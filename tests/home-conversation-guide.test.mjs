@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { homeGuideDestinations, homeGuideGoals, homeGuideCategories, browseHomeGuideOffers, homeGuideQuickStarts, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply } from "../lib/home-conversation.mjs";
+import { homeGuideDestinations, homeGuideGoals, homeGuideCategories, browseHomeGuideOffers, homeGuideQuickStarts, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply, homeGuideOpening } from "../lib/home-conversation.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -370,4 +370,91 @@ test("home advisor replaces repeated service catalogs without changing #1537 fre
  const guide=read("components/home-conversation-guide.tsx");
  for(const token of ["data-home-guide-needs","data-home-guide-need={item.id}","data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
    assert.ok(guide.includes(token));
+});
+
+
+test("love request gets a warm, relevant subcategory question before any offer", () => {
+  const love = resolveHomeGuideQuestion("Хочу любви", "en");
+  assert.equal(love.lang, "ru");
+  assert.equal(love.topic, "relationships");
+  assert.equal(love.subtopic, null);
+  assert.match(homeGuideOpening(love).ru, /любви и близости/);
+  const focus = homeGuideFollowup(love);
+  assert.match(focus.prompt.ru, /встретить близкого человека/);
+  assert.deepEqual(focus.choices.slice(0, 3).map(c => c.id), ["focus-meeting", "focus-bond", "focus-patterns"]);
+  assert.equal(chooseHomeGuideOffer(love, "written-review"), null,
+    "A general wish for love should not immediately promote a written service");
+  const selected = chooseHomeGuideOffer(love, "focus-meeting", "ru");
+  assert.equal(selected.context.subtopic, "meeting");
+  assert.deepEqual(selected.offers, []);
+  assert.match(homeGuideFollowup(selected.context).prompt.ru, /ожиданиях/);
+  const offer = chooseHomeGuideOffer(selected.context, "written-review", "ru");
+  assert.deepEqual(offer.offers.map(item => item.id), ["review"]);
+  assert.equal(offer.offers[0].href, "/ru/services/free-situation-review");
+  assert.ok(!offer.offers[0].href.includes("Хочу"));
+  assert.equal(offer.offers[0].checkoutStatus, "not_verified");
+});
+
+test("follow-up subcategories are usable via buttons and natural language EN/RU/ES", () => {
+  for (const [text, locale] of [["I want love", "en"], ["Хочу любви", "ru"], ["Quiero amor", "es"]]) {
+    const context = resolveHomeGuideQuestion(text, locale);
+    assert.equal(context.topic, "relationships");
+    assert.equal(context.subtopic, null);
+    assert.ok(homeGuideOpening(context)[locale].length > 25);
+    assert.ok(homeGuideFollowup(context).prompt[locale].length > 25);
+    for (const id of ["focus-meeting", "focus-bond", "focus-patterns"]) {
+      const selected = chooseHomeGuideOffer(context, id, locale);
+      assert.deepEqual(selected.offers, []);
+      assert.ok(homeGuideFollowup(selected.context).choices.some(c => c.id === "personal"));
+      const free = chooseHomeGuideOffer(selected.context, "self-check", locale);
+      assert.equal(free.offers[0].id, "tests");
+    }
+  }
+  const love = resolveHomeGuideQuestion("Хочу любви", "ru");
+  assert.equal(matchHomeGuideReply("Хочу познакомиться", love), "focus-meeting");
+  assert.equal(matchHomeGuideReply("Хочу сблизиться с партнёром", love), "focus-bond");
+  assert.equal(matchHomeGuideReply("Что мешает мне?", love), "focus-patterns");
+  assert.equal(matchHomeGuideReply("Мне нужен мастер", love), "personal");
+  assert.equal(matchHomeGuideReply("something unrelated", love), null);
+  assert.equal(chooseHomeGuideOffer(love, "focus-evil"), null);
+  assert.equal(chooseHomeGuideOffer(resolveHomeGuideQuestion("Просто вопрос", "ru"), "focus-meeting"), null);
+});
+
+test("specific stress, relationship and business messages retain their right subcategory", () => {
+  const conflict = resolveHomeGuideQuestion("Ссоримся с партнёром", "ru");
+  assert.equal(conflict.subtopic, "conflict");
+  assert.match(homeGuideFollowup(conflict).prompt.ru, /произошедшее/);
+  assert.equal(chooseHomeGuideOffer(conflict, "written-review").offers[0].id, "review");
+
+  const worry = resolveHomeGuideQuestion("Постоянная тревога", "ru");
+  assert.equal(worry.subtopic, "anxiety");
+  assert.match(homeGuideFollowup(worry).prompt.ru, /тревогу/);
+  assert.equal(chooseHomeGuideOffer(worry, "calm-practice").offers[0].id, "antistress");
+
+  const sleep = resolveHomeGuideQuestion("Стресс и плохо сплю", "ru");
+  assert.equal(sleep.subtopic, "sleep");
+  assert.match(homeGuideFollowup(sleep).prompt.ru, /сон/);
+
+  const work = resolveHomeGuideQuestion("I need clients for my business", "en");
+  assert.match(homeGuideOpening(work).en, /business/);
+  assert.equal(homeGuideFollowup(work).choices[0].id, "work-start");
+  assert.equal(chooseHomeGuideOffer(work, "work-grow").offers[0].id, "business");
+
+  const urgent = resolveHomeGuideQuestion("Хочу покончить с собой", "ru");
+  assert.equal(homeGuideFollowup(urgent), null);
+  assert.equal(chooseHomeGuideOffer(urgent, "focus-meeting"), null);
+});
+
+test("dialog speaks the visitor language and does not repeat the prompt over the buttons", () => {
+  const ui = read("components/home-conversation-guide.tsx");
+  assert.ok(ui.includes("homeGuideOpening(result)[result.lang]"));
+  assert.ok(ui.includes("const t = copy[context?.lang ?? locale]"));
+  assert.ok(ui.includes("<p className={styles.choiceCaption}>{answerCopy.choiceHint}</p>"));
+  assert.ok(!ui.includes("<p className={styles.choiceCaption}>{followup.prompt[context.lang]}</p>"));
+  for (const term of ["choiceHint: \"Выберите вариант", "choiceHint: \"Choose an option", "choiceHint: \"Elige una opción"]) {
+    assert.ok(ui.includes(term), term);
+  }
+  for (const forbidden of ["fetch(", "sendBeacon(", "localStorage", "sessionStorage", "/api/"]) {
+    assert.ok(!ui.includes(forbidden) && !read("lib/home-conversation.mjs").includes(forbidden));
+  }
 });

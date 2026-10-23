@@ -7,6 +7,7 @@ import { ArrowRight, ArrowUp, BookOpen, BriefcaseBusiness, Check, Compass, Heart
 
 import {
   homeGuideFollowup,
+  homeGuideOpening,
   homeGuideQuickStarts,
   chooseHomeGuideOffer,
   matchHomeGuideReply,
@@ -66,6 +67,7 @@ type GuideCopy = {
   topics: string;
   unknown: string;
   followup: string;
+  choiceHint: string;
   goalLabels: Record<HomeGuideGoal, string>;
   goalResponses: Record<HomeGuideGoal, string>;
   goalActions: Record<HomeGuideGoal, string>;
@@ -131,6 +133,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "It sounds like your question may relate to",
     unknown: "Thanks for sharing. We can find a starting point without labelling your situation.",
     followup: "What would help most right now?",
+    choiceHint: "Choose an option or write your own answer.",
     goalLabels: {
       understand: "Understand my situation",
       tests: "Explore free tests",
@@ -213,6 +216,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Похоже, вопрос касается темы",
     unknown: "Спасибо, что поделились. Необязательно давать ситуации название, чтобы найти первый шаг.",
     followup: "Что вам сейчас было бы полезнее?",
+    choiceHint: "Выберите вариант или ответьте своими словами.",
     goalLabels: {
       understand: "Разобраться в ситуации",
       tests: "Бесплатные тесты",
@@ -295,6 +299,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     topics: "Parece que tu pregunta podría tratar sobre",
     unknown: "Gracias por compartirlo. No hace falta etiquetar tu situación para encontrar un primer paso.",
     followup: "¿Qué te ayudaría más ahora?",
+    choiceHint: "Elige una opción o responde con tus propias palabras.",
     goalLabels: {
       understand: "Entender mi situación",
       tests: "Pruebas gratuitas",
@@ -349,11 +354,12 @@ const quickStartIcons = {
 } as const;
 
 export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
-  const t = copy[locale];
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [context, setContext] = useState<Context | null>(null);
+  // Keep the entire chat chrome in the language of the visitor's question.
+  const t = copy[context?.lang ?? locale];
   const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
   const [supportsVoice, setSupportsVoice] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
@@ -510,7 +516,10 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       const selection = chooseHomeGuideOffer(context, replyId, context.lang);
       if (selection) {
         const next = homeGuideFollowup(selection.context);
-        const response = selection.response?.[context.lang] ?? next?.prompt[context.lang] ?? copy[context.lang].followup;
+        const response = selection.offers.length > 0
+          ? selection.response?.[context.lang] ?? copy[context.lang].followup
+          : [selection.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
+            || copy[context.lang].followup;
         appendExchange(question, response);
         setContext(selection.context);
         setRecommendations(selection.offers);
@@ -524,7 +533,8 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const followup = homeGuideFollowup(result);
     const answer = result.urgent
       ? responseCopy.urgent
-      : followup?.prompt[result.lang] ?? responseCopy.unknown + " " + responseCopy.followup;
+      : [homeGuideOpening(result)[result.lang], followup?.prompt[result.lang] ?? responseCopy.followup]
+          .filter(Boolean).join(" ");
     appendExchange(question, answer);
     setContext(result);
     setRecommendations([]);
@@ -544,7 +554,10 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     const result = chooseHomeGuideOffer(context, choiceId, context.lang);
     if (!selected || !result) return;
     const next = homeGuideFollowup(result.context);
-    const answer = result.response?.[context.lang] ?? next?.prompt[context.lang] ?? copy[context.lang].followup;
+    const answer = result.offers.length > 0
+      ? result.response?.[context.lang] ?? copy[context.lang].followup
+      : [result.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
+        || copy[context.lang].followup;
     appendExchange(selected.label[context.lang], answer);
     setContext(result.context);
     setRecommendations(result.offers);
@@ -628,7 +641,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setVoiceElapsed(0);
     setVoiceError(null);
     voiceStartedAtRef.current = 0;
-    engine.lang = locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-US";
+    engine.lang = (context?.lang ?? locale) === "ru" ? "ru-RU" : (context?.lang ?? locale) === "es" ? "es-ES" : "en-US";
     engine.interimResults = true;
     // iOS WebKit has known long-running/restart bugs; prefer a short utterance.
     const isIosWebKit = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -830,7 +843,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
 
                 {context && !context.urgent && recommendations.length === 0 && followup ? (
                   <div className={styles.choiceGroup}>
-                    <p className={styles.choiceCaption}>{followup.prompt[context.lang]}</p>
+                    <p className={styles.choiceCaption}>{answerCopy.choiceHint}</p>
                     <div className={styles.choices} role="group" aria-label={followup.prompt[context.lang]} data-home-guide-choices>
                       {followup.choices.slice(0, 3).map(choice => (
                         <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>

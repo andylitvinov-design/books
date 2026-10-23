@@ -5,8 +5,10 @@ export type HomeGuideGoal = "understand" | "tests" | "practice" | "consult" | "i
 export declare const homeGuideGoals: ReadonlyArray<HomeGuideGoal>;
 export type HomeGuideContext = {
   lang: PublicLocale; topic: IdeasTopic | null; matched: boolean; urgent: boolean; interest: "reiki" | null;
+  subtopic: string | null;
 };
 export declare function resolveHomeGuideQuestion(input: string, fallbackLocale?: PublicLocale, previous?: HomeGuideContext | null): HomeGuideContext;
+export declare function homeGuideOpening(context: HomeGuideContext | null): Record<PublicLocale, string>;
 export declare function homeGuideDestinations(args: {
   goal: HomeGuideGoal;
   topic: IdeasTopic | null;
