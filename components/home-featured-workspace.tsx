@@ -135,21 +135,21 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
     </div>
     <div className={styles.grid} role="group" aria-label={t.title} data-home-module-grid>
       {moduleIds.map(id => {
-        const module = t.modules[id];
+        const item = t.modules[id];
         const visual = moduleVisuals[id];
         const Icon = visual.Icon;
         return <button type="button" key={id} className={styles.tile}
           data-home-module={id} data-home-module-selected={selected === id ? "true" : "false"}
           aria-pressed={selected === id} aria-controls="hh-home-module-detail"
-          aria-label={module.title + ". " + module.detail}
+          aria-label={item.title + ". " + item.detail}
           onClick={() => setSelected(id)}>
           <span className={styles.thumb} aria-hidden="true">
             <Image src={visual.photo} alt="" fill unoptimized loading="lazy"
               sizes="(max-width: 640px) 48px, 56px" />
           </span>
-          <span className={styles.titleRow}><Icon size={15} aria-hidden="true" /><strong>{module.title}</strong></span>
-          <span className={styles.desc}>{module.detail}</span>
-          <span className={styles.inside}>{module.inside}<ArrowRight size={13} aria-hidden="true" /></span>
+          <span className={styles.titleRow}><Icon size={15} aria-hidden="true" /><strong>{item.title}</strong></span>
+          <span className={styles.desc}>{item.detail}</span>
+          <span className={styles.inside}>{item.inside}<ArrowRight size={13} aria-hidden="true" /></span>
         </button>;
       })}
     </div>
