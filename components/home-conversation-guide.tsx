@@ -19,6 +19,11 @@ import {
   type HomeGuideGoal,
   type HomeGuideOffer,
 } from "@/lib/home-conversation.mjs";
+import { orderGuideClarificationChoices } from "@/lib/home-guide-quality.mjs";
+import {
+  getGuideClarificationPriorities, shareGuideQualityFeedback,
+  type GuideCategory, type GuideSignal,
+} from "@/lib/home-guide-quality-client";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-conversation-guide.module.css";
@@ -70,6 +75,11 @@ type GuideCopy = {
   unknown: string;
   followup: string;
   choiceHint: string;
+  qualityConsent: string;
+  qualityHelp: string;
+  qualityHelpful: string;
+  qualityNotHelpful: string;
+  qualitySaved: string;
   goalLabels: Record<HomeGuideGoal, string>;
   goalResponses: Record<HomeGuideGoal, string>;
   goalActions: Record<HomeGuideGoal, string>;
@@ -136,6 +146,11 @@ const copy: Record<PublicLocale, GuideCopy> = {
     unknown: "Thanks for sharing. We can find a starting point without labelling your situation.",
     followup: "What would help most right now?",
     choiceHint: "You can reply in your own words, too.",
+    qualityConsent: "Help improve suggestions: share only the topic and rating, never my messages.",
+    qualityHelp: "Was this suggestion useful?",
+    qualityHelpful: "Yes",
+    qualityNotHelpful: "Not really",
+    qualitySaved: "Thanks — the category-only feedback was saved.",
     goalLabels: {
       understand: "Understand my situation",
       tests: "Explore free tests",
@@ -219,6 +234,11 @@ const copy: Record<PublicLocale, GuideCopy> = {
     unknown: "Спасибо, что поделились. Необязательно давать ситуации название, чтобы найти первый шаг.",
     followup: "Что вам сейчас было бы полезнее?",
     choiceHint: "Можно просто ответить своими словами.",
+    qualityConsent: "Улучшать подсказки: сохранять только выбранную тему и оценку, без текста переписки.",
+    qualityHelp: "Подсказка была полезной?",
+    qualityHelpful: "Да",
+    qualityNotHelpful: "Не очень",
+    qualitySaved: "Спасибо — сохранили только обезличенную категорию и оценку.",
     goalLabels: {
       understand: "Разобраться в ситуации",
       tests: "Бесплатные тесты",
@@ -302,6 +322,11 @@ const copy: Record<PublicLocale, GuideCopy> = {
     unknown: "Gracias por compartirlo. No hace falta etiquetar tu situación para encontrar un primer paso.",
     followup: "¿Qué te ayudaría más ahora?",
     choiceHint: "También puedes responder con tus propias palabras.",
+    qualityConsent: "Mejorar las sugerencias: compartir solo el tema y la valoración, nunca mis mensajes.",
+    qualityHelp: "¿Te sirvió la sugerencia?",
+    qualityHelpful: "Sí",
+    qualityNotHelpful: "No mucho",
+    qualitySaved: "Gracias. Solo guardamos la categoría y la valoración.",
     goalLabels: {
       understand: "Entender mi situación",
       tests: "Pruebas gratuitas",
@@ -363,6 +388,10 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   // Keep the entire chat chrome in the language of the visitor's question.
   const t = copy[context?.lang ?? locale];
   const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
+  const [qualityConsent, setQualityConsent] = useState(false);
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [needsClarification, setNeedsClarification] = useState(false);
+  const [qualityPriorities, setQualityPriorities] = useState<GuideCategory[]>([]);
   const [supportsVoice, setSupportsVoice] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -439,6 +468,16 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   }, [isOpen, closeDialog]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    // Read only public 5+-sample aggregate; no visitor question is transmitted.
+    void getGuideClarificationPriorities().then(categories => {
+      if (active) setQualityPriorities(categories);
+    });
+    return () => { active = false; };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen && chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
@@ -509,6 +548,28 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setTurns(current => [...current, ...exchange].slice(-8));
   }
 
+  function categorizeGuideContext(current: Context): GuideCategory {
+    if (current.interest === "site") return "site";
+    if (current.interest === "courses" || current.interest === "reiki") return "courses";
+    if (current.topic === "relationships") return "love";
+    if (current.topic === "work") return "business";
+    if (current.topic === "resources" || current.topic === "stress") return "energy";
+    return "other";
+  }
+
+  function recordGuideFeedback(category: GuideCategory, signal: GuideSignal, language: PublicLocale) {
+    if (!qualityConsent) return;
+    void shareGuideQualityFeedback({ category, signal, locale: language, consent: true });
+  }
+
+  function noteClarifiedChoice(choiceId: string, language: PublicLocale) {
+    if (!needsClarification) return;
+    setNeedsClarification(false);
+    const category = choiceId.startsWith("topic-")
+      ? choiceId.slice(6) as GuideCategory : "other";
+    recordGuideFeedback(category, category === "other" ? "unresolved" : "clarified", language);
+  }
+
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
@@ -533,6 +594,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
           : [selection.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
             || copy[context.lang].followup;
         appendExchange(question, response);
+        if (!context.matched) noteClarifiedChoice(replyId, context.lang);
         setContext(selection.context);
         setRecommendations(selection.offers);
         setDraft("");
@@ -560,6 +622,11 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       return;
     }
     const result = safety;
+    if (!result.matched) setNeedsClarification(true);
+    else if (needsClarification) {
+      setNeedsClarification(false);
+      recordGuideFeedback(categorizeGuideContext(result), "clarified", result.lang);
+    }
     const responseCopy = copy[result.lang];
     const followup = homeGuideFollowup(result);
     // Continue the topic rather than repeating the same category opening.
@@ -596,6 +663,8 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       : [result.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
         || copy[context.lang].followup;
     appendExchange(selected.label[context.lang], answer);
+    if (!context.matched) noteClarifiedChoice(choiceId, context.lang);
+    setFeedbackSaved(false);
     setContext(result.context);
     setRecommendations(result.offers);
   }
@@ -780,6 +849,9 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     cancelVoice();
     setContext(null);
     setRecommendations([]);
+    setQualityConsent(false);
+    setNeedsClarification(false);
+    setFeedbackSaved(false);
     setDraft("");
     setTurns([]);
     questionRef.current?.focus();
@@ -787,6 +859,9 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
 
   const answerCopy = copy[context?.lang ?? locale];
   const followup = homeGuideFollowup(context);
+  const suggestedChoices = context && !context.matched
+    ? orderGuideClarificationChoices(followup?.choices ?? [], qualityPriorities)
+    : followup?.choices ?? [];
   const recording = voiceState !== "idle";
   const recordingLabel = voiceState === "starting" ? t.voiceStarting : voiceState === "finishing" ? t.voiceFinishing : t.voiceListening;
   const voiceTime = `${String(Math.floor(voiceElapsed / 60)).padStart(2, "0")}:${String(voiceElapsed % 60).padStart(2, "0")}`;
@@ -882,17 +957,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                   <div className={styles.choiceGroup}>
                     <p className={styles.choiceCaption}>{answerCopy.choiceHint}</p>
                     <div className={styles.choices} role="group" aria-label={followup.prompt[context.lang]} data-home-guide-choices>
-                      {followup.choices.slice(0, 3).map(choice => (
+                      {suggestedChoices.slice(0, 3).map(choice => (
                         <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
                           {choice.label[context.lang]}
                         </button>
                       ))}
                     </div>
-                    {followup.choices.length > 3 ? (
+                    {suggestedChoices.length > 3 ? (
                       <details className={styles.extraChoices}>
                         <summary>{t.moreWays}</summary>
                         <div className={styles.choices}>
-                          {followup.choices.slice(3).map(choice => (
+                          {suggestedChoices.slice(3).map(choice => (
                             <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
                               {choice.label[context.lang]}
                             </button>
@@ -922,8 +997,29 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                       onClick={() => setRecommendations([])}>
                       {{en:"Change my answer",ru:"Изменить выбор",es:"Cambiar respuesta"}[context.lang]}
                     </button>
+                    <div className={styles.qualityRating}>
+                      <span>{answerCopy.qualityHelp}</span>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved}
+                        onClick={() => {
+                          recordGuideFeedback(categorizeGuideContext(context), "helpful", context.lang);
+                          setFeedbackSaved(true);
+                        }}>{answerCopy.qualityHelpful}</button>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved}
+                        onClick={() => {
+                          recordGuideFeedback(categorizeGuideContext(context), "unhelpful", context.lang);
+                          setFeedbackSaved(true);
+                        }}>{answerCopy.qualityNotHelpful}</button>
+                    </div>
+                    {feedbackSaved ? <p className={styles.qualitySaved} role="status">{answerCopy.qualitySaved}</p> : null}
                     <p className={styles.limitation}>{answerCopy.limitation}</p>
                   </div>
+                ) : null}
+                {context && !context.urgent ? (
+                  <label className={styles.qualityConsent} data-home-guide-quality-consent>
+                    <input type="checkbox" checked={qualityConsent}
+                      onChange={event => { setQualityConsent(event.currentTarget.checked); setFeedbackSaved(false); }} />
+                    <span>{answerCopy.qualityConsent}</span>
+                  </label>
                 ) : null}
               </div>
             </div>
