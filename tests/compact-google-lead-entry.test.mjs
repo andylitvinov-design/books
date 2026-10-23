@@ -46,6 +46,8 @@ test('Google request uses PKCE, explicit consent and verified-profile CRM save b
   assert.match(src,/fetch\("\/api\/app\/auth\/contact-profile"/)
   assert.match(src,/setGoogleReady\(true\)/)
   assert.match(src,/if \(!consent\) \{/)
+  assert.match(src,/if \(description\.trim\(\)\) \{/)
+  assert.match(src,/setError\(c\.googleNote\)/)
   assert.match(src,/consentToReply: !quick/)
   assert.match(src,/quick \? c\.googleQuickNote : c\.googleSubmitNote/)
   assert.match(src,/if \(pending\?\.consentToReply === true\)/)
