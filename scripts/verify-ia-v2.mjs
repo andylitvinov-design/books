@@ -73,8 +73,10 @@ async function verifyDirectNavigation(nav, { locale, surface, expected, label })
   const cabinetHref = '/' + (locale === 'es' ? 'en' : locale) + '/app'
   const freeReviewHref = '/' + locale + '/services/free-situation-review'
   const directions = expected.filter(item => ['energy','love','business'].includes(item.id))
-  const expectedHeader = [...directions.map(({id,href}) => ({id,href})), { id: 'cabinet', href: cabinetHref }]
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about', cabinetHref], label + ': exact direct header destinations')
+  // Home has a dialog trigger for My Space; other pages retain a direct Cabinet link.
+  const isHome = surface === 'home'
+  const expectedHeader = [...directions.map(({id,href}) => ({id,href})), { id: 'cabinet', href: isHome ? null : cabinetHref }]
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about', ...(isHome ? [] : [cabinetHref])], label + ': exact direct header destinations')
   assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
   const current = nav.locator(':scope > a[aria-current="page"]')
   await expect(current).toHaveCount(directions.some(item => item.id === surface) ? 1 : 0)
@@ -140,17 +142,27 @@ async function verifyPublicHeaderMatrix(page, engine) {
         const expected = getSiteNavigation(locale)
         const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...expected.filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/academy', '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
-        const cabinetEntry = header.locator('a.site-cabinet-entry')
+        const cabinetEntry = header.locator('.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
         const trigger = menu.locator('summary')
         await expect(trigger).toHaveText(locale.toUpperCase())
-        await expect(cabinetEntry).toHaveAttribute('href', '/' + (locale === 'es' ? 'en' : locale) + '/app')
-        // The direct cabinet entry must be readable on actual phone viewports:
-        // a dashboard icon or aria-label alone is not enough for discovery.
-        const cabinetText = { en: 'Cabinet', ru: 'Кабинет', es: 'Gabinete' }[locale]
-        const visibleCabinetLabel = cabinetEntry.locator(width <= 1023 ? '.site-cabinet-entry__compact' : '.site-cabinet-entry__full')
-        await expect(visibleCabinetLabel).toBeVisible()
-        await expect(visibleCabinetLabel).toHaveText(cabinetText)
+        await expect(cabinetEntry).toHaveCount(1)
+        // The homepage My Space trigger opens a consent-safe dialog, not a phantom
+        // navigation link; all other public routes retain the direct Cabinet link.
+        if (surface === 'home') {
+          await expect(cabinetEntry).toHaveAttribute('aria-haspopup', 'dialog')
+          await expect(cabinetEntry).toHaveAttribute('aria-controls', 'home-personal-space-dialog')
+          await expect(cabinetEntry).toHaveAttribute('aria-expanded', 'false')
+          await expect(cabinetEntry).toHaveAccessibleName({en:'My Space',ru:'Моё пространство',es:'Mi espacio'}[locale])
+          const visibleText = {en:'My Space',ru:'Моё',es:'Mi espacio'}[locale]
+          await expect(cabinetEntry.locator('span')).toHaveText(visibleText)
+        } else {
+          await expect(cabinetEntry).toHaveAttribute('href', '/' + (locale === 'es' ? 'en' : locale) + '/app')
+          const cabinetText = { en: 'Cabinet', ru: 'Кабинет', es: 'Gabinete' }[locale]
+          const visibleCabinetLabel = cabinetEntry.locator(width <= 1023 ? '.site-cabinet-entry__compact' : '.site-cabinet-entry__full')
+          await expect(visibleCabinetLabel).toBeVisible()
+          await expect(visibleCabinetLabel).toHaveText(cabinetText)
+        }
         if (width <= 767) await expect(cabinetEntry.locator('svg')).toBeHidden()
         await expect(menu).toHaveJSProperty('open', false)
         await inViewport(cabinetEntry, label + '/cabinet')
