@@ -452,3 +452,41 @@ test('urgent text hides marketing and the local dialogue has privacy-safe respon
   assert.match(css,/@media\(max-width:480px\)\{[\s\S]*?\.dialogChips\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.doesNotMatch(css,/overflow-x:auto/)
 })
+
+test('manual topic and action controls do not unexpectedly reveal the conversation panel',()=>{
+  for (const direction of ['energy','relationships','business']) {
+    for (const locale of ['en','ru','es']) {
+      const f=fixture(direction,locale)
+      let tree=f.render()
+      const topic=journey(direction).topics[0].id
+      by(tree,'data-direction-filter',topic)[0].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-direction-dialogue',true).length,0)
+      by(tree,'data-direction-intent','course')[0].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-direction-dialogue',true).length,0)
+      assert.equal(by(tree,'data-direction-filter',topic)[0].props['aria-pressed'],true)
+      assert.equal(by(tree,'data-direction-intent','course')[0].props['aria-pressed'],true)
+      by(tree,'data-direction-action-reset',true)[0].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-direction-dialogue',true).length,0)
+      assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
+        .map(n=>n.props['data-direction-section']),['test','course','session'])
+    }
+  }
+})
+
+test('closing urgent safety guide restores ordinary browsing and clears unsafe query',()=>{
+  const f=fixture('energy','ru')
+  let tree=f.render()
+  nodes(tree).find(n=>n.props?.id==='hh-direction-wish').props.onChange({target:{value:'Хочу умереть'}})
+  tree=f.render()
+  by(tree,'data-direction-wish-submit',true)[0].props.onClick()
+  tree=f.render()
+  assert.equal(nodes(tree).filter(n=>n.props?.role==='alert').length,1)
+  by(tree,'data-dialog-close',true)[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-direction-dialogue',true).length,0)
+  assert.equal(nodes(tree).filter(n=>n.props?.['data-direction-section']).length,3)
+  assert.equal(nodes(tree).find(n=>n.props?.id==='hh-direction-wish').props.value,'')
+})
