@@ -576,6 +576,32 @@ test('storage errors expose neither upstream details nor credentials or video co
   }
 })
 
+test('upstream failures are classified with fixed non-sensitive diagnostic codes', async () => {
+  const cases = [
+    [async () => ({ ok:false, status:429 }), 'provider-limit'],
+    [async () => ({ ok:false, status:401 }), 'provider-auth'],
+    [async () => ({ ok:false, status:403 }), 'provider-auth'],
+    [async () => ({ ok:false, status:404 }), 'provider-endpoint'],
+    [async () => ({ ok:false, status:503 }), 'provider-5xx'],
+    [async () => ({ ok:true, json:async () => ({ error:'ERR max requests limit exceeded with sensitive payload' }) }), 'provider-limit'],
+    [async () => ({ ok:true, json:async () => ({ error:'token authentication failed, private details here' }) }), 'provider-auth'],
+    [async () => ({ ok:true, json:async () => ({ unexpected:'sensitive' }) }), 'provider-protocol'],
+    [async () => { throw new Error('private upstream connection url: synthetic-test-token') }, 'transport'],
+  ];
+  for (const [fetchFn, expectedCode] of cases) {
+    const store = createSiteVideoStore({ environment, fetchFn });
+    await assert.rejects(store.get(videoKey('home-intro','en')), error => {
+      assert.ok(codeIs('storage')(error));
+      assert.equal(error.diagnosticCode, expectedCode);
+      assert.equal(Object.prototype.propertyIsEnumerable.call(error,'diagnosticCode'), false);
+      assert.equal(error.cause, undefined);
+      assert.doesNotMatch(JSON.stringify(error), /synthetic|private|payload|connection|upstream|token/i);
+      assert.doesNotMatch(error.message, /synthetic|private|payload|token|429|503/i);
+      return true;
+    });
+  }
+});
+
 test('a hung storage request is aborted after the bounded timeout', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] })
   let signal
