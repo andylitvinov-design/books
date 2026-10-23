@@ -290,7 +290,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
   const publishedCount=services.filter(item=>item.status==='published').length
-  const openRequests=requests.filter(item=>['requested','contacted'].includes(item.status)).length
+  const openRequests=requests.filter(item=>['requested','contacted','confirmed','in_progress'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   const newServices=data.newServices
@@ -764,8 +764,8 @@ function Services({items,locale,busy,quota,createRequest=0,starter='',onSave,onS
   </>
 }
 function Requests({items,t,locale,busy,onStatus,onSaveContact}){
-  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted'].includes(item.status))?'open':'all')
-  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted'].includes(item.status):item.status===status))
+  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','confirmed','in_progress'].includes(item.status))?'open':'all')
+  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','confirmed','in_progress'].includes(item.status):item.status===status))
   const ru=t.requests==='Заявки'
   return <section className="hh-section"><div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
     <label className="hh-practice-requests-filter">{ru?'Статус':'Status'}
@@ -779,7 +779,22 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact}){
     </label>
   </div><p className="hh-fine" role="status">{visible.length} / {items.length}</p>
     {!visible.length&&<p>{t.none}</p>}
-    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{x.message&&<p>{x.message}</p>}{x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}</article>)}
+    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{x.message&&<p>{x.message}</p>}
+      {x.remoteBooking&&<p className="hh-fine"><strong>{locale==='ru'?'Дистанционная поддержка цели':'Goal support'}</strong>
+        {' · '}{x.remoteBooking.duration} min · {x.remoteBooking.date} {x.remoteBooking.time} ({x.remoteBooking.timezone})
+        {' · '}{x.remoteBooking.price} {x.remoteBooking.currency}
+        {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
+      {x.remoteBooking&&<div className="hh-actions">
+        {x.status==='requested'&&<>
+          <button disabled={busy} onClick={()=>onStatus(x,'confirmed')}>{locale==='ru'?'Подтвердить время':'Confirm slot'}</button>
+          <button disabled={busy} onClick={()=>onStatus(x,'declined')}>{locale==='ru'?'Отклонить':'Decline'}</button>
+        </>}
+        {x.status==='confirmed'&&<>
+          <button disabled={busy} onClick={()=>onStatus(x,'in_progress')}>{locale==='ru'?'Начать сеанс':'Start session'}</button>
+          <button disabled={busy} onClick={()=>onStatus(x,'declined')}>{locale==='ru'?'Отменить до начала':'Decline before start'}</button>
+        </>}
+        {x.status==='in_progress'&&<button disabled={busy} onClick={()=>onStatus(x,'completed')}>{locale==='ru'?'Завершить сеанс':'Mark completed'}</button>}
+      </div>}</article>)}
   </section>
 }
 
