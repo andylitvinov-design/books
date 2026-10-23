@@ -151,7 +151,7 @@ Object.assign(TEXT.es,{
 const BASE = {
   copy: { en: {title:'', shortDescription:'', description:''}, ru: {title:'', shortDescription:'', description:''}, es: {title:'', shortDescription:'', description:''} },
   areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', locationLabel:'',
-  pricingMode:'contact', confirmedPrice:'', currency:'CAD', durationMinutes:'',
+  pricingMode:'contact', confirmedPrice:'', currency:'CAD', durationMinutes:'', priceOptions:[],
   imagePath:'', photos:[], videoPresentation:null, goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
 }
 
@@ -173,7 +173,7 @@ function initialDraft(item,locale,starter='') {
         copy:item.localizedCopy||{}, areaKey:item.areaKey, offeringType:item.offeringType,
         deliveryFormat:item.deliveryFormat, locationLabel:item.locationLabel, languages:item.languages,
         pricingMode:item.pricingMode, confirmedPrice:item.confirmedPrice??'', currency:item.currency||'CAD',
-        durationMinutes:item.durationMinutes??'', imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, goals:item.goals||[],
+        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, goals:item.goals||[],
         methods:item.methods||[], benefits:item.benefits||[], faq:item.faq||[],
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
@@ -218,6 +218,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
     confirmedPrice:paid?(draft.confirmedPrice==null||draft.confirmedPrice===''?null:Number(draft.confirmedPrice)):null,
     currency:paid?(draft.currency||'CAD'):'',
     durationMinutes:draft.durationMinutes==null||draft.durationMinutes===''?null:Number(draft.durationMinutes),
+    priceOptions:paid?(draft.priceOptions||[]).filter(option=>option.price!==''&&option.price!=null).map(option=>({duration:option.duration,price:Number(option.price)})):[],
     displayLocales:draft.copy.es.title?.trim()
       ? [...new Set([...(draft.displayLocales||['en','ru']),'es'])]
       : (draft.displayLocales||['en','ru']).filter(code=>code!=='es'),
@@ -361,6 +362,26 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
             </select>
           </label>
         </div>}
+        {paid&&draft.areaKey==='energy_spiritual'&&draft.deliveryFormat!=='in_person'&&
+          <fieldset className={styles.formatGroup} style={{marginTop:14}}>
+            <legend>{lang==='ru'?'Цены дистанционной поддержки (10 / 20 / 30 / 60 мин)':lang==='es'?'Precios por duración (10 / 20 / 30 / 60 min)':'Remote support prices by duration (10 / 20 / 30 / 60 min)'}</legend>
+            <p className={styles.note}>{lang==='ru'?'Заполните только длительности, которые вы действительно предлагаете. Цены появятся после модерации.':lang==='es'?'Añade solo las duraciones que ofreces. Requiere aprobación.':'Fill only the durations you actually offer. Prices require approval.'}</p>
+            <div className={styles.twoFields} style={{width:'100%'}}>
+              {[10,20,30,60].map(duration=><label className={styles.field} key={duration}>
+                <span>{duration} min · {draft.currency||'CAD'}</span>
+                <input type="number" min="0.01" max="100000" step="0.01" inputMode="decimal"
+                  value={(draft.priceOptions||[]).find(option=>option.duration===duration)?.price??''}
+                  disabled={locked} placeholder="—"
+                  onChange={event=>{
+                    const price=event.target.value
+                    set('priceOptions',[
+                      ...(draft.priceOptions||[]).filter(option=>option.duration!==duration),
+                      ...(price!==''?[{duration,price}]:[]),
+                    ])
+                  }}/>
+              </label>)}
+            </div>
+          </fieldset>}
         <div className={styles.bookingPreview} aria-label={c.fromPreview}>
           <span>{c.fromPreview}</span><strong>{priceSummary}</strong>
           {draft.durationMinutes&&<small>{draft.durationMinutes} {c.duration}</small>}
