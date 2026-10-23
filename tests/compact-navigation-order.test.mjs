@@ -34,6 +34,8 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
     assert.equal(activeCompactNavigationId(`/${locale}/explore/business`), 'business')
     assert.equal(activeCompactNavigationId(`/${locale}/library`), 'books')
     assert.equal(activeCompactNavigationId(`/${locale}/about`), 'about')
+    assert.equal(activeCompactNavigationId(`/${locale}/academy`), 'courses')
+    assert.equal(getSiteNavigation(locale).find(item => item.id === 'courses').href, `/${locale}/academy`)
   }
   for (const locale of ['en','ru']) assert.equal(activeCompactNavigationId(`/${locale}/app`), 'cabinet')
 })
