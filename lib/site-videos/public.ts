@@ -7,6 +7,17 @@ import { toPublishedSiteVideo } from './model.js';
 import { builtInSiteVideoRecords } from './defaults.js';
 import type { PublishedSiteVideo, SiteVideoStore } from './model.js';
 import { getSiteVideoStore } from './store.js';
+const diagnosticCategories = new Set([
+  'provider-limit', 'provider-auth', 'provider-endpoint', 'provider-5xx',
+  'provider-http', 'provider-command', 'provider-protocol', 'timeout', 'transport',
+]);
+function safeStorageDiagnostic(error: unknown): string {
+  const category = error && typeof error === 'object' && 'diagnosticCode' in error
+    ? error.diagnosticCode : undefined;
+  return typeof category === 'string' && diagnosticCategories.has(category)
+    ? category : 'unknown';
+}
+
 
 function approvedBuiltInVideos(): Record<string, PublishedSiteVideo> {
   // Storage-off mode is cheap and deterministic. Never share its cache key
@@ -36,12 +47,10 @@ const readStoredPublishedVideos = unstable_cache(
         if (video) videos[record.key] = video;
       }
       return videos;
-    } catch {
-      // Fail closed: never show a draft, hidden override, or unverified builtin.
-      // Cache this *empty* public result for 60 seconds rather than throwing on
-      // every stale revalidation and re-hitting an unavailable external store.
-      // A successful owner publication invalidates the tag immediately.
-      console.warn('[site-videos] Public video storage unavailable; serving an empty 60s snapshot.');
+    } catch (error) {
+      // Cached published-only snapshot stays empty rather than restoring an
+      // unseen/hidden editorial override. No provider data enters this log.
+      console.warn('[site-videos] Public video storage unavailable; category=' + safeStorageDiagnostic(error) + '; serving an empty 60s snapshot.');
       return {};
     }
   },
@@ -63,8 +72,10 @@ const readStoredPublishedSiteVideo = unstable_cache(
       // This is a streamed or below-fold media section. A bounded HGET is
       // cheaper than HGETALL and cannot block the primary hero render.
       return toPublishedSiteVideo(await store.get(key, { timeoutMs: 1800 }));
-    } catch {
-      console.warn('[site-videos] Public single-video read unavailable; keeping placement hidden for 60s.');
+    } catch (error) {
+      // This fixed diagnostic enum reveals neither request parameters nor
+      // credentials. Keep the publication gate fail-closed during an outage.
+      console.warn('[site-videos] Public single-video read unavailable; category=' + safeStorageDiagnostic(error) + '; keeping placement hidden for 60s.');
       return undefined;
     }
   },
