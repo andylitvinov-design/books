@@ -43,7 +43,7 @@ const words: Record<Locale, {
     request: 'Request a personal session', freeAction: 'Start free written review',
     freeKicker: 'FREE · WRITTEN REVIEW', paidKicker: 'LIVE WITH ANDREY',
     other: 'Other paid formats', available: 'Personal session formats',
-    consent: 'Only an enquiry you submit with consent goes to Andrey. Your choice stays on this page until then.',
+    consent: 'Your question stays on this page. Only a separate enquiry you send with consent reaches Andrey.',
     noBooking: 'A request is not a booked or paid appointment. Time is confirmed personally; business results are not guaranteed.',
     mentorPrice: 'By arrangement',
     reasons: {
@@ -61,7 +61,7 @@ const words: Record<Locale, {
   ru: {
     title: 'Найдите подходящий формат',
     questionLabel: 'Задайте вопрос о бизнесе',
-    questionPlaceholder: 'Например: как мне найти клиентов и увеличить доход?',
+    questionPlaceholder: 'Например: как привлечь первых клиентов?',
     submit: 'Найти решение или идею',
     questionError: 'Напишите короткий вопрос (хотя бы 8 символов).',
     ideaLabel: 'Идея для первого шага',
@@ -70,7 +70,7 @@ const words: Record<Locale, {
     request: 'Запросить личную сессию', freeAction: 'Начать бесплатный разбор',
     freeKicker: 'БЕСПЛАТНО · ПИСЬМЕННО', paidKicker: 'СЕССИЯ С АНДРЕЕМ',
     other: 'Другие платные форматы', available: 'Форматы личных сессий',
-    consent: 'Только заявка с вашим согласием отправляется Андрею. До этого выбор остаётся на странице.',
+    consent: 'Ваш вопрос остаётся на странице. Андрею отправится только отдельно поданная заявка с вашим согласием.',
     noBooking: 'Заявка — ещё не запись и не оплата. Время согласуется лично; результаты для бизнеса не гарантируются.',
     mentorPrice: 'По договорённости',
     reasons: {
@@ -97,7 +97,7 @@ const words: Record<Locale, {
     request: 'Solicitar una sesión personal', freeAction: 'Empezar revisión gratuita',
     freeKicker: 'GRATIS · POR ESCRITO', paidKicker: 'EN VIVO CON ANDREY',
     other: 'Otras opciones de pago', available: 'Modalidades de sesiones personales',
-    consent: 'Solo enviamos tu solicitud con tu consentimiento. Hasta entonces, tu elección queda en la página.',
+    consent: 'Tu pregunta se queda aquí. Solo se envía a Andrey una solicitud aparte con tu consentimiento.',
     noBooking: 'Solicitar no confirma una cita ni un pago. El horario se acuerda personalmente, sin promesas económicas.',
     mentorPrice: 'Por acuerdo',
     reasons: {
