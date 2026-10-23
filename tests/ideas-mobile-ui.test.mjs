@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -203,8 +203,9 @@ test("Ideas full-photo first screen embeds the question and two real CTAs in one
   assert.ok(ui.includes('testLink: "Or explore a free test"'));
   assert.match(css, /\.hero::before \{[\s\S]*?ideas-pine-sharp\.avif/);
   assert.match(css, /\.freeTestLink \{/);
+  assert.ok(statSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)).size > 8000, "The scenic asset must retain enough detail for mobile");
   assert.match(css, /\.hero::after \{[\s\S]*?linear-gradient/);
-  assert.match(css, /saturate\(1\.48\)/);
+  assert.match(css, /saturate\(1\.08\)/);
   assert.match(css, /\.heading \{\s*display: block;[\s\S]*?background: transparent/);
   assert.match(css, /\.heroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(ui, /testOverline: "Explore yourself"/);
