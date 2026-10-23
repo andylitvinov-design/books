@@ -324,3 +324,131 @@ test('second action filter keeps the selected topic and shows only the intended 
   assert.match(css,/@media\(max-width:350px\)/)
   assert.doesNotMatch(source,/\/api\/service-enquiries|sendBeacon|localStorage/)
 })
+
+
+test('guided dialogue auto-selects topic, action and a real offer in nine localized journeys',()=>{
+  const cases=[
+    ['energy','en','I cannot sleep and would like a course','sleep','course'],
+    ['energy','ru','Не могу спать и хочу пройти тест','sleep','test'],
+    ['energy','es','Quiero dormir y recibir un consejo','sleep','advice'],
+    ['relationships','en','Conflict and communication: book a consultation','conflict','session'],
+    ['relationships','ru','Конфликт и общение, хочу консультацию','conflict','session'],
+    ['relationships','es','Tengo problemas con límites, quiero un curso','boundaries','course'],
+    ['business','en','I need more clients and want a course','productivity','course'],
+    ['business','ru','Выгорание на работе, хочу пройти тест','work-stress','test'],
+    ['business','es','Quiero aprender a ganar dinero','money-beliefs','course'],
+  ]
+  for (const [direction,locale,request,topic,intent] of cases){
+    const f=fixture(direction,locale)
+    let tree=f.render()
+    assert.equal(by(tree,'data-direction-dialogue',true).length,0,'dialog starts closed')
+    nodes(tree).find(n=>n.props?.id==='hh-direction-wish').props.onChange({target:{value:request}})
+    tree=f.render()
+    by(tree,'data-direction-wish-submit',true)[0].props.onClick()
+    tree=f.render()
+    const dialog=by(tree,'data-direction-dialogue',true)
+    assert.equal(dialog.length,1,'dialog appears directly below first hero after submit')
+    assert.equal(dialog[0].props['data-dialog-topic'],topic)
+    assert.equal(dialog[0].props['data-dialog-intent'],intent)
+    assert.equal(by(tree,'data-direction-filter',topic)[0].props['aria-pressed'],true)
+    assert.equal(by(tree,'data-direction-intent',intent)[0].props['aria-pressed'],true)
+    const expectedSection=intent==='advice'?'advice':intent
+    assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
+      .map(n=>n.props['data-direction-section']),[expectedSection])
+    const selectedLink=by(tree,'data-dialog-offer')[0]
+    assert.ok(selectedLink,'real recommendation is clickable')
+    assert.equal(selectedLink.props.href,by(tree,'data-offer-action',intent)[0].props.href)
+    assert.ok(selectedLink.props.href.startsWith('/'+locale+'/') ||
+      (locale==='es' && selectedLink.props.href.startsWith('/en/')))
+    assert.ok(!selectedLink.props.href.includes(encodeURIComponent(request)))
+    assert.equal(by(tree,'data-dialog-refine','topic').length,1)
+    assert.equal(by(tree,'data-dialog-refine','intent').length,1)
+  }
+})
+
+test('dialogue clarification preserves the topic, updates either filter and supports chip-led navigation',()=>{
+  const f=fixture('energy','en')
+  let tree=f.render()
+  nodes(tree).find(n=>n.props?.id==='hh-direction-wish')
+    .props.onChange({target:{value:'I want to take a course for poor sleep'}})
+  tree=f.render()
+  by(tree,'data-direction-wish-submit',true)[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-direction-filter','sleep')[0].props['aria-pressed'],true)
+  assert.equal(by(tree,'data-direction-intent','course')[0].props['aria-pressed'],true)
+
+  // A free-text clarification updates only the part it names.
+  nodes(tree).find(n=>n.props?.id==='hh-direction-followup')
+    .props.onChange({target:{value:'Actually, a test instead'}})
+  tree=f.render()
+  by(tree,'data-dialog-followup-form',true)[0].props.onSubmit({preventDefault(){}})
+  tree=f.render()
+  assert.equal(by(tree,'data-direction-filter','sleep')[0].props['aria-pressed'],true)
+  assert.equal(by(tree,'data-direction-intent','test')[0].props['aria-pressed'],true)
+  assert.equal(by(tree,'data-offer-action','test').length,2)
+  assert.equal(by(tree,'data-dialog-offer')[0].props.href,by(tree,'data-offer-action','test')[0].props.href)
+
+  by(tree,'data-dialog-refine','topic')[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-dialog-topic-choice','resources').length,1)
+  by(tree,'data-dialog-topic-choice','resources')[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-direction-filter','resources')[0].props['aria-pressed'],true)
+  assert.equal(by(tree,'data-direction-intent','test')[0].props['aria-pressed'],true)
+
+  by(tree,'data-dialog-close',true)[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-direction-dialogue',true).length,0)
+  assert.equal(by(tree,'data-direction-filter','resources')[0].props['aria-pressed'],true,
+    'closing the explanation must not reset the actual filters')
+
+  // An unrecognized new query never invents a matching focus.
+  by(tree,'data-direction-wish-submit',true)[0].props.onClick()
+  tree=f.render()
+  nodes(tree).find(n=>n.props?.id==='hh-direction-wish')
+    .props.onChange({target:{value:'zxqv zysp unseen idea'}})
+  tree=f.render()
+  by(tree,'data-direction-wish-submit',true)[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-direction-filter','all')[0].props['aria-pressed'],true)
+  assert.equal(by(tree,'data-dialog-topic-choice','sleep').length,1)
+  assert.equal(by(tree,'data-dialog-offer').length,0)
+  by(tree,'data-dialog-topic-choice','sleep')[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-dialog-intent-choice','course').length,1)
+  by(tree,'data-dialog-intent-choice','course')[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-dialog-offer').length,1)
+  by(tree,'data-dialog-reset',true)[0].props.onClick()
+  tree=f.render()
+  assert.equal(by(tree,'data-direction-dialogue',true).length,0)
+  assert.equal(by(tree,'data-direction-filter','all')[0].props['aria-pressed'],true)
+  assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
+    .map(n=>n.props['data-direction-section']),['test','course','session'])
+})
+
+test('urgent text hides marketing and the local dialogue has privacy-safe responsive controls',()=>{
+  for (const [locale,text] of [
+    ['en','I want to kill myself'],['ru','Хочу умереть'],['es','Quiero morir'],
+  ]){
+    const f=fixture('energy',locale)
+    let tree=f.render()
+    nodes(tree).find(n=>n.props?.id==='hh-direction-wish').props.onChange({target:{value:text}})
+    tree=f.render()
+    by(tree,'data-direction-wish-submit',true)[0].props.onClick()
+    tree=f.render()
+    assert.equal(by(tree,'data-direction-dialogue',true).length,1)
+    assert.equal(nodes(tree).filter(n=>n.props?.role==='alert').length,1)
+    assert.equal(nodes(tree).filter(n=>n.props?.['data-direction-section']).length,0)
+    assert.equal(nodes(tree).filter(n=>n.props?.['data-offer-action']).length,0)
+    by(tree,'data-dialog-reset',true)[0].props.onClick()
+    tree=f.render()
+    assert.equal(nodes(tree).filter(n=>n.props?.['data-direction-section']).length,3)
+  }
+  assert.doesNotMatch(source,/fetch\(|sendBeacon|localStorage|sessionStorage|\/api\/service-enquiries/)
+  assert.match(css,/\.dialogPanel\{width:min\(780px,100%\)/)
+  assert.match(css,/\.dialogReply input\{[^}]*font:450 16px/)
+  assert.match(css,/\.dialogPanel :is\(a,button,input\):focus-visible/)
+  assert.match(css,/@media\(max-width:480px\)\{[\s\S]*?\.dialogChips\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(css,/overflow-x:auto/)
+})
