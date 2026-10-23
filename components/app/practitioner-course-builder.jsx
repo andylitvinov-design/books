@@ -85,6 +85,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  function openCreate(){
   if(busy||uploading||recording)return
   if(dirty&&!creating&&!window.confirm(t.discard))return
+  if(dirty&&current)setDraft(JSON.parse(JSON.stringify(current.draft)))
   setError('');setMessage('');setNewTitle('');setNewLocale(['en','ru','es'].includes(locale)?locale:'en')
   setCreating(true);setListOpen(false);setShowPreview(false)
  }
@@ -295,6 +296,9 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
         <small>{t.slides} {draft.slides.findIndex(s=>s.id===active.id)+1}/{draft.slides.length}</small>
         <h4>{active.title||t.untitled}</h4>
         {active.body&&<p>{active.body}</p>}
+        {active.assetId&&(active.kind==='image'?<img loading="lazy" src={'/api/practitioner-course-media/'+active.assetId} alt={active.title||t.photoAlt}/>:
+         active.kind==='audio'?<audio controls preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>:
+         active.kind==='video'?<video controls playsInline preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>:null)}
         {active.kind==='embed'&&active.videoUrl&&<a href={active.videoUrl} target="_blank" rel="noopener noreferrer">{t.link} <ExternalLink size={14}/></a>}
        </div>}
        <button type="button" className={styles.nextScreen} disabled={busy||uploading||recording||draft.slides.length>=60&&draft.slides[draft.slides.length-1]?.id===slideId} onClick={nextSlide}>{draft.slides[draft.slides.length-1]?.id===slideId?t.addNext:t.nextScreen}<ChevronRight size={17}/></button>
