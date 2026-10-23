@@ -355,6 +355,49 @@
   text-underline-offset: 3px;
 }
 .limitation { margin: 0; color: #73675c; font-size: 10.5px; line-height: 1.4; }
+/* Optional privacy-preserving guide quality feedback, never pre-checked. */
+.qualityConsent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 1px 5px;
+  padding: 8px 9px;
+  border-radius: 11px;
+  background: rgba(244, 247, 242, .8);
+  color: #52645c;
+  font: 500 11px/1.4 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+.qualityConsent input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #216d66;
+  cursor: pointer;
+}
+.qualityRating {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #52675e;
+  font: 600 11px/1.4 Arial, Helvetica, sans-serif;
+}
+.qualityRating span { flex: 1 1 100%; }
+.qualityRating button {
+  border: 1px solid #cbdcd2;
+  border-radius: 17px;
+  min-height: 36px;
+  padding: 6px 11px;
+  color: #275f57;
+  background: #f7fbf8;
+  font: 650 11px/1.25 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+.qualityRating button:disabled { cursor: default; opacity: .5; }
+.qualitySaved { color: #28635a; font-size: 11px; margin: 0; }
+
 
 .chatFooter {
   flex: none;

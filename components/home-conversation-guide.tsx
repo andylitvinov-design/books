@@ -19,6 +19,11 @@ import {
   type HomeGuideGoal,
   type HomeGuideOffer,
 } from "@/lib/home-conversation.mjs";
+import { orderGuideClarificationChoices } from "@/lib/home-guide-quality.mjs";
+import {
+  getGuideClarificationPriorities, shareGuideQualityFeedback,
+  type GuideCategory, type GuideSignal,
+} from "@/lib/home-guide-quality-client";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-conversation-guide.module.css";
@@ -70,6 +75,11 @@ type GuideCopy = {
   unknown: string;
   followup: string;
   choiceHint: string;
+  qualityConsent: string;
+  qualityHelp: string;
+  qualityHelpful: string;
+  qualityNotHelpful: string;
+  qualitySaved: string;
   goalLabels: Record<HomeGuideGoal, string>;
   goalResponses: Record<HomeGuideGoal, string>;
   goalActions: Record<HomeGuideGoal, string>;
@@ -136,6 +146,11 @@ const copy: Record<PublicLocale, GuideCopy> = {
     unknown: "Thanks for sharing. We can find a starting point without labelling your situation.",
     followup: "What would help most right now?",
     choiceHint: "You can reply in your own words, too.",
+    qualityConsent: "Help improve suggestions: share only the topic and rating, never my messages.",
+    qualityHelp: "Was this suggestion useful?",
+    qualityHelpful: "Yes",
+    qualityNotHelpful: "Not really",
+    qualitySaved: "Thanks — the category-only feedback was saved.",
     goalLabels: {
       understand: "Understand my situation",
       tests: "Explore free tests",
@@ -159,7 +174,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     },
     secondary: "Another way to explore",
     privacyShort: "Private in this browser · How it works",
-    privacyDetail: "Your typed question stays in this browser while the page is open. It is not sent to our server, CRM, analytics or an AI provider. This is a local topic-based guide, not an AI therapist or a real-time human conversation. If you choose voice input, your browser or operating system may process audio through its speech recognition provider. You decide whether to enable the microphone. Do not include confidential personal details.",
+    privacyDetail: "Messages stay in this browser and are not sent to our server, CRM, analytics or an AI provider. If you explicitly enable quality feedback, only a broad category and rating are stored privately for 14 days, with aggregated daily counts retained for 60 days. Messages, names and test results are never included. This is an automated site guide, not a therapist or human conversation. Your browser may use its speech provider only when you tap the microphone. Avoid confidential details.",
     voiceStart: "Dictate a question with microphone",
     voiceStop: "Stop voice input",
     voiceError: "Speech recognition stopped unexpectedly. You can try again or type your question.",
@@ -219,6 +234,11 @@ const copy: Record<PublicLocale, GuideCopy> = {
     unknown: "Спасибо, что поделились. Необязательно давать ситуации название, чтобы найти первый шаг.",
     followup: "Что вам сейчас было бы полезнее?",
     choiceHint: "Можно просто ответить своими словами.",
+    qualityConsent: "Улучшать подсказки: сохранять только выбранную тему и оценку, без текста переписки.",
+    qualityHelp: "Подсказка была полезной?",
+    qualityHelpful: "Да",
+    qualityNotHelpful: "Не очень",
+    qualitySaved: "Спасибо — сохранили только обезличенную категорию и оценку.",
     goalLabels: {
       understand: "Разобраться в ситуации",
       tests: "Бесплатные тесты",
@@ -242,7 +262,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     },
     secondary: "Другой способ разобраться",
     privacyShort: "Только в этом браузере · Как работает",
-    privacyDetail: "Текст вопроса остаётся в этом браузере, пока открыта страница. Он не передаётся на наш сервер, в CRM, аналитику или AI-провайдеру. Это тематический помощник для навигации, а не AI-терапевт и не живой консультант. При голосовом вводе браузер или операционная система могут обрабатывать звук через сервис распознавания речи. Микрофон включается только по вашему действию. Не вводите конфиденциальные данные.",
+    privacyDetail: "Текст диалога остаётся в браузере и не передаётся серверу, CRM, аналитике или AI-провайдеру. Только при явном согласии сохраняются общая тема и оценка: события до 14 дней, суммарная статистика до 60 дней. Самих сообщений, имён и результатов тестов в базе нет. Это автоматический помощник сайта, не терапевт и не живой консультант. При нажатии микрофона браузер может использовать свой сервис распознавания речи. Не вводите конфиденциальные сведения.",
     voiceStart: "Продиктовать вопрос",
     voiceStop: "Остановить голосовой ввод",
     voiceError: "Голосовой ввод прервался. Попробуйте ещё раз или напишите вопрос.",
@@ -302,6 +322,11 @@ const copy: Record<PublicLocale, GuideCopy> = {
     unknown: "Gracias por compartirlo. No hace falta etiquetar tu situación para encontrar un primer paso.",
     followup: "¿Qué te ayudaría más ahora?",
     choiceHint: "También puedes responder con tus propias palabras.",
+    qualityConsent: "Mejorar las sugerencias: compartir solo el tema y la valoración, nunca mis mensajes.",
+    qualityHelp: "¿Te sirvió la sugerencia?",
+    qualityHelpful: "Sí",
+    qualityNotHelpful: "No mucho",
+    qualitySaved: "Gracias. Solo guardamos la categoría y la valoración.",
     goalLabels: {
       understand: "Entender mi situación",
       tests: "Pruebas gratuitas",
@@ -325,7 +350,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     },
     secondary: "Otra opción para explorar",
     privacyShort: "Privado en este navegador · Cómo funciona",
-    privacyDetail: "Tu texto permanece en este navegador mientras la página esté abierta. No se envía a nuestro servidor, CRM, analítica ni a un proveedor de IA. Esta guía local recomienda rutas por temas: no es una terapeuta de IA ni una conversación humana en directo. Si usas la voz, el navegador o sistema operativo puede enviar audio a su proveedor de reconocimiento. Solo activamos el micrófono cuando lo decides. Evita datos confidenciales.",
+    privacyDetail: "Los mensajes se quedan en este navegador: no se envían al servidor, CRM, analítica ni IA. Solo si aceptas se guarda el tema general y la valoración durante 14 días; los totales diarios se conservan hasta 60 días. Nunca se guardan mensajes, nombres ni resultados de pruebas. Esta es una guía automática, no un terapeuta humano. El micrófono puede usar el servicio de voz del navegador al pulsarlo. Evita información confidencial.",
     voiceStart: "Dictar una pregunta",
     voiceStop: "Detener dictado",
     voiceError: "El dictado se interrumpió. Vuelve a intentarlo o escribe tu pregunta.",
@@ -363,6 +388,11 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   // Keep the entire chat chrome in the language of the visitor's question.
   const t = copy[context?.lang ?? locale];
   const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
+  const [qualityConsent, setQualityConsent] = useState(false);
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [qualityPending, setQualityPending] = useState(false);
+  const [needsClarification, setNeedsClarification] = useState(false);
+  const [qualityPriorities, setQualityPriorities] = useState<GuideCategory[]>([]);
   const [supportsVoice, setSupportsVoice] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -439,6 +469,16 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   }, [isOpen, closeDialog]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    // Read only public 5+-sample aggregate; no visitor question is transmitted.
+    void getGuideClarificationPriorities().then(categories => {
+      if (active) setQualityPriorities(categories);
+    });
+    return () => { active = false; };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen && chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
@@ -509,6 +549,36 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setTurns(current => [...current, ...exchange].slice(-8));
   }
 
+  function categorizeGuideContext(current: Context): GuideCategory {
+    if (current.interest === "site") return "site";
+    if (current.interest === "courses" || current.interest === "reiki") return "courses";
+    if (current.topic === "relationships") return "love";
+    if (current.topic === "work") return "business";
+    if (current.topic === "resources" || current.topic === "stress") return "energy";
+    return "other";
+  }
+
+  function recordGuideFeedback(category: GuideCategory, signal: GuideSignal, language: PublicLocale): Promise<boolean> {
+    if (!qualityConsent) return Promise.resolve(false);
+    return shareGuideQualityFeedback({ category, signal, locale: language, consent: true });
+  }
+
+  function rateGuideSuggestion(signal: "helpful" | "unhelpful") {
+    if (!context || !qualityConsent || qualityPending || feedbackSaved) return;
+    setQualityPending(true);
+    void recordGuideFeedback(categorizeGuideContext(context), signal, context.lang)
+      .then(saved => { if (saved) setFeedbackSaved(true); })
+      .finally(() => setQualityPending(false));
+  }
+
+  function noteClarifiedChoice(choiceId: string, language: PublicLocale) {
+    if (!needsClarification) return;
+    setNeedsClarification(false);
+    const category = choiceId.startsWith("topic-")
+      ? choiceId.slice(6) as GuideCategory : "other";
+    void recordGuideFeedback(category, category === "other" ? "unresolved" : "clarified", language);
+  }
+
   function ask(text: string) {
     const question = text.trim().slice(0, 500);
     if (!question) { questionRef.current?.focus(); return; }
@@ -533,6 +603,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
           : [selection.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
             || copy[context.lang].followup;
         appendExchange(question, response);
+        if (!context.matched) noteClarifiedChoice(replyId, context.lang);
         setContext(selection.context);
         setRecommendations(selection.offers);
         setDraft("");
@@ -560,6 +631,11 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       return;
     }
     const result = safety;
+    if (!result.matched) setNeedsClarification(true);
+    else if (needsClarification) {
+      setNeedsClarification(false);
+      void recordGuideFeedback(categorizeGuideContext(result), "clarified", result.lang);
+    }
     const responseCopy = copy[result.lang];
     const followup = homeGuideFollowup(result);
     // Continue the topic rather than repeating the same category opening.
@@ -596,6 +672,8 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
       : [result.response?.[context.lang], next?.prompt[context.lang]].filter(Boolean).join(" ")
         || copy[context.lang].followup;
     appendExchange(selected.label[context.lang], answer);
+    if (!context.matched) noteClarifiedChoice(choiceId, context.lang);
+    setFeedbackSaved(false);
     setContext(result.context);
     setRecommendations(result.offers);
   }
@@ -780,6 +858,10 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     cancelVoice();
     setContext(null);
     setRecommendations([]);
+    setQualityConsent(false);
+    setNeedsClarification(false);
+    setFeedbackSaved(false);
+    setQualityPending(false);
     setDraft("");
     setTurns([]);
     questionRef.current?.focus();
@@ -787,6 +869,9 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
 
   const answerCopy = copy[context?.lang ?? locale];
   const followup = homeGuideFollowup(context);
+  const suggestedChoices = context && !context.matched
+    ? orderGuideClarificationChoices(followup?.choices ?? [], qualityPriorities)
+    : followup?.choices ?? [];
   const recording = voiceState !== "idle";
   const recordingLabel = voiceState === "starting" ? t.voiceStarting : voiceState === "finishing" ? t.voiceFinishing : t.voiceListening;
   const voiceTime = `${String(Math.floor(voiceElapsed / 60)).padStart(2, "0")}:${String(voiceElapsed % 60).padStart(2, "0")}`;
@@ -882,17 +967,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                   <div className={styles.choiceGroup}>
                     <p className={styles.choiceCaption}>{answerCopy.choiceHint}</p>
                     <div className={styles.choices} role="group" aria-label={followup.prompt[context.lang]} data-home-guide-choices>
-                      {followup.choices.slice(0, 3).map(choice => (
+                      {suggestedChoices.slice(0, 3).map(choice => (
                         <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
                           {choice.label[context.lang]}
                         </button>
                       ))}
                     </div>
-                    {followup.choices.length > 3 ? (
+                    {suggestedChoices.length > 3 ? (
                       <details className={styles.extraChoices}>
                         <summary>{t.moreWays}</summary>
                         <div className={styles.choices}>
-                          {followup.choices.slice(3).map(choice => (
+                          {suggestedChoices.slice(3).map(choice => (
                             <button key={choice.id} type="button" className={styles.choice} onClick={() => chooseGoal(choice.id)}>
                               {choice.label[context.lang]}
                             </button>
@@ -922,8 +1007,23 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                       onClick={() => setRecommendations([])}>
                       {{en:"Change my answer",ru:"Изменить выбор",es:"Cambiar respuesta"}[context.lang]}
                     </button>
+                    <div className={styles.qualityRating}>
+                      <span>{answerCopy.qualityHelp}</span>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved || qualityPending}
+                        onClick={() => rateGuideSuggestion("helpful")}>{answerCopy.qualityHelpful}</button>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved || qualityPending}
+                        onClick={() => rateGuideSuggestion("unhelpful")}>{answerCopy.qualityNotHelpful}</button>
+                    </div>
+                    {feedbackSaved ? <p className={styles.qualitySaved} role="status">{answerCopy.qualitySaved}</p> : null}
                     <p className={styles.limitation}>{answerCopy.limitation}</p>
                   </div>
+                ) : null}
+                {context && !context.urgent ? (
+                  <label className={styles.qualityConsent} data-home-guide-quality-consent>
+                    <input type="checkbox" checked={qualityConsent}
+                      onChange={event => { setQualityConsent(event.currentTarget.checked); setFeedbackSaved(false); }} />
+                    <span>{answerCopy.qualityConsent}</span>
+                  </label>
                 ) : null}
               </div>
             </div>
