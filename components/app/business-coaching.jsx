@@ -10,6 +10,7 @@ import {
   businessSnapshotScores, businessSuggestions, businessProgress, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
 import { BUSINESS_WEEKLY_CONTENT_VERSION, BUSINESS_WEEK_MODULES, businessWeekModule, businessDayResult, businessWeekProgress, businessTrackExample, businessWeekSkill } from '@/lib/business-coaching/week-modules'
+import { BUSINESS_GOAL_CHOICES, BUSINESS_DAY_CHOICES, BUSINESS_WEEK_REVIEW_CHOICES, businessGoalLabel, businessTinyAction, businessChoiceLabel, businessOneTapResult, businessWeekReviewChoice, businessWeekReviewNote, businessWeekReviewLabel } from '@/lib/business-coaching/closed-questions'
 import styles from './business-coaching.module.css'
 
 // Decorative first-party CSS illustration: executive notebook on a walnut desk.
@@ -37,7 +38,7 @@ const copy = {
     startStep1:'My direction', startStep2:'One clear goal', startStep3:'Start privately',
     nextStep:'Continue', previousStep:'Back', skipCheck:'Skip self-reflection for now', optionalCheck:'Optional · 18 short questions',
     overviewLabel:'What happens next', overviewText:'Each day opens one practical lesson. You choose the pace; your results stay in your private Cabinet.',
-    lessonEyebrow:'ONE LESSON · ONE PRACTICAL RESULT', startHeading:'Start with what matters to you',
+    lessonEyebrow:'ONE SHORT STEP · ONE TAP', startHeading:'Start with what matters to you',
     draftAction:'Save draft', saveContinue:'Save my lesson and continue', nextLesson:'Next lesson', alreadySaved:'All changes saved',
     ideaSlide:'Skill', actionSlide:'Practice', reflectionSlide:'Reflect', resultSlide:'Result', doneSlide:'Saved',
     learnedBefore:'Previously practised', firstSkill:'Your first practice starts here.', todaySkill:'Today’s skill',
@@ -47,29 +48,29 @@ const copy = {
     reflectionTitle:'A thought for today', reflectionPrompt:'Does today’s step seem useful for your own goal?',
     reflectAgree:'Yes', reflectDisagree:'No', reflectUnsure:'I need to think',
     reflectOptional:'Optional. This is your opinion, not a test or a completed action. It saves only with your lesson.',
-    savedCelebration:'Your lesson is saved', practisedSkill:'Skill you practised', viewSavedResult:'Read my saved result', focusWarmup:'Optional 2-minute warm-up',
-    celebrationHelp:'Your actual result is in your private journal. Review any slide or continue when ready.',
+    savedCelebration:'Your answer is saved', practisedSkill:'Today’s focus', viewSavedResult:'Read my saved result', previousWrittenResult:'Previous written entry', focusWarmup:'Optional 2-minute warm-up',
+    celebrationHelp:'A checked learning step does not prove an external business result.',
     showSaved:'Review saved lesson', returnLater:'You can return tomorrow; no automatic reminder is sent.',
-    goalCanEdit:'You can add habits and indicators later in Edit goals.',
+    goalCanEdit:'Choose one direction. You can change it later without losing earlier answers.',
     unsaved:'Not saved yet', courseMap:'Course map', privateJournal:'Private learning journal',
     completedDays:'Completed days', moduleDay:'Lesson', modulePace:'One step at a time', finishedDay:'Completed',
     description:'Define an achievable goal, explore your working habits, practise small actions and track real changes privately.',
     begin:'Build my free plan', start:'Start my 90-day programme',
-    track:'Where are you now?', goal:'My main goal for 90 days', supporting:'A supporting goal (optional)',
+    track:'Where are you now?', goal:'What matters most over the next 90 days?', supporting:'A supporting goal (optional)',
     habit:'One habit to develop (optional)', chooseMetric:'A measurable indicator (optional)',
     target:'Desired value (optional)', currency:'Currency', privacy:'Only you can see these notes and figures. They are not shared with practitioners or advertising systems.',
     consent:'I choose this learning programme and agree to save my private answers, actions and progress in my Holistic House account.',
-    questionnaire:'My business snapshot', questionnaireHelp:'An original Holistic House self-reflection, not a validated psychological test. Think about the last 14 days; skip questions that do not fit.',
+    questionnaire:'My business snapshot', questionnaireHelp:'An optional Holistic House self-reflection, not a validated psychological test. All answers are pre-written; skip any question.',
     scoring:'0 = never · 4 = consistently. Missing answers remain unmeasured.',
     notMeasured:'Not assessed', private:'Private', saved:'Saved to your private account.',
     loadError:'Could not load your private course. Try again.', saveError:'Could not save. Please try again.',
     conflict:'Your course changed in another tab. Reload before editing further.',
     today:'Today', plan:'90-day plan', survey:'Self-check', metrics:'Indicators', report:'My report',
-    progress:'Practices completed', day:'Day', week:'Week', practice:'My practical action', note:'What I did or noticed (optional)',
-    completed:'Action completed', saveAction:'Save my action', selectDay:'Choose a day', suggested:'Possible learning directions',
+    progress:'Learning steps answered', day:'Day', week:'Week', practice:'My practical action', note:'What I did or noticed (optional)',
+    completed:'Learning check completed', saveAction:'Save my action', selectDay:'Choose a day', suggested:'Possible learning directions',
     suggestedNote:'These are optional topics based on your self-reported answers, not diagnoses or personal shortcomings.',
-    planIntro:'Each week offers 7 short, real-world actions. Days 85–90 are for review and integration. Work at your own pace.',
-    weeklyReview:'Weekly reflection', reviewPlaceholder:'What did I try? What did I observe? What should change next?',
+    planIntro:'90 tiny daily steps, each answered with one choice. Answering never verifies an outside business outcome.',
+    weeklyReview:'Weekly one-tap check-in', reviewPlaceholder:'What did I try? What did I observe? What should change next?',
     saveReview:'Save weekly reflection', measurement:'Repeat my snapshot', retest:'Save new snapshot', retestDue:'Another comparable check-in becomes available at least 21 days after the previous one.',
     original:'Starting snapshot', latest:'Most recent snapshot', personal:'Original HH questionnaire · 14-day recall · self-report',
     records:'Business indicators (entered by me)', metric:'Indicator', value:'Value', from:'Period start', to:'Period end',
@@ -83,12 +84,12 @@ const copy = {
     inactive:'Resume the programme to make changes.', noSurvey:'No initial survey was saved; nothing is scored as zero.',
     insight:'Your own answers can guide elective skill-practice topics. They are not professional psychometrics.',
     status:'Programme status', saveGoal:'Update my goals', editGoal:'Edit goals', back:'Back',
-    selectModule:'Choose a weekly module', weeklyObjective:'This week’s concrete outcome', weekArtifact:'Final weekly document',
+    selectModule:'Choose a weekly module', weeklyObjective:'This week’s concrete outcome', weekArtifact:'Optional deeper practice',
     dailyArtifact:'Result to save today', doneWhen:'Completion check', myResult:'My actual result (private)',
     resultPlaceholder:'Write a short, factual result: what you prepared, decided, observed or actually tried. A draft or an honest “not yet” is fine.',
     resultRequired:'Write at least 6 characters describing the actual result before marking the lesson complete. You may save an unfinished draft instead.',
     unsavedResult:'Your current day has unsaved changes. Leave this day without saving them?',
-    moduleComplete:'Days done', moduleDocumented:'With saved results', finalModule:'Final integration · 6 days',
+    moduleComplete:'Days done', moduleDocumented:'Answers saved', finalModule:'Final integration · 6 days',
     weeklyResults:'Results saved by module', legacyCompletion:'Previously completed without a written result',
     optionalNote:'Optional reflections (separate from the concrete result)',
     daySaved:'Saved', checkinDue:'Check-ins may only be repeated after 21 days.', export:'Export all my Cabinet data',
@@ -103,7 +104,7 @@ const copy = {
     startStep1:'Моё направление', startStep2:'Одна ясная цель', startStep3:'Личный старт',
     nextStep:'Продолжить', previousStep:'Назад', skipCheck:'Пропустить опрос пока', optionalCheck:'Необязательно · 18 коротких вопросов',
     overviewLabel:'Как устроен курс', overviewText:'Каждый день — одно практическое задание. Темп выбираете вы; результаты хранятся в личном кабинете.',
-    lessonEyebrow:'ОДИН УРОК · ОДИН КОНКРЕТНЫЙ РЕЗУЛЬТАТ', startHeading:'Начните с того, что важно именно вам',
+    lessonEyebrow:'ОДИН КОРОТКИЙ ШАГ · ОДНО НАЖАТИЕ', startHeading:'Начните с того, что важно именно вам',
     draftAction:'Сохранить черновик', saveContinue:'Сохранить урок и продолжить', nextLesson:'Следующий урок', alreadySaved:'Все изменения сохранены',
     ideaSlide:'Навык', actionSlide:'Практика', reflectionSlide:'Мнение', resultSlide:'Итог', doneSlide:'Готово',
     learnedBefore:'Ранее практиковали', firstSkill:'Это ваша первая практика.', todaySkill:'Навык на сегодня',
@@ -113,29 +114,29 @@ const copy = {
     reflectionTitle:'Мысль на сегодня', reflectionPrompt:'Насколько этот шаг полезен для вашей цели?',
     reflectAgree:'Да', reflectDisagree:'Нет', reflectUnsure:'Надо подумать',
     reflectOptional:'Необязательно. Это ваше мнение, не тест и не отметка о выполнении. Сохраняется вместе с уроком.',
-    savedCelebration:'Ваш урок сохранён', practisedSkill:'Навык, который вы практиковали', viewSavedResult:'Прочитать сохранённый результат', focusWarmup:'Разминка на 2 минуты (по желанию)',
-    celebrationHelp:'Фактический результат сохранён в личном дневнике. Вы можете вернуться к любому слайду или продолжить.',
+    savedCelebration:'Ваш ответ сохранён', practisedSkill:'Тема дня', viewSavedResult:'Прочитать сохранённый результат', previousWrittenResult:'Моя прежняя запись', focusWarmup:'Разминка на 2 минуты (по желанию)',
+    celebrationHelp:'Пройденный вопрос не подтверждает внешние результаты бизнеса.',
     showSaved:'Просмотреть сохранённый урок', returnLater:'Можно продолжить завтра; автоматическое напоминание не отправляется.',
-    goalCanEdit:'Привычки и показатели можно добавить позже через «Изменить цели».',
+    goalCanEdit:'Выберите одну цель. Позже её можно изменить без потери предыдущих ответов.',
     unsaved:'Пока не сохранено', courseMap:'Карта курса', privateJournal:'Личный дневник',
     completedDays:'Пройдено дней', moduleDay:'Урок', modulePace:'Один шаг за раз', finishedDay:'Завершено',
     description:'Определите реалистичную цель, исследуйте рабочие привычки, выполняйте небольшие задания и сохраняйте реальные результаты.',
     begin:'Создать мой бесплатный план', start:'Начать мою программу',
-    track:'Ваша текущая ситуация', goal:'Моя главная цель на 90 дней', supporting:'Дополнительная цель (необязательно)',
+    track:'Ваша текущая ситуация', goal:'Что важнее всего на ближайшие 90 дней?', supporting:'Дополнительная цель (необязательно)',
     habit:'Одна привычка для развития (необязательно)', chooseMetric:'Измеримый показатель (необязательно)',
     target:'Желаемое значение (необязательно)', currency:'Валюта', privacy:'Заметки и цифры видны только вам. Они не отправляются мастерам и в рекламные системы.',
     consent:'Я сам(а) выбираю эту обучающую программу и согласен(на) сохранять мои ответы, задания и прогресс в личном кабинете Holistic House.',
-    questionnaire:'Мой бизнес-профиль', questionnaireHelp:'Авторское самонаблюдение Holistic House, не научно валидированный психотест. Вспомните последние 14 дней. Неподходящие вопросы можно пропустить.',
+    questionnaire:'Мой бизнес-профиль', questionnaireHelp:'Необязательное самонаблюдение Holistic House, не валидированный психотест. Ответы готовые; любой вопрос можно пропустить.',
     scoring:'0 = никогда · 4 = почти всегда. Отсутствие ответа не означает ноль.',
     notMeasured:'Нет замера', private:'Личные данные', saved:'Сохранено в вашем личном кабинете.',
     loadError:'Не удалось загрузить личную программу. Попробуйте снова.', saveError:'Не удалось сохранить. Попробуйте снова.',
     conflict:'Программа изменилась в другой вкладке. Обновите страницу перед сохранением.',
     today:'Сегодня', plan:'План на 90 дней', survey:'Опросник', metrics:'Показатели', report:'Мой отчёт',
-    progress:'Выполнено практик', day:'День', week:'Неделя', practice:'Практическое задание', note:'Что я сделал(а) или заметил(а) (по желанию)',
-    completed:'Задание выполнено', saveAction:'Сохранить результат', selectDay:'Выберите день', suggested:'Возможные направления развития',
+    progress:'Пройдено вопросов', day:'День', week:'Неделя', practice:'Практическое задание', note:'Что я сделал(а) или заметил(а) (по желанию)',
+    completed:'Вопрос пройден', saveAction:'Сохранить результат', selectDay:'Выберите день', suggested:'Возможные направления развития',
     suggestedNote:'Предложения основаны на ваших ответах и не означают диагноз или недостатки личности.',
-    planIntro:'Каждая неделя содержит 7 небольших практических шагов. Дни 85–90 — закрепление и итоги. Двигайтесь в своём темпе.',
-    weeklyReview:'Итоги недели', reviewPlaceholder:'Что попробовал(а)? Что заметил(а)? Что стоит изменить?',
+    planIntro:'90 маленьких шагов, каждый с готовыми ответами. Ответ не подтверждает внешний бизнес-результат.',
+    weeklyReview:'Итоги недели в одно касание', reviewPlaceholder:'Что попробовал(а)? Что заметил(а)? Что стоит изменить?',
     saveReview:'Сохранить обзор недели', measurement:'Повторить самооценку', retest:'Сохранить новый замер', retestDue:'Следующий сопоставимый опрос доступен не ранее 21 дня после предыдущего.',
     original:'Начальная самооценка', latest:'Последняя самооценка', personal:'Авторский опросник HH · последние 14 дней · самоотчёт',
     records:'Мои бизнес-показатели', metric:'Показатель', value:'Значение', from:'Начало периода', to:'Конец периода',
@@ -149,12 +150,12 @@ const copy = {
     inactive:'Продолжите курс, чтобы вносить изменения.', noSurvey:'Первоначальный опрос не сохранён; пропущенные ответы не считаются нулём.',
     insight:'Ответы могут подсказать добровольные учебные темы, но не заменяют профессиональную психометрию.',
     status:'Статус программы', saveGoal:'Обновить цели', editGoal:'Изменить цели', back:'Назад',
-    selectModule:'Выберите недельный модуль', weeklyObjective:'Конкретный результат недели', weekArtifact:'Итоговый документ недели',
+    selectModule:'Выберите недельный модуль', weeklyObjective:'Конкретный результат недели', weekArtifact:'Углублённая практика (по желанию)',
     dailyArtifact:'Результат, который сохраняем сегодня', doneWhen:'Критерий готовности', myResult:'Мой фактический результат (личная запись)',
     resultPlaceholder:'Кратко запишите конкретный результат: что подготовили, решили, заметили или действительно попробовали. Черновик или честное «пока нет» тоже подходит.',
     resultRequired:'Чтобы отметить день завершённым, опишите реальный результат хотя бы шестью символами. Незавершённый черновик можно сохранить без галочки.',
     unsavedResult:'В текущем дне остались несохранённые изменения. Перейти к другому дню, не сохраняя их?',
-    moduleComplete:'Дней выполнено', moduleDocumented:'С записанным результатом', finalModule:'Закрепление · 6 дней',
+    moduleComplete:'Дней выполнено', moduleDocumented:'Ответов сохранено', finalModule:'Закрепление · 6 дней',
     weeklyResults:'Сохранённые результаты по модулям', legacyCompletion:'Ранее отмечено выполненным без записи результата',
     optionalNote:'Личные размышления (отдельно от конкретного результата)',
     daySaved:'Сохранено', checkinDue:'Повторный опрос доступен через 21 день.', export:'Экспортировать все данные кабинета',
@@ -226,8 +227,9 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
   const [retestAnswers,setRetestAnswers]=useState({}),[goalEditing,setGoalEditing]=useState(false)
-  const [lessonStage,setLessonStage]=useState(0) // 0 skill, 1 action, 2 reflection, 3 result, 4 saved celebration
+  const [lessonStage,setLessonStage]=useState(1) // 1 closed question and chosen answer, 4 saved confirmation
   const [reflectionChoice,setReflectionChoice]=useState('')
+  const [lessonChoice,setLessonChoice]=useState('')
   const [focusRemaining,setFocusRemaining]=useState(120),[focusRunning,setFocusRunning]=useState(false)
   const course=state?.course,revision=state?.revision||0
   // A local optional focus timer: it neither sends personal data nor marks a day completed.
@@ -287,6 +289,7 @@ export default function BusinessCoaching({locale='en',accountId}){
           setDayNote(result.course.days?.[next]?.note||'')
           setDayResult(result.course.days?.[next]?.result||'')
           setDayDone(Boolean(result.course.days?.[next]?.done))
+          setLessonChoice(result.course.days?.[next]?.choiceId||'')
           setReflectionChoice(result.course.days?.[next]?.reflectionChoice||'')
           setReviewNote(result.course.reviews?.[Math.ceil(next/7)]?.note||'')
         }
@@ -297,8 +300,9 @@ export default function BusinessCoaching({locale='en',accountId}){
   const progress=useMemo(()=>businessProgress(course),[course])
   const savedDay=course?.days?.[day]||{}
   const hasUnsavedDay=dayResult!==(savedDay.result||'')||dayNote!==(savedDay.note||'')||
-    reflectionChoice!==(savedDay.reflectionChoice||'')||dayDone!==Boolean(savedDay.done)
+    lessonChoice!==(savedDay.choiceId||'')||reflectionChoice!==(savedDay.reflectionChoice||'')||dayDone!==Boolean(savedDay.done)
   const selected=businessDayResult(day,lang)
+  const tinyAction=businessTinyAction(day,lang)
   const week=selected?.week||1
   const currentModule=businessWeekModule(week,lang)
   const currentWeekProgress=businessWeekProgress(course,week)
@@ -341,15 +345,16 @@ export default function BusinessCoaching({locale='en',accountId}){
   function chooseDay(next){
     const previous=course?.days?.[day]||{}
     const unsaved=dayResult!==(previous.result||'') || dayNote!==(previous.note||'') ||
-      reflectionChoice!==(previous.reflectionChoice||'') || dayDone!==Boolean(previous.done)
+      reflectionChoice!==(previous.reflectionChoice||'') || lessonChoice!==(previous.choiceId||'') || dayDone!==Boolean(previous.done)
     if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
     setFocusRemaining(120)
-    changeLessonStage(0)
+    changeLessonStage(1)
     setModuleWeek(Math.min(13,Math.ceil(next/7)))
     setDayNote(course?.days?.[next]?.note||'')
     setDayResult(course?.days?.[next]?.result||'')
     setDayDone(Boolean(course?.days?.[next]?.done))
+    setLessonChoice(course?.days?.[next]?.choiceId||'')
     setReflectionChoice(course?.days?.[next]?.reflectionChoice||'')
     setReviewNote(course?.reviews?.[next<=84?Math.ceil(next/7):13]?.note||'')
     changeTab('today')
@@ -358,14 +363,14 @@ export default function BusinessCoaching({locale='en',accountId}){
     e.preventDefault()
     if(!consent||startStep!==3)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){changeTab('today');setDay(1);setFocusRemaining(120);changeLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setStartStep(1)}
+    if(yes){changeTab('today');setDay(1);setFocusRemaining(120);changeLessonStage(1);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setLessonChoice('');setStartStep(1)}
   }
   async function saveDayAndContinue(complete=false){
     // Actual completion stays server-validated, and the congratulation screen
     // opens only after a successful encrypted save. Never auto-advance on failure.
     const persistedDone=complete || Boolean(savedDay.done)
     const ok=await command('day',{
-      day,done:persistedDone,note:dayNote,result:dayResult,
+      day,done:persistedDone,note:dayNote,result:dayResult,choiceId:lessonChoice,
       reflectionChoice,contentVersion:BUSINESS_WEEKLY_CONTENT_VERSION,
     })
     if(ok){
@@ -378,29 +383,21 @@ export default function BusinessCoaching({locale='en',accountId}){
     const yes=await command('metric',{...metricForm,value:Number(metricForm.value)})
     if(yes)setMetricForm(initialMetric())
   }
-  function goalFields(edit=false){
-    const value=goal
-    return <div className={styles.fields}>
-      {!edit&&<label>{t.track}
-        <select value={value.track} onChange={e=>setGoal(v=>({...v,track:e.target.value}))}>
-          {BUSINESS_TRACKS.map(track=><option key={track.id} value={track.id}>{track[lang]}</option>)}
-        </select>
-      </label>}
-      <label>{t.goal}<textarea rows={2} required minLength={4} maxLength={240} value={value.primaryGoal}
-        onChange={e=>setGoal(v=>({...v,primaryGoal:e.target.value}))} placeholder={lang==='ru'?'Например: наладить стабильный поток обращений':'For example: establish a sustainable flow of enquiries'}/></label>
-      <label>{t.supporting}<input maxLength={180} value={value.supportingGoal} onChange={e=>setGoal(v=>({...v,supportingGoal:e.target.value}))}/></label>
-      <label>{t.habit}<input maxLength={180} value={value.habit} onChange={e=>setGoal(v=>({...v,habit:e.target.value}))}/></label>
-      <div className={styles.fieldRow}>
-        <label>{t.chooseMetric}<select value={value.metric||''} onChange={e=>setGoal(v=>({...v,metric:e.target.value}))}>
-          <option value="">—</option>{BUSINESS_METRICS.map(m=><option key={m.id} value={m.id}>{m[lang]}</option>)}
-        </select></label>
-        <label>{t.target}<input type="number" min="0" max="1000000000000" step="any" value={value.target??''}
-          onChange={e=>setGoal(v=>({...v,target:e.target.value}))}/></label>
-        <label>{t.currency}<select value={value.currency} onChange={e=>setGoal(v=>({...v,currency:e.target.value}))}>
-          {['CAD','USD','EUR','GBP','UAH'].map(c=><option key={c}>{c}</option>)}
-        </select></label>
+  // New journeys and goal edits use closed answers; historical custom goals remain visible.
+  function goalFields(){
+    const options=BUSINESS_GOAL_CHOICES[course?.track||goal.track]||[]
+    const legacy=goal.primaryGoal&&!options.some(row=>row.en===goal.primaryGoal||row.ru===goal.primaryGoal)
+    return <div className={styles.fields} data-business-closed-goals>
+      <p>{t.goal}</p>
+      {legacy&&<p className={styles.legacyNote}>{businessGoalLabel(goal.primaryGoal,lang)}</p>}
+      <div className={styles.trackChoices} role="group" aria-label={t.goal}>
+        {options.map(option=><button key={option.id} type="button"
+          aria-pressed={goal.primaryGoal===option.en||goal.primaryGoal===option.ru}
+          onClick={()=>setGoal(value=>({...value,primaryGoal:option.en}))}>
+          {option[lang]}<CheckCircle2 size={18} aria-hidden="true"/>
+        </button>)}
       </div>
-      <small>{t.targetHelp}</small>
+      <small>{t.goalCanEdit}</small>
     </div>
   }
   if(loading)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
@@ -454,13 +451,9 @@ export default function BusinessCoaching({locale='en',accountId}){
               {t.nextStep}<ArrowRight size={17}/></button>
           </div>
         </section>}
+
         {startStep===2&&<section className={styles.intakeBody} data-coaching-intake-step="reflection">
-          <label className={styles.textareaLabel}>{t.goal}
-            <textarea rows={3} required minLength={4} maxLength={240} value={goal.primaryGoal}
-              onChange={e=>setGoal(v=>({...v,primaryGoal:e.target.value}))}
-              placeholder={lang==='ru'?'Например: получать больше целевых обращений':'For example: attract more relevant enquiries'}/>
-          </label>
-          <p className={styles.intakeOptionalHint}>{t.goalCanEdit}</p>
+          {goalFields()}
           <div className={styles.intakeControls}>
             <button type="button" className={styles.backButton} onClick={()=>setStartStep(1)}>
               <ArrowLeft size={17}/>{t.previousStep}</button>
@@ -471,7 +464,7 @@ export default function BusinessCoaching({locale='en',accountId}){
         {startStep===3&&<section className={styles.intakeBody} data-coaching-intake-step="consent">
           <div className={styles.intakeSummary}>
             <Target size={20} aria-hidden="true"/>
-            <div><strong>{t.goal}</strong><p>{goal.primaryGoal}</p></div>
+            <div><strong>{t.goal}</strong><p>{businessGoalLabel(goal.primaryGoal,lang)}</p></div>
           </div>
           <label className={styles.consent}><input type="checkbox" checked={consent}
             onChange={e=>setConsent(e.target.checked)}/><span>{t.consent}</span></label>
@@ -519,7 +512,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
         <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
-        <h1>{t.title}</h1><p>{course.goal.primaryGoal}</p>
+        <h1>{t.title}</h1><p>{businessGoalLabel(course.goal.primaryGoal,lang)}</p>
         <div className={styles.statRow}>
           <span><CheckCircle2 size={17}/><strong>{progress.completed} / 90</strong> {t.progress}</span>
           <span><CalendarDays size={17}/>{dateLabel(course.startedAt,lang)}</span>
@@ -586,22 +579,29 @@ export default function BusinessCoaching({locale='en',accountId}){
             </button>
           })}
         </nav>
-      <details className={styles.review} key={week}>
+      <details className={styles.review} key={week} data-business-closed-weekly-review>
         <summary>{t.weeklyReview} · {t.week} {week}<ChevronDown size={17}/></summary>
-        <textarea rows={3} maxLength={1500} value={reviewNote} onChange={e=>setReviewNote(e.target.value)}
-          placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
-        <button type="button" disabled={busy||course.status!=='active'}
+        <p>{lang==='ru'?'Как прошла эта неделя?':'What describes this week best?'}</p>
+        <div className={styles.oneTapChoices} role="group" aria-label={t.weeklyReview}>
+          {BUSINESS_WEEK_REVIEW_CHOICES.map(option=><button key={option.id} type="button"
+            aria-pressed={businessWeekReviewChoice(reviewNote)===option.id}
+            disabled={course.status!=='active'}
+            onClick={()=>setReviewNote(current=>businessWeekReviewNote(current,option.id))}>{option[lang]}</button>)}
+        </div>
+        {reviewNote&&!businessWeekReviewChoice(reviewNote)&&
+          <p className={styles.legacyNote}>{reviewNote}</p>}
+        <button type="button" disabled={busy||course.status!=='active'||!businessWeekReviewChoice(reviewNote)}
           onClick={()=>command('weekly-review',{week,note:reviewNote})}>{t.saveReview}</button>
       </details>
         </div>
       </details>
       </div>
-      <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow}>
-        {[t.ideaSlide,t.actionSlide,t.reflectionSlide,t.resultSlide,t.doneSlide].map((label,index)=>
-          <button type="button" key={label} aria-current={lessonStage===index?'step':undefined}
+      <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow} data-business-one-tap-steps>
+        {[[1,lang==='ru'?'Ответить':'Answer'],[4,t.doneSlide]].map(([index,label],step)=>
+          <button type="button" key={index} aria-current={lessonStage===index?'step':undefined}
             disabled={index===4&&(!savedDay.done||hasUnsavedDay)}
             onClick={()=>changeLessonStage(index)} aria-label={label}>
-            <span>{index+1}</span>{label}
+            <span>{step+1}</span>{label}
           </button>)}
       </nav>
       <article className={styles.lessonSlide} data-business-lesson-slide data-lesson-stage={lessonStage}>
@@ -613,9 +613,29 @@ export default function BusinessCoaching({locale='en',accountId}){
           <span className={styles.lessonNumber}>{t.day} {day} / 90</span>
           <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
         </div>
-        {lessonStage===0&&<div className={styles.oneIdea} data-business-skill-brief>
-          <h2>{t.todaySkill}</h2>
-          <p className={styles.skillTarget}>{transferableSkill}</p>
+        {lessonStage===1&&<div className={styles.oneIdea} data-business-closed-answer data-business-skill-brief>
+          <h2>{t.todaySkill}: {transferableSkill}</h2>
+          <p className={styles.skillTarget}>{lang==='ru'?'Как прошёл этот маленький шаг?':'How did this small step go?'}</p>
+          <p className={styles.oneTapPrompt}>{tinyAction}</p>
+          <div className={styles.oneTapChoices} role="group"
+            aria-label={lang==='ru'?'Выберите один ответ':'Choose one answer'}>
+            {BUSINESS_DAY_CHOICES.map(option=><button type="button" key={option.id}
+              aria-pressed={lessonChoice===option.id} data-business-day-choice={option.id}
+              disabled={course.status!=='active'}
+              onClick={()=>{
+                setLessonChoice(option.id)
+                setDayResult(businessOneTapResult(option.id))
+              }}>
+              <CheckCircle2 size={18} aria-hidden="true"/><span>{option[lang]}</span>
+            </button>)}
+          </div>
+          <small>{lang==='ru'
+            ? 'Любой ответ подходит. Это личный выбор, а не проверка дохода или выполненной работы.'
+            : 'Every answer is valid. This is a private check-in, not verified work or income.'}</small>
+          {trackExample&&<details className={styles.trackExample} data-business-path-example>
+            <summary>{t.exampleForMyPath}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <p>{trackExample}</p>
+          </details>}
           {previousSkills.length>0&&<details className={styles.skillRecap}>
             <summary>{t.learnedBefore}<ChevronDown size={16} aria-hidden="true"/></summary>
             <div className={styles.skillRecapChips}>
@@ -625,112 +645,43 @@ export default function BusinessCoaching({locale='en',accountId}){
             </div>
           </details>}
         </div>}
-        {lessonStage===1&&<div className={styles.oneIdea} data-business-real-practice>
-          <h2>{t.practice}</h2>
-          <p>{selected.action}</p>
-          <small><CheckCircle2 size={16} aria-hidden="true"/>{t.doneWhen}: {selected.doneWhen}</small>
-          {trackExample&&<details className={styles.trackExample} data-business-path-example>
-            <summary>{t.exampleForMyPath}<ChevronDown size={16} aria-hidden="true"/></summary>
-            <p>{trackExample}</p>
-          </details>}
-          <details className={styles.focusTimer} data-business-focus-timer>
-            <summary>{t.focusWarmup}<ChevronDown size={16} aria-hidden="true"/></summary>
-            <span>{t.focusHelp}</span>
-            <div className={styles.focusTimerRow}>
-              <strong role="timer" aria-live="off">
-                {String(Math.floor(focusRemaining/60)).padStart(2,'0')}:{String(focusRemaining%60).padStart(2,'0')}
-              </strong>
-              <div className={styles.focusControls} role="group" aria-label={t.focusStart}>
-                <button type="button" disabled={course.status!=='active'||focusRemaining===0}
-                  onClick={()=>setFocusRunning(value=>!value)}>
-                  {focusRunning?<PauseCircle size={17}/>:<PlayCircle size={17}/>}
-                  {focusRunning?t.focusPause:t.focusStart}
-                </button>
-                <button type="button" onClick={()=>{setFocusRunning(false);setFocusRemaining(120)}}>
-                  {t.focusReset}
-                </button>
-              </div>
-            </div>
-            {focusRemaining===0&&<small role="status">{t.focusDone}</small>}
-          </details>
-        </div>}
-        {lessonStage===2&&<div className={styles.oneIdea} data-business-one-reflection>
-          <h2>{t.reflectionTitle}</h2>
-          <p className={styles.reflectionFocus}>{selected.resultLabel}</p>
-          <p>{t.reflectionPrompt}</p>
-          <div className={styles.reflectionChoices} role="group" aria-label={t.reflectionPrompt}>
-            {[['agree',t.reflectAgree],['disagree',t.reflectDisagree],['unsure',t.reflectUnsure]].map(([value,label])=>
-              <button key={value} type="button" aria-pressed={reflectionChoice===value}
-                onClick={()=>setReflectionChoice(current=>current===value?'':value)}
-                disabled={course.status!=='active'} data-business-reflection-choice={value}>{label}</button>)}
-          </div>
-          <small>{t.reflectOptional}</small>
-        </div>}
-        {lessonStage===3&&<div className={styles.oneIdea} data-business-private-result>
-          <h2>{t.myResult}</h2>
-          <p>{selected.resultLabel}</p>
-          <label className={styles.textareaLabel}>
-            <span className={styles.visuallyHidden}>{t.myResult}</span>
-            <textarea rows={3} value={dayResult} maxLength={1200} onChange={e=>setDayResult(e.target.value)}
-              placeholder={t.resultPlaceholder} disabled={course.status!=='active'}/>
-          </label>
-          <details className={styles.optionalNotes}>
-            <summary>{t.optionalNote}<ChevronDown size={16} aria-hidden="true"/></summary>
-            <label className={styles.textareaLabel}>{t.note}
-              <textarea rows={3} value={dayNote} maxLength={900} onChange={e=>setDayNote(e.target.value)}
-                placeholder={t.reviewPlaceholder} disabled={course.status!=='active'}/>
-            </label>
-          </details>
-          {savedDay.done&&!savedDay.result&&<p className={styles.legacyNote}>{t.legacyCompletion}</p>}
-        </div>}
         {lessonStage===4&&savedDay.done&&!hasUnsavedDay&&<div className={styles.oneIdea+' '+styles.savedCelebration}
           data-business-saved-celebration role="status">
           <span className={styles.celebrationMark}><CheckCircle2 size={26} aria-hidden="true"/></span>
           <h2>{t.savedCelebration}</h2>
           <strong>{t.practisedSkill}</strong>
-          <p className={styles.skillTarget}>{transferableSkill}</p>
-          {savedDay.result&&<details className={styles.savedResult}>
+          <p className={styles.skillTarget}>{tinyAction}</p>
+          <p>{businessChoiceLabel(savedDay,lang)}</p>
+          {savedDay.result&&!savedDay.choiceId&&<details className={styles.savedResult}>
             <summary>{t.viewSavedResult}<ChevronDown size={16} aria-hidden="true"/></summary>
             <blockquote>{savedDay.result}</blockquote>
           </details>}
-          <small>{t.returnLater}</small>
+          {savedDay.legacyResult&&<details className={styles.savedResult}>
+            <summary>{t.previousWrittenResult}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <blockquote>{savedDay.legacyResult}</blockquote>
+          </details>}
+          <small>{t.celebrationHelp}</small>
         </div>}
       </article>
       <div className={styles.lessonSaveBar} data-business-lesson-save>
-        <button className={styles.backButton} type="button" disabled={lessonStage===0&&day===1}
-          onClick={()=>lessonStage>0?changeLessonStage(value=>value-1):chooseDay(day-1)}>
+        <button className={styles.backButton} type="button" disabled={lessonStage===1&&day===1}
+          onClick={()=>lessonStage===4?changeLessonStage(1):chooseDay(day-1)}>
           <ArrowLeft size={16} aria-hidden="true"/>{t.previousStep}</button>
-        {lessonStage<3&&<button className={styles.primary} type="button"
-          onClick={()=>changeLessonStage(value=>Math.min(3,value+1))}>
-          {t.nextStep}<ArrowRight size={17} aria-hidden="true"/></button>}
-        {lessonStage===3&&<>
-          <span className={styles.lessonSaveState} aria-live="polite">
-            {hasUnsavedDay?<span className={styles.unsavedDot} aria-hidden="true"/>:
-              <CheckCircle2 size={17} aria-hidden="true"/>}
-            {hasUnsavedDay?t.unsaved:t.alreadySaved}
-          </span>
-          <button type="button" className={styles.draftButton}
-            disabled={busy||course.status!=='active'||!hasUnsavedDay}
-            onClick={()=>void saveDayAndContinue(false)}>{t.draftAction}</button>
-          <button type="button" className={styles.primary}
-            disabled={busy||(!savedDay.done&&!hasUnsavedDay&&course.status!=='active')||
-              ((!savedDay.done||hasUnsavedDay)&&
-                (course.status!=='active'||dayResult.trim().length<6))}
-            onClick={()=>{
-              if(savedDay.done&&!hasUnsavedDay)changeLessonStage(4)
-              else void saveDayAndContinue(true)
-            }}>
-            {savedDay.done&&!hasUnsavedDay?t.showSaved:t.saveContinue}
-            <ArrowRight size={17} aria-hidden="true"/>
-          </button>
-        </>}
+        {lessonStage===1&&<button type="button" className={styles.primary}
+          disabled={busy||(course.status!=='active'&&(!savedDay.done||hasUnsavedDay))||
+            (!savedDay.done&&!lessonChoice)||(hasUnsavedDay&&!lessonChoice)}
+          onClick={()=>{
+            if(savedDay.done&&!hasUnsavedDay)changeLessonStage(4)
+            else void saveDayAndContinue(true)
+          }}>
+          {savedDay.done&&!hasUnsavedDay?t.showSaved:t.saveContinue}
+          <ArrowRight size={17} aria-hidden="true"/>
+        </button>}
         {lessonStage===4&&<button type="button" className={styles.primary}
           onClick={()=>day<90?chooseDay(day+1):changeTab('report')}>
           {day<90?t.nextLesson:t.report}<ArrowRight size={17} aria-hidden="true"/>
         </button>}
       </div>
-      {lessonStage===3&&dayResult.trim().length>0&&dayResult.trim().length<6&&
-        <p className={styles.inlineHelp} role="status">{t.resultRequired}</p>}
     </div>}
     {course.status==='active'&&tab!=='today'&&<div className={styles.goalEditor}>
       {!goalEditing?<button type="button" className={styles.editGoalsToggle} onClick={()=>{
@@ -784,9 +735,10 @@ export default function BusinessCoaching({locale='en',accountId}){
                 <span className={record?.done?styles.doneMark:styles.emptyMark}>{record?.done?'✓':index+1}</span>
                 <span className={styles.moduleDayText}>
                   <strong>{t.day} {entry.day} · {entry.resultLabel}</strong>
-                  <small>{entry.action}</small>
-                  <small><b>{t.doneWhen}:</b> {entry.doneWhen}</small>
-                  {record?.result&&<em>{record.result.length>135?record.result.slice(0,135)+'…':record.result}</em>}
+                  <small>{businessTinyAction(entry.day,lang)}</small>
+                  
+                  {record?.result&&<em>{businessChoiceLabel(record,lang).slice(0,135)}</em>}
+                  {record?.legacyResult&&<em>{t.previousWrittenResult}: {record.legacyResult.slice(0,135)}</em>}
                   {record?.done&&!record?.result&&<em>{t.legacyCompletion}</em>}
                 </span>
                 <ArrowRight size={15} aria-hidden="true"/>
@@ -880,8 +832,9 @@ export default function BusinessCoaching({locale='en',accountId}){
             {entries.map(({day:recordDay,record,spec})=><p key={recordDay}>
               <strong>{t.day} {recordDay} · {record.resultLabelSnapshot?.[lang]||spec.result[lang]}</strong>
               {' · '}{record.done?t.completed:t.daySaved}
-              {record.result?<span> — {record.result}</span>:
+              {record.result?<span> — {businessChoiceLabel(record,lang)}</span>:
                 record.done?<span> — {t.legacyCompletion}</span>:null}
+              {record.legacyResult?<span> · {t.previousWrittenResult}: {record.legacyResult}</span>:null}
               {record.note?<span> · {t.notes}: {record.note}</span>:null}
               {record.reflectionChoice&&<span> · {t.reflectionSlide}: {({agree:t.reflectAgree,disagree:t.reflectDisagree,unsure:t.reflectUnsure})[record.reflectionChoice]||'—'}</span>}
             </p>)}
@@ -891,7 +844,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       </div>
       <div className={styles.reportBlock}><h3>{t.notes}</h3>
         {Object.entries(course.reviews).sort((a,b)=>Number(a[0])-Number(b[0])).map(([k,d])=>
-          <p key={k}><strong>{t.week} {k}.</strong> {d.note}</p>)}
+          <p key={k}><strong>{t.week} {k}.</strong> {businessWeekReviewLabel(d.note,lang)}</p>)}
       </div>
       <div className={styles.reportBlock}><h3>{t.records}</h3>
         {course.metrics.length?course.metrics.map(m=><p key={m.id}><strong>{metricKinds.get(m.metric)?.[lang]}:</strong> {m.value} {m.currency||''}
