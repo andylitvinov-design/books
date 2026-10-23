@@ -43,8 +43,7 @@ test('every Pro card has existing locally-hosted photography and a real action',
       assert.ok(nodes(button).some(node=>node.type==='img' || typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'lesson image at left')
     }
     assert.ok(find(view,'data-profi-action','start-course-overview'),'direct course CTA above the fold')
-    find(view,'data-profi-path','practice').props.onClick()
-    view=widget.render()
+    assert.equal(find(view,'data-profi-path','practice').props.href,'#profi-practice')
     for(const key of ['session','intro','workshop','course']){
       const offer=find(view,'data-profi-offer',key)
       assert.ok(nodes(offer).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'offer image at left: '+key)
@@ -157,6 +156,27 @@ test('Pro page contains a separate free-tests and private/personal-professional 
   assert.match(css,/@media\(max-width:600px\)/)
 })
 
+test('Pro keeps learning, practitioner offers and profiles visible in one scrollable page',()=>{
+  assert.match(hub,/learnChoice: "Я хочу обучиться"/)
+  assert.match(hub,/proChoice: "Я уже практик"/)
+  assert.doesNotMatch(hub,/data-profi-active-path|path === "learn" \?|choosePath\(/)
+  assert.match(css,/\.journey\[id\]\{scroll-margin-top:/)
+  for (const locale of ['en','ru','es']) {
+    const tree=mount(locale).render()
+    const all=nodes(tree)
+    const learn=all.findIndex(x=>x.props?.['data-profi-learning']!==undefined)
+    const practice=all.findIndex(x=>x.props?.['data-profi-practice']!==undefined)
+    const profiles=all.findIndex(x=>x.props?.['data-profi-profiles']!==undefined)
+    assert.ok(learn>0 && practice>learn && profiles>practice,locale+': learn → practice → profiles')
+    assert.equal(find(tree,'data-profi-path','learn').props.href,'#profi-learning')
+    assert.equal(find(tree,'data-profi-path','practice').props.href,'#profi-practice')
+    assert.equal(find(tree,'data-profi-path','learn').type,'a')
+    assert.equal(find(tree,'data-profi-path','practice').type,'a')
+    assert.equal(all.filter(x=>x.props?.['data-profi-lesson']!==undefined).length,5)
+    assert.equal(all.filter(x=>x.props?.['data-profi-offer']!==undefined).length,4)
+  }
+})
+
 test('actual interactive learner track explores five steps but launches only existing training',()=>{
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
@@ -182,7 +202,7 @@ test('offer studio really switches all four starter destinations, not fake publi
   ]
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
-    find(widget.render(),'data-profi-path','practice').props.onClick()
+    assert.ok(nodes(widget.render()).some(x=>Object.hasOwn(x.props||{},'data-profi-practice')))
     for(const [kind,url,action] of choices){
       let tree=widget.render()
       find(tree,'data-profi-offer',kind).props.onClick()
@@ -238,8 +258,8 @@ test('earning promise stays honest; mobile and accessibility are deliberate',()=
       phrase)
   }
   assert.match(hub,/не даёт профессиональной квалификации/)
-  assert.match(hub,/role="group" aria-label=\{t.choose\}/)
-  assert.match(hub,/aria-pressed=\{path === "practice"\}/)
+  assert.match(hub,/<nav className=\{styles.pathControls\} aria-label=\{t.choose\}/)
+  assert.match(hub,/href="#profi-practice"/)
   assert.match(hub,/aria-pressed=\{offer === key\}/)
   assert.match(css,/@media\(max-width:359px\)/)
   assert.match(css,/@media\(max-width:600px\)/)
