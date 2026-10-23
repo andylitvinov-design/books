@@ -161,6 +161,8 @@
   font: 450 11px/1.3 system-ui, sans-serif;
   overflow-wrap: anywhere;
 }
+.stepTail { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.stepReward { color: #947b60; font: 680 10px/1.2 system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .status {
   display: inline-flex;
   align-items: center;
@@ -288,7 +290,8 @@
     padding: 6px 9px;
   }
   .stepCopy { flex: initial; }
-  .status { align-self: center; white-space: nowrap; }
+  .stepTail { align-items: flex-end; gap: 3px; }
+  .status { align-self: flex-end; white-space: nowrap; }
   .overview { margin-top: 10px; }
   .completion { width: min(170px, 38%); }
 }
@@ -311,6 +314,7 @@
   .stepCopy strong { font-size: 12px; }
   .stepCopy small { font-size: 10px; }
   .status { padding: 3px 5px; font-size: 9px; max-width: 93px; white-space: normal; }
+  .stepReward { font-size: 9px; }
   .next { padding: 9px; gap: 7px; }
   .nextText strong { font-size: 13px; }
   .shell .primary { flex: 1 0 100%; width: 100%; }
