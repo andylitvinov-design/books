@@ -432,7 +432,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [habitSetup,setHabitSetup]=useState(false)
   const [inviteOpen,setInviteOpen]=useState(false)
   const [saved,setSaved]=useState(hasSaved)
-  const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
+  // The session's editorial edition must survive a server-confirmed save and
+  // a full refresh. Historic sessions without this key still use old copy.
+  const [answers,setAnswers]=useState(()=>{
+    const prior=data?.currentSession?.signals?.opora54?.answers||{}
+    return hasSaved?prior:{...prior,experienceEdition:'as-5.8-one-action-v1'}
+  })
   const [practiceEmotionChoice,setPracticeEmotionChoice]=useState(
     data?.currentSession?.signals?.practiceEmotion?.choice||null)
   const [practiceEmotionText,setPracticeEmotionText]=useState(
@@ -472,7 +477,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   // Completed older records retain their original course copy and choice labels.
   const dailyPlan=oporaAs58Day(cycle.day,lang)
-  const showNewPlan=!reviewOnly&&!hasSaved
+  const showNewPlan=!hasSaved||answers.experienceEdition==='as-5.8-one-action-v1'
   const support=oporaExperienceSupport(cycle.day,lang)
   const depth=oporaExperienceDepth(cycle.day,lang)
   const practiceGuide=(showNewPlan?dailyPlan?.practice:null)||
