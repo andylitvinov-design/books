@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
 
-import { AcademyCourseCardList, type AcademyCourseItem } from "@/components/academy-course-card-list";
+import { AcademyCourseCardList, type AcademyCourseCategory, type AcademyCourseItem } from "@/components/academy-course-card-list";
 import { AcademyMyCourses } from "@/components/academy-my-courses";
 import { DiscoverySectionTabs } from "@/components/discovery-section-tabs";
 import type { AcademyView } from "@/data/academy/catalog";
@@ -17,15 +17,18 @@ const COPY = {
   en: {
     eyebrow: "HOLISTIC HOUSE · ACADEMY",
     title: "Find your learning path",
-    description: "Explore Reiki, Temple Studies and stress relief. Start free or choose a full learning program.",
+    description: "All courses in one place: business and career, stress relief, Reiki and Temple Studies.",
     videoTitle: "Explore video lessons",
     videoDescription: "Original lessons and guided practices organized by program and language.",
     searchLabel: "Find a learning course",
-    placeholder: "Reiki, Tantra or stress relief…",
+    placeholder: "Business, Reiki or stress relief…",
     searchButton: "Find my course",
     browse: "Choose your course",
     catalogLabel: "ALL LEARNING PROGRAMMES",
     count: "courses",
+    filtersLabel: "Filter courses by topic",
+    filterAll: "All courses", filterFree: "Free", filterWellbeing: "Wellbeing",
+    filterReiki: "Reiki", filterBusiness: "Business & Career", filterTemple: "Temple Studies",
     results: "Matching learning options",
     paths: "EXPLORE THE ACADEMY",
     freeCourses: "Free Courses", freeDescription: "Short guided lessons you can begin today.",
@@ -43,15 +46,18 @@ const COPY = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · АКАДЕМИЯ",
     title: "Найдите свою программу обучения",
-    description: "Изучайте Рейки, храмовые практики и антистресс. Начните бесплатно или выберите полную программу.",
+    description: "Все курсы в одном месте: бизнес и карьера, антистресс, Рейки и храмовые практики.",
     videoTitle: "Выберите видеоуроки",
     videoDescription: "Авторские уроки и практики, сгруппированные по программам и языкам записи.",
     searchLabel: "Поиск курсов",
-    placeholder: "Рейки, Тантра или антистресс…",
+    placeholder: "Бизнес, Рейки или антистресс…",
     searchButton: "Подобрать курс",
     browse: "Выберите свой курс",
     catalogLabel: "ВСЕ ПРОГРАММЫ ОБУЧЕНИЯ",
     count: "курсов",
+    filtersLabel: "Фильтр курсов по направлению",
+    filterAll: "Все курсы", filterFree: "Бесплатные", filterWellbeing: "Антистресс",
+    filterReiki: "Рейки", filterBusiness: "Бизнес и карьера", filterTemple: "Храмовые практики",
     results: "Подходящие варианты",
     paths: "НАПРАВЛЕНИЯ АКАДЕМИИ",
     freeCourses: "Бесплатные курсы", freeDescription: "Короткие занятия, которые можно начать прямо сейчас.",
@@ -69,15 +75,18 @@ const COPY = {
   es: {
     eyebrow: "HOLISTIC HOUSE · ACADEMIA",
     title: "Encuentra tu ruta de aprendizaje",
-    description: "Explora Reiki, Temple Studies y antiestrés. Empieza gratis o elige un programa completo.",
+    description: "Todos los cursos en un lugar: negocios y carrera, antiestrés, Reiki y tradiciones del templo.",
     videoTitle: "Explora las videolecciones",
     videoDescription: "Lecciones y prácticas organizadas por programa e idioma original.",
     searchLabel: "Buscar cursos",
-    placeholder: "Reiki, Tantra o antiestrés…",
+    placeholder: "Negocios, Reiki o antiestrés…",
     searchButton: "Buscar curso",
     browse: "Elige tu curso",
     catalogLabel: "TODOS LOS PROGRAMAS",
     count: "cursos",
+    filtersLabel: "Filtrar cursos por tema",
+    filterAll: "Todos", filterFree: "Gratis", filterWellbeing: "Bienestar",
+    filterReiki: "Reiki", filterBusiness: "Negocios y carrera", filterTemple: "Tradiciones del templo",
     results: "Opciones encontradas",
     paths: "EXPLORAR LA ACADEMIA",
     freeCourses: "Cursos gratis", freeDescription: "Lecciones breves que puedes comenzar hoy.",
@@ -94,8 +103,12 @@ const COPY = {
   },
 } as const;
 
+type CourseFilter = "all" | "free" | AcademyCourseCategory;
+const COURSE_FILTERS: readonly CourseFilter[] = ["all", "business", "free", "wellbeing", "reiki", "temple"];
+
 const SEARCH_KEYWORDS: Record<string, string> = {
   "academy-free-opora": "opora stress anti-stress antistress antiestrés stress relief стресс антистресс тревога опора 14 days 14 дней",
+  "academy-business-career-90-days": "business career professional founder coaching 90 day plan 12 weeks negocio carrera empresa empleo negocios бизнес карьера работа предприниматель коучинг 90 дней 12 недель",
   "academy-featured-principles-energywork": "free energywork principles basics reiki practitioner study initiation tantra kundalini yggdrasil энергетическая работа основы рейки практик обучение инициация курс gratuito iniciación aprendizaje",
   "academy-free-tantra-introduction": "tantra reiki level 1 free initiation тантра рейки первая ступень бесплатная инициация",
   "academy-free-yggdrasil-introduction": "reiki yggdrasil level 1 free initiation рейки иггдрасиль первая ступень",
@@ -201,13 +214,22 @@ export function AcademyDiscovery({
 }) {
   const t = COPY[locale];
   const [query, setQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<CourseFilter>("all");
+  const filterLabels: Record<CourseFilter, string> = {
+    all: t.filterAll, free: t.filterFree, wellbeing: t.filterWellbeing,
+    reiki: t.filterReiki, business: t.filterBusiness, temple: t.filterTemple,
+  };
   const terms = useMemo(() => searchTerms(query), [query]);
   const matchedItems = useMemo(() => items.filter((item) =>
     matchesTerms([item.title, item.subtitle, item.description, SEARCH_KEYWORDS[item.id]].filter(Boolean).join(" "), terms),
   ), [items, terms]);
   const isSearching = Boolean(query.trim());
-  const freeItems = matchedItems.filter((item) => item.free);
-  const studyItems = matchedItems.filter((item) => !item.free);
+  const hasFilter = activeFilter !== "all";
+  const filteredItems = useMemo(() => matchedItems.filter((item) => (
+    activeFilter === "all" || (activeFilter === "free" ? Boolean(item.free) : item.category === activeFilter)
+  )), [matchedItems, activeFilter]);
+  const freeItems = filteredItems.filter((item) => item.free);
+  const studyItems = filteredItems.filter((item) => !item.free);
   const upcomingEvents = useMemo(() => {
     const now = Date.now();
     return events.filter((event) => (
@@ -225,7 +247,6 @@ export function AcademyDiscovery({
       COPY.en.liveEvents, COPY.ru.liveEvents, COPY.es.liveEvents,
     ].filter(Boolean).join(" "), terms),
   ), [upcomingEvents, terms]);
-  const resultCount = matchedItems.length + matchedEvents.length;
 
   function scrollToResults() {
     const target = document.getElementById("academy-programs");
@@ -285,13 +306,22 @@ export function AcademyDiscovery({
               <p className={styles.listKicker}>{t.catalogLabel}</p>
               <h2>{isSearching ? t.results : t.browse}</h2>
             </div>
-            {isSearching ? (
-              <button type="button" className={styles.reset} onClick={() => setQuery("")}>{t.reset}</button>
+            {(isSearching || hasFilter) ? (
+              <button type="button" className={styles.reset} onClick={() => { setQuery(""); setActiveFilter("all"); }}>{t.reset}</button>
             ) : (
               <span className={styles.count}>{items.length} {t.count}</span>
             )}
           </div>
-          {isSearching && !resultCount ? <p className={styles.empty} role="status">{t.empty}</p> : null}
+          <div className={styles.courseFilters} role="group" aria-label={t.filtersLabel}>
+            {COURSE_FILTERS.map((filter) => (
+              <button key={filter} type="button" aria-pressed={activeFilter === filter}
+                className={activeFilter === filter ? [styles.filterPill, styles.filterSelected].join(" ") : styles.filterPill}
+                onClick={() => setActiveFilter(filter)}>
+                {filterLabels[filter]}
+              </button>
+            ))}
+          </div>
+          {(isSearching || hasFilter) && !filteredItems.length ? <p className={styles.empty} role="status">{t.empty}</p> : null}
 
           <section className={styles.categoryGroup} id="academy-free-courses" aria-labelledby="academy-free-courses-title">
             <div className={styles.categoryHeading}>

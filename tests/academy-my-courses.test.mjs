@@ -161,7 +161,7 @@ test('signed-in course owner sees their live growth and Reiki progress and one-c
   assert.ok(items.some(n => n.props?.href === '/en/academy/principles-of-energywork/learn?slide=flight-04'
     && words(n).includes('Flight to the Sun')))
   assert.ok(items.some(n => n.props?.role === 'progressbar' && n.props?.['aria-valuenow'] === 3))
-  assert.deepEqual(h.calls.map(c => c.path), ['bootstrap', 'course', 'academy-energywork', 'bootstrap'])
+  assert.deepEqual(h.calls.map(c => c.path), ['bootstrap', 'course', 'academy-energywork', 'business-coaching', 'bootstrap'])
   h.signedOut()
   h.render()
   assert.equal(h.tree, null, 'A sign-out event must clear the personal cards synchronously')
@@ -204,6 +204,55 @@ test('a partial course backend outage still shows the independently authorized R
   h.unmount()
 })
 
+test('started private Business & Career course appears in My courses with truthful 90-day progress', async () => {
+  const course = { template: 'hh-business-90-v1', status: 'active', days: {
+    1: { done: true }, 2: { done: false }, 3: { done: true }, 99: { done: true },
+  } }
+  const h = harness((path, _, method, options) => {
+    assert.equal(method, 'GET')
+    if (path === 'bootstrap') return bootstrap('owner-business')
+    assert.equal(options.accountId, 'owner-business')
+    if (path === 'business-coaching') return { course }
+    if (path === 'course') return { courses: [] }
+    if (path === 'academy-energywork') return { enrolled: false }
+    throw Error('Unexpected API')
+  }, 'ru')
+  await h.settle()
+  const items = nodes(h.tree)
+  assert.ok(items.some(n => n.props?.['data-academy-owned-business'] === '90-days'))
+  assert.ok(items.some(n => n.props?.href === '/ru/app/business'))
+  assert.ok(items.some(n => n.props?.role === 'progressbar'
+    && n.props?.['aria-valuemax'] === 90 && n.props?.['aria-valuenow'] === 2))
+  assert.match(words(h.tree), /Бизнес и карьера/)
+  assert.match(words(h.tree), /2 \/ 90/)
+  h.signedOut()
+  h.render()
+  assert.equal(h.tree, null, 'Sign-out clears the business card synchronously')
+  h.unmount()
+})
+
+test('an unstarted business course is not shown as an enrollment', async () => {
+  const h = harness(path => path === 'bootstrap' ? bootstrap('owner-new')
+    : path === 'course' ? { courses: [] }
+      : path === 'business-coaching' ? { course: null }
+        : { enrolled: false })
+  await h.settle()
+  assert.ok(!nodes(h.tree).some(n => n.props?.['data-academy-owned-business']))
+  h.unmount()
+})
+
+test('a changed account after private business read never exposes former account progress', async () => {
+  let bootReads = 0
+  const h = harness(path => path === 'bootstrap'
+    ? bootstrap(++bootReads === 1 ? 'owner-a' : 'owner-b')
+    : path === 'business-coaching'
+      ? { course: { template: 'hh-business-90-v1', days: { 1: { done: true } } } }
+      : path === 'course' ? { courses: [] } : { enrolled: false })
+  await h.settle()
+  assert.equal(h.tree, null)
+  h.unmount()
+})
+
 test('responsive cards stay inside the screen, with 320px and 430px breakpoints', () => {
   const css = read('components/academy-my-courses.module.css')
   assert.match(css, /@media \(max-width: 430px\)/)
@@ -212,4 +261,6 @@ test('responsive cards stay inside the screen, with 320px and 430px breakpoints'
   assert.match(css, /min-width: 0/)
   assert.match(css, /:focus-visible/)
   assert.match(css, /min-height: 44px/)
+  assert.match(css, /\.businessCard \{/)
+  assert.match(css, /\.businessCard \.action \{/)
 })

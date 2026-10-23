@@ -17,9 +17,13 @@ type GrowthCourse = {
 type EnergyworkProgress = {
   enrolled?: boolean; slideId?: string; status?: string; answers?: Record<string, unknown>
 }
+type BusinessCourse = {
+  template?: string; status?: string;
+  days?: Record<string, { done?: boolean }>
+}
 type Snapshot = {
   locale: Locale; accountId: string | null; courses: GrowthCourse[];
-  energywork: EnergyworkProgress | null; incomplete: boolean
+  energywork: EnergyworkProgress | null; business: BusinessCourse | null; incomplete: boolean
 }
 
 const sequence = energyworkSequence()
@@ -34,6 +38,7 @@ const COPY = {
     empty: 'You have not started a course yet. Explore the free courses below.',
     unavailable: 'Some course progress is temporarily unavailable. You can open your courses in the cabinet.',
     progress: 'Lessons completed', position: 'Saved slide position',
+    business: 'Business & Career · 90 Days', businessProgress: 'Learning days completed',
   },
   ru: {
     title: 'Мои курсы', hint: 'Продолжите с того места, где остановились.', all: 'Все мои курсы',
@@ -44,6 +49,7 @@ const COPY = {
     empty: 'Вы пока не начали ни один курс. Выберите бесплатный курс ниже.',
     unavailable: 'Прогресс некоторых курсов временно недоступен. Откройте список в личном кабинете.',
     progress: 'Пройдено уроков', position: 'Сохранённая позиция',
+    business: 'Бизнес и карьера · 90 дней', businessProgress: 'Выполнено учебных шагов',
   },
   es: {
     title: 'Mis cursos', hint: 'Continúa donde lo dejaste.', all: 'Todos mis cursos',
@@ -54,6 +60,7 @@ const COPY = {
     empty: 'Todavía no has comenzado un curso. Explora los cursos gratuitos más abajo.',
     unavailable: 'Parte del progreso no está disponible. Puedes abrir tus cursos en el área personal.',
     progress: 'Lecciones completadas', position: 'Última diapositiva guardada',
+    business: 'Negocios y carrera · 90 días', businessProgress: 'Días de aprendizaje completados',
   },
 } as const
 
@@ -134,6 +141,36 @@ function ReikiCard({ progress, locale }: { progress: EnergyworkProgress; locale:
   </article>
 }
 
+function BusinessCard({ course, locale }: { course: BusinessCourse; locale: Locale }) {
+  const t = COPY[locale]
+  const language = locale === 'ru' ? 'ru' : 'en'
+  // Only a server-confirmed, already-enrolled private course reaches this card.
+  // Missing/invalid days are not counted as completed; no goals or notes are exposed.
+  const completed = Object.entries(course.days ?? {}).filter(([key, day]) => (
+    /^(?:[1-9]|[1-8][0-9]|90)$/.test(key) && day?.done === true
+  )).length
+  const finished = course.status === 'completed'
+  const paused = course.status === 'paused'
+  return <article className={[styles.card, styles.businessCard].join(' ')} data-academy-owned-business="90-days">
+    <div className={styles.photo}>
+      <Image src="/images/holistic-house/books-library.webp" alt="" fill
+        sizes="(max-width: 430px) 96px, 148px" />
+    </div>
+    <div className={styles.body}>
+      <span className={styles.eyebrow}>{finished ? t.completed : paused ? t.paused : t.other}</span>
+      <h3>{t.business}</h3>
+      <p>{completed} / 90 · {t.businessProgress}</p>
+      <div className={styles.track} role="progressbar" aria-label={t.businessProgress}
+        aria-valuemin={0} aria-valuemax={90} aria-valuenow={completed}>
+        <span style={{ width: (completed / 90 * 100) + '%' }} />
+      </div>
+      <Link className={styles.action} href={'/' + language + '/app/business'} prefetch={false}>
+        {finished ? t.review : t.continue}<ArrowRight size={16} aria-hidden="true" />
+      </Link>
+    </div>
+  </article>
+}
+
 /** Public Academy is static for guests; only the existing private APIs reveal an owner's saved courses. */
 export function AcademyMyCourses({ locale }: { locale: Locale }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
@@ -160,9 +197,10 @@ export function AcademyMyCourses({ locale }: { locale: Locale }) {
         if (!boot?.account?.id || boot.account.onboardingState !== 'active') return
         const accountId = boot.account.id as string
         const options = { accountId, signal: request.signal }
-        const [growth, reiki] = await Promise.allSettled([
+        const [growth, reiki, businessResult] = await Promise.allSettled([
           appFetch('course', undefined, 'GET', options),
           appFetch('academy-energywork', undefined, 'GET', options),
+          appFetch('business-coaching', undefined, 'GET', options),
         ])
         if (!isCurrent()) return
         // Prevent a stale private view after sign-out, OAuth switch, or session expiry mid-request.
@@ -173,8 +211,12 @@ export function AcademyMyCourses({ locale }: { locale: Locale }) {
         const owned = list.filter(item => item && typeof item.id === 'string' && Number(item.stage || 0) > 0)
         const energywork = reiki.status === 'fulfilled' && reiki.value?.enrolled === true
           ? reiki.value as EnergyworkProgress : null
-        setSnapshot({ locale, accountId, courses: owned, energywork,
-          incomplete: growth.status === 'rejected' || reiki.status === 'rejected' })
+        const business = businessResult.status === 'fulfilled'
+          && businessResult.value?.course?.template === 'hh-business-90-v1'
+          ? businessResult.value.course as BusinessCourse : null
+        setSnapshot({ locale, accountId, courses: owned, energywork, business,
+          incomplete: growth.status === 'rejected' || reiki.status === 'rejected'
+            || businessResult.status === 'rejected' })
       } catch {
         if (isCurrent()) clear() // Never interpret an auth or network error as an empty account.
       }
@@ -208,7 +250,7 @@ export function AcademyMyCourses({ locale }: { locale: Locale }) {
       || Number(b.status !== 'completed') - Number(a.status !== 'completed'))
   const first = active[0]
   const rest = active.slice(1)
-  const hasCourses = active.length > 0 || Boolean(current.energywork)
+  const hasCourses = active.length > 0 || Boolean(current.energywork) || Boolean(current.business)
   return <section className={styles.section} id="academy-my-courses" data-academy-my-courses aria-labelledby="academy-my-courses-title">
     <div className={styles.heading}>
       <div><span className={styles.kicker}><BookOpenCheck size={15} aria-hidden="true" />HOLISTIC HOUSE</span>
@@ -219,6 +261,7 @@ export function AcademyMyCourses({ locale }: { locale: Locale }) {
     {hasCourses ? <div className={styles.cards}>
       {first ? <GrowthCard course={first} locale={locale} featured /> : null}
       {current.energywork ? <ReikiCard progress={current.energywork} locale={locale} /> : null}
+      {current.business ? <BusinessCard course={current.business} locale={locale} /> : null}
       {rest.map(course => <GrowthCard key={course.id} course={course} locale={locale} featured={false} />)}
     </div> : !current.incomplete ? <p className={styles.empty}><LockKeyhole size={15} aria-hidden="true" />{t.empty}</p> : null}
     {current.incomplete ? <p className={styles.warning} role="status">{t.unavailable}</p> : null}

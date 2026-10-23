@@ -29,7 +29,7 @@ test("Academy home groups free courses, study programs and verified live events 
   assert.ok(services.includes("linear-gradient(121deg,#203450 0%,#283d5c 58%,#483a52 100%)"));
 });
 
-test("EN RU ES course search is local, keeps all eight real destinations and preserves video archive access", () => {
+test("EN RU ES course search is local, keeps all nine real destinations and preserves video archive access", () => {
   const hub = read("components/academy-hub.tsx");
   const discovery = read("components/academy-discovery.tsx");
   for (const title of [
@@ -40,12 +40,17 @@ test("EN RU ES course search is local, keeps all eight real destinations and pre
     "academy-free-tantra-introduction", "academy-free-yggdrasil-introduction",
     "academy-featured-yggdrasil", "academy-featured-tantra-reiki",
     "academy-featured-kundalini-reiki", "academy-featured-temple-studies",
+    "academy-business-career-90-days",
   ]) assert.ok(hub.includes('id: "' + id + '"'), id);
   assert.match(hub, /courseHref: REIKI_FREE_COURSE_PATH/);
   assert.match(hub, /courseHref: "\/" \+ \(locale === "es" \? "en" : locale\) \+ "\/app\/course\?program=stress"/);
   assert.match(hub, /tantra-reiki-yin-yang-cover\.svg/);
-  assert.equal((hub.match(/free: true/g) || []).length, 4);
+  assert.equal((hub.match(/free: true/g) || []).length, 5);
   assert.match(discovery, /useMemo\(\(\) => items\.filter/);
+  assert.match(discovery, /COURSE_FILTERS\.map/);
+  assert.match(discovery, /aria-pressed=\{activeFilter === filter\}/);
+  assert.match(discovery, /item\.category === activeFilter/);
+  assert.match(discovery, /setActiveFilter\("all"\)/);
   assert.match(discovery, /matchesTerms/);
   assert.match(discovery, /role="search"/);
   assert.match(discovery, /onSubmit=\{submitSearch\}/);
@@ -89,8 +94,8 @@ test("Every Academy course expands a distinct EN/RU/ES explanation and the Reiki
   const landing = read("components/principles-of-energywork.tsx");
   const metadata = read("app/[locale]/academy/[[...slug]]/page.tsx");
   const discovery = read("components/academy-discovery.tsx");
-  const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple"];
-  assert.equal((hub.match(/detailsHint: hints\.[A-Za-z]+/g) || []).length, 8, "Every course needs its own hint");
+  const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple", "business"];
+  assert.equal((hub.match(/detailsHint: hints\.[A-Za-z]+/g) || []).length, 9, "Every course needs its own hint");
   for (const key of keys) assert.ok(hub.includes("detailsHint: hints." + key), "Missing course-specific help: " + key);
   for (const example of [
     "Fourteen gentle daily practices", "14 дней коротких практик", "Catorce prácticas breves",
@@ -165,6 +170,39 @@ test("Academy quick path pills and three headings remain mobile-friendly in Engl
   assert.match(styles, /\.eventUpper\s*\{/);
   assert.match(hub, /import \{ PUBLIC_EVENTS \} from "@\/data\/public-events"/);
   assert.match(hub, /events=\{PUBLIC_EVENTS\}/);
+});
+
+test("Business & Career appears in the same Academy with a real free private 90-day course", () => {
+  const hub = read("components/academy-hub.tsx");
+  const discovery = read("components/academy-discovery.tsx");
+  const cards = read("components/academy-course-card-list.tsx");
+  const cardCss = read("components/academy-course-card-list.module.css");
+  const filterCss = read("components/academy-discovery.module.css");
+  const route = read("app/[locale]/app/[[...path]]/page.jsx");
+  const start = hub.indexOf('id: "academy-business-career-90-days"');
+  const end = hub.indexOf('id: "academy-featured-principles-energywork"', start);
+  assert.ok(start >= 0 && end > start, "Business is an Academy card, not a separate-only service");
+  const business = hub.slice(start, end);
+  assert.match(business, /category: "business"/);
+  assert.match(business, /detailsHint: hints\.business/);
+  assert.match(business, /free: true/);
+  assert.match(business, /href: "\/" \+ locale \+ "\/explore\/business"/);
+  assert.match(business, /courseHref: "\/" \+ \(locale === "ru" \? "ru" : "en"\) \+ "\/app\/business"/);
+  assert.match(business, /90 дней/);
+  assert.match(business, /90 days/);
+  assert.match(business, /90 días/);
+  assert.match(route, /['"]business['"]/);
+  assert.equal((hub.match(/category: "(?:wellbeing|reiki|business|temple)"/g) || []).length, 9);
+  assert.match(discovery, /\["all", "business", "free", "wellbeing", "reiki", "temple"\]/);
+  for (const label of ["Все курсы", "Бизнес и карьера", "All courses", "Business & Career", "Negocios y carrera"]) assert.ok(discovery.includes(label), label);
+  assert.match(discovery, /activeFilter === "free" \? Boolean\(item\.free\) : item\.category === activeFilter/);
+  assert.match(discovery, /role="group" aria-label=\{t\.filtersLabel\}/);
+  assert.match(cards, /data-academy-course-category=\{item\.category\}/);
+  assert.match(cardCss, /\.card\[data-academy-course-category="business"\]/);
+  assert.match(filterCss, /\.courseFilters \{/);
+  assert.match(filterCss, /overflow-x: auto/);
+  assert.match(filterCss, /\.filterPill \{/);
+  assert.match(filterCss, /min-height: 40px/);
 });
 
 test("Live academy cards show only confirmed future events with real registration links", () => {

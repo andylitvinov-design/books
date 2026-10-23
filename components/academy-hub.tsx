@@ -127,7 +127,8 @@ const academyCourseHints = {
     "yggdrasilFull": "Explore the full Reiki Yggdrasil pathway, including the five-level Basic Course and further study modules. See how the levels fit together, read the materials and choose where to continue.",
     "tantraFull": "A connected nine-level journey through Tantra Reiki, beginning with Spring of Life and moving toward deeper awareness and personal practice. Review the topics and materials for each level.",
     "kundaliniFull": "A three-level Kundalini Reiki path with introductory practices and original Paul Crick study materials. Start with Level 1, learn how the stages connect and arrange any teacher-led initiation separately.",
-    "temple": "Seven connected stages explore ancient mystery traditions, myths, runes, Tarot and archetypal imagery. Learn their cultural background and use symbolic reflection to explore your own questions."
+    "temple": "Seven connected stages explore ancient mystery traditions, myths, runes, Tarot and archetypal imagery. Learn their cultural background and use symbolic reflection to explore your own questions.",
+    "business": "A free 90-day Business & Career course with 12 weekly modules, one practical outcome a day and a private progress journal. Set your own goals and record real observations; business results are not guaranteed."
   },
   "ru": {
     "opora": "14 дней коротких практик помогут замечать напряжение и мягко возвращаться к спокойствию. Начните с трёх бесплатных проверок состояния, а затем проходите уроки в удобном для себя темпе.",
@@ -137,7 +138,8 @@ const academyCourseHints = {
     "yggdrasilFull": "Полная программа Рейки Иггдрасиль с базовым курсом из пяти ступеней и отдельными модулями дальнейшего обучения. Посмотрите последовательность, материалы и выберите следующий шаг.",
     "tantraFull": "Девять ступеней Тантра Рейки в едином учебном маршруте: от «Родника жизни» к дальнейшим практикам внимания и внутреннего опыта. Изучите описание и материалы каждой ступени.",
     "kundaliniFull": "Три ступени Кундалини Рейки, вводные практики и оригинальные материалы Пола Крика. Начните с первой ступени и при желании отдельно согласуйте личную инициацию.",
-    "temple": "Семь взаимосвязанных этапов: древние мистерии, мифы, руны, Таро и архетипические образы. Изучайте традиции и используйте символическое исследование для осмысления личных вопросов."
+    "temple": "Семь взаимосвязанных этапов: древние мистерии, мифы, руны, Таро и архетипические образы. Изучайте традиции и используйте символическое исследование для осмысления личных вопросов.",
+    "business": "Бесплатный курс «Бизнес и карьера» на 90 дней: 12 недельных модулей, один практический шаг в день и личный дневник прогресса. Вы выбираете цель и отмечаете реальные изменения без обещаний результата."
   },
   "es": {
     "opora": "Catorce prácticas breves te ayudan a reconocer la tensión y volver poco a poco a la calma. Empieza con tres chequeos gratuitos de tu estado y avanza por las lecciones a tu ritmo.",
@@ -147,7 +149,8 @@ const academyCourseHints = {
     "yggdrasilFull": "Explora Reiki Yggdrasil completo: un Curso Básico de cinco niveles y otros módulos de formación. Conoce las etapas, los materiales y el siguiente paso en tu camino.",
     "tantraFull": "Un recorrido de nueve niveles de Tantra Reiki: desde Manantial de Vida hacia prácticas de atención y exploración interior. Consulta los temas y materiales de cada nivel.",
     "kundaliniFull": "Un recorrido de tres niveles de Kundalini Reiki con prácticas iniciales y materiales originales de Paul Crick. Empieza por el Nivel 1 y acuerda cualquier iniciación personal por separado.",
-    "temple": "Siete etapas conectan antiguas tradiciones, mitos, runas, Tarot e imágenes arquetípicas. Conoce su contexto cultural y explora tus preguntas mediante la reflexión simbólica."
+    "temple": "Siete etapas conectan antiguas tradiciones, mitos, runas, Tarot e imágenes arquetípicas. Conoce su contexto cultural y explora tus preguntas mediante la reflexión simbólica.",
+    "business": "Curso gratuito de 90 días sobre negocios y carrera: 12 módulos semanales, una acción práctica diaria y un diario privado. Las lecciones están en inglés o ruso y no prometen resultados."
   }
 } as const satisfies Record<PublicLocale, Record<string, string>>;
 
@@ -183,6 +186,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const items: AcademyCourseItem[] = [
     {
       id: "academy-free-opora",
+      category: "wellbeing",
       detailsHint: hints.opora,
       title: locale === "ru" ? "ОПОРА · Антистресс" : locale === "es" ? "OPORA · Antiestrés" : "OPORA · Stress Relief",
       subtitle: locale === "ru" ? "14 КОРОТКИХ ЗАНЯТИЙ" : locale === "es" ? "14 LECCIONES" : "14 GENTLE LESSONS",
@@ -194,8 +198,27 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
       free: true,
       actionLabel: locale === "ru" ? "Пройти курс" : locale === "es" ? "Empezar curso" : "Take course",
     },
+    {
+      id: "academy-business-career-90-days",
+      category: "business",
+      detailsHint: hints.business,
+      title: locale === "ru" ? "Бизнес и карьера · 90 дней" : locale === "es" ? "Negocios y carrera · 90 días" : "Business & Career · 90 Days",
+      subtitle: locale === "ru" ? "12 МОДУЛЕЙ · 90 ПРАКТИЧЕСКИХ ШАГОВ" : locale === "es" ? "12 MÓDULOS · 90 ACCIONES" : "12 MODULES · 90 PRACTICAL STEPS",
+      description: locale === "ru"
+        ? "Бесплатная программа развития бизнеса и карьеры: ясная цель, ежедневные действия и личный дневник прогресса."
+        : locale === "es"
+          ? "Plan gratuito de desarrollo profesional con metas claras, acciones diarias y progreso privado. Clases en inglés o ruso."
+          : "A free business and career course: clarify your goal, practise one action each day and track progress privately.",
+      href: "/" + locale + "/explore/business",
+      courseHref: "/" + (locale === "ru" ? "ru" : "en") + "/app/business",
+      image: "/images/holistic-house/books-library.webp",
+      duration: locale === "ru" ? "90 дней · в своём темпе" : locale === "es" ? "90 días · a tu ritmo" : "90 days · at your pace",
+      free: true,
+      actionLabel: locale === "ru" ? "Начать бесплатно" : locale === "es" ? "Empezar gratis" : "Start free course",
+    },
         {
           id: "academy-featured-principles-energywork",
+          category: "reiki",
           detailsHint: hints.practitioner,
           title: locale === "ru" ? "Бесплатный курс «Практик Рейки»: обучение и инициация" : locale === "es" ? "Curso gratis Reiki Practitioner: estudio e iniciación" : "Free Course Reiki Practitioner: Study & Initiation",
           subtitle: locale === "ru" ? "5 УРОКОВ · 3 СИСТЕМЫ РЕЙКИ" : locale === "es" ? "5 LECCIONES · 3 SISTEMAS DE REIKI" : "5 LESSONS · 3 REIKI SYSTEMS",
@@ -213,6 +236,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         },
         {
           id: "academy-free-tantra-introduction",
+          category: "reiki",
           detailsHint: hints.tantraIntro,
           title: locale === "ru" ? "Тантра Рейки · 1 ступень" : locale === "es" ? "Tantra Reiki · Nivel 1" : "Tantra Reiki · Level 1",
           subtitle: locale === "ru" ? "ВВЕДЕНИЕ · 1 СТУПЕНЬ" : locale === "es" ? "INTRODUCCIÓN · NIVEL 1" : "INTRODUCTION · LEVEL 1",
@@ -225,6 +249,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         },
         {
           id: "academy-free-yggdrasil-introduction",
+          category: "reiki",
           detailsHint: hints.yggdrasilIntro,
           title: locale === "ru" ? "Рейки Иггдрасиль · 1 ступень" : locale === "es" ? "Reiki Yggdrasil · Nivel 1" : "Reiki Yggdrasil · Level 1",
           subtitle: locale === "ru" ? "ВВЕДЕНИЕ · 1 СТУПЕНЬ" : locale === "es" ? "INTRODUCCIÓN · NIVEL 1" : "INTRODUCTION · LEVEL 1",
@@ -237,6 +262,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         },
         {
           id: "academy-featured-yggdrasil",
+          category: "reiki",
           detailsHint: hints.yggdrasilFull,
           title: locale === "ru" ? "Дао Рейки Иггдрасиль" : "DAO Reiki Yggdrasil",
           subtitle: action.featured,
@@ -251,6 +277,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         },
         {
           id: "academy-featured-tantra-reiki",
+          category: "reiki",
           detailsHint: hints.tantraFull,
           title: locale === "ru" ? "Тантра Рейки" : "Tantra Reiki",
           subtitle: action.featured,
@@ -265,6 +292,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         },
         {
           id: "academy-featured-kundalini-reiki",
+          category: "reiki",
           detailsHint: hints.kundaliniFull,
           title: locale === "ru" ? "Кундалини Рейки" : "Kundalini Reiki",
           subtitle: action.featured,
@@ -279,6 +307,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         },
         {
           id: "academy-featured-temple-studies",
+          category: "temple",
           detailsHint: hints.temple,
           title: locale === "ru" ? "Temple Studies — Храмовые традиции" : locale === "es" ? "Temple Studies — Tradiciones del Templo" : "Temple Studies",
           subtitle: action.featured,
