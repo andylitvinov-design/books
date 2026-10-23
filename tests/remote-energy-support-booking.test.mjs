@@ -92,3 +92,13 @@ test('short sessions never inherit an unapproved price from the owner tariff',()
   assert.throws(()=>normalizeRemoteSupportBooking({...thirty,duration:10,expectedPrice:25},owner,now),/PRICE_NOT_PUBLISHED/)
   assert.throws(()=>normalizeRemoteSupportBooking({...thirty,duration:20,expectedPrice:35},owner,now),/PRICE_NOT_PUBLISHED/)
 })
+
+test('remote service cards and deep links require wizard preferences before consultation submit',async()=>{
+  const {readFileSync}=await import('node:fs')
+  const src=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
+  assert.match(src,/service\.slug === 'remote-energy-support'/)
+  assert.match(src,/\/services\/remote-energy-support\?practitioner=/)
+  assert.match(src,/service\.slug === 'remote-energy-support' && !remoteDraft/)
+  assert.match(src,/Choose your duration and preferred time first/)
+  assert.match(src,/remoteBooking: remoteDraft \? \{/)
+})
