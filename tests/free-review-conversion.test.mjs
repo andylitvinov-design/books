@@ -45,7 +45,7 @@ test("free landings explain benefits before closing with one short capture", () 
   assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /kind === "situation" \? <div className=\{styles\.videoWrap\}/,
-    "Generic overview video is retained for the written-review service");
+    "Owner-selected constellation video is present on the written-review landing");
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
