@@ -29,6 +29,7 @@ const copy = {
     google: "Continue with Google", googleBusy: "Connecting Google…",
     googleReady: "Google email verified.",
     googleConsent: "To send via Google, first agree to a personal reply in the checkbox above.",
+    googleNote: "To keep your note, send with email or phone. For Google, clear the note first.",
     googleSubmitNote: "After Google verifies your email, your request is submitted automatically. No marketing.",
     googleQuickNote: "Google fills your email. Tap Send to register the request.",
     googleError: "Google sign-in is unavailable. You can leave a contact without an account.",
@@ -61,6 +62,7 @@ const copy = {
     google: "Продолжить с Google", googleBusy: "Подключаем Google…",
     googleReady: "Email Google подтверждён.",
     googleConsent: "Для отправки через Google сначала согласитесь на личный ответ галочкой выше.",
+    googleNote: "Чтобы не потерять комментарий, отправьте заявку через email или телефон. Для Google сначала очистите комментарий.",
     googleSubmitNote: "После подтверждения email через Google заявка отправится автоматически. Без рассылок.",
     googleQuickNote: "Google заполнит email. Нажмите «Отправить», чтобы зарегистрировать заявку.",
     googleError: "Вход через Google недоступен. Можно оставить контакт без аккаунта.",
@@ -93,6 +95,7 @@ const copy = {
     google: "Continuar con Google", googleBusy: "Conectando Google…",
     googleReady: "Correo de Google verificado.",
     googleConsent: "Para enviar con Google, acepta primero la respuesta personal en la casilla de arriba.",
+    googleNote: "Para conservar tu nota, envía por correo o teléfono. Borra la nota antes de usar Google.",
     googleSubmitNote: "Tras verificar tu correo con Google, se enviará la solicitud automáticamente. Sin publicidad.",
     googleQuickNote: "Google rellenará tu correo. Pulsa Enviar para registrar la solicitud.",
     googleError: "Google no está disponible. Puedes dejar tu contacto sin cuenta.",
@@ -304,6 +307,12 @@ export function ContactChannelChooser({
       panelRef.current?.querySelector<HTMLInputElement>("[data-reply-consent]")?.focus();
       return;
     }
+    if (description.trim()) {
+      // Never silently discard a private note on a full-page OAuth round trip.
+      // We do not save it in URLs, browser session storage or Google payloads.
+      setError(c.googleNote);
+      return;
+    }
     setGoogleBusy(true);
     setError("");
     try {
@@ -421,7 +430,7 @@ export function ContactChannelChooser({
               {googleBusy ? c.googleBusy : c.google}
             </button>}
             {(!quick || !googleReady) && <small className={styles.privateNote}>{quick ? c.googleQuickNote : c.googleSubmitNote}</small>}
-            {error === c.googleConsent && <p className={styles.error} role="alert">{error}</p>}
+            {(error === c.googleConsent || error === c.googleNote) && <p className={styles.error} role="alert">{error}</p>}
             {googleReady && method === "email" && <p className={styles.googleReady} role="status">{quick ? c.quickReady : c.googleReady}</p>}
             {(!quick || !googleReady) && <p className={styles.separator}><span>{c.divider}</span></p>}
             {!quick && <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
@@ -486,7 +495,7 @@ export function ContactChannelChooser({
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick ? c.quickSubmit : c.submit)}
             </button>
-            {error && error !== c.googleConsent && <p className={styles.error} role="alert">{error}</p>}
+            {error && error !== c.googleConsent && error !== c.googleNote && <p className={styles.error} role="alert">{error}</p>}
           </form>
         ) : (
           <>
