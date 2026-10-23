@@ -120,7 +120,9 @@ test('the admin entry redirects guests and shows daily practitioner actions afte
 
   assert.match(dashboard, /requireAdminRequest/)
   assert.match(dashboard, /redirect\('\/admin\/login'\)/)
-  assert.match(dashboard, /PractitionerCabinet/)
+  // The former /admin entry deliberately routes authenticated users to the
+  // single private practice cockpit; no duplicate old dashboard is rendered.
+  assert.match(dashboard, /redirect\('\/'\+locale\+'\/app\/practice'\)/)
   assert.match(cabinet, /Practitioner Cabinet/)
   assert.match(cabinet, /Кабинет практика/)
   assert.match(cabinet, /\/admin\/consultations\/new/)
