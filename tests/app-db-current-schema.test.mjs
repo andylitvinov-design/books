@@ -16,7 +16,8 @@ test('current isolated fixture keeps loopback, empty-database and least-privileg
 test('exact current schema dependencies precede their consumers and synthetic login', () => {
   const position = name => { const index = setup.indexOf(name); assert.ok(index > 0, name); return index }
   assert.ok(position('20261005164140_hh_master_network_r2.sql') < position('20261019121144_hh_practitioner_request_messages_20261019.sql'))
-  assert.ok(position('20261019121144_hh_practitioner_request_messages_20261019.sql') < position('20261019180000_hh_client_message_push_optin.sql'))
+  assert.ok(position('20261019121144_hh_practitioner_request_messages_20261019.sql') < position('20261019174312_hh_practitioner_request_read_state_20261019.sql'))
+  assert.ok(position('20261019174312_hh_practitioner_request_read_state_20261019.sql') < position('20261019180000_hh_client_message_push_optin.sql'))
   assert.ok(position('20261013170000_hh_opt_in_push_notifications.sql') < position('20261019180000_hh_client_message_push_optin.sql'))
   assert.ok(position('create schema storage;') < position('client-delivery-sessions-20261015.sql'))
   assert.ok(position('client-delivery-sessions-20261015.sql') < position('20261020192118_hh_report_engagement_opt_in_20261020.sql'))

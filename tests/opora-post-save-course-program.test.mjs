@@ -23,12 +23,12 @@ async function press(h,label){
   await h.settle()
 }
 const words={
-  en:{next:'Continue',save:'Save my practice',receipt:'Your moment is saved',
+  en:{next:'Continue',save:'Save my practice',receipt:'Congratulations! Lesson 1 complete!',
     audio:'Relax with waves',start:"See what's next",week1:'Week 1: Find your supports',week2:'Week 2: Make it your own',
-    nextTitle:'Your next small step',map:'My course map',finished:'Your 14 days are complete',habit:'Keep OPORA close',configure:'Set it up',later:'Not now'},
-  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Ваш момент сохранён',
+    nextTitle:'Your complete 14-day journey',map:'My course map',finished:'Your 14 days are complete',habit:'Keep OPORA close',configure:'Set it up',later:'Not now'},
+  ru:{next:'Продолжить',save:'Сохранить мою практику',receipt:'Поздравляем! Урок 1 пройден!',
     audio:'Послушать волны',start:'Посмотреть, что дальше',week1:'Первая неделя: найти опору',
-    week2:'Вторая неделя: свой опыт',nextTitle:'Следующий маленький шаг',
+    week2:'Вторая неделя: свой опыт',nextTitle:'Ваш путь из 14 дней',
     map:'К карте курса',finished:'Ваши 14 дней позади',habit:'ОПОРА всегда под рукой',configure:'Настроить',later:'Не сейчас'},
 }
 test('confirmed Day 1 save leads to programme, commitment, optional phone setup, then tomorrow',async()=>{
@@ -41,18 +41,20 @@ test('confirmed Day 1 save leads to programme, commitment, optional phone setup,
     assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
     assert.match(textOf(f.h.tree),new RegExp(w.receipt))
     assert.equal(f.finishCount,0)
-    await press(f.h,w.audio)
+    assert.equal(findButton(f.h.tree,w.audio),undefined,'No duplicate post-save ocean step')
     await press(f.h,w.start)
-    assert.match(textOf(f.h.tree),new RegExp(w.week1))
-    for(let day=1;day<=7;day++)assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
-    const one=nodes(f.h.tree).find(n=>n.props?.['data-opora-program-week']==='1')
-    assert.ok(one)
-    await press(f.h,w.next)
-    assert.match(textOf(f.h.tree),new RegExp(w.week2))
-    for(let day=8;day<=14;day++)assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
-    await press(f.h,w.next)
     assert.match(textOf(f.h.tree),new RegExp(w.nextTitle))
-    assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(2,locale).practice))
+    const path=nodes(f.h.tree).find(n=>n.type?.name==='OporaCoursePath')
+    assert.ok(path)
+    const map=path.type(path.props)
+    assert.equal(map.props['data-opora-course-map'],'all-14-days')
+    assert.match(textOf(map),new RegExp(w.week1))
+    assert.match(textOf(map),new RegExp(w.week2))
+    assert.equal(nodes(map).filter(n=>n.props?.['data-opora-journey-day']).length,14)
+    for(let day=1;day<=14;day++){
+      assert.ok(textOf(map).includes(oporaExperienceDay(day,locale).title))
+      assert.ok(textOf(map).includes(oporaExperienceDay(day,locale).practice))
+    }
     await press(f.h,"I'm committed")
     assert.match(textOf(f.h.tree),new RegExp(w.habit))
     assert.ok(findButton(f.h.tree,w.configure),'Setup must require explicit opt in')
@@ -80,9 +82,11 @@ test('Days 2-13 show the real next lesson after saving; Day 14 shows completion,
     await press(f.h,w.save)
     assert.equal(f.saved.length,1)
     assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
-    await press(f.h,w.audio)
+    assert.equal(findButton(f.h.tree,w.audio),undefined,'No duplicate post-save ocean step')
     await press(f.h,w.start)
-    const rendered=textOf(f.h.tree)
+    const path=nodes(f.h.tree).find(n=>n.type?.name==='OporaCoursePath')
+    assert.ok(path)
+    const rendered=textOf(path.type(path.props))
     if(day===14){
       assert.match(rendered,new RegExp(w.finished))
       assert.doesNotMatch(rendered,/Day 15/)
@@ -104,16 +108,21 @@ test('declining the first lesson phone reminder keeps the lesson saved and still
   for(let i=0;i<10;i++)await press(f.h,w.next)
   await press(f.h,'I managed a little')
   await press(f.h,w.save)
-  await press(f.h,w.audio)
+  assert.equal(findButton(f.h.tree,w.audio),undefined)
   await press(f.h,w.start)
-  await press(f.h,w.next)
-  await press(f.h,w.next)
   await press(f.h,"I'm committed")
   assert.match(textOf(f.h.tree),/Keep OPORA close/)
+  assert.equal(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']),false)
+  await press(f.h,'Back')
+  assert.ok(nodes(f.h.tree).some(n=>n.type?.name==='OporaCoursePath'),'Back still returns to the map')
+  assert.equal(f.saved.length,1)
+  await press(f.h,"I'm committed")
   await press(f.h,w.later)
+  assert.equal(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']),false,'Declining never opens device setup')
   assert.match(textOf(f.h.tree),/See you tomorrow!/)
   assert.equal(f.saved.length,1)
   await press(f.h,w.map)
   assert.equal(f.finishCount,1)
   f.h.unmount()
 })
+

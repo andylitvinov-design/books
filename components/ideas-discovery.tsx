@@ -8,6 +8,7 @@ import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
 import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
+import { rotateIdeasPreviewAphorisms } from "@/lib/ideas-preview-rotation.mjs";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -303,7 +304,7 @@ function AphorismTiles({ items, locale, heading }: {
       <h3 className={styles.aphorismHeading}><Quote size={24} aria-hidden="true" />{heading}</h3>
       <ol className={styles.aphorisms}>
         {items.map((item, index) => (
-          <li key={item.id}>
+          <li key={item.id} data-ideas-aphorism-id={item.id}>
             <span className={styles.number} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
             <div className={styles.aphorismBody}>
               <p>{item.text}</p>
@@ -395,6 +396,11 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const [error, setError] = useState(false);
   const [attachmentError, setAttachmentError] = useState(false);
   const [visibleAphorisms, setVisibleAphorisms] = useState(3);
+  // Stable SSR example for hydration; a fresh, nonrepeating set is chosen on the client.
+  const [previewAphorisms, setPreviewAphorisms] = useState(() =>
+    getIdeasAphorismMatches("growth", locale, "resources").slice(0, 3));
+  const [previewReady, setPreviewReady] = useState(false);
+  const previewLocaleRef = useRef<PublicLocale | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [openOffer, setOpenOffer] = useState<Offer | null>(null);
   const [activeMode, setActiveMode] = useState<Mode>("dao");
@@ -403,6 +409,14 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const [daoReadingError, setDaoReadingError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Only public quote IDs are retained; the visitor's question never leaves React memory.
+    if (previewLocaleRef.current === locale) return;
+    previewLocaleRef.current = locale;
+    setPreviewAphorisms(rotateIdeasPreviewAphorisms(locale));
+    setPreviewReady(true);
+  }, [locale]);
 
   function choose(mode: Mode) {
     setActiveMode(mode);
@@ -688,9 +702,9 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           {result.mode !== "dao" ? <p className={styles.note}>{result.mode === "aphorisms" ? answerCopy.aphorismNote : answerCopy.personalNote}</p> : null}
         </div>
       ) : exampleHexagram ? (
-        <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}>
-          <AphorismTiles items={getIdeasAphorismMatches("growth", locale, "resources").slice(0, 3)}
-            locale={locale} heading={t.sampleAphorisms} />
+        <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}
+          data-ideas-preview-ready={previewReady ? "" : undefined}>
+          <AphorismTiles items={previewAphorisms} locale={locale} heading={t.sampleAphorisms} />
           <DaoInsightPanel entry={exampleHexagram} locale={locale} topic="resources" example />
           <p className={styles.note}>{t.previewNote}</p>
           <DaoOfferCards locale={locale} openOffer={openOffer}

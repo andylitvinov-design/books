@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
@@ -124,7 +125,8 @@ test('day one restores five opening screens and all days add untracked support a
       // Skipping the optional mood choice is represented as null, never a fabricated feeling.
       assert.equal(f.payload.welcomeFeeling,null)
     }
-    assert.match(textOf(h.tree),new RegExp(d.saved))
+    assert.equal(nodes(h.tree).filter(n=>n.props?.['data-opora-lesson-outro']==='saved').length,1)
+    assert.equal(textOf(nodes(h.tree).find(n=>n.type==='h2')).trim(),day===14?oporaEndingCopy(lang).congratsFinal:oporaEndingCopy(lang).congratsTitle.replace('{day}',String(day)))
     assert.ok(textOf(h.tree).includes(options[0].label),'Confirmed receipt shows the exact selected step')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
     assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
@@ -132,7 +134,9 @@ test('day one restores five opening screens and all days add untracked support a
     await click(h,lang==='ru'?'Посмотреть, что дальше':"See what's next")
     // A single long route replaces the duplicated 3-day teaser and two
     // disconnected weekly lists. All 14 previews remain visible and read-only.
-    const map=nodes(h.tree).find(n=>n.props?.['data-opora-course-map']==='all-14-days')
+    const path=nodes(h.tree).find(n=>n.type?.name==='OporaCoursePath')
+    assert.ok(path,'Current player must render its real roadmap component')
+    const map=path.type(path.props)
     assert.ok(map,'The whole route must be visible after a confirmed save')
     const cards=nodes(map).filter(n=>n.props?.['data-opora-journey-day']!==undefined)
     assert.equal(cards.length,14,'All 14 days in one scrollable path')
@@ -290,7 +294,7 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   assert.match(server,/oporaOpening/)
   assert.match(server,/as-5\.6-five-moments-v1/)
   assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input\.visitedSlideKeys\)/)
-  assert.match(today,/data\?\.lesson\?\.version===COURSE_ANTISTRESS_SKILLS_V7/)
+  assert.match(today,/playerData\?\.lesson\?\.version===COURSE_ANTISTRESS_SKILLS_V7/)
   assert.match(today,/<OporaExperiencePlayer/)
   assert.match(today,/<OporaV6SlidePlayer/)
   assert.match(css,/100dvh/)
@@ -309,3 +313,4 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
     assert.equal(verifyCourseSlideVisitOrder(buildCourseSlides(old),OPORA_EXPERIENCE_PRE_SAVE_KEYS),false)
   }
 })
+
