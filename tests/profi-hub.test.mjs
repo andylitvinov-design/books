@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { getCompactNavigation, getSiteNavigation, activeCompactNavigationId } from "../lib/site-navigation-model.js";
-import { hasSpanishCounterpart, publicCounterpart } from "../lib/public-locales.ts";
 
 const read = file => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 const page = read("app/[locale]/pro/page.tsx");
@@ -31,7 +30,7 @@ test("bottom navigation and hamburger share Pro and active route, without losing
   }
   assert.match(bottom, /getCompactNavigation\(locale\)/);
   assert.match(icons, /pro: GraduationCap/);
-  assert.match(read("app/holistic-house-home.css"), /grid-template-columns:repeat\(7/);
+  assert.match(read("app/holistic-house-home.css"), /grid-template-columns:\s*repeat\(7/);
 });
 
 test("learning and practitioner branches use existing real workflows and transparent promises", () => {
