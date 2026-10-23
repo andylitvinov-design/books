@@ -49,14 +49,22 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
   }
   const masters: EnergySupportMaster[] = records.flatMap((record) =>
     record.services
-      .filter((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual")
+      .filter((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual" && service.status === "published")
       .map((service) => ({
         slug: record.slug,
         name: record.profile.displayName || record.profile.name || service.practitionerName,
         title: record.profile.professionalTitle || "",
         photo: record.profile.photoPath || "",
         serviceId: service.id,
-        methods: service.methods?.length ? service.methods : ["Reiki / energywork"],
+        methods: service.methods?.length ? service.methods : ["Remote support"],
+        bio: record.profile.shortBio || "",
+        languages: service.languages || [],
+        currency: service.currency || "",
+        priceOptions: service.priceOptions?.length
+          ? service.priceOptions
+          : ([10, 20, 30, 60].includes(service.durationMinutes || 0) &&
+             service.confirmedPrice != null && service.pricingMode !== "contact" && service.pricingMode !== "free"
+              ? [{ duration: service.durationMinutes as 10 | 20 | 30 | 60, price: service.confirmedPrice }] : []),
       }))
   );
   return (
