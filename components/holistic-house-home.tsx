@@ -74,7 +74,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </header>
 
       <HomeSectionCarousel locale={locale} />
-      <HomeMasterPath locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
       <HomePersonalSpaceCard locale={locale} />
@@ -160,6 +159,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </section>
 
       <HomepageContactCta locale={locale} />
+      <HomeMasterPath locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} prefetch={false}>Holistic House</Link>

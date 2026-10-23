@@ -11,6 +11,16 @@ test("EN RU ES home keep one consistent place for five complete category screens
   const es = read("app/es/page.tsx");
   for (const home of [enRu, es]) {
     assert.match(home, /<HomeFeaturedWorkspace locale=/);
+    assert.match(home, /<HomeMasterPath locale=/);
+    const ordered = ["HomeSectionCarousel", "HomeFreeDiagnosisBanner",
+      "HomeConversationGuide", "HomePersonalSpaceCard", "HomeFeaturedWorkspace",
+      "HomepageTopicJourneys", "HomeMoreDisclosure", "HomeMasterPath"];
+    let previous = -1;
+    for (const name of ordered) {
+      const position = home.indexOf("<" + name);
+      assert.ok(position > previous, "Home preserves section order: " + name);
+      previous = position;
+    }
   }
   assert.match(feature, /type ModuleKey = "tests" \| "courses" \| "services" \| "learning" \| "master"/);
   assert.match(feature, /moduleIds: ModuleKey\[\] = \["tests", "courses", "services", "learning", "master"\]/);
