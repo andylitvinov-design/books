@@ -23,7 +23,7 @@ const copy={
     retry:'Reload session',close:'Exit session',unsaved:'You have an unsaved answer. Leave without saving it?',
     question:'QUESTION',of:'OF',back:'Back',next:'Save & continue',finish:'Save & finish',skip:'Skip this question',
     hint:'Or type and edit your answer',placeholder:'My answer…',required:'Write at least a few words before continuing.',
-    stopMic:'Stop dictation and review the recognized text before saving.'
+    stopMic:'Stop dictation and review the recognized text before saving.',
     saving:'Saving…',saved:'Saved in your private cabinet',change:'You can change your answer before finishing.',
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
     noAnswer:'Skipped',history:'Earlier private sessions',historyItem:'Previous session',
@@ -45,7 +45,7 @@ const copy={
     retry:'Обновить сессию',close:'Закрыть сессию',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',
     question:'ВОПРОС',of:'ИЗ',back:'Назад',next:'Сохранить и далее',finish:'Сохранить и завершить',skip:'Пропустить вопрос',
     hint:'Или напишите и отредактируйте ответ',placeholder:'Мой ответ…',required:'Напишите хотя бы несколько слов, прежде чем продолжить.',
-    stopMic:'Остановите микрофон и проверьте распознанный текст перед сохранением.'
+    stopMic:'Остановите микрофон и проверьте распознанный текст перед сохранением.',
     saving:'Сохраняем…',saved:'Сохранено в личном кабинете',change:'До завершения ответ можно изменить.',
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
     noAnswer:'Пропущено',history:'Предыдущие личные сессии',historyItem:'Прошлая сессия',
@@ -66,7 +66,7 @@ const copy={
     retry:'Actualizar sesión',close:'Salir',unsaved:'Tu respuesta no está guardada. ¿Salir?',
     question:'PREGUNTA',of:'DE',back:'Atrás',next:'Guardar y seguir',finish:'Guardar y terminar',skip:'Saltar pregunta',
     hint:'O escribe y edita tu respuesta',placeholder:'Mi respuesta…',required:'Escribe algunas palabras.',
-    stopMic:'Detén el micrófono y revisa el texto antes de guardar.'
+    stopMic:'Detén el micrófono y revisa el texto antes de guardar.',
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
     history:'Sesiones anteriores',historyItem:'Sesión anterior',share:'No enviamos tus respuestas a otras personas.',
