@@ -77,6 +77,7 @@ const actionCopy = {
     all: 'Show all options',
     selected: 'Showing:',
     buttons: { test: 'Take a test', advice: 'Get advice', course: 'Take a course', session: 'Get a consultation' },
+    shortButtons: { test: 'Test', advice: 'Advice', course: 'Course', session: 'Consult' },
     adviceKicker: 'FREE · PERSONAL GUIDANCE',
     adviceTitle: 'Get a free written review',
     adviceDetail: 'Describe your question in a short form for a personal written response. No session is booked automatically.',
@@ -87,6 +88,7 @@ const actionCopy = {
     all: 'Все варианты',
     selected: 'Показано:',
     buttons: { test: 'Пройти тест', advice: 'Получить совет', course: 'Пройти курс', session: 'Получить консультацию' },
+    shortButtons: { test: 'Тест', advice: 'Совет', course: 'Курс', session: 'Сессия' },
     adviceKicker: 'БЕСПЛАТНО · ЛИЧНЫЙ ОТВЕТ',
     adviceTitle: 'Бесплатный письменный разбор',
     adviceDetail: 'Опишите свой запрос в короткой форме, чтобы получить личный письменный ответ. Встреча не бронируется автоматически.',
@@ -97,6 +99,7 @@ const actionCopy = {
     all: 'Todas las opciones',
     selected: 'Mostrando:',
     buttons: { test: 'Hacer un test', advice: 'Recibir orientación', course: 'Hacer un curso', session: 'Solicitar una consulta' },
+    shortButtons: { test: 'Test', advice: 'Consejo', course: 'Curso', session: 'Consulta' },
     adviceKicker: 'GRATIS · ORIENTACIÓN PERSONAL',
     adviceTitle: 'Revisión escrita gratuita',
     adviceDetail: 'Comparte tu pregunta en un formulario breve para recibir una respuesta personal. No se reserva una cita automáticamente.',
@@ -767,10 +770,10 @@ export function DirectionOffers({ locale, journey, suggestions }: {
         {actionIds.map(id => {
           const Icon = actionIcons[id]
           return <button type="button" key={id} className={styles.actionChip}
-            data-direction-intent={id} aria-pressed={intent===id}
+            data-direction-intent={id} aria-label={action.buttons[id]} aria-pressed={intent===id}
             aria-controls="hh-direction-sections"
             onClick={()=>selectAction(intent===id ? null : id)}>
-            <Icon size={17} aria-hidden="true"/><span>{action.buttons[id]}</span>
+            <Icon size={17} aria-hidden="true"/><span className={styles.actionFull}>{action.buttons[id]}</span><span className={styles.actionShort} aria-hidden="true">{action.shortButtons[id]}</span>
           </button>
         })}
       </div>
