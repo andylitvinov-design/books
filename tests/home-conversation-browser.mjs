@@ -363,7 +363,7 @@ try {
             await route.fulfill({ status: 201, contentType: "application/json",
               body: JSON.stringify({ saved: true }) });
           });
-          await question.fill("unfamiliar qwerty zzxt please");
+          await question.fill("Непонятные жужжалки и абракадабра");
           await dialog.getByRole("button", { name: scenario.send }).click();
           await expect(guide.locator('[role="log"]')).toContainText("Я пока не совсем понял");
           const optin = guide.locator("[data-home-guide-quality-consent] input");
