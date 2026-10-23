@@ -1685,8 +1685,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     <summary><MessageCircle size={17} aria-hidden="true" />{t.finalContactHeading}</summary>
                     <section className={styles.finalContact} data-reiki-personal-contact
                       aria-label={t.finalContactHeading}>
-                    <p>{t.finalContactNote}</p>
-                    <div className={styles.finalContactActions}>
+                      <p>{t.finalContactNote}</p>
+                      <div className={styles.finalContactActions}>
                       <a className={styles.finalContactLink} href={reikiWhatsAppUrl}
                         target="_blank" rel="noopener noreferrer">
                         WhatsApp <ExternalLink size={16} aria-hidden="true" />
@@ -1695,7 +1695,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                         target="_blank" rel="noopener noreferrer">
                         Telegram <ExternalLink size={16} aria-hidden="true" />
                       </a>
-                    </div>
+                      </div>
                     </section>
                   </details>
                   <section className={styles.finalSnapshot} data-reiki-learning-highlights>
@@ -1706,7 +1706,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     {highlights.length ? <ul className={styles.highlights}>
                       {highlights.map((point, index) => <li key={index}>{point}</li>)}
                     </ul> : <p>{locale === "ru" ? "Заметки можно добавить позже." : "You can add notes later."}</p>}
-                  </section>}
+                  </section>
                   <details className={styles.finalDisclosure} data-reiki-course-journal>
                     <summary><BookOpen size={17} aria-hidden="true" />{t.summary}</summary>
                     <div className={styles.finalDisclosureBody}>
