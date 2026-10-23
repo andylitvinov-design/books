@@ -554,6 +554,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </div>}
         {activePanel==='events'&&<PracticeEvents locale={locale} accountId={accountId} />}
 
+        {activePanel==='clients'&&isOwner&&
+          <Link href="/admin/personal-support" className="hh-practice-monthly-support-link" data-monthly-support-owner-link>
+            {locale==='ru'?'Месячное сопровождение · €200 — клиенты и встречи':locale==='es'?'Acompañamiento mensual · 200 € — clientes y sesiones':'Monthly support · €200 — clients and sessions'}
+            <ChevronRight aria-hidden="true"/>
+          </Link>}
         {activePanel==='clients'&&
           <PractitionerClientProfiles items={requests} services={services}
             practitionerTasks={data.practitionerTasks||[]}
