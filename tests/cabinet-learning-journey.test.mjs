@@ -104,6 +104,9 @@ test('journey is FIRST in signed-in Profile, never duplicated in reports or gues
   assert.match(journey, /materialTab=courses/)
   assert.match(journey, /От первых открытий/)
   assert.match(journey, /From your first discoveries/)
+  assert.match(journey, /Tu camino/)
+  assert.match(journey, /Una solicitud no confirma una cita/)
+  assert.match(journey, /locale === 'es' \? 'es' : 'en'/)
 })
 
 test('all five journey headers stay visible, while actions expand below the selected header', () => {
