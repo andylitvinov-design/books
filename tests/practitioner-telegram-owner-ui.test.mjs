@@ -94,5 +94,7 @@ test('manual owner report does not require paid or free model credentials',()=>{
  assert.match(send,/result.status==='partially_accepted'/)
  assert.match(page,/council_partial:/)
  assert.match(page,/Реальные статусы Gemini и Mistral/)
+ assert.doesNotMatch(page,/another day's recovery/)
+ assert.match(page,/recovery of another date is still unconfirmed/)
  assert.doesNotMatch(send,/modelSettings\(|council_missing_keys|GEMINI_FREE_TIER_CONFIRMED/)
 })
