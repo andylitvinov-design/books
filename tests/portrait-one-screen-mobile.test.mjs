@@ -11,8 +11,8 @@ test('only private Reports compresses the portrait between both green menus', ()
   assert.match(mobile, /@media\(max-width:620px\)/)
   assert.ok(mobile.includes(scoped))
   assert.ok(mobile.includes('.modelStage:has(.portraitRadar)'))
-  assert.match(mobile, /height:clamp\(248px,34svh,284px\)/)
-  assert.match(mobile, /aspect-ratio:auto/)
+  assert.match(mobile, /width:min\(100%,clamp\(229px,31\.38svh,262px\)\)/)
+  assert.match(mobile, /aspect-ratio:360 \/ 390/)
   assert.match(mobile, /height:220%!important/)
   assert.match(mobile, /transform:translate\(-80%,-50%\)/)
   // Scoring, source values and links are not replaced by layout fixtures.
@@ -28,7 +28,7 @@ test('320–430px phones have touch-sized upper and lower menus on short screens
   assert.match(button, /min-height:44px/)
   assert.match(button, /flex-direction:row/)
   for (const height of [550, 667, 768, 844, 932]) {
-    const stage = Math.max(248, Math.min(.34 * height, 284))
+    const stage = Math.min(262, Math.max(229, .3138 * height)) * 390 / 360
     const estimatedMenusAndStage = 44 + stage + 44 + 19 // picker padding/gaps
     assert.ok(estimatedMenusAndStage <= 395,
       `portrait controls exceed compact mobile budget at ${height}px: ${estimatedMenusAndStage}`)
