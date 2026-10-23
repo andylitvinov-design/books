@@ -138,7 +138,6 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
   const completed = ready ? journey.steps.filter(step => step.done).length : 0
   const next = ready ? t.stages.find(stage => stage.id === journey.nextId) : null
   const currentIndex = next ? t.stages.findIndex(stage => stage.id === next.id) : 4
-  const currentStage = next || t.stages[4]
   const canAuthor = Boolean(journey?.practitionerStatus)
   const nextHref = next ? getRoute(next.id, lang, canAuthor, journey.freeConsultationServiceId)
     : '/' + lang + '/app/practice'
@@ -179,7 +178,7 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
     </div>}
 
     <ol className={styles.roadmap} aria-label={t.progress} data-journey-visible-steps>
-      {t.stages.map((stage, index) => {
+      {t.stages.map(stage => {
         const info = ready ? journey.steps.find(item => item.id === stage.id) : null
         const done = info?.done === true
         const current = ready && next?.id === stage.id
