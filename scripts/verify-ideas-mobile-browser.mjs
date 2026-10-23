@@ -44,8 +44,8 @@ async function verify(browserType, locale, width) {
     const heroBounds = await hero.boundingBox();
     const headingBounds = await hero.locator("[class*=heading]").first().boundingBox();
     const inputBounds = await hero.locator("#ideas-question").boundingBox();
-    const photo = await hero.evaluate(node => getComputedStyle(node).backgroundImage);
-    assert.ok(photo.includes("ideas-pine-reference.webp"), label + ": image spans first card");
+    const photo = await hero.evaluate(node => getComputedStyle(node, "::before").backgroundImage);
+    assert.ok(photo.includes("ideas-pine-reference.webp"), label + ": vivid image spans first card");
     assert.ok(heroBounds && headingBounds && inputBounds &&
       inputBounds.y > headingBounds.y && inputBounds.y + inputBounds.height <= heroBounds.y + heroBounds.height,
       label + ": question overlays same full-height scenic card");
@@ -53,10 +53,24 @@ async function verify(browserType, locale, width) {
     const testAction = hero.locator("[data-ideas-free-test]");
     const secondary = await testAction.boundingBox();
     assert.ok(primary && secondary && primary.height >= 44 && secondary.height >= 44 &&
-      closeEnough(primary.y, secondary.y), label + ": both first-screen actions accessible");
-    assert.equal(await testAction.getAttribute("href"),
-      "/" + (locale === "es" ? "en" : locale) + "/client?startTests=hh-current-state",
-      label + ": direct, guest-eligible free test (never catalog)");
+      secondary.y >= primary.y + primary.height - 1,
+      label + ": two vertically stacked full-width actions");
+    assert.equal(await testAction.getAttribute("aria-expanded"), "false");
+    await hub.locator("#ideas-question").fill(
+      locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
+    await testAction.tap();
+    const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
+    await filtered.waitFor({ state: "visible" });
+    assert.equal(await testAction.getAttribute("aria-expanded"), "true");
+    assert.equal(await filtered.locator("[data-ideas-test-start]").count(), 3, label + ": real filtered tests");
+    assert.equal(await filtered.locator("[data-ideas-test-start]").first().getAttribute("href"),
+      "/" + (locale === "es" ? "en" : locale) + "/client?startTests=gad-7",
+      label + ": stress selects existing anxiety check");
+    assert.ok(!(await filtered.locator("[data-ideas-more-tests]").getAttribute("href")).includes("ansiedad"),
+      label + ": never leak the private phrase through the address");
+    await testAction.tap();
+    assert.equal(await testAction.getAttribute("aria-expanded"), "false");
+    assert.equal(await hub.locator('[data-ideas-filtered-tests]:visible').count(), 0);
     await hub.locator("[data-ideas-preview]").waitFor({ state: "visible" });
     await hub.locator("[data-ideas-preview-ready]").waitFor({ state: "visible" });
     const previewAphorisms = hub.locator("[data-ideas-preview] [data-ideas-aphorisms] ol li");

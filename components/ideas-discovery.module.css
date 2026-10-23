@@ -429,22 +429,38 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 }
 /* One complete scenic surface: heading, prompt and both CTAs live on the image. */
 .hero {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 18px;
-  min-height: clamp(340px, 32vw, 410px);
-  padding: clamp(19px, 3.2vw, 35px);
+  gap: clamp(20px, 3vw, 32px);
+  min-height: clamp(460px, 37vw, 540px);
+  padding: clamp(18px, 3.2vw, 35px);
   border: 1px solid #e4d4c1;
   border-radius: 20px;
   overflow: hidden;
-  background-color: #efe6da;
-  background-image:
-    linear-gradient(90deg, rgba(255, 250, 242, .95) 0%, rgba(255, 249, 241, .89) 36%, rgba(255, 249, 241, .50) 72%, rgba(255, 249, 241, .30) 100%),
-    url("/images/holistic-house/ideas-pine-reference.webp");
-  background-size: cover, cover;
-  background-position: center, 68% center;
-  background-repeat: no-repeat;
+  background: #f8f0e4;
+}
+/* The artwork stays vivid; separate soft overlays protect readable text.
+   All interactive elements are real HTML, not pixels from a mock-up. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url("/images/holistic-house/ideas-pine-reference.webp") right center / cover no-repeat;
+  filter: saturate(1.48) contrast(1.11) brightness(1.025);
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgba(255, 250, 242, .86), rgba(255, 250, 242, .04) 62%),
+    linear-gradient(90deg, rgba(255, 250, 242, .94) 0%, rgba(255, 250, 242, .72) 32%, rgba(255, 250, 242, .10) 78%, rgba(255, 250, 242, .02) 100%);
 }
 .heading {
   display: block;
@@ -500,7 +516,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 .attach:hover { background:#f5ebe1; }
 .heroActions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 9px;
   margin-top: 9px;
 }
@@ -527,14 +543,41 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 }
 .submit:hover { background:linear-gradient(116deg,#815438,#65422f); }
 .testButton {
-  border: 1px solid #bfa58d;
-  background: rgba(255,251,244,.88);
+  min-height: 58px;
+  border: 1.5px solid #996e51;
+  background: rgba(255,251,244,.92);
   color: #64422e;
   font-weight: 800;
   box-shadow: 0 3px 12px rgba(87,62,44,.08);
+  cursor: pointer;
 }
 .testButton svg { flex: 0 0 auto; }
+.testButton svg:last-child { margin-left: auto; }
+.testButton svg:first-child { margin-right: auto; }
+.testButtonText { display:flex; flex-direction:column; gap:2px; flex:1; }
+.testButtonKicker { font-size:12px; font-weight:550; line-height:1.2; }
+.testButtonText strong { font-size:16px; line-height:1.2; }
 .testButton:hover { background: #fffdf9; border-color: #98755b; }
+.testPicker {
+  width: min(100%, 700px);
+  padding: 13px;
+  border: 1px solid #cdb49c;
+  border-radius: 17px;
+  background: rgba(255, 252, 247, .97);
+  box-shadow: 0 10px 25px rgba(57, 41, 25, .11);
+}
+.testPicker[hidden] { display: none; }
+.testPickerHeading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.testPickerHeading > div { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.testPickerHeading strong { font-size:14px; }
+.testPickerHeading span { font-size:12px; color:#6f5a47; }
+.testPickerClose { width:44px; height:44px; flex:0 0 44px; border:0; border-radius:50%; background:#f5ece2; color:#654a37; cursor:pointer; }
+.testPickerList { list-style:none; padding:0; margin:9px 0 5px; display:grid; gap:5px; }
+.testPickerItem { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:44px; padding:10px 12px; border:1px solid #dfcbb6; border-radius:11px; background:#fffefa; color:#543b2c; text-decoration:none; font-size:13px; font-weight:700; }
+.testPickerItem:hover { background:#f3f8f4; border-color:#91b8ad; }
+.testPickerItem svg { flex-shrink:0; }
+.allMatchingTests { display:inline-flex; align-items:center; gap:6px; min-height:44px; color:#0c6062; font-size:13px; font-weight:750; text-decoration:underline; text-underline-offset:3px; }
+.testPickerNote { margin:4px 0 0; color:#695f56; font-size:11px; line-height:1.45; }
 .privacyDisclosure { color: #5c5148; font-size: 12px; text-shadow: 0 1px rgba(255,253,248,.8); }
 .actions { gap: 8px; margin-top: 10px; }
 .action {
@@ -676,15 +719,12 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 .root :is(button,a,textarea,summary):focus-visible { outline:3px solid #15878b; outline-offset:3px; }
 @media (max-width:760px) {
   .root { padding:7px; border-radius:20px; }
-  .hero {
-    min-height: 337px;
-    padding: clamp(13px, 4vw, 19px);
-    gap: 13px;
-    border-radius: 16px;
-    background-image:
-      linear-gradient(180deg, rgba(255,250,241,.73) 0%, rgba(255,249,241,.88) 47%, rgba(255,250,243,.80) 100%),
-      url("/images/holistic-house/ideas-pine-reference.webp");
-    background-position: center, 66% center;
+  .hero { min-height: 430px; padding: clamp(13px, 4vw, 19px); gap: 20px; border-radius: 16px; }
+  .hero::before { background-position: 66% center; }
+  .hero::after {
+    background:
+      linear-gradient(0deg, rgba(255,250,241,.94) 0%, rgba(255,250,241,.17) 66%, rgba(255,250,241,.10) 100%),
+      linear-gradient(90deg, rgba(255,250,241,.88) 0%, rgba(255,250,241,.59) 44%, rgba(255,250,241,.08) 85%);
   }
   .heading { min-height:0; padding:0; border-radius:0; background:none; }
   .eyebrow { font-size:10px; }
@@ -974,10 +1014,24 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 
 /* Safe iPhone 320px compact layout without cutting CTA text or scenic content. */
 @media (max-width: 360px) {
-  .hero { min-height: 325px; padding: 12px; }
+  .hero { min-height: 410px; padding: 12px; }
   .heading h1 { font-size: 39px; }
   .heading .lead { max-width: 88%; font-size: 12.5px; }
   .heroActions { gap: 6px; }
   .submit, .testButton { padding: 8px 4px; min-height: 50px; font-size: 12px; }
   .heroActions svg { width: 15px; height: 15px; }
+}
+
+/* Two stacked CTAs + the in-place existing-test handoff at small widths. */
+@media (max-width: 760px) {
+  .heroActions { grid-template-columns: minmax(0,1fr); gap:8px; }
+  .submit { min-height:48px; font-size:14px; }
+  .testButton { min-height:56px; padding:8px 13px; font-size:14px; }
+  .testButtonText strong { font-size:15px; }
+  .testPicker { padding:11px; }
+  .testPickerItem { min-height:46px; }
+}
+@media (max-width: 360px) {
+  .hero { min-height:410px; }
+  .submit, .testButton { font-size:13px; }
 }
