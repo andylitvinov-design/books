@@ -1275,3 +1275,24 @@ a.service-home-start-card:hover {
 .service-home-more[open]{padding-bottom:12px}
 .service-home-more[open]>.service-home-hero{max-width:100%;border-radius:16px}
 @media(max-width:760px){.service-home-more{width:calc(100% - 16px)}.service-home-more[open]>.service-home-hero{min-height:0}}
+
+
+/* Sitewide search: maintain a single-line, touch-friendly header at 320–430px. */
+@media (max-width: 767px) {
+  .house-header--services .site-navigation { gap: 4px; }
+  .house-header--services .house-wordmark { font-size: clamp(18px, 5vw, 25px); }
+  .house-header--services .site-navigation > .site-cabinet-entry {
+    min-width: 64px; padding-inline: 7px; font-size: 11px;
+  }
+  .house-header--services .site-language-menu-trigger { padding-inline: 6px; }
+}
+@media (max-width: 359px) {
+  .house-header--services .house-wordmark { font-size: 17px; }
+  .house-header--services .house-wordmark span { display: none; }
+  .house-header--services .site-navigation > .site-cabinet-entry {
+    min-width: 44px; width: 44px; padding: 0;
+  }
+  .house-header--services .site-cabinet-entry__compact { display: none; }
+  .house-header--services .site-cabinet-entry svg { display: block; }
+  .house-header--services .site-main-menu-trigger { width: 40px; min-width: 40px; }
+}
