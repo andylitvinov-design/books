@@ -35,8 +35,8 @@ const owlPath = '/images/holistic-house/gentle-owl.svg'
 assets.set(owlPath,await readFile(new URL('../public/images/holistic-house/gentle-owl.svg',import.meta.url)))
 const browser = await (engineName === 'webkit' ? webkit : chromium).launch()
 try {
-  for (const locale of ['ru', 'en', 'es']) for (const width of [320, 360, 390]) for (const priorHelp of [false, true]) {
-    const context = await browser.newContext({ viewport: { width, height: 844 }, serviceWorkers: 'block' })
+  for (const locale of ['ru', 'en', 'es']) for (const width of [320, 360, 390, 430]) for (const priorHelp of [false, true]) {
+    const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
     const t = words[locale], brief = oporaExperienceGuide(5, locale)
@@ -68,9 +68,13 @@ try {
         }),
         stage: (() => { const node = document.querySelector('[data-opora-experience-first] main');
           return { client: node.clientWidth, scroll: node.scrollWidth } })(),
+        panel: (() => { const node = document.querySelector('[data-opora-current-screen]');
+          return node ? { client: node.clientHeight, scroll: node.scrollHeight } : null })(),
       }))
       assert.ok(bounds.document <= width + 1, `${locale}/${width}/${state}: document overflows`)
       assert.ok(bounds.stage.scroll <= bounds.stage.client + 1, `${locale}/${width}/${state}: stage overflows horizontally`)
+      if (['why','story','options','settle'].includes(state) && bounds.panel)
+        assert.ok(bounds.panel.scroll <= bounds.panel.client + 2, `${locale}/${width}/${state}: teaching step requires vertical scrolling`)
       for (const r of bounds.fixed) assert.ok(r.left >= -1 && r.right <= width + 1 && r.top >= -1 && r.bottom <= bounds.height + 1,
         `${locale}/${width}/${state}: header/footer clipped`)
       await expect(button(t.pause)).toBeVisible()
@@ -162,7 +166,7 @@ try {
       throw error
     } finally { await context.close() }
   }
-  assert.equal(evidence.cases.length, 18)
+  assert.equal(evidence.cases.length, 24)
   console.log(JSON.stringify(evidence, null, 2))
 } finally {
   await writeFile(`${output}/summary.json`, JSON.stringify(evidence, null, 2) + '\n')
