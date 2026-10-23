@@ -2233,35 +2233,7 @@ function PortfolioPage({ data, locale }) {
   }, [])
   useEffect(() => { setRetakeBusy(false); setRetakeError('') }, [accountId, activeTab, locale])
   useEffect(() => { setActiveTab(requestedTab) }, [requestedTab])
-  const [recommendationScrollRequest, setRecommendationScrollRequest] = useState(0)
-  const [analysisScrollRequest, setAnalysisScrollRequest] = useState(0)
-  useEffect(() => {
-    if (!recommendationScrollRequest || activeTab !== 'values') return
-    const frame = window.requestAnimationFrame(() => {
-      const target = document.getElementById('hh-portrait-recommendations')
-      if (!target) return
-      target.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'start',
-      })
-      target.focus({ preventScroll: true })
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [recommendationScrollRequest, activeTab])
-
-  useEffect(() => {
-    if (!analysisScrollRequest) return
-    const frame = window.requestAnimationFrame(() => {
-      const target = document.getElementById('hh-portrait-analyses')
-      if (!target) return
-      target.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'start',
-      })
-      target.focus({ preventScroll: true })
-    })
-    return () => window.cancelAnimationFrame(frame)
-  }, [analysisScrollRequest])
+  const [portraitTab, setPortraitTab] = useState('tests')
   const retakeDefinitions = useMemo(() => {
     const definitions = new Map()
     for (const result of data.results || []) {
@@ -2352,18 +2324,23 @@ function PortfolioPage({ data, locale }) {
         </summary>
         <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
           portrait={buildPsychPortrait(data.results || [])}
-          portraitActions={({ selectedSector, portrait }) =>
+          portraitTab={portraitTab}
+          portraitActions={({ selectedSector, portrait }) => <>
             <PortraitTestQuickActions locale={locale} sector={selectedSector} portrait={portrait}
               entriesByKey={entriesByKey} results={data.results || []}
               runs={data.runs || []} accountId={accountId}
               activeTestPlan={data.activeTestPlan}
-              onAnalyses={() => setAnalysisScrollRequest(current => current + 1)}
-              onRecommendations={() => {
-                chooseView('values')
-                setRecommendationScrollRequest(current => current + 1)
-              }} />} />
+              activeTab={portraitTab} onTabChange={setPortraitTab} />
+            <div id="hh-portrait-panel-analyses" role="tabpanel" className="hh-portrait-inline-panel"
+              aria-labelledby="hh-portrait-tab-analyses" hidden={portraitTab !== 'analyses'}>
+              {portraitTab === 'analyses' && <PortraitAnalyses results={data.results || []} locale={locale} />}
+            </div>
+            <div id="hh-portrait-panel-recommendations" role="tabpanel" className="hh-portrait-inline-panel"
+              aria-labelledby="hh-portrait-tab-recommendations" hidden={portraitTab !== 'recommendations'}>
+              {portraitTab === 'recommendations' && <PortraitRecommendations results={data.results || []} locale={locale} />}
+            </div>
+          </>} />
       </details>
-      <PortraitAnalyses results={data.results || []} locale={locale} />
       {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
       <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
       <nav className="hh-insights-view-tabs" role="tablist"
@@ -2525,7 +2502,6 @@ function PortfolioPage({ data, locale }) {
       )}
 
       {allGroups.length > 0 && <p className="hh-insights-scale-note">{ru ? 'Показатели относятся к отдельным шкалам, а не к проценту здоровья.' : 'Scores reflect individual scales, not an overall health percentage.'}</p>}
-      <PortraitRecommendations results={data.results || []} locale={locale} />
       {allGroups.length > 0 && (
         <details className="hh-insights-export">
           <summary>{ru ? 'Скачать общий отчёт по всем тестам (PDF)' : 'Download a complete PDF report'}</summary>
