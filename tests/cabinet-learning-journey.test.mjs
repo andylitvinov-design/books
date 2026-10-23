@@ -110,7 +110,7 @@ test('all five named and clickable journey steps are ALWAYS visible without open
   const journey = source('components/app/cabinet-journey.jsx')
   const css = source('components/app/cabinet-journey.module.css')
   assert.match(journey, /<ol className=\{styles\.roadmap\}[^>]*data-journey-visible-steps/)
-  assert.match(journey, /t\.stages\.map\(\(stage, index\) =>/)
+  assert.match(journey, /t\.stages\.map\(stage =>/)
   assert.match(journey, /data-journey-stage=\{stage\.id\}/)
   assert.match(journey, /styles\.stepReward/)
   assert.match(journey, /String\(info\.earned\) \+ '\/' \+ String\(info\.reward\) \+ ' XP'/)
