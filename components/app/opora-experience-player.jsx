@@ -589,18 +589,26 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
         <section className={styles.panel+' '+(
           moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
-        )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')} aria-live="off">
+        )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')}
+          aria-live="off" data-opora-current-screen={moment}>
           {inPreview&&<span className={styles.eyebrow}>
             {moment==='habit'?t.habitKicker:t.preview.nextKicker}
             {' · '}{previewIndex+1}/{previewScreens.length}
           </span>}
           {(!receipt||inviteOpen)&&<span className={styles.eyebrow}>
-            {moment==='recap'?c.recapKicker:moment==='invite'?c.inviteKicker:
+            {moment==='recap'?c.recapKicker:
+              moment==='recapPractice'?j.recapPracticeKicker:
+              moment==='recapNext'?j.recapNextKicker:
+              moment==='recapFeedback'?j.recapFeedbackKicker:
+              moment==='invite'?c.inviteKicker:
              moment==='welcome'?opening.welcomeKicker:
             moment==='baseline'?opening.baselineKicker:
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
-            moment==='arrive'?t.minute:moment==='support'?t.supportKicker:moment==='practice'?(cycle.day===1?t.coreKicker:t.stepLabel):
+            moment==='arrive'?t.minute:moment==='support'?t.supportKicker:
+             moment==='why'?j.whyKicker:moment==='story'?j.storyKicker:
+             moment==='options'?j.optionsKicker:moment==='settle'?j.settleKicker:
+             moment==='practice'?(cycle.day===1?t.coreKicker:t.stepLabel):
             moment==='feel'?t.feel:moment==='affirmation'?(cycle.day===1?opening.thoughtKicker:t.quote):t.keep}
           </span>}
           <h2 ref={heading} tabIndex={-1} className={styles.title}>{title}</h2>
@@ -672,19 +680,34 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='support'&&<div className={styles.supportMessage} data-opora-daily-support={cycle.day}>
              <p className={styles.supportBody}>{support?.body}</p>
            </div>}
-           {moment==='practice'&&<>
+           {moment==='why'&&!neutralSupport&&<p className={styles.lead}>{depth?.why}</p>}
+          {moment==='story'&&!neutralSupport&&<>
+            <p className={styles.lead}>{depth?.scenario}</p>
+            <p className={styles.soft}>{j.storyNote}</p>
+          </>}
+          {moment==='options'&&!neutralSupport&&<>
+            <p className={styles.lead}>{j.optionsLead}</p>
+            <p className={styles.gentleVariant}>{depth?.alternative}</p>
+          </>}
+          {moment==='settle'&&!neutralSupport&&<>
+            <p className={styles.lead}>{j.settleLead}</p>
+            <p className={styles.soft}>{j.settleNote}</p>
+          </>}
+          {moment==='practice'&&<>
             {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&
               <div className={styles.coreWhy} data-opora-core-purpose="true">
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
-            <div className={styles.inlinePracticeAudio} data-opora-inline-practice-audio="true">
-              <div className={styles.meditationGuide} data-opora-guided-meditation="true">
-                <strong>{t.meditationTitle}</strong>
-                <ol>{t.meditationSteps.map((instruction,index)=><li key={index}>{instruction}</li>)}</ol>
+            <details className={styles.optionalMeditation} data-opora-inline-practice-audio="true">
+              <summary>{t.meditationTitle}<ChevronDown size={17} aria-hidden="true"/></summary>
+              <div className={styles.inlinePracticeAudio}>
+                <div className={styles.meditationGuide} data-opora-guided-meditation="true">
+                  <ol>{t.meditationSteps.map((instruction,index)=><li key={index}>{instruction}</li>)}</ol>
+                </div>
+                <OporaOceanOutro locale={lang} paused={safety} compact/>
               </div>
-              <OporaOceanOutro locale={lang} paused={safety} compact/>
-            </div>
+            </details>
             <p className={styles.miniLabel}>{cycle.day===1?t.tryPrompt:t.tryAfter}</p>
             <div className={styles.chips} role="group"
               aria-label={cycle.day===1?t.tryPrompt:t.tryAfter}>
@@ -735,17 +758,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 {habitSetupContent||<p className={styles.soft}>{t.habitFallback}</p>}
               </div>}
           </>}
-          {moment==='recap'&&<>
-            <p className={styles.lead}>{c.recapLead}</p>
-            <div className={styles.recapSummary} data-opora-lesson-recap="true">
-              <div className={styles.summaryItem}><span aria-hidden="true">🌿</span>
-                <div><strong>{c.notice}</strong><small>{c.noticeBody}</small></div></div>
-              <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
-                <div><strong>{c.skill}: {dayCopy?.title||t.learn}</strong><small>{practiceGuide}</small></div></div>
-              <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
-                <div><strong>{t.takeaway}</strong><small>{plan||(answers.transfer==='not_planning'?t.noPlan:t.keepText)}</small></div></div>
-            </div>
-            <p className={styles.miniLabel}>{c.question}</p>
+          {moment==='recap'&&<div className={styles.recapSummary} data-opora-lesson-recap="true">
+            <div className={styles.summaryItem}><span aria-hidden="true">🌿</span>
+              <div><strong>{c.notice}</strong><small>{c.noticeBody}</small></div></div>
+          </div>}
+          {moment==='recapPractice'&&<div className={styles.recapSummary}>
+            <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
+              <div><strong>{c.skill}: {dayCopy?.title||t.learn}</strong><small>{practiceGuide}</small></div></div>
+          </div>}
+          {moment==='recapNext'&&<div className={styles.recapSummary}>
+            <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
+              <div><strong>{t.takeaway}</strong><small>{answers.transfer==='planned'?plan:j.noPlan}</small></div></div>
+          </div>}
+          {moment==='recapFeedback'&&<>
             <div className={styles.confidenceChoices} role="group" aria-label={c.question}
               data-opora-lesson-confidence="true">
               {c.choices.map(([value,label])=><button type="button" key={value} disabled={locked}
@@ -796,18 +821,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           <ArrowLeft size={17}/>{t.back}</button>:
         receipt?<button type="button" className={styles.back} disabled={locked}
           onClick={moment==='habit'&&habitSetup?()=>setHabitSetup(false)
-            :inPreview?backFromPreview:()=>setStep(displayScenes.length-1)}>
+            :inPreview?backFromPreview:()=>setStep(flowScenes.length-1)}>
           <ArrowLeft size={17}/>{t.back}
         </button>:<button type="button" className={styles.back}
           onClick={step===0?onClose:back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
         <button type="button" className={styles.primary} disabled={locked}
           onClick={inviteOpen?(onFinish||onClose):
             moment==='habit'?(habitSetup?()=>{setPreviewIndex(-1);setInviteOpen(true)}:()=>setHabitSetup(true)):
-            inPreview?advancePreview:receipt?openPreview:recap?submit:next}>
+            inPreview?advancePreview:receipt?openPreview:
+            moment==='recapFeedback'?(saved?()=>setStep(flowScenes.length):submit):next}>
           {inviteOpen?t.finish:moment==='habit'?(habitSetup?t.next:t.habitConfigure):
             inPreview?(moment==='nextStep'&&cycle.day===1?c.commit:previewIndex===previewScreens.length-1?c.commit:t.next):
-            receipt?t.seeProgram:recap?(saving?t.saving:t.save):t.next}
-          {inviteOpen||recap||(moment==='habit'&&habitSetup)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
+            receipt?t.seeProgram:moment==='recapFeedback'&&!saved?(saving?t.saving:t.save):t.next}
+          {inviteOpen||(moment==='recapFeedback'&&!saved)||(moment==='habit'&&habitSetup)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
         </button>
       </footer>
     </div>
