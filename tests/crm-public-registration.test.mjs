@@ -100,8 +100,8 @@ test('shared course/service chooser requires a reply contact and opt-in; name is
   const view=read('components/contact-channel-chooser.tsx')
   const styles=read('components/contact-channel-chooser.module.css')
   for (const term of ['autoComplete="name"','autoComplete="email"',
-    'contactConsent: consent', 'contact: { displayName:', 'type="checkbox" required',
-    'setConsent(false)','setDisplayName("")','setPhone("")']) {
+    'contactConsent: agreed', 'contact: {', 'type="checkbox" required',
+    'setConsent(quick)','setConsent(true)','setDisplayName("")','setPhone("")']) {
     assert.ok(view.includes(term),term)
   }
   assert.match(read('components/phone-country-input.tsx'),/autoComplete="tel-national"/)
