@@ -28,5 +28,6 @@ jobs:
           node-version: 22
       - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
       - run: npm ci --no-audit --no-fund
-      - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
+      - run: node --test tests/about-testimonial-languages.test.mjs tests/about-page.test.mjs tests/es-about.test.mjs tests/ru-about-video-presentation.test.mjs
+      - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx components/about-testimonial-gallery.tsx components/personal-testimonials.tsx 'app/[locale]/about/page.tsx' app/es/about/page.tsx app/admin/videos/page.tsx
       - run: npx tsc --noEmit
