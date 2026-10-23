@@ -186,6 +186,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const items: AcademyCourseItem[] = [
     {
       id: "academy-free-personal-coaching",
+      detailsHint: locale === "ru" ? "Самостоятельная короткая сессия. Ответы доступны только в вашем кабинете, живой специалист не участвует." : locale === "es" ? "Sesión privada autoguiada, no un coach humano ni una cita. Disponible en inglés." : "A short self-guided, private reflection. No live practitioner, booked meeting or AI messages.",
       title: locale === "ru" ? "Личная коуч-сессия" : locale === "es" ? "Sesión personal de coaching" : "Personal Coaching Session",
       subtitle: locale === "ru" ? "7 ВОПРОСОВ · 10–15 МИНУТ" : locale === "es" ? "7 PREGUNTAS · 10–15 MIN" : "7 QUESTIONS · 10–15 MIN",
       description: locale === "ru"

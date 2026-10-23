@@ -29,14 +29,14 @@ test("Academy home groups free courses, study programs and verified live events 
   assert.ok(services.includes("linear-gradient(121deg,#203450 0%,#283d5c 58%,#483a52 100%)"));
 });
 
-test("EN RU ES course search includes the Egyptian Priesthood alongside the eight existing destinations", () => {
+test("EN RU ES course search includes Personal Coaching Session and existing destinations", () => {
   const hub = read("components/academy-hub.tsx");
   const discovery = read("components/academy-discovery.tsx");
   for (const title of [
     "Find your learning path", "Найдите свою программу обучения", "Encuentra tu ruta de aprendizaje",
   ]) assert.ok(discovery.includes(title), title);
   for (const id of [
-    "academy-free-opora", "academy-featured-principles-energywork", "academy-featured-egypt-priesthood",
+    "academy-free-personal-coaching", "academy-free-opora", "academy-featured-principles-energywork", "academy-featured-egypt-priesthood",
     "academy-free-tantra-introduction", "academy-free-yggdrasil-introduction",
     "academy-featured-yggdrasil", "academy-featured-tantra-reiki",
     "academy-featured-kundalini-reiki", "academy-featured-temple-studies",
@@ -44,7 +44,7 @@ test("EN RU ES course search includes the Egyptian Priesthood alongside the eigh
   assert.match(hub, /courseHref: REIKI_FREE_COURSE_PATH/);
   assert.match(hub, /courseHref: "\/" \+ \(locale === "es" \? "en" : locale\) \+ "\/app\/course\?program=stress"/);
   assert.match(hub, /tantra-reiki-yin-yang-cover\.svg/);
-  assert.equal((hub.match(/free: true/g) || []).length, 5);
+  assert.equal((hub.match(/free: true/g) || []).length, 6);
   assert.match(discovery, /useMemo\(\(\) => items\.filter/);
   assert.match(discovery, /matchesTerms/);
   assert.match(discovery, /role="search"/);
@@ -90,7 +90,7 @@ test("Every Academy course expands a distinct EN/RU/ES explanation and the Reiki
   const metadata = read("app/[locale]/academy/[[...slug]]/page.tsx");
   const discovery = read("components/academy-discovery.tsx");
   const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple"];
-  assert.equal((hub.match(/detailsHint: hints\.[A-Za-z]+/g) || []).length, 8, "Every course needs its own hint");
+  assert.equal((hub.match(/detailsHint:/g) || []).length, 10, "Every course needs a specific explanation");
   for (const key of keys) assert.ok(hub.includes("detailsHint: hints." + key), "Missing course-specific help: " + key);
   for (const example of [
     "Fourteen gentle daily practices", "14 дней коротких практик", "Catorce prácticas breves",

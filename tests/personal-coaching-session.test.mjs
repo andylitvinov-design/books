@@ -50,6 +50,8 @@ test('independent account-encrypted backend with owner-scope RLS; legacy data re
   assert.match(sql,/for update to hh_app_backend[\s\S]*with check\(account_id=/)
   assert.match(sql,/\(select app_private\.account_active\(\)\)/)
   assert.match(old,/hh-business-90-v1/)
+  assert.match(old,/BUSINESS_COURSE_PAUSED/)
+  assert.match(source('lib/business-coaching/program.js'),/BUSINESS_COURSE_INTAKE_PAUSED = true/)
   assert.match(old,/app_private\.business_coaching_programs/)
   assert.doesNotMatch(repo,/app_private\.business_coaching_programs/)
 })

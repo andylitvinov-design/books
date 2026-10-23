@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Check, ChevronLeft, LockKeyhole, MessageCircle, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, LockKeyhole, MessageCircle, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import styles from './personal-coaching.module.css'
@@ -201,7 +201,8 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.line}><Sparkles size={17}/>{t.time}</div>
           <div className={styles.line}><LockKeyhole size={17}/>{t.private}</div>
           {error&&<p className={styles.error} role="alert">{error}</p>}
-          <button type="button" className={styles.primary} disabled={busy} onClick={begin}>{busy?t.saving:t.start}<ArrowRight size={19}/></button>
+          {error&&!state ? <button type="button" className={styles.primary} disabled={busy} onClick={reload}>{t.retry}<ArrowRight size={19}/></button>
+            : <button type="button" className={styles.primary} disabled={busy} onClick={begin}>{busy?t.saving:t.start}<ArrowRight size={19}/></button>}
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
         </div>
         : finished ? <div className={styles.summary} data-coaching-summary>
