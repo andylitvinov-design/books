@@ -10,7 +10,6 @@ import styles from "./psychic-alchemy-intro-video.module.css";
 // Use the stable embed page, NEVER the expiring signed MP4 download URL.
 const VIDEO_ID = existingAboutIntroVideo.heygenId;
 const EMBED_URL = `https://app.heygen.com/embeds/${VIDEO_ID}`;
-const WATCH_URL = `https://app.heygen.com/share/${VIDEO_ID}`;
 
 export function PsychicAlchemyIntroVideo({ video = existingAboutIntroVideo }: { video?: PublishedSiteVideo }) {
   const [active, setActive] = useState(false);
@@ -53,7 +52,6 @@ export function PsychicAlchemyIntroVideo({ video = existingAboutIntroVideo }: { 
         </div>
         <div className={styles.note}>
           <span>AI-assisted video using Andy’s digital twin and voice.</span>
-          <a href={WATCH_URL} target="_blank" rel="noopener noreferrer">Open video <span aria-hidden="true">↗</span></a>
         </div>
       </div>
       {transcript.length > 0 && <details className={styles.transcript}>
