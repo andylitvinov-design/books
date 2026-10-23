@@ -152,6 +152,53 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
     matchingDrafts:true,contactSubmitted:true,thankYouNavigation:true});
 }
 
+// Mock the transport boundaries, never a real Google account or CRM write.
+// Covers the same-tab OAuth round trip, selected paid offer, consent and
+// receipt navigation. True Google provider E2E remains an independent gate.
+async function verifySyntheticGoogleReturn(page, submissions) {
+  const path="/en/academy/reiki/yggdrasil/free-initiation";
+  const fakeGoogle="https://accounts.google.com/hh-qa-oauth-return";
+  await page.route("**/api/app/auth/start",async route=>{
+    const request=JSON.parse(route.request().postData()||"{}");
+    assert.equal(request.continueTo,"enquiry");
+    assert.equal(request.returnPath,path);
+    await route.fulfill({status:200,contentType:"application/json",
+      body:JSON.stringify({redirectUrl:fakeGoogle})});
+  });
+  await page.route(fakeGoogle,async route=>{
+    await route.fulfill({status:302,headers:{location:origin+path+"?hh_enquiry=google"},body:""});
+  });
+  await page.route("**/api/app/auth/contact-profile",async route=>{
+    await route.fulfill({status:200,contentType:"application/json",
+      body:JSON.stringify({email:"google-qa@example.test",displayName:"Google QA"})});
+  });
+  try {
+    await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+    await page.locator('[data-yggdrasil-form] button[data-intent="personal"]').click();
+    const chooser=page.locator('[data-yggdrasil-form] [data-contact-channel-chooser]');
+    await chooser.locator('button[data-contact-order]').click();
+    const form=chooser.locator("form");
+    const consent=form.locator('input[data-reply-consent]');
+    assert.equal(await consent.isChecked(),false,"Google must require explicit opt-in");
+    await consent.check();
+    const before=submissions.length;
+    await form.locator("button").filter({hasText:/Continue with Google/i}).first().click();
+    await page.waitForURL(origin+"/en/thank-you",{timeout:20000});
+    await page.locator("[data-service-thank-you]").getByText("HH-CA5016DE79E4",{exact:true})
+      .waitFor({state:"visible",timeout:10000});
+    assert.equal(submissions.length,before+1,"OAuth return creates exactly one saved request");
+    const req=submissions.at(-1);
+    assert.equal(req.contact.email,"google-qa@example.test");
+    assert.equal(req.contactConsent,true);
+    assert.match(req.serviceTitle,/Personal initiation/,"OAuth must preserve original paid option");
+    assert.doesNotMatch(req.description,/google-qa@example.test/,"Never copy contact to note");
+  }finally{
+    await page.unroute("**/api/app/auth/start");
+    await page.unroute(fakeGoogle);
+    await page.unroute("**/api/app/auth/contact-profile");
+  }
+}
+
 async function runEngine(name, engine) {
   const browser = await engine.launch({headless:true});
   try {
@@ -210,6 +257,9 @@ async function runEngine(name, engine) {
                 "The selected paid option must reach the encrypted owner request");
               assert.equal(page.url(),origin+"/"+locale+"/thank-you");
             }
+          }
+          if (name === "chromium" && width === 390 && locale === "en") {
+            await verifySyntheticGoogleReturn(page,submissions);
           }
           {
             const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
