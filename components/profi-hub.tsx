@@ -54,14 +54,14 @@ const copy = {
     ready: "I already practise—show me the Pro route",
     proEyebrow: "YOUR FIRST PUBLIC OFFER",
     proTitle: "Turn your experience into an offer.",
-    proLead: "Create a clear service, set your own terms, send it for review and make your public page easy to share.",
+    proLead: "Describe what you offer, choose your own terms and move from your private draft to a shareable public page."
     pickerTitle: "What would you like to offer?",
     pickerHint: "Choose one. We'll take you to the right existing editor—not create a listing just by tapping.",
     offers: {
       session: { title: "1:1 Reiki session", subtitle: "For individual support", preview: "Personal Reiki session", format: "Personal meeting · online or in person", pricing: "You choose the duration and price", tip: "Describe who the session is for, what happens and the boundaries of your work." },
       intro: { title: "Free introduction", subtitle: "Let clients get to know you", preview: "Introductory meeting", format: "Short introductory conversation", pricing: "Free · no client payment", tip: "Explain exactly what the free introduction includes and what it doesn't." },
       workshop: { title: "Workshop or group", subtitle: "Teach a small group", preview: "Reiki group workshop", format: "Group event · online or in person", pricing: "You set the conditions and price", tip: "Add the format, participant expectations, duration and suitable group size." },
-      course: { title: "My own course", subtitle: "Share a complete method", preview: "Educational Reiki course", format: "Lessons, practices and reflection", pricing: "Publication is reviewed; site checkout is not active", tip: "Start with a course title, then build lessons and submit the public programme for review." },
+      course: { title: "My own course", subtitle: "Share a complete method", preview: "Educational Reiki course", format: "Lessons, practices and reflection", pricing: "An approved practitioner profile and explicit publication are required. Site checkout is not active", tip: "Start with a course title, then build lessons and submit the public programme for review." },
     },
     previewLabel: "EXAMPLE OF YOUR FUTURE CARD · NOT PUBLISHED",
     previewClient: "What a visitor could understand",
@@ -86,6 +86,7 @@ const copy = {
     moneyTitle: "How can I earn here?",
     moneyText: "Offer a service with a clear price, share its approved public page, receive a request and agree on an actual paid session with your client. Site checkout and practitioner payouts are not yet live. The approved 20% platform commission policy concerns confirmed paid onsite orders when that system launches; there is no automatic commission on unpaid requests, free services or external payments.",
     moneyCaution: "No earnings, number of clients or payments are guaranteed. Pricing, qualifications and legal eligibility are your responsibility.",
+    paymentStatus: "Site checkout and practitioner payouts are not active. Clients and practitioners must agree on payment separately.",
     catalog: "Explore current services",
     masters: "Explore practitioner profiles",
     footer: "Back to Holistic House",
@@ -125,14 +126,14 @@ const copy = {
     ready: "Я уже практикую — перейти к пути Профи",
     proEyebrow: "ТВОЁ ПЕРВОЕ ПРЕДЛОЖЕНИЕ",
     proTitle: "Преврати опыт в понятную услугу.",
-    proLead: "Создай предложение, задай условия, отправь его на проверку и получи публичную страницу, которой удобно делиться.",
+    proLead: "Расскажи, что предлагаешь, укажи свои условия и пройди путь от личного черновика до публичной страницы."
     pickerTitle: "Что хочешь предложить?",
     pickerHint: "Выбери формат. Он откроется в существующем редакторе — выбор здесь ничего не публикует.",
     offers: {
       session: { title: "Личная сессия Рейки", subtitle: "Работа один на один", preview: "Индивидуальная сессия Рейки", format: "Лично или онлайн", pricing: "Длительность и цену указываешь ты", tip: "Расскажи, для кого эта сессия, что будет происходить и каковы границы твоей практики." },
       intro: { title: "Бесплатное знакомство", subtitle: "Первые контакты с клиентами", preview: "Вводная встреча", format: "Короткая ознакомительная встреча", pricing: "Бесплатно · без оплаты клиента", tip: "Чётко опиши, что входит в бесплатную встречу и что не входит." },
       workshop: { title: "Мастер-класс / группа", subtitle: "Обучение для нескольких человек", preview: "Групповой мастер-класс Рейки", format: "Группа · онлайн или лично", pricing: "Условия и цену задаёшь ты", tip: "Укажи формат, продолжительность, ожидания участников и комфортный размер группы." },
-      course: { title: "Собственный курс", subtitle: "Обучение своей методике", preview: "Авторский учебный курс Рейки", format: "Уроки, практики и рефлексия", pricing: "Модерация перед публикацией; оплата на сайте пока отключена", tip: "Начни с названия, затем собери уроки и отправь курс на проверку." },
+      course: { title: "Собственный курс", subtitle: "Обучение своей методике", preview: "Авторский учебный курс Рейки", format: "Уроки, практики и рефлексия", pricing: "Нужен одобренный профиль мастера и отдельное подтверждение публикации. Оплата на сайте пока отключена", tip: "Начни с названия, затем собери уроки и отправь курс на проверку." },
     },
     previewLabel: "ПРИМЕР БУДУЩЕЙ КАРТОЧКИ · НЕ ОПУБЛИКОВАНО",
     previewClient: "Что сможет понять клиент",
@@ -157,6 +158,7 @@ const copy = {
     moneyTitle: "Как здесь зарабатывать?",
     moneyText: "Создай услугу с понятной ценой, поделись одобренной страницей, получи обращение и согласуй с клиентом реальную платную встречу. Встроенные платежи и выплаты мастерам пока не работают. Утверждённая комиссия платформы 20% относится к подтверждённым оплаченным через сайт заказам после запуска этого механизма; по неоплаченным обращениям, бесплатным услугам и внешним платежам автоматической комиссии нет.",
     moneyCaution: "Число клиентов, заработок и оплата не гарантируются. Мастер сам отвечает за цену, корректность квалификации и соблюдение закона.",
+    paymentStatus: "Оплата на сайте и выплаты мастерам пока не работают. Условия расчётов с клиентом согласуются отдельно.",
     catalog: "Посмотреть опубликованные услуги",
     masters: "Каталог мастеров",
     footer: "На главную",
@@ -196,14 +198,14 @@ const copy = {
     ready: "Ya practico—quiero publicar",
     proEyebrow: "TU PRIMERA OFERTA",
     proTitle: "Convierte tu experiencia en una oferta.",
-    proLead: "Crea un servicio claro, elige tus condiciones, envíalo a revisión y comparte tu página pública.",
+    proLead: "Explica tu oferta, elige condiciones y pasa de un borrador privado a una página pública."
     pickerTitle: "¿Qué te gustaría ofrecer?",
     pickerHint: "Elige una opción. Se abrirá el editor existente; tocar aquí no publica nada.",
     offers: {
       session: { title: "Sesión Reiki individual", subtitle: "Atención personalizada", preview: "Sesión individual de Reiki", format: "En línea o presencial", pricing: "Tú eliges duración y precio", tip: "Explica a quién se dirige, en qué consiste y cuáles son tus límites." },
       intro: { title: "Introducción gratis", subtitle: "Una primera conversación", preview: "Encuentro introductorio", format: "Breve conversación inicial", pricing: "Gratis · sin pago del cliente", tip: "Aclara exactamente qué incluye la introducción gratuita." },
       workshop: { title: "Taller o grupo", subtitle: "Aprender en grupo", preview: "Taller grupal de Reiki", format: "En grupo · en línea o presencial", pricing: "Tú defines condiciones y precio", tip: "Explica modalidad, duración, expectativas y tamaño del grupo." },
-      course: { title: "Mi propio curso", subtitle: "Enseña tu método", preview: "Curso educativo Reiki", format: "Lecciones, prácticas y reflexión", pricing: "Revisión antes de publicar; el checkout no está activo", tip: "Empieza con el nombre del curso y añade tus lecciones antes de enviarlo a revisión." },
+      course: { title: "Mi propio curso", subtitle: "Enseña tu método", preview: "Curso educativo Reiki", format: "Lecciones, prácticas y reflexión", pricing: "Necesitas un perfil profesional aprobado y confirmación explícita al publicar. El checkout aún no está activo", tip: "Empieza con el nombre del curso y añade tus lecciones antes de enviarlo a revisión." },
     },
     previewLabel: "EJEMPLO · AÚN NO PUBLICADO",
     previewClient: "Lo que verá el visitante",
@@ -228,6 +230,7 @@ const copy = {
     moneyTitle: "¿Cómo puedo ganar dinero?",
     moneyText: "Publica un servicio con precio claro, comparte su página aprobada, recibe una solicitud y acuerda una sesión pagada con el cliente. Los pagos y retiros dentro del sitio aún no están activos. La política de comisión del 20% se aplicará a pedidos confirmados y pagados en la web cuando exista el sistema; no hay comisión automática sobre consultas sin pago, servicios gratuitos o pagos externos.",
     moneyCaution: "No se garantizan clientes, ingresos ni pagos. Tú respondes por tus precios, acreditaciones y obligaciones legales.",
+    paymentStatus: "Los pagos y retiros en la web aún no están activos. Las condiciones de pago se acuerdan por separado.",
     catalog: "Ver servicios publicados",
     masters: "Explorar profesionales",
     footer: "Volver al inicio",
@@ -414,6 +417,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                   ))}
                 </ol>
               </section>
+              <p className={styles.paymentStatus}><ShieldCheck size={17} aria-hidden="true" />{t.paymentStatus}</p>
               <div className={styles.benefitGrid}>
                 <article><CircleDollarSign size={22} aria-hidden="true" /><h3>{t.freeTitle}</h3><p>{t.freeBody}</p></article>
                 <article><ShieldCheck size={22} aria-hidden="true" /><h3>{t.discoverTitle}</h3><p>{t.discoverBody}</p></article>
