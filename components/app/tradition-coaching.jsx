@@ -69,7 +69,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   }).catch(()=>{if(active)setError(t.loadError)}).finally(()=>{if(active)setLoading(false)})
   return ()=>{active=false}
  },[accountId,endpoint,visit,t.loadError,def])
- useEffect(()=>{if(!loading&&question&&!completed)heading.current?.focus({preventScroll:true})},[index,loading,completed,question?.id])
+ useEffect(()=>{if(!loading&&question&&!completed)heading.current?.focus({preventScroll:true})},[index,loading,completed,question])
  useEffect(()=>{
   if(!dirty)return
   const warn=e=>{e.preventDefault();e.returnValue=''}
@@ -195,7 +195,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
         </div>
         <CoachingQuestionVoice key={question.id} text={question.question?.[lang]||''}
            locale={lang} disabled={busy} onTranscript={value=>{
-             setNote(old=>(old?old+' ':'')+value);setNotice('');setError('')
+             setNote(old=>((old?old+' ':'')+value).slice(0,500));setNotice('');setError('')
            }}/>
         <p className={extra.hint}>{question.hint?.[lang]||''}</p>
         <div className={extra.choices} role="radiogroup" aria-label={question.question?.[lang]}>
