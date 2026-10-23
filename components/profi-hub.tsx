@@ -66,7 +66,9 @@ const copy = {
     previewLabel: "EXAMPLE OF YOUR FUTURE CARD · NOT PUBLISHED",
     previewClient: "What a visitor could understand",
     previewAction: "Request service",
+    previewCourseAction: "View course",
     previewNote: "The real public request action appears only after approval. This example is not an active listing.",
+    previewCourseNote: "An approved practitioner profile and your explicit course publication are required. This is not an active course."
     createService: "Create my service in My Practice",
     createCourse: "Create my course in My Practice",
     googleNote: "Google sign-in is required for private drafts. We preserve this safe editor choice through sign-in; nothing is saved before you confirm it.",
@@ -144,7 +146,9 @@ const copy = {
     previewLabel: "ПРИМЕР БУДУЩЕЙ КАРТОЧКИ · НЕ ОПУБЛИКОВАНО",
     previewClient: "Что сможет понять клиент",
     previewAction: "Запросить услугу",
+    previewCourseAction: "Открыть курс",
     previewNote: "Настоящая кнопка обращения станет доступна только после одобрения. Это демонстрация, а не действующая услуга.",
+    previewCourseNote: "Для публикации курса нужен одобренный профиль и твоё отдельное подтверждение. Пока это только пример."
     createService: "Создать услугу в «Моей практике»",
     createCourse: "Создать курс в «Моей практике»",
     googleNote: "Для сохранения нужен вход через Google. Выбранный формат безопасно сохраняется при переходе после входа; без подтверждения ничего не записывается.",
@@ -222,7 +226,9 @@ const copy = {
     previewLabel: "EJEMPLO · AÚN NO PUBLICADO",
     previewClient: "Lo que verá el visitante",
     previewAction: "Solicitar servicio",
+    previewCourseAction: "Ver curso",
     previewNote: "La solicitud real solo estará disponible después de la aprobación. Es una demostración.",
+    previewCourseNote: "Se necesita un perfil aprobado y tu publicación explícita. Por ahora es solo un ejemplo."
     createService: "Crear mi servicio en My Practice",
     createCourse: "Crear mi curso en My Practice",
     googleNote: "Entra con Google para guardar borradores. La selección del editor se conserva durante el inicio de sesión; nada se publica automáticamente.",
@@ -405,10 +411,10 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                     <h3>{chosen.preview}</h3>
                     <p>{chosen.format}</p>
                     <strong className={styles.priceNote}>{chosen.pricing}</strong>
-                    <span className={styles.fakeButton} aria-hidden="true">{t.previewAction}<ArrowRight size={16} /></span>
+                    <span className={styles.fakeButton} aria-hidden="true">{offer === "course" ? t.previewCourseAction : t.previewAction}<ArrowRight size={16} /></span>
                   </div>
                   <p className={styles.micro}>{chosen.tip}</p>
-                  <p className={styles.micro}>{t.previewNote}</p>
+                  <p className={styles.micro}>{offer === "course" ? t.previewCourseNote : t.previewNote}</p>
                   <Link href={offerHref} className={styles.primary} prefetch={false}
                     data-profi-action={offer === "course" ? "create-course" : "create-service"}
                     data-profi-selected-offer={offer}>
