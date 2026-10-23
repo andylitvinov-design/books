@@ -42,6 +42,16 @@ test("asking a question reveals only a Daoist paragraph and Expand all; full 64-
   assert.match(css, /\.daoProse \{/);
 });
 
+test("expanded Dao interpretation has no redundant read or draw-another actions in RU/EN/ES", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const css = read("components/ideas-discovery.module.css");
+  assert.match(ui, /<div className=\{styles\.daoReading\} data-ideas-dao-reading>/);
+  assert.match(ui, /<DaoOfferCards locale=\{answerLocale\}/);
+  assert.doesNotMatch(ui, /answerCopy\.(?:card|again)|styles\.hexagramActions|RefreshCw/);
+  assert.doesNotMatch(ui, /Прочитать толкование|Другой символ|Read interpretation|Draw another|Leer interpretación|Otro símbolo/);
+  assert.doesNotMatch(css, /\.hexagramActions/);
+});
+
 test("first screen shows an explicitly marked educational example, never a made-up personal answer", () => {
   const ui = read("components/ideas-discovery.tsx");
   assert.match(ui, /const exampleHexagram = getHexagram\(42\)/);
