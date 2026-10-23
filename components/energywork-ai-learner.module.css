@@ -3828,10 +3828,11 @@
     line-height: 1.24;
   }
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls {
-    margin: 1px auto 0;
+    margin: 6px auto 0;
     gap: 7px;
+    max-width: 160px;
   }
-  /* A 34px visual circle with a full 44px tap target on iPhone. */
+  /* A 30px visual circle with a full 44px tap target on iPhone. */
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button {
     position: relative;
     width: 44px;
@@ -3843,7 +3844,7 @@
   .page[data-reiki-full-reviews="v1"][data-reiki-current-kind="voices"] .voicesControls button::before {
     content: "";
     position: absolute;
-    inset: 5px;
+    inset: 7px;
     border: 1px solid #b9dfe8;
     border-radius: 50%;
     background: rgba(255,255,255,.95);
