@@ -1,5 +1,5 @@
 import { SiteVideoPlayer } from "@/components/site-video-player";
-import { getServiceVideoMedia, type ServiceVideoLocale, type ServiceVideoTopic } from "@/data/service-video-library";
+import { englishPsychotherapyLandingVideo, getServiceVideoMedia, type ServiceVideoLocale, type ServiceVideoTopic } from "@/data/service-video-library";
 import { siteVideoWatchUrl } from "@/lib/site-videos/model";
 import styles from "./service-video-showcase.module.css";
 
@@ -76,18 +76,22 @@ const copy = {
 } as const;
 
 export function ServiceVideoShowcase({
-  topic, locale, id = "service-video",
+  topic, locale, id = "service-video", variant = "default",
 }: {
   topic: ServiceVideoTopic;
   locale: ServiceVideoLocale;
   id?: string;
+  variant?: "default" | "psychotherapy-en";
 }) {
-  const video = getServiceVideoMedia(topic, locale);
+  const isEnglishPsychotherapy = variant === "psychotherapy-en" && locale === "en" && topic === "hypnotherapy";
+  const video = isEnglishPsychotherapy ? englishPsychotherapyLandingVideo : getServiceVideoMedia(topic, locale);
   const t = copy[locale];
-  const section = t[topic];
+  const section = isEnglishPsychotherapy
+    ? {heading: "Psychotherapy — a personal introduction", context: "Watch Andrey’s English-language introduction before deciding whether to request an individual session."}
+    : t[topic];
   return (
     <section className={styles.section} id={id} data-service-video={topic}
-      data-video-kind={video.general ? "general" : "method"} aria-labelledby={id + "-title"} lang={locale}>
+      data-video-kind={video.general ? "general" : "method"} data-psychotherapy-video={isEnglishPsychotherapy ? "en" : undefined} aria-labelledby={id + "-title"} lang={locale}>
       <div className={styles.intro}>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
         <h2 id={id + "-title"}>{section.heading}</h2>
