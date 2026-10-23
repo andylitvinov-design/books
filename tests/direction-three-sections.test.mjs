@@ -168,7 +168,7 @@ test('approved Services photo hero and Academy-style cards preserve mobile reada
   assert.match(css,/\.offerList\{display:grid;gap:10px\}/)
   assert.match(css,/\.groupActions\{display:flex/)
   assert.match(css,/\.offerList \.card:nth-child\(n\+3\)\{animation:offerReveal/)
-  assert.match(css,/prefers-reduced-motion:reduce\)\{[^}]*animation:none/)
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?animation:none/)
   assert.match(css,/prefers-reduced-motion/)
   assert.match(source,/unoptimized priority=\{slideIndex===0\}/)
   const route=read('app/[locale]/explore/[theme]/page.tsx')
