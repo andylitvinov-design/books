@@ -26,7 +26,8 @@ test('public navigation exposes three real directions without administration', a
     assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
     assert.equal(items.find(item => item.id === 'business').href, `/${locale}/explore/business`)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
-    assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/courses`)
+    assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/academy`)
+    assert.equal(items.find(item => item.id === 'courses').label, { en: 'Courses', ru: 'Курсы', es: 'Cursos' }[locale])
     assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
     assert.equal(getCompactNavigation(locale).find(item => item.id === 'business').href, `/${locale}/explore/business`)
@@ -36,6 +37,21 @@ test('public navigation exposes three real directions without administration', a
     assert.match(source, /getCompactNavigation/)
     assert.match(source, /prefetch=\{false\}/)
   }
+})
+
+test('Courses menu opens the full Academy; enrolled My Courses remains in the personal area', async () => {
+  const [nav, oldRoute, academy, ownedCourses] = await Promise.all([
+    readFile('components/site-navigation.tsx', 'utf8'),
+    readFile('app/[locale]/courses/page.tsx', 'utf8'),
+    readFile('app/[locale]/academy/[[...slug]]/page.tsx', 'utf8'),
+    readFile('components/academy-my-courses.tsx', 'utf8'),
+  ])
+  assert.match(nav, /item\.id === 'courses'/)
+  assert.doesNotMatch(nav, /\{ id: 'academy', label: text\.academy/)
+  assert.match(oldRoute, /permanentRedirect\(`\/\$\{locale\}\/academy`\)/)
+  assert.match(academy, /if \(!slug\?\.length\) \{[\s\S]*?return <AcademyHub locale=\{locale\} view=\{view\} \/>/)
+  assert.match(ownedCourses, /title: 'My courses'/)
+  assert.match(ownedCourses, /title: 'Мои курсы'/)
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
