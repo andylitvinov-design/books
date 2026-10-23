@@ -952,9 +952,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <a href={'/'+lang+'/services/free-consultation'}><span aria-hidden="true">🤝</span>{c.consultation}<ArrowRight size={19}/></a>
             </nav>
           </>}
-          {moment==='practice'&&guidanceForMoment&&
-            <p className={styles.practiceGuidance} data-opora-optional-guidance="true">{guidanceForMoment}</p>}
-          {guidanceForMoment&&moment!=='practice'&&
+          {/* Guidance can be opened without competing with the one daily task.
+               The separate Day 14 meditation is always visible, never folded. */}
+          {guidanceForMoment&&
             <div className={styles.guidanceGroup} data-gentle-guidance={moment}>
             <div className={styles.guidanceRow}>
               <img className={styles.guidanceAnimal} src="/images/holistic-house/gentle-owl.svg"
