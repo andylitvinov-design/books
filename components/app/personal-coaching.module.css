@@ -105,3 +105,67 @@
  .textarea{min-height:90px}
 }
 @media(prefers-reduced-motion:reduce){.progressTrack span{transition:none}}
+
+
+/* Client question → three model explanations → explicit voluntary model choice */
+.picker{padding:clamp(18px,4vw,40px);display:flex;flex-direction:column;gap:12px;min-width:0}
+.picker h1{font-size:clamp(28px,4.5vw,42px);line-height:1.14;color:#213d4c;margin:2px 0}
+.questionForm{display:grid;gap:10px;margin-top:8px}
+.questionForm>.primary{width:100%;max-width:480px;justify-self:start}
+.picker .textarea{min-height:105px;max-height:210px}
+.picker .lead{font-size:15px;font-weight:550}
+.picker .privacyNote{display:flex;gap:8px;align-items:flex-start;line-height:1.4}
+.picker .privacyNote svg{flex:none;margin-top:2px}
+.durationFields{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px;border:0;padding:0}
+.durationFields legend{font-size:12px;font-weight:800;color:#315860;margin-bottom:8px}
+.durationChoice{display:inline-flex;align-items:center;min-height:44px}
+.durationChoice input{position:absolute;opacity:0;width:1px;height:1px}
+.durationChoice span{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:7px 15px;background:#fff;border:1px solid #a6c2bf;border-radius:99px;color:#315660;font-weight:750}
+.durationChoice input:checked+span{background:#165e69;color:white;border-color:#165e69}
+.durationChoice input:focus-visible+span{outline:3px solid #00aab3;outline-offset:3px}
+.modelListTitle{font-size:clamp(18px,3vw,24px);line-height:1.2;color:#244b58;margin:12px 0 0}
+.modelList{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.modelCard{border:1px solid #d2e4dd;background:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 10px #0a263011;min-width:0}
+.modelCardHeading{display:flex;gap:10px;align-items:flex-start}
+.modelCardHeading>div{min-width:0}
+.modelCardHeading h3{font-size:16px;font-weight:850;line-height:1.2;color:#1a3f4a;margin:0 0 5px}
+.modelCardHeading span:not(.modelNumber){font-size:11px;color:#527278}
+.modelNumber{display:grid;place-items:center;flex:none;border-radius:12px;width:32px;height:32px;background:#d7efeb;color:#175d63;font-weight:850}
+.modelDescription{font-size:13px;line-height:1.48;color:#344f56;margin:0;flex:1}
+.modelMatch{display:flex;align-items:flex-start;gap:5px;color:#1e6b5e;font-weight:700;font-size:12px;line-height:1.35;margin:0}
+.modelMatch svg{flex:none}
+.modelFallback{font-size:12px;line-height:1.5;color:#657474;margin:0}
+.modelDetails{border-top:1px solid #e4edeb;padding-top:9px}
+.modelDetails summary{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#406872;font-weight:750}
+.modelDetails p{font-size:12px;color:#4b6368;line-height:1.45;margin:6px 0 0}
+.modelSelect{min-height:46px;width:100%;display:flex;justify-content:center;align-items:center;gap:6px;border:0;border-radius:12px;padding:10px;background:#126271;color:#fff;font-weight:850;cursor:pointer;line-height:1.2}
+.modelSelect:hover{background:#0c4d5d}
+.modelSelect:disabled{opacity:.55}
+.contextQuestion{font-size:12px;color:#47626a;line-height:1.4;background:#e9f4f0;border-radius:10px;padding:10px 13px;overflow-wrap:anywhere}
+.contextQuestion strong{color:#194f56}
+.schemeLabel{display:inline-flex;align-items:center;gap:7px;color:#2a686f;font-size:12px;font-weight:750}
+.optionList{display:flex;gap:8px;flex-wrap:wrap;margin:5px 0 12px}
+.optionChip{border:1px solid #b8d4cf;background:#fff;min-height:45px;border-radius:14px;padding:9px 14px;cursor:pointer;color:#27525c;font-size:14px;font-weight:700;text-align:left}
+.optionChip:hover{background:#e9f5f2}
+.optionChip[aria-pressed="true"]{background:#136a74;color:#fff;border-color:#136a74}
+.optionScale{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+.optionScale .optionChip{text-align:center;padding:8px 3px}
+.optionalText{font-size:12px;font-weight:750;color:#486770;margin:10px 0 7px}
+.requiredPlan{font-size:13px;color:#395b60;background:#e9f5f0;border-radius:9px;padding:10px;line-height:1.5}
+@media(max-width:750px){
+ .modelList{grid-template-columns:1fr}
+ .modelCard{gap:8px}
+}
+@media(max-width:600px){
+ .picker{padding:23px 18px calc(22px + env(safe-area-inset-bottom));gap:10px}
+ .picker h1{font-size:28px}
+ .picker .lead{font-size:14px}
+ .picker .textarea{min-height:94px}
+ .optionChip{min-height:44px;font-size:13px}
+ .optionScale{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media(max-width:370px){
+ .picker{padding:18px 14px calc(20px + env(safe-area-inset-bottom))}
+ .optionScale{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .optionChip{font-size:12px;padding:8px 10px}
+}

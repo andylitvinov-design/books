@@ -8,6 +8,7 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching } from '@/lib/app/personal-coaching'
+import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
 import { createNotificationRepository } from '@/lib/app/notification-repository'
@@ -596,6 +597,11 @@ async function handle(request, { params }) {
       if (method === 'GET') return json(await readDevelopmentGoals(config, actor))
       if (method === 'POST') return json(await saveDevelopmentGoals(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'personal-coaching-catalog') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method === 'GET') return json(await readPersonalCoachingCatalog(config,actor))
+      throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'personal-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)

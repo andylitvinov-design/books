@@ -155,7 +155,7 @@ export default function MyCoursesDashboard({
         <span className={styles.businessTrackEyebrow}>{locale==='ru'?'БЕСПЛАТНЫЙ КУРС':'FREE PERSONAL COURSE'}</span>
         <strong className={styles.businessTrackTitle}>{locale==='ru'?'Личная коуч-сессия':'Personal Coaching Session'}</strong>
         <span className={styles.businessTrackDescription}>
-          {locale==='ru'?'7 вопросов по одному на экран. Ваши ответы и один конкретный шаг.':'7 questions, one at a time. Your answers and a clear next step.'}
+          {locale==='ru'?'Опишите свой вопрос, выберите одну из трёх моделей и пройдите короткую личную сессию.':'Enter your question, choose from three suggested models and complete a short private session.'}
         </span>
         <span className={styles.businessTrackAction}>
           {locale==='ru'?'Начать сессию':'Start my session'}<ArrowRight size={16} aria-hidden="true"/>

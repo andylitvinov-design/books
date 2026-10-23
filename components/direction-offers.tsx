@@ -122,8 +122,8 @@ const directionCopy = {
     es: { name: 'Amor', title: 'Cercanía, confianza y conexión', course: 'OPORA · Apoyo interior', courseDetail: 'Prácticas de estabilidad antes de conversaciones difíciles, no un curso específico de relaciones.', service: 'Consulta sobre relaciones', serviceDetail: 'Explora la comunicación, los límites y tus patrones.' },
   },
   business: {
-    en: { name: 'Business', title: 'Grow with focus and a clear direction', course: 'Personal Coaching Session', courseDetail: 'Seven coaching questions, your own written answers and one realistic next step.', service: 'Business & career consultation', serviceDetail: 'Work on a decision, career move or project with Andrey.' },
-    ru: { name: 'Бизнес', title: 'Развитие с фокусом и ясным планом', course: 'Личная коуч-сессия', courseDetail: 'Семь вопросов, ваши ответы и один реальный следующий шаг.', service: 'Консультация по бизнесу и карьере', serviceDetail: 'Разберите решение, профессиональную цель или проект.' },
+    en: { name: 'Business', title: 'Grow with focus and a clear direction', course: 'Personal Coaching Session', courseDetail: 'Enter your question, choose one of three matching coaching approaches and save your private session.', service: 'Business & career consultation', serviceDetail: 'Work on a decision, career move or project with Andrey.' },
+    ru: { name: 'Бизнес', title: 'Развитие с фокусом и ясным планом', course: 'Личная коуч-сессия', courseDetail: 'Опишите свой вопрос, выберите подходящую модель из трёх и сохраните личную сессию.', service: 'Консультация по бизнесу и карьере', serviceDetail: 'Разберите решение, профессиональную цель или проект.' },
     es: { name: 'Negocios', title: 'Desarrolla tu proyecto con claridad', course: 'Sesión personal de coaching', courseDetail: 'Siete preguntas y tus respuestas privadas (en inglés).', service: 'Consulta de negocios y carrera', serviceDetail: 'Explora decisiones, objetivos profesionales o proyectos.' },
   },
 } as const
