@@ -202,3 +202,49 @@
   .extraLink small{font-size:11.5px}
 }
 @media(prefers-reduced-motion:reduce){.disclosure>summary svg{transition:none}}
+
+
+/* In-place, local-only clarification directly below the photographed first
+   screen. The dialog is compact and never overlays the topic/action filters. */
+.dialogPanel{width:min(780px,100%);margin:10px 0 0;padding:12px 15px 11px;border:1px solid #dfd0bd;border-radius:18px;background:#fffdf8;box-shadow:0 8px 26px #604b3720}
+.dialogHeader{display:flex;align-items:center;gap:9px;min-height:28px;color:#49392e;font:750 13px/1.3 Arial,Helvetica,sans-serif}
+.dialogAvatar{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:#e5efea;color:#39756c}
+.dialogHeaderActions{display:flex;align-items:center;gap:5px;margin-left:auto}
+.dialogHeaderActions button{display:grid;place-items:center;min-height:35px;min-width:35px;padding:6px 9px;border:0;border-radius:9px;background:transparent;color:#795f52;font:700 11px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.dialogHeaderActions button:hover{background:#f5ede2}
+.dialogSummary{padding:5px 0 0;font-size:12px;line-height:1.45;color:#69574c}
+.dialogSummary p{margin:3px 0}
+.dialogSelections{display:flex;flex-wrap:wrap;gap:6px}
+.dialogSelections span{display:inline-flex;gap:5px;padding:5px 9px;border:1px solid #e9dccb;border-radius:8px;background:#f9f2e8;color:#563f31;overflow-wrap:anywhere}
+.dialogSelections b{font-weight:750}
+.dialogPrompt{margin:9px 0 7px;color:#47382e;font:750 12px/1.38 Arial,Helvetica,sans-serif}
+.dialogChips{display:flex;flex-wrap:wrap;gap:6px}
+.dialogChips button{min-height:39px;padding:7px 11px;border:1px solid #d9c7b4;border-radius:10px;background:#fff9f1;color:#665044;font:700 11.5px/1.3 Arial,Helvetica,sans-serif;cursor:pointer;text-align:center}
+.dialogChips button:hover{background:#f3e6d5}
+.dialogChips button[aria-pressed="true"]{background:#3a756f;color:white;border-color:#3a756f}
+.dialogSuggestion{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:9px 0 0;font:650 12px/1.3 Arial,Helvetica,sans-serif;color:#725f52}
+.dialogSuggestion a{display:inline-flex;align-items:center;gap:5px;min-height:37px;padding:7px 11px;border-radius:9px;background:#277b7e;color:white;text-decoration:none;font:800 11.5px/1.25 Arial,Helvetica,sans-serif}
+.dialogSuggestion a:hover{background:#17676b;color:white}
+.root[data-direction-offers="business"] .dialogSuggestion a{background:#86603c}
+.dialogReply{display:flex;align-items:stretch;gap:6px;margin-top:9px}
+.dialogReply input{min-height:42px;flex:1 1 0;width:100%;padding:8px 11px;border:1px solid #dfd2c4;border-radius:10px;background:white;color:#403128;font:450 16px/1.35 Arial,Helvetica,sans-serif}
+.dialogReply input::placeholder{color:#817367}
+.dialogReply button{display:grid;place-items:center;min-height:42px;min-width:44px;border:0;border-radius:10px;background:#8e4960;color:white;cursor:pointer}
+.dialogReply button:disabled{opacity:.4;cursor:not-allowed}
+.dialogPrivacy{margin:8px 0 0;color:#8a7b6c;font:450 10px/1.4 Arial,Helvetica,sans-serif}
+.dialogUrgent{margin:10px 0 3px;color:#6e2938;font:600 13px/1.5 Arial,Helvetica,sans-serif}
+.dialogPanel :is(a,button,input):focus-visible{outline:3px solid #1d8488;outline-offset:2px}
+@media(max-width:480px){
+  .dialogPanel{width:100%;margin-top:8px;padding:10px 11px 9px;border-radius:15px}
+  .dialogSummary{font-size:11.5px}
+  .dialogChips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dialogChips button{padding:7px 6px;min-height:42px;overflow-wrap:anywhere}
+  .dialogSuggestion{font-size:11px}
+  .dialogSuggestion a{max-width:100%;overflow-wrap:anywhere}
+}
+@media(max-width:350px){
+  .dialogPanel{padding-inline:9px}
+  .dialogHeaderActions{gap:0}
+  .dialogHeaderActions button{padding-inline:5px;font-size:10px}
+  .dialogChips button{font-size:11px}
+}
