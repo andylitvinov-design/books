@@ -161,6 +161,7 @@ test('day one restores five opening screens and all days add untracked support a
     assert.equal(f.payload.opora54.answers.transferChoice,'two')
     assert.equal(f.payload.opora54.answers.transferFeeling,undefined)
     assert.equal(f.payload.opora54.answers.transferPlanVersion,'one-v1')
+    assert.equal(f.payload.opora54.answers.experienceEdition,'as-5.8-one-action-v1')
     assert.deepEqual(f.payload.practiceEmotion,day===4?{customText:spokenFeeling}:
       day===11?{choice:'sadness'}:undefined)
     assert.equal(f.payload.opora54.answers.lessonConfidence,'some')
