@@ -354,6 +354,32 @@ try {
           await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
           await guide.getByRole("button", { name: scenario.reset }).click();
         }
+        if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
+          // Unknown input is never transmitted. Only explicit consent + a
+          // curated category creates an outgoing feedback event.
+          const observed = [];
+          await page.route("**/api/home-guide/quality", async route => {
+            observed.push(route.request().postDataJSON());
+            await route.fulfill({ status: 201, contentType: "application/json",
+              body: JSON.stringify({ saved: true }) });
+          });
+          await question.fill("Непонятные жужжалки и абракадабра");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[role="log"]')).toContainText("Я пока не совсем понял");
+          const optin = guide.locator("[data-home-guide-quality-consent] input");
+          await expect(optin).not.toBeChecked();
+          assert.equal(observed.length, 0);
+          await optin.check();
+          await guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Работа и бизнес",
+          }).click();
+          await expect.poll(() => observed.length).toBe(1);
+          assert.deepEqual(observed[0], {
+            category: "business", signal: "clarified", locale: "ru", consent: true,
+          });
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await guide.getByRole("button", { name: scenario.reset }).click();
+        }
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
