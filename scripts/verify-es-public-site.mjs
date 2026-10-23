@@ -41,7 +41,7 @@ async function assertSpanishNavigation(page, path) {
   } else await expect(cabinet).toHaveAttribute('href','/en/app');
   const destinations = [
     '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
-    '/es/explore/business', '/es/client/tests', '/es/books',
+    '/es/explore/business', '/es/client/tests', '/es/books', '/es/pro',
     '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
     '/es/services', '/es/academy', '/es/about',
   ];
