@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, ChevronLeft, LockKeyhole, MessageCircle, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, LockKeyhole, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import PersonalCoachingPicker from './personal-coaching-picker'
@@ -242,69 +242,91 @@ export default function PersonalCoaching({locale='en',accountId}){
       </header>
       <section className={styles.sheet}>
         {loading ? <div className={styles.center} role="status">{t.loading}</div>
-        : !course ? <div className={styles.intro} data-coaching-start>
-          <span className={styles.eyebrow}>{t.eyebrow}</span>
-          <span className={styles.symbol}><MessageCircle size={29}/></span>
-          <h1>{t.title}</h1>
-          <p className={styles.lead}>{t.intro}</p>
-          <p className={styles.subtle}>{t.selfGuided}</p>
-          <div className={styles.line}><Sparkles size={17}/>{t.time}</div>
-          <div className={styles.line}><LockKeyhole size={17}/>{t.private}</div>
-          {error&&<p className={styles.error} role="alert">{error}</p>}
-          {error&&!state ? <button type="button" className={styles.primary} disabled={busy} onClick={reload}>{t.retry}<ArrowRight size={19}/></button>
-            : <button type="button" className={styles.primary} disabled={busy} onClick={begin}>{busy?t.saving:t.start}<ArrowRight size={19}/></button>}
-          <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
+        : !catalog ? <div className={styles.center} role="alert">
+          <p>{t.loadError}</p>
+          <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
         </div>
+        : (!course||newSelection) ? <PersonalCoachingPicker locale={lang} catalog={catalog}
+          onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
         : finished ? <div className={styles.summary} data-coaching-summary>
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
           <p>{t.finished}</p>
+          {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</p>}
+          {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
           <div className={styles.answers}>
-            {PERSONAL_COACH_QUESTIONS.map(item=><div className={styles.answer} key={item.id}>
-              <strong>{item.question[lang]}</strong>
-              <p>{session.answers[item.id]||t.noAnswer}</p>
+            {activeQuestions.map(item=><div className={styles.answer} key={item.id}>
+              <strong>{translated(item.prompt||item.question,lang)}</strong>
+              <p>{prettyAnswer(session.answers[item.id],item,lang,t.noAnswer)}</p>
             </div>)}
           </div>
           <div className={styles.actionRecap}>
-            <span>{t.plan}</span><strong>{session.answers.first_step||t.noAnswer}</strong>
-            {session.answers.when&&<small>{session.answers.when}</small>}
+            <span>{t.plan}</span>
+            <strong>{scheme?prettyAnswer(session.answers[activeQuestions.at(-1)?.id],
+              activeQuestions.at(-1),lang,t.noAnswer):session.answers.first_step||t.noAnswer}</strong>
+            {!scheme&&session.answers.when&&<small>{session.answers.when}</small>}
           </div>
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
             <summary>{t.history} ({course.history.length})</summary>
             {course.history.map(old=><article key={old.id}>
               <strong>{t.historyItem} · {new Date(old.completedAt||old.startedAt).toLocaleDateString(lang)}</strong>
-              {PERSONAL_COACH_QUESTIONS.map(item=><p key={item.id}><b>{item.question[lang]}</b> {old.answers[item.id]||t.noAnswer}</p>)}
+              {questionsFor({current:old},catalog).map(item=><p key={item.id}>
+                <b>{translated(item.prompt||item.question,lang)}</b> {prettyAnswer(old.answers[item.id],item,lang,t.noAnswer)}
+              </p>)}
             </article>)}
           </details>}
           <p className={styles.subtle}>{t.restart}</p>
           {error&&<p className={styles.error} role="alert">{error}</p>}
-          <button type="button" className={styles.primary} disabled={busy} onClick={begin}>{t.new}<ArrowRight size={18}/></button>
+          <button type="button" className={styles.primary} disabled={busy}
+            onClick={()=>{setNewSelection(true);setError('')}}>{t.new}<ArrowRight size={18}/></button>
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           <small className={styles.disclaimer}>{t.completeNote}</small>
         </div>
+        : !question ? <div className={styles.center} role="alert">
+            {langCopy.loadingCatalog} <button type="button" onClick={reload}>{t.retry}</button>
+          </div>
         : <div className={styles.session} data-coaching-one-question data-coaching-question={question.id}>
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{t.title}</span>
-            <strong>{t.question} {index+1} {t.of} {PERSONAL_COACH_QUESTIONS.length}</strong>
+            <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
           </div>
-          <div className={styles.progressTrack} role="progressbar" aria-label={t.question} aria-valuemin={0} aria-valuemax={PERSONAL_COACH_QUESTIONS.length} aria-valuenow={index+1}>
-            <span style={{width:((index+1)/PERSONAL_COACH_QUESTIONS.length*100)+'%'}}/>
+          <div className={styles.progressTrack} role="progressbar" aria-label={t.question} aria-valuemin={0} aria-valuemax={activeQuestions.length} aria-valuenow={index+1}>
+            <span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/>
           </div>
           <div className={styles.questionArea}>
-            <span className={styles.stage}>{question.stage.toUpperCase()}</span>
-            <h1 ref={titleRef} tabIndex={-1}>{question.question[lang]}</h1>
-            <p>{question.hint[lang]}</p>
-            <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">{t.hint}</label>
-            <textarea id="hh-personal-coach-answer" className={styles.textarea} value={draft}
-              maxLength={800} rows={4} placeholder={t.placeholder} disabled={busy}
+            <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
+            {session.clientQuestion&&<p className={styles.contextQuestion}>
+              <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
+            {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</span>}
+            <h1 ref={titleRef} tabIndex={-1}>{translated(question.prompt||question.question,lang)}</h1>
+            <p>{translated(question.reflection||question.hint,lang)}</p>
+            {question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
+              <span className={styles.answerLabel}>{langCopy.choice}</span>
+              <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
+                {(question.type==='scale_0_10'
+                  ? Array.from({length:11},(_,value)=>({id:String(value),label:{en:String(value),ru:String(value),es:String(value)}}))
+                  : question.choices||[]).map(option=><button key={option.id} type="button" disabled={busy}
+                  className={styles.optionChip} aria-pressed={draft==='choice:'+option.id}
+                  onClick={()=>{setDraft('choice:'+option.id);setError('');setNotice('')}}>
+                  {translated(option.label,lang)}</button>)}
+              </div>
+            </>}
+            {scheme?.requiredCustomPlan&&index===activeQuestions.length-1&&
+              <p className={styles.requiredPlan}>{langCopy.woop}</p>}
+            <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
+              {question.type?langCopy.orWrite:t.hint}</label>
+            <textarea id="hh-personal-coach-answer" className={styles.textarea}
+              value={draft.startsWith('choice:')?'':draft}
+              maxLength={800} rows={question.type?2:4} placeholder={t.placeholder} disabled={busy}
               onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
-            <span className={styles.counter}>{draft.length}/800</span>
-            <div className={styles.suggestions} aria-label={lang==='ru'?'Примеры ответа':'Answer ideas'}>
-              {question.examples[lang].map(option=><button type="button" key={option} disabled={busy}
+            <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
+            {!question.type&&<div className={styles.suggestions}
+                aria-label={lang==='ru'?'Примеры ответа':'Answer ideas'}>
+              {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy}
                 onClick={()=>{setDraft(option);setError('');setNotice('')}}>{option}</button>)}
-            </div>
+            </div>}
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
@@ -313,7 +335,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             <div className={styles.footerActions}>
               <button type="button" className={styles.back} onClick={backward} disabled={busy||index===0}><ChevronLeft size={18}/>{t.back}</button>
               <button type="button" className={styles.primary} disabled={busy} onClick={()=>next(false)}>
-                {busy?t.saving:index===PERSONAL_COACH_QUESTIONS.length-1?t.finish:t.next}<ArrowRight size={18}/>
+                {busy?t.saving:index===activeQuestions.length-1?t.finish:t.next}<ArrowRight size={18}/>
               </button>
             </div>
             {!question.required&&<button type="button" className={styles.skip} disabled={busy} onClick={()=>next(true)}>{t.skip}</button>}
