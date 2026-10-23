@@ -1,3 +1,13 @@
+## 2026-10-23 — morning Telegram site-click visibility; referral data remain unmeasured
+
+The existing **09:00 EDT / 08:00 EST Toronto** owner-only My Practice Telegram digest (13:00 UTC Vercel cron) now has a clearly scoped **Site** block. It sums only the already recorded public-service CTA events (order, WhatsApp and Telegram), for yesterday and seven completed Toronto days. These are **click events**, not people, total website clicks, received messages, leads, confirmed bookings or payments. It separately retains service-card impressions and true server-received public/private enquiry counts. No second bot, cron, sender, SQL table, identifier or paid service.
+
+**Traffic-source attribution and total page visits: NOT MEASURED.** The production `app_private.service_funnel_daily` table has only service/day counters and no referrer, UTM, channel, session or visit data. Vercel Web Analytics API returned `404 Web Analytics not found`; the linked GSC Wizard access currently returns `payment_required`. The site's Google Analytics privacy hold remains `PUBLIC_ANALYTICS_AVAILABLE=false`, and the Privacy analytics Allow control is disabled. The digest must show **no data** for Google/social/direct and unique visits, not synthetic zeros or guessed sources. Untrusted referrer/UTM fields are not passed into Telegram. The source section is intentionally a data-coverage indicator until an explicitly consent-reviewed first-party tracking design, source taxonomy, security and E2E is approved through [attribution issue #988](https://github.com/andylitvinov-design/books/issues/988).
+
+**Verification:** `node --test tests/practitioner-daily-telegram.test.mjs tests/practitioner-analytics-subscriptions.test.mjs tests/app-housekeeping-cron.test.mjs`; targeted CI, production deployment READY+SHA+alias and next **real** Telegram private send receipt independently required. A green build or a prepared Markdown message is not proof that a user received it.
+
+---
+
 ## 2026-10-21 — owner screenshots: Gemini Free Tier verified, Mistral key saved ≠ API access
 
 The owner sent Google AI Studio Projects screenshots showing **Free tier** with **Set up billing** (paid billing not activated on the shown projects), plus a Mistral Studio API Keys screen explicitly warning that the current organization might need a plan change **to use the API keys**. The owner already entered a Studio key on the signed Holistic House form. Production Supabase readback verified exactly one encrypted Studio key and Free-mode checkbox record; the Google Free Tier confirmation was then recorded based on the owner-supplied project screenshot and explicit instruction to complete the setup. Existing Gemini/Router credentials remain unchanged; no plain secrets were read.
