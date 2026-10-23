@@ -27,7 +27,8 @@ const words = {
     back: 'Go back', end: 'End without saving', anchor: 'If you wish, look at one ordinary object around you.' },
 }
 const assets = new Map(await Promise.all(['course-start-heron.webp', 'course-focus-mountain-boy.webp',
-  'reiki-practitioner-sunrise.webp', 'report-lighthouse-coast.webp'].map(async name => [
+  'reiki-practitioner-sunrise.webp', 'report-lighthouse-coast.webp',
+  'hero-olive-incense.webp', 'reiki-approved-sunrise-v3.webp'].map(async name => [
   '/images/holistic-house/' + name, await readFile(new URL('../public/images/holistic-house/' + name, import.meta.url)),
 ])))
 const owlPath = '/images/holistic-house/gentle-owl.svg'
@@ -96,7 +97,15 @@ try {
       await expect(page.locator('[aria-pressed]')).toHaveCount(0)
       await assertBounds('support')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-support.png` })
+      // Explore every short educational screen before the real exercise.
+      // Keep checks realistic in WebKit and at 320px without accidental writes.
+      for(const moment of ['why','story','options','settle']){
+        await click(t.next)
+        await expect(page.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+        await assertBounds(moment)
+      }
       await click(t.next)
+      await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
       assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
       assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)
