@@ -30,18 +30,18 @@ function render(locale, pathname) {
   return exports.MobileBottomNavigation({ initialLocale: locale });
 }
 async function scenario(locale, surface, fault, visible = true) {
-  const pathname = surface === 'home' ? locale === 'en' ? '/' : '/' + locale : surface === 'business' ? '/' + locale + '/explore/business' : '/' + locale + '/' + surface;
+  const pathname = surface === 'home' ? locale === 'en' ? '/' : '/' + locale : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + surface : '/' + locale + '/' + surface;
   const tree = render(locale, pathname);
   const anchors = nodes(tree).filter(node => node.type === 'a');
   assert.equal(anchors.length, 6);
   assert.ok(anchors.every(node => node.props.prefetch === false), 'No speculative tests or cabinet navigation');
   if (fault === 'old courses slot') { anchors[4].props['data-nav-item'] = 'courses'; anchors[4].props.href = '/' + locale + '/courses'; }
   if (fault === 'old cabinet slot') { anchors[5].props['data-nav-item'] = 'cabinet'; anchors[5].props.href = '/' + locale + '/client'; }
-  if (fault === 'wrong business destination') anchors[4].props.href = '/' + locale + '/client';
+  if (fault === 'wrong business destination') anchors[3].props.href = '/' + locale + '/client';
   if (fault === 'wrong house destination') anchors[5].props.href = '/es/app';
-  if (fault === 'wrong business label') anchors[4].props.children = 'My tests';
+  if (fault === 'wrong business label') anchors[3].props.children = 'My tests';
   if (fault === 'wrong house label') anchors[5].props.children = 'My House';
-  if (fault === 'wrong accessible name') anchors[4].props['aria-label'] = 'Wrong';
+  if (fault === 'wrong accessible name') anchors[3].props['aria-label'] = 'Wrong';
   if (fault === 'missing link') anchors.pop();
   if (fault === 'extra link') anchors.push({ type: 'a', props: { href: '/extra', 'data-nav-item': 'extra' } });
   if (fault === 'wrong order') [anchors[4], anchors[5]] = [anchors[5], anchors[4]];
@@ -66,7 +66,7 @@ async function scenario(locale, surface, fault, visible = true) {
   await verify(bottom, { locale, surface: surface.startsWith('client') ? 'tests' : surface, label: pathname });
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'library', 'services', 'academy', 'business', 'client', 'client/tests']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
+  for (const surface of ['home', 'library', 'energy', 'love', 'business', 'client', 'client/tests']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
   for (const fault of ['old courses slot', 'old cabinet slot', 'wrong business destination', 'wrong house destination', 'wrong business label', 'wrong house label', 'wrong accessible name', 'missing link', 'extra link', 'wrong order', 'missing active', 'duplicate active', 'wrong active']) {
     test(locale + ' exact mobile verifier rejects ' + fault, () => assert.rejects(scenario(locale, 'client/tests', fault)));
   }
