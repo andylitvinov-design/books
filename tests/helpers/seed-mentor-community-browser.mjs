@@ -2,6 +2,7 @@
 // approved educational posts and a free listing ONLY in the isolated CI database.
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
 import { getAppConfig } from "../../lib/app/config.js";
 import { createAppRepository } from "../../lib/app/repository.js";
 import { createPractitionerRepository } from "../../lib/practitioners/repository.js";
@@ -131,7 +132,11 @@ try {
     assert.equal(visible.length, 2, locale + ": exactly two moderated articles");
     assert.equal(visible.every((entry) => !Object.hasOwn(entry, "draft")), true);
   }
-  console.log("MENTOR_COMMUNITY_FIXTURE_PASS synthetic approved mentor, moderated six-article feed, draft RLS, related service, three locales", randomUUID().slice(0, 8));
+  await mkdir("artifacts/mentor-community", { recursive: true });
+  await writeFile("artifacts/mentor-community/fixture-manifest.json", JSON.stringify({
+    synthetic: true, practitionerSlug: master.slug, hiddenSlug: hidden.slug, articleCount: 6, locales: ["en", "ru", "es"], id: randomUUID().slice(0, 8),
+  }, null, 2));
+  console.log("MENTOR_COMMUNITY_FIXTURE_PASS synthetic approved mentor, moderated six-article feed, draft RLS, related service, three locales");
 } finally {
   await closeDatabase();
 }
