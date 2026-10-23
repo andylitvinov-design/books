@@ -86,6 +86,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  const [message,setMessage]=useState('')
  const current=items.find(x=>x.id===selected)
  const active=draft?.slides?.find(x=>x.id===slideId)
+ const coverId=active?.coverAssetId||(active?.kind==='image'?active?.assetId:null)
  const dirty=!!current&&JSON.stringify(draft)!==JSON.stringify(current.draft)
  const unfinishedSlide=draft?.slides?.find(slide=>
   (slide.kind==='text'&&!String(slide.title||'').trim()&&!String(slide.body||'').trim()&&!String(slide.question||'').trim()&&!slide.coverAssetId)||
@@ -292,73 +293,128 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
      </details>
      <div className={styles.slideHeading}><strong>{t.slides} · {draft.slides.length}/60</strong>
       <button type="button" onClick={addSlide} disabled={busy||uploading||recording||draft.slides.length>=60}><Plus size={15}/>{t.add}</button></div>
-     <p className={styles.slideHint}>{t.slideHint}</p>
-     <div className={styles.slidePicker} role="group" aria-label={t.slides}>
-      {draft.slides.map((slide,i)=><button type="button" key={slide.id} aria-pressed={slide.id===slideId} onClick={()=>{setSlideId(slide.id);setShowPreview(false)}} disabled={busy||uploading||recording}>
-        {i+1} · {slide.title||t.choose}</button>)}
+     <div className={styles.elementToolbar} role="toolbar" aria-label={t.elementToolbar} data-course-slide-types data-course-element-toolbar>
+      <button type="button" disabled={busy||uploading||recording||!active} onClick={()=>focusBlock(bodyRef)}><AlignLeft size={20}/><span>{t.elementText}</span></button>
+      <button type="button" disabled={busy||uploading||recording||!active} onClick={()=>photoInputRef.current?.click()}><ImageIcon size={20}/><span>{t.elementPhoto}</span></button>
+      <button type="button" disabled={busy||uploading||recording||!active} aria-pressed={active?.kind==='audio'} onClick={()=>changeMediaKind('audio')}><Headphones size={20}/><span>{t.elementAudio}</span></button>
+      <button type="button" disabled={busy||uploading||recording||!active} aria-pressed={active?.kind==='video'||active?.kind==='embed'} onClick={()=>changeMediaKind('video')}><Film size={20}/><span>{t.elementVideo}</span></button>
+      <button type="button" disabled={busy||uploading||recording||!active} onClick={()=>focusBlock(questionRef)}><MessageCircleQuestion size={20}/><span>{t.elementQuestion}</span></button>
+      <button type="button" disabled={busy||uploading||recording||!active} onClick={()=>{
+       setShowPreview(false)
+       requestAnimationFrame(()=>{if(ctaDetailsRef.current){ctaDetailsRef.current.open=true;ctaLabelRef.current?.focus()}})
+      }}><Link2 size={20}/><span>{t.elementCta}</span></button>
      </div>
      {active&&<div className={styles.slideEditor} key={active.id}>
-       <div className={styles.slideTools}>
-        <div className={styles.slideKindPicker} role="group" aria-label={t.type} data-course-slide-types>
-         {[
-          {kind:'text',label:t.text,Icon:BookOpen},
-          {kind:'image',label:t.image,Icon:ImageIcon},
-          {kind:'audio',label:t.audio,Icon:Headphones},
-          {kind:'video',label:t.video,Icon:Film},
-          {kind:'embed',label:t.embed,Icon:Link2},
-         ].map(({kind,label,Icon})=><button key={kind} type="button" aria-pressed={active.kind===kind}
-           disabled={busy||uploading||recording} onClick={()=>updateSlide({kind,assetId:null,videoUrl:''})}>
-           <Icon size={17} aria-hidden="true"/><span>{label}</span>
-         </button>)}
-        </div>
-        <div className={styles.reorder}>
-         <button type="button" title={t.up} aria-label={t.up} onClick={()=>moveSlide(-1)} disabled={busy||uploading||recording||draft.slides[0]?.id===slideId}><ArrowUp size={17}/></button>
-         <button type="button" title={t.down} aria-label={t.down} onClick={()=>moveSlide(1)} disabled={busy||uploading||recording||draft.slides[draft.slides.length-1]?.id===slideId}><ArrowDown size={17}/></button>
-         <button type="button" title={t.duplicate} aria-label={t.duplicate} onClick={duplicateSlide} disabled={busy||uploading||recording||draft.slides.length>=60}><Copy size={17}/></button>
-         <button type="button" title={t.removeSlide} aria-label={t.removeSlide} onClick={removeSlide} disabled={busy||uploading||recording}><Trash2 size={17}/></button>
+      <div className={styles.canvasFrame} data-course-visual-canvas>
+       <div className={styles.canvasActions} role="group" aria-label={t.slides}>
+        <button type="button" title={t.moveUp} aria-label={t.moveUp} onClick={()=>moveSlide(-1)} disabled={busy||uploading||recording||draft.slides[0]?.id===slideId}><ArrowUp size={17}/></button>
+        <button type="button" title={t.moveDown} aria-label={t.moveDown} onClick={()=>moveSlide(1)} disabled={busy||uploading||recording||draft.slides[draft.slides.length-1]?.id===slideId}><ArrowDown size={17}/></button>
+        <button type="button" title={t.duplicate} aria-label={t.duplicate} onClick={duplicateSlide} disabled={busy||uploading||recording||draft.slides.length>=60}><Copy size={17}/></button>
+        <button type="button" className={styles.deleteScreen} title={t.removeSlide} aria-label={t.removeSlide} onClick={removeSlide} disabled={busy||uploading||recording}><Trash2 size={17}/></button>
+       </div>
+       <div className={styles.slideCanvas} data-course-slide-preview aria-label={t.lessonCanvas}>
+        {(!showPreview||coverId)&&<div className={styles.photoStage} data-course-photo-placeholder>
+         {coverId?<img loading="lazy" src={'/api/practitioner-course-media/'+coverId} alt={active.title||t.photoAlt}/>:
+          <div className={styles.landscapePlaceholder} aria-label={t.noPhoto}><span aria-hidden="true" className={styles.sunGlow}/></div>}
+         {!showPreview&&<div className={styles.photoControls}>
+          <button type="button" className={styles.photoUpload} disabled={busy||uploading||recording} onClick={()=>photoInputRef.current?.click()}>
+           <Plus size={20} aria-hidden="true"/>{uploading?t.uploading:coverId?t.replacePhoto:t.addPhoto}
+          </button>
+          {coverId&&<button type="button" className={styles.photoRemove} onClick={removeCover} disabled={busy||uploading||recording} aria-label={t.removePhoto}><X size={17}/></button>}
+         </div>}
+        </div>}
+        <input ref={photoInputRef} type="file" className={styles.visuallyHidden} accept={fileAccept.image}
+         disabled={busy||uploading||recording} aria-label={t.addPhoto}
+         onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file,false,'cover')}}/>
+        <div className={styles.pageContent}>
+         {showPreview?
+          (active.title&&<h4 className={styles.canvasTitle}>{active.title}</h4>):
+          <label className={styles.canvasTitleField}><span className={styles.visuallyHidden}>{t.slideTitle}</span>
+           <input className={styles.canvasTitleInput} value={active.title} maxLength={140} placeholder={t.screenTitlePlaceholder}
+            disabled={busy||uploading||recording} onChange={e=>updateSlide({title:e.target.value})}/></label>}
+         {(!showPreview||active.question)&&<div className={styles.questionBlock} data-course-question-block>
+          <span className={styles.blockIcon}><MessageCircleQuestion size={22} aria-hidden="true"/></span>
+          <div className={styles.blockCopy}><strong>{t.questionLabel}</strong>
+           {showPreview?<p>{active.question}</p>:
+            <textarea ref={questionRef} aria-label={t.questionLabel} rows={2} maxLength={500} value={active.question||''} placeholder={t.questionPlaceholder}
+             disabled={busy||uploading||recording} onChange={e=>updateSlide({question:e.target.value})}/>}
+          </div>
+         </div>}
+         {(!showPreview||active.body)&&<div className={styles.instructionBlock} data-course-text-block>
+          <span className={styles.blockIcon}><AlignLeft size={22} aria-hidden="true"/></span>
+          <div className={styles.blockCopy}><strong>{t.instructionLabel}</strong>
+           {showPreview?<p>{active.body}</p>:
+            <textarea ref={bodyRef} aria-label={t.instructionLabel} rows={3} maxLength={4000} value={active.body} placeholder={t.instructionPlaceholder}
+             disabled={busy||uploading||recording} onChange={e=>updateSlide({body:e.target.value})}/>}
+          </div>
+         </div>}
+         {(!showPreview||(active.ctaLabel&&active.ctaUrl))&&<div className={styles.ctaBlock} data-course-cta-block>
+          {showPreview?<span className={styles.ctaPreview}><Link2 size={17}/>{active.ctaLabel}<ChevronRight size={16}/></span>:
+           <details ref={ctaDetailsRef} key={active.id+':cta'} className={styles.ctaDetails} defaultOpen={!!(active.ctaLabel||active.ctaUrl)}>
+            <summary><Link2 size={19}/>{active.ctaLabel||t.optionalCta}<ChevronRight size={16}/></summary>
+            <div className={styles.ctaFields}>
+             <label>{t.buttonText}<input ref={ctaLabelRef} type="text" maxLength={90} value={active.ctaLabel||''} placeholder={t.buttonTextExample}
+              disabled={busy||uploading||recording} onChange={e=>updateSlide({ctaLabel:e.target.value})}/></label>
+             <label>{t.buttonUrl}<input type="text" inputMode="url" maxLength={900} value={active.ctaUrl||''} placeholder="https://…"
+              disabled={busy||uploading||recording} onChange={e=>updateSlide({ctaUrl:e.target.value})}/></label>
+            </div>
+           </details>}
+         </div>}
+         {(active.kind==='audio'||active.kind==='video'||active.kind==='embed')&&<div className={styles.mediaBox} data-course-media-attachment>
+          <strong><Film size={16}/>{t.mediaTitle}</strong>
+          {active.kind==='embed'?
+           <label><Link2 size={15}/>{t.link}<input type="url" value={active.videoUrl||''} placeholder="https://youtu.be/…"
+            disabled={busy||uploading||recording} onChange={e=>updateSlide({videoUrl:e.target.value})}/></label>:
+           <>
+            {!showPreview&&<label className={styles.mediaUpload}><Plus size={16}/>{uploading?t.uploading:t.upload}
+             <input type="file" accept={fileAccept[active.kind]} disabled={busy||uploading||recording}
+              onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file)}}/></label>}
+            {!showPreview&&<CourseSlideRecorder key={active.id+':'+active.kind} kind={active.kind} locale={locale} busy={busy||uploading}
+             onRecordingChange={setRecording} onUpload={file=>upload(file,true)}/>}
+            {active.assetId&&<div className={styles.preview}>
+             {active.kind==='audio'?<audio controls preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>:
+              <video controls playsInline preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>}
+            </div>}
+           </>}
+          {!showPreview&&(active.kind==='video'||active.kind==='embed')&&<button type="button" className={styles.mediaMode} disabled={busy||uploading||recording}
+           onClick={()=>changeMediaKind(active.kind==='embed'?'video':'embed')}>{active.kind==='embed'?t.uploadVideo:t.externalVideo}</button>}
+          {active.kind==='video'&&active.assetId&&<details className={styles.youtubePrepare} data-course-youtube-handoff>
+           <summary><ExternalLink size={16}/>{t.youtubePrep}</summary>
+           <p>{t.youtubeNote}</p><div className={styles.youtubeActions}>
+            <a href={'/api/practitioner-course-media/'+active.assetId+'?download=1'}><Download size={16}/>{t.youtubeDownload}</a>
+            {typeof onOpenYoutube==='function'
+             ?<button type="button" onClick={onOpenYoutube} disabled={busy||uploading||recording}><ExternalLink size={16}/>{t.youtubeUploader}</button>
+             :<a href="https://studio.youtube.com/" target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>{t.youtubeStudio}</a>}
+           </div>
+          </details>}
+          <small>{t.limit} · {t.private}</small>
+         </div>}
         </div>
        </div>
-       <label>{t.slideTitle}<input value={active.title} maxLength={140} disabled={busy||uploading||recording} onChange={e=>updateSlide({title:e.target.value})}/></label>
-       <label>{t.body}<textarea value={active.body} maxLength={4000} rows={4} disabled={busy||uploading||recording} onChange={e=>updateSlide({body:e.target.value})}/></label>
-       {active.kind==='embed'&&<label><Link2 size={15}/>{t.link}<input type="url" value={active.videoUrl||''} placeholder="https://youtu.be/…" onChange={e=>updateSlide({videoUrl:e.target.value})} disabled={busy||uploading||recording}/></label>}
-       {['image','audio','video'].includes(active.kind)&&<div className={styles.mediaBox}>
-        <label>{active.kind==='image'?<ImageIcon size={16}/>:active.kind==='audio'?<Headphones size={16}/>:<Film size={16}/>}
-          {uploading?t.uploading:t.upload}
-          <input type="file" accept={fileAccept[active.kind]} disabled={busy||uploading||recording}
-           onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file)}}/>
-        </label>
-        {['audio','video'].includes(active.kind)&&<CourseSlideRecorder key={active.id+':'+active.kind}
-         kind={active.kind} locale={locale} busy={busy||uploading}
-         onRecordingChange={setRecording} onUpload={file=>upload(file,true)}/>}
-        {active.assetId&&<div className={styles.preview}>
-         {active.kind==='image'?<img loading="lazy" src={'/api/practitioner-course-media/'+active.assetId} alt={active.title||t.photoAlt}/>:
-          active.kind==='audio'?<audio controls preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>:
-           <video controls playsInline preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>}
-        </div>}
-        {active.kind==='video'&&active.assetId&&<details className={styles.youtubePrepare} data-course-youtube-handoff>
-         <summary><ExternalLink size={16}/>{t.youtubePrep}</summary>
-         <p>{t.youtubeNote}</p>
-         <div className={styles.youtubeActions}>
-          <a href={'/api/practitioner-course-media/'+active.assetId+'?download=1'}><Download size={16}/>{t.youtubeDownload}</a>
-          {typeof onOpenYoutube==='function'
-            ?<button type="button" onClick={onOpenYoutube} disabled={busy||uploading||recording}><ExternalLink size={16}/>{t.youtubeUploader}</button>
-            :<a href="https://studio.youtube.com/" target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>{t.youtubeStudio}</a>}
-         </div>
-        </details>}
-        <small>{t.limit} · {t.private}</small>
-       </div>}
-       <button type="button" className={styles.previewToggle} aria-expanded={showPreview} onClick={()=>setShowPreview(value=>!value)}><Eye size={16}/>{showPreview?t.hideSlidePreview:t.previewSlide}</button>
-       {showPreview&&<div className={styles.livePreview} data-course-slide-preview aria-label={t.previewSlide}>
-        <small>{t.slides} {draft.slides.findIndex(s=>s.id===active.id)+1}/{draft.slides.length}</small>
-        <h4>{active.title||t.untitled}</h4>
-        {active.body&&<p>{active.body}</p>}
-        {active.assetId&&(active.kind==='image'?<img loading="lazy" src={'/api/practitioner-course-media/'+active.assetId} alt={active.title||t.photoAlt}/>:
-         active.kind==='audio'?<audio controls preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>:
-         active.kind==='video'?<video controls playsInline preload="none" src={'/api/practitioner-course-media/'+active.assetId}/>:null)}
-        {active.kind==='embed'&&active.videoUrl&&<a href={active.videoUrl} target="_blank" rel="noopener noreferrer">{t.link} <ExternalLink size={14}/></a>}
-       </div>}
-       <button type="button" className={styles.nextScreen} disabled={busy||uploading||recording||draft.slides.length>=60&&draft.slides[draft.slides.length-1]?.id===slideId} onClick={nextSlide}>{draft.slides[draft.slides.length-1]?.id===slideId?t.addNext:t.nextScreen}<ChevronRight size={17}/></button>
-      </div>}
+      </div>
+      <div className={styles.canvasFooter}>
+       <button type="button" className={styles.previewToggle} aria-expanded={showPreview} onClick={()=>setShowPreview(v=>!v)}>
+        {showPreview?<Pencil size={16}/>:<Eye size={16}/>} {showPreview?t.editSlide:t.visualPreview}
+       </button>
+      </div>
+     </div>}
+     <div className={styles.slidePicker} role="group" aria-label={t.slides} data-course-slide-thumbnails>
+      {draft.slides.map((slide,i)=><button type="button" key={slide.id} aria-pressed={slide.id===slideId}
+       onClick={()=>{setSlideId(slide.id);setShowPreview(false)}} disabled={busy||uploading||recording}>
+       <span className={styles.thumbnailArt}>
+        {slide.coverAssetId||(slide.kind==='image'&&slide.assetId)?
+         <img loading="lazy" src={'/api/practitioner-course-media/'+(slide.coverAssetId||slide.assetId)} alt=""/>:
+         <ImageIcon size={23} aria-hidden="true"/>}
+       </span><span className={styles.thumbnailNumber}>{i+1}</span><small>{slide.title||t.untitled}</small>
+      </button>)}
+      <button type="button" className={styles.addSlideTile} onClick={addSlide} disabled={busy||uploading||recording||draft.slides.length>=60}>
+       <Plus size={23}/><small>{t.addScreen}</small>
+      </button>
+     </div>
+     {active&&<div className={styles.slideTail}>
+      <button type="button" className={styles.nextScreen} disabled={busy||uploading||recording||draft.slides.length>=60&&draft.slides[draft.slides.length-1]?.id===slideId}
+       onClick={nextSlide}>{draft.slides[draft.slides.length-1]?.id===slideId?t.addNext:t.nextScreen}<ChevronRight size={17}/></button>
+     </div>}
      <div className={styles.publishReadiness} role="status"><LockKeyhole size={14} aria-hidden="true"/>{publishIssue?t.notReady+' '+publishIssue:t.ready}</div>
      <div className={styles.bottom}>
       <span className={dirty?styles.dirty:styles.saved}>{dirty?t.unsaved:t.saved}</span>
