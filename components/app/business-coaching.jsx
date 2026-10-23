@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, Moon, PauseCircle, PlayCircle, Sun, Target, TrendingUp, ListChecks, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
-  BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
+  BUSINESS_COURSE_INTAKE_PAUSED, BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
   BUSINESS_RESPONSE_LABELS, BUSINESS_METRICS,
   businessSnapshotScores, businessSuggestions, businessProgress, businessSurveyChanges, businessMetricChanges,
 } from '@/lib/business-coaching/program'
@@ -405,6 +405,12 @@ export default function BusinessCoaching({locale='en',accountId}){
   }
   if(loading)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
   if(!state)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
+  if(!course && BUSINESS_COURSE_INTAKE_PAUSED)return <section className={'hh-panel '+styles.root} data-business-coaching data-business-admissions-paused data-wood-mode={woodMode}>
+    <h1>{lang==='ru'?'90-дневная программа на паузе':'The 90-day programme is paused'}</h1>
+    <p>{lang==='ru'?'Мы временно закрыли новые записи. Уже сохранённые программы и результаты не удалены.':'New starts are temporarily closed. Existing private programmes and saved results are preserved.'}</p>
+    <Link className={styles.primary} href={'/'+lang+'/app/coaching'}>{lang==='ru'?'Начать личную коуч-сессию':'Start a Personal Coaching Session'}<ArrowRight size={17}/></Link>
+    <Link href={'/'+lang+'/app/course?view=courses'}>{lang==='ru'?'Мои курсы':'My Courses'}</Link>
+  </section>
   if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching
     data-course-visual="executive-wood-v2" data-business-immersive="reiki" data-wood-mode={woodMode} data-business-course-screen="welcome" data-business-onboarding-step={startStep}>
     <header className={styles.immersiveHeader} data-business-onboarding-header>

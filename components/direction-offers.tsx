@@ -122,9 +122,9 @@ const directionCopy = {
     es: { name: 'Amor', title: 'Cercanía, confianza y conexión', course: 'OPORA · Apoyo interior', courseDetail: 'Prácticas de estabilidad antes de conversaciones difíciles, no un curso específico de relaciones.', service: 'Consulta sobre relaciones', serviceDetail: 'Explora la comunicación, los límites y tus patrones.' },
   },
   business: {
-    en: { name: 'Business', title: 'Grow with focus and a clear direction', course: '90-day Business Development', courseDetail: 'A practical day-by-day development path in your private account.', service: 'Business & career consultation', serviceDetail: 'Work on a decision, career move or project with Andrey.' },
-    ru: { name: 'Бизнес', title: 'Развитие с фокусом и ясным планом', course: 'Развитие бизнеса · 90 дней', courseDetail: 'Ежедневные шаги и дневник прогресса в личном кабинете.', service: 'Консультация по бизнесу и карьере', serviceDetail: 'Разберите решение, профессиональную цель или проект.' },
-    es: { name: 'Negocios', title: 'Desarrolla tu proyecto con claridad', course: 'Desarrollo de negocios · 90 días', courseDetail: 'Pasos diarios y progreso en tu área privada (en inglés).', service: 'Consulta de negocios y carrera', serviceDetail: 'Explora decisiones, objetivos profesionales o proyectos.' },
+    en: { name: 'Business', title: 'Grow with focus and a clear direction', course: 'Personal Coaching Session', courseDetail: 'Seven coaching questions, your own written answers and one realistic next step.', service: 'Business & career consultation', serviceDetail: 'Work on a decision, career move or project with Andrey.' },
+    ru: { name: 'Бизнес', title: 'Развитие с фокусом и ясным планом', course: 'Личная коуч-сессия', courseDetail: 'Семь вопросов, ваши ответы и один реальный следующий шаг.', service: 'Консультация по бизнесу и карьере', serviceDetail: 'Разберите решение, профессиональную цель или проект.' },
+    es: { name: 'Negocios', title: 'Desarrolla tu proyecto con claridad', course: 'Sesión personal de coaching', courseDetail: 'Siete preguntas y tus respuestas privadas (en inglés).', service: 'Consulta de negocios y carrera', serviceDetail: 'Explora decisiones, objetivos profesionales o proyectos.' },
   },
 } as const
 
@@ -496,7 +496,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const selected = journey.topics.find(item => item.id === topicId)
   const appLocale = locale === 'es' ? 'en' : locale
   const courseHref = direction === 'business'
-    ? '/' + appLocale + '/app/business'
+    ? '/' + appLocale + '/app/coaching'
     : '/' + locale + '/courses/antistress'
   const serviceHref = '/' + locale + '/services/' + ({
     energy: 'alchemy-of-soul', relationships: 'systemic-constellations', business: 'business-consulting',
