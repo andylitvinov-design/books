@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {preparePhoto} from '@/components/session-photo-uploader'
-import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight,Copy,LockKeyhole,MessageCircleQuestion,AlignLeft,Pencil,X,Music} from 'lucide-react'
+import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight,Copy,LockKeyhole,MessageCircleQuestion,AlignLeft,Pencil,X} from 'lucide-react'
 import CourseSlideRecorder from './course-slide-recorder'
 import styles from './practitioner-course-builder.module.css'
 
