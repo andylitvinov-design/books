@@ -32,7 +32,7 @@ function journey(direction){
       :['decisions','productivity','work-stress','money-beliefs']
   return {id:direction,focus:[ids[0]],topics:ids.map(id=>({id,title:LABELS[id],detail:LABELS[id],focus:[id]}))}
 }
-function fixture(direction,locale){
+function fixture(direction,locale,suggestions={}){
   const state=[]
   let cursor=0
   const modules={
@@ -55,7 +55,7 @@ function fixture(direction,locale){
     window:{matchMedia:()=>({matches:true})},
     document:{getElementById:()=>({scrollIntoView(){}})},
   })
-  const props={locale,journey:journey(direction),suggestions:{}}
+  const props={locale,journey:journey(direction),suggestions}
   return {render:()=>{cursor=0;return exports.DirectionOffers(props)}}
 }
 
@@ -86,6 +86,41 @@ test('the single page shows hero then filter then three separate topic-specific 
       assert.equal(by(tree,'data-offer-action','session')[0].props.href,'/'+locale+'/services/'+service)
     }
   }
+})
+
+test('all suggested free-test cards open their exact guest questionnaire without a second picker',()=>{
+  const keys=['hh-current-state','phq-4','mini-ipip-20','who-5','phq-9']
+  for(const direction of ['energy','relationships','business']){
+    for(const locale of ['en','ru','es']){
+      const ids=journey(direction).topics.map(item=>item.id)
+      const suggestions=Object.fromEntries([
+        ['', [{key:keys[0],title:'Weekly Wellbeing Check-in'}]],
+        ...ids.map((id,i)=>[id,[{key:keys[i+1],title:'Suggested questionnaire'}]]),
+      ])
+      const f=fixture(direction,locale,suggestions)
+      const runnerLocale=locale==='es'?'en':locale
+      const hrefFor=key=>'/'+runnerLocale+'/client?startTests='+key
+      let tree=f.render()
+      assert.equal(by(tree,'data-offer-action','test')[0].props.href,hrefFor(keys[0]))
+      assert.equal(by(tree,'data-offer-action','test')[1].props.href,hrefFor(keys[1]))
+      by(tree,'data-direction-show-more','test')[0].props.onClick()
+      tree=f.render()
+      const cards=by(tree,'data-offer-action','test')
+      assert.deepEqual(cards.map(item=>item.props.href),keys.slice(0,4).map(hrefFor))
+      for(const card of cards){
+        assert.deepEqual([...new URL(card.props.href,'https://example.invalid').searchParams.keys()],['startTests'])
+        assert.ok(!card.props.href.includes('/client/tests?'))
+      }
+      assert.equal(by(tree,'data-direction-all','test')[0].props.href,'/'+locale+'/client/tests?catalog=full')
+      by(tree,'data-direction-filter',ids[3])[0].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-offer-action','test')[0].props.href,hrefFor(keys[4]))
+    }
+  }
+  const runner=read('components/app/cabinet-landing.jsx')
+  assert.ok(runner.includes("requestedGuestTests = searchParams.get('startTests')"))
+  assert.ok(runner.includes('if (definitions.length === 1)'))
+  assert.ok(runner.includes('return begin(definitions[0].key)'))
 })
 
 test('each group reveals exactly two additional real offers inline, then an external catalog link',()=>{
