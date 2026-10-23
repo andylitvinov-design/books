@@ -115,3 +115,23 @@ test('coaching form and choice player have matching CSS selectors',()=>{
  assert.match(css,/@media\(max-width:370px\)/)
  assert.match(css,/safe-area-inset-bottom/)
 })
+
+
+test('Personal Coaching reuses the established opt-in question voice, not a second recorder',()=>{
+ const player=source('components/app/personal-coaching.jsx')
+ const voice=source('components/app/coaching-question-voice.jsx')
+ const course=source('components/app/tradition-coaching.jsx')
+ const css=source('components/app/tradition-coaching.module.css')
+ assert.match(player,/import CoachingQuestionVoice from '\.\/coaching-question-voice'/)
+ assert.match(player,/<CoachingQuestionVoice key=\{question\.id\}/)
+ assert.match(player,/onTranscript=\{words=>/)
+ assert.match(player,/setDraft\(words\.trim\(\)\.slice\(0,800\)\)/)
+ assert.match(course,/CoachingQuestionVoice/)
+ assert.match(voice,/window\.confirm\(t\.notice\)/)
+ assert.match(voice,/SpeechRecognition\|\|window\.webkitSpeechRecognition/)
+ assert.match(voice,/if\(recognition\.current!==capture\)return/)
+ assert.match(voice,/document\.addEventListener\('visibilitychange'/)
+ assert.match(voice,/window\.speechSynthesis\.cancel\(\)/)
+ assert.match(css,/\.voiceActions button\{[^}]*min-height:44px/)
+ assert.doesNotMatch(voice,/fetch\(|getUserMedia\(|MediaRecorder/)
+})

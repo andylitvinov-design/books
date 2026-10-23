@@ -40,6 +40,7 @@ export default function CoachingQuestionVoice({text,locale='en',onTranscript,dis
   function toggleVoice(){
     if(!support.tts||disabled)return
     if(speaking){window.speechSynthesis.cancel();utterance.current=null;setSpeaking(false);return}
+    if(recognition.current){recognition.current.abort();recognition.current=null;setListening(false)}
     try{
       const synth=window.speechSynthesis
       synth.cancel()
@@ -57,15 +58,18 @@ export default function CoachingQuestionVoice({text,locale='en',onTranscript,dis
     if(listening){recognition.current?.stop();return}
     if(!support.stt){setError(t.unsupported);return}
     if(!window.confirm(t.notice))return
+    if(utterance.current){window.speechSynthesis.cancel();utterance.current=null;setSpeaking(false)}
     try{
       const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition
       const capture=new Constructor()
       capture.lang=spoken;capture.continuous=false;capture.interimResults=false;capture.maxAlternatives=1
       capture.onresult=e=>{
+        // An old question's late recognition callback must never replace the next slide's answer.
+        if(recognition.current!==capture)return
         const value=Array.from(e.results||[]).filter(r=>r.isFinal).map(r=>r[0]?.transcript||'').join(' ').trim()
         if(value)savedCallback.current?.(value)
       }
-      capture.onerror=()=>{setError(t.error)}
+      capture.onerror=()=>{if(recognition.current===capture)setError(t.error)}
       capture.onend=()=>{if(recognition.current===capture){recognition.current=null;setListening(false)}}
       recognition.current=capture;setError('');capture.start();setListening(true)
     }catch{recognition.current=null;setListening(false);setError(t.error)}
