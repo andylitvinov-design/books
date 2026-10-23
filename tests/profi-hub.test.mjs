@@ -1,63 +1,170 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { getCompactNavigation, getSiteNavigation, activeCompactNavigationId } from "../lib/site-navigation-model.js";
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { runInNewContext } from 'node:vm'
+import test from 'node:test'
+import ts from 'typescript'
+import { activeCompactNavigationId, getCompactNavigation, getSiteNavigation } from '../lib/site-navigation-model.js'
 
-const read = file => readFileSync(new URL("../" + file, import.meta.url), "utf8");
-const page = read("app/[locale]/pro/page.tsx");
-const hub = read("components/profi-hub.tsx");
-const css = read("components/profi-hub.module.css");
-const bottom = read("components/mobile-bottom-navigation.tsx");
-const icons = read("components/compact-navigation-icons.ts");
-const publicLocales = read("lib/public-locales.ts");
+const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
+const page = read('app/[locale]/pro/page.tsx')
+const hub = read('components/profi-hub.tsx')
+const css = read('components/profi-hub.module.css')
+const practice = read('components/app/practice-workspace.jsx')
+const materials = read('components/app/practice-materials.jsx')
+const editor = read('components/app/simple-service-editor.jsx')
+const builder = read('components/app/practitioner-course-builder.jsx')
+const auth = read('app/api/app/[...path]/route.js')
+const app = read('components/app/app-workspace.jsx')
 
-test("Pro is a real localized public route with alternate metadata", () => {
-  assert.match(page, /<ProfiHub locale=\{locale\}/);
-  for (const locale of ["en", "ru", "es"]) assert.match(page, new RegExp(locale + ': \\{ title:'));
-  assert.match(page, /"x-default": "\/en\/pro"/);
-  assert.match(publicLocales, /\/pro/);
-  assert.match(publicLocales, /publicCounterpart/);
-});
-
-test("bottom navigation and hamburger share Pro and active route, without losing existing destinations", () => {
-  const expected = ["home", "energy", "love", "business", "tests", "books", "pro"];
-  for (const locale of ["en", "ru", "es"]) {
-    const nav = getCompactNavigation(locale);
-    assert.deepEqual(nav.map(item => item.id), expected);
-    assert.equal(nav.at(-1).href, "/" + locale + "/pro");
-    assert.equal(getSiteNavigation(locale).find(item => item.id === "pro")?.href, "/" + locale + "/pro");
-    assert.equal(activeCompactNavigationId("/" + locale + "/pro"), "pro");
+const jsx = (type,props) => typeof type === 'function' ? type(props||{}) : { type, props: props||{} }
+const nodes = tree => tree == null || typeof tree !== 'object' ? [] :
+  Array.isArray(tree) ? tree.flatMap(nodes) : [tree,...nodes(tree.props?.children)]
+function mount(locale) {
+  const state = []
+  let cursor = 0
+  const useState = init => {
+    const i = cursor++
+    if (!(i in state)) state[i] = typeof init === 'function' ? init() : init
+    return [state[i], change => {
+      state[i] = typeof change === 'function' ? change(state[i]) : change
+    }]
   }
-  assert.match(bottom, /getCompactNavigation\(locale\)/);
-  assert.match(icons, /pro: GraduationCap/);
-  assert.match(read("app/holistic-house-home.css"), /grid-template-columns:\s*repeat\(7/);
-});
+  const style = new Proxy({}, { get: (_,key) => String(key) })
+  const modules = {
+    'react/jsx-runtime': { jsx, jsxs:jsx },
+    react: { useState },
+    'next/link': { default:props => jsx('a',props) },
+    'next/image': { default:props => jsx('img',props) },
+    'lucide-react': new Proxy({}, { get: () => () => null }),
+    '@/components/public-site-header': { PublicSiteHeader:props=>jsx('header',props) },
+    './profi-hub.module.css': { __esModule:true,default:style },
+  }
+  const compiled = ts.transpileModule(hub,{
+    fileName:'profi-hub.tsx',
+    compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},
+  }).outputText
+  const exports = {}
+  runInNewContext(compiled,{
+    exports,
+    require: name => { assert.ok(Object.hasOwn(modules,name),'known dependency: '+name);return modules[name] },
+    window: { requestAnimationFrame: callback=>callback(), matchMedia:()=>({matches:true}) },
+    document: { getElementById:()=>({scrollIntoView(){}}) },
+  })
+  return { render:()=>{cursor=0;return exports.ProfiHub({locale})} }
+}
+const find = (tree,attribute,value) => nodes(tree).find(x=>x.props?.[attribute]===value)
 
-test("learning and practitioner branches use existing real workflows and transparent promises", () => {
-  for (const phrase of ["Хочу стать профи", "Я уже профи", "I want to learn Reiki", "I'm already a pro", "Ya soy profesional"]) assert.ok(hub.includes(phrase), phrase);
-  for (const entry of [
-    "academy/principles-of-energywork/learn",
-    "/academy/reiki",
-    "/app/practice?panel=services",
-    "/app/practice?panel=materials&materialTab=courses",
-    "data-profi-path=\"learn\"",
-    "data-profi-path=\"share\"",
-    "data-profi-action=\"start-course\"",
-    "data-profi-action=\"create-service\"",
-    "data-profi-action=\"create-course\"",
-  ]) assert.ok(hub.includes(entry), entry);
-  assert.match(hub, /does not grant a professional credential/);
-  assert.match(hub, /Публикация проходит проверку/);
-  assert.match(hub, /Inicia|iniciación requiere confirmación personal/);
-  assert.match(hub, /locale === "es" \? "en" : locale/);
-});
+test('Pro is a real EN/RU/ES route with correct metadata and safe account fallback',()=>{
+  assert.match(page,/<ProfiHub locale=\{locale\}/)
+  for(const lang of ['en','ru','es']) assert.match(page,new RegExp('"/'+lang+'/pro"'))
+  assert.match(page,/"x-default": "\/en\/pro"/)
+  assert.match(read('lib/public-locales.ts'), /(?:en\|ru\|es).*pro/)
+  for(const locale of ['en','ru','es']){
+    const view=mount(locale).render()
+    assert.equal(find(view,'data-profi-page',locale).type,'main')
+  }
+  assert.match(hub,/locale === "es" \? "en" : locale/)
+})
 
-test("320px touch layout and accessible, reduced motion routing are explicit", () => {
-  assert.match(css, /@media\(max-width:374px\)/);
-  assert.match(css, /@media\(max-width:720px\)/);
-  assert.match(css, /min-height:48px/);
-  assert.match(css, /focus-visible/);
-  assert.match(css, /prefers-reduced-motion/);
-  assert.match(hub, /aria-labelledby="profi-learning-title"/);
-  assert.match(hub, /aria-labelledby="profi-share-title"/);
-});
+test('bottom bar and hamburger preserve all original six links and add seventh Pro',()=>{
+  const expected=['home','energy','love','business','tests','books','pro']
+  for(const locale of ['en','ru','es']){
+    const nav=getCompactNavigation(locale)
+    assert.deepEqual(nav.map(x=>x.id),expected)
+    assert.equal(nav.at(-1).href,'/'+locale+'/pro')
+    assert.equal(getSiteNavigation(locale).find(x=>x.id==='pro')?.href,'/'+locale+'/pro')
+    assert.equal(activeCompactNavigationId('/'+locale+'/pro'),'pro')
+  }
+  assert.match(read('components/compact-navigation-icons.ts'),/pro: GraduationCap/)
+  assert.match(read('components/mobile-bottom-navigation.tsx'),/getCompactNavigation\(locale\)/)
+  assert.match(read('app/ia-v2.css'),/repeat\(7,minmax\(0,1fr\)\)/)
+  assert.match(read('app/holistic-house-home.css'),/repeat\(7, minmax\(0,1fr\)\)/)
+})
+
+test('actual interactive learner track explores five steps but launches only existing training',()=>{
+  for(const locale of ['en','ru','es']){
+    const widget=mount(locale)
+    let tree=widget.render()
+    assert.ok(find(tree,'data-profi-learning',undefined) === undefined) // property is boolean, check via node below
+    assert.ok(nodes(tree).some(x=>x.props && Object.hasOwn(x.props,'data-profi-learning')))
+    assert.equal(nodes(tree).filter(x=>x.props && Object.hasOwn(x.props,'data-profi-lesson')).length,5)
+    find(tree,'data-profi-lesson',4).props.onClick()
+    tree=widget.render()
+    assert.ok(nodes(tree).some(x=>x.props?.['aria-label'] &&
+      (x.props['aria-label']==='In this lesson'||x.props['aria-label']==='Что попробуешь'||x.props['aria-label']==='Qué explorarás')))
+    const link=find(tree,'data-profi-action','start-course')
+    assert.equal(link.props.href,'/'+(locale==='es'?'en':locale)+'/academy/principles-of-energywork/learn')
+    assert.ok(nodes(tree).some(x=>x.props?.['data-profi-path']==='practice'))
+  }
+})
+
+test('offer studio really switches all four starter destinations, not fake publish forms',()=>{
+  const choices=[
+    ['session','?panel=services&create=1&starter=session','create-service'],
+    ['intro','?panel=services&create=1&starter=intro','create-service'],
+    ['workshop','?panel=services&create=1&starter=workshop','create-service'],
+    ['course','?panel=materials&materialTab=courses&create=1','create-course'],
+  ]
+  for(const locale of ['en','ru','es']){
+    const widget=mount(locale)
+    find(widget.render(),'data-profi-path','practice').props.onClick()
+    for(const [kind,url,action] of choices){
+      let tree=widget.render()
+      find(tree,'data-profi-offer',kind).props.onClick()
+      tree=widget.render()
+      const preview=find(tree,'data-profi-preview',kind)
+      assert.ok(preview,'offer preview is selected: '+kind)
+      const link=find(tree,'data-profi-action',action)
+      assert.ok(link)
+      assert.equal(link.props.href,'/'+(locale==='es'?'en':locale)+'/app/practice'+url)
+      assert.equal(link.props['data-profi-selected-offer'],kind)
+      assert.equal(nodes(tree).filter(x=>x.props && Object.hasOwn(x.props,'data-profi-step')).length,4)
+      assert.ok(nodes(tree).some(x=>x.props?.['data-profi-money-model']!==undefined))
+    }
+  }
+})
+
+test('safe Google OAuth continuation validates and maps only categorical Pro intents',()=>{
+  assert.match(app,/page === 'practice' \? \{ continueTo: 'my-practice'/)
+  assert.match(app,/proPanel === 'services' && proCreate/)
+  assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'\]\)/)
+  assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'course', 'profile', 'requests'\]/g)||[]).length,2)
+  assert.match(auth,/profi === 'course' \? '\?panel=materials&materialTab=courses&create=1'/)
+  assert.match(auth,/profi === 'profile' \? '\?panel=profile'/)
+  assert.match(auth,/profi === 'requests' \? '\?panel=requests'/)
+  assert.match(auth,/'\?panel=services&create=1&starter=' \+ profi/)
+  assert.doesNotMatch(hub,/localStorage|sessionStorage|fetch\(|createClient\(|navigator\.share/)
+})
+
+test('actual protected editors open the requested draft without saving before user confirmation',()=>{
+  assert.match(practice,/params\.get\('create'\)==='1'/)
+  assert.match(practice,/setNewServiceRequest\(current=>current\+1\)/)
+  assert.match(practice,/setProStarter\(\['session','intro','workshop'\]\.includes/)
+  assert.match(practice,/quickCreateCourse=\{proCourseStart\}/)
+  assert.match(practice,/starter=\{item\?null:starter\}/)
+  for(const kind of ['session','intro','workshop']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
+  assert.match(editor,/!item && Object\.hasOwn\(PRO_STARTERS,starter\)/)
+  assert.match(editor,/onSaveAndSubmit\(item\?\.id\|\|null,makePayload\(\),item\?\.revision\)/)
+  assert.match(materials,/setCourseComposerOpen\(true\)/)
+  assert.match(materials,/startCreate=\{quickCreateCourse\}/)
+  assert.match(builder,/setCreating\(Boolean\(startCreate\)\|\|!list\.length\)/)
+  assert.match(builder,/data-course-quick-start/)
+  assert.doesNotMatch(hub,/publishNow\(|payment_received|lead_created/)
+})
+
+test('earning promise stays honest; mobile and accessibility are deliberate',()=>{
+  for(const phrase of ['Встроенные платежи и выплаты мастерам пока не работают',
+    'Checkout','no earnings','No earnings','не гарантируются','до 10 сохранённых услуг Hobby']) {
+    assert.ok(hub.toLowerCase().includes(phrase.toLowerCase()) || phrase==='Checkout' && hub.includes('checkout'),
+      phrase)
+  }
+  assert.match(hub,/не даёт профессиональной квалификации/)
+  assert.match(hub,/role="group" aria-label=\{t.choose\}/)
+  assert.match(hub,/aria-pressed=\{path === "practice"\}/)
+  assert.match(hub,/aria-pressed=\{offer === key\}/)
+  assert.match(css,/@media\(max-width:359px\)/)
+  assert.match(css,/@media\(max-width:600px\)/)
+  assert.match(css,/prefers-reduced-motion/)
+  assert.match(css,/focus-visible/)
+  assert.match(css,/min-height:49px/)
+})
