@@ -111,17 +111,19 @@ test("all homepage slides describe real benefits in EN, RU and ES with compact m
   assert.match(carousel, /title: "Nuevas ideas para tu pregunta"/);
 });
 
-test("the approved photo hero has light text-only section links without replacing its slider", () => {
-  const sections = ["home", "tests", "services", "academy", "business", "ideas", "cabinet"];
-  assert.match(carousel, /const navKeys = \["home", "tests", "services", "academy", "business", "ideas", "cabinet"\] as const/);
+test("the approved photo hero offers six localized destinations without an extra Home tab", () => {
+  const sections = ["tests", "services", "academy", "business", "ideas", "cabinet"];
+  assert.match(carousel, /const navKeys = \["tests", "services", "academy", "business", "ideas", "cabinet"\] as const/);
+  assert.doesNotMatch(carousel, /const navKeys = \["home"/);
+  assert.doesNotMatch(carousel, /nav: \{ home:/);
   assert.match(carousel, /<nav className=\{styles\.sectionNav\} aria-label=\{t\.navigationLabel\}/);
   assert.match(carousel, /data-home-nav-section=\{key\}/);
   assert.match(carousel, /aria-current=\{key === slide\.key \? "true" : undefined\}/);
   assert.match(carousel, /slides\.find\(item => item\.key === key\)/);
-  // #1573 uses an explicit EN fallback for the Spanish cabinet; keep that route contract.
-  assert.match(carousel, /href=\{key === "cabinet" && locale === "es" \? "\/en\/app" : target \? `\/\$\{locale\}\$\{target\.href\}` : locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
+  // The Spanish private cabinet intentionally uses the working English app route.
+  assert.match(carousel, /href=\{key === "cabinet" && locale === "es" \? "\/en\/app" : \`\/\$\{locale\}\$\{target\.href\}\`\}/);
   for (const item of sections) assert.match(carousel, new RegExp(item + ': "'));
-  for (const label of ["Главная", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Кабинет", "Inicio", "Pruebas", "Servicios", "Academia", "Negocios", "Mi espacio"]) {
+  for (const label of ["Tests", "Services", "Academy", "Business", "Ideas", "Cabinet", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Кабинет", "Pruebas", "Servicios", "Academia", "Negocios", "Mi espacio"]) {
     assert.ok(carousel.includes(label), "Missing localized top navigation label: " + label);
   }
   assert.ok(carousel.indexOf("className={styles.sectionNav}") > carousel.indexOf("className={styles.gradient}"));
@@ -134,21 +136,24 @@ test("the approved photo hero has light text-only section links without replacin
   assert.doesNotMatch(carousel, /navKeys\.map[^]*?<svg/);
 });
 
-test("homepage slider category bar matches the outlined oval and contrast-white active pill on narrow iPhones", () => {
+test("homepage slider keeps a lighter slim oval, white active pill, and accessible horizontal scrolling", () => {
   const scoped = style.split("/* Homepage-only segmented navigation:")[1];
   assert.ok(scoped, "Missing homepage-only pill styles");
   assert.match(scoped, /\.hero\[data-home-section-carousel\] \.sectionNav \{/);
-  assert.match(scoped, /border: 1px solid rgba\(255, 253, 246, \.70\)/);
+  assert.match(scoped, /border: 1px solid rgba\(255, 253, 246, \.44\)/);
+  assert.match(scoped, /background: rgba\(25, 40, 44, \.40\)/);
+  assert.match(scoped, /padding: 2px/);
   assert.match(scoped, /border-radius: 999px/);
-  assert.match(scoped, /\.sectionNavScroller \{[^}]*gap: 2px/s);
+  assert.match(scoped, /\.sectionNavScroller \{[^}]*gap: 1px/s);
   assert.match(scoped, /\.sectionNavLink \{[^}]*min-height: 44px/s);
   assert.match(scoped, /\.sectionNavLink\[aria-current="true"\] \{[^}]*color: #23394d;[^}]*background: #fffdfa;/s);
   assert.match(scoped, /\.sectionNavLink \+ \.sectionNavLink::before,[^]*?content: none/);
+  assert.match(scoped, /width: min\(350px, calc\(100% - 28px\)\)/);
   assert.match(scoped, /@media \(max-width: 760px\)/);
   assert.match(scoped, /@media \(max-width: 365px\)/);
   assert.match(scoped, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(carousel, /data-home-nav-active=\{key === slide\.key \? "true" : "false"\}/);
-  // Touch-scrolling the 7 labels must not also swipe the parent photo carousel.
+  // Horizontal swipes on the six labels must not swipe the parent photo carousel.
   assert.match(carousel, /onTouchStart=\{event => event\.stopPropagation\(\)\}/);
   assert.match(carousel, /onTouchEnd=\{event => event\.stopPropagation\(\)\}/);
   assert.match(carousel, /onTouchCancel=\{event => event\.stopPropagation\(\)\}/);
