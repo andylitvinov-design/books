@@ -96,7 +96,7 @@ export function EgyptianPriesthoodLanding({ locale }: { locale: PublicLocale }) 
             {egyptLessonTopics.map((topic, index) => {
               const original = osirisOriginalVideos[index];
               return (
-                <li key={topic.id}>
+                <li key={topic.id} data-egypt-video-id={original?.id} data-egypt-video-order={original?.order} data-egypt-day={index + 1}>
                   <Link href={"/" + locale + "/academy/egyptian-priesthood/learn?lesson=" + (index + 1)}
                     className={styles.syllabusItem}>
                     <span className={styles.dayNumber}>{String(index + 1).padStart(2, "0")}</span>
