@@ -55,7 +55,7 @@ test("backend enforces same-origin, strict payload, rate limits and no raw text"
     "request.body.text", "console.log("]) {
     assert.ok(!endpoint.includes(forbidden), forbidden);
   }
-  const schema=read("supabase/migrations/20261023160700_home_guide_quality_feedback.sql");
+  const schema=read("supabase/migrations/20261023152143_home_guide_quality_feedback_20261023.sql");
   for(const token of [
     "create table if not exists app_private.home_guide_quality_events",
     "create table if not exists app_private.home_guide_quality_daily",

@@ -37,7 +37,7 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
     'grid-template-columns:92px minmax(0,1fr)',
   ]) assert.ok(styles.includes(token), token)
   assert.ok(route.includes("theme === 'relationships') redirect"))
-  assert.ok(route.includes('data-direction-more'))
+  assert.ok(route.includes('<DirectionExtras'))
   assert.ok(route.includes('<TopicJourneySelector'))
   assert.ok(home.includes("direction.id === 'relationships' ? 'love'"))
   assert.ok(spanish.includes('<HomepageTopicJourneys locale="es" />'))

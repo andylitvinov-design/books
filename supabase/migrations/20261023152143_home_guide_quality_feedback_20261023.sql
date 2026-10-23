@@ -1,3 +1,4 @@
+-- Applied to production Supabase as migration 20261023152143.
 -- Opt-in learning for the public Home guide. No visitor text, health data, 
 -- identifiers, IPs, transcripts or account references are stored here.
 -- All operations are server only through the existing restricted hh_app_backend.
