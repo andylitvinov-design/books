@@ -78,6 +78,10 @@ test('day one restores five opening screens and all days add untracked support a
     }
     // Practical work always comes after the voluntary acceptance screen.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
+    assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-guided-meditation']==='true'),
+      'Early meditation must not appear on an everyday practice card')
+    assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-inline-practice-audio']==='true'),
+      'No expandable timer remains in the daily practice')
     await click(h,d.try)
     await click(h,d.next)
     await click(h,d.unchanged)
@@ -107,6 +111,14 @@ test('day one restores five opening screens and all days add untracked support a
     await click(h,d.next)
     assert.ok(textOf(h.tree).includes(options[0].label))
     await click(h,d.next)
+    if(day===14){
+      const final=nodes(h.tree).find(n=>n.props?.['data-opora-final-meditation']==='day-14')
+      assert.ok(final,'Day 14 has a closing meditation before the final feedback')
+      assert.ok(nodes(final).some(n=>n.props?.['data-opora-guided-meditation']==='true'))
+      assert.equal(nodes(final).filter(n=>n.type==='details').length,0,
+        'Meditation is exposed without any accordion')
+      await click(h,d.next)
+    }
     assert.ok(textOf(h.tree).includes(lang==='ru'?'Как вам было?':'How was this for you?'))
     await click(h,lang==='ru'?'Получилось немного':'I managed a little')
     assert.equal(f.requests,0,'No save until the recap is explicitly completed')
