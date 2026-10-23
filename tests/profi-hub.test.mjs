@@ -10,6 +10,12 @@ const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8'
 const page = read('app/[locale]/pro/page.tsx')
 const hub = read('components/profi-hub.tsx')
 
+test('Pro public tests and profile block is unique without unsupported marketing banner props',()=>{
+  assert.doesNotMatch(hub,/HomeFreeDiagnosisBanner/)
+  assert.match(hub,/data-profi-profiles/)
+  assert.match(hub,/data-profi-entry="tests"/)
+})
+
 test('Pro TSX parses with no syntax diagnostics in all three locales',()=>{
   const source=ts.createSourceFile('components/profi-hub.tsx',hub,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
   const problems=source.parseDiagnostics.map(item=>{
