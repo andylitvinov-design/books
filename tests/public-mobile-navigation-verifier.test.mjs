@@ -35,7 +35,7 @@ async function scenario(locale, surface, fault, visible = true) {
     '/' + locale + '/' + surface;
   const tree = render(locale, pathname);
   const anchors = nodes(tree).filter(node => node.type === 'a');
-  assert.equal(anchors.length, 6);
+  assert.equal(anchors.length, 7);
   assert.ok(anchors.every(node => node.props.prefetch === false), 'No speculative tests or cabinet navigation');
   if (fault === 'old courses slot') { anchors[4].props['data-nav-item'] = 'courses'; anchors[4].props.href = '/' + locale + '/courses'; }
   if (fault === 'old cabinet slot') { anchors[5].props['data-nav-item'] = 'cabinet'; anchors[5].props.href = '/' + locale + '/client'; }
