@@ -1,5 +1,5 @@
 import type { PublicLocale } from "@/lib/public-locales";
-import { searchSite } from "@/lib/public-site-search";
+import { searchSite } from "@/lib/site-search-index";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

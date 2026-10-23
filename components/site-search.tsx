@@ -6,7 +6,7 @@ import { Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
-import type { SiteSearchResult, SiteSearchKind } from "@/lib/public-site-search";
+import type { SiteSearchResult, SiteSearchKind } from "@/lib/site-search-index";
 import styles from "./site-search.module.css";
 
 const words = {
