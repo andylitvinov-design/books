@@ -67,3 +67,21 @@ test('personal course offers listen, typed, one-tap and dictated editable choice
   assert.match(css,/@media\(max-width:370px\)/)
   assert.doesNotMatch(ui,/localStorage|sessionStorage|MediaRecorder|sendBeacon|dangerouslySetInnerHTML/)
 })
+
+
+test('coaching UI scripts are parseable before a production deployment', async()=>{
+  const ts=(await import('typescript')).default
+  for(const file of [
+    'components/app/personal-coaching.jsx',
+    'components/app/personal-coaching-picker.jsx',
+    'components/app/coaching-question-voice.jsx',
+    'components/app/tradition-coaching.jsx',
+  ]){
+    const parsed=ts.createSourceFile(file,source(file),ts.ScriptTarget.ES2022,true,ts.ScriptKind.JSX)
+    const errors=parsed.parseDiagnostics.map(item=>{
+      const where=parsed.getLineAndCharacterOfPosition(item.start||0)
+      return file+':'+(where.line+1)+': '+ts.flattenDiagnosticMessageText(item.messageText,' ')
+    })
+    assert.deepEqual(errors,[],file+' contains invalid JSX/JavaScript')
+  }
+})
