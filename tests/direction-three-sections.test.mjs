@@ -120,7 +120,7 @@ test('all suggested free-test cards open their exact guest questionnaire without
   const runner=read('components/app/cabinet-landing.jsx')
   assert.ok(runner.includes("requestedGuestTests = searchParams.get('startTests')"))
   assert.ok(runner.includes('if (definitions.length === 1)'))
-  assert.ok(runner.includes('if (definitions.length === 1)'))
+  assert.ok(runner.includes('return begin(definitions[0].key)'))
 })
 
 test('each group reveals exactly two additional real offers inline, then an external catalog link',()=>{
