@@ -59,8 +59,16 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
-      assert.ok(realLifeChoice?.label,'Every day needs an authored action')
-      await click(player,realLifeChoice.label)
+      assert.ok(realLifeChoice?.label,'Archived choices must remain accessible')
+      if(day===4){
+        const content=textOf(player.tree)
+        assert.ok(content.includes(locale==='ru'?'Перед одним привычным делом':'Before one routine task'))
+        assert.ok(!content.includes(realLifeChoice.label),'Day 4 must not present an alternative choice')
+        const field=nodes(player.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
+        assert.ok(field,'Day 4 emotion entry must exist')
+        field.props.onChange({target:{value:locale==='ru'?'спокойствие':'calm'}})
+        await player.settle()
+      }else await click(player,realLifeChoice.label)
       await advanceOporaTo(player,'recapFeedback',t.next)
       await click(player,locale==='ru'?'Получилось немного':'I managed a little')
       assert.equal(requests, 0, 'Opening moments and choosing responses never saves')
@@ -88,6 +96,8 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.aphorism, 'unsure')
       assert.equal(saved.signals.opora54.answers.transfer, 'planned')
       assert.equal(saved.signals.opora54.answers.transferChoice, 'two')
+      assert.equal(saved.signals.opora54.answers.transferFeeling,day===4
+        ?(locale==='ru'?'спокойствие':'calm'):undefined)
       assert.equal(saved.signals.opora54.answers.lessonConfidence,'some')
       if (day === 14) assert.equal(receipt.cycle.status, 'completed')
       else {
