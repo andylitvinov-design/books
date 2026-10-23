@@ -40,7 +40,7 @@ test("all home locales keep the approved hero and show five distinct compact cho
 test("each module selects its OWN two or three real existing routes without creating data", () => {
   for (const value of [
     'selected === "tests"', 'selected === "courses"', 'selected === "services"',
-    'selected === "learning"', 'data-home-module="master"',
+    'selected === "learning"', 'master: { title:',
     '/client/tests?focus=stress', '/client/tests?focus=resources',
     '/courses/antistress', 'accountRoot + "/business"',
     '/services/free-situation-review', '/services#consultation',
