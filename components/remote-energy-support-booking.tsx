@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { REMOTE_SUPPORT_DRAFT_KEY } from "@/lib/practitioners/remote-energy-support";
 import styles from "./remote-energy-support-booking.module.css";
@@ -173,6 +174,10 @@ export function RemoteEnergySupportBooking({
   return (
     <section className={styles.page} aria-labelledby="remote-support-title">
       <div className={styles.intro}>
+        <div className={styles.introPhoto}>
+          <Image src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt=""
+            fill sizes="(max-width:650px) 100vw, 880px" priority />
+        </div>
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
         <h1 id="remote-support-title">{t.title}</h1>
         <p>{t.intro}</p>
@@ -180,6 +185,9 @@ export function RemoteEnergySupportBooking({
           <span>{t.durations}</span><span>{t.pending}</span>
         </div>
         <p className={styles.steps}>{t.steps}</p>
+        {masters.length ? <a className={styles.introAction} href="#remote-master">
+          {locale === "ru" ? "Выбрать практику" : locale === "es" ? "Elegir práctica" : "Choose a practice"} →
+        </a> : null}
       </div>
       {masters.length === 0 ? (
         <div className={styles.empty} role="status">

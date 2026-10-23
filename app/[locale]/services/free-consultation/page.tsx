@@ -195,6 +195,7 @@ export default async function FreeConsultationPage({ params }: Props) {
         </section>
 
         <section className={styles.introduction} id="intro-request" aria-labelledby="free-introduction-title">
+          <div className={styles.introductionPhoto}><Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:760px) 100vw, 230px" /></div>
           <div className={styles.introductionIcon}><CalendarDays size={25} aria-hidden="true" /></div>
           <div className={styles.introductionCopy}>
             <p className={styles.eyebrow}>{t.introLabel}</p>
