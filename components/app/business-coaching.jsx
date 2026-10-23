@@ -501,8 +501,8 @@ export default function BusinessCoaching({locale='en',accountId}){
         <button key={id} aria-current={tab===id?'page':undefined} onClick={()=>changeTab(id)} type="button"><Icon size={16}/>{label}</button>)}
     </nav>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    {notice&&<p role="status" className={styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
-    {course.status!=='active'&&<p className={styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
+    {notice&&<p role="status" className={tab==='today'?styles.visuallyHidden:styles.notice}><CheckCircle2 size={16}/>{notice}</p>}
+    {course.status!=='active'&&<p className={tab==='today'?styles.visuallyHidden:styles.notice}>{course.status==='paused'?t.paused:t.finished}</p>}
     {course.status==='paused'&&tab==='today'&&<button type="button" className={styles.resumeCourse} disabled={busy} onClick={()=>void command('resume')}><PlayCircle size={16}/>{t.resume}</button>}
     {tab==='today'&&<div className={styles.panel} data-business-weekly-lesson data-business-one-screen-lesson>
       <div className={styles.lessonTopbar}>
