@@ -12,6 +12,7 @@ import PracticeRequestsOverview from './practice-requests-overview'
 import PublicEnquiryContact from './public-enquiry-contact'
 import MyServicesDashboard from './my-services-dashboard'
 import SimpleServiceEditor from './simple-service-editor'
+import RemoteGoalPhoto from './remote-goal-photo'
 import PracticePhotoUpload from './practice-photo-upload'
 import PracticeVideoField from './practice-video-field'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
@@ -783,7 +784,9 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact}){
       {x.remoteBooking&&<p className="hh-fine"><strong>{locale==='ru'?'Дистанционная поддержка цели':'Goal support'}</strong>
         {' · '}{x.remoteBooking.duration} min · {x.remoteBooking.date} {x.remoteBooking.time} ({x.remoteBooking.timezone})
         {' · '}{x.remoteBooking.price} {x.remoteBooking.currency}
-        {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
+        {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.remoteBooking&&x.remoteBooking.photoPath&&
+        <RemoteGoalPhoto key={x.id} requestId={x.id} role="master"
+          hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
       {x.remoteBooking&&<div className="hh-actions">
         {x.status==='requested'&&<>
           <button disabled={busy} onClick={()=>onStatus(x,'confirmed')}>{locale==='ru'?'Подтвердить время':'Confirm slot'}</button>

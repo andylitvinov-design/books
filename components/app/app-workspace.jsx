@@ -82,6 +82,7 @@ const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
 const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
+const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
 
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
@@ -3817,6 +3818,10 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
               {' · '}{locale==='ru'?'Оплата пока не подключена':'Payment not yet enabled'}
             </p>}
             {request.message && <p>{request.message}</p>}
+            {request.remoteBooking &&
+              <RemoteGoalPhoto key={request.id} requestId={request.id} role="client"
+                hasPhoto={Boolean(request.remoteBooking.photoPath)} status={request.status}
+                locale={locale} onChanged={reload}/>}
             {request.remoteBooking && request.status==='completed' &&
               <ServiceReviews serviceId={request.serviceId} locale={locale} verifiedOnly />}
             <PracticeRequestConversation key={request.id} requestId={request.id}
