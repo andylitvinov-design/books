@@ -15,6 +15,18 @@ import styles from './opora-experience-player.module.css'
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
 // Five persisted moments plus one editorial support screen at step two.
 // Existing server visit keys, practice signals and open sessions are preserved.
+// Eight basic emotions are offered as vocabulary, not as a clinical scale.
+const PRIMARY_EMOTIONS=Object.freeze([
+  {value:'joy',symbol:'☀️',label:{en:'Joy',ru:'Радость',es:'Alegría'}},
+  {value:'trust',symbol:'🤝',label:{en:'Trust',ru:'Доверие',es:'Confianza'}},
+  {value:'fear',symbol:'🌧️',label:{en:'Fear',ru:'Страх',es:'Miedo'}},
+  {value:'surprise',symbol:'✨',label:{en:'Surprise',ru:'Удивление',es:'Sorpresa'}},
+  {value:'sadness',symbol:'🌙',label:{en:'Sadness',ru:'Грусть',es:'Tristeza'}},
+  {value:'disgust',symbol:'🍂',label:{en:'Disgust',ru:'Отвращение',es:'Rechazo'}},
+  {value:'anger',symbol:'🔥',label:{en:'Anger',ru:'Злость',es:'Enojo'}},
+  {value:'anticipation',symbol:'🌱',label:{en:'Anticipation',ru:'Ожидание',es:'Expectativa'}},
+])
+const EMOTION_PRACTICE_DAYS=new Set([4,11])
 const WORDS={
   ru:{
     day:'День',of:'из',pause:'Пауза',close:'Закончить',back:'Назад',next:'Продолжить',
@@ -49,6 +61,9 @@ const WORDS={
     keepText:'Как применить сегодняшний навык? Выберите один маленький шаг на потом — или пропустите.',
     plan:'Попробую позже',noPlan:'Не сегодня',
     saved:'Ваш момент сохранён',savedText:'Вы уделили себе немного времени.',
+    emotionPrompt:'Какая эмоция сейчас ближе? · Необязательно',
+    emotionOther:'Своя эмоция',emotionPlaceholder:'Или опишите, что чувствуете…',
+    emotionSummary:'Названная эмоция',
     meditationTitle:'Медитация «Опора» · 2 минуты (по желанию)',
     meditationSteps:[
       'Сядьте удобно и почувствуйте опору стула или пола. Дышите естественно.',
@@ -119,6 +134,9 @@ const WORDS={
     keepText:'How might you use today’s skill? Choose one small step for later, or skip.',
     plan:'I might try this',noPlan:'Not today',
     saved:'Your moment is saved',savedText:'You made a little space for yourself.',
+    emotionPrompt:'Which feeling is closest? · Optional',
+    emotionOther:'Your own feeling',emotionPlaceholder:'Or describe how you feel…',
+    emotionSummary:'Feeling you named',
     meditationTitle:'2-minute grounding meditation · optional',
     meditationSteps:[
       'Sit comfortably and notice the chair or floor supporting you. Breathe naturally.',
@@ -185,6 +203,9 @@ WORDS.es = {
   quoteText:'¿Estás de acuerdo con esta idea?',agree:'De acuerdo',unsure:'Quiero pensarlo',disagree:'En desacuerdo',
   keepText:'¿Cómo podrías usar esta habilidad? Elige un gesto pequeño para más tarde o sáltalo.',plan:'Quizá lo intente',noPlan:'Hoy no',
   saved:'Tu momento se ha guardado',savedText:'Te diste un pequeño espacio.',
+  emotionPrompt:'¿Qué emoción se acerca más? · Opcional',
+  emotionOther:'Tu propia emoción',emotionPlaceholder:'O describe cómo te sientes…',
+  emotionSummary:'Emoción que nombraste',
   meditationTitle:'Meditación de apoyo · 2 minutos (opcional)',
   meditationSteps:[
     'Siéntate cómodamente y siente el apoyo de la silla o del suelo. Respira con naturalidad.',
@@ -373,6 +394,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [saved,setSaved]=useState(hasSaved)
   const [answers,setAnswers]=useState(data?.currentSession?.signals?.opora54?.answers||{})
   const [welcomeFeeling,setWelcomeFeeling]=useState(data?.currentSession?.signals?.welcomeFeeling||null)
+  const [practiceEmotionChoice,setPracticeEmotionChoice]=useState(data?.currentSession?.signals?.practiceEmotion?.choice||null)
+  const [practiceEmotionText,setPracticeEmotionText]=useState(data?.currentSession?.signals?.practiceEmotion?.customText||'')
   const [openingResource,setOpeningResource]=useState(data?.currentSession?.signals?.oporaOpening?.resource??null)
   // Keep the stored lastDayDifficulty key and 0→10 severity direction for existing records.
   const [openingDifficulty,setOpeningDifficulty]=useState(data?.currentSession?.signals?.oporaOpening?.lastDayDifficulty??null)
@@ -419,6 +442,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const chosenFeelingLabel=cycle.day===1
     ?welcomeFeelingChoices(cycle.activeGoal||cycle.primaryGoal,lang).find(item=>item.id===welcomeFeeling)?.label
     :chosenFeeling?.label
+  const namedEmotion=PRIMARY_EMOTIONS.find(item=>item.value===practiceEmotionChoice)?.label[lang]||practiceEmotionText.trim()
   const ratingText=rating==='useful'?t.feelingBetter:rating==='partly'?t.feelingPartial:
     rating==='unchanged'?t.feelingSame:rating==='uncomfortable'?t.feelingHard:''
   useEffect(()=>{
@@ -509,6 +533,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
         comfort:rating==='uncomfortable'?'uncomfortable':null,
         transferStage:safe.answers.transfer==='planned'?'plan':null,
         welcomeFeeling:welcomeFeeling||null,
+        ...(EMOTION_PRACTICE_DAYS.has(cycle.day)&&
+          (practiceEmotionChoice||practiceEmotionText.trim())?{
+          practiceEmotion:practiceEmotionChoice
+            ?{choice:practiceEmotionChoice}
+            :{customText:practiceEmotionText.trim()},
+        }:{}),
         ...(cycle.day===1?{
           oporaOpening:{
             resource:openingResource,
@@ -589,7 +619,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
         <section className={styles.panel+' '+(
           moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
-        )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')}
+        )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')
+          +(moment==='practice'&&EMOTION_PRACTICE_DAYS.has(cycle.day)?' '+styles.emotionPractice:'')}
           aria-live="off" data-opora-current-screen={moment}>
           {inPreview&&<span className={styles.eyebrow}>
             {moment==='habit'?t.habitKicker:t.preview.nextKicker}
@@ -699,6 +730,28 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
             {!neutralSupport&&<p className={styles.lead}>{practiceGuide}</p>}
+            {!neutralSupport&&EMOTION_PRACTICE_DAYS.has(cycle.day)&&
+              <div className={styles.emotionPicker} data-opora-emotion-picker="true">
+                <p id="opora-emotion-prompt" className={styles.emotionPrompt}>{t.emotionPrompt}</p>
+                <div className={styles.emotionChoices} role="group" aria-labelledby="opora-emotion-prompt">
+                  {PRIMARY_EMOTIONS.map(item=><button type="button" key={item.value}
+                    data-symbol={item.symbol} disabled={locked}
+                    aria-pressed={practiceEmotionChoice===item.value}
+                    onClick={()=>{
+                      setPracticeEmotionChoice(previous=>previous===item.value?null:item.value)
+                      setPracticeEmotionText('')
+                    }}>{item.label[lang]}</button>)}
+                </div>
+                <label className={styles.emotionOwnLabel} htmlFor="opora-own-emotion">{t.emotionOther}</label>
+                <input id="opora-own-emotion" data-opora-own-emotion="true"
+                  className={styles.emotionOwnInput} type="text" maxLength={80}
+                  autoComplete="off" disabled={locked} value={practiceEmotionText}
+                  placeholder={t.emotionPlaceholder}
+                  onChange={event=>{
+                    setPracticeEmotionText(event.target.value)
+                    setPracticeEmotionChoice(null)
+                  }}/>
+              </div>}
             <details className={styles.optionalMeditation} data-opora-inline-practice-audio="true">
               <summary>{t.meditationTitle}<ChevronDown size={17} aria-hidden="true"/></summary>
               <div className={styles.inlinePracticeAudio}>
@@ -787,6 +840,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
             {chosenFeeling&&<p className={styles.soft}><strong>{t.startFeeling}:</strong> {chosenFeelingLabel}</p>}
+            {namedEmotion&&EMOTION_PRACTICE_DAYS.has(cycle.day)&&
+              <p className={styles.soft}><strong>{t.emotionSummary}:</strong> {namedEmotion}</p>}
             {answers.transfer==='planned'&&<p className={styles.soft}><strong>{t.takeaway}:</strong> {plan}</p>}
             {rating&&<p className={styles.soft}><strong>{t.feedback}:</strong> {ratingText}</p>}
             {!rating&&<p className={styles.soft}>{t.noResult}</p>}
