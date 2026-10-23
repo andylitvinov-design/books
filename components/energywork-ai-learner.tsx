@@ -722,10 +722,10 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
         </div>
       </fieldset>
       <fieldset className={styles.initiationChoiceGroup} data-reiki-personal-choices>
-        <legend>{ru ? "3. Хотите личную инициацию с Андреем?" : "3. Prefer a personal 1:1 initiation with Andrey?"}</legend>
+        <legend>{ru ? "3. Какой формат инициации вам ближе?" : "3. Which initiation format feels right for you?"}</legend>
         <p className={styles.initiationHelper}>{ru
-          ? "По желанию, в дополнение к бесплатной инициации в чате. Длительность выбираете сейчас; дату и формат согласуете позже с Андреем."
-          : "Optional, in addition to the free chat initiation. Choose a duration now; arrange the date and format with Andrey later."}</p>
+          ? "Бесплатная инициация в чате остаётся доступной. По желанию добавьте личную сессию на 30 или 60 минут; время и формат согласуете с Андреем позже."
+          : "Your free chat initiation stays included. Add a 30- or 60-minute live session if you wish; arrange the time and format with Andrey later."}</p>
         <div className={styles.initiationChoiceGrid}>
           {REIKI_PERSONAL_SESSIONS.map((option) => (
             <label key={option.id} className={styles.initiationChoice + (request.personalSession === option.id ? " " + styles.initiationChoiceSelected : "")}>
@@ -733,18 +733,18 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
                 checked={request.personalSession === option.id}
                 onChange={() => change({ personalSession: option.id })} />
               <span>{option.id === "none"
-                ? (ru ? "Только чат, без личной сессии" : "Chat only, no personal session")
+                ? (ru ? "Личная инициация через чат" : "Personal initiation through chat mode")
                 : option.id === "express"
-                  ? (ru ? "Краткая личная инициация" : "Express personal initiation")
-                  : (ru ? "Полноценная личная сессия" : "Full personal session")}</span>
+                  ? (ru ? "Краткая личная инициация вживую" : "Short live personal initiation")
+                  : (ru ? "Полная личная инициация вживую" : "Full live personal initiation")}</span>
               <small>{option.id === "none" ? (ru ? "Без доплаты" : "No extra fee")
                 : "€" + option.priceEur + " · " + option.minutes + (ru ? " мин" : " min")}</small>
             </label>
           ))}
         </div>
         <p className={styles.initiationHelper}>{ru
-          ? "€50 / 30 минут или €100 / 60 минут. Сейчас только заявка — без списания и подтверждения бронирования."
-          : "€50 / 30 minutes or €100 / 60 minutes. Request only; no charge or confirmed booking at this step."}</p>
+          ? "Пока только заявка — без оплаты и подтверждённой записи."
+          : "This is only a request — no charge or confirmed booking yet."}</p>
       </fieldset>
       <div className={styles.initiationDetails}>
         <p className={styles.initiationSectionTitle}>{ru ? "4. Как к вам обращаться и когда вам удобно?" : "4. Tell Andrey how to reach you and when you're available"}</p>
