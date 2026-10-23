@@ -69,7 +69,7 @@ test('homepage uses shared client-only provider and keeps existing hero/banner/d
   assert.match(panel, /bootstrap\?view=portrait/);
   assert.match(panel, /accountId: first.accountId/);
   assert.match(panel, /IntersectionObserver/);
-  assert.match(panel, /BroadcastChannel\('hh-app-session'\)/);
+  assert.match(panel, /BroadcastChannel\([\"']hh-app-session[\"']\)/);
   assert.match(panel, /showModal\(/);
   assert.doesNotMatch(panel, /localStorage|sessionStorage|sendBeacon|analytics|dangerouslySetInnerHTML/);
 });
