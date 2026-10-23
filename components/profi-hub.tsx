@@ -13,7 +13,6 @@ import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./profi-hub.module.css";
 
-type Path = "learn" | "practice";
 const OFFER_KEYS = ["session", "intro", "workshop", "course"] as const;
 type OfferKey = typeof OFFER_KEYS[number];
 
@@ -56,8 +55,8 @@ const copy = {
     headline: "Learn Reiki. Build your own practice.",
     lead: "A practical route from your first lesson to an offer clients can discover. Start learning—or publish the experience you already have.",
     choose: "Choose where you are today",
-    learnChoice: "I want to become a practitioner",
-    proChoice: "I'm already practising",
+    learnChoice: "I want to learn",
+    proChoice: "I'm already a practitioner",
     facts: ["Free learning entry", "Free basic service listing", "One protected My Practice"],
     profilesKicker: "YOUR FIRST STEP · FREE",
     profilesTitle: "Explore yourself. Choose your profile.",
@@ -143,8 +142,8 @@ const copy = {
     headline: "Освой Рейки. Создай свою практику.",
     lead: "Понятный путь от первого урока до своей услуги, которую могут найти клиенты. Начни учиться или используй уже накопленный опыт.",
     choose: "Выбери, где ты сейчас",
-    learnChoice: "Хочу стать профи",
-    proChoice: "Я уже профи",
+    learnChoice: "Я хочу обучиться",
+    proChoice: "Я уже практик",
     facts: ["Бесплатный старт обучения", "Бесплатное базовое размещение", "Единая «Моя практика»"],
     profilesKicker: "ПЕРВЫЙ ШАГ · БЕСПЛАТНО",
     profilesTitle: "Пройди тесты. Создай свой профиль.",
@@ -230,8 +229,8 @@ const copy = {
     headline: "Aprende Reiki. Construye tu práctica.",
     lead: "Un camino claro desde la primera lección hasta una oferta que los clientes puedan encontrar. Empieza a aprender o comparte tu experiencia.",
     choose: "Elige tu etapa actual",
-    learnChoice: "Quiero aprender Reiki",
-    proChoice: "Ya soy profesional",
+    learnChoice: "Quiero aprender",
+    proChoice: "Ya soy practicante",
     facts: ["Aprendizaje inicial gratis", "Ficha básica de servicio gratis", "Un único espacio de práctica"],
     profilesKicker: "PRIMER PASO · GRATIS",
     profilesTitle: "Haz pruebas. Crea tu perfil.",
@@ -315,7 +314,6 @@ const copy = {
 
 export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  const [path, setPath] = useState<Path>("learn");
   const [lessonIndex, setLessonIndex] = useState(0);
   const [offer, setOffer] = useState<OfferKey>("session");
   const appLocale = locale === "es" ? "en" : locale;
@@ -330,16 +328,6 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
     : practiceRoot + "?panel=services&create=1&starter=" + offer;
   const chosen = t.offers[offer];
 
-  function choosePath(next: Path) {
-    setPath(next);
-    window.requestAnimationFrame(() => {
-      document.getElementById("profi-path-content")?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-        block: "start",
-      });
-    });
-  }
-
   return (
     <main className={"house-home house-home--services " + styles.page} lang={locale} data-profi-page={locale}>
       <PublicSiteHeader locale={locale} />
@@ -353,16 +341,14 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
             <h1 id="profi-title">{t.name}</h1>
             <p className={styles.heroHeadline}>{t.headline}</p>
             <p className={styles.heroLead}>{t.lead}</p>
-            <div className={styles.pathControls} role="group" aria-label={t.choose}>
-              <button type="button" aria-pressed={path === "learn"} className={path === "learn" ? styles.active : ""}
-                data-profi-path="learn" onClick={() => choosePath("learn")}>
+            <nav className={styles.pathControls} aria-label={t.choose}>
+              <a href="#profi-learning" data-profi-path="learn">
                 <GraduationCap size={19} aria-hidden="true" /><span>{t.learnChoice}</span><ArrowRight size={16} aria-hidden="true" />
-              </button>
-              <button type="button" aria-pressed={path === "practice"} className={path === "practice" ? styles.active : ""}
-                data-profi-path="practice" onClick={() => choosePath("practice")}>
+              </a>
+              <a href="#profi-practice" data-profi-path="practice">
                 <HeartHandshake size={19} aria-hidden="true" /><span>{t.proChoice}</span><ArrowRight size={16} aria-hidden="true" />
-              </button>
-            </div>
+              </a>
+            </nav>
           </div>
         </section>
 
@@ -370,52 +356,13 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
           {t.facts.map((fact) => <span key={fact}><CheckCircle2 size={15} aria-hidden="true" />{fact}</span>)}
         </div>
 
-        <HomeFreeDiagnosisBanner locale={locale} context="pro" />
-
-        <section className={styles.profileGateway} data-profi-profiles aria-labelledby="profi-profiles-title">
-          <div className={styles.profilesHeading}>
-            <div>
-              <p className={styles.sectionKicker}><Sparkles size={16} aria-hidden="true" />{t.profilesKicker}</p>
-              <h2 id="profi-profiles-title">{t.profilesTitle}</h2>
-              <p>{t.profilesHint}</p>
-            </div>
-          </div>
-          <div className={styles.profileEntries}>
-            <Link href={publicRoot + "/client/tests"} className={styles.profileEntry}
-              prefetch={false} data-profi-entry="tests">
-              <Photo src={PHOTOS.tests} className={styles.profileEntryPhoto} />
-              <span className={styles.profileEntryText}>
-                <strong>{t.testEntry.title}</strong><small>{t.testEntry.body}</small>
-                <span className={styles.profileEntryAction}>{t.testEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
-              </span>
-            </Link>
-            <Link href={"/" + appLocale + "/app/portrait"} className={styles.profileEntry}
-              prefetch={false} data-profi-entry="personal">
-              <Photo src={PHOTOS.personal} className={styles.profileEntryPhoto} />
-              <span className={styles.profileEntryText}>
-                <strong>{t.personalEntry.title}</strong><small>{t.personalEntry.body}</small>
-                <span className={styles.profileEntryAction}>{t.personalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
-              </span>
-            </Link>
-            <Link href={profileHref} className={styles.profileEntry}
-              prefetch={false} data-profi-entry="professional">
-              <Photo src={PHOTOS.professional} className={styles.profileEntryPhoto} />
-              <span className={styles.profileEntryText}>
-                <strong>{t.professionalEntry.title}</strong><small>{t.professionalEntry.body}</small>
-                <span className={styles.profileEntryAction}>{t.professionalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
-              </span>
-            </Link>
-          </div>
-          <p className={styles.profilePrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.profilePrivacy}</p>
-        </section>
-
-        <div id="profi-path-content" className={styles.pathContent} data-profi-active-path={path}>
-          {path === "learn" ? (
-            <section className={styles.journey} aria-labelledby="profi-learning-title" data-profi-learning>
+        <div className={styles.pathContent} data-profi-single-page>
+            <section id="profi-learning" className={styles.journey} aria-labelledby="profi-learning-title" data-profi-learning>
               <div className={styles.sectionIntro}>
                 <Photo src={PHOTOS.lessons[0]} className={styles.introPhoto} sizes="(max-width: 600px) 90px, 190px" />
                 <p className={styles.sectionKicker}><BookOpen size={16} aria-hidden="true" />{t.learnEyebrow}</p>
-                <h2 id="profi-learning-title">{t.learnTitle}</h2>
+                <h2 id="profi-learning-title">{t.learnChoice}</h2>
+                 <h3 className={styles.sectionSubtitle}>{t.learnTitle}</h3>
                 <p>{t.learnLead}</p>
               </div>
               <div className={styles.lessonLayout}>
@@ -474,18 +421,18 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                   <Link href={academyHref} prefetch={false} className={styles.secondary} data-profi-action="advanced-reiki">
                     {t.advanced}<ArrowRight size={16} aria-hidden="true" />
                   </Link>
-                  <button type="button" onClick={() => choosePath("practice")} className={styles.textAction}>
+                  <a href="#profi-practice" className={styles.textAction}>
                     {t.ready}<ArrowRight size={17} aria-hidden="true" />
-                  </button>
+                  </a>
                 </div>
               </section>
             </section>
-          ) : (
-            <section className={styles.journey} aria-labelledby="profi-practice-title" data-profi-practice>
+            <section id="profi-practice" className={styles.journey} aria-labelledby="profi-practice-title" data-profi-practice>
               <div className={styles.sectionIntro}>
                 <Photo src={PHOTOS.professional} className={styles.introPhoto} sizes="(max-width: 600px) 90px, 190px" />
                 <p className={styles.sectionKicker}><Rocket size={17} aria-hidden="true" />{t.proEyebrow}</p>
-                <h2 id="profi-practice-title">{t.proTitle}</h2>
+                <h2 id="profi-practice-title">{t.proChoice}</h2>
+                 <h3 className={styles.sectionSubtitle}>{t.proTitle}</h3>
                 <p>{t.proLead}</p>
               </div>
               <div className={styles.offerStudio}>
@@ -561,8 +508,46 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 <Link href={publicRoot + "/masters"} prefetch={false}>{t.masters}<ArrowRight size={16} aria-hidden="true" /></Link>
               </nav>
             </section>
-          )}
         </div>
+
+        <HomeFreeDiagnosisBanner locale={locale} context="pro" />
+
+        <section className={styles.profileGateway} data-profi-profiles aria-labelledby="profi-profiles-title">
+          <div className={styles.profilesHeading}>
+            <div>
+              <p className={styles.sectionKicker}><Sparkles size={16} aria-hidden="true" />{t.profilesKicker}</p>
+              <h2 id="profi-profiles-title">{t.profilesTitle}</h2>
+              <p>{t.profilesHint}</p>
+            </div>
+          </div>
+          <div className={styles.profileEntries}>
+            <Link href={publicRoot + "/client/tests"} className={styles.profileEntry}
+              prefetch={false} data-profi-entry="tests">
+              <Photo src={PHOTOS.tests} className={styles.profileEntryPhoto} />
+              <span className={styles.profileEntryText}>
+                <strong>{t.testEntry.title}</strong><small>{t.testEntry.body}</small>
+                <span className={styles.profileEntryAction}>{t.testEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
+              </span>
+            </Link>
+            <Link href={"/" + appLocale + "/app/portrait"} className={styles.profileEntry}
+              prefetch={false} data-profi-entry="personal">
+              <Photo src={PHOTOS.personal} className={styles.profileEntryPhoto} />
+              <span className={styles.profileEntryText}>
+                <strong>{t.personalEntry.title}</strong><small>{t.personalEntry.body}</small>
+                <span className={styles.profileEntryAction}>{t.personalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
+              </span>
+            </Link>
+            <Link href={profileHref} className={styles.profileEntry}
+              prefetch={false} data-profi-entry="professional">
+              <Photo src={PHOTOS.professional} className={styles.profileEntryPhoto} />
+              <span className={styles.profileEntryText}>
+                <strong>{t.professionalEntry.title}</strong><small>{t.professionalEntry.body}</small>
+                <span className={styles.profileEntryAction}>{t.professionalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
+              </span>
+            </Link>
+          </div>
+          <p className={styles.profilePrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.profilePrivacy}</p>
+        </section>
 
         <footer className={styles.footer}>
           <Link href={locale === "en" ? "/" : "/" + locale} prefetch={false}>{t.footer}<ArrowRight size={16} aria-hidden="true" /></Link>
