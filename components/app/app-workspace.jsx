@@ -3983,7 +3983,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
           {busy ? c.saving : c.submitRequest}
         </button>
         {error && <p role="alert">{message(error, c)}</p>}
-      </form>
+      </form>}
     </section>
   )
 }
