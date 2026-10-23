@@ -26,12 +26,11 @@ const copy = {
     create: "Create your own course",
     free: "Free",
     stages: [
-      { title: "Get to know yourself", action: "Take free tests" },
-      { title: "Explore your situation", action: "Free written review" },
-      { title: "Learn Reiki", action: "Start the free course" },
-      { title: "Develop your skills", action: "Explore Academy" },
-      { title: "Create a course", action: "Open course editor" },
-      { title: "Share your service", action: "Open service editor" },
+      { title: "Discover yourself", action: "Take free tests" },
+      { title: "Take a free course", action: "Start Reiki Practitioner" },
+      { title: "Receive a free service", action: "Ask for a written review" },
+      { title: "Professional training", action: "Explore advanced Reiki" },
+      { title: "Become a Master", action: "Explore the Pro path" },
     ],
     review: "A practitioner profile and basic service listing are free. Public listings require review; free study is not a professional qualification. The steps are suggestions, not prerequisites.",
   },
@@ -52,11 +51,10 @@ const copy = {
     free: "Бесплатно",
     stages: [
       { title: "Узнай себя", action: "Пройти бесплатные тесты" },
-      { title: "Разбери свой вопрос", action: "Бесплатный письменный разбор" },
-      { title: "Изучи Рейки", action: "Пройти бесплатный курс" },
-      { title: "Развивай мастерство", action: "Открыть Академию" },
-      { title: "Создай свой курс", action: "Редактор курсов" },
-      { title: "Опубликуй услугу", action: "Редактор услуг" },
+      { title: "Пройди бесплатный курс", action: "Начать курс «Практик Рейки»" },
+      { title: "Получи бесплатную услугу", action: "Запросить письменный разбор" },
+      { title: "Профессиональное обучение", action: "Углублённые курсы Рейки" },
+      { title: "Стань мастером", action: "Открыть путь «Профи»" },
     ],
     review: "Профиль мастера и базовое размещение услуг бесплатны. Публикация — после модерации; бесплатный курс не даёт автоматической квалификации. Этапы — рекомендации, а не обязательные условия.",
   },
@@ -76,12 +74,11 @@ const copy = {
     create: "Crear mi curso",
     free: "Gratis",
     stages: [
-      { title: "Conócete", action: "Hacer pruebas gratis" },
-      { title: "Explora tu situación", action: "Revisión escrita gratis" },
-      { title: "Aprende Reiki", action: "Empezar el curso gratis" },
-      { title: "Sigue aprendiendo", action: "Explorar Academia" },
-      { title: "Crea tu curso", action: "Abrir editor de cursos" },
-      { title: "Comparte tu servicio", action: "Abrir editor de servicios" },
+      { title: "Conócete mejor", action: "Hacer pruebas gratis" },
+      { title: "Haz un curso gratis", action: "Empezar Reiki Practitioner" },
+      { title: "Recibe un servicio gratis", action: "Pedir revisión escrita" },
+      { title: "Formación profesional", action: "Explorar Reiki avanzado" },
+      { title: "Sé profesional", action: "Abrir camino Pro" },
     ],
     review: "El perfil profesional y la publicación básica de servicios son gratuitos. Las publicaciones requieren revisión; un curso gratuito no otorga certificación profesional. Los pasos son opcionales.",
   },
@@ -95,15 +92,16 @@ export function HomeMasterPath({ locale }: { locale: PublicLocale }) {
   const accountLocale = locale === "es" ? "en" : locale;
   const targets = [
     "/" + locale + "/client/tests",
+    "/" + accountLocale + "/academy/principles-of-energywork/learn",
     "/" + locale + "/services/free-situation-review",
-    "/" + locale + "/academy/principles-of-energywork/learn",
-    "/" + locale + "/academy",
-    "/" + accountLocale + "/app/practice?panel=materials&materialTab=courses",
-    "/" + accountLocale + "/app/practice?panel=services",
+    "/" + locale + "/academy/reiki",
+    "/" + locale + "/pro",
   ];
+  const serviceEditor = "/" + accountLocale + "/app/practice?panel=services&create=1";
+  const courseEditor = "/" + accountLocale + "/app/practice?panel=materials&materialTab=courses&create=1";
   const personalTargets = [
     targets[0],
-    targets[2],
+    targets[1],
     "/" + accountLocale + "/app/portfolio#hh-development-program",
   ];
 
@@ -149,9 +147,9 @@ export function HomeMasterPath({ locale }: { locale: PublicLocale }) {
               </Link>
             </div>
             <div className={styles.actions}>
-              <Link className={styles.primary} href={targets[5]} prefetch={false}
+              <Link className={styles.primary} href={serviceEditor} prefetch={false}
                 data-home-master-action="publish-service">{t.publish}<ArrowRight size={17} aria-hidden="true" /></Link>
-              <Link className={styles.secondary} href={targets[4]} prefetch={false}
+              <Link className={styles.secondary} href={courseEditor} prefetch={false}
                 data-home-master-action="create-course">{t.create}<ArrowRight size={16} aria-hidden="true" /></Link>
             </div>
           </div>
