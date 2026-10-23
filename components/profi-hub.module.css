@@ -10,11 +10,11 @@
 .heroHeadline{max-width:600px;margin:11px 0 10px;font:400 clamp(24px,3.5vw,41px)/1.13 Georgia,"Times New Roman",serif;letter-spacing:-.025em;text-wrap:balance}
 .heroLead{max-width:550px;margin:0;color:#eee2d7;font-size:15px;line-height:1.55}
 .pathControls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:650px;margin-top:28px}
-.pathControls button{min-width:0;display:flex;align-items:center;gap:9px;min-height:56px;border:1px solid rgba(255,242,223,.57);border-radius:14px;padding:11px 14px;background:rgba(255,249,241,.14);color:#fffaf3;font:750 13px/1.25 Arial,Helvetica,sans-serif;text-align:left;cursor:pointer;backdrop-filter:blur(9px)}
-.pathControls button>span{flex:1;min-width:0}
-.pathControls button>svg:last-child{flex:0 0 15px}
-.pathControls button.active,.pathControls button[aria-pressed="true"]{border-color:#fff5e9;background:#fff7eb;color:#684532}
-.pathControls button:hover{border-color:#fff6e9}
+.pathControls a{min-width:0;display:flex;align-items:center;gap:9px;min-height:56px;border:1px solid rgba(255,242,223,.57);border-radius:14px;padding:11px 14px;background:rgba(255,249,241,.14);color:#fffaf3;font:750 13px/1.25 Arial,Helvetica,sans-serif;text-align:left;text-decoration:none;cursor:pointer;backdrop-filter:blur(9px)}
+.pathControls a>span{flex:1;min-width:0}
+.pathControls a>svg:last-child{flex:0 0 15px}
+.pathControls a:focus-visible{border-color:#fff5e9;background:#fff7eb;color:#684532}
+.pathControls a:hover{border-color:#fff6e9}
 .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px auto 0;padding:0 2px}
 .facts span{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:47px;padding:9px 13px;border:1px solid #e8ddce;border-radius:11px;background:#fffdf9;color:#695446;font-size:12px;font-weight:700;line-height:1.3}
 .facts span svg{flex:0 0 15px;color:#967658}
@@ -35,6 +35,8 @@
 .profilePrivacy svg{flex:0 0 14px;margin-top:1px}
 
 .pathContent{scroll-margin-top:15px}
+.journey[id]{scroll-margin-top:calc(84px + env(safe-area-inset-top))}
+.sectionIntro .sectionSubtitle{margin:0 0 10px;color:#705445;font:400 clamp(19px,2.6vw,26px)/1.2 Georgia,"Times New Roman",serif}
 .journey{padding:clamp(30px,4vw,47px) clamp(2px,2.1vw,18px) 26px}
 .sectionIntro{max-width:800px;margin-bottom:23px}
 .sectionIntro h2{margin:9px 0 7px;font:400 clamp(33px,4.7vw,55px)/1.08 Georgia,"Times New Roman",serif;letter-spacing:-.039em;text-wrap:balance}
@@ -141,7 +143,7 @@
  .heroHeadline{font-size:clamp(26px,6.9vw,34px)}
  .heroLead{max-width:370px;font-size:13px;line-height:1.51}
  .pathControls{grid-template-columns:1fr;gap:8px;margin-top:21px}
- .pathControls button{min-height:47px;padding:8px 12px;font-size:12px}
+ .pathControls a{min-height:47px;padding:8px 12px;font-size:12px}
  .facts{grid-template-columns:1fr;gap:5px}
  .facts span{justify-content:flex-start;min-height:33px;padding:6px 12px;font-size:11px}
  .journey{padding:28px 2px 20px}
@@ -169,7 +171,7 @@
  .heroContent{padding:23px 15px}
  .hero h1{font-size:60px}
  .heroHeadline{font-size:26px}
- .pathControls button{font-size:11.5px}
+ .pathControls a{font-size:11.5px}
  .offerGrid{gap:6px}
  .offerGrid button{padding:11px 8px}
  .offerGrid button strong{font-size:12px}
@@ -216,7 +218,7 @@
  grid-template-rows:auto auto auto;column-gap:23px;align-items:center;
  max-width:none;margin:0 0 18px;
 }
-.introPhoto{grid-column:1;grid-row:1/4;align-self:stretch;min-height:145px;border-radius:19px}
+.introPhoto{grid-column:1;grid-row:1/5;align-self:stretch;min-height:145px;border-radius:19px}
 .sectionIntro>:not(.introPhoto){grid-column:2;min-width:0}
 .sectionIntro h2{margin:5px 0;font-size:clamp(29px,3.6vw,43px)}
 .sectionIntro>p:last-child{font-size:13px;line-height:1.47}
@@ -322,7 +324,7 @@
  .heroHeadline{font-size:clamp(23px,6.5vw,29px);line-height:1.12}
  .heroLead{font-size:12px;line-height:1.44}
  .pathControls{margin-top:17px;gap:7px}
- .pathControls button{min-height:44px;padding:7px 10px;font-size:12px}
+ .pathControls a{min-height:44px;padding:7px 10px;font-size:12px}
  .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
  .facts span{min-height:42px;justify-content:center;text-align:center;font-size:9px;line-height:1.22;padding:5px 3px}
  .facts span svg{display:none}
@@ -341,6 +343,7 @@
  .sectionIntro{grid-template-columns:86px minmax(0,1fr);gap:4px 12px;margin-bottom:14px}
  .introPhoto{min-height:112px;border-radius:14px}
  .sectionIntro h2{font-size:clamp(26px,7vw,34px);line-height:1.11}
+ .sectionIntro .sectionSubtitle{font-size:18px;line-height:1.24;margin:2px 0 5px}
  .sectionIntro>p:last-child{font-size:11px;line-height:1.37}
  .sectionIntro .sectionKicker{font-size:9px}
  .lessonSelector,.lessonDetail,.offerChoices,.offerPreview,.nextStage,.publishJourney{
