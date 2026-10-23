@@ -24,6 +24,24 @@ test("all approved service videos reuse exactly reviewed EN/RU sources, never ge
   }
 });
 
+test("the requested psychotherapy YouTube video is limited to RU service media", () => {
+  const registry = read("data/service-video-library.ts");
+  const showcase = read("components/service-video-showcase.tsx");
+  const landing = read("components/personal-service-landing.tsx");
+  const ruVideo = registry.match(/const hypnotherapyRu: ServiceVideoMedia = \{[\s\S]*?\n\};/);
+  const enVideo = registry.match(/const hypnotherapyEn: ServiceVideoMedia = \{[\s\S]*?\n\};/);
+  assert.ok(ruVideo, "Russian psychotherapy media must be defined");
+  assert.ok(enVideo, "English psychotherapy media must remain defined");
+  assert.match(ruVideo[0], /youtubeId: "eLsjFaKCBhI", language: "ru"/);
+  assert.match(ruVideo[0], /general: false/);
+  assert.doesNotMatch(enVideo[0], /eLsjFaKCBhI/);
+  assert.match(registry, /ru: \{[\s\S]*?hypnotherapy: hypnotherapyRu,/);
+  assert.match(registry, /en: \{[\s\S]*?hypnotherapy: hypnotherapyEn,/);
+  assert.match(registry, /return media\[locale === "es" \? "en" : locale\]\[topic\]/);
+  assert.match(landing, /service === "imagery-therapy" \? "hypnotherapy"/);
+  assert.match(showcase, /heading: "Образная психотерапия — видео о подходе"/);
+});
+
 test("the Services video gallery is expanded by default after booking and testimonials", () => {
   const page = read("app/[locale]/services/page.tsx");
   const begin = page.indexOf('id="method-videos" open');
