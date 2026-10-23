@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, Search } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
 import styles from './direction-offers.module.css'
@@ -242,8 +242,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     setFeedback('')
   }
 
-  function submitWish(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  function submitWish() {
     if (!question.trim()) { setFeedback(ui.missing); return }
     const match = matchWish(question.slice(0,160), journey.topics)
     setTopicId(match?.id ?? '')
@@ -269,13 +268,16 @@ export function DirectionOffers({ locale, journey, suggestions }: {
         <p className={styles.kicker}>HOLISTIC HOUSE · {d.name}</p>
         <h1 id="hh-direction-heading">{d.title}</h1>
         <p className={styles.intro}>{ui.question}</p>
-        <form className={styles.wishForm} onSubmit={submitWish} role="search" data-direction-wish-form>
+        <div className={styles.wishForm} role="search" data-direction-wish-form>
           <label className={styles.srOnly} htmlFor="hh-direction-wish">{ui.question}</label>
-          <input id="hh-direction-wish" type="search" name="wish" maxLength={160}
+          <input id="hh-direction-wish" type="search" maxLength={160}
             value={question} onChange={event=>setQuestion(event.target.value)}
+            onKeyDown={(event: KeyboardEvent<HTMLInputElement>)=>{
+              if(event.key==='Enter'){event.preventDefault();submitWish()}
+            }}
             placeholder={ui.placeholder} autoComplete="off" enterKeyHint="search" />
-          <button type="submit" data-direction-wish-submit>{ui.submit}<Search size={17} aria-hidden="true"/></button>
-        </form>
+          <button type="button" onClick={submitWish} data-direction-wish-submit>{ui.submit}<Search size={17} aria-hidden="true"/></button>
+        </div>
       </div>
       <div className={styles.slideControls} role="group" aria-label={ui.image}>
         <button type="button" onClick={()=>setSlideIndex(index=>(index+2)%3)} aria-label={ui.previous}><ChevronLeft size={17} aria-hidden="true"/></button>
