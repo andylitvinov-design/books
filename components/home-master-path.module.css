@@ -1,0 +1,63 @@
+.section {
+  box-sizing: border-box;
+  width: min(1240px, calc(100% - 28px));
+  margin: 14px auto 20px;
+  padding: clamp(16px, 2.7vw, 28px);
+  border: 1px solid #e8dccd;
+  border-radius: 22px;
+  background: #fffdf8;
+  color: #3c3027;
+  box-shadow: 0 9px 28px rgba(76, 46, 28, .04);
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+.heading { min-width: 0; }
+.eyebrow { display: flex; align-items: center; gap: 7px; margin: 0 0 5px; color: #8d603f; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.heading h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(21px, 2.6vw, 29px); font-weight: 500; line-height: 1.18; letter-spacing: -.025em; }
+.switch { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; padding: 4px; border: 1px solid #e5d7c6; border-radius: 999px; background: #f8f0e7; }
+.switch button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 0; border-radius: 999px; padding: 9px 14px; background: transparent; color: #644e3e; font: inherit; font-size: 13px; font-weight: 650; line-height: 1.1; cursor: pointer; }
+.switch button.selected { background: #744333; color: #fffaf5; box-shadow: 0 2px 8px rgba(70, 37, 20, .1); }
+.free { font-size: 10px; font-weight: 650; opacity: .85; }
+.personal { display: flex; align-items: center; justify-content: space-between; gap: 22px; border-top: 1px solid #f0e8dc; margin-top: 18px; padding-top: 17px; }
+.personal p { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.personal p strong { font-size: 15px; }
+.personal p span { color: #726356; font-size: 12px; line-height: 1.5; }
+.shortcuts { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.shortcuts a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 8px 12px; border: 1px solid #e7dbcb; border-radius: 999px; background: #fbf7f0; color: #694832; font-size: 12px; font-weight: 650; line-height: 1.25; text-decoration: none; }
+.shortcuts a:hover, .steps a:hover, .secondary:hover { border-color: #b69882; color: #744333; background: #f5e9db; }
+.master { border-top: 1px solid #f0e8dc; margin-top: 18px; padding-top: 18px; }
+.masterIntro { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+.masterIntro h3 { margin: 0 0 5px; font-family: Georgia, "Times New Roman", serif; font-size: 23px; font-weight: 500; }
+.masterIntro p { max-width: 500px; margin: 0; color: #726356; font-size: 13px; line-height: 1.5; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.actions a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid #744333; border-radius: 999px; padding: 10px 15px; font-size: 12px; font-weight: 700; line-height: 1.3; text-align: center; text-decoration: none; }
+.primary { background: #744333; color: #fff; }
+.primary:hover { background: #5d3225; color: #fff; }
+.secondary { background: #fffdf8; color: #744333; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 17px 0 0; padding: 0; list-style: none; }
+.steps li { display: flex; align-items: flex-start; gap: 11px; min-width: 0; padding: 12px; border: 1px solid #ece2d5; border-radius: 14px; background: #faf7f1; }
+.number { flex: 0 0 auto; display: grid; width: 29px; height: 29px; place-items: center; border-radius: 50%; background: #ead8c6; color: #6e442f; font-size: 11px; font-weight: 750; }
+.stageCopy { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 1px; }
+.stageCopy strong { font-size: 13px; line-height: 1.3; }
+.stageCopy a { display: inline-flex; align-items: center; gap: 5px; width: fit-content; min-height: 25px; color: #805439; font-size: 12px; line-height: 1.3; text-decoration: underline; text-underline-offset: 3px; }
+.review { display: flex; align-items: flex-start; gap: 7px; margin: 13px 0 0; color: #77685a; font-size: 11px; line-height: 1.5; }
+.review svg { flex: 0 0 auto; margin-top: 1px; }
+.section a:focus-visible, .section button:focus-visible { outline: 3px solid #915b40; outline-offset: 3px; }
+@media (max-width: 960px) {
+  .top, .masterIntro, .personal { align-items: stretch; flex-direction: column; gap: 12px; }
+  .switch { align-self: flex-start; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 540px) {
+  .section { border-radius: 17px; padding: 16px 14px; }
+  .heading h2 { font-size: 22px; }
+  .switch { align-self: stretch; }
+  .switch button { flex: 1 1 0; min-width: 0; padding: 9px 6px; font-size: 12px; }
+  .shortcuts, .actions { display: grid; grid-template-columns: 1fr; width: 100%; }
+  .shortcuts a, .actions a { justify-content: space-between; }
+  .masterIntro h3 { font-size: 21px; }
+  .steps { grid-template-columns: 1fr; gap: 7px; }
+  .steps li { padding: 11px 12px; }
+  .stageCopy { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; gap: 9px; }
+  .stageCopy a { min-height: 44px; text-align: right; justify-content: flex-end; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .section * { scroll-behavior: auto; } }

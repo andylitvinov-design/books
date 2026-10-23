@@ -169,6 +169,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials')setActivePanel('materials')
+    if(params.get('panel')==='services')setActivePanel('services')
     if(params.get('panel')==='marketing')setActivePanel('marketing')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
     if(params.get('panel')==='crm')setActivePanel('crm')

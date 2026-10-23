@@ -10,7 +10,10 @@ test("all home languages visibly show functional My Tests, My Courses, Reports a
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
   for (const source of [home, es]) {
+    assert.match(source, /<HomeMasterPath locale=/);
     assert.match(source, /<HomeFeaturedWorkspace locale=/);
+    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMasterPath"));
+    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf("<HomeFreeDiagnosisBanner"));
     assert.ok(source.indexOf("<HomeConversationGuide") < source.indexOf("<HomePersonalSpaceCard"));
     assert.ok(source.indexOf("<HomePersonalSpaceCard") < source.indexOf("<HomeFeaturedWorkspace"));
     assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomepageTopicJourneys"));
