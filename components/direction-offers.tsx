@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, MessageCircle, Search, Send, X } from 'lucide-react'
 import { useState, type KeyboardEvent } from 'react'
+import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
 import styles from './direction-offers.module.css'
@@ -733,6 +734,8 @@ export function DirectionOffers({ locale, journey, suggestions }: {
           <p className={styles.dialogPrivacy}>{ui.privacy}</p>
         </>}
     </section>}
+
+    {!dialogUrgent && <HomeFreeDiagnosisBanner locale={locale} context={direction === 'relationships' ? 'love' : direction} />}
 
     {!dialogUrgent && <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
       <div className={styles.filterHeading}>
