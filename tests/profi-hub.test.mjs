@@ -99,8 +99,8 @@ test('Pro page contains a separate free-tests and private/personal-professional 
     assert.equal(activeCompactNavigationId('/'+locale+'/client/tests'),'pro')
   }
   assert.match(hub,/Личные результаты тестов не публикуются/)
-  assert.match(css,/\\.profileEntries\\{display:grid/)
-  assert.match(css,/@media\\(max-width:600px\\)/)
+  assert.match(css,/\.profileEntries\{display:grid/)
+  assert.match(css,/@media\(max-width:600px\)/)
 })
 
 test('actual interactive learner track explores five steps but launches only existing training',()=>{
