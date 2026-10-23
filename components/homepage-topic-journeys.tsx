@@ -43,10 +43,10 @@ const copy = {
 
 export function HomepageTopicJourneys({ locale }: { locale: PublicLocale }) {
   const c = copy[locale]
-  return <section className={styles.section} aria-labelledby="hh-topic-journeys" id="hh-topic-journeys" data-home-topic-journeys>
+  return <section className={styles.section} aria-labelledby="hh-topic-journeys-title" id="hh-topic-journeys" data-home-topic-journeys>
     <header className={styles.heading}>
       <p className={styles.kicker}>{c.kicker}</p>
-      <h2 id="hh-topic-journeys">{c.title}</h2>
+      <h2 id="hh-topic-journeys-title">{c.title}</h2>
       <p>{c.intro}</p>
     </header>
     <div className={styles.grid}>
