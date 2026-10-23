@@ -228,3 +228,120 @@ test('Day 1 rejects malformed, oversize or mismatched custom answers before writ
     assert.equal(owner.writes.length,before)
   }
 })
+
+
+for(const [locale,next,back,label,custom] of [
+  ['en','Continue','Back','Sadness','A little unsure right now'],
+  ['ru','Продолжить','Назад','Грусть','Пока трудно назвать'],
+  ['es','Continuar','Atrás','Tristeza','Siento emociones mezcladas'],
+]){
+  for(const day of [4,11]){
+    test(`OPORA ${locale} day ${day} optionally records an emotion without exposing private text`,async()=>{
+      const owner=repositoryHarness({freshPhase:true})
+      await owner.create('AS2')
+      owner.seedDay(day)
+      const data=await owner.read(locale)
+      let submitted
+      const player=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},
+        async onSession(value){
+          submitted=structuredClone(value)
+          await owner.command(submitted,locale)
+          return true
+        },
+      })
+      const field=()=>nodes(player.tree).find(node=>node.type==='input'&&
+        node.props?.['data-opora-own-emotion']==='true')
+      try{
+        await advanceOporaTo(player,'practice',next)
+        const picker=nodes(player.tree).find(node=>node.props?.['data-opora-emotion-picker']==='true')
+        assert.ok(picker,'An emotion-naming exercise should have a picker')
+        const options=nodes(picker).filter(node=>node.type==='button')
+        assert.equal(options.length,8,'Eight basic emotions, not a diagnostic score')
+        assert.ok(field(),'A learner can name a different feeling')
+        assert.equal(field().props.maxLength,80)
+        await click(player,label)
+        assert.equal(findButton(player.tree,label).props['aria-pressed'],true)
+        assert.equal(field().props.value,'')
+        field().props.onChange({target:{value:'  '+custom+'  '}})
+        await player.settle()
+        assert.equal(findButton(player.tree,label).props['aria-pressed'],false,
+          'Custom text is an alternative to a predefined emotion')
+        await click(player,next)
+        await click(player,back)
+        assert.equal(field().props.value,'  '+custom+'  ','Navigating back must keep the unsaved draft')
+        await advanceOporaTo(player,'recapFeedback',next)
+        await click(player,locale==='ru'?'Пока только знакомлюсь':
+          locale==='es'?'Hoy solo las exploré':'I only explored them today')
+        await click(player,locale==='ru'?'Сохранить мою практику':
+          locale==='es'?'Guardar mi práctica':'Save my practice')
+        assert.deepEqual(submitted.practiceEmotion,{customText:custom})
+        const stored=owner.sessions.at(-1).signals.practiceEmotion
+        assert.equal(stored?.choice,undefined)
+        assert.ok(stored.customTextCiphertext?.length>30)
+        assert.equal(stored.customText,undefined)
+        assert.equal(JSON.stringify(owner.sessions.at(-1).signals).includes(custom),false,
+          'Private feeling must not leak into JSONB signals')
+        const readBack=await owner.read(locale)
+        assert.equal(readBack.currentSession.signals.practiceEmotion.customText,custom,
+          'Only the authenticated owner can read the decrypted feeling')
+      }finally{player.unmount()}
+    })
+  }
+}
+
+test('OPORA predefined choice is saved without free text, and feelings remain optional',async()=>{
+  for(const [day,choose] of [[4,true],[11,false],[5,false]]){
+    const owner=repositoryHarness({freshPhase:true})
+    await owner.create('AS2')
+    owner.seedDay(day)
+    const data=await owner.read('en')
+    let submitted
+    const player=mount('opora-experience-player',{locale:'en',data,onClose(){},onFinish(){},
+      async onSession(value){submitted=structuredClone(value);await owner.command(submitted,'en');return true},
+    })
+    try{
+      await advanceOporaTo(player,'practice','Continue')
+      const picker=nodes(player.tree).find(node=>node.props?.['data-opora-emotion-picker']==='true')
+      assert.equal(Boolean(picker),day!==5,'Other lessons must stay focused on their own exercise')
+      if(choose){
+        await click(player,'Trust')
+        assert.equal(findButton(player.tree,'Trust').props['aria-pressed'],true)
+      }
+      await advanceOporaTo(player,'recapFeedback','Continue')
+      await click(player,'I only explored them today')
+      await click(player,'Save my practice')
+      if(choose){
+        assert.deepEqual(submitted.practiceEmotion,{choice:'trust'})
+        assert.deepEqual(owner.sessions.at(-1).signals.practiceEmotion,{choice:'trust'})
+      }else{
+        assert.equal(submitted.practiceEmotion,undefined)
+        assert.equal(owner.sessions.at(-1).signals.practiceEmotion,undefined)
+      }
+    }finally{player.unmount()}
+  }
+})
+
+test('OPORA server rejects forged, conflicting, oversize and out-of-day emotions before any write',async()=>{
+  const invalid=[
+    {choice:'not-an-emotion'},
+    {choice:'fear',customText:'Another feeling'},
+    {customText:'x'.repeat(81)},
+    {customText:'Two\\nLines'},
+    {customText:42},
+    {choice:null,customText:''},
+  ]
+  for(const [day,emotion] of [...invalid.map(value=>[4,value]),[5,{choice:'joy'}]]){
+    const owner=repositoryHarness({freshPhase:true})
+    await owner.create('AS2')
+    owner.seedDay(day)
+    const data=await owner.read('en'),before=owner.writes.length
+    await assert.rejects(owner.command({
+      day,lessonId:data.lesson.id,operationId:'00000000-0000-4000-8000-000000008888',
+      feedback:'skip',practiceWindow:'practice_v6',
+      visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
+      opora54:{answers:{},hints:[],ease:null},practiceEmotion:emotion,
+    }),'en'),/INVALID_OPORA_PRACTICE_EMOTION/)
+    assert.equal(owner.sessions.length,0)
+    assert.equal(owner.writes.length,before)
+  }
+})
