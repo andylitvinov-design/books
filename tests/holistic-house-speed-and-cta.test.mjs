@@ -63,8 +63,10 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   const book = home.indexOf('"data-hero-cta": "paid-sessions"');
   const free = home.indexOf('"data-hero-cta": "free-written-review"');
   const tests = home.indexOf('"data-hero-cta": "free-tests"');
-  const belowFold = home.indexOf("<ServicesSolutions");
-  assert.ok(firstScreen < book && book < free && free < tests && tests < belowFold, "Personal enquiry is primary and free options remain accessible");
+  const belowFold = home.indexOf("<HomeMoreDisclosure");
+  const more = read("components/home-more-disclosure.tsx");
+  assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  assert.ok(firstScreen < book && book < free && free < tests && tests < belowFold, "Personal enquiry is primary; the secondary catalogue remains expandable");
   assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
 });
 
