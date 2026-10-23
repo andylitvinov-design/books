@@ -62,7 +62,7 @@ const copy = {
     ready: "I already practise—show me the Pro route",
     proEyebrow: "YOUR FIRST PUBLIC OFFER",
     proTitle: "Turn your experience into an offer.",
-    proLead: "Describe what you offer, choose your own terms and move from your private draft to a shareable public page."
+    proLead: "Describe what you offer, choose your own terms and move from your private draft to a shareable public page.",
     pickerTitle: "What would you like to offer?",
     pickerHint: "Choose one. We'll take you to the right existing editor—not create a listing just by tapping.",
     offers: {
@@ -76,7 +76,7 @@ const copy = {
     previewAction: "Request service",
     previewCourseAction: "View course",
     previewNote: "The real public request action appears only after approval. This example is not an active listing.",
-    previewCourseNote: "An approved practitioner profile and your explicit course publication are required. This is not an active course."
+    previewCourseNote: "An approved practitioner profile and your explicit course publication are required. This is not an active course.",
     createService: "Create my service in My Practice",
     createCourse: "Create my course in My Practice",
     googleNote: "Sign in with Google to save a private draft. New practitioners first complete a moderated profile; your selected editor remains available after that step. Nothing is saved by choosing an offer.",
@@ -149,7 +149,7 @@ const copy = {
     ready: "Я уже практикую — перейти к пути Профи",
     proEyebrow: "ТВОЁ ПЕРВОЕ ПРЕДЛОЖЕНИЕ",
     proTitle: "Преврати опыт в понятную услугу.",
-    proLead: "Расскажи, что предлагаешь, укажи свои условия и пройди путь от личного черновика до публичной страницы."
+    proLead: "Расскажи, что предлагаешь, укажи свои условия и пройди путь от личного черновика до публичной страницы.",
     pickerTitle: "Что хочешь предложить?",
     pickerHint: "Выбери формат. Он откроется в существующем редакторе — выбор здесь ничего не публикует.",
     offers: {
@@ -163,7 +163,7 @@ const copy = {
     previewAction: "Запросить услугу",
     previewCourseAction: "Открыть курс",
     previewNote: "Настоящая кнопка обращения станет доступна только после одобрения. Это демонстрация, а не действующая услуга.",
-    previewCourseNote: "Для публикации курса нужен одобренный профиль и твоё отдельное подтверждение. Пока это только пример."
+    previewCourseNote: "Для публикации курса нужен одобренный профиль и твоё отдельное подтверждение. Пока это только пример.",
     createService: "Создать услугу в «Моей практике»",
     createCourse: "Создать курс в «Моей практике»",
     googleNote: "Для черновика войди через Google. Если ты новый мастер, сначала заполни профиль для модерации; выбранный редактор останется доступен после этого шага. Сам выбор ничего не сохраняет.",
@@ -236,7 +236,7 @@ const copy = {
     ready: "Ya practico—quiero publicar",
     proEyebrow: "TU PRIMERA OFERTA",
     proTitle: "Convierte tu experiencia en una oferta.",
-    proLead: "Explica tu oferta, elige condiciones y pasa de un borrador privado a una página pública."
+    proLead: "Explica tu oferta, elige condiciones y pasa de un borrador privado a una página pública.",
     pickerTitle: "¿Qué te gustaría ofrecer?",
     pickerHint: "Elige una opción. Se abrirá el editor existente; tocar aquí no publica nada.",
     offers: {
@@ -250,7 +250,7 @@ const copy = {
     previewAction: "Solicitar servicio",
     previewCourseAction: "Ver curso",
     previewNote: "La solicitud real solo estará disponible después de la aprobación. Es una demostración.",
-    previewCourseNote: "Se necesita un perfil aprobado y tu publicación explícita. Por ahora es solo un ejemplo."
+    previewCourseNote: "Se necesita un perfil aprobado y tu publicación explícita. Por ahora es solo un ejemplo.",
     createService: "Crear mi servicio en My Practice",
     createCourse: "Crear mi curso en My Practice",
     googleNote: "Entra con Google para guardar borradores. Si eres nuevo, primero completa el perfil sujeto a revisión; después podrás usar el editor elegido. La selección no guarda nada.",
