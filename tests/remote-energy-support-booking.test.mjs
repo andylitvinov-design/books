@@ -72,5 +72,5 @@ test('only matching, recent, minimal scheduling preference is restored',()=>{
   assert.equal(readRemoteSupportDraft(storage,'other-id',now),null)
   assert.equal(readRemoteSupportDraft(storage,'offering-id',now+2*24*3600*1000),null)
   assert.equal(formatRemoteSupportDraft(draft).includes('NOT yet confirmed'),false)
-  assert.match(formatRemoteSupportDraft(draft),/not a confirmed or paid booking/i)
+  assert.match(formatRemoteSupportDraft(draft),/not confirmed or paid/i)
 })
