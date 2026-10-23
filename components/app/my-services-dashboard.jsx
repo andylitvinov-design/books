@@ -52,7 +52,7 @@ const COPY = {
   },
 }
 
-export default function MyServicesDashboard({items=[],locale='en',createRequest=0,quota,renderEditor}) {
+export default function MyServicesDashboard({items=[],locale='en',createRequest=0,quota,busy=false,renderEditor}) {
   const lang=COPY[locale]?locale:'en'
   const c=COPY[lang]
   const canAdd=quota?.canAdd!==false
@@ -60,6 +60,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
   const [createDirty,setCreateDirty]=useState(false)
   const [editingId,setEditingId]=useState(null)
   const [editDirty,setEditDirty]=useState(false)
+  const [mediaBusy,setMediaBusy]=useState(false)
   const [finderOpen,setFinderOpen]=useState(false)
   const [query,setQuery]=useState('')
   const [status,setStatus]=useState('all')
@@ -76,6 +77,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
   const activeFilters=[query.trim(),status!=='all',area!=='all',format!=='any',price!=='any'].filter(Boolean).length
   const clearFilters=()=>{setQuery('');setStatus('all');setArea('all');setFormat('any');setPrice('any')}
   const toggleComposer=()=>{
+    if(busy||mediaBusy)return
     if(editingItem){
       if(editDirty&&!window.confirm(c.discard))return
       setEditingId(null);setEditDirty(false);return
@@ -140,14 +142,14 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
         <div><ClipboardList size={18} aria-hidden="true"/><strong>{reviewing}</strong><span>{c.review}</span></div>
       </div>}
       <div className={styles.actions}>
-        <button type="button" disabled={!canAdd&&!composing} aria-expanded={composing} onClick={toggleComposer}>
+        <button type="button" disabled={busy||mediaBusy||(!canAdd&&!composing)} aria-expanded={composing} onClick={toggleComposer}>
           <Plus size={17} aria-hidden="true"/>{composing?c.close:c.add}
         </button>
         <Link href={'/'+locale+'/services'} prefetch={false}>{c.viewAll}<ArrowUpRight size={15} aria-hidden="true"/></Link>
       </div>
       {!composing&&<p className={styles.count} role="status" aria-live="polite">{c.showing} {visible.length} / {items.length}</p>}
-      {creating&&canAdd&&<div className={styles.editor} data-service-composer-focus>{renderEditor(null,setCreateDirty)}</div>}
-      {editingItem&&<div className={styles.editor} data-service-composer-focus data-edit-service={editingItem.id}>{renderEditor(editingItem,setEditDirty)}</div>}
+      {creating&&canAdd&&<div className={styles.editor} data-service-composer-focus>{renderEditor(null,setCreateDirty,setMediaBusy)}</div>}
+      {editingItem&&<div className={styles.editor} data-service-composer-focus data-edit-service={editingItem.id}>{renderEditor(editingItem,setEditDirty,setMediaBusy)}</div>}
       {!composing&&<div className={styles.list}>
         {visible.map(item=><details key={item.id+':'+item.revision} className={styles.serviceCard}
           onToggle={event=>{if(event.currentTarget.open){setEditingId(item.id);setEditDirty(false)}}}>
