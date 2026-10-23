@@ -336,9 +336,9 @@ test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and fea
 test("home advisor replaces repeated service catalogs without changing #1537 free diagnosis",()=>{
  const home=read("components/holistic-house-home.tsx"),es=read("app/es/page.tsx");
  for(const page of [home,es]){
-   assert.match(page,/<details className="service-home-more"/);
+   assert.match(page,/<HomeMoreDisclosure locale=/);
    assert.ok(page.indexOf("<HomeFreeDiagnosisBanner") < page.indexOf("<HomeConversationGuide"));
-   assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<details className="service-home-more"'));
+   assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<HomeMoreDisclosure locale='));
  }
  const guide=read("components/home-conversation-guide.tsx");
  for(const token of ["data-home-guide-filters","data-home-guide-inline-results","data-home-guide-browse-offer","styles.advisorPortrait","browseHomeGuideOffers"])
