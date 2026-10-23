@@ -179,3 +179,6 @@
  .progress span{font-size:9px}
  .reorder button{min-width:40px}
 }
+
+.livePreview img{display:block;max-width:100%;max-height:300px;object-fit:contain;margin:12px auto;border-radius:10px}
+.livePreview audio,.livePreview video{display:block;width:100%;max-width:100%;margin:12px auto;border-radius:10px}
