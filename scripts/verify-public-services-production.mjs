@@ -209,6 +209,12 @@ try {
         await expect(page.locator("[data-services-studio-free]")).toBeHidden();
         await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
         await showcase.locator('[data-services-kind="reiki"]').click();
+        // Reiki category selection intentionally restores its available online mode.
+        await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        await expect(showcase.locator("[data-services-empty]")).toHaveCount(0);
+        // Explicitly select an unavailable mode to exercise the real empty-state recovery.
+        await showcase.locator('[data-services-mode="toronto"]').click();
         await visible(showcase.locator("[data-services-empty]"));
         await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
         await showcase.locator("[data-services-empty] button").click();
@@ -316,6 +322,10 @@ try {
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
     await esShowcase.locator('[data-services-kind="reiki"]').click();
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await expect(esShowcase.locator("[data-services-empty]")).toHaveCount(0);
+    await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
     await esShowcase.locator('[data-services-mode="online"]').click();
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
@@ -623,3 +633,4 @@ try {
 }
 if (failure) throw failure;
 console.log("PASS public production service acceptance");
+
