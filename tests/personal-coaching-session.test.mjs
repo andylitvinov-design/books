@@ -30,7 +30,7 @@ test('7 separately authored GROW-based questions are localized, versioned and un
 test('independent account-encrypted backend with owner-scope RLS; legacy data remains untouched',()=>{
   const repo=source('lib/app/personal-coaching.js')
   const old=source('lib/app/business-coaching.js')
-  const sql=source('supabase/migrations/20261023183000_hh_personal_coaching_sessions.sql')
+  const sql=source('supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql')
   assert.match(repo,/import 'server-only'/)
   assert.match(repo,/transaction\(config,actor/)
   assert.match(repo,/seal\(course,sealContext\(actor\),config\)/)
