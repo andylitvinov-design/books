@@ -9,7 +9,7 @@ import { layoutPortraitRayLabels } from '../lib/assessments/portrait-ray-labels.
 import { portraitAxisChoices } from '../lib/assessments/portrait-constructs.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
-  portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors,
+  portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors, portraitSectorReadouts,
   portraitSectorMidAngle, portraitFullCircleAngleForAxis,
 } from '../lib/assessments/portrait-sectors.js'
 
@@ -55,7 +55,7 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
       if (name === '@/lib/assessments/portrait-ray-labels') return {layoutPortraitRayLabels}
       if (name === '@/lib/assessments/portrait-sectors') return {
         PORTRAIT_SECTORS,PORTRAIT_SECTOR_KEYS,PORTRAIT_AXIS_ORDER,
-        portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,
+        portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,portraitSectorReadouts,
         portraitSectorMidAngle,portraitFullCircleAngleForAxis,
       }
       if (name.endsWith('.module.css')) return {__esModule:true,default:new Proxy({}, {get:(_,key)=>key})}
