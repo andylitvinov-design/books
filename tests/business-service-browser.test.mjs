@@ -25,6 +25,7 @@ function mount(locale){
       return [values[i],next=>{values[i]=typeof next==='function'?next(values[i]):next}]}},
     'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})},
     'lucide-react':new Proxy({}, {get:(_,name)=>name}),
+    'next/image':{default:'NextImage'},
     '@/components/acquisition-event-link':{AcquisitionEventLink:'TrackedLink'},
     '@/data/business-consulting-copy':{businessConsultingCopy:mock},
     './business-service-browser.module.css':{default:new Proxy({}, {get:(_,name)=>name})},
@@ -86,3 +87,24 @@ for(const locale of ['en','ru','es']){
     assert.ok(h.find('data-business-show-more',true))
   })
 }
+
+test('photo-left compact service selection keeps the first three offers visible and accessible',()=>{
+  const css=read('components/business-service-browser.module.css')
+  assert.match(css,/\.cardMedia\{position:relative/)
+  assert.match(css,/height:clamp\(113px,16svh,151px\)/)
+  assert.match(css,/height:clamp\(108px,17svh,125px\)/)
+  assert.match(css,/@media\(max-width:760px\)/)
+  assert.match(css,/\.titleSmall\{display:inline\}/)
+  for(const locale of ['en','ru','es']){
+    const h=mount(locale)
+    const photos=['free','express','full'].map(kind=>h.find('data-business-service-photo',kind))
+    assert.ok(photos.every(Boolean))
+    assert.deepEqual(photos.map(photo=>nodes(photo).find(node=>node.type==='NextImage')?.props?.alt),['','',''])
+    const actions=nodes(h.tree).filter(n=>n.props?.attributes?.['data-business-direct-option'])
+    assert.ok(actions.every(link=>link.props.href==='#business-direct-request'))
+    assert.ok(actions.every(link=>nodes(link).some(node=>node.props?.['aria-hidden']===true)))
+  }
+  assert.match(source,/compactOffers\[locale\]/)
+  assert.match(source,/servicePhotos\[item\.id\]/)
+  assert.doesNotMatch(source,/lead_created|payment_received|contact_whatsapp_click/)
+})

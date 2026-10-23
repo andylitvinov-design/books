@@ -23,38 +23,69 @@
 .catalog h2{margin:0 0 5px;color:#213b45;font:500 clamp(24px,3vw,32px)/1.14 Georgia,"Times New Roman",serif}
 .lead{margin:0 0 14px;color:#627880;font:450 13px/1.45 system-ui,sans-serif}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.card{display:flex;flex-direction:column;gap:9px;min-width:0;padding:16px;border:1px solid #dcd0bf;border-radius:16px;background:#fffefa;box-shadow:0 4px 14px rgb(51 39 25 / 5%)}
-.cardTop{display:flex;align-items:center;justify-content:space-between;color:#9f744e}
-.num{font:800 11px/1.3 system-ui,sans-serif;color:#91745d}
-.card h3{margin:0;color:#25424b;font:550 clamp(17px,2vw,21px)/1.2 Georgia,"Times New Roman",serif}
-.card p{flex:1;min-height:0;margin:0;color:#62767b;font:450 12px/1.5 system-ui,sans-serif}
-.price{color:#916036;font:850 14px/1.3 system-ui,sans-serif}
-.action{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;margin-top:2px;padding:10px 12px;border-radius:10px;background:#284752;color:#fff!important;font:750 12px/1.3 system-ui,sans-serif;text-decoration:none}
+.card{display:grid;grid-template-columns:minmax(87px,33%) minmax(0,1fr);gap:11px;min-height:220px;min-width:0;padding:9px;border:1px solid #ddceba;border-radius:17px;background:#fffefa;box-shadow:0 5px 17px rgb(62 43 23 / 7%)}
+.cardMedia{position:relative;align-self:stretch;min-height:0;overflow:hidden;border-radius:12px;background:#e5dacb}
+.cardMedia img{object-fit:cover;object-position:center}
+.cardBody{display:flex;flex-direction:column;gap:8px;min-width:0;padding:4px 2px 3px 0}
+.cardTop{display:flex;align-items:center;justify-content:space-between;color:#a37b51}
+.num{font:800 11px/1.3 system-ui,sans-serif;color:#926e4c}
+.card h3{margin:0;color:#24444c;font:550 clamp(17px,1.9vw,22px)/1.13 Georgia,"Times New Roman",serif;letter-spacing:-.019em;overflow-wrap:break-word}
+.titleSmall{display:none}
+.summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden;margin:0;color:#65777b;font:450 12px/1.48 system-ui,sans-serif}
+.cardFooter{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:7px}
+.price{flex:none;color:#986138;font:850 15px/1.3 system-ui,sans-serif}
+.action{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;min-width:0;margin-left:auto;padding:8px 10px;border-radius:10px;background:#284752;color:#fff!important;font:750 11px/1.3 system-ui,sans-serif;text-decoration:none}
 .action:hover{background:#3b5d66}
 .action svg{flex:none}
+.actionShort{display:none}
 .showMore{display:flex;align-items:center;justify-content:center;gap:11px;min-height:47px;width:100%;margin:15px 0 0;padding:10px 14px;border:1px solid #be996b;border-radius:12px;background:#f2e4d0;color:#4c3a29;font:800 13px/1.3 system-ui,sans-serif;cursor:pointer}
 .showMore:hover{background:#e9d3b6}
 .showMore span{display:grid;place-items:center;min-width:32px;padding:4px 7px;border-radius:99px;background:#e5cba5;color:#60452c}
 .empty{padding:16px;border:1px dashed #bfab91;border-radius:12px;color:#6b5c4a;background:#fffcf6;font:550 13px/1.5 system-ui,sans-serif}
 .disclaimer{margin:13px 0 0;color:#7b8888;font:400 10px/1.45 system-ui,sans-serif}
 .root :is(button,a,summary):focus-visible{outline:3px solid #be8959;outline-offset:3px}
+@media(max-width:1100px) and (min-width:761px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{min-height:185px}
+}
 @media(max-width:760px){
-  .cards{grid-template-columns:1fr;gap:10px}
-  .card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;padding:13px 14px}
-  .cardTop{grid-column:1/-1}
-  .card h3{grid-column:1/-1;font-size:20px}
-  .card p{grid-column:1/-1;font-size:12px}
-  .price{grid-column:1}
-  .action{grid-column:1/-1;margin-top:0}
-  .filters{margin-bottom:18px}
+  .kicker{margin-bottom:3px;font-size:9px}
+  .catalog h2{margin-bottom:4px;font-size:clamp(22px,5vw,26px)}
+  .lead{margin-bottom:9px;font-size:12px;line-height:1.35}
+  .cards{grid-template-columns:1fr;gap:8px}
+  /* 3 x max 151px + heading and gaps fits the browsing area on common iPhones. */
+  .card{grid-template-columns:clamp(78px,26vw,120px) minmax(0,1fr);gap:10px;height:clamp(113px,16svh,151px);min-height:0;padding:7px;border-radius:15px;overflow:hidden}
+  .cardMedia{border-radius:10px}
+  .cardBody{gap:3px;padding:1px 1px 1px 0}
+  .cardTop svg{width:14px;height:14px}
+  .num{font-size:10px}
+  .card h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font-size:clamp(16px,4.4vw,20px);line-height:1.08}
+  .titleFull{display:none}
+  .titleSmall{display:inline}
+  .summary{-webkit-line-clamp:2;line-clamp:2;font-size:clamp(10px,2.7vw,11px);line-height:1.25}
+  .price{font-size:clamp(12px,3.5vw,15px)}
+  .action{gap:5px;min-height:36px;padding:6px 9px;font-size:11px;border-radius:8px}
+  .action svg{width:14px;height:14px}
+  .actionText{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .actionShort{display:inline}
+  .filters{margin-bottom:13px}
+}
+@media(max-width:360px), (max-height:680px) and (max-width:760px){
+  .cards{gap:6px}
+  .card{height:clamp(108px,17svh,125px);gap:7px}
+  .cardBody{gap:2px}
+  .card h3{font-size:15px}
+  .summary{font-size:10px}
+  .action{min-height:34px;padding:5px 7px}
+  .catalog h2{font-size:21px}
+  .lead{font-size:11px;margin-bottom:7px}
+  .filterBody{padding:4px 11px 14px}
 }
 @media(max-width:390px){
   .filters>summary{gap:9px;padding:10px 11px}
   .filters>summary strong{font-size:13px}
   .filters>summary small{font-size:11px}
   .filterIcon{width:35px;height:35px}
-  .card h3{font-size:19px}
-  .filterBody{padding:4px 11px 14px}
   .chips button{padding:8px 10px;font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.chevron{transition:none}}
