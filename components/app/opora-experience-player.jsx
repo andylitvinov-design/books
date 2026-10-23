@@ -6,9 +6,10 @@ import {validateOpora54Signals} from '@/lib/inner-growth/anti-stress-skills-v6'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '@/lib/inner-growth/course-slide-sequence'
 import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
 import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,oporaExperienceTransferChoices,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
+import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,oporaExperienceTransferChoices,oporaExperienceDepth,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
+import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner-growth/opora-gentle-journey'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
@@ -359,9 +360,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
   const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
-  // Editorial-only support is second. The server never receives a fabricated visit key.
-  const displayScenes=[scenes[0],'support',...scenes.slice(1)]
-  const [step,setStep]=useState(reviewOnly?0:hasSaved?displayScenes.length:0)
+  // Day 1 retains the five restored opening screens. Days 2–14 have four
+  // extra editorial moments before practice, all private and non-persisted.
+  const displayScenes=cycle.day===1
+    ?[scenes[0],'support',...scenes.slice(1)]
+    :[scenes[0],'support',...OPORA_GENTLE_INTRO,...scenes.slice(1)]
+  const flowScenes=[...displayScenes,...OPORA_GENTLE_RECAP]
+  const [step,setStep]=useState(reviewOnly?0:hasSaved?flowScenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
   const [habitSetup,setHabitSetup]=useState(false)
   const [inviteOpen,setInviteOpen]=useState(false)
@@ -386,20 +391,21 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const heading=useRef(null),safetyTrigger=useRef(null),safetyPrimary=useRef(null)
   const safetyBack=useRef(null),safetyEnd=useRef(null),wasPaused=useRef(false)
   const locked=Boolean(busy||saving)
-  const recap=step===displayScenes.length&&!saved
-  const receipt=step>=displayScenes.length&&saved
+  const recap=step>=displayScenes.length&&step<flowScenes.length&&!saved
+  const receipt=step>=flowScenes.length&&saved
   // Optional device setup comes after the verified save and the next-day commitment.
   const previewScreens=cycle.day===1?['nextStep','habit']:['nextStep']
   const inPreview=receipt&&previewIndex>=0&&!inviteOpen
   const moment=inviteOpen?'invite':inPreview?previewScreens[previewIndex]:
-    recap?'recap':receipt?'receipt':displayScenes[step]
-  const previewTotal=displayScenes.length+3+previewScreens.length
-  const previewStep=inviteOpen?previewTotal:inPreview?displayScenes.length+3+previewIndex:
-    receipt?displayScenes.length+2:Math.min(step+1,previewTotal)
+    receipt?'receipt':flowScenes[step]
+  const previewTotal=flowScenes.length+2+previewScreens.length
+  const previewStep=inviteOpen?previewTotal:inPreview?flowScenes.length+2+previewIndex:
+    receipt?flowScenes.length+1:Math.min(step+1,previewTotal)
   const opening=OPENING[lang]
-  const c=oporaEndingCopy(lang)
+  const c=oporaEndingCopy(lang),j=oporaGentleCopy(lang)
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   const support=oporaExperienceSupport(cycle.day,lang)
+  const depth=oporaExperienceDepth(cycle.day,lang)
   const practiceGuide=oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const legacyPlan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
   const transferChoices=oporaExperienceTransferChoices(cycle.day,lang)
@@ -448,7 +454,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     if(locked)return
     setError('')
     setShowHelp(false)
-    setStep(s=>Math.min(displayScenes.length,s+1))
+    setStep(s=>Math.min(flowScenes.length-1,s+1))
   }
   function back(){
     if(locked)return
@@ -475,9 +481,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     if(value==='uncomfortable')setSafety(true)
   }
   async function submit(){
-    if(reviewOnly){setStep(displayScenes.length);return}
+    if(reviewOnly){setStep(flowScenes.length);return}
     if(locked||saved)return
-    if(step!==displayScenes.length||
+    if(step!==flowScenes.length-1||
       scenes.some(key=>!visited.current.has(key))){
       setError(t.incomplete);return
     }
@@ -520,6 +526,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     finally{setSaving(false)}
   }
   const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
+    moment==='recapPractice'?dayCopy?.title||t.learn:
+    moment==='recapNext'?j.recapNextTitle:
+    moment==='recapFeedback'?j.recapFeedbackTitle:
     moment==='invite'?(cycle.day===14?c.inviteFinal:c.inviteTitle):
     moment==='nextStep'?t.preview.nextTitle:
     moment==='receipt'?(cycle.day===14?c.congratsFinal:c.congratsTitle.replace('{day}',String(cycle.day))):
@@ -529,6 +538,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='recall'?opening.recall:
     moment==='arrive'?(cycle.day===1?t.arrivalWarmTitle:t.arriveTitle):
     moment==='support'?support?.title:
+    moment==='why'?j.whyTitle:moment==='story'?j.storyTitle:
+    moment==='options'?j.optionsTitle:moment==='settle'?j.settleTitle:
     moment==='practice'?dayCopy?.title||t.learn:
     moment==='feel'?t.feelTitle:
     moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
