@@ -181,12 +181,11 @@ async function runEngine(name, engine) {
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
-          // The Spanish DAO route still uses CoreServiceDetail with the same
-          // privacy-gated ContactChannelChooser. EN/RU now use FreeEntryLanding.
-          const daoSelector = locale === "es"
-            ? 'main[data-core-service-detail="dao"] [data-contact-channel-chooser]'
-            : 'main[data-free-entry-landing="dao"] [data-free-resource-enquiry="dao"] [data-contact-channel-chooser]';
-          cases.push({path:"/"+locale+"/services/dao-health-profile",selector:daoSelector,min:1});
+          // Spanish keeps the approved consented chooser; EN/RU use the
+          // first-party CRM form with opt-in instead of duplicating messengers.
+          if (locale === "es") {
+            cases.push({path:"/es/services/dao-health-profile",selector:'main[data-core-service-detail="dao"] [data-contact-channel-chooser]',min:1});
+          }
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
@@ -213,6 +212,19 @@ async function runEngine(name, engine) {
               assert.match(text || "", /PERSONAL|ЛИЧНУЮ/i, "The new selection must be in the prepared message");
               await button.click();
             }
+          }
+          if (locale !== "es") {
+            const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
+              {waitUntil:"domcontentloaded",timeout:60000});
+            assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
+            const daoForm = page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
+            await daoForm.waitFor({state:"visible",timeout:25000});
+            const consent = daoForm.locator('input[type="checkbox"][required]');
+            assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
+            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
+              "Dao form cannot submit without an opt-in");
+            assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
+              "Dao uses approved first-party contact capture, not a second messenger funnel");
           }
           if (name === "chromium" && width === 390 && locale === "en") {
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
