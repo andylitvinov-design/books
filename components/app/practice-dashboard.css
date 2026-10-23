@@ -1305,3 +1305,22 @@
  .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid{gap:3px}
  .hh-app .hh-practice-dashboard[data-practice-active] .hh-practice-v4-grid button span{font-size:9px}
 }
+
+
+/* Mentor community: two compact shortcuts, not a duplicate ninth dashboard tab. */
+.hh-app .hh-practice-community-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.hh-app .hh-practice-community-shortcuts :is(a,button){box-sizing:border-box;display:flex;align-items:center;gap:9px;min-width:0;min-height:66px;padding:10px 12px;border:1px solid #e3d4c3;border-radius:14px;text-align:left;text-decoration:none;background:#fffcf7;color:#352a22;cursor:pointer;font:inherit}
+.hh-app .hh-practice-community-shortcuts :is(a,button):hover{border-color:#9ac8b8;background:#f1faf6}
+.hh-app .hh-practice-community-shortcuts :is(a,button):focus-visible{outline:3px solid #0b7a78;outline-offset:2px}
+.hh-app .hh-practice-community-shortcuts :is(a,button) > svg:first-child{width:25px;height:25px;flex:none;color:#0b7a78}
+.hh-app .hh-practice-community-shortcuts :is(a,button) > svg:last-child{width:16px;height:16px;flex:none;color:#846c55}
+.hh-app .hh-practice-community-shortcuts :is(a,button) span{flex:1;min-width:0;display:grid;gap:3px}
+.hh-app .hh-practice-community-shortcuts :is(a,button) strong{font:700 12px/1.3 system-ui,sans-serif;overflow-wrap:anywhere}
+.hh-app .hh-practice-community-shortcuts :is(a,button) small{font:500 10px/1.35 system-ui,sans-serif;color:#756759}
+@media(max-width:360px){
+ .hh-app .hh-practice-community-shortcuts{gap:5px}
+ .hh-app .hh-practice-community-shortcuts :is(a,button){gap:5px;padding:8px 7px}
+ .hh-app .hh-practice-community-shortcuts :is(a,button) > svg:first-child{width:20px;height:20px}
+ .hh-app .hh-practice-community-shortcuts :is(a,button) > svg:last-child{display:none}
+ .hh-app .hh-practice-community-shortcuts :is(a,button) strong{font-size:11px}
+}

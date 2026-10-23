@@ -155,13 +155,34 @@ export default function MyCoursesDashboard({
         <span className={styles.businessTrackEyebrow}>{locale==='ru'?'БЕСПЛАТНЫЙ КУРС':'FREE PERSONAL COURSE'}</span>
         <strong className={styles.businessTrackTitle}>{locale==='ru'?'Личная коуч-сессия':'Personal Coaching Session'}</strong>
         <span className={styles.businessTrackDescription}>
-          {locale==='ru'?'7 вопросов по одному на экран. Ваши ответы и один конкретный шаг.':'7 questions, one at a time. Your answers and a clear next step.'}
+          {locale==='ru'?'Опишите свой вопрос, выберите одну из трёх моделей и пройдите короткую личную сессию.':'Enter your question, choose from three suggested models and complete a short private session.'}
         </span>
         <span className={styles.businessTrackAction}>
           {locale==='ru'?'Начать сессию':'Start my session'}<ArrowRight size={16} aria-hidden="true"/>
         </span>
       </span>
     </Link>
+    <div className={styles.traditionLinks} data-ancient-coaching-courses>
+      {[
+        {id:'egyptian',title:locale==='ru'?'Египетский коучинг':'Egyptian Goal Planning',
+          description:locale==='ru'?'11 коротких экранов · Ка, Ба, Иб и другие уровни. Желание, ценности, действия и ресурсы.':'11 short screens · Ka, Ba, Ib and other levels. Desire, values, actions and support.',
+          photo:'/academy/reiki-yggdrasil/source/temple-studies.png'},
+        {id:'greek',title:locale==='ru'?'Греческий коучинг':'Greek Goal Planning',
+          description:locale==='ru'?'10 экранов · Эпитемия, Тюмос, Логос, Эйдос и Телос. От желания к своему шагу.':'10 screens · Epithymia, Thymos, Logos, Eidos and Telos. From desire to one next step.',
+          photo:'/academy/reiki-yggdrasil/source/temple-studies.png'},
+      ].map(item=><Link key={item.id} href={'/'+(locale==='ru'?'ru':'en')+'/app/coaching/'+item.id}
+        prefetch={false} className={styles.businessTrack} data-tradition-course-card={item.id}>
+        <span className={styles.businessTrackPhoto} aria-hidden="true">
+          <img src={item.photo} alt="" width={240} height={220} loading="lazy" decoding="async"/>
+        </span>
+        <span className={styles.businessTrackBody}>
+          <span className={styles.businessTrackEyebrow}>{locale==='ru'?'КОУЧИНГ-КУРС · С СОХРАНЕНИЕМ':'COACHING COURSE · SAVED PRIVATELY'}</span>
+          <strong className={styles.businessTrackTitle}>{item.title}</strong>
+          <span className={styles.businessTrackDescription}>{item.description}</span>
+          <span className={styles.businessTrackAction}>{locale==='ru'?'Начать или продолжить':'Start or continue'}<ArrowRight size={16} aria-hidden="true"/></span>
+        </span>
+      </Link>)}
+    </div>
     {main&&<section className={styles.startedCourses} aria-label={t.started} data-started-courses>
       <h3>{t.started}</h3>
       <CourseTile course={main} locale={locale} t={t} hero onOpen={onOpen} onClose={setClosing}

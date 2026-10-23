@@ -57,6 +57,15 @@ for (const suffix of ['/', '/ru', '/es']) {
   const medianRscBytes = Math.round(median(warmedRsc));
   const medianFlightBytes = Math.round(median(warmedFlight));
   const medianMarkupBytes = Math.round(median(warmedHtmlWithoutInlineScripts));
+  const warmMeasurements = measurements.slice(1);
+  const medianRscMarkerOnlyBytes = Object.fromEntries(
+    Object.keys(warmMeasurements[0].rscMarkerOnlyBytes).map(marker => [
+      marker,
+      Math.round(median(warmMeasurements.map(v => v.rscMarkerOnlyBytes[marker]))),
+    ]),
+  );
+  const medianRscMultiMarkerBytes = Math.round(median(warmMeasurements.map(v => v.rscMultiMarkerBytes)));
+  const medianRscUnclassifiedFlightBytes = Math.round(median(warmMeasurements.map(v => v.rscUnclassifiedFlightBytes)));
   const budgetWarnings = [];
   if (medianHtmlBytes > htmlWarnBytes) budgetWarnings.push(`decoded HTML above ${htmlWarnBytes} bytes`);
   if (medianInlineBytes > inlineWarnBytes) budgetWarnings.push(`inline scripts above ${inlineWarnBytes} bytes`);
@@ -64,7 +73,8 @@ for (const suffix of ['/', '/ru', '/es']) {
     for (const warning of budgetWarnings) console.error(`::warning title=Public HTML payload::${url.pathname}: ${warning}`);
   }
   console.log(JSON.stringify({
-    page: url.toString(), firstRequestTtfbMs: measurements[0].ttfbMs,
+    page: url.toString(), capturedAtUtc: new Date().toISOString(),
+    firstRequestTtfbMs: measurements[0].ttfbMs,
     warmTtfbMedianMs: Math.round(median(warm)),
     warmTtfbMaximumMs: Math.max(...warm),
     medianDecodedHtmlBytes: medianHtmlBytes,
@@ -73,11 +83,15 @@ for (const suffix of ['/', '/ru', '/es']) {
     medianDecodedFlightBytes: medianFlightBytes,
     medianFlightEncodingOverheadBytes: medianRscBytes - medianFlightBytes,
     rscScriptSizeBands: measurements[measurements.length - 1].rscSizeBands,
+    medianRscMarkerOnlyBytes,
+    medianRscMultiMarkerBytes,
+    medianRscUnclassifiedFlightBytes,
+    rscLargestFlightChunksLastSample: measurements[measurements.length - 1].rscLargestFlightChunks,
     flightChunksParsed: measurements[measurements.length - 1].parsedFlightChunks,
     medianHtmlExcludingInlineScriptBodiesBytes: medianMarkupBytes,
     medianRscHtmlSharePct: Math.round((medianRscBytes / medianHtmlBytes) * 1000) / 10,
     htmlWarnBytes, inlineWarnBytes, budgetWarnings,
     samples: measurements,
-    note: 'TTFB is header latency only. HTML size is decoded UTF-8, not compressed transfer bytes. Next RSC scripts include JavaScript escaping/overhead; decoded Flight counts only confidently parsed [1, string] chunks, and is not a full semantic component attribution. No Flight content is logged. Not a browser LCP measurement.',
+    note: 'TTFB is header latency only. HTML size is decoded UTF-8, not compressed transfer bytes. Next RSC scripts include JavaScript escaping/overhead; decoded Flight counts only confidently parsed [1, string] chunks, and is not a full semantic component attribution. Public marker buckets are heuristic: a chunk with multiple markers is counted as mixed; chunks without markers are unattributed. No Flight content is logged. Not a browser LCP measurement.',
   }, null, 2));
 }
