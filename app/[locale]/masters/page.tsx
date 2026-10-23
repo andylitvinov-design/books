@@ -91,6 +91,8 @@ export default async function MastersPage({ params }: PageProps) {
         </div>
       </section>
       <MentorCommunitySwitch locale={locale} hasArticles={articles.length > 0}
+        mastersUnavailable={mastersResult.status === "rejected"}
+        articlesUnavailable={articlesResult.status === "rejected"}
         mentors={<MarketplaceMasterFinder practitioners={practitioners} locale={locale} />}
         articles={<ArticleDirectory locale={locale} preview articles={articles.map((a) => ({
           id: a.id,
