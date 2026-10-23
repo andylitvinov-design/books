@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { ArrowRight, LayoutDashboard, Menu, Sparkles } from 'lucide-react';
+import { ArrowRight, Menu, Sparkles } from 'lucide-react';
 import { CartNavLink } from '@/components/commerce/cart-nav-link';
 import { SiteSearch } from '@/components/site-search';
 import { compactNavigationIcons } from './compact-navigation-icons';
@@ -14,12 +14,6 @@ import { useNavigationLocale } from './use-navigation-locale';
 import { HomePersonalSpaceNavEntry } from './home-personal-space';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
-
-const cabinetEntryCopy = {
-  en: { full: 'Cabinet', compact: 'Cabinet', aria: 'Open personal cabinet' },
-  ru: { full: 'Кабинет', compact: 'Кабинет', aria: 'Открыть личный кабинет' },
-  es: { full: 'Gabinete', compact: 'Gabinete', aria: 'Abrir gabinete personal' },
-} as const;
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
 
@@ -51,7 +45,6 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
   const text = navigationCopy[activeLocale];
-  const cabinet = cabinetEntryCopy[activeLocale];
   const siteMenu = siteMenuCopy[activeLocale];
   const current = activeNavigationId(pathname);
   const menuCurrent = activeCompactNavigationId(pathname);
@@ -133,21 +126,8 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
     <SiteSearch locale={activeLocale} pathname={pathname} />
-    {(pathname === '/' || pathname === '/ru' || pathname === '/es')
-      ? <HomePersonalSpaceNavEntry locale={activeLocale} href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`} />
-      : <><Link
-      className="site-cabinet-entry"
-      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
-      prefetch={false}
-      data-nav-item="cabinet"
-      aria-current={current === 'cabinet' ? 'page' : undefined}
-      aria-label={cabinet.aria}
-      lang={activeLocale === 'es' ? 'en' : undefined}
-    >
-      <LayoutDashboard aria-hidden="true" />
-      <span className="site-cabinet-entry__full">{cabinet.full}</span>
-      <span className="site-cabinet-entry__compact">{cabinet.compact}</span>
-    </Link></>}
+    <HomePersonalSpaceNavEntry locale={activeLocale}
+      href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`} />
     <Link className="site-nav-shop-entry" data-nav-item="shop" href={"/" + activeLocale + "/shop"}
       prefetch={false} aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}>
       {shopMenuCopy[activeLocale]}
