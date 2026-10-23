@@ -172,6 +172,39 @@ test("Academy quick path pills and three headings remain mobile-friendly in Engl
   assert.match(hub, /events=\{PUBLIC_EVENTS\}/);
 });
 
+test("Business & Career appears in the same Academy with a real free private 90-day course", () => {
+  const hub = read("components/academy-hub.tsx");
+  const discovery = read("components/academy-discovery.tsx");
+  const cards = read("components/academy-course-card-list.tsx");
+  const cardCss = read("components/academy-course-card-list.module.css");
+  const filterCss = read("components/academy-discovery.module.css");
+  const route = read("app/[locale]/app/[[...path]]/page.jsx");
+  const start = hub.indexOf('id: "academy-business-career-90-days"');
+  const end = hub.indexOf('id: "academy-featured-principles-energywork"', start);
+  assert.ok(start >= 0 && end > start, "Business is an Academy card, not a separate-only service");
+  const business = hub.slice(start, end);
+  assert.match(business, /category: "business"/);
+  assert.match(business, /detailsHint: hints\.business/);
+  assert.match(business, /free: true/);
+  assert.match(business, /href: "\/" \+ locale \+ "\/explore\/business"/);
+  assert.match(business, /courseHref: "\/" \+ \(locale === "ru" \? "ru" : "en"\) \+ "\/app\/business"/);
+  assert.match(business, /90 дней/);
+  assert.match(business, /90 days/);
+  assert.match(business, /90 días/);
+  assert.match(route, /['"]business['"]/);
+  assert.equal((hub.match(/category: "(?:wellbeing|reiki|business|temple)"/g) || []).length, 9);
+  assert.match(discovery, /\["all", "business", "free", "wellbeing", "reiki", "temple"\]/);
+  for (const label of ["Все курсы", "Бизнес и карьера", "All courses", "Business & Career", "Negocios y carrera"]) assert.ok(discovery.includes(label), label);
+  assert.match(discovery, /activeFilter === "free" \? Boolean\(item\.free\) : item\.category === activeFilter/);
+  assert.match(discovery, /role="group" aria-label=\{t\.filtersLabel\}/);
+  assert.match(cards, /data-academy-course-category=\{item\.category\}/);
+  assert.match(cardCss, /\.card\[data-academy-course-category="business"\]/);
+  assert.match(filterCss, /\.courseFilters \{/);
+  assert.match(filterCss, /overflow-x: auto/);
+  assert.match(filterCss, /\.filterPill \{/);
+  assert.match(filterCss, /min-height: 40px/);
+});
+
 test("Live academy cards show only confirmed future events with real registration links", () => {
   const source = read("components/academy-discovery.tsx");
   assert.match(source, /event\.status === "published"/);

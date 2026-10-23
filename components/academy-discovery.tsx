@@ -104,7 +104,7 @@ const COPY = {
 } as const;
 
 type CourseFilter = "all" | "free" | AcademyCourseCategory;
-const COURSE_FILTERS: readonly CourseFilter[] = ["all", "free", "wellbeing", "reiki", "business", "temple"];
+const COURSE_FILTERS: readonly CourseFilter[] = ["all", "business", "free", "wellbeing", "reiki", "temple"];
 
 const SEARCH_KEYWORDS: Record<string, string> = {
   "academy-free-opora": "opora stress anti-stress antistress antiestrés stress relief стресс антистресс тревога опора 14 days 14 дней",
