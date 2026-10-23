@@ -10,6 +10,7 @@ import { localePath, saveUiLocale } from '@/lib/ui-locale';
 import { hasSpanishCounterpart, publicCounterpart, savePublicLocale, type PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, activeNavigationId, getCompactNavigation, getSiteNavigation, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
+import { HomePersonalSpaceNavEntry } from './home-personal-space';
 
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 
@@ -131,7 +132,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
-    <Link
+    {(pathname === '/' || pathname === '/ru' || pathname === '/es')
+      ? <HomePersonalSpaceNavEntry locale={activeLocale} href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`} />
+      : <><Link
       className="site-cabinet-entry"
       href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`}
       prefetch={false}
@@ -143,7 +146,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       <LayoutDashboard aria-hidden="true" />
       <span className="site-cabinet-entry__full">{cabinet.full}</span>
       <span className="site-cabinet-entry__compact">{cabinet.compact}</span>
-    </Link>
+    </Link></>}
     <Link className="site-nav-shop-entry" data-nav-item="shop" href={"/" + activeLocale + "/shop"}
       prefetch={false} aria-current={pathname === "/" + activeLocale + "/shop" ? "page" : undefined}>
       {shopMenuCopy[activeLocale]}
