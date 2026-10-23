@@ -163,11 +163,13 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     const carousel = page.locator("[data-meditation-review-carousel]");
     if (expectedReviews) {
       await expect(carousel).toHaveAttribute("data-review-count", String(expectedReviews));
-      const screenshotExamples = id === "flight-voices" || id === "kun-voices";
+      // Video-comment CTAs are removed from all four review slides; only
+      // independently sourced Tantra/Yggdrasil testimonials retain source links.
+      const hasSourceLink = id === "tan-voices" || id === "ygg-voices";
       await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a'))
-        .toHaveCount(id === "flight-voices" ? 0 : screenshotExamples ? 1 : 2);
+        .toHaveCount(hasSourceLink ? 1 : 0);
       await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']"))
-        .toHaveCount(id === "flight-voices" ? 0 : 1);
+        .toHaveCount(0);
       if (id === "flight-voices" && page.viewportSize()?.width <= 760) {
         const arrows = await page.locator("button[data-review-next]").evaluate(button => {
           const rectangle = button.getBoundingClientRect();
@@ -182,8 +184,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
         });
         assert.ok(arrows.touchWidth >= 44 && arrows.touchHeight >= 44,
           where + ": smaller visual arrows must keep a 44px touch target");
-        assert.ok(arrows.circleDiameter <= 35 && arrows.circleDiameter >= 32,
-          where + ": arrow circles should be visually compact");
+        assert.ok(arrows.circleDiameter <= 31 && arrows.circleDiameter >= 29,
+          where + ": 30px visual arrows remain compact and distinct from the 44px touch target");
         assert.ok(arrows.quotePadding <= 4,
           where + ": keep the testimonial reading column wide");
       }
@@ -211,9 +213,9 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       assert.equal(await carousel.locator("blockquote p").innerText(), first, where + ": Previous restores quote");
     } else {
       await expect(carousel).toHaveCount(0);
-      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(1);
+      await expect(page.locator('[data-meditation-voices] [class*="voicesReferences"] a')).toHaveCount(0);
       await expect(page.locator("button[data-review-next]")).toHaveCount(0);
-      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(1);
+      await expect(page.locator("[data-meditation-voices] a[href*='youtube.com/watch']")).toHaveCount(0);
     }
   }
   if (data.kind === "milestone") {

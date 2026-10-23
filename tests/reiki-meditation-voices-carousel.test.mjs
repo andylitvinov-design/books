@@ -45,7 +45,7 @@ test("Buttons switch quotes without navigating away or touching required student
   assert.match(learner, /<MeditationVoices key=\{slide\.id\}/);
   assert.match(learner, /aria-live="polite" aria-atomic="true"/);
   assert.match(learner, /t\.voicesSource/);
-  assert.match(learner, /t\.voicesComments/);
+  assert.doesNotMatch(learner, /showVideoComments|voicesComments/, "No review screen should expose a Video comments CTA");
   assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/);
   assert.match(browser, /Next switches quote in place/);
   assert.match(browser, /Previous restores quote/);
@@ -56,6 +56,11 @@ test("Buttons switch quotes without navigating away or touching required student
   assert.match(learner, /styles\.voicesReferences/);
   assert.match(learner, /styles\.voiceDotActive/);
   assert.match(learner, /voicesArt = slide\.kind === "voices"/);
+  assert.match(css, /A 30px visual circle with a full 44px tap target on iPhone/);
+  const mobileReview = css.slice(css.indexOf("/* REIKI FULL TESTIMONIALS V1"));
+  assert.match(mobileReview, /\.voicesControls \{\s*margin: 6px auto 0;/);
+  assert.match(mobileReview, /inset: 7px;/);
+  assert.match(browser, /const hasSourceLink = id === "tan-voices" \|\| id === "ygg-voices"/);
 });
 
 test("Full original Tantra Reiki testimonials survive without excerpt truncation", () => {
