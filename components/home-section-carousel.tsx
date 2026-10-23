@@ -21,13 +21,13 @@ const slides = [
 ] as const;
 
 // Keep all six slides paired with their named category above the photograph.
-// Home remains a page link; Cabinet is a slide category as well as a header entry.
-const navKeys = ["home", "tests", "services", "academy", "business", "ideas", "cabinet"] as const;
+// The wordmark links to Home; Cabinet is a slide category as well as a header entry.
+const navKeys = ["tests", "services", "academy", "business", "ideas", "cabinet"] as const;
 
 const copy = {
   en: {
     navigationLabel: "Explore site sections",
-    nav: { home: "Home", tests: "Tests", services: "Services", academy: "Academy", business: "Business", ideas: "Ideas", cabinet: "Cabinet" },
+    nav: { tests: "Tests", services: "Services", academy: "Academy", business: "Business", ideas: "Ideas", cabinet: "Cabinet" },
     region: "Explore Holistic House",
     previous: "Previous section",
     next: "Next section",
@@ -43,7 +43,7 @@ const copy = {
   },
   ru: {
     navigationLabel: "Разделы сайта",
-    nav: { home: "Главная", tests: "Тесты", services: "Услуги", academy: "Академия", business: "Бизнес", ideas: "Идеи", cabinet: "Кабинет" },
+    nav: { tests: "Тесты", services: "Услуги", academy: "Академия", business: "Бизнес", ideas: "Идеи", cabinet: "Кабинет" },
     region: "Разделы Holistic House",
     previous: "Предыдущий раздел",
     next: "Следующий раздел",
@@ -59,7 +59,7 @@ const copy = {
   },
   es: {
     navigationLabel: "Secciones del sitio",
-    nav: { home: "Inicio", tests: "Pruebas", services: "Servicios", academy: "Academia", business: "Negocios", ideas: "Ideas", cabinet: "Mi espacio" },
+    nav: { tests: "Pruebas", services: "Servicios", academy: "Academia", business: "Negocios", ideas: "Ideas", cabinet: "Mi espacio" },
     region: "Explora Holistic House",
     previous: "Sección anterior",
     next: "Sección siguiente",
@@ -100,7 +100,7 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
     return () => window.clearInterval(timer);
   }, [paused, interactionVersion]);
 
-  // The seventh, "Cabinet", label may be outside the 320px navigation viewport.
+  // The sixth, "Cabinet", label may be outside the 320px navigation viewport.
   // Scroll only the horizontal label strip, never the document itself.
   useEffect(() => {
     const scroller = navScroller.current;
@@ -170,13 +170,13 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
             onTouchEnd={event => event.stopPropagation()}
             onTouchCancel={event => event.stopPropagation()}>
             {navKeys.map(key => {
-              const target = key === "home" ? undefined : slides.find(item => item.key === key);
-              if (key !== "home" && !target) return null;
+              const target = slides.find(item => item.key === key);
+              if (!target) return null;
               return (
                 <Link
                   key={key}
                   className={styles.sectionNavLink}
-                  href={key === "cabinet" && locale === "es" ? "/en/app" : target ? `/${locale}${target.href}` : locale === "en" ? "/" : `/${locale}`}
+                  href={key === "cabinet" && locale === "es" ? "/en/app" : `/${locale}${target.href}`}
                   aria-current={key === slide.key ? "true" : undefined}
                   data-home-nav-active={key === slide.key ? "true" : "false"}
                   prefetch={false}
