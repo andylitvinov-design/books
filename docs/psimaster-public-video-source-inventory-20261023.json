@@ -1,0 +1,999 @@
+{
+  "summary": {
+    "generatedDate": "2026-10-23",
+    "scope": "75 educational source records in 147-item PsiMaster taxonomy; 1 missing-body record",
+    "records": 76,
+    "sourceRead": 66,
+    "errors": 10,
+    "sourceVideoPlacements": 121,
+    "uniqueVideoIds": 91,
+    "knownNativeVideoIds": 41,
+    "unmappedUniqueVideoIds": 62,
+    "groups": 39,
+    "verification": "Source link discovery only; does NOT verify playback, content rights or the owner's authorship"
+  },
+  "records": [
+    {
+      "sourceTaxonomyId": "12060",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12060",
+      "classification": "Academy",
+      "sourceHeading": null,
+      "group": "applied/tantric-healing",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12123",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12123",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": null,
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12180",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12180",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": null,
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12182",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12182",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": null,
+      "group": "reiki/yggdrasil/western-magic",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12192",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12192",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": null,
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12199",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12199",
+      "classification": "Archive",
+      "sourceHeading": null,
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12200",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12200",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": null,
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12202",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12202",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": null,
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12206",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12206",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Инициация Рейки Иггдрасиль и развитие Интуиции.",
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [
+        "PiZhuunFpHU",
+        "-pvYoNZ0mCw",
+        "4ptK7Bl6Qis",
+        "cAePALD1HkE"
+      ],
+      "videoCount": 4,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12207",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12207",
+      "classification": "Archive",
+      "sourceHeading": "Описание и регистрация.",
+      "group": "archive",
+      "videoIds": [
+        "w3t5RUJ0RFM"
+      ],
+      "videoCount": 1,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12210",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12210",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "1 ступень Рейки Иггдрасиль",
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [
+        "-pvYoNZ0mCw",
+        "4ptK7Bl6Qis",
+        "cAePALD1HkE"
+      ],
+      "videoCount": 3,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12212",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12212",
+      "classification": "Archive",
+      "sourceHeading": "ОТЗЫВЫ. Базовый курс Рейки Иггдрасиль",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12290",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12290",
+      "classification": "Archive",
+      "sourceHeading": "3. Клуб Храм Обьятий.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12308",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12308",
+      "classification": "Academy",
+      "sourceHeading": "Курс 2. Образная Терапия",
+      "group": "applied/imagery-therapy/mirrorland",
+      "videoIds": [
+        "EhQPjuyNCS4",
+        "m03fo3CW7Eo"
+      ],
+      "videoCount": 2,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12312",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12312",
+      "classification": "AcademyVideo",
+      "sourceHeading": "Бесплатные Видео-Курсы.",
+      "group": "videos/energy-pump-ups",
+      "videoIds": [
+        "95peObUizeE",
+        "ZYGjw0PtvdM"
+      ],
+      "videoCount": 2,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12313",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12313",
+      "classification": "AcademySupplement",
+      "sourceHeading": null,
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12323",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12323",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Школа Иггдрасиль",
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [
+        "PiZhuunFpHU",
+        "-pvYoNZ0mCw",
+        "4ptK7Bl6Qis",
+        "cAePALD1HkE"
+      ],
+      "videoCount": 4,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12327",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12327",
+      "classification": "AcademyVideo",
+      "sourceHeading": "Архетипы Майя (видео)",
+      "group": "videos/maya-archetypes",
+      "videoIds": [
+        "9w6AmFXaL2U",
+        "w32jiN4ejCg",
+        "JbslP34kygE",
+        "eMpcOkZgtmU",
+        "8YQt8FcbkM0",
+        "TaK8avHqq7Q"
+      ],
+      "videoCount": 6,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12329",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12329",
+      "classification": "Academy",
+      "sourceHeading": "Курс 3. Северные Скандинавские мистерии рун.",
+      "group": "symbolic/scandinavian-mysteries",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12343",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12343",
+      "classification": "Academy",
+      "sourceHeading": "Курс 5. Западная магия и Мистерии Арканов Таро.",
+      "group": "symbolic/tarot/major-arcana-mysteries",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12344",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12344",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Тантра Рейки- Базовый курс (1-9 ступень).",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12345",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12345",
+      "classification": "Academy",
+      "sourceHeading": "Кундалини Рейки - Базовый курс (1-3 ступень).",
+      "group": "reiki/kundalini-reiki",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12346",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12346",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Этап 1. Базовый курс. Мастер Рейки Иггдрасиль.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12351",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12351",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Этап 3. Инструктор Рейки Иггдрасиль.",
+      "group": "reiki/yggdrasil/instructor-course",
+      "videoIds": [
+        "2zgwT78HFOo",
+        "4PbtfrRcOhU",
+        "zkQArvh38Rk",
+        "MUxXsOrGG20",
+        "QeHCsD6SXl8",
+        "UV1Kg2zqstI",
+        "eVD4C5c1_50",
+        "Mp--4JYbnV4",
+        "kFMUqgvwvZk",
+        "5qJSdsJR_Hk",
+        "thuizAm9E04",
+        "v7jh-rw25U0",
+        "tl7DnCrZ-uI",
+        "pTfGiXaOyGQ",
+        "X2fm0Sm4Wxc"
+      ],
+      "videoCount": 15,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12352",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12352",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "1. Сила Рун и Скандинавские Мистерии",
+      "group": "reiki/yggdrasil/rune-magic",
+      "videoIds": [
+        "a-lN5EgzSC0",
+        "BEIeCSecWAI",
+        "GsM1SZ1MSPw"
+      ],
+      "videoCount": 3,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12353",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12353",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "4. Зодиак. Египетская мудрость и Греческие Мистерии.",
+      "group": "reiki/yggdrasil/temple-magic",
+      "videoIds": [
+        "qT2pbPsHAw8",
+        "lA2MI9v497I",
+        "VTRr4KOeGJI",
+        "eGmMz9z1Puk",
+        "BwBlVerwAhY",
+        "3imaLfspOss",
+        "CFPcSb4bNN8",
+        "5WaDYO4A7RI",
+        "xJKk44jzcVA",
+        "YjZh0cJbBi0"
+      ],
+      "videoCount": 10,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12355",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12355",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "6. Мудрость Северных Шаманов и Славянская Магия",
+      "group": "reiki/yggdrasil/higher-magic",
+      "videoIds": [
+        "0jzVjVuaKa8",
+        "2CqfZnhJBT8",
+        "dPovTDah0hc",
+        "JdoKZY5umMY",
+        "XidOrRZZq3E",
+        "8CF3so0Sq9o",
+        "NuX7kN7RO-Y",
+        "Ucrp1AjS0Ss"
+      ],
+      "videoCount": 8,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12356",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12356",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "5. Мудрость Востока. Суфизм, Индия и Китай",
+      "group": "reiki/yggdrasil/eastern-magic",
+      "videoIds": [
+        "9OosUNGI12k",
+        "Or3DFDvJSKw",
+        "cdfzUaqRa68",
+        "HBwy34WFpPM",
+        "cyHqlVFHmAQ",
+        "uuthxpk4Fn8",
+        "cXcsjY4K8kk",
+        "LJIpvVic82Y",
+        "TyRWtVCGioM",
+        "nJuI0LaaLX4",
+        "Lt3_vFjKx3s"
+      ],
+      "videoCount": 11,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12362",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12362",
+      "classification": "Academy",
+      "sourceHeading": "2. Курс Целительных энергетических массажей.",
+      "group": "applied/energy-massage",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12382",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12382",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Этап 2. Целительство в Рейки Иггдрасиль.",
+      "group": "reiki/yggdrasil/instructor-course",
+      "videoIds": [
+        "WcFd8JSys7o",
+        "BYQUPhz75iI"
+      ],
+      "videoCount": 2,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12383",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12383",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Ступень 1. Дорога к Себе.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12384",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12384",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Ступень 2. Зазеркалье. Возврат Силы.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12385",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12385",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Ступень 3. Сборка личности. Интеграция.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12386",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12386",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Ступень 4. Большие фигуры. Пространство Архетипов.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12387",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12387",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Модуль 2. Мистерии Диониса",
+      "group": "videos/greek-mysteries-dionysus",
+      "videoIds": [
+        "qipPFBpRNF8",
+        "sH-LjZwgNOI"
+      ],
+      "videoCount": 2,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12388",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12388",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Модуль 1. Лики Бога Амун Ра.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12389",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12389",
+      "classification": "Academy",
+      "sourceHeading": "Курс 4. Славянский Шаманизм",
+      "group": "mysteries/slavic/shamanism",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12390",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12390",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Настройки на Каналы Богов Майя и Ацтеков.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12392",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12392",
+      "classification": "Academy",
+      "sourceHeading": "Курс 6. Мистерии Майя и Ацтеков. Шепот Пернатого Змея",
+      "group": "mysteries/maya-aztec/feathered-serpent",
+      "videoIds": [
+        "9w6AmFXaL2U",
+        "w32jiN4ejCg",
+        "JbslP34kygE",
+        "eMpcOkZgtmU",
+        "8YQt8FcbkM0",
+        "TaK8avHqq7Q"
+      ],
+      "videoCount": 6,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12393",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12393",
+      "classification": "Archive",
+      "sourceHeading": "ОТЗЫВЫ",
+      "group": "archive",
+      "videoIds": [
+        "m9RfDgK76PU",
+        "5oj0BIbLT4w",
+        "MIVLm1GUTtM",
+        "thhX4iRjOEQ",
+        "wbnmhNcJiXA"
+      ],
+      "videoCount": 5,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12394",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12394",
+      "classification": "Academy",
+      "sourceHeading": "4. Клуб Храм Любви. Диониссийская Тантра.",
+      "group": "archive/dionysian-tantra-club",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12395",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12395",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Шаманские расстановки",
+      "group": "temple-studies",
+      "videoIds": [
+        "Nkl1ox3UJCs"
+      ],
+      "videoCount": 1,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12397",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12397",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Инициация Рейки Иггдрасиль 1 ст. Бесплатное участие.",
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [
+        "PiZhuunFpHU",
+        "-pvYoNZ0mCw",
+        "4ptK7Bl6Qis",
+        "cAePALD1HkE"
+      ],
+      "videoCount": 4,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12399",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12399",
+      "classification": "Academy",
+      "sourceHeading": "Курс 1. Красота и Сила Античности. Греция и Рим.",
+      "group": "mysteries/greece-rome/beauty-and-power",
+      "videoIds": [
+        "m9RfDgK76PU"
+      ],
+      "videoCount": 1,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12400",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12400",
+      "classification": "Academy",
+      "sourceHeading": "Курс 2. Славянские сказки и мистерии.",
+      "group": "mysteries/slavic/fairy-tales-mysteries",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12401",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12401",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Диагностика ситуации, бизнес-анализ, расстановка.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12402",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12402",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Архетипическая Терапия (Расстановка + Инициация)",
+      "group": "unassigned-archive-review",
+      "videoIds": [
+        "m9RfDgK76PU"
+      ],
+      "videoCount": 1,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12403",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12403",
+      "classification": "Academy",
+      "sourceHeading": "3. Телесная психотерапия (Бодинамика)",
+      "group": "applied/body-psychotherapy-bodynamics",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12404",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12404",
+      "classification": "Archive",
+      "sourceHeading": "О нас",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12405",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12405",
+      "classification": "Academy",
+      "sourceHeading": "Курс 1. Образная терапия. Символдрама (раскрытие потенциалов)",
+      "group": "applied/imagery-therapy-symboldrama",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12407",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12407",
+      "classification": "Academy",
+      "sourceHeading": "Курс 2. Демиурги Творения. Гипнокочинг для бизнеса.",
+      "group": "applied/business/demiurges-of-creation",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12408",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12408",
+      "classification": "Academy",
+      "sourceHeading": "Курс 3. Гипнотерапия и регрессии прошлых жизней.",
+      "group": "applied/hypnotherapy-regressions",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12409",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12409",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Ритуалы Силы - Шаманские расстановки",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12410",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12410",
+      "classification": "Academy",
+      "sourceHeading": "Курс 7. Зороастризм и Магия Востока.",
+      "group": "mysteries/zoroastrism/eastern-magic",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12412",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12412",
+      "classification": "Academy",
+      "sourceHeading": "Модуль 0. Круг Эроса.",
+      "group": "archive/circle-of-eros",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12415",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12415",
+      "classification": "Archive",
+      "sourceHeading": "Академия",
+      "group": "reiki/yggdrasil/basic-course",
+      "videoIds": [
+        "PiZhuunFpHU",
+        "-pvYoNZ0mCw",
+        "4ptK7Bl6Qis",
+        "cAePALD1HkE"
+      ],
+      "videoCount": 4,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12416",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12416",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Обучение (Факультеты)",
+      "group": "temple-studies",
+      "videoIds": [
+        "w3t5RUJ0RFM"
+      ],
+      "videoCount": 1,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12418",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12418",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Модуль 4. Мистерии Гора.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12425",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12425",
+      "classification": "Academy",
+      "sourceHeading": "Курс 5. Большие фигуры",
+      "group": "applied/archetypal-therapy/big-figures",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12431",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12431",
+      "classification": "AcademySupplement",
+      "sourceHeading": null,
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12434",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12434",
+      "classification": "AcademyMissingBody",
+      "sourceHeading": null,
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12449",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12449",
+      "classification": "Academy",
+      "sourceHeading": "Курс 4. Сексуальная Энергетика и Греческие Боги Любви",
+      "group": "applied/sexual-energy-greek-gods",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12452",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12452",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Методичка. Базовый курс Рейки Иггдрасиль",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12454",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12454",
+      "classification": "Academy",
+      "sourceHeading": "Марафон Мечты в Энергиях Диониса",
+      "group": "archive/dionysus-dreams-marathon",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12455",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12455",
+      "classification": "Academy",
+      "sourceHeading": "Курс 2. Высокая мудрость Египетских Богов.",
+      "group": "mysteries/egypt/high-wisdom",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12456",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12456",
+      "classification": "AcademySupplement",
+      "sourceHeading": "Модуль 2. Мистерии Осириса.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12457",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12457",
+      "classification": "DuplicateCanonical",
+      "sourceHeading": "Как получить 1ю ступень Рейки Иггдрасиль в ПОДАРОК?",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12462",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12462",
+      "classification": "Academy",
+      "sourceHeading": "Курс Архетипической терапии.",
+      "group": "applied/archetypal-therapy/program",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12468",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12468",
+      "classification": "AcademyVideo",
+      "sourceHeading": "Медитации Силы и Защиты",
+      "group": "videos/strength-protection",
+      "videoIds": [
+        "h8r_fIVWM0U",
+        "8XN-EFpSt8M",
+        "uN5BFjdKVvY",
+        "ziXmEWe3Dh0",
+        "lOkX_8TM-FA",
+        "DPdDGnU4DL8",
+        "1oshNCVzHR8"
+      ],
+      "videoCount": 7,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12469",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12469",
+      "classification": "Archive",
+      "sourceHeading": null,
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12470",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12470",
+      "classification": "Archive",
+      "sourceHeading": "АКЦИИ. ПОДАРКИ.",
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12471",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12471",
+      "classification": "AcademyVideo",
+      "sourceHeading": "Курс Мистерии Диониса",
+      "group": "videos/greek-mysteries-dionysus",
+      "videoIds": [
+        "qipPFBpRNF8",
+        "sH-LjZwgNOI",
+        "Yw8k00ZNGC8",
+        "9vIsfbGLTnA",
+        "d8o8dOUzEnw",
+        "mOSWavaWkvs",
+        "_9y1lR0lpPA"
+      ],
+      "videoCount": 7,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12472",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12472",
+      "classification": "AcademyVideo",
+      "sourceHeading": null,
+      "group": "videos/egypt-osiris",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12473",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12473",
+      "classification": "Archive",
+      "sourceHeading": null,
+      "group": "unassigned-archive-review",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12477",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12477",
+      "classification": "AcademyVideo",
+      "sourceHeading": "Курс Сила Планет",
+      "group": "videos/planetary-power",
+      "videoIds": [
+        "2GMLhPrEJ3s",
+        "8XN-EFpSt8M",
+        "h8r_fIVWM0U",
+        "owG8gBIQ2hU",
+        "3Lc38_-SqD0",
+        "ziXmEWe3Dh0",
+        "ocks6JP2lD8",
+        "-volI7wYbl0",
+        "R1krHd3JRXc",
+        "uN5BFjdKVvY",
+        "6wNdBVoYt50"
+      ],
+      "videoCount": 11,
+      "extractStatus": "source_read",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    },
+    {
+      "sourceTaxonomyId": "12478",
+      "sourceUrl": "https://psimaster.net/service?shs_term_node_tid_depth=12478",
+      "classification": "AcademyVideo",
+      "sourceHeading": null,
+      "group": "videos/greek-mysteries-demeter",
+      "videoIds": [],
+      "videoCount": 0,
+      "extractStatus": "timeout",
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+    }
+  ]
+}
