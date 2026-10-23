@@ -6,6 +6,8 @@ import "@/app/temple-studies.css";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { AcademyDirection, AcademyHub } from "@/components/academy-hub";
+import { AcademyTraditionCoachingLanding } from "@/components/academy-tradition-coaching-landing";
+import { traditionBySlug } from "@/lib/personal-coaching/traditions";
 import { PublicGrowthCourses } from "@/components/public-growth-courses";
 import PublicPractitionerCourses from "@/components/public-practitioner-courses";
 import { KundaliniReikiCourse } from "@/components/kundalini-reiki-course";
@@ -56,6 +58,8 @@ function yggdrasilChild(slug: string[] | undefined) { return slug?.length === 3 
 
 function pageTitle(locale: PublicLocale, slug: string[] | undefined) {
   if (!slug?.length) return academyCopy[locale].title;
+  if (routeKey(slug) === "coaching/egyptian") return traditionBySlug("egyptian")?.name[locale] || "Egyptian Goal Planning";
+  if (routeKey(slug) === "coaching/greek") return traditionBySlug("greek")?.name[locale] || "Greek Goal Planning";
   if (routeKey(slug) === "egyptian-priesthood") return locale === "ru" ? "Египетское жречество — видеокурс Осириса" : locale === "es" ? "Sacerdocio egipcio — curso de Osiris" : "Egyptian Priesthood — Osiris Video Course";
   if (routeKey(slug) === "egyptian-priesthood/learn") return locale === "ru" ? "Египетское жречество — обучение" : locale === "es" ? "Sacerdocio egipcio — aprender" : "Egyptian Priesthood — Learning Journey";
   if (routeKey(slug) === "free-ai-courses") return locale === "ru" ? "Бесплатные ИИ-курсы" : locale === "es" ? "Cursos de IA gratuitos" : "Free AI Courses";
@@ -93,7 +97,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const languageSuffix = slug?.length ? "/" + slug.join("/") : "";
   const child = yggdrasilChild(slug);
   const courseModule = child ? yggdrasilModuleBySlug(child) : null;
-  const description = routeKey(slug) === "egyptian-priesthood" || routeKey(slug) === "egyptian-priesthood/learn"
+  const ancientCourse = routeKey(slug) === "coaching/egyptian" ? traditionBySlug("egyptian")
+    : routeKey(slug) === "coaching/greek" ? traditionBySlug("greek") : null;
+  const description = ancientCourse ? ancientCourse.description[locale]
+    : routeKey(slug) === "egyptian-priesthood" || routeKey(slug) === "egyptian-priesthood/learn"
     ? locale === "ru" ? "Египетское жречество: 7 оригинальных видеоуроков Андрея Литвинова по циклу Осириса, короткие практики, рефлексия и переход к египетским мистериям."
       : locale === "es" ? "Sacerdocio egipcio: siete vídeos originales en ruso del ciclo de Osiris, prácticas y reflexiones." : "Egyptian Priesthood: seven original Russian-language Osiris video lessons by Andrey Litvinov, reflection and historical study."
     : routeKey(slug) === "principles-of-energywork/learn"
@@ -173,6 +180,8 @@ export default async function AcademyPage({ params, searchParams }: Props) {
     return <AcademyHub locale={locale} view={view} />;
   }
 
+  if (key === "coaching/egyptian") return <AcademyTraditionCoachingLanding locale={locale} slug="egyptian" />;
+  if (key === "coaching/greek") return <AcademyTraditionCoachingLanding locale={locale} slug="greek" />;
   if (key === "egyptian-priesthood") return <EgyptianPriesthoodLanding locale={locale} />;
   if (key === "egyptian-priesthood/learn") {
     const rawLesson = Array.isArray(query.lesson) ? query.lesson[0] : query.lesson;
