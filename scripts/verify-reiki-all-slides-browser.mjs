@@ -228,8 +228,12 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     const footer = page.locator('[class*="milestoneActions"]');
     await expect(footer.locator("button")).toHaveCount(2);
     await expect(footer.locator("button[data-energywork-next]")).toBeVisible();
+    const needsFirstPrivateSave = id === "flight-done" &&
+      (await page.locator("[data-reiki-first-lesson-consent]").count()) > 0;
     await expect(footer.locator("button[data-energywork-next]")).toContainText(
-      locale === "ru" ? "Сохранить урок и продолжить" : "Save my lesson and continue");
+      needsFirstPrivateSave
+        ? (locale === "ru" ? "Сохранить" : "Save")
+        : (locale === "ru" ? "Сохранить урок и продолжить" : "Save my lesson and continue"));
     await expect(page.locator("button[data-energywork-save-progress]")).toHaveCount(0);
     await expect(page.locator("[data-reiki-reminder-setup]")).toHaveCount(0);
   } else {
