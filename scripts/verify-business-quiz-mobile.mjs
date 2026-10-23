@@ -47,6 +47,12 @@ async function verify(browserType,locale,width){
       const box=await options.last().boundingBox()
       assert.ok(box.y+box.height<770,label+': all three choices above bottom bar')
     }
+    const direct=page.locator('[data-business-website-enquiry]')
+    assert.equal(await direct.locator('[data-business-option]').count(),4,label+': four formats')
+    assert.equal(await direct.locator('[data-business-option="free"]').getAttribute('aria-pressed'),'true',
+      label+': free default')
+    assert.equal(await direct.locator('#business-request-form').isVisible(),false,
+      label+': contact fields collapsed initially')
     const filters=page.locator('[data-business-service-filter]')
     assert.equal(await filters.evaluate(node=>node.open),false,label+': filter initially collapsed')
     assert.equal(await page.locator('[data-business-service-card]').count(),3,label+': first three services')
@@ -65,12 +71,21 @@ async function verify(browserType,locale,width){
     await cta.click()
     const form=page.locator('[data-business-website-enquiry]')
     await form.waitFor({state:'visible'})
-    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'express')
+    const capturePhoto=direct.locator('header img').first()
+    await capturePhoto.scrollIntoViewIfNeeded()
+    await capturePhoto.evaluate(img=>img.decode())
+    assert.ok(await capturePhoto.evaluate(img=>img.complete&&img.naturalWidth>50),
+      label+': real Andrey photo in request card')
+    assert.equal(await form.locator('[data-business-option="express"]').getAttribute('aria-pressed'),'true')
+    assert.equal(await form.locator('#business-request-form').isVisible(),true,
+      label+': website CTA opens contact fields inline')
+    assert.equal(await form.locator('button[type=submit]').isDisabled(),true,
+      label+': contact cannot submit without consent')
     await page.locator('[data-business-finder-result] summary').click()
     await page.locator('[data-business-format-choice="free"]').click()
     assert.equal(await cta.getAttribute('data-business-direct-option'),'free')
     await cta.click()
-    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'free')
+    assert.equal(await form.locator('[data-business-option="free"]').getAttribute('aria-pressed'),'true')
     await page.locator('[data-business-finder-reset]').click()
     assert.equal(await page.locator('[data-business-need]').count(),3)
 
@@ -89,7 +104,12 @@ async function verify(browserType,locale,width){
     assert.equal(await page.locator('[data-business-service-card="imagery"]').count(),1)
     // Existing consent-gated CRM form receives a direct card's approved price.
     await page.locator('[data-business-service-card="full"] [data-business-direct-option="full"]').click()
-    assert.equal(await form.locator('[data-business-field="format"]').inputValue(),'full')
+    assert.equal(await form.locator('[data-business-option="full"]').getAttribute('aria-pressed'),'true')
+    if(snap){
+      await form.locator('[data-business-option="free"]').click()
+      await form.locator('[data-business-open-request]').click()
+      await form.screenshot({path:dir+'/03-new-consultation-card.png'})
+    }
     const after=await measure()
     assert.ok(after.content<=after.viewport+1,label+': after interactions no horizontal overflow')
     assert.deepEqual(errors,[],label+': no unhandled page errors')

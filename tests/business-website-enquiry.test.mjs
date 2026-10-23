@@ -73,3 +73,38 @@ test("mobile enquiry collects a single explicit reply contact, with an optional 
   assert.match(css,/@media\(max-width:350px\)/);
   for(const lang of ["en","ru","es"])assert.match(form,new RegExp(lang+": \\{"));
 });
+
+
+test("photo-led business choice cards replace the always-open first-screen form",()=>{
+  const form=read("components/business-website-enquiry.tsx");
+  const css=read("components/business-website-enquiry.module.css");
+  assert.match(form,/const \[expanded,setExpanded\]=useState\(false\)/);
+  assert.match(form,/aria-pressed=\{format===key\}/);
+  assert.match(form,/Image src=\{formatImages\[key\]\}/);
+  assert.match(form,/data-business-field="format"/);
+  assert.match(form,/aria-expanded=\{expanded\} aria-controls="business-request-form"/);
+  assert.match(form,/hidden=\{!expanded\}/);
+  assert.match(form,/setFormat\(value\);setExpanded\(true\)/);
+  assert.match(form,/format === "free"/);
+  assert.match(form,/€50/);
+  assert.match(form,/€100/);
+  assert.match(css,/\.options\{display:grid/);
+  assert.match(css,/\.option\[aria-pressed="true"\]/);
+  assert.match(css,/@media\(max-width:480px\)/);
+  assert.match(css,/@media\(max-width:350px\)/);
+  assert.match(css,/\.capture\[hidden\]/);
+});
+
+test("anonymous business enquiry is saved before manual messenger handoff",()=>{
+  const form=read("components/business-website-enquiry.tsx");
+  assert.match(form,/fetch\("\/api\/services\/business-consulting"/);
+  assert.match(form,/contactConsent:consent/);
+  assert.match(form,/body\?\.received===true/);
+  assert.match(form,/setSuccess\(true\)/);
+  assert.match(form,/success \? \(/);
+  assert.match(form,/telegramEnquiryUrlFromWhatsApp\(chatHref\)/);
+  assert.match(form,/target="_blank" rel="noopener noreferrer"/);
+  assert.match(form,/request: e\.chatMessage/);
+  assert.doesNotMatch(form,/request:\s*question|request:\s*contact|request:\s*name/);
+  assert.doesNotMatch(form,/onClick=\{.*setSuccess\(true\)/);
+});

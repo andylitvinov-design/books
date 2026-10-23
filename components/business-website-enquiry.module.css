@@ -34,3 +34,139 @@
 .replyMode button[aria-pressed="true"]{background:#e3ebe4;color:#285f46;border-color:#608a6c;box-shadow:inset 0 0 0 1px #608a6c}
 .phoneField{display:grid;gap:5px;min-width:0}
 .phoneField label{color:#4a3d34;font:700 12px/1.4 Arial,Helvetica,sans-serif}
+
+
+/* Conversion-first layout: photo-led introduction, illustrated format choices,
+   and one CTA. The personal contact intake only unfolds after an explicit tap. */
+.panel{
+  box-sizing:border-box;
+  max-width:980px;
+  padding:clamp(19px,3.2vw,30px);
+  border:1px solid #ddcabb;
+  border-radius:24px;
+  background:linear-gradient(145deg,#f9f3ea 0%,#f4eadc 68%,#f0e5d5 100%);
+  box-shadow:0 12px 34px rgba(85,59,37,.08);
+}
+.panel *{box-sizing:border-box}
+.intro{display:grid;grid-template-columns:110px minmax(0,1fr);align-items:center;gap:20px;margin-bottom:20px}
+.portrait{position:relative;overflow:hidden;width:110px;aspect-ratio:4/5;border-radius:17px;background:#ded1be;box-shadow:0 5px 14px rgba(81,57,35,.11)}
+.portrait img{object-fit:cover;object-position:50% 25%}
+.introText{min-width:0}
+.introText h2{font-size:clamp(28px,3vw,38px);line-height:1.14;max-width:560px}
+.introText .lead{font-size:14px;line-height:1.48;max-width:530px;margin:8px 0 0}
+.question{margin:0 0 11px;color:#604c3f;font:800 13px/1.35 Arial,Helvetica,sans-serif}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.option{
+  display:flex;align-items:center;gap:12px;min-width:0;min-height:98px;
+  padding:10px;border:1.5px solid #dccfc0;border-radius:15px;
+  background:rgba(255,255,255,.84);color:#3a372f;
+  text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.option:hover{border-color:#ae8665;background:#fff}
+.option[aria-pressed="true"]{border:2px solid #8c583e;padding:9.5px;background:#fff9f2;box-shadow:0 4px 16px rgba(128,81,46,.1)}
+.optionImage{position:relative;flex:0 0 72px;width:72px;height:74px;border-radius:11px;overflow:hidden;background:#ece3d4}
+.optionImage img{object-fit:cover;object-position:center}
+.optionCopy{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.optionCopy strong{font:800 14px/1.3 Arial,Helvetica,sans-serif;color:#47362d;text-wrap:balance}
+.optionCopy small{font:500 11px/1.4 Arial,Helvetica,sans-serif;color:#72655a}
+.optionEnd{display:flex;flex:none;flex-direction:column;align-items:flex-end;justify-content:space-between;align-self:stretch;gap:8px}
+.optionPrice{font:800 10px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap;color:#9b6446;letter-spacing:.02em}
+.optionCheck{width:27px;height:27px;display:grid;place-items:center;border:1.5px solid #c9b7a5;border-radius:50%;color:#fff}
+.option[aria-pressed="true"] .optionCheck{border-color:#8c583e;background:#8c583e}
+.openRequest{
+  width:100%;min-height:56px;margin-top:15px;display:grid;grid-template-columns:25px minmax(0,1fr) 25px;
+  gap:10px;align-items:center;justify-items:center;padding:13px 18px;
+  border:0;border-radius:14px;background:#d86b51;color:#fff;cursor:pointer;
+  font:800 16px/1.3 Arial,Helvetica,sans-serif;box-shadow:0 8px 16px rgba(148,72,48,.14);
+}
+.openRequest:hover{background:#c65c44}
+.openRequest svg{flex:none}
+.openRequest[aria-expanded="true"] svg:last-child{transform:rotate(180deg)}
+.actionNote{margin:8px 0 0;color:#756a5f;text-align:center;font:500 11px/1.45 Arial,Helvetica,sans-serif}
+.capture{
+  margin-top:12px;padding:17px;border:1px solid #dfcbbc;border-radius:15px;
+  background:rgba(255,255,255,.92);scroll-margin-block:95px 120px;
+}
+.capture[hidden],.questionField[hidden]{display:none!important}
+.captureIntro{margin:0 0 12px;color:#594e46;font:650 13px/1.5 Arial,Helvetica,sans-serif}
+.capture .form{max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.capture .form label{min-width:0}
+.contactChoice{display:grid;gap:7px;min-width:0}
+.capture .replyMode{gap:5px}
+.capture .replyMode button{min-height:38px;border-radius:9px}
+.capture .phoneField{gap:4px}
+.capture .phoneField label{display:block}
+.capture .detailsToggle,.capture .questionField,.capture .consent,
+.capture .form button[type=submit],.capture .error{grid-column:1/-1}
+.capture .form button[type=submit]{background:#35654b;min-height:50px}
+.capture .form button[type=submit]:hover:not(:disabled){background:#284f3a}
+.capture .form label.consent{font-size:12px}
+.footer{display:flex;flex-direction:column;gap:10px;margin-top:16px;border-top:1px solid #e2d4c4;padding-top:13px}
+.trust{display:flex;flex-wrap:wrap;gap:12px 18px}
+.trust span{display:flex;align-items:center;gap:5px;color:#7b604b;font:800 11px/1.3 Arial,Helvetica,sans-serif}
+.trust svg{color:#527d66}
+.footer .note{margin:0;font-size:11px}
+.savedPanel{margin-top:16px}
+.savedPanel .success{max-width:none}
+.savedPanel .success p{margin:5px 0 0}
+.freeNext{margin:12px 0 0;color:#4d6459;font:600 12px/1.5 Arial,Helvetica,sans-serif}
+.nextAction{
+  display:inline-flex;gap:8px;align-items:center;min-height:44px;margin:12px 0 0;
+  padding:10px 14px;background:#fefcf7;border:1px solid #9dc2b0;border-radius:11px;
+  color:#286b51;font:750 13px/1.4 Arial,Helvetica,sans-serif;text-decoration:none;
+}
+.chatTitle{margin:15px 0 9px;color:#675547;font:800 13px/1.4 Arial,Helvetica,sans-serif}
+.messengerChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.messengerChoices a{
+  display:flex;align-items:center;justify-content:center;gap:9px;min-height:49px;
+  padding:10px 12px;border-radius:11px;color:#fff;text-decoration:none;
+  font:800 14px/1.3 Arial,Helvetica,sans-serif;
+}
+.whatsapp{background:#178462}
+.telegram{background:#2b79a7}
+.messengerChoices a:hover{filter:brightness(1.08)}
+.panel :is(.option,.openRequest,.messengerChoices a,.nextAction):focus-visible{outline:3px solid #956247;outline-offset:3px}
+@media(max-width:720px){
+  .options{grid-template-columns:minmax(0,1fr);gap:9px}
+  .option{min-height:85px}
+  .intro{gap:13px;grid-template-columns:82px minmax(0,1fr);margin-bottom:18px}
+  .portrait{width:82px;border-radius:13px}
+  .introText h2{font-size:clamp(24px,6vw,31px)}
+  .introText .lead{font-size:12px;line-height:1.43}
+  .capture .form{grid-template-columns:minmax(0,1fr)}
+  .capture .detailsToggle,.capture .questionField,.capture .consent,
+  .capture .form button[type=submit],.capture .error{grid-column:1}
+}
+@media(max-width:480px){
+  .panel{padding:18px 14px;border-radius:20px;margin-top:16px}
+  .intro{grid-template-columns:72px minmax(0,1fr);gap:12px;margin-bottom:16px}
+  .portrait{width:72px;border-radius:11px}
+  .eyebrow{font-size:9px}
+  .introText h2{font-size:clamp(24px,6.25vw,29px)}
+  .introText .lead{font-size:12px}
+  .option{gap:10px;min-height:77px;padding:7px;border-radius:12px}
+  .option[aria-pressed="true"]{padding:6.5px}
+  .optionImage{width:65px;height:65px;flex-basis:65px;border-radius:9px}
+  .optionCopy strong{font-size:13px}
+  .optionCopy small{font-size:10.5px}
+  .optionEnd{gap:6px}
+  .optionPrice{font-size:9px}
+  .optionCheck{width:23px;height:23px}
+  .openRequest{min-height:53px;margin-top:12px;font-size:15px}
+  .capture{padding:12px}
+  .trust{gap:9px 12px}
+}
+@media(max-width:350px){
+  .intro{grid-template-columns:62px minmax(0,1fr)}
+  .portrait{width:62px}
+  .introText h2{font-size:24px}
+  .introText .lead{font-size:11px}
+  .optionImage{width:57px;height:60px;flex-basis:57px}
+  .optionCopy strong{font-size:12px}
+  .optionCopy small{font-size:10px}
+  .optionPrice{font-size:8px}
+  .option{gap:7px}
+  .messengerChoices{gap:7px}
+  .messengerChoices a{font-size:12px;padding:9px 6px}
+}
+@media(prefers-reduced-motion:reduce){.option{transition:none}}

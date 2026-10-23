@@ -392,7 +392,11 @@ try {
       "Free Business hero must reach the separate written situation review, not imply a live session");
     const requestForm = main.locator("[data-business-website-enquiry]");
     await visible(requestForm);
-    assert.equal(await requestForm.locator("select[data-business-field=\"format\"]").count(),1);
+    assert.equal(await requestForm.locator('[data-business-option]').count(),4);
+    await expect(requestForm.locator('[data-business-option="free"]')).toHaveAttribute('aria-pressed','true');
+    await expect(requestForm.locator('#business-request-form')).toBeHidden();
+    await requestForm.locator('[data-business-open-request]').click();
+    await expect(requestForm.locator('#business-request-form')).toBeVisible();
     await expect(requestForm.locator("button[type=submit]")).toBeDisabled();
     const offers = main.locator("#business-offers");
     for (const kind of ["free", "express", "full"]) {
