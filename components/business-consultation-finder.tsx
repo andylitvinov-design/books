@@ -39,7 +39,7 @@ const words: Record<Locale, {
     questionError: 'Please write a short question (at least 8 characters).',
     ideaLabel: 'A practical idea',
     unknownIdea: 'Choose a topic below to narrow this down. You can also start with a free written review.',
-    match: 'Choose how to begin', focus: 'Your focus', change: 'Change my answer',
+    match: 'Choose how to begin', focus: 'Your focus', change: 'Edit question',
     request: 'Request a personal session', freeAction: 'Start free written review',
     freeKicker: 'FREE · WRITTEN REVIEW', paidKicker: 'LIVE WITH ANDREY',
     other: 'Other paid formats', available: 'Personal session formats',
@@ -66,7 +66,7 @@ const words: Record<Locale, {
     questionError: 'Напишите короткий вопрос (хотя бы 8 символов).',
     ideaLabel: 'Идея для первого шага',
     unknownIdea: 'Выберите тему в фильтре ниже для уточнения. Можно также начать с бесплатного письменного разбора.',
-    match: 'Два способа начать', focus: 'Ваш запрос', change: 'Изменить ответ',
+    match: 'Два способа начать', focus: 'Ваш запрос', change: 'Изменить вопрос',
     request: 'Запросить личную сессию', freeAction: 'Начать бесплатный разбор',
     freeKicker: 'БЕСПЛАТНО · ПИСЬМЕННО', paidKicker: 'СЕССИЯ С АНДРЕЕМ',
     other: 'Другие платные форматы', available: 'Форматы личных сессий',
@@ -93,7 +93,7 @@ const words: Record<Locale, {
     questionError: 'Escribe una pregunta breve (al menos 8 caracteres).',
     ideaLabel: 'Una idea para empezar',
     unknownIdea: 'Elige un tema abajo para precisar tu pregunta. También puedes solicitar una revisión escrita gratis.',
-    match: 'Dos formas de empezar', focus: 'Tu tema', change: 'Cambiar respuesta',
+    match: 'Dos formas de empezar', focus: 'Tu tema', change: 'Editar pregunta',
     request: 'Solicitar una sesión personal', freeAction: 'Empezar revisión gratuita',
     freeKicker: 'GRATIS · POR ESCRITO', paidKicker: 'EN VIVO CON ANDREY',
     other: 'Otras opciones de pago', available: 'Modalidades de sesiones personales',
@@ -134,7 +134,8 @@ export function BusinessConsultationFinder({locale, onTopicIdentified}: {
     mentoring: {name: businessConsultingCopy[locale].mentorTitle, price: t.mentorPrice},
   }
   // Only a *public topic label*, never the visitor's free text, enters a CRM handoff.
-  const context = need ? t.focus + ': ' + t.choices[need].label + '.' : ''
+  const topicLabel = topic === 'all' ? (need ? t.choices[need].label : '') : BUSINESS_TOPIC_GUIDE[locale][topic].label
+  const context = need ? t.focus + ': ' + topicLabel + '.' : ''
   const idea = topic === 'all' ? t.unknownIdea : BUSINESS_TOPIC_GUIDE[locale][topic].idea
 
   function submitQuestion(event: FormEvent<HTMLFormElement>) {
@@ -176,7 +177,7 @@ export function BusinessConsultationFinder({locale, onTopicIdentified}: {
         onClick={restart}><RotateCcw size={14} aria-hidden="true"/>{t.change}</button>
       <div className={styles.resultIntro}>
         <p className={styles.resultEyebrow}>{t.match}</p>
-        <p className={styles.needSummary}>{t.focus}: <strong>{t.choices[need].label}</strong></p>
+        <p className={styles.needSummary}>{t.focus}: <strong>{topicLabel}</strong></p>
       </div>
       <p className={styles.quickIdea} data-business-quick-idea><Lightbulb size={16} aria-hidden="true"/>
         <span><strong>{t.ideaLabel}:</strong> {idea}</span>
