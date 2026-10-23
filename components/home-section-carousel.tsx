@@ -12,30 +12,30 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./services-conversion-hero.module.css";
 
 const slides = [
-  { key: "services", href: "/services", image: "/images/holistic-house/hero-olive-incense.webp", position: "center" },
-  { key: "tests", href: "/client/tests", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", position: "center" },
-  { key: "academy", href: "/academy", image: "/images/holistic-house/reiki-approved-sunrise-v3.webp", position: "center" },
+  { key: "services", href: "/explore/energy", image: "/images/holistic-house/hero-olive-incense.webp", position: "center" },
+  { key: "academy", href: "/explore/love", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", position: "center" },
   { key: "business", href: "/explore/business", image: "/images/holistic-house/andy-about.png", position: "center 30%" },
+  { key: "tests", href: "/client/tests", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", position: "center" },
   { key: "ideas", href: "/books", image: "/images/holistic-house/books-library.webp", position: "center" },
   { key: "cabinet", href: "/app", image: "/academy/reiki-yggdrasil/source/program-overview.jpg", position: "center" },
 ] as const;
 
 // Keep all six slides paired with their named category above the photograph.
 // The wordmark links to Home; Cabinet is a slide category as well as a header entry.
-const navKeys = ["tests", "services", "academy", "business", "ideas", "cabinet"] as const;
+const navKeys = ["services", "academy", "business", "tests", "ideas", "cabinet"] as const;
 
 const copy = {
   en: {
     navigationLabel: "Explore site sections",
-    nav: { tests: "Tests", services: "Services", academy: "Academy", business: "Business", ideas: "Ideas", cabinet: "Cabinet" },
+    nav: { tests: "Tests", services: "Energy", academy: "Love", business: "Business", ideas: "Ideas", cabinet: "Cabinet" },
     region: "Explore Holistic House",
     previous: "Previous section",
     next: "Next section",
     choose: "Choose a site section",
     slides: {
-      services: { eyebrow: "SERVICES · PERSONAL CONSULTATIONS", title: "Personal sessions for life's questions", lead: "Explore relationships, stress or difficult decisions in a one-to-one session in Toronto or online.", action: "Request a consultation · from €50" },
+      services: { eyebrow: "ENERGY · WELLBEING & PRACTICE", title: "Energy, calm and personal support", lead: "Explore stress, daily energy and personal resources through free tests, courses and optional individual guidance.", action: "Request a consultation · from €50" },
       tests: { eyebrow: "TESTS · FREE SELF-CHECKS", title: "Free tests to understand yourself", lead: "Explore stress, strengths and personal resources. See a report with insights for your next step.", action: "Take free tests" },
-      academy: { eyebrow: "ACADEMY · COURSES & PRACTICES", title: "Courses, lessons and meditations", lead: "Choose Reiki and personal-growth courses with guided exercises and lessons you can return to.", action: "Find a course" },
+      academy: { eyebrow: "LOVE · CONNECTION & RELATIONSHIPS", title: "Explore love, trust and personal boundaries", lead: "Understand communication, closeness and boundaries. Choose a free self-check, guided course or personal session.", action: "Explore Love options" },
       business: { eyebrow: "BUSINESS · COACHING & STRATEGY", title: "Support for work and business decisions", lead: "Clarify goals and business challenges through coaching, strategy and practical next steps.", action: "View business services" },
       ideas: { eyebrow: "IDEAS · QUESTIONS & BOOKS", title: "Fresh perspectives on your question", lead: "Ask a question for an I Ching reflection or aphorisms, and explore books for more inspiration.", action: "Explore Ideas" },
       cabinet: { eyebrow: "PERSONAL CABINET · YOUR SPACE", title: "Your tests, courses & progress", lead: "Save test reports, continue courses, revisit recommendations and follow your development in one place.", action: "Open my Cabinet" },
@@ -43,15 +43,15 @@ const copy = {
   },
   ru: {
     navigationLabel: "Разделы сайта",
-    nav: { tests: "Тесты", services: "Услуги", academy: "Академия", business: "Бизнес", ideas: "Идеи", cabinet: "Кабинет" },
+    nav: { tests: "Тесты", services: "Энергия", academy: "Любовь", business: "Бизнес", ideas: "Идеи", cabinet: "Кабинет" },
     region: "Разделы Holistic House",
     previous: "Предыдущий раздел",
     next: "Следующий раздел",
     choose: "Выберите раздел сайта",
     slides: {
-      services: { eyebrow: "УСЛУГИ · ЛИЧНЫЕ КОНСУЛЬТАЦИИ", title: "Личные сессии по важным вопросам", lead: "Отношения, стресс или сложный выбор: исследуйте свой запрос на встрече в Торонто или онлайн.", action: "Запросить консультацию · от €50" },
+      services: { eyebrow: "ЭНЕРГИЯ · САМОЧУВСТВИЕ И ПРАКТИКА", title: "Энергия и внутренняя опора", lead: "Исследуйте стресс, усталость и ресурсы через бесплатные тесты, курсы и возможность личной консультации.", action: "Запросить консультацию · от €50" },
       tests: { eyebrow: "ТЕСТЫ · БЕСПЛАТНО", title: "Узнайте свои сильные стороны", lead: "Пройдите тесты на стресс и личные ресурсы. Получите отчёт с результатами и выводами.", action: "Пройти тесты" },
-      academy: { eyebrow: "АКАДЕМИЯ · КУРСЫ И ПРАКТИКИ", title: "Курсы, уроки и медитации", lead: "Осваивайте Рейки и практики развития через уроки, упражнения и медитации в своём темпе.", action: "Выбрать курс" },
+      academy: { eyebrow: "ЛЮБОВЬ · ОТНОШЕНИЯ И БЛИЗОСТЬ", title: "Любовь, доверие и личные границы", lead: "Исследуйте близость, общение и границы через бесплатный тест, курс самоподдержки или личную сессию.", action: "Открыть варианты" },
       business: { eyebrow: "БИЗНЕС · КОУЧИНГ И СТРАТЕГИЯ", title: "Поддержка в работе и бизнесе", lead: "Разберите цели, трудности проекта и варианты решений. Наметьте практический следующий шаг.", action: "Услуги для бизнеса" },
       ideas: { eyebrow: "ИДЕИ · ВОПРОСЫ И КНИГИ", title: "Подсказки для вашего вопроса", lead: "Задайте вопрос, получите афоризмы или символ Книги Перемен. Найдите новые идеи в книгах.", action: "Открыть Идеи" },
       cabinet: { eyebrow: "ЛИЧНЫЙ КАБИНЕТ · МОЁ ПРОСТРАНСТВО", title: "Ваши тесты, курсы и прогресс", lead: "Сохраняйте отчёты, продолжайте курсы, возвращайтесь к рекомендациям и следите за динамикой.", action: "Перейти в кабинет" },
@@ -59,15 +59,15 @@ const copy = {
   },
   es: {
     navigationLabel: "Secciones del sitio",
-    nav: { tests: "Pruebas", services: "Servicios", academy: "Academia", business: "Negocios", ideas: "Ideas", cabinet: "Mi espacio" },
+    nav: { tests: "Pruebas", services: "Energía", academy: "Amor", business: "Negocios", ideas: "Ideas", cabinet: "Mi espacio" },
     region: "Explora Holistic House",
     previous: "Sección anterior",
     next: "Sección siguiente",
     choose: "Elige una sección del sitio",
     slides: {
-      services: { eyebrow: "SERVICIOS · CONSULTAS PERSONALES", title: "Sesiones para tus preguntas importantes", lead: "Explora relaciones, estrés y decisiones difíciles en una sesión personal en Toronto o en línea.", action: "Solicitar una consulta · desde €50" },
+      services: { eyebrow: "ENERGÍA · BIENESTAR Y PRÁCTICA", title: "Energía, calma y apoyo personal", lead: "Explora estrés, energía y recursos a través de pruebas gratuitas, cursos y orientación personal opcional.", action: "Solicitar una consulta · desde €50" },
       tests: { eyebrow: "PRUEBAS · GRATIS", title: "Pruebas gratis para conocerte mejor", lead: "Explora estrés, fortalezas y recursos personales. Consulta un informe con ideas para tu próximo paso.", action: "Hacer pruebas gratis" },
-      academy: { eyebrow: "ACADEMIA · CURSOS Y PRÁCTICAS", title: "Cursos, lecciones y meditaciones", lead: "Descubre Reiki y prácticas de desarrollo con lecciones, ejercicios y meditaciones a tu ritmo.", action: "Elegir un curso" },
+      academy: { eyebrow: "AMOR · CONEXIÓN Y RELACIONES", title: "Amor, confianza y límites personales", lead: "Explora comunicación, cercanía y límites. Empieza por una prueba, un curso o una sesión personal.", action: "Explorar opciones" },
       business: { eyebrow: "NEGOCIOS · COACHING Y ESTRATEGIA", title: "Apoyo para el trabajo y tus proyectos", lead: "Aclara objetivos y desafíos del negocio con orientación y pasos prácticos para avanzar.", action: "Ver servicios de negocios" },
       ideas: { eyebrow: "IDEAS · PREGUNTAS Y LIBROS", title: "Nuevas ideas para tu pregunta", lead: "Haz una pregunta para recibir aforismos o un símbolo del I Ching y explora libros para reflexionar.", action: "Explorar Ideas" },
       cabinet: { eyebrow: "MI ESPACIO · GABINETE PERSONAL", title: "Tus pruebas, cursos y avances", lead: "Guarda informes, continúa tus cursos, revisa recomendaciones y sigue tu progreso en un solo lugar.", action: "Abrir mi espacio" },

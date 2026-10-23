@@ -8,8 +8,8 @@ const carousel = read("components/home-section-carousel.tsx");
 const style = read("components/services-conversion-hero.module.css");
 
 test("home reuses the Services photo slider with six real destinations, not fake service filters", () => {
-  const ids = ["services", "tests", "academy", "business", "ideas", "cabinet"];
-  const routes = ["/services", "/client/tests", "/academy", "/explore/business", "/books", "/app"];
+  const ids = ["services", "academy", "business", "tests", "ideas", "cabinet"];
+  const routes = ["/explore/energy", "/explore/love", "/explore/business", "/client/tests", "/books", "/app"];
   for (let i = 0; i < ids.length; i++) {
     assert.ok(carousel.includes('key: "' + ids[i] + '", href: "' + routes[i] + '"'), "Missing section route: " + ids[i]);
     assert.ok(carousel.includes('data-home-slide-action={slide.key}'));
@@ -107,13 +107,13 @@ test("all homepage slides describe real benefits in EN, RU and ES with compact m
   assert.match(carousel, /lead: "Сохраняйте отчёты, продолжайте курсы, возвращайтесь к рекомендациям/);
   assert.match(carousel, /lead: "Guarda informes, continúa tus cursos, revisa recomendaciones/);
   assert.match(carousel, /title: "Free tests to understand yourself"/);
-  assert.match(carousel, /title: "Курсы, уроки и медитации"/);
+  assert.match(carousel, /title: "Любовь, доверие и личные границы"/);
   assert.match(carousel, /title: "Nuevas ideas para tu pregunta"/);
 });
 
 test("the approved photo hero offers six localized destinations without an extra Home tab", () => {
-  const sections = ["tests", "services", "academy", "business", "ideas", "cabinet"];
-  assert.match(carousel, /const navKeys = \["tests", "services", "academy", "business", "ideas", "cabinet"\] as const/);
+  const sections = ["services", "academy", "business", "tests", "ideas", "cabinet"];
+  assert.match(carousel, /const navKeys = \["services", "academy", "business", "tests", "ideas", "cabinet"\] as const/);
   assert.doesNotMatch(carousel, /const navKeys = \["home"/);
   assert.doesNotMatch(carousel, /nav: \{ home:/);
   assert.match(carousel, /<nav className=\{styles\.sectionNav\} aria-label=\{t\.navigationLabel\}/);
@@ -123,7 +123,7 @@ test("the approved photo hero offers six localized destinations without an extra
   // The Spanish private cabinet intentionally uses the working English app route.
   assert.match(carousel, /href=\{key === "cabinet" && locale === "es" \? "\/en\/app" : \`\/\$\{locale\}\$\{target\.href\}\`\}/);
   for (const item of sections) assert.match(carousel, new RegExp(item + ': "'));
-  for (const label of ["Tests", "Services", "Academy", "Business", "Ideas", "Cabinet", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Кабинет", "Pruebas", "Servicios", "Academia", "Negocios", "Mi espacio"]) {
+  for (const label of ["Tests", "Energy", "Love", "Business", "Ideas", "Cabinet", "Тесты", "Энергия", "Любовь", "Бизнес", "Идеи", "Кабинет", "Pruebas", "Energía", "Amor", "Negocios", "Mi espacio"]) {
     assert.ok(carousel.includes(label), "Missing localized top navigation label: " + label);
   }
   assert.ok(carousel.indexOf("className={styles.sectionNav}") > carousel.indexOf("className={styles.gradient}"));

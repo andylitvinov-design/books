@@ -41,26 +41,31 @@ test("photo-led service cards replace the duplicated free text cards on all home
     assert.ok(offers.includes(slug), slug);
   }
   const serviceCardsAt = more.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  const topicCardsAt = more.indexOf('<HomepageTopicJourneys locale={locale} />');
-  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt, "Expanded photo service cards precede topic journeys");
+  assert.ok(serviceCardsAt >= 0, "Expanded photo services remain in the deferred catalog");
+  assert.ok(home.indexOf('<HomepageTopicJourneys locale={locale} />') < home.indexOf('<HomeMoreDisclosure locale={locale}>'),
+    "Three needs-first photo directions appear outside the deferred catalogue");
+  assert.ok(es.indexOf('<HomepageTopicJourneys locale="es" />') < es.indexOf('<HomeMoreDisclosure locale="es">'),
+    "Spanish homepage mirrors the same three direction cards");
+  assert.doesNotMatch(more, /<HomepageTopicJourneys locale=/);
   assert.doesNotMatch(home, /HomeFreeTestsBanner/);
   assert.match(es, /className="service-home-actions" id="free-start"/);
   assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('</HomeMoreDisclosure>'));
   assert.match(more, /<HomeExploreSections locale="es" \/>/);
-  assert.match(navigation, /#free-start/);
+  assert.match(navigation, /services\/free-situation-review/);
   assert.match(home, /not a live call/);
   assert.match(es, /no una llamada/);
 });
 
-test("menu keeps the original full catalog but prioritizes free entry, services, About and Library", () => {
+test("main menu prioritizes Energy Love Business and retains full legacy catalogues", () => {
   const nav = read("components/site-navigation.tsx");
   assert.match(nav, /site-nav-free-entry/);
-  assert.match(nav, /item\.id === 'services'/);
-  assert.match(nav, /site-nav-about-entry/);
-  assert.match(nav, /site-library-entry/);
-  assert.match(nav, /site-main-menu-trigger__label/);
   assert.match(nav, /getCompactNavigation\(activeLocale\)/);
-  assert.match(nav, /menuItems\.map/);
+  assert.match(nav, /\['energy', 'love', 'business'\]/);
+  assert.match(nav, /id: 'services'/);
+  assert.match(nav, /id: 'academy'/);
+  assert.match(nav, /site-nav-about-entry/);
+  assert.match(nav, /site-main-menu-more/);
+  assert.match(nav, /mainMenuItems\.map/);
 });
 
 test("primary home CTA has stronger contrast and mobile introduction stays readable", () => {

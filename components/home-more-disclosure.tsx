@@ -12,10 +12,6 @@ const ServicesSolutions = dynamic(
   () => import("./services-solutions").then(mod => mod.ServicesSolutions),
   { ssr: false },
 );
-const HomepageTopicJourneys = dynamic(
-  () => import("./homepage-topic-journeys").then(mod => mod.HomepageTopicJourneys),
-  { ssr: false },
-);
 const TestSelectionCourseBanner = dynamic(
   () => import("./sitewide-antistress-banner").then(mod => mod.TestSelectionCourseBanner),
   { ssr: false },
@@ -43,7 +39,6 @@ export function HomeMoreDisclosure({
         ? <HomeExploreSections locale="es" />
         : <>
             <ServicesSolutions locale={locale} variant="home" />
-            <HomepageTopicJourneys locale={locale} />
             <TestSelectionCourseBanner locale={locale} />
             <HomeExploreSections locale={locale} />
           </>

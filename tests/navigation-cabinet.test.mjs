@@ -14,19 +14,18 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation keeps Business as one compact shortcut and never exposes administration', async () => {
+test('public navigation exposes three real directions without administration', async () => {
   const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'relationships', 'academy', 'courses', 'cabinet'])
+  assert.deepEqual(primaryNavigationIds, ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.length, 8)
-    assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
+    assert.equal(items.find(item=>item.id==='love').href, '/'+locale+'/explore/love')
+    assert.equal(items.find(item=>item.id==='energy').href, '/'+locale+'/explore/energy')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
     assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
-    assert.equal(items.some(item => item.id === 'business'), false)
+    assert.equal(items.find(item => item.id === 'business').href, `/${locale}/explore/business`)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
-    assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
-    assert.equal(items.find(item => item.id === 'academy').external, false)
     assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/courses`)
     assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
@@ -262,7 +261,7 @@ test('top site header opens Cabinet while mobile bottom bar promotes Books', asy
 
   assert.match(home, /<SiteNavigation locale=\{locale\}/)
   assert.match(header, /<SiteNavigation locale=\{locale\}/)
-  assert.match(nav, /filter\(item => item\.id === 'services'\)/)
+  assert.match(nav, /\['energy', 'love', 'business'\]\.includes\(item\.id\)/)
   assert.match(nav, /site-nav-free-entry/)
   assert.match(nav, /site-nav-about-entry/)
   assert.match(nav, /className="site-cabinet-entry"/)

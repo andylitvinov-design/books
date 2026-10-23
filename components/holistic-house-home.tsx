@@ -7,6 +7,8 @@ import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
 import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
 import { HomeConversationGuide } from "@/components/home-conversation-guide";
+import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
+import { HomePersonalSpaceProvider, HomePersonalSpaceCard } from "@/components/home-personal-space";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
 
 
@@ -14,7 +16,6 @@ import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
 
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
-import { HomePersonalSpaceProvider, HomePersonalSpaceCard } from "@/components/home-personal-space";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import type { Locale } from "@/data/remedies";
 
@@ -75,6 +76,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
       <HomePersonalSpaceCard locale={locale} />
+      <HomepageTopicJourneys locale={locale} />
       <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
