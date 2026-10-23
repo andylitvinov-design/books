@@ -14,20 +14,20 @@ test('locale counterpart paths preserve the current localized route', async () =
   assert.equal(readUiLocale('holistic_house_ui_locale=ru'), 'ru')
 })
 
-test('public navigation keeps Business as one compact shortcut and never exposes administration', async () => {
+test('public navigation exposes three real directions without administration', async () => {
   const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
-  assert.deepEqual(primaryNavigationIds, ['home', 'library', 'services', 'events', 'relationships', 'academy', 'courses', 'cabinet'])
+  assert.deepEqual(primaryNavigationIds, ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.length, 8)
-    assert.equal(items.find(item=>item.id==='relationships').href, '/'+locale+'/relationships')
+    assert.equal(items.find(item=>item.id==='love').href, '/'+locale+'/explore/love')
+    assert.equal(items.find(item=>item.id==='energy').href, '/'+locale+'/explore/energy')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)
     assert.equal(items.find(item => item.id === 'events').href, `/${locale}/events`)
-    assert.equal(items.some(item => item.id === 'business'), false)
+    assert.equal(items.find(item => item.id === 'business').href, `/${locale}/explore/business`)
     assert.equal(items.find(item => item.id === 'cabinet').href, `/${locale}/client`)
-    assert.equal(items.find(item => item.id === 'academy').href, `/${locale}/academy`)
-    assert.equal(items.find(item => item.id === 'academy').external, false)
-    assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/courses`)
+    assert.equal(items.find(item => item.id === 'courses').href, `/${locale}/academy`)
+    assert.equal(items.find(item => item.id === 'courses').label, { en: 'Courses', ru: 'Курсы', es: 'Cursos' }[locale])
     assert.ok(!items.some(item => item.id === 'about'))
     assert.ok(items.every(item => item.label && !item.href.startsWith('/admin')))
     assert.equal(getCompactNavigation(locale).find(item => item.id === 'business').href, `/${locale}/explore/business`)
@@ -37,6 +37,21 @@ test('public navigation keeps Business as one compact shortcut and never exposes
     assert.match(source, /getCompactNavigation/)
     assert.match(source, /prefetch=\{false\}/)
   }
+})
+
+test('Courses menu opens the full Academy; enrolled My Courses remains in the personal area', async () => {
+  const [nav, oldRoute, academy, ownedCourses] = await Promise.all([
+    readFile('components/site-navigation.tsx', 'utf8'),
+    readFile('app/[locale]/courses/page.tsx', 'utf8'),
+    readFile('app/[locale]/academy/[[...slug]]/page.tsx', 'utf8'),
+    readFile('components/academy-my-courses.tsx', 'utf8'),
+  ])
+  assert.match(nav, /item\.id === 'courses'/)
+  assert.doesNotMatch(nav, /\{ id: 'academy', label: text\.academy/)
+  assert.match(oldRoute, /permanentRedirect\(`\/\$\{locale\}\/academy`\)/)
+  assert.match(academy, /if \(!slug\?\.length\) \{[\s\S]*?return <AcademyHub locale=\{locale\} view=\{view\} \/>/)
+  assert.match(ownedCourses, /title: 'My courses'/)
+  assert.match(ownedCourses, /title: 'Мои курсы'/)
 })
 
 test('the umbrella homepage can render Russian and English chrome and copy', async () => {
@@ -262,7 +277,7 @@ test('top site header opens Cabinet while mobile bottom bar promotes Books', asy
 
   assert.match(home, /<SiteNavigation locale=\{locale\}/)
   assert.match(header, /<SiteNavigation locale=\{locale\}/)
-  assert.match(nav, /filter\(item => item\.id === 'services'\)/)
+  assert.match(nav, /\['energy', 'love', 'business'\]\.includes\(item\.id\)/)
   assert.match(nav, /site-nav-free-entry/)
   assert.match(nav, /site-nav-about-entry/)
   assert.match(nav, /className="site-cabinet-entry"/)

@@ -116,7 +116,15 @@ try {
             };
           });
           await requestPanel.locator('input[type="text"]').fill("qa.home@example.test");
-          await requestPanel.locator('input[type="checkbox"]').check();
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[role="alert"]')).toContainText("Please agree");
+          assert.equal(registrations.length, 0, "No CRM request before explicit reply consent");
+          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
+          await expect(consentBox).not.toBeChecked();
+          // Real visitor taps the consent text; the independent label forwards
+          // exactly one click to its named input, on touch and mouse.
+          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
+          await expect(consentBox).toBeChecked();
           await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
           await expect(requestPanel.locator('[role="alert"]')).toBeVisible();
           assert.equal(await requestPanel.locator("[data-lead-saved]").count(), 0,
@@ -157,6 +165,48 @@ try {
             path: "artifacts/home-conversation/" + engineName + "-inline-messenger-390.png",
             animations: "disabled",
           });
+        }
+        if (width === 430 && scenario.locale === "ru" && scenario.text === scenarios[1].text) {
+          // A provider handoff error after the server ACK must not retract an
+          // already committed CRM lead. No live contact or external send.
+          const payloads = [];
+          await page.route("**/api/service-enquiries", async route => {
+            payloads.push(JSON.parse(route.request().postData() || "{}"));
+            return route.fulfill({ status: 201, contentType: "application/json",
+              body: '{"saved":true,"referenceCode":"HH-FFEEDDCCBBAA"}' });
+          });
+          await page.evaluate(() => {
+            const qa = { opened: 0, closed: 0, attempted: 0 };
+            window.__homeHandoffFailureQA = qa;
+            window.open = () => {
+              qa.opened++;
+              const popup = {
+                opener: null, closed: false,
+                location: { replace() { qa.attempted++; throw new Error("SIMULATED_SAFARI_HANDOFF_BLOCK"); } },
+                close() { qa.closed++; popup.closed = true; },
+              };
+              return popup;
+            };
+          });
+          await requestPanel.locator('input[type="text"]').fill("qa-failed-handoff@example.test");
+          const consentBox = requestPanel.locator('[data-home-diagnosis-consent]');
+          await expect(consentBox).not.toBeChecked();
+          await requestPanel.locator('label[for="' + await consentBox.getAttribute("id") + '"]').click();
+          await expect(consentBox).toBeChecked();
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[data-lead-saved]')).toContainText("HH-FFEEDDCCBBAA");
+          await expect(requestPanel.locator('[role="alert"]')).toContainText(
+            "Заявка сохранена, но мессенджер не открылся");
+          assert.equal(payloads.length, 1, "A failed handoff cannot reinsert a saved lead");
+          assert.equal(payloads[0].contact.email, "qa-failed-handoff@example.test");
+          assert.deepEqual(await page.evaluate(() => ({ ...window.__homeHandoffFailureQA })),
+            { opened: 1, closed: 1, attempted: 1 });
+          const safeWhatsApp = requestPanel.locator('a[data-home-diagnosis-channel="whatsapp"]');
+          const safeTelegram = requestPanel.locator('a[data-home-diagnosis-channel="telegram"]');
+          await expect(safeWhatsApp).toBeVisible();
+          await expect(safeTelegram).toBeVisible();
+          assert.match(await safeWhatsApp.getAttribute("href") || "", /HH-FFEEDDCCBBAA/);
+          assert.doesNotMatch(await safeTelegram.getAttribute("href") || "", /qa-failed-handoff/);
         }
         await requestButton.click();
         await expect(requestButton).toHaveAttribute("aria-expanded", "false");
@@ -273,6 +323,62 @@ try {
           await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
           await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
           await dialog.getByRole("button", { name: scenario.reset }).click();
+        }
+        if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
+          // Natural two-question route and real local reply, including WebKit.
+          await question.fill("Хочу любви");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Встретить близкого человека",
+          }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Начать общение",
+          })).toBeVisible();
+          const replyLayout = await guide.locator("[data-home-guide-choices]").evaluate(node =>
+            ({ clipped: node.scrollWidth > node.clientWidth + 1 }));
+          assert.equal(replyLayout.clipped, false, "Conversation suggestion chips fit 390px");
+          await question.fill("Боюсь первой написать");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await question.fill("Спасибо");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await question.fill("Другие варианты");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+          await question.fill("Мне кажется, что я как будто невидима для других людей");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
+          await guide.getByRole("button", { name: scenario.reset }).click();
+        }
+        if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
+          // Unknown input is never transmitted. Only explicit consent + a
+          // curated category creates an outgoing feedback event.
+          const observed = [];
+          await page.route("**/api/home-guide/quality", async route => {
+            observed.push(route.request().postDataJSON());
+            await route.fulfill({ status: 201, contentType: "application/json",
+              body: JSON.stringify({ saved: true }) });
+          });
+          await question.fill("Непонятные жужжалки и абракадабра");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[role="log"]')).toContainText("Я пока не совсем понял");
+          const optin = guide.locator("[data-home-guide-quality-consent] input");
+          await expect(optin).not.toBeChecked();
+          assert.equal(observed.length, 0);
+          await optin.check();
+          await guide.locator("[data-home-guide-choices]").getByRole("button", {
+            name: "Работа и бизнес",
+          }).click();
+          await expect.poll(() => observed.length).toBe(1);
+          assert.deepEqual(observed[0], {
+            category: "business", signal: "clarified", locale: "ru", consent: true,
+          });
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await guide.getByRole("button", { name: scenario.reset }).click();
         }
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);

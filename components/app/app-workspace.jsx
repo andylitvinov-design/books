@@ -74,6 +74,7 @@ export { appFetch }
 const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
+const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
@@ -623,6 +624,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portrait' && (
             <>
+              <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
               <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
               <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
                 reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
@@ -3689,7 +3691,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             <p className="hh-kicker">{service.practitionerName}{service.professionalTitle ? ` · ${service.professionalTitle}` : ''}</p>
             <h2>{service.copy[locale].title}</h2>
             <p>{service.copy[locale].description}</p>
-            <p className="hh-fine">{service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
+            <p className="hh-fine">{service.pricingMode === 'free' ? (locale === 'ru' ? 'Бесплатно · по запросу' : 'Free · by request') : service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
             <button className="hh-primary" onClick={() => setSelected(service)}>
               {c.request}
             </button>

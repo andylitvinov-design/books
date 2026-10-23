@@ -1,25 +1,36 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { getHomeopathyLocaleParams, isSupportedLocale } from "@/data/remedies";
+import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 
 type PageProps = { params: Promise<{ locale: string }> };
-export function generateStaticParams() { return getHomeopathyLocaleParams(); }
+
+// Legacy /courses bookmarks should reach the full public Academy, not one subsection.
+export function generateStaticParams() {
+  return (["en", "ru", "es"] as const).map((locale) => ({ locale }));
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) return { title: "Not found" };
-  const ru = locale === "ru";
+  if (!isPublicLocale(locale)) return { title: "Not found" };
+  const copy = {
+    en: { title: "Courses & Academy | Holistic House", description: "Discover all Holistic House courses and learning programs in the Academy." },
+    ru: { title: "Курсы и Академия | Holistic House", description: "Полный каталог курсов и образовательных программ Holistic House в Академии." },
+    es: { title: "Cursos y Academia | Holistic House", description: "Explora todos los cursos y programas educativos de Holistic House en la Academia." },
+  }[locale];
   return {
     metadataBase: metadataBaseFor(),
-    title: ru ? "Мои курсы — ОПОРА Антистресс, 14 занятий | Holistic House" : "My Courses — OPORA Stress Relief, 14 lessons | Holistic House",
-    description: ru
-      ? "Сейчас доступен курс ОПОРА Антистресс: 14 занятий, семь навыков самоподдержки, практика и наблюдение за изменениями. Другие курсы в разработке."
-      : "OPORA Stress Relief is the currently available free learning course: 14 lessons, seven practical skills, gentle exercises and honest progress tracking.",
-    alternates: { canonical: `/${locale}/academy/free-ai-courses`, languages: { en: "/en/academy/free-ai-courses", ru: "/ru/academy/free-ai-courses", es: "/es/academy/free-ai-courses" } },
+    title: copy.title,
+    description: copy.description,
+    alternates: {
+      canonical: `/${locale}/academy`,
+      languages: { en: "/en/academy", ru: "/ru/academy", es: "/es/academy" },
+    },
   };
 }
+
 export default async function CoursesPage({ params }: PageProps) {
   const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
-  permanentRedirect(`/${locale}/academy/free-ai-courses`);
+  if (!isPublicLocale(locale)) notFound();
+  permanentRedirect(`/${locale}/academy`);
 }

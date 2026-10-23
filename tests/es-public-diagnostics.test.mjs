@@ -54,29 +54,14 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  const block=source.slice(start,end);
  const portraitAssertion="await expect(page).toHaveURL(origin+'/en/app/portrait');";
  assert.equal(block.split(portraitAssertion).length-1,2,'Both actual navigation and reload require the approved canonical portrait route');
- // Preserve the original frozen action sequence except for the two approved
- // portrait redirects and the new exact canonical-course catalog assertion.
- const catalogAssertion="\n          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);";
- assert.equal(block.split(catalogAssertion).length-1,1,'Exactly one bounded course catalog assertion');
- // The approved Library header moved account access into the exact My House
- // menu item. Freeze that complete handoff, then preserve the old rest-of-flow hash.
- const accountEntry=`        const accountMenu = page.locator('.site-navigation details.site-main-menu');
-        await expect(accountMenu).toHaveCount(1);
-        await expect(accountMenu).toHaveJSProperty('open', false);
-        await click(page.locator('.site-main-menu-trigger'));
-        await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
-        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
-        await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Mi Casa');
-        await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
-        await click(accountLink);`;
- assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed menu-to-account handoff');
- const priorAccountEntry=`        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
-        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));`;
- const normalized=block.replace(accountEntry,priorAccountEntry).replace(catalogAssertion,'').replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
- assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from approved redirects and account menu handoff');
+ // Freeze the current direct Cabinet handoff and every existing browser action.
+ const accountEntry="        const accountLink = page.locator('.site-navigation > a.site-cabinet-entry');\n        await expect(accountLink).toHaveCount(1);\n        await expect(accountLink).toHaveAccessibleName('Abrir gabinete personal');\n        await expect(accountLink).toBeVisible();\n        await expect(accountLink).toHaveAttribute('href','/en/app');\n        await click(accountLink);\n";
+ assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed direct Cabinet handoff');
+ const guestAssertion='        await assertCabinetGuestEntry(page, expect);';
+ assert.equal(block.split(guestAssertion).length-1,2,'Guest checks on actual arrival and reload');
+ const oldGuest="        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();\n        await expect(page.locator('.hh-app .hh-entry h1')).toHaveText(/^(A little space to understand yourself\\.|The new personal app is not connected yet\\.)$/);\n        await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href','/en/client');";
+ const normalized=block.replace(guestAssertion,oldGuest).replace(guestAssertion,"        await expect(page.locator('.hh-app .hh-entry')).toBeVisible();");
+ assert.equal(createHash('sha256').update(normalized).digest('hex'),'3833d47ecb06bb3cadb8e230f4934bc383e1a3ce2562de01bc610d577b79bd06','Current 34451 action/assertion block unchanged except guest markup contract');
 });
 
 test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{

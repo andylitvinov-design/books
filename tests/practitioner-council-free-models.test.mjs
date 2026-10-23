@@ -159,7 +159,7 @@ test('daily report is cached under one claimed private date before Telegram send
   assert.match(code,/if\(!markdown\)/)
   assert.match(code,/reviewDailyCouncil\(report,aiEnv,fetcher\)/)
   assert.match(code,/composeDailyCouncilTelegram\(report,reviews\)/)
-  assert.match(code,/One delivery per invocation/)
+  assert.match(code,/At most two documents per cron invocation/)
   assert.match(code,/status='failed'/)
   const sql=readFileSync(new URL('../supabase/migrations/20261020190745_hh_free_ai_council_cached_daily_20261020.sql',import.meta.url),'utf8')
   assert.match(sql,/force row level security/i)

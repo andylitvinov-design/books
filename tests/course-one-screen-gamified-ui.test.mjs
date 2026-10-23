@@ -62,9 +62,12 @@ test('Academy: bottom save status retains guest, consent and authenticated persi
   assert.match(academy, /sync === "consent"/);
   assert.match(academy, /sync === "ready"/);
   assert.match(academy, /checked=\{consented\}/);
+  assert.match(academy, /<input type="checkbox" checked=\{firstLessonConsent\}\s*onChange=\{event => setFirstLessonConsent\(event.target.checked\)\}\s*data-reiki-first-lesson-consent/);
+  assert.equal((academy.match(/data-reiki-first-lesson-consent/g)||[]).length,1);
+  assert.doesNotMatch(academy, /showInstallOffer|data-reiki-save-dock/);
   assert.match(academy, /onClick=\{startSaving\}/);
-  assert.match(academy, /onClick=\{sync === "ready" \? next : saveLessonOneToCabinet\}/);
-  assert.match(academy, /if \(busy \|\| !firstLessonConsent \|\| !\["guest", "consent"\]\.includes\(sync\) \|\|\s*slide\.id !== "flight-save"\) return;/);
+  assert.match(academy, /if \(slide\.id === "flight-done" && sync !== "ready"\) \{\s*if \(sync === "guest" \|\| sync === "consent"\) await saveLessonOneToCabinet\("continue"\);\s*return;/);
+  assert.match(academy, /if \(busy \|\| !firstLessonConsent \|\| !\["guest", "consent"\]\.includes\(sync\) \|\|\s*slide\.id !== "flight-done"\) return;/);
   assert.match(academy, /if \(sync === "guest"\) await signIn\(\);/);
   assert.match(academy, /disabled=\{!consented \|\| busy\} onClick=\{startSaving\}/);
   assert.ok(academy.indexOf('<div className={styles.savedLine} data-reiki-private-save-status') > academy.indexOf('<section className={styles.slide'));
@@ -77,7 +80,10 @@ test('Academy: immersive mobile viewport still scrolls dense lessons and keeps r
   assert.match(academyCss, /overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain/);
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.next\{/);
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.art\{/);
-  assert.match(academy, /<AcademyVideoPlayer key=\{slide\.id \+ ":" \+ \(useOriginal \? "original" : "lesson"\)\}/);
-  assert.match(academy, /onClick=\{finishForToday\} disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable"\}/);
+  assert.match(academy, /<AcademyVideoPlayer key=\{slide\.id\} youtubeId=\{youtubeId\}/);
+  assert.match(academy, /const youtubeId = lessonVideo\?\.youtubeId \?\? original\?\.youtubeId/);
+  assert.match(academy, /data-reiki-media-role=\{lessonVideo \? "introduction" : "meditation"\}/);
+  assert.doesNotMatch(academy, /lessonVideoChoices|setChoice\("original"\)/);
+  assert.match(academy, /onClick=\{finishForToday\} disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable" \|\| \(slide\.id === "flight-done" && sync !== "ready" && !firstLessonConsent\)\}/);
 });
 

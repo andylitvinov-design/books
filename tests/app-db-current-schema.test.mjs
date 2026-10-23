@@ -24,3 +24,13 @@ test('exact current schema dependencies precede their consumers and synthetic lo
   assert.ok(position('20261017013000_hh_assessment_interpretation_registry.sql') < position('create role hh_app_ci_login'))
   assert.ok(position('20261020192118_hh_report_engagement_opt_in_20261020.sql') < position('create role hh_app_ci_login'))
 })
+
+test('public enquiry counts use the existing protected schema in isolated setup', () => {
+  const migration = '20261019152000_hh_public_service_enquiries_secure.sql'
+  assert.equal(setup.split(migration).length - 1, 1)
+  const position = setup.indexOf(migration)
+  assert.ok(position > setup.indexOf('20261005165044_hh_master_network_r2_policy_hardening.sql'))
+  assert.ok(position < setup.indexOf('create role hh_app_ci_login'))
+  assert.ok(setup.includes("await db.query(await readFile(new URL('../../supabase/migrations/" + migration + "',import.meta.url),'utf8'))"))
+  assert.doesNotMatch(setup, /create table app\.public_service_enquiries|alter table app\.public_service_enquiries|grant .*public_service_enquiries/i)
+})

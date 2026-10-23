@@ -9,6 +9,7 @@ import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-g
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid,oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 const t={
@@ -74,7 +75,7 @@ test('day one restores five opening screens and all days add untracked support a
     if(day!==1){
       assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
       assert.ok(!findButton(h.tree,d.try),'Step two must never ask for practice proof')
-      await click(h,d.next)
+      await advanceOporaTo(h,'practice',d.next)
     }
     // Practical work always comes after the voluntary acceptance screen.
     assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,lang)))
@@ -97,8 +98,17 @@ test('day one restores five opening screens and all days add untracked support a
     assert.ok(!textOf(h.tree).includes(f.lesson.aphorism))
     await click(h,options[0].label)
     await click(h,d.next)
+    // Each takeaway now has its own screen; the personal self-report is last.
     assert.match(textOf(h.tree),lang==='ru'?/Что вы освоили сегодня/:/What you learned today/)
-    assert.ok(textOf(h.tree).includes(oporaExperienceDay(day,lang).title))
+    assert.ok(textOf(h.tree).includes(lang==='ru'?'Замечать своё состояние':'Notice how you feel'))
+    assert.ok(!textOf(h.tree).includes(oporaExperienceDay(day,lang).practice))
+    await click(h,d.next)
+    assert.ok(textOf(h.tree).includes(oporaExperienceDay(day,lang).practice))
+    assert.ok(!textOf(h.tree).includes('Notice how you feel'))
+    await click(h,d.next)
+    assert.ok(textOf(h.tree).includes(options[0].label))
+    await click(h,d.next)
+    assert.ok(textOf(h.tree).includes(lang==='ru'?'Как вам было?':'How was this for you?'))
     await click(h,lang==='ru'?'Получилось немного':'I managed a little')
     assert.equal(f.requests,0,'No save until the recap is explicitly completed')
     await click(h,d.save)
@@ -183,11 +193,11 @@ test('two unique optional action ideas per day, in EN/RU/ES, without rewriting l
 
 test('new action alternative is saved as three; old one keeps its original historic meaning',async()=>{
   const f=fixture('en',3),h=f.h
-  for(let i=0;i<5;i++)await click(h,t.en.next)
+  await advanceOporaTo(h,'save',t.en.next)
   const [first,second]=oporaExperienceTransferChoices(3,'en')
   assert.ok(textOf(h.tree).includes(first.label))
   await click(h,second.label)
-  await click(h,t.en.next)
+  await advanceOporaTo(h,'recapFeedback',t.en.next)
   await click(h,'I managed a little')
   await click(h,t.en.save)
   assert.equal(f.payload.opora54.answers.transferChoice,'three')
@@ -210,7 +220,7 @@ test('new action alternative is saved as three; old one keeps its original histo
 
 test('the restored five opening screens remain fully optional, with no false practice claim',async()=>{
   const f=fixture('en',1),h=f.h
-  for(let i=0;i<10;i++)await click(h,t.en.next)
+  await advanceOporaTo(h,'recapFeedback',t.en.next)
   await click(h,'I only explored them today')
   await click(h,t.en.save)
   assert.equal(f.requests,1)
@@ -238,7 +248,7 @@ test('photo-first feelings and optional feedback work in ES without changing val
   const selection=nodes(h.tree).find(node=>node.type==='button'&&textOf(node).includes('Me siento tenso/a'))
   assert.equal(selection?.props['aria-pressed'],true)
   assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-start-mood']==='true').length,1)
-  for(let i=0;i<10;i++)await click(h,'Continuar')
+  await advanceOporaTo(h,'recapFeedback','Continuar')
   await click(h,'Hoy solo las exploré')
   await click(h,'Guardar mi práctica')
   assert.equal(f.payload.welcomeFeeling,'tense')
@@ -249,8 +259,8 @@ test('photo-first feelings and optional feedback work in ES without changing val
 
 test('a missing recap selection never sends a completion receipt or invented action',async()=>{
   const f=fixture('en',2),h=f.h
-  for(let i=0;i<6;i++)await click(h,t.en.next)
-  assert.match(textOf(h.tree),/What you learned today/)
+  await advanceOporaTo(h,'recapFeedback',t.en.next)
+  assert.match(textOf(h.tree),/How was this for you\?/)
   await click(h,t.en.save)
   assert.equal(f.requests,0)
   assert.match(textOf(h.tree),/Choose the card closest to your experience/)
@@ -313,4 +323,5 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
     assert.equal(verifyCourseSlideVisitOrder(buildCourseSlides(old),OPORA_EXPERIENCE_PRE_SAVE_KEYS),false)
   }
 })
+
 

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { auditDelegatedSeoHeading } from "./verify-seo-source-contracts.mjs";
 import { getPrioritySitemapEntries, SEO_PRIORITY_PAGE_FAMILIES } from "../data/seo-priority-paths.js";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -10,7 +11,7 @@ const read = (path) => readFileSync(new URL(path, projectRoot), "utf8");
 const origin = "https://holistichouse.vercel.app";
 const publicRouteSources = [
   ["app/[locale]/about/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
-  ["app/[locale]/services/free-situation-review/page.tsx", /generateMetadata/, /alternates:/, /<h1/],
+  ["app/[locale]/services/free-situation-review/page.tsx", /generateMetadata/, /alternates:/],
   ["app/[locale]/academy/[[...slug]]/page.tsx", /generateMetadata/, /alternates:/],
   ["components/yggdrasil-free-initiation.tsx", /<h1/],
 ];
@@ -21,11 +22,11 @@ const privateRouteSources = [
   "app/admin/clients/page.js",
 ];
 
-export function auditSeoSources() {
+export function auditSeoSources({ readSource = read } = {}) {
   const failures = [];
   const check = (condition, message) => { if (!condition) failures.push(message); };
   const entries = getPrioritySitemapEntries(origin);
-  const map = JSON.parse(read("data/seo-demand-map.json"));
+  const map = JSON.parse(readSource("data/seo-demand-map.json"));
   check(entries.length === 15, "Unexpected number of public locale-complete pages");
   check(SEO_PRIORITY_PAGE_FAMILIES.length === 5, "Unexpected number of priority page families");
   check(new Set(entries.map((entry) => entry.url)).size === entries.length, "Duplicate priority sitemap URLs");
@@ -46,20 +47,27 @@ export function auditSeoSources() {
   }
   for (const [path, ...patterns] of publicRouteSources) {
     check(existsSync(new URL(path, projectRoot)), "Missing public SEO source: " + path);
-    const source = read(path);
+    const source = readSource(path);
     for (const pattern of patterns) check(pattern.test(source), "Missing public SEO contract " + pattern + " in " + path);
   }
   for (const path of privateRouteSources) {
     check(existsSync(new URL(path, projectRoot)), "Missing private route source: " + path);
-    check(/robots:\s*\{\s*index:\s*false/.test(read(path)), "Private route must remain noindex: " + path);
+    check(/robots:\s*\{\s*index:\s*false/.test(readSource(path)), "Private route must remain noindex: " + path);
   }
-  const sitemapCode = read("app/sitemap.ts");
+  const freeReview = auditDelegatedSeoHeading({
+    pageSource: readSource("app/[locale]/services/free-situation-review/page.tsx"),
+    componentSource: readSource("components/free-entry-landing.tsx"),
+    componentName: "FreeEntryLanding", moduleSpecifier: "@/components/free-entry-landing",
+    props: { locale: { identifier: "locale" }, kind: "situation" },
+  });
+  failures.push(...freeReview.failures);
+  const sitemapCode = readSource("app/sitemap.ts");
   check(/getPrioritySitemapEntries\(base\)/.test(sitemapCode), "Priority sitemap entries are not integrated");
   check(/\.\.\.existing, \.\.\.entries, \.\.\.priorityEntries, \.\.\.network/.test(sitemapCode), "Sitemap merge or deduplication contract changed");
-  const shell = read("app/layout.tsx");
+  const shell = readSource("app/layout.tsx");
   check(/type="application\/ld\+json"/.test(shell) && /"@type": "WebSite"/.test(shell), "Public WebSite JSON-LD is missing");
   check(/"google-site-verification"/.test(shell), "Existing owner-approved Google Search Console verification metadata is missing");
-  const freeInitiation = read("components/yggdrasil-free-initiation.tsx");
+  const freeInitiation = readSource("components/yggdrasil-free-initiation.tsx");
   for (const suffix of ["/basic-course/description", "/basic-course"]) {
     check(freeInitiation.includes(suffix), "Missing internal Yggdrasil learning link: " + suffix);
   }

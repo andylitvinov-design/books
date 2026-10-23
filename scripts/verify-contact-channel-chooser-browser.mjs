@@ -1,3 +1,4 @@
+import { verifyCompactLeadScroll } from './helpers/compact-lead-scroll-verifier.mjs';
 import { assertRegisteredEnquiryReceipt } from './helpers/enquiry-receipt-verifier.mjs';
 import { assertCompactLeadRequest } from './helpers/compact-lead-verifier.mjs';
 // Public read-only, no outgoing messenger clicks, sends, sign-in, or client records.
@@ -163,6 +164,7 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
 async function runEngine(name, engine) {
   const browser = await engine.launch({headless:true});
   try {
+    if (!live) results.push(...await verifyCompactLeadScroll(browser, expect, origin, name));
     for (const width of (name === "webkit" ? [390] : [320,390,1188])) {
       for (const locale of ["en","ru","es"]) {
         const context = await browser.newContext({
@@ -263,5 +265,3 @@ finally {
 }
 if(failure)throw failure;
 console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);
-
-

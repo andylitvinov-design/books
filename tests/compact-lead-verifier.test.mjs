@@ -136,3 +136,25 @@ test('pointer failure writes bounded JSON and screenshot while preserving origin
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+test('read-only post-check hook runs once after pointer and before synthetic submit', async () => {
+  const f = fixture(); let calls = 0;
+  await assertCompactLeadRequest(f.page, f.capture, f.expect, {
+    locale: 'en', serviceTitle: 'Free symbolic Wu Xing Resource Profile',
+    async afterConsentCheck(consent) {
+      calls++; assert.equal(consent.selector, 'input[type="checkbox"]');
+      assert.equal(f.state.checkAttempts, 1); assert.equal(f.state.consent, true);
+      assert.equal(f.state.saved, false);
+    },
+  });
+  assert.equal(calls, 1); assert.equal(f.state.checkAttempts, 1); assert.equal(f.state.removed, 1);
+});
+test('post-check geometry failure preserves original error, prevents submit and cleans route', async () => {
+  const f = fixture(); const failure = new Error('Synthetic obstructed center');
+  await assert.rejects(assertCompactLeadRequest(f.page, f.capture, f.expect, {
+    locale: 'en', serviceTitle: 'Free symbolic Wu Xing Resource Profile',
+    async afterConsentCheck() { throw failure; },
+  }), error => error === failure);
+  assert.equal(f.state.checkAttempts, 1); assert.equal(f.state.saved, false);
+  assert.equal(f.state.removed, 1); assert.equal(f.state.disposed, 1);
+});

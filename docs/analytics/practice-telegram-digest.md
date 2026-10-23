@@ -1,3 +1,13 @@
+## 2026-10-23 — morning Telegram site-click visibility; referral data remain unmeasured
+
+The existing **09:00 EDT / 08:00 EST Toronto** owner-only My Practice Telegram digest (13:00 UTC Vercel cron) now has a clearly scoped **Site** block. It sums only the already recorded public-service CTA events (order, WhatsApp and Telegram), for yesterday and seven completed Toronto days. These are **click events**, not people, total website clicks, received messages, leads, confirmed bookings or payments. It separately retains service-card impressions and true server-received public/private enquiry counts. No second bot, cron, sender, SQL table, identifier or paid service.
+
+**Traffic-source attribution and total page visits: NOT MEASURED.** The production `app_private.service_funnel_daily` table has only service/day counters and no referrer, UTM, channel, session or visit data. Vercel Web Analytics API returned `404 Web Analytics not found`; the linked GSC Wizard access currently returns `payment_required`. The site's Google Analytics privacy hold remains `PUBLIC_ANALYTICS_AVAILABLE=false`, and the Privacy analytics Allow control is disabled. The digest must show **no data** for Google/social/direct and unique visits, not synthetic zeros or guessed sources. Untrusted referrer/UTM fields are not passed into Telegram. The source section is intentionally a data-coverage indicator until an explicitly consent-reviewed first-party tracking design, source taxonomy, security and E2E is approved through [attribution issue #988](https://github.com/andylitvinov-design/books/issues/988).
+
+**Verification:** `node --test tests/practitioner-daily-telegram.test.mjs tests/practitioner-analytics-subscriptions.test.mjs tests/app-housekeeping-cron.test.mjs`; targeted CI, production deployment READY+SHA+alias and next **real** Telegram private send receipt independently required. A green build or a prepared Markdown message is not proof that a user received it.
+
+---
+
 ## 2026-10-21 — owner screenshots: Gemini Free Tier verified, Mistral key saved ≠ API access
 
 The owner sent Google AI Studio Projects screenshots showing **Free tier** with **Set up billing** (paid billing not activated on the shown projects), plus a Mistral Studio API Keys screen explicitly warning that the current organization might need a plan change **to use the API keys**. The owner already entered a Studio key on the signed Holistic House form. Production Supabase readback verified exactly one encrypted Studio key and Free-mode checkbox record; the Google Free Tier confirmation was then recorded based on the owner-supplied project screenshot and explicit instruction to complete the setup. Existing Gemini/Router credentials remain unchanged; no plain secrets were read.
@@ -211,3 +221,12 @@ This is one **owner** digest, not opt-in Telegram mail for every master. No cros
 4. Сохранить RLS/FORCE RLS, отсутствие `anon/authenticated` SELECT на приватные owner/provider/delivery таблицы, не передавать данные CRM, клиентов, тестов, здоровья и secrets в отчёты/AI.
 
 Для владельца: [защищённое подключение и ручная проверка](https://holistichouse.vercel.app/admin/telegram-setup) · [Mistral Studio — проверить Free access](https://console.mistral.ai/) · [Google AI Studio — Free Tier](https://aistudio.google.com/app/projects). Открытые блокеры фиксировать в [AI Council #242](https://github.com/andylitvinov-design/ai-projects-brain/issues/242).
+
+### 2026-10-23 · Bounded recovery + owner-visible Gemini readiness (PR follow-up)
+
+- **Не пропускать вчерашний `failed`:** текущий день выбирается первым, затем максимум **одна** непринятая архивная дата за последние 7 дней в этом же вызове cron. У каждого дня своя `claim_token` и подтверждённый Telegram `accepted`, максимум два документа в день восстановления, без дублей для уже принятых дат.
+- Исторический день отправляется только по проверенным фактам GitHub HTML/HTTP, со статусами моделей `skipped / HISTORICAL_BACKFILL_NO_INFERENCE` и без повторного платного или бесплатного AI inference. Gemini/Mistral исследуют **только сегодняшний** архив; кодировка старых ответов никогда не выдаётся за новые результаты. Ошибка при второй отправке сохраняет `partially_accepted` и отдельный `failed` для следующей попытки; полученные первые квитанции не стираются.
+- GitHub issues comments за релевантный период запрашиваются с `since`/100, чтобы старые комментарии не вытесняли текущий дневной аудит при росте Issue #242.
+- Owner UI [Telegram setup](https://holistichouse.vercel.app/admin/telegram-setup) теперь в дополнение к Mistral делает **только authenticated GET** метаданных Gemini `gemini-3.8-flash` и раздельно отображает `ready / unauthorized / rate_limited / unavailable`. Статус `ready` — **не** реальная генерация и не подтверждение Telegram доставки.
+- Функция cron допускает до 120 секунд на редкий восстановительный цикл, **только если такое время поддерживается реальным Vercel deployment**; запретов на платные модели/дублирующие cron это не отменяет.
+- Данные клиентских CRM, клинических тестов и секреты не используются; отдельные отправки пользователям не включены. Блокер Mistral при `GET /v1/models` без доступа к бесплатному Small остаётся владельческой/провайдерской зависимостью.

@@ -64,7 +64,7 @@ test("canonical free-course entry starts at the beginning and saved learners can
   const course = read("components/energywork-ai-learner.tsx");
   assert.match(routes, /startAtExperience=\{query\.start === "1"\}/);
   assert.match(course, /startAtExperience\?: boolean/);
-  assert.match(course, /useState\(startAtExperience \? 1 : 0\)/);
+  assert.match(course, /useState\(startAtExperience \? energyworkSlides\(\)\.findIndex\(\(item\) => item\.id === "welcome-02"\) : 0\)/);
   assert.match(course, /const savedIndex = Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)/);
   assert.match(course, /setIndex\(requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex\)/);
   assert.match(course, /startAtExperience = false/);

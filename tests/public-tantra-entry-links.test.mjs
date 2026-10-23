@@ -10,12 +10,12 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const empty = () => null;
-const anchor = ({ href, children }) => React.createElement('a', { href }, children);
+const anchor = ({ href, children, prefetch, event, attributes, ...props }) => React.createElement('a', { ...props, href }, children);
 
 // Render the real page components, stubbing unrelated child UI and framework
 // hooks so these checks need neither a server nor external data or requests.
-function loadComponent(path, imports) {
-  const compiled = ts.transpileModule(read(path), {
+function loadComponent(path, imports, source = read(path)) {
+  const compiled = ts.transpileModule(source, {
     fileName: path,
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
@@ -33,10 +33,11 @@ function loadComponent(path, imports) {
 
 const publicArtwork = loadComponent('lib/public-card-artwork.ts', { '@/data/public-card-artwork-urls.json': JSON.parse(read('data/public-card-artwork-urls.json')) });
 const shared = {
+  react: React,
   '@/lib/public-card-artwork': publicArtwork,
   'next/link': anchor,
   'next/image': empty,
-  'lucide-react': { ArrowUpRight: empty, FileText: empty, ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
+  'lucide-react': { ChevronDown: empty, ArrowUpRight: empty, FileText: empty, ClipboardCheck: empty, GraduationCap: empty, ChevronRight: empty, BriefcaseBusiness: empty, Flower2: empty, Sparkles: empty, ArrowRight: empty },
   '@/components/static-portrait': { StaticPortrait: empty },
   '@/components/public-site-header': { PublicSiteHeader: empty },
 };
@@ -47,6 +48,54 @@ const freePaths = loadComponent('components/home-free-paths.tsx', {
   './home-free-paths.module.css': {},
 }).HomeFreePaths;
 shared['@/components/home-free-paths'] = { HomeFreePaths: freePaths };
+// Actual carousel exposes the canonical Energy/Love/Business directions.
+shared['@/components/home-section-carousel'] = loadComponent('components/home-section-carousel.tsx', {
+  ...shared, react: React,
+  'lucide-react': {...shared['lucide-react'], ChevronLeft:empty},
+  './services-conversion-hero.module.css': {},
+});
+shared['@/components/home-free-diagnosis-banner'] = {HomeFreeDiagnosisBanner:empty};
+shared['@/components/home-conversation-guide'] = {HomeConversationGuide:empty};
+shared['@/components/homepage-topic-journeys'] = {HomepageTopicJourneys:empty};
+shared['@/components/personal-testimonials'] = {PersonalTestimonials:empty};
+shared['@/components/home-personal-space'] = {HomePersonalSpaceProvider:({children})=>children, HomePersonalSpaceCard:empty};
+const explore = loadComponent('components/home-explore-sections.tsx', {
+  ...shared, '@/components/acquisition-event-link':{AcquisitionEventLink:anchor},
+  'lucide-react':{...shared['lucide-react'],BookOpen:empty,LockKeyhole:empty},
+  './home-explore-sections.module.css':{},
+}).HomeExploreSections;
+let expanded = false;
+async function loadDisclosure(source = read('components/home-more-disclosure.tsx')) {
+  const pending=[];
+  const exports=loadComponent('components/home-more-disclosure.tsx', {
+    ...shared, react:{...React,useState:()=>[expanded,value=>{expanded=value;}]},
+    './services-solutions':{ServicesSolutions:empty},
+    './homepage-topic-journeys':{HomepageTopicJourneys:empty},
+    './sitewide-antistress-banner':{TestSelectionCourseBanner:empty},
+    './home-explore-sections':{HomeExploreSections:explore},
+    'next/dynamic':loader=>{
+      let Component;
+      pending.push(loader().then(value=>{assert.equal(typeof value,'function');Component=value;}));
+      return props=>React.createElement(Component,props);
+    },
+  },source);
+  await Promise.all(pending);
+  return exports.HomeMoreDisclosure;
+}
+const HomeMoreDisclosure=await loadDisclosure();
+shared['@/components/home-more-disclosure']={HomeMoreDisclosure};
+function openDirections(locale, Disclosure=HomeMoreDisclosure) {
+  expanded=false;
+  const closed=Disclosure({locale});
+  assert.equal(closed.props['data-home-more-deferred'],'true');
+  assert.doesNotMatch(renderToStaticMarkup(closed),/id="home-explore-title"/);
+  closed.props.onToggle({currentTarget:{open:true}});
+  const opened=renderToStaticMarkup(Disclosure({locale}));
+  assert.match(opened,/id="home-explore-title"/);
+  // Exclude noscript fallback: Academy must exist in the real expanded cards.
+  const cards=opened.replace(/<noscript>[\s\S]*?<\/noscript>/g,'');
+  assert.ok(links(cards).some(link=>link.href==='/' + locale + '/academy'));
+}
 const home = loadComponent('components/holistic-house-home.tsx', {
   ...shared,
   '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
@@ -76,12 +125,17 @@ const courseCards = { AcademyCourseCardList: ({ items }) => items.map((item) => 
 const academyDiscovery = loadComponent('components/academy-discovery.tsx', {
   ...shared,
   react: React,
-  'lucide-react': { ...shared['lucide-react'], ChevronDown: empty, Search: empty },
+  'lucide-react': { ...shared['lucide-react'], ChevronDown: empty, Search: empty, BookOpen:empty, CalendarDays:empty, MapPin:empty },
+  '@/components/academy-my-courses': {AcademyMyCourses:empty},
   '@/components/academy-course-card-list': courseCards,
   './academy-discovery.module.css': {},
 }).AcademyDiscovery;
+const publicEvents = loadComponent('data/public-events.ts', {});
+const freeCourse = loadComponent('lib/academy/reiki-free-course.ts', {});
 const academy = loadComponent('components/academy-hub.tsx', {
   ...shared,
+  '@/lib/academy/reiki-free-course': freeCourse,
+  '@/data/public-events':publicEvents,
   '@/components/academy-discovery': { AcademyDiscovery: academyDiscovery },
   '@/components/academy-video-courses': { AcademyVideoCourses: empty },
   '@/components/academy-course-capture': { AcademyCourseCapture: empty },
@@ -91,19 +145,17 @@ const academy = loadComponent('components/academy-hub.tsx', {
   }])) },
 }).AcademyHub;
 
-const links = (html) => [...html.matchAll(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(([, href, content]) => ({ href, text: content.replace(/<[^>]+>/g, '') }));
-const renderLinks = (component, props) => links(renderToStaticMarkup(React.createElement(component, props)));
+const links = (html) => [...html.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(([, href, content]) => ({ href, text: content.replace(/<[^>]+>/g, '') }));
+const renderLinks = (component, props) => links(renderToStaticMarkup(React.createElement(component, props)).replace(/<noscript>[\s\S]*?<\/noscript>/g,''));
 const labels = { en: /Tantra Reiki.*free Level 1 initiation/, ru: /Тантра Рейки.*бесплатная инициация 1-й ступени/, es: /Tantra Reiki.*iniciación gratuita de Nivel 1/ };
 const courseLabels = { en: /Tantra Reiki.*Level 1/, ru: /Тантра Рейки.*1 ступень/, es: /Tantra Reiki.*Nivel 1/ };
 
 for (const locale of ['en', 'ru', 'es']) {
-  test(`${locale} Home renders a direct localized Tantra entry and preserves its written-review link`, () => {
+  test(`${locale} Home exposes its current Academy discovery route and preserves review and books`, () => {
+    openDirections(locale);
     const pageLinks = renderLinks(locale === 'es' ? spanishHome : home, { locale });
-    const tantra = pageLinks.filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`);
-    assert.equal(tantra.length, 1);
-    assert.match(tantra[0].text, labels[locale]);
-    assert.ok(pageLinks.some((link) => link.href === `/${locale}/services/free-situation-review`));
-    assert.ok(pageLinks.some((link) => link.href === (locale === 'es' ? '/es/books' : `/${locale}/library`)));
+    assertHomeDiscovery(pageLinks,locale);
+
   });
 
   test(`${locale} Academy has a direct Tantra free card and an independent video archive`, () => {
@@ -163,35 +215,61 @@ test('Home retains server-provided intro content and consultation CTA after cont
   assert.ok(renderLinks(spanishHome, {}).some((link) => link.href === '/es/services#consultation'));
 });
 
-test('Spanish Tantra link belongs to the new learning card and preserves current public sections', () => {
+test('Spanish homepage keeps current section discovery instead of removed learning-card videos', () => {
+  openDirections('es');
   const html = renderToStaticMarkup(React.createElement(spanishHome));
-  const learning = html.match(/<article class="service-home-start-card service-home-start-card--learning">([\s\S]*?)<\/article>/)?.[1];
-  assert.ok(learning);
-  for (const path of ['/es/academy', '/es/library', '/es/academy/reiki/tantra-reiki/free-initiation']) {
-    assert.ok(links(learning).some((link) => link.href === path), path);
+  const pageLinks = links(html);
+  for (const path of ['/es/academy', '/es/client/tests', '/es/services', '/es/explore/business', '/es/books', '/es/about']) {
+    assert.ok(pageLinks.some(link => link.href === path), path);
   }
-  assert.equal(links(html).filter((link) => link.href === '/es/academy/reiki/tantra-reiki/free-initiation').length, 1);
-  assert.ok(links(html).some((link) => link.href === '/es/client/tests'));
-  assert.ok(links(html).some((link) => link.href === '/es/about#testimonials-title'));
   assert.match(html, /Andrey Litvinov/);
-  assert.match(html, /data-video-id="m9RfDgK76PU"/);
-  assert.match(html, /data-video-id="5oj0BIbLT4w"/);
+  assert.match(html, /data-home-more-deferred="true"/);
 });
 
+
 for (const locale of ['en', 'ru', 'es']) {
-  test(`${locale} preserves the three free paths and owner-approved personal-session-first hero while keeping Tantra in learning`, () => {
+  test(`${locale} preserves standalone free-path destinations and current personal-session-first hero`, () => {
     const options = renderLinks(freePaths, { locale });
     assert.deepEqual(options.map((link) => link.href), [
       `/${locale}/services/free-situation-review`, `/${locale}/wu-xing`, `/${locale}/client/tests`,
     ]);
+    openDirections(locale);
     const html = renderToStaticMarkup(React.createElement(locale === 'es' ? spanishHome : home, { locale }));
     const hero = html.match(/<section class="service-home-hero"[\s\S]*?<\/section>/)?.[0];
     assert.ok(hero);
     assert.deepEqual(links(hero).map((link) => link.href), [
       `/${locale}/services#consultation`, `/${locale}/services/free-situation-review`, `/${locale}/client/tests`,
     ]);
-    const learning = html.match(/<article class="service-home-start-card service-home-start-card--learning">([\s\S]*?)<\/article>/)?.[1];
-    assert.ok(learning);
-    assert.equal(links(learning).filter((link) => link.href === `/${locale}/academy/reiki/tantra-reiki/free-initiation`).length, 1);
+    assertHomeDiscovery(links(html),locale);
   });
 }
+
+
+function assertHomeDiscovery(pageLinks, locale) {
+  for (const path of ['/academy','/services/free-situation-review','/books']) {
+    assert.ok(pageLinks.some(link => link.href === '/' + locale + path), 'Current public destination: ' + path);
+  }
+  assert.equal(pageLinks.filter(link=>link.href==='/' + locale + '/academy/reiki/tantra-reiki/free-initiation').length,0,
+    'Home does not claim a removed direct Tantra card; Academy owns that entry');
+}
+for (const fault of ['missing Academy','wrong Academy']) test('homepage discovery proof rejects ' + fault, () => {
+  openDirections('en');
+  let pageLinks=renderLinks(home,{locale:'en'});
+  if(fault==='missing Academy') pageLinks=pageLinks.filter(link=>link.href!=='/en/academy');
+  else pageLinks=pageLinks.map(link=>link.href==='/en/academy'?{...link,href:'/en/wrong'}:link);
+  assert.throws(()=>assertHomeDiscovery(pageLinks,'en'));
+});
+
+test('Home Academy discovery rejects a disconnected native disclosure callback',async()=>{
+  const source=read('components/home-more-disclosure.tsx');
+  const mutant=source.replace('setExpanded(event.currentTarget.open)','setExpanded(false)');
+  assert.notEqual(mutant,source);
+  const Broken=await loadDisclosure(mutant);
+  assert.throws(()=>openDirections('en',Broken));
+});
+test('Home Academy discovery rejects a missing dynamic export',async()=>{
+  const source=read('components/home-more-disclosure.tsx');
+  const mutant=source.replace('mod.HomeExploreSections','mod.MissingExploreSections');
+  assert.notEqual(mutant,source);
+  await assert.rejects(loadDisclosure(mutant));
+});

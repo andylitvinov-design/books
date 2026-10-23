@@ -4,6 +4,7 @@ import { createRequestAuth } from '@/lib/app/session'
 import { safeEnquiryReturnPath } from '@/lib/app/enquiry-auth-redirect'
 import { createAppRepository } from '@/lib/app/repository'
 import { readDevelopmentGoals, saveDevelopmentGoals } from '@/lib/app/development-goals'
+import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
@@ -95,7 +96,7 @@ async function handle(request, { params }) {
         returnPath = body.returnPath ?? null
       if (body.native !== undefined && body.native !== true) throw new AppError('INVALID_CONTINUATION',400)
       if (continueTo !== null && !['tests', 'course', 'consultations', 'business', 'enquiry'].includes(continueTo) &&
-        !['cabinet','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
+        !['cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -142,7 +143,7 @@ async function handle(request, { params }) {
       if (serviceId) requireUUID(serviceId)
       if (requestId !== null) requireUUID(requestId)
       if ((continueTo === 'consultations') !== Boolean(requestId)) throw new AppError('INVALID_CONTINUATION', 400)
-      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner','enquiry'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
+      if ((intentId && serviceId) || (continueTo && (!['tests','course','consultations','business','cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner','enquiry'].includes(continueTo) || intentId || serviceId))) throw new AppError('INVALID_CONTINUATION', 400)
       // Native OAuth runs Google in the system browser. This HTTPS callback
       // merely returns the single-use PKCE authorization code to the app;
       // the WebView's existing HttpOnly PKCE cookie then exchanges it through
@@ -175,6 +176,8 @@ async function handle(request, { params }) {
                 ? `${origin}/${locale}/app/business`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
+                : continueTo === 'my-practice'
+                  ? `${origin}/${locale}/app/practice`
                 : continueTo === 'my-tests'
                   ? `${origin}/${locale}/app/tests`
                   : continueTo === 'my-courses'
@@ -565,6 +568,10 @@ async function handle(request, { params }) {
         return json(await deleteLabReport(config, actor, path[1]))
       }
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'journey' && method === 'GET') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      return json(await readLearningJourney(config, actor))
     }
     if (joined === 'development-goals') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)

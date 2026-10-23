@@ -60,13 +60,62 @@ test("WhatsApp and Telegram draft only a generic course-next-step request", () =
   assert.match(learner, /target="_blank" rel="noopener noreferrer"/);
 });
 
-test("finished learners can step Back and jump to any previous lesson", () => {
-  assert.match(learner, /data-reiki-final-revisit/);
-  assert.match(learner, /energyworkLessons\.map\(\(lesson, lessonIndex\) => \(/);
-  assert.match(learner, /onClick=\{\(\) => jumpToSlide\(lesson\.firstSlideId\)\}/);
-  assert.match(learner, /<footer className=\{styles\.footer\}>\s*<div className=\{styles\.actions/);
+test("final slide removes the duplicate lesson grid but keeps existing navigation", () => {
+  assert.doesNotMatch(learner, /data-reiki-final-revisit|finalRevisitGrid|finalRevisitButton/);
+  assert.match(learner, /<nav className=\{styles\.journey\} aria-label=\{t\.fiveLessons\}>/);
+  assert.match(learner, /energyworkLessons\.map\(\(lesson, number\) => \(/);
   assert.match(learner, /onClick=\{previous\}/);
-  assert.match(learner, /\{!completed && slide\.id !== "flight-save" \? \(/);
+  assertFooterNavigation(learner);
+  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/course\?view=courses"\}/);
+  assert.match(learner, /jumpToSlide\(nextIncompleteSlide \?\? "end-01"\)/);
   assert.match(css, /\.page\[data-reiki-current-kind="finish"\] \.back \{ min-height: 44px; \}/);
   assert.match(css, /@media \(max-width: 430px\)[\s\S]*?\.page\[data-reiki-current-kind="finish"\] \.back \{ display: inline-flex; width: 100%; min-height: 48px; \}/);
+});
+
+test("lesson five closing slide is compact but notes and opt-in flows remain accessible", () => {
+  assert.match(learner, /data-reiki-learning-highlights/);
+  assert.match(learner, /"Your highlights"/);
+  assert.match(learner, /"Ваши итоги"/);
+  assert.doesNotMatch(learner, /A simple summary of your own recorded answers and choices/);
+  for (const section of ["data-reiki-course-journal", "data-reiki-readiness-checklist",
+    "data-reiki-course-resources", "data-reiki-contact-disclosure"]) {
+    assert.ok(learner.includes('<details className={styles.finalDisclosure} ' + section), section);
+  }
+  assert.match(learner, /<pre className=\{styles\.notes\}>/);
+  assert.match(learner, /onClick=\{copyNotes\}/);
+  assert.match(learner, /onClick=\{\(\) => window\.print\(\)\}/);
+  assert.match(learner, /href=\{reikiWhatsAppUrl\}/);
+  assert.match(learner, /href=\{reikiTelegramUrl\}/);
+  assert.match(learner, /checked=\{applicationConsented\}/);
+  assert.match(learner, /disabled=\{busy \|\| !applicationConsented\} onClick=\{applyForInitiation\}/);
+  assert.match(css, /Lesson 5 \/ slide 6: compact, disclosure-first final summary/);
+  assert.match(css, /\.finalDisclosure > summary \{[\s\S]*?min-height: 44px/);
+  assert.match(css, /\.finalDisclosure > summary:focus-visible/);
+});
+
+
+
+function assertFooterNavigation(source) {
+  const footer = source.slice(source.indexOf('<footer className={styles.footer}>'));
+  assert.match(footer, /onClick=\{previous\} disabled=\{index === 0 \|\| busy \|\| sync === "checking"\}/);
+  const expression = footer.match(/\{\(([^\n]+)\) \? \(\s*<button type="button" onClick=\{next\}/)?.[1];
+  assert.ok(expression, 'Actual footer Next predicate must be found');
+  assert.match(expression, /^slide\.kind === "milestone" \|\| !completed$/);
+  const showNext = new Function('slide', 'completed', 'return (' + expression + ')');
+  for (const [kind, completed, visible] of [
+    ['milestone',false,true],['milestone',true,true],
+    ['reflection',false,true],['reflection',true,false],
+    ['finish',true,false],
+  ]) assert.equal(showNext({kind}, completed), visible, kind + ':' + completed);
+  assert.match(footer, /slide\.id === "flight-done" && sync !== "ready" && !firstLessonConsent/);
+}
+test('footer predicate rejects a final Next, missing Back and lost inline consent guard', () => {
+  for (const [before,after] of [
+    ['(slide.kind === "milestone" || !completed) ? (','(slide.kind === "milestone" || completed) ? ('],
+    ['onClick={previous}', 'onClick={() => {}}'],
+    ['slide.id === "flight-done" && sync !== "ready" && !firstLessonConsent','false'],
+  ]) {
+    assert.ok(learner.includes(before));
+    assert.throws(() => assertFooterNavigation(learner.replaceAll(before,after)));
+  }
 });

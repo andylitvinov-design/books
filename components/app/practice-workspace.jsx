@@ -162,13 +162,14 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState('')
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState(''),[showSignup,setShowSignup]=useState(false)
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     if(params.get('panel')==='materials')setActivePanel('materials')
+    if(params.get('panel')==='services')setActivePanel('services')
     if(params.get('panel')==='marketing')setActivePanel('marketing')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
     if(params.get('panel')==='crm')setActivePanel('crm')
@@ -342,6 +343,55 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     else if(index===1)choosePanel('services')
     else shareProfile()
   }
+  const marketplace = <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
+      <div className="hh-practice-marketplace-heading">
+        <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
+        <div>
+          <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
+          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
+          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
+        </div>
+      </div>
+      {!needsOnboarding&&<div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
+        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
+          aria-pressed={activePanel==='services'} onClick={addService}>
+          <Plus aria-hidden="true" />
+          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        <p className="hh-practice-marketplace-cta-note">
+          <span>{marketplaceCopy.hobby}</span>
+          <span aria-hidden="true">·</span>
+          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
+        </p>
+      </div>}
+      <div className="hh-practice-marketplace-latest">
+        <div className="hh-practice-marketplace-latest-heading">
+          <h3>{marketplaceCopy.latest}</h3>
+          <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
+            {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
+          </Link>
+        </div>
+        {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
+          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
+            <Link className="hh-practice-marketplace-card"
+              href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
+              <ShowcaseCover item={item} />
+              <span className="hh-practice-marketplace-card-content">
+                <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
+                <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
+                <span className="hh-practice-marketplace-card-summary">{item.shortDescriptions?.[locale]||item.shortDescriptions?.en||''}</span>
+                <span className="hh-practice-marketplace-card-foot">
+                  <span>{showcasePrice(item,locale,marketplaceCopy)}</span><ChevronRight aria-hidden="true" />
+                </span>
+              </span>
+            </Link>
+          </li>)}
+        </ul>:<p className="hh-practice-marketplace-empty" role="status">
+          {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
+        </p>}
+      </div>
+    </section>
   return <section className="hh-practice-dashboard" data-practice-active={activePanel||undefined} data-practice-one-screen>
     <header className="hh-practice-head">
       <nav className="hh-practice-breadcrumb" aria-label={ru?'Путь':'Breadcrumb'}>
@@ -392,13 +442,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </button>}
     </section>}
 
-    {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
+    {!needsOnboarding&&!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
       onAddService={needsOnboarding
         ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
         : addService}
       onViewAll={()=>choosePanel('requests')} /></div>}
-    {readySteps<3&&!activePanel&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
+    {!needsOnboarding&&readySteps<3&&!activePanel&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
       <div className="hh-practice-setup-head">
         <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
         <span>{readySteps}/3</span>
@@ -475,7 +525,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </section>
       </details>
     </>}
-    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
+    {needsOnboarding&&!showSignup&&<div className="hh-practice-join">
+      {marketplace}
+      <button type="button" className="hh-primary" onClick={()=>setShowSignup(true)}>
+        {p?(ru?'Продолжить регистрацию':locale==='es'?'Continuar el registro':'Continue registration'):(ru?'Начать свою практику':locale==='es'?'Empezar mi práctica':'Start my practice')}
+      </button>
+    </div>}
+    {needsOnboarding? showSignup&&<div id="hh-practice-onboarding"><MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
         data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
@@ -577,58 +633,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </section>}
     {!needsOnboarding&&!activePanel&&<details className="hh-practice-v4-community">
       <summary><Leaf aria-hidden="true"/><span>{marketplaceCopy.latest}</span><ChevronRight aria-hidden="true"/></summary>
-      <section className="hh-practice-marketplace" aria-labelledby="hh-practice-marketplace-title">
-      <div className="hh-practice-marketplace-heading">
-        <span className="hh-practice-marketplace-mark"><Leaf aria-hidden="true" /></span>
-        <div>
-          <p className="hh-practice-marketplace-kicker">{marketplaceCopy.kicker}</p>
-          <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
-          <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
-        </div>
-      </div>
-      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
-        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
-          aria-pressed={activePanel==='services'} onClick={addService}>
-          <Plus aria-hidden="true" />
-          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
-          <ChevronRight aria-hidden="true" />
-        </button>
-        <p className="hh-practice-marketplace-cta-note">
-          <span>{marketplaceCopy.hobby}</span>
-          <span aria-hidden="true">·</span>
-          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
-        </p>
-      </div>
-      <div className="hh-practice-marketplace-latest">
-        <div className="hh-practice-marketplace-latest-heading">
-          <h3>{marketplaceCopy.latest}</h3>
-          <Link className="hh-practice-marketplace-all" href={'/'+locale+'/services?catalog=1#service-listings'} prefetch={false}>
-            {marketplaceCopy.all}<ChevronRight aria-hidden="true" />
-          </Link>
-        </div>
-        {recentPublicServices.length?<ul className="hh-practice-marketplace-cards">
-          {recentPublicServices.map(item=><li key={item.practitionerSlug+'/'+item.slug}>
-            <Link className="hh-practice-marketplace-card"
-              href={getPublicServiceDetailHref(locale,item.practitionerSlug,item.slug)} prefetch={false}>
-              <ShowcaseCover item={item} />
-              <span className="hh-practice-marketplace-card-content">
-                <span className="hh-practice-marketplace-card-byline">{item.practitionerName||marketplaceCopy.practitioner}</span>
-                <strong className="hh-practice-marketplace-card-title">{item.titles?.[locale]||item.titles?.en}</strong>
-                <span className="hh-practice-marketplace-card-summary">{item.shortDescriptions?.[locale]||item.shortDescriptions?.en||''}</span>
-                <span className="hh-practice-marketplace-card-foot">
-                  <span>{showcasePrice(item,locale,marketplaceCopy)}</span><ChevronRight aria-hidden="true" />
-                </span>
-              </span>
-            </Link>
-          </li>)}
-        </ul>:<p className="hh-practice-marketplace-empty" role="status">
-          {newServices?marketplaceCopy.noRecent:marketplaceCopy.unavailable}
-        </p>}
-      </div>
-    </section>
+      {marketplace}
+
     </details>}
 
-    {ownerTools && !activePanel && <details className="hh-practice-more-tools">
+    {!needsOnboarding && ownerTools && !activePanel && <details className="hh-practice-more-tools">
       <summary>{d.extra}</summary>
       <div className="hh-master-clinical-tools">{ownerTools}</div>
       <div className="hh-actions"><button type="button" className="hh-practice-new-service" onClick={()=>choosePanel('crm')} aria-pressed={activePanel==='crm'}>{ru?'Деловые контакты и подписчики':'Business contacts & subscribers'}</button><button type="button" className="hh-practice-new-service" disabled={busy} onClick={()=>openOwner('tools')}>{ru?'Дополнительные инструменты администратора':'Additional administrative tools'} →</button></div>
@@ -747,9 +756,9 @@ function Services({items,locale,busy,quota,createRequest=0,onSave,onSaveAndSubmi
   const ru=locale==='ru'
   return <>
     {!canAdd&&<p className="hh-practice-limit-notice" role="status">{ru?'Бесплатный Hobby: достигнут лимит 10 услуг. Вы можете редактировать уже добавленные услуги.':locale==='es'?'Hobby gratis: has alcanzado el límite de 10 servicios. Puedes editar los existentes.':'Free Hobby: the 10-service limit is reached. You can still edit your existing services.'}</p>}
-    <MyServicesDashboard items={items} locale={locale} quota={quota} createRequest={createRequest}
-      renderEditor={item=><SimpleServiceEditor key={item?.id||'new'} item={item} locale={locale} busy={busy}
-        onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause}/>} />
+    <MyServicesDashboard items={items} locale={locale} quota={quota} busy={busy} createRequest={createRequest}
+      renderEditor={(item,onDirtyChange,onMediaBusyChange)=><SimpleServiceEditor key={item?item.id+':'+item.revision:'new'} item={item} locale={locale} busy={busy}
+        onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause} onDirtyChange={onDirtyChange} onMediaBusyChange={onMediaBusyChange}/>} />
   </>
 }
 function Requests({items,t,locale,busy,onStatus,onSaveContact}){
@@ -777,3 +786,4 @@ function safeLeadContact(value){
   if(!value||typeof value!=='object')return ''
   return [value.displayName||value.name,value.email,value.phone].filter(part=>typeof part==='string'&&part.trim()).join(' · ')
 }
+

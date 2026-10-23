@@ -1,10 +1,11 @@
+import { homeFixture, assertDeferredHome, assertExploreLinks } from './helpers/home-source-render-fixture.mjs';
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("approved 2026-10-09 home design keeps all three service directions and original routes", () => {
+test("approved home design keeps service directions and the rendered photo-left guide routes", async () => {
   const home = read("components/holistic-house-home.tsx");
   const journey = read("components/personal-work-journey.tsx");
   const more = read("components/home-more-disclosure.tsx");
@@ -32,11 +33,13 @@ test("approved 2026-10-09 home design keeps all three service directions and ori
   assert.match(home, /className="service-home-hero"/);
   assert.match(home, /event="self_check_start"/);
   assert.match(home, /event="service_view"/);
-  const explore = read("components/home-explore-sections.tsx");
   assert.match(more, /<HomeExploreSections locale=\{locale\} \/>/);
-  assert.match(explore, /academyAction: "Browse courses"/);
-  assert.match(explore, /cabinetAction: "Open my Cabinet"/);
-  assert.match(explore, /libraryAction: "Browse the Library"/);
+  // Owner-merged #1460 reorganized these labels into photo-led topic cards.
+  // Follow the mounted disclosure rather than accepting unused copy keys.
+  for (const locale of ["en", "ru", "es"]) {
+    const { expanded } = await assertDeferredHome(homeFixture({ locale }), locale);
+    assertExploreLinks(expanded, locale);
+  }
 });
 
 test("homeopathy card has a complete local illustration instead of the observed broken image", () => {

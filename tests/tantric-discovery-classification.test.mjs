@@ -23,8 +23,8 @@ test('only the traditional symbolic Chakra construct is Hobby; five behavioral r
   }
   for (const locale of ['en', 'ru']) {
     const active = buildExplorerEntries({ locale, audience: 'guest' }).filter(row => row.startable)
-    assert.equal(active.length, 145)
-    assert.deepEqual(['monitoring', 'professional', 'hobby'].map(kind => active.filter(row => row.testKind === kind).length), [67, 72, 6])
+    assert.equal(active.length, 150)
+    assert.deepEqual(['monitoring', 'professional', 'hobby'].map(kind => active.filter(row => row.testKind === kind).length), [67, 77, 6])
     for (const [key, kind] of Object.entries(expected)) assert.equal(active.find(row => row.key === key).testKind, kind)
   }
 })

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, PlayCircle, Search, Sparkles } from "lucide-react";
 
 import { AcademyCourseCardList, type AcademyCourseItem } from "@/components/academy-course-card-list";
 import { AcademyMyCourses } from "@/components/academy-my-courses";
@@ -12,6 +12,9 @@ import type { AcademyView } from "@/data/academy/catalog";
 import type { PublicEvent } from "@/data/public-events";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-discovery.module.css";
+
+export type AcademyArchiveButton = { id: string; title: string; href: string; archived?: boolean };
+const LEGACY_PREVIEW_COUNT = 8;
 
 const COPY = {
   en: {
@@ -25,11 +28,15 @@ const COPY = {
     searchButton: "Find my course",
     browse: "Choose your course",
     catalogLabel: "ALL LEARNING PROGRAMMES",
-    count: "courses",
+    count: "learning options",
     results: "Matching learning options",
     paths: "EXPLORE THE ACADEMY",
     freeCourses: "Free Courses", freeDescription: "Short guided lessons you can begin today.",
     studyPrograms: "Study Programs", studyDescription: "Complete pathways, levels and original study materials.",
+    psimaster: "PsiMaster courses & videos", psimasterShort: "PsiMaster archive", psimasterDescription: "Original Russian-language programmes, now readable on Holistic House. Historical descriptions do not confirm current enrollment.",
+    psimasterVideos: "Original video courses", psimasterVideoDescription: "Open the preserved Russian lessons in their own course pages.",
+    historical: "Historical programme", archiveOnly: "Archive only", videoLesson: "Video lessons",
+    showAllLegacy: "Show all courses", showLessLegacy: "Show fewer",
     liveEvents: "Live Events", liveDescription: "Workshops and gatherings with confirmed dates.",
     noMatchesInGroup: "No matches in this section.",
     noLiveEvents: "No confirmed upcoming events yet. New workshops will appear when dates are published.",
@@ -51,11 +58,15 @@ const COPY = {
     searchButton: "Подобрать курс",
     browse: "Выберите свой курс",
     catalogLabel: "ВСЕ ПРОГРАММЫ ОБУЧЕНИЯ",
-    count: "курсов",
+    count: "материалов",
     results: "Подходящие варианты",
     paths: "НАПРАВЛЕНИЯ АКАДЕМИИ",
     freeCourses: "Бесплатные курсы", freeDescription: "Короткие занятия, которые можно начать прямо сейчас.",
     studyPrograms: "Программы обучения", studyDescription: "Полные учебные маршруты, ступени и авторские материалы.",
+    psimaster: "Курсы и видео PsiMaster", psimasterShort: "Архив PsiMaster", psimasterDescription: "Русскоязычные программы из прежней Академии. Каждая кнопка открывает страницу на Holistic House; архивные описания не означают, что набор сейчас открыт.",
+    psimasterVideos: "Авторские видеокурсы", psimasterVideoDescription: "Сохранённые уроки на русском, доступные на отдельных страницах курсов.",
+    historical: "Историческая программа", archiveOnly: "Только архив", videoLesson: "Видеоуроки",
+    showAllLegacy: "Показать все курсы", showLessLegacy: "Свернуть список",
     liveEvents: "Живые встречи", liveDescription: "Семинары и мероприятия с подтверждёнными датами.",
     noMatchesInGroup: "В этой категории совпадений нет.",
     noLiveEvents: "Пока нет подтверждённых будущих мероприятий. Новые встречи появятся после согласования дат.",
@@ -77,11 +88,15 @@ const COPY = {
     searchButton: "Buscar curso",
     browse: "Elige tu curso",
     catalogLabel: "TODOS LOS PROGRAMAS",
-    count: "cursos",
+    count: "opciones",
     results: "Opciones encontradas",
     paths: "EXPLORAR LA ACADEMIA",
     freeCourses: "Cursos gratis", freeDescription: "Lecciones breves que puedes comenzar hoy.",
     studyPrograms: "Programas de estudio", studyDescription: "Recorridos completos, niveles y materiales originales.",
+    psimaster: "Cursos y vídeos de PsiMaster", psimasterShort: "Archivo PsiMaster", psimasterDescription: "Programas históricos originales en ruso, ahora accesibles en Holistic House. Su archivo no implica inscripción abierta.",
+    psimasterVideos: "Videocursos originales", psimasterVideoDescription: "Abre las lecciones originales en ruso desde su propia página.",
+    historical: "Programa histórico", archiveOnly: "Solo archivo", videoLesson: "Videolecciones",
+    showAllLegacy: "Ver todos los cursos", showLessLegacy: "Mostrar menos",
     liveEvents: "Eventos en vivo", liveDescription: "Talleres y encuentros con fechas confirmadas.",
     noMatchesInGroup: "No hay coincidencias en esta sección.",
     noLiveEvents: "Aún no hay eventos próximos confirmados. Se publicarán cuando se confirmen las fechas.",
@@ -190,22 +205,34 @@ export function AcademyDiscovery({
   locale,
   view,
   items,
+  legacyCourses,
+  legacyVideos,
   label,
   events,
 }: {
   locale: PublicLocale;
   view: AcademyView;
   items: AcademyCourseItem[];
+  legacyCourses: AcademyArchiveButton[];
+  legacyVideos: AcademyArchiveButton[];
   label: string;
   events: readonly PublicEvent[];
 }) {
   const t = COPY[locale];
   const [query, setQuery] = useState("");
+  const [showAllLegacy, setShowAllLegacy] = useState(false);
   const terms = useMemo(() => searchTerms(query), [query]);
   const matchedItems = useMemo(() => items.filter((item) =>
     matchesTerms([item.title, item.subtitle, item.description, SEARCH_KEYWORDS[item.id]].filter(Boolean).join(" "), terms),
   ), [items, terms]);
+  const matchedLegacyCourses = useMemo(() => legacyCourses.filter((item) =>
+    matchesTerms([item.title, item.id, "psimaster psi master псимастер архив"].join(" "), terms),
+  ), [legacyCourses, terms]);
+  const matchedLegacyVideos = useMemo(() => legacyVideos.filter((item) =>
+    matchesTerms([item.title, item.id, "psimaster psi master псимастер видео"].join(" "), terms),
+  ), [legacyVideos, terms]);
   const isSearching = Boolean(query.trim());
+  const visibleLegacyCourses = isSearching || showAllLegacy ? matchedLegacyCourses : matchedLegacyCourses.slice(0, LEGACY_PREVIEW_COUNT);
   const freeItems = matchedItems.filter((item) => item.free);
   const studyItems = matchedItems.filter((item) => !item.free);
   const upcomingEvents = useMemo(() => {
@@ -225,7 +252,7 @@ export function AcademyDiscovery({
       COPY.en.liveEvents, COPY.ru.liveEvents, COPY.es.liveEvents,
     ].filter(Boolean).join(" "), terms),
   ), [upcomingEvents, terms]);
-  const resultCount = matchedItems.length + matchedEvents.length;
+  const resultCount = matchedItems.length + matchedLegacyCourses.length + matchedLegacyVideos.length + matchedEvents.length;
 
   function scrollToResults() {
     const target = document.getElementById("academy-programs");
@@ -273,6 +300,7 @@ export function AcademyDiscovery({
           <nav className={styles.quickPaths} aria-label={t.paths}>
             <a href="#academy-free-courses"><BookOpen size={16} aria-hidden="true" />{t.freeCourses}</a>
             <a href="#academy-study-programs"><GraduationCap size={16} aria-hidden="true" />{t.studyPrograms}</a>
+            <a href="#academy-psimaster-courses"><Archive size={16} aria-hidden="true" />{t.psimasterShort}</a>
             <a href="#academy-live-events"><CalendarDays size={16} aria-hidden="true" />{t.liveEvents}</a>
           </nav>
         ) : null}
@@ -288,7 +316,7 @@ export function AcademyDiscovery({
             {isSearching ? (
               <button type="button" className={styles.reset} onClick={() => setQuery("")}>{t.reset}</button>
             ) : (
-              <span className={styles.count}>{items.length} {t.count}</span>
+              <span className={styles.count}>{items.length + legacyCourses.length + legacyVideos.length} {t.count}</span>
             )}
           </div>
           {isSearching && !resultCount ? <p className={styles.empty} role="status">{t.empty}</p> : null}
@@ -321,9 +349,65 @@ export function AcademyDiscovery({
             ) : isSearching ? <p className={styles.categoryEmpty}>{t.noMatchesInGroup}</p> : null}
           </section>
 
+          {(!isSearching || matchedLegacyCourses.length > 0 || matchedLegacyVideos.length > 0) ? (
+            <section className={styles.categoryGroup} id="academy-psimaster-courses" aria-labelledby="academy-psimaster-courses-title">
+              <div className={styles.categoryHeading}>
+                <span className={styles.categoryNumber} aria-hidden="true">3</span>
+                <div className={styles.categoryHeadingCopy}>
+                  <h3 id="academy-psimaster-courses-title">{t.psimaster}</h3>
+                  <p>{t.psimasterDescription}</p>
+                </div>
+                <span className={styles.categoryCount}>{matchedLegacyCourses.length + matchedLegacyVideos.length}</span>
+              </div>
+              {matchedLegacyCourses.length > 0 ? (
+                <>
+                  <div className={styles.legacyGrid} id="academy-psimaster-course-grid" role="list">
+                    {visibleLegacyCourses.map((item) => (
+                      <div role="listitem" key={item.id}>
+                        <Link className={styles.legacyLink} href={item.href} prefetch={false} data-psimaster-course={item.id}>
+                          <BookOpen size={18} strokeWidth={1.7} aria-hidden="true" />
+                          <span className={styles.legacyLinkCopy}>
+                            <strong>{item.title}</strong>
+                            <small>{item.archived ? t.archiveOnly : t.historical}</small>
+                          </span>
+                          <ArrowRight size={17} aria-hidden="true" />
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                  {!isSearching && matchedLegacyCourses.length > LEGACY_PREVIEW_COUNT ? (
+                    <button type="button" className={styles.legacyToggle}
+                      aria-controls="academy-psimaster-course-grid" aria-expanded={showAllLegacy}
+                      onClick={() => setShowAllLegacy(!showAllLegacy)}>
+                      {showAllLegacy ? t.showLessLegacy : `${t.showAllLegacy} (${matchedLegacyCourses.length})`}
+                      <ChevronDown className={showAllLegacy ? styles.chevronUp : undefined} size={16} aria-hidden="true" />
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+              {matchedLegacyVideos.length > 0 ? (
+                <div className={styles.legacyVideos}>
+                  <h4>{t.psimasterVideos}</h4>
+                  <p>{t.psimasterVideoDescription}</p>
+                  <div className={styles.legacyGrid} role="list">
+                    {matchedLegacyVideos.map((item) => (
+                      <div role="listitem" key={item.id}>
+                        <Link className={styles.legacyLink} href={item.href} prefetch={false} data-psimaster-video={item.id}>
+                          <PlayCircle size={18} strokeWidth={1.7} aria-hidden="true" />
+                          <span className={styles.legacyLinkCopy}><strong>{item.title}</strong><small>{t.videoLesson}</small></span>
+                          <ArrowRight size={17} aria-hidden="true" />
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           <section className={styles.categoryGroup} id="academy-live-events" aria-labelledby="academy-live-events-title">
             <div className={styles.categoryHeading}>
-              <span className={styles.categoryNumber} aria-hidden="true">3</span>
+              <span className={styles.categoryNumber} aria-hidden="true">4</span>
               <div className={styles.categoryHeadingCopy}>
                 <h3 id="academy-live-events-title">{t.liveEvents}</h3>
                 <p>{t.liveDescription}</p>

@@ -10,7 +10,9 @@ import {ensureOwnerTelegramPairing,resolvedOwnerTelegramEnv} from '@/lib/practit
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
-export const maxDuration=60
+// Bounded provider GET/inference and one missed-day recovery may exceed 60s.
+// No additional cron invocation or paid provider calls are authorized.
+export const maxDuration=120
 
 export async function GET(request){
   if(!cronAuthorized(request,process.env))

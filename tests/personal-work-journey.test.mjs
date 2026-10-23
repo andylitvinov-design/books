@@ -2,46 +2,58 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 
 const root = process.cwd();
 const source = (...parts) => readFileSync(path.join(root, ...parts), "utf8");
 
-test("home presents four photo-left offer cards before videos", () => {
+function assertDeferredHome(home, disclosure) {
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
+  assert.doesNotMatch(home, /<ServicesSolutions/);
+  assert.match(disclosure, /import\("\.\/services-solutions"\)\.then\(mod => mod\.ServicesSolutions\)/);
+  assert.match(disclosure, /onToggle=\{event => setExpanded\(event\.currentTarget\.open\)\}/);
+  assert.match(disclosure, /\{expanded \? \(locale === "es"/);
+  assert.match(disclosure, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+}
+
+test("home defers the existing four photo offers until the native disclosure opens", () => {
   const home = source("components", "holistic-house-home.tsx");
-  const cards = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  const video = home.indexOf("{introVideoContent}");
-  assert.ok(cards > 0 && video > cards);
-  assert.match(source("components", "home-intro-video-section.tsx"), /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
+  const disclosure = source("components", "home-more-disclosure.tsx");
+  assertDeferredHome(home, disclosure);
+  for (const [before, after] of [['mod.ServicesSolutions', 'mod.Missing'], ['setExpanded(event.currentTarget.open)', 'setExpanded(false)'], ['variant="home"', 'variant="services"']]) {
+    assert.ok(disclosure.includes(before));
+    assert.throws(() => assertDeferredHome(home, disclosure.replace(before, after)));
+  }
   assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
   assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
   assert.match(source("components", "services-solutions.tsx"), /isHome \? allOffers\.filter\(\(offer\) => offer\.id !== "business"\) : allOffers/);
 });
 
-test("Services leads with five compact photo offers and enquiry, retaining optional free tests", () => {
+function assertServicesOrder(page) {
+  const markers = ['<ServicesConversionHero', '<ServicesStudioOffers', '<ServicesIntroMedia', '<PersonalTestimonials', '<ServicesMethodVideos', '<PublicConsultationCta', '<ServicesDirectoryInvitation'];
+  let previous = -1;
+  for (const marker of markers) {
+    const index = page.indexOf(marker);
+    assert.ok(index > previous, marker + ' must exist in the intended order');
+    previous = index;
+  }
+  assert.match(page, /id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/);
+  assert.doesNotMatch(page, /<ServicesSmartDiscovery|<ServiceCart|<FreeInsightsPaths/);
+}
+
+test("Services presents studio offers before media, testimonials and gated personal booking", () => {
   const page = source("app", "[locale]", "services", "page.tsx");
+  assertServicesOrder(page);
+  for (const marker of ['<ServicesStudioOffers', '<PersonalTestimonials', 'serviceBooking', 'wiseEnabled={wisePaymentsEnabled()}', 'paypalPersonalEnabled={personalPayPalEnabled()}']) {
+    assert.ok(page.includes(marker));
+    assert.throws(() => assertServicesOrder(page.replace(marker, '')));
+  }
+  const reordered = page.replace('<ServicesStudioOffers', '<TEMP').replace('<PersonalTestimonials', '<ServicesStudioOffers').replace('<TEMP', '<PersonalTestimonials');
+  assert.throws(() => assertServicesOrder(reordered));
   const offers = source("data", "core-service-offers.ts");
-  const ui = source("components", "services-solutions.tsx");
-  const hero = source("components", "services-conversion-hero.tsx");
-  const choiceIndex = page.indexOf("<ServicesSolutions");
-  const testimonials = page.indexOf("<PersonalTestimonials");
-  const extra = page.indexOf('id="available-services"');
-  assert.ok(choiceIndex > 0 && testimonials > choiceIndex && extra > testimonials);
-  assert.match(ui, /allOffers\.filter/);
-  assert.match(page, /<ServicesTestsIntro locale=\{locale as Locale\} \/>/);
-  assert.doesNotMatch(page, /<FreeInsightsPaths/);
-  assert.match(page, /<ServicesConversionHero locale=\{locale as Locale\} \/>/);
-  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesTestsIntro"));
-  for(const id of ["situation","dao","alchemy","hypnotherapy"])
-    assert.ok(offers.includes('id: "' + id + '"'), id);
-  for(const route of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"])
+  for (const route of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"])
     assert.ok(offers.includes('route: "' + route + '"'), route);
-  assert.match(hero, /Get a free written review/);
-  assert.doesNotMatch(hero, /Draw by hand on paper|€100/);
-  const editorialStart = page.indexOf("const editorialOffers =");
-  const renderStart = page.indexOf("  return (");
-  assert.ok(editorialStart > 0 && renderStart > editorialStart, "Separate editorial offer data from the rendered Services layout");
-  assert.match(page.slice(editorialStart, renderStart), /€50 \/ 30 min · €100 \/ 60 min/);
-  assert.doesNotMatch(page.slice(renderStart), /€50|€100/, "Editorial prices remain in metadata; paid card prices are rendered in ServicesSolutions");
 });
 
 test("three service directions link to real pages, not implied stages", () => {
@@ -66,10 +78,11 @@ test("free review and imagery therapy have real EN/RU/ES pages and honest contac
   const form = source("components", "free-situation-review-form.tsx");
   const intake = source("components", "free-drawing-intake.tsx");
   const consultation = source("components", "personal-consultation-form.tsx");
-  for (const phrase of ["Бесплатная диагностика ситуации", "Free Situation Review & Personal Consultation",
-    "FreeSituationReviewForm", "getHomeopathyLocaleParams", "generateMetadata", "topic.cards.map", "deeper.title"]) {
+  for (const phrase of ["Бесплатный письменный разбор ситуации", "Free Situation Review — personal written reflection", "Revisión escrita gratuita de tu situación", "FreeEntryLanding", "generateStaticParams", "generateMetadata", 'kind="situation"']) {
     assert.ok(free.includes(phrase), phrase);
   }
+  const landing = source("components", "free-entry-landing.tsx");
+  assert.match(landing, /kind === "situation" \? \(\s*<details className=\{styles.fullQuestionnaire\} data-optional-written-review>[\s\S]*?<FreeSituationReviewForm locale=\{locale\} \/>/);
   for (const phrase of ["PersonalServiceLanding", "imagery-therapy", "service={service}"]) assert.ok(imagery.includes(phrase), phrase);
   assert.match(consultation, /service\?: string/);
   assert.match(consultation, /service \? "service" : "personal"/);
@@ -96,67 +109,65 @@ test("service links remain tappable, mobile-safe and keyboard accessible", () =>
   assert.match(detailCss, /grid-template-columns:1fr/);
 });
 
-test("Services hero separates paid enquiry from free written review without diagnostic steps", () => {
+const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
+const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props.children)];
+function renderHero(input, locale) {
+  const changes = [];
+  const modules = {
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    react: { useEffect() {}, useState: value => [value, () => {}] },
+    'next/image': { default: props => jsx('img', props) },
+    'next/link': { default: props => jsx('a', props) },
+    'lucide-react': Object.fromEntries(['ArrowRight', 'ChevronLeft', 'ChevronRight', 'MapPin', 'MonitorPlay'].map(key => [key, () => null])),
+    '@/components/static-portrait': { StaticPortrait: () => null },
+    '@/components/services-hero-quick-request': { ServicesHeroQuickRequest: () => null },
+    '@/components/services-explorer-state': {
+      matchingServicesCount: () => 1,
+      serviceTopics: ['all', 'personal', 'relationships', 'business', 'reiki', 'free'],
+      useServicesExplorer: () => ({mode: 'online', topic: 'all', setMode: value => changes.push(['mode', value]), setTopic: value => changes.push(['topic', value])}),
+    },
+    './services-conversion-hero.module.css': { default: new Proxy({}, { get: (_, key) => key }) },
+  };
+  const exports = {};
+  const compiled = ts.transpileModule(input, {compilerOptions: {jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS}}).outputText;
+  runInNewContext(compiled, {exports, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; }});
+  return { tree: exports.ServicesConversionHero({locale}), changes };
+}
+function assertHeroContract(input) {
+  const copy = {
+    en: ['Start free · 3 options', 'Ask about a personal session · from €50', 'Session times and conditions are confirmed before booking or payment.'],
+    ru: ['Три бесплатных варианта', 'Запросить личную сессию · от €50', 'Время встречи и условия подтверждаются до записи и оплаты.'],
+    es: ['Tres opciones gratuitas', 'Solicitar sesión personal · desde €50', 'La hora y las condiciones se confirman antes de reservar o pagar.'],
+  };
+  for (const [locale, [freeLabel, paidLabel, reassurance]] of Object.entries(copy)) {
+    const {tree, changes} = renderHero(input, locale);
+    const all = nodes(tree);
+    const actions = all.filter(node => node.props['data-service-hero-cta']);
+    assert.deepEqual(actions.map(node => [node.type, node.props['data-service-hero-cta'], node.props.href, node.props.children[0]]), [
+      ['a', 'free', '#free-insights', freeLabel], ['a', 'paid', '#consultation', paidLabel],
+    ]);
+    actions[0].props.onClick();
+    assert.deepEqual(changes, [['mode', 'online'], ['topic', 'free']]);
+    assert.equal(all.filter(node => node.type === 'p' && node.props.className === 'reassurance' && node.props.children === reassurance).length, 1);
+  }
+}
+test("Services hero keeps three free options distinct from paid enquiry and prior agreement", () => {
   const hero = source("components", "services-conversion-hero.tsx");
-  const css = source("components", "services-conversion-hero.module.css");
-  // Owner #996 (f3b6edefc) deliberately rewrote headings and paid enquiry labels.
-  // Keep the free written path, optional paid support and prior agreement explicit.
-  const approvedCopy = {
-    ru: {
-      heading: "Личная работа с вашим вопросом: отношения, работа и решения",
-      lead: "Начните с бесплатного письменного разбора ситуации, тестов самонаблюдения или символического профиля У-Син. Если нужна личная работа, обсудим индивидуальную сессию с Андреем — от €50 за 30 минут.",
-      paidCta: "Запросить личную сессию · от €50",
-      small: "Бесплатный разбор — по анкете и рисунку, не видеозвонок. Личная запись и оплата только после согласования.",
-    },
-    en: {
-      heading: "Personal guidance for relationships, work and life decisions",
-      lead: "Begin with a free written situation review, wellbeing self-checks or a symbolic Wu Xing profile. For personal support, explore a one-to-one session with Andrey — starting at €50 for 30 minutes.",
-      paidCta: "Ask about a personal session · from €50",
-      small: "Free review means form and drawing → written feedback, not a live call. Session time and payment are agreed separately.",
-    },
-    es: {
-      heading: "Acompañamiento personal para relaciones, trabajo y decisiones",
-      lead: "Empieza con una revisión escrita gratuita, cuestionarios de autoobservación o un perfil simbólico Wu Xing. Si prefieres atención personal, explora sesiones con Andrey desde €50 por 30 minutos.",
-      paidCta: "Solicitar sesión personal · desde €50",
-      small: "La revisión gratuita incluye formulario y dibujo → respuesta escrita, no una llamada. Las sesiones se acuerdan por separado.",
-    },
-  };
-  const assertHeroContract = input => {
-    for (const [locale, fields] of Object.entries(approvedCopy)) {
-      const block = input.match(new RegExp("\\b" + locale + ": \\{([\\s\\S]*?)\\n  \\}"))?.[1];
-      assert.ok(block, locale + " copy block");
-      for (const [field, value] of Object.entries(fields)) {
-        assert.ok(block.includes(field + ": " + JSON.stringify(value)), locale + "." + field);
-      }
-    }
-    assert.match(input, /<Link className=\{styles\.cta\} href="#consultation" data-service-hero-cta="paid">\s*\{t\.paidCta\}/);
-    assert.match(input, /<Link className=\{styles\.paidLink\} href=\{"\/" \+ locale \+ "\/services\/free-situation-review"\} data-service-hero-cta="free-written-review">\s*\{t\.cta\}/);
-    assert.ok(input.indexOf('data-service-hero-cta="paid"') < input.indexOf('data-service-hero-cta="free-written-review"'));
-    assert.match(input, /See all three free options/);
-    assert.match(input, /href="#free-insights"/);
-    assert.match(input, /<p className=\{styles\.small\}>\{t\.small\}<\/p>/);
-    assert.doesNotMatch(input, /coaching form|ME, GOAL|Draw by hand on paper/);
-  };
   assertHeroContract(hero);
   for (const [before, after] of [
-    ["/services/free-situation-review", "/services/alchemy-of-soul"],
-    ['href="#consultation"', 'href="/en/services/free-situation-review"'],
-    ["{t.paidCta}", "{t.cta}"],
-    ["{t.cta}", "{t.paidCta}"],
-    ["Session time and payment are agreed separately.", "Session time is automatically confirmed."],
-    ["Личная запись и оплата только после согласования.", "Запись подтверждается автоматически."],
-    ["Las sesiones se acuerdan por separado.", "La sesión se confirma automáticamente."],
-    ["{t.small}", ""],
-    ['href="#free-insights"', 'href="#solutions"'],
+    ['href="#consultation"', 'href="#free-insights"'], ['href="#free-insights"', 'href="#consultation"'],
+    ['{t.freeCta}', '{t.paidCta}'], ['{t.paidCta}', '{t.freeCta}'],
+    ['{t.reassurance}', '"Booked automatically"'],
+    ['Session times and conditions are confirmed before booking or payment.', 'Booking confirmed.'],
+    ['setMode("online"); setTopic("free");', 'setMode("toronto"); setTopic("all");'],
   ]) {
     assert.ok(hero.includes(before), before);
     assert.throws(() => assertHeroContract(hero.replace(before, after)), undefined, before);
   }
-  assert.match(css, /\.paidLink:focus-visible/);
-  assert.match(css, /\.actions \.paidLink\{[\s\S]*?min-height:44px/);
-  assert.doesNotMatch(hero, /coaching form|ME, GOAL|Draw by hand on paper/);
+  const css = source("components", "services-conversion-hero.module.css");
+  assert.match(css, /:focus-visible/);
+  assert.match(css, /min-height:44px/);
   assert.match(css, /@media\(max-width:760px\)/);
-  assert.match(css, /min-height:60px/);
 });
 
 test("wellbeing preselection enters an actual free drawing intake, never a phantom live session", () => {
@@ -167,5 +178,11 @@ test("wellbeing preselection enters an actual free drawing intake, never a phant
   assert.ok(intake.includes('new URLSearchParams(window.location.search).get("topic")'));
   assert.ok(intake.includes('setTopic(requested as Topic)'));
   assert.ok(intake.includes('"wellbeing"'));
-  assert.ok(freePage.indexOf("className={styles.contentGrid}") < freePage.indexOf("className={styles.details}"));
+  assert.match(freePage, /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
+  const landing = source("components", "free-entry-landing.tsx");
+  const detailed = landing.indexOf('data-optional-written-review');
+  const compact = landing.indexOf('<CompactLeadCapture');
+  assert.ok(detailed > 0 && compact > detailed);
+  assert.match(landing.slice(detailed, compact), /<FreeSituationReviewForm locale=\{locale\} \/>/);
 });
+

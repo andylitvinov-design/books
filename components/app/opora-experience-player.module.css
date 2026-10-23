@@ -516,3 +516,69 @@
 .meditationGuide li{padding-left:2px}
 .meditationGuide li::marker{color:#158b91;font-weight:800}
 @media(max-height:680px){.meditationGuide ol{font-size:12px;gap:2px;line-height:1.25}}
+
+/* One thought per step: four soft, day-specific orientation moments precede the
+   practice, and the three takeaways never compete with the self-report. */
+.why{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.story{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.options{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.settle{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.recapPractice{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.recapNext{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.recapFeedback{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.why .stage,.story .stage,.options .stage,.settle .stage,
+.recap .stage,.recapPractice .stage,.recapNext .stage,.recapFeedback .stage{
+  align-items:center;
+}
+.why .panel,.story .panel,.options .panel,.settle .panel,
+.recap .panel,.recapPractice .panel,.recapNext .panel,.recapFeedback .panel{
+  margin:auto;gap:clamp(9px,1.45vh,14px);padding:clamp(18px,4vw,26px);
+}
+.why .lead,.story .lead,.options .lead,.settle .lead{
+  font-size:clamp(17px,4.4vw,21px);line-height:1.46;
+}
+.gentleVariant{
+  margin:0;display:flex;align-items:center;min-height:60px;
+  padding:13px 15px;border-radius:16px;border:1.5px solid #a5d9d0;
+  background:rgba(246,255,249,.95);color:#285862;
+  font-size:clamp(16px,4vw,18px);font-weight:620;line-height:1.43;
+}
+.recap .summaryItem,.recapPractice .summaryItem,.recapNext .summaryItem{
+  padding:14px 15px;gap:12px;align-items:center;
+}
+.recap .summaryItem strong,.recapPractice .summaryItem strong,.recapNext .summaryItem strong{
+  font-size:clamp(17px,4.3vw,19px);line-height:1.33;
+}
+.recap .summaryItem small,.recapPractice .summaryItem small,.recapNext .summaryItem small{
+  font-size:clamp(15px,3.75vw,17px);line-height:1.43;
+}
+.recapFeedback .confidenceChoices{gap:8px}
+.recapFeedback .confidenceChoices button{min-height:49px}
+/* The optional meditation stays available but does not crowd the main
+   instruction or require scrolling to see the practice response buttons. */
+.optionalMeditation{
+  width:100%;min-width:0;border:1px solid rgba(132,191,190,.75);
+  border-radius:15px;background:rgba(248,255,252,.88);
+}
+.optionalMeditation summary{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 12px;min-height:44px;cursor:pointer;list-style:none;
+  font-size:clamp(13px,3.55vw,15px);line-height:1.32;
+  font-weight:700;color:#23606b;
+}
+.optionalMeditation summary::-webkit-details-marker{display:none}
+.optionalMeditation summary svg{flex:none;transition:transform .2s ease}
+.optionalMeditation[open] summary svg{transform:rotate(180deg)}
+.optionalMeditation summary:focus-visible{outline:3px solid #096d89;outline-offset:3px}
+.optionalMeditation .inlinePracticeAudio{padding:0 12px 12px;display:grid;gap:8px;margin:0}
+@media(max-width:370px),(max-height:680px){
+  .why .panel,.story .panel,.options .panel,.settle .panel,
+  .recap .panel,.recapPractice .panel,.recapNext .panel,.recapFeedback .panel{
+    padding:14px 15px;gap:8px;
+  }
+  .gentleVariant{min-height:50px;padding:10px 12px;font-size:15px}
+  .recap .summaryItem,.recapPractice .summaryItem,.recapNext .summaryItem{padding:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .optionalMeditation summary svg{transition:none}
+}

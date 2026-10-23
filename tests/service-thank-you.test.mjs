@@ -51,7 +51,17 @@ test('video is draft-only until explicit checked publication, with no default au
   assert.throws(()=>prepareVideoChange(draft,{
     slot:'thank-you',locale:'ru',intent:'publish',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',reviewed:false,
   }))
-  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideos/)
+  const published=prepareVideoChange(draft,{
+    slot:'thank-you',locale:'ru',intent:'publish',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',reviewed:true,
+  })
+  assert.equal(toPublishedSiteVideo(published)?.youtubeId,'OkLEN8Zb-sY')
+  const hidden=prepareVideoChange(published,{slot:'thank-you',locale:'ru',intent:'hide'})
+  assert.equal(toPublishedSiteVideo(hidden),undefined)
+  const page=source('app/[locale]/thank-you/page.tsx')
+  assert.match(page,/import \{ getPublishedSiteVideo \} from "@\/lib\/site-videos\/public"/)
+  assert.match(page,/const video = await getPublishedSiteVideo\("thank-you:" \+ locale\)/)
+  assert.match(page,/video=\{video \?\? null\}/)
+  assert.doesNotMatch(page,/getSiteVideoStore|getPublishedSiteVideos|\.draft|driveUrl/)
   assert.match(source('components/site-video-manager.tsx'),/\["about-intro", "thank-you"\]\.includes\(item\.id\)/)
   assert.match(source('components/service-enquiry-thank-you.tsx'),/\{video && \(/)
 })

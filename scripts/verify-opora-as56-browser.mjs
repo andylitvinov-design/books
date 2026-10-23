@@ -16,13 +16,13 @@ const fixture = await buildOporaBrowserFixture()
 const evidence = { scope: 'ACTUAL_HYDRATED_AS56_PLAYER_SYNTHETIC_DAY5_REAL_CSS_NO_AUTH_NO_API',
   engine: engineName, sourceProof: fixture.sourceProof, cases: [] }
 const words = {
-  ru: { next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
+  ru: { save: 'Сохранить мою практику', next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
     original: 'Показать мягкую подсказку', pause: 'Пауза', neutral: 'Вернуться с нейтральной опорой',
     back: 'Вернуться', end: 'Закончить без сохранения', anchor: 'Если хочется, посмотрите на один обычный предмет вокруг.' },
-  es: { next: 'Continuar', previous: 'Atrás', help: 'Ver una pista suave',
+  es: { save: 'Guardar mi práctica', next: 'Continuar', previous: 'Atrás', help: 'Ver una pista suave',
     original: 'Ver una pista suave', pause: 'Pausa', neutral: 'Volver con una referencia neutra',
     back: 'Volver', end: 'Salir sin guardar', anchor: 'Si quieres, mira un objeto neutro a tu alrededor.' },
-  en: { next: 'Continue', previous: 'Back', help: 'Show gentle guidance',
+  en: { save: 'Save my practice', next: 'Continue', previous: 'Back', help: 'Show gentle guidance',
     original: 'Show gentle guidance', pause: 'Pause', neutral: 'Return with a neutral anchor',
     back: 'Go back', end: 'End without saving', anchor: 'If you wish, look at one ordinary object around you.' },
 }
@@ -35,8 +35,8 @@ const owlPath = '/images/holistic-house/gentle-owl.svg'
 assets.set(owlPath,await readFile(new URL('../public/images/holistic-house/gentle-owl.svg',import.meta.url)))
 const browser = await (engineName === 'webkit' ? webkit : chromium).launch()
 try {
-  for (const locale of ['ru', 'en', 'es']) for (const width of [320, 360, 390]) for (const priorHelp of [false, true]) {
-    const context = await browser.newContext({ viewport: { width, height: 844 }, serviceWorkers: 'block' })
+  for (const locale of ['ru', 'en', 'es']) for (const width of [320, 360, 390, 430]) for (const priorHelp of [false, true]) {
+    const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
     const t = words[locale], brief = oporaExperienceGuide(5, locale)
@@ -68,9 +68,13 @@ try {
         }),
         stage: (() => { const node = document.querySelector('[data-opora-experience-first] main');
           return { client: node.clientWidth, scroll: node.scrollWidth } })(),
+        panel: (() => { const node = document.querySelector('[data-opora-current-screen]');
+          return node ? { client: node.clientHeight, scroll: node.scrollHeight } : null })(),
       }))
       assert.ok(bounds.document <= width + 1, `${locale}/${width}/${state}: document overflows`)
       assert.ok(bounds.stage.scroll <= bounds.stage.client + 1, `${locale}/${width}/${state}: stage overflows horizontally`)
+      if (['why','story','options','settle'].includes(state) && bounds.panel)
+        assert.ok(bounds.panel.scroll <= bounds.panel.client + 2, `${locale}/${width}/${state}: teaching step requires vertical scrolling`)
       for (const r of bounds.fixed) assert.ok(r.left >= -1 && r.right <= width + 1 && r.top >= -1 && r.bottom <= bounds.height + 1,
         `${locale}/${width}/${state}: header/footer clipped`)
       await expect(button(t.pause)).toBeVisible()
@@ -97,7 +101,15 @@ try {
       await expect(page.locator('[aria-pressed]')).toHaveCount(0)
       await assertBounds('support')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-support.png` })
+      // Explore every short educational screen before the real exercise.
+      // Keep checks realistic in WebKit and at 320px without accidental writes.
+      for(const moment of ['why','story','options','settle']){
+        await click(t.next)
+        await expect(page.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+        await assertBounds(moment)
+      }
       await click(t.next)
+      await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
       assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
       assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)
@@ -139,6 +151,50 @@ try {
       await click(t.pause); await click(t.neutral)
       await assertNeutral()
       await click(t.pause); await click(t.end)
+      // The photographed owner complaint was the crowded recap, not only the
+      // introduction. Validate all four separate closing cards in each locale
+      // and iPhone width, without clicking Save or contacting a live account.
+      if (!priorHelp) {
+        const recapPage = await context.newPage()
+        try {
+          await recapPage.goto(origin + oporaFixturePath(locale))
+          let found = false
+          for (let index = 0; index < 24; index++) {
+            const active = await recapPage.locator('[data-opora-current-screen]')
+              .getAttribute('data-opora-current-screen')
+            if (active === 'recap') { found = true; break }
+            await recapPage.getByRole('button', { name: t.next, exact: true }).click()
+          }
+          assert.ok(found, locale + '/' + width + ': recap must be reachable')
+          for (const moment of ['recap', 'recapPractice', 'recapNext', 'recapFeedback']) {
+            await expect(recapPage.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+            const size = await recapPage.evaluate(() => {
+              const panel = document.querySelector('[data-opora-current-screen]')
+              const main = panel?.closest('main')
+              return { panelClient:panel.clientHeight, panelScroll:panel.scrollHeight,
+                mainClient:main.clientHeight, mainScroll:main.scrollHeight,
+                screenWidth:document.documentElement.scrollWidth }
+            })
+            assert.ok(size.panelScroll <= size.panelClient + 2,
+              locale + '/' + width + '/' + moment + ': recap panel must not scroll')
+            assert.ok(size.mainScroll <= size.mainClient + 2,
+              locale + '/' + width + '/' + moment + ': recap stage must fit screen')
+            assert.ok(size.screenWidth <= width + 1,
+              locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
+            if (moment !== 'recapFeedback') {
+              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
+                'Each takeaway has exactly one visible idea')
+              await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
+              await recapPage.getByRole('button', { name: t.next, exact: true }).click()
+            } else {
+              await expect(recapPage.getByRole('button',{ name:t.save, exact:true })).toBeVisible()
+              await recapPage.screenshot({ path: `${output}/${locale}-${width}-recapFeedback.png` })
+            }
+          }
+          const recapSaves = await recapPage.evaluate(() => window.__oporaBrowser?.saves)
+          assert.equal(recapSaves,0,'Viewing recap cannot write a private practice')
+        } finally { await recapPage.close() }
+      }
       const state = await page.evaluate(() => ({ ...window.__oporaBrowser,
         finalData: JSON.stringify(window.__oporaBrowserData) }))
       assert.equal(state.saves, 0, 'No callback may record an accidental save')
@@ -154,9 +210,10 @@ try {
       throw error
     } finally { await context.close() }
   }
-  assert.equal(evidence.cases.length, 18)
+  assert.equal(evidence.cases.length, 24)
   console.log(JSON.stringify(evidence, null, 2))
 } finally {
   await writeFile(`${output}/summary.json`, JSON.stringify(evidence, null, 2) + '\n')
   await browser.close()
 }
+

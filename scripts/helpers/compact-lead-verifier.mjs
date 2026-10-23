@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 // Browser-only fixture: intercept before the user action, never write a lead.
-export async function assertCompactLeadRequest(page, capture, expect, { locale, serviceTitle }) {
+export async function assertCompactLeadRequest(page, capture, expect, { locale, serviceTitle, afterConsentCheck }) {
   const sourcePath = new URL(page.url()).pathname
   const referenceCode = 'HH-CA5016DE79E4'
   const email = 'qa-compact@example.test'
@@ -76,6 +76,7 @@ export async function assertCompactLeadRequest(page, capture, expect, { locale, 
     } finally {
       await originalConsent.dispose().catch(() => {})
     }
+    if (afterConsentCheck) await afterConsentCheck(consent)
     await expect(submit).toBeEnabled()
     await submit.click()
     await expect(capture.locator('[data-lead-saved][role="status"]')).toContainText(referenceCode)

@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { parse } from 'postcss'
+import { runInNewContext } from 'node:vm'
+import ts from 'typescript'
 import {
   classifyDiscoveryIntent, DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery,
   normalizeDiscoveryInput, serviceMatchesDiscoveryFacets,
@@ -201,11 +203,10 @@ test('Explore by area is compact on mobile without removing category selection o
 
 
 test('service match results use full-width orderable cards with accessible details and real contact handoff',async()=>{
-  const [ui,css,en,es,matcher]=await Promise.all([
+  const [ui,css,directory,matcher]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
-    readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
-    readFile(new URL('../app/es/services/page.tsx',import.meta.url),'utf8'),
+    readFile(new URL('../components/services-directory-page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../lib/whatsapp-enquiry.js',import.meta.url),'utf8'),
   ])
   for(const key of ['resultTitle:"Your options"','resultTitle:"Ваши варианты"','resultTitle:"Tus opciones"']) assert.ok(ui.includes(key))
@@ -261,10 +262,16 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(css.includes('.editorialChannels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'))
   assert.ok(css.includes('.editorialCard{grid-template-columns:minmax(0,1fr) 111px;'))
   assert.ok(css.includes('.editorialCard :is(button,a):focus-visible'))
-  assert.ok(en.includes('href:\`/\${locale}/services/systemic-constellations\`'))
-  assert.ok(en.includes('free:offer.id === "situation" || offer.id === "dao"'))
-  assert.ok(es.includes('details:detail,href,areaKey:areas[id]'))
-  assert.ok(en.includes('€50 / 30 min · €100 / 60 min'))
+  await assertDirectoryEditorial(directory)
+  for (const [before,after] of [
+    ['/services/systemic-constellations','/services/wrong'],
+    ['editorialOffers={editorialOffers}', 'editorialOffers={[]}'],
+    ['free: offer.id === "situation" || offer.id === "dao"', 'free: false'],
+    ['€50 / 30 min · €100 / 60 min', '€0'],
+  ]) {
+    assert.ok(directory.includes(before), before)
+    await assert.rejects(assertDirectoryEditorial(directory.replace(before,after)))
+  }
 })
 
 test('a relationship query such as Love shows relevant orderable services first, without unrelated free cards',()=>{
@@ -388,3 +395,52 @@ test('mobile service filters stay on one row; format and page language have visi
   assert.match(css,/\.quickFacets\{gap:5px;margin:10px 0 7px\}/);
   assert.doesNotMatch(css,/\.quickFacets\{grid-template-columns:repeat\(2,/);
 });
+
+
+// Evaluate actual directory JSX with an empty synthetic repository. No application
+// configuration, network, database module or environment is imported by this fixture.
+async function assertDirectoryEditorial(source) {
+  const jsx = (type,props) => typeof type === 'function' ? type(props || {}) : {type,props:props || {}}
+  const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree,...nodes(tree.props.children)]
+  const compile = (input, modules) => {
+    const exports = {}
+    runInNewContext(ts.transpileModule(input, {compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS}}).outputText, {
+      exports, process:{env:{}}, require: name => {assert.ok(Object.hasOwn(modules,name),name);return modules[name]},
+    })
+    return exports
+  }
+  const offers = compile(await readFile(new URL('../data/core-service-offers.ts',import.meta.url),'utf8'),{})
+  let repositoryCalls = 0
+  const {ServicesDirectoryPage} = compile(source, {
+    'react/jsx-runtime':{jsx,jsxs:jsx},
+    'next/link':{default:props=>jsx('a',props)},
+    'lucide-react':{ArrowLeft:()=>null,ArrowRight:()=>null},
+    '@/components/public-site-header':{PublicSiteHeader:()=>null},
+    '@/components/services-smart-discovery':{ServicesSmartDiscovery:props=>jsx('discovery',props)},
+    '@/components/master-network-explorer':{MarketplaceServiceFinder:()=>null},
+    '@/data/core-service-offers':offers,
+    '@/lib/app/config':{getAppConfig:()=>({synthetic:true})},
+    '@/lib/practitioners/repository':{createPractitionerRepository:config=>{
+      assert.equal(config.synthetic,true)
+      return {listPublicServices:async locale=>{assert.ok(['en','ru','es'].includes(locale));repositoryCalls++;return []}}
+    }},
+    './services-directory-page.module.css':{default:{}},
+  })
+  for(const locale of ['en','ru','es']) {
+    const tree=await ServicesDirectoryPage({locale})
+    const discovery=nodes(tree).filter(node=>node.type==='discovery')
+    assert.equal(discovery.length,1)
+    const rows=discovery[0].props.editorialOffers
+    assert.deepEqual(Array.from(rows,row=>row.id),['situation','dao','alchemy','hypnotherapy','business','constellations','remote-energy-support'])
+    assert.equal(discovery[0].props.locale,locale)
+    assert.equal(discovery[0].props.aiAvailable,false)
+    const routes=['free-situation-review','dao-health-profile','alchemy-of-soul','hypnotherapy-course','business-consulting','systemic-constellations','remote-energy-support']
+    rows.forEach((row,index)=>{
+      assert.equal(row.href,'/'+locale+'/services/'+routes[index])
+      assert.equal(row.free,index<2)
+      assert.equal(row.price,index<2 || index===6 ? undefined : '€50 / 30 min · €100 / 60 min')
+      assert.ok(row.title && row.details && row.label)
+    })
+  }
+  assert.equal(repositoryCalls,3)
+}

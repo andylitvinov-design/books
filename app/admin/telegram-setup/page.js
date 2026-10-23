@@ -45,7 +45,8 @@ const resultNotes={
   identity_mismatch:{ru:'Имя бота или владельца чата не совпадает. Отправка заблокирована.',en:'Bot or private owner chat mismatch. Sending blocked.'},
   sender_disabled:{ru:'Отправка выключена на сервере.',en:'Server delivery switch is off.'},
   setup_unavailable:{ru:'Сервис проверки временно недоступен.',en:'Connection verification temporarily unavailable.'},
-  council_sent:{ru:'AI-отчёт принят Telegram. Проверь чат Dot.',en:'AI report accepted by Telegram. Check Dot.'},
+  council_sent:{ru:'Отчёт Holistic House принят Telegram. Реальные статусы Gemini и Mistral указаны внутри файла.',en:'Holistic House report accepted by Telegram. Genuine Gemini and Mistral statuses are in the file.'},
+  council_partial:{ru:'Один отчёт Telegram принял, но восстановление другой даты не подтверждено. Повтор возможен без дубля принятого дня.',en:'Telegram accepted one report; recovery of another date is still unconfirmed. Accepted days will not be duplicated.'},
   council_duplicate:{ru:'Этот отчёт уже отправлен или выполняется. Без дубля.',en:'Already sent or running. No duplicate.'},
   council_missing_keys:{ru:'Подтверди Gemini Free Tier и подключи бесплатный Mistral (OpenRouter или Studio Free mode).',en:'Confirm Gemini Free Tier and connect Mistral via OpenRouter free or Studio Free mode.'},
   council_no_archive:{ru:'Публичный HTML-аудит ещё не создан.',en:'Public HTML audit not archived yet.'},
@@ -67,6 +68,7 @@ export default async function TelegramSetupPage({searchParams}){
   const lang=ru?'ru':'en'
   let provider={geminiKeyPresent:models.geminiKeyPresent,
     geminiFreeConfirmed:models.geminiFreeConfirmed,
+    geminiModelProbeStatus:'not_checked',
     mistralStudioKeyPresent:models.mistralDirectKeyPresent,
     mistralFreeConfirmed:models.mistralDirectFreeConfirmed,
     mistralStudioProbeStatus:'not_checked',
@@ -177,6 +179,21 @@ export default async function TelegramSetupPage({searchParams}){
                 ?ru?'Ключ сохранён; требуется подтверждение Free Tier':'Key saved; Free Tier confirmation required'
                 :ru?'API-ключ не подключён':'API key missing'
           }</strong></p>
+          {provider.geminiKeyPresent&&provider.geminiFreeConfirmed&&
+            <p className={provider.geminiModelProbeStatus==='ready'
+              ?styles.footnote:styles.warning} role="status">
+              {provider.geminiModelProbeStatus==='ready'
+                ?ru?'Gemini API: модель доступна по GET без генерации. Реальный ответ пока не проверен.':
+                  'Gemini API: model metadata confirmed by GET, with no inference. A real response is not yet verified.'
+                :provider.geminiModelProbeStatus==='unauthorized'
+                  ?ru?'Gemini API отклонил ключ (401/403). Проверь ключ Free Tier проекта.':
+                    'Gemini API rejected the key (401/403). Check the Free Tier project key.'
+                  :provider.geminiModelProbeStatus==='rate_limited'
+                    ?ru?'Gemini API ограничил запросы (429); генерация не запускалась.':
+                      'Gemini API rate-limited metadata (429); no generation was attempted.'
+                    :ru?'Gemini API: доступность модели пока не подтверждена. Платные запросы не запускаются.':
+                      'Gemini API: model access is not confirmed yet. No paid inference is attempted.'}
+            </p>}
           <p>Mistral · OpenRouter: <strong>{
             provider.mistralOpenRouterKeyPresent
               ?ru?'Ключ сохранён; модель :free и цена проверяются при запуске':

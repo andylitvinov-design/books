@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import * as navigationModel from '../lib/site-navigation-model.js';
+import * as serviceCart from '../lib/commerce/cart.js';
 import * as uiLocale from '../lib/ui-locale.js';
 import { isSupportedLocale, getHomeopathyLocaleParams } from '../data/remedies.js';
 
@@ -32,8 +33,16 @@ function load(path, imports, transform = value => value) {
 const discoveryTabs=load('components/discovery-section-tabs.tsx',{...common,'./discovery-section-tabs.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}});
 common['@/components/discovery-section-tabs']=discoveryTabs;
 const publicLocales = load('lib/public-locales.ts', {});
+const { CartNavLink } = load('components/commerce/cart-nav-link.tsx', {
+  ...common, '@/lib/commerce/cart': serviceCart,
+  './cart-nav-link.module.css': {default:{navCart:'cart-nav-link'}},
+});
 const { SiteNavigation } = load('components/site-navigation.tsx', {
   ...common, 'next/navigation': { usePathname: () => canonical },
+  '@/components/commerce/cart-nav-link': {CartNavLink},
+  '@/components/site-search': { SiteSearch: () => null },
+  './home-personal-space': { HomePersonalSpaceNavEntry() { assert.fail('Course catalog is not Home; must use direct Cabinet link'); } },
+  './compact-navigation-icons': {compactNavigationIcons:Object.fromEntries(navigationModel.compactNavigationIds.map(id=>[id,()=>null]))},
   '@/lib/ui-locale': uiLocale, '@/lib/public-locales': publicLocales,
   '@/lib/site-navigation-model': navigationModel,
   './use-navigation-locale': { useNavigationLocale: locale => locale },
@@ -51,6 +60,10 @@ const { PublicGrowthCourses } = load('components/public-growth-courses.tsx', {
 });
 const { MobileBottomNavigation } = load('components/mobile-bottom-navigation.tsx', {
   ...common, 'next/navigation': { usePathname: () => canonical },
+  '@/components/commerce/cart-nav-link': {CartNavLink},
+  '@/components/site-search': { SiteSearch: () => null },
+  './home-personal-space': { HomePersonalSpaceNavEntry() { assert.fail('Course catalog is not Home; must use direct Cabinet link'); } },
+  './compact-navigation-icons': {compactNavigationIcons:Object.fromEntries(navigationModel.compactNavigationIds.map(id=>[id,()=>null]))},
   '@/lib/site-navigation-model': navigationModel, './use-navigation-locale': { useNavigationLocale: () => 'es' },
 });
 function matches(node, selector) {
@@ -86,7 +99,7 @@ function visibleNodes(tree, width) {
     if (!node || typeof node !== 'object') return;
     const classes = String(node.props.className || '').split(' ');
     const compactDirect = width <= 1140 && parent?.props.className === 'site-navigation'
-      && node.type === 'a' && !classes.includes('site-library-entry');
+      && node.type === 'a' && !classes.includes('site-cabinet-entry');
     hidden ||= Boolean(node.props.hidden) || node.props['aria-hidden'] === 'true' || compactDirect;
     if (!hidden) visible.add(node);
     const children = [node.props.children].flat(Infinity);
@@ -95,7 +108,7 @@ function visibleNodes(tree, width) {
   visit(tree);
   return visible;
 }
-async function scenario(fault, { width = 1365, verifier = helper } = {}) {
+async function scenario(fault, { width = 1365, verifier = helper, extraEnrollment = false } = {}) {
   const catalog = PublicGrowthCourses({ locale: 'es' });
   const bottom = MobileBottomNavigation({ initialLocale: 'es' });
   const metadata = jsx('link', { rel: 'canonical', href: 'https://holistichouse.vercel.app' + canonical });
@@ -110,6 +123,7 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
   const hero = one('section[aria-labelledby="courses-title"]');
   const heroStart = nodes(hero).find(node => node.type === 'a' && text(node) === 'Empezar gratis');
   const freeStart = one('.site-navigation > a.site-nav-free-entry');
+  if (extraEnrollment) catalog.props.children.push({...heroStart});
   if (fault === 'wrong enrollment') heroStart.props.href = '/es/app/course?program=confidence';
   if (fault === 'missing hero') delete hero.props['aria-labelledby'];
   if (fault === 'duplicate hero') catalog.props.children.push({ ...hero });
@@ -133,7 +147,7 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
   if (fault === 'missing course cabinet') delete one('[data-course-cabinet]').props['data-course-cabinet'];
   if (fault === 'missing skill') one('[data-opora-stress-seven-skills] ol').props.children.pop();
   if (fault === 'missing daily plan') delete one('[data-opora-14-day-public-plan]').props['data-opora-14-day-public-plan'];
-  if (fault === 'wrong active') one('[data-nav-item="academy"]').props['aria-current'] = undefined;
+  if (fault === 'wrong active') one('[data-nav-item="energy"]').props['aria-current'] = 'page';
   if (fault === 'duplicate active') one('[data-nav-item="tests"]').props['aria-current'] = 'page';
   const visible = visibleNodes(tree, width);
   if (fault === 'wrong free-start visibility') {
@@ -163,24 +177,24 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
   assert.ok(enrollment.every(node => node.props.prefetch === false), 'The public catalog must not prefetch private enrollment');
   if (!fault) {
     const starts = nodes(catalog).filter(node => node.type === 'a' && text(node) === 'Empezar gratis');
-    assert.equal(starts.length, 3, 'Real JSX includes the direct header, closed site menu and course hero actions');
-    assert.equal(starts.filter(node => visible.has(node)).length, width > 1140 ? 2 : 1, 'Reproduce desktop collision and compact navigation visibility');
+    assert.equal(starts.length, extraEnrollment ? 2 : 1, 'Only the course hero uses the enrollment label; header offers a written review');
+    assert.equal(starts.filter(node => visible.has(node)).length, extraEnrollment ? 2 : 1);
   }
 }
 for (const width of [390, 1365]) {
   test(width + 'px actual Spanish catalog and header JSX satisfy separately scoped free-start and enrollment contracts', () => scenario(undefined, { width }));
 }
-test('real header fixture exposes the old whole-catalog selector failure on desktop', async () => {
+test('hero scoping survives an unrelated same-label enrollment link', async () => {
   const unscoped = helper.replace("const start = hero.getByRole(", "const start = catalog.getByRole(");
   assert.notEqual(unscoped, helper);
-  await assert.rejects(scenario(undefined, { width: 1365, verifier: unscoped }));
-  await scenario(undefined, { width: 390, verifier: unscoped });
+  await scenario(undefined, { width: 1365, extraEnrollment: true });
+  await assert.rejects(scenario(undefined, { width: 1365, verifier: unscoped, extraEnrollment: true }));
 });
 test('desktop free-start verifier rejects a wrong accessible name', () => assert.rejects(scenario('wrong free-start accessible name')));
 test('fixture compact-header breakpoint agrees with actual source CSS', () => {
   const css = read('app/holistic-house-home.css');
   assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.house-header--services \.site-navigation > a \{ display: none; \}/);
-  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-library-entry\) \{ display: none; \}/);
+  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-cabinet-entry\) \{ display: none; \}/);
 });
 for (const width of [390, 1365]) for (const fault of ['missing hero', 'duplicate hero', 'missing hero action', 'duplicate hero action', 'hidden hero action', 'wrong free-start destination', 'wrong free-start label', 'wrong free-start visibility', 'missing free-start action', 'duplicate free-start action', 'swapped free-start and enrollment', 'wrong canonical', 'duplicate canonical', 'missing catalog', 'duplicate catalog', 'wrong language', 'wrong heading', 'wrong enrollment', 'missing programme', 'extra programme', 'wrong stress label', 'missing programme enrollment', 'wrong detail route', 'missing detail action', 'wrong methodology', 'missing course cabinet', 'missing skill', 'missing daily plan', 'wrong active', 'duplicate active', 'legacy URL', 'hidden heading', 'redirect response', 'wrong response URL']) {
   test(width + 'px actual Spanish catalog verifier rejects ' + fault, () => assert.rejects(scenario(fault, { width })));
@@ -205,7 +219,7 @@ test('Spanish audit checks both redirect and direct canonical catalog without in
   assert.match(source, /new URL\(href\)\.pathname === '\/es\/courses'/);
   assert.match(source, /assert\.deepEqual\(unselectedClientRequests,\[\]/);
   assert.match(source, /assert\.deepEqual\(errors,\[\]/);
-  assert.match(read('app/[locale]/academy/[[...slug]]/page.tsx'), /if \(key === "free-ai-courses"\) return <PublicGrowthCourses locale=\{locale\} \/>/);
+  assert.match(read('app/[locale]/academy/[[...slug]]/page.tsx'), /if \(key === "free-ai-courses"\) return <><PublicGrowthCourses locale=\{locale\} \/><PublicPractitionerCourses locale=\{locale\} \/><\/>/);
 });
 
 test('actual Spanish request observer blocks speculative EN/RU discovery roots and tests, but not explicit ES navigation', () => {
@@ -243,3 +257,4 @@ test('actual sitemap assertions require the canonical origin and exact course UR
     [...correct, 'https://holistichouse.vercel.app/es/courses'],
   ]) assert.throws(() => check(sitemap(bad), routes, assert, URL));
 });
+

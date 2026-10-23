@@ -14,11 +14,12 @@ const release = read('scripts/verify-release-reaudit.mjs');
 const directHelper = ia.slice(ia.indexOf('async function verifyDirectNavigation('), ia.indexOf('async function verifySiteMenu('));
 const helper = ia.slice(ia.indexOf('async function verifySiteMenu('), ia.indexOf('async function verifyPublicHeaderMatrix('));
 const origin = 'https://example.test';
+const directChildren = tree => Array.isArray(tree) ? tree.flatMap(directChildren) : tree && typeof tree === 'object' && tree.type === undefined ? directChildren(tree.props.children) : tree ? [tree] : [];
 const treeNodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(treeNodes) : [tree, ...treeNodes(tree.props.children)];
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
 const link = props => jsx('a', props);
-function loadComponent(path, modules) {
-  const compiled = ts.transpileModule(read(path), { fileName: path, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+function loadComponent(path, modules, source = read(path)) {
+  const compiled = ts.transpileModule(source, { fileName: path, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
   runInNewContext(compiled, { exports, require: name => {
     assert.ok(Object.hasOwn(modules, name), 'Known component dependency: ' + name);
@@ -36,6 +37,41 @@ const { CartNavLink } = loadComponent('components/commerce/cart-nav-link.tsx', {
   'lucide-react': { ShoppingBasket: () => null }, '@/lib/commerce/cart': serviceCart,
   './cart-nav-link.module.css': { default: { navCart: 'cart-nav-link' } },
 });
+let spaceOpen = false;
+function loadSpaceEntry(source = read('components/home-personal-space.tsx')) {
+  return loadComponent('components/home-personal-space.tsx', {
+  ...common,
+  'next/image': {default: props => jsx('img', props)},
+  'lucide-react': Object.fromEntries(['ArrowRight','BookOpen','BriefcaseBusiness','ChevronDown','ClipboardList','FileText','LockKeyhole','Sparkles','Target','UserRound','X'].map(key => [key, () => null])),
+  react: { createContext: () => ({}), useContext: () => ({open: spaceOpen, openPanel: () => {spaceOpen = true;}}) },
+  '@/lib/app/client-fetch': {appFetch: () => assert.fail('No application fetch in navigation fixture')},
+  '@/lib/home-personal-space.mjs': {homeSpaceSummary: () => assert.fail('No private summary in navigation fixture')},
+  './home-personal-space.module.css': {default: {}},
+  }, source).HomePersonalSpaceNavEntry;
+}
+const HomePersonalSpaceNavEntry = loadSpaceEntry();
+function assertSpaceEntry(Entry, locale) {
+  spaceOpen = false;
+  const entry = Entry({locale, href: '/' + (locale === 'es' ? 'en' : locale) + '/app'});
+  assert.equal(entry.type, 'button');
+  assert.equal(entry.props.href, undefined);
+  assert.equal(entry.props['aria-haspopup'], 'dialog');
+  assert.equal(entry.props['aria-controls'], 'home-personal-space-dialog');
+  assert.equal(entry.props['aria-expanded'], false);
+  assert.equal(entry.props['aria-label'], {en:'My Space', ru:'Моё пространство', es:'Mi espacio'}[locale]);
+  entry.props.onClick();
+  assert.equal(spaceOpen, true, 'Actual My Space callback opens its provider');
+  assert.equal(Entry({locale}).props['aria-expanded'], true);
+}
+for (const locale of ['en','ru','es']) {
+  test(locale + ' real My Space entry opens its dialog context without navigating', () => assertSpaceEntry(HomePersonalSpaceNavEntry, locale));
+}
+test('My Space entry rejects a disconnected actual open callback', () => {
+  const source = read('components/home-personal-space.tsx');
+  const mutant = source.replace('onClick={space.openPanel}', 'onClick={() => {}}');
+  assert.notEqual(mutant, source);
+  assert.throws(() => assertSpaceEntry(loadSpaceEntry(mutant), 'en'), /opens its provider/);
+});
 let pathname = '/';
 const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   ...common,
@@ -45,8 +81,10 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
   '@/components/commerce/cart-nav-link': { CartNavLink },
+  '@/components/site-search': { SiteSearch: () => null },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
+  './home-personal-space': { HomePersonalSpaceNavEntry },
 });
 const { AcquisitionEventLink } = loadComponent('components/acquisition-event-link.tsx', { ...common, '@/data/local-acquisition': acquisition });
 const { coreServiceOffers } = loadComponent('data/core-service-offers.ts', {});
@@ -61,9 +99,37 @@ const { ServicesSolutions } = loadComponent('components/services-solutions.tsx',
   '@/data/service-video-library': { getServiceVideoWatchUrl: (id, locale) => '/' + locale + '/services/video/' + id },
   './services-solutions.module.css': { default: {} },
 });
+let expandedHome = false;
+async function loadHomeDisclosure(source = read('components/home-more-disclosure.tsx')) {
+  const pending = [];
+  const exports = loadComponent('components/home-more-disclosure.tsx', {
+    ...common, react: { useState: () => [expandedHome, value => { expandedHome = value; }] },
+    './services-solutions': { ServicesSolutions },
+    './homepage-topic-journeys': { HomepageTopicJourneys: () => null },
+    './sitewide-antistress-banner': { TestSelectionCourseBanner: () => null },
+    './home-explore-sections': { HomeExploreSections: () => null },
+    'next/dynamic': { default: loader => {
+      let component;
+      // Execute the transpiled import and its real .then export selection.
+      pending.push(loader().then(value => {
+        assert.equal(typeof value, 'function', 'Dynamic loader must select a known component export');
+        component = value;
+      }));
+      return props => {
+        assert.equal(typeof component, 'function', 'Await dynamic imports before rendering');
+        return component(props);
+      };
+    } },
+  }, source);
+  await Promise.all(pending);
+  return exports.HomeMoreDisclosure;
+}
+const HomeMoreDisclosure = await loadHomeDisclosure();
 const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx', {
   ...common, '@/data/local-acquisition': acquisition,
+  '@/components/home-more-disclosure': {HomeMoreDisclosure},
   '@/components/site-navigation': { SiteNavigation },
+  '@/components/home-personal-space': { HomePersonalSpaceProvider: ({children}) => children, HomePersonalSpaceCard: () => null },
   '@/components/services-solutions': { ServicesSolutions },
   '@/components/acquisition-event-link': { AcquisitionEventLink },
   ...Object.fromEntries([
@@ -77,8 +143,38 @@ const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx'
   ].map(([path, name]) => ['@/components/' + path, { [name]: () => null }])),
 });
 
+function expandedHomeTree(props) {
+  expandedHome = false;
+  const closed = HolisticHouseHome(props);
+  assert.equal(treeNodes(closed).filter(node=>node.props['data-core-service-offers']==='home').length,0);
+  const disclosure=treeNodes(closed).find(node=>node.props['data-home-more-deferred']==='true');
+  assert.ok(disclosure);
+  disclosure.props.onToggle({currentTarget:{open:true}});
+  return HolisticHouseHome(props);
+}
+
+test('deferred services reject a loader selecting a missing export', async () => {
+  const original = read('components/home-more-disclosure.tsx');
+  const mutant = original.replace('mod => mod.ServicesSolutions', 'mod => mod.MissingServicesSolutions');
+  assert.notEqual(mutant, original);
+  await assert.rejects(loadHomeDisclosure(mutant), /known component export/);
+});
+
+test('deferred services reject a disconnected native disclosure callback', async () => {
+  const original = read('components/home-more-disclosure.tsx');
+  const mutant = original.replace('setExpanded(event.currentTarget.open)', 'setExpanded(false)');
+  assert.notEqual(mutant, original);
+  const BrokenDisclosure = await loadHomeDisclosure(mutant);
+  expandedHome = false;
+  const closed = BrokenDisclosure({ locale: 'en' });
+  const disclosure = treeNodes(closed).find(node => node.props['data-home-more-deferred'] === 'true');
+  disclosure.props.onToggle({ currentTarget: { open: true } });
+  const opened = BrokenDisclosure({ locale: 'en' });
+  assert.throws(() => assert.equal(treeNodes(opened).filter(node => node.props['data-core-service-offers'] === 'home').length, 1));
+});
+
 test('CSP history clicks the unique body About CTA despite the real header duplicate', () => {
-  const tree = HolisticHouseHome({ locale: 'en' });
+  const tree = expandedHomeTree({ locale: 'en' });
   const allAbout = treeNodes(tree).filter(node => node.type === 'a' && node.props.href === '/en/about');
   assert.equal(allAbout.length, 3, 'actual JSX reproduces the formerly ambiguous selector');
   const section = treeNodes(tree).filter(node => node.props.className === 'service-home-about');
@@ -126,21 +222,21 @@ function assertPhotoServices(section, locale) {
   });
 }
 for (const locale of ['en', 'ru']) {
-  test(locale + ' homepage renders exact personal-session, free-review and self-check routes in owner-approved order', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
+  test(locale + ' homepage renders exact personal-session, free-review and self-check routes in owner-approved order', () => assertHomeRoutes(expandedHomeTree({ locale }), locale));
 }
 for (const locale of ['en', 'ru']) {
   test(locale + ' existing photo cards keep both free services and two personal-work options', () => assertPhotoServices(ServicesSolutions({ locale, variant: 'home' }), locale));
 }
 for (const action of ['free-written-review', 'free-tests', 'paid-sessions']) {
   test('homepage route contract rejects wrong ' + action + ' destination', () => {
-    const tree = HolisticHouseHome({ locale: 'en' });
+    const tree = expandedHomeTree({ locale: 'en' });
     treeNodes(tree).find(node => node.props['data-hero-cta'] === action).props.href = '/wrong';
     assert.throws(() => assertHomeRoutes(tree, 'en'));
   });
 }
 for (const fault of ['wrong paid label', 'missing primary consultation class', 'missing free target', 'wrong Wu Xing route']) {
   test('homepage contract rejects ' + fault, () => {
-    const tree = HolisticHouseHome({ locale: 'en' });
+    const tree = expandedHomeTree({ locale: 'en' });
     const nodes = treeNodes(tree);
     if (fault === 'wrong paid label') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.children[0] = 'Free call';
     if (fault === 'missing primary consultation class') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.className = 'service-home-paid-link';
@@ -203,8 +299,8 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
-  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/academy', '/' + locale + '/about'];
+  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
   const nodes = treeNodes(menuTree).filter(node => node.type === 'a');
@@ -254,7 +350,7 @@ async function menuScenario(locale, surface, fault) {
     async toBeFocused() { assert.equal(focused, actual); },
     async toHaveURL(expected) { assert.equal(actual, page); assert.equal(url, fault === 'wrong navigation' ? origin + '/wrong' : expected); },
   });
-  const verify = new Function('assert', 'expect', 'origin', helper + ';return verifySiteMenu;')(assert, expect, origin);
+  const verify = new Function('assert', 'expect', 'origin', 'getSiteNavigation', helper + ';return verifySiteMenu;')(assert, expect, origin, navigationModel.getSiteNavigation);
   const bounded = [];
   await verify(page, header, { locale, surface, label: 'synthetic', expectedMenu, inViewport: async control => {
     assert.notEqual(fault, 'out of bounds'); bounded.push(control);
@@ -263,23 +359,24 @@ async function menuScenario(locale, surface, fault) {
   assert.deepEqual(bounded, [trigger, ...links]);
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'services', 'library']) test(`${locale}/${surface} verifier uses actual JSX menu destinations and navigates`, () => menuScenario(locale, surface));
+  for (const surface of ['home', 'energy', 'love', 'business', 'library']) test(`${locale}/${surface} verifier uses actual JSX menu destinations and navigates`, () => menuScenario(locale, surface));
 }
 for (const fault of ['wrong destination', 'missing catalog destination', 'extra catalog destination', 'missing active state', 'duplicate active state', 'wrong active surface', 'duplicate destination', 'missing menu', 'cannot open', 'keyboard order', 'escape', 'focus return', 'overflow', 'out of bounds', 'route close', 'wrong navigation']) {
   test('site-menu verifier rejects ' + fault, () => assert.rejects(menuScenario('en', 'home', fault)));
 }
 
 async function directScenario(locale, surface, fault) {
-  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
+  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
-  const direct = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a');
+  const direct = Array.from(directChildren(tree.props.children)).filter(node => node?.type === 'a');
+  const controls = Array.from(directChildren(tree.props.children)).filter(node => node?.type === 'a' || node?.type === 'button');
   if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';
-  if (fault === 'wrong services route') direct[1].props.href = '/wrong';
-  if (fault === 'wrong About route') direct[2].props.href = '/wrong';
-  if (fault === 'wrong shop route') direct[4].props.href = '/wrong-shop';
-  if (fault === 'wrong cart route') direct[5].props.href = '/wrong-cart';
-  if (fault === 'wrong cabinet route') direct[3].props.href = '/' + locale + '/library';
-  if (fault === 'missing direct link') direct.splice(2, 1);
+  if (fault === 'wrong shop route') direct.find(node => node.props['data-nav-item'] === 'shop').props.href = '/wrong-shop';
+  if (fault === 'wrong cart route') direct.find(node => node.props['data-nav-item'] === 'cart').props.href = '/wrong-cart';
+  if (fault === 'wrong energy route') direct[1].props.href = '/wrong';
+  if (fault === 'wrong About route') direct[4].props.href = '/wrong';
+  if (fault === 'wrong cabinet route') direct[5].props.href = '/' + locale + '/library';
+  if (fault === 'missing direct link') direct.splice(4, 1);
   if (fault === 'extra direct link') direct.push({ type: 'a', props: { href: '/' + locale + '/library' } });
   if (fault === 'missing data id') delete direct[1].props['data-nav-item'];
   if (fault === 'missing active state') delete direct[1].props['aria-current'];
@@ -291,7 +388,7 @@ async function directScenario(locale, surface, fault) {
   if (fault === 'spurious library active state') direct[1].props['aria-current'] = 'page';
   const nav = { locator(selector) {
     const nodes = selector === ':scope > a' ? direct
-      : selector === ':scope > a[data-nav-item]' ? direct.filter(node => node.props['data-nav-item'])
+      : selector === ':scope > [data-nav-item]' ? controls.filter(node => node.props['data-nav-item'])
       : selector === ':scope > a[aria-current="page"]' ? direct.filter(node => node.props['aria-current'] === 'page')
       : assert.fail('Unexpected direct selector: ' + selector);
     return { nodes, evaluateAll: async callback => callback(nodes.map(node => ({ getAttribute: name => node.props[name] ?? null }))) };
@@ -304,10 +401,10 @@ async function directScenario(locale, surface, fault) {
   await verify(nav, { locale, surface, expected: navigationModel.getSiteNavigation(locale), label: 'synthetic' });
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'services', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
+  for (const surface of ['home', 'energy', 'love', 'business', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
 }
-for (const fault of ['wrong free review route', 'wrong services route', 'wrong About route', 'wrong cabinet route', 'wrong shop route', 'wrong cart route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
-  test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'services', fault)));
+for (const fault of ['wrong free review route', 'wrong energy route', 'wrong shop route', 'wrong cart route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
+  test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'energy', fault)));
 }
 
 test('library audit checks the menu active link while preserving exact six-slot bottom navigation', () => {
@@ -315,7 +412,8 @@ test('library audit checks the menu active link while preserving exact six-slot 
   assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
   assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/books'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(6\)/);
-  assert.match(ia, /const cabinetEntry = header\.locator\('a\.site-cabinet-entry'\)/);
+  assert.match(ia, /const cabinetEntry = header\.locator\('\.site-cabinet-entry'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(1\)/);
 });
+
 

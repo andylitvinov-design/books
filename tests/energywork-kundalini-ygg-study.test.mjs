@@ -20,13 +20,13 @@ test('Nine approved Kundalini questions and seven Yggdrasil questions preserve p
   assert.equal(ENERGYWORK_VERSION,'2026-10-20.p10')
   assert.equal(ENERGYWORK_P6_VERSION,'2026-10-19.p6')
   assert.equal(ENERGYWORK_P5_VERSION,'2026-10-19.p5')
-  assert.equal(energyworkSequence().length,60)
-  assert.deepEqual(energyworkLessonRanges().map(x=>x.count),[8,14,16,14,6])
+  assert.equal(energyworkSequence().length,63)
+  assert.deepEqual(energyworkLessonRanges().map(x=>x.count),[7,15,17,15,6])
   const kundalini = ["kun-study-v2-01","kun-study-v2-02","kun-study-v2-03","kun-study-v2-04","kun-study-v2-05","kun-study-v2-06","kun-study-v2-07","kun-study-v2-08","kun-study-v2-09"]
   assert.deepEqual(ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS,kundalini)
-  assert.deepEqual(ENERGYWORK_BRANCH.kundalini.slice(6,15),kundalini)
+  assert.deepEqual(ENERGYWORK_BRANCH.kundalini.slice(7,16),kundalini)
   assert.equal(ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS.length,7)
-  assert.deepEqual(ENERGYWORK_BRANCH.yggdrasil.slice(6,13),[...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS])
+  assert.deepEqual(ENERGYWORK_BRANCH.yggdrasil.slice(7,14),[...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS])
   for(const id of [...kundalini,...ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS]){
     assert.equal(ENERGYWORK_QUESTIONS[id],'text',id)
     assert.ok(ENERGYWORK_LESSON_ANSWER_IDS.includes(id),id)

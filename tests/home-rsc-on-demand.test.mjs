@@ -10,7 +10,12 @@ test("closed EN/RU/ES homepage details omit heavyweight catalogue markup from in
   const disclosure = read("components/home-more-disclosure.tsx");
   for (const page of [home, es]) {
     assert.match(page, /<HomeMoreDisclosure locale=/);
-    assert.doesNotMatch(page, /<ServicesSolutions |<HomeExploreSections |<HomepageTopicJourneys |<TestSelectionCourseBanner /);
+    assert.doesNotMatch(page, /<ServicesSolutions |<HomeExploreSections |<TestSelectionCourseBanner /);
+    // Functional Tests/Courses/Reports/Development and three direction gateways stay small and public.
+    assert.match(page, /<HomeFeaturedWorkspace locale=/);
+    assert.match(page, /<HomepageTopicJourneys locale=/);
+    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomepageTopicJourneys"));
+    assert.ok(page.indexOf('<HomepageTopicJourneys') < page.indexOf('<HomeMoreDisclosure'));
     assert.match(page, /<HomeConversationGuide/);
     assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFreeDiagnosisBanner"));
     assert.ok(page.indexOf("<HomeFreeDiagnosisBanner") < page.indexOf("<HomeConversationGuide"));
@@ -19,16 +24,16 @@ test("closed EN/RU/ES homepage details omit heavyweight catalogue markup from in
   assert.match(disclosure, /onToggle=\{event => setExpanded\(event\.currentTarget\.open\)\}/);
   assert.match(disclosure, /\{expanded \? \(locale === "es"/);
   for (const tag of [
-    "ServicesSolutions", "HomepageTopicJourneys", "TestSelectionCourseBanner", "HomeExploreSections",
+    "ServicesSolutions", "TestSelectionCourseBanner", "HomeExploreSections",
   ]) {
     assert.match(disclosure, new RegExp("dynamic\\(\\s*\\(\\) => import\\(\"\\./" + ({
       ServicesSolutions: "services-solutions",
-      HomepageTopicJourneys: "homepage-topic-journeys",
       TestSelectionCourseBanner: "sitewide-antistress-banner",
       HomeExploreSections: "home-explore-sections",
     })[tag] + "\"\\)"));
   }
   assert.match(disclosure, /ssr: false/);
+  assert.doesNotMatch(disclosure, /<HomepageTopicJourneys locale=/);
   assert.match(disclosure, /<noscript>/);
   for (const route of ["services", "client/tests", "academy"]) assert.ok(disclosure.includes(route), route);
   assert.doesNotMatch(disclosure, /fetch\(|sendBeacon|localStorage|dangerouslySetInnerHTML|\/api\/client/);

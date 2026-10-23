@@ -15,8 +15,8 @@ const browser = read('scripts/verify-reiki-all-slides-browser.mjs')
 test('all five Reiki lessons place music-assisted practice directly before the closing slide', () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges()
-  assert.equal(sequence.length, 60, 'the additional three redundant lesson-five screens are retired')
-  assert.deepEqual(ranges.map(({ count }) => count), [8, 14, 16, 14, 6])
+  assert.equal(sequence.length, 63, 'the duplicate first-lesson save screen is retired while original intros stay')
+  assert.deepEqual(ranges.map(({ count }) => count), [7, 15, 17, 15, 6])
 
   const endings = [
     { first: 'flight-01', practices: ['flight-03'], last: 'flight-done', report: 'flight-04' },
@@ -30,10 +30,10 @@ test('all five Reiki lessons place music-assisted practice directly before the c
     const { start, end } = ranges[lessonIndex]
     const ids = sequence.slice(start, end)
     assert.equal(ids[0], item.first, 'lesson ' + (lessonIndex + 1) + ' introduction')
-    // Lesson one has a separate consented Google-save gate after congratulations.
+    // Lesson one displays consent inline with congratulations.
     const finaleIndex = ids.indexOf(item.last)
     assert.ok(finaleIndex >= 0, 'lesson ' + (lessonIndex + 1) + ' congratulations')
-    assert.equal(ids.at(-1), lessonIndex === 0 ? 'flight-save' : item.last,
+    assert.equal(ids.at(-1), item.last,
       'lesson ' + (lessonIndex + 1) + ' last screen')
     assert.deepEqual(
       ids.slice(finaleIndex - item.practices.length, finaleIndex),
@@ -60,7 +60,7 @@ test('all five Reiki lessons place music-assisted practice directly before the c
 
 test('existing practice timers retain soundtrack, pause, answers and previous/next navigation', () => {
   assert.match(editorial, /function withClosingPractices\(/)
-  assert.match(editorial, /slide\.phase === "flight" && slide\.id !== "flight-save"/)
+  assert.match(editorial, /slide\.phase === "flight"/)
   assert.match(editorial, /\["tan-03"\], "tan-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.kundalini, \["kun-03"\], "kun-done"\)/)
   assert.match(editorial, /withClosingPractices\(pathSlides\.yggdrasil, \["ygg-03"\], "ygg-done"\)/)
