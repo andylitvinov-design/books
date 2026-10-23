@@ -28,28 +28,38 @@ async function assertSpanishNavigation(page, path) {
   const currentUrl = page.url();
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
-  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library'], 'Spanish direct destinations: ' + path);
+  // Keep the three visible visitor needs and free written review in the header.
+  const direct = navigation.locator(':scope > a:not([data-nav-item="shop"]):not([data-nav-item="cart"])');
+  const first = ['/es/services/free-situation-review','/es/explore/energy','/es/explore/love','/es/explore/business','/es/about'];
+  if (path !== '/es') first.push('/en/app');
+  assert.deepEqual(await direct.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), first, 'Spanish direct destinations: ' + path);
+  const cabinet = navigation.locator('.site-cabinet-entry');
+  await expect(cabinet).toHaveCount(1);
+  if (path === '/es') {
+    await expect(cabinet).toHaveAttribute('aria-haspopup','dialog');
+    await expect(cabinet).toHaveAccessibleName('Mi espacio');
+  } else await expect(cabinet).toHaveAttribute('href','/en/app');
   const destinations = [
-    ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
-    ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
-    ['/es/academy', 'Academia'], ['/es/events', 'Eventos'],
-    ['/en/app', 'Gabinete'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+    '/es/services/free-situation-review', '/es', '/es/explore/energy', '/es/explore/love',
+    '/es/explore/business', '/es/client/tests', '/es/books',
+    '/es/shop', '/es/cart', '/es/library', '/es/courses', '/es/events',
+    '/es/services', '/es/academy', '/es/about',
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
-  const links = menu.locator('.site-main-menu-panel > a');
+  const links = menu.locator('.site-main-menu-panel a');
   await expect(menu).toHaveCount(1);
   await expect(menu).toHaveJSProperty('open', false);
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveAccessibleName('Abrir menú del sitio');
-  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), destinations.map(([href]) => href), 'Spanish full menu destinations: ' + path);
+  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => el.getAttribute('href'))), destinations, 'Spanish full menu destinations: ' + path);
   await trigger.focus();
   await trigger.press('Enter');
   await expect(menu).toHaveJSProperty('open', true);
-  for (let index = 0; index < destinations.length; index++) {
-    await expect(links.nth(index)).toBeVisible();
-    await expect(links.nth(index)).toHaveAccessibleName(destinations[index][1]);
-  }
+  for (const link of await links.all()) await expect(link).toBeVisible();
+  await expect(links.nth(2)).toHaveAccessibleName('Energía');
+  await expect(links.nth(3)).toHaveAccessibleName('Amor');
+  await expect(links.nth(4)).toHaveAccessibleName('Negocios');
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'Open Spanish site menu overflow: ' + path);
   await trigger.press('Tab');
   await expect(links.first()).toBeFocused();
@@ -72,11 +82,11 @@ async function assertSpanishCourseCatalog(page, response) {
   // Scope each contract; the direct header action is hidden at compact widths.
   const freeStart = catalog.locator('.site-navigation > a.site-nav-free-entry');
   await expect(freeStart).toHaveCount(1);
-  await expect(freeStart).toHaveText('Empezar gratis');
-  await expect(freeStart).toHaveAttribute('href', '/es#free-start');
+  await expect(freeStart).toHaveText('Revisión gratis');
+  await expect(freeStart).toHaveAttribute('href', '/es/services/free-situation-review');
   if (page.viewportSize().width > 1140) {
     await expect(freeStart).toBeVisible();
-    await expect(freeStart).toHaveAccessibleName('Empezar gratis');
+    await expect(freeStart).toHaveAccessibleName('Revisión gratis');
   } else await expect(freeStart).toBeHidden();
   const hero = catalog.locator('section[aria-labelledby="courses-title"]');
   await expect(hero).toHaveCount(1);
@@ -94,8 +104,7 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
   await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
   await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
-  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
-  await expect(page.locator('.mobile-bottom-navigation [data-nav-item="academy"]')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(0);
 }
 
 // Production-parity HTTPS browser checks. Never read real private records,
