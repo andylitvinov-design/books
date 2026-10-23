@@ -6,6 +6,7 @@ import {consumeSessionSaveTarget} from '@/lib/app/session-exit-navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './saved-document-reader.css'
 import Image from 'next/image'
+import consultationStyles from './consultation-offers.module.css'
 import dynamic from 'next/dynamic'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
 import Link from 'next/link'
@@ -3657,15 +3658,46 @@ function ContextForm({ locale, reload, event }) {
     </section>
   )
 }
+// Only first-party decorative imagery: never display Andrey as another practitioner's portrait.
+function consultationPhotoFor(service) {
+  if (service.slug === 'free-intro-availability-request') return '/images/holistic-house/andy-about.png'
+  const topic = [service.slug, service.areaKey, service.offeringType].filter(Boolean).join(' ').toLowerCase()
+  if (/reiki|energy|healing|massage/.test(topic)) return '/images/holistic-house/reiki-practitioner-sunrise.webp'
+  if (/business|career|consulting/.test(topic)) return '/images/holistic-house/books-library.webp'
+  if (/stress|imagery|hypno|dream/.test(topic)) return '/images/holistic-house/course-focus-mountain-boy.webp'
+  return '/images/holistic-house/hero-olive-incense.webp'
+}
+function consultationPriceFor(service, locale, fallback) {
+  if (service.pricingMode === 'free') return locale === 'ru' ? 'Бесплатно · запрос' : 'Free · enquiry'
+  if (service.pricingMode !== 'contact' && service.confirmedPrice != null && Number.isFinite(Number(service.confirmedPrice))) {
+    return (service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : '') +
+      (service.currency || '') + ' ' + String(service.confirmedPrice)
+  }
+  return fallback
+}
 function Consultations({ data, locale, reload, initialServiceId = '', source = '', requestedMessageId = '' }) {
-  const c = COPY[locale],
-    [selected, setSelected] = useState(null),
-    [error, setError] = useState(null)
+  const c = COPY[locale]
+  const [selected, setSelected] = useState(null)
+  const [requestSent, setRequestSent] = useState(false)
+  const [error, setError] = useState(null)
+  const handledDeepLink = useRef('')
+  const requestRef = useRef(null)
+  const services = [...(data.services || [])].sort((a, b) => {
+    const rank = item => item.id === initialServiceId ? 0 : item.slug === 'free-intro-availability-request' ? 1 : 2
+    return rank(a) - rank(b)
+  })
+  // Apply a link from Your Path once, not again after the user closes the form.
   useEffect(() => {
-    if (!initialServiceId || selected) return
-    const service = (data.services || []).find((item) => item.id === initialServiceId)
-    if (service) setSelected(service)
-  }, [data.services, initialServiceId, selected])
+    if (!initialServiceId || handledDeepLink.current === initialServiceId) return
+    const service = (data.services || []).find(item => item.id === initialServiceId)
+    if (!service) return
+    handledDeepLink.current = initialServiceId
+    setSelected(service)
+  }, [data.services, initialServiceId])
+  // Deep links and card CTAs land at the actual request form, never below a long catalog.
+  useEffect(() => {
+    if (selected?.id) requestRef.current?.scrollIntoView?.({ block: 'start', behavior: 'auto' })
+  }, [selected?.id])
   async function updateRequest(request, action) {
     try {
       await appFetch('requests/' + request.id, { action, expectedRevision: request.revision })
@@ -3675,13 +3707,14 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
     }
   }
   return (
-    <section>
-      <div className="hh-heading">
+    <section className={consultationStyles.root} data-consultation-requests>
+      <div className={consultationStyles.heading}>
+        <p className={consultationStyles.eyebrow}>{locale === 'ru' ? 'HOLISTIC HOUSE · ЛИЧНАЯ ПОДДЕРЖКА' : 'HOLISTIC HOUSE · PERSONAL GUIDANCE'}</p>
         <h1>{c.consultations}</h1>
         <p>{c.consultationsIntro}</p>
-        <p className="hh-fine">{locale === 'ru' ? 'Чтобы получать сообщения на телефон:' : 'To receive phone alerts for replies:'}{' '}
-          <Link href={`/${locale}/app/settings#hh-phone-notifications`} prefetch={false}>
-            {locale === 'ru' ? 'Включить уведомления' : 'Enable notifications'}
+        <p className={consultationStyles.notification}>{locale === 'ru' ? 'Ответы на телефон:' : 'Phone alerts for replies:'}{' '}
+          <Link href={'/' + locale + '/app/settings#hh-phone-notifications'} prefetch={false}>
+            {locale === 'ru' ? 'Настроить уведомления' : 'Notification settings'}
           </Link>
         </p>
         {source === 'test-results' && <aside className="hh-panel hh-consult-test-source">
@@ -3694,34 +3727,69 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
           </Link>
         </aside>}
       </div>
-      <InstallHolisticHouse locale={locale} />
-      <div className="hh-grid hh-services">
-        {!(data.services || []).length && <p>{c.emptyServices || c.emptyRequests}</p>}
-        {(data.services || []).map((service) => (
-          <article className="hh-panel" key={service.id}>
-            <p className="hh-kicker">{service.practitionerName}{service.professionalTitle ? ` · ${service.professionalTitle}` : ''}</p>
-            <h2>{service.copy[locale].title}</h2>
-            <p>{service.copy[locale].description}</p>
-            <p className="hh-fine">{service.pricingMode === 'free' ? (locale === 'ru' ? 'Бесплатно · по запросу' : 'Free · by request') : service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
-            <button className="hh-primary" onClick={() => setSelected(service)}>
-              {c.request}
-            </button>
-          </article>
-        ))}
-      </div>
+      {requestSent && <p className={consultationStyles.notice} role="status">
+        {locale === 'ru'
+          ? 'Заявка отправлена и появилась в «Моих заявках». Время встречи ещё не подтверждено.'
+          : 'Your request was sent and appears in My requests. No appointment is confirmed yet.'}
+      </p>}
       {selected && (
-        <RequestForm
-          key={selected.id}
-          service={selected}
-          locale={locale}
-          data={data}
-          close={() => setSelected(null)}
-          onDone={async () => {
-            setSelected(null)
-            await reload()
-          }}
-        />
+        <div ref={requestRef} className={consultationStyles.formSlot} id="hh-consultation-request">
+          <p className={consultationStyles.formEyebrow}>{locale === 'ru' ? 'ВАШ ВЫБОР · ОТПРАВИТЬ ЗАЯВКУ' : 'YOUR SELECTION · SEND AN ENQUIRY'}</p>
+          <RequestForm
+            key={selected.id}
+            service={selected}
+            locale={locale}
+            data={data}
+            close={() => setSelected(null)}
+            onDone={async () => {
+              setSelected(null)
+              await reload()
+              setRequestSent(true)
+            }}
+          />
+        </div>
       )}
+      <div className={consultationStyles.sectionLabel}>
+        <h2>{locale === 'ru' ? 'Выберите услугу' : 'Explore personal services'}</h2>
+        <p>{locale === 'ru' ? 'Заявка ≠ подтверждённая запись' : 'Enquiry ≠ confirmed appointment'}</p>
+      </div>
+      <div className={consultationStyles.grid} data-consultation-photo-cards>
+        {!services.length && <p>{c.emptyServices || c.emptyRequests}</p>}
+        {services.map((service) => {
+          const offer = service.copy?.[locale] || service.copy?.en || service.copy?.ru || {}
+          const intro = service.slug === 'free-intro-availability-request'
+          const chosen = selected?.id === service.id
+          return (
+            <article className={consultationStyles.card + (chosen ? ' ' + consultationStyles.chosen : '')}
+              key={service.id} data-consultation-photo-card={service.slug || service.id}>
+              <div className={consultationStyles.photo} aria-hidden="true">
+                <Image src={consultationPhotoFor(service)} alt="" fill sizes="(max-width: 480px) 100px, (max-width: 1080px) 150px, 180px" />
+              </div>
+              <div className={consultationStyles.cardBody}>
+                <p className={consultationStyles.practitioner}>
+                  {service.practitionerName}{service.professionalTitle ? ' · ' + service.professionalTitle : ''}
+                </p>
+                <h3>{offer.title}</h3>
+                <p className={consultationStyles.description}>{offer.shortDescription || offer.description}</p>
+                <p className={consultationStyles.pricing}>
+                  {consultationPriceFor(service, locale, c.price)}
+                  {service.durationMinutes ? ' · ' + service.durationMinutes + (locale === 'ru' ? ' мин' : ' min') : ''}
+                </p>
+                <button type="button" className={consultationStyles.action}
+                  onClick={() => { setRequestSent(false); setSelected(service) }}>
+                  {chosen
+                    ? (locale === 'ru' ? 'Заявка открыта' : 'Request form open')
+                    : intro
+                      ? (locale === 'ru' ? 'Запросить знакомство' : 'Ask about an introduction')
+                      : (locale === 'ru' ? 'Отправить заявку' : 'Request this service')}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </button>
+              </div>
+            </article>
+          )
+        })}
+      </div>
+      <InstallHolisticHouse locale={locale} />
       <section className="hh-section">
         <h2>{c.requests}</h2>
         {!data.requests.length && <p>{c.emptyRequests}</p>}
