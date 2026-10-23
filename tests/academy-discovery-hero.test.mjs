@@ -29,14 +29,14 @@ test("Academy home groups free courses, study programs and verified live events 
   assert.ok(services.includes("linear-gradient(121deg,#203450 0%,#283d5c 58%,#483a52 100%)"));
 });
 
-test("EN RU ES course search is local, keeps all eight real destinations and preserves video archive access", () => {
+test("EN RU ES course search includes the Egyptian Priesthood alongside the eight existing destinations", () => {
   const hub = read("components/academy-hub.tsx");
   const discovery = read("components/academy-discovery.tsx");
   for (const title of [
     "Find your learning path", "Найдите свою программу обучения", "Encuentra tu ruta de aprendizaje",
   ]) assert.ok(discovery.includes(title), title);
   for (const id of [
-    "academy-free-opora", "academy-featured-principles-energywork",
+    "academy-free-opora", "academy-featured-principles-energywork", "academy-featured-egypt-priesthood",
     "academy-free-tantra-introduction", "academy-free-yggdrasil-introduction",
     "academy-featured-yggdrasil", "academy-featured-tantra-reiki",
     "academy-featured-kundalini-reiki", "academy-featured-temple-studies",
@@ -44,7 +44,7 @@ test("EN RU ES course search is local, keeps all eight real destinations and pre
   assert.match(hub, /courseHref: REIKI_FREE_COURSE_PATH/);
   assert.match(hub, /courseHref: "\/" \+ \(locale === "es" \? "en" : locale\) \+ "\/app\/course\?program=stress"/);
   assert.match(hub, /tantra-reiki-yin-yang-cover\.svg/);
-  assert.equal((hub.match(/free: true/g) || []).length, 4);
+  assert.equal((hub.match(/free: true/g) || []).length, 5);
   assert.match(discovery, /useMemo\(\(\) => items\.filter/);
   assert.match(discovery, /matchesTerms/);
   assert.match(discovery, /role="search"/);
@@ -160,7 +160,8 @@ test("Academy quick path pills and three headings remain mobile-friendly in Engl
   assert.match(source, /<GraduationCap size=\{16\}/);
   assert.match(source, /<CalendarDays size=\{16\}/);
   assert.match(styles, /\.quickPaths\s*\{/);
-  assert.match(styles, /grid-template-columns:\s*repeat\(3,\s*minmax\(0, 1fr\)\)/);
+  assert.match(styles, /grid-template-columns:\s*repeat\(4,\s*minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.quickPaths \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 620px\)/);
   assert.match(styles, /\.eventUpper\s*\{/);
   assert.match(hub, /import \{ PUBLIC_EVENTS \} from "@\/data\/public-events"/);

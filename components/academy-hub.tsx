@@ -215,6 +215,26 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           actionLabel: locale === "ru" ? "Начать бесплатный курс" : locale === "es" ? "Empezar gratis" : "Start the free course",
         },
         {
+          id: "academy-featured-egypt-priesthood",
+          title: locale === "ru" ? "Египетское жречество · Осирис" : locale === "es" ? "Sacerdocio egipcio · Osiris" : "Egyptian Priesthood · Osiris",
+          subtitle: locale === "ru" ? "7 ОРИГИНАЛЬНЫХ ВИДЕОУРОКОВ" : locale === "es" ? "7 VIDEOLECCIONES ORIGINALES" : "7 ORIGINAL VIDEO LESSONS",
+          description: locale === "ru"
+            ? "Видеокурс из архива PsiMaster: семь дней Осириса, короткие практики и рефлексия в формате «Практик Рейки»."
+            : locale === "es"
+              ? "Siete vídeos originales del ciclo Osiris, prácticas breves y reflexión, una idea por pantalla."
+              : "Seven original Osiris videos from PsiMaster, one-screen practices and short reflections in the Reiki Practitioner style.",
+          detailsHint: locale === "ru"
+            ? "Оригинальный порядок всех семи видео сохранён. Вопросы и упражнения — новый учебный маршрут; это не расшифровка видео и не диплом жреца."
+            : locale === "es" ? "Se conserva el orden original; las preguntas son una guía moderna, no transcripciones ni un título."
+              : "All seven original videos stay in sequence; the new reflections are an educational adaptation, not transcripts or a qualification.",
+          href: "/" + locale + "/academy/egyptian-priesthood",
+          courseHref: "/" + locale + "/academy/egyptian-priesthood/learn",
+          image: "/academy/reiki-yggdrasil/source/temple-studies.png",
+          duration: locale === "ru" ? "7 дней · 51 экран" : locale === "es" ? "7 días · 51 pantallas" : "7 days · 51 screens",
+          free: true,
+          actionLabel: locale === "ru" ? "Начать курс" : locale === "es" ? "Empezar curso" : "Start course",
+        },
+        {
           id: "academy-free-tantra-introduction",
           detailsHint: hints.tantraIntro,
           title: locale === "ru" ? "Тантра Рейки · 1 ступень" : locale === "es" ? "Tantra Reiki · Nivel 1" : "Tantra Reiki · Level 1",
