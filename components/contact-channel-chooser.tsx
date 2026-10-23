@@ -245,7 +245,7 @@ export function ContactChannelChooser({
         // register a CRM enquiry. OAuth authentication alone cannot create a lead.
         if (pending?.consentToReply === true) {
           setConsent(true);
-          void saveEnquiry({ displayName: nextName, email: nextEmail, phone: "" }, true, "");
+          void saveEnquiry({ displayName: nextName.length >= 2 && nextName.length <= 120 ? nextName : "", email: nextEmail, phone: "" }, true, "");
         }
       }).catch(() => { if (active) setError(c.googleError); });
     return () => { active = false; };
@@ -300,10 +300,20 @@ export function ContactChannelChooser({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await saveEnquiry();
+  }
+
+  async function saveEnquiry(
+    verifiedGoogleContact?: { displayName: string; email: string; phone: string },
+    agreed = consent,
+    note = description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+  ) {
     if (busy || saved) return;
-    const cleanedPhone = phone.replace(/[\s().-]/g, "");
-    if ((method === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
-      (method === "phone" && ! /^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
+    const methodForSave = verifiedGoogleContact ? "email" : method;
+    const emailForSave = verifiedGoogleContact?.email ?? email.trim();
+    const cleanedPhone = verifiedGoogleContact?.phone ?? phone.replace(/[\s().-]/g, "");
+    if ((methodForSave === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForSave)) ||
+      (methodForSave === "phone" && ! /^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !agreed) {
       setError(c.contactError);
       return;
     }
@@ -317,10 +327,14 @@ export function ContactChannelChooser({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           operationId: nextId, serviceTitle,
-          description: description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+          description: note,
           sourcePath: pathname, locale,
-          contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
-          contactConsent: consent, website,
+          contact: {
+            displayName: verifiedGoogleContact?.displayName ?? displayName.trim(),
+            email: methodForSave === "email" ? emailForSave : "",
+            phone: methodForSave === "phone" ? cleanedPhone : "",
+          },
+          contactConsent: agreed, website,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -334,7 +348,7 @@ export function ContactChannelChooser({
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
           referenceCode: data.referenceCode, createdAt: Date.now(),
         }));
-        if (!stayAfterSave) router.push("/" + locale + "/thank-you");
+        router.push("/" + locale + "/thank-you");
       } catch {
         // Private browsing may block sessionStorage. The existing in-place
         // confirmation and optional messenger handoff remain available.
