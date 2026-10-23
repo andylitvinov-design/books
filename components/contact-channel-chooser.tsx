@@ -231,7 +231,13 @@ export function ContactChannelChooser({
     try {
       pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
     } catch { /* A blocked or malformed temporary marker never creates a lead. */ }
-    if (pending?.path !== pathname || pending.service !== serviceTitle || pending.panel !== panelId) return;
+    // Selection may reset on a full Google page reload. The pending public
+    // service label is the visitor's original selected offer; check the same
+    // public path/panel and use that label rather than silently switching
+    // back to the page's default free or paid option.
+    if (pending?.path !== pathname || pending.panel !== panelId ||
+        typeof pending.service !== "string" || !pending.service.trim() ||
+        pending.service.length > 160) return;
     // Keep the marker until the profile request has finished. Development
     // StrictMode may cleanup/re-run this effect; clearing the marker before
     // its first asynchronous profile read loses the only valid continuation.
@@ -262,7 +268,10 @@ export function ContactChannelChooser({
         // register a CRM enquiry. OAuth authentication alone cannot create a lead.
         if (pending?.consentToReply === true) {
           setConsent(true);
-          void saveEnquiry({ displayName: nextName.length >= 2 && nextName.length <= 120 ? nextName : "", email: nextEmail, phone: "" }, true, "");
+          void saveEnquiry({
+            displayName: nextName.length >= 2 && nextName.length <= 120 ? nextName : "",
+            email: nextEmail, phone: "",
+          }, true, "", pending.service);
         }
       }).catch(() => { if (active) { finishReturn(); setError(c.googleError); } });
     return () => { active = false; };
@@ -324,6 +333,7 @@ export function ContactChannelChooser({
     verifiedGoogleContact?: { displayName: string; email: string; phone: string },
     agreed = consent,
     note = description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+    selectedPublicService = serviceTitle,
   ) {
     if (busy || saved) return;
     const methodForSave = verifiedGoogleContact ? "email" : method;
@@ -343,7 +353,7 @@ export function ContactChannelChooser({
         method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          operationId: nextId, serviceTitle,
+          operationId: nextId, serviceTitle: selectedPublicService,
           description: note,
           sourcePath: pathname, locale,
           contact: {
