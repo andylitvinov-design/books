@@ -274,6 +274,9 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
             data-home-reports-cta><ShieldCheck size={15} aria-hidden="true" />{t.reports}</Link>
           <Link prefetch={false} href={accountRoot + "/portfolio#hh-development-program"}
             data-home-development-cta><Target size={15} aria-hidden="true" />{t.growth}</Link>
+          <Link prefetch={false} href={accountRoot + "/personal-support"}
+            data-home-personal-support-cta><ShieldCheck size={15} aria-hidden="true" />
+            {locale === "ru" ? "Моё сопровождение" : locale === "es" ? "Mi acompañamiento" : "My personal support"}</Link>
         </nav>
       )}
       <p className={styles.privacy}>{t.privacy}</p>
