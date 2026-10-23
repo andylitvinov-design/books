@@ -70,7 +70,8 @@ test("private account links still require a signed-in summary, ES public links s
   assert.match(feature, /const signedIn = space\?\.status === "ready" && Boolean\(space\.summary\)/);
   assert.match(feature, /locale === "es" \? "en" : locale/);
   assert.match(feature, /id === "tests" && signedIn/);
-  assert.match(feature, /id === "courses" && signedIn/);
+  assert.match(feature, /myCourses: myCoursesHref/);
+  assert.match(feature, /offer.id === "myCourses" && !signedIn/);
   assert.match(feature, /\{signedIn && \(/);
   assert.match(feature, /data-home-reports-cta/);
   assert.match(feature, /data-home-development-cta/);
