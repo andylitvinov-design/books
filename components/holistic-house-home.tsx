@@ -7,6 +7,7 @@ import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
 import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
 import { HomeConversationGuide } from "@/components/home-conversation-guide";
+import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
 
 
@@ -72,6 +73,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomeSectionCarousel locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
+      <HomepageTopicJourneys locale={locale} />
       <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
