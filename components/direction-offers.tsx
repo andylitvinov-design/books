@@ -23,7 +23,11 @@ type Journey = {
 }
 type SuggestedTest = { title: string }
 type Direction = 'energy' | 'relationships' | 'business'
-type Offer = { title: string; description: string; action: string; photo: string; href: string; eyebrow: string; note: string }
+type Offer = { id: string; title: string; description: string; action: string; photo: string; href: string; eyebrow: string; note: string }
+type OfferKind = 'test' | 'course' | 'session'
+type Localized = Record<PublicLocale, string>
+type CatalogOffer = { id: string; title: Localized; description: Localized; path: string; photo: string; note: Localized; action?: Localized }
+const tr = (en: string, ru: string, es: string): Localized => ({en, ru, es})
 
 const photography = {
   test: '/images/holistic-house/report-lighthouse-coast.webp',
@@ -83,6 +87,135 @@ const directionCopy = {
   },
 } as const
 
+
+/* Curated, independently real routes; do not manufacture programmes, bookings
+   or prices. Historical Academy material is always labelled as an archive. */
+const archiveNote = tr('Historical Academy material', 'Материалы архива Академии', 'Material histórico de la Academia')
+const archiveAction = tr('View material', 'Смотреть материал', 'Ver material')
+const studyNote = tr('Academy study material', 'Учебные материалы Академии', 'Material de la Academia')
+const courseOptions: Record<Direction, readonly CatalogOffer[]> = {
+  energy: [
+    {
+      id:'reiki-practitioner', title:tr('Reiki Practitioner · Free course','Практик Рейки · Бесплатный курс','Reiki Practitioner · Curso gratuito'),
+      description:tr('Five introductory lessons with exercises and guided meditations.','Пять вводных уроков с упражнениями и медитациями.','Cinco lecciones con ejercicios y meditaciones.'),
+      path:'/academy/principles-of-energywork', photo:'/academy/reiki-yggdrasil/source/program-overview.jpg',
+      note:tr('Free · 5 lessons','Бесплатно · 5 уроков','Gratis · 5 lecciones'),
+    },
+    {
+      id:'kundalini-reiki', title:tr('Kundalini Reiki · 3 levels','Кундалини Рейки · 3 ступени','Kundalini Reiki · 3 niveles'),
+      description:tr('Explore the source manual and introductory Reiki practices.','Изучите методичку и базовые практики Рейки.','Explora el manual y las prácticas introductorias.'),
+      path:'/academy/reiki/kundalini-reiki', photo:'/academy/kundalini-reiki/kundalini-manual-level-2.jpg', note:studyNote,
+    },
+    {
+      id:'yggdrasil-reiki', title:tr('Tao Reiki Yggdrasil','Дао Рейки Иггдрасиль','Tao Reiki Yggdrasil'),
+      description:tr('A structured introduction to symbolic energywork.','Структурированное введение в символические энергопрактики.','Una introducción estructurada a la práctica energética simbólica.'),
+      path:'/academy/reiki/yggdrasil', photo:'/academy/reiki-yggdrasil/source/basic-program.jpg', note:studyNote,
+    },
+  ],
+  relationships: [
+    {
+      id:'love-archetypes', title:tr('Archetypes of Love','Архетипы любви','Arquetipos del amor'),
+      description:tr('Explore relationship patterns through myth and symbolic reflection.','Исследуйте отношения через мифы и символическую рефлексию.','Explora las relaciones mediante mitos y reflexión simbólica.'),
+      path:'/academy/mysteries/archetypes-of-love', photo:'/images/holistic-house/hero-olive-incense.webp',
+      note:archiveNote, action:archiveAction,
+    },
+    {
+      id:'love-hypnocoaching', title:tr('Hypno-Coaching of Love','Гипно-коучинг любви','Hipnocoaching del amor'),
+      description:tr('Historical lessons about closeness, trust and personal choice.','Архивные материалы о близости, доверии и выборе.','Material histórico sobre cercanía, confianza y decisiones.'),
+      path:'/academy/mysteries/hypno-love', photo:'/academy/reiki-yggdrasil/source/temple-studies.png',
+      note:archiveNote, action:archiveAction,
+    },
+    {
+      id:'love-constellations', title:tr('Constellations of Love','Расстановки любви','Constelaciones del amor'),
+      description:tr('An archived programme on connection, autonomy and boundaries.','Архивная программа о связи, автономии и границах.','Programa histórico sobre conexión, autonomía y límites.'),
+      path:'/academy/archive/constellations-of-love', photo:photography.loveSession,
+      note:archiveNote, action:archiveAction,
+    },
+  ],
+  business: [
+    {
+      id:'business-demiurges', title:tr('Demiurges of Creation · Business','Демиурги Творения · Бизнес','Demiurgos de la creación · Negocios'),
+      description:tr('Historical symbolic coaching ideas for projects and decisions.','Архивные символические подходы к проектам и решениям.','Ideas históricas de coaching simbólico para proyectos.'),
+      path:'/academy/applied/business/demiurges-of-creation', photo:'/images/holistic-house/books-library.webp',
+      note:archiveNote, action:archiveAction,
+    },
+    {
+      id:'business-runes', title:tr('Runes & Business','Руны и бизнес','Runas y negocios'),
+      description:tr('An archived symbolic framework for plans and choices.','Архивная символическая схема для планирования и выбора.','Material simbólico histórico para planes y decisiones.'),
+      path:'/academy/runes/runes-business', photo:'/academy/reiki-yggdrasil/source/advanced-runes.png',
+      note:archiveNote, action:archiveAction,
+    },
+    {
+      id:'business-stress', title:tr('OPORA · Work stress support','ОПОРА · Поддержка при стрессе на работе','OPORA · Apoyo ante el estrés laboral'),
+      description:tr('The existing 14-day course for everyday steadiness and focus.','Действующий 14-дневный курс для устойчивости и фокуса.','Curso actual de 14 días para la estabilidad y el enfoque.'),
+      path:'/courses/antistress', photo:photography.energyCourse,
+      note:tr('14-day programme', '14-дневная программа', 'Programa de 14 días'),
+    },
+  ],
+}
+const serviceOptions: Record<Direction, readonly CatalogOffer[]> = {
+  energy: [
+    {
+      id:'remote-reiki', title:tr('Remote Reiki energy support','Дистанционная поддержка Рейки','Apoyo Reiki a distancia'),
+      description:tr('Choose a remote or live online format; timing and fee are confirmed separately.','Выберите дистанционный или онлайн-формат; время и стоимость уточняются.','Elige el formato a distancia o en vivo; confirma hora y precio.'),
+      path:'/services/remote-energy-support', photo:'/academy/reiki-yggdrasil/source/basic-program.jpg',
+      note:tr('Price confirmed before payment','Цена до оплаты согласовывается','Precio acordado antes de pagar'),
+    },
+    {
+      id:'energy-imagery', title:tr('Imagery therapy','Образная терапия','Terapia con imágenes'),
+      description:tr('Explore your question through guided imagery and reflection.','Исследуйте свой запрос через образы и осмысление.','Explora tu pregunta con imágenes guiadas y reflexión.'),
+      path:'/services/imagery-therapy', photo:photography.loveCourse,
+      note:tr('Personal consultation','Личная консультация','Consulta individual'),
+    },
+    {
+      id:'energy-written-review', title:tr('Free written situation review','Бесплатный письменный разбор ситуации','Revisión escrita gratuita'),
+      description:tr('Share a question for a written response; no live booking is made.','Задайте вопрос для письменного ответа без бронирования встречи.','Envía una pregunta para recibir respuesta escrita, sin reserva.'),
+      path:'/services/free-situation-review', photo:photography.test,
+      note:tr('Free · Written format','Бесплатно · Письменно','Gratis · Por escrito'),
+    },
+  ],
+  relationships: [
+    {
+      id:'love-imagery', title:tr('Imagery therapy','Образная терапия','Terapia con imágenes'),
+      description:tr('Explore relationship feelings and choices through guided imagery.','Исследуйте чувства и решения в отношениях через образы.','Explora sentimientos y decisiones con imágenes guiadas.'),
+      path:'/services/imagery-therapy', photo:photography.loveCourse,
+      note:tr('Personal consultation','Личная консультация','Consulta individual'),
+    },
+    {
+      id:'love-written-review', title:tr('Free written situation review','Бесплатный письменный разбор ситуации','Revisión escrita gratuita'),
+      description:tr('Describe a relationship question for a written first response.','Опишите ситуацию в отношениях для первого письменного ответа.','Describe tu situación para una primera respuesta escrita.'),
+      path:'/services/free-situation-review', photo:photography.test,
+      note:tr('Free · Written format','Бесплатно · Письменно','Gratis · Por escrito'),
+    },
+    {
+      id:'love-alchemy', title:tr('Alchemy of Soul','Алхимия Души','Alquimia del alma'),
+      description:tr('Individual symbolic work on your question and repeating patterns.','Индивидуальная символическая работа с запросом и повторениями.','Trabajo simbólico individual sobre patrones recurrentes.'),
+      path:'/services/alchemy-of-soul', photo:photography.energySession,
+      note:tr('Personal consultation','Личная консультация','Consulta individual'),
+    },
+  ],
+  business: [
+    {
+      id:'business-written-review', title:tr('Free written situation review','Бесплатный письменный разбор ситуации','Revisión escrita gratuita'),
+      description:tr('Ask about a professional decision without booking a session.','Задайте вопрос о рабочем решении без бронирования сессии.','Consulta una decisión profesional sin reservar una sesión.'),
+      path:'/services/free-situation-review', photo:photography.test,
+      note:tr('Free · Written format','Бесплатно · Письменно','Gratis · Por escrito'),
+    },
+    {
+      id:'business-constellations', title:tr('Systemic constellations','Системные расстановки','Constelaciones sistémicas'),
+      description:tr('Map roles, competing needs and patterns around a work decision.','Рассмотрите роли, противоречия и сценарии рабочего решения.','Explora roles y patrones alrededor de una decisión laboral.'),
+      path:'/services/systemic-constellations', photo:photography.loveSession,
+      note:tr('Personal consultation','Личная консультация','Consulta individual'),
+    },
+    {
+      id:'business-imagery', title:tr('Imagery therapy','Образная терапия','Terapia con imágenes'),
+      description:tr('Use guided reflection to clarify goals, pressure and direction.','Через образы проясните цели, напряжение и направление.','Aclara objetivos y decisiones mediante reflexión guiada.'),
+      path:'/services/imagery-therapy', photo:photography.loveCourse,
+      note:tr('Personal consultation','Личная консультация','Consulta individual'),
+    },
+  ],
+}
+
 // The same approved images used by the former Services/Academy hero and public
 // home. Manual slide changes are deliberate: no autoplay while visitors type.
 const heroPhotography: Record<Direction, readonly [string, string, string]> = {
@@ -111,6 +244,7 @@ const presentation = {
     unmatched: 'Explore the available options below, or choose a more specific topic.',
     missing: 'Write a short wish or select a topic below.',
     privacy: 'Your words stay on this page. Only a form you deliberately submit can create an enquiry.',
+    showMore: 'Show 2 more', showLess: 'Show fewer',
     choose: 'Make your request more specific',
     filterLead: 'Choose one theme to update all three sections.',
     image: 'Show photograph', previous: 'Previous photograph', next: 'Next photograph', start: 'Find your way to begin',
@@ -127,6 +261,7 @@ const presentation = {
     unmatched: 'Ниже доступны все варианты. Уточните запрос с помощью фильтра.',
     missing: 'Напишите пожелание или выберите тему ниже.',
     privacy: 'Ваш текст остаётся на этой странице. Заявка появится только после отдельной отправки формы.',
+    showMore: 'Показать ещё 2', showLess: 'Свернуть',
     choose: 'Уточните, что вам сейчас нужно',
     filterLead: 'Выберите тему — предложения в трёх разделах обновятся.',
     image: 'Показать фото', previous: 'Предыдущее фото', next: 'Следующее фото', start: 'Выберите способ начать',
@@ -143,6 +278,7 @@ const presentation = {
     unmatched: 'Explora las opciones o elige un tema más específico.',
     missing: 'Escribe brevemente tu deseo o elige un tema.',
     privacy: 'Tus palabras permanecen en esta página. Solo enviar otro formulario crea una solicitud.',
+    showMore: 'Ver 2 más', showLess: 'Mostrar menos',
     choose: 'Aclara qué necesitas ahora',
     filterLead: 'Elige un tema para actualizar las tres secciones.',
     image: 'Mostrar fotografía', previous: 'Fotografía anterior', next: 'Fotografía siguiente', start: 'Elige cómo empezar',
@@ -200,6 +336,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const [question, setQuestion] = useState('')
   const [feedback, setFeedback] = useState('')
   const [slideIndex, setSlideIndex] = useState(0)
+  const [expanded, setExpanded] = useState<Record<OfferKind, boolean>>({test:false,course:false,session:false})
   if (!directionIds.includes(journey.id as Direction)) return null
 
   const direction = journey.id as Direction
@@ -207,10 +344,6 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const d = directionCopy[direction][locale]
   const ui = presentation[locale]
   const selected = journey.topics.find(item => item.id === topicId)
-  const focus = journeyFocusForTopics(journey, selected ? [selected.id] : [])
-  const suggested = suggestions[selected?.id || '']?.[0]
-  const testHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
-    '&journey=' + direction + '&topics=' + encodeURIComponent(topicId)
   const appLocale = locale === 'es' ? 'en' : locale
   const courseHref = direction === 'business'
     ? '/' + appLocale + '/app/business'
@@ -218,17 +351,42 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const serviceHref = '/' + locale + '/services/' + ({
     energy: 'alchemy-of-soul', relationships: 'systemic-constellations', business: 'business-consulting',
   } as const)[direction]
-  const offers: Offer[] = [
-    { eyebrow: c.free, title: selected ? selected.title[locale] : c.testTitle,
-      description: suggested ? c.suggested + suggested.title : c.testDescription,
-      photo: photography.test, href: testHref, action: c.testAction, note: c.freeNote },
-    { eyebrow: c.course, title: d.course, description: d.courseDetail,
-      photo: photography[direction === 'relationships' ? 'loveCourse' : direction === 'business' ? 'businessCourse' : 'energyCourse'],
-      href: courseHref, action: c.courseAction, note: c.courseNote },
-    { eyebrow: c.session, title: d.service, description: d.serviceDetail,
-      photo: photography[direction === 'relationships' ? 'loveSession' : direction === 'business' ? 'businessSession' : 'energySession'],
-      href: serviceHref, action: c.sessionAction, note: c.sessionNote },
-  ]
+  const offerFromCatalog = (item: CatalogOffer, kind: OfferKind): Offer => ({
+    id:item.id, title:item.title[locale], description:item.description[locale],
+    photo:item.photo, href:'/' + locale + item.path, note:item.note[locale],
+    eyebrow:kind==='course' ? c.course : c.session,
+    action:item.action?.[locale] ?? (kind==='course' ? c.courseAction : c.sessionAction),
+  })
+  const topicChoices = selected
+    ? [selected, ...journey.topics.filter(topic => topic.id !== selected.id)]
+    : journey.topics
+  const testOffers: Offer[] = topicChoices.slice(0,4).map((topic,index) => {
+    const focus = journeyFocusForTopics(journey, [topic.id])
+    const suggested = suggestions[topic.id]?.[0]
+    const testHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
+      '&journey=' + direction + '&topics=' + encodeURIComponent(topic.id)
+    return {
+      id:topic.id, eyebrow:c.free, title:topic.title[locale],
+      description:suggested ? c.suggested + suggested.title : topic.detail[locale],
+      photo:index%2===0 ? photography.test : heroPhotography[direction][2],
+      href:testHref, action:c.testAction, note:c.freeNote,
+    }
+  })
+  const offers: Record<OfferKind, Offer[]> = {
+    test: testOffers,
+    course: [
+      { id:'primary-course', eyebrow:c.course, title:d.course, description:d.courseDetail,
+        photo:photography[direction === 'relationships' ? 'loveCourse' : direction === 'business' ? 'businessCourse' : 'energyCourse'],
+        href:courseHref, action:c.courseAction, note:c.courseNote },
+      ...courseOptions[direction].map(item => offerFromCatalog(item,'course')),
+    ],
+    session: [
+      { id:'primary-session', eyebrow:c.session, title:d.service, description:d.serviceDetail,
+        photo:photography[direction === 'relationships' ? 'loveSession' : direction === 'business' ? 'businessSession' : 'energySession'],
+        href:serviceHref, action:c.sessionAction, note:c.sessionNote },
+      ...serviceOptions[direction].map(item => offerFromCatalog(item,'session')),
+    ],
+  }
   const kinds = ['test', 'course', 'session'] as const
   const icons = [ClipboardCheck, GraduationCap, CalendarDays] as const
   const allHrefs = [
@@ -311,47 +469,57 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     </section>
 
     <div className={styles.sections} aria-label={ui.start} data-direction-sections>
-      {offers.map((offer,index)=>{
+      {kinds.map((kind,index)=>{
         const Icon=icons[index]
         const group=ui.groups[index]
-        return <section className={styles.group} key={kinds[index]}
-          id={'hh-direction-'+kinds[index]} data-direction-section={kinds[index]}
-          aria-labelledby={'hh-direction-section-title-'+kinds[index]}>
+        const showAll=expanded[kind]
+        return <section className={styles.group} key={kind}
+          id={'hh-direction-'+kind} data-direction-section={kinds[index]}
+          aria-labelledby={'hh-direction-section-title-'+kind}>
           <div className={styles.sectionHeading}>
             <span className={styles.sectionIndex} aria-hidden="true">{index+1}</span>
             <div className={styles.sectionCopy}>
               <p>{group.kicker}</p>
-              <h2 id={'hh-direction-section-title-'+kinds[index]}>{group.title}</h2>
+              <h2 id={'hh-direction-section-title-'+kind}>{group.title}</h2>
               <span>{group.detail}</span>
             </div>
-            <Link className={styles.sectionAll} href={allHrefs[index]} prefetch={false}>
-              {group.all}<ArrowRight size={16} aria-hidden="true"/>
-            </Link>
           </div>
-          <article className={styles.card} data-offer-type={kinds[index]}>
-            <div className={styles.photo}>
-              <Image src={offer.photo} alt="" fill loading="lazy" unoptimized
-                sizes="(max-width:430px) 92px, (max-width:760px) 130px, 200px"/>
-            </div>
-            <div className={styles.cardBody}>
-              <p className={styles.eyebrow}><Icon aria-hidden="true" size={15}/>{offer.eyebrow}</p>
-              <h3>{offer.title}</h3>
-              <p className={styles.description}>{offer.description}</p>
-              <div className={styles.cardFooter}>
-                <span className={styles.note}>{offer.note}</span>
-                <Link className={styles.action} href={offer.href} prefetch={false} data-offer-action={kinds[index]}>
-                  {offer.action}<ArrowRight size={17} aria-hidden="true"/>
-                </Link>
-              </div>
-            </div>
-          </article>
-          {index===0 && suggestions[selected?.id||'']?.length>1 && <p className={styles.testSuggestions}>
-            {c.suggested}{' '}
-            {suggestions[selected?.id||''].slice(0,2).map(t=>t.title).join(' · ')}
-          </p>}
-          <Link className={styles.mobileAll} href={allHrefs[index]} prefetch={false}>{group.all}<ArrowRight size={16} aria-hidden="true"/></Link>
+          <div className={styles.offerList} id={'hh-direction-offers-'+kind} role="list">
+            {offers[kind].slice(0,showAll ? 4 : 2).map((offer,offerIndex)=>
+              <article className={styles.card} key={offer.id} role="listitem"
+                data-offer-type={kind} data-offer-id={offer.id} data-offer-index={offerIndex+1}>
+                <div className={styles.photo}>
+                  <Image src={offer.photo} alt="" fill loading="lazy" unoptimized
+                    sizes="(max-width:430px) 92px, (max-width:760px) 130px, 200px"/>
+                </div>
+                <div className={styles.cardBody}>
+                  <p className={styles.eyebrow}><Icon aria-hidden="true" size={15}/>{offer.eyebrow}</p>
+                  <h3>{offer.title}</h3>
+                  <p className={styles.description}>{offer.description}</p>
+                  <div className={styles.cardFooter}>
+                    <span className={styles.note}>{offer.note}</span>
+                    <Link className={styles.action} href={offer.href} prefetch={false} data-offer-action={kind}>
+                      {offer.action}<ArrowRight size={17} aria-hidden="true"/>
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            )}
+          </div>
+          <div className={styles.groupActions}>
+            <button type="button" className={styles.moreButton}
+              aria-controls={'hh-direction-offers-'+kind} aria-expanded={showAll}
+              data-direction-show-more={kind}
+              onClick={()=>setExpanded(prev=>({...prev,[kind]:!prev[kind]}))}>
+              {showAll ? ui.showLess : ui.showMore}
+              <ChevronDown className={showAll ? styles.chevronOpen : undefined} size={16} aria-hidden="true"/>
+            </button>
+            {showAll && <Link className={styles.allButton} href={allHrefs[index]} prefetch={false}
+              data-direction-all={kind}>{group.all}<ArrowRight size={16} aria-hidden="true"/></Link>}
+          </div>
         </section>
       })}
+
     </div>
   </div>
 }
