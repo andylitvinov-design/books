@@ -33,6 +33,13 @@ const hypnotherapyEn: ServiceVideoMedia = {
   poster: path + "hypnotherapy-en-v1.webp",
   general: false,
 };
+// The Russian psychotherapy landing uses the owner's selected public YouTube video.
+// No new render or upload is needed, and the EN/ES media remain independent.
+const hypnotherapyRu: ServiceVideoMedia = {
+  video: { youtubeId: "eLsjFaKCBhI", language: "ru", title: "Образная психотерапия — видео о подходе" },
+  poster: path + "hypnotherapy-en-v1.webp",
+  general: false,
+};
 const homeopathyEn: ServiceVideoMedia = {
   video: { youtubeId: "ILyRWyHtJoE", language: "en", title: "My Approach to Homeopathy", durationSeconds: 31 },
   poster: path + "homeopathy-en-v2.webp",
@@ -49,7 +56,8 @@ const homeopathyRu: ServiceVideoMedia = {
  * The 4 YouTube IDs are the checked, previously published @shamanic_academy
  * mirrors of the exact HeyGen masters in defaults.js; do not reupload.
  * The EN method videos retain their approved HeyGen provider embeds and original stills.
- * No method-specific RU render exists: use a clearly labelled GENERAL RU overview.
+ * RU psychotherapy uses the owner's selected YouTube video; other RU methods
+ * without a dedicated video retain the clearly labelled general overview.
  * No personal/client videos or Drive playback links belong in this registry.
  */
 const media: Record<"en" | "ru", Record<ServiceVideoTopic, ServiceVideoMedia>> = {
@@ -63,7 +71,7 @@ const media: Record<"en" | "ru", Record<ServiceVideoTopic, ServiceVideoMedia>> =
   ru: {
     overview: overviewRu,
     alchemy: overviewRu,
-    hypnotherapy: overviewRu,
+    hypnotherapy: hypnotherapyRu,
     constellations: overviewRu,
     homeopathy: homeopathyRu,
   },
