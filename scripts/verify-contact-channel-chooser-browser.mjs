@@ -181,11 +181,8 @@ async function runEngine(name, engine) {
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
-          // Spanish keeps the approved consented chooser; EN/RU use the
-          // first-party CRM form with opt-in instead of duplicating messengers.
-          if (locale === "es") {
-            cases.push({path:"/es/services/dao-health-profile",selector:'main[data-core-service-detail="dao"] [data-contact-channel-chooser]',min:1});
-          }
+          // EN/RU/ES Dao now share one consented first-party CRM landing.
+          // None use a parallel messenger chooser; verify them after the loop.
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
@@ -213,7 +210,7 @@ async function runEngine(name, engine) {
               await button.click();
             }
           }
-          if (locale !== "es") {
+          {
             const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
               {waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
