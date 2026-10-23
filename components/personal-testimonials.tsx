@@ -109,19 +109,23 @@ export function PersonalTestimonials({
   variant = "home",
 }: {
   locale: PublicLocale;
-  variant?: "home" | "services" | "all";
+  variant?: "home" | "services" | "all" | "about";
 }) {
   const current = copy[locale];
   const isHome = variant === "home";
+  const isAbout = variant === "about";
+  const isFullArchive = isAbout || variant === "all";
   const videos = isHome ? testimonialVideos[locale].slice(0, 4) : testimonialVideos[locale].slice(0, 4);
   // Full consultation landing: show all 12 provenance-checked videos, not the compact home/services subset.
-  const presentedVideos = variant === "all"
+  const presentedVideos = isFullArchive
     ? [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]]
     : videos;
+  // On About, use only genuine, matching local video stills. Never render a blank archived photo.
+  const visibleVideos = isAbout ? presentedVideos.filter((item) => locallyArchivedVideoPosterIds.has(item.id)) : presentedVideos;
   // Home shows four matching-audio originals, with every other archived clip available in-place.
   const remainingHomeVideos = isHome ? testimonialVideos[locale].slice(4) : [];
   const otherLanguageVideos = isHome ? testimonialVideos[locale === "ru" ? "en" : "ru"] : [];
-  const titleId = isHome ? "home-testimonials-title" : "services-testimonials-title";
+  const titleId = isAbout ? "testimonials-title" : isHome ? "home-testimonials-title" : "services-testimonials-title";
 
   const renderVideoCards = (
     items: ReadonlyArray<{ id: string; title: string; language: "en" | "ru" }>,
@@ -133,6 +137,8 @@ export function PersonalTestimonials({
         video={{ youtubeId: item.id, language: item.language, title: item.title }}
         locale={locale}
         compact
+        minimal={isAbout}
+        internalOnly={isAbout}
         fallbackPoster={locallyArchivedVideoPosterIds.has(item.id) ? `/images/holistic-house/testimonial-posters/${item.id}.webp` : undefined}
       />
     </div>
@@ -153,14 +159,14 @@ export function PersonalTestimonials({
     <section
       className={styles.section}
       aria-labelledby={titleId}
-      id={isHome ? "testimonials" : "client-experiences"}
+      id={isHome ? "testimonials" : isAbout ? "about-testimonials" : "client-experiences"}
       data-personal-testimonials={variant}
       lang={locale}
     >
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{current.eyebrow}</p>
-        <h2 id={titleId}>{isHome || variant === "all" ? current.title : current.serviceTitle}</h2>
-        <p>{variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : locale === "es" ? "12 testimonios reales en vídeo, con audio en inglés y ruso. Pulsa para leer una historia personal." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
+        <h2 id={titleId}>{isHome || isFullArchive ? current.title : current.serviceTitle}</h2>
+        <p>{isAbout ? (locale === "ru" ? "Письменный отзыв, опубликованный с разрешения автора, и 10 оригинальных видеоотзывов — здесь, на Holistic House." : locale === "es" ? "Un testimonio escrito compartido con permiso y 10 testimonios reales en vídeo, disponibles aquí en Holistic House." : "A written client story shared with permission and 10 original video reviews — all here on Holistic House.") : variant === "all" ? (locale === "ru" ? "12 настоящих видеоотзывов на русском и английском. История клиента — по нажатию." : locale === "es" ? "12 testimonios reales en vídeo, con audio en inglés y ruso. Pulsa para leer una historia personal." : "12 authentic video testimonials in English and Russian. Tap to read a client story.") : isHome ? current.lead : current.serviceLead}</p>
       </header>
 
       {variant === "all" ? (
@@ -172,14 +178,14 @@ export function PersonalTestimonials({
 
       <div className={styles.videoHeader}>
         <h3>{current.videoHeading}</h3>
-        <span>{variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : locale === "es" ? "12 vídeos · audio en inglés y ruso" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
+        <span>{isAbout ? (locale === "ru" ? "10 видео · RU/EN" : locale === "es" ? "10 vídeos · audio RU/EN" : "10 videos · RU/EN audio") : variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : locale === "es" ? "12 vídeos · audio en inglés y ruso" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
       </div>
-      {variant === "all" && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : locale === "es" ? "Desliza para ver más testimonios →" : "Swipe or scroll to see all video reviews →"}</p>}
+      {isFullArchive && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : locale === "es" ? "Desliza para ver más testimonios →" : "Swipe or scroll to see all video reviews →"}</p>}
       <div className={styles.videoGrid}
-        role={variant === "all" ? "region" : undefined}
-        aria-label={variant === "all" ? (locale === "ru" ? "Галерея из 12 видеоотзывов" : "Gallery of 12 video testimonials") : undefined}
-        tabIndex={variant === "all" ? 0 : undefined}>
-        {renderVideoCards(presentedVideos, variant === "all")}
+        role={isFullArchive ? "region" : undefined}
+        aria-label={isFullArchive ? (locale === "ru" ? `Галерея из ${visibleVideos.length} видеоотзывов` : `Gallery of ${visibleVideos.length} video testimonials`) : undefined}
+        tabIndex={isFullArchive ? 0 : undefined}>
+        {renderVideoCards(visibleVideos, isFullArchive)}
       </div>
 
       {isHome && (
@@ -217,9 +223,9 @@ export function PersonalTestimonials({
 
       <p className={styles.disclaimer}>{current.disclaimer}</p>
       <div className={styles.actions}>
-        <Link prefetch={false} className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
+        {!isAbout && <Link prefetch={false} className={styles.more} href={"/" + locale + "/about#testimonials-title"}>
           {current.moreLink}<ArrowRight aria-hidden="true" size={17}/>
-        </Link>
+        </Link>}
         <Link prefetch={false} className={styles.contact} href={variant === "all" ? "#request-free-review" : "/" + locale + "/services/free-situation-review"}>
           {current.ctaLink}<ArrowRight aria-hidden="true" size={17}/>
         </Link>

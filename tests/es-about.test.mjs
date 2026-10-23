@@ -27,7 +27,7 @@ test('Spanish About uses its independent published Spanish audio, not an English
   for (const text of ['Audio en inglés','Audio en ruso','cc_lang_pref: video.language','lang={textLanguage}','psychic-alchemy-es-v1.webp']) assert.ok(player.includes(text));
 });
 test('ES About retains all sections, real translated destinations, form and SEO', () => {
-  const page = source('app/es/about/page.tsx'); for (const value of ['about-biography', 'about-testimonials', 'about-review-archive', 'personal-consultation-title', 'about-client-cabinet', 'canonical:', "es: '/es/about'", '/es/books', '/es/homeopathy', '/es/services', '/es/client']) assert.ok(page.includes(value), value);
+  const page = source('app/es/about/page.tsx'); for (const value of ['about-biography', 'PersonalTestimonials', 'variant="about"', 'personal-consultation-title', 'about-client-cabinet', 'canonical:', "es: '/es/about'", '/es/books', '/es/homeopathy', '/es/services', '/es/client']) assert.ok(page.includes(value), value);
   assert.doesNotMatch(page, /Los enlaces marcados con EN|href="\/en\/client"/);
   const form = source('components/personal-consultation-form.tsx');
   const chooser = source('components/consultation-choice-capture.tsx');
