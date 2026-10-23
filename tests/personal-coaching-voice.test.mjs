@@ -75,6 +75,7 @@ test('coaching UI scripts are parseable before a production deployment', async()
     'components/app/personal-coaching.jsx',
     'components/app/personal-coaching-picker.jsx',
     'components/app/coaching-question-voice.jsx',
+    'components/app/app-workspace.jsx',
     'components/app/tradition-coaching.jsx',
   ]){
     const parsed=ts.createSourceFile(file,source(file),ts.ScriptTarget.ES2022,true,ts.ScriptKind.JSX)

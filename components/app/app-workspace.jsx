@@ -1125,7 +1125,7 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
         </button>
         {saved && <p role="status">{c.saved}</p>}
         {error && <p role="alert">{message(error, c)}</p>}
-      </form>}
+      </form>
     </section>
   )
 }
