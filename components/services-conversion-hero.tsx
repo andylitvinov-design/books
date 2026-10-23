@@ -29,6 +29,7 @@ const copy = {
     modeTitle: "Where would you like to meet?",
     online: "Online",
     toronto: "Toronto · In person",
+    inPerson: "In person",
     filterTitle: "What kind of support are you looking for?",
     filterLead: "Choose a theme to see the services that fit.",
     topics: { all: "All services", personal: "Personal growth", relationships: "Relationships", business: "Business & career", reiki: "Reiki & energy", free: "Start free" },
@@ -57,6 +58,7 @@ const copy = {
     modeTitle: "Как вам удобно встретиться?",
     online: "Онлайн",
     toronto: "Торонто · Лично",
+    inPerson: "Лично",
     filterTitle: "Какой тип услуг вам подходит?",
     filterLead: "Выберите тему — ниже останутся подходящие предложения.",
     topics: { all: "Все услуги", personal: "Личное развитие", relationships: "Отношения", business: "Бизнес и карьера", reiki: "Рейки и энергия", free: "Бесплатно" },
@@ -85,6 +87,7 @@ const copy = {
     modeTitle: "¿Dónde prefieres reunirnos?",
     online: "En línea",
     toronto: "Toronto · Presencial",
+    inPerson: "Presencial",
     filterTitle: "¿Qué tipo de servicio buscas?",
     filterLead: "Elige un tema y descubre las opciones adecuadas.",
     topics: { all: "Todos", personal: "Crecimiento personal", relationships: "Relaciones", business: "Negocios y carrera", reiki: "Reiki y energía", free: "Empezar gratis" },
@@ -214,10 +217,18 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
 
       <div className={styles.finder} data-services-category-filter>
         <div className={styles.filterHeader}>
-          <div>
-            <h2>{t.filterTitle}</h2>
-            <p>{t.filterLead}</p>
+          <h2>{t.filterTitle}</h2>
+          <div className={styles.modeToggle} role="group" aria-label={t.modeTitle}>
+            <button type="button" aria-pressed={mode === "online"} className={mode === "online" ? styles.modeActive : ""}
+              data-services-mode="online" onClick={() => setMode("online")}>
+              <MonitorPlay size={15} aria-hidden="true" />{t.online}
+            </button>
+            <button type="button" aria-pressed={mode === "toronto"} className={mode === "toronto" ? styles.modeActive : ""}
+              data-services-mode="toronto" title={t.toronto} aria-label={t.toronto} onClick={() => setMode("toronto")}>
+              <MapPin size={15} aria-hidden="true" />{t.inPerson}
+            </button>
           </div>
+          <p>{t.filterLead}</p>
         </div>
         <div className={styles.topicList} role="group" aria-label={t.filterTitle}>
           {serviceTopics.map(kind => (
@@ -225,22 +236,6 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
               className={topic === kind ? styles.topicActive : styles.topic}
               onClick={() => chooseTopic(kind)}>{t.topics[kind]}</button>
           ))}
-        </div>
-        <div className={styles.finderTop}>
-          <div>
-            <p className={styles.finderEyebrow}>{t.modeTitle}</p>
-            <div className={styles.modeToggle} role="group" aria-label={t.modeTitle}>
-              <button type="button" aria-pressed={mode === "online"} className={mode === "online" ? styles.modeActive : ""}
-                data-services-mode="online" onClick={() => setMode("online")}>
-                <MonitorPlay size={17} aria-hidden="true" />{t.online}
-              </button>
-              <button type="button" aria-pressed={mode === "toronto"} className={mode === "toronto" ? styles.modeActive : ""}
-                data-services-mode="toronto" onClick={() => setMode("toronto")}>
-                <MapPin size={17} aria-hidden="true" />{t.toronto}
-              </button>
-            </div>
-          </div>
-          <p className={styles.reassurance}>{t.reassurance}</p>
         </div>
         <div className={styles.finderFooter}>
           <p role="status" aria-live="polite" data-services-match-count>
@@ -254,6 +249,7 @@ export function ServicesConversionHero({ locale }: { locale: PublicLocale }) {
               {t.paidCta}<ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
+          <p className={styles.reassurance}>{t.reassurance}</p>
         </div>
         {count === 0 ? <div className={styles.empty} data-services-empty>
           <p>{t.noResults}</p>

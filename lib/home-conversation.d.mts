@@ -35,4 +35,12 @@ export declare function browseHomeGuideOffers(args: {
   question?: string;
 }): { urgent: boolean; matched: boolean; offers: HomeGuideOffer[] };
 
+export type HomeGuideQuickStart = {
+  id: "stress" | "relationships" | "direction" | "business" | "resources" | "reiki";
+  title: string;
+  category: string;
+  href: string;
+};
+export declare function homeGuideQuickStarts(locale?: PublicLocale): HomeGuideQuickStart[];
+
 export declare function matchHomeGuideReply(input: string, context: HomeGuideContext | null): string | null;

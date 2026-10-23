@@ -4,16 +4,20 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/home-conversation-guide.*'
+      - 'components/home-free-diagnosis-banner.*'
       - 'components/holistic-house-home.tsx'
       - 'app/es/page.tsx'
       - 'lib/home-conversation.*'
       - 'tests/home-conversation-guide.test.mjs'
       - 'tests/home-conversation-browser.mjs'
+      - 'tests/home-carousel-first-screen-cta.test.mjs'
+      - 'tests/home-diagnosis-messenger.test.mjs'
       - '.github/workflows/hh-home-conversation.yml'
   push:
     branches: ['codex/public-book-library']
     paths:
       - 'components/home-conversation-guide.*'
+      - 'components/home-free-diagnosis-banner.*'
       - 'components/holistic-house-home.tsx'
       - 'app/es/page.tsx'
       - 'lib/home-conversation.*'
@@ -38,11 +42,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Localized conversation, topic routing and existing carousel regressions
-        run: node --test tests/home-conversation-guide.test.mjs tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs
+        run: node --test tests/home-conversation-guide.test.mjs tests/ideas-guidance.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs tests/home-diagnosis-messenger.test.mjs
       - name: Check affected TypeScript and React UI
         run: |
           npx tsc --noEmit
-          npx eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx
+          npx eslint components/home-conversation-guide.tsx components/holistic-house-home.tsx app/es/page.tsx components/home-free-diagnosis-banner.tsx
       - name: Build with the project's production dependencies
         run: npm run build
         env:

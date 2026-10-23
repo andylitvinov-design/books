@@ -31,19 +31,22 @@ test("photo-led service cards replace the duplicated free text cards on all home
     assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths/);
     assert.match(source, /service-home-hero/);
   }
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
+  const more = read("components/home-more-disclosure.tsx");
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
+  assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
   assert.match(cards, /id=\{isHome \? "free-start" : undefined\}/);
   assert.match(cards, /homepageMedia\[offer\.id\]/);
   assert.match(cards, /data-core-service-id=\{offer\.id\}/);
   for (const slug of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"]) {
     assert.ok(offers.includes(slug), slug);
   }
-  const serviceCardsAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  const topicCardsAt = home.indexOf('<HomepageTopicJourneys locale={locale} />');
-  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt, "Photo service cards must precede topic journeys");
+  const serviceCardsAt = more.indexOf('<ServicesSolutions locale={locale} variant="home" />');
+  const topicCardsAt = more.indexOf('<HomepageTopicJourneys locale={locale} />');
+  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt, "Expanded photo service cards precede topic journeys");
   assert.doesNotMatch(home, /HomeFreeTestsBanner/);
   assert.match(es, /className="service-home-actions" id="free-start"/);
-  assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('<HomeExploreSections locale="es" />'));
+  assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('</HomeMoreDisclosure>'));
+  assert.match(more, /<HomeExploreSections locale="es" \/>/);
   assert.match(navigation, /#free-start/);
   assert.match(home, /not a live call/);
   assert.match(es, /no una llamada/);

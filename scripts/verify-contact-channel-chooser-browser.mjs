@@ -189,6 +189,8 @@ async function runEngine(name, engine) {
           assert.equal(daoResponse?.status(),200);
           const dao = page.locator('main[data-free-entry-landing="dao"]');
           await expect(dao.locator('h1')).toBeVisible();
+          await expect(dao.locator('[data-compact-lead-form] input[type="checkbox"][required]')).toHaveCount(1);
+          await expect(dao.locator('[data-contact-channel-chooser]')).toHaveCount(0);
           await dao.locator('a[href="#request-free-wu-xing"]').click();
           await assertCompactLeadRequest(page,dao.locator('#request-free-wu-xing'),expect,{
             locale,serviceTitle:"Free symbolic Wu Xing Resource Profile",

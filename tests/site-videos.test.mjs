@@ -448,6 +448,26 @@ test('durable stores survive recreation and atomically protect publish/hide from
   assert.ok(database.commands.every(command => !JSON.stringify(command).includes('prescription:record:')))
 })
 
+test('public placements fetch exactly one editorial field and preserve explicit hide', async () => {
+  const original = published();
+  const hidden = prepareVideoChange(original, { slot: 'home-intro', locale: 'en', intent: 'hide' }, timestamp);
+  const hash = new Map([[original.key, JSON.stringify(original)]]);
+  const commands = [];
+  const fetchFn = async (_url, options) => {
+    const command = JSON.parse(options.body);
+    commands.push(command);
+    if (command[0] !== 'HGET') throw new Error('A single video must not request the full editorial hash');
+    assert.equal(command[1], 'holistic-house:site-videos:v1');
+    return { ok: true, json: async () => ({ result: hash.get(command[2]) ?? null }) };
+  };
+  const store = createSiteVideoStore({ environment, fetchFn });
+  assert.equal(toPublishedSiteVideo(await store.get(original.key, { timeoutMs: 1800 })).youtubeId, firstId);
+  hash.set(original.key, JSON.stringify(hidden));
+  assert.equal(toPublishedSiteVideo(await store.get(original.key, { timeoutMs: 1800 })), undefined);
+  assert.equal(commands.length, 2);
+  assert.ok(commands.every(command => command[0] === 'HGET' && command[2] === original.key));
+});
+
 test('invalid stored rows stay hidden and cannot be mistaken for a missing record during edits', async () => {
   const database = fakeRestDatabase()
   const valid = published()

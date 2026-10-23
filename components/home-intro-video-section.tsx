@@ -1,6 +1,6 @@
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { videoKey } from "@/lib/site-videos/model";
-import { getPublishedSiteVideos } from "@/lib/site-videos/public";
+import { getPublishedSiteVideo } from "@/lib/site-videos/public";
 
 const copy = {
   en: { kicker: "A short introduction", title: "Holistic House in half a minute" },
@@ -13,8 +13,7 @@ const copy = {
  * No private session, cookie or request-specific CSP nonce is cached.
  */
 export async function HomeIntroVideoSection({ locale }: { locale: "en" | "ru" }) {
-  const published = await getPublishedSiteVideos();
-  const introVideo = published[videoKey("home-intro", locale)];
+  const introVideo = await getPublishedSiteVideo(videoKey("home-intro", locale));
   if (!introVideo) return null;
   const text = copy[locale];
   return (

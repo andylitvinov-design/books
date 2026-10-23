@@ -118,7 +118,8 @@ test("the approved photo hero has light text-only section links without replacin
   assert.match(carousel, /data-home-nav-section=\{key\}/);
   assert.match(carousel, /aria-current=\{key === slide\.key \? "true" : undefined\}/);
   assert.match(carousel, /slides\.find\(item => item\.key === key\)/);
-  assert.match(carousel, /href=\{target \? `\/\$\{locale\}\$\{target\.href\}` : locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
+  // #1573 uses an explicit EN fallback for the Spanish cabinet; keep that route contract.
+  assert.match(carousel, /href=\{key === "cabinet" && locale === "es" \? "\/en\/app" : target \? `\/\$\{locale\}\$\{target\.href\}` : locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
   for (const item of sections) assert.match(carousel, new RegExp(item + ': "'));
   for (const label of ["Главная", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Кабинет", "Inicio", "Pruebas", "Servicios", "Academia", "Negocios", "Mi espacio"]) {
     assert.ok(carousel.includes(label), "Missing localized top navigation label: " + label);
@@ -131,4 +132,24 @@ test("the approved photo hero has light text-only section links without replacin
   assert.match(style, /\.sectionNavLink\[aria-current="true"\]/);
   assert.match(style, /@media \(max-width:365px\)/);
   assert.doesNotMatch(carousel, /navKeys\.map[^]*?<svg/);
+});
+
+test("homepage slider category bar matches the outlined oval and contrast-white active pill on narrow iPhones", () => {
+  const scoped = style.split("/* Homepage-only segmented navigation:")[1];
+  assert.ok(scoped, "Missing homepage-only pill styles");
+  assert.match(scoped, /\.hero\[data-home-section-carousel\] \.sectionNav \{/);
+  assert.match(scoped, /border: 1px solid rgba\(255, 253, 246, \.70\)/);
+  assert.match(scoped, /border-radius: 999px/);
+  assert.match(scoped, /\.sectionNavScroller \{[^}]*gap: 2px/s);
+  assert.match(scoped, /\.sectionNavLink \{[^}]*min-height: 44px/s);
+  assert.match(scoped, /\.sectionNavLink\[aria-current="true"\] \{[^}]*color: #23394d;[^}]*background: #fffdfa;/s);
+  assert.match(scoped, /\.sectionNavLink \+ \.sectionNavLink::before,[^]*?content: none/);
+  assert.match(scoped, /@media \(max-width: 760px\)/);
+  assert.match(scoped, /@media \(max-width: 365px\)/);
+  assert.match(scoped, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(carousel, /data-home-nav-active=\{key === slide\.key \? "true" : "false"\}/);
+  // Touch-scrolling the 7 labels must not also swipe the parent photo carousel.
+  assert.match(carousel, /onTouchStart=\{event => event\.stopPropagation\(\)\}/);
+  assert.match(carousel, /onTouchEnd=\{event => event\.stopPropagation\(\)\}/);
+  assert.match(carousel, /onTouchCancel=\{event => event\.stopPropagation\(\)\}/);
 });

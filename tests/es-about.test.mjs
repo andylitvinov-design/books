@@ -14,8 +14,8 @@ test('Spanish biography preserves every English section, paragraph and experienc
 });
 test('Spanish About uses its independent published Spanish audio, not an English fallback', async () => {
   const page = source('app/es/about/page.tsx');
-  assert.match(page, /getPublishedSiteVideos\(\)/);
-  assert.ok(page.includes("published['about-intro:es']"));
+  assert.match(page, /getPublishedSiteVideo\('about-intro:es'\)/);
+  assert.doesNotMatch(page, /getPublishedSiteVideos\(\)/);
   assert.doesNotMatch(page, /englishIntro|about-intro:en|create_video|saveSiteVideoAction/);
   const { existingAboutIntroVideoEs } = await import('../lib/site-videos/defaults.js');
   const { aboutIntroEs } = await loadData('data/about-es.ts');
