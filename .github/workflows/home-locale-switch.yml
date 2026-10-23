@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'components/holistic-house-home.tsx'
+      - 'components/home-core-methods.tsx'
+      - 'components/home-core-methods.module.css'
+      - 'app/es/page.tsx'
+      - 'tests/home-core-methods.test.mjs'
       - 'components/site-navigation.tsx'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
@@ -11,6 +15,10 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-house-home.tsx'
+      - 'components/home-core-methods.tsx'
+      - 'components/home-core-methods.module.css'
+      - 'app/es/page.tsx'
+      - 'tests/home-core-methods.test.mjs'
       - 'components/site-navigation.tsx'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
@@ -18,6 +26,27 @@ on:
 permissions:
   contents: read
 jobs:
+  core-methods:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: New home method cards, affected lint and types
+        run: |
+          node --test tests/home-core-methods.test.mjs
+          npx eslint components/home-core-methods.tsx components/holistic-house-home.tsx app/es/page.tsx
+          npx tsc --noEmit
+      - name: Build three home locales with reviewed dependencies
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
   first-click:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -32,8 +61,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Navigation, types and affected-component lint
         run: |
-          node --test tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
-          npx eslint components/holistic-house-home.tsx
+          node --test tests/home-core-methods.test.mjs tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
+          npx eslint components/holistic-house-home.tsx components/home-core-methods.tsx app/es/page.tsx
           npx tsc --noEmit
       - name: Build the real application
         run: npm run build
