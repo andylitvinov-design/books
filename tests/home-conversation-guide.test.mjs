@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { homeGuideDestinations, homeGuideGoals, homeGuideCategories, browseHomeGuideOffers, homeGuideQuickStarts, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply, homeGuideOpening, homeGuideConversationCue } from "../lib/home-conversation.mjs";
+import { homeGuideDestinations, homeGuideGoals, homeGuideCategories, browseHomeGuideOffers, homeGuideQuickStarts, resolveHomeGuideQuestion, homeGuideFollowup, chooseHomeGuideOffer, matchHomeGuideReply, homeGuideOpening, homeGuideConversationCue, homeGuideFreeTextStep } from "../lib/home-conversation.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -494,11 +494,48 @@ test("urgent crisis suppresses promotions, including after a normal conversation
   assert.equal(resolveHomeGuideQuestion("Нужен бесплатный тест", "ru", urgent).urgent, true);
 });
 
+
+test("open-ended text after a second question is heard without endless repetition", () => {
+  const love = resolveHomeGuideQuestion("Хочу любви", "ru");
+  assert.equal(homeGuideFreeTextStep("Я давно никому не нужна и мне от этого грустно", love, "ru"), null,
+    "Do not skip the first clarifying question");
+  const next = chooseHomeGuideOffer(love, "focus-meeting", "ru").context;
+  assert.equal(homeGuideFreeTextStep("не знаю", next, "ru"), null);
+  const result = homeGuideFreeTextStep("Мне кажется, меня никто не замечает, даже когда я пытаюсь общаться", next, "ru");
+  assert.ok(result);
+  assert.deepEqual(result.offers.map(x => x.id), ["review", "tests"]);
+  assert.match(result.response.ru, /не могу понять все нюансы/);
+  assert.equal(result.offers[0].href, "/ru/services/free-situation-review");
+  assert.doesNotMatch(result.offers[0].href, /никто|замечает|[?&]/);
+  const other = chooseHomeGuideOffer(next, "personal", "ru");
+  assert.equal(other.offers[0].id, "consult", "Personal service remains opt-in");
+  const urgent = resolveHomeGuideQuestion("Хочу умереть", "ru", next);
+  assert.equal(homeGuideFreeTextStep("Спасибо, что ответили", urgent, "ru"), null);
+});
+
+test("natural language category correction for relationships, sleep, money and Spanish", () => {
+  const boyfriend = resolveHomeGuideQuestion("Боюсь потерять парня", "en");
+  assert.equal(boyfriend.lang, "ru");
+  assert.equal(boyfriend.topic, "relationships");
+  assert.equal(boyfriend.subtopic, "bond");
+  const sleepless = resolveHomeGuideQuestion("У меня бессонница", "ru");
+  assert.equal(sleepless.topic, "stress");
+  assert.equal(sleepless.subtopic, "sleep");
+  const money = resolveHomeGuideQuestion("Хочу больше денег", "ru");
+  assert.equal(money.topic, "work");
+  assert.equal(money.subtopic, "income");
+  assert.match(homeGuideFollowup(money).prompt.ru, /увеличить доход/);
+  const spanish = resolveHomeGuideQuestion("Quiero amor", "en");
+  assert.equal(spanish.lang, "es", "A brief natural Spanish sentence should not use English on EN home");
+  assert.equal(spanish.topic, "relationships");
+});
+
 test("mobile chat uses gentle suggestion chips and context-first privacy-safe dialogue", () => {
   const ui = read("components/home-conversation-guide.tsx");
   const css = read("components/home-conversation-guide.module.css");
   const router = read("lib/home-conversation.mjs");
   assert.ok(ui.includes("homeGuideConversationCue(question, context)"));
+  assert.ok(ui.includes("homeGuideFreeTextStep(question, context, safety.lang)"));
   assert.ok(ui.includes("const safety = resolveHomeGuideQuestion"));
   assert.ok(ui.indexOf("if (safety.urgent)") < ui.indexOf("const replyId = matchHomeGuideReply"));
   assert.ok(ui.includes("const sameConversation = context"));
