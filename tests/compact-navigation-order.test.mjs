@@ -3,14 +3,14 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { activeCompactNavigationId, compactNavigationIds, getCompactNavigation, getSiteNavigation, navigationCopy } from '../lib/site-navigation-model.js'
 
-const order = ['home', 'energy', 'love', 'business', 'tests', 'books']
+const order = ['home', 'energy', 'love', 'business', 'tests', 'books', 'pro']
 
-test('mobile bottom bar and menu use the same six ordered destinations in EN, RU and ES', () => {
+test('mobile bottom bar and menu use the same seven ordered destinations in EN, RU and ES', () => {
   assert.deepEqual(compactNavigationIds, order)
   for (const locale of ['en', 'ru', 'es']) {
     const items = getCompactNavigation(locale)
     assert.deepEqual(items.map(item => item.id), order)
-    assert.equal(new Set(items.map(item => item.id)).size, 6)
+    assert.equal(new Set(items.map(item => item.id)).size, 7)
     assert.equal(items[0].href, locale === 'en' ? '/' : `/${locale}`)
     assert.equal(items[1].href, `/${locale}/explore/energy`)
     assert.equal(items[2].href, `/${locale}/explore/love`)
@@ -19,6 +19,8 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
     assert.equal(getSiteNavigation(locale).filter(item => item.id === 'business').length, 1, 'Business is one canonical public direction')
     assert.equal(items[5].href, `/${locale}/books`)
     assert.equal(items[5].label, { en: 'Ideas', ru: 'Идеи', es: 'Ideas' }[locale])
+    assert.equal(items[6].href, `/${locale}/pro`)
+    assert.equal(items[6].label, { en: 'Pro', ru: 'Профи', es: 'Pro' }[locale])
     for (const item of items) {
       assert.equal(item.label, navigationCopy[locale][item.id])
       assert.equal(item.ariaLabel, item.label)
@@ -35,6 +37,7 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
     assert.equal(activeCompactNavigationId(`/${locale}/library`), 'books')
     assert.equal(activeCompactNavigationId(`/${locale}/about`), 'about')
     assert.equal(activeCompactNavigationId(`/${locale}/academy`), 'courses')
+    assert.equal(activeCompactNavigationId(`/${locale}/pro`), 'pro')
     assert.equal(getSiteNavigation(locale).find(item => item.id === 'courses').href, `/${locale}/academy`)
   }
   for (const locale of ['en','ru']) assert.equal(activeCompactNavigationId(`/${locale}/app`), 'cabinet')
