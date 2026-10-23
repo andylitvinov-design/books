@@ -285,7 +285,8 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         : <span>{ru ? 'Выберите тему слева' : es ? 'Elige un tema' : 'Choose a topic to highlight'}</span>}</div>
     </div>}
     {!portrait && !compact && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
-    {portrait && !compact && portraitActions}
+    {portrait && !compact && (typeof portraitActions === 'function'
+      ? portraitActions({ selectedSector, portrait }) : portraitActions)}
     {portrait && !compact && !allSectors && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>

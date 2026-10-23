@@ -31,6 +31,7 @@ import { TestRatingCard } from '@/components/app/test-rating-card'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
 import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
 import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
+import { PortraitTestQuickActions } from '@/components/app/portrait-test-quick-actions'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
@@ -2351,32 +2352,16 @@ function PortfolioPage({ data, locale }) {
         </summary>
         <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
           portrait={buildPsychPortrait(data.results || [])}
-          portraitActions={<nav className="hh-portrait-quick-actions"
-            aria-label={ru ? 'Действия с психологическим портретом' : 'Psychological portrait actions'}
-            data-testid="portrait-quick-actions">
-            <Link href={`/${locale}/app/tests?profile=missing`} prefetch={false}
-              className="hh-portrait-quick-primary" data-testid="portrait-completion-action">
-              <ClipboardList size={18} aria-hidden="true" />
-              {ru ? 'Тесты' : locale === 'es' ? 'Tests' : 'Tests'}
-            </Link>
-            <button type="button" className="hh-portrait-quick-secondary hh-portrait-quick-analyses"
-              data-testid="portrait-analyses-action"
-              onClick={() => {
-                setAnalysisScrollRequest(current => current + 1)
-              }}>
-              <BarChart3 size={18} aria-hidden="true" />
-              {ru ? 'Анализы' : locale === 'es' ? 'Análisis' : 'Analyses'}
-            </button>
-            <button type="button" className="hh-portrait-quick-secondary"
-              data-testid="portrait-recommendations-action"
-              onClick={() => {
+          portraitActions={({ selectedSector, portrait }) =>
+            <PortraitTestQuickActions locale={locale} sector={selectedSector} portrait={portrait}
+              entriesByKey={entriesByKey} results={data.results || []}
+              runs={data.runs || []} accountId={accountId}
+              activeTestPlan={data.activeTestPlan}
+              onAnalyses={() => setAnalysisScrollRequest(current => current + 1)}
+              onRecommendations={() => {
                 chooseView('values')
                 setRecommendationScrollRequest(current => current + 1)
-              }}>
-              <Sparkles size={18} aria-hidden="true" />
-              {ru ? 'Рекомендации' : 'Recommendations'}
-            </button>
-          </nav>} />
+              }} />} />
       </details>
       <PortraitAnalyses results={data.results || []} locale={locale} />
       {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
