@@ -580,7 +580,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               </span>)}
             </div>
           </details>}
-        </div>
+        </div>}
         {lessonStage===1&&<div className={styles.oneIdea} data-business-real-practice>
           <h2>{t.practice}</h2>
           <p>{selected.action}</p>
