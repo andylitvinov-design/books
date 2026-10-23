@@ -11,8 +11,10 @@ test("closed EN/RU/ES homepage details omit heavyweight catalogue markup from in
   for (const page of [home, es]) {
     assert.match(page, /<HomeMoreDisclosure locale=/);
     assert.doesNotMatch(page, /<ServicesSolutions |<HomeExploreSections |<TestSelectionCourseBanner /);
-    // Only the three small public direction gateways are now rendered on the homepage.
+    // Functional Tests/Courses/Reports/Development and three direction gateways stay small and public.
+    assert.match(page, /<HomeFeaturedWorkspace locale=/);
     assert.match(page, /<HomepageTopicJourneys locale=/);
+    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomepageTopicJourneys"));
     assert.ok(page.indexOf('<HomepageTopicJourneys') < page.indexOf('<HomeMoreDisclosure'));
     assert.match(page, /<HomeConversationGuide/);
     assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFreeDiagnosisBanner"));

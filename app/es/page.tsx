@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import { HomeSectionCarousel } from '@/components/home-section-carousel';
 import { HomeMasterPath } from '@/components/home-master-path';
+import { HomeFeaturedWorkspace } from '@/components/home-featured-workspace';
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner';
 import { HomeConversationGuide } from '@/components/home-conversation-guide';
 import { HomepageTopicJourneys } from '@/components/homepage-topic-journeys';
@@ -28,6 +29,7 @@ export default function SpanishHomePage() {
     <HomeFreeDiagnosisBanner locale="es" />
     <HomeConversationGuide locale="es" />
     <HomePersonalSpaceCard locale="es" />
+    <HomeFeaturedWorkspace locale="es" />
     <HomepageTopicJourneys locale="es" />
     <HomeMoreDisclosure locale="es">
     <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
