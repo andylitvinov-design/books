@@ -8,9 +8,13 @@
     "sourceVideoPlacements": 170,
     "uniqueVideoIds": 140,
     "knownNativeVideoIds": 41,
-    "unmappedUniqueVideoIds": 99,
     "groups": 39,
-    "verification": "Source link discovery only; does NOT verify playback, content rights or the owner's authorship"
+    "verification": "Source link discovery only; does NOT verify playback, content rights or the owner's authorship",
+    "matchingAnyExistingHolisticHouseVideo": 114,
+    "notYetIndexedInHolisticHouse": 26,
+    "groupingNote": "group identifies related original programme, not author ownership or publication approval. Non-original/third-party videos require review before public embed.",
+    "nativeCoverageSources": "data/academy/{yggdrasil-curriculum.json,media.generated.json,psimaster-media.generated.json,psimaster-supplemental-media.generated.json}",
+    "caseNote": "26 unindexed YouTube IDs include historic third-party lectures and testimonials; none are automatically assigned to new public course lessons."
   },
   "records": [
     {
@@ -22,7 +26,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12123",
@@ -33,7 +39,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12180",
@@ -48,7 +56,9 @@
       ],
       "videoCount": 3,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12182",
@@ -85,7 +95,20 @@
       ],
       "videoCount": 25,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 15,
+      "unindexedVideoIds": [
+        "7-En6Gzd_cw",
+        "1oV-hhRYuWs",
+        "2JsrM1pjwT0",
+        "2coGfxGbVr8",
+        "AkqHOXfk5fU",
+        "4VW1YI21T7Q",
+        "Wq6SFWL4rhs",
+        "ikgIoCgDpYw",
+        "ESktGxYqDFQ",
+        "63CfFqybj50"
+      ]
     },
     {
       "sourceTaxonomyId": "12192",
@@ -100,7 +123,9 @@
       ],
       "videoCount": 3,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12199",
@@ -111,7 +136,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12200",
@@ -126,7 +153,11 @@
       ],
       "videoCount": 3,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 2,
+      "unindexedVideoIds": [
+        "FxOE-cEAnP4"
+      ]
     },
     {
       "sourceTaxonomyId": "12202",
@@ -141,7 +172,9 @@
       ],
       "videoCount": 3,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12206",
@@ -157,7 +190,11 @@
       ],
       "videoCount": 4,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": [
+        "PiZhuunFpHU"
+      ]
     },
     {
       "sourceTaxonomyId": "12207",
@@ -170,7 +207,11 @@
       ],
       "videoCount": 1,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": [
+        "w3t5RUJ0RFM"
+      ]
     },
     {
       "sourceTaxonomyId": "12210",
@@ -185,7 +226,9 @@
       ],
       "videoCount": 3,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12212",
@@ -196,7 +239,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12290",
@@ -207,7 +252,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12308",
@@ -221,7 +268,9 @@
       ],
       "videoCount": 2,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 2,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12312",
@@ -235,7 +284,9 @@
       ],
       "videoCount": 2,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 2,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12313",
@@ -246,7 +297,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12323",
@@ -262,7 +315,11 @@
       ],
       "videoCount": 4,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": [
+        "PiZhuunFpHU"
+      ]
     },
     {
       "sourceTaxonomyId": "12327",
@@ -280,7 +337,9 @@
       ],
       "videoCount": 6,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 6,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12329",
@@ -291,7 +350,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12343",
@@ -302,7 +363,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12344",
@@ -313,7 +376,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12345",
@@ -324,7 +389,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12346",
@@ -335,7 +402,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12351",
@@ -362,7 +431,9 @@
       ],
       "videoCount": 15,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 15,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12352",
@@ -377,7 +448,9 @@
       ],
       "videoCount": 3,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12353",
@@ -399,7 +472,14 @@
       ],
       "videoCount": 10,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 6,
+      "unindexedVideoIds": [
+        "eGmMz9z1Puk",
+        "BwBlVerwAhY",
+        "5WaDYO4A7RI",
+        "YjZh0cJbBi0"
+      ]
     },
     {
       "sourceTaxonomyId": "12355",
@@ -419,7 +499,9 @@
       ],
       "videoCount": 8,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 8,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12356",
@@ -442,7 +524,14 @@
       ],
       "videoCount": 11,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 7,
+      "unindexedVideoIds": [
+        "cdfzUaqRa68",
+        "HBwy34WFpPM",
+        "uuthxpk4Fn8",
+        "cXcsjY4K8kk"
+      ]
     },
     {
       "sourceTaxonomyId": "12362",
@@ -453,7 +542,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12382",
@@ -467,7 +558,9 @@
       ],
       "videoCount": 2,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 2,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12383",
@@ -478,7 +571,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12384",
@@ -489,7 +584,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12385",
@@ -500,7 +597,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12386",
@@ -511,7 +610,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12387",
@@ -525,7 +626,9 @@
       ],
       "videoCount": 2,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 2,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12388",
@@ -536,7 +639,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12389",
@@ -547,7 +652,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12390",
@@ -558,7 +665,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12392",
@@ -576,7 +685,9 @@
       ],
       "videoCount": 6,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 6,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12393",
@@ -593,7 +704,14 @@
       ],
       "videoCount": 5,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 1,
+      "unindexedVideoIds": [
+        "m9RfDgK76PU",
+        "5oj0BIbLT4w",
+        "thhX4iRjOEQ",
+        "wbnmhNcJiXA"
+      ]
     },
     {
       "sourceTaxonomyId": "12394",
@@ -604,7 +722,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12395",
@@ -617,7 +737,11 @@
       ],
       "videoCount": 1,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": [
+        "Nkl1ox3UJCs"
+      ]
     },
     {
       "sourceTaxonomyId": "12397",
@@ -633,7 +757,11 @@
       ],
       "videoCount": 4,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": [
+        "PiZhuunFpHU"
+      ]
     },
     {
       "sourceTaxonomyId": "12399",
@@ -646,7 +774,11 @@
       ],
       "videoCount": 1,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": [
+        "m9RfDgK76PU"
+      ]
     },
     {
       "sourceTaxonomyId": "12400",
@@ -657,7 +789,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12401",
@@ -668,7 +802,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12402",
@@ -681,7 +817,11 @@
       ],
       "videoCount": 1,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": [
+        "m9RfDgK76PU"
+      ]
     },
     {
       "sourceTaxonomyId": "12403",
@@ -692,7 +832,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12404",
@@ -703,7 +845,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12405",
@@ -714,7 +858,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12407",
@@ -725,7 +871,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12408",
@@ -736,7 +884,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12409",
@@ -747,7 +897,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12410",
@@ -758,7 +910,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12412",
@@ -769,7 +923,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12415",
@@ -785,7 +941,11 @@
       ],
       "videoCount": 4,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 3,
+      "unindexedVideoIds": [
+        "PiZhuunFpHU"
+      ]
     },
     {
       "sourceTaxonomyId": "12416",
@@ -798,7 +958,11 @@
       ],
       "videoCount": 1,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": [
+        "w3t5RUJ0RFM"
+      ]
     },
     {
       "sourceTaxonomyId": "12418",
@@ -809,7 +973,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12425",
@@ -820,7 +986,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12431",
@@ -831,7 +999,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12434",
@@ -842,7 +1012,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12449",
@@ -853,7 +1025,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12452",
@@ -864,7 +1038,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12454",
@@ -875,7 +1051,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12455",
@@ -886,7 +1064,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12456",
@@ -897,7 +1077,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12457",
@@ -908,7 +1090,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12462",
@@ -919,7 +1103,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12468",
@@ -938,7 +1124,9 @@
       ],
       "videoCount": 7,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 7,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12469",
@@ -949,7 +1137,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12470",
@@ -960,7 +1150,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12471",
@@ -979,7 +1171,9 @@
       ],
       "videoCount": 7,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 7,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12472",
@@ -998,7 +1192,9 @@
       ],
       "videoCount": 7,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 7,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12473",
@@ -1009,7 +1205,9 @@
       "videoIds": [],
       "videoCount": 0,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 0,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12477",
@@ -1032,7 +1230,9 @@
       ],
       "videoCount": 11,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 11,
+      "unindexedVideoIds": []
     },
     {
       "sourceTaxonomyId": "12478",
@@ -1049,7 +1249,9 @@
       ],
       "videoCount": 5,
       "extractStatus": "source_read",
-      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified."
+      "caveat": "Source-visible video links; playback, ownership and exact lesson order not verified.",
+      "existingHolisticHouseIds": 5,
+      "unindexedVideoIds": []
     }
   ]
 }
