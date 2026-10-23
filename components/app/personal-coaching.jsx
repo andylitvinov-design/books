@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowRight, Check, ChevronLeft, LockKeyhole, MessageCircle, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
+import PersonalCoachingPicker from './personal-coaching-picker'
 import styles from './personal-coaching.module.css'
 
 const copy={
@@ -70,20 +71,53 @@ const copy={
     completed:'Sesión completada',emptyError:'No se pudo empezar. Inténtalo de nuevo.',
   },
 }
+const extraCopy={
+  en:{choice:'Choose an answer',orWrite:'Or write your own answer (optional)',
+    woop:'For a complete WOOP exercise, write your own specific if–then plan here.',
+    chosen:'Selected approach',yourQuestion:'Your original question',loadingCatalog:'Your coaching questions are being loaded…'},
+  ru:{choice:'Выберите ответ',orWrite:'Или впишите свой ответ (необязательно)',
+    woop:'Для полноценной WOOP сформулируйте свой конкретный план «если — то» словами.',
+    chosen:'Выбранная модель',yourQuestion:'Ваш исходный вопрос',loadingCatalog:'Загружаем вопросы выбранной модели…'},
+  es:{choice:'Elige una respuesta',orWrite:'O escribe tu respuesta (opcional)',
+    woop:'Para completar WOOP, escribe tu propio plan específico «si — entonces».',
+    chosen:'Modelo elegido',yourQuestion:'Tu pregunta original',loadingCatalog:'Cargando las preguntas de tu modelo…'},
+}
+const translated=(value,lang)=>value?.[lang]||value?.en||''
+const questionsFor=(course,catalog)=>{
+  const key=course?.current?.schemeKey
+  if(!key)return PERSONAL_COACH_QUESTIONS
+  return catalog?.schemes?.find(item=>item.schemeKey===key)?.questions||[]
+}
+const firstUnanswered=(items,answers={})=>{
+  if(items===PERSONAL_COACH_QUESTIONS)return personalCoachNextIndex(answers)
+  const found=items.findIndex(item=>!Object.prototype.hasOwnProperty.call(answers||{},item.id))
+  return found===-1?Math.max(0,items.length-1):found
+}
+const prettyAnswer=(value,item,lang,missing)=>{
+  if(typeof value!=='string')return missing
+  if(!value.startsWith('choice:'))return value
+  const id=value.slice(7)
+  if(item?.type==='scale_0_10')return id+'/10'
+  return translated(item?.choices?.find(c=>c.id===id)?.label,lang)||missing
+}
 export default function PersonalCoaching({locale='en',accountId}){
   const lang=['en','ru','es'].includes(locale)?locale:'en',t=copy[lang],root='/'+(locale==='ru'?'ru':'en')+'/app'
-  const [state,setState]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
+  const [state,setState]=useState(null),[catalog,setCatalog]=useState(null)
+  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[newSelection,setNewSelection]=useState(false)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
-  const course=state?.course,session=course?.current,question=PERSONAL_COACH_QUESTIONS[index]
-  const persisted=session?.answers?.[question.id]
-  const dirty=Boolean(session?.status==='active' && draft!==(typeof persisted==='string'?persisted:''))
+  const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
+  const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
+  const activeQuestions=questionsFor(course,catalog)
+  const question=activeQuestions[index]||activeQuestions[0]
+  const persisted=session?.answers?.[question?.id]
+  const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
-  function visit(indexToOpen,values){
-    const next=Math.max(0,Math.min(PERSONAL_COACH_QUESTIONS.length-1,indexToOpen))
+  function visit(indexToOpen,values,items=activeQuestions){
+    const next=Math.max(0,Math.min(items.length-1,indexToOpen))
     setIndex(next)
-    const saved=values?.[PERSONAL_COACH_QUESTIONS[next].id]
+    const saved=values?.[items[next]?.id]
     setDraft(typeof saved==='string'?saved:'')
     setNotice('')
     setError('')
@@ -92,21 +126,29 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(!accountId)return
     setLoading(true);setError('')
     try{
-      const value=await appFetch('personal-coaching',undefined,'GET',{accountId})
-      setState(value)
-      visit(personalCoachNextIndex(value.course?.current?.answers),value.course?.current?.answers)
+      const [value,loadedCatalog]=await Promise.all([
+        appFetch('personal-coaching',undefined,'GET',{accountId}),
+        appFetch('personal-coaching-catalog',undefined,'GET',{accountId}),
+      ])
+      setState(value);setCatalog(loadedCatalog)
+      const list=questionsFor(value.course,loadedCatalog)
+      visit(firstUnanswered(list,value.course?.current?.answers),value.course?.current?.answers,list)
     }catch{setError(t.loadError)}
     finally{setLoading(false)}
   }
   useEffect(()=>{
     let live=true
     setLoading(true)
-    appFetch('personal-coaching',undefined,'GET',{accountId}).then(value=>{
+    Promise.all([
+      appFetch('personal-coaching',undefined,'GET',{accountId}),
+      appFetch('personal-coaching-catalog',undefined,'GET',{accountId}),
+    ]).then(([value,loadedCatalog])=>{
       if(!live)return
-      setState(value)
-      const next=personalCoachNextIndex(value.course?.current?.answers)
+      setState(value);setCatalog(loadedCatalog)
+      const list=questionsFor(value.course,loadedCatalog)
+      const next=firstUnanswered(list,value.course?.current?.answers)
       setIndex(next)
-      const answer=value.course?.current?.answers?.[PERSONAL_COACH_QUESTIONS[next].id]
+      const answer=value.course?.current?.answers?.[list[next]?.id]
       setDraft(typeof answer==='string'?answer:'')
       setError('')
     }).catch(()=>{if(live)setError(t.loadError)})
@@ -136,24 +178,32 @@ export default function PersonalCoaching({locale='en',accountId}){
       return null
     }finally{busyRef.current=false;setBusy(false)}
   }
-  async function begin(){
-    const result=await command('start')
-    if(result)visit(personalCoachNextIndex(result.course?.current?.answers),result.course?.current?.answers)
+  async function begin(choice,clientQuestion){
+    const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion})
+    if(result){
+      const list=questionsFor(result.course,catalog)
+      visit(firstUnanswered(list,result.course?.current?.answers),result.course?.current?.answers,list)
+      setNewSelection(false)
+    }
   }
   async function next(skip=false){
     if(busyRef.current||!session)return
     const answer=skip?null:draft.trim()
-    if((question.required&&!answer)||(question.required&&answer.length<3)){
+    if((question.required&&!answer)||(question.required&&!question.type&&answer.length<3)){
       setError(t.required);return
     }
+    if(scheme?.requiredCustomPlan && index===activeQuestions.length-1 &&
+      (answer?.startsWith('choice:')||!answer||answer.length<10)){
+      setError(langCopy.woop);return
+    }
     if(!skip&&typeof persisted==='string'&&persisted===answer && Object.prototype.hasOwnProperty.call(session.answers,question.id)){
-      if(index===PERSONAL_COACH_QUESTIONS.length-1)await command('complete')
+      if(index===activeQuestions.length-1)await command('complete')
       else visit(index+1,session.answers)
       return
     }
     const saved=await command('answer',{questionId:question.id,answer})
     if(!saved)return
-    if(index===PERSONAL_COACH_QUESTIONS.length-1){
+    if(index===activeQuestions.length-1){
       // Completion is reported only after the final answer and status both persisted.
       const completed=await commandAfterSave(saved,'complete')
       if(!completed)setError(t.saveError)
@@ -180,7 +230,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   async function erase(){
     if(!window.confirm(t.deleteConfirm))return
     const result=await command('delete',{confirmed:true})
-    if(result){setNotice('');visit(0,{})}
+    if(result){setNotice('');setNewSelection(false);visit(0,{},PERSONAL_COACH_QUESTIONS)}
   }
   return <main className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
     <div className={styles.scenery} aria-hidden="true"/>
