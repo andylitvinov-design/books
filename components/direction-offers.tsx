@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, Search } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, ClipboardCheck, GraduationCap, CalendarDays, Search } from 'lucide-react'
 import { useState, type KeyboardEvent } from 'react'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
@@ -83,6 +83,23 @@ const directionCopy = {
   },
 } as const
 
+// Short, real client requests. IDs and focus keys continue to come from the existing
+// topic journey registry; the full editorial title remains the accessible label.
+const quickTopicLabels: Record<string, Record<PublicLocale, string>> = {
+  fatigue: { en: 'Low energy', ru: 'Мало сил', es: 'Falta de energía' },
+  sleep: { en: 'Poor sleep', ru: 'Плохой сон', es: 'Dormir mejor' },
+  body: { en: 'Body tension', ru: 'Напряжение в теле', es: 'Tensión corporal' },
+  resources: { en: 'Recharge & recover', ru: 'Восстановить силы', es: 'Recuperar fuerzas' },
+  trust: { en: 'More closeness', ru: 'Больше близости', es: 'Más cercanía' },
+  boundaries: { en: 'Personal boundaries', ru: 'Личные границы', es: 'Límites personales' },
+  conflict: { en: 'Arguments & conflict', ru: 'Ссоры и конфликты', es: 'Conflictos y discusiones' },
+  presence: { en: 'Intimacy & connection', ru: 'Интимность и контакт', es: 'Intimidad y conexión' },
+  decisions: { en: 'Find direction', ru: 'Куда двигаться?', es: 'Elegir rumbo' },
+  productivity: { en: 'Focus & results', ru: 'Фокус и результат', es: 'Foco y resultados' },
+  'work-stress': { en: 'Burnout at work', ru: 'Выгорание на работе', es: 'Agotamiento laboral' },
+  'money-beliefs': { en: 'Money & growth', ru: 'Деньги и рост', es: 'Dinero y crecimiento' },
+}
+
 // The same approved images used by the former Services/Academy hero and public
 // home. Manual slide changes are deliberate: no autoplay while visitors type.
 const heroPhotography: Record<Direction, readonly [string, string, string]> = {
@@ -108,9 +125,9 @@ const presentation = {
     question: 'What would you like to change or explore?',
     placeholder: 'Tell us what you would like support with…',
     submit: 'Find my options', suggested: 'Suggested topic:',
-    unmatched: 'Explore the available options below, or choose a more specific topic.',
-    missing: 'Write a short wish or select a topic below.',
-    privacy: 'Your words stay on this page. Only a form you deliberately submit can create an enquiry.',
+    unmatched: 'Choose a topic below to explore options.',
+    missing: 'Enter a wish or choose a topic.',
+    privacy: 'Your words stay here; no enquiry is sent.',
     choose: 'Make your request more specific',
     filterLead: 'Choose one theme to update all three sections.',
     image: 'Show photograph', previous: 'Previous photograph', next: 'Next photograph', start: 'Find your way to begin',
@@ -124,9 +141,9 @@ const presentation = {
     question: 'Что вы хотели бы изменить или исследовать?',
     placeholder: 'Напишите, в чём вам нужна поддержка…',
     submit: 'Найти варианты', suggested: 'Подходящая тема:',
-    unmatched: 'Ниже доступны все варианты. Уточните запрос с помощью фильтра.',
-    missing: 'Напишите пожелание или выберите тему ниже.',
-    privacy: 'Ваш текст остаётся на этой странице. Заявка появится только после отдельной отправки формы.',
+    unmatched: 'Выберите тему ниже.',
+    missing: 'Напишите запрос или выберите тему.',
+    privacy: 'Ваш текст остаётся здесь — заявка не отправляется.',
     choose: 'Уточните, что вам сейчас нужно',
     filterLead: 'Выберите тему — предложения в трёх разделах обновятся.',
     image: 'Показать фото', previous: 'Предыдущее фото', next: 'Следующее фото', start: 'Выберите способ начать',
@@ -140,9 +157,9 @@ const presentation = {
     question: '¿Qué te gustaría cambiar o explorar?',
     placeholder: 'Cuéntanos qué tipo de apoyo necesitas…',
     submit: 'Encontrar opciones', suggested: 'Tema recomendado:',
-    unmatched: 'Explora las opciones o elige un tema más específico.',
-    missing: 'Escribe brevemente tu deseo o elige un tema.',
-    privacy: 'Tus palabras permanecen en esta página. Solo enviar otro formulario crea una solicitud.',
+    unmatched: 'Elige un tema para explorar opciones.',
+    missing: 'Escribe tu objetivo o elige un tema.',
+    privacy: 'Tu texto se queda aquí; no se envía.',
     choose: 'Aclara qué necesitas ahora',
     filterLead: 'Elige un tema para actualizar las tres secciones.',
     image: 'Mostrar fotografía', previous: 'Fotografía anterior', next: 'Fotografía siguiente', start: 'Elige cómo empezar',
@@ -247,10 +264,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     const match = matchWish(question.slice(0,160), journey.topics)
     setTopicId(match?.id ?? '')
     setFeedback(match ? ui.suggested + ' ' + match.title[locale] : ui.unmatched)
-    document.getElementById('hh-direction-focus')?.scrollIntoView({
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      block: 'start',
-    })
+    // No forced scrolling: the selected inline button updates in place.
   }
 
   return <div className={styles.root} data-direction-offers={direction}>
@@ -290,22 +304,20 @@ export function DirectionOffers({ locale, journey, suggestions }: {
 
     <section className={styles.filterPanel} id="hh-direction-focus" aria-label={ui.choose} data-direction-topic-finder>
       <div className={styles.filterHeading}>
-        <div><p className={styles.filterKicker}>{ui.start}</p><h2>{ui.choose}</h2><p>{ui.filterLead}</p></div>
-        <label className={styles.filter}>
-          <span>{c.pick}</span>
-          <span className={styles.selectWrap}>
-            <select value={topicId} onChange={event=>selectTopic(event.target.value)} data-direction-filter>
-              <option value="">{c.all}</option>
-              {journey.topics.map(topic=><option key={topic.id} value={topic.id}>{topic.title[locale]}</option>)}
-            </select>
-            <ChevronDown size={17} aria-hidden="true"/>
-          </span>
-        </label>
+        <h2 id="hh-direction-focus-label">{c.pick}</h2>
+        <button type="button" className={styles.reset} data-direction-filter="all"
+          aria-pressed={!topicId} aria-controls="hh-direction-test hh-direction-course hh-direction-session"
+          onClick={()=>selectTopic('')}>{c.all}</button>
       </div>
-      <div className={styles.topicChips} role="group" aria-label={c.pick}>
-        <button type="button" className={styles.chip} aria-pressed={!topicId} onClick={()=>selectTopic('')}>{c.all}</button>
+      <p id="hh-direction-focus-hint" className={styles.srOnly}>{ui.filterLead}</p>
+      <div className={styles.topicChips} role="group"
+        aria-labelledby="hh-direction-focus-label" aria-describedby="hh-direction-focus-hint">
         {journey.topics.map(topic=><button type="button" className={styles.chip} key={topic.id}
-          aria-pressed={topicId===topic.id} onClick={()=>selectTopic(topic.id)}>{topic.title[locale]}</button>)}
+          data-direction-filter={topic.id} aria-label={topic.title[locale]}
+          aria-controls="hh-direction-test hh-direction-course hh-direction-session"
+          aria-pressed={topicId===topic.id} onClick={()=>selectTopic(topic.id)}>
+          {quickTopicLabels[topic.id]?.[locale] ?? topic.title[locale]}
+        </button>)}
       </div>
       <p className={styles.feedback} role="status" aria-live="polite">{feedback || ui.privacy}</p>
     </section>
