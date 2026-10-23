@@ -130,6 +130,7 @@
   .action{min-height:42px;max-width:100%;padding:8px 11px;font-size:12px;white-space:normal}
   .mobileAll{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin:7px 2px 0;color:#76513e;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:750}
 }
+@media(max-width:430px){.hero{border-radius:18px}.sections{gap:13px}.group{border-radius:15px}}
 @media(max-width:350px){
   .hero{height:clamp(330px,53svh,360px)}
   .hero h1{font-size:28px}
