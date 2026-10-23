@@ -238,6 +238,40 @@ test('approved Services photo hero and Academy-style cards preserve mobile reada
   assert.match(route,/<DirectionExtras locale=\{locale as PublicLocale\}/)
 })
 
+
+test('action filter is one compact, accessible row at 320–430px in every locale',()=>{
+  const full={
+    en:['Take a test','Get advice','Take a course','Get a consultation'],
+    ru:['Пройти тест','Получить совет','Пройти курс','Получить консультацию'],
+    es:['Hacer un test','Recibir orientación','Hacer un curso','Solicitar una consulta'],
+  }
+  const short={
+    en:['Test','Advice','Course','Consult'],
+    ru:['Тест','Совет','Курс','Сессия'],
+    es:['Test','Consejo','Curso','Consulta'],
+  }
+  for(const direction of ['energy','relationships','business']){
+    for(const locale of ['en','ru','es']){
+      const tree=fixture(direction,locale).render()
+      const buttons=nodes(tree).filter(n=>n.props?.['data-direction-intent'])
+      assert.equal(buttons.length,4)
+      assert.deepEqual(buttons.map(n=>n.props['aria-label']),full[locale])
+      for(let i=0;i<4;i++){
+        const spans=nodes(buttons[i]).filter(n=>n.type==='span')
+        assert.equal(spans.find(n=>n.props.className==='actionShort')?.props.children,short[locale][i])
+        assert.equal(spans.find(n=>n.props.className==='actionShort')?.props['aria-hidden'],'true')
+        assert.equal(spans.find(n=>n.props.className==='actionFull')?.props.children,full[locale][i])
+      }
+    }
+  }
+  assert.match(css,/@media\(max-width:900px\)\{\.actionChip \.actionFull\{display:none\}\.actionChip \.actionShort\{display:inline\}\}/)
+  assert.match(css,/@media\(max-width:780px\)\{[\s\S]*?\.actionChips\{flex:1 1 100%\}/)
+  assert.match(css,/@media\(max-width:480px\)\{[\s\S]*?\.actionChip\{min-height:44px;[^}]*white-space:[^}]*\}|\.actionChip\{min-height:44px;padding:7px 3px;border-radius:10px;font-size:11px\}/)
+  assert.match(css,/@media\(max-width:350px\)\{[\s\S]*?\.actionChip\{padding-inline:2px;font-size:10.5px\}/)
+  assert.match(css,/\.actionChip\{[^}]*white-space:nowrap\}/)
+  assert.doesNotMatch(css,/\.actionChips\{[^}]*repeat\(2,minmax\(0,1fr\)\)/)
+})
+
 test('four topic requests are always visible as localized accessible buttons with a stable reset',()=>{
   for(const direction of ['energy','relationships','business']){
     for(const locale of ['en','ru','es']){
@@ -318,8 +352,10 @@ test('second action filter keeps the selected topic and shows only the intended 
     'Пройти тест','Получить совет','Пройти курс','Получить консультацию',
     'Hacer un test','Recibir orientación','Hacer un curso','Solicitar una consulta'])
     assert.ok(source.includes(label),label)
-  assert.match(css,/\.actionChips\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
-  assert.match(css,/\.topicChips,\.actionChips\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.actionFinder\{display:flex;align-items:center;/)
+  assert.match(css,/\.actionChips\{display:grid;flex:1 1 0;min-width:0;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.topicChips\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(css,/\.topicChips,\.actionChips\{grid-template-columns:repeat\(2/)
   assert.match(css,/\.actionChip\[aria-pressed="true"\]/)
   assert.match(css,/@media\(max-width:350px\)/)
   assert.doesNotMatch(source,/\/api\/service-enquiries|sendBeacon|localStorage/)
