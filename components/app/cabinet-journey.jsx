@@ -53,11 +53,13 @@ const COPY = {
   },
 }
 
-const getRoute = (id, locale, canAuthor) => {
+const getRoute = (id, locale, canAuthor, freeConsultationServiceId = null) => {
   const lang = locale === 'ru' ? 'ru' : 'en'
   if (id === 'tests') return `/${lang}/app/tests`
   if (id === 'course') return `/${lang}/academy/principles-of-energywork/learn`
-  if (id === 'consultation') return `/${lang}/services/free-consultation`
+  if (id === 'consultation') return freeConsultationServiceId
+    ? `/${lang}/app/consultations?service=${encodeURIComponent(freeConsultationServiceId)}`
+    : `/${lang}/services/free-consultation`
   if (id === 'author' && canAuthor) return `/${lang}/app/practice?panel=materials&materialTab=courses`
   return `/${lang}/app/practice`
 }
@@ -138,7 +140,7 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
             next.id === 'author' && nextState?.drafted ? t.draftSaved :
             next.id === 'tests' ? `${journey.testsCompleted}/3 · ${next.detail}` : next.detail}</p>}
         </div>
-        {next && <Link className={styles.primary} href={getRoute(next.id, lang, canAuthor)} prefetch={false}>
+        {next && <Link className={styles.primary} href={getRoute(next.id, lang, canAuthor, journey.freeConsultationServiceId)} prefetch={false}>
           {nextAction}<ArrowRight size={16} aria-hidden="true" />
         </Link>}
       </div>
@@ -157,7 +159,7 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
                 {stage.id === 'author' && state?.drafted && !state.published && <em>{t.draftSaved}</em>}
                 <div className={styles.stepBottom}>
                   <small>{state?.earned || 0} XP {t.earned} {stage.id === 'tests' ? `· ${state?.count || 0}/3` : ''}</small>
-                  <Link href={getRoute(stage.id, lang, canAuthor)} prefetch={false}>
+                  <Link href={getRoute(stage.id, lang, canAuthor, journey.freeConsultationServiceId)} prefetch={false}>
                     {stage.action}<ArrowRight size={13} aria-hidden="true" />
                   </Link>
                 </div>
