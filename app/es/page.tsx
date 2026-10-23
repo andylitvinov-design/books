@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import { HomeSectionCarousel } from '@/components/home-section-carousel';
+import { HomeMasterPath } from '@/components/home-master-path';
 import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner';
 import { HomeConversationGuide } from '@/components/home-conversation-guide';
 import { HomepageTopicJourneys } from '@/components/homepage-topic-journeys';
@@ -23,6 +24,7 @@ export default function SpanishHomePage() {
   return <HomePersonalSpaceProvider locale="es"><main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
     <HomeSectionCarousel locale="es" />
+    <HomeMasterPath locale="es" />
     <HomeFreeDiagnosisBanner locale="es" />
     <HomeConversationGuide locale="es" />
     <HomePersonalSpaceCard locale="es" />
