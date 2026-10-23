@@ -67,8 +67,8 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
   assert.match(hub,/locale === "es" \? "en" : locale/)
 })
 
-test('bottom bar and hamburger preserve all original six links and add seventh Pro',()=>{
-  const expected=['home','energy','love','business','tests','books','pro']
+test('bottom bar and hamburger replace Tests with Pro while keeping six usable links',()=>{
+  const expected=['home','energy','love','business','books','pro']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
@@ -78,8 +78,29 @@ test('bottom bar and hamburger preserve all original six links and add seventh P
   }
   assert.match(read('components/compact-navigation-icons.ts'),/pro: GraduationCap/)
   assert.match(read('components/mobile-bottom-navigation.tsx'),/getCompactNavigation\(locale\)/)
-  assert.match(read('app/ia-v2.css'),/repeat\(7,minmax\(0,1fr\)\)/)
-  assert.match(read('app/holistic-house-home.css'),/repeat\(7, minmax\(0,1fr\)\)/)
+  assert.match(read('app/ia-v2.css'),/repeat\(6,minmax\(0,1fr\)\)/)
+  assert.match(read('app/holistic-house-home.css'),/repeat\(6, minmax\(0,1fr\)\)/)
+})
+
+
+test('Pro page contains a separate free-tests and private/personal-professional profile block',()=>{
+  for(const locale of ['en','ru','es']){
+    const tree=mount(locale).render()
+    const entries=nodes(tree).filter(x=>x.props && Object.hasOwn(x.props,'data-profi-entry'))
+    assert.deepEqual(entries.map(x=>x.props['data-profi-entry']),['tests','personal','professional'])
+    const appLocale=locale==='es'?'en':locale
+    assert.deepEqual(entries.map(x=>x.props.href),[
+      '/'+locale+'/client/tests',
+      '/'+appLocale+'/app/portrait',
+      '/'+appLocale+'/app/practice?panel=profile'
+    ])
+    assert.ok(nodes(tree).some(x=>x.props && Object.hasOwn(x.props,'data-profi-profiles')))
+    assert.ok(entries.every(x=>x.props.prefetch===false))
+    assert.equal(activeCompactNavigationId('/'+locale+'/client/tests'),'pro')
+  }
+  assert.match(hub,/Личные результаты тестов не публикуются/)
+  assert.match(css,/\\.profileEntries\\{display:grid/)
+  assert.match(css,/@media\\(max-width:600px\\)/)
 })
 
 test('actual interactive learner track explores five steps but launches only existing training',()=>{
