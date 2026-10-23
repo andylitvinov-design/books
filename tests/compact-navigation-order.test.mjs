@@ -63,3 +63,24 @@ test('both navigation surfaces render from the canonical six-item model', () => 
   assert.doesNotMatch(bottom, /mobileCopy|\[\.\.\.publicItems/)
   assert.doesNotMatch(header, /getSiteNavigation\(activeLocale\)\.map\(item =>/)
 })
+
+test('descriptive Body, Stress and Money labels stay localized without changing routes', () => {
+  const expected = {
+    en: { energy: 'Body and Energy', love: 'Stress and Relationships', business: 'Money and Business' },
+    ru: { energy: 'Тело и энергия', love: 'Стресс и отношения', business: 'Деньги и бизнес' },
+    es: { energy: 'Cuerpo y energía', love: 'Estrés y relaciones', business: 'Dinero y negocios' },
+  }
+  for (const locale of ['en', 'ru', 'es']) {
+    const menu = getCompactNavigation(locale)
+    for (const [id, label] of Object.entries(expected[locale])) {
+      const link = menu.find(item => item.id === id)
+      assert.equal(link.label, label)
+      assert.equal(link.ariaLabel, label)
+      assert.equal(link.href, `/${locale}/explore/${id}`)
+    }
+  }
+  const css = readFileSync(new URL('../app/ia-v2.css', import.meta.url), 'utf8')
+  assert.match(css, /\.ia222-bottom-navigation a span \{[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;/)
+  assert.doesNotMatch(css, /\.ia222-bottom-navigation a span \{[^}]*white-space: nowrap;/)
+  assert.match(css, /\.ia222-bottom-navigation a \{[^}]*min-height: 76px;/)
+})
