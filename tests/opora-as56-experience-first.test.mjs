@@ -224,7 +224,7 @@ test('Day 4 spoken feeling is optional, localized and cleared by Not today',asyn
     await click(h,skip)
     assert.equal(nodes(h.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true').props.value,'')
     await advanceOporaTo(h,'recapFeedback',next)
-    await click(h,lang==='ru'?'Получилось немного':lang==='es'?'Algo pude hacer':'I managed a little')
+    await click(h,lang==='ru'?'Получилось немного':lang==='es'?'Pude hacerlo un poco':'I managed a little')
     await click(h,lang==='ru'?'Сохранить мою практику':lang==='es'?'Guardar mi práctica':'Save my practice')
     assert.equal(f.payload.opora54.answers.transferFeeling,undefined)
     assert.equal(f.payload.opora54.answers.transfer,'not_planning')
