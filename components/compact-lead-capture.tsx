@@ -178,7 +178,7 @@ export function CompactLeadCapture({
 
   return (
     <section id={id} className={[styles.section, variant === "inline" ? styles.inline : "", messengerMode ? styles.messengerInline : ""].filter(Boolean).join(" ")}
-      data-compact-last-slide={variant === "inline" ? undefined : ""}
+      data-compact-last-slide={variant === "inline" || messengerMode ? undefined : ""}
       data-inline-offer-form={variant === "inline" ? "" : undefined}
       data-messenger-lead-capture={messengerMode ? "" : undefined} data-service-lead-capture
       lang={locale} aria-label={title}>
@@ -206,7 +206,7 @@ export function CompactLeadCapture({
           <label className={styles.field}>
             <span>{t.contact}</span>
             <input type="text" name="contact" inputMode="text" autoComplete="off"
-              value={address} maxLength={254} placeholder={t.placeholder}
+              value={address} maxLength={254} placeholder={t.placeholder} disabled={sending}
               onChange={event => { setAddress(event.target.value); operationId.current = null; setError(""); }} />
           </label>
           <p className={styles.messengerPrompt}>{t.messengerPrompt}</p>
