@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, Moon, PauseCircle, PlayCircle, Sun, Target, TrendingUp, ListChecks } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronDown, ClipboardCheck, Download, FileCheck2, LockKeyhole, Moon, PauseCircle, PlayCircle, Sun, Target, TrendingUp, ListChecks, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import {
   BUSINESS_TRACKS, BUSINESS_DOMAINS, BUSINESS_QUESTIONS,
@@ -406,7 +406,20 @@ export default function BusinessCoaching({locale='en',accountId}){
   if(loading)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode} aria-busy="true"><p>{lang==='ru'?'Открываем вашу программу…':'Opening your programme…'}</p></section>
   if(!state)return <section className={'hh-panel '+styles.root} data-wood-mode={woodMode}><h1>{t.title}</h1><p role="alert">{error||t.loadError}</p><button onClick={refresh}>{t.reload}</button></section>
   if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching
-    data-course-visual="executive-wood-v2" data-wood-mode={woodMode} data-business-course-screen="welcome" data-business-onboarding-step={startStep}>
+    data-course-visual="executive-wood-v2" data-business-immersive="reiki" data-wood-mode={woodMode} data-business-course-screen="welcome" data-business-onboarding-step={startStep}>
+    <header className={styles.immersiveHeader} data-business-onboarding-header>
+      <Link className={styles.immersiveClose} href={'/'+lang+'/app/course?view=courses'}
+        aria-label={lang==='ru'?'Закрыть курс':'Close course'}>
+        <X size={21} aria-hidden="true"/>
+      </Link>
+      <div className={styles.immersiveProgress}>
+        <small>{t.title}</small>
+        <div role="progressbar" aria-label={t.begin} aria-valuemin={0} aria-valuemax={3} aria-valuenow={startStep}>
+          <span style={{width:(startStep/3*100)+'%'}}/>
+        </div>
+      </div>
+      <span className={styles.immersiveCount}>{startStep} / 3</span>
+    </header>
     {themePicker}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
@@ -474,8 +487,35 @@ export default function BusinessCoaching({locale='en',accountId}){
       </form>
     </section>
   </section>
-  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-wood-mode={woodMode} data-business-current-tab={tab}>
+  return <section className={'hh-panel '+styles.root} data-business-coaching data-course-visual="executive-wood-v2" data-business-immersive="reiki" data-wood-mode={woodMode} data-business-current-tab={tab}>
     {tab!=='today'&&themePicker}
+    {tab==='today'&&<header className={styles.immersiveHeader} data-business-lesson-header>
+      <Link className={styles.immersiveClose} href={'/'+lang+'/app/course?view=courses'}
+        aria-label={lang==='ru'?'Закрыть курс':'Close course'}
+        onClick={event=>{
+          if(course.status==='active'&&hasUnsavedDay&&!window.confirm(t.unsavedResult))
+            event.preventDefault()
+        }}>
+        <X size={21} aria-hidden="true"/>
+      </Link>
+      <div className={styles.immersiveProgress}>
+        <small>{t.day} {day} / 90 · {t.title}</small>
+        <div role="progressbar" aria-label={t.progress} aria-valuemin={0} aria-valuemax={90} aria-valuenow={progress.completed}>
+          <span style={{width:progress.percent+'%'}}/>
+        </div>
+      </div>
+      <details className={styles.immersiveMenu}>
+        <summary aria-label={lang==='ru'?'Разделы курса':'Course sections'}
+          title={lang==='ru'?'Разделы курса':'Course sections'}>
+          <ListChecks size={20} aria-hidden="true"/>
+        </summary>
+        <div className={styles.immersiveMenuPanel}>
+          {[['today',t.today],['plan',t.plan],['survey',t.survey],['metrics',t.metrics],['report',t.report]].map(([id,label])=>
+            <button type="button" key={id} aria-current={tab===id?'page':undefined}
+              onClick={()=>changeTab(id)}>{label}<ArrowRight size={15} aria-hidden="true"/></button>)}
+        </div>
+      </details>
+    </header>}
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
         <span className={styles.heroKicker}><BriefcaseBusiness size={14} aria-hidden="true"/>{t.pathway}</span>
@@ -565,6 +605,10 @@ export default function BusinessCoaching({locale='en',accountId}){
           </button>)}
       </nav>
       <article className={styles.lessonSlide} data-business-lesson-slide data-lesson-stage={lessonStage}>
+        <div className={styles.lessonPhoto} aria-hidden="true">
+          <img src="/images/holistic-house/books-library.webp" alt=""
+            width={1000} height={620} decoding="async" loading="eager"/>
+        </div>
         <div className={styles.lessonIdentity}>
           <span className={styles.lessonNumber}>{t.day} {day} / 90</span>
           <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
