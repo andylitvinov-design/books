@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { ArrowRight, LayoutDashboard, Menu, Sparkles } from 'lucide-react';
 import { CartNavLink } from '@/components/commerce/cart-nav-link';
+import { SiteSearch } from '@/components/site-search';
 import { compactNavigationIcons } from './compact-navigation-icons';
 import type { Locale } from '@/data/remedies';
 import { localePath, saveUiLocale } from '@/lib/ui-locale';
@@ -126,6 +127,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
     <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
+    <SiteSearch locale={activeLocale} pathname={pathname} />
     {(pathname === '/' || pathname === '/ru' || pathname === '/es')
       ? <HomePersonalSpaceNavEntry locale={activeLocale} href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`} />
       : <><Link
