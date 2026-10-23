@@ -1008,7 +1008,7 @@
   box-shadow:0 15px 42px #103b5538;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav{
-  flex:0 0 auto;grid-template-columns:repeat(5,minmax(0,1fr));
+  flex:0 0 auto;grid-template-columns:repeat(3,minmax(0,1fr));
   gap:5px;margin:0;padding:9px clamp(15px,4vw,29px) 12px;
 }
 .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonStageNav button{
@@ -1234,3 +1234,56 @@
   }
   .root[data-business-immersive=reiki] .immersiveHeader{display:none}
 }
+
+/* Business 90 Days — one-tap closed questions, never a mandatory essay. */
+.oneTapChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.oneTapChoices button{
+  min-width:0;min-height:52px;padding:12px 13px;
+  display:flex;align-items:center;justify-content:flex-start;gap:10px;
+  text-align:left;overflow-wrap:anywhere;
+  border:2px solid #cfdee4;border-radius:14px;
+  background:#f8fdff;color:#173c5b;
+  font:750 14px/1.35 system-ui,sans-serif;cursor:pointer;
+}
+.oneTapChoices button svg{flex:0 0 18px;color:#5b8194;opacity:.5}
+.oneTapChoices button[aria-pressed=true]{border-color:#058b9e;background:#ddf7f3;color:#075467}
+.oneTapChoices button[aria-pressed=true] svg{color:#057b88;opacity:1}
+.oneTapChoices button:focus-visible{outline:3px solid #0b839a;outline-offset:3px}
+.oneTapChoices button:disabled{opacity:.52;cursor:not-allowed}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapChoices{
+  grid-template-columns:1fr;gap:8px;margin:11px 0 13px;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapChoices button{
+  min-height:52px;padding:10px 14px;border-radius:13px;font-size:15px;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapPrompt{
+  padding:11px 13px;border-radius:12px;background:#eaf8f8;
+  border-left:3px solid #10a5ad;color:#17495c!important;
+}
+.root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapChoices button[aria-pressed=true]{
+  background:#daf8ef;color:#075467;border-color:#058b9e;
+}
+.root[data-business-course-screen=welcome] [data-business-closed-goals]>.trackChoices{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.root .review .oneTapChoices button{
+  background:#fbfeff;color:#173c5b;min-height:48px;line-height:1.3;font-size:13px;
+}
+.root .review .oneTapChoices button[aria-pressed=true]{
+  background:#ddf7f3;color:#075467;border-color:#058b9e;
+}
+@media(max-width:620px){
+  .root[data-business-course-screen=welcome] [data-business-closed-goals]>.trackChoices{grid-template-columns:1fr}
+  .root .review .oneTapChoices{grid-template-columns:1fr;gap:6px}
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .lessonPhoto{
+    height:clamp(105px,16dvh,145px);
+  }
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapChoices button{
+    min-height:50px;font-size:14px;
+  }
+}
+@media(max-width:350px){
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapChoices{gap:5px;margin:7px 0}
+  .root[data-business-immersive=reiki][data-business-current-tab=today] .oneTapChoices button{min-height:47px;padding:8px 11px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.oneTapChoices button{transition:none}}
