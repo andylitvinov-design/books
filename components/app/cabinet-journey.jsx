@@ -186,6 +186,9 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
         const status = stageStatus(stage.id, info, current, t)
         const description = info ? stageMeta(stage.id, info, t) : stage.hint
         const Icon = ICONS[stage.id]
+        const points = info ? (info.earned > 0 && !done
+          ? String(info.earned) + '/' + String(info.reward) + ' XP'
+          : '+' + String(info.reward) + ' XP') : '— XP'
         const contents = <>
           <span className={styles.marker} aria-hidden="true">
             {done ? <Check size={18} /> : <Icon size={17} />}
@@ -194,7 +197,10 @@ export default function CabinetJourney({ accountId, locale = 'en' }) {
             <strong>{stage.title}</strong>
             <small>{description}</small>
           </span>
-          <span className={styles.status}>{status}</span>
+          <span className={styles.stepTail}>
+            <span className={styles.status}>{status}</span>
+            <small className={styles.stepReward}>{points}</small>
+          </span>
         </>
         return <li key={stage.id} className={[
           styles.stage, done ? styles.complete : current ? styles.active : styles.upcoming,
