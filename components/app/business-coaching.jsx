@@ -227,7 +227,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   const [dayResult,setDayResult]=useState(''),[moduleWeek,setModuleWeek]=useState(1)
   const [reviewNote,setReviewNote]=useState(''),[metricForm,setMetricForm]=useState(initialMetric)
   const [retestAnswers,setRetestAnswers]=useState({}),[goalEditing,setGoalEditing]=useState(false)
-  const [lessonStage,setLessonStage]=useState(0) // 0 one idea, 1 closed answer, 4 saved confirmation
+  const [lessonStage,setLessonStage]=useState(1) // 1 closed question and chosen answer, 4 saved confirmation
   const [reflectionChoice,setReflectionChoice]=useState('')
   const [lessonChoice,setLessonChoice]=useState('')
   const [focusRemaining,setFocusRemaining]=useState(120),[focusRunning,setFocusRunning]=useState(false)
@@ -349,7 +349,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     if(next!==day && course?.status==='active' && unsaved && !window.confirm(t.unsavedResult))return
     setDay(next)
     setFocusRemaining(120)
-    changeLessonStage(0)
+    changeLessonStage(1)
     setModuleWeek(Math.min(13,Math.ceil(next/7)))
     setDayNote(course?.days?.[next]?.note||'')
     setDayResult(course?.days?.[next]?.result||'')
@@ -363,7 +363,7 @@ export default function BusinessCoaching({locale='en',accountId}){
     e.preventDefault()
     if(!consent||startStep!==3)return
     const yes=await command('start',{...goal,metric:goal.metric||null,target:goal.target===''?null:Number(goal.target),answers,consent:true})
-    if(yes){changeTab('today');setDay(1);setFocusRemaining(120);changeLessonStage(0);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setLessonChoice('');setStartStep(1)}
+    if(yes){changeTab('today');setDay(1);setFocusRemaining(120);changeLessonStage(1);setModuleWeek(1);setDayNote('');setDayResult('');setDayDone(false);setReflectionChoice('');setLessonChoice('');setStartStep(1)}
   }
   async function saveDayAndContinue(complete=false){
     // Actual completion stays server-validated, and the congratulation screen
@@ -597,7 +597,7 @@ export default function BusinessCoaching({locale='en',accountId}){
       </details>
       </div>
       <nav className={styles.lessonStageNav} aria-label={t.lessonEyebrow} data-business-one-tap-steps>
-        {[[0,t.ideaSlide],[1,lang==='ru'?'Ответить':'Choose'],[4,t.doneSlide]].map(([index,label],step)=>
+        {[[1,lang==='ru'?'Ответить':'Answer'],[4,t.doneSlide]].map(([index,label],step)=>
           <button type="button" key={index} aria-current={lessonStage===index?'step':undefined}
             disabled={index===4&&(!savedDay.done||hasUnsavedDay)}
             onClick={()=>changeLessonStage(index)} aria-label={label}>
@@ -613,26 +613,9 @@ export default function BusinessCoaching({locale='en',accountId}){
           <span className={styles.lessonNumber}>{t.day} {day} / 90</span>
           <span className={styles.lessonFormat}>{t.lessonEyebrow}</span>
         </div>
-        {lessonStage===0&&<div className={styles.oneIdea} data-business-skill-brief>
-          <h2>{t.todaySkill}</h2>
-          <p className={styles.skillTarget}>{transferableSkill}</p>
-          <p className={styles.oneTapPrompt}>{tinyAction}</p>
-          {previousSkills.length>0&&<details className={styles.skillRecap}>
-            <summary>{t.learnedBefore}<ChevronDown size={16} aria-hidden="true"/></summary>
-            <div className={styles.skillRecapChips}>
-              {previousSkills.map(item=><span key={item.day}>
-                <CheckCircle2 size={14} aria-hidden="true"/>{item.skill}
-              </span>)}
-            </div>
-          </details>}
-          {trackExample&&<details className={styles.trackExample} data-business-path-example>
-            <summary>{t.exampleForMyPath}<ChevronDown size={16} aria-hidden="true"/></summary>
-            <p>{trackExample}</p>
-          </details>}
-        </div>}
-        {lessonStage===1&&<div className={styles.oneIdea} data-business-closed-answer>
-          <h2>{lang==='ru'?'Один короткий вопрос':'One quick question'}</h2>
-          <p className={styles.skillTarget}>{lang==='ru'?'Как прошёл ваш маленький шаг?':'How did your small step go?'}</p>
+        {lessonStage===1&&<div className={styles.oneIdea} data-business-closed-answer data-business-skill-brief>
+          <h2>{t.todaySkill}: {transferableSkill}</h2>
+          <p className={styles.skillTarget}>{lang==='ru'?'Как прошёл этот маленький шаг?':'How did this small step go?'}</p>
           <p className={styles.oneTapPrompt}>{tinyAction}</p>
           <div className={styles.oneTapChoices} role="group"
             aria-label={lang==='ru'?'Выберите один ответ':'Choose one answer'}>
@@ -649,6 +632,18 @@ export default function BusinessCoaching({locale='en',accountId}){
           <small>{lang==='ru'
             ? 'Любой ответ подходит. Это личный выбор, а не проверка дохода или выполненной работы.'
             : 'Every answer is valid. This is a private check-in, not verified work or income.'}</small>
+          {trackExample&&<details className={styles.trackExample} data-business-path-example>
+            <summary>{t.exampleForMyPath}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <p>{trackExample}</p>
+          </details>}
+          {previousSkills.length>0&&<details className={styles.skillRecap}>
+            <summary>{t.learnedBefore}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <div className={styles.skillRecapChips}>
+              {previousSkills.map(item=><span key={item.day}>
+                <CheckCircle2 size={14} aria-hidden="true"/>{item.skill}
+              </span>)}
+            </div>
+          </details>}
         </div>}
         {lessonStage===4&&savedDay.done&&!hasUnsavedDay&&<div className={styles.oneIdea+' '+styles.savedCelebration}
           data-business-saved-celebration role="status">
@@ -669,14 +664,9 @@ export default function BusinessCoaching({locale='en',accountId}){
         </div>}
       </article>
       <div className={styles.lessonSaveBar} data-business-lesson-save>
-        <button className={styles.backButton} type="button" disabled={lessonStage===0&&day===1}
-          onClick={()=>lessonStage===4?changeLessonStage(1):
-            lessonStage===1?changeLessonStage(0):chooseDay(day-1)}>
+        <button className={styles.backButton} type="button" disabled={lessonStage===1&&day===1}
+          onClick={()=>lessonStage===4?changeLessonStage(1):chooseDay(day-1)}>
           <ArrowLeft size={16} aria-hidden="true"/>{t.previousStep}</button>
-        {lessonStage===0&&<button className={styles.primary} type="button"
-          onClick={()=>changeLessonStage(1)}>
-          {lang==='ru'?'Выбрать ответ':'Choose answer'}<ArrowRight size={17} aria-hidden="true"/>
-        </button>}
         {lessonStage===1&&<button type="button" className={styles.primary}
           disabled={busy||(course.status!=='active'&&(!savedDay.done||hasUnsavedDay))||
             (!savedDay.done&&!lessonChoice)||(hasUnsavedDay&&!lessonChoice)}
