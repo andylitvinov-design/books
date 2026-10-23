@@ -71,9 +71,9 @@ const directionCopy = {
     es: { name: 'Energía', title: 'Tu energía y equilibrio interior', course: 'OPORA · Apoyo personal', courseDetail: 'Prácticas breves para el estrés y la estabilidad cotidiana.', service: 'Acompañamiento personal', serviceDetail: 'Explora tu situación con Andrey online o en Toronto.' },
   },
   relationships: {
-    en: { name: 'Love', title: 'Build connection, trust and closeness', course: 'Practices for trust and boundaries', courseDetail: 'Start with self-checks and find a self-guided support path.', service: 'Relationship consultation', serviceDetail: 'Explore communication, boundaries or repeating patterns together.' },
-    ru: { name: 'Любовь', title: 'Близость, доверие и отношения', course: 'Практики доверия и границ', courseDetail: 'Начните с тестов и подберите самостоятельную практику.', service: 'Консультация об отношениях', serviceDetail: 'Исследуйте общение, границы и повторяющиеся ситуации.' },
-    es: { name: 'Amor', title: 'Cercanía, confianza y conexión', course: 'Prácticas de confianza y límites', courseDetail: 'Empieza con tests y encuentra prácticas a tu ritmo.', service: 'Consulta sobre relaciones', serviceDetail: 'Explora la comunicación, los límites y tus patrones.' },
+    en: { name: 'Love', title: 'Build connection, trust and closeness', course: 'OPORA · Inner support', courseDetail: 'Self-guided steadiness practices before challenging conversations; not a dedicated relationships course.', service: 'Relationship consultation', serviceDetail: 'Explore communication, boundaries or repeating patterns together.' },
+    ru: { name: 'Любовь', title: 'Близость, доверие и отношения', course: 'ОПОРА · Внутренняя поддержка', courseDetail: 'Практики устойчивости перед трудными разговорами. Это не отдельный курс по отношениям.', service: 'Консультация об отношениях', serviceDetail: 'Исследуйте общение, границы и повторяющиеся ситуации.' },
+    es: { name: 'Amor', title: 'Cercanía, confianza y conexión', course: 'OPORA · Apoyo interior', courseDetail: 'Prácticas de estabilidad antes de conversaciones difíciles, no un curso específico de relaciones.', service: 'Consulta sobre relaciones', serviceDetail: 'Explora la comunicación, los límites y tus patrones.' },
   },
   business: {
     en: { name: 'Business', title: 'Grow with focus and a clear direction', course: '90-day Business Development', courseDetail: 'A practical day-by-day development path in your private account.', service: 'Business & career consultation', serviceDetail: 'Work on a decision, career move or project with Andrey.' },
@@ -101,11 +101,11 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const testHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
     '&journey=' + direction + '&topics=' + encodeURIComponent(topicId)
   const appLocale = locale === 'es' ? 'en' : locale
+  // A course CTA must open an actual course, not silently bounce back to a test
+  // chooser. Love reuses OPORA until a reviewed relationships course exists.
   const courseHref = direction === 'business'
     ? '/' + appLocale + '/app/business'
-    : direction === 'energy'
-      ? '/' + appLocale + '/courses/antistress'
-      : testHref + '&mode=course'
+    : '/' + locale + '/courses/antistress'
   const serviceHref = '/' + locale + '/services/' + ({
     energy: 'alchemy-of-soul', relationships: 'systemic-constellations', business: 'business-consulting',
   } as const)[direction]
