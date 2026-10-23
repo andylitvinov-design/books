@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   ArrowRight, BookOpen, CheckCircle2, ChevronRight, CircleDollarSign,
-  ClipboardList, GraduationCap, HandHeart, HeartHandshake, LockKeyhole,
-  MessageSquare, Rocket, ShieldCheck, Sparkles, UserRound, UsersRound,
+  ClipboardList, GraduationCap, HeartHandshake, LockKeyhole,
+  MessageSquare, Rocket, ShieldCheck, Sparkles,
 } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
@@ -16,6 +16,36 @@ import styles from "./profi-hub.module.css";
 type Path = "learn" | "practice";
 const OFFER_KEYS = ["session", "intro", "workshop", "course"] as const;
 type OfferKey = typeof OFFER_KEYS[number];
+
+// All photographs already live in this site's public asset directory.
+const PHOTOS = {
+  tests: "/images/holistic-house/course-focus-mountain-boy.webp",
+  personal: "/images/holistic-house/report-lighthouse-coast.avif",
+  professional: "/images/holistic-house/hero-olive-incense.webp",
+  lessons: [
+    "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/course-focus-mountain-boy.webp",
+    "/images/holistic-house/report-lighthouse-coast.avif",
+    "/images/holistic-house/reiki-practitioner-sunrise.webp",
+  ],
+  offers: {
+    session: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+    intro: "/images/holistic-house/report-lighthouse-coast.avif",
+    workshop: "/images/holistic-house/hero-olive-incense.webp",
+    course: "/images/holistic-house/books-library.webp",
+  },
+  stages: [
+    "/images/holistic-house/course-focus-mountain-boy.webp",
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/books-library.webp",
+    "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+  ],
+} as const;
+
+function Photo({ src, className, sizes = "100px" }: { src: string; className: string; sizes?: string }) {
+  return <span className={className} aria-hidden="true"><Image src={src} alt="" fill unoptimized sizes={sizes} /></span>;
+}
 
 // This public guide never stores answers, sells credentials, submits a listing,
 // starts payment, or claims that visiting the editor creates a client enquiry.
@@ -353,7 +383,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
           <div className={styles.profileEntries}>
             <Link href={publicRoot + "/client/tests"} className={styles.profileEntry}
               prefetch={false} data-profi-entry="tests">
-              <span className={styles.profileEntryIcon}><ClipboardList size={21} aria-hidden="true" /></span>
+              <Photo src={PHOTOS.tests} className={styles.profileEntryPhoto} />
               <span className={styles.profileEntryText}>
                 <strong>{t.testEntry.title}</strong><small>{t.testEntry.body}</small>
                 <span className={styles.profileEntryAction}>{t.testEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
@@ -361,7 +391,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
             </Link>
             <Link href={"/" + appLocale + "/app/portrait"} className={styles.profileEntry}
               prefetch={false} data-profi-entry="personal">
-              <span className={styles.profileEntryIcon}><UserRound size={21} aria-hidden="true" /></span>
+              <Photo src={PHOTOS.personal} className={styles.profileEntryPhoto} />
               <span className={styles.profileEntryText}>
                 <strong>{t.personalEntry.title}</strong><small>{t.personalEntry.body}</small>
                 <span className={styles.profileEntryAction}>{t.personalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
@@ -369,7 +399,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
             </Link>
             <Link href={profileHref} className={styles.profileEntry}
               prefetch={false} data-profi-entry="professional">
-              <span className={styles.profileEntryIcon}><GraduationCap size={21} aria-hidden="true" /></span>
+              <Photo src={PHOTOS.professional} className={styles.profileEntryPhoto} />
               <span className={styles.profileEntryText}>
                 <strong>{t.professionalEntry.title}</strong><small>{t.professionalEntry.body}</small>
                 <span className={styles.profileEntryAction}>{t.professionalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
@@ -383,6 +413,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
           {path === "learn" ? (
             <section className={styles.journey} aria-labelledby="profi-learning-title" data-profi-learning>
               <div className={styles.sectionIntro}>
+                <Photo src={PHOTOS.lessons[0]} className={styles.introPhoto} sizes="(max-width: 600px) 90px, 190px" />
                 <p className={styles.sectionKicker}><BookOpen size={16} aria-hidden="true" />{t.learnEyebrow}</p>
                 <h2 id="profi-learning-title">{t.learnTitle}</h2>
                 <p>{t.learnLead}</p>
@@ -398,14 +429,21 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                           className={lessonIndex === index ? styles.lessonActive : ""}
                           onClick={() => setLessonIndex(index)}
                           data-profi-lesson={index + 1}>
-                          <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
+                          <span className={styles.lessonThumb}>
+                            <Image src={PHOTOS.lessons[index]} alt="" fill unoptimized sizes="88px" />
+                            <span className={styles.photoNumber}>{String(index + 1).padStart(2, "0")}</span>
+                          </span>
                           <strong>{lesson.title}</strong><ChevronRight size={17} aria-hidden="true" />
                         </button>
                       </li>
                     ))}
                   </ol>
+                  <Link href={trainingHref} className={styles.primary} prefetch={false} data-profi-action="start-course-overview">
+                    {t.studyCta}<ArrowRight size={18} aria-hidden="true" />
+                  </Link>
                 </div>
                 <div className={styles.lessonDetail} role="region" aria-live="polite" aria-label={t.lessonFocus}>
+                  <Photo src={PHOTOS.lessons[lessonIndex]} className={styles.lessonDetailPhoto} sizes="(max-width: 600px) 100vw, 520px" />
                   <span className={styles.lessonMark}><GraduationCap size={26} aria-hidden="true" /></span>
                   <p className={styles.sectionKicker}>{t.lessonFocus} · {lessonIndex + 1}/5</p>
                   <h3>{t.lessons[lessonIndex].title}</h3>
@@ -422,9 +460,12 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 <div className={styles.threeSteps}>
                   {t.after.map((step, index) => (
                     <article key={step.title}>
-                      <span className={styles.roundIndex}>{index + 1}</span>
-                      <h4>{step.title}</h4>
-                      <p>{step.detail}</p>
+                      <Photo src={PHOTOS.stages[index]} className={styles.stagePhoto} sizes="96px" />
+                      <div className={styles.stageText}>
+                        <span className={styles.roundIndex}>{index + 1}</span>
+                        <h4>{step.title}</h4>
+                        <p>{step.detail}</p>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -442,6 +483,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
           ) : (
             <section className={styles.journey} aria-labelledby="profi-practice-title" data-profi-practice>
               <div className={styles.sectionIntro}>
+                <Photo src={PHOTOS.professional} className={styles.introPhoto} sizes="(max-width: 600px) 90px, 190px" />
                 <p className={styles.sectionKicker}><Rocket size={17} aria-hidden="true" />{t.proEyebrow}</p>
                 <h2 id="profi-practice-title">{t.proTitle}</h2>
                 <p>{t.proLead}</p>
@@ -454,11 +496,8 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                     {OFFER_KEYS.map((key) => (
                       <button type="button" key={key} className={offer === key ? styles.offerSelected : ""}
                         aria-pressed={offer === key} onClick={() => setOffer(key)} data-profi-offer={key}>
-                        {key === "course" ? <BookOpen size={19} aria-hidden="true" /> :
-                          key === "workshop" ? <UsersRound size={19} aria-hidden="true" /> :
-                          key === "intro" ? <HandHeart size={19} aria-hidden="true" /> :
-                          <HeartHandshake size={19} aria-hidden="true" />}
-                        <span><strong>{t.offers[key].title}</strong><small>{t.offers[key].subtitle}</small></span>
+                        <Photo src={PHOTOS.offers[key]} className={styles.offerThumb} sizes="95px" />
+                        <span className={styles.offerText}><strong>{t.offers[key].title}</strong><small>{t.offers[key].subtitle}</small></span>
                         <ChevronRight size={16} aria-hidden="true" />
                       </button>
                     ))}
@@ -467,7 +506,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 <div className={styles.offerPreview} data-profi-preview={offer}>
                   <p className={styles.previewEyebrow}><LockKeyhole size={14} aria-hidden="true" />{t.previewLabel}</p>
                   <div className={styles.previewCard}>
-                    <span className={styles.previewArtwork}><Sparkles size={31} aria-hidden="true" /></span>
+                    <Photo src={PHOTOS.offers[offer]} className={styles.previewPhoto} sizes="(max-width: 600px) 36vw, 220px" />
                     <p className={styles.sectionKicker}>{t.previewClient}</p>
                     <h3>{chosen.preview}</h3>
                     <p>{chosen.format}</p>
@@ -490,7 +529,10 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 <ol>
                   {(offer === "course" ? t.courseSteps : t.steps).map((step, index) => (
                     <li key={step.title}>
-                      <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
+                      <span className={styles.publishPhoto}>
+                        <Image src={PHOTOS.stages[index]} alt="" fill unoptimized sizes="100px" />
+                        <span className={styles.photoNumber}>{String(index + 1).padStart(2, "0")}</span>
+                      </span>
                       <div><h4>{step.title}</h4><p>{step.detail}</p></div>
                       <Link href={index === 0 ? profileHref : index === 1 ? offerHref :
                         index === 2 ? offer === "course" ? publicRoot + "/academy" : publicRoot + "/masters" :
@@ -505,9 +547,9 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
               </section>
               <p className={styles.paymentStatus}><ShieldCheck size={17} aria-hidden="true" />{t.paymentStatus}</p>
               <div className={styles.benefitGrid}>
-                <article><CircleDollarSign size={22} aria-hidden="true" /><h3>{t.freeTitle}</h3><p>{t.freeBody}</p></article>
-                <article><ShieldCheck size={22} aria-hidden="true" /><h3>{t.discoverTitle}</h3><p>{t.discoverBody}</p></article>
-                <article><MessageSquare size={22} aria-hidden="true" /><h3>{t.requestTitle}</h3><p>{t.requestBody}</p></article>
+                <article><Photo src={PHOTOS.personal} className={styles.benefitPhoto} /><div><h3><CircleDollarSign size={19} aria-hidden="true" />{t.freeTitle}</h3><p>{t.freeBody}</p></div></article>
+                <article><Photo src={PHOTOS.offers.course} className={styles.benefitPhoto} /><div><h3><ShieldCheck size={19} aria-hidden="true" />{t.discoverTitle}</h3><p>{t.discoverBody}</p></div></article>
+                <article><Photo src={PHOTOS.offers.session} className={styles.benefitPhoto} /><div><h3><MessageSquare size={19} aria-hidden="true" />{t.requestTitle}</h3><p>{t.requestBody}</p></div></article>
               </div>
               <details className={styles.moneyDetails} data-profi-money-model>
                 <summary><ClipboardList size={19} aria-hidden="true" />{t.moneyTitle}<ChevronRight size={17} aria-hidden="true" /></summary>
