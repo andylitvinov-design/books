@@ -74,8 +74,8 @@ async function verifyDirectNavigation(nav, { locale, surface, expected, label })
   const freeReviewHref = '/' + locale + '/services/free-situation-review'
   const directions = expected.filter(item => ['energy','love','business'].includes(item.id))
   const expectedHeader = [...directions.map(({id,href}) => ({id,href})), { id: 'cabinet', href: cabinetHref }]
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about', cabinetHref], label + ': exact direct header destinations')
-  assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => el.getAttribute('href'))), [freeReviewHref, ...directions.map(item => item.href), '/' + locale + '/about', cabinetHref], label + ': exact direct header destinations')
+  assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.filter(el => !['shop','cart'].includes(el.getAttribute('data-nav-item'))).map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
   const current = nav.locator(':scope > a[aria-current="page"]')
   await expect(current).toHaveCount(directions.some(item => item.id === surface) ? 1 : 0)
   if (directions.some(item => item.id === surface)) await expect(current).toHaveAttribute('href', directions.find(item => item.id === surface).href)

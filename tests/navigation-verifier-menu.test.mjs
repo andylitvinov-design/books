@@ -195,8 +195,8 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
-  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/academy', '/' + locale + '/about'];
+  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface === 'love' ? 'relationships' : surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
   const nodes = treeNodes(menuTree).filter(node => node.type === 'a');
@@ -255,21 +255,21 @@ async function menuScenario(locale, surface, fault) {
   assert.deepEqual(bounded, [trigger, ...links]);
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'services', 'library']) test(`${locale}/${surface} verifier uses actual JSX menu destinations and navigates`, () => menuScenario(locale, surface));
+  for (const surface of ['home', 'energy', 'love', 'business', 'library']) test(`${locale}/${surface} verifier uses actual JSX menu destinations and navigates`, () => menuScenario(locale, surface));
 }
 for (const fault of ['wrong destination', 'missing catalog destination', 'extra catalog destination', 'missing active state', 'duplicate active state', 'wrong active surface', 'duplicate destination', 'missing menu', 'cannot open', 'keyboard order', 'escape', 'focus return', 'overflow', 'out of bounds', 'route close', 'wrong navigation']) {
   test('site-menu verifier rejects ' + fault, () => assert.rejects(menuScenario('en', 'home', fault)));
 }
 
 async function directScenario(locale, surface, fault) {
-  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
+  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface === 'love' ? 'relationships' : surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const direct = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a');
   if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';
-  if (fault === 'wrong services route') direct[1].props.href = '/wrong';
-  if (fault === 'wrong About route') direct[2].props.href = '/wrong';
-  if (fault === 'wrong cabinet route') direct[3].props.href = '/' + locale + '/library';
-  if (fault === 'missing direct link') direct.splice(2, 1);
+  if (fault === 'wrong energy route') direct[1].props.href = '/wrong';
+  if (fault === 'wrong About route') direct[4].props.href = '/wrong';
+  if (fault === 'wrong cabinet route') direct[5].props.href = '/' + locale + '/library';
+  if (fault === 'missing direct link') direct.splice(4, 1);
   if (fault === 'extra direct link') direct.push({ type: 'a', props: { href: '/' + locale + '/library' } });
   if (fault === 'missing data id') delete direct[1].props['data-nav-item'];
   if (fault === 'missing active state') delete direct[1].props['aria-current'];
@@ -294,10 +294,10 @@ async function directScenario(locale, surface, fault) {
   await verify(nav, { locale, surface, expected: navigationModel.getSiteNavigation(locale), label: 'synthetic' });
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'services', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
+  for (const surface of ['home', 'energy', 'love', 'business', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
 }
-for (const fault of ['wrong free review route', 'wrong services route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
-  test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'services', fault)));
+for (const fault of ['wrong free review route', 'wrong energy route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
+  test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'energy', fault)));
 }
 
 test('library audit checks the menu active link while preserving exact six-slot bottom navigation', () => {
