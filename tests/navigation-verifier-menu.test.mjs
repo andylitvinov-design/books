@@ -41,6 +41,12 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
+  './home-personal-space': { HomePersonalSpaceNavEntry: ({locale}) => jsx('button', {
+    className:'site-cabinet-entry','data-nav-item':'cabinet',
+    'aria-haspopup':'dialog','aria-controls':'home-personal-space-dialog',
+    'aria-expanded':false,'aria-label':{en:'My Space',ru:'Моё пространство',es:'Mi espacio'}[locale],
+    children:locale==='ru'?'Моё':{en:'My Space',es:'Mi espacio'}[locale],
+  }) },
 });
 const { AcquisitionEventLink } = loadComponent('components/acquisition-event-link.tsx', { ...common, '@/data/local-acquisition': acquisition });
 const { coreServiceOffers } = loadComponent('data/core-service-offers.ts', {});
@@ -58,6 +64,7 @@ const { ServicesSolutions } = loadComponent('components/services-solutions.tsx',
 const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx', {
   ...common, '@/data/local-acquisition': acquisition,
   '@/components/site-navigation': { SiteNavigation },
+  '@/components/home-personal-space': { HomePersonalSpaceProvider: ({children}) => children, HomePersonalSpaceCard: () => null },
   '@/components/services-solutions': { ServicesSolutions },
   '@/components/acquisition-event-link': { AcquisitionEventLink },
   ...Object.fromEntries([
@@ -265,6 +272,7 @@ async function directScenario(locale, surface, fault) {
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const direct = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a');
+  const controls = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a' || node?.type === 'button');
   if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';
   if (fault === 'wrong energy route') direct[1].props.href = '/wrong';
   if (fault === 'wrong About route') direct[4].props.href = '/wrong';
@@ -281,7 +289,7 @@ async function directScenario(locale, surface, fault) {
   if (fault === 'spurious library active state') direct[1].props['aria-current'] = 'page';
   const nav = { locator(selector) {
     const nodes = selector === ':scope > a' ? direct
-      : selector === '[data-nav-item]' ? direct.filter(node => node.props['data-nav-item'])
+      : selector === '[data-nav-item]' ? controls.filter(node => node.props['data-nav-item'])
       : selector === ':scope > a[aria-current="page"]' ? direct.filter(node => node.props['aria-current'] === 'page')
       : assert.fail('Unexpected direct selector: ' + selector);
     return { nodes, evaluateAll: async callback => callback(nodes.map(node => ({ getAttribute: name => node.props[name] ?? null }))) };
@@ -305,6 +313,6 @@ test('library audit checks the menu active link while preserving exact six-slot 
   assert.match(ia, /const current = nav\.locator\('\.site-main-menu-panel a\[aria-current="page"\]'\);?\s*await expect\(current\)\.toHaveCount\(1\)/);
   assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/books'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(6\)/);
-  assert.match(ia, /const cabinetEntry = header\.locator\('a\.site-cabinet-entry'\)/);
+  assert.match(ia, /const cabinetEntry = header\.locator\('\.site-cabinet-entry'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(1\)/);
 });
