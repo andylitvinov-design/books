@@ -11,9 +11,9 @@ function supported(locale: string): locale is PublicLocale {
 }
 
 const seo = {
-  en: { title: "Pro | Learn Reiki & Share Your Practice", description: "Start the free five-lesson Reiki Practitioner programme or, if you already practise, create your course and list services on Holistic House." },
-  ru: { title: "Профи | Обучение Рейки и свои услуги", description: "Начните бесплатное обучение «Практик Рейки» из пяти уроков или, если вы уже практикуете, разместите свои услуги и создайте курс." },
-  es: { title: "Pro | Aprende Reiki y comparte tu práctica", description: "Empieza el curso gratuito de Reiki Practitioner o publica tus servicios y crea cursos si ya tienes experiencia." },
+  en: { title: "Pro | Learn Reiki & Share Your Practice", description: "Take free self-checks, build a private personal profile or become a Reiki practitioner. Experienced practitioners can create a profile, course and services on Holistic House." },
+  ru: { title: "Профи | Обучение Рейки и свои услуги", description: "Пройдите бесплатные тесты, создайте личный или профессиональный профиль, начните обучение Рейки или разместите свои услуги и курсы на Holistic House." },
+  es: { title: "Pro | Aprende Reiki y comparte tu práctica", description: "Haz pruebas gratuitas, crea tu perfil personal o profesional y comienza a aprender Reiki. Si ya practicas, ofrece servicios o crea cursos en Holistic House." },
 } as const;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
