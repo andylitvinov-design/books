@@ -210,9 +210,17 @@ export function ContactChannelChooser({
     publicAdSearch, pathname, locale,
   );
   const originalMessage = new URL(referredWhatsappUrl).searchParams.get("text") || "";
-  const serviceTitle = originalMessage.split("\n")
+  const baseService = originalMessage.split("\n")
     .find(line => /^(?:Service|Услуга|Servicio):\s*/i.test(line))
     ?.replace(/^[^:]+:\s*/, "").trim() || "Holistic House service";
+  // The selected public offer was previously present only in an unsent chat
+  // draft. It must also reach the private CRM before the thank-you redirect.
+  // Never extract the visitor's Context, Topic, questions or clinical answers.
+  const selectedOption = originalMessage.split("\n")
+    .find(line => /^(?:Selected option|Выбранный вариант|Opción elegida):\s*/i.test(line))
+    ?.replace(/^[^:]+:\s*/, "").trim() || "";
+  const serviceTitle = selectedOption
+    ? (baseService + " · " + selectedOption).slice(0, 160) : baseService;
 
   // A same-tab OAuth return uses only non-sensitive, public service identity in
   // sessionStorage; never save entered contacts, private notes or tokens there.
