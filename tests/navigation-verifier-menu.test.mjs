@@ -5,6 +5,7 @@ import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as navigationModel from '../lib/site-navigation-model.js';
+import * as serviceCart from '../lib/commerce/cart.js';
 import * as acquisition from '../data/local-acquisition.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
@@ -30,6 +31,11 @@ const common = {
   'next/link': { default: link },
   'lucide-react': Object.fromEntries(['BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'Sparkles'].map(name => [name, () => null])),
 };
+const { CartNavLink } = loadComponent('components/commerce/cart-nav-link.tsx', {
+  ...common, react: { useEffect() {}, useState: () => [0, () => {}] },
+  'lucide-react': { ShoppingBasket: () => null }, '@/lib/commerce/cart': serviceCart,
+  './cart-nav-link.module.css': { default: { navCart: 'cart-nav-link' } },
+});
 let pathname = '/';
 const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   ...common,
@@ -38,7 +44,7 @@ const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   '@/lib/ui-locale': { localePath: (path, locale) => '/' + locale + path, saveUiLocale() {} },
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
-  '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
+  '@/components/commerce/cart-nav-link': { CartNavLink },
   './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
   './use-navigation-locale': { useNavigationLocale: locale => locale },
 });
@@ -65,6 +71,8 @@ const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx'
     ['homepage-topic-journeys', 'HomepageTopicJourneys'],
     ['home-free-tests-banner', 'HomeFreeTestsBanner'], ['personal-testimonials', 'PersonalTestimonials'],
     ['site-video-player', 'SiteVideoPlayer'],
+    ['home-section-carousel', 'HomeSectionCarousel'], ['home-free-diagnosis-banner', 'HomeFreeDiagnosisBanner'],
+    ['home-conversation-guide', 'HomeConversationGuide'], ['home-explore-sections', 'HomeExploreSections'],
     ['sitewide-antistress-banner', 'TestSelectionCourseBanner'],
   ].map(([path, name]) => ['@/components/' + path, { [name]: () => null }])),
 });
@@ -83,8 +91,8 @@ test('CSP history clicks the unique body About CTA despite the real header dupli
 });
 
 const homeLabels = {
-  en: ['Get a free written review', 'Take free self-checks', 'Ask about a session · from €50'],
-  ru: ['Получить бесплатный разбор', 'Пройти бесплатные тесты', 'Запросить личную сессию · от €50'],
+  en: ['Get a free written review', 'Take free self-checks', 'Request a consultation · from €50'],
+  ru: ['Получить бесплатный разбор', 'Пройти бесплатные тесты', 'Запросить консультацию · от €50'],
 };
 function assertHomeRoutes(tree, locale) {
   const nodes = treeNodes(tree);
@@ -195,7 +203,7 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
@@ -268,6 +276,8 @@ async function directScenario(locale, surface, fault) {
   if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';
   if (fault === 'wrong services route') direct[1].props.href = '/wrong';
   if (fault === 'wrong About route') direct[2].props.href = '/wrong';
+  if (fault === 'wrong shop route') direct[4].props.href = '/wrong-shop';
+  if (fault === 'wrong cart route') direct[5].props.href = '/wrong-cart';
   if (fault === 'wrong cabinet route') direct[3].props.href = '/' + locale + '/library';
   if (fault === 'missing direct link') direct.splice(2, 1);
   if (fault === 'extra direct link') direct.push({ type: 'a', props: { href: '/' + locale + '/library' } });
@@ -281,7 +291,7 @@ async function directScenario(locale, surface, fault) {
   if (fault === 'spurious library active state') direct[1].props['aria-current'] = 'page';
   const nav = { locator(selector) {
     const nodes = selector === ':scope > a' ? direct
-      : selector === '[data-nav-item]' ? direct.filter(node => node.props['data-nav-item'])
+      : selector === ':scope > a[data-nav-item]' ? direct.filter(node => node.props['data-nav-item'])
       : selector === ':scope > a[aria-current="page"]' ? direct.filter(node => node.props['aria-current'] === 'page')
       : assert.fail('Unexpected direct selector: ' + selector);
     return { nodes, evaluateAll: async callback => callback(nodes.map(node => ({ getAttribute: name => node.props[name] ?? null }))) };
@@ -296,7 +306,7 @@ async function directScenario(locale, surface, fault) {
 for (const locale of ['en', 'ru', 'es']) {
   for (const surface of ['home', 'services', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
 }
-for (const fault of ['wrong free review route', 'wrong services route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
+for (const fault of ['wrong free review route', 'wrong services route', 'wrong About route', 'wrong cabinet route', 'wrong shop route', 'wrong cart route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
   test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'services', fault)));
 }
 
@@ -308,3 +318,4 @@ test('library audit checks the menu active link while preserving exact six-slot 
   assert.match(ia, /const cabinetEntry = header\.locator\('a\.site-cabinet-entry'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(1\)/);
 });
+

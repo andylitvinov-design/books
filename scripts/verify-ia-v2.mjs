@@ -73,9 +73,9 @@ async function verifyDirectNavigation(nav, { locale, surface, expected, label })
   const cabinetHref = '/' + (locale === 'es' ? 'en' : locale) + '/app'
   const freeReviewHref = '/' + locale + '/services/free-situation-review'
   const serviceHref = expected.find(item => item.id === 'services').href
-  const expectedHeader = [{ id: 'services', href: serviceHref }, { id: 'cabinet', href: cabinetHref }]
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeReviewHref, serviceHref, '/' + locale + '/about', cabinetHref], label + ': exact direct header destinations')
-  assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
+  const expectedHeader = [{ id: 'services', href: serviceHref }, { id: 'cabinet', href: cabinetHref }, { id: 'shop', href: '/' + locale + '/shop' }, { id: 'cart', href: '/' + locale + '/cart' }]
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeReviewHref, serviceHref, '/' + locale + '/about', cabinetHref, '/' + locale + '/shop', '/' + locale + '/cart'], label + ': exact direct header destinations')
+  assert.deepEqual(await nav.locator(':scope > a[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
   const current = nav.locator(':scope > a[aria-current="page"]')
   await expect(current).toHaveCount(surface === 'services' ? 1 : 0)
   if (surface === 'services') await expect(current).toHaveAttribute('href', serviceHref)
@@ -133,7 +133,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
+        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...expected.filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinetEntry = header.locator('a.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
@@ -347,7 +347,7 @@ try {
         } else {
           // Books is the sixth bottom-navigation slot; the full Library remains in the menu.
           const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
-          assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
+          assert.deepEqual(await nav.locator(':scope > a[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
           await expect(nav.locator('[aria-current="page"]')).toHaveCount(1)
           await expect(nav.locator('[data-nav-item="books"]')).toHaveAttribute('aria-current', 'page')
@@ -576,3 +576,4 @@ try {
   writeFileSync(`${evidence}/results.json`, JSON.stringify(results, null, 2))
   writeFileSync(`${evidence}/app.log`, sanitize(logs))
 }
+

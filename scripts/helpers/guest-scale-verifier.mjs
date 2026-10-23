@@ -176,7 +176,10 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     const model = interpretationBandModel(result, dimension, locale)
     const reading = gaugeModel(dimension, result, locale)?.rangeReading
     assert.deepEqual(actual.publishedBands, reading ? reading.rows.map(band => ({
-      range: band.displayRange, label: band.label, current: band.current,
+      range: band.displayRange,
+      label: (band.originalAnswerCode !== null && band.originalAnswerCode !== undefined
+        ? (locale === 'ru' ? '≈ вариант ' : '≈ option ') + band.originalAnswerCode + ' · ' : '') + band.label,
+      current: band.current,
     })) : model.bands.map(band => ({range: `${band.from}–${band.to}`,label: band.label,current: band.code === model.currentBand?.code})), 'Exact source-aware range rows and current selection')
     if (reading) {
       assert.equal(normalized(actual.rangeHeading), normalized(reading.heading))
@@ -419,3 +422,4 @@ export async function assertGuestScaleResult(page, expect, result, locale) {
     await expect(root).toBeVisible()
   } finally { await page.unroute(endpoint, intercept) }
 }
+

@@ -28,16 +28,18 @@ async function assertSpanishNavigation(page, path) {
   const currentUrl = page.url();
   const navigation = page.locator('.site-navigation');
   await expect(navigation).toHaveCount(1);
-  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es#free-start', '/es/services', '/es/about', '/es/library'], 'Spanish direct destinations: ' + path);
+  assert.deepEqual(await navigation.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), ['/es/services/free-situation-review', '/es/services', '/es/about', '/en/app', '/es/shop', '/es/cart'], 'Spanish direct destinations: ' + path);
   const destinations = [
-    ['/es#free-start', 'Empezar gratis'], ['/es', 'Inicio'],
-    ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
-    ['/es/academy', 'Academia'], ['/es/events', 'Eventos'],
-    ['/en/app', 'Gabinete'], ['/es/library', 'Biblioteca'], ['/es/relationships', 'Amor e intimidad'], ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
+    ['/es/services/free-situation-review', 'Revisión gratuita de tu situación Cuestionario y dibujo · respuesta personal por escrito'],
+    ['/es', 'Inicio'], ['/es/client/tests', 'Tests'], ['/es/services', 'Servicios'],
+    ['/es/academy', 'Academia'], ['/es/explore/business', 'Negocios'], ['/es/books', 'Ideas'],
+    ['/es/shop', 'Tienda'], ['/es/cart', 'Carrito'],
+    ['/es/library', 'Biblioteca'], ['/es/events', 'Eventos'], ['/es/relationships', 'Amor e intimidad'],
+    ['/es/courses', 'Mis cursos'], ['/es/about', 'Sobre mí'],
   ];
   const menu = navigation.locator('details.site-main-menu');
   const trigger = menu.locator('summary');
-  const links = menu.locator('.site-main-menu-panel > a');
+  const links = menu.locator('.site-main-menu-panel a');
   await expect(menu).toHaveCount(1);
   await expect(menu).toHaveJSProperty('open', false);
   await expect(trigger).toBeVisible();
@@ -72,11 +74,11 @@ async function assertSpanishCourseCatalog(page, response) {
   // Scope each contract; the direct header action is hidden at compact widths.
   const freeStart = catalog.locator('.site-navigation > a.site-nav-free-entry');
   await expect(freeStart).toHaveCount(1);
-  await expect(freeStart).toHaveText('Empezar gratis');
-  await expect(freeStart).toHaveAttribute('href', '/es#free-start');
+  await expect(freeStart).toHaveText('Revisión gratis');
+  await expect(freeStart).toHaveAttribute('href', '/es/services/free-situation-review');
   if (page.viewportSize().width > 1140) {
     await expect(freeStart).toBeVisible();
-    await expect(freeStart).toHaveAccessibleName('Empezar gratis');
+    await expect(freeStart).toHaveAccessibleName('Revisión gratis');
   } else await expect(freeStart).toBeHidden();
   const hero = catalog.locator('section[aria-labelledby="courses-title"]');
   await expect(hero).toHaveCount(1);
@@ -231,15 +233,9 @@ try {
         }
         await page.screenshot({path:`${evidence}/${live?'live':'local'}-es-client-${engine}-${width}.png`,animations:'disabled'});
         stage=`${engine} ${width} Spanish account navigation`;
-        const accountMenu = page.locator('.site-navigation details.site-main-menu');
-        await expect(accountMenu).toHaveCount(1);
-        await expect(accountMenu).toHaveJSProperty('open', false);
-        await click(page.locator('.site-main-menu-trigger'));
-        await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
-        await expect(accountMenu.getByRole('link', { name: 'Gabinete', exact: true })).toHaveCount(1);
+        const accountLink = page.locator('.site-navigation > a.site-cabinet-entry');
         await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Gabinete');
+        await expect(accountLink).toHaveAccessibleName('Abrir gabinete personal');
         await expect(accountLink).toBeVisible();
         await expect(accountLink).toHaveAttribute('href','/en/app');
         await click(accountLink);
@@ -285,7 +281,7 @@ try {
           assert.ok(page.url().endsWith('/es/client'));
         }
         assert.deepEqual(errors,[]);
-        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'four direct links plus eleven-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
+        results.push({engine,width,routes:routes.length,transport:'HTTPS',publicNavigation:'six direct links plus fourteen-entry Spanish menu, Enter/Tab/Escape and focus return',search:'single matching remedy + ES detail',languageSwitch:'same remedy EN/ES + saved preference + explicit canonical home',clientEntryLanguageSwitch:'ES to EN to RU to ES, public entry forms only',unselectedClientRequests:unselectedClientRequests.length,homeAlternates:'exact English root and Russian /ru URLs',courses:'legacy redirect and direct canonical growth catalog, exact Stress Relief enrollment and public detail/methodology links',overflow:false,pageErrors:0});
         console.log(`PASS: ${live?'live':'local'} Spanish public site ${engine} ${width}`);
         await context.close();
       }
@@ -320,3 +316,4 @@ try {
 } finally {
   try {saveDiagnostics();} finally {if(proxy){proxy.closeAllConnections();proxy.close();} if(app)app.kill('SIGTERM');}
 }
+

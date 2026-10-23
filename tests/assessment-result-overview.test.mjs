@@ -48,7 +48,12 @@ test('missing, malformed, outside-range scores and dates do not produce fabricat
       section('ok', { value: 0 }),
     ],
   }, { measurementAt: 'bad-date' })
-  assert.deepEqual(overview.preview.map(item => item.score), [null, null, null])
+  // Valid measured zero is ranked before unavailable scales, not fabricated.
+  assert.deepEqual(overview.preview.map(item => [item.key, item.score]), [['ok', '0 / 0–10'], ['bad', null], ['outside', null]])
+  for (const value of [null, undefined, 'high', 12, -1, NaN, Infinity]) {
+    const invalid = assessmentResultOverview({ sections: [section('invalid', { value })] }, null)
+    assert.equal(invalid.preview[0].score, null, 'Malformed or out-of-range values remain unavailable')
+  }
   assert.equal(overview.additionalCount, 1)
   assert.equal(overview.measurementDateLabel, null)
   assert.match(overview.purpose, /compatible data/)
@@ -91,3 +96,4 @@ test('result page offers a real per-scale selector instead of a duplicated previ
   assert.match(banner, /compact = false/)
   assert.match(banner, /!compact && <p className=\{styles\.intro\}>/)
 })
+
