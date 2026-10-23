@@ -162,7 +162,7 @@ const copy = {
     firstSaveText: "Your answers and your Flight to the Sun review will be carefully saved in My Courses. Return to them whenever you like, and edit or rewrite them at any time.",
     firstSaveAssurance: "Only you decide what to share. Your reflections stay private.",
     firstSaveConsent: "I am 18+ and agree to save this lesson and my answers privately in My Courses.",
-    firstSaveGuestHint: "Save your first lesson privately to unlock Tantra Reiki."
+    firstSaveGuestHint: "Save your first lesson privately to unlock Tantra Reiki.",
     firstSavePolicy: "Privacy Policy",
     firstSaveGoogle: "Save with Google & continue",
     firstSaveAccount: "Save to My Courses & continue",
@@ -317,7 +317,7 @@ const copy = {
     firstSaveText: "Ваши ответы и отзыв о «Полёте к Солнцу» будут бережно сохранены в вашем кабинете. Вы сможете в любой момент к ним вернуться, изменить или переписать.",
     firstSaveAssurance: "Только вы решаете, чем делиться. Ваши записи остаются личными.",
     firstSaveConsent: "Мне есть 18 лет, я согласен(на) сохранить урок и ответы приватно в «Моих курсах».",
-    firstSaveGuestHint: "Сохраните первый урок, чтобы перейти к Тантра Рейки."
+    firstSaveGuestHint: "Сохраните первый урок, чтобы перейти к Тантра Рейки.",
     firstSavePolicy: "Политика конфиденциальности",
     firstSaveGoogle: "Сохранить через Google и продолжить",
     firstSaveAccount: "Сохранить в кабинете и продолжить",
@@ -930,7 +930,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
           !value.answers?.["flight-04"]) {
         throw new Error("INVALID_FIRST_LESSON_RESPONSE");
       }
-      hydrate(value); // Private server persistence is confirmed before the app offer.
+      hydrate(value); // Private server persistence is confirmed before continuation.
       window.sessionStorage.removeItem(ENERGYWORK_FIRST_LESSON_STORAGE_KEY);
       setFirstLessonConsent(false);
       // The confirmed private snapshot already opens Lesson 2 without another slide.
