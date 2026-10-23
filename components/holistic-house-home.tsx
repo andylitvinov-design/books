@@ -14,6 +14,7 @@ import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
 
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
+import { HomePersonalSpaceProvider, HomePersonalSpaceCard } from "@/components/home-personal-space";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
 import type { Locale } from "@/data/remedies";
 
@@ -60,6 +61,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
   const entry = LOCAL_ACQUISITION[locale];
 
   return (
+    <HomePersonalSpaceProvider locale={locale}>
     <main className="house-home house-home--services" lang={locale} data-home-design="approved-v2">
       <header className="house-header house-header--services">
         <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} aria-label={text.homeLabel} prefetch={false}>
@@ -72,6 +74,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomeSectionCarousel locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
+      <HomePersonalSpaceCard locale={locale} />
       <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
@@ -164,5 +167,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         </p>
       </footer>
     </main>
+    </HomePersonalSpaceProvider>
   );
 }
