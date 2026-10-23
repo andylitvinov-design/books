@@ -21,7 +21,7 @@ type Journey = {
   focus: readonly string[]
   topics: readonly Topic[]
 }
-type SuggestedTest = { title: string }
+type SuggestedTest = { key: string; title: string }
 type Direction = 'energy' | 'relationships' | 'business'
 type Offer = { id: string; title: string; description: string; action: string; photo: string; href: string; eyebrow: string; note: string }
 type OfferKind = 'test' | 'course' | 'session'
@@ -44,7 +44,7 @@ const copy = {
     pick: 'Find your focus', all: 'All topics', subtitle: 'Choose a topic, then the way you would like to begin.',
     free: '01 · FREE TEST', course: '02 · COURSE', session: '03 · PERSONAL SESSION',
     testTitle: 'Explore your current resources', testDescription: 'Choose a free self-reflection questionnaire relevant to your question.',
-    suggested: 'Suggested: ', testAction: 'Take a free test', freeNote: 'Free to start',
+    suggested: 'Suggested: ', testAction: 'Take a free test', chooseTest: 'Choose a test', freeNote: 'Free to start',
     courseAction: 'Explore the course', courseNote: 'At your own pace',
     sessionAction: 'Explore a session', sessionNote: '30 min €50 · 60 min €100',
     more: 'Explore all options', moreTests: 'All tests', moreCourses: 'All courses', moreServices: 'All personal services',
@@ -53,7 +53,7 @@ const copy = {
     pick: 'Уточните тему', all: 'Все темы', subtitle: 'Выберите запрос, а затем удобный способ начать.',
     free: '01 · БЕСПЛАТНЫЙ ТЕСТ', course: '02 · КУРС', session: '03 · ЛИЧНАЯ СЕССИЯ',
     testTitle: 'Исследуйте свои ресурсы', testDescription: 'Выберите бесплатный опросник для самоисследования по вашему запросу.',
-    suggested: 'Рекомендуем: ', testAction: 'Пройти тест', freeNote: 'Начните бесплатно',
+    suggested: 'Рекомендуем: ', testAction: 'Пройти тест', chooseTest: 'Выбрать тест', freeNote: 'Начните бесплатно',
     courseAction: 'Открыть курс', courseNote: 'В своём темпе',
     sessionAction: 'Выбрать сессию', sessionNote: '30 мин €50 · 60 мин €100',
     more: 'Остальные предложения', moreTests: 'Все тесты', moreCourses: 'Все курсы', moreServices: 'Все личные услуги',
@@ -62,7 +62,7 @@ const copy = {
     pick: 'Elige un tema', all: 'Todos los temas', subtitle: 'Elige tu tema y la forma de comenzar.',
     free: '01 · TEST GRATIS', course: '02 · CURSO', session: '03 · SESIÓN PERSONAL',
     testTitle: 'Explora tus recursos', testDescription: 'Elige un cuestionario gratuito de reflexión personal.',
-    suggested: 'Sugerencia: ', testAction: 'Hacer un test', freeNote: 'Empieza gratis',
+    suggested: 'Sugerencia: ', testAction: 'Hacer un test', chooseTest: 'Elegir un test', freeNote: 'Empieza gratis',
     courseAction: 'Explorar el curso', courseNote: 'A tu ritmo',
     sessionAction: 'Explorar una sesión', sessionNote: '30 min €50 · 60 min €100',
     more: 'Explorar más opciones', moreTests: 'Todos los tests', moreCourses: 'Todos los cursos', moreServices: 'Todos los servicios',
@@ -374,28 +374,36 @@ export function DirectionOffers({ locale, journey, suggestions }: {
     eyebrow:kind==='course' ? c.course : c.session,
     action:item.action?.[locale] ?? (kind==='course' ? c.courseAction : c.sessionAction),
   })
+  // These cards already name an eligible suggested questionnaire. Take the visitor
+  // straight into the existing single-test guest runner instead of a second picker.
+  // Only the public definition key goes in the URL — never a concern or test answer.
+  const directTestHref = (suggested: SuggestedTest | undefined, pickerHref: string) =>
+    suggested?.key
+      ? '/' + appLocale + '/client?startTests=' + encodeURIComponent(suggested.key)
+      : pickerHref
+  const overviewSuggested = suggestions['']?.[0]
   const topicChoices = selected
     ? [selected, ...journey.topics.filter(topic => topic.id !== selected.id)]
     : journey.topics.slice(0,3)
   const topicOffers: Offer[] = topicChoices.map((topic,index) => {
     const focus = journeyFocusForTopics(journey, [topic.id])
     const suggested = suggestions[topic.id]?.[0]
-    const testHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
+    const pickerHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
       '&journey=' + direction + '&topics=' + encodeURIComponent(topic.id)
     return {
       id:topic.id, eyebrow:c.free, title:topic.title[locale],
       description:suggested ? c.suggested + suggested.title : topic.detail[locale],
       photo:index%2===0 ? photography.test : heroPhotography[direction][2],
-      href:testHref, action:c.testAction, note:c.freeNote,
+      href:directTestHref(suggested, pickerHref), action:suggested?.key ? c.testAction : c.chooseTest, note:c.freeNote,
     }
   })
   const testOffers: Offer[] = selected ? topicOffers : [
     {id:'all-topics', eyebrow:c.free, title:c.testTitle,
-      description:suggestions['']?.[0] ? c.suggested + suggestions[''][0].title : c.testDescription,
+      description:overviewSuggested ? c.suggested + overviewSuggested.title : c.testDescription,
       photo:photography.test,
-      href:'/' + locale + '/client/tests?focus=' + encodeURIComponent(journeyFocusForTopics(journey, [] ).join(',')) +
-        '&journey=' + direction + '&topics=',
-      action:c.testAction, note:c.freeNote },
+      href:directTestHref(overviewSuggested, '/' + locale + '/client/tests?focus=' + encodeURIComponent(journeyFocusForTopics(journey, [] ).join(',')) +
+        '&journey=' + direction + '&topics='),
+      action:overviewSuggested?.key ? c.testAction : c.chooseTest, note:c.freeNote },
     ...topicOffers,
   ]
   const offers: Record<OfferKind, Offer[]> = {
