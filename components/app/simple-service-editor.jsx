@@ -175,7 +175,7 @@ function initialDraft(item,locale) {
   }
 }
 
-export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,onSaveAndSubmit,onPause,onDirtyChange}){
+export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,onSaveAndSubmit,onPause,onDirtyChange,onMediaBusyChange}){
   const lang=TEXT[locale]?locale:'en', c=TEXT[lang]
   const [videoBusy,setVideoBusy]=useState(false),[photoBusy,setPhotoBusy]=useState(false)
   const [draft,setDraft]=useState(()=>initialDraft(item,lang))
@@ -296,7 +296,7 @@ export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,
           <button type="button" onClick={()=>setPhotoToolsOpen(false)} disabled={photoBusy}>{c.photoClose}</button>
         </div>
         <PracticePhotoUpload mode="service" value={photos} onChange={value=>set('photos',value)}
-          locale={locale} disabled={busy||videoBusy} onBusyChange={setPhotoBusy}/>
+          locale={locale} disabled={busy||videoBusy} onBusyChange={value=>{setPhotoBusy(value);onMediaBusyChange?.(value)}}/>
         <p className={styles.stageTip}>{c.publicOnly}</p>
       </div>}
       {!photoToolsOpen&&<p className={styles.note}>{c.photoTip}</p>}
@@ -363,7 +363,7 @@ export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,
       <p className={styles.stageTip}>{c.detailsTip}</p>
       <div className={styles.mediaCard}>
         <PracticeVideoField locale={locale} value={draft.videoPresentation} onChange={value=>set('videoPresentation',value)}
-          onBusyChange={setVideoBusy}/>
+          onBusyChange={value=>{setVideoBusy(value);onMediaBusyChange?.(value)}}/>
       </div>
       <details className={styles.advanced} data-service-advanced-details>
         <summary><span>{c.addLanguages}</span><ChevronDown size={18} aria-hidden="true"/></summary>
