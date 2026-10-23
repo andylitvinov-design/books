@@ -45,6 +45,10 @@ jobs:
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-home-consultation-first-screen.mjs || status=$?
+          # Capture safe aggregate HTML / Flight metrics from THIS PR's local
+          # production build; the separate public audit reads old live alias.
+          # Never upload Flight contents or private routes.
+          TTFB_SAMPLES=3 node scripts/measure-hh-public-ttfb.mjs http://127.0.0.1:3100 > artifacts/public-services-production/home-rsc-local.json || status=$?
           node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
           node scripts/verify-service-cart-browser.mjs || status=$?
           node scripts/verify-storefront-shop-browser.mjs || status=$?
