@@ -65,7 +65,7 @@ try {
         await expect(guide).toHaveCount(1);
         await expect(guide).toBeVisible();
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
-        await expect(guide.locator("div[class*=quickChoices] button")).toHaveCount(3);
+        await expect(guide.locator("[data-home-guide-needs] a")).toHaveCount(6);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(page.locator("[data-home-section-carousel]")).toHaveCount(1);
@@ -96,7 +96,7 @@ try {
         const visualFit = await page.evaluate(() => {
           const masthead = document.querySelector(".house-home--services > .house-header--services");
           const hero = document.querySelector("[data-home-conversation-guide] [class*=intro]");
-          const firstTile = document.querySelector("[data-home-conversation-guide] [class*=quickChoices] button:first-child");
+          const firstTile = document.querySelector('[data-home-conversation-guide] [data-home-guide-need="stress"]');
           if (!masthead || !hero || !firstTile) return null;
           const mastheadBox = masthead.getBoundingClientRect();
           const heroBox = hero.getBoundingClientRect();
@@ -111,24 +111,42 @@ try {
         });
         assert.ok(visualFit && visualFit.headerInside && visualFit.headerContentFits && visualFit.heroTitleInside,
           scenario.locale + "/" + width + " masthead or pine hero overflows: " + JSON.stringify(visualFit));
-        assert.ok(visualFit.starterTileHeight >= 72, "Ideas-style quick start must stay easy to tap");
+        assert.ok(visualFit.starterTileHeight >= 70, "Quick request cards must stay easy to tap");
         assert.equal(visualFit.starterTileColor, "rgb(7, 78, 80)", "Evergreen featured topic must match Ideas");
         if (width === 390) {
           await page.screenshot({ path: `artifacts/home-conversation/${engineName}-${scenario.locale}-collapsed.png` });
         }
-        await expect(guide.locator("[data-home-guide-filters] button")).toHaveCount(5);
-        const testsLabel={en:"Free tests",ru:"Бесплатные тесты",es:"Pruebas gratis"}[scenario.locale];
-        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:testsLabel,exact:true}).click();
-        await expect(guide.locator('[data-home-guide-browse-offer="tests"]')).toBeVisible();
-        await expect(guide.locator("[data-home-guide-browse-offer]")).toHaveCount(1);
-        const testsHref=scenario.locale==="es"?"/en/client/tests":"/"+scenario.locale+"/client/tests";
-        await expect(guide.locator('[data-home-guide-browse-offer="tests"] a')).toHaveAttribute("href",testsHref);
-        const allLabel={en:"All",ru:"Всё",es:"Todo"}[scenario.locale];
-        await guide.locator("[data-home-guide-filters]").getByRole("button",{name:allLabel,exact:true}).click();
-        assert.ok(await guide.locator("[data-home-guide-browse-offer]").count()<=3,"Only three inline offers");
-        if(width===390){
+        const lang = scenario.locale;
+        const needLinks = {
+          stress: "/" + lang + "/courses/antistress",
+          relationships: "/" + lang + "/services/free-situation-review",
+          direction: "/" + lang + "/books",
+          business: "/" + (lang === "ru" ? "ru" : "en") + "/app/business",
+          resources: "/" + lang + "/services/dao-health-profile",
+          reiki: "/" + lang + "/academy/reiki/free-practitioner-course",
+        };
+        for (const [id, href] of Object.entries(needLinks)) {
+          const card = guide.locator('[data-home-guide-need="' + id + '"]');
+          await expect(card).toBeVisible();
+          await expect(card).toHaveAttribute("href", href);
+          assert.ok((await card.locator("small").innerText()).trim().length >= 5,
+            "Every need must identify its helpful site category");
+        }
+        const boardFit = await guide.evaluate(node => {
+          const grid = node.querySelector("[data-home-guide-needs]");
+          return {
+            height: node.getBoundingClientRect().height,
+            sectionOverflows: node.scrollHeight > node.clientHeight + 2,
+            categoryOverflows: Boolean(grid && grid.scrollWidth > grid.clientWidth + 2),
+            columns: grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 0,
+          };
+        });
+        assert.ok(boardFit.height <= 610 && !boardFit.sectionOverflows && !boardFit.categoryOverflows,
+          lang + "/" + width + " six-card board must fit within one 820px screen without internal scrolling: " + JSON.stringify(boardFit));
+        assert.equal(boardFit.columns, 2, "Phone needs grid must have two columns");
+        if (width === 390) {
           await guide.scrollIntoViewIfNeeded();
-          await page.screenshot({path:`artifacts/home-conversation/${engineName}-${scenario.locale}-advisor.png`});
+          await page.screenshot({path: `artifacts/home-conversation/${engineName}-${scenario.locale}-needs.png`});
         }
         await guide.locator("[data-home-guide-launcher]").click();
         const dialog = guide.locator("[data-home-guide-dialog]");
@@ -185,10 +203,12 @@ try {
         await page.keyboard.press("Escape");
         await expect(guide.locator("[data-home-guide-dialog]")).toHaveCount(0);
         await expect(guide.locator("[data-home-guide-launcher]")).toBeVisible();
-        // Full-width first-screen CTA should handle the written question directly.
-        await guide.locator("#home-guide-entry-question").fill(scenario.text);
+        // Chat is a separate button: the full composer only appears in the modal.
+        await expect(guide.locator("#home-guide-entry-question")).toHaveCount(0);
         await guide.locator("[data-home-guide-launcher]").click();
         await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();
+        await dialog.locator("textarea").fill(scenario.text);
+        await dialog.getByRole("button", { name: scenario.send }).click();
         await expect(guide.locator('[role="log"]')).toContainText(scenario.text);
         await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
         await page.keyboard.press("Escape");

@@ -118,7 +118,8 @@ test("the approved photo hero has light text-only section links without replacin
   assert.match(carousel, /data-home-nav-section=\{key\}/);
   assert.match(carousel, /aria-current=\{key === slide\.key \? "true" : undefined\}/);
   assert.match(carousel, /slides\.find\(item => item\.key === key\)/);
-  assert.match(carousel, /href=\{target \? `\/\$\{locale\}\$\{target\.href\}` : locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
+  // #1573 uses an explicit EN fallback for the Spanish cabinet; keep that route contract.
+  assert.match(carousel, /href=\{key === "cabinet" && locale === "es" \? "\/en\/app" : target \? `\/\$\{locale\}\$\{target\.href\}` : locale === "en" \? "\/" : `\/\$\{locale\}`\}/);
   for (const item of sections) assert.match(carousel, new RegExp(item + ': "'));
   for (const label of ["Главная", "Тесты", "Услуги", "Академия", "Бизнес", "Идеи", "Кабинет", "Inicio", "Pruebas", "Servicios", "Academia", "Negocios", "Mi espacio"]) {
     assert.ok(carousel.includes(label), "Missing localized top navigation label: " + label);
