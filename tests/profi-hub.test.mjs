@@ -85,7 +85,6 @@ test('actual interactive learner track explores five steps but launches only exi
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
     let tree=widget.render()
-    assert.ok(find(tree,'data-profi-learning',undefined) === undefined) // property is boolean, check via node below
     assert.ok(nodes(tree).some(x=>x.props && Object.hasOwn(x.props,'data-profi-learning')))
     assert.equal(nodes(tree).filter(x=>x.props && Object.hasOwn(x.props,'data-profi-lesson')).length,5)
     find(tree,'data-profi-lesson',4).props.onClick()
