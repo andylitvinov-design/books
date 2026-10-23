@@ -70,7 +70,7 @@ test('coaching form is one page, text inputs plus up to eight user questions, no
 })
 
 test('compact numbered rows: one editable answer per author question without multiple prompts in one field', () => {
-  assert.match(form, /<ol className={styles.fields}>/)
+  assert.match(form, /<ol className={styles.fields} start={COACHING_FIELDS.findIndex/)
   assert.match(form, /<li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>/)
   assert.match(form, /htmlFor={"coaching-field-" \+ field.id}/)
   assert.match(form, /id={"coaching-field-" \+ field.id}/)
