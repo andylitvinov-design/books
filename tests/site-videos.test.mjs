@@ -6,7 +6,7 @@ import {
   prepareVideoChange, siteVideoWatchUrl, toPublishedSiteVideo, videoKey, videoPagePath,
 } from '../lib/site-videos/model.js'
 import {
-  createMemorySiteVideoStore, createSiteVideoStore, getSiteVideoStore,
+  createMemorySiteVideoStore, createPublicSiteVideoStore, createSiteVideoStore, getSiteVideoStore,
 } from '../lib/site-videos/store.js'
 
 const firstId = 'OkLEN8Zb-sY'
@@ -575,6 +575,79 @@ test('storage errors expose neither upstream details nor credentials or video co
     })
   }
 })
+
+test('upstream failures are classified with fixed non-sensitive diagnostic codes', async () => {
+  const cases = [
+    [async () => ({ ok:false, status:429 }), 'provider-limit'],
+    [async () => ({ ok:false, status:401 }), 'provider-auth'],
+    [async () => ({ ok:false, status:403 }), 'provider-auth'],
+    [async () => ({ ok:false, status:404 }), 'provider-endpoint'],
+    [async () => ({ ok:false, status:503 }), 'provider-5xx'],
+    [async () => ({ ok:true, json:async () => ({ error:'ERR max requests limit exceeded with sensitive payload' }) }), 'provider-limit'],
+    [async () => ({ ok:true, json:async () => ({ error:'token authentication failed, private details here' }) }), 'provider-auth'],
+    [async () => ({ ok:true, json:async () => ({ unexpected:'sensitive' }) }), 'provider-protocol'],
+    [async () => { throw new Error('private upstream connection url: synthetic-test-token') }, 'transport'],
+  ];
+  for (const [fetchFn, expectedCode] of cases) {
+    const store = createSiteVideoStore({ environment, fetchFn });
+    await assert.rejects(store.get(videoKey('home-intro','en')), error => {
+      assert.ok(codeIs('storage')(error));
+      assert.equal(error.diagnosticCode, expectedCode);
+      assert.equal(Object.prototype.propertyIsEnumerable.call(error,'diagnosticCode'), false);
+      assert.equal(error.cause, undefined);
+      assert.doesNotMatch(JSON.stringify(error), /synthetic|private|payload|connection|upstream|token/i);
+      assert.doesNotMatch(error.message, /synthetic|private|payload|token|429|503/i);
+      return true;
+    });
+  }
+});
+
+test('read-only media credential serves public records without any write privilege', async () => {
+  // Built-in approved publications are virtual revision-zero records.
+  const record = { ...published(), revision: 0 };
+  assert.ok(isSiteVideoRecord(record));
+  const calls = [];
+  const testEnv = { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN: 'separate-read-only-test-credential' };
+  const store = createPublicSiteVideoStore({
+    environment: testEnv, initialRecords: [record],
+    fetchFn: async (_url, request) => {
+      const command = JSON.parse(request.body);
+      calls.push({ auth: request.headers.Authorization, command });
+      assert.equal(command[0], 'HGET');
+      return { ok:true, json:async () => ({ result:null }) };
+    },
+  });
+  assert.equal(typeof store.save, 'undefined');
+  assert.equal(toPublishedSiteVideo(await store.get(record.key)).title, record.published.title);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].auth, 'Bearer separate-read-only-test-credential');
+  assert.equal(calls[0].command[2], record.key);
+});
+
+test('read-only auth fallback retries writer only on authentication, never on timeout/quota', async () => {
+  const keys = [];
+  const env = { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN:'synthetic-read-only-token' };
+  const fetchFn = async (_url, options) => {
+    keys.push(options.headers.Authorization);
+    if (keys.length === 1) return { ok:false, status:401 };
+    return { ok:true, json:async () => ({ result:null }) };
+  };
+  const store = createPublicSiteVideoStore({environment:env,fetchFn});
+  assert.equal(await store.get(videoKey('home-intro', 'en')), null);
+  assert.deepEqual(keys, ['Bearer synthetic-read-only-token','Bearer synthetic-test-token']);
+  for (const code of [429,503]) {
+    const seen = [];
+    const blocked = createPublicSiteVideoStore({
+      environment:env,
+      fetchFn: async (_url, options) => {
+        seen.push(options.headers.Authorization);
+        return { ok:false,status:code };
+      },
+    });
+    await assert.rejects(blocked.get(videoKey('home-intro','en')), error => error.code==='storage');
+    assert.deepEqual(seen,['Bearer synthetic-read-only-token']);
+  }
+});
 
 test('a hung storage request is aborted after the bounded timeout', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] })

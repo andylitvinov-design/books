@@ -17,16 +17,16 @@ export const ENERGYWORK_PREVIOUS_VERSION = '2026-10-18.p1'
 export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
-  'welcome-01','welcome-02',
+  'welcome-video','welcome-01','welcome-02',
   'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done','flight-save',
   'presence-01','presence-04','tan-done',
   'intention-04',
   'paths-01','paths-03',
 ])
 export const ENERGYWORK_BRANCH = Object.freeze({
-  yggdrasil: ['ygg-01','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
-  tantra: ['tan-01','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
-  kundalini: ['kun-01','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
+  yggdrasil: ['ygg-01','ygg-intro-video','ygg-02','ygg-03','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-done'],
+  tantra: ['tan-01','tan-intro-video','tan-02','tan-03','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02'],
+  kundalini: ['kun-01','kun-intro-video','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
 })
 export const ENERGYWORK_INITIATION = Object.freeze(['init-02'])
 export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
@@ -114,7 +114,7 @@ function withClosingPractices(ids, practiceIds, finaleId) {
 }
 export function energyworkSequence(_legacyPath = null) {
   return [
-    'welcome-01','welcome-02',
+    'welcome-video','welcome-01','welcome-02',
     ...withClosingPractices(
       ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
       ['flight-03'], 'flight-done'),
@@ -146,7 +146,7 @@ export function energyworkAdvanceAlreadyStored(currentId, nextId, savedId, hasUn
   return current >= 0 && next === current + 1 && saved >= next
 }
 // Derive lesson lengths from the canonical sequence, not hard-coded totals.
-// end is exclusive; the two welcome slides are an introduction before lesson 1.
+// end is exclusive; an opening video and two welcome slides precede lesson 1.
 export function energyworkLessonRanges(sequence = energyworkSequence()) {
   const starts = ENERGYWORK_LESSON_STARTS.map(id => sequence.indexOf(id))
   if (starts.some((value, index) => value < 0 || (index > 0 && value <= starts[index - 1])))

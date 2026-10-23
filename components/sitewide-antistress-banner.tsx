@@ -86,6 +86,8 @@ const reviewCopy = {
 const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:admin|api|document-preview|privacy|terms)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/academy\/reiki\/yggdrasil\/free-initiation\/?$/.test(pathname) ||
+  // Keep the fire landing hero and its CTA inside the first phone viewport.
+  /^\/(?:ru|en|es)\/academy\/reiki\/kundalini-reiki\/?$/.test(pathname) ||
   (/^\/(?:ru|en|es)\/client(?:\/|$)/.test(pathname) && !/^\/(?:en|ru)\/client(?:\/tests)?\/?$/.test(pathname)) ||
   /^\/(?:ru|en|es)\/(?:report|prescriptions)(?:\/|$)/.test(pathname) ||
   /^\/(?:ru|en|es)\/app\/(?:course|runs|results|documents|settings|privacy)(?:\/|$)/.test(pathname);
