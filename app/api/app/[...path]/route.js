@@ -765,6 +765,8 @@ async function handle(request, { params }) {
       exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.personalCoaching = await readPersonalCoaching(config, actor)
+      exported.egyptianCoaching = await readTraditionCoaching(config, actor, 'hh-egyptian-goal-planning-v1')
+      exported.greekCoaching = await readTraditionCoaching(config, actor, 'hh-greek-goal-planning-v1')
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
       exported.growthCourses = await createGrowthCourseRepository(config).exportHistory(actor)
       exported.growthCycles = await createDailyCourseRepository(config).exportHistory(actor)
