@@ -7,6 +7,7 @@ import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
+import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import styles from './personal-coaching.module.css'
 
 const copy={
@@ -21,7 +22,8 @@ const copy={
     conflict:'Your session changed in another tab. Reload to get the newest saved answers.',
     retry:'Reload session',close:'Exit session',unsaved:'You have an unsaved answer. Leave without saving it?',
     question:'QUESTION',of:'OF',back:'Back',next:'Save & continue',finish:'Save & finish',skip:'Skip this question',
-    hint:'Write your answer below',placeholder:'My answer…',required:'Write at least a few words before continuing.',
+    hint:'Or type and edit your answer',placeholder:'My answer…',required:'Write at least a few words before continuing.',
+    stopMic:'Stop dictation and review the recognized text before saving.'
     saving:'Saving…',saved:'Saved in your private cabinet',change:'You can change your answer before finishing.',
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
     noAnswer:'Skipped',history:'Earlier private sessions',historyItem:'Previous session',
@@ -42,7 +44,8 @@ const copy={
     conflict:'Сессия изменилась в другой вкладке. Обновите сохранённые ответы.',
     retry:'Обновить сессию',close:'Закрыть сессию',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',
     question:'ВОПРОС',of:'ИЗ',back:'Назад',next:'Сохранить и далее',finish:'Сохранить и завершить',skip:'Пропустить вопрос',
-    hint:'Ваш ответ ниже',placeholder:'Мой ответ…',required:'Напишите хотя бы несколько слов, прежде чем продолжить.',
+    hint:'Или напишите и отредактируйте ответ',placeholder:'Мой ответ…',required:'Напишите хотя бы несколько слов, прежде чем продолжить.',
+    stopMic:'Остановите микрофон и проверьте распознанный текст перед сохранением.'
     saving:'Сохраняем…',saved:'Сохранено в личном кабинете',change:'До завершения ответ можно изменить.',
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
     noAnswer:'Пропущено',history:'Предыдущие личные сессии',historyItem:'Прошлая сессия',
@@ -62,7 +65,8 @@ const copy={
     saveError:'No se guardó tu respuesta. Inténtalo de nuevo.',conflict:'Otra pestaña ha modificado la sesión. Actualiza tus datos.',
     retry:'Actualizar sesión',close:'Salir',unsaved:'Tu respuesta no está guardada. ¿Salir?',
     question:'PREGUNTA',of:'DE',back:'Atrás',next:'Guardar y seguir',finish:'Guardar y terminar',skip:'Saltar pregunta',
-    hint:'Tu respuesta',placeholder:'Mi respuesta…',required:'Escribe algunas palabras.',
+    hint:'O escribe y edita tu respuesta',placeholder:'Mi respuesta…',required:'Escribe algunas palabras.',
+    stopMic:'Detén el micrófono y revisa el texto antes de guardar.'
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
     history:'Sesiones anteriores',historyItem:'Sesión anterior',share:'No enviamos tus respuestas a otras personas.',
@@ -107,6 +111,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[newSelection,setNewSelection]=useState(false)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
+  const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const titleRef=useRef(null),busyRef=useRef(false)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
@@ -120,6 +125,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     setIndex(next)
     const saved=values?.[items[next]?.id]
     setDraft(typeof saved==='string'?saved:'')
+    setDictating(false)
     setNotice('')
     setError('')
   }
@@ -189,6 +195,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   }
   async function next(skip=false){
     if(busyRef.current||!session)return
+    if(dictating){setError(t.stopMic);return}
     const answer=skip?null:draft.trim()
     if((question.required&&!answer)||(question.required&&!question.type&&answer.length<3)){
       setError(t.required);return
@@ -222,10 +229,12 @@ export default function PersonalCoaching({locale='en',accountId}){
   }
   function backward(){
     if(index===0)return
+    if(dictating){setError(t.stopMic);return}
     if(dirty&&!window.confirm(t.unsaved))return
     visit(index-1,session?.answers)
   }
   function exit(event){
+    if(dictating){event.preventDefault();setError(t.stopMic);return}
     if(dirty&&!window.confirm(t.unsaved))event.preventDefault()
   }
   async function erase(){
@@ -302,9 +311,13 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</span>}
             <h1 ref={titleRef} tabIndex={-1}>{translated(question.prompt||question.question,lang)}</h1>
-            <CoachingQuestionVoice key={question.id} text={translated(question.prompt||question.question,lang)}
-              locale={lang} disabled={busy} onTranscript={words=>{
-                setDraft(words.trim().slice(0,800));setError('');setNotice('')
+            <CoachingQuestionVoice key={question.id+'-'+lang}
+              text={translated(question.prompt||question.question,lang)} locale={lang}
+              mode="answer" disabled={busy} speechConsent={speechConsent}
+              onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
+              onTranscript={words=>{
+                setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
+                setError('');setNotice('')
               }}/>
             <p>{translated(question.reflection||question.hint,lang)}</p>
             {question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
@@ -312,7 +325,7 @@ export default function PersonalCoaching({locale='en',accountId}){
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
                 {(question.type==='scale_0_10'
                   ? Array.from({length:11},(_,value)=>({id:String(value),label:{en:String(value),ru:String(value),es:String(value)}}))
-                  : question.choices||[]).map(option=><button key={option.id} type="button" disabled={busy}
+                  : question.choices||[]).map(option=><button key={option.id} type="button" disabled={busy||dictating}
                   className={styles.optionChip} aria-pressed={draft==='choice:'+option.id}
                   onClick={()=>{setDraft('choice:'+option.id);setError('');setNotice('')}}>
                   {translated(option.label,lang)}</button>)}
@@ -320,6 +333,11 @@ export default function PersonalCoaching({locale='en',accountId}){
             </>}
             {scheme?.requiredCustomPlan&&index===activeQuestions.length-1&&
               <p className={styles.requiredPlan}>{langCopy.woop}</p>}
+            {!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
+              {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy||dictating}
+                className={draft.trim()===option?styles.chosen:undefined} aria-pressed={draft.trim()===option}
+                onClick={()=>{setDraft(option);setError('');setNotice('')}}>{option}</button>)}
+            </div>}
             <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
               {question.type?langCopy.orWrite:t.hint}</label>
             <textarea id="hh-personal-coach-answer" className={styles.textarea}
@@ -327,11 +345,8 @@ export default function PersonalCoaching({locale='en',accountId}){
               maxLength={800} rows={question.type?2:4} placeholder={t.placeholder} disabled={busy}
               onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
             <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
-            {!question.type&&<div className={styles.suggestions}
-                aria-label={lang==='ru'?'Примеры ответа':'Answer ideas'}>
-              {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy}
-                onClick={()=>{setDraft(option);setError('');setNotice('')}}>{option}</button>)}
-            </div>}
+            {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
+
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
