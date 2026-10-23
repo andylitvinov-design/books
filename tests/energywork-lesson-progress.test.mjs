@@ -11,10 +11,10 @@ const repo = read("lib/academy/energywork-course-repository.js")
 test("The visible slide counter uses five real lesson lengths and a separate introduction", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges(sequence)
-  assert.equal(sequence.length, 64)
+  assert.equal(sequence.length, 63)
   assert.deepEqual(sequence.slice(3,10), ["flight-01","flight-02","flight-voices","flight-05","flight-04","flight-03","flight-done"], "Lesson 1 ends after the timed practice")
   assert.equal(ranges[0].start, 3, "Teacher welcome video and two welcome screens are outside lesson 1")
-  assert.deepEqual(ranges.map(range => range.count), [8, 15, 17, 15, 6])
+  assert.deepEqual(ranges.map(range => range.count), [7, 15, 17, 15, 6])
   assert.deepEqual(ranges.map(range => range.firstSlideId),
     ["flight-01", "tan-01", "kun-01", "ygg-01", "paths-01"])
   for (let i = 0; i < ranges.length; i++) {
@@ -54,14 +54,16 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
 })
 
 
-test("The actual first lesson renders its final practice and congratulations before the consented save gate", () => {
+test("Lesson 1 finishes directly on the inline consented save milestone", () => {
   const curriculum = read("data/academy/energywork-ai-curriculum.ts");
   const expected = energyworkSequence();
   const reportIndex = expected.indexOf("flight-04");
   const practiceIndex = expected.indexOf("flight-03");
   const doneIndex = expected.indexOf("flight-done");
-  const saveIndex = expected.indexOf("flight-save");
-  assert.ok(reportIndex < practiceIndex && practiceIndex < doneIndex && doneIndex < saveIndex);
-  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/);
-  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/);
+  assert.ok(reportIndex < practiceIndex && practiceIndex < doneIndex);
+  assert.equal(expected[doneIndex + 1], "tan-01");
+  assert.ok(!expected.includes("flight-save"));
+  assert.match(curriculum, /slide\.phase === "flight"/);
+  assert.match(learner, /data-reiki-first-lesson-consent/);
+  assert.match(learner, /saveLessonOneToCabinet\("continue"\)/);
 });

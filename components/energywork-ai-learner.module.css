@@ -4935,116 +4935,6 @@
     margin-top: 1px;
   }
 }
-/* Keep the first lesson's save button inside its card, but OUTSIDE the
-   scrollable copy. Its separate row cannot disappear beneath course progress. */
-.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] {
-  grid-template-rows: minmax(0, 1fr) auto;
-}
-.page[data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .slideMain {
-  min-height: 0;
-  overflow-y: auto;
-  scroll-padding-bottom: 16px;
-}
-.page[data-course-portrait="v3"] .firstLessonSaveDock {
-  position: relative;
-  z-index: 1;
-  flex: none;
-  padding: 10px 14px 13px;
-  border-top: 1px solid rgba(133, 197, 191, .55);
-  background: linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(235, 250, 247, .98));
-}
-.page[data-course-portrait="v3"] .firstLessonSaveDock .firstLessonSaveAction {
-  display: flex;
-  width: min(100%, 660px);
-  margin: 0 auto;
-}
-@media (max-width: 760px) {
-  .page[data-course-one-screen][data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] {
-    display: flex;
-    flex-direction: column;
-  }
-  .page[data-course-one-screen][data-course-portrait="v3"] [data-energywork-slide-id="flight-save"] .slideMain {
-    flex: 1 1 auto;
-    min-height: 0;
-    height: auto;
-    max-height: none;
-    justify-content: flex-start;
-    padding-bottom: 16px;
-  }
-  .page[data-course-portrait="v3"] .firstLessonSaveDock {
-    padding: 8px 11px 11px;
-  }
-  .page[data-course-portrait="v3"] .firstLessonSaveDock .firstLessonSaveAction {
-    min-height: 49px;
-  }
-}
-@media (max-width: 380px) and (max-height: 700px) {
-  .page[data-course-portrait="v3"] .firstLessonSaveDock {
-    padding: 6px 9px 8px;
-  }
-  .page[data-course-portrait="v3"] .firstLessonSaveDock .firstLessonSaveAction {
-    min-height: 44px;
-  }
-}
-
-/* App install is a separate optional page reached only after a confirmed save. */
-.page.installOfferPage {
-  display: grid; align-items: center; justify-items: center;
-  min-height: 100svh; padding: 24px 15px;
-  background: radial-gradient(circle at 16% 8%, #d8f5f0, transparent 48%),
-    linear-gradient(180deg, #f7f7f2, #e8f3f0);
-}
-.installOfferCard {
-  width: min(100%, 500px); display: flex; flex-direction: column; align-items: center;
-  padding: clamp(23px, 5vw, 38px); border-radius: 25px;
-  border: 1px solid #c5e1d9; background: #fffdf9;
-  box-shadow: 0 20px 55px rgba(40, 94, 93, .12);
-  text-align: center; color: #245963;
-}
-.installOfferSaved {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 13px; font-weight: 800; color: #138076;
-}
-.installOfferSymbol {
-  display: grid; place-items: center; width: 74px; height: 74px;
-  margin: 24px 0 10px; color: #148c90; border-radius: 22px;
-  background: linear-gradient(140deg, #d9f5ef, #f5faf4);
-}
-.installOfferCard h1 {
-  font: 700 clamp(27px, 7vw, 36px)/1.13 Georgia, "Times New Roman", serif;
-  color: #164b56; letter-spacing: -.025em; margin: 7px 0 10px;
-}
-.installOfferCard > p { font-size: 15px; line-height: 1.5; margin: 0 0 19px; }
-.installOfferPrimary, .installOfferSecondary, .installOfferContinue {
-  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-  width: 100%; min-height: 52px; border-radius: 14px;
-  font: inherit; font-size: 15px; font-weight: 800; text-decoration: none;
-}
-.installOfferPrimary { color: #fff; background: #058982; border: 1px solid #058982; }
-.installOfferSecondary {
-  margin-top: 10px; color: #1b6370; background: #eaf6f1; border: 1px solid #a9d6c9;
-}
-.installOfferContinue {
-  margin-top: 13px; min-height: 38px; width: auto; padding: 5px 10px;
-  border: none; background: transparent; color: #27777b;
-  text-decoration: underline; cursor: pointer; font-size: 13px;
-}
-.installOfferCard > .installOfferNote {
-  display: flex; align-items: flex-start; gap: 7px; margin: 15px 0 0;
-  color: #60767a; font-size: 11px; line-height: 1.4; text-align: left;
-}
-.installOfferNote svg { flex: 0 0 auto; }
-@media (max-width: 760px) {
-  .page.installOfferPage {
-    position: fixed; inset: 0; z-index: 2147483000;
-    min-height: 0; height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
-    padding: calc(14px + env(safe-area-inset-top)) 15px
-      calc(14px + env(safe-area-inset-bottom));
-  }
-  .installOfferCard { padding: 22px 17px; }
-  .installOfferSymbol { margin: 17px 0 9px; }
-}
-
 /* Reiki Practitioner opening · five-day learning promise and personal initiation gift.
    Reuse welcome-01: do not shift stable slide IDs or private progress. */
 .page[data-course-portrait="v3"] .welcomeSlide .welcomeGift {
@@ -5237,4 +5127,84 @@
   .page[data-course-portrait="v3"] [data-energywork-slide-kind="video"] .videoCaption {
     display: none;
   }
+}
+
+
+/* REIKI LESSON 1 · one milestone/consent screen on 320–430px devices.
+   The guest-only gate is compact; the completion photo and pinned CTA remain. */
+.page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+  [data-energywork-slide-id="flight-done"] .firstLessonSave {
+  width: 100%;
+  margin: 7px 0 0;
+  padding: 9px 12px;
+  gap: 5px;
+  border-radius: 14px;
+  background: linear-gradient(118deg, rgba(252,255,251,.94), rgba(232,250,246,.92));
+}
+.page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+  [data-energywork-slide-id="flight-done"] .firstLessonAssurance {
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0;
+  background: none;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+  [data-energywork-slide-id="flight-done"] .firstLessonSave .consentLabel {
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #255d65;
+}
+.page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+  [data-energywork-slide-id="flight-done"] .firstLessonPrivacy {
+  line-height: 1.25;
+  font-size: 10.5px;
+}
+.page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+  [data-energywork-slide-id="flight-done"] .slideMain {
+  justify-content: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-width: 760px) {
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .art {
+    max-height: min(20dvh, 150px);
+  }
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .slideMain { gap: 5px; padding: 8px 11px; }
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .content h1 {
+    font-size: clamp(22px, 6vw, 29px);
+    margin-bottom: 4px;
+  }
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .milestoneCard {
+    margin-top: 5px;
+    padding: 6px 8px;
+  }
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .milestoneInlineChoices { margin-top: 6px; }
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .milestoneInlineChoices button {
+    min-height: 48px;
+    padding: 7px 10px;
+  }
+}
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .art {
+    max-height: min(16dvh, 110px);
+  }
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .firstLessonSave {
+    margin-top: 3px;
+    padding: 6px 9px;
+    gap: 4px;
+  }
+  .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
+    [data-energywork-slide-id="flight-done"] .firstLessonSave .consentLabel { font-size: 11px; }
 }

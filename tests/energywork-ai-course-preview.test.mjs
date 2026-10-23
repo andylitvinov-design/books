@@ -13,12 +13,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 64 published editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 64)
+  assert.equal(ids.length, 63)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -84,8 +84,9 @@ test('Lesson 1 practice with music comes after reflections, immediately before c
   assert.match(lesson, /Sun’s light and warmth/)
   assert.match(lesson, /Удалось ли вам подняться к Солнцу во время медитации/)
   assert.match(lesson, /question: \{ type: "text"/)
-  assert.match(curriculum, /slide\.phase === "flight" && slide\.id !== "flight-save"/)
-  assert.match(curriculum, /commonSlides\.find\(\(slide\) => slide\.id === "flight-save"\)!/)
+  assert.match(curriculum, /slide\.phase === "flight"/)
+  assert.doesNotMatch(curriculum, /id: "flight-save"/)
+  assert.equal(energyworkSequence()[10], 'tan-01')
   assert.match(curriculum, /After Tantra Reiki: the foundation of presence/)
 })
 
@@ -140,7 +141,8 @@ test('Guest answers stay unsaved; consented Google learners use private versione
   assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
   assert.match(learner, /maxLength=\{isMeditationFeedback \? undefined : 1600\}/)
   assert.doesNotMatch(learner, /aria-pressed=\{path === choice\.id\}|choosePath\(/)
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\}/)
+  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable"/)
+  assert.match(learner, /slide\.id === "flight-done" && sync !== "ready" && !firstLessonConsent/)
 })
 
 test('Course remains available in Academy, guest cabinet and course page routes', () => {
