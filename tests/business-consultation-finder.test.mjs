@@ -57,7 +57,7 @@ test('Business first-screen finder reuses consent-bound CRM handoff in all local
   assert.match(css,/\.choice\{/)
   assert.match(css,/\.primary\{/)
   assert.match(css,/\.freePrimary\{/)
-  assert.match(css,/\.ways\{grid-template-columns:1fr/)
+  assert.match(css,/\.ways\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
   assert.doesNotMatch(source,/fetch\(|localStorage|sessionStorage|accountId|clientId|testResults|diagnose\(/)
   for(const locale of ['en','ru','es']) assert.match(source,new RegExp('\\b'+locale+': \\{'))
 })
