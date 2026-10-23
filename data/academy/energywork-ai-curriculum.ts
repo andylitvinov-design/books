@@ -230,17 +230,13 @@ const tantraPracticeQuestion: EnergyworkQuestion = {
 };
 
 const commonSlides: EnergyworkSlide[] = [
-  // The existing welcome ID is the true title page. The teacher's video follows
-  // it on its own slide, before the original Flight to the Sun meditation.
+  // The existing welcome ID is the title page. A short experience question
+  // follows it, then Andrey's video introduces the Flight to the Sun lesson.
   // All stable IDs, progress records and personal answers are preserved.
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
     title: l("Reiki Practitioner", "Практик Рейки"),
     body: l("Discover Tantra Reiki, Kundalini Reiki and Reiki Yggdrasil through gentle meditations and short daily practices.",
       "Познакомьтесь с Тантра Рейки, Кундалини Рейки и Рейки Иггдрасиль через мягкие медитации и короткие ежедневные практики.") },
-  { id: "welcome-video", phase: "welcome", kind: "video",
-    title: l("First, a word from Andrey", "Сначала — слово Андрея"),
-    body: l("Watch Andrey introduce Flight to the Sun. The original guided meditation has its own slide in Lesson 1.",
-      "Сначала посмотрите вступление Андрея к «Полёту к Солнцу». Оригинальная медитация будет отдельным слайдом первого урока.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
     body: l("Not a test — just choose your experience.",
@@ -251,6 +247,10 @@ const commonSlides: EnergyworkSlide[] = [
       { id: "reiki-1-2", label: l("I have Reiki Level 1 or 2", "У меня уже есть 1-я или 2-я ступень Рейки") },
       { id: "master", label: l("I'm a Reiki Master", "Я мастер Рейки") },
     ] } },
+  { id: "welcome-video", phase: "welcome", kind: "video",
+    title: l("First, a word from Andrey", "Сначала — слово Андрея"),
+    body: l("Watch Andrey introduce Flight to the Sun. The original guided meditation has its own slide in Lesson 1.",
+      "Сначала посмотрите вступление Андрея к «Полёту к Солнцу». Оригинальная медитация будет отдельным слайдом первого урока.") },
 
   { id: "flight-01", phase: "flight", kind: "lesson", image: image.sun,
     title: l("The Sun is calling. Ready?", "Солнце зовёт. Готовы?"),

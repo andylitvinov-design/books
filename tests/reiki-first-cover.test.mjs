@@ -10,13 +10,13 @@ const styles = read("components/energywork-ai-learner.module.css");
 
 test("The title page always precedes Andrey's video and the original meditation", () => {
   const order = energyworkSequence();
-  assert.deepEqual(order.slice(0, 3), ["welcome-01", "welcome-video", "welcome-02"]);
+  assert.deepEqual(order.slice(0, 3), ["welcome-01", "welcome-02", "welcome-video"]);
   assert.deepEqual(ENERGYWORK_COMMON.slice(0, 3), order.slice(0, 3));
   assert.ok(order.indexOf("welcome-video") < order.indexOf("flight-02"));
   const cover = curriculum.indexOf('id: "welcome-01"');
   const teacher = curriculum.indexOf('id: "welcome-video"');
   const question = curriculum.indexOf('id: "welcome-02"');
-  assert.ok(cover >= 0 && cover < teacher && teacher < question);
+  assert.ok(cover >= 0 && cover < question && question < teacher);
   assert.equal(new Set(order).size, order.length);
   assert.deepEqual(energyworkLessonRanges().map(r => r.count), [7,15,17,15,6]);
   assert.match(learner, /useState\(startAtExperience \? energyworkSlides\(\)\.findIndex\(\(item\) => item\.id === "welcome-02"\) : 0\)/);

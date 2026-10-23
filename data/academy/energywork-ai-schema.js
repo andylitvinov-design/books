@@ -17,7 +17,7 @@ export const ENERGYWORK_PREVIOUS_VERSION = '2026-10-18.p1'
 export const ENERGYWORK_LEGACY_VERSION = '2026-10-17.p0'
 export const ENERGYWORK_PATHS = Object.freeze(['yggdrasil','tantra','kundalini'])
 export const ENERGYWORK_COMMON = Object.freeze([
-  'welcome-01','welcome-video','welcome-02',
+  'welcome-01','welcome-02','welcome-video',
   'flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done',
   'presence-01','presence-04','tan-done',
   'intention-04',
@@ -114,7 +114,7 @@ function withClosingPractices(ids, practiceIds, finaleId) {
 }
 export function energyworkSequence(_legacyPath = null) {
   return [
-    'welcome-01','welcome-video','welcome-02',
+    'welcome-01','welcome-02','welcome-video',
     ...withClosingPractices(
       ['flight-01','flight-02','flight-03','flight-voices','flight-05','flight-04','flight-done'],
       ['flight-03'], 'flight-done'),
@@ -132,6 +132,15 @@ export function energyworkSequence(_legacyPath = null) {
       'end-01','intention-04','end-02',
     ], ['intention-04'], 'end-02'),
   ]
+}
+// Old bookmarks on the teacher video may predate the introductory question.
+// Such students see the question first, while saved answers keep their place.
+// No change to private answers, version or storage.
+export function energyworkWelcomeResumeId(slideId, answers = {}) {
+  if (slideId === 'welcome-video' &&
+      !ENERGYWORK_EXPERIENCE_VALUES.includes(answers?.['welcome-02']))
+    return 'welcome-02'
+  return slideId
 }
 // Revisiting an already reached slide is navigation, not another write. The
 // server cursor is monotonic; only a new/edited answer needs a fresh save.
