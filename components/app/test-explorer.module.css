@@ -1310,3 +1310,28 @@
     padding:7px 2px;
   }
 }
+
+/* Verified original test scores on the portrait, independent of ray length. */
+.visual:not(.visualCompact) .radarSummaryAxis{
+  fill:#225e58;
+  font:700 11px/1.1 system-ui,sans-serif;
+  stroke:rgba(255,253,246,.96);
+  stroke-width:3px;
+  paint-order:stroke fill;
+}
+.visual:not(.visualCompact) .radarActualValue{
+  fill:#135e56;
+  font:850 14px/1 system-ui,sans-serif;
+  stroke:#fffaf2;
+  stroke-width:4.5px;
+  stroke-linejoin:round;
+  paint-order:stroke fill;
+}
+.visual:not(.visualCompact) .radarScoreMissing{
+  fill:#817f77;
+  font-weight:500;
+}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .radarActualValue{font-size:13px;stroke-width:4px}
+  .visual:not(.visualCompact) .radarSummaryAxis{font-size:10.5px}
+}

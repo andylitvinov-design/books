@@ -9,7 +9,7 @@ import { layoutPortraitRayLabels } from '../lib/assessments/portrait-ray-labels.
 import { portraitAxisChoices } from '../lib/assessments/portrait-constructs.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
-  portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors,
+  portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors, portraitSectorReadouts,
   portraitSectorMidAngle, portraitFullCircleAngleForAxis,
 } from '../lib/assessments/portrait-sectors.js'
 
@@ -55,7 +55,7 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
       if (name === '@/lib/assessments/portrait-ray-labels') return {layoutPortraitRayLabels}
       if (name === '@/lib/assessments/portrait-sectors') return {
         PORTRAIT_SECTORS,PORTRAIT_SECTOR_KEYS,PORTRAIT_AXIS_ORDER,
-        portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,
+        portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,portraitSectorReadouts,
         portraitSectorMidAngle,portraitFullCircleAngleForAxis,
       }
       if (name.endsWith('.module.css')) return {__esModule:true,default:new Proxy({}, {get:(_,key)=>key})}
@@ -80,7 +80,7 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
   }
 }
 
-test('All is the first of five views and shows only measurement coverage, not averaged health percentages',()=>{
+test('All is the first of five views and labels actual original test values, not a domain average',()=>{
   for(const locale of ['en','ru','es']){
     const app=harness(locale)
     const tree=app.render()
@@ -108,30 +108,66 @@ test('All is the first of five views and shows only measurement coverage, not av
   }
 })
 
-test('All ray lengths equal the exact measured / total fraction of the 146-unit radius',()=>{
-  // The example values are 4/5, 2/3, 2/4 and 4/5, not normalized wellbeing scores.
+test('All selects a named latest verified test score, not measured-count coverage',()=>{
   const measured = ['stress','anxiety','sleep','energy','clarity','focus',
     'relationships','intimacy','mood','emotional_regulation','resource','meaning']
-  const expected = {body:4/5,work:2/3,relationships:2/4,growth:4/5}
   for(const locale of ['en','ru','es']){
     const app = harness(locale,measured)
-    const groups = nodes(app.render(),'g',p=>p['data-summary-sector']!==undefined)
+    // 4/5 measured in Body must NEVER show 4/5 as a pseudo sector score.
+    app.portrait.axes.stress.measuredAt='2026-10-22T12:00:00Z'
+    app.portrait.axes.stress.rawValue=1
+    app.portrait.axes.stress.max=5
+    app.portrait.axes.stress.percent=95
+    app.portrait.axes.energy.measuredAt='2026-10-23T12:00:00Z'
+    app.portrait.axes.energy.rawValue=3
+    app.portrait.axes.energy.max=5
+    app.portrait.axes.energy.percent=15
+    const tree=app.render()
+    const groups=nodes(tree,'g',p=>p['data-summary-sector']!==undefined)
     assert.equal(groups.length,4)
+    const body=groups.find(group=>group.props['data-summary-sector']==='body')
+    assert.equal(body.props['data-source-axis'],'energy')
+    const actual=nodes(body,'text',p=>p['data-summary-test-score']==='body')
+    assert.equal(actual.length,1)
+    assert.equal(actual[0].props.children,'3 / 5')
+    // The drawing position comes from the SAME saved test, not 4/5 coverage.
+    const ray=nodes(body,'line',p=>p.className==='radarRay')
+    assert.equal(ray.length,1)
+    assert.ok(Math.abs(Math.hypot(ray[0].props.x2-180,ray[0].props.y2-182)-146*.15)<1e-8)
+    assert.equal(nodes(body,'circle',p=>p.className==='radarPoint').length,1)
     for(const group of groups){
-      const key = group.props['data-summary-sector']
-      const ray = nodes(group,'line',p=>p.className==='radarRay')
-      const dot = nodes(group,'circle',p=>p.className==='radarPoint')
-      assert.equal(ray.length,1,key)
-      assert.equal(dot.length,1,key)
-      const length = Math.hypot(ray[0].props.x2-180,ray[0].props.y2-182)
-      assert.ok(Math.abs(length-146*expected[key])<1e-8,`${locale}: ${key} expected ${expected[key]*100}% radius, got ${length/146*100}%`)
-      assert.ok(Math.abs(Math.hypot(dot[0].props.cx-180,dot[0].props.cy-182)-length)<1e-8,key+' dot matches ray')
+      const axis=group.props['data-source-axis']
+      assert.ok(axis && app.portrait.axes[axis],locale+' '+group.props['data-summary-sector'])
+      const source=app.portrait.axes[axis]
+      const actual=nodes(group,'text',p=>p['data-summary-test-score']!==undefined)
+      assert.equal(actual[0].props.children,`${source.rawValue} / ${source.max}`)
+      assert.equal(nodes(group,'text',p=>p.className==='radarSummaryAxis').length,1)
+    }
+    const empty=harness(locale,[]).render()
+    for(const group of nodes(empty,'g',p=>p['data-summary-sector']!==undefined)){
+      assert.equal(group.props['data-source-axis'],'')
+      assert.equal(nodes(group,'line',p=>p.className==='radarRay').length,0)
+      assert.equal(nodes(group,'text',p=>p['data-summary-test-score']!==undefined)[0].props.children,'—')
     }
   }
-  const empty = harness('en',[]).render()
-  for(const group of nodes(empty,'g',p=>p['data-summary-sector']!==undefined)){
-    assert.equal(nodes(group,'line',p=>p.className==='radarRay').length,0)
-  }
+})
+
+test('detail charts label only actual raw test scores including descriptive values',()=>{
+  const app=harness('en',['stress','anxiety','energy'])
+  app.portrait.axes.stress.rawValue=1.5
+  app.portrait.axes.stress.max=5
+  app.portrait.axes.stress.percent=70
+  app.portrait.axes.energy.mode='descriptive'
+  app.portrait.axes.energy.percent=null
+  app.portrait.axes.energy.rawValue=2
+  app.portrait.axes.energy.max=4
+  const tree=app.choose('body')
+  const axis=key=>detailRays(tree).find(node=>node.props['data-detail-axis']===key)
+  assert.equal(nodes(axis('stress'),'text',p=>p['data-portrait-raw-score']==='stress')[0].props.children,'1.5 / 5')
+  assert.equal(nodes(axis('energy'),'text',p=>p['data-portrait-raw-score']==='energy')[0].props.children,'2 / 4')
+  assert.equal(nodes(axis('energy'),'line',p=>p.className==='radarRay').length,0)
+  assert.equal(nodes(axis('sleep'),'text',p=>p['data-portrait-raw-score']!==undefined).length,0)
+  assert.equal(nodes(axis('embodiment'),'text',p=>p['data-portrait-raw-score']!==undefined).length,0)
 })
 
 test('individual current and previous rays use the full 0–100 scale with no artificial minimum length',()=>{
@@ -297,7 +333,7 @@ test('Reports keeps the three quick actions right under the radar',()=>{
   const src=read('components/app/test-explorer-visual.jsx')
   assert.ok(src.indexOf('className={styles.portraitRadar}')<src.indexOf('{portrait && !compact && portraitActions}'))
   assert.ok(src.indexOf('{portrait && !compact && portraitActions}')<src.indexOf('className={styles.portraitControls}'))
-  assert.match(src,/\{portrait && !compact && !allSectors && <section className=\{styles.portraitControls\}/)
+  assert.match(src,/\{portrait && !compact && portraitTab === 'tests' && !allSectors && <section className=\{styles.portraitControls\}/)
   assert.match(src,/data-portrait-sector=\{sector.key\}/)
   assert.match(src,/data-portrait-sector-all/)
 })
