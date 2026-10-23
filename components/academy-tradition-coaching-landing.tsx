@@ -6,7 +6,6 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-tradition-coaching-landing.module.css";
 
 type TraditionSlug = "egyptian" | "greek";
-type Dictionary = Record<PublicLocale, string>;
 type StageCopy = Record<PublicLocale, readonly string[]>;
 
 const steps: Record<TraditionSlug, StageCopy> = {
