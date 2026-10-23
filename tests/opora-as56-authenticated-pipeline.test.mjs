@@ -101,6 +101,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.transferFeeling,undefined,
         'Free-text emotions must never be saved in plain JSONB')
       assert.equal(saved.signals.opora54.answers.transferPlanVersion,'one-v1')
+      assert.equal(saved.signals.opora54.answers.experienceEdition,'as-5.8-one-action-v1')
       if(day===4){
         const answer=locale==='ru'?'спокойствие':'calm'
         assert.deepEqual(payload.practiceEmotion,{customText:answer})
@@ -143,7 +144,8 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.signals.practiceAttempt, null)
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)
-    assert.deepEqual(saved.signals.opora54.answers, {lessonConfidence:'explored'})
+    assert.deepEqual(saved.signals.opora54.answers, {
+        experienceEdition:'as-5.8-one-action-v1',lessonConfidence:'explored'})
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
