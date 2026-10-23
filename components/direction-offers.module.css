@@ -48,6 +48,17 @@
 .sections{display:grid;gap:23px;margin:22px 0 8px}
 .group{scroll-margin-top:24px;padding:20px 21px 17px;border:1px solid #e1d4c5;border-radius:22px;background:#fffaf4;box-shadow:0 7px 22px #4b35200d}
 .sectionHeading{display:flex;gap:13px;align-items:center;margin-bottom:16px}
+.offerList{display:grid;gap:10px}
+.groupActions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:13px}
+.moreButton,.allButton{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:12px;font:750 12px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;text-align:center}
+.moreButton{border:1px solid #d8c4b2;background:#f7eee4;color:#704b37}
+.moreButton:hover{background:#efdfce}
+.allButton{border:1px solid #805a43;background:#805a43;color:#fffcf8;text-decoration:none}
+.allButton:hover{background:#66422f;color:#fff}
+.chevronOpen{transform:rotate(180deg)}
+.groupActions :is(button,a):focus-visible{outline:3px solid #9b6b4f;outline-offset:3px}
+.offerList .card:nth-child(n+3){animation:offerReveal .19s ease-out both}
+@keyframes offerReveal{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
 .sectionIndex{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:50%;background:#f0e2d3;color:#8a533b;font:850 14px/1 Arial,Helvetica,sans-serif}
 .sectionCopy{flex:1;min-width:0}
 .sectionCopy>p{margin:0 0 3px;color:#9b694c;font:800 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.09em}
@@ -125,10 +136,15 @@
   .cardFooter{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:3px}
   .note{font-size:11px}
   .action{min-height:42px;max-width:100%;padding:8px 11px;font-size:12px;white-space:normal}
+  .offerList{gap:9px}
+  .groupActions{gap:8px;margin-top:11px}
+  .moreButton,.allButton{flex:1 1 auto;min-height:42px;padding:9px 11px;font-size:12px}
   .mobileAll{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin:7px 2px 0;color:#76513e;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:750}
 }
 @media(max-width:430px){.hero{border-radius:18px}.sections{gap:13px}.group{border-radius:15px}}
 @media(max-width:350px){
+  .groupActions{flex-direction:column;align-items:stretch}
+  .moreButton,.allButton{width:100%}
   .hero{height:clamp(330px,53svh,360px)}
   .hero h1{font-size:28px}
   .wishForm button{padding-inline:7px;font-size:10px}
@@ -140,7 +156,7 @@
   .description{font-size:11.5px}
   .action{font-size:11px;padding:7px 9px}
 }
-@media(prefers-reduced-motion:reduce){.dot span{transition:none}}
+@media(prefers-reduced-motion:reduce){.dot span{transition:none}.offerList .card:nth-child(n+3){animation:none}.chevronOpen{transition:none}}
 /* Two concise alternative actions: never repeat the main tests, courses or session cards. */
 .disclosure{box-sizing:border-box;width:min(900px,calc(100% - 28px));min-width:0;margin:12px auto 36px}
 .disclosure>summary{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:9px;width:max-content;max-width:100%;min-height:42px;margin:0 auto;padding:10px 16px;border:1px solid #ddcaba;border-radius:999px;background:#fcf7f0;color:#714c3c;font:750 13px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
