@@ -556,7 +556,7 @@ export function MyCourse({ data, locale = 'en' }) {
 
   return <div className={styles.root + (compactBaselineNav ? ' ' + styles.compactBaselineRoot : '')} data-my-course>
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
-      courses={courses} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
+      courses={courses} accountId={accountId} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
       locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} multiCourseEnabled={access?.multiCourseEnabled === true} overLimit={access?.overLimit}
       onOpen={course => selectCourse(course.id)} onNew={startAnother}
       onClose={course => manageCourse('close', course)} onPrimary={course => manageCourse('make-primary', course)}
