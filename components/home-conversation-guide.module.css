@@ -284,7 +284,7 @@
   background: #e8d9c8;
   color: #4f3b2d;
 }
-.choiceCaption { margin: 0 0 7px; color: #66594c; font-size: 12px; font-weight: 750; }
+.choiceCaption { margin: 0 0 7px; color: #66594c; font-size: 11.5px; font-weight: 500; }
 .choices { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 0 0 6px; }
 .choice {
   display: flex;
