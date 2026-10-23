@@ -151,7 +151,6 @@ try {
             await page.waitForURL(new RegExp("/" + locale + "/articles/[^/]+$"), { timeout: 30000 });
             assert.equal(await page.locator("h1").first().isVisible(), true);
             assert.equal(await page.locator("article").getByText("PRIVATE_PENDING_REVISION").count(), 0);
-            const relatedService = page.locator("article .related a[href*='/services/']");
             // The existing article detail has a related service but CSS modules
             // may rename class; use the stable href instead.
             assert.ok(await page.locator('article a[href^="/' + locale + '/services/"]').count() >= 1,
