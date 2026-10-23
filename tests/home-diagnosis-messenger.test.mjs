@@ -72,3 +72,20 @@ test("EN/RU/ES contact consent and mobile accessibility are preserved", () => {
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /min-height: 46px/);
 });
+
+test("a committed CRM lead stays saved when external messenger navigation fails on iPhone", () => {
+  const save = banner.indexOf("committedReference = result.referenceCode;");
+  const receipt = banner.indexOf("setReference(committedReference);", save);
+  const saveFailure = banner.indexOf("setError(t.error);", receipt);
+  const skipHandoff = banner.indexOf("return;", saveFailure);
+  const navigation = banner.indexOf("handoffWindow.location.replace(destination)", skipHandoff);
+  const handoffFailure = banner.indexOf("setError(t.handoffError);", navigation);
+  assert.ok(save >= 0 && receipt > save && saveFailure > receipt &&
+    skipHandoff > saveFailure && navigation > skipHandoff && handoffFailure > navigation);
+  assert.match(banner, /The database commit is irreversible even if Safari blocks the next step/);
+  assert.match(banner, /catch \{\s*try \{ handoffWindow\?\.close\(\); \} catch \{ \/\* The saved receipt remains visible/);
+  assert.match(banner, /handoffError: "Your request was saved/);
+  assert.match(banner, /handoffError: "Заявка сохранена/);
+  assert.match(banner, /handoffError: "La solicitud se guardó/);
+  assert.doesNotMatch(banner, /setReference\(""\)/);
+});
