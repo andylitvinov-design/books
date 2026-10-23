@@ -238,7 +238,6 @@ test('approved Services photo hero and Academy-style cards preserve mobile reada
   assert.match(route,/<DirectionExtras locale=\{locale as PublicLocale\}/)
 })
 
-
 test('action filter is one compact, accessible row at 320–430px in every locale',()=>{
   const full={
     en:['Take a test','Get advice','Take a course','Get a consultation'],
@@ -264,9 +263,9 @@ test('action filter is one compact, accessible row at 320–430px in every local
       }
     }
   }
-  assert.match(css,/@media\(max-width:900px\)\{\.actionChip \.actionFull\{display:none\}\.actionChip \.actionShort\{display:inline\}\}/)
+  assert.match(css,/@media\(max-width:1050px\)\{\.actionChip \.actionFull\{display:none\}\.actionChip \.actionShort\{display:inline\}\}/)
   assert.match(css,/@media\(max-width:780px\)\{[\s\S]*?\.actionChips\{flex:1 1 100%\}/)
-  assert.match(css,/@media\(max-width:480px\)\{[\s\S]*?\.actionChip\{min-height:44px;[^}]*white-space:[^}]*\}|\.actionChip\{min-height:44px;padding:7px 3px;border-radius:10px;font-size:11px\}/)
+  assert.match(css,/@media\(max-width:480px\)\{[\s\S]*?\.actionChip\{min-height:44px;padding:7px 3px;border-radius:10px;font-size:11px\}/)
   assert.match(css,/@media\(max-width:350px\)\{[\s\S]*?\.actionChip\{padding-inline:2px;font-size:10.5px\}/)
   assert.match(css,/\.actionChip\{[^}]*white-space:nowrap\}/)
   assert.doesNotMatch(css,/\.actionChips\{[^}]*repeat\(2,minmax\(0,1fr\)\)/)
