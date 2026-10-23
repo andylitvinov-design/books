@@ -5,6 +5,7 @@ import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner
 import { HomeConversationGuide } from '@/components/home-conversation-guide';
 import { HomepageTopicJourneys } from '@/components/homepage-topic-journeys';
 import { HomePersonalSpaceProvider, HomePersonalSpaceCard } from '@/components/home-personal-space';
+import { HomeFeaturedWorkspace } from '@/components/home-featured-workspace';
 import Link from 'next/link';
 import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
@@ -26,6 +27,7 @@ export default function SpanishHomePage() {
     <HomeFreeDiagnosisBanner locale="es" />
     <HomeConversationGuide locale="es" />
     <HomePersonalSpaceCard locale="es" />
+    <HomeFeaturedWorkspace locale="es" />
     <HomepageTopicJourneys locale="es" />
     <HomeMoreDisclosure locale="es">
     <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
