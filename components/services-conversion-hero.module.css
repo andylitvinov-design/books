@@ -268,32 +268,34 @@
   }
 }
 
-/* Homepage-only segmented navigation: one oval shell, white active category.
-   Service-page carousels deliberately retain their own navigation treatment. */
+/* Homepage-only segmented navigation: slim translucent oval, bright active pill.
+   All six real destinations remain reachable by horizontal scroll on small phones.
+   Service-page carousels deliberately keep their separate navigation treatment. */
 .hero[data-home-section-carousel] .sectionNav {
-  top: 13px;
-  right: 22px;
-  max-width: calc(100% - 44px);
-  padding: 4px;
-  border: 1px solid rgba(255, 253, 246, .70);
+  top: 10px;
+  right: 20px;
+  max-width: min(540px, calc(100% - 40px));
+  padding: 2px;
+  border: 1px solid rgba(255, 253, 246, .44);
   border-radius: 999px;
-  background: rgba(26, 43, 55, .67);
-  box-shadow: 0 6px 20px rgba(15, 25, 28, .24);
-  -webkit-backdrop-filter: blur(9px);
-  backdrop-filter: blur(9px);
+  background: rgba(25, 40, 44, .40);
+  box-shadow: 0 2px 10px rgba(15, 25, 28, .10);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 .hero[data-home-section-carousel] .sectionNavScroller {
-  gap: 2px;
+  gap: 1px;
   border-radius: 999px;
-  scroll-padding-inline: 6px;
+  scroll-padding-inline: 4px;
 }
 .hero[data-home-section-carousel] .sectionNavLink {
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0 10px;
   border-radius: 999px;
   color: #fffaf2;
-  font: 700 12px/1.2 Arial, Helvetica, sans-serif;
-  text-shadow: none;
+  font: 600 12px/1.2 Arial, Helvetica, sans-serif;
+  letter-spacing: -.01em;
+  text-shadow: 0 1px 3px rgba(15, 25, 27, .55);
   transition: color .18s, background .18s;
 }
 .hero[data-home-section-carousel] .sectionNavLink:first-child { margin-left: 0; }
@@ -302,9 +304,9 @@
 .hero[data-home-section-carousel] .sectionNavLink[aria-current="true"] {
   color: #23394d;
   background: #fffdfa;
-  font-weight: 800;
+  font-weight: 700;
   text-shadow: none;
-  box-shadow: 0 2px 9px rgba(16, 29, 40, .14);
+  box-shadow: 0 1px 5px rgba(16, 29, 40, .08);
 }
 @media (hover: hover) and (pointer: fine) {
   .hero[data-home-section-carousel] .sectionNavLink:not([aria-current="true"]):hover {
@@ -314,21 +316,19 @@
 }
 @media (max-width: 760px) {
   .hero[data-home-section-carousel] .sectionNav {
-    top: 9px;
-    left: 11px;
-    right: 11px;
+    top: 8px;
+    left: 50%;
+    right: auto;
+    width: min(350px, calc(100% - 28px));
     max-width: none;
+    transform: translateX(-50%);
   }
   .hero[data-home-section-carousel] .sectionNavScroller { width: 100%; }
-  .hero[data-home-section-carousel] .sectionNavLink {
-    min-height: 44px;
-    padding-inline: 12px;
-    font-size: 12px;
-  }
+  .hero[data-home-section-carousel] .sectionNavLink { padding-inline: 9px; }
 }
 @media (max-width: 365px) {
-  .hero[data-home-section-carousel] .sectionNav { left: 8px; right: 8px; }
-  .hero[data-home-section-carousel] .sectionNavLink { padding-inline: 10px; font-size: 11px; }
+  .hero[data-home-section-carousel] .sectionNav { width: calc(100% - 24px); }
+  .hero[data-home-section-carousel] .sectionNavLink { padding-inline: 8px; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero[data-home-section-carousel] .sectionNavLink { transition: none; }
