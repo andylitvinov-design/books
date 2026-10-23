@@ -205,3 +205,65 @@ test('four topic requests are always visible as localized accessible buttons wit
     }
   }
 })
+
+
+test('second action filter keeps the selected topic and shows only the intended real offer in EN/RU/ES',()=>{
+  for(const direction of ['energy','relationships','business']){
+    for(const locale of ['en','ru','es']){
+      const f=fixture(direction,locale)
+      let tree=f.render()
+      const actions=nodes(tree).filter(n=>n.props?.['data-direction-intent'])
+      assert.equal(by(tree,'data-direction-action-finder',true).length,1)
+      assert.deepEqual(actions.map(n=>n.props['data-direction-intent']),['test','advice','course','session'])
+      assert.ok(actions.every(n=>n.type==='button' && n.props['aria-pressed']===false))
+      assert.ok(actions.every(n=>n.props['aria-controls']==='hh-direction-sections'))
+      assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
+        .map(n=>n.props['data-direction-section']),['test','course','session'])
+
+      // Topic and action are independent; selecting an action never changes the
+      // person's test focus nor creates a CRM request or an appointment.
+      const topic=journey(direction).topics[1].id
+      by(tree,'data-direction-filter',topic)[0].props.onClick()
+      tree=f.render()
+      for(const intent of ['test','course','session']){
+        by(tree,'data-direction-intent',intent)[0].props.onClick()
+        tree=f.render()
+        assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
+          .map(n=>n.props['data-direction-section']),[intent])
+        assert.equal(by(tree,'data-offer-action',intent).length,2)
+        assert.equal(by(tree,'data-direction-intent',intent)[0].props['aria-pressed'],true)
+        assert.equal(by(tree,'data-direction-filter',topic)[0].props['aria-pressed'],true)
+        if(intent==='test') assert.match(by(tree,'data-offer-action','test')[0].props.href,new RegExp('topics='+topic+'$'))
+        by(tree,'data-direction-action-reset',true)[0].props.onClick()
+        tree=f.render()
+      }
+
+      by(tree,'data-direction-intent','advice')[0].props.onClick()
+      tree=f.render()
+      assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
+        .map(n=>n.props['data-direction-section']),['advice'])
+      const advice=by(tree,'data-offer-action','advice')
+      assert.equal(advice.length,1)
+      assert.equal(advice[0].props.href,'/'+locale+'/services/free-situation-review')
+      assert.equal(by(tree,'data-direction-filter',topic)[0].props['aria-pressed'],true)
+      assert.equal(by(tree,'data-offer-action','session').length,0,'Advice is not sold as a paid appointment')
+
+      // Tapping the active action again resets the section filter in place.
+      by(tree,'data-direction-intent','advice')[0].props.onClick()
+      tree=f.render()
+      assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
+        .map(n=>n.props['data-direction-section']),['test','course','session'])
+      assert.equal(by(tree,'data-direction-filter',topic)[0].props['aria-pressed'],true)
+      assert.equal(by(tree,'data-direction-action-reset',true).length,0)
+    }
+  }
+  for(const label of ['Take a test','Get advice','Take a course','Get a consultation',
+    'Пройти тест','Получить совет','Пройти курс','Получить консультацию',
+    'Hacer un test','Recibir orientación','Hacer un curso','Solicitar una consulta'])
+    assert.ok(source.includes(label),label)
+  assert.match(css,/\.actionChips\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.topicChips,\.actionChips\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.actionChip\[aria-pressed="true"\]/)
+  assert.match(css,/@media\(max-width:350px\)/)
+  assert.doesNotMatch(source,/\/api\/service-enquiries|sendBeacon|localStorage/)
+})
