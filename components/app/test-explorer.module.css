@@ -1335,3 +1335,73 @@
   .visual:not(.visualCompact) .radarActualValue{font-size:13px;stroke-width:4px}
   .visual:not(.visualCompact) .radarSummaryAxis{font-size:10.5px}
 }
+
+
+/* Reports portrait: keep both green menus on one short iPhone screen.
+   Scope to private Reports only: do not alter the public Test Explorer,
+   result charts or portrait data. The picture and SVG scale together. */
+@media(max-width:620px){
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact):has(.portraitRadar){
+    padding:3px;
+    border:0;
+    box-shadow:none;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorPicker{
+    margin:0 0 3px;
+    padding:3px;
+    border-radius:10px;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorChip,
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorAll{
+    min-height:44px;
+    padding:3px 2px;
+    font-size:clamp(8.5px,2.5vw,10.5px);
+    line-height:1.1;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorChip > span{
+    max-width:100%;
+    overflow-wrap:anywhere;
+    hyphens:auto;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
+    min-height:0;
+    width:100%;
+    height:clamp(248px,34svh,284px);
+    aspect-ratio:auto;
+    margin:0;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .model,
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .portraitRadar{
+    width:100%;
+    height:100%;
+  }
+  /* Original photo crops at 80% from its left; scaling from stage height
+     keeps the face under the real-score SVG when the stage gets shorter. */
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) .portraitSource{
+    width:auto!important;
+    height:220%!important;
+    left:50%!important;
+    top:50%!important;
+    transform:translate(-80%,-50%);
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
+    gap:4px;
+    margin:3px 0 1px;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
+    flex-direction:row;
+    flex-wrap:wrap;
+    min-height:44px;
+    padding:5px 3px;
+    gap:3px;
+    font-size:clamp(10px,2.6vw,12px);
+    line-height:1.15;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:first-child){
+    display:none;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:last-child){
+    width:12px;
+    height:12px;
+  }
+}
