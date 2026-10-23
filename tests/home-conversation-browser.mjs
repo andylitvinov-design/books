@@ -349,6 +349,9 @@ try {
           await dialog.getByRole("button", { name: scenario.send }).click();
           await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
           await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+          await question.fill("Мне кажется, что я как будто невидима для других людей");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await expect(guide.locator('[data-home-guide-offer="review"]')).toBeVisible();
           await guide.getByRole("button", { name: scenario.reset }).click();
         }
         await page.keyboard.press("Escape");
