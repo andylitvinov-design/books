@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, RefreshCw, Send, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, Send, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
@@ -63,8 +63,6 @@ const copy = {
     expandDao: "Развернуть всё", collapseDao: "Свернуть",
     originalReading: "Полное авторское толкование · русский оригинал", editorialReading: "Полное редакционное толкование · на русском",
     loadingReading: "Загружаем полное толкование…", unavailableReading: "Полное толкование не загрузилось. Откройте карточку гексаграммы.",
-    again: "Другой символ",
-    card: "Прочитать толкование",
     aphorismNote: "Подбор по смыслу вопроса: редакционные афоризмы, авторские переложения и исторические народные пословицы. Переводы пословиц смысловые, с указанием оригинала и проверяемого сборника.",
     more: "Ещё 3 афоризма", inspiredBy: "Источник идеи · по мотивам", sourceLabel: "Источник", proverbSource: "Происхождение", originalLabel: "Оригинал", editorial: "Holistic House · авторский афоризм",
     personalNote: "Это тематический подбор, не индивидуальная оценка. Выберите формат и заполните существующую форму на странице услуги.",
@@ -138,8 +136,6 @@ const copy = {
     expandDao: "Expand all", collapseDao: "Show less",
     originalReading: "Full author interpretation · in Russian", editorialReading: "Full editorial interpretation · in Russian",
     loadingReading: "Loading full interpretation…", unavailableReading: "The full reading could not be loaded. Open the hexagram page instead.",
-    again: "Draw another",
-    card: "Read interpretation",
     aphorismNote: "Topic-matched original reflections and historical folk proverbs, with cited collections. New proverb translations convey the original meaning; inspired reflections are not verbatim historical quotations.",
     more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", proverbSource: "Provenance", originalLabel: "Original", editorial: "Holistic House editorial · original aphorism",
     personalNote: "These are topic-based options, not a personal assessment. Choose a format and complete its existing request form.",
@@ -213,8 +209,6 @@ const copy = {
     expandDao: "Desplegar todo", collapseDao: "Mostrar menos",
     originalReading: "Interpretación completa del autor · en ruso", editorialReading: "Interpretación editorial completa · en ruso",
     loadingReading: "Cargando interpretación completa…", unavailableReading: "No se pudo cargar la interpretación. Abre la página del hexagrama.",
-    again: "Otro símbolo",
-    card: "Leer interpretación",
     aphorismNote: "Aforismos originales y refranes tradicionales con su colección citada. Las traducciones expresan el sentido; las paráfrasis no son citas históricas literales.",
     more: "Ver 3 aforismos más", inspiredBy: "Fuente · inspirado en", sourceLabel: "Fuente", proverbSource: "Procedencia", originalLabel: "Original", editorial: "Holistic House · aforismo original",
     personalNote: "Son opciones por tema, no una evaluación personal. Elige una y completa el formulario existente de la página.",
@@ -635,17 +629,6 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                           </div>
                         </>
                       ) : <p className={styles.daoReadingStatus} role="status">{daoReadingError ? answerCopy.unavailableReading : answerCopy.loadingReading}</p>}
-                    </div>
-                    <div className={styles.hexagramActions}>
-                      <Link href={"/" + answerLocale + "/dao/hexagrams/" + hexagram.number} prefetch={false}>
-                        {answerCopy.card}<ArrowRight size={16} aria-hidden="true" />
-                      </Link>
-                      <button type="button" onClick={() => {
-                        setExpandedDao(false);
-                        setFullDaoReading(null);
-                        setDaoReadingError(false);
-                        setResult({ ...result, hexagram: drawRandomHexagram() });
-                      }}><RefreshCw size={16} aria-hidden="true" />{answerCopy.again}</button>
                     </div>
                     <p className={styles.note}>{answerCopy.daoNote}</p>
                   </>
