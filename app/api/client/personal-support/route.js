@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { AppError } from "@/lib/assessments/contracts";
 import { getAppConfig,requestOrigin } from "@/lib/app/config";
 import { createRequestAuth } from "@/lib/app/session";
 import { PRIVATE_HEADERS,safeError } from "@/lib/app/http";
