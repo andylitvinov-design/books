@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, ClipboardList, FileText, GraduationCap, Heart, LockKeyhole, Sparkles, Target, UserRound, X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
@@ -101,6 +102,12 @@ function nextHref(summary: HomeSpaceSummary, locale: PublicLocale) {
 }
 
 export function HomePersonalSpaceProvider({ locale, children }: { locale: PublicLocale; children: ReactNode }) {
+  // The Next.js root layout persists across client-side navigation. Select the
+  // live route locale rather than keeping the language of the original page.
+  const pathname = usePathname();
+  const activeLocale: PublicLocale = pathname === "/" || /^\/en(?:\/|$)/.test(pathname) ? "en"
+    : /^\/ru(?:\/|$)/.test(pathname) ? "ru"
+    : /^\/es(?:\/|$)/.test(pathname) ? "es" : locale;
   const [status, setStatus] = useState<Status>("idle");
   const [summary, setSummary] = useState<HomeSpaceSummary | null>(null);
   const [open, setOpen] = useState(false);
@@ -205,7 +212,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
     try {
       const native = isNativeHolisticHouse();
       const result = await appFetch("auth/start", {
-        locale: locale === "es" ? "en" : locale,
+        locale: activeLocale === "es" ? "en" : activeLocale,
         continueTo: "cabinet",
         ...(native ? { native: true } : {}),
       });
@@ -219,11 +226,11 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
       setSigningIn(false);
       setSignInError(true);
     }
-  }, [locale, signingIn]);
+  }, [activeLocale, signingIn]);
 
   const value: Space = { status, summary, open, load, openPanel, closePanel };
-  const t = copy[locale];
-  const root = cabinetBase(locale);
+  const t = copy[activeLocale];
+  const root = cabinetBase(activeLocale);
   const personalActions = [
     { href: root + "/tests", label: t.tests, Icon: ClipboardList },
     { href: root + "/portrait#personal-reports", label: t.reports, Icon: FileText },
@@ -274,13 +281,13 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                   </header>
                   <p className={styles.pathHint}>{t.ownHint}</p>
                   <nav className={styles.pathLinks} aria-label={t.forMe}>
-                    <Link href={"/" + locale + "/client/tests"} prefetch={false} onClick={closePanel}>
+                    <Link href={"/" + activeLocale + "/client/tests"} prefetch={false} onClick={closePanel}>
                       <span>{t.freeTest}</span><ArrowRight size={14} aria-hidden="true" />
                     </Link>
-                    <Link href={"/" + locale + "/academy"} prefetch={false} onClick={closePanel}>
+                    <Link href={"/" + activeLocale + "/academy"} prefetch={false} onClick={closePanel}>
                       <span>{t.exploreCourses}</span><ArrowRight size={14} aria-hidden="true" />
                     </Link>
-                    <Link href={"/" + locale + "/services/free-situation-review"} prefetch={false} onClick={closePanel}>
+                    <Link href={"/" + activeLocale + "/services/free-situation-review"} prefetch={false} onClick={closePanel}>
                       <span>{t.freeReview}</span><ArrowRight size={14} aria-hidden="true" />
                     </Link>
                   </nav>
@@ -308,7 +315,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                   <h3>{t.next[summary.next].title}</h3>
                   <p>{t.next[summary.next].detail}</p>
                 </div>
-                <Link className={styles.nextAction} href={nextHref(summary, locale)} prefetch={false} onClick={closePanel}>
+                <Link className={styles.nextAction} href={nextHref(summary, activeLocale)} prefetch={false} onClick={closePanel}>
                   {t.next[summary.next].action}<ArrowRight size={15} aria-hidden="true" />
                 </Link>
               </section>
@@ -366,7 +373,7 @@ export function HomePersonalSpaceNavEntry({ locale, href }: { locale: PublicLoca
   return <button type="button" className="site-cabinet-entry" data-nav-item="cabinet"
     aria-haspopup="dialog" aria-controls="home-personal-space-dialog" aria-expanded={space.open}
     onClick={space.openPanel} aria-label={t.label}>
-    <UserRound aria-hidden="true" /><span>{locale === "ru" ? "Моё" : t.label}</span><ChevronDown size={13} aria-hidden="true" />
+    <UserRound aria-hidden="true" /><span className="site-cabinet-entry__full">{t.label}</span><span className="site-cabinet-entry__compact">{locale === "ru" ? "Моё" : t.label}</span><ChevronDown size={13} aria-hidden="true" />
   </button>;
 }
 
