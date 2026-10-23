@@ -113,7 +113,7 @@ const presentation = {
     privacy: 'Your words stay on this page. Only a form you deliberately submit can create an enquiry.',
     choose: 'Make your request more specific',
     filterLead: 'Choose one theme to update all three sections.',
-    image: 'Show photograph', start: 'Find your way to begin',
+    image: 'Show photograph', previous: 'Previous photograph', next: 'Next photograph', start: 'Find your way to begin',
     groups: [
       { kicker: '01 · START FREE', title: 'Free tests', detail: 'Understand your current resources before choosing a next step.', all: 'See all tests' },
       { kicker: '02 · LEARN & PRACTISE', title: 'Courses', detail: 'Work at your own pace with a guided programme.', all: 'Browse all courses' },
@@ -129,7 +129,7 @@ const presentation = {
     privacy: 'Ваш текст остаётся на этой странице. Заявка появится только после отдельной отправки формы.',
     choose: 'Уточните, что вам сейчас нужно',
     filterLead: 'Выберите тему — предложения в трёх разделах обновятся.',
-    image: 'Показать фото', start: 'Выберите способ начать',
+    image: 'Показать фото', previous: 'Предыдущее фото', next: 'Следующее фото', start: 'Выберите способ начать',
     groups: [
       { kicker: '01 · БЕСПЛАТНО', title: 'Бесплатные тесты', detail: 'Исследуйте своё состояние и ресурсы перед следующим шагом.', all: 'Все тесты' },
       { kicker: '02 · ОБУЧЕНИЕ', title: 'Курсы', detail: 'Занимайтесь в удобном темпе по готовой программе.', all: 'Все курсы' },
@@ -145,7 +145,7 @@ const presentation = {
     privacy: 'Tus palabras permanecen en esta página. Solo enviar otro formulario crea una solicitud.',
     choose: 'Aclara qué necesitas ahora',
     filterLead: 'Elige un tema para actualizar las tres secciones.',
-    image: 'Mostrar fotografía', start: 'Elige cómo empezar',
+    image: 'Mostrar fotografía', previous: 'Fotografía anterior', next: 'Fotografía siguiente', start: 'Elige cómo empezar',
     groups: [
       { kicker: '01 · EMPIEZA GRATIS', title: 'Pruebas gratuitas', detail: 'Explora tus recursos personales antes de decidir.', all: 'Ver todas las pruebas' },
       { kicker: '02 · APRENDER', title: 'Cursos', detail: 'Practica a tu ritmo con un programa guiado.', all: 'Ver todos los cursos' },
@@ -177,12 +177,12 @@ function matchWish(question: string, topics: readonly Topic[]): Topic | undefine
   const normalized = question.normalize('NFKC').toLocaleLowerCase().trim()
   if (normalized.length < 3) return undefined
   const ranked = topics.map(topic => {
-    const aliases = [
-      ...(topicKeywords[topic.id] ?? []),
-      ...Object.values(topic.title).flatMap(label => label.toLocaleLowerCase().split(/[^\p{L}\p{N}]+/u)),
-      ...Object.values(topic.detail).flatMap(label => label.toLocaleLowerCase().split(/[^\p{L}\p{N}]+/u)),
-    ].filter(word => word.length >= 4)
-    const score = aliases.filter(word => normalized.includes(word)).length
+    const aliases = (topicKeywords[topic.id] ?? []).filter(word => word.length >= 3)
+    const labels = [...Object.values(topic.title), ...Object.values(topic.detail)]
+      .flatMap(label => label.toLocaleLowerCase().split(/[^\p{L}\p{N}]+/u))
+      .filter(word => word.length >= 4)
+    const score = aliases.filter(word => normalized.includes(word)).length * 3 +
+      labels.filter(word => normalized.includes(word)).length
     return { topic, score }
   }).sort((a,b)=>b.score-a.score)
   return ranked[0]?.score ? ranked[0].topic : undefined
@@ -278,11 +278,11 @@ export function DirectionOffers({ locale, journey, suggestions }: {
         </form>
       </div>
       <div className={styles.slideControls} role="group" aria-label={ui.image}>
-        <button type="button" onClick={()=>setSlideIndex(index=>(index+2)%3)} aria-label={ui.image+' 3 / 1'}><ChevronLeft size={17} aria-hidden="true"/></button>
+        <button type="button" onClick={()=>setSlideIndex(index=>(index+2)%3)} aria-label={ui.previous}><ChevronLeft size={17} aria-hidden="true"/></button>
         {[0,1,2].map(index=><button type="button" key={index}
           className={styles.dot} aria-label={ui.image+' '+(index+1)}
           aria-pressed={slideIndex===index} onClick={()=>setSlideIndex(index)}><span/></button>)}
-        <button type="button" onClick={()=>setSlideIndex(index=>(index+1)%3)} aria-label={ui.image+' 1 / 3'}><ChevronRight size={17} aria-hidden="true"/></button>
+        <button type="button" onClick={()=>setSlideIndex(index=>(index+1)%3)} aria-label={ui.next}><ChevronRight size={17} aria-hidden="true"/></button>
       </div>
     </section>
 
