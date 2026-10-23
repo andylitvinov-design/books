@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
@@ -10,8 +10,8 @@ const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8'
 const page = read('app/[locale]/pro/page.tsx')
 const hub = read('components/profi-hub.tsx')
 
-test('Pro public tests and profile block is unique without unsupported marketing banner props',()=>{
-  assert.doesNotMatch(hub,/HomeFreeDiagnosisBanner/)
+test('Pro shows one contextual free review CTA, tests and profile entries',()=>{
+  assert.equal((hub.match(/<HomeFreeDiagnosisBanner /g)||[]).length,1)
   assert.match(hub,/data-profi-profiles/)
   assert.match(hub,/data-profi-entry="tests"/)
 })
@@ -25,6 +25,44 @@ test('Pro TSX parses with no syntax diagnostics in all three locales',()=>{
   assert.deepEqual(problems,[])
 })
 const css = read('components/profi-hub.module.css')
+
+test('every Pro card has existing locally-hosted photography and a real action',()=>{
+  const photographs=[...hub.matchAll(/"(\/images\/holistic-house\/[^"]+\.(?:webp|avif))"/g)].map(match=>match[1])
+  assert.ok(photographs.length>=10)
+  for(const src of new Set(photographs)){
+    assert.ok(existsSync(new URL('../public'+src,import.meta.url)),'missing approved site photo '+src)
+  }
+  for(const locale of ['en','ru','es']){
+    const widget=mount(locale)
+    let view=widget.render()
+    const entries=nodes(view).filter(x=>Object.hasOwn(x.props||{},'data-profi-entry'))
+    assert.equal(entries.length,3)
+    for(const card of entries) assert.ok(nodes(card).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'profile image at left')
+    for(let lesson=1;lesson<=5;lesson++){
+      const button=find(view,'data-profi-lesson',lesson)
+      assert.ok(nodes(button).some(node=>node.type==='img' || typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'lesson image at left')
+    }
+    assert.ok(find(view,'data-profi-action','start-course-overview'),'direct course CTA above the fold')
+    find(view,'data-profi-path','practice').props.onClick()
+    view=widget.render()
+    for(const key of ['session','intro','workshop','course']){
+      const offer=find(view,'data-profi-offer',key)
+      assert.ok(nodes(offer).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'offer image at left: '+key)
+    }
+    const preview=find(view,'data-profi-preview','session')
+    assert.ok(nodes(preview).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')))
+    assert.equal(nodes(preview).filter(node=>node.props?.className==='fakeButton').length,0)
+    assert.equal(find(view,'data-profi-action','create-service').props.prefetch,false)
+  }
+  assert.match(css,/\.profileEntryPhoto/)
+  assert.match(css,/\.lessonThumb/)
+  assert.match(css,/\.offerThumb/)
+  assert.match(css,/\.publishPhoto/)
+  assert.match(css,/\.previewPhoto/)
+  assert.match(css,/min-height:calc\(100svh - 148px\)/)
+  assert.match(css,/@media\(max-width:359px\)/)
+})
+
 const practice = read('components/app/practice-workspace.jsx')
 const materials = read('components/app/practice-materials.jsx')
 const editor = read('components/app/simple-service-editor.jsx')

@@ -44,3 +44,21 @@ Two valid user paths:
 - Hosted payment and payouts remain disabled: out of scope until account legality, agreements, provider onboarding and explicit owner approval.
 
 Track implementation evidence and release status in PR #1662 and Master Network issue #715; do not mark complete before the production flows above are observed.
+
+
+## Visual iteration · 2026-10-23 · PR #1689
+
+**Request:** compact Pro landing in established Holistic House style, one idea per phone screen, existing site photography to the **left** of cards and obvious working CTAs (do not imply a published listing, paid course or booking when a click only starts an application).
+
+**Implementation in `components/profi-hub.tsx` / `profi-hub.module.css`:**
+- Reuse owned site-served `/images/holistic-house/*` imagery with `next/image` and `unoptimized` to avoid external image hosts / Vercel image transformation charges. Decorative crops carry empty `alt` and accompanying text stays readable.
+- Smaller hero, single-row benefit chips, photo-left testing/personal/professional profile cards.
+- One-screen mobile-style learning programme list (five **actual** lesson entry previews) with a **direct** start-course link; a separate scenic selected-lesson details panel with its own working link; three photo-led next-step cards.
+- One-screen offering-choice panel with four photo-left options, separate realistic **not-published** preview and existing editor link. Removed the visually clickable but inert preview “Request service” label.
+- Photo-left publishing workflow and benefit cards; consistent maroon CTA, warm wood/cream colors, focus-visible and reduced-motion safeguards. Use content-driven auto height rather than cutting off accessibility text at 320px or zoom.
+- EN/RU/ES page content and existing account fallback preserved. All four existing starter destinations retained. No new payment, client, CRM or privacy writes.
+
+**Validation plan / honest status:**
+- Added source and mock-interaction tests in `tests/profi-hub.test.mjs` covering local image paths, three languages, all five learning thumbnails, four offer choices and real CTAs. Reconciled contradictory free-review-banner expectations left in an older test.
+- PR: https://github.com/andylitvinov-design/books/pull/1689. **At creation, Actions queued, no green CI or mobile browser screenshot claim.**
+- Promotion is only safe after a successful typecheck/lint/build and production deployment exact-SHA + READY/alias validation; account-authenticated My Practice editor, real request receipt and payments remain distinct E2E checks.
