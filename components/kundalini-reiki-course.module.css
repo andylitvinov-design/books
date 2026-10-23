@@ -662,9 +662,17 @@
   .captureStage { grid-template-columns:1fr; }
   .capturePortrait { position:absolute; width:88px; height:94px; min-height:0; right:13px; top:12px;
     z-index:1; border:2px solid #f6d7a4; border-radius:12px; opacity:.93; }
-  .captureStage [data-kundalini-course-capture] { padding-right:105px; }
-  .captureStage [data-kundalini-course-capture] [role="group"] { margin-right:-90px; }
-  .captureStage [data-kundalini-course-capture] button[data-kundalini-choice] { min-height:65px; }
+  .captureStage [data-kundalini-course-capture] { padding-right:15px; }
+  .captureStage [data-kundalini-course-capture] > :is(p,h2):nth-child(-n+3) { margin-right:96px; }
+  .captureStage [data-kundalini-course-capture] [role="group"] { margin-right:0; }
+  .captureStage [data-kundalini-course-capture] button[data-kundalini-choice] {
+    min-height:59px; padding:5px 7px;
+    grid-template-columns:48px minmax(0,1fr) 18px; gap:7px;
+  }
+  .captureStage [data-kundalini-course-capture] button[data-kundalini-choice] > span:first-child {
+    width:48px; height:48px; border-radius:7px;
+  }
+  .captureStage [data-kundalini-course-capture] button[data-kundalini-choice] small { font-size:11px; }
 }
 @media (max-width:360px), (max-height:680px) {
   .heroLine { display:none; }
@@ -673,4 +681,19 @@
   .heroDisclosure summary { min-height:32px; }
   .heroMetrics span { font-size:.64rem; padding:4px 7px; }
   .heroActions .primaryAction { min-height:41px; }
+}
+
+/* Keep the actual CRM submit button, not the option chips, in ember red. */
+.captureStage [data-kundalini-course-capture] [class*="academy-course-capture_action"] {
+  background: #981e27; color: #fff9ef; box-shadow: 0 8px 19px rgba(125,24,27,.17);
+}
+.captureStage [data-kundalini-course-capture] [class*="academy-course-capture_action"]:hover { background:#76151b; }
+.captureStage [data-kundalini-course-capture] [class*="academy-course-capture_assurances"] span,
+.captureStage [data-kundalini-course-capture] [class*="academy-course-capture_links"] a { color:#872a20; }
+.heroPhotoFrame::after { content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(120deg,rgba(255,200,89,.14),transparent 55%,rgba(167,39,27,.12)); }
+@media (max-width:360px), (max-height:680px) {
+  .capturePortrait { width:67px; height:73px; }
+  .captureStage [data-kundalini-course-capture] > :is(p,h2):nth-child(-n+3) { margin-right:72px; }
+  .captureStage [data-kundalini-course-capture] button[data-kundalini-choice] small { display:none; }
 }
