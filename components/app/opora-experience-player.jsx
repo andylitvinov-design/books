@@ -696,7 +696,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
         <section className={styles.panel+' '+(
           moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
-        )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')}
+        )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')
+          +(moment==='practice'&&cycle.day===11&&showNewPlan?' '+styles.emotionPractice:'')}
           aria-live="off" data-opora-current-screen={moment}>
           {inPreview&&<span className={styles.eyebrow}>
             {moment==='habit'?t.habitKicker:t.preview.nextKicker}
