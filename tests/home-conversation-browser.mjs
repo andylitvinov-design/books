@@ -158,6 +158,45 @@ try {
             animations: "disabled",
           });
         }
+        if (width === 430 && scenario.locale === "ru" && scenario.text === scenarios[1].text) {
+          // A provider handoff error after the server ACK must not retract an
+          // already committed CRM lead. No live contact or external send.
+          const payloads = [];
+          await page.route("**/api/service-enquiries", async route => {
+            payloads.push(JSON.parse(route.request().postData() || "{}"));
+            return route.fulfill({ status: 201, contentType: "application/json",
+              body: '{"saved":true,"referenceCode":"HH-FFEEDDCCBBAA"}' });
+          });
+          await page.evaluate(() => {
+            const qa = { opened: 0, closed: 0, attempted: 0 };
+            window.__homeHandoffFailureQA = qa;
+            window.open = () => {
+              qa.opened++;
+              const popup = {
+                opener: null, closed: false,
+                location: { replace() { qa.attempted++; throw new Error("SIMULATED_SAFARI_HANDOFF_BLOCK"); } },
+                close() { qa.closed++; popup.closed = true; },
+              };
+              return popup;
+            };
+          });
+          await requestPanel.locator('input[type="text"]').fill("qa-failed-handoff@example.test");
+          await requestPanel.locator('input[type="checkbox"]').check();
+          await requestPanel.locator('button[data-home-diagnosis-channel="whatsapp"]').click();
+          await expect(requestPanel.locator('[data-lead-saved]')).toContainText("HH-FFEEDDCCBBAA");
+          await expect(requestPanel.locator('[role="alert"]')).toContainText(
+            "Заявка сохранена, но мессенджер не открылся");
+          assert.equal(payloads.length, 1, "A failed handoff cannot reinsert a saved lead");
+          assert.equal(payloads[0].contact.email, "qa-failed-handoff@example.test");
+          assert.deepEqual(await page.evaluate(() => ({ ...window.__homeHandoffFailureQA })),
+            { opened: 1, closed: 1, attempted: 1 });
+          const safeWhatsApp = requestPanel.locator('a[data-home-diagnosis-channel="whatsapp"]');
+          const safeTelegram = requestPanel.locator('a[data-home-diagnosis-channel="telegram"]');
+          await expect(safeWhatsApp).toBeVisible();
+          await expect(safeTelegram).toBeVisible();
+          assert.match(await safeWhatsApp.getAttribute("href") || "", /HH-FFEEDDCCBBAA/);
+          assert.doesNotMatch(await safeTelegram.getAttribute("href") || "", /qa-failed-handoff/);
+        }
         await requestButton.click();
         await expect(requestButton).toHaveAttribute("aria-expanded", "false");
         await expect(requestPanel).toBeHidden();

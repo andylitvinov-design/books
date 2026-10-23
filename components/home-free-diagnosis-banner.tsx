@@ -28,6 +28,7 @@ const copy = {
     consentRequired: "Please agree to a reply about this request.",
     saving: "Saving…",
     error: "Your request could not be saved. No messenger chat was opened; please try again.",
+    handoffError: "Your request was saved, but the messenger could not open. Choose a messenger again below.",
     saved: "Request saved", reference: "Reference",
     privacy: "Your contact is saved securely before opening the messenger. Sending the chat is still your choice; a chat identity, appointment or payment is not automatically confirmed.",
     requestText: "Please send instructions for the free written situation review, questionnaire and hand drawing.",
@@ -47,6 +48,7 @@ const copy = {
     consentRequired: "Подтвердите согласие на ответ по заявке.",
     saving: "Сохраняем…",
     error: "Не удалось сохранить заявку. Чат не открыт; попробуйте ещё раз.",
+    handoffError: "Заявка сохранена, но мессенджер не открылся. Выберите WhatsApp или Telegram ещё раз ниже.",
     saved: "Заявка сохранена", reference: "Номер",
     privacy: "Контакт сохраняется защищённо до перехода в мессенджер. Сообщение вы отправляете сами; личность в чате, запись и оплата не подтверждаются автоматически.",
     requestText: "Пришлите, пожалуйста, инструкцию к бесплатному письменному разбору, анкете и рисунку от руки.",
@@ -66,6 +68,7 @@ const copy = {
     consentRequired: "Confirma tu consentimiento para recibir una respuesta.",
     saving: "Guardando…",
     error: "No se pudo guardar la solicitud. No se abrió el chat; inténtalo otra vez.",
+    handoffError: "La solicitud se guardó, pero no se pudo abrir el chat. Selecciona WhatsApp o Telegram de nuevo abajo.",
     saved: "Solicitud guardada", reference: "Referencia",
     privacy: "Guardamos el contacto de forma segura antes de abrir el chat. Tú decides si envías el mensaje; no se confirma automáticamente la identidad, reserva ni pago.",
     requestText: "Envíame las instrucciones para la revisión escrita gratuita, el cuestionario y el dibujo a mano.",
@@ -117,6 +120,7 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
     operationId.current = currentId;
     setBusy(channel);
     setError("");
+    let committedReference = "";
     try {
       const response = await fetch("/api/service-enquiries", {
         method: "POST", credentials: "same-origin", cache: "no-store",
@@ -134,19 +138,30 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
         if (response.status === 409) operationId.current = null;
         throw new Error("NOT_SAVED");
       }
-      setReference(result.referenceCode);
+      committedReference = result.referenceCode;
+      setReference(committedReference);
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
-          JSON.stringify({ referenceCode: result.referenceCode, createdAt: Date.now() }));
+          JSON.stringify({ referenceCode: committedReference, createdAt: Date.now() }));
       } catch { /* Only optional display receipt storage; CRM already committed. */ }
-      const destination = channelUrl(locale, result.referenceCode, channel);
-      if (handoffWindow && !handoffWindow.closed) handoffWindow.location.replace(destination);
-      else window.location.assign(destination);
     } catch {
       try { handoffWindow?.close(); } catch { /* No navigation after save failure. */ }
       setError(t.error);
+      return;
     } finally {
       setBusy(null);
+    }
+
+    // The database commit is irreversible even if Safari blocks the next step.
+    // Keep its receipt + both safe links available rather than falsely reporting
+    // that no lead was saved or attempting another CRM insert.
+    try {
+      const destination = channelUrl(locale, committedReference, channel);
+      if (handoffWindow && !handoffWindow.closed) handoffWindow.location.replace(destination);
+      else window.location.assign(destination);
+    } catch {
+      try { handoffWindow?.close(); } catch { /* The saved receipt remains visible. */ }
+      setError(t.handoffError);
     }
   }
 
