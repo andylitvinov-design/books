@@ -42,7 +42,8 @@ test("actions use real localized routes and remain navigation only", () => {
     "/app/coaching",
     "/services/catalog#service-listings",
   ]) assert.ok(ui.includes(route), "Missing destination: " + route);
-  assert.match(ui, /href=\{"\/" \+ locale \+ method\.primaryPath\}/);
+  assert.match(ui, /method\.id === "coaching" && locale === "es" \? "\/en\/app\/coaching"/);
+  assert.match(ui, /: "\/" \+ locale \+ method\.primaryPath/);
   assert.match(ui, /href=\{"\/" \+ locale \+ method\.secondaryPath\}/);
   for (const photo of [
     "hero-olive-incense.webp", "reiki-approved-sunrise-v3.webp", "course-start-heron.webp",
