@@ -176,7 +176,9 @@ try {
         await expect(question).toHaveValue("");
         await expect(guide).toHaveAttribute("data-guide-phase", "ready");
         if (width === 320) {
-          await question.fill("I want to kill myself");
+          await question.fill("I need clients for my business");
+          await dialog.getByRole("button", { name: scenario.send }).click();
+          await question.fill({ en: "I want to die, I am just starting", ru: "Хочу умереть, я начинаю бизнес", es: "Quiero morir, estoy empezando un negocio" }[scenario.locale]);
           await dialog.getByRole("button", { name: scenario.send }).click();
           await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
           await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
@@ -297,6 +299,16 @@ try {
       await expect(guide.locator("[data-home-voice-recording]")).toHaveCount(0);
       await expect(guide.locator('[role="log"]')).toContainText(scenario.text);
       await expect(guide.locator("[data-home-guide-choices]")).toBeVisible();
+      const dialog = guide.locator("[data-home-guide-dialog]");
+      await dialog.locator("textarea").fill("I need clients for my business");
+      await dialog.getByRole("button", { name: scenario.send }).click();
+      await dialog.getByRole("button", { name: microphoneLabel }).click();
+      await page.evaluate(text => {
+        window.__homeVoiceMock.onresult({ results: [[{ transcript: text }]] });
+      }, { en: "I want to die, I am just starting", ru: "Хочу умереть, я начинаю бизнес", es: "Quiero morir, estoy empezando un negocio" }[scenario.locale]);
+      await guide.getByRole("button", { name: finish }).click();
+      await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+      await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
       assert.deepEqual(errors, [], "Voice UI JS error");
       assert.deepEqual(leakedRequests, [], "Spoken question must never leak through a request URL");
       evidence.cases.push({ locale: scenario.locale, width: 390, voiceMock: true, cancel: true, finishSends: true, noUrlLeak: true });
@@ -402,3 +414,4 @@ try {
   if (browser) await browser.close();
   server.kill("SIGTERM");
 }
+
