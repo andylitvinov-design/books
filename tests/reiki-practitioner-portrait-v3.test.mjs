@@ -58,21 +58,26 @@ test('V3 increases all mobile teaching typography and preserves pinned navigatio
 });
 
 
-test('First Reiki Practitioner slide explains five days, three traditions, daily practice and the one-system free chat initiation gift in EN/RU', () => {
+test('Compact first slide names all three Reiki traditions and accurately distinguishes the free chat request', () => {
   const opening = curriculum.slice(curriculum.indexOf('id: "welcome-01"'), curriculum.indexOf('id: "welcome-02"'));
-  assert.match(opening, /Reiki Practitioner — a five-day journey/);
-  assert.match(opening, /Практик Рейки — пятидневный курс/);
-  assert.match(opening, /Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil/);
+  const introCard = learner.slice(learner.indexOf('className={styles.welcomeReward}'),
+    learner.indexOf('className={styles.benefits}'));
+  assert.match(opening, /title: l\("Reiki Practitioner", "Практик Рейки"\)/);
+  assert.match(opening, /Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil in five short lessons/);
   assert.match(opening, /Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль/);
-  assert.match(opening, /Each day brings a short exercise and a meditation/);
-  assert.match(opening, /Каждый день вас ждут небольшое упражнение и медитация/);
-  assert.match(learner, /welcomeGiftTitle: "Free Level 1 Reiki initiation with Andrey — in chat"/);
-  assert.match(learner, /welcomeGiftTitle: "Бесплатная инициация I ступени с Андреем в чате"/);
-  assert.match(learner, /request one free Level 1 initiation guided by Andrey in chat/);
-  assert.match(learner, /одну бесплатную инициацию I ступени с Андреем в чате/);
-  assert.match(learner, /After completing all five lessons/);
-  assert.match(learner, /data-reiki-initiation-gift/);
-  assert.match(learner, /<strong>\{t\.welcomeGiftTitle\}<\/strong>/);
-  assert.match(style, /\.welcomeSlide \.welcomeGift/);
+  assert.match(learner, /eyebrow: "FREE · 5-DAY REIKI COURSE"/);
+  assert.match(learner, /eyebrow: "БЕСПЛАТНЫЙ КУРС · 5 ДНЕЙ"/);
+  assert.match(learner, /welcomeGiftTitle: "Free Level 1 Reiki initiation"/);
+  assert.match(learner, /welcomeGiftTitle: "Бесплатная инициация Рейки I ступени"/);
+  assert.match(learner, /request one free initiation with Andrey in chat/);
+  assert.match(learner, /можно запросить одну бесплатную инициацию с Андреем в чате/);
+  assert.match(learner, /Not automatic; personal sessions are optional/);
+  assert.match(introCard, /data-reiki-initiation-gift/);
+  assert.match(introCard, /<strong>\{t\.welcomeGiftTitle\}<\/strong>/);
+  assert.doesNotMatch(introCard, /welcomeSystems|welcomeRequirement|welcomeRewardTitle/);
+  assert.match(style, /REIKI COMPACT WELCOME V4/);
+  assert.match(style, /data-energywork-screen="welcome"\] \.journeyLabel/);
+  assert.match(style, /clip-path: inset\(50%\)/);
+  assert.match(style, /data-energywork-screen="welcome"\] \.progressHeader/);
   assert.match(style, /max-height: 700px/);
 });
