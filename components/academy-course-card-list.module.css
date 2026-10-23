@@ -15,6 +15,13 @@
   box-shadow: 0 6px 19px rgb(33 61 85 / 7%);
   color: #203e59;
 }
+.card[data-academy-course-category="business"] {
+  border-color: #d6bda0; background: #fffaf3;
+}
+.card[data-academy-course-category="business"] .type { color: #856240; }
+.card[data-academy-course-category="business"] .duration { color: #88603d; }
+.card[data-academy-course-category="business"] .take { background: linear-gradient(105deg, #755337, #473124); }
+.card[data-academy-course-category="business"] .take:hover { background: linear-gradient(105deg, #60432f, #37241c); }
 .upper {
   display: grid;
   grid-template-columns: minmax(114px, 32%) minmax(0, 1fr);

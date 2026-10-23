@@ -9,7 +9,10 @@ import type { CatalogShowcaseItem } from "@/components/catalog-showcase";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-course-card-list.module.css";
 
+export type AcademyCourseCategory = "wellbeing" | "reiki" | "business" | "temple";
+
 export type AcademyCourseItem = CatalogShowcaseItem & {
+  category: AcademyCourseCategory;
   courseHref?: string;
   free?: boolean;
   duration?: string;
@@ -43,7 +46,8 @@ function AcademyCourseCard({ item, locale }: { item: AcademyCourseItem; locale: 
   const hintId = `academy-course-hint-${item.id}`;
 
   return (
-    <article className={styles.card} role="listitem" data-academy-course-card={item.id}>
+    <article className={styles.card} role="listitem" data-academy-course-card={item.id}
+      data-academy-course-category={item.category}>
       <div className={styles.upper}>
         <Link className={styles.photo} href={item.href} aria-label={item.title}>
           {item.image ? (

@@ -29,7 +29,7 @@ test("Academy home groups free courses, study programs and verified live events 
   assert.ok(services.includes("linear-gradient(121deg,#203450 0%,#283d5c 58%,#483a52 100%)"));
 });
 
-test("EN RU ES course search is local, keeps all eight real destinations and preserves video archive access", () => {
+test("EN RU ES course search is local, keeps all nine real destinations and preserves video archive access", () => {
   const hub = read("components/academy-hub.tsx");
   const discovery = read("components/academy-discovery.tsx");
   for (const title of [
@@ -40,12 +40,17 @@ test("EN RU ES course search is local, keeps all eight real destinations and pre
     "academy-free-tantra-introduction", "academy-free-yggdrasil-introduction",
     "academy-featured-yggdrasil", "academy-featured-tantra-reiki",
     "academy-featured-kundalini-reiki", "academy-featured-temple-studies",
+    "academy-business-career-90-days",
   ]) assert.ok(hub.includes('id: "' + id + '"'), id);
   assert.match(hub, /courseHref: REIKI_FREE_COURSE_PATH/);
   assert.match(hub, /courseHref: "\/" \+ \(locale === "es" \? "en" : locale\) \+ "\/app\/course\?program=stress"/);
   assert.match(hub, /tantra-reiki-yin-yang-cover\.svg/);
-  assert.equal((hub.match(/free: true/g) || []).length, 4);
+  assert.equal((hub.match(/free: true/g) || []).length, 5);
   assert.match(discovery, /useMemo\(\(\) => items\.filter/);
+  assert.match(discovery, /COURSE_FILTERS\.map/);
+  assert.match(discovery, /aria-pressed=\{activeFilter === filter\}/);
+  assert.match(discovery, /item\.category === activeFilter/);
+  assert.match(discovery, /setActiveFilter\("all"\)/);
   assert.match(discovery, /matchesTerms/);
   assert.match(discovery, /role="search"/);
   assert.match(discovery, /onSubmit=\{submitSearch\}/);
@@ -89,8 +94,8 @@ test("Every Academy course expands a distinct EN/RU/ES explanation and the Reiki
   const landing = read("components/principles-of-energywork.tsx");
   const metadata = read("app/[locale]/academy/[[...slug]]/page.tsx");
   const discovery = read("components/academy-discovery.tsx");
-  const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple"];
-  assert.equal((hub.match(/detailsHint: hints\.[A-Za-z]+/g) || []).length, 8, "Every course needs its own hint");
+  const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple", "business"];
+  assert.equal((hub.match(/detailsHint: hints\.[A-Za-z]+/g) || []).length, 9, "Every course needs its own hint");
   for (const key of keys) assert.ok(hub.includes("detailsHint: hints." + key), "Missing course-specific help: " + key);
   for (const example of [
     "Fourteen gentle daily practices", "14 дней коротких практик", "Catorce prácticas breves",
