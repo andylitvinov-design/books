@@ -1365,10 +1365,12 @@
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
     min-height:0;
-    width:100%;
-    height:clamp(248px,34svh,284px);
-    aspect-ratio:auto;
-    margin:0;
+    /* Keep the SVG's ring circular and legible; shrinking only height would
+       letterbox it inside a wide background and break measured-label alignment. */
+    width:min(100%,clamp(229px,31.38svh,262px));
+    height:auto;
+    aspect-ratio:360 / 390;
+    margin:0 auto;
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .model,
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) > .portraitRadar{
