@@ -64,21 +64,24 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
     await expect(links.nth(index)).toHaveText(expected[index].label)
     if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].label)
   }
+  const activeId = surface === 'library' ? 'books' : surface === 'client' ? 'tests' : surface
   await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1)
-  await expect(bottom.locator('[data-nav-item="' + (surface === 'library' ? 'books' : surface) + '"]')).toHaveAttribute('aria-current', 'page')
+  await expect(bottom.locator('[data-nav-item="' + activeId + '"]')).toHaveAttribute('aria-current', 'page')
   return expected
 }
 
 async function verifyDirectNavigation(nav, { locale, surface, expected, label }) {
   const cabinetHref = '/' + (locale === 'es' ? 'en' : locale) + '/app'
   const freeReviewHref = '/' + locale + '/services/free-situation-review'
-  const serviceHref = expected.find(item => item.id === 'services').href
-  const expectedHeader = [{ id: 'services', href: serviceHref }, { id: 'cabinet', href: cabinetHref }]
-  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))), [freeReviewHref, serviceHref, '/' + locale + '/about', cabinetHref], label + ': exact direct header destinations')
+  const core = getCompactNavigation(locale).filter(item => ['energy','love','business'].includes(item.id))
+  const expectedHeader = [...core.map(({id,href}) => ({id,href})), { id: 'cabinet', href: cabinetHref }]
+  assert.deepEqual(await nav.locator(':scope > a').evaluateAll(elements => elements.map(el => el.getAttribute('href'))),
+    [freeReviewHref, ...core.map(item => item.href), '/' + locale + '/about', cabinetHref],
+    label + ': exact direct header destinations')
   assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedHeader, label + ': exact header destinations')
   const current = nav.locator(':scope > a[aria-current="page"]')
-  await expect(current).toHaveCount(surface === 'services' ? 1 : 0)
-  if (surface === 'services') await expect(current).toHaveAttribute('href', serviceHref)
+  await expect(current).toHaveCount(['energy','love','business'].includes(surface) ? 1 : 0)
+  if (['energy','love','business'].includes(surface)) await expect(current).toHaveAttribute('href', core.find(item => item.id === surface).href)
 }
 
 async function verifySiteMenu(page, header, { locale, surface, label, expectedMenu, inViewport }) {
@@ -124,7 +127,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
     assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1 && box.y >= -1 && box.y + box.height <= height + 1 && box.width >= 44 && box.height >= 44, label + ': visible 44px control must fit viewport')
   }
   for (const locale of ['en', 'ru', 'es']) {
-    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['services', '/' + locale + '/services'], ['library', '/' + locale + '/library']]) {
+    for (const [surface, path] of [['home', locale === 'es' ? '/es' : '/?lang=' + locale], ['energy', '/' + locale + '/explore/energy'], ['love', '/' + locale + '/explore/love'], ['business', '/' + locale + '/explore/business'], ['library', '/' + locale + '/library']]) {
       for (const width of [320, 360, 374, 375, 390, 430, 768, 1023, 1024, 1100, 1280]) {
         const label = engine + '/' + locale + '/' + surface + '/' + width
         diagnostic.phase(label)
@@ -133,7 +136,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
         await page.waitForLoadState('networkidle')
         const header = page.locator('header.house-header--services')
         const expected = getSiteNavigation(locale)
-        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['library','relationships','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
+        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), ...expected.filter(item => ['library','services','academy','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinetEntry = header.locator('a.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
