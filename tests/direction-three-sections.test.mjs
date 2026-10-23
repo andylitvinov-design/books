@@ -65,7 +65,9 @@ test('the single page shows hero then filter then three separate topic-specific 
       const tree=fixture(direction,locale).render()
       assert.equal(by(tree,'data-direction-hero',true).length,1)
       assert.equal(by(tree,'data-direction-wish-form',true).length,1)
-      assert.equal(by(tree,'data-direction-filter',true).length,1)
+      assert.equal(by(tree,'data-direction-filter','all').length,1)
+      assert.equal(nodes(tree).filter(n=>n.type==='select').length,0)
+      assert.equal(nodes(tree).filter(n=>n.props?.['data-direction-filter']).length,5)
       assert.equal(by(tree,'data-direction-topic-finder',true).length,1)
       const sections=nodes(tree).filter(n=>n.props?.['data-direction-section'])
       assert.deepEqual(sections.map(n=>n.props['data-direction-section']),['test','course','session'])
@@ -101,7 +103,7 @@ test('wishes refine client-side topic without copying personal words into URLs',
     assert.ok(prevented)
     // The button uses the same local handler without a native form action.
     tree=f.render()
-    assert.equal(by(tree,'data-direction-filter',true)[0].props.value,expected)
+    assert.equal(by(tree,'data-direction-filter',expected)[0].props['aria-pressed'],true)
     const href=by(tree,'data-offer-action','test')[0].props.href
     assert.ok(href.includes('topics='+expected))
     assert.ok(!href.includes('wish')&&!href.includes(encodeURIComponent(question)))
@@ -119,6 +121,10 @@ test('approved Services photo hero and Academy-style cards preserve mobile reada
   assert.match(source,/role="status" aria-live="polite"/)
   assert.match(css,/\.hero\{[^}]*height:clamp\(405px,43vw,515px\)/s)
   assert.match(css,/\.wishForm input\{[^}]*font:500 16px/s)
+  assert.match(css,/\.topicChips\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/s)
+  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(css,/overflow-x:auto/)
+  assert.doesNotMatch(source,/<select\b|scrollIntoView\(/)
   assert.match(css,/@media\(max-width:480px\)/)
   assert.match(css,/@media\(max-width:350px\)/)
   assert.match(css,/grid-template-columns:92px minmax\(0,1fr\)/)
@@ -129,4 +135,29 @@ test('approved Services photo hero and Academy-style cards preserve mobile reada
   const route=read('app/[locale]/explore/[theme]/page.tsx')
   assert.match(route,/<DirectionOffers locale=\{locale as PublicLocale\} journey=\{journey\} suggestions=\{suggestions\}\/>/)
   assert.match(route,/data-direction-more/)
+})
+
+test('four topic requests are always visible as localized accessible buttons with a stable reset',()=>{
+  for(const direction of ['energy','relationships','business']){
+    for(const locale of ['en','ru','es']){
+      const f=fixture(direction,locale)
+      let tree=f.render()
+      const ids=journey(direction).topics.map(topic=>topic.id)
+      const controls=nodes(tree).filter(n=>n.props?.['data-direction-filter'])
+      assert.deepEqual(controls.map(n=>n.props['data-direction-filter']),['all',...ids])
+      assert.ok(controls.every(n=>n.type==='button'))
+      assert.equal(controls[0].props['aria-pressed'],true)
+      assert.ok(controls.slice(1).every(n=>n.props['aria-pressed']===false))
+      assert.ok(controls.slice(1).every(n=>typeof n.props['aria-label']==='string'))
+      // Clicking a topic updates the real test handoff without a menu or scroll.
+      controls[2].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-direction-filter',ids[1])[0].props['aria-pressed'],true)
+      assert.ok(by(tree,'data-offer-action','test')[0].props.href.includes('topics='+ids[1]))
+      by(tree,'data-direction-filter','all')[0].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-direction-filter','all')[0].props['aria-pressed'],true)
+      assert.ok(by(tree,'data-offer-action','test')[0].props.href.endsWith('topics='))
+    }
+  }
 })
