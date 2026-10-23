@@ -90,6 +90,10 @@ test('the mobile editor is a calm client-facing page with photo left on desktop 
  assert.match(dashboard,/\{creating&&canAdd&&<div className=\{styles.editor\} data-service-composer-focus>/)
  assert.match(dashboard,/if\(creating&&createDirty&&!window\.confirm\(c\.discard\)\)return/)
  assert.match(dashboard,/renderEditor\(null,setCreateDirty\)/)
+ assert.match(dashboard,/data-edit-service=\{editingItem\.id\}/)
+ assert.match(dashboard,/renderEditor\(editingItem,setEditDirty\)/)
+ assert.match(dashboard,/if\(editDirty&&!window\.confirm\(c\.discard\)\)return/)
+ assert.match(workspace,/key=\{item\?item\.id\+':'\+item\.revision:'new'\}/)
 })
 
 test('English/Russian/Spanish labels and hard server moderation remain the only publishing route',()=>{
