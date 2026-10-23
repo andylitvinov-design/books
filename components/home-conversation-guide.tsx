@@ -11,6 +11,7 @@ import {
   chooseHomeGuideOffer,
   matchHomeGuideReply,
   resolveHomeGuideQuestion,
+  type HomeGuideCategory,
   type HomeGuideContext,
   type HomeGuideGoal,
   type HomeGuideOffer,
