@@ -68,29 +68,3 @@ test("Kundalini shows compact fire-colour photo panels and reuses the safe CRM s
   assert.match(capture, /method: "POST"|<ContactChannelChooser/);
   assert.match(captureStyles, /:global\(\.reiki-kundalini-page\) \.capture/);
 });
-, and a clear free-first next step", async () => {
-  const [page, css] = await Promise.all([
-    read("components/kundalini-reiki-course.tsx"),
-    read("components/kundalini-reiki-course.module.css"),
-  ]);
-  for (const path of [
-    "/images/holistic-house/reiki-approved-sunrise-v3.webp",
-    "/images/holistic-house/hero-olive-incense.webp",
-    "/images/holistic-house/andy-about.png",
-  ]) assert.ok(page.includes(path), "Use the verified same-origin visual: " + path);
-  assert.ok(page.indexOf("id=\"kundalini-title\"") < page.indexOf("id=\"kundalini-levels\""));
-  assert.ok(page.indexOf("id=\"kundalini-levels\"") < page.indexOf("id=\"kundalini-meditation-title\""));
-  assert.ok(page.indexOf("id=\"kundalini-meditation-title\"") < page.indexOf("id=\"kundalini-manual\""));
-  assert.ok(page.indexOf("id=\"kundalini-manual\"") < page.indexOf("id=\"kundalini-enquire\""));
-  assert.match(page, /data-reiki-course-cta/);
-  assert.match(page, /href=\{freeLevelHref\(locale\)\}/);
-  assert.match(page, /href=\{REIKI_FREE_COURSE_PATH\}/);
-  assert.match(page, /<AcademyVideoPlayer youtubeId=\{meditation\.youtubeId\}/);
-  assert.match(page, /<details className=\{styles\.levelDetail\}>/);
-  assert.match(css, /\.levels \{ display: grid; grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(css, /\.levels \{ grid-template-columns: 1fr;/);
-  assert.match(css, /\.page \.hero/);
-  assert.match(css, /overflow-x: clip/);
-  assert.match(css, /@media \(max-width: 360px\)/);
-  assert.match(css, /prefers-reduced-motion: reduce/);
-});
