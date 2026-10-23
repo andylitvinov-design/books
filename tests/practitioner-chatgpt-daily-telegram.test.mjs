@@ -59,6 +59,8 @@ test('public archive reader reuses single fetch for Council and ChatGPT',async()
   const result=await fetchPublicDailyArchives(period,async(uri,opts)=>{
     requests++
     assert.match(String(uri),/\/issues\/242\/comments/)
+    assert.equal(new URL(uri).searchParams.get('since'),'2026-10-14T00:00:00Z')
+    assert.equal(new URL(uri).searchParams.get('per_page'),'100')
     assert.equal(opts.method,'GET')
     assert.equal(opts.headers.Authorization,undefined)
     return Response.json([comment()])
