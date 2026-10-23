@@ -526,7 +526,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     finally{setSaving(false)}
   }
   const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
-    moment==='recapPractice'?dayCopy?.title||t.learn:
+    moment==='recapPractice'?c.skill:
     moment==='recapNext'?j.recapNextTitle:
     moment==='recapFeedback'?j.recapFeedbackTitle:
     moment==='invite'?(cycle.day===14?c.inviteFinal:c.inviteTitle):
@@ -764,11 +764,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           </div>}
           {moment==='recapPractice'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
-              <div><strong>{c.skill}: {dayCopy?.title||t.learn}</strong><small>{practiceGuide}</small></div></div>
+              <div><strong>{dayCopy?.title||t.learn}</strong><small>{practiceGuide}</small></div></div>
           </div>}
           {moment==='recapNext'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
-              <div><strong>{t.takeaway}</strong><small>{answers.transfer==='planned'?plan:j.noPlan}</small></div></div>
+              <div><strong>{answers.transfer==='planned'?plan:j.noPlan}</strong></div></div>
           </div>}
           {moment==='recapFeedback'&&<>
             <div className={styles.confidenceChoices} role="group" aria-label={c.question}
