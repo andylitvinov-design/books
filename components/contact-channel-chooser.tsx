@@ -224,13 +224,18 @@ export function ContactChannelChooser({
       pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
     } catch { /* A blocked or malformed temporary marker never creates a lead. */ }
     if (pending?.path !== pathname || pending.service !== serviceTitle || pending.panel !== panelId) return;
-    window.sessionStorage.removeItem("hh-google-enquiry-return");
-    url.searchParams.delete("hh_enquiry");
+    // Keep the marker until the profile request has finished. Development
+    // StrictMode may cleanup/re-run this effect; clearing the marker before
+    // its first asynchronous profile read loses the only valid continuation.
+    const finishReturn = () => {
+      try { window.sessionStorage.removeItem("hh-google-enquiry-return"); } catch { /* A blocked tab still can display an error. */ }
+      url.searchParams.delete("hh_enquiry");
+      url.searchParams.delete("auth");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    };
     const authError = url.searchParams.has("auth");
-    url.searchParams.delete("auth");
-    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
     setOpen(true);
-    if (authError) { setError(c.googleError); return; }
+    if (authError) { finishReturn(); setError(c.googleError); return; }
     let active = true;
     fetch("/api/app/auth/contact-profile", { method: "GET", credentials: "same-origin", cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("NOT_SIGNED_IN")))
@@ -241,6 +246,7 @@ export function ContactChannelChooser({
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) throw new Error("NO_EMAIL");
         setEmail(nextEmail);
         if (nextName.length >= 2 && nextName.length <= 120) setDisplayName(nextName);
+        finishReturn();
         setMethod("email");
         setGoogleReady(true);
         setError("");
@@ -250,7 +256,7 @@ export function ContactChannelChooser({
           setConsent(true);
           void saveEnquiry({ displayName: nextName.length >= 2 && nextName.length <= 120 ? nextName : "", email: nextEmail, phone: "" }, true, "");
         }
-      }).catch(() => { if (active) setError(c.googleError); });
+      }).catch(() => { if (active) { finishReturn(); setError(c.googleError); } });
     return () => { active = false; };
   }, [pathname, serviceTitle, panelId, c.googleError]);
 
