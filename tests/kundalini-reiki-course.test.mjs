@@ -112,7 +112,8 @@ test("Kundalini Reiki now uses the same safe Academy selector and CRM-backed mes
   assert.match(selector, /stayAfterSave/);
   assert.match(chooser, /method: "POST"/);
   assert.match(chooser, /fetch\("\/api\/service-enquiries"/);
-  assert.match(chooser, /if \(!stayAfterSave\) router\.push/);
+  assert.doesNotMatch(chooser, /if \(!stayAfterSave\) router\.push/);
+  assert.match(chooser, /router\.push\("\/" \+ locale \+ "\/thank-you"\)/);
 });
 
 test("Kundalini landing identifies the linked free AI course as covering all three Reiki systems", async () => {

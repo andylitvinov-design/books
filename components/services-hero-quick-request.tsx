@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
@@ -93,6 +94,7 @@ export function ServicesHeroQuickRequest({
   locale, service, mode, onClose,
 }: { locale: PublicLocale; service: string; mode: MeetingMode; onClose: () => void }) {
   const t = copy[locale];
+  const router = useRouter();
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [consent, setConsent] = useState(false);
@@ -141,6 +143,7 @@ export function ServicesHeroQuickRequest({
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
           JSON.stringify({ referenceCode: result.referenceCode, createdAt: Date.now() }));
+        router.push("/" + locale + "/thank-you");
       } catch { /* A blocked sessionStorage must not undo a server-confirmed enquiry. */ }
     } catch {
       setError(t.error);

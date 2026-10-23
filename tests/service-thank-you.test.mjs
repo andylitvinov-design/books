@@ -28,6 +28,16 @@ test('page and service form only acknowledge a successful server-saved reply req
   assert.match(form,/setSaved\(\{ saved: true, referenceCode: data\.referenceCode \}\)/)
   assert.match(form,/sessionStorage\.setItem\(RECEIPT_SESSION_KEY/)
   assert.match(form,/router\.push\("\/" \+ locale \+ "\/thank-you"\)/)
+  assert.doesNotMatch(form,/if \(!stayAfterSave\)/)
+  for (const path of ["components/compact-lead-capture.tsx","components/services-hero-quick-request.tsx","components/business-website-enquiry.tsx"]) {
+    const code=source(path)
+    assert.match(code,/sessionStorage\.setItem\(RECEIPT_SESSION_KEY/)
+    assert.match(code,/router\.push\(/)
+  }
+  assert.match(source("lib/business-consulting/enquiry-store.js"),/referenceCode: "HH-" \+ digest\.slice\(0, 12\)/)
+  assert.match(ui,/telegramEnquiryUrlFromWhatsApp\(whatsapp\)/)
+  assert.match(ui,/request: c\.chatRequest \+ \(confirmed \? " · " \+ receipt : ""\)/)
+  assert.match(ui,/const confirmed = \/\^HH-/)
   assert.doesNotMatch(form,/localStorage|sendBeacon/i)
   assert.match(page,/robots: \{ index: false, follow: false/)
   assert.match(ui,/parseEnquiryReceipt\(window\.sessionStorage\.getItem/)
@@ -51,7 +61,7 @@ test('video is draft-only until explicit checked publication, with no default au
   assert.throws(()=>prepareVideoChange(draft,{
     slot:'thank-you',locale:'ru',intent:'publish',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Thanks',reviewed:false,
   }))
-  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideos/)
+  assert.match(source('app/[locale]/thank-you/page.tsx'),/getPublishedSiteVideo/)
   assert.match(source('components/site-video-manager.tsx'),/\["about-intro", "thank-you"\]\.includes\(item\.id\)/)
   assert.match(source('components/service-enquiry-thank-you.tsx'),/\{video && \(/)
 })

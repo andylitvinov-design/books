@@ -37,41 +37,42 @@ function draft(href, host, path) {
  * acknowledgement. No real lead is written to production or test Supabase.
  */
 async function submitSyntheticForm(page, chooser, locale, submissions) {
-  const form=chooser.locator('form');
+  const form = chooser.locator("form");
   await form.waitFor({state:"visible"});
-  const button=form.locator('button[type="submit"]');
-  assert.equal(await button.isDisabled(),true,"Contact+consent are required");
+  const button = form.locator('button[type="submit"]');
+  assert.equal(await button.isDisabled(), true, "Contact and reply consent are required");
   const withName = submissions.length % 3 === 0;
   const usePhone = submissions.length % 3 === 1;
   const googleButton = form.locator('button[type="button"]').filter({hasText:/Google/i});
   if (locale === "en") {
-    assert.equal(await googleButton.count(),1,"Optional Google must be available");
-    assert.equal(await googleButton.first().isDisabled(),false);
+    assert.equal(await googleButton.count(), 1, "Google option available");
+    assert.equal(await googleButton.first().isDisabled(), false);
   }
   if (usePhone) {
-    await form.getByRole('group').locator('button').nth(1).click();
+    await form.getByRole("group").locator("button").nth(1).click();
     await form.locator('input[type="tel"]').fill("4165550123");
-  } else await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
+  } else {
+    await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
+  }
   if (withName) {
-    // Name is an explicit opt-in field, hidden until requested.
     await form.locator('details:has(input[autocomplete="name"]) > summary').click();
     await form.locator('input[autocomplete="name"]').fill("QA Visitor");
   }
-  // Alternate private note / no-note requests without expanding optional name.
   const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
   const hasNote = submissions.length % 2 === 0;
   if (hasNote) {
     await form.locator('details:has(textarea) > summary').click();
-    await form.locator('textarea').fill(privateNote);
+    await form.locator("textarea").fill(privateNote);
   }
-  assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
-  await form.locator('input[type="checkbox"]').check();
-  const priorCount=submissions.length;
+  assert.equal(await button.isDisabled(),true,"Consent must not be prechecked");
+  await form.locator('input[type="checkbox"][required]').check();
+  const priorCount = submissions.length;
   await button.click();
-  const wa=chooser.locator('a[data-contact-channel="whatsapp"]');
-  await wa.waitFor({state:"visible",timeout:10000});
-  assert.equal(submissions.length,priorCount+1,"Exactly one first-party registration submitted");
-  const request=submissions[submissions.length-1];
+  await page.waitForURL(origin + "/" + locale + "/thank-you",{timeout:15000});
+  await page.locator('[data-service-thank-you]').getByText("HH-CA5016DE79E4",{exact:true})
+    .waitFor({state:"visible",timeout:15000});
+  assert.equal(submissions.length,priorCount+1,"Exactly one first-party request committed");
+  const request = submissions[submissions.length-1];
   assert.equal(request.locale,locale);
   assert.equal(request.contactConsent,true);
   assert.equal(request.contact.displayName,withName?"QA Visitor":"");
@@ -81,80 +82,136 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   assert.ok(request.operationId && /^[a-f0-9-]{36}$/i.test(request.operationId));
   assert.ok(request.sourcePath && request.sourcePath.startsWith("/"+locale+"/"));
   assert.ok(request.serviceTitle);
-  assert.equal(request.description,hasNote?"PRIVATE_QA_NOTE_NOT_FOR_MESSENGER":"");
+  assert.equal(request.description,hasNote?privateNote:"");
   assert.ok(!request.website);
+  return request;
 }
 
 async function verifyChooser(page, chooser, locale, name, screenshot, submissions) {
   const trigger = chooser.locator("button[data-contact-order]");
   await trigger.scrollIntoViewIfNeeded();
-  await trigger.waitFor({ state:"visible" });
-  assert.equal(await trigger.getAttribute("type"), "button");
-  assert.equal(await trigger.getAttribute("aria-expanded"), "false");
+  await trigger.waitFor({state:"visible"});
+  assert.equal(await trigger.getAttribute("type"),"button");
+  assert.equal(await trigger.getAttribute("aria-expanded"),"false");
   const panelId = await trigger.getAttribute("aria-controls");
-  assert.ok(panelId, "Panel ID");
+  assert.ok(panelId,"Panel ID");
   const panel = chooser.locator('[id="' + panelId + '"]');
-  assert.equal(await panel.count(), 1);
-  assert.equal(await panel.isVisible(), false, "The registration form must start closed");
+  assert.equal(await panel.count(),1);
+  assert.equal(await panel.isVisible(),false);
   const startUrl = page.url();
-  const ctaRect = await trigger.boundingBox();
-  assert.ok(ctaRect && ctaRect.width >= 150 && ctaRect.height >= 44, "Large, accessible order button " + name + ": " + JSON.stringify(ctaRect));
+  const cta = await trigger.boundingBox();
+  assert.ok(cta && cta.width>=150 && cta.height>=44,"Accessible order CTA");
   await trigger.click();
-  await panel.waitFor({ state:"visible", timeout:10000 });
-  assert.equal(await trigger.getAttribute("aria-expanded"), "true");
-  assert.equal(page.url(), startUrl, "Order first click must stay on this page");
-  assert.equal((await panel.locator("p").first().innerText()).trim(), questions[locale]);
-  const wa = panel.locator('a[data-contact-channel="whatsapp"]');
-  const tg = panel.locator('a[data-contact-channel="telegram"]');
-  assert.equal(await wa.count(), 0, "Do not offer messenger before registration is saved");
-  assert.equal(await tg.count(), 0, "Do not offer messenger before registration is saved");
+  await panel.waitFor({state:"visible",timeout:10000});
+  assert.equal(await trigger.getAttribute("aria-expanded"),"true");
+  assert.equal(page.url(),startUrl,"Opening must not yet navigate");
+  assert.equal((await panel.locator("p").first().innerText()).trim(),questions[locale]);
+  assert.equal(await panel.locator('a[data-contact-channel="whatsapp"]').count(),0,"No messenger before save");
+  assert.equal(await panel.locator('a[data-contact-channel="telegram"]').count(),0,"No messenger before save");
   await submitSyntheticForm(page,chooser,locale,submissions);
-  assert.equal(await wa.count(), 1);
-  assert.equal(await tg.count(), 1);
+  const receiptPage = page.locator("[data-service-thank-you]");
+  const wa = receiptPage.locator('a[data-contact-channel="whatsapp"]');
+  const tg = receiptPage.locator('a[data-contact-channel="telegram"]');
+  assert.equal(await wa.count(),1);
+  assert.equal(await tg.count(),1);
   const [waHref,tgHref] = await Promise.all([wa.getAttribute("href"),tg.getAttribute("href")]);
-  const waDraft = draft(waHref, "wa.me", "/14376066502");
-  const tgDraft = draft(tgHref, "t.me", "/AndyTherapist");
-  assert.equal(waDraft, tgDraft, "Both channels must retain the same selected request");
-  assert.ok(waDraft.includes("Holistic House") && /Service|Услуга|Servicio/.test(waDraft));
-  assert.doesNotMatch(waDraft,/qa-browser@example.test|QA Visitor/,"Never leak stored contact in messenger URL");
-  assert.match(waDraft,/HH-CA5016DE79E4/,"The optional messenger handoff includes the enquiry reference");
-  assert.doesNotMatch(waDraft,/PRIVATE_QA_NOTE_NOT_FOR_MESSENGER/,"Never put visitor notes in external messenger URL");
+  const waDraft = draft(waHref,"wa.me","/14376066502");
+  const tgDraft = draft(tgHref,"t.me","/AndyTherapist");
+  assert.equal(waDraft,tgDraft,"Same privacy-safe follow-up in both channels");
+  assert.match(waDraft,/HH-CA5016DE79E4/,"Handoff contains saved enquiry reference");
+  assert.ok(waDraft.includes("Holistic House"),"Generic brand identification");
+  assert.doesNotMatch(waDraft,/qa-browser@example.test|QA Visitor|PRIVATE_QA_NOTE_NOT_FOR_MESSENGER/,
+    "Contact data and private note must not leak to messengers");
   const viewportWidth = page.viewportSize().width;
-  for (const channel of [wa,tg]) {
+  for(const channel of [wa,tg]){
     await channel.scrollIntoViewIfNeeded();
-    const b=await channel.boundingBox();
-    assert.ok(b && b.width >= 100 && b.height >= 44, "Usable messenger tap target at " + name + ": " + JSON.stringify(b));
-    assert.ok(b.x >= -1 && b.x + b.width <= viewportWidth + 1, "Messenger choice fits screen");
-    // Playwright trial click checks real hit testing, performs its own scroll
-    // and never follows an external messenger URL. A fixed mobile tab bar
-    // must not intercept the control when a user tries to tap it.
+    const rect=await channel.boundingBox();
+    assert.ok(rect && rect.width>=100 && rect.height>=44,"Usable chat touch target");
+    assert.ok(rect.x>=-1 && rect.x+rect.width<=viewportWidth+1,"Chat action fits viewport");
     const marker=await channel.getAttribute("data-contact-channel");
     try {
       await channel.click({trial:true,timeout:8000});
-    } catch (error) {
-      const obstruction=await page.evaluate(({marker,panelId})=>{
-        const anchor=document.getElementById(panelId)?.querySelector('a[data-contact-channel="' + marker + '"]');
-        const rect=anchor?.getBoundingClientRect();
-        const atop=rect&&document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
-        return {
-          control:rect?{top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right}:null,
-          covering:atop?.tagName||null,
-          coveringClass:typeof atop?.className==='string'?atop.className.slice(0,90):'',
-          viewport:{width:innerWidth,height:innerHeight,scrollY:scrollY},
-        };
-      },{marker,panelId});
-      throw new Error("Messenger choice not tappable: "+name+" / "+marker+" "+
+    }catch(error){
+      const obstruction=await page.evaluate(marker=>{
+        const anchor=document.querySelector('a[data-contact-channel="' + marker + '"]');
+        const r=anchor?.getBoundingClientRect();
+        const covering=r&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+        return {control:r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right}:null,
+          covering:covering?.tagName||null,
+          coveringClass:typeof covering?.className==="string"?covering.className.slice(0,90):"",
+          viewport:{width:innerWidth,height:innerHeight}};
+      },marker);
+      throw new Error("Thank-you chat action blocked: "+name+"/"+marker+" "+
         JSON.stringify(obstruction)+" / "+error.message);
     }
   }
-  const dimensions = await page.evaluate(() => ({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
-  assert.ok(dimensions.scroll <= dimensions.inner + 2, "No mobile horizontal overflow: " + JSON.stringify(dimensions));
-  if (screenshot) await chooser.screenshot({ path:output + "/" + slug(name) + ".png", animations:"disabled" });
-  await trigger.focus();
-  await page.keyboard.press("Enter");
-  await panel.waitFor({state:"hidden",timeout:8000});
-  assert.equal(await trigger.getAttribute("aria-expanded"), "false");
-  results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],matchingDrafts:true,contactSubmitted:true,keyboardClose:true,nonNavigating:true});
+  const dimensions=await page.evaluate(()=>({inner:innerWidth,scroll:document.documentElement.scrollWidth}));
+  assert.ok(dimensions.scroll<=dimensions.inner+2,"No mobile horizontal overflow");
+  if(screenshot) await receiptPage.screenshot({path:output+"/"+slug(name)+".png",animations:"disabled"});
+  results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],
+    matchingDrafts:true,contactSubmitted:true,thankYouNavigation:true});
+}
+
+// Mock the transport boundaries, never a real Google account or CRM write.
+// Covers the same-tab OAuth round trip, selected paid offer, consent and
+// receipt navigation. True Google provider E2E remains an independent gate.
+async function verifySyntheticGoogleReturn(page, submissions) {
+  const path="/en/academy/reiki/yggdrasil/free-initiation";
+  const fakeGoogle="https://accounts.google.com/hh-qa-oauth-return";
+  let googleStarts=0;
+  await page.route("**/api/app/auth/start",async route=>{
+    googleStarts++;
+    const request=JSON.parse(route.request().postData()||"{}");
+    assert.equal(request.continueTo,"enquiry");
+    assert.equal(request.returnPath,path);
+    await route.fulfill({status:200,contentType:"application/json",
+      body:JSON.stringify({redirectUrl:fakeGoogle})});
+  });
+  await page.route(fakeGoogle,async route=>{
+    await route.fulfill({status:302,headers:{location:origin+path+"?hh_enquiry=google"},body:""});
+  });
+  await page.route("**/api/app/auth/contact-profile",async route=>{
+    await route.fulfill({status:200,contentType:"application/json",
+      body:JSON.stringify({email:"google-qa@example.test",displayName:"Google QA"})});
+  });
+  try {
+    await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:60000});
+    await page.locator('[data-yggdrasil-form] button[data-intent="personal"]').click();
+    const chooser=page.locator('[data-yggdrasil-form] [data-contact-channel-chooser]');
+    await chooser.locator('button[data-contact-order]').click();
+    const form=chooser.locator("form");
+    const consent=form.locator('input[data-reply-consent]');
+    assert.equal(await consent.isChecked(),false,"Google must require explicit opt-in");
+    const google=form.locator("button").filter({hasText:/Continue with Google/i}).first();
+    await google.click();
+    assert.equal(googleStarts,0,"No OAuth without reply consent");
+    await consent.check();
+    const noteDetails=form.locator("details:has(textarea)");
+    await noteDetails.locator("summary").click();
+    const note=noteDetails.locator("textarea");
+    await note.fill("PRIVATE_GOOGLE_DRAFT_SHOULD_NOT_DISAPPEAR");
+    await google.click();
+    assert.equal(googleStarts,0,"A typed private note must not be silently dropped by OAuth");
+    await note.fill("");
+    const before=submissions.length;
+    const started=page.waitForRequest(req=>req.url().endsWith("/api/app/auth/start") && req.method()==="POST");
+    await google.click();
+    await started;
+    assert.equal(googleStarts,1,"One opt-in Google handoff");
+    await page.waitForURL(origin+"/en/thank-you",{timeout:20000});
+    await page.locator("[data-service-thank-you]").getByText("HH-CA5016DE79E4",{exact:true})
+      .waitFor({state:"visible",timeout:10000});
+    assert.equal(submissions.length,before+1,"OAuth return creates exactly one saved request");
+    const req=submissions.at(-1);
+    assert.equal(req.contact.email,"google-qa@example.test");
+    assert.equal(req.contactConsent,true);
+    assert.match(req.serviceTitle,/Personal initiation/,"OAuth must preserve original paid option");
+    assert.doesNotMatch(req.description,/google-qa@example.test/,"Never copy contact to note");
+  }finally{
+    await page.unroute("**/api/app/auth/start");
+    await page.unroute(fakeGoogle);
+    await page.unroute("**/api/app/auth/contact-profile");
+  }
 }
 
 async function runEngine(name, engine) {
@@ -193,9 +250,14 @@ async function runEngine(name, engine) {
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
             const indexes = count > 2 ? [0,count-1] : [0];
             for (const i of indexes) {
-              await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
+              if(i!==indexes[0]){
+                const again = await page.goto(origin+item.path,{waitUntil:"domcontentloaded",timeout:60000});
+                assert.equal(again?.status(),200);
+              }
+              await verifyChooser(page,page.locator(item.selector).nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
             }
             if (item.path.endsWith("/yggdrasil/free-initiation")) {
+              await page.goto(origin+item.path,{waitUntil:"domcontentloaded",timeout:60000});
               const form = page.locator("[data-yggdrasil-form]");
               const personal = form.locator('button[data-intent="personal"]');
               await personal.click();
@@ -205,10 +267,14 @@ async function runEngine(name, engine) {
               assert.equal(await button.getAttribute("aria-expanded"),"false");
               await button.click();
               await submitSyntheticForm(page,chooser,locale,submissions);
-              const text = new URL(await chooser.locator('a[data-contact-channel="telegram"]').getAttribute("href")).searchParams.get("text");
-              assert.match(text || "", /PERSONAL|ЛИЧНУЮ/i, "The new selection must be in the prepared message");
-              await button.click();
+              const selected = submissions[submissions.length-1];
+              assert.match(selected.serviceTitle + " " + selected.description,/PERSONAL|ЛИЧНУЮ|personal|личн/i,
+                "The selected paid option must reach the encrypted owner request");
+              assert.equal(page.url(),origin+"/"+locale+"/thank-you");
             }
+          }
+          if (name === "chromium" && width === 390 && locale === "en") {
+            await verifySyntheticGoogleReturn(page,submissions);
           }
           {
             const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
@@ -230,7 +296,9 @@ async function runEngine(name, engine) {
             assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
             await consent.check();
             await submit.click();
-            await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
+            await page.waitForURL(origin+"/"+locale+"/thank-you",{timeout:15000});
+            await page.locator('[data-service-thank-you]').getByText("HH-CA5016DE79E4",{exact:true})
+              .waitFor({state:"visible",timeout:15000});
             assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
             const enquiry = submissions.at(-1);
             assert.equal(enquiry.locale,locale);
@@ -248,7 +316,7 @@ async function runEngine(name, engine) {
             const templeChooser = temple.locator("[data-contact-channel-chooser]");
             await templeChooser.waitFor({state:"visible"});
             await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
-            assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
+            assert.equal(await page.locator('[data-service-thank-you] a[data-contact-channel="whatsapp"]').count(),1);
           }
         } finally {
           await page.close();
@@ -272,4 +340,4 @@ finally {
   await writeFile(output+"/results.json",JSON.stringify({origin,live,checkedAt:new Date().toISOString(),results,errors,failure:failure?.message||null},null,2));
 }
 if(failure)throw failure;
-console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);
+console.log("PASS browser verified thank-you navigation and optional messenger handoff on Chromium and WebKit",results.length);

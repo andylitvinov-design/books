@@ -27,7 +27,11 @@ const copy = {
     contactHelp: "Choose one way to receive a personal reply. No account needed.",
     contactError: "Enter a valid email or international phone number.",
     google: "Continue with Google", googleBusy: "Connecting Google…",
-    googleReady: "Google details added. Please confirm your request.",
+    googleReady: "Google email verified.",
+    googleConsent: "To send via Google, first agree to a personal reply in the checkbox above.",
+    googleNote: "To keep your note, send with email or phone. For Google, clear the note first.",
+    googleSubmitNote: "After Google verifies your email, your request is submitted automatically. No marketing.",
+    googleQuickNote: "Google fills your email. Tap Send to register the request.",
     googleError: "Google sign-in is unavailable. You can leave a contact without an account.",
     divider: "or without an account", replyVia: "How should Andrey reply?",
     nameOptional: "Add your name (optional)", privacy: "How we use your details",
@@ -56,7 +60,11 @@ const copy = {
     contactHelp: "Выберите один удобный способ для личного ответа. Аккаунт не нужен.",
     contactError: "Введите правильный email или телефон с международным кодом.",
     google: "Продолжить с Google", googleBusy: "Подключаем Google…",
-    googleReady: "Контакт Google добавлен. Подтвердите отправку заявки.",
+    googleReady: "Email Google подтверждён.",
+    googleConsent: "Для отправки через Google сначала согласитесь на личный ответ галочкой выше.",
+    googleNote: "Чтобы не потерять комментарий, отправьте заявку через email или телефон. Для Google сначала очистите комментарий.",
+    googleSubmitNote: "После подтверждения email через Google заявка отправится автоматически. Без рассылок.",
+    googleQuickNote: "Google заполнит email. Нажмите «Отправить», чтобы зарегистрировать заявку.",
     googleError: "Вход через Google недоступен. Можно оставить контакт без аккаунта.",
     divider: "или без аккаунта", replyVia: "Как вам ответить?",
     nameOptional: "Добавить имя (необязательно)", privacy: "Как используются ваши данные",
@@ -85,7 +93,11 @@ const copy = {
     contactHelp: "Elige un medio para recibir una respuesta personal. No necesitas cuenta.",
     contactError: "Introduce un correo válido o teléfono con prefijo internacional.",
     google: "Continuar con Google", googleBusy: "Conectando Google…",
-    googleReady: "Datos de Google añadidos. Confirma tu solicitud.",
+    googleReady: "Correo de Google verificado.",
+    googleConsent: "Para enviar con Google, acepta primero la respuesta personal en la casilla de arriba.",
+    googleNote: "Para conservar tu nota, envía por correo o teléfono. Borra la nota antes de usar Google.",
+    googleSubmitNote: "Tras verificar tu correo con Google, se enviará la solicitud automáticamente. Sin publicidad.",
+    googleQuickNote: "Google rellenará tu correo. Pulsa Enviar para registrar la solicitud.",
     googleError: "Google no está disponible. Puedes dejar tu contacto sin cuenta.",
     divider: "o sin crear una cuenta", replyVia: "¿Cómo prefieres recibir la respuesta?",
     nameOptional: "Añadir tu nombre (opcional)", privacy: "Cómo usamos tus datos",
@@ -118,7 +130,7 @@ type Props = {
   attributes?: Record<string, string>;
   id?: string;
   quick?: boolean;
-  /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
+  /** @deprecated Confirmed enquiries now use the thank-you page; retained for existing callers. */
   stayAfterSave?: boolean;
   resetKey?: string;
   publicTopic?: string;
@@ -127,7 +139,7 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, stayAfterSave = false, resetKey, publicTopic,
+  onChannelClick, attributes, id, quick = false, resetKey, publicTopic,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -201,27 +213,47 @@ export function ContactChannelChooser({
     publicAdSearch, pathname, locale,
   );
   const originalMessage = new URL(referredWhatsappUrl).searchParams.get("text") || "";
-  const serviceTitle = originalMessage.split("\n")
+  const baseService = originalMessage.split("\n")
     .find(line => /^(?:Service|Услуга|Servicio):\s*/i.test(line))
     ?.replace(/^[^:]+:\s*/, "").trim() || "Holistic House service";
+  // The selected public offer was previously present only in an unsent chat
+  // draft. It must also reach the private CRM before the thank-you redirect.
+  // Never extract the visitor's Context, Topic, questions or clinical answers.
+  const selectedOption = originalMessage.split("\n")
+    .find(line => /^(?:Selected option|Выбранный вариант|Opción elegida):\s*/i.test(line))
+    ?.replace(/^[^:]+:\s*/, "").trim() || "";
+  const serviceTitle = selectedOption
+    ? (baseService + " · " + selectedOption).slice(0, 160) : baseService;
 
   // A same-tab OAuth return uses only non-sensitive, public service identity in
   // sessionStorage; never save entered contacts, private notes or tokens there.
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get("hh_enquiry") !== "google") return;
-    let pending: { path?: string; service?: string; panel?: string } | null = null;
+    let pending: { path?: string; service?: string; panel?: string; consentToReply?: boolean } | null = null;
     try {
       pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
     } catch { /* A blocked or malformed temporary marker never creates a lead. */ }
-    if (pending?.path !== pathname || pending.service !== serviceTitle || pending.panel !== panelId) return;
-    window.sessionStorage.removeItem("hh-google-enquiry-return");
-    url.searchParams.delete("hh_enquiry");
+    // Selection may reset on a full Google page reload. The pending public
+    // service label is the visitor's original selected offer; check the same
+    // public path/panel and use that label rather than silently switching
+    // back to the page's default free or paid option.
+    if (pending?.path !== pathname || pending.panel !== panelId ||
+        typeof pending.service !== "string" || !pending.service.trim() ||
+        pending.service.length > 160) return;
+    const chosenPublicService = pending.service;
+    // Keep the marker until the profile request has finished. Development
+    // StrictMode may cleanup/re-run this effect; clearing the marker before
+    // its first asynchronous profile read loses the only valid continuation.
+    const finishReturn = () => {
+      try { window.sessionStorage.removeItem("hh-google-enquiry-return"); } catch { /* A blocked tab still can display an error. */ }
+      url.searchParams.delete("hh_enquiry");
+      url.searchParams.delete("auth");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    };
     const authError = url.searchParams.has("auth");
-    url.searchParams.delete("auth");
-    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
     setOpen(true);
-    if (authError) { setError(c.googleError); return; }
+    if (authError) { finishReturn(); setError(c.googleError); return; }
     let active = true;
     fetch("/api/app/auth/contact-profile", { method: "GET", credentials: "same-origin", cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("NOT_SIGNED_IN")))
@@ -232,10 +264,20 @@ export function ContactChannelChooser({
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) throw new Error("NO_EMAIL");
         setEmail(nextEmail);
         if (nextName.length >= 2 && nextName.length <= 120) setDisplayName(nextName);
+        finishReturn();
         setMethod("email");
         setGoogleReady(true);
         setError("");
-      }).catch(() => { if (active) setError(c.googleError); });
+        // Only the pre-OAuth reply consent allows the verified Google email to
+        // register a CRM enquiry. OAuth authentication alone cannot create a lead.
+        if (pending?.consentToReply === true) {
+          setConsent(true);
+          void saveEnquiry({
+            displayName: nextName.length >= 2 && nextName.length <= 120 ? nextName : "",
+            email: nextEmail, phone: "",
+          }, true, "", chosenPublicService);
+        }
+      }).catch(() => { if (active) { finishReturn(); setError(c.googleError); } });
     return () => { active = false; };
   }, [pathname, serviceTitle, panelId, c.googleError]);
 
@@ -260,6 +302,17 @@ export function ContactChannelChooser({
 
   async function startGoogle() {
     if (googleBusy || busy) return;
+    if (!consent) {
+      setError(c.googleConsent);
+      panelRef.current?.querySelector<HTMLInputElement>("[data-reply-consent]")?.focus();
+      return;
+    }
+    if (description.trim()) {
+      // Never silently discard a private note on a full-page OAuth round trip.
+      // We do not save it in URLs, browser session storage or Google payloads.
+      setError(c.googleNote);
+      return;
+    }
     setGoogleBusy(true);
     setError("");
     try {
@@ -272,7 +325,7 @@ export function ContactChannelChooser({
       if (!response.ok || typeof data.redirectUrl !== "string" ||
           new URL(data.redirectUrl).protocol !== "https:") throw new Error("GOOGLE_UNAVAILABLE");
       window.sessionStorage.setItem("hh-google-enquiry-return",
-        JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId }));
+        JSON.stringify({ path: pathname, service: serviceTitle, panel: panelId, consentToReply: !quick }));
       window.location.assign(data.redirectUrl);
     } catch {
       window.sessionStorage.removeItem("hh-google-enquiry-return");
@@ -283,10 +336,21 @@ export function ContactChannelChooser({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await saveEnquiry();
+  }
+
+  async function saveEnquiry(
+    verifiedGoogleContact?: { displayName: string; email: string; phone: string },
+    agreed = consent,
+    note = description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+    selectedPublicService = serviceTitle,
+  ) {
     if (busy || saved) return;
-    const cleanedPhone = phone.replace(/[\s().-]/g, "");
-    if ((method === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
-      (method === "phone" && ! /^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
+    const methodForSave = verifiedGoogleContact ? "email" : method;
+    const emailForSave = verifiedGoogleContact?.email ?? email.trim();
+    const cleanedPhone = verifiedGoogleContact?.phone ?? phone.replace(/[\s().-]/g, "");
+    if ((methodForSave === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForSave)) ||
+      (methodForSave === "phone" && ! /^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !agreed) {
       setError(c.contactError);
       return;
     }
@@ -299,11 +363,15 @@ export function ContactChannelChooser({
         method: "POST", credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          operationId: nextId, serviceTitle,
-          description: description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+          operationId: nextId, serviceTitle: selectedPublicService,
+          description: note,
           sourcePath: pathname, locale,
-          contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
-          contactConsent: consent, website,
+          contact: {
+            displayName: verifiedGoogleContact?.displayName ?? displayName.trim(),
+            email: methodForSave === "email" ? emailForSave : "",
+            phone: methodForSave === "phone" ? cleanedPhone : "",
+          },
+          contactConsent: agreed, website,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -317,7 +385,7 @@ export function ContactChannelChooser({
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
           referenceCode: data.referenceCode, createdAt: Date.now(),
         }));
-        if (!stayAfterSave) router.push("/" + locale + "/thank-you");
+        router.push("/" + locale + "/thank-you");
       } catch {
         // Private browsing may block sessionStorage. The existing in-place
         // confirmation and optional messenger handoff remain available.
@@ -351,11 +419,18 @@ export function ContactChannelChooser({
         {(!quick || saved) && <p className={styles.question}>{saved ? c.messengers : c.question}</p>}
         {!saved ? (
           <form onSubmit={submit} className={styles.enquiryForm}>
+            {!quick && <label className={styles.consent}>
+              <input type="checkbox" required data-reply-consent checked={consent} disabled={busy || googleBusy}
+                onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
+              <span>{c.consent}</span>
+            </label>}
             {(!quick || !googleReady) && <button type="button" className={styles.googleButton} onClick={startGoogle}
               disabled={busy || googleBusy} aria-label={c.google}>
               <span className={styles.googleMark} aria-hidden="true">G</span>
               {googleBusy ? c.googleBusy : c.google}
             </button>}
+            {(!quick || !googleReady) && <small className={styles.privateNote}>{quick ? c.googleQuickNote : c.googleSubmitNote}</small>}
+            {(error === c.googleConsent || error === c.googleNote) && <p className={styles.error} role="alert">{error}</p>}
             {googleReady && method === "email" && <p className={styles.googleReady} role="status">{quick ? c.quickReady : c.googleReady}</p>}
             {(!quick || !googleReady) && <p className={styles.separator}><span>{c.divider}</span></p>}
             {!quick && <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
@@ -405,12 +480,7 @@ export function ContactChannelChooser({
                   setDescription(event.target.value); setError(""); operationId.current = null;
                 }} />
               <small className={styles.privateNote}>{c.privateNote}</small>
-            </details>
-            <label className={styles.consent}>
-              <input type="checkbox" required checked={consent} disabled={busy}
-                onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
-              <span>{c.consent}</span>
-            </label></>}
+            </details></>}
             {quick && <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
               onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
               {method === "email" ? c.quickPhone : c.quickEmail}
@@ -425,7 +495,7 @@ export function ContactChannelChooser({
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick ? c.quickSubmit : c.submit)}
             </button>
-            {error && <p className={styles.error} role="alert">{error}</p>}
+            {error && error !== c.googleConsent && error !== c.googleNote && <p className={styles.error} role="alert">{error}</p>}
           </form>
         ) : (
           <>

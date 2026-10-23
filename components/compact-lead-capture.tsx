@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
@@ -79,6 +79,7 @@ export function CompactLeadCapture({
 }) {
   const t = copy[locale];
   const pathname = usePathname();
+  const router = useRouter();
   const [address, setAddress] = useState("");
   const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -120,6 +121,7 @@ export function CompactLeadCapture({
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
           JSON.stringify({ referenceCode: result.referenceCode, createdAt: Date.now() }));
+        router.push("/" + locale + "/thank-you");
       } catch { /* Receipt storage is optional; a committed enquiry remains saved. */ }
     } catch {
       setError(t.error);
