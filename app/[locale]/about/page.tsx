@@ -108,7 +108,7 @@ export default async function AboutPage({ params }: PageProps) {
           <h2 id="personal-consultation-title">{consultation.heading}</h2>
           <p>{consultation.text}</p>
         </div>
-        <PersonalConsultationForm locale={typedLocale} />
+        <PersonalConsultationForm locale={typedLocale} onSiteContact />
       </section>
 
       <section className="about-client-cabinet" aria-labelledby="client-cabinet-title">

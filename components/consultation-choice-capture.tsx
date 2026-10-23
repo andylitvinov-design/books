@@ -189,6 +189,7 @@ export function ConsultationChoiceCapture({
   sitewide = false,
   wiseEnabled = false,
   paypalPersonalEnabled = false,
+  onSiteContact = false,
 }: {
   locale: PublicLocale;
   variant: Variant;
@@ -197,6 +198,7 @@ export function ConsultationChoiceCapture({
   sitewide?: boolean;
   wiseEnabled?: boolean;
   paypalPersonalEnabled?: boolean;
+  onSiteContact?: boolean;
 }) {
   const t = copy[locale];
   const titleId = useId();
@@ -341,9 +343,16 @@ export function ConsultationChoiceCapture({
         <div className={styles.secondary}>
           {isPaidRequest ? <Link prefetch={false} href={"/" + locale + "/services/free-situation-review"}><ShieldCheck size={14} aria-hidden="true" />{t.otherPath}</Link>
             : !isService ? <Link prefetch={false} href={"/" + locale + "/services"}><ShieldCheck size={14} aria-hidden="true" />{t.paidHint}</Link> : null}
-          <AcquisitionEventLink prefetch={false} href={telegramUrl} target="_blank" rel="noopener noreferrer" event="contact_click" attributes={{ "data-contact-channel": "telegram" }}>
-            <Send size={14} aria-hidden="true" />{t.telegram}
-          </AcquisitionEventLink>
+          {onSiteContact ? (
+            <Link prefetch={false} href={"/" + locale + "/contact"} data-contact-channel="site">
+              <Send size={14} aria-hidden="true" />
+              {locale === "ru" ? "Связаться на Holistic House" : locale === "es" ? "Contactar en Holistic House" : "Contact on Holistic House"}
+            </Link>
+          ) : (
+            <AcquisitionEventLink prefetch={false} href={telegramUrl} target="_blank" rel="noopener noreferrer" event="contact_click" attributes={{ "data-contact-channel": "telegram" }}>
+              <Send size={14} aria-hidden="true" />{t.telegram}
+            </AcquisitionEventLink>
+          )}
         </div>
       </div>
       <p className={styles.disclaimer}>{isPaidRequest ? t.serviceNote : t.safeguard}</p>
