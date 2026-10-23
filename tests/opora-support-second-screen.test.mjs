@@ -5,6 +5,8 @@ import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skill
 import {
   oporaExperienceSupport, oporaExperienceSupportValid, oporaExperienceGuide,
 } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaAs58Day} from '../lib/inner-growth/opora-as58-one-action.js'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 
@@ -41,7 +43,7 @@ test('support is the SECOND visible screen of each of 14 days in all 3 languages
         assert.equal(supporting.length,1,'Missing supportive step '+locale+':'+day)
         assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,locale).title))
         assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,locale).body))
-        assert.ok(!textOf(h.tree).includes(oporaExperienceGuide(day,locale)),'Task shown too early')
+        assert.ok(!textOf(h.tree).includes(oporaAs58Day(day,locale).practice),'Task shown too early')
         assert.ok(!nodes(h.tree).some(x=>x.props?.['data-gentle-guidance']==='support'),'Support is not a hint')
         assert.equal(nodes(h.tree).filter(x=>x.props?.['aria-pressed']!==undefined).length,0,
           'No rating, answer, task confirmation or engagement choice on screen two')
@@ -49,10 +51,10 @@ test('support is the SECOND visible screen of each of 14 days in all 3 languages
         findButton(h.tree,back[locale]).props.onClick();await h.settle()
         assert.equal(textOf(h.tree),before,'Back returns to unchanged arrival')
         findButton(h.tree,next[locale]).props.onClick();await h.settle()
-        findButton(h.tree,next[locale]).props.onClick();await h.settle()
+        await advanceOporaTo(h,'practice',next[locale])
         assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-daily-support']).length,0)
-        if(day!==1) assert.ok(textOf(h.tree).includes(oporaExperienceGuide(day,locale)),
-          'Optional practice must still be available on screen three')
+        assert.ok(textOf(h.tree).includes(oporaAs58Day(day,locale).practice),
+          'Single authored daily practice must be reachable after the support screen')
         assert.equal(writes,0,'Reading support must not persist practice or health data')
       }finally{h.unmount()}
     }

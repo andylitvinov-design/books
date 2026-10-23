@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {oporaExperienceDepth,oporaExperienceDepthValid,oporaExperienceDay} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaAs58Day} from '../lib/inner-growth/opora-as58-one-action.js'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '../lib/inner-growth/opora-gentle-journey.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -67,17 +68,18 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' gets four short teaching
       assert.equal(f.writes,0)
     }
     await advanceOporaTo(h,'practice',t.next)
-    assert.ok(textOf(screen(h,'practice')).includes(oporaExperienceDay(4,lang).practice))
-    const extra=nodes(h.tree).find(n=>n.type==='details'&&n.props?.['data-opora-inline-practice-audio']==='true')
-    assert.ok(extra,'Optional two-minute audio must remain accessible')
-    assert.equal(extra.props.open,undefined,'Additional guidance must not crowd the main practice')
+    assert.ok(textOf(screen(h,'practice')).includes(oporaAs58Day(4,lang).practice))
+    assert.equal(nodes(h.tree).filter(n=>n.type==='details'&&
+      n.props?.['data-opora-inline-practice-audio']==='true').length,0,
+      'Meditation moved to one visible Day 14 screen, never behind an accordion')
     await advanceOporaTo(h,'recap',t.next)
     assert.equal(nodes(screen(h,'recap')).filter(n=>n.props?.className?.includes?.('summaryItem')).length,1)
-    assert.ok(!textOf(screen(h,'recap')).includes(oporaExperienceDay(4,lang).practice))
+    assert.ok(!textOf(screen(h,'recap')).includes(oporaAs58Day(4,lang).practice))
     await advanceOporaTo(h,'recapPractice',t.next)
-    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaExperienceDay(4,lang).practice))
+    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs58Day(4,lang).practice))
     await advanceOporaTo(h,'recapNext',t.next)
-    assert.ok(textOf(screen(h,'recapNext')).includes(content.everyday), 'An everyday suggestion is optional, not an assumed plan')
+    assert.ok(!textOf(screen(h,'recapNext')).includes(content.everyday),
+      'No action can be assumed when the learner has not chosen a plan')
     await advanceOporaTo(h,'recapFeedback',t.next)
     assert.equal(nodes(screen(h,'recapFeedback')).filter(n=>n.props?.['data-opora-lesson-confidence']==='true').length,1)
     assert.equal(f.writes,0)
