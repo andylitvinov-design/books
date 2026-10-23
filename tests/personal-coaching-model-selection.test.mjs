@@ -99,7 +99,7 @@ test('coaching form and choice player have matching CSS selectors',()=>{
  const css=source('components/app/personal-coaching.module.css')
  const picker=source('components/app/personal-coaching-picker.jsx')
  const player=source('components/app/personal-coaching.jsx')
- const classes=[...new Set([...picker,...player].flatMap(c=>c.matchAll(/styles\.([A-Za-z0-9_]+)/g)).map(m=>m[1]))]
+ const classes=[...new Set([...picker.matchAll(/styles\.([A-Za-z0-9_]+)/g),...player.matchAll(/styles\.([A-Za-z0-9_]+)/g)].map(m=>m[1]))]
  const actual=new Set([...css.matchAll(/(?<![\w-])\.([A-Za-z_][A-Za-z_0-9-]*)/g)].map(m=>m[1]))
  assert.deepEqual(classes.filter(c=>!actual.has(c)),[])
  assert.match(css,/@media\(max-width:370px\)/)
