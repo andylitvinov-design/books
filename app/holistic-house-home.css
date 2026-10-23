@@ -1327,3 +1327,26 @@ a.service-home-start-card:hover {
   .house-header--services .site-cabinet-entry__compact { display: inline; }
   .house-header--services .site-cabinet-entry svg { display: none; }
 }
+
+/* Shared My Space control outside the service-style header, too. */
+.site-navigation > button.site-cabinet-entry {
+  box-sizing: border-box; display: inline-flex; align-items: center;
+  justify-content: center; gap: 7px; min-height: 44px;
+  border: 1px solid #d6bdab; border-radius: 999px; padding: 8px 12px;
+  background: #f2e6d9; color: #70452e;
+  font-size: 12px; line-height: 1.2; font-weight: 700;
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.site-navigation > button.site-cabinet-entry:hover,
+.site-navigation > button.site-cabinet-entry[aria-expanded="true"] {
+  border-color: #80afa0; background: #e7f1eb; color: #205b52;
+}
+.site-navigation > button.site-cabinet-entry:focus-visible {
+  outline: 3px solid #9b7056; outline-offset: 3px;
+}
+.site-navigation .site-cabinet-entry__full { display: inline; }
+.site-navigation .site-cabinet-entry__compact { display: none; }
+@media (max-width: 1023px) {
+  .site-navigation .site-cabinet-entry__full { display: none; }
+  .site-navigation .site-cabinet-entry__compact { display: inline; }
+}
