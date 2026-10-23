@@ -78,7 +78,7 @@ const copy = {
     previewCourseNote: "An approved practitioner profile and your explicit course publication are required. This is not an active course."
     createService: "Create my service in My Practice",
     createCourse: "Create my course in My Practice",
-    googleNote: "Google sign-in is required for private drafts. We preserve this safe editor choice through sign-in; nothing is saved before you confirm it.",
+    googleNote: "Sign in with Google to save a private draft. New practitioners first complete a moderated profile; your selected editor remains available after that step. Nothing is saved by choosing an offer.",
     stepsTitle: "From idea to first client enquiry",
     steps: [
       { title: "Present yourself", detail: "Add a real name, practice description, languages and relevant background.", action: "My profile" },
@@ -165,7 +165,7 @@ const copy = {
     previewCourseNote: "Для публикации курса нужен одобренный профиль и твоё отдельное подтверждение. Пока это только пример."
     createService: "Создать услугу в «Моей практике»",
     createCourse: "Создать курс в «Моей практике»",
-    googleNote: "Для сохранения нужен вход через Google. Выбранный формат безопасно сохраняется при переходе после входа; без подтверждения ничего не записывается.",
+    googleNote: "Для черновика войди через Google. Если ты новый мастер, сначала заполни профиль для модерации; выбранный редактор останется доступен после этого шага. Сам выбор ничего не сохраняет.",
     stepsTitle: "От идеи до первого обращения",
     steps: [
       { title: "Расскажи о себе", detail: "Укажи настоящее имя, подход, языки и подтверждаемый опыт.", action: "Мой профиль" },
@@ -252,7 +252,7 @@ const copy = {
     previewCourseNote: "Se necesita un perfil aprobado y tu publicación explícita. Por ahora es solo un ejemplo."
     createService: "Crear mi servicio en My Practice",
     createCourse: "Crear mi curso en My Practice",
-    googleNote: "Entra con Google para guardar borradores. La selección del editor se conserva durante el inicio de sesión; nada se publica automáticamente.",
+    googleNote: "Entra con Google para guardar borradores. Si eres nuevo, primero completa el perfil sujeto a revisión; después podrás usar el editor elegido. La selección no guarda nada.",
     stepsTitle: "De la idea a la primera consulta",
     steps: [
       { title: "Preséntate", detail: "Añade nombre real, experiencia, idiomas y descripción de tu práctica.", action: "Mi perfil" },
