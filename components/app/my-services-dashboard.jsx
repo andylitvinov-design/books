@@ -24,7 +24,7 @@ const COPY = {
     area:'Topic',allAreas:'All topics',format:'Format',anyFormat:'Any format',online:'Online',inPerson:'In person',hybrid:'Online or in person',
     price:'Price',anyPrice:'Any price',free:'Free',priced:'With a price',contact:'Price on request',
     status:'Status',all:'All services',published:'Published',review:'Under review',draft:'Drafts / paused',draftOne:'Draft',
-    total:'Services',clear:'Clear filters',viewAll:'Explore all services',add:'Add service',close:'Close editor',discard:'Close without saving changes?',
+    total:'Services',clear:'Clear filters',viewAll:'Explore all services',add:'Add service',edit:'Edit service',close:'Back to my services',discard:'Close without saving changes?',
     showing:'Showing',noResults:'No matching services. Change your filters or clear the search.',filters:'active filters',
     untitled:'Untitled service',changes:'Changes needed',paused:'Paused',suspended:'Suspended',min:'min',
   },
@@ -35,7 +35,7 @@ const COPY = {
     area:'Тема',allAreas:'Все темы',format:'Формат',anyFormat:'Любой формат',online:'Онлайн',inPerson:'Лично',hybrid:'Онлайн или лично',
     price:'Цена',anyPrice:'Любая цена',free:'Бесплатно',priced:'С указанной ценой',contact:'По запросу',
     status:'Статус',all:'Все услуги',published:'Опубликованные',review:'На проверке',draft:'Черновики / пауза',draftOne:'Черновик',
-    total:'Услуги',clear:'Сбросить фильтры',viewAll:'Все услуги сайта',add:'Добавить услугу',close:'Закрыть форму',discard:'Закрыть редактор без сохранения изменений?',
+    total:'Услуги',clear:'Сбросить фильтры',viewAll:'Все услуги сайта',add:'Добавить услугу',edit:'Редактировать услугу',close:'К моим услугам',discard:'Закрыть редактор без сохранения изменений?',
     showing:'Показано',noResults:'Нет подходящих услуг. Измените фильтры или сбросьте поиск.',filters:'активных фильтров',
     untitled:'Без названия',changes:'Нужны правки',paused:'На паузе',suspended:'Приостановлено',min:'мин',
   },
@@ -46,7 +46,7 @@ const COPY = {
     area:'Tema',allAreas:'Todos los temas',format:'Formato',anyFormat:'Cualquier formato',online:'En línea',inPerson:'Presencial',hybrid:'En línea o presencial',
     price:'Precio',anyPrice:'Cualquier precio',free:'Gratis',priced:'Con precio',contact:'Precio a consultar',
     status:'Estado',all:'Todos',published:'Publicados',review:'En revisión',draft:'Borradores / pausa',draftOne:'Borrador',
-    total:'Servicios',clear:'Restablecer filtros',viewAll:'Explorar todos los servicios',add:'Añadir servicio',close:'Cerrar formulario',discard:'¿Cerrar sin guardar los cambios?',
+    total:'Servicios',clear:'Restablecer filtros',viewAll:'Explorar todos los servicios',add:'Añadir servicio',edit:'Editar servicio',close:'Volver a mis servicios',discard:'¿Cerrar sin guardar los cambios?',
     showing:'Mostrando',noResults:'No hay coincidencias. Cambia los filtros.',filters:'filtros activos',
     untitled:'Sin título',changes:'Necesita cambios',paused:'En pausa',suspended:'Suspendido',min:'min',
   },
@@ -58,6 +58,8 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
   const canAdd=quota?.canAdd!==false
   const [creating,setCreating]=useState(items.length===0&&canAdd)
   const [createDirty,setCreateDirty]=useState(false)
+  const [editingId,setEditingId]=useState(null)
+  const [editDirty,setEditDirty]=useState(false)
   const [finderOpen,setFinderOpen]=useState(false)
   const [query,setQuery]=useState('')
   const [status,setStatus]=useState('all')
@@ -67,11 +69,17 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
   useEffect(()=>{if(items.length||!canAdd){setCreating(false);setCreateDirty(false)}},[items.length,canAdd])
   useEffect(()=>{if(createRequest>0&&canAdd)setCreating(true)},[createRequest,canAdd])
   const visible=useMemo(()=>filterPracticeServices(items,{query,status,area,format,price}),[items,query,status,area,format,price])
+  const editingItem=items.find(item=>item.id===editingId)||null
+  const composing=creating||Boolean(editingItem)
   const published=items.filter(item=>item.status==='published').length
   const reviewing=items.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   const activeFilters=[query.trim(),status!=='all',area!=='all',format!=='any',price!=='any'].filter(Boolean).length
   const clearFilters=()=>{setQuery('');setStatus('all');setArea('all');setFormat('any');setPrice('any')}
   const toggleComposer=()=>{
+    if(editingItem){
+      if(editDirty&&!window.confirm(c.discard))return
+      setEditingId(null);setEditDirty(false);return
+    }
     if(creating&&createDirty&&!window.confirm(c.discard))return
     setCreating(value=>!value);setCreateDirty(false)
   }
@@ -81,7 +89,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
     : c.contact
   return <section className={styles.dashboard} aria-labelledby="hh-my-services-title">
     <div className={styles.inner}>
-      {!creating&&<><button type="button" className={styles.finderButton} id="hh-services-picker-toggle"
+      {!composing&&<><button type="button" className={styles.finderButton} id="hh-services-picker-toggle"
         onClick={()=>setFinderOpen(value=>!value)}
         aria-controls="hh-services-picker" aria-expanded={finderOpen}>
         <span className={styles.finderIcon}><SlidersHorizontal size={22} aria-hidden="true"/></span>
@@ -121,26 +129,28 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
         </div>
       </div>
       </>}
-      <header className={styles.header} data-composing={creating}>
+      <header className={styles.header} data-composing={composing}>
         <p className={styles.kicker}>{c.kicker}</p>
-        <h2 id="hh-my-services-title">{creating?c.add:c.title}</h2>
-        <p>{creating?(lang==='ru'?'Создайте красивое предложение за три экрана.':lang==='es'?'Crea tu oferta en tres pantallas sencillas.':'Create a client-ready offer in three simple screens.'):c.intro}</p>
+        <h2 id="hh-my-services-title">{editingItem?c.edit:creating?c.add:c.title}</h2>
+        <p>{composing?(lang==='ru'?'Предложение для клиента — три простых экрана.':lang==='es'?'Una oferta clara en tres pantallas.':'A clear client-facing offer in three screens.'):c.intro}</p>
       </header>
-      {!creating&&<div className={styles.stats} role="group" aria-label={c.title}>
+      {!composing&&<div className={styles.stats} role="group" aria-label={c.title}>
         <div><Leaf size={18} aria-hidden="true"/><strong>{items.length}</strong><span>{c.total}</span></div>
         <div><CheckCircle2 size={18} aria-hidden="true"/><strong>{published}</strong><span>{c.published}</span></div>
         <div><ClipboardList size={18} aria-hidden="true"/><strong>{reviewing}</strong><span>{c.review}</span></div>
       </div>}
       <div className={styles.actions}>
-        <button type="button" disabled={!canAdd&&!creating} aria-expanded={creating} onClick={toggleComposer}>
-          <Plus size={17} aria-hidden="true"/>{creating?c.close:c.add}
+        <button type="button" disabled={!canAdd&&!composing} aria-expanded={composing} onClick={toggleComposer}>
+          <Plus size={17} aria-hidden="true"/>{composing?c.close:c.add}
         </button>
         <Link href={'/'+locale+'/services'} prefetch={false}>{c.viewAll}<ArrowUpRight size={15} aria-hidden="true"/></Link>
       </div>
-      {!creating&&<p className={styles.count} role="status" aria-live="polite">{c.showing} {visible.length} / {items.length}</p>}
+      {!composing&&<p className={styles.count} role="status" aria-live="polite">{c.showing} {visible.length} / {items.length}</p>}
       {creating&&canAdd&&<div className={styles.editor} data-service-composer-focus>{renderEditor(null,setCreateDirty)}</div>}
-      {!creating&&<div className={styles.list}>
-        {visible.map(item=><details key={item.id+':'+item.revision} className={styles.serviceCard}>
+      {editingItem&&<div className={styles.editor} data-service-composer-focus data-edit-service={editingItem.id}>{renderEditor(editingItem,setEditDirty)}</div>}
+      {!composing&&<div className={styles.list}>
+        {visible.map(item=><details key={item.id+':'+item.revision} className={styles.serviceCard}
+          onToggle={event=>{if(event.currentTarget.open){setEditingId(item.id);setEditDirty(false)}}}>
           <summary>
             <span className={styles.serviceIcon}>{(item.draftCopy?.photos?.[0]||item.photos?.[0])?<img src={item.draftCopy?.photos?.[0]||item.photos?.[0]} alt="" loading="lazy" />:<Leaf size={21} aria-hidden="true"/>}</span>
             <span className={styles.serviceInfo}>
@@ -151,11 +161,10 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
             <span className={styles.status} data-status={item.status}>{statusLabel(item.status)}</span>
             <ChevronRight className={styles.cardChevron} size={16} aria-hidden="true"/>
           </summary>
-          <div className={styles.editor}>{renderEditor(item)}</div>
         </details>)}
       </div>}
       {items.length===0&&!creating&&canAdd&&<p className={styles.empty}>{lang==='ru'?'Пока нет услуг. Добавьте своё первое предложение.':lang==='es'?'Aún no hay servicios. Añade tu primera oferta.':'No services yet. Add your first offer.'}</p>}
-      {items.length>0&&!visible.length&&<p className={styles.empty} role="status">{c.noResults}</p>}
+      {!composing&&items.length>0&&!visible.length&&<p className={styles.empty} role="status">{c.noResults}</p>}
     </div>
   </section>
 }
