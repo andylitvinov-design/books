@@ -23,70 +23,73 @@ const moduleVisuals = {
 
 const copy = {
   en: {
-    eyebrow: "EXPLORE HOLISTIC HOUSE",
-    title: "What would you like to do?",
-    hint: "Choose a space to see where to begin.",
-    open: "Choose", selected: "Selected", options: "Ways to begin",
+    eyebrow: "MY SPACE · YOUR 5-STEP PATH",
+    title: "From discovering yourself to sharing your practice",
+    hint: "Five steps, one clear next action. Start at any stage.",
+    options: "CHOOSE YOUR ACTION", step: "Step",
     modules: {
-      tests: { title: "Tests", detail: "Explore yourself", inside: "Stress · energy · focus", panel: "Choose a free self-check" },
-      courses: { title: "Courses", detail: "Follow your own plan", inside: "OPORA · 90 days", panel: "Start or continue a programme" },
-      services: { title: "Services", detail: "Personal guidance", inside: "Review · sessions", panel: "Choose how to get personal support" },
-      learning: { title: "Learning", detail: "Learn at your pace", inside: "Reiki · Academy", panel: "Explore free lessons and training" },
-      master: { title: "Become a Master", detail: "Share your expertise", inside: "Create courses · list services", panel: "Publish your work through My Practice" },
+      tests: { title: "Discover yourself", detail: "Free tests & your profile", inside: "Tests · personal profile", panel: "Get to know yourself" },
+      courses: { title: "Take a free course", detail: "Learn a skill at your pace", inside: "Reiki · OPORA", panel: "Begin a free course" },
+      services: { title: "Try a free service", detail: "Written review or initiation", inside: "Free review · Reiki", panel: "Choose your free introduction" },
+      learning: { title: "Professional training", detail: "Explore advanced courses", inside: "Academy · paid options", panel: "Develop your professional skills" },
+      master: { title: "Become a Master", detail: "Offer your own work", inside: "Profile · services · courses", panel: "Share your experience" },
     },
-    stress: "Stress test", energy: "Energy & resources", allTests: "All free tests", myTests: "My tests",
-    opora: "OPORA · 14 days", businessCourse: "Business & Career · 90 days", myCourses: "My courses",
-    reiki: "Reiki Practitioner · free", academy: "Explore Academy",
-    review: "Free written review", consultation: "Consultation · from €50", allServices: "All services",
-    publish: "Publish a service", createCourse: "Create a course",
+    allTests: "Take free tests", profile: "Create my personal profile", stress: "Stress self-check", myTests: "My tests",
+    reiki: "Reiki Practitioner · free course", opora: "OPORA · 14-day free course", myCourses: "My courses",
+    review: "Request a free written review", initiation: "Free Tantra Reiki initiation", freeEnergy: "Explore Wu Xing resources",
+    advanced: "Explore Reiki training", proTrack: "Professional learning path", academy: "All Academy courses",
+    publish: "Create a service", createCourse: "Create my course", practitionerProfile: "Create professional profile",
     reports: "My reports", growth: "My development path",
-    privacy: "Private reports and progress open only inside your protected Cabinet.",
-    bookingNote: "A request is not a confirmed appointment.",
-    masterNote: "Free listing requires profile review. Training is not a qualification.",
+    privacy: "Private tests, reports and progress stay in your protected My Space.",
+    servicesNote: "A written review is not a live consultation. Reiki initiation is arranged personally after a request; it is not automatic.",
+    learningNote: "Some advanced programmes are paid. Review the current terms with the teacher: website checkout and automatic paid access are not live.",
+    masterNote: "A profile and draft are free. Public offers require approval; enquiries are not bookings or payments.",
   },
   ru: {
-    eyebrow: "ВОЗМОЖНОСТИ HOLISTIC HOUSE",
-    title: "Что вы хотите сделать?",
-    hint: "Выберите раздел — покажем, с чего начать.",
-    open: "Выбрать", selected: "Выбрано", options: "С чего начать",
+    eyebrow: "МОЁ ПРОСТРАНСТВО · 5 ШАГОВ",
+    title: "От знакомства с собой — к собственной практике",
+    hint: "Пять последовательных шагов. Можно начать с любого.",
+    options: "ВАШЕ ДЕЙСТВИЕ", step: "Шаг",
     modules: {
-      tests: { title: "Тесты", detail: "Лучше понять себя", inside: "Стресс · ресурс · фокус", panel: "Выберите бесплатный тест" },
-      courses: { title: "Курсы", detail: "Личный план развития", inside: "ОПОРА · 90 дней", panel: "Начните или продолжите программу" },
-      services: { title: "Услуги", detail: "Личная поддержка", inside: "Разбор · консультации", panel: "Выберите формат личной работы" },
-      learning: { title: "Обучение", detail: "Учиться в своём темпе", inside: "Рейки · Академия", panel: "Бесплатные уроки и обучение" },
-      master: { title: "Стать мастером", detail: "Делиться своим опытом", inside: "Свой курс · своя услуга", panel: "Публикуйте свои материалы в My Practice" },
+      tests: { title: "Узнай себя", detail: "Бесплатные тесты и профиль", inside: "Тесты · личный профиль", panel: "Начни знакомство с собой" },
+      courses: { title: "Пройди бесплатный курс", detail: "Освой первый навык", inside: "Рейки · ОПОРА", panel: "Выбери бесплатный курс" },
+      services: { title: "Получи бесплатную услугу", detail: "Разбор или инициация", inside: "Разбор · Рейки", panel: "Попробуй бесплатный формат" },
+      learning: { title: "Профессиональное обучение", detail: "Курсы для углубления практики", inside: "Академия · платные программы", panel: "Продолжи обучение" },
+      master: { title: "Стань мастером", detail: "Размести услуги и свои курсы", inside: "Профиль · услуги · курсы", panel: "Представь свою практику" },
     },
-    stress: "Стресс", energy: "Энергия и ресурсы", allTests: "Все бесплатные тесты", myTests: "Мои тесты",
-    opora: "ОПОРА · 14 дней", businessCourse: "Бизнес и карьера · 90 дней", myCourses: "Мои курсы",
-    reiki: "Практик Рейки · бесплатно", academy: "Открыть Академию",
-    review: "Бесплатный письменный разбор", consultation: "Консультация · от €50", allServices: "Все услуги",
-    publish: "Опубликовать услугу", createCourse: "Создать курс",
+    allTests: "Пройти бесплатные тесты", profile: "Создать личный профиль", stress: "Тест на стресс", myTests: "Мои тесты",
+    reiki: "Практик Рейки · бесплатный курс", opora: "ОПОРА · 14 дней бесплатно", myCourses: "Мои курсы",
+    review: "Получить бесплатный письменный разбор", initiation: "Бесплатная инициация Тантра Рейки", freeEnergy: "Исследовать ресурсы У-Син",
+    advanced: "Курсы Рейки", proTrack: "Путь профессионального обучения", academy: "Все курсы Академии",
+    publish: "Создать свою услугу", createCourse: "Создать свой курс", practitionerProfile: "Создать профиль мастера",
     reports: "Мои отчёты", growth: "Мой путь развития",
-    privacy: "Личные отчёты и прогресс доступны только в защищённом кабинете.",
-    bookingNote: "Заявка не является подтверждённой записью.",
-    masterNote: "Бесплатная публикация требует проверки профиля. Обучение не подтверждает квалификацию.",
+    privacy: "Результаты тестов, отчёты и прогресс доступны только в защищённом кабинете.",
+    servicesNote: "Бесплатный разбор — письменный, без звонка. Инициация проводится по отдельному согласованию с мастером.",
+    learningNote: "Часть углублённых программ — платные. Условия уточняются у преподавателя: оплата и автоматический доступ на сайте пока не работают.",
+    masterNote: "Профиль и черновик бесплатны. Публичные предложения проходят проверку; заявка не означает бронь или оплату.",
   },
   es: {
-    eyebrow: "EXPLORA HOLISTIC HOUSE",
-    title: "¿Qué te gustaría hacer?",
-    hint: "Elige un espacio y descubre cómo empezar.",
-    open: "Elegir", selected: "Elegido", options: "Cómo empezar",
+    eyebrow: "MI ESPACIO · 5 PASOS",
+    title: "De conocerte mejor a compartir tu práctica",
+    hint: "Cinco pasos claros. Puedes empezar donde quieras.",
+    options: "ELIGE QUÉ HACER", step: "Paso",
     modules: {
-      tests: { title: "Pruebas", detail: "Conocerte mejor", inside: "Estrés · energía · foco", panel: "Elige una prueba gratuita" },
-      courses: { title: "Cursos", detail: "Tu plan personal", inside: "OPORA · 90 días", panel: "Empieza o continúa un programa" },
-      services: { title: "Servicios", detail: "Atención personal", inside: "Revisión · sesiones", panel: "Elige cómo recibir apoyo personal" },
-      learning: { title: "Aprender", detail: "A tu propio ritmo", inside: "Reiki · Academia", panel: "Lecciones y formación gratuitas" },
-      master: { title: "Ser profesional", detail: "Comparte tu práctica", inside: "Crear cursos · servicios", panel: "Publica tu trabajo en My Practice" },
+      tests: { title: "Conócete mejor", detail: "Pruebas gratis y perfil", inside: "Pruebas · perfil", panel: "Empieza por conocerte" },
+      courses: { title: "Haz un curso gratis", detail: "Aprende una habilidad", inside: "Reiki · OPORA", panel: "Empieza un curso gratis" },
+      services: { title: "Recibe ayuda gratis", detail: "Revisión o iniciación", inside: "Revisión · Reiki", panel: "Elige una introducción gratuita" },
+      learning: { title: "Formación profesional", detail: "Explora cursos avanzados", inside: "Academia · opciones de pago", panel: "Profundiza tu formación" },
+      master: { title: "Sé profesional", detail: "Publica servicios y cursos", inside: "Perfil · servicios · cursos", panel: "Comparte tu práctica" },
     },
-    stress: "Estrés", energy: "Energía y recursos", allTests: "Todas las pruebas", myTests: "Mis pruebas",
-    opora: "OPORA · 14 días", businessCourse: "Negocios y carrera · 90 días", myCourses: "Mis cursos",
-    reiki: "Reiki Practitioner · gratis", academy: "Ver Academia",
-    review: "Revisión escrita gratis", consultation: "Consulta · desde €50", allServices: "Todos los servicios",
-    publish: "Publicar un servicio", createCourse: "Crear curso",
+    allTests: "Hacer pruebas gratis", profile: "Crear mi perfil personal", stress: "Prueba de estrés", myTests: "Mis pruebas",
+    reiki: "Reiki Practitioner · curso gratis", opora: "OPORA · 14 días gratis", myCourses: "Mis cursos",
+    review: "Solicitar revisión escrita gratis", initiation: "Iniciación gratis de Tantra Reiki", freeEnergy: "Explorar recursos Wu Xing",
+    advanced: "Explorar formación Reiki", proTrack: "Mi camino profesional", academy: "Todos los cursos de la Academia",
+    publish: "Crear un servicio", createCourse: "Crear mi curso", practitionerProfile: "Crear perfil profesional",
     reports: "Mis informes", growth: "Mi desarrollo",
-    privacy: "Tus informes y progreso permanecen en tu gabinete protegido.",
-    bookingNote: "Una solicitud no confirma una reserva.",
-    masterNote: "La publicación requiere revisión del perfil; estudiar no equivale a una cualificación.",
+    privacy: "Las pruebas, los informes y el progreso personales quedan en tu espacio protegido.",
+    servicesNote: "La revisión es escrita, no una llamada. La iniciación Reiki necesita confirmación personal del maestro.",
+    learningNote: "Algunos programas avanzados son de pago. Consulta las condiciones: el pago en la web y el acceso automático aún no están activos.",
+    masterNote: "Crear un perfil y un borrador es gratis. Las publicaciones requieren revisión; una solicitud no es una reserva ni un pago.",
   },
 } as const;
 
@@ -104,28 +107,30 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
 
   const choices: { label: string; href: string; id: string }[] =
     selected === "tests" ? [
-      { id: "stress", label: t.stress, href: "/" + locale + "/client/tests?focus=stress" },
-      { id: "resources", label: t.energy, href: "/" + locale + "/client/tests?focus=resources" },
       { id: "all", label: t.allTests, href: "/" + locale + "/client/tests" },
+      { id: "profile", label: t.profile, href: accountRoot + "/portrait" },
+      { id: "stress", label: t.stress, href: "/" + locale + "/client/tests?focus=stress" },
       ...(signedIn ? [{ id: "mine", label: t.myTests, href: accountRoot + "/tests" }] : []),
     ] : selected === "courses" ? [
+      { id: "reiki", label: t.reiki, href: "/" + accountLocale + "/academy/principles-of-energywork/learn" },
       { id: "opora", label: t.opora, href: "/" + locale + "/courses/antistress" },
-      { id: "business", label: t.businessCourse, href: accountRoot + "/business" },
       ...(signedIn ? [{ id: "mine", label: t.myCourses, href: ownedCoursesHref }] : []),
     ] : selected === "services" ? [
       { id: "review", label: t.review, href: "/" + locale + "/services/free-situation-review" },
-      { id: "session", label: t.consultation, href: "/" + locale + "/services#consultation" },
-      { id: "all", label: t.allServices, href: "/" + locale + "/services" },
+      { id: "initiation", label: t.initiation, href: "/" + locale + "/academy/reiki/tantra-reiki/free-initiation" },
+      { id: "wu-xing", label: t.freeEnergy, href: "/" + locale + "/wu-xing" },
     ] : selected === "learning" ? [
-      { id: "reiki", label: t.reiki, href: "/" + accountLocale + "/academy/principles-of-energywork/learn" },
+      { id: "reiki-advanced", label: t.advanced, href: "/" + locale + "/academy/reiki" },
+      { id: "professional", label: t.proTrack, href: "/" + locale + "/pro" },
       { id: "academy", label: t.academy, href: "/" + locale + "/academy" },
     ] : [
-      { id: "service", label: t.publish, href: accountRoot + "/practice?panel=services" },
-      { id: "course", label: t.createCourse, href: accountRoot + "/practice?panel=materials&materialTab=courses" },
+      { id: "pro-profile", label: t.practitionerProfile, href: accountRoot + "/practice?panel=profile" },
+      { id: "service", label: t.publish, href: accountRoot + "/practice?panel=services&create=1" },
+      { id: "course", label: t.createCourse, href: accountRoot + "/practice?panel=materials&materialTab=courses&create=1" },
     ];
 
   return <section id="home-my-space-features" className={styles.root}
-    data-home-featured-workspace aria-labelledby="hh-home-features-title">
+    data-home-featured-workspace data-home-path-stages="5" aria-labelledby="hh-home-features-title">
     <div className={styles.heading}>
       <div>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
@@ -134,15 +139,16 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
       <p className={styles.hint}>{t.hint}</p>
     </div>
     <div className={styles.grid} role="group" aria-label={t.title} data-home-module-grid>
-      {moduleIds.map(id => {
+      {moduleIds.map((id, index) => {
         const item = t.modules[id];
         const visual = moduleVisuals[id];
         const Icon = visual.Icon;
         return <button type="button" key={id} className={styles.tile}
           data-home-module={id} data-home-module-selected={selected === id ? "true" : "false"}
           aria-pressed={selected === id} aria-controls="hh-home-module-detail"
-          aria-label={item.title + ". " + item.detail}
+          aria-label={(index + 1) + "/5. " + item.title + ". " + item.detail}
           onClick={() => setSelected(id)}>
+          <span className={styles.stepNum} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
           <span className={styles.thumb} aria-hidden="true">
             <Image src={visual.photo} alt="" fill unoptimized loading="lazy"
               sizes="(max-width: 640px) 48px, 56px" />
@@ -156,7 +162,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
     <div className={styles.detail} id="hh-home-module-detail" data-home-module-detail={selected}
       aria-live="polite" aria-atomic="true">
       <div className={styles.detailHeading}>
-        <p className={styles.eyebrow}>{t.options}</p>
+        <p className={styles.eyebrow}>{t.options} · {t.step} {moduleIds.indexOf(selected) + 1} / 5</p>
         <h3>{t.modules[selected].panel}</h3>
       </div>
       <nav className={styles.detailLinks} aria-label={t.modules[selected].panel}>
@@ -166,8 +172,8 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
           {action.label}<ArrowRight size={15} aria-hidden="true" />
         </Link>)}
       </nav>
-      {(selected === "master" || selected === "services") && <p className={styles.note}>
-        {selected === "master" ? t.masterNote : t.bookingNote}
+      {(selected === "master" || selected === "services" || selected === "learning") && <p className={styles.note}>
+        {selected === "master" ? t.masterNote : selected === "learning" ? t.learningNote : t.servicesNote}
       </p>}
     </div>
     {signedIn && <nav className={styles.privateLinks} aria-label={t.reports + " · " + t.growth}>
