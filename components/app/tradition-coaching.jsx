@@ -112,6 +112,17 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   }catch(e){setError(e?.code==='PERSONAL_COACH_REVISION_CONFLICT'?t.conflict:t.error)}
   finally{busyRef.current=false;setBusy(false)}
  }
+ function onChoiceKeyDown(event){
+  if(!['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(event.key))return
+  const items=question?.choices||[]
+  if(!items.length)return
+  event.preventDefault()
+  const current=items.findIndex(item=>item.id===choice)
+  const direction=['ArrowRight','ArrowDown'].includes(event.key)?1:-1
+  const next=(current<0?0:(current+direction+items.length)%items.length)
+  setChoice(items[next].id);setError('');setNotice('')
+  event.currentTarget.querySelectorAll('[role="radio"]')[next]?.focus()
+ }
  function backward(){
   if(index===0)return
   if(dirty&&!window.confirm(t.unsaved))return
@@ -198,8 +209,9 @@ export default function TraditionCoaching({locale='en',accountId,template}){
              setNote(old=>((old?old+' ':'')+value).slice(0,500));setNotice('');setError('')
            }}/>
         <p className={extra.hint}>{question.hint?.[lang]||''}</p>
-        <div className={extra.choices} role="radiogroup" aria-label={question.question?.[lang]}>
-          {question.choices?.map(option=><button type="button" role="radio" key={option.id}
+        <div className={extra.choices} role="radiogroup" aria-label={question.question?.[lang]} onKeyDown={onChoiceKeyDown}>
+          {question.choices?.map((option,optionIndex)=><button type="button" role="radio" key={option.id}
+            tabIndex={choice===option.id||(!choice&&optionIndex===0)?0:-1}
             aria-checked={choice===option.id} disabled={busy} data-choice-id={option.id}
             className={choice===option.id?extra.chosen:extra.choice} onClick={()=>{
               setChoice(option.id);setError('');setNotice('')
