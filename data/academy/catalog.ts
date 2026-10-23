@@ -2,6 +2,7 @@ import sources from "./sources.generated.json";
 import media from "./media.generated.json";
 import psimasterSources from "./psimaster-sources.generated.json";
 import psimasterMedia from "./psimaster-media.generated.json";
+import psimasterSupplementalMedia from "./psimaster-supplemental-media.generated.json";
 import psimasterTranslations from "./psimaster-translations.generated.json";
 import legacyTranslations from "./legacy-translations.generated.json";
 import tantraReikiFullArchive from "./tantra-reiki-full.generated.json";
@@ -133,7 +134,7 @@ export const academyCopy = {
 } as const;
 
 const sourceRecords = [...(sources as AcademySourceRecord[]), ...(psimasterSources as AcademySourceRecord[])];
-const mediaRecords = [...(media as AcademyMediaRecord[]), ...(psimasterMedia as AcademyMediaRecord[])];
+const mediaRecords = [...(media as AcademyMediaRecord[]), ...(psimasterMedia as AcademyMediaRecord[]), ...(psimasterSupplementalMedia as AcademyMediaRecord[])];
 
 const academyCuratedPublicBlocks: Partial<Record<string, Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>>> = {
   "reiki/tantra-reiki": tantraReikiFullArchive.blocks as Partial<Record<AcademySourceRecord["sourceLocale"], AcademyBlock[]>>,
