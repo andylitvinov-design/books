@@ -382,11 +382,18 @@ export function ContactChannelChooser({
         {(!quick || saved) && <p className={styles.question}>{saved ? c.messengers : c.question}</p>}
         {!saved ? (
           <form onSubmit={submit} className={styles.enquiryForm}>
+            {!quick && <label className={styles.consent}>
+              <input type="checkbox" required data-reply-consent checked={consent} disabled={busy || googleBusy}
+                onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
+              <span>{c.consent}</span>
+            </label>}
             {(!quick || !googleReady) && <button type="button" className={styles.googleButton} onClick={startGoogle}
               disabled={busy || googleBusy} aria-label={c.google}>
               <span className={styles.googleMark} aria-hidden="true">G</span>
               {googleBusy ? c.googleBusy : c.google}
             </button>}
+            {(!quick || !googleReady) && <small className={styles.privateNote}>{c.googleSubmitNote}</small>}
+            {error === c.googleConsent && <p className={styles.error} role="alert">{error}</p>}
             {googleReady && method === "email" && <p className={styles.googleReady} role="status">{quick ? c.quickReady : c.googleReady}</p>}
             {(!quick || !googleReady) && <p className={styles.separator}><span>{c.divider}</span></p>}
             {!quick && <div className={styles.methodChoices} role="group" aria-label={c.replyVia}>
@@ -436,12 +443,7 @@ export function ContactChannelChooser({
                   setDescription(event.target.value); setError(""); operationId.current = null;
                 }} />
               <small className={styles.privateNote}>{c.privateNote}</small>
-            </details>
-            <label className={styles.consent}>
-              <input type="checkbox" required checked={consent} disabled={busy}
-                onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
-              <span>{c.consent}</span>
-            </label></>}
+            </details></>}
             {quick && <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
               onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
               {method === "email" ? c.quickPhone : c.quickEmail}
@@ -456,7 +458,7 @@ export function ContactChannelChooser({
                 (method === "email" ? !email.trim() : !phone.trim()) || !consent}>
               <Send size={17} aria-hidden="true" />{busy ? c.sending : (quick ? c.quickSubmit : c.submit)}
             </button>
-            {error && <p className={styles.error} role="alert">{error}</p>}
+            {error && error !== c.googleConsent && <p className={styles.error} role="alert">{error}</p>}
           </form>
         ) : (
           <>
