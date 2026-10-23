@@ -4,6 +4,7 @@ import { PublicSiteHeader } from '@/components/public-site-header'
 import { TopicJourneySelector } from '@/components/topic-journey-selector'
 import { DirectionOffers } from '@/components/direction-offers'
 import { DirectionExtras } from '@/components/direction-extras'
+import { GoalSupportOffers } from '@/components/goal-support-offers'
 import { TopicGrowthGuide } from '@/components/topic-growth-guide'
 import { growthGuideFor } from '@/data/growth-guides'
 import { TOPIC_JOURNEYS, getTopicJourney } from '@/lib/assessments/topic-journeys'
@@ -58,6 +59,7 @@ export default async function TopicJourneyPage({ params }: Props) {
     <PublicSiteHeader locale={locale as PublicLocale} showAssessmentStrip={false}/>
     {isDirection ? <>
       <DirectionOffers locale={locale as PublicLocale} journey={journey} suggestions={suggestions}/>
+      <GoalSupportOffers locale={locale as PublicLocale} direction={theme as 'energy' | 'love' | 'business'}/>
       <DirectionExtras locale={locale as PublicLocale} direction={theme as 'energy' | 'love' | 'business'}/>
     </> : <>
       <TopicJourneySelector locale={locale as PublicLocale} journey={journey} suggestions={suggestions}/>
