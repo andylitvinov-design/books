@@ -242,7 +242,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
    if(result.error)throw new Error(result.error.message||'MEDIA_UPLOAD_FAILED')
    await api({action:'upload-complete',assetId:intent.assetId})
    if(selected!==courseBefore)throw new Error('ACCOUNT_CHANGED')
-   setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideBefore?{...s,...(target==='cover'&&s.kind!=='image'?{coverAssetId:intent.assetId}:{assetId:intent.assetId})}:s)}))
+   setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideBefore?{...s,...(target==='cover'?(s.kind==='image'?{assetId:intent.assetId,coverAssetId:null}:{coverAssetId:intent.assetId}):{assetId:intent.assetId})}:s)}))
    setMessage(t.fileReady+' · '+t.save)
    return true
   }catch(e){setError(e.message);return false}
