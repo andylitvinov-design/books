@@ -149,9 +149,9 @@ export default function TraditionCoaching({locale='en',accountId,template}){
      <span className={base.brand}>HOLISTIC HOUSE · ACADEMY</span>
      <span className={base.private}><LockKeyhole size={14}/>{t.private}</span>
    </header>
-   <section className={base.sheet}>
+   <section className={base.sheet+' '+extra.courseSheet}>
     {loading?<div className={base.center} role="status">{t.load}</div>
-    : !course?<div className={base.intro} data-tradition-start>
+    : !course?<div className={base.intro+' '+extra.courseIntro} data-tradition-start>
       <span className={base.eyebrow}>HOLISTIC HOUSE · COACHING</span>
       <img src={def.art} width={850} height={250} alt="" className={extra.heroArt} loading="lazy"/>
       <h1>{def.name[lang]}</h1>
@@ -164,7 +164,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       </button>
       <Link href={home} className={base.secondary}>{t.home}</Link>
     </div>
-    :completed?<div className={base.summary} data-tradition-summary>
+    :completed?<div className={base.summary+' '+extra.courseSummary} data-tradition-summary>
       <span className={base.completed}><Check size={16}/>{t.complete}</span>
       <h1>{t.result}</h1>
       <p>{def.name[lang]}</p>
@@ -190,7 +190,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       <button type="button" className={base.delete} disabled={busy} onClick={erase}><Trash2 size={16}/>{t.delete}</button>
       <small className={base.disclaimer}>{t.introNote}</small>
     </div>
-    :question?<div className={base.session} data-tradition-one-question data-tradition-question={question.id}>
+    :question?<div className={base.session+' '+extra.courseSession} data-tradition-one-question data-tradition-question={question.id}>
       <div className={base.progressHeader}>
         <span className={base.eyebrow}>{def.name[lang]}</span>
         <strong>{t.question} {index+1} {t.of} {questions.length}</strong>
@@ -199,7 +199,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
         aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={index+1}>
         <span style={{width:((index+1)/questions.length*100)+'%'}}/>
       </div>
-      <div className={base.questionArea}>
+      <div className={base.questionArea+' '+extra.courseScroll}>
         <span className={base.stage}>{question.title?.[lang]||question.title?.en||question.stage}</span>
         <div className={extra.questionHeader}>
          <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>

@@ -52,3 +52,24 @@
 @media(prefers-reduced-motion:reduce){
  .heroArt,.choice,.chosen{animation:none;transition:none}
 }
+
+/* Reiki Practitioner-style lesson shell: persistent navigation on short iPhones.
+   A single question/choices scroll inside the slide, never behind the footer. */
+.courseSheet{
+  height:calc(100dvh - 105px);max-height:calc(100dvh - 105px);
+  min-height:0;overflow:hidden;
+}
+.courseSession{min-height:0;overflow:hidden}
+.courseScroll{min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.courseIntro,.courseSummary{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:600px){
+ .courseSheet{
+   margin-top:0;height:calc(100dvh - 58px);max-height:calc(100dvh - 58px);
+   min-height:0;border-radius:0
+ }
+ .courseScroll{padding-top:12px;padding-bottom:14px}
+}
+@media(max-height:550px){
+ .courseSheet{height:calc(100dvh - 55px);max-height:calc(100dvh - 55px)}
+ .courseScroll{padding-top:9px;padding-bottom:9px}
+}
