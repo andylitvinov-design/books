@@ -147,6 +147,47 @@ try {
     await expect(actions.locator('[data-testid="portrait-analyses-action"]')).toContainText(locale === 'ru' ? 'Анализы' : 'Analyses')
     await expect(actions.locator('[data-testid="portrait-recommendations-action"]')).toContainText(locale === 'ru' ? 'Рекомендации' : 'Recommendations')
 
+    // Owner's iPhone requirement: the first and last teal control rows must
+    // share one visible mobile frame. Check geometry in the authenticated
+    // isolated browser, including a short 550px screen and EN/RU wrapping.
+    for (const width of [320, 390, 430]) {
+      for (const height of [550, 768, 844]) {
+        await page.setViewportSize({ width, height })
+        await card().locator('[data-portrait-sectors]').evaluate(
+          el => el.scrollIntoView({ block: 'start', inline: 'nearest' }))
+        const frame = await card().evaluate(el => {
+          const rect = node => node.getBoundingClientRect()
+          const upper = rect(el.querySelector('[data-portrait-sectors]'))
+          const lower = rect(el.querySelector('[data-testid="portrait-quick-actions"]'))
+          const upperButtons = [...el.querySelectorAll('[data-portrait-sectors] button')]
+          const lowerButtons = [...el.querySelectorAll('[data-testid="portrait-quick-actions"] button')]
+          return {
+            firstTop: upper.top,
+            lastBottom: lower.bottom,
+            span: lower.bottom - upper.top,
+            minTopTap: Math.min(...upperButtons.map(node => rect(node).height)),
+            minBottomTap: Math.min(...lowerButtons.map(node => rect(node).height)),
+            viewportHeight: innerHeight,
+            overflow: document.documentElement.scrollWidth - innerWidth,
+          }
+        })
+        assert.ok(frame.span <= 410,
+          `${locale} ${width}x${height}: portrait separates two menus by ${frame.span}px (max 410)`)
+        assert.ok(frame.firstTop >= -2 && frame.lastBottom <= frame.viewportHeight - 70,
+          `${locale} ${width}x${height}: both menu rows must be onscreen above bottom nav`)
+        assert.ok(frame.minTopTap >= 44 && frame.minBottomTap >= 44,
+          `${locale} ${width}x${height}: both menu rows need 44px touch targets`)
+        assert.ok(frame.overflow <= 1, `${locale} ${width}x${height}: horizontal overflow`)
+        console.log('PORTRAIT_ONE_SCREEN', JSON.stringify({ engine:name, locale, width, height, ...frame }))
+        if (width === 390 && height === 768) {
+          await card().screenshot({
+            path:`${output}/${name}-${locale}-390x768-both-menus.png`,
+            animations:'disabled', timeout:30000,
+          })
+        }
+      }
+    }
+
     // Selecting a category, or even expanding Take Test, must not start a
     // questionnaire. Only a specific test button creates/resumes a run.
     const work = card().locator('button[data-portrait-sector="work"]')
