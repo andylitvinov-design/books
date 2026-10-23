@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   ArrowRight, BookOpen, CheckCircle2, ChevronRight, CircleDollarSign,
   ClipboardList, GraduationCap, HandHeart, HeartHandshake, LockKeyhole,
-  MessageSquare, Rocket, ShieldCheck, Sparkles, UsersRound,
+  MessageSquare, Rocket, ShieldCheck, Sparkles, UserRound, UsersRound,
 } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -28,6 +28,13 @@ const copy = {
     learnChoice: "I want to become a practitioner",
     proChoice: "I'm already practising",
     facts: ["Free learning entry", "Free basic service listing", "One protected My Practice"],
+    profilesKicker: "YOUR FIRST STEP · FREE",
+    profilesTitle: "Explore yourself. Choose your profile.",
+    profilesHint: "You can take a test without signing in. Keep personal results private, or create a separate professional profile for clients.",
+    testEntry: { title: "Take free tests", body: "Discover your strengths and what you want to develop.", action: "Choose a test" },
+    personalEntry: { title: "My personal profile", body: "Save test results and follow your own development privately.", action: "Create personal profile" },
+    professionalEntry: { title: "My professional profile", body: "Introduce your practice and prepare services for review.", action: "Create practitioner profile" },
+    profilePrivacy: "Personal test reports are not shown to your clients or added to your professional listing. Google sign-in is needed to save profiles.",
     learnEyebrow: "YOUR LEARNING ROUTE",
     learnTitle: "Five lessons. One real beginning.",
     learnLead: "Explore three Reiki traditions through guided exercises. No previous experience needed to start.",
@@ -108,6 +115,13 @@ const copy = {
     learnChoice: "Хочу стать профи",
     proChoice: "Я уже профи",
     facts: ["Бесплатный старт обучения", "Бесплатное базовое размещение", "Единая «Моя практика»"],
+    profilesKicker: "ПЕРВЫЙ ШАГ · БЕСПЛАТНО",
+    profilesTitle: "Пройди тесты. Создай свой профиль.",
+    profilesHint: "Тесты доступны без регистрации. Личный профиль нужен для собственного развития, профессиональный — для представления услуг клиентам.",
+    testEntry: { title: "Бесплатные тесты", body: "Узнай о своих сильных сторонах и точках развития.", action: "Пройти бесплатные тесты" },
+    personalEntry: { title: "Личный профиль", body: "Сохраняй результаты тестов и наблюдай свой прогресс.", action: "Создать личный профиль" },
+    professionalEntry: { title: "Профессиональный профиль", body: "Расскажи о своей практике и подготовь услуги к публикации.", action: "Создать профиль профи" },
+    profilePrivacy: "Личные результаты тестов не публикуются и не попадают в профессиональный профиль. Для сохранения профиля нужен вход через Google.",
     learnEyebrow: "ПУТЬ ОБУЧЕНИЯ",
     learnTitle: "Пять уроков — начало практики",
     learnLead: "Изучи три традиции Рейки через упражнения и личный опыт. Для старта не нужен предыдущий опыт.",
@@ -188,6 +202,13 @@ const copy = {
     learnChoice: "Quiero aprender Reiki",
     proChoice: "Ya soy profesional",
     facts: ["Aprendizaje inicial gratis", "Ficha básica de servicio gratis", "Un único espacio de práctica"],
+    profilesKicker: "PRIMER PASO · GRATIS",
+    profilesTitle: "Haz pruebas. Crea tu perfil.",
+    profilesHint: "Puedes probar los tests sin registrarte. Tu perfil personal es privado; el profesional sirve para presentar tus servicios.",
+    testEntry: { title: "Pruebas gratuitas", body: "Descubre tus fortalezas y posibilidades de desarrollo.", action: "Hacer pruebas gratis" },
+    personalEntry: { title: "Perfil personal", body: "Guarda tus resultados y sigue tu propio progreso en privado.", action: "Crear perfil personal" },
+    professionalEntry: { title: "Perfil profesional", body: "Presenta tu experiencia y prepara tus servicios para revisión.", action: "Crear perfil profesional" },
+    profilePrivacy: "Los resultados personales no se comparten con clientes ni se publican en tu perfil profesional. Para guardar perfiles, inicia sesión con Google.",
     learnEyebrow: "TU CAMINO DE APRENDIZAJE",
     learnTitle: "Cinco lecciones. Un comienzo real.",
     learnLead: "Conoce tres tradiciones de Reiki con ejercicios guiados. Puedes comenzar sin experiencia previa.",
@@ -317,6 +338,43 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
         <div className={styles.facts} aria-label={t.choose}>
           {t.facts.map((fact) => <span key={fact}><CheckCircle2 size={15} aria-hidden="true" />{fact}</span>)}
         </div>
+
+        <section className={styles.profileGateway} data-profi-profiles aria-labelledby="profi-profiles-title">
+          <div className={styles.profilesHeading}>
+            <div>
+              <p className={styles.sectionKicker}><Sparkles size={16} aria-hidden="true" />{t.profilesKicker}</p>
+              <h2 id="profi-profiles-title">{t.profilesTitle}</h2>
+              <p>{t.profilesHint}</p>
+            </div>
+          </div>
+          <div className={styles.profileEntries}>
+            <Link href={publicRoot + "/client/tests"} className={styles.profileEntry}
+              prefetch={false} data-profi-entry="tests">
+              <span className={styles.profileEntryIcon}><ClipboardList size={21} aria-hidden="true" /></span>
+              <span className={styles.profileEntryText}>
+                <strong>{t.testEntry.title}</strong><small>{t.testEntry.body}</small>
+                <span className={styles.profileEntryAction}>{t.testEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
+              </span>
+            </Link>
+            <Link href={"/" + appLocale + "/app/portrait"} className={styles.profileEntry}
+              prefetch={false} data-profi-entry="personal">
+              <span className={styles.profileEntryIcon}><UserRound size={21} aria-hidden="true" /></span>
+              <span className={styles.profileEntryText}>
+                <strong>{t.personalEntry.title}</strong><small>{t.personalEntry.body}</small>
+                <span className={styles.profileEntryAction}>{t.personalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
+              </span>
+            </Link>
+            <Link href={profileHref} className={styles.profileEntry}
+              prefetch={false} data-profi-entry="professional">
+              <span className={styles.profileEntryIcon}><GraduationCap size={21} aria-hidden="true" /></span>
+              <span className={styles.profileEntryText}>
+                <strong>{t.professionalEntry.title}</strong><small>{t.professionalEntry.body}</small>
+                <span className={styles.profileEntryAction}>{t.professionalEntry.action}<ArrowRight size={15} aria-hidden="true" /></span>
+              </span>
+            </Link>
+          </div>
+          <p className={styles.profilePrivacy}><LockKeyhole size={14} aria-hidden="true" />{t.profilePrivacy}</p>
+        </section>
 
         <div id="profi-path-content" className={styles.pathContent} data-profi-active-path={path}>
           {path === "learn" ? (
