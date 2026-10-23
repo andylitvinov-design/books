@@ -48,7 +48,7 @@ const copy = {
     reflectionTitle:'A thought for today', reflectionPrompt:'Does today’s step seem useful for your own goal?',
     reflectAgree:'Yes', reflectDisagree:'No', reflectUnsure:'I need to think',
     reflectOptional:'Optional. This is your opinion, not a test or a completed action. It saves only with your lesson.',
-    savedCelebration:'Your answer is saved', practisedSkill:'Today’s focus', viewSavedResult:'Read my saved result', focusWarmup:'Optional 2-minute warm-up',
+    savedCelebration:'Your answer is saved', practisedSkill:'Today’s focus', viewSavedResult:'Read my saved result', previousWrittenResult:'Previous written entry', focusWarmup:'Optional 2-minute warm-up',
     celebrationHelp:'A checked learning step does not prove an external business result.',
     showSaved:'Review saved lesson', returnLater:'You can return tomorrow; no automatic reminder is sent.',
     goalCanEdit:'Choose one direction. You can change it later without losing earlier answers.',
@@ -114,7 +114,7 @@ const copy = {
     reflectionTitle:'Мысль на сегодня', reflectionPrompt:'Насколько этот шаг полезен для вашей цели?',
     reflectAgree:'Да', reflectDisagree:'Нет', reflectUnsure:'Надо подумать',
     reflectOptional:'Необязательно. Это ваше мнение, не тест и не отметка о выполнении. Сохраняется вместе с уроком.',
-    savedCelebration:'Ваш ответ сохранён', practisedSkill:'Тема дня', viewSavedResult:'Прочитать сохранённый результат', focusWarmup:'Разминка на 2 минуты (по желанию)',
+    savedCelebration:'Ваш ответ сохранён', practisedSkill:'Тема дня', viewSavedResult:'Прочитать сохранённый результат', previousWrittenResult:'Моя прежняя запись', focusWarmup:'Разминка на 2 минуты (по желанию)',
     celebrationHelp:'Пройденный вопрос не подтверждает внешние результаты бизнеса.',
     showSaved:'Просмотреть сохранённый урок', returnLater:'Можно продолжить завтра; автоматическое напоминание не отправляется.',
     goalCanEdit:'Выберите одну цель. Позже её можно изменить без потери предыдущих ответов.',
@@ -661,6 +661,10 @@ export default function BusinessCoaching({locale='en',accountId}){
             <summary>{t.viewSavedResult}<ChevronDown size={16} aria-hidden="true"/></summary>
             <blockquote>{savedDay.result}</blockquote>
           </details>}
+          {savedDay.legacyResult&&<details className={styles.savedResult}>
+            <summary>{t.previousWrittenResult}<ChevronDown size={16} aria-hidden="true"/></summary>
+            <blockquote>{savedDay.legacyResult}</blockquote>
+          </details>}
           <small>{t.celebrationHelp}</small>
         </div>}
       </article>
@@ -744,6 +748,7 @@ export default function BusinessCoaching({locale='en',accountId}){
                   <small>{businessTinyAction(entry.day,lang)}</small>
                   
                   {record?.result&&<em>{businessChoiceLabel(record,lang).slice(0,135)}</em>}
+                  {record?.legacyResult&&<em>{t.previousWrittenResult}: {record.legacyResult.slice(0,135)}</em>}
                   {record?.done&&!record?.result&&<em>{t.legacyCompletion}</em>}
                 </span>
                 <ArrowRight size={15} aria-hidden="true"/>
@@ -839,6 +844,7 @@ export default function BusinessCoaching({locale='en',accountId}){
               {' · '}{record.done?t.completed:t.daySaved}
               {record.result?<span> — {businessChoiceLabel(record,lang)}</span>:
                 record.done?<span> — {t.legacyCompletion}</span>:null}
+              {record.legacyResult?<span> · {t.previousWrittenResult}: {record.legacyResult}</span>:null}
               {record.note?<span> · {t.notes}: {record.note}</span>:null}
               {record.reflectionChoice&&<span> · {t.reflectionSlide}: {({agree:t.reflectAgree,disagree:t.reflectDisagree,unsure:t.reflectUnsure})[record.reflectionChoice]||'—'}</span>}
             </p>)}
