@@ -24,7 +24,9 @@ const words = {
     defaultGoalsPreview: 'Пока личные цели не сохранены, автоматический подбор отключён. Начальные ползунки — только образец для редактирования, а не психологическая норма.',
     unsavedGoalsPreview: 'Это предварительный подбор по несохранённым изменениям. Сохраните цели, чтобы закрепить ваш маршрут.',
     goals: 'Желаемые ориентиры', goalHint: 'Ползунки — добровольные личные ориентиры, а не нормы здоровья. Неподходящие для оценки развития шкалы исключены из рекомендаций.',
-    measured: 'Сейчас', notMeasured: 'Нет замера', target: 'Цель', axes: 'подтверждённых направлений',
+    measured: 'Результаты тестов', notMeasured: 'Нет измерений', target: 'Цель', axes: 'измеренных направлений',
+    myTarget: 'Моя цель', exampleTarget: 'Пример цели · не сохранён', draftTarget: 'Новая цель · не сохранена',
+    targetNote: 'Желаемый ориентир, а не результат теста.', loadingTarget: 'Загружаем сохранённые цели…',
     details: 'Уточнить цели по отдельным шкалам', detailsHint: 'По умолчанию каждая шкала наследует цель своей сферы.',
     fineTune: 'Своя цель', inherit: 'Общая цель', save: 'Сохранить цели и подобрать программу',
     saving: 'Сохраняем…', saved: 'Цели сохранены в личном кабинете.',
@@ -74,7 +76,9 @@ const words = {
     defaultGoalsPreview: 'No personal targets are saved yet. The starting sliders are editable placeholders, not a psychological norm; recommendations start after you save.',
     unsavedGoalsPreview: 'This preview uses unsaved changes. Save your targets to keep your development path.',
     goals: 'Your desired levels', goalHint: 'Sliders are optional personal preferences, not health norms; unsuitable measures cannot drive recommendations.',
-    measured: 'Current', notMeasured: 'Not measured', target: 'Goal', axes: 'measured directions',
+    measured: 'Test results', notMeasured: 'Not measured', target: 'Goal', axes: 'measured directions',
+    myTarget: 'My goal', exampleTarget: 'Example goal · not saved', draftTarget: 'Draft goal · not saved',
+    targetNote: 'An editable target, not a test result.', loadingTarget: 'Loading saved goals…',
     details: 'Customize individual scale targets', detailsHint: 'Each scale initially inherits the target of its life area.',
     fineTune: 'Custom goal', inherit: 'Area goal', save: 'Save goals & find programmes',
     saving: 'Saving…', saved: 'Your goals are saved in your private account.',
@@ -154,12 +158,12 @@ function ProfileTestCard({ test, index, lang, copy }) {
   </article>
 }
 
-function TargetSlider({ title, value, onChange, compact = false }) {
+function TargetSlider({ title, value, onChange, compact = false, ariaLabel = title }) {
   return <label className={compact ? styles.subSlider : styles.slider}>
     <span className={styles.sliderTitle}>{title}</span>
     <span className={styles.sliderValue}>{percent(value)}</span>
     <input type="range" min="0" max="100" step="5" value={value}
-      aria-label={title} onChange={event => onChange(Number(event.target.value))} />
+      aria-label={ariaLabel} onChange={event => onChange(Number(event.target.value))} />
     {!compact && <span className={styles.endpoints} aria-hidden="true"><span>0</span><span>100</span></span>}
   </label>
 }
@@ -321,14 +325,25 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
       <div className={styles.sectorGrid}>
         {PORTRAIT_SECTORS.map(sector => {
           const summary = plan.sectors.find(item => item.key === sector.key)
-          return <article className={styles.sectorCard} key={sector.key}>
+          const measuredAxes = summary?.measuredAxes || 0
+          const hasMeasurements = measuredAxes > 0
+          const goalLabel = revision === 0 && !dirty ? t.exampleTarget : dirty ? t.draftTarget : t.myTarget
+          return <article className={styles.sectorCard} key={sector.key} data-development-sector={sector.key}>
             <div className={styles.sectorTop}>
               <strong>{sector.label[lang]}</strong>
-              <span>{summary?.measuredAxes ? (summary.measuredAxes + ' / ' + sector.axes.length) : t.notMeasured}</span>
             </div>
-            <TargetSlider title={sector.label[lang]} value={goals.targets[sector.key]}
-              onChange={n => changeSector(sector.key, n)} />
-            <small className={styles.coverage}>{summary?.measuredAxes || 0} / {sector.axes.length} {t.axes}</small>
+            <div className={styles.currentRow} data-development-current={hasMeasurements ? 'available' : 'unmeasured'}>
+              <span className={styles.currentLabel}>{t.measured}</span>
+              <strong className={hasMeasurements ? styles.currentCount : styles.currentMissing}>
+                {hasMeasurements ? measuredAxes + ' / ' + sector.axes.length + ' ' + t.axes : t.notMeasured}
+              </strong>
+            </div>
+            <div className={styles.targetArea} data-development-target-editor>
+              {loaded ? <TargetSlider title={goalLabel} ariaLabel={sector.label[lang] + ' · ' + t.target}
+                value={goals.targets[sector.key]} onChange={n => changeSector(sector.key, n)} /> :
+                <p className={styles.targetLoading}>{t.loadingTarget}</p>}
+              <small className={styles.targetNote}>{t.targetNote}</small>
+            </div>
           </article>
         })}
       </div>
