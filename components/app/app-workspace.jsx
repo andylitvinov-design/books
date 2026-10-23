@@ -1125,7 +1125,7 @@ function Preferences({ data, locale, onboarding = false, onDone }) {
         </button>
         {saved && <p role="status">{c.saved}</p>}
         {error && <p role="alert">{message(error, c)}</p>}
-      </form>
+      </form>}
     </section>
   )
 }
@@ -3746,15 +3746,22 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
                   {consultationPriceFor(service, locale, c.price)}
                   {service.durationMinutes ? ' · ' + service.durationMinutes + (locale === 'ru' ? ' мин' : ' min') : ''}
                 </p>
-                <button type="button" className={consultationStyles.action}
-                  onClick={() => { setRequestSent(false); setSelected(service) }}>
-                  {chosen
-                    ? (locale === 'ru' ? 'Заявка открыта' : 'Request form open')
-                    : intro
-                      ? (locale === 'ru' ? 'Запросить знакомство' : 'Ask about an introduction')
-                      : (locale === 'ru' ? 'Отправить заявку' : 'Request this service')}
-                  <ArrowRight size={16} aria-hidden="true" />
-                </button>
+                {service.slug === 'remote-energy-support'
+                  ? <Link className={consultationStyles.action}
+                      href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug || '')}`}
+                      prefetch={false}>
+                      {locale === 'ru' ? 'Выбрать время' : locale === 'es' ? 'Elegir horario' : 'Choose a time'}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  : <button type="button" className={consultationStyles.action}
+                      onClick={() => { setRequestSent(false); setSelected(service) }}>
+                      {chosen
+                        ? (locale === 'ru' ? 'Заявка открыта' : 'Request form open')
+                        : intro
+                          ? (locale === 'ru' ? 'Запросить знакомство' : 'Ask about an introduction')
+                          : (locale === 'ru' ? 'Отправить заявку' : 'Request this service')}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </button>}
               </div>
             </article>
           )
@@ -3897,7 +3904,15 @@ function RequestForm({ service, locale, data, close, onDone }) {
         ? 'Ваш выбор мастера, метода, длительности и времени добавлен в сообщение. Это запрос, а не оплаченная или подтверждённая запись.'
         : 'Your preferences for practitioner, method, duration and time are in the message. This is a request, not a paid or confirmed booking.'}</p>}
       <p>{c.requestNote}</p>
-      <form className="hh-form" onSubmit={submit}>
+      {service.slug === 'remote-energy-support' && !remoteDraft
+        ? <p><Link className="hh-primary"
+            href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug || '')}`}
+            prefetch={false}>
+            {locale === 'ru' ? 'Сначала выберите длительность и время' :
+             locale === 'es' ? 'Primero elige la duración y el horario' :
+             'Choose your duration and preferred time first'} →
+          </Link></p>
+        : <form className="hh-form" onSubmit={submit}>
         {!remoteDraft && <label>
           {c.contact}
           <input
