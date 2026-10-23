@@ -31,7 +31,7 @@ function render(locale, pathname) {
 }
 async function scenario(locale, surface, fault, visible = true) {
   const pathname = surface === 'home' ? locale === 'en' ? '/' : '/' + locale :
-    ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface === 'love' ? 'relationships' : surface) :
+    ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) :
     '/' + locale + '/' + surface;
   const tree = render(locale, pathname);
   const anchors = nodes(tree).filter(node => node.type === 'a');

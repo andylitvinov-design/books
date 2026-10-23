@@ -196,7 +196,7 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 
 async function menuScenario(locale, surface, fault) {
   const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/academy', '/' + locale + '/about'];
-  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface === 'love' ? 'relationships' : surface) : '/' + locale + '/' + surface;
+  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
   const nodes = treeNodes(menuTree).filter(node => node.type === 'a');
@@ -262,7 +262,7 @@ for (const fault of ['wrong destination', 'missing catalog destination', 'extra 
 }
 
 async function directScenario(locale, surface, fault) {
-  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface === 'love' ? 'relationships' : surface) : '/' + locale + '/' + surface;
+  pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const direct = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a');
   if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';

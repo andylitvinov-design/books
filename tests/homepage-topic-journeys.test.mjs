@@ -59,7 +59,7 @@ test('marketing → topic → prefiltered simple test explorer → course or fre
   const more = await readFile('components/home-more-disclosure.tsx', 'utf8')
   assert.doesNotMatch(more, /<HomepageTopicJourneys locale=\{locale\}/)
   assert.match(home, /<HomepageTopicJourneys locale=\{locale\}/)
-  assert.match(tiles,/explore\/' \+ direction\.id/)
+  assert.match(tiles,/direction\.id === 'relationships' \? 'love' : direction\.id/)
   for (const direction of ['energy','relationships','business']) assert.ok(tiles.includes("id: '" + direction + "'"))
   assert.match(chooser,/data-topic-action="tests"/)
   assert.match(chooser,/data-topic-action="course"/)

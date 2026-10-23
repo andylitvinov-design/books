@@ -13,7 +13,7 @@ test('mobile bottom bar and menu use the same six ordered destinations in EN, RU
     assert.equal(new Set(items.map(item => item.id)).size, 6)
     assert.equal(items[0].href, locale === 'en' ? '/' : `/${locale}`)
     assert.equal(items[1].href, `/${locale}/explore/energy`)
-    assert.equal(items[2].href, `/${locale}/explore/relationships`)
+    assert.equal(items[2].href, `/${locale}/explore/love`)
     assert.equal(items[4].href, `/${locale}/client/tests`)
     assert.equal(items[3].href, `/${locale}/explore/business`)
     assert.equal(getSiteNavigation(locale).filter(item => item.id === 'business').length, 1, 'Business is one canonical public direction')
