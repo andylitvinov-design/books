@@ -37,7 +37,7 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
     'grid-template-columns:92px minmax(0,1fr)',
   ]) assert.ok(styles.includes(token), token)
   assert.ok(route.includes("theme === 'relationships') redirect"))
-  assert.ok(route.includes('data-direction-more'))
+  assert.ok(route.includes('<DirectionExtras'))
   assert.ok(route.includes('<TopicJourneySelector'))
   assert.ok(home.includes("direction.id === 'relationships' ? 'love'"))
   assert.ok(spanish.includes('<HomepageTopicJourneys locale="es" />'))
@@ -62,4 +62,23 @@ test('all course CTAs open a real existing learning route, not the tests picker 
   const business = await readFile('app/[locale]/app/[[...path]]/page.jsx','utf8')
   assert.ok(en.length > 100)
   assert.ok(business.length > 100)
+})
+
+test('Energy, Love and Business share compact translucent tabs at the hero top right', async () => {
+  const cards = await readFile('components/direction-offers.tsx', 'utf8')
+  const css = await readFile('components/direction-offers.module.css', 'utf8')
+  assert.match(cards, /<nav className=\{styles\.switcher\}/)
+  assert.match(cards, /directionIds\.map\(id => <Link/)
+  assert.match(cards, /aria-current=\{id === direction \? 'page' : undefined\}/)
+  assert.match(cards, /directionCopy\[id\]\[locale\]\.name/)
+  const shell = css.match(/\.switcher\{([^}]*)\}/)?.[1]
+  assert.ok(shell, 'shared segmented switcher has its own styles')
+  assert.match(shell, /right:20px/, 'align the switcher to the top right')
+  assert.doesNotMatch(shell, /left:/, 'do not anchor it to the left')
+  assert.match(shell, /background:rgb\(24 35 43 \/ 36%\)/, 'a subtle translucent dark glass backdrop')
+  assert.match(shell, /backdrop-filter:blur\(12px\)/)
+  assert.match(css, /\.switcher a\[aria-current="page"\]\{[^}]*background:rgb\(255 252 247 \/ 95%\)/)
+  assert.match(css, /\.switcher a:hover:not\(\[aria-current="page"\]\)/)
+  assert.match(css, /@media\(max-width:480px\)\{[\s\S]*?\.switcher\{top:10px;right:11px;/)
+  assert.match(css, /\.switcher a\{min-height:40px;padding:7px 11px;font-size:11px\}/)
 })

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { closeDatabase } from '@/lib/app/database'
+import { refreshHomeGuideQualityDaily } from '@/lib/app/home-guide-quality'
 import { PRIVATE_HEADERS } from '@/lib/app/http'
 import { runHousekeepingCron } from '@/lib/app/housekeeping-cron'
 import {
@@ -19,7 +20,12 @@ export async function GET(request) {
       run: async () => {
         const config = getAppConfig()
         try {
-          return await runAppHousekeeping(config)
+          const result = await runAppHousekeeping(config)
+          // Existing daily authorized cron also refreshes non-identifying
+          // guide clarification priorities; failure does not block maintenance.
+          try { await refreshHomeGuideQualityDaily(config) }
+          catch { console.error('HH_HOME_GUIDE_QUALITY_DAILY_FAILED') }
+          return result
         } catch (error) {
           await recordAppHousekeepingFailure(config).catch(() => {})
           throw error

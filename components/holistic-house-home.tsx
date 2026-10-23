@@ -10,6 +10,8 @@ import { HomeConversationGuide } from "@/components/home-conversation-guide";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { HomePersonalSpaceCard } from "@/components/home-personal-space";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
+import { HomeMasterPath } from "@/components/home-master-path";
+import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
 
 
 
@@ -72,9 +74,11 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </header>
 
       <HomeSectionCarousel locale={locale} />
+      <HomeMasterPath locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
       <HomePersonalSpaceCard locale={locale} />
+      <HomeFeaturedWorkspace locale={locale} />
       <HomepageTopicJourneys locale={locale} />
       <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">

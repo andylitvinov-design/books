@@ -368,6 +368,10 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
   </SpaceContext.Provider>;
 }
 
+export function useHomePersonalSpace() {
+  return useContext(SpaceContext);
+}
+
 export function HomePersonalSpaceNavEntry({ locale, href }: { locale: PublicLocale; href: string }) {
   const space = useContext(SpaceContext);
   const t = copy[locale];

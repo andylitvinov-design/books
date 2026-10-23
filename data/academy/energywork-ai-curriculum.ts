@@ -230,16 +230,17 @@ const tantraPracticeQuestion: EnergyworkQuestion = {
 };
 
 const commonSlides: EnergyworkSlide[] = [
-  // The owner's Lesson 1 introduction is the very first screen, before the course.
-  // Original meditation remains at the existing flight-02 ID.
+  // The existing welcome ID is the true title page. The teacher's video follows
+  // it on its own slide, before the original Flight to the Sun meditation.
+  // All stable IDs, progress records and personal answers are preserved.
+  { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
+    title: l("Reiki Practitioner", "Практик Рейки"),
+    body: l("Discover Tantra Reiki, Kundalini Reiki and Reiki Yggdrasil through gentle meditations and short daily practices.",
+      "Познакомьтесь с Тантра Рейки, Кундалини Рейки и Рейки Иггдрасиль через мягкие медитации и короткие ежедневные практики.") },
   { id: "welcome-video", phase: "welcome", kind: "video",
     title: l("First, a word from Andrey", "Сначала — слово Андрея"),
     body: l("Watch Andrey introduce Flight to the Sun. The original guided meditation has its own slide in Lesson 1.",
       "Сначала посмотрите вступление Андрея к «Полёту к Солнцу». Оригинальная медитация будет отдельным слайдом первого урока.") },
-  { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
-    title: l("Reiki Practitioner — a five-day journey", "Практик Рейки — пятидневный курс"),
-    body: l("Explore the principles of Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil. Each day brings a short exercise and a meditation to discover the character of each system through your own experience.",
-      "Познакомьтесь с принципами Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль. Каждый день вас ждут небольшое упражнение и медитация, чтобы на собственном опыте исследовать особенности каждой системы.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
     body: l("Not a test — just choose your experience.",

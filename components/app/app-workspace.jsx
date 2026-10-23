@@ -3689,7 +3689,7 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             <p className="hh-kicker">{service.practitionerName}{service.professionalTitle ? ` · ${service.professionalTitle}` : ''}</p>
             <h2>{service.copy[locale].title}</h2>
             <p>{service.copy[locale].description}</p>
-            <p className="hh-fine">{service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
+            <p className="hh-fine">{service.pricingMode === 'free' ? (locale === 'ru' ? 'Бесплатно · по запросу' : 'Free · by request') : service.pricingMode !== 'contact' && service.confirmedPrice != null ? `${service.pricingMode === 'from' ? (locale === 'ru' ? 'от ' : 'from ') : ''}${service.currency || ''} ${service.confirmedPrice}` : c.price}{service.durationMinutes ? ` · ${service.durationMinutes} min` : ''}</p>
             <button className="hh-primary" onClick={() => setSelected(service)}>
               {c.request}
             </button>

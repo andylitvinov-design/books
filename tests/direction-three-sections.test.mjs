@@ -65,17 +65,59 @@ test('the single page shows hero then filter then three separate topic-specific 
       const tree=fixture(direction,locale).render()
       assert.equal(by(tree,'data-direction-hero',true).length,1)
       assert.equal(by(tree,'data-direction-wish-form',true).length,1)
-      assert.equal(by(tree,'data-direction-filter',true).length,1)
+      assert.equal(by(tree,'data-direction-filter','all').length,1)
+      assert.equal(nodes(tree).filter(n=>n.type==='select').length,0)
+      assert.equal(nodes(tree).filter(n=>n.props?.['data-direction-filter']).length,5)
       assert.equal(by(tree,'data-direction-topic-finder',true).length,1)
       const sections=nodes(tree).filter(n=>n.props?.['data-direction-section'])
       assert.deepEqual(sections.map(n=>n.props['data-direction-section']),['test','course','session'])
       const actions=nodes(tree).filter(n=>n.props?.['data-offer-action'])
-      assert.equal(actions.length,3)
-      assert.match(actions[0].props.href,/\/client\/tests\?focus=/)
+      assert.equal(actions.length,6,'initially two per test/course/service group')
+      for(const kind of ['test','course','session']){
+        assert.equal(by(tree,'data-offer-action',kind).length,2)
+        assert.equal(by(tree,'data-direction-show-more',kind).length,1)
+        assert.equal(by(tree,'data-direction-show-more',kind)[0].props['aria-expanded'],false)
+        assert.equal(by(tree,'data-direction-all',kind).length,0)
+      }
+      assert.match(by(tree,'data-offer-action','test')[0].props.href,/\/client\/tests\?focus=/)
       const actualCourse=direction==='business'?'/'+(locale==='es'?'en':locale)+'/app/business':'/'+locale+'/courses/antistress'
-      assert.equal(actions[1].props.href,actualCourse)
+      assert.equal(by(tree,'data-offer-action','course')[0].props.href,actualCourse)
       const service={energy:'alchemy-of-soul',relationships:'systemic-constellations',business:'business-consulting'}[direction]
-      assert.equal(actions[2].props.href,'/'+locale+'/services/'+service)
+      assert.equal(by(tree,'data-offer-action','session')[0].props.href,'/'+locale+'/services/'+service)
+    }
+  }
+})
+
+test('each group reveals exactly two additional real offers inline, then an external catalog link',()=>{
+  for(const direction of ['energy','relationships','business']){
+    for(const locale of ['en','ru','es']){
+      const fixtureInstance=fixture(direction,locale)
+      let tree=fixtureInstance.render()
+      for(const kind of ['test','course','session']){
+        const before=by(tree,'data-direction-show-more',kind)[0]
+        assert.equal(before.props.type,'button','show more never navigates')
+        assert.equal(before.props['aria-controls'],'hh-direction-offers-'+kind)
+        before.props.onClick()
+        tree=fixtureInstance.render()
+        const groupActions=by(tree,'data-offer-action',kind)
+        assert.equal(groupActions.length,4,kind+' must reveal exactly 2 extra items')
+        assert.equal(new Set(groupActions.map(a=>a.props.href)).size,4,'each offer points to a distinct route or topic')
+        assert.equal(by(tree,'data-direction-show-more',kind)[0].props['aria-expanded'],true)
+        assert.equal(by(tree,'data-direction-all',kind).length,1,'catalog link appears below all four offers')
+        const href=by(tree,'data-direction-all',kind)[0].props.href
+        const expected={test:'/client/tests?catalog=full',course:'/academy',session:'/services/catalog#service-listings'}[kind]
+        assert.equal(href,'/'+locale+expected)
+      }
+      assert.equal(nodes(tree).filter(n=>n.props?.['data-offer-action']).length,12)
+      assert.deepEqual(
+        nodes(tree).filter(n=>n.props?.['data-offer-type']).map(n=>n.props['data-offer-type']),
+        ['test','test','test','test','course','course','course','course','session','session','session','session'],
+      )
+      by(tree,'data-direction-show-more','test')[0].props.onClick()
+      tree=fixtureInstance.render()
+      assert.equal(by(tree,'data-offer-action','test').length,2,'collapse restores compact list')
+      assert.equal(by(tree,'data-direction-all','test').length,0)
+      assert.equal(by(tree,'data-offer-action','course').length,4,'expansion state is independent')
     }
   }
 })
@@ -101,7 +143,7 @@ test('wishes refine client-side topic without copying personal words into URLs',
     assert.ok(prevented)
     // The button uses the same local handler without a native form action.
     tree=f.render()
-    assert.equal(by(tree,'data-direction-filter',true)[0].props.value,expected)
+    assert.equal(by(tree,'data-direction-filter',expected)[0].props['aria-pressed'],true)
     const href=by(tree,'data-offer-action','test')[0].props.href
     assert.ok(href.includes('topics='+expected))
     assert.ok(!href.includes('wish')&&!href.includes(encodeURIComponent(question)))
@@ -119,14 +161,47 @@ test('approved Services photo hero and Academy-style cards preserve mobile reada
   assert.match(source,/role="status" aria-live="polite"/)
   assert.match(css,/\.hero\{[^}]*height:clamp\(405px,43vw,515px\)/s)
   assert.match(css,/\.wishForm input\{[^}]*font:500 16px/s)
+  assert.match(css,/\.topicChips\{[^}]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/s)
+  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.doesNotMatch(css,/overflow-x:auto/)
+  assert.doesNotMatch(source,/<select\b|scrollIntoView\(/)
   assert.match(css,/@media\(max-width:480px\)/)
   assert.match(css,/@media\(max-width:350px\)/)
   assert.match(css,/grid-template-columns:92px minmax\(0,1fr\)/)
   assert.doesNotMatch(css,/line-clamp:2|text-overflow:ellipsis/)
   assert.match(css,/:focus-visible/)
+  assert.match(css,/\.offerList\{display:grid;gap:10px\}/)
+  assert.match(css,/\.groupActions\{display:flex/)
+  assert.match(css,/\.offerList \.card:nth-child\(n\+3\)\{animation:offerReveal/)
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?animation:none/)
   assert.match(css,/prefers-reduced-motion/)
   assert.match(source,/unoptimized priority=\{slideIndex===0\}/)
   const route=read('app/[locale]/explore/[theme]/page.tsx')
   assert.match(route,/<DirectionOffers locale=\{locale as PublicLocale\} journey=\{journey\} suggestions=\{suggestions\}\/>/)
-  assert.match(route,/data-direction-more/)
+  assert.match(route,/<DirectionExtras locale=\{locale as PublicLocale\}/)
+})
+
+test('four topic requests are always visible as localized accessible buttons with a stable reset',()=>{
+  for(const direction of ['energy','relationships','business']){
+    for(const locale of ['en','ru','es']){
+      const f=fixture(direction,locale)
+      let tree=f.render()
+      const ids=journey(direction).topics.map(topic=>topic.id)
+      const controls=nodes(tree).filter(n=>n.props?.['data-direction-filter'])
+      assert.deepEqual(controls.map(n=>n.props['data-direction-filter']),['all',...ids])
+      assert.ok(controls.every(n=>n.type==='button'))
+      assert.equal(controls[0].props['aria-pressed'],true)
+      assert.ok(controls.slice(1).every(n=>n.props['aria-pressed']===false))
+      assert.ok(controls.slice(1).every(n=>typeof n.props['aria-label']==='string'))
+      // Clicking a topic updates the real test handoff without a menu or scroll.
+      controls[2].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-direction-filter',ids[1])[0].props['aria-pressed'],true)
+      assert.ok(by(tree,'data-offer-action','test')[0].props.href.includes('topics='+ids[1]))
+      by(tree,'data-direction-filter','all')[0].props.onClick()
+      tree=f.render()
+      assert.equal(by(tree,'data-direction-filter','all')[0].props['aria-pressed'],true)
+      assert.ok(by(tree,'data-offer-action','test')[0].props.href.endsWith('topics='))
+    }
+  }
 })
