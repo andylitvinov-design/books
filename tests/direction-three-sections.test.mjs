@@ -355,7 +355,7 @@ test('guided dialogue auto-selects topic, action and a real offer in nine locali
     const expectedSection=intent==='advice'?'advice':intent
     assert.deepEqual(nodes(tree).filter(n=>n.props?.['data-direction-section'])
       .map(n=>n.props['data-direction-section']),[expectedSection])
-    const selectedLink=by(tree,'data-dialog-offer')[0]
+    const selectedLink=nodes(tree).filter(n=>n.props?.['data-dialog-offer'])[0]
     assert.ok(selectedLink,'real recommendation is clickable')
     assert.equal(selectedLink.props.href,by(tree,'data-offer-action',intent)[0].props.href)
     assert.ok(selectedLink.props.href.startsWith('/'+locale+'/') ||
@@ -386,7 +386,7 @@ test('dialogue clarification preserves the topic, updates either filter and supp
   assert.equal(by(tree,'data-direction-filter','sleep')[0].props['aria-pressed'],true)
   assert.equal(by(tree,'data-direction-intent','test')[0].props['aria-pressed'],true)
   assert.equal(by(tree,'data-offer-action','test').length,2)
-  assert.equal(by(tree,'data-dialog-offer')[0].props.href,by(tree,'data-offer-action','test')[0].props.href)
+  assert.equal(nodes(tree).filter(n=>n.props?.['data-dialog-offer'])[0].props.href,by(tree,'data-offer-action','test')[0].props.href)
 
   by(tree,'data-dialog-refine','topic')[0].props.onClick()
   tree=f.render()
@@ -412,13 +412,13 @@ test('dialogue clarification preserves the topic, updates either filter and supp
   tree=f.render()
   assert.equal(by(tree,'data-direction-filter','all')[0].props['aria-pressed'],true)
   assert.equal(by(tree,'data-dialog-topic-choice','sleep').length,1)
-  assert.equal(by(tree,'data-dialog-offer').length,0)
+  assert.equal(nodes(tree).filter(n=>n.props?.['data-dialog-offer']).length,0)
   by(tree,'data-dialog-topic-choice','sleep')[0].props.onClick()
   tree=f.render()
   assert.equal(by(tree,'data-dialog-intent-choice','course').length,1)
   by(tree,'data-dialog-intent-choice','course')[0].props.onClick()
   tree=f.render()
-  assert.equal(by(tree,'data-dialog-offer').length,1)
+  assert.equal(nodes(tree).filter(n=>n.props?.['data-dialog-offer']).length,1)
   by(tree,'data-dialog-reset',true)[0].props.onClick()
   tree=f.render()
   assert.equal(by(tree,'data-direction-dialogue',true).length,0)
