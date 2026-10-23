@@ -270,3 +270,69 @@
     line-clamp: 1;
   }
 }
+
+/* Homepage-only segmented navigation: one oval shell, white active category.
+   Service-page carousels deliberately retain their own navigation treatment. */
+.hero[data-home-section-carousel] .sectionNav {
+  top: 13px;
+  right: 22px;
+  max-width: calc(100% - 44px);
+  padding: 4px;
+  border: 1px solid rgba(255, 253, 246, .70);
+  border-radius: 999px;
+  background: rgba(26, 43, 55, .67);
+  box-shadow: 0 6px 20px rgba(15, 25, 28, .24);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+}
+.hero[data-home-section-carousel] .sectionNavScroller {
+  gap: 2px;
+  border-radius: 999px;
+  scroll-padding-inline: 6px;
+}
+.hero[data-home-section-carousel] .sectionNavLink {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #fffaf2;
+  font: 700 12px/1.2 Arial, Helvetica, sans-serif;
+  text-shadow: none;
+  transition: color .18s, background .18s;
+}
+.hero[data-home-section-carousel] .sectionNavLink:first-child { margin-left: 0; }
+.hero[data-home-section-carousel] .sectionNavLink + .sectionNavLink::before,
+.hero[data-home-section-carousel] .sectionNavLink[aria-current="true"]::after { content: none; }
+.hero[data-home-section-carousel] .sectionNavLink[aria-current="true"] {
+  color: #23394d;
+  background: #fffdfa;
+  font-weight: 800;
+  text-shadow: none;
+  box-shadow: 0 2px 9px rgba(16, 29, 40, .14);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero[data-home-section-carousel] .sectionNavLink:not([aria-current="true"]):hover {
+    color: #fff;
+    background: rgba(255, 255, 255, .16);
+  }
+}
+@media (max-width: 760px) {
+  .hero[data-home-section-carousel] .sectionNav {
+    top: 9px;
+    left: 11px;
+    right: 11px;
+    max-width: none;
+  }
+  .hero[data-home-section-carousel] .sectionNavScroller { width: 100%; }
+  .hero[data-home-section-carousel] .sectionNavLink {
+    min-height: 44px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 365px) {
+  .hero[data-home-section-carousel] .sectionNav { left: 8px; right: 8px; }
+  .hero[data-home-section-carousel] .sectionNavLink { padding-inline: 10px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero[data-home-section-carousel] .sectionNavLink { transition: none; }
+}

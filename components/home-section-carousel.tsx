@@ -165,7 +165,10 @@ export function HomeSectionCarousel({ locale }: { locale: PublicLocale }) {
         </div>
         <div className={styles.gradient} aria-hidden="true" />
         <nav className={styles.sectionNav} aria-label={t.navigationLabel} data-home-hero-nav="true">
-          <div className={styles.sectionNavScroller} ref={navScroller}>
+          <div className={styles.sectionNavScroller} ref={navScroller}
+            onTouchStart={event => event.stopPropagation()}
+            onTouchEnd={event => event.stopPropagation()}
+            onTouchCancel={event => event.stopPropagation()}>
             {navKeys.map(key => {
               const target = key === "home" ? undefined : slides.find(item => item.key === key);
               if (key !== "home" && !target) return null;
