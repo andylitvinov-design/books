@@ -37,20 +37,20 @@ test('every Pro card has existing locally-hosted photography and a real action',
     let view=widget.render()
     const entries=nodes(view).filter(x=>Object.hasOwn(x.props||{},'data-profi-entry'))
     assert.equal(entries.length,3)
-    for(const card of entries) assert.ok(nodes(card).some(node=>node.type==='img'),'profile image at left')
+    for(const card of entries) assert.ok(nodes(card).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'profile image at left')
     for(let lesson=1;lesson<=5;lesson++){
       const button=find(view,'data-profi-lesson',lesson)
-      assert.ok(nodes(button).some(node=>node.type==='img'),'lesson image at left')
+      assert.ok(nodes(button).some(node=>node.type==='img' || typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'lesson image at left')
     }
     assert.ok(find(view,'data-profi-action','start-course-overview'),'direct course CTA above the fold')
     find(view,'data-profi-path','practice').props.onClick()
     view=widget.render()
     for(const key of ['session','intro','workshop','course']){
       const offer=find(view,'data-profi-offer',key)
-      assert.ok(nodes(offer).some(node=>node.type==='img'),'offer image at left: '+key)
+      assert.ok(nodes(offer).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'offer image at left: '+key)
     }
     const preview=find(view,'data-profi-preview','session')
-    assert.ok(nodes(preview).some(node=>node.type==='img'))
+    assert.ok(nodes(preview).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')))
     assert.equal(nodes(preview).filter(node=>node.props?.className==='fakeButton').length,0)
     assert.equal(find(view,'data-profi-action','create-service').props.prefetch,false)
   }
