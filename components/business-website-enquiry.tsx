@@ -266,7 +266,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
             </span>
           </button>)}
         </div>
-        <button type="button" className={styles.openRequest}
+        <button type="button" className={styles.openRequest} data-business-open-request
           aria-expanded={expanded} aria-controls="business-request-form"
           onClick={() => setExpanded(open => !open)}>
           <ShoppingBag size={21} aria-hidden="true"/>
