@@ -5,10 +5,10 @@ import styles from './practice-request-conversation.module.css'
 
 const COPY={
   en:{open:'Conversation history',close:'Hide conversation',initial:'Original enquiry',title:'Private in-app conversation',
-    info:'Only you and the assigned practitioner can see this conversation. Messages stay inside Holistic House; no Telegram, WhatsApp or email delivery is implied.',
+    info:'Only you and the assigned practitioner can see this conversation. Messages stay inside Holistic House; no Telegram, WhatsApp or email delivery is implied. Direct contacts are hidden. Opted-in Telegram recipients may receive a neutral alert, never the full message text.',
     loading:'Loading conversation…',none:'No follow-up messages yet.',reply:'Write a short reply',
-    hint:'Business contact only. Do not enter diagnoses, reports, test results or private session links.',
-    send:'Save reply in conversation',saved:'Reply saved to the private conversation.',
+    hint:'Write through the portal. No phone numbers, email, @handles, external links or health details.',contactBlocked:'Contact details cannot be exchanged. Please reply through Holistic House.',
+    send:'Send through Holistic House',saved:'Reply saved to the private conversation.',
     loadOlder:'Earlier messages',refresh:'Refresh',newMessages:'New for you',markViewed:'Mark as viewed',viewed:'Messages marked as viewed.',retry:'Try again',error:'Could not load this conversation.',
     closed:'This enquiry is closed; the history remains readable.',
     conflict:'This reply conflicts with an earlier request. Change the text or refresh.',
@@ -16,10 +16,10 @@ const COPY={
     limit:'Daily message limit reached.',unknown:'Reply status is uncertain. Do not resend automatically.',
     me:'You',master:'Practitioner',client:'Client',privateNote:'Private master note',writeNote:'Write private note',saveNote:'Save private note',noteSaved:'Private note saved (not visible to client).'},
   ru:{open:'История переписки',close:'Скрыть переписку',initial:'Первоначальная заявка',title:'Защищённая переписка внутри сайта',
-    info:'Эту переписку видят только клиент и мастер, которому адресована заявка. Сообщения сохраняются в Holistic House, но не отправляются автоматически в Telegram, WhatsApp или email.',
+    info:'Эту переписку видят только клиент и мастер, которому адресована заявка. Сообщения сохраняются в Holistic House. Прямые контакты скрыты. Подключённый Telegram может получить только нейтральное уведомление без текста; доставка в WhatsApp пока не подключена.',
     loading:'Загружаю переписку…',none:'Дополнительных сообщений пока нет.',reply:'Ваш короткий ответ',
-    hint:'Только деловая переписка. Не указывайте диагнозы, отчёты, результаты тестов и приватные ссылки.',
-    send:'Сохранить ответ в переписке',saved:'Ответ сохранён в защищённой переписке.',
+    hint:'Пишите через портал. Без телефонов, email, @ников, внешних ссылок и медицинских данных.',contactBlocked:'Контактами обмениваться нельзя. Продолжайте переписку через Holistic House.',
+    send:'Отправить через Holistic House',saved:'Ответ сохранён в защищённой переписке.',
     loadOlder:'Ранние сообщения',refresh:'Обновить',newMessages:'Новые для вас',markViewed:'Отметить просмотренными',viewed:'Сообщения отмечены просмотренными.',retry:'Повторить',error:'Не удалось загрузить переписку.',
     closed:'Заявка закрыта; история доступна для просмотра.',
     conflict:'Этот запрос противоречит ранее сохранённому ответу. Измените текст или обновите историю.',
@@ -27,10 +27,10 @@ const COPY={
     limit:'Достигнут суточный лимит сообщений.',unknown:'Статус ответа неизвестен. Не повторяйте отправку автоматически.',
     me:'Вы',master:'Мастер',client:'Клиент',privateNote:'Внутренняя заметка мастера',writeNote:'Внутренняя заметка',saveNote:'Сохранить заметку',noteSaved:'Заметка сохранена, клиент её не видит.'},
   es:{open:'Historial de mensajes',close:'Ocultar conversación',initial:'Solicitud inicial',title:'Conversación privada dentro del sitio',
-    info:'Solo el cliente y el profesional asignado pueden ver estos mensajes. Permanecen en Holistic House, sin envío automático por Telegram, WhatsApp o correo.',
+    info:'Solo el cliente y el profesional asignado pueden ver estos mensajes. Se guardan en Holistic House. Los contactos personales están ocultos; Telegram puede enviar solo un aviso neutro con consentimiento. WhatsApp no está conectado.',
     loading:'Cargando mensajes…',none:'Aún no hay mensajes adicionales.',reply:'Tu respuesta breve',
-    hint:'Solo comunicaciones profesionales. No incluyas diagnósticos, pruebas ni enlaces privados.',
-    send:'Guardar respuesta',saved:'Respuesta guardada en la conversación privada.',
+    hint:'Responde aquí. Sin teléfonos, emails, @usuarios, enlaces externos ni datos médicos.',contactBlocked:'No se pueden intercambiar contactos. Responde dentro de Holistic House.',
+    send:'Enviar por Holistic House',saved:'Respuesta guardada en la conversación privada.',
     loadOlder:'Mensajes anteriores',refresh:'Actualizar',newMessages:'Nuevos para ti',markViewed:'Marcar como vistos',viewed:'Mensajes marcados como vistos.',retry:'Intentar de nuevo',error:'No se pudo cargar la conversación.',
     closed:'Solicitud cerrada; el historial sigue disponible.',
     conflict:'Esta solicitud entra en conflicto con una respuesta anterior.',private:'Elimina datos médicos y enlaces privados.',
@@ -144,7 +144,8 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       onSaved?.()
     }catch(err){
       if(session.current===original){
-        setNotice(err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:
+        setNotice(err.message==='CONTACT_EXCHANGE_BLOCKED'?t.contactBlocked:
+          err.message==='PRIVATE_CONTENT_BLOCKED'?t.private:
           err.message==='CONVERSATION_CLOSED'?t.closed:
           err.message==='PRACTICE_MESSAGE_DAILY_LIMIT'?t.limit:
           err.message==='CONFLICT'?t.conflict:t.unknown)
