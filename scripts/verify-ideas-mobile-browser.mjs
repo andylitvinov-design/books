@@ -40,6 +40,23 @@ async function verify(browserType, locale, width) {
     assert.equal(response?.status(), 200, label + ": route");
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
+    const hero = hub.locator("[data-ideas-hero]");
+    const heroBounds = await hero.boundingBox();
+    const headingBounds = await hero.locator("[class*=heading]").first().boundingBox();
+    const inputBounds = await hero.locator("#ideas-question").boundingBox();
+    const photo = await hero.evaluate(node => getComputedStyle(node).backgroundImage);
+    assert.ok(photo.includes("ideas-pine-reference.webp"), label + ": image spans first card");
+    assert.ok(heroBounds && headingBounds && inputBounds &&
+      inputBounds.y > headingBounds.y && inputBounds.y + inputBounds.height <= heroBounds.y + heroBounds.height,
+      label + ": question overlays same full-height scenic card");
+    const primary = await hero.locator('button[type="submit"]').boundingBox();
+    const testAction = hero.locator("[data-ideas-free-test]");
+    const secondary = await testAction.boundingBox();
+    assert.ok(primary && secondary && primary.height >= 44 && secondary.height >= 44 &&
+      closeEnough(primary.y, secondary.y), label + ": both first-screen actions accessible");
+    assert.equal(await testAction.getAttribute("href"),
+      "/" + (locale === "es" ? "en" : locale) + "/client?startTests=hh-current-state",
+      label + ": direct, guest-eligible free test (never catalog)");
     await hub.locator("[data-ideas-preview]").waitFor({ state: "visible" });
     await hub.locator("[data-ideas-preview-ready]").waitFor({ state: "visible" });
     const previewAphorisms = hub.locator("[data-ideas-preview] [data-ideas-aphorisms] ol li");
