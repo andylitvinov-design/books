@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:
 import { promisify } from 'node:util'
 import { chromium, expect } from '@playwright/test'
 import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
+import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -287,6 +288,18 @@ try {
         await save('publish')
         const destination = await editor.locator('.site-video-editor-heading > a').getAttribute('href')
         await navigate(destination)
+        if (slot.id === 'thank-you') {
+          // The thank-you page deliberately hides every video before a valid
+          // tab-local enquiry receipt. Seed only an isolated synthetic browser
+          // receipt; no real lead, payment, private account or session is touched.
+          assert.equal(await page.locator('.site-video-player').filter({ hasText: title }).count(), 0)
+          await page.evaluate(key => {
+            window.sessionStorage.setItem(key, JSON.stringify({
+              referenceCode: 'HH-0123456789AB', createdAt: Date.now(),
+            }))
+          }, RECEIPT_SESSION_KEY)
+          await page.reload({ waitUntil: 'domcontentloaded' })
+        }
         await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
       }
       pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
