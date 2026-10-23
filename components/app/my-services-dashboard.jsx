@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Leaf, Plus, Search, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, CheckCircle2, ChevronDown, ChevronRight, ClipboardList, Leaf, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { filterPracticeServices } from '@/lib/practitioners/filter-owned-services.mjs'
 import styles from './my-services-dashboard.module.css'
 
@@ -143,7 +143,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
       </div>}
       <div className={styles.actions}>
         <button type="button" disabled={busy||mediaBusy||(!canAdd&&!composing)} aria-expanded={composing} onClick={toggleComposer}>
-          <Plus size={17} aria-hidden="true"/>{composing?c.close:c.add}
+          {composing?<ArrowLeft size={17} aria-hidden="true"/>:<Plus size={17} aria-hidden="true"/>}{composing?c.close:c.add}
         </button>
         <Link href={'/'+locale+'/services'} prefetch={false}>{c.viewAll}<ArrowUpRight size={15} aria-hidden="true"/></Link>
       </div>
