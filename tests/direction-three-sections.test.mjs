@@ -134,7 +134,7 @@ test('approved Services photo hero and Academy-style cards preserve mobile reada
   assert.match(source,/unoptimized priority=\{slideIndex===0\}/)
   const route=read('app/[locale]/explore/[theme]/page.tsx')
   assert.match(route,/<DirectionOffers locale=\{locale as PublicLocale\} journey=\{journey\} suggestions=\{suggestions\}\/>/)
-  assert.match(route,/data-direction-more/)
+  assert.match(route,/<DirectionExtras locale=\{locale as PublicLocale\}/)
 })
 
 test('four topic requests are always visible as localized accessible buttons with a stable reset',()=>{
