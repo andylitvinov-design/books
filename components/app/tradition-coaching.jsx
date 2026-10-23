@@ -2,7 +2,7 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Check,ChevronLeft,LockKeyhole,ScrollText,Sparkles,Trash2,X} from 'lucide-react'
+import {ArrowRight,Check,ChevronLeft,LockKeyhole,ScrollText,Trash2,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
 import CoachingQuestionVoice from './coaching-question-voice'
