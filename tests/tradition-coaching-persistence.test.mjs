@@ -87,7 +87,7 @@ test('Egyptian and Greek survive cross-course save, reload and GROW deletion; no
  greek=await actions.saveTraditionCoaching(config,actorA,g,{action:'answer',revision:greek.revision,
    questionId:'goal',answer:{choiceId:'personal',note:''}})
  greek=await actions.saveTraditionCoaching(config,actorA,g,{action:'answer',revision:greek.revision,
-   questionId:'action_24h',answer:{choiceId:'personal',note:'Tomorrow'}})
+   questionId:'action_24h',answer:{choiceId:'message',note:'Tomorrow'}})
  greek=await actions.saveTraditionCoaching(config,actorA,g,{action:'complete',revision:greek.revision})
  assert.equal(greek.course.current.status,'completed')
  assert.equal((await actions.readTraditionCoaching(config,actorA,e)).course.current.answers.goal.note,'A private goal')
