@@ -43,7 +43,7 @@ test('mobile bottom bar and menu use the same seven ordered destinations in EN, 
   for (const locale of ['en','ru']) assert.equal(activeCompactNavigationId(`/${locale}/app`), 'cabinet')
 })
 
-test('both navigation surfaces render from the canonical six-item model', () => {
+test('both navigation surfaces render from the canonical seven-item model', () => {
   const bottom = readFileSync(new URL('../components/mobile-bottom-navigation.tsx', import.meta.url), 'utf8')
   const header = readFileSync(new URL('../components/site-navigation.tsx', import.meta.url), 'utf8')
   assert.match(bottom, /const mobileItems = getCompactNavigation\(locale\)/)
