@@ -22,7 +22,7 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - run: npm ci --no-audit --no-fund
+      - run: npm ci --include=dev --no-audit --no-fund
       - name: Install Chromium and WebKit for isolated public acceptance
         run: |
           mkdir -p /tmp/hh-public-services-tools
