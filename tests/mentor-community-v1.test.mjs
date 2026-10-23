@@ -75,3 +75,34 @@ test("master shortcuts reuse existing Materials editor and public directory", as
   assert.match(css, /min-height:66px/);
   assert.match(css, /@media\(max-width:360px\)/);
 });
+
+test("empty community and server failures provide distinct, usable alternatives without exposing drafts", async () => {
+  const [switcher, page, css, workflow, fixture, browser] = await Promise.all([
+    read("components/mentor-community-switch.tsx"),
+    read("app/[locale]/masters/page.tsx"),
+    read("components/mentor-community-switch.module.css"),
+    read(".github/workflows/mentor-community-acceptance.yml"),
+    read("tests/helpers/seed-mentor-community-browser.mjs"),
+    read("scripts/verify-mentor-community-browser.mjs"),
+  ]);
+  assert.match(page, /mastersUnavailable=\{mastersResult\.status === "rejected"\}/);
+  assert.match(page, /articlesUnavailable=\{articlesResult\.status === "rejected"\}/);
+  assert.match(switcher, /data-community-unavailable/);
+  assert.match(switcher, /data-community-empty="articles"/);
+  assert.match(switcher, /activate\("mentors", true\)/);
+  assert.match(switcher, /materialTab=articles/);
+  assert.match(switcher, /window\.location\.reload\(\)/);
+  assert.match(css, /\.emptyActions/);
+  assert.match(css, /min-height:44px/);
+  assert.match(workflow, /postgres:17-alpine/);
+  assert.match(workflow, /HH_APP_TEST_RUNTIME: isolated/);
+  assert.match(workflow, /HH_APP_PRODUCTION_APPROVED: 'false'/);
+  assert.match(fixture, /assertIsolated\(\)/);
+  assert.match(fixture, /config\.test, true/);
+  assert.match(fixture, /PRIVATE_PENDING_REVISION/);
+  assert.match(browser, /chromium/);
+  assert.match(browser, /webkit/);
+  assert.match(browser, /noHorizontalOverflow/);
+  assert.match(browser, /320, 375, 390, 430/);
+  assert.doesNotMatch(browser, /request\.post\(|page\.route\(|submit\(.*enquiry/);
+});
