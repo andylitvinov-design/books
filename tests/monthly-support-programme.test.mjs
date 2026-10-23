@@ -17,7 +17,7 @@ test("€200 is exactly two 60-minute sessions, never a membership auto-renewal"
   assert.equal(MONTHLY_SUPPORT_PRICE_MINOR,20000);
   assert.equal(MONTHLY_SUPPORT_SLOTS,2);
   assert.match(MONTHLY_SUPPORT_TITLE,/Personal support · 2 x 60 min · EUR 200/);
-  const schema=read("supabase/migrations/20261023210000_hh_personal_support_monthly_20261023.sql");
+  const schema=read("supabase/migrations/20261023211650_hh_personal_support_monthly_20261023.sql");
   assert.match(schema,/amount_minor integer NOT NULL DEFAULT 20000 CHECK \(amount_minor=20000\)/);
   assert.match(schema,/ordinal IN \(1,2\)/);
   assert.match(schema,/receipt_digest text NOT NULL UNIQUE/);
@@ -87,7 +87,7 @@ test("owner-only mutating API and client-only readback are separately authentica
 
 
 test("encrypted monthly messages enforce participant RLS and neutral in-site delivery",()=>{
-  const migration=read("supabase/migrations/20261023210000_hh_personal_support_monthly_20261023.sql");
+  const migration=read("supabase/migrations/20261023211650_hh_personal_support_monthly_20261023.sql");
   const service=read("lib/practitioners/monthly-support-messages.js");
   const route=read("app/api/client/personal-support/[programId]/messages/route.js");
   const component=read("components/monthly-support-thread.tsx");
