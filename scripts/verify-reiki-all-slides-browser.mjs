@@ -63,6 +63,8 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
       privateSaveStatus: element.querySelector("[data-reiki-private-save-status]")?.textContent?.trim() || "",
       programmeOpen: element.querySelector('button[aria-controls="reiki-journey-help"]')?.getAttribute("aria-expanded") === "true",
       programmeHeight: element.querySelector("section[data-expanded]")?.getBoundingClientRect().height ?? 0,
+      welcomeRailHidden: getComputedStyle(element.querySelector("nav")).display === "none",
+      welcomeProgressHidden: getComputedStyle(element.querySelector('[class*="progressHeader"]')).display === "none",
       slideHorizontalOverflow: scroller.scrollWidth-scroller.clientWidth,
       slideVerticalOverflow: scroller.scrollHeight-scroller.clientHeight,
       rootHorizontalOverflow: element.scrollWidth-element.clientWidth,
@@ -90,15 +92,22 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(label.text.length > 4, where + ": a meaningful full stage name");
     // Review reading screens deliberately tuck labels off-screen to make space
     // for complete reviews while retaining five dots and SR-accessible names.
-    if (data.kind === "voices") continue;
+    if (data.kind === "voices" || data.kind === "welcome") continue;
     assert.ok(label.width >= 34 && label.height >= 15, where + ": stage name visibly occupies space, not visually hidden: "+JSON.stringify(label));
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
   }
-  assert.ok(data.slideJustify.includes("center"),
-    where + ": lesson content uses the expected vertical alignment");
+  assert.ok(data.slideJustify.includes(data.kind === "welcome" ? "flex-end" : "center"),
+    where + ": intro prioritizes the photo; lessons keep centered learning content");
+  if (data.kind === "welcome") {
+    assert.ok(data.welcomeRailHidden && data.welcomeProgressHidden,
+      where + ": the invitation hides premature lesson progress and stage numbers");
+  } else {
+    assert.ok(!data.welcomeRailHidden && !data.welcomeProgressHidden,
+      where + ": actual learning retains the five-stage rail and private progress");
+  }
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
-  assert.ok(data.privateSaveStatus.length > 0, where + ": current guest, consent or private-save status is visible");
+  if (data.kind !== "welcome") assert.ok(data.privateSaveStatus.length > 0, where + ": course pages disclose guest/consent/private-save status");
   assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
   assert.ok(data.programmeHeight > 25 && data.programmeHeight < 48,
     where + ": collapsed hint keeps a single compact bottom row");
@@ -524,8 +533,8 @@ async function verifyShortViewport(page,locale) {
     const allowedExtra = id === "flight-done" ? 3 : id === "welcome-02" ? 110 : 35;
     assert.ok(dimensions.used <= dimensions.space + allowedExtra,
       locale+" "+id+" must not require excessive inner scrolling on 375×625: "+JSON.stringify(dimensions));
-    assert.ok(dimensions.justify.includes("center"),
-      locale+" "+id+" should balance short teaching content vertically");
+    assert.ok(dimensions.justify.includes(id === "welcome-01" ? "flex-end" : "center"),
+      locale+" "+id+" welcome invites below the photo; lessons remain centered");
     const bottomMargin = 3;
     if (id === "welcome-01") {
       assert.ok(dimensions.benefit, locale+" welcome benefits are present");
