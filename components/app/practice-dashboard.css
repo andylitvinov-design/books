@@ -1324,3 +1324,8 @@
  .hh-app .hh-practice-community-shortcuts :is(a,button) > svg:last-child{display:none}
  .hh-app .hh-practice-community-shortcuts :is(a,button) strong{font-size:11px}
 }
+
+/* Existing My Practice Clients panel → owner-only monthly support workflow. */
+.hh-practice-monthly-support-link{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;max-width:100%;padding:12px 15px;margin:10px 0;border:1px solid #d7c3a9;background:#fff8ed;border-radius:13px;color:#624530;font-size:13px;font-weight:800;text-decoration:none}
+.hh-practice-monthly-support-link:hover{background:#fff1dc}
+.hh-practice-monthly-support-link:focus-visible{outline:3px solid #b48756;outline-offset:3px}
