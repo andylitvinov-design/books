@@ -79,6 +79,8 @@
 .publishJourney li h4{margin:0 0 4px;font:400 21px/1.18 Georgia,"Times New Roman",serif}
 .publishJourney li p{margin:0;color:#756458;font-size:12px;line-height:1.55}
 .stepLink{grid-column:2;justify-self:start;margin-top:5px;text-decoration:underline;text-underline-offset:4px}
+.paymentStatus{display:flex;align-items:flex-start;gap:9px;margin:16px 0 0;padding:12px 14px;border:1px solid #decbba;border-radius:12px;background:#f5ece0;color:#705646;font-size:12px;line-height:1.55}
+.paymentStatus svg{flex:0 0 17px;margin-top:1px;color:#916d51}
 .benefitGrid{margin-top:12px}
 .benefitGrid article{padding:20px;background:#f3eade}
 .benefitGrid article>svg{color:#845b43}
