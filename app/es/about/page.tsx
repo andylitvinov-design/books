@@ -3,6 +3,8 @@ import { StaticPortrait } from "@/components/static-portrait";
 import Link from 'next/link';
 import { PublicSiteHeader } from '@/components/public-site-header';
 import { PersonalConsultationForm } from '@/components/personal-consultation-form';
+import { AboutTestimonialGallery } from '@/components/about-testimonial-gallery';
+import { archivedTestimonialPosterFor, testimonialVideos } from '@/components/personal-testimonials';
 import { SiteVideoPlayer } from '@/components/site-video-player';
 import { aboutEs } from '@/data/about-es';
 import { metadataBaseFor } from '@/data/site-metadata';
@@ -12,11 +14,7 @@ export const metadata: Metadata = {
   metadataBase: metadataBaseFor(), title: aboutEs.meta.title, description: aboutEs.meta.description,
   alternates: { canonical: '/es/about', languages: { en: '/en/about', ru: '/ru/about', es: '/es/about', 'x-default': '/en/about' } },
 };
-const testimonials = [
-  { id: 'm9RfDgK76PU', title: 'Anton Korchinsky — testimonio sobre nuestro trabajo' },
-  { id: '5oj0BIbLT4w', title: 'Elena Bakhtina — testimonio de una clienta' },
-  { id: 'MIVLm1GUTtM', title: 'Yuri Goncharenko — testimonio de un cliente' },
-];
+
 const archiveImage = 'https://psimaster.net/sites/default/files/styles/medium/public/article/' + encodeURIComponent('андрей-литвинов-рейки-иггдрасиль-ассгард-николай-журавлев');
 const archives = [
   { title: 'Testimonios sobre sesiones de imaginación guiada', description: 'Archivo de testimonios sobre consultas personales y trabajo con imágenes interiores.', href: 'https://psimaster.net/node/786', image: archiveImage + '.jpg?itok=8hSPbZ15' },
@@ -32,7 +30,22 @@ export default async function SpanishAboutPage() {
     <section className="about-introduction" aria-labelledby="about-title"><div className="about-portrait"><StaticPortrait alt={aboutEs.photoAlt} fill priority sizes="(max-width: 767px) 100vw, (max-width: 1127px) 56vw, 660px" src="/images/holistic-house/andy-about.png" /></div><div className="about-introduction-copy"><p className="about-kicker">{aboutEs.eyebrow}</p><h1 id="about-title">Andrey Litvinov</h1>{aboutEs.intro.map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div></section>
     <article className="about-biography">{aboutEs.sections.map(section => <section key={section.heading}><h2>{section.heading}</h2>{section.items && <ul>{section.items.map(item => <li key={item}>{item}</li>)}</ul>}{section.paragraphs?.map(paragraph => <p key={paragraph}>{paragraph}</p>)}</section>)}</article>
     <section className="about-explore" aria-labelledby="about-explore-title"><p className="about-kicker">Holistic House</p><h2 id="about-explore-title">{aboutEs.explore.heading}</h2><nav aria-label={aboutEs.explore.heading}>{explore.map(link => <Link href={link.href} key={link.href}>{link.label}<span aria-hidden="true">→</span></Link>)}</nav></section>
-    <section className="about-testimonials" aria-labelledby="testimonials-title"><div className="about-section-heading"><p className="homeopathy-kicker">Testimonios</p><h2 id="testimonials-title">Testimonios en vídeo</h2><p>Algunos testimonios en vídeo publicados anteriormente en mi sitio PsiMaster. El audio original está en ruso.</p></div><div className="about-video-grid">{testimonials.map(video => <SiteVideoPlayer key={video.id} video={{ youtubeId: video.id, title: video.title, language: 'ru' }} locale="es" textLanguage="es" compact />)}</div></section>
+    <section className="about-testimonials" aria-labelledby="testimonials-title">
+      <div className="about-section-heading">
+        <p className="homeopathy-kicker">Testimonios</p>
+        <h2 id="testimonials-title">Testimonios en vídeo</h2>
+        <p>Primero, seis testimonios con audio original en inglés. Los testimonios en ruso se pueden abrir por separado.</p>
+      </div>
+      <AboutTestimonialGallery
+        locale="es"
+        primaryVideos={testimonialVideos.es.map((item) => ({
+          ...item, fallbackPoster: archivedTestimonialPosterFor(item.id),
+        }))}
+        otherLanguageVideos={testimonialVideos.ru.map((item) => ({
+          ...item, fallbackPoster: archivedTestimonialPosterFor(item.id),
+        }))}
+      />
+    </section>
     <section className="about-review-archive" aria-labelledby="archive-title"><div className="about-section-heading"><p className="homeopathy-kicker">Fotos y testimonios escritos</p><h2 id="archive-title">Fotos y testimonios escritos</h2><p>Algunos testimonios antiguos y ensayos de participantes se conservan en el archivo de PsiMaster. Estos enlaces llevan a las publicaciones originales en ruso.</p></div><div className="about-review-grid">{archives.map(card => <a href={card.href} key={card.href} rel="noreferrer" target="_blank">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img alt="" loading="lazy" src={card.image} /><div><h3>{card.title}</h3><p>{card.description}</p><span>Abrir el archivo de PsiMaster →</span></div></a>)}</div></section>
