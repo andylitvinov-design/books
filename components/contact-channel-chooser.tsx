@@ -238,6 +238,7 @@ export function ContactChannelChooser({
     if (pending?.path !== pathname || pending.panel !== panelId ||
         typeof pending.service !== "string" || !pending.service.trim() ||
         pending.service.length > 160) return;
+    const chosenPublicService = pending.service;
     // Keep the marker until the profile request has finished. Development
     // StrictMode may cleanup/re-run this effect; clearing the marker before
     // its first asynchronous profile read loses the only valid continuation.
@@ -271,7 +272,7 @@ export function ContactChannelChooser({
           void saveEnquiry({
             displayName: nextName.length >= 2 && nextName.length <= 120 ? nextName : "",
             email: nextEmail, phone: "",
-          }, true, "", pending.service);
+          }, true, "", chosenPublicService);
         }
       }).catch(() => { if (active) { finishReturn(); setError(c.googleError); } });
     return () => { active = false; };
