@@ -63,11 +63,15 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   const book = home.indexOf('"data-hero-cta": "paid-sessions"');
   const free = home.indexOf('"data-hero-cta": "free-written-review"');
   const tests = home.indexOf('"data-hero-cta": "free-tests"');
-  const belowFold = home.indexOf("</HomeMoreDisclosure>");
+  const catalogueStart = home.indexOf("<HomeMoreDisclosure");
+  const catalogueEnd = home.indexOf("</HomeMoreDisclosure>");
   const more = read("components/home-more-disclosure.tsx");
   assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.ok(belowFold < firstScreen && firstScreen < book && book < free && free < tests, "Detailed personal enquiry follows the compact first fold inside the expandable catalogue");
-  assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
+  assert.ok(catalogueStart >= 0 && catalogueStart < firstScreen && firstScreen < book &&
+    book < free && free < tests && tests < catalogueEnd,
+    "Detailed personal enquiry stays in the expandable catalogue after the compact first fold");
+  assert.ok(catalogueEnd < home.indexOf("<HomepageContactCta locale={locale} />"),
+    "Expanded catalogue remains before the bottom free capture");
 });
 
 test("bypass transformations only for owned WebP images and the exact approved local artwork", () => {
