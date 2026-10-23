@@ -622,7 +622,7 @@ function MeditationVoices({ slide, locale }: {
             <div className={styles.voicesControls} role="group" aria-label={t.voicesNavigation}>
               <button type="button" data-review-prev aria-label={t.voicesPrevious}
                 onClick={() => setActive((index) => (index - 1 + entries.length) % entries.length)}>
-                <ArrowLeft size={18} aria-hidden="true" />
+                <ArrowLeft size={16} aria-hidden="true" />
               </button>
               <span className={styles.voicesCount} aria-hidden="true">
                 {entries.map((entry, number) => (
@@ -631,7 +631,7 @@ function MeditationVoices({ slide, locale }: {
               </span>
               <button type="button" data-review-next aria-label={t.voicesNext}
                 onClick={() => setActive((index) => (index + 1) % entries.length)}>
-                <ArrowRight size={18} aria-hidden="true" />
+                <ArrowRight size={16} aria-hidden="true" />
               </button>
             </div>
           ) : null}
