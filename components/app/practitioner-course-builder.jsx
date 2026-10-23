@@ -199,31 +199,45 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  }
  return <section className={styles.root} data-practitioner-course-builder>
   <header className={styles.heading}><div><h3><BookOpen size={19}/>{t.heading}</h3><p>{t.sub}</p></div>
-   <button type="button" className={styles.primary} disabled={busy||uploading||recording} onClick={create}><Plus size={17}/>{t.new}</button>
+   {creating?items.length>0&&<button type="button" className={styles.secondary} disabled={busy||uploading||recording} onClick={()=>setCreating(false)}>{t.cancel}</button>
+   :<button type="button" className={styles.primary} disabled={busy||uploading||recording} onClick={openCreate}><Plus size={17}/>{t.new}</button>}
   </header>
   {loading?<p aria-live="polite">…</p>:loadFailed?
    <div className={styles.loadFailure} role="status"><p>{t.unavailable}</p><button type="button" className={styles.secondary} onClick={()=>setRetryKey(n=>n+1)}>{t.retry}</button></div>:
    <div className={styles.columns}>
-    <aside className={styles.courseList} aria-label={t.select}>
-     {items.length?items.filter(item=>[item.draft?.title,item.draft?.description].join(' ').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())).map(item=><button type="button" key={item.id} disabled={busy||uploading||recording}
+    {items.length>0&&<button type="button" className={styles.courseSwitch} aria-expanded={listOpen} onClick={()=>setListOpen(open=>!open)}><BookOpen size={17}/>{t.myCourses} · {items.length}<ChevronRight size={16} aria-hidden="true"/></button>}
+    {items.length>0&&<aside className={styles.courseList} aria-label={t.select} data-mobile-open={listOpen}>
+     {items.filter(item=>[item.draft?.title,item.draft?.description].join(' ').toLocaleLowerCase().includes(searchQuery.trim().toLocaleLowerCase())).map(item=><button type="button" key={item.id} disabled={busy||uploading||recording}
        className={item.id===selected?styles.selected:''} aria-pressed={item.id===selected} onClick={()=>choose(item)}>
        <span className={styles.courseArtwork}><BookOpen size={21} aria-hidden="true"/></span>
        <span className={styles.courseCardCopy}><strong>{item.draft?.title||t.new}</strong>
         <small>{item.draft?.locale?.toUpperCase()} · {item.draft?.slides?.length||0} {t.slides.toLowerCase()}</small>
         <span className={item.status==='published'?styles.publishedTag:styles.draftTag}>{item.status==='published'?t.published:t.draft}</span>
        </span><ChevronRight size={17} aria-hidden="true"/>
-      </button>):<p className={styles.empty}>{t.empty}</p>}
-    </aside>
-    {current&&draft&&<div className={styles.editor}>
-     <div className={styles.fields}>
-      <label>{t.name}<input value={draft.title} maxLength={140} onChange={e=>setDraft({...draft,title:e.target.value})} disabled={busy||uploading||recording}/></label>
-      <label>{t.lang}<select value={draft.locale} disabled={busy||uploading||recording} onChange={e=>setDraft({...draft,locale:e.target.value})}><option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option></select></label>
-      <label className={styles.wide}>{t.summary}<textarea rows={2} maxLength={900} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} disabled={busy||uploading||recording}/></label>
-     </div>
+      </button>)}
+    </aside>}
+    {creating&&<form className={styles.quickStart+(!items.length?' '+styles.fullWidth:'')} onSubmit={event=>void create(event)} data-course-quick-start>
+     <div className={styles.progress} aria-label={t.stepName+' / '+t.stepBuild+' / '+t.stepPublish}><span className={styles.progressActive}>1 · {t.stepName}</span><span>2 · {t.stepBuild}</span><span>3 · {t.stepPublish}</span></div>
+     <h4>{t.startTitle}</h4><p>{t.startHint}</p>
+     <label>{t.name}<input type="text" required maxLength={140} value={newTitle} placeholder={t.startExample} onChange={event=>setNewTitle(event.target.value)} disabled={busy||uploading||recording}/></label>
+     <label>{t.lang}<select value={newLocale} onChange={event=>setNewLocale(event.target.value)} disabled={busy||uploading||recording}><option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option></select></label>
+     <small className={styles.privateNote}><LockKeyhole size={14} aria-hidden="true"/>{t.intro} {t.private}.</small>
+     <button type="submit" className={styles.primary} disabled={busy||uploading||recording||!newTitle.trim()}><Plus size={17}/>{busy?t.saving:t.createNow}</button>
+    </form>}
+    {!creating&&current&&draft&&<div className={styles.editor}>
+     <div className={styles.progress} aria-label={t.stepName+' / '+t.stepBuild+' / '+t.stepPublish}><span>1 · {t.stepName}</span><span className={styles.progressActive}>2 · {t.stepBuild}</span><span>3 · {t.stepPublish}</span></div>
+     <div className={styles.simpleTitle}><label>{t.name}<input value={draft.title} maxLength={140} required onChange={e=>setDraft({...draft,title:e.target.value})} disabled={busy||uploading||recording}/></label></div>
+     <details className={styles.courseSettings}><summary>{t.moreSettings} · {draft.locale.toUpperCase()}</summary>
+      <div className={styles.fields}>
+       <label>{t.lang}<select value={draft.locale} disabled={busy||uploading||recording} onChange={e=>setDraft({...draft,locale:e.target.value})}><option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option></select></label>
+       <label className={styles.wide}>{t.summary}<textarea rows={2} maxLength={900} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})} disabled={busy||uploading||recording}/></label>
+      </div>
+     </details>
      <div className={styles.slideHeading}><strong>{t.slides} · {draft.slides.length}/60</strong>
       <button type="button" onClick={addSlide} disabled={busy||uploading||recording||draft.slides.length>=60}><Plus size={15}/>{t.add}</button></div>
+     <p className={styles.slideHint}>{t.slideHint}</p>
      <div className={styles.slidePicker} role="group" aria-label={t.slides}>
-      {draft.slides.map((slide,i)=><button type="button" key={slide.id} aria-pressed={slide.id===slideId} onClick={()=>setSlideId(slide.id)} disabled={busy||uploading||recording}>
+      {draft.slides.map((slide,i)=><button type="button" key={slide.id} aria-pressed={slide.id===slideId} onClick={()=>{setSlideId(slide.id);setShowPreview(false)}} disabled={busy||uploading||recording}>
         {i+1} · {slide.title||t.choose}</button>)}
      </div>
      {active&&<div className={styles.slideEditor} key={active.id}>
@@ -241,8 +255,9 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
          </button>)}
         </div>
         <div className={styles.reorder}>
-         <button type="button" title={t.up} aria-label={t.up} onClick={()=>moveSlide(-1)} disabled={busy||uploading||recording}><ArrowUp size={17}/></button>
-         <button type="button" title={t.down} aria-label={t.down} onClick={()=>moveSlide(1)} disabled={busy||uploading||recording}><ArrowDown size={17}/></button>
+         <button type="button" title={t.up} aria-label={t.up} onClick={()=>moveSlide(-1)} disabled={busy||uploading||recording||draft.slides[0]?.id===slideId}><ArrowUp size={17}/></button>
+         <button type="button" title={t.down} aria-label={t.down} onClick={()=>moveSlide(1)} disabled={busy||uploading||recording||draft.slides[draft.slides.length-1]?.id===slideId}><ArrowDown size={17}/></button>
+         <button type="button" title={t.duplicate} aria-label={t.duplicate} onClick={duplicateSlide} disabled={busy||uploading||recording||draft.slides.length>=60}><Copy size={17}/></button>
          <button type="button" title={t.removeSlide} aria-label={t.removeSlide} onClick={removeSlide} disabled={busy||uploading||recording}><Trash2 size={17}/></button>
         </div>
        </div>
@@ -275,18 +290,27 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
         </details>}
         <small>{t.limit} · {t.private}</small>
        </div>}
+       <button type="button" className={styles.previewToggle} aria-expanded={showPreview} onClick={()=>setShowPreview(value=>!value)}><Eye size={16}/>{showPreview?t.hideSlidePreview:t.previewSlide}</button>
+       {showPreview&&<div className={styles.livePreview} data-course-slide-preview aria-label={t.previewSlide}>
+        <small>{t.slides} {draft.slides.findIndex(s=>s.id===active.id)+1}/{draft.slides.length}</small>
+        <h4>{active.title||t.untitled}</h4>
+        {active.body&&<p>{active.body}</p>}
+        {active.kind==='embed'&&active.videoUrl&&<a href={active.videoUrl} target="_blank" rel="noopener noreferrer">{t.link} <ExternalLink size={14}/></a>}
+       </div>}
+       <button type="button" className={styles.nextScreen} disabled={busy||uploading||recording||draft.slides.length>=60&&draft.slides[draft.slides.length-1]?.id===slideId} onClick={nextSlide}>{draft.slides[draft.slides.length-1]?.id===slideId?t.addNext:t.nextScreen}<ChevronRight size={17}/></button>
       </div>}
+     <div className={styles.publishReadiness} role="status"><LockKeyhole size={14} aria-hidden="true"/>{publishIssue?t.notReady+' '+publishIssue:t.ready}</div>
      <div className={styles.bottom}>
       <span className={dirty?styles.dirty:styles.saved}>{dirty?t.unsaved:t.saved}</span>
       <button type="button" className={styles.secondary} disabled={busy||uploading||recording||!dirty} onClick={()=>void operate('save')}><Save size={16}/>{busy?t.saving:t.save}</button>
-      <button type="button" className={styles.primary} disabled={busy||uploading||recording||!draft.slides.length} onClick={()=>void operate('publish')}><Globe2 size={16}/>{current.status==='published'?t.republish:t.publish}</button>
+      <button type="button" className={styles.primary} disabled={busy||uploading||recording||!!publishIssue} onClick={()=>void operate('publish')}><Globe2 size={16}/>{current.status==='published'?t.republish:t.publish}</button>
      </div>
      {current.status==='published'&&<div className={styles.publicControls}>
       <a href={shareHref} target="_blank" rel="noopener noreferrer"><Eye size={16}/>{t.preview}</a>
       <button type="button" onClick={()=>void share()} disabled={busy||uploading||recording}><Share2 size={16}/>{t.share}</button>
       <button type="button" onClick={()=>void operate('unpublish')} disabled={busy||uploading||recording}>{t.hide}</button>
      </div>}
-     <button className={styles.archive} type="button" disabled={busy||uploading||recording} onClick={()=>void operate('archive')}>{t.delete}</button>
+     <details className={styles.advanced}><summary>{t.moreSettings}</summary><button className={styles.archive} type="button" disabled={busy||uploading||recording} onClick={()=>void operate('archive')}>{t.delete}</button></details>
     </div>}
    </div>}
   {error&&!loadFailed&&<p className={styles.error} role="alert">{error}</p>}
