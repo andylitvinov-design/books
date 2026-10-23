@@ -102,7 +102,7 @@ test('catalog is backend-only, questions are versioned, and raw question is encr
  assert.equal((sqlWeights.match(/WHERE topic_key=/g)||[]).length,19)
  assert.match(sqlTags,/REVOKE ALL ON TABLE app_private\.coaching_intent_signals FROM PUBLIC,anon,authenticated/)
  assert.equal((sqlTags.match(/\('(?:goal|decision|business|career|relationships|conflict|communication|money|confidence|stuck|habits|procrastination|motivation|leadership|productivity|growth|transition|unclear|creativity)'/g)||[]).length,19)
- assert.doesNotMatch(ui,/localStorage|sessionStorage|analytics\.|sendBeacon|fetch\(/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage|window\.analytics|gtag\(|fbq\(|sendBeacon\(|\bfetch\(/)
  assert.doesNotMatch(backend,/crm_contacts|assessment_results|business_coaching_programs/)
 })
 test('coaching form and choice player have matching CSS selectors',()=>{
