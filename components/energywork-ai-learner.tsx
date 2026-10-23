@@ -149,7 +149,6 @@ const copy = {
     voicesFullText: "Full learner review",
     voicesNoQuote: "No verified comments for this exact recording are available here yet.",
     voicesSource: "Original review",
-    voicesComments: "Video comments",
     voicesNote: "Other people's experiences are not a standard to meet.",
     voicesPrevious: "Previous review",
     voicesNext: "Next review",
@@ -304,7 +303,6 @@ const copy = {
     voicesFullText: "Полный текст отзыва",
     voicesNoQuote: "Подтверждённых отзывов именно об этой записи пока нет.",
     voicesSource: "Источник отзыва",
-    voicesComments: "Комментарии к видео",
     voicesNote: "Ваш опыт не обязан совпадать с чужим.",
     voicesPrevious: "Предыдущий отзыв",
     voicesNext: "Следующий отзыв",
@@ -595,17 +593,14 @@ function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
 
 /** Review buttons only change the quote, never the current course slide. */
 /** Compact, accessible carousel: review arrows never advance the lesson. */
-function MeditationVoices({ slide, locale, youtubeId }: {
+function MeditationVoices({ slide, locale }: {
   slide: EnergyworkSlide;
   locale: EnergyworkLocale;
-  youtubeId?: string;
 }) {
   const t = copy[locale];
   const entries = slide.testimonials ?? [];
   const [active, setActive] = useState(0);
   const currentReview = entries[active];
-  // The Sun examples are standalone written reflections, not verified comments on this recording.
-  const showVideoComments = slide.id !== "flight-voices" && Boolean(youtubeId);
   return (
     <div className={styles.voicesCard} data-meditation-voices>
       <div className={styles.voicesHeading}>
@@ -644,19 +639,11 @@ function MeditationVoices({ slide, locale, youtubeId }: {
       ) : (
         <p className={styles.voicesEmpty}>{t.voicesNoQuote}</p>
       )}
-      {(currentReview?.sourcePath || showVideoComments) ? (
+      {currentReview?.sourcePath ? (
         <div className={styles.voicesReferences}>
-          {currentReview?.sourcePath ? (
-            <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
-              {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
-            </Link>
-          ) : null}
-          {showVideoComments ? (
-            <a className={styles.voicesLink} href={"https://www.youtube.com/watch?v=" + youtubeId}
-              target="_blank" rel="noopener noreferrer">
-              {t.voicesComments}<ExternalLink size={14} aria-hidden="true" />
-            </a>
-          ) : null}
+          <Link className={styles.voicesLink} href={"/" + locale + "/academy/" + currentReview.sourcePath}>
+            {t.voicesSource}<ExternalLink size={14} aria-hidden="true" />
+          </Link>
         </div>
       ) : null}
     </div>
@@ -1512,7 +1499,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                   </p>
                 </aside>
               ) : null}
-              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} youtubeId={media?.youtubeId ?? undefined} /> : null}
+              {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
 
               {slide.id === "end-01" ? (
