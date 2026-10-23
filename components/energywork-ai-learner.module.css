@@ -4829,23 +4829,6 @@
 }
 .page[data-reiki-reviews="v4"] .finalContactLink:hover,
 .page[data-reiki-reviews="v4"] .finalContactLink:focus-visible { background: #e6f9f3; }
-.page[data-reiki-reviews="v4"] .finalRevisit {
-  margin: 12px 0; padding: 11px 0;
-  border-top: 1px solid #bfdedf; border-bottom: 1px solid #bfdedf;
-}
-.page[data-reiki-reviews="v4"] .finalRevisit h2 {
-  font-size: 14px; color: #236475; margin: 0 0 9px;
-}
-.page[data-reiki-reviews="v4"] .finalRevisitGrid {
-  display: flex; flex-wrap: wrap; gap: 7px;
-}
-.page[data-reiki-reviews="v4"] .finalRevisitButton {
-  display: inline-flex; justify-content: center; align-items: center; gap: 7px;
-  min-height: 44px; border: 1px solid #b4d7d4; border-radius: 11px;
-  padding: 8px 11px; background: #f6fffd; color: #155a67;
-  font-size: 12px; font-weight: 750; cursor: pointer;
-}
-.page[data-reiki-reviews="v4"] .finalRevisitButton:disabled { opacity: .5; cursor: not-allowed; }
 .page[data-reiki-current-kind="finish"] .actions { justify-content: flex-start; }
 .page[data-reiki-current-kind="finish"] .back { min-height: 44px; }
 @media (max-width: 430px) {
@@ -4854,12 +4837,10 @@
   }
   .page[data-reiki-reviews="v4"] .finalContact { padding: 12px; margin: 9px 0; }
   .page[data-reiki-reviews="v4"] .finalReceipt { padding: 11px; }
-  .page[data-reiki-reviews="v4"] .finalRevisitButton { flex: 1 1 42%; }
   .page[data-reiki-current-kind="finish"] .back { display: inline-flex; width: 100%; min-height: 48px; }
 }
 @media print {
-  .page[data-reiki-reviews="v4"] .finalContact,
-  .page[data-reiki-reviews="v4"] .finalRevisit { display: none; }
+  .page[data-reiki-reviews="v4"] .finalContact { display: none; }
 }
 
 
