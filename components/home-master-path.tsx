@@ -1,173 +1,70 @@
-"use client";
-
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowRight, BookOpen, CheckCircle2, Compass, GraduationCap, Leaf, Sparkles } from "lucide-react";
+import { ArrowRight, GraduationCap } from "lucide-react";
 
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./home-master-path.module.css";
 
-type Mode = "personal" | "master";
-
+// The homepage only needs a closing invitation. The full personal/master
+// journey, free tests, training and publishing tools live on the Pro page.
 const copy = {
   en: {
-    eyebrow: "HOLISTIC HOUSE · YOUR PATH",
-    heading: "Discover your path. Share what you learn.",
-    choose: "Choose your path",
-    personal: "For myself",
-    master: "Become a Master",
-    personalTitle: "Start with yourself",
-    personalHint: "Free self-checks, learning and your own development space.",
-    shortcuts: ["Get to know myself", "Learn Reiki for free", "My development path"],
-    masterTitle: "Your path to energy practice",
-    proPath: "Open the full Pro journey",
-    masterHint: "New to energywork? Explore the steps. Already practicing? You can list a service now.",
-    publish: "List a service for free",
-    create: "Create your own course",
-    free: "Free",
-    stages: [
-      { title: "Get to know yourself", action: "Take free tests" },
-      { title: "Explore your situation", action: "Free written review" },
-      { title: "Learn Reiki", action: "Start the free course" },
-      { title: "Develop your skills", action: "Explore Academy" },
-      { title: "Create a course", action: "Open course editor" },
-      { title: "Share your service", action: "Open service editor" },
-    ],
-    review: "A practitioner profile and basic service listing are free. Public listings require review; free study is not a professional qualification. The steps are suggestions, not prerequisites.",
+    eyebrow: "HOLISTIC HOUSE · PRO",
+    title: "Become a Master",
+    description: "Learn Reiki step by step, or bring your experience and share your own services and courses.",
+    explore: "Explore the Pro path",
+    publish: "List my services",
+    note: "Basic listings are free and reviewed before publication. Free learning does not grant a professional qualification.",
   },
   ru: {
-    eyebrow: "HOLISTIC HOUSE · ВАШ ПУТЬ",
-    heading: "Узнай себя. Развивай практику. Делись опытом.",
-    choose: "Выберите свой путь",
-    personal: "Для себя",
-    master: "Стать мастером",
-    personalTitle: "Начни с себя",
-    personalHint: "Бесплатные тесты, обучение и личный путь развития.",
-    shortcuts: ["Узнать себя", "Бесплатный курс Рейки", "Мой путь развития"],
-    masterTitle: "Твой путь в энергопрактике",
-    proPath: "Открыть полный путь «Профи»",
-    masterHint: "Новичок? Начни с обучения. Уже практикуешь? Можешь сразу добавить свою услугу.",
-    publish: "Опубликовать услугу бесплатно",
-    create: "Создать свой курс",
-    free: "Бесплатно",
-    stages: [
-      { title: "Узнай себя", action: "Пройти бесплатные тесты" },
-      { title: "Разбери свой вопрос", action: "Бесплатный письменный разбор" },
-      { title: "Изучи Рейки", action: "Пройти бесплатный курс" },
-      { title: "Развивай мастерство", action: "Открыть Академию" },
-      { title: "Создай свой курс", action: "Редактор курсов" },
-      { title: "Опубликуй услугу", action: "Редактор услуг" },
-    ],
-    review: "Профиль мастера и базовое размещение услуг бесплатны. Публикация — после модерации; бесплатный курс не даёт автоматической квалификации. Этапы — рекомендации, а не обязательные условия.",
+    eyebrow: "HOLISTIC HOUSE · ПРОФИ",
+    title: "Станьте мастером",
+    description: "Изучайте Рейки с нуля или делитесь своим опытом — размещайте услуги и собственные курсы.",
+    explore: "Открыть раздел «Профи»",
+    publish: "Разместить свои услуги",
+    note: "Базовое размещение бесплатно, публикация после модерации. Бесплатное обучение не присваивает профессиональную квалификацию.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · TU CAMINO",
-    heading: "Conócete. Aprende. Comparte tu práctica.",
-    choose: "Elige tu camino",
-    personal: "Para mí",
-    master: "Ser profesional",
-    personalTitle: "Empieza por ti",
-    personalHint: "Pruebas gratis, aprendizaje y desarrollo personal.",
-    shortcuts: ["Conocerme mejor", "Aprender Reiki gratis", "Mi camino de desarrollo"],
-    masterTitle: "Tu camino en las prácticas energéticas",
-    proPath: "Abrir el camino Pro",
-    masterHint: "¿Estás empezando? Explora los pasos. ¿Ya practicas? Puedes añadir tu servicio hoy.",
-    publish: "Publicar un servicio gratis",
-    create: "Crear mi curso",
-    free: "Gratis",
-    stages: [
-      { title: "Conócete", action: "Hacer pruebas gratis" },
-      { title: "Explora tu situación", action: "Revisión escrita gratis" },
-      { title: "Aprende Reiki", action: "Empezar el curso gratis" },
-      { title: "Sigue aprendiendo", action: "Explorar Academia" },
-      { title: "Crea tu curso", action: "Abrir editor de cursos" },
-      { title: "Comparte tu servicio", action: "Abrir editor de servicios" },
-    ],
-    review: "El perfil profesional y la publicación básica de servicios son gratuitos. Las publicaciones requieren revisión; un curso gratuito no otorga certificación profesional. Los pasos son opcionales.",
+    eyebrow: "HOLISTIC HOUSE · PRO",
+    title: "Hazte profesional",
+    description: "Aprende Reiki paso a paso o comparte tu experiencia ofreciendo servicios y cursos propios.",
+    explore: "Explorar el camino Pro",
+    publish: "Publicar mis servicios",
+    note: "La publicación básica es gratis y requiere revisión. La formación gratuita no acredita una cualificación profesional.",
   },
 } as const;
 
 export function HomeMasterPath({ locale }: { locale: PublicLocale }) {
-  const [mode, setMode] = useState<Mode>("personal");
   const t = copy[locale];
-  // The private Account/My Practice supports EN/RU. Use the English Account
-  // for Spanish visitors rather than sending them to a non-existent /es/app.
+  // Private My Practice supports EN/RU. Spanish marketing stays in Spanish.
   const accountLocale = locale === "es" ? "en" : locale;
-  const targets = [
-    "/" + locale + "/client/tests",
-    "/" + locale + "/services/free-situation-review",
-    "/" + locale + "/academy/principles-of-energywork/learn",
-    "/" + locale + "/academy",
-    "/" + accountLocale + "/app/practice?panel=materials&materialTab=courses",
-    "/" + accountLocale + "/app/practice?panel=services",
-  ];
-  const personalTargets = [
-    targets[0],
-    targets[2],
-    "/" + accountLocale + "/app/portfolio#hh-development-program",
-  ];
 
   return (
-    <section className={styles.section} aria-labelledby="hh-home-master-path-title" data-home-master-path data-home-master-mode={mode}>
-      <div className={styles.top}>
-        <div className={styles.heading}>
-          <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
-          <h2 id="hh-home-master-path-title">{t.heading}</h2>
-        </div>
-        <div className={styles.switch} role="group" aria-label={t.choose}>
-          <button type="button" aria-pressed={mode === "personal"} onClick={() => setMode("personal")}
-            className={mode === "personal" ? styles.selected : ""} data-home-path-switch="personal">
-            <Compass size={16} aria-hidden="true" />{t.personal}
-          </button>
-          <button type="button" aria-pressed={mode === "master"} onClick={() => setMode("master")}
-            className={mode === "master" ? styles.selected : ""} data-home-path-switch="master">
-            <GraduationCap size={17} aria-hidden="true" />{t.master}
-            <span className={styles.free}>{t.free}</span>
-          </button>
-        </div>
+    <section className={styles.section} aria-labelledby="hh-home-master-invitation-title" data-home-master-invitation>
+      <div className={styles.photo} aria-hidden="true">
+        <Image
+          src="/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp"
+          alt=""
+          fill
+          sizes="(max-width: 640px) 108px, (max-width: 960px) 210px, 234px"
+          loading="lazy"
+        />
       </div>
-
-      {mode === "personal" ? (
-        <div className={styles.personal} data-home-path-panel="personal">
-          <p><strong>{t.personalTitle}</strong><span>{t.personalHint}</span></p>
-          <nav className={styles.shortcuts} aria-label={t.personal}>
-            {t.shortcuts.map((label, index) => (
-              <Link href={personalTargets[index]} key={label} prefetch={false}>
-                {index === 0 ? <CheckCircle2 size={17} aria-hidden="true" /> : index === 1
-                  ? <BookOpen size={17} aria-hidden="true" /> : <Leaf size={17} aria-hidden="true" />}
-                {label}<ArrowRight size={15} aria-hidden="true" />
-              </Link>
-            ))}
-          </nav>
-        </div>
-      ) : (
-        <div className={styles.master} data-home-path-panel="master">
-          <div className={styles.masterIntro}>
-            <div><h3>{t.masterTitle}</h3><p>{t.masterHint}</p>
-              <Link className={styles.proGuide} href={"/" + locale + "/pro"} prefetch={false} data-home-master-pro-guide>
-                {t.proPath}<ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            </div>
-            <div className={styles.actions}>
-              <Link className={styles.primary} href={targets[5]} prefetch={false}
-                data-home-master-action="publish-service">{t.publish}<ArrowRight size={17} aria-hidden="true" /></Link>
-              <Link className={styles.secondary} href={targets[4]} prefetch={false}
-                data-home-master-action="create-course">{t.create}<ArrowRight size={16} aria-hidden="true" /></Link>
-            </div>
-          </div>
-          <ol className={styles.steps} aria-label={t.masterTitle}>
-            {t.stages.map((stage, index) => (
-              <li key={stage.title}>
-                <span className={styles.number} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                <span className={styles.stageCopy}><strong>{stage.title}</strong>
-                  <Link href={targets[index]} prefetch={false}>{stage.action}<ArrowRight size={14} aria-hidden="true" /></Link>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p className={styles.review}><CheckCircle2 size={16} aria-hidden="true" />{t.review}</p>
-        </div>
-      )}
+      <div className={styles.intro}>
+        <p className={styles.eyebrow}><GraduationCap size={16} aria-hidden="true" />{t.eyebrow}</p>
+        <h2 id="hh-home-master-invitation-title">{t.title}</h2>
+        <p className={styles.description}>{t.description}</p>
+      </div>
+      <nav className={styles.actions} aria-label={t.title}>
+        <Link className={styles.primary} href={"/" + locale + "/pro"} prefetch={false} data-home-master-action="explore-pro">
+          {t.explore}<ArrowRight size={17} aria-hidden="true" />
+        </Link>
+        <Link className={styles.secondary} href={"/" + accountLocale + "/app/practice?panel=services"} prefetch={false}
+          data-home-master-action="publish-service">
+          {t.publish}<ArrowRight size={17} aria-hidden="true" />
+        </Link>
+      </nav>
+      <p className={styles.note}>{t.note}</p>
     </section>
   );
 }

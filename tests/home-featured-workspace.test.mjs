@@ -12,9 +12,9 @@ test("all home locales keep the approved hero and show five distinct compact cho
   for (const home of [enRu, es]) {
     assert.match(home, /<HomeMasterPath locale=/);
     assert.match(home, /<HomeFeaturedWorkspace locale=/);
-    const ordered = ["HomeSectionCarousel", "HomeMasterPath", "HomeFreeDiagnosisBanner",
+    const ordered = ["HomeSectionCarousel", "HomeFreeDiagnosisBanner",
       "HomeConversationGuide", "HomePersonalSpaceCard", "HomeFeaturedWorkspace",
-      "HomepageTopicJourneys", "HomeMoreDisclosure"];
+      "HomepageTopicJourneys", "HomeMoreDisclosure", "HomeMasterPath"];
     let previous = -1;
     for (const name of ordered) {
       const position = home.indexOf("<" + name);

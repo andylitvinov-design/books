@@ -3,52 +3,53 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
-const widget = read("components/home-master-path.tsx");
-const styles = read("components/home-master-path.module.css");
 const home = read("components/holistic-house-home.tsx");
 const spanish = read("app/es/page.tsx");
-const practice = read("components/app/practice-workspace.jsx");
-const lessons = read("app/[locale]/academy/[[...slug]]/page.tsx");
+const widget = read("components/home-master-path.tsx");
+const styles = read("components/home-master-path.module.css");
 
-test("homepage exposes a real For me / Become a Master switch in EN, RU and ES", () => {
+test("all homepage locales remove the top path switch and put a single Master invitation just before footer", () => {
+  for (const [source, cta] of [[home, "<HomepageContactCta"], [spanish, "<PublicConsultationCta"]]) {
+    assert.equal((source.match(/<HomeMasterPath\b/g) || []).length, 1, "Exactly one Master invitation");
+    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeFreeDiagnosisBanner"));
+    assert.ok(source.indexOf("<HomeFreeDiagnosisBanner") < source.indexOf("<HomeFeaturedWorkspace"));
+    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomeMasterPath"));
+    assert.ok(source.indexOf(cta) < source.indexOf("<HomeMasterPath"), "Invitation follows other home CTAs");
+    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf("<footer"), "Invitation precedes footer");
+  }
   assert.match(home, /<HomeMasterPath locale=\{locale\} \/>/);
   assert.match(spanish, /<HomeMasterPath locale="es" \/>/);
-  for (const source of [home, spanish]) {
-    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMasterPath"));
-    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf("<HomeFreeDiagnosisBanner"));
-  }
-  assert.match(widget, /type Mode = "personal" \| "master"/);
-  assert.match(widget, /aria-pressed=\{mode === "personal"\}/);
-  assert.match(widget, /aria-pressed=\{mode === "master"\}/);
-  assert.match(widget, /data-home-path-panel="master"/);
-  assert.match(widget, /data-home-path-panel="personal"/);
-  for (const str of ["Become a Master", "Стать мастером", "Ser profesional", "List a service for free", "Опубликовать услугу бесплатно", "Publicar un servicio gratis"]) {
-    assert.ok(widget.includes(str), "Missing localized CTA: " + str);
-  }
+  assert.match(widget, /data-home-master-invitation/);
+  assert.doesNotMatch(widget, /useState|data-home-path-switch|data-home-path-panel|personalTargets/);
 });
 
-test("every journey action is linked to an existing entry route, not an imaginary new cabinet", () => {
-  for (const path of [
-    '"/client/tests"', '"/services/free-situation-review"',
-    '"/academy/principles-of-energywork/learn"', '"/academy"',
-    '"/app/practice?panel=materials&materialTab=courses"',
-    '"/app/practice?panel=services"',
-  ]) {
-    assert.ok(widget.includes(path), "Expected journey route: " + path);
-  }
-  assert.match(lessons, /principles-of-energywork\/learn/);
-  assert.match(widget, /locale === "es" \? "en" : locale/);
+test("the compact invitation has localized actionable Pro and My Practice links without fake publication", () => {
+  const pro = read("app/[locale]/pro/page.tsx");
+  const practice = read("components/app/practice-workspace.jsx");
+  assert.ok(widget.includes('href={"/" + locale + "/pro"}'));
+  assert.ok(widget.includes('href={"/" + accountLocale + "/app/practice?panel=services"}'));
+  assert.ok(widget.includes('locale === "es" ? "en" : locale'));
+  assert.match(pro, /<ProfiHub locale=\{locale\}/);
   assert.match(practice, /if\(params\.get\('panel'\)==='services'\)setActivePanel\('services'\)/);
-  assert.match(practice, /if\(params\.get\('panel'\)==='materials'\)setActivePanel\('materials'\)/);
-  assert.match(practice, /materialTab/);
+  for (const label of ["Become a Master", "Станьте мастером", "Hazte profesional",
+    "List my services", "Разместить свои услуги", "Publicar mis servicios"]) {
+    assert.ok(widget.includes(label), label);
+  }
+  assert.match(widget, /reviewed before publication/);
+  assert.match(widget, /после модерации/);
+  assert.match(widget, /does not grant a professional qualification/);
+  assert.doesNotMatch(widget, /fetch\(|sendBeacon|autoPublish|checkout|payment/);
 });
 
-test("master path describes real publication moderation and mobile accessibility", () => {
-  assert.match(widget, /Public listings require review/);
-  assert.match(widget, /Публикация — после модерации/);
-  assert.match(widget, /no.*prerequisites|not prerequisites/);
-  assert.match(widget, /not a professional qualification/);
-  assert.match(styles, /@media \(max-width: 540px\)/);
+test("the footer invitation is compact, photo-led, mobile-accessible and has no duplicated steps", () => {
+  assert.match(widget, /<Image[\s\S]*?loading="lazy"/);
+  assert.match(widget, /portrait-static\/andy-828-3dcbabded1e9\.webp/);
+  assert.match(widget, /data-home-master-action="explore-pro"/);
+  assert.match(widget, /data-home-master-action="publish-service"/);
+  assert.match(styles, /grid-template-columns: 234px minmax\(0, 1fr\)/);
+  assert.match(styles, /@media \(max-width: 640px\)/);
+  assert.match(styles, /grid-template-columns: 108px minmax\(0, 1fr\)/);
   assert.match(styles, /min-height: 44px/);
-  assert.match(styles, /focus-visible/);
+  assert.match(styles, /:focus-visible/);
+  assert.doesNotMatch(widget, /<ol|<button|mode === "personal"/);
 });
