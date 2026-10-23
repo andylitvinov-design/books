@@ -163,7 +163,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
           await expect(visibleCabinetLabel).toBeVisible()
           await expect(visibleCabinetLabel).toHaveText(cabinetText)
         }
-        if (width <= 767) await expect(cabinetEntry.locator('svg')).toBeHidden()
+        if (width <= 767) for (const icon of await cabinetEntry.locator('svg').all()) await expect(icon).toBeHidden()
         await expect(menu).toHaveJSProperty('open', false)
         await inViewport(cabinetEntry, label + '/cabinet')
         await inViewport(trigger, label + '/language')
