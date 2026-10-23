@@ -11,7 +11,6 @@ import './profile-domains.css'
 import './profile-refresh.css'
 
 const DevelopmentProgram = dynamic(() => import('./development-program'), { ssr: false })
-const CabinetJourney = dynamic(() => import('./cabinet-journey'), { ssr: false })
 const DOMAINS = PROFILE_AREAS
 const ICONS = { psychology: Brain, homeopathy: Leaf, wu_xing: Flower2, hypnotherapy: HeartHandshake }
 const WORDS = {
@@ -268,7 +267,6 @@ export function ProfileDomains({
   )
 
   return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
-    {!external && accountId && <CabinetJourney key={accountId} accountId={accountId} locale={locale} />}
     {external && <header className="hh-domain-hero">
       <div className="hh-domain-title">
         <p className="hh-domain-eyebrow">{t.eyebrow}</p>
