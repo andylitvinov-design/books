@@ -104,7 +104,7 @@ test('each group reveals exactly two additional real offers inline, then an exte
         assert.equal(by(tree,'data-direction-show-more',kind)[0].props['aria-expanded'],true)
         assert.equal(by(tree,'data-direction-all',kind).length,1,'catalog link appears below all four offers')
         const href=by(tree,'data-direction-all',kind)[0].props.href
-        const expected={test:'/client/tests?catalog=full',course:'/academy',session:'/services'}[kind]
+        const expected={test:'/client/tests?catalog=full',course:'/academy',session:'/services/catalog#service-listings'}[kind]
         assert.equal(href,'/'+locale+expected)
       }
       assert.equal(nodes(tree).filter(n=>n.props?.['data-offer-action']).length,12)
