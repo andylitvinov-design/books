@@ -550,8 +550,8 @@ function PracticeTimer({ locale, durationSeconds = 120 }: { locale: EnergyworkLo
 
 
 
-/** Existing video slides plus the fifth video at the opening of lesson five.
- * Switching sources unmounts the old iframe without changing private progress.
+/** Intro recordings and original guided meditations are independent slides.
+ * One source per screen; never hide the meditation behind a video selector.
  */
 function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
   slide: EnergyworkSlide;
@@ -559,42 +559,32 @@ function ReikiLessonVideo({ slide, locale, lessonVideo, original }: {
   lessonVideo?: ReikiPractitionerLessonVideo;
   original: { youtubeId: string | null; title: string } | null;
 }) {
-  const [choice, setChoice] = useState<"lesson" | "original">("lesson");
   const t = copy[locale];
-  const useOriginal = !lessonVideo || choice === "original";
-  const youtubeId = !useOriginal && lessonVideo ? lessonVideo.youtubeId : original?.youtubeId;
-  const videoTitle = !useOriginal && lessonVideo ? lessonVideo.title[locale] : original?.title;
+  const youtubeId = lessonVideo?.youtubeId ?? original?.youtubeId;
+  const videoTitle = lessonVideo?.title[locale] ?? original?.title;
   return (
-    <div className={styles.video} data-reiki-lesson-video={slide.id}>
-      {lessonVideo && original?.youtubeId ? (
-        <div className={styles.lessonVideoChoices} role="group"
-          aria-label={locale === "ru" ? "Выбор видео урока" : "Choose lesson video"}>
-          <button type="button" className={styles.lessonVideoChoice}
-            aria-pressed={!useOriginal} onClick={() => setChoice("lesson")}>
-            {locale === "ru" ? "Видеоурок" : "Lesson video"}
-          </button>
-          <button type="button" className={styles.lessonVideoChoice}
-            aria-pressed={useOriginal} onClick={() => setChoice("original")}>
-            {locale === "ru" ? "Медитация (EN)" : "Meditation (EN)"}
-          </button>
-        </div>
-      ) : null}
+    <div className={styles.video} data-reiki-lesson-video={slide.id}
+      data-reiki-media-role={lessonVideo ? "introduction" : "meditation"}>
       {youtubeId ? (
-        <AcademyVideoPlayer key={slide.id + ":" + (useOriginal ? "original" : "lesson")}
-          youtubeId={youtubeId} title={videoTitle ?? slide.title[locale]} />
+        <AcademyVideoPlayer key={slide.id} youtubeId={youtubeId}
+          title={videoTitle ?? slide.title[locale]} />
       ) : (
         <p className={styles.missingVideo}><PlayCircle size={24} aria-hidden="true" />
           {t.unavailable}</p>
       )}
       {youtubeId ? (
         <p className={styles.videoCaption}>
-          {useOriginal
-            ? (locale === "ru" ? "Дополнительная английская медитация." : "Optional original English guided meditation.")
-            : slide.id === "paths-01"
+          {slide.id === "paths-01"
+            ? (locale === "ru"
+              ? "Вводное видео пятого урока. Просмотр не является личной инициацией."
+              : "Lesson five introduction. Watching is not a personal initiation.")
+            : lessonVideo
               ? (locale === "ru"
-                ? "Вводное видео пятого урока. Просмотр не является личной инициацией."
-                : "Lesson five introduction. Watching is not a personal initiation.")
-              : (locale === "ru" ? "Запись урока. Нажмите Play, чтобы начать просмотр." : "Lesson recording. Press Play to start.")}
+                ? "Вступление Андрея. Оригинальная медитация — на отдельном слайде."
+                : "Andrey’s introduction. The original guided meditation has its own slide.")
+              : (locale === "ru"
+                ? "Оригинальная медитация (EN). Нажмите Play, чтобы начать практику."
+                : "Original guided meditation (EN). Press Play when you are ready.")}
         </p>
       ) : null}
     </div>
@@ -810,7 +800,7 @@ function ReikiInitiationRequestForm({ value, locale, onChange }: {
 export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props) {
   const t = copy[locale];
   // Referral entrants have already read the course overview; saved account progress still wins.
-  const [index, setIndex] = useState(startAtExperience ? 1 : 0);
+  const [index, setIndex] = useState(startAtExperience ? energyworkSlides().findIndex((item) => item.id === "welcome-02") : 0);
   const pageRef = useRef<HTMLElement | null>(null);
   const [programmeOpen, setProgrammeOpen] = useState(false);
   const [showInstallOffer, setShowInstallOffer] = useState(false);
@@ -1144,7 +1134,8 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const otherStudyMissing = (isKundaliniStudyQuestion || isYggdrasilStudyQuestion) &&
     !energyworkReikiStudyAnswerComplete(answers[slide.id]);
   const media = slide.videoKey ? englishGuidedMeditations.find((item) => item.key === slide.videoKey) : null;
-  // paths-01 is already the first screen of lesson five; no extra slide or progress migration.
+  // Four new introduction slides plus the existing fifth intro use teacher videos.
+  // All four original video slides now show their meditations directly.
   const lessonVideo = slide.kind === "video" || slide.id === "paths-01"
     ? reikiPractitionerLessonVideos.find((item) => item.slideId === slide.id)
     : undefined;
