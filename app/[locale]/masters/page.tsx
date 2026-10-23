@@ -6,11 +6,28 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import { createArticleRepository } from "@/lib/practitioners/article-repository";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
+import { ArticleDirectory } from "@/components/practitioner-article-directory";
+import { MentorCommunitySwitch } from "@/components/mentor-community-switch";
 import styles from "./masters-page.module.css";
 
 type PageProps = { params: Promise<{ locale: string }> };
+type PublicArticle = {
+  id: string;
+  slug: string;
+  practitionerSlug: string;
+  practitionerName: string;
+  publishedAt: string | null;
+  published: {
+    title: string;
+    excerpt: string;
+    coverPath?: string;
+    tags?: string[];
+  };
+};
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -19,12 +36,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!isPublicLocale(locale)) return { title: "Not found" };
   return {
     metadataBase: metadataBaseFor(),
-    title: (locale === "ru" ? "Практики" : locale === "es" ? "Profesionales" : "Practitioners") + " | Holistic House",
+    title: (locale === "ru" ? "Наставники и статьи" : locale === "es"
+      ? "Mentores y artículos" : "Mentors & Articles") + " | Holistic House",
     description: locale === "ru"
-      ? "Найдите практику и отправьте запрос на дистанционную энергетическую поддержку."
+      ? "Читайте статьи мастеров, знакомьтесь с их методами и выбирайте наставника."
       : locale === "es"
-        ? "Encuentra profesionales y solicita apoyo energético a distancia."
-        : "Find a practitioner and request remote energy support.",
+        ? "Lee artículos de profesionales, descubre sus enfoques y encuentra un mentor."
+        : "Read practitioner articles, explore their approaches and find a mentor.",
     alternates: {
       canonical: `/${locale}/masters`,
       languages: { en: "/en/masters", ru: "/ru/masters", es: "/es/masters" },
@@ -37,20 +55,29 @@ export default async function MastersPage({ params }: PageProps) {
   if (!isPublicLocale(locale)) notFound();
   const ru = locale === "ru", es = locale === "es";
   let practitioners: PublicPractitioner[] = [];
-  try {
-    practitioners = await createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale);
-  } catch {
-    // The finder has an explicit empty state; never invent or hard-code practitioners.
-  }
+  let articles: PublicArticle[] = [];
+  const config = getAppConfig();
+  const [mastersResult, articlesResult] = await Promise.allSettled([
+    createPractitionerRepository(config).listPublicPractitioners(locale),
+    createArticleRepository(config).publicList(locale),
+  ]);
+  if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
+  if (articlesResult.status === "fulfilled") articles = (articlesResult.value as PublicArticle[]).slice(0, 24);
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
       <section className={styles.hero} aria-labelledby="practitioners-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>{ru ? "HOLISTIC HOUSE · МАСТЕРА" : es ? "HOLISTIC HOUSE · PROFESIONALES" : "HOLISTIC HOUSE · PRACTITIONERS"}</p>
-          <h1 id="practitioners-title">{ru ? "Найдите своего мастера" : es ? "Encuentra tu profesional" : "Find your practitioner"}</h1>
-          <p>{ru ? "Практики, личные сеансы и дистанционная поддержка." : es ? "Sesiones personales y apoyo a distancia, en un solo lugar." : "Personal sessions and remote support, all in one place."}</p>
+          <p className={styles.eyebrow}>
+            {ru ? "HOLISTIC HOUSE · СООБЩЕСТВО" : es
+              ? "HOLISTIC HOUSE · COMUNIDAD" : "HOLISTIC HOUSE · COMMUNITY"}
+          </p>
+          <h1 id="practitioners-title">{ru ? "Найдите своего наставника"
+            : es ? "Encuentra a tu mentor" : "Find your mentor"}</h1>
+          <p>{ru ? "Наставники, авторские статьи, личные практики и услуги — в одном месте."
+            : es ? "Mentores, artículos, prácticas y sesiones en un mismo lugar."
+              : "Meet practitioners, read their insights and explore their services."}</p>
         </div>
         <div className={styles.heroActions}>
           <Link className={styles.supportAction} href={`/${locale}/services/remote-energy-support`}>
@@ -63,7 +90,20 @@ export default async function MastersPage({ params }: PageProps) {
           </Link>
         </div>
       </section>
-      <MarketplaceMasterFinder practitioners={practitioners} locale={locale} />
+      <MentorCommunitySwitch locale={locale} hasArticles={articles.length > 0}
+        mentors={<MarketplaceMasterFinder practitioners={practitioners} locale={locale} />}
+        articles={<ArticleDirectory locale={locale} preview articles={articles.map((a) => ({
+          id: a.id,
+          slug: a.slug,
+          practitionerName: a.practitionerName,
+          practitionerSlug: a.practitionerSlug,
+          publishedAt: String(a.publishedAt || ""),
+          title: a.published.title,
+          excerpt: a.published.excerpt,
+          coverPath: a.published.coverPath || "",
+          tags: Array.isArray(a.published.tags) ? a.published.tags : [],
+        }))} />}
+      />
     </main>
   );
 }
