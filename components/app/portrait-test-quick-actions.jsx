@@ -41,11 +41,31 @@ const panelId = 'hh-portrait-test-recommendations'
 export function PortraitTestQuickActions({
   locale = 'en', sector = 'all', portrait = null, entriesByKey,
   results = [], runs = [], accountId, activeTestPlan = null,
-  onAnalyses, onRecommendations,
+  activeTab = 'tests', onTabChange,
 }) {
   const t = COPY[locale] || COPY.en
+  const testsVisible = activeTab === 'tests'
+  function selectTab(next) {
+    if (next === 'tests') setExpanded(value => testsVisible ? !value : true)
+    onTabChange?.(next)
+    setError('')
+  }
+  function handleTabKeyDown(event) {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+    const current = event.target?.getAttribute('data-portrait-tab')
+    const keys = ['tests', 'analyses', 'recommendations']
+    if (!keys.includes(current)) return
+    event.preventDefault()
+    const index = keys.indexOf(current)
+    const next = event.key === 'Home' ? keys[0] : event.key === 'End' ? keys[keys.length - 1]
+      : keys[(index + (event.key === 'ArrowRight' ? 1 : -1) + keys.length) % keys.length]
+    if (next === 'tests') setExpanded(true)
+    onTabChange?.(next)
+    event.currentTarget.querySelector('[data-portrait-tab="' + next + '"]')?.focus()
+  }
   const router = useRouter()
   const [expanded, setExpanded] = useState(false)
+  const expandedVisible = testsVisible && expanded
   const [startingKey, setStartingKey] = useState('')
   const [error, setError] = useState('')
   const starting = useRef(false)
@@ -93,28 +113,38 @@ export function PortraitTestQuickActions({
   }
 
   return <>
-    <nav className="hh-portrait-quick-actions"
-      aria-label={locale === 'ru' ? 'Действия с психологическим портретом' :
-        locale === 'es' ? 'Acciones del retrato psicológico' : 'Psychological portrait actions'}
+    <nav className="hh-portrait-quick-actions" role="tablist"
+      onKeyDown={handleTabKeyDown}
+      aria-label={locale === 'ru' ? 'Вкладки психологического портрета' :
+        locale === 'es' ? 'Pestañas del retrato psicológico' : 'Psychological portrait tabs'}
       data-testid="portrait-quick-actions">
-      <button type="button" className="hh-portrait-quick-primary"
-        data-testid="portrait-completion-action" aria-expanded={expanded}
-        aria-controls={panelId} onClick={() => { setExpanded(value => !value); setError('') }}>
+      <button type="button" id="hh-portrait-tab-tests" role="tab" data-portrait-tab="tests"
+        className={testsVisible ? 'hh-portrait-quick-primary' : 'hh-portrait-quick-secondary'}
+        data-testid="portrait-completion-action" aria-expanded={expandedVisible}
+        aria-selected={testsVisible} tabIndex={testsVisible ? 0 : -1}
+        aria-controls={panelId} onClick={() => selectTab('tests')}>
         <ClipboardList size={18} aria-hidden="true" />
         <span>{t.open}</span>
-        <ChevronDown size={14} aria-hidden="true" className={expanded ? styles.up : styles.down} />
+        <ChevronDown size={14} aria-hidden="true" className={expandedVisible ? styles.up : styles.down} />
       </button>
-      <button type="button" className="hh-portrait-quick-secondary hh-portrait-quick-analyses"
-        data-testid="portrait-analyses-action" onClick={onAnalyses}>
-        <BarChart3 size={18} aria-hidden="true" />{t.analyses}
+      <button type="button" id="hh-portrait-tab-analyses" role="tab" data-portrait-tab="analyses"
+        className={activeTab === 'analyses' ? 'hh-portrait-quick-primary hh-portrait-quick-analyses' : 'hh-portrait-quick-secondary hh-portrait-quick-analyses'}
+        data-testid="portrait-analyses-action" aria-selected={activeTab === 'analyses'}
+        tabIndex={activeTab === 'analyses' ? 0 : -1}
+        aria-controls="hh-portrait-panel-analyses" onClick={() => selectTab('analyses')}>
+        <BarChart3 size={18} aria-hidden="true" /><span>{t.analyses}</span>
       </button>
-      <button type="button" className="hh-portrait-quick-secondary"
-        data-testid="portrait-recommendations-action" onClick={onRecommendations}>
-        <Sparkles size={18} aria-hidden="true" />{t.recommendations}
+      <button type="button" id="hh-portrait-tab-recommendations" role="tab" data-portrait-tab="recommendations"
+        className={activeTab === 'recommendations' ? 'hh-portrait-quick-primary' : 'hh-portrait-quick-secondary'}
+        data-testid="portrait-recommendations-action" aria-selected={activeTab === 'recommendations'}
+        tabIndex={activeTab === 'recommendations' ? 0 : -1}
+        aria-controls="hh-portrait-panel-recommendations" onClick={() => selectTab('recommendations')}>
+        <Sparkles size={18} aria-hidden="true" /><span>{t.recommendations}</span>
       </button>
     </nav>
-    <section id={panelId} className={styles.shell} data-expanded={expanded}
-      data-testid="portrait-test-recommendations" aria-hidden={!expanded} inert={!expanded}
+    <section id={panelId} className={styles.shell} role="tabpanel"
+      aria-labelledby="hh-portrait-tab-tests" data-expanded={expandedVisible}
+      data-testid="portrait-test-recommendations" aria-hidden={!expandedVisible} inert={!expandedVisible}
       aria-label={t.heading + ': ' + sectorLabel}>
       <div className={styles.panel}>
         <header className={styles.header}>
