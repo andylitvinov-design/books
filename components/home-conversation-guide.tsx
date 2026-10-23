@@ -174,7 +174,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     },
     secondary: "Another way to explore",
     privacyShort: "Private in this browser · How it works",
-    privacyDetail: "Your typed question stays in this browser while the page is open. It is not sent to our server, CRM, analytics or an AI provider. This is a local topic-based guide, not an AI therapist or a real-time human conversation. If you choose voice input, your browser or operating system may process audio through its speech recognition provider. You decide whether to enable the microphone. Do not include confidential personal details.",
+    privacyDetail: "Messages stay in this browser and are not sent to our server, CRM, analytics or an AI provider. If you explicitly enable quality feedback, only a broad category and rating are stored privately for 14 days, with aggregated daily counts retained for 60 days. Messages, names and test results are never included. This is an automated site guide, not a therapist or human conversation. Your browser may use its speech provider only when you tap the microphone. Avoid confidential details.",
     voiceStart: "Dictate a question with microphone",
     voiceStop: "Stop voice input",
     voiceError: "Speech recognition stopped unexpectedly. You can try again or type your question.",
@@ -262,7 +262,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     },
     secondary: "Другой способ разобраться",
     privacyShort: "Только в этом браузере · Как работает",
-    privacyDetail: "Текст вопроса остаётся в этом браузере, пока открыта страница. Он не передаётся на наш сервер, в CRM, аналитику или AI-провайдеру. Это тематический помощник для навигации, а не AI-терапевт и не живой консультант. При голосовом вводе браузер или операционная система могут обрабатывать звук через сервис распознавания речи. Микрофон включается только по вашему действию. Не вводите конфиденциальные данные.",
+    privacyDetail: "Текст диалога остаётся в браузере и не передаётся серверу, CRM, аналитике или AI-провайдеру. Только при явном согласии сохраняются общая тема и оценка: события до 14 дней, суммарная статистика до 60 дней. Самих сообщений, имён и результатов тестов в базе нет. Это автоматический помощник сайта, не терапевт и не живой консультант. При нажатии микрофона браузер может использовать свой сервис распознавания речи. Не вводите конфиденциальные сведения.",
     voiceStart: "Продиктовать вопрос",
     voiceStop: "Остановить голосовой ввод",
     voiceError: "Голосовой ввод прервался. Попробуйте ещё раз или напишите вопрос.",
@@ -350,7 +350,7 @@ const copy: Record<PublicLocale, GuideCopy> = {
     },
     secondary: "Otra opción para explorar",
     privacyShort: "Privado en este navegador · Cómo funciona",
-    privacyDetail: "Tu texto permanece en este navegador mientras la página esté abierta. No se envía a nuestro servidor, CRM, analítica ni a un proveedor de IA. Esta guía local recomienda rutas por temas: no es una terapeuta de IA ni una conversación humana en directo. Si usas la voz, el navegador o sistema operativo puede enviar audio a su proveedor de reconocimiento. Solo activamos el micrófono cuando lo decides. Evita datos confidenciales.",
+    privacyDetail: "Los mensajes se quedan en este navegador: no se envían al servidor, CRM, analítica ni IA. Solo si aceptas se guarda el tema general y la valoración durante 14 días; los totales diarios se conservan hasta 60 días. Nunca se guardan mensajes, nombres ni resultados de pruebas. Esta es una guía automática, no un terapeuta humano. El micrófono puede usar el servicio de voz del navegador al pulsarlo. Evita información confidencial.",
     voiceStart: "Dictar una pregunta",
     voiceStop: "Detener dictado",
     voiceError: "El dictado se interrumpió. Vuelve a intentarlo o escribe tu pregunta.",
@@ -390,6 +390,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
   const [recommendations, setRecommendations] = useState<HomeGuideOffer[]>([]);
   const [qualityConsent, setQualityConsent] = useState(false);
   const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [qualityPending, setQualityPending] = useState(false);
   const [needsClarification, setNeedsClarification] = useState(false);
   const [qualityPriorities, setQualityPriorities] = useState<GuideCategory[]>([]);
   const [supportsVoice, setSupportsVoice] = useState(false);
@@ -557,9 +558,17 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     return "other";
   }
 
-  function recordGuideFeedback(category: GuideCategory, signal: GuideSignal, language: PublicLocale) {
-    if (!qualityConsent) return;
-    void shareGuideQualityFeedback({ category, signal, locale: language, consent: true });
+  function recordGuideFeedback(category: GuideCategory, signal: GuideSignal, language: PublicLocale): Promise<boolean> {
+    if (!qualityConsent) return Promise.resolve(false);
+    return shareGuideQualityFeedback({ category, signal, locale: language, consent: true });
+  }
+
+  function rateGuideSuggestion(signal: "helpful" | "unhelpful") {
+    if (!context || !qualityConsent || qualityPending || feedbackSaved) return;
+    setQualityPending(true);
+    void recordGuideFeedback(categorizeGuideContext(context), signal, context.lang)
+      .then(saved => { if (saved) setFeedbackSaved(true); })
+      .finally(() => setQualityPending(false));
   }
 
   function noteClarifiedChoice(choiceId: string, language: PublicLocale) {
@@ -567,7 +576,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setNeedsClarification(false);
     const category = choiceId.startsWith("topic-")
       ? choiceId.slice(6) as GuideCategory : "other";
-    recordGuideFeedback(category, category === "other" ? "unresolved" : "clarified", language);
+    void recordGuideFeedback(category, category === "other" ? "unresolved" : "clarified", language);
   }
 
   function ask(text: string) {
@@ -625,7 +634,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     if (!result.matched) setNeedsClarification(true);
     else if (needsClarification) {
       setNeedsClarification(false);
-      recordGuideFeedback(categorizeGuideContext(result), "clarified", result.lang);
+      void recordGuideFeedback(categorizeGuideContext(result), "clarified", result.lang);
     }
     const responseCopy = copy[result.lang];
     const followup = homeGuideFollowup(result);
@@ -852,6 +861,7 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
     setQualityConsent(false);
     setNeedsClarification(false);
     setFeedbackSaved(false);
+    setQualityPending(false);
     setDraft("");
     setTurns([]);
     questionRef.current?.focus();
@@ -999,16 +1009,10 @@ export function HomeConversationGuide({ locale }: { locale: PublicLocale }) {
                     </button>
                     <div className={styles.qualityRating}>
                       <span>{answerCopy.qualityHelp}</span>
-                      <button type="button" disabled={!qualityConsent || feedbackSaved}
-                        onClick={() => {
-                          recordGuideFeedback(categorizeGuideContext(context), "helpful", context.lang);
-                          setFeedbackSaved(true);
-                        }}>{answerCopy.qualityHelpful}</button>
-                      <button type="button" disabled={!qualityConsent || feedbackSaved}
-                        onClick={() => {
-                          recordGuideFeedback(categorizeGuideContext(context), "unhelpful", context.lang);
-                          setFeedbackSaved(true);
-                        }}>{answerCopy.qualityNotHelpful}</button>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved || qualityPending}
+                        onClick={() => rateGuideSuggestion("helpful")}>{answerCopy.qualityHelpful}</button>
+                      <button type="button" disabled={!qualityConsent || feedbackSaved || qualityPending}
+                        onClick={() => rateGuideSuggestion("unhelpful")}>{answerCopy.qualityNotHelpful}</button>
                     </div>
                     {feedbackSaved ? <p className={styles.qualitySaved} role="status">{answerCopy.qualitySaved}</p> : null}
                     <p className={styles.limitation}>{answerCopy.limitation}</p>
