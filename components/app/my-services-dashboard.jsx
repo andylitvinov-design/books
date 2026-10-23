@@ -89,7 +89,7 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
   const priceLabel=item=>item.pricingMode==='free'?c.free:item.pricingMode==='contact'?c.contact:item.confirmedPrice!=null
     ? ((item.pricingMode==='from'?(lang==='ru'?'От ':lang==='es'?'Desde ':'From '):'')+[item.currency,item.confirmedPrice].filter(Boolean).join(' '))
     : c.contact
-  return <section className={styles.dashboard} aria-labelledby="hh-my-services-title">
+  return <section className={styles.dashboard} aria-labelledby={composing?undefined:'hh-my-services-title'} aria-label={composing?c.title:undefined}>
     <div className={styles.inner}>
       {!composing&&<><button type="button" className={styles.finderButton} id="hh-services-picker-toggle"
         onClick={()=>setFinderOpen(value=>!value)}
@@ -131,11 +131,11 @@ export default function MyServicesDashboard({items=[],locale='en',createRequest=
         </div>
       </div>
       </>}
-      <header className={styles.header} data-composing={composing}>
+      {!composing&&<header className={styles.header} data-composing={composing}>
         <p className={styles.kicker}>{c.kicker}</p>
         <h2 id="hh-my-services-title">{editingItem?c.edit:creating?c.add:c.title}</h2>
         <p>{composing?(lang==='ru'?'Предложение для клиента — три простых экрана.':lang==='es'?'Una oferta clara en tres pantallas.':'A clear client-facing offer in three screens.'):c.intro}</p>
-      </header>
+      </header>}
       {!composing&&<div className={styles.stats} role="group" aria-label={c.title}>
         <div><Leaf size={18} aria-hidden="true"/><strong>{items.length}</strong><span>{c.total}</span></div>
         <div><CheckCircle2 size={18} aria-hidden="true"/><strong>{published}</strong><span>{c.published}</span></div>
