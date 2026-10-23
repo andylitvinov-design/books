@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, ChevronDown, ClipboardCheck, GraduationCap, CalendarDays } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { journeyFocusForTopics } from '@/lib/assessments/topic-journeys'
 import type { PublicLocale } from '@/lib/public-locales'
 import styles from './direction-offers.module.css'
@@ -96,7 +96,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const c = copy[locale]
   const d = directionCopy[direction][locale]
   const selected = journey.topics.find(item => item.id === topicId)
-  const focus = useMemo(() => journeyFocusForTopics(journey, selected ? [selected.id] : []), [journey, selected])
+  const focus = journeyFocusForTopics(journey, selected ? [selected.id] : [])
   const suggested = suggestions[selected?.id || '']?.[0]
   const testHref = '/' + locale + '/client/tests?focus=' + encodeURIComponent(focus.join(',')) +
     '&journey=' + direction + '&topics=' + encodeURIComponent(topicId)
