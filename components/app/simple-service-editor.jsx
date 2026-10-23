@@ -206,9 +206,9 @@ export default function SimpleServiceEditor({item,locale='en',busy=false,onSave,
   const makePayload=()=>({
     ...draft,languages:commas(languagesText),methods:commas(methodsText),
     benefits:lines(benefitsText,5),faq:lines(faqText,6),
-    confirmedPrice:paid?(draft.confirmedPrice===''?null:Number(draft.confirmedPrice)):null,
+    confirmedPrice:paid?(draft.confirmedPrice==null||draft.confirmedPrice===''?null:Number(draft.confirmedPrice)):null,
     currency:paid?(draft.currency||'CAD'):'',
-    durationMinutes:draft.durationMinutes===''?null:Number(draft.durationMinutes),
+    durationMinutes:draft.durationMinutes==null||draft.durationMinutes===''?null:Number(draft.durationMinutes),
     displayLocales:draft.copy.es.title?.trim()
       ? [...new Set([...(draft.displayLocales||['en','ru']),'es'])]
       : (draft.displayLocales||['en','ru']).filter(code=>code!=='es'),
