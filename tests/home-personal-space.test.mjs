@@ -73,3 +73,40 @@ test('homepage uses shared client-only provider and keeps existing hero/banner/d
   assert.match(panel, /showModal\(/);
   assert.doesNotMatch(panel, /localStorage|sessionStorage|sendBeacon|analytics|dangerouslySetInnerHTML/);
 });
+
+test('the home drawer keeps a personal left column and a separate master right column for guests and members', () => {
+  const panel = readFileSync(new URL('../components/home-personal-space.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../components/home-personal-space.module.css', import.meta.url), 'utf8');
+  for (const label of ['For me', 'For masters', 'Для себя', 'Для мастера', 'Para mí', 'Para maestros']) {
+    assert.ok(panel.includes(label), label);
+  }
+  assert.match(panel, /className=\{styles\.pathGrid\}/);
+  assert.match(panel, /personalActions\.map\(/);
+  assert.match(panel, /masterActions\.map\(/);
+  assert.match(panel, /summary\.professional \?/);
+  assert.match(panel, /href=\{root \+ "\/practice"\}/);
+  assert.match(panel, /practice\?panel=services/);
+  assert.match(panel, /practice\?panel=materials&materialTab=courses/);
+  assert.match(css, /grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /@media \(max-width: 350px\)/);
+  assert.doesNotMatch(css, /\.pathGrid\s*\{[^}]*grid-template-columns:\s*1fr/);
+  assert.match(css, /min-height:\s*44px/);
+  assert.match(css, /env\(safe-area-inset-bottom\)/);
+});
+
+test('guest Google entry uses the existing rate-limited PKCE Cabinet continuation without auto-enrolment', () => {
+  const panel = readFileSync(new URL('../components/home-personal-space.tsx', import.meta.url), 'utf8');
+  const route = readFileSync(new URL('../app/api/app/[...path]/route.js', import.meta.url), 'utf8');
+  assert.match(panel, /status === "guest"/);
+  assert.match(panel, /onClick=\{\(\) => void startGoogleSignIn\(\)\}/);
+  assert.match(panel, /appFetch\("auth\/start",/);
+  assert.match(panel, /continueTo: "cabinet"/);
+  assert.match(panel, /isNativeHolisticHouse\(\)/);
+  assert.match(panel, /Browser\.open\(\{ url: result\.redirectUrl \}\)/);
+  assert.match(panel, /window\.location\.assign\(result\.redirectUrl\)/);
+  assert.match(panel, /role="alert"/);
+  assert.match(route, /signInWithOAuth\(\{/);
+  assert.match(route, /continueTo === 'cabinet'/);
+  assert.match(route, /op: 'oauth-start'/);
+  assert.doesNotMatch(panel, /localStorage|sessionStorage|sendBeacon|autoSubmit/);
+});
