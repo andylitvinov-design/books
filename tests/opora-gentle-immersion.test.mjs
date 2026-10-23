@@ -77,7 +77,7 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' gets four short teaching
     await advanceOporaTo(h,'recapPractice',t.next)
     assert.ok(textOf(screen(h,'recapPractice')).includes(oporaExperienceDay(4,lang).practice))
     await advanceOporaTo(h,'recapNext',t.next)
-    assert.ok(textOf(screen(h,'recapNext')).includes(oporaGentleCopy(lang).noPlan))
+    assert.ok(textOf(screen(h,'recapNext')).includes(content.everyday), 'An everyday suggestion is optional, not an assumed plan')
     await advanceOporaTo(h,'recapFeedback',t.next)
     assert.equal(nodes(screen(h,'recapFeedback')).filter(n=>n.props?.['data-opora-lesson-confidence']==='true').length,1)
     assert.equal(f.writes,0)
