@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaAs58Day,oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -61,8 +62,8 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
       await advanceOporaTo(f.h,'practice',t.next)
-      assert.ok(textOf(f.h.tree).includes(oporaExperienceDay(day,locale).title))
-      assert.ok(textOf(f.h.tree).includes(oporaExperienceGuide(day,locale)))
+      assert.ok(textOf(f.h.tree).includes(oporaAs58Day(day,locale).title))
+      assert.ok(textOf(f.h.tree).includes(oporaAs58Day(day,locale).practice))
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],false)
       await f.click(t.help)
@@ -128,6 +129,7 @@ for(const locale of ['ru','en','es']){
 }
 test('AS5.7 validates current trilingual content without resurrecting superseded long guidance',()=>{
   assert.equal(oporaExperienceGuidesValid(),true)
+  assert.equal(oporaAs58Valid(),true)
   assert.equal(OPORA_EXPERIENCE_DESIGN_VERSION,'as-5.7-soft-morning')
   for(const day of [0,15,-1,1.5,null,undefined,'1'])assert.equal(oporaExperienceGuide(day),null)
   assert.match(oporaExperienceGuide(12,'ru'),/мысль, что…/u)
