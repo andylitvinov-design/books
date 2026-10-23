@@ -18,7 +18,7 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,shortcut=null,onTabChange}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,quickCreateCourse=false,shortcut=null,onTabChange}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -48,13 +48,16 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   moderation:'Your videos appear on the public profile after editorial approval. Previously published materials remain visible until changes are approved.',
   invalid:'Enter a valid YouTube or Vimeo URL.',duplicate:'This video is already in your materials.',saving:'Saving…',saved:'Video saved to your materials as a draft.',removed:'Video removed from your materials.',saveFailed:'Could not save the video. Please try again.',conflict:'Your profile changed in another tab. Refresh the page and try again.',confirmRemove:'Remove this video from your materials?',autoSaved:'Videos save immediately. Submit for review to publish them on your profile.',
  }
- const [tab,setTab]=useState(isOwner?'courses':'articles')
+ const [tab,setTab]=useState(quickCreateCourse?'courses':isOwner?'courses':'articles')
  const [query,setQuery]=useState('')
- const [courseComposerOpen,setCourseComposerOpen]=useState(false)
+ const [courseComposerOpen,setCourseComposerOpen]=useState(Boolean(quickCreateCourse))
  const [searchOpen,setSearchOpen]=useState(false)
  const [showAll,setShowAll]=useState(false)
  const [audioAction,setAudioAction]=useState('')
  const activeTabs=['articles','services','courses',...(isOwner?['audio']:[]),'videos']
+ useEffect(()=>{
+   if(quickCreateCourse){setTab('courses');setCourseComposerOpen(true)}
+ },[quickCreateCourse])
  useEffect(()=>{
    const requested=new URLSearchParams(window.location.search).get('materialTab')
    if(activeTabs.includes(requested)){setTab(requested);onTabChange?.(requested)}
@@ -198,7 +201,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
      <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Аудиозаписи закрыты до вашей публикации.':es?'El audio permanece privado hasta publicarlo.':'Audio stays private until you publish it.'}</p>
     </div>}
     <div className={styles.courseComposer}>
-     {courseComposerOpen&&<div className={styles.composerPanel}><PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} onOpenYoutube={isOwner?onOpenYoutube:null}/></div>}
+     {courseComposerOpen&&<div className={styles.composerPanel}><PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} startCreate={quickCreateCourse} onOpenYoutube={isOwner?onOpenYoutube:null}/></div>}
     </div>
    </section>:
    tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>
