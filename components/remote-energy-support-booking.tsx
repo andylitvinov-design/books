@@ -185,7 +185,8 @@ export function RemoteEnergySupportBooking({
       const draft = {
         version: 2, serviceId: selected.serviceId, practitioner: selected.name,
         goal, method, format, duration, date: day, time, timezone,
-        startsAt: startsAt.toISOString(), savedAt: Date.now(),
+        startsAt: startsAt.toISOString(), expectedPrice: currentPrice.price,
+        expectedCurrency: selected.currency, savedAt: Date.now(),
       };
       window.sessionStorage.setItem(REMOTE_SUPPORT_DRAFT_KEY, JSON.stringify(draft));
       // The cabinet supports EN/RU at present; ES retains preferences but opens EN.
