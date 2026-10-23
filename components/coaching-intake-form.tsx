@@ -23,17 +23,17 @@ const blank = (): Draft => ({ topic: "personal", name: "", city: "", answers: {}
 const copy = {
   en: {
     eyebrow: "AUTHOR'S COACHING QUESTIONNAIRE · HOLISTIC HOUSE",
-    title: "Your question. Your next step.",
-    lead: "Explore your situation, define your goal and prepare the questions you want to discuss with a coach. One page, at your own pace.",
+    title: "Your coaching questions",
+    lead: "One question per line. Answer at your own pace.",
     labelTopic: "What is your request about?",
     yourName: "How should we address you? (optional)",
     location: "City and country (optional)",
     addQuestion: "Add another question", ownQuestions: "What would you like to ask the coach?",
     ownHint: "List concrete questions you want to discuss. Choose ONE priority question in the field above.",
     questionPlaceholder: "Write your question here",
-    optional: "Optional", required: "Essential to complete", note: "These are open coaching reflections, not a scored psychological test.",
-    signedOut: "You can fill the questionnaire without signing in. To keep your answers between visits, sign in with Google and save a private draft.",
-    signedIn: "Signed in · Only you can access this saved questionnaire.",
+    optional: "Optional", required: "Essential to complete", requiredLegend: "* Essential; all other answers are optional.", answerPlaceholder: "Your answer…", note: "These are open coaching reflections, not a scored psychological test.",
+    signedOut: "Fill it out without signing in. Google is only needed to save privately.",
+    signedIn: "Private questionnaire · visible only to you.",
     login: "Sign in to save privately", signInError: "Google sign-in is currently unavailable. You can still copy your answers.",
     loading: "Checking your private account…", unavailable: "Private saving is unavailable. You can keep filling in and copy your answers.",
     consent: "Save my coaching answers encrypted in my Holistic House account. They are not sent to a coach, messenger or CRM.",
@@ -60,17 +60,17 @@ const copy = {
   },
   ru: {
     eyebrow: "АВТОРСКАЯ КОУЧИНГ-АНКЕТА · HOLISTIC HOUSE",
-    title: "Ваш вопрос. Ваш следующий шаг.",
-    lead: "Опишите ситуацию, сформулируйте цель и подготовьте вопросы для коуча. Одна страница, без спешки.",
+    title: "Вопросы и ответы",
+    lead: "Один пункт — один вопрос. Отвечайте в своём темпе.",
     labelTopic: "К какой теме относится ваш запрос?",
     yourName: "Как к вам обращаться? (необязательно)",
     location: "Город и страна (необязательно)",
     addQuestion: "Добавить вопрос", ownQuestions: "Что вы хотели бы спросить у коуча?",
     ownHint: "Перечислите конкретные вопросы. ОДИН самый важный укажите в отдельном поле выше.",
     questionPlaceholder: "Напишите свой вопрос",
-    optional: "Необязательно", required: "Нужно для завершения", note: "Это коучинговая рефлексия, а не психологический тест с баллами.",
-    signedOut: "Анкету можно заполнить без входа. Для сохранения между посещениями войдите через Google и сохраните приватный черновик.",
-    signedIn: "Вы вошли · Сохранённую анкету можете видеть только вы.",
+    optional: "Необязательно", required: "Нужно для завершения", requiredLegend: "* Обязательные вопросы; остальные по желанию.", answerPlaceholder: "Ваш ответ…", note: "Это коучинговая рефлексия, а не психологический тест с баллами.",
+    signedOut: "Заполняйте без входа. Google нужен только для приватного сохранения.",
+    signedIn: "Приватная анкета · ответы видны только вам.",
     login: "Войти и сохранить приватно", signInError: "Вход через Google пока недоступен. Вы можете скопировать ответы.",
     loading: "Проверяем ваш личный кабинет…", unavailable: "Приватное сохранение недоступно. Можно заполнить анкету и скопировать ответы.",
     consent: "Сохранить ответы в зашифрованном виде в моём кабинете Holistic House. Коучу, в мессенджер и CRM они не отправляются.",
@@ -97,17 +97,17 @@ const copy = {
   },
   es: {
     eyebrow: "FORMULARIO DE COACHING DEL AUTOR · HOLISTIC HOUSE",
-    title: "Tu pregunta. Tu próximo paso.",
-    lead: "Explora tu situación, define una meta y prepara tus preguntas para el coach. Todo en una página y a tu ritmo.",
+    title: "Tus preguntas de coaching",
+    lead: "Una pregunta por apartado. Responde a tu ritmo.",
     labelTopic: "¿De qué trata tu consulta?",
     yourName: "¿Cómo podemos llamarte? (opcional)",
     location: "Ciudad y país (opcional)",
     addQuestion: "Añadir otra pregunta", ownQuestions: "¿Qué deseas preguntar al coach?",
     ownHint: "Escribe preguntas concretas. Elige UNA pregunta prioritaria en el campo anterior.",
     questionPlaceholder: "Escribe tu pregunta aquí",
-    optional: "Opcional", required: "Necesario para completar", note: "Son reflexiones de coaching, no una prueba psicológica puntuable.",
-    signedOut: "Puedes completar el formulario sin iniciar sesión. Para guardarlo entre visitas, inicia sesión con Google y guarda un borrador privado.",
-    signedIn: "Sesión iniciada · Solo tú puedes acceder a este formulario guardado.",
+    optional: "Opcional", required: "Necesario para completar", requiredLegend: "* Preguntas esenciales; las demás son opcionales.", answerPlaceholder: "Tu respuesta…", note: "Son reflexiones de coaching, no una prueba psicológica puntuable.",
+    signedOut: "Puedes responder sin iniciar sesión. Google solo es necesario para guardar.",
+    signedIn: "Formulario privado · solo tú puedes ver las respuestas.",
     login: "Iniciar sesión para guardar", signInError: "Google no está disponible. Aún puedes copiar tus respuestas.",
     loading: "Comprobando tu cuenta privada…", unavailable: "No se puede guardar ahora. Puedes completar y copiar tus respuestas.",
     consent: "Guardar mis respuestas cifradas en mi cuenta de Holistic House. No se enviarán al coach, mensajería o CRM.",
@@ -304,14 +304,13 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
 
   return <section className={styles.form} aria-labelledby="coaching-form-title" data-coaching-intake lang={locale}>
     <header className={styles.intro}>
-      <div>
-        <p className={styles.eyebrow}>{t.eyebrow}</p>
+      <div className={styles.introCopy}>
         <h2 id="coaching-form-title">{t.title}</h2>
         <p className={styles.lead}>{t.lead}</p>
-        <p className={styles.education}><ShieldCheck size={17} aria-hidden="true" />{t.note}</p>
+        <p className={styles.education}><ShieldCheck size={15} aria-hidden="true" />{t.note}</p>
       </div>
       <div className={styles.stats} role="status" aria-live="polite">
-        <strong>{filled} / {total}</strong>
+        <span className={styles.count}><strong>{filled}</strong> / {total}</span>
         <span>{locale === "ru" ? "ответов" : locale === "es" ? "respuestas" : "answered"}</span>
         <div className={styles.progress} role="progressbar" aria-valuenow={filled} aria-valuemin={0} aria-valuemax={total} aria-label={locale === "ru" ? "Заполнено вопросов" : locale === "es" ? "Preguntas respondidas" : "Questions answered"}><span style={{ width: String(Math.round(filled / total * 100)) + "%" }} /></div>
       </div>
@@ -344,30 +343,35 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </label>
     </div>
 
+    <p className={styles.requiredLegend}>{t.requiredLegend}</p>
     {COACHING_GROUPS.map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
       <div className={styles.groupHeading}><span className={styles.number}>{String(groupIndex + 1).padStart(2, "0")}</span>
         <div><h3 id={"coaching-" + group.id}>{group.title[locale]}</h3><p>{group.hint[locale]}</p></div>
+        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id).length}</span>
       </div>
-      <div className={styles.fields}>
-        {COACHING_FIELDS.filter(field => field.group === group.id).map((field, index) => <label key={field.id} className={styles.field}>
-          <span>{field.label[locale]} {field.required ? <em title={t.required}>*</em> : <small>{t.optional}</small>}</span>
+      <ol className={styles.fields} start={COACHING_FIELDS.findIndex(item => item.group === group.id) + 1}>
+        {COACHING_FIELDS.filter(field => field.group === group.id).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
+          <label htmlFor={"coaching-field-" + field.id} className={styles.questionLabel}>
+            <span className={styles.ordinal} aria-hidden="true">{String(COACHING_FIELDS.findIndex(item => item.id === field.id) + 1).padStart(2, "0")}</span>
+            <span>{field.label[locale]} {field.required ? <em title={t.required}>*</em> : null}</span>
+          </label>
           <textarea
+            id={"coaching-field-" + field.id}
             value={draft.answers[field.id] || ""} disabled={collision || busy}
             onChange={event => fieldChange(field.id, event.target.value)}
-            rows={field.id === "request" || field.id === "priorityQuestion" ? 3 : 2}
-            maxLength={field.max}
-            placeholder={index === 0 ? (locale === "ru" ? "Ваш ответ…" : locale === "es" ? "Tu respuesta…" : "Your answer…") : undefined}
+            rows={2} maxLength={field.max}
+            placeholder={t.answerPlaceholder}
             aria-required={field.required}
           />
-        </label>)}
-      </div>
+        </li>)}
+      </ol>
       {group.id === "session" ? <div className={styles.ownQuestions}>
         <div className={styles.ownHeader}><div><h4>{t.ownQuestions}</h4><p>{t.ownHint}</p></div>
           <button type="button" disabled={collision || busy || draft.questions.length >= 8} onClick={() => edit(previous => ({ ...previous, questions: [...previous.questions, ""] }))}>
             <Plus size={16} aria-hidden="true" />{t.addQuestion}
           </button>
         </div>
-        {draft.questions.map((question, index) => <div className={styles.questionRow} key={index}>
+        {draft.questions.map((question, index) => <div className={styles.questionRow} key={index} data-extra-question={index + 1}>
           <label htmlFor={"coaching-question-" + index}>{index + 1}</label>
           <textarea id={"coaching-question-" + index} rows={2} maxLength={600} value={question} disabled={collision || busy}
             placeholder={t.questionPlaceholder} onChange={event => edit(previous => ({ ...previous, questions: previous.questions.map((item, i) => i === index ? event.target.value : item) }))} />

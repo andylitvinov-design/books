@@ -26,8 +26,8 @@ const copy = {
     back: "Все услуги",
     kicker: "ЛИЧНАЯ РАБОТА · АНДРЕЙ ЛИТВИНОВ",
     title: "Алхимия души",
-    titleDetail: "Психогомеопатия",
-    headline: "Найти то, что удерживает проблему — и наметить путь к изменениям.",
+    titleDetail: "Psychic Alchemy · Психогомеопатия",
+    headline: "Начинаем с вашего вопроса. Исследуем глубинные связи. Ищем следующий шаг.",
     intro: "Сначала исследуем ситуацию через расстановку, затем через образную гипнотерапию — возможный внутренний корень. Дополнительные ресурсы подбираем индивидуально.",
     chips: ["Расстановка", "Гипнотерапия", "Ресурсная поддержка"],
     cta: "Запросить сеанс",
@@ -61,6 +61,13 @@ const copy = {
     videoTitle: "Посмотрите, как я работаю",
     videoIntro: "Короткое ранее опубликованное видео о выборе метода под конкретный запрос.",
     videoNote: "Видео знакомит с общим подходом; не является полной демонстрацией всех этапов «Алхимии души».",
+
+    featuredKicker: "ПЕРВОЕ ЗНАКОМСТВО · 5 МИНУТ",
+    featuredTitle: "Psychic Alchemy — об этом рассказываю сам",
+    featuredIntro: "Начните с моего видео. Ниже — как проходит персональная работа: сначала ваш запрос, затем исследование ситуации, внутренних реакций и доступных ресурсов.",
+    featuredVideoNote: "Оригинальная запись на английском. Видео загружается только после нажатия Play; просмотр необязателен.",
+    featuredVideoAction: "Обсудить мой запрос",
+    featuredVideoFree: "Сначала бесплатно",
 
     reviewsKicker: "ОПЫТ КЛИЕНТОВ",
     reviewsTitle: "Люди рассказывают сами",
@@ -103,8 +110,8 @@ const copy = {
     back: "All services",
     kicker: "PERSONAL WORK · ANDREY LITVINOV",
     title: "Alchemy of the Soul",
-    titleDetail: "Psycho-homeopathy",
-    headline: "Explore what keeps a problem in place — and find a possible way forward.",
+    titleDetail: "Psychic Alchemy · Psycho-homeopathy",
+    headline: "Begin with your question. Explore deeper patterns. Find a next step.",
     intro: "We first map the situation through a constellation, then explore the possible inner root through guided-imagery hypnotherapy. Additional resources are chosen individually.",
     chips: ["Constellations", "Hypnotherapy", "Personal resources"],
     cta: "Request a session",
@@ -138,6 +145,13 @@ const copy = {
     videoTitle: "See how I work",
     videoIntro: "A previously published short video about choosing a method for each person's situation.",
     videoNote: "This introduces the broader approach, not all stages of the Alchemy of the Soul service.",
+
+    featuredKicker: "MEET THE PRACTITIONER · 5-MINUTE VIDEO",
+    featuredTitle: "Psychic Alchemy — in my own words",
+    featuredIntro: "Begin with my introduction, then explore how a personal session starts with your real question and combines systemic exploration, guided imagery and optional complementary resources.",
+    featuredVideoNote: "Original English audio. The YouTube player loads only after you choose to press Play. Watching is optional.",
+    featuredVideoAction: "Discuss my situation",
+    featuredVideoFree: "Start free",
 
     reviewsKicker: "CLIENT EXPERIENCES",
     reviewsTitle: "Hear from people I've worked with",
@@ -180,8 +194,8 @@ const copy = {
     back: "Todos los servicios",
     kicker: "TRABAJO PERSONAL · ANDREY LITVINOV",
     title: "Alquimia del Alma",
-    titleDetail: "Psicohomeopatía",
-    headline: "Explora qué mantiene una dificultad — y encuentra una posible forma de avanzar.",
+    titleDetail: "Psychic Alchemy · Psicohomeopatía",
+    headline: "Partimos de tu pregunta, exploramos patrones profundos y buscamos el siguiente paso.",
     intro: "Primero observamos la situación mediante una constelación y después exploramos posibles patrones internos con hipnoterapia de imágenes guiadas. Elegimos los recursos complementarios de forma individual.",
     chips: ["Constelaciones", "Hipnoterapia", "Recursos personales"],
     cta: "Solicitar una sesión",
@@ -215,6 +229,13 @@ const copy = {
     videoTitle: "Descubre cómo trabajo",
     videoIntro: "Un breve vídeo ya publicado, en inglés, sobre cómo elijo el método para cada situación.",
     videoNote: "El vídeo presenta el enfoque general, no todas las etapas del servicio Alquimia del Alma. El audio original está en inglés.",
+
+    featuredKicker: "CONOCE AL FACILITADOR · VÍDEO DE 5 MINUTOS",
+    featuredTitle: "Psychic Alchemy — explicado por mí",
+    featuredIntro: "Comienza con mi presentación y descubre cómo una sesión parte de tu pregunta para explorar la situación, las imágenes guiadas y los recursos complementarios opcionales.",
+    featuredVideoNote: "El audio original está en inglés. YouTube solo se carga cuando pulsas Play. El vídeo es opcional.",
+    featuredVideoAction: "Consultar mi situación",
+    featuredVideoFree: "Empezar gratis",
 
     reviewsKicker: "EXPERIENCIAS DE CLIENTES",
     reviewsTitle: "Escucha sus experiencias",
@@ -275,6 +296,15 @@ const testimonials = {
   ],
 } as const;
 
+// Owner-supplied public presentation (23 October 2026). Keep the exact video ID;
+ // a YouTube Live link is played through the existing privacy-first poster player.
+const featuredIntroVideo = {
+  youtubeId: "-zacUn_zN6g",
+  title: "Psychic Alchemy — Andrey Litvinov",
+  language: "en" as const,
+  durationSeconds: 300,
+};
+
 export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   const t = copy[locale];
   const video = getServiceVideoMedia("alchemy", locale);
@@ -297,6 +327,24 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <Link href={"/" + locale + "/services"}><ArrowLeft size={15} aria-hidden="true" />{t.back}</Link>
           <span aria-hidden="true">/</span><span>{t.title}</span>
         </nav>
+
+
+        <section className={[styles.panel, styles.featuredVideoSection].join(" ")}
+          data-alchemy-panel="featured-video" aria-labelledby="alchemy-featured-video-title">
+          <div className={styles.featuredVideoText}>
+            <span className={styles.eyebrow}><PlayCircle size={15} aria-hidden="true" />{t.featuredKicker}</span>
+            <h2 id="alchemy-featured-video-title">{t.featuredTitle}</h2>
+            <p>{t.featuredIntro}</p>
+            <div className={styles.featuredVideoActions}>
+              <a className={styles.featuredVideoAction} href="#alchemy-request">{t.featuredVideoAction}<ArrowRight size={16} aria-hidden="true" /></a>
+              <Link className={styles.featuredFree} href={freeReview}>{t.featuredVideoFree}<ArrowUpRight size={14} aria-hidden="true" /></Link>
+            </div>
+          </div>
+          <div className={styles.featuredVideoMedia} data-alchemy-featured-video="-zacUn_zN6g">
+            <SiteVideoPlayer video={featuredIntroVideo} locale={locale} compact minimal posterPriority fallbackPoster="/images/holistic-house/andy-about.png" />
+          </div>
+          <p className={styles.featuredVideoNote}>{t.featuredVideoNote}</p>
+        </section>
 
         <section className={[styles.panel, styles.hero].join(" ")} data-alchemy-panel="hero" aria-labelledby="alchemy-title">
           <p className={styles.heroEyebrow}><Sparkles size={14} aria-hidden="true" />{t.kicker}</p>

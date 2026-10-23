@@ -15,7 +15,16 @@ const pageCss = read('app/[locale]/coaching/coaching-page.module.css')
 test('author coaching model: pinned identity, valid multilingual groups, no fabricated score', () => {
   assert.match(COACHING_INTAKE_VERSION, /^hh-author-coaching-intake-v1-/)
   assert.equal(COACHING_GROUPS.length, 4)
-  assert.equal(COACHING_FIELDS.length, 14)
+  assert.equal(COACHING_FIELDS.length, 20)
+  // All original IDs remain pinned: previously encrypted v1 drafts must not be
+  // remapped, discarded, or silently split across different personal questions.
+  const legacyIds = ['request','occupation','concern','attempts','biggestDifficulty',
+    'alreadyDone','idealOutcome','importance','resources','paths','sessionOutcome',
+    'successEvidence','priorityQuestion','extraContext']
+  const newIds = ['concernDuration','attemptsResult','currentResults',
+    'expectedChange','existingSupport','helpers']
+  for (const id of [...legacyIds, ...newIds]) assert.ok(COACHING_FIELD_IDS.includes(id), id)
+  assert.equal(COACHING_INTAKE_VERSION, 'hh-author-coaching-intake-v1-20261023')
   assert.equal(new Set(COACHING_FIELD_IDS).size, COACHING_FIELD_IDS.length)
   assert.equal(new Set(COACHING_GROUPS.map(g => g.id)).size, 4)
   assert.equal(new Set(COACHING_TOPICS.map(g => g.id)).size, COACHING_TOPICS.length)
@@ -25,6 +34,8 @@ test('author coaching model: pinned identity, valid multilingual groups, no fabr
     assert.ok(Number.isInteger(field.max) && field.max >= 600 && field.max <= 1600, field.id)
     for (const locale of ['en', 'ru', 'es']) {
       assert.ok(field.label[locale]?.trim().length >= 18, field.id + ' ' + locale)
+      assert.equal((field.label[locale].match(/\?/g) || []).length, 1, field.id + ' ' + locale + ' must be ONE question')
+      assert.ok(field.label[locale].endsWith('?'), field.id + ' ' + locale + ' must end in a question mark')
     }
   }
   for (const group of COACHING_GROUPS) for (const locale of ['en', 'ru', 'es']) {
@@ -56,6 +67,26 @@ test('coaching form is one page, text inputs plus up to eight user questions, no
   assert.match(form, /copyFailed/)
   assert.match(form, /accountConflict/)
   for (const locale of ['en', 'ru', 'es']) assert.match(form, new RegExp('^  ' + locale + ': \\{', 'm'))
+})
+
+test('compact numbered rows: one editable answer per author question without multiple prompts in one field', () => {
+  assert.match(form, /<ol className={styles.fields} start={COACHING_FIELDS.findIndex/)
+  assert.match(form, /<li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>/)
+  assert.match(form, /htmlFor={"coaching-field-" \+ field.id}/)
+  assert.match(form, /id={"coaching-field-" \+ field.id}/)
+  assert.match(form, /COACHING_FIELDS.findIndex/)
+  assert.match(form, /placeholder={t.answerPlaceholder}/)
+  assert.match(form, /t.requiredLegend/)
+  assert.match(form, /<span className={styles.groupCount}>/)
+  assert.match(style, /grid-template-columns:\s*minmax\(0,\s*\.95fr\)\s+minmax\(0,\s*1\.15fr\)/)
+  assert.match(style, /@media \(max-width: 760px\)/)
+  assert.match(style, /\.fieldRow:focus-within textarea/)
+  assert.match(style, /min-height:\s*44px/)
+  assert.match(style, /\.actions\s*\{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
+  assert.doesNotMatch(form, /className={styles.field}>/)
+  assert.doesNotMatch(style, /box-shadow:\s*0 9px 25px/)
+  // No marketing forms, external calls or analytics added to the questionnaire.
+  assert.doesNotMatch(form, /fetch\(["']https?:\/\/|dataLayer\.push|sendWhatsApp|sendTelegram/)
 })
 
 test('server saves only user-approved AES-GCM account data with revision and owner checks', () => {

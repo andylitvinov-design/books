@@ -84,6 +84,8 @@ const BusinessCoaching = dynamic(() => import('@/components/app/business-coachin
 const PersonalCoaching = dynamic(() => import('@/components/app/personal-coaching'), { ssr: false })
 const TraditionCoaching = dynamic(() => import('@/components/app/tradition-coaching'), { ssr: false })
 const PracticeWorkspace = dynamic(() => import('@/components/app/practice-workspace'))
+const ServiceReviews = dynamic(() => import('@/components/service-reviews').then(module => module.ServiceReviews))
+const RemoteGoalPhoto = dynamic(() => import('@/components/app/remote-goal-photo'))
 
 function message(error, c) {
   return error?.code === 'REVISION_CONFLICT' || error?.code === 'CONFLICT'
@@ -3744,15 +3746,22 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
                   {consultationPriceFor(service, locale, c.price)}
                   {service.durationMinutes ? ' · ' + service.durationMinutes + (locale === 'ru' ? ' мин' : ' min') : ''}
                 </p>
-                <button type="button" className={consultationStyles.action}
-                  onClick={() => { setRequestSent(false); setSelected(service) }}>
-                  {chosen
-                    ? (locale === 'ru' ? 'Заявка открыта' : 'Request form open')
-                    : intro
-                      ? (locale === 'ru' ? 'Запросить знакомство' : 'Ask about an introduction')
-                      : (locale === 'ru' ? 'Отправить заявку' : 'Request this service')}
-                  <ArrowRight size={16} aria-hidden="true" />
-                </button>
+                {service.slug === 'remote-energy-support'
+                  ? <Link className={consultationStyles.action}
+                      href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug || '')}`}
+                      prefetch={false}>
+                      {locale === 'ru' ? 'Выбрать время' : locale === 'es' ? 'Elegir horario' : 'Choose a time'}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  : <button type="button" className={consultationStyles.action}
+                      onClick={() => { setRequestSent(false); setSelected(service) }}>
+                      {chosen
+                        ? (locale === 'ru' ? 'Заявка открыта' : 'Request form open')
+                        : intro
+                          ? (locale === 'ru' ? 'Запросить знакомство' : 'Ask about an introduction')
+                          : (locale === 'ru' ? 'Отправить заявку' : 'Request this service')}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </button>}
               </div>
             </article>
           )
@@ -3764,7 +3773,15 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
         {!data.requests.length && <p>{c.emptyRequests}</p>}
         {data.requests.map((request) => (
           <article className="hh-panel" key={request.id} id={'hh-consultation-' + request.id}>
-            <span className="hh-badge">{c[request.status]}</span>
+            <span className="hh-badge">{request.remoteBooking
+              ? (({requested:locale==='ru'?'Ожидает мастера':'Waiting for practitioner',
+                   confirmed:locale==='ru'?'Подтверждено':'Confirmed',
+                   declined:locale==='ru'?'Отклонено':'Declined',
+                   reschedule_proposed:locale==='ru'?'Предложен перенос':'Reschedule proposed',
+                   in_progress:locale==='ru'?'Проводится':'In progress',
+                   completed:locale==='ru'?'Выполнено':'Completed',
+                   cancelled:locale==='ru'?'Отменено':'Cancelled'})[request.status] || request.status)
+              : (c[request.status] || request.status)}</span>
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
@@ -3772,7 +3789,35 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             <p>
               {dateLabel(request.createdAt, locale)} · {request.contact}
             </p>
+            {request.remoteBooking?.proposed&&<div className="hh-panel">
+              <p><strong>{locale==='ru'?'Мастер предложил другое время':'Practitioner suggested another time'}:</strong>
+                {' '}{request.remoteBooking.proposed.date} {request.remoteBooking.proposed.time}
+                {' '}({request.remoteBooking.proposed.timezone})
+              </p>
+              <p className="hh-fine">{locale==='ru'
+                ? 'После согласия вы вернётесь в ожидание окончательного подтверждения мастером.'
+                : 'Accepting returns this request to awaiting practitioner confirmation.'}</p>
+              <div className="hh-actions">
+                <button type="button" onClick={()=>updateRequest(request,'accept_time')}>
+                  {locale==='ru'?'Принять время':'Accept time'}
+                </button>
+                <button type="button" onClick={()=>updateRequest(request,'decline_time')}>
+                  {locale==='ru'?'Отклонить перенос':'Decline change'}
+                </button>
+              </div>
+            </div>}
+            {request.remoteBooking && <p className="hh-fine">
+              {request.remoteBooking.duration} min · {request.remoteBooking.date} {request.remoteBooking.time}
+              {' · '}{request.remoteBooking.timezone} · {request.remoteBooking.price} {request.remoteBooking.currency}
+              {' · '}{locale==='ru'?'Оплата пока не подключена':'Payment not yet enabled'}
+            </p>}
             {request.message && <p>{request.message}</p>}
+            {request.remoteBooking &&
+              <RemoteGoalPhoto key={request.id} requestId={request.id} role="client"
+                hasPhoto={Boolean(request.remoteBooking.photoPath)} status={request.status}
+                locale={locale} onChanged={reload}/>}
+            {request.remoteBooking && request.status==='completed' &&
+              <ServiceReviews serviceId={request.serviceId} locale={locale} verifiedOnly />}
             <PracticeRequestConversation key={request.id} requestId={request.id}
               autoOpen={requestedMessageId === request.id}
               accountId={data.account.id} locale={locale}
@@ -3784,7 +3829,8 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
                 <button onClick={() => updateRequest(request, 'unshare')}>{c.unshare}</button>
               </>
             )}
-            {['requested', 'contacted'].includes(request.status) && (
+            {(['requested','contacted'].includes(request.status) ||
+              (request.remoteBooking && ['confirmed','reschedule_proposed'].includes(request.status))) && (
               <button onClick={() => updateRequest(request, 'cancel')}>{c.withdraw}</button>
             )}
             <p className="hh-fine">{c.requestNote}</p>
@@ -3804,13 +3850,15 @@ function RequestForm({ service, locale, data, close, onDone }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
     operation = useRef(null),
-    [energyPrefill, setEnergyPrefill] = useState(false)
+    [energyPrefill, setEnergyPrefill] = useState(false),
+    [remoteDraft, setRemoteDraft] = useState(null)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const draft = readRemoteSupportDraft(window.sessionStorage, service.id)
     if (!draft) return
     setNote((current) => current || formatRemoteSupportDraft(draft))
     setEnergyPrefill(true)
+    if (draft.version === 2) setRemoteDraft(draft)
   }, [service.id])
   const shared = data.results.find((r) => r.id === shareId)
   async function submit(e) {
@@ -3820,9 +3868,15 @@ function RequestForm({ service, locale, data, close, onDone }) {
     const body = operation.current || {
       serviceId: service.id,
       operationId: crypto.randomUUID(),
-      contact,
+      contact: remoteDraft ? 'Via Holistic House portal' : contact,
       message: note,
-      shareResultId: shareId || null,
+      remoteBooking: remoteDraft ? {
+        version:2, goal:remoteDraft.goal, method:remoteDraft.method, format:remoteDraft.format,
+        duration:remoteDraft.duration, date:remoteDraft.date, time:remoteDraft.time,
+        timezone:remoteDraft.timezone, startsAt:remoteDraft.startsAt,
+        expectedPrice:remoteDraft.expectedPrice, expectedCurrency:remoteDraft.expectedCurrency,
+      } : undefined,
+      shareResultId: remoteDraft ? null : (shareId || null),
       shareConfirmed: confirmed,
     }
     operation.current = body
@@ -3850,8 +3904,16 @@ function RequestForm({ service, locale, data, close, onDone }) {
         ? 'Ваш выбор мастера, метода, длительности и времени добавлен в сообщение. Это запрос, а не оплаченная или подтверждённая запись.'
         : 'Your preferences for practitioner, method, duration and time are in the message. This is a request, not a paid or confirmed booking.'}</p>}
       <p>{c.requestNote}</p>
-      <form className="hh-form" onSubmit={submit}>
-        <label>
+      {service.slug === 'remote-energy-support' && !remoteDraft
+        ? <p><Link className="hh-primary"
+            href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug || '')}`}
+            prefetch={false}>
+            {locale === 'ru' ? 'Сначала выберите длительность и время' :
+             locale === 'es' ? 'Primero elige la duración y el horario' :
+             'Choose your duration and preferred time first'} →
+          </Link></p>
+        : <form className="hh-form" onSubmit={submit}>
+        {!remoteDraft && <label>
           {c.contact}
           <input
             required
@@ -3860,7 +3922,10 @@ function RequestForm({ service, locale, data, close, onDone }) {
             disabled={busy || Boolean(operation.current)}
             onChange={(e) => setContact(e.target.value)}
           />
-        </label>
+        </label>}
+        {remoteDraft && <p className="hh-fine">{locale==='ru'
+          ? 'Общение через защищённый кабинет Holistic House. Контакты сторон не передаются напрямую.'
+          : 'Messages stay in Holistic House. Personal contact details are not shared with the practitioner.'}</p>}
         <label>
           {c.message}
           <textarea
@@ -3870,7 +3935,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             onChange={(e) => setNote(e.target.value)}
           />
         </label>
-        <label>
+        {!remoteDraft && <label>
           {c.share}
           <select
             value={shareId}
@@ -3887,8 +3952,8 @@ function RequestForm({ service, locale, data, close, onDone }) {
               </option>
             ))}
           </select>
-        </label>
-        {shared && (
+        </label>}
+        {!remoteDraft && shared && (
           <>
             <div className="hh-notice">
               <p>
@@ -3913,12 +3978,12 @@ function RequestForm({ service, locale, data, close, onDone }) {
             </label>
           </>
         )}
-        <p className="hh-fine">{c.sharingNote}</p>
+        {!remoteDraft && <p className="hh-fine">{c.sharingNote}</p>}
         <button className="hh-primary" disabled={busy}>
           {busy ? c.saving : c.submitRequest}
         </button>
         {error && <p role="alert">{message(error, c)}</p>}
-      </form>
+      </form>}
     </section>
   )
 }

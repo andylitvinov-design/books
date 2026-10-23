@@ -80,7 +80,7 @@ function messageFor(code:string|undefined,t:typeof COPY.en|typeof COPY.ru|typeof
   if(code==="INVALID_REVIEW"||code==="INVALID_RATING")return t.errorInvalid;
   return t.genericError;
 }
-export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:string}){
+export function ServiceReviews({serviceId,locale,verifiedOnly=false,readOnly=false}:{serviceId:string;locale:string;verifiedOnly?:boolean;readOnly?:boolean}){
   const language=locale==="ru"?"ru":locale==="es"?"es":"en";
   const t=COPY[language];
   const [data,setData]=useState<ReviewPayload|null>(null);
@@ -166,20 +166,26 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
           <small>{data.summary.count} {t.reviewCount}</small>
         </div>}
       </div>
-      <p className={styles.note}>{t.note}</p>
-      {data&&!loading&&(
+      <p className={styles.note}>{verifiedOnly
+        ? language==='ru'?'Отзывы принимаются только после выполненного заказа. Публичная публикация требует проверки.':
+          language==='es'?'Solo se acepta feedback tras una sesión completada. Publicación sujeta a revisión.':
+          'Feedback is accepted only after a completed booking. Publication requires moderation.'
+        : t.note}</p>
+      {data&&!loading&&!readOnly&&(
         <div className={styles.actions}>
           {data.viewer.canReview&&mine?.status!=="hidden"&&
             <button type="button" className={styles.primary} onClick={openEditor}>{mine?t.edit:t.write}</button>}
-          {mine?.status==="published"&&
+          {mine&&
             <button type="button" className={styles.secondary} disabled={saving} onClick={()=>void remove()}>{t.delete}</button>}
           {!data.viewer.signedIn&&<Link className={styles.primary} href={"/"+(language==="es"?"en":language)+"/app"}>{t.signin} →</Link>}
           {data.viewer.signedIn&&!data.viewer.canReview&&<span className={styles.note}>
-            {data.viewer.suggestedName?t.owner:t.inactive}</span>}
+            {verifiedOnly
+              ? (language==='ru'?'Отзывы доступны после выполненного сеанса':language==='es'?'Opiniones tras la sesión completada':'Reviews unlock after a completed session')
+              : (data.viewer.suggestedName?t.owner:t.inactive)}</span>}
           {mine?.status==="hidden"&&<span className={styles.note}>{t.hidden}</span>}
         </div>
       )}
-      {formOpen&&canReview&&<form className={styles.form} onSubmit={submit}>
+      {formOpen&&canReview&&!readOnly&&<form className={styles.form} onSubmit={submit}>
         <label>{t.publicName}<input value={displayName} onChange={event=>setDisplayName(event.target.value)}
           required minLength={2} maxLength={60} autoComplete="nickname"/></label>
         <fieldset className={styles.stars}><legend>{t.rating}</legend>
@@ -191,7 +197,7 @@ export function ServiceReviews({serviceId,locale}:{serviceId:string;locale:strin
           required minLength={50} maxLength={1200} rows={4}/></label>
         <p className={styles.note} aria-live="polite">{bodyCharacterCount} / 50 · {t.experienceHint}</p>
         <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={saving||bodyCharacterCount<50}>{saving?t.loading:(mine?t.save:t.publish)}</button>
+          <button type="submit" className={styles.primary} disabled={saving||bodyCharacterCount<50}>{saving?t.loading:(mine?t.save:(verifiedOnly?(language==='ru'?'Отправить отзыв на проверку':'Send feedback for review'):t.publish))}</button>
           <button type="button" className={styles.secondary} disabled={saving} onClick={()=>setFormOpen(false)}>{t.cancel}</button>
         </div>
       </form>}

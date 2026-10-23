@@ -602,6 +602,39 @@ test('upstream failures are classified with fixed non-sensitive diagnostic codes
   }
 });
 
+test('read-only tokens containing ordinary r/n characters are used; CR/LF cannot enter Authorization', async () => {
+  const key = videoKey('home-intro', 'en');
+  const seen = [];
+  const normal = createPublicSiteVideoStore({
+    environment: { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN: 'random-reader-token-nr' },
+    initialRecords: [],
+    fetchFn: async (_url, request) => {
+      seen.push(request.headers.Authorization);
+      assert.equal(JSON.parse(request.body)[0], 'HGET');
+      return { ok: true, json: async () => ({ result: null }) };
+    },
+  });
+  assert.equal(typeof normal.save, 'undefined');
+  assert.equal(await normal.get(key), null);
+  assert.deepEqual(seen, ['Bearer random-reader-token-nr'], 'ordinary r/n must not select the writer');
+
+  for (const malformed of ['abc' + String.fromCharCode(13) + 'x',
+                           'abc' + String.fromCharCode(10) + 'x']) {
+    const requests = [];
+    const guarded = createPublicSiteVideoStore({
+      environment: { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN: malformed },
+      initialRecords: [],
+      fetchFn: async (_url, request) => {
+        requests.push(request.headers.Authorization);
+        return { ok: true, json: async () => ({ result: null }) };
+      },
+    });
+    assert.equal(await guarded.get(key), null);
+    assert.deepEqual(requests, ['Bearer synthetic-test-token'],
+      'CR/LF must be rejected before creating request headers');
+  }
+});
+
 test('read-only media credential serves public records without any write privilege', async () => {
   // Built-in approved publications are virtual revision-zero records.
   const record = { ...published(), revision: 0 };

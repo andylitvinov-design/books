@@ -59,3 +59,47 @@ test('classifies large RSC chunks without returning their private contents', () 
   assert.equal(data.rscSizeBands.over16KiB, 1);
   assert.equal(JSON.stringify(data).includes(long.slice(0, 400)), false);
 });
+
+
+test('reports privacy-safe structural RSC buckets for comparisons across dates', () => {
+  const onlyCarousel = 'start data-home-section-carousel private-name-do-not-log';
+  const mixed = 'data-home-free-diagnosis-banner data-home-conversation-guide secret-answer';
+  const unknown = 'private-question: unseen';
+  const html = [onlyCarousel, mixed, unknown].map(chunk =>
+    '<script nonce="secret-nonce">self.__next_f.push([1,' + JSON.stringify(chunk) + '])</script>'
+  ).join('');
+  const data = analyzePublicHtmlPayload(html);
+  assert.equal(data.parsedFlightChunks, 3);
+  assert.equal(data.rscMarkerOnlyBytes.carousel, Buffer.byteLength(onlyCarousel));
+  assert.equal(data.rscMarkerOnlyBytes.freeDiagnosis, 0);
+  assert.equal(data.rscMarkerChunkCounts.carousel, 1);
+  assert.equal(data.rscMarkerChunkCounts.freeDiagnosis, 1);
+  assert.equal(data.rscMarkerChunkCounts.conversationGuide, 1);
+  assert.equal(data.rscMultiMarkerBytes, Buffer.byteLength(mixed));
+  assert.equal(data.rscUnclassifiedFlightBytes, Buffer.byteLength(unknown));
+  assert.equal(
+    Object.values(data.rscMarkerOnlyBytes).reduce((a, b) => a + b, 0)
+      + data.rscMultiMarkerBytes + data.rscUnclassifiedFlightBytes,
+    data.decodedFlightBytes,
+  );
+  assert.ok(data.rscLargestFlightChunks.length <= 5);
+  assert.ok(data.rscLargestFlightChunks.every(chunk =>
+    Number.isInteger(chunk.ordinal) && Number.isInteger(chunk.bytes)
+    && chunk.publicMarkers.every(marker => Object.hasOwn(data.rscMarkerOnlyBytes, marker))));
+  for (const secret of ['private-name-do-not-log', 'secret-answer', 'private-question', 'secret-nonce']) {
+    assert.ok(!JSON.stringify(data).includes(secret), 'no private payload/nonce in profiler: ' + secret);
+  }
+});
+
+test('top structural chunks are bounded and never disclose their contents', () => {
+  const chunks = Array.from({ length: 8 }, (_, i) => ('private-'+i).repeat(i + 1));
+  const html = chunks.map(chunk =>
+    '<script>self.__next_f.push([1,' + JSON.stringify(chunk) + '])</script>'
+  ).join('');
+  const profile = analyzePublicHtmlPayload(html);
+  assert.equal(profile.rscLargestFlightChunks.length, 5);
+  assert.ok(profile.rscLargestFlightChunks.every(v => v.publicMarkers.length === 0));
+  assert.deepEqual(profile.rscLargestFlightChunks.map(v => v.bytes),
+    [...profile.rscLargestFlightChunks.map(v => v.bytes)].sort((a, b) => b - a));
+  for (const chunk of chunks) assert.ok(!JSON.stringify(profile).includes(chunk), 'raw Flight must not appear');
+});
