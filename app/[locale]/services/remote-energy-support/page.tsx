@@ -70,10 +70,9 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
               ? [{ duration: service.durationMinutes as 10 | 20 | 30 | 60, price: service.confirmedPrice }] : []),
       }))
   );
-  const reviews = createServiceReviewRepository(getAppConfig());
   const withReviews = await Promise.all(masters.map(async (master) => {
     try {
-      const {summary} = await reviews.listPublic(master.serviceId);
+      const {summary} = await createServiceReviewRepository(getAppConfig()).listPublic(master.serviceId);
       return {...master,reviewCount:summary.count,reviewAverage:summary.average};
     } catch { return master; }
   }));
