@@ -6,7 +6,7 @@ import { unstable_cache, unstable_noStore as noStore } from 'next/cache';
 import { toPublishedSiteVideo } from './model.js';
 import { builtInSiteVideoRecords } from './defaults.js';
 import type { PublishedSiteVideo, SiteVideoStore } from './model.js';
-import { getSiteVideoStore } from './store.js';
+import { getPublicSiteVideoStore } from './store.js';
 const diagnosticCategories = new Set([
   'provider-limit', 'provider-auth', 'provider-endpoint', 'provider-5xx',
   'provider-http', 'provider-command', 'provider-protocol', 'timeout', 'transport',
@@ -32,7 +32,7 @@ function approvedBuiltInVideos(): Record<string, PublishedSiteVideo> {
 // No draft fields, session data, cookies or per-request CSP nonce are cached.
 const readStoredPublishedVideos = unstable_cache(
   async (): Promise<Record<string, PublishedSiteVideo>> => {
-    const store = getSiteVideoStore() as SiteVideoStore | undefined;
+    const store = getPublicSiteVideoStore() as Pick<SiteVideoStore, 'get' | 'list'> | undefined;
     // Cached snapshots can still revalidate after a deployment switched to
     // the supported storage-off mode. Return an empty stored snapshot rather
     // than throwing (and retrying) during background revalidation. The actual
@@ -54,7 +54,7 @@ const readStoredPublishedVideos = unstable_cache(
       return {};
     }
   },
-  ['holistic-house:published-videos:stored:v2'],
+  ['holistic-house:published-videos:stored:v3'],
   { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
 );
 
@@ -66,12 +66,12 @@ const readStoredPublishedVideos = unstable_cache(
  */
 const readStoredPublishedSiteVideo = unstable_cache(
   async (key: string): Promise<PublishedSiteVideo | undefined> => {
-    const store = getSiteVideoStore() as SiteVideoStore | undefined;
+    const store = getPublicSiteVideoStore() as Pick<SiteVideoStore, 'get' | 'list'> | undefined;
     if (!store) return undefined;
     try {
       // This is a streamed or below-fold media section. A bounded HGET is
       // cheaper than HGETALL and cannot block the primary hero render.
-      return toPublishedSiteVideo(await store.get(key, { timeoutMs: 1800 }));
+      return toPublishedSiteVideo(await store.get(key, { timeoutMs: 3000 }));
     } catch (error) {
       // This fixed diagnostic enum reveals neither request parameters nor
       // credentials. Keep the publication gate fail-closed during an outage.
@@ -79,7 +79,7 @@ const readStoredPublishedSiteVideo = unstable_cache(
       return undefined;
     }
   },
-  ['holistic-house:published-video:single-key:v1'],
+  ['holistic-house:published-video:single-key:v2'],
   { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
 );
 
@@ -87,7 +87,7 @@ export const getPublishedSiteVideo = cache(async (key: string): Promise<Publishe
   // Preserve the per-response CSP nonce and URL-derived locale; only the
   // explicitly approved public record is shared by the data cache.
   noStore();
-  if (!getSiteVideoStore()) {
+  if (!getPublicSiteVideoStore()) {
     const record = builtInSiteVideoRecords().find(item => item.key === key);
     return record ? toPublishedSiteVideo(record) : undefined;
   }
@@ -103,7 +103,7 @@ export const getPublishedSiteVideo = cache(async (key: string): Promise<Publishe
 export const getPublishedSiteVideos = cache(async (): Promise<Record<string, PublishedSiteVideo>> => {
   // The document's CSP nonce and locale can change on every request.
   noStore();
-  if (!getSiteVideoStore()) {
+  if (!getPublicSiteVideoStore()) {
     return approvedBuiltInVideos();
   }
   try {
