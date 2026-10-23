@@ -41,11 +41,21 @@ async function verify(browserType, locale, width) {
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
     await hub.locator("[data-ideas-preview]").waitFor({ state: "visible" });
+    await hub.locator("[data-ideas-preview-ready]").waitFor({ state: "visible" });
     const previewAphorisms = hub.locator("[data-ideas-preview] [data-ideas-aphorisms] ol li");
     assert.equal(await previewAphorisms.count(), 3, label + ": three source-labelled example aphorisms");
     const previewSources = await hub.locator("[data-ideas-preview] [class*=aphorismSource]").allTextContents();
     assert.equal(previewSources.length, 3, label + ": every sample aphorism has a source label");
     assert.ok(previewSources.every(value => value.trim()), label + ": never blank source label");
+    if (locale === "en" && width === 390) {
+      const before = await previewAphorisms.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-ideas-aphorism-id")));
+      assert.equal(new Set(before).size, 3, label + ": unique on first open");
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await hub.locator("[data-ideas-preview-ready]").waitFor({ state: "visible" });
+      const after = await previewAphorisms.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-ideas-aphorism-id")));
+      assert.equal(new Set(after).size, 3, label + ": unique after reload");
+      assert.ok(after.every(id => !before.includes(id)), label + ": all three change on page reopen");
+    }
     const previewRects = await Promise.all([0, 1, 2].map(i => previewAphorisms.nth(i).boundingBox()));
     assert.ok(previewRects.every(Boolean), label + ": all three quote rows visible in DOM");
     assert.ok(previewRects[0].y < previewRects[1].y && previewRects[1].y < previewRects[2].y,
