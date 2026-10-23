@@ -171,7 +171,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
   </nav>
   {tab!=='articles'&&<div className={styles.actionBar} data-material-primary-action={tab}>
    {tab==='services'?<button type="button" className={styles.actionPrimary} disabled={busy} onClick={onAddService||onOpenServices}><Plus size={19} aria-hidden="true"/>{ru?'Добавить услугу':es?'Añadir servicio':'Add service'}</button>:
-    tab==='courses'?<button type="button" className={styles.actionPrimary} aria-expanded={courseComposerOpen} onClick={()=>setCourseComposerOpen(open=>!open)}><Plus size={19} aria-hidden="true"/>{courseComposerOpen?(ru?'К моим курсам':es?'Volver a cursos':'Back to courses'):(ru?'Создать курс':es?'Crear curso':'Create course')}</button>:
+    tab==='courses'?<button type="button" className={styles.actionPrimary} aria-expanded={courseComposerOpen} onClick={()=>setCourseComposerOpen(open=>!open)}><Plus size={19} aria-hidden="true"/>{courseComposerOpen?(ru?'К моим курсам':es?'Volver a cursos':'Back to courses'):(ru?'Создать или изменить курс':es?'Crear o editar curso':'Create or edit course')}</button>:
     tab==='audio'&&isOwner?<>
      <button type="button" className={styles.actionPrimary} aria-pressed={audioAction==='upload'} onClick={()=>setAudioAction(mode=>mode==='upload'?'':'upload')}><Plus size={18} aria-hidden="true"/>{ru?'Загрузить аудио':es?'Subir audio':'Upload audio'}</button>
      <button type="button" className={styles.actionSecondary} aria-pressed={audioAction==='record'} onClick={()=>setAudioAction(mode=>mode==='record'?'':'record')}><Headphones size={17} aria-hidden="true"/>{ru?'Записать':es?'Grabar':'Record'}</button>

@@ -33,57 +33,54 @@ for (const engine of [chromium, webkit]) {
         try {
           const response = await page.goto(origin + route, { waitUntil: 'domcontentloaded', timeout: 60000 });
           assert.equal(response?.status(), 200, label + ': public home must load');
-          const strip = page.locator('[data-home-quick-booking="true"]');
-          const paid = strip.locator('[data-home-quick-cta="paid"]');
-          const free = strip.locator('[data-home-quick-cta="free-review"]');
+          const slider = page.locator('[data-home-section-carousel] [role="region"][aria-roledescription="carousel"]');
+          const paid = slider.locator('[data-home-first-screen-cta="paid"]');
+          const free = page.locator('[data-home-free-diagnosis-banner] [data-home-diagnosis-order]');
           await paid.waitFor({ state: 'visible', timeout: 30000 });
           await free.waitFor({ state: 'visible', timeout: 30000 });
-          const [card, book, review, slider] = await Promise.all([
-            strip.boundingBox(), paid.boundingBox(), free.boundingBox(),
-            page.locator('[data-home-section-carousel] [role="region"][aria-roledescription="carousel"]').boundingBox(),
+          const [card, book, review] = await Promise.all([
+            slider.boundingBox(), paid.boundingBox(), free.boundingBox(),
           ]);
-          assert.ok(card && book && review && slider, label + ': all first-screen pieces have visible boxes');
-          assert.ok(card.y >= 0 && card.y + card.height <= 844 - 72,
-            label + ': consultation offer fits above the mobile bottom navigation');
-          assert.ok(book.y + book.height <= 844 - 72 && review.y + review.height <= 844 - 72,
-            label + ': both CTAs visible without scrolling');
-          assert.ok(card.y + card.height <= slider.y + 2, label + ': consultation precedes discovery carousel');
+          assert.ok(card && book && review, label + ': slider, paid CTA and free diagnosis are rendered');
+          assert.ok(book.y >= card.y && book.y + book.height <= card.y + card.height,
+            label + ': consultation CTA stays inside the first slider');
+          assert.ok(book.y >= 0 && book.y + book.height <= 844 - 72,
+            label + ': consultation CTA fits above mobile bottom navigation without scrolling');
           assert.ok(book.height >= 44 && review.height >= 44, label + ': finger-sized tap areas');
           assert.equal((await paid.innerText()).trim().replace(/\s+/g, ' '), paidCopy,
             label + ': exact localized €50 CTA');
-          const price = (await strip.innerText()).replace(/\s+/g, ' ');
-          assert.ok(price.includes('€50') && price.includes('€100'), label + ': both approved prices are clear');
           const paidHref = await paid.getAttribute('href');
-          const freeHref = await free.getAttribute('href');
+          const freeHref = '/' + locale + '/services/free-situation-review';
           assert.equal(paidHref, '/' + locale + '/services#consultation', label + ': existing booking destination');
-          assert.equal(freeHref, '/' + locale + '/services/free-situation-review', label + ': free written review');
-          // The approved reference keeps the original photo and overlays only
-          // quiet text navigation. Verify touch sizing, locality and true paths.
+          assert.equal(await free.getAttribute('aria-expanded'), 'false',
+            label + ': free diagnosis opens the existing consent-gated inline form');
+          // The approved first carousel slide keeps the original photo, seven named
+          // section links and the priced consultation button on the first fold.
           const sectionNav = page.locator('[data-home-hero-nav="true"]');
           await sectionNav.waitFor({ state: 'visible', timeout: 30000 });
           const sectionLinks = sectionNav.locator('a[data-home-nav-section]');
-          assert.equal(await sectionLinks.count(), 6, label + ': six plain text site sections');
+          assert.equal(await sectionLinks.count(), 7, label + ': seven plain text site sections');
           assert.equal(await sectionNav.locator('svg, img').count(), 0, label + ': no icons in the hero navigation');
           assert.ok((await sectionNav.getAttribute('aria-label'))?.length > 3, label + ': accessible section list');
-          const keys = ['home', 'tests', 'services', 'academy', 'business', 'ideas'];
-          const suffixes = ['', '/client/tests', '/services', '/academy', '/explore/business', '/books'];
+          const keys = ['home', 'tests', 'services', 'academy', 'business', 'ideas', 'cabinet'];
+          const suffixes = ['', '/client/tests', '/services', '/academy', '/explore/business', '/books', '/app'];
           for (let i = 0; i < keys.length; i++) {
             const link = sectionLinks.nth(i);
             assert.equal(await link.getAttribute('data-home-nav-section'), keys[i], label + ': navigation order');
             assert.equal(await link.getAttribute('href'),
-              suffixes[i] ? '/' + locale + suffixes[i] : locale === 'en' ? '/' : '/' + locale,
+              keys[i] === 'cabinet' && locale === 'es' ? '/en/app' : suffixes[i] ? '/' + locale + suffixes[i] : locale === 'en' ? '/' : '/' + locale,
               label + ': real localized route for ' + keys[i]);
             const target = await link.boundingBox();
             assert.ok(target && target.height >= 44, label + ': touch target for ' + keys[i]);
           }
-          assert.equal(await sectionLinks.first().getAttribute('aria-current'), 'page', label + ': active homepage');
+          assert.equal(await sectionLinks.nth(2).getAttribute('aria-current'), 'true', label + ': first services slide selected');
           const [navBox, copyBox] = await Promise.all([
             sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
           ]);
           assert.ok(navBox && copyBox, label + ': nav and photo copy are laid out');
-          assert.ok(navBox.y >= slider.y - 1 && navBox.y + navBox.height <= copyBox.y + 4,
+          assert.ok(navBox.y >= card.y - 1 && navBox.y + navBox.height <= copyBox.y + 4,
             label + ': lightweight nav stays above the title without overlapping it');
-          assert.ok(navBox.x >= slider.x - 1 && navBox.x + navBox.width <= slider.x + slider.width + 1,
+          assert.ok(navBox.x >= card.x - 1 && navBox.x + navBox.width <= card.x + card.width + 1,
             label + ': nav stays within the existing photo');
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
           assert.ok(overflow <= 1, label + ': no horizontal overflow');
