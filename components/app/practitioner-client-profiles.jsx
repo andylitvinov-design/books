@@ -4,7 +4,6 @@ import {useEffect,useMemo,useRef,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
 import PractitionerRequestTasks from './practitioner-request-tasks'
 import {torontoToday} from '@/lib/practitioners/task-policy'
-import PublicEnquiryContact from './public-enquiry-contact'
 import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
 import {buildPractitionerWorkQueue,filterPractitionerClientGroups,practitionerTaskTarget} from '@/lib/practitioners/client-work-queue'
 import styles from './practitioner-client-profiles.module.css'
@@ -21,7 +20,7 @@ const COPY={
     markContacted:'Mark contacted',markClosed:'Close request',none:'No clients yet.',
     filtered:'No clients match the filters.',noNotes:'No initial text provided.',
     privacy:'Only enquiries to your services. Anonymous contacts are not verified; private tests and records stay hidden.',
-    noPortal:'Reply inside Holistic House or use the contact details the client shared. Telegram/WhatsApp history is not connected.',
+    noPortal:'Reply via Holistic House. Direct contacts stay hidden; verified channels can receive neutral alerts, not private message text.',viaPortal:'Through Holistic House',awaitPortal:'Guest enquiry: no verified client portal account. Request a secure sign-in before private messaging.',
     historySummary:'Original request and secure in-app replies',messageCount:'Conversation entries',
     recent:'Recent clients',tasks:'Open tasks',overdue:'Overdue',nextActions:'Upcoming actions',taskFilter:'With tasks',alerts:'Phone alerts',awaiting:'Awaiting my reply',newMessages:'New messages',lastActivity:'Recent activity',refresh:'Refresh clients',tip:'Tap a client to see their requests and conversation.',
     today:'Due today',todayFilter:'Tasks today',overdueFilter:'Overdue tasks',
@@ -38,7 +37,7 @@ const COPY={
     markContacted:'Отметить связь',markClosed:'Закрыть заявку',none:'Клиентов пока нет.',
     filtered:'По выбранному фильтру клиентов нет.',noNotes:'Первоначальное сообщение не указано.',
     privacy:'Здесь только обращения к вам. Анонимные контакты не подтверждены; личные тесты и чужие заявки недоступны.',
-    noPortal:'Можно ответить внутри Holistic House или по указанному контакту. История Telegram/WhatsApp пока не подключена.',
+    noPortal:'Отвечайте через Holistic House. Прямые контакты скрыты; подтверждённые каналы получают только нейтральные уведомления.',viaPortal:'Через Holistic House',awaitPortal:'Гостевая заявка: аккаунт клиента не подтверждён. Для защищённого ответа клиент должен войти на сайт.',
     historySummary:'Первое обращение и ответы внутри сайта',messageCount:'Записей переписки',
     recent:'Последние клиенты',tasks:'Открытые задачи',overdue:'Просрочено',nextActions:'Ближайшие действия',taskFilter:'С задачами',alerts:'Уведомления на телефон',awaiting:'Ждут моего ответа',newMessages:'Новые сообщения',lastActivity:'Недавняя активность',refresh:'Обновить клиентов',tip:'Нажмите на клиента, чтобы увидеть его заявки и переписку.',
     today:'На сегодня',todayFilter:'Задачи на сегодня',overdueFilter:'Просроченные задачи',
@@ -55,7 +54,7 @@ const COPY={
     markContacted:'Marcar contactado',markClosed:'Cerrar solicitud',none:'Todavía no hay clientes.',
     filtered:'No hay coincidencias.',noNotes:'Sin mensaje inicial.',
     privacy:'Solo solicitudes a tus servicios. Los contactos anónimos no están verificados; sin datos privados de terceros.',
-    noPortal:'Puedes responder dentro de Holistic House. El historial de Telegram/WhatsApp no está conectado.',
+    noPortal:'Responde a través de Holistic House. Los contactos están ocultos; los canales verificados solo reciben avisos neutrales.',viaPortal:'A través de Holistic House',awaitPortal:'Solicitud invitada: el cliente todavía no tiene una cuenta verificada para la conversación privada.',
     historySummary:'Solicitud original y respuestas privadas',messageCount:'Mensajes guardados',
     recent:'Clientes recientes',tasks:'Tareas pendientes',overdue:'Atrasadas',nextActions:'Próximas acciones',taskFilter:'Con tareas',alerts:'Alertas al teléfono',awaiting:'Esperan mi respuesta',newMessages:'Mensajes nuevos',lastActivity:'Actividad reciente',refresh:'Actualizar clientes',tip:'Elige un cliente para ver sus solicitudes y mensajes.',
     today:'Para hoy',todayFilter:'Tareas para hoy',overdueFilter:'Tareas atrasadas',
@@ -73,7 +72,7 @@ const MANUAL_COPY={
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
-export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onSaveContact,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
+export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
@@ -287,7 +286,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
             <button type="button" onClick={()=>{setSelectedKey('');setTaskFocus(null)}}>{t.closeProfile}</button>
           </div>
           <dl className={styles.facts}>
-            <div><dt>{t.contact}</dt><dd>{selected.contact}</dd></div>
+            <div><dt>{t.contact}</dt><dd>{t.viaPortal}</dd></div>
             <div><dt>{t.requests}</dt><dd>{selected.items.length}</dd></div>
             <div><dt>{t.pending}</dt><dd>{selected.open}</dd></div>
           </dl>
@@ -315,7 +314,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                   <button type="button" disabled={busy} onClick={()=>onStatus?.(request,'closed')}>{t.markClosed}</button>
                 </div>}
                 {request.requestKind==='public'
-                  ? <PublicEnquiryContact request={request} locale={lang} busy={busy} onSave={onSaveContact}/>
+                  ? <p className={styles.hint}>{t.awaitPortal}</p>
                   : <>
                       <PractitionerRequestTasks key={'tasks:'+request.id} requestId={request.id}
                         focusTaskId={taskFocus?.requestId===request.id?taskFocus.taskId:''}
