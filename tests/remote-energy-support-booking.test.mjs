@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   REMOTE_SUPPORT_DRAFT_KEY,readRemoteSupportDraft,formatRemoteSupportDraft,
-  normalizeRemoteSupportBooking,
+  normalizeRemoteSupportBooking,proposedRemoteSlot,
 } from '../lib/practitioners/remote-energy-support.js'
 
 const now=Date.parse('2027-01-16T14:00:00.000Z')
@@ -73,4 +73,22 @@ test('only matching, recent, minimal scheduling preference is restored',()=>{
   assert.equal(readRemoteSupportDraft(storage,'offering-id',now+2*24*3600*1000),null)
   assert.equal(formatRemoteSupportDraft(draft).includes('NOT yet confirmed'),false)
   assert.match(formatRemoteSupportDraft(draft),/not confirmed or paid/i)
+})
+
+test('practitioner alternate time is reflected in the client timezone',()=>{
+  const proposed=proposedRemoteSlot('2027-01-18T19:45:00.000Z','America/Toronto',now)
+  assert.deepEqual({...proposed},{startsAt:'2027-01-18T19:45:00.000Z',
+    date:'2027-01-18',time:'14:45',timezone:'America/Toronto'})
+  assert.throws(()=>proposedRemoteSlot('2027-01-18T19:45:00.000Z','Invalid/Zone',now))
+  assert.throws(()=>proposedRemoteSlot('2027-01-18T19:45:00.000Z','America/Toronto',
+    Date.parse('2027-01-19T00:00:00.000Z')))
+})
+test('short sessions never inherit an unapproved price from the owner tariff',()=>{
+  const owner={...service,confirmed_price:50,currency:'EUR',duration_minutes:30,
+    discovery_metadata:{methods:['Usui Reiki'],priceOptions:[{duration:30,price:50},{duration:60,price:100}]}}
+  const thirty={...booking,duration:30,expectedPrice:50,expectedCurrency:'EUR'}
+  assert.equal(normalizeRemoteSupportBooking(thirty,owner,now).price,50)
+  assert.equal(normalizeRemoteSupportBooking({...thirty,duration:60,expectedPrice:100},owner,now).price,100)
+  assert.throws(()=>normalizeRemoteSupportBooking({...thirty,duration:10,expectedPrice:25},owner,now),/PRICE_NOT_PUBLISHED/)
+  assert.throws(()=>normalizeRemoteSupportBooking({...thirty,duration:20,expectedPrice:35},owner,now),/PRICE_NOT_PUBLISHED/)
 })
