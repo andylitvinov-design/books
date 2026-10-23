@@ -4,6 +4,7 @@ import { runInNewContext } from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
 import { activeCompactNavigationId, getCompactNavigation, getSiteNavigation } from '../lib/site-navigation-model.js'
+import { classifyHolisticHouseNativeAuth } from '../lib/native/deep-link-policy.js'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 const page = read('app/[locale]/pro/page.tsx')
@@ -166,4 +167,16 @@ test('earning promise stays honest; mobile and accessibility are deliberate',()=
   assert.match(css,/prefers-reduced-motion/)
   assert.match(css,/focus-visible/)
   assert.match(css,/min-height:49px/)
+})
+
+test('native Google callback forwards safe Pro category but rejects duplicate or arbitrary query',()=>{
+  const ok=classifyHolisticHouseNativeAuth('holistichouse://auth/callback?code=abc&locale=ru&continue=my-practice&profi=intro')
+  assert.equal(ok.kind,'hh-auth')
+  assert.match(ok.path,/\/api\/app\/auth\/callback\?/)
+  assert.match(ok.path,/continue=my-practice/)
+  assert.match(ok.path,/profi=intro/)
+  const duplicate=classifyHolisticHouseNativeAuth('holistichouse://auth/callback?code=abc&profi=intro&profi=course')
+  assert.equal(duplicate.kind,'unsupported')
+  const injected=classifyHolisticHouseNativeAuth('holistichouse://auth/callback?code=abc&returnPath=https%3A%2F%2Fevil.invalid')
+  assert.equal(injected.kind,'unsupported')
 })
