@@ -112,6 +112,7 @@ const COPY = {
 const SEARCH_KEYWORDS: Record<string, string> = {
   "academy-free-opora": "opora stress anti-stress antistress antiestrés stress relief стресс антистресс тревога опора 14 days 14 дней",
   "academy-featured-principles-energywork": "free energywork principles basics reiki practitioner study initiation tantra kundalini yggdrasil энергетическая работа основы рейки практик обучение инициация курс gratuito iniciación aprendizaje",
+  "academy-featured-egypt-priesthood": "egypt egyptian osiris priesthood ancient temple egyptian mysticism egyptian gods египет жречество осирис жрецы видео курс мистерии egipto sacerdocio osiris",
   "academy-free-tantra-introduction": "tantra reiki level 1 free initiation тантра рейки первая ступень бесплатная инициация",
   "academy-free-yggdrasil-introduction": "reiki yggdrasil level 1 free initiation рейки иггдрасиль первая ступень",
   "academy-featured-yggdrasil": "dao yggdrasil reiki basic course training levels рейки иггдрасиль базовый курс",
