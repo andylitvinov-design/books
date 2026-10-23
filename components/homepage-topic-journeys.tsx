@@ -1,54 +1,65 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
-import type { Locale } from '@/data/remedies'
-import { TOPIC_JOURNEYS } from '@/lib/assessments/topic-journeys'
+import type { PublicLocale } from '@/lib/public-locales'
 import styles from './homepage-topic-journeys.module.css'
 
-// Reuse the site's approved photographic assets. Keep these static and
-// unoptimized to avoid consuming the exhausted Vercel image-transform quota.
-const photos: Record<string, string> = {
-  relationships: '/images/holistic-house/video-posters/constellations-en-v1.webp',
-  business: '/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp',
-  stress: '/images/holistic-house/hero-olive-incense.webp',
-  energy: '/academy/reiki-yggdrasil/source/eastern-tradition.png',
-  effectiveness: '/images/holistic-house/video-posters/hypnotherapy-en-v1.webp',
-}
-const text = {
+// Approved local artwork; images are not transformed at request time.
+const directions = [
+  { id: 'energy', image: '/images/holistic-house/reiki-approved-sunrise-v3.webp' },
+  { id: 'relationships', image: '/images/holistic-house/video-posters/constellations-en-v1.webp' },
+  { id: 'business', image: '/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp' },
+] as const
+
+const copy = {
   en: {
     kicker: 'FIND YOUR DIRECTION',
-    title: 'What matters to you right now?',
-    intro: 'Choose a direction, then a focus. We will suggest two free tests to begin with.',
-    action: 'Take a free test',
+    title: 'Energy · Love · Business',
+    intro: 'Choose the area that matters to you. Each offers a free test, a practical course and personal guidance.',
+    action: 'Explore options',
+    energy: { title: 'Energy', eyebrow: 'WELLBEING & BALANCE', detail: 'Stress, recovery, Reiki and inner resources.' },
+    relationships: { title: 'Love', eyebrow: 'CONNECTION & CLOSENESS', detail: 'Trust, communication and personal boundaries.' },
+    business: { title: 'Business', eyebrow: 'WORK & DEVELOPMENT', detail: 'Career, focus, decisions and project growth.' },
   },
   ru: {
     kicker: 'ВЫБЕРИТЕ СВОЁ НАПРАВЛЕНИЕ',
-    title: 'Что сейчас для вас важно?',
-    intro: 'Выберите направление и тему — предложим два бесплатных теста для начала.',
-    action: 'Пройти тест',
+    title: 'Энергия · Любовь · Бизнес',
+    intro: 'Выберите важную вам сферу. В каждой — бесплатный тест, практический курс и личная консультация.',
+    action: 'Посмотреть предложения',
+    energy: { title: 'Энергия', eyebrow: 'РЕСУРСЫ И РАВНОВЕСИЕ', detail: 'Стресс, восстановление, Рейки и внутренняя опора.' },
+    relationships: { title: 'Любовь', eyebrow: 'КОНТАКТ И БЛИЗОСТЬ', detail: 'Доверие, общение и личные границы.' },
+    business: { title: 'Бизнес', eyebrow: 'РАБОТА И РАЗВИТИЕ', detail: 'Карьера, решения, фокус и рост проекта.' },
+  },
+  es: {
+    kicker: 'ELIGE TU DIRECCIÓN',
+    title: 'Energía · Amor · Negocios',
+    intro: 'Elige tu área. Encuentra un test gratuito, un curso práctico y apoyo personal.',
+    action: 'Explorar opciones',
+    energy: { title: 'Energía', eyebrow: 'BIENESTAR Y EQUILIBRIO', detail: 'Estrés, recuperación, Reiki y recursos personales.' },
+    relationships: { title: 'Amor', eyebrow: 'CONEXIÓN Y CERCANÍA', detail: 'Confianza, comunicación y límites personales.' },
+    business: { title: 'Negocios', eyebrow: 'TRABAJO Y DESARROLLO', detail: 'Carrera, decisiones, foco y crecimiento del proyecto.' },
   },
 } as const
 
-export function HomepageTopicJourneys({ locale }: { locale: Locale }) {
-  const language = locale === 'ru' ? 'ru' : 'en'
-  const c = text[language]
+export function HomepageTopicJourneys({ locale }: { locale: PublicLocale }) {
+  const c = copy[locale]
   return <section className={styles.section} aria-labelledby="hh-topic-journeys" id="hh-topic-journeys" data-home-topic-journeys>
     <header className={styles.heading}>
       <p className={styles.kicker}>{c.kicker}</p>
-      <h2>{c.title}</h2>
+      <h2 id="hh-topic-journeys">{c.title}</h2>
       <p>{c.intro}</p>
     </header>
     <div className={styles.grid}>
-      {TOPIC_JOURNEYS.map((journey) => <article key={journey.id} className={styles.tile} data-topic-id={journey.id}>
-        <Link href={`/${language}/explore/${journey.id}`} className={styles.tileLink}>
+      {directions.map(direction => <article key={direction.id} className={styles.tile} data-topic-id={direction.id}>
+        <Link href={'/' + locale + '/explore/' + direction.id} className={styles.tileLink} prefetch={false}>
           <span className={styles.photo}>
-            <Image src={photos[journey.id]} alt="" fill unoptimized loading="lazy"
-              sizes="(max-width: 720px) 116px, (max-width: 1024px) 145px, 185px" />
+            <Image src={direction.image} alt="" fill unoptimized loading="lazy"
+              sizes="(max-width: 720px) 94px, (max-width: 1024px) 120px, 150px" />
           </span>
           <span className={styles.tileContent}>
-            <span className={styles.eyebrow}>{journey.eyebrow[language]}</span>
-            <strong>{journey.title[language]}</strong>
-            <span className={styles.description}>{journey.summary[language]}</span>
+            <span className={styles.eyebrow}>{c[direction.id].eyebrow}</span>
+            <strong>{c[direction.id].title}</strong>
+            <span className={styles.description}>{c[direction.id].detail}</span>
             <span className={styles.action}>{c.action}<ArrowUpRight size={17} aria-hidden="true" /></span>
           </span>
         </Link>
