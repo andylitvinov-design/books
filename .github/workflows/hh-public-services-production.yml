@@ -45,6 +45,7 @@ jobs:
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-home-consultation-first-screen.mjs || status=$?
+          node scripts/verify-home-inline-messenger-browser.mjs || status=$?
           node scripts/verify-contact-channel-chooser-browser.mjs || status=$?
           node scripts/verify-service-cart-browser.mjs || status=$?
           node scripts/verify-storefront-shop-browser.mjs || status=$?
@@ -62,6 +63,7 @@ jobs:
             artifacts/business-quiz-mobile/
             artifacts/ideas-mobile/
             artifacts/home-first-screen/
+            artifacts/home-inline-messenger/
             artifacts/contact-channel-browser/
             artifacts/service-cart/
             artifacts/storefront-shop/

@@ -5,6 +5,10 @@ on:
     branches: [codex/public-book-library]
     paths:
       - "components/compact-lead-capture.tsx"
+      - "components/home-free-diagnosis-banner.tsx"
+      - "components/home-free-diagnosis-banner.module.css"
+      - "tests/home-inline-messenger-crm.test.mjs"
+      - "tests/home-carousel-first-screen-cta.test.mjs"
       - "components/compact-lead-capture.module.css"
       - "components/free-entry-landing.tsx"
       - "components/sitewide-lead-capture.tsx"
@@ -18,6 +22,10 @@ on:
     branches: [codex/public-book-library]
     paths:
       - "components/compact-lead-capture.tsx"
+      - "components/home-free-diagnosis-banner.tsx"
+      - "components/home-free-diagnosis-banner.module.css"
+      - "tests/home-inline-messenger-crm.test.mjs"
+      - "tests/home-carousel-first-screen-cta.test.mjs"
       - "components/compact-lead-capture.module.css"
       - "components/free-entry-landing.tsx"
       - "components/sitewide-lead-capture.tsx"
@@ -46,10 +54,13 @@ jobs:
           tests/free-review-conversion.test.mjs
           tests/contact-channel-chooser.test.mjs
           tests/services-hero-quick-request.test.mjs
+          tests/home-carousel-first-screen-cta.test.mjs
+          tests/home-inline-messenger-crm.test.mjs
       - name: Lint modified UI and lead classifier
         run: >-
           npx --no-install eslint
           components/compact-lead-capture.tsx
+          components/home-free-diagnosis-banner.tsx
           components/free-entry-landing.tsx
           components/sitewide-lead-capture.tsx
           lib/public-lead-capture.js

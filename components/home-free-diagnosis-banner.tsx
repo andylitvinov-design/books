@@ -15,10 +15,10 @@ const copy = {
     description: "Explore one question with a short questionnaire and a hand-drawn ME · GOAL · PROBLEM sketch.",
     benefits: ["Personal written review", "A clearer next step", "No fee or video call"],
     order: "Request for free",
-    close: "Hide request form",
+    close: "Hide contact options",
     details: "How it works",
     formTitle: "Where can we reply?",
-    formLead: "Leave an email or phone number. Andrey will explain how to send your questionnaire and drawing.",
+    formLead: "Choose WhatsApp or Telegram. Your contact is saved before the chat opens.",
     note: "A symbolic review, not a medical diagnosis. A request is not a confirmed appointment.",
   },
   ru: {
@@ -27,10 +27,10 @@ const copy = {
     description: "Один важный вопрос, короткая анкета и рисунок «Я · Цель · Проблема».",
     benefits: ["Личный письменный разбор", "Яснее следующий шаг", "Без оплаты и созвона"],
     order: "Заказать бесплатно",
-    close: "Скрыть форму заявки",
+    close: "Скрыть способы связи",
     details: "Как это работает",
     formTitle: "Куда вам ответить?",
-    formLead: "Оставьте email или телефон. Андрей объяснит, как отправить анкету и рисунок.",
+    formLead: "Выберите WhatsApp или Telegram. Контакт сохраняется перед открытием чата.",
     note: "Символический разбор, не медицинский диагноз. Заявка не означает подтверждённую запись.",
   },
   es: {
@@ -39,10 +39,10 @@ const copy = {
     description: "Una pregunta importante, un formulario breve y un dibujo YO · META · PROBLEMA.",
     benefits: ["Informe personal escrito", "Un próximo paso más claro", "Sin pago ni videollamada"],
     order: "Solicitar gratis",
-    close: "Ocultar formulario",
+    close: "Ocultar opciones de contacto",
     details: "Cómo funciona",
     formTitle: "¿Dónde podemos responderte?",
-    formLead: "Deja tu correo o teléfono. Andrey te explicará cómo enviar el formulario y el dibujo.",
+    formLead: "Elige WhatsApp o Telegram. Tu contacto se guarda antes de abrir el chat.",
     note: "Reflexión simbólica, no diagnóstico médico. La solicitud no confirma una cita.",
   },
 } as const;
@@ -79,16 +79,17 @@ export function HomeFreeDiagnosisBanner({ locale }: { locale: PublicLocale }) {
             {t.details}
           </Link>
         </div>
+        <div id={formId} className={styles.request} hidden={!open} data-home-diagnosis-request>
+          <CompactLeadCapture
+            locale={locale}
+            variant="messenger"
+            serviceTitle="Free drawing-based situation review"
+            sourcePath={"/" + locale + "/services/free-situation-review"}
+            title={t.formTitle}
+            lead={t.formLead}
+          />
+        </div>
         <p className={styles.note}>{t.note}</p>
-      </div>
-      <div id={formId} className={styles.request} hidden={!open} data-home-diagnosis-request>
-        <CompactLeadCapture
-          locale={locale}
-          serviceTitle="Free drawing-based situation review"
-          sourcePath={"/" + locale + "/services/free-situation-review"}
-          title={t.formTitle}
-          lead={t.formLead}
-        />
       </div>
     </section>
   );
