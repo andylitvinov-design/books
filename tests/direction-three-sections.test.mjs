@@ -123,6 +123,28 @@ test('all suggested free-test cards open their exact guest questionnaire without
   assert.ok(runner.includes('return begin(definitions[0].key)'))
 })
 
+test('visible cards prefer different guest tests when topic suggestions overlap',()=>{
+  for(const direction of ['energy','relationships','business']){
+    for(const locale of ['en','ru','es']){
+      const ids=journey(direction).topics.map(topic=>topic.id)
+      const primary={key:'hh-monthly-profile',title:'Monthly Life Profile'}
+      const second={key:'hh-resource-pulse',title:'Resources & Inner Support'}
+      const suggestions=Object.fromEntries([['',[primary,second]],...ids.map(id=>[id,[primary,second]])])
+      const runnerLocale=locale==='es'?'en':locale
+      const f=fixture(direction,locale,suggestions)
+      let tree=f.render()
+      const hrefs=by(tree,'data-offer-action','test').map(link=>link.props.href)
+      assert.equal(hrefs[0],'/'+runnerLocale+'/client?startTests=hh-monthly-profile')
+      assert.equal(hrefs[1],'/'+runnerLocale+'/client?startTests=hh-resource-pulse')
+      by(tree,'data-direction-filter',ids[1])[0].props.onClick()
+      tree=f.render()
+      const narrowed=by(tree,'data-offer-action','test').map(link=>link.props.href)
+      assert.equal(narrowed[0],'/'+runnerLocale+'/client?startTests=hh-monthly-profile')
+      assert.equal(narrowed[1],'/'+runnerLocale+'/client?startTests=hh-resource-pulse')
+    }
+  }
+})
+
 test('each group reveals exactly two additional real offers inline, then an external catalog link',()=>{
   for(const direction of ['energy','relationships','business']){
     for(const locale of ['en','ru','es']){
