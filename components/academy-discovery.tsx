@@ -17,11 +17,11 @@ const COPY = {
   en: {
     eyebrow: "HOLISTIC HOUSE · ACADEMY",
     title: "Find your learning path",
-    description: "All courses in one place: business and career, stress relief, Reiki and Temple Studies."
+    description: "All courses in one place: business and career, stress relief, Reiki and Temple Studies.",
     videoTitle: "Explore video lessons",
     videoDescription: "Original lessons and guided practices organized by program and language.",
     searchLabel: "Find a learning course",
-    placeholder: "Business, Reiki or stress relief…"
+    placeholder: "Business, Reiki or stress relief…",
     searchButton: "Find my course",
     browse: "Choose your course",
     catalogLabel: "ALL LEARNING PROGRAMMES",
@@ -46,11 +46,11 @@ const COPY = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · АКАДЕМИЯ",
     title: "Найдите свою программу обучения",
-    description: "Все курсы в одном месте: бизнес и карьера, антистресс, Рейки и храмовые практики."
+    description: "Все курсы в одном месте: бизнес и карьера, антистресс, Рейки и храмовые практики.",
     videoTitle: "Выберите видеоуроки",
     videoDescription: "Авторские уроки и практики, сгруппированные по программам и языкам записи.",
     searchLabel: "Поиск курсов",
-    placeholder: "Бизнес, Рейки или антистресс…"
+    placeholder: "Бизнес, Рейки или антистресс…",
     searchButton: "Подобрать курс",
     browse: "Выберите свой курс",
     catalogLabel: "ВСЕ ПРОГРАММЫ ОБУЧЕНИЯ",
@@ -75,11 +75,11 @@ const COPY = {
   es: {
     eyebrow: "HOLISTIC HOUSE · ACADEMIA",
     title: "Encuentra tu ruta de aprendizaje",
-    description: "Todos los cursos en un lugar: negocios y carrera, antiestrés, Reiki y tradiciones del templo."
+    description: "Todos los cursos en un lugar: negocios y carrera, antiestrés, Reiki y tradiciones del templo.",
     videoTitle: "Explora las videolecciones",
     videoDescription: "Lecciones y prácticas organizadas por programa e idioma original.",
     searchLabel: "Buscar cursos",
-    placeholder: "Negocios, Reiki o antiestrés…"
+    placeholder: "Negocios, Reiki o antiestrés…",
     searchButton: "Buscar curso",
     browse: "Elige tu curso",
     catalogLabel: "TODOS LOS PROGRAMAS",
@@ -321,7 +321,7 @@ export function AcademyDiscovery({
               </button>
             ))}
           </div>
-          {(isSearching || hasFilter) && !filteredItems.length ? <p className={styles.empty} role="status">{t.empty}</p> : null
+          {(isSearching || hasFilter) && !filteredItems.length ? <p className={styles.empty} role="status">{t.empty}</p> : null}
 
           <section className={styles.categoryGroup} id="academy-free-courses" aria-labelledby="academy-free-courses-title">
             <div className={styles.categoryHeading}>
