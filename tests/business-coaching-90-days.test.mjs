@@ -390,7 +390,7 @@ test('two-screen lessons validate and save selected answers without mandatory es
   assert.ok(ui.includes('data-business-lesson-slide data-lesson-stage={lessonStage}'))
   assert.ok(ui.includes('data-business-lesson-save'))
   assert.ok(ui.includes('const [lessonStage,setLessonStage]=useState(1)'))
-  assert.ok(ui.includes('[[1,lang==='+'\'ru\''+'?'))
+  assert.ok(ui.includes("[[1,lang==='ru'?'Ответить':'Answer']"))
   assert.ok(ui.includes('[4,t.doneSlide]]'))
   assert.ok(!ui.includes('lessonStage===0&&'))
   assert.ok(ui.includes('lessonStage===1&&'))
