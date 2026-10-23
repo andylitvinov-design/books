@@ -39,7 +39,7 @@
 @media(max-width:380px){
  .choices{grid-template-columns:minmax(0,1fr)}
  .choice,.chosen{min-height:44px;padding:7px 11px}
- .voiceActions button{min-height:42px;font-size:11px}
+ .voiceActions button{min-height:44px;font-size:11px}
  .heroArt{max-height:135px}
 }
 @media(max-height:650px){

@@ -44,3 +44,8 @@ The table shows editorial examples, not validated topic diagnosis, financial adv
 - Client: `lib/personal-coaching/model-matcher.js`, `components/app/personal-coaching-picker.jsx`, updated existing coaching screen/CSS and course CTAs.
 - Automated tests: `tests/personal-coaching-model-selection.test.mjs`, existing `tests/personal-coaching-session.test.mjs`, dedicated GHA workflow.
 - Final QA must include 10/19 DB counts, all references, denied `anon` privileges, logged-in account save → reload → resume → finish → encrypted export/delete, cross-account RLS denial, EN/RU/ES editorial review, physical mobile 320/390/430 iPhone Safari, actual deployment SHA and canonical alias. Without those, report implementation **not fully E2E verified**.
+
+## Coaching question audio and dictation reused (2026-10-23)
+- Personal Coaching now reuses the **same** `CoachingQuestionVoice` control as Egyptian/Greek sessions. The question is spoken only on Listen; microphone recognition starts only after a clearly worded device/provider privacy confirmation, with typed / keyboard-dictation fallback. The recognized transcript becomes editable local draft text; only Save & continue sends it to the existing authenticated encrypted session endpoint.
+- Browser TTS/capture stop on slide changes, backgrounding or unmount. Old-recognition event callbacks are ignored after a question switches, avoiding cross-slide answer contamination. Never use an external paid speech API, HeyGen render, SMS or analytics for audio/answers.
+- Actual iPhone Safari microphone permission, speaking quality and authenticated save/reload require manual E2E; structural regression checks do not substitute.

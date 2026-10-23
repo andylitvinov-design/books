@@ -6,6 +6,7 @@ import { ArrowRight, Check, ChevronLeft, LockKeyhole, Trash2, X } from 'lucide-r
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import PersonalCoachingPicker from './personal-coaching-picker'
+import CoachingQuestionVoice from './coaching-question-voice'
 import styles from './personal-coaching.module.css'
 
 const copy={
@@ -301,6 +302,10 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</span>}
             <h1 ref={titleRef} tabIndex={-1}>{translated(question.prompt||question.question,lang)}</h1>
+            <CoachingQuestionVoice key={question.id} text={translated(question.prompt||question.question,lang)}
+              locale={lang} disabled={busy} onTranscript={words=>{
+                setDraft(words.trim().slice(0,800));setError('');setNotice('')
+              }}/>
             <p>{translated(question.reflection||question.hint,lang)}</p>
             {question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
