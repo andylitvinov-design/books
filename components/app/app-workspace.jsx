@@ -3812,6 +3812,23 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             <p>
               {dateLabel(request.createdAt, locale)} · {request.contact}
             </p>
+            {request.remoteBooking?.proposed&&<div className="hh-panel">
+              <p><strong>{locale==='ru'?'Мастер предложил другое время':'Practitioner suggested another time'}:</strong>
+                {' '}{request.remoteBooking.proposed.date} {request.remoteBooking.proposed.time}
+                {' '}({request.remoteBooking.proposed.timezone})
+              </p>
+              <p className="hh-fine">{locale==='ru'
+                ? 'После согласия вы вернётесь в ожидание окончательного подтверждения мастером.'
+                : 'Accepting returns this request to awaiting practitioner confirmation.'}</p>
+              <div className="hh-actions">
+                <button type="button" onClick={()=>updateRequest(request,'accept_time')}>
+                  {locale==='ru'?'Принять время':'Accept time'}
+                </button>
+                <button type="button" onClick={()=>updateRequest(request,'decline_time')}>
+                  {locale==='ru'?'Отклонить перенос':'Decline change'}
+                </button>
+              </div>
+            </div>}
             {request.remoteBooking && <p className="hh-fine">
               {request.remoteBooking.duration} min · {request.remoteBooking.date} {request.remoteBooking.time}
               {' · '}{request.remoteBooking.timezone} · {request.remoteBooking.price} {request.remoteBooking.currency}
@@ -3835,7 +3852,8 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
                 <button onClick={() => updateRequest(request, 'unshare')}>{c.unshare}</button>
               </>
             )}
-            {['requested', 'contacted'].includes(request.status) && (
+            {(['requested','contacted'].includes(request.status) ||
+              (request.remoteBooking && ['confirmed','reschedule_proposed'].includes(request.status))) && (
               <button onClick={() => updateRequest(request, 'cancel')}>{c.withdraw}</button>
             )}
             <p className="hh-fine">{c.requestNote}</p>

@@ -291,7 +291,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
   const publishedCount=services.filter(item=>item.status==='published').length
-  const openRequests=requests.filter(item=>['requested','contacted','confirmed','in_progress'].includes(item.status)).length
+  const openRequests=requests.filter(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   const newServices=data.newServices
@@ -562,7 +562,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onRefresh={()=>load()}
             focusRequestId={focusRequestId}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
+            onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
         {activePanel==='crm'&&isOwner&&accountId&&
           <CrmManager key={accountId} locale={locale} accountId={accountId}/>} 
@@ -583,7 +583,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
           </div>
           <Requests items={requests} t={t} locale={locale} busy={busy}
-            onStatus={(item,status)=>act(()=>practiceFetch('/requests/'+item.id,{status,expectedRevision:item.revision}))}
+            onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
       </section>}
@@ -765,8 +765,9 @@ function Services({items,locale,busy,quota,createRequest=0,starter='',onSave,onS
   </>
 }
 function Requests({items,t,locale,busy,onStatus,onSaveContact}){
-  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','confirmed','in_progress'].includes(item.status))?'open':'all')
-  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','confirmed','in_progress'].includes(item.status):item.status===status))
+  const [proposals,setProposals]=useState({})
+  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status))?'open':'all')
+  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status):item.status===status))
   const ru=t.requests==='Заявки'
   return <section className="hh-section"><div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
     <label className="hh-practice-requests-filter">{ru?'Статус':'Status'}
@@ -787,6 +788,22 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact}){
         {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.remoteBooking&&x.remoteBooking.photoPath&&
         <RemoteGoalPhoto key={x.id} requestId={x.id} role="master"
           hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
+      {x.remoteBooking&&x.remoteBooking.proposed&&<p className="hh-fine">
+        {locale==='ru'?'Предложено новое время':'Alternative time offered'}:
+        {' '}{x.remoteBooking.proposed.date} {x.remoteBooking.proposed.time}
+        {' '}({x.remoteBooking.proposed.timezone}) ·
+        {' '}{locale==='ru'?'Ожидается согласие клиента':'Waiting for client acceptance'}
+      </p>}
+      {x.remoteBooking&&['requested','confirmed'].includes(x.status)&&<label className="hh-fine">
+        {locale==='ru'?'Предложить другое время (ваш местный часовой пояс)':'Suggest another time (your local timezone)'}
+        <input type="datetime-local" style={{display:'block',width:'min(100%,300px)',marginTop:6}}
+          value={proposals[x.id]||''} disabled={busy}
+          onChange={event=>setProposals(prev=>({...prev,[x.id]:event.target.value}))}/>
+        <button type="button" disabled={busy||!proposals[x.id]||!Number.isFinite(new Date(proposals[x.id]).getTime())}
+          onClick={()=>onStatus(x,undefined,{action:'propose_time',proposedStartAt:new Date(proposals[x.id]).toISOString()})}>
+          {locale==='ru'?'Отправить новое время':'Offer new time'}
+        </button>
+      </label>}
       {x.remoteBooking&&<div className="hh-actions">
         {x.status==='requested'&&<>
           <button disabled={busy} onClick={()=>onStatus(x,'confirmed')}>{locale==='ru'?'Подтвердить время':'Confirm slot'}</button>
