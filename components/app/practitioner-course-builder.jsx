@@ -2,16 +2,16 @@
 import {useEffect,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {preparePhoto} from '@/components/session-photo-uploader'
-import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight} from 'lucide-react'
+import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight,Copy,LockKeyhole} from 'lucide-react'
 import CourseSlideRecorder from './course-slide-recorder'
 import styles from './practitioner-course-builder.module.css'
 
 const translations={
- en:{heading:'Course editor',sub:'Create lessons with text, photos, audio, video or links. Drafts stay private.',unavailable:'The new course library could not be loaded. Your other materials are safe.',retry:'Try again',
+ en:{startTitle:'What would you like to teach?',startHint:'Name your course. We will add its first lesson screen automatically.',startExample:'e.g. Five steps to everyday calm',createNow:'Create course and first slide',cancel:'Cancel',myCourses:'My courses',stepName:'Name',stepBuild:'Build',stepPublish:'Publish',moreSettings:'Description and language',nextScreen:'Next screen',addNext:'Add next screen',slideHint:'One useful idea per screen. Choose text, a photo, audio or video.',previewSlide:'Preview this screen',hideSlidePreview:'Hide preview',duplicate:'Duplicate screen',untitled:'Untitled screen',enterTitle:'Enter a course title first.',emptyScreen:'Add text or a title to this screen before publishing.',missingFile:'Upload media or add a video link before publishing.',ready:'Ready to review and publish. Only published courses are public.',notReady:'To publish:',discard:'Discard your unsaved changes?',intro:'Start with a name. You can add more lessons, media and description later.',createError:'Could not create the course.',heading:'Course editor',sub:'Create lessons with text, photos, audio, video or links. Drafts stay private.',unavailable:'The new course library could not be loaded. Your other materials are safe.',retry:'Try again',
  new:'New course',name:'Course title',summary:'Short description',lang:'Language',slides:'Slides',add:'Add slide',slideTitle:'Slide title',body:'Text / instructions',type:'Content type',text:'Text',image:'Photo',audio:'Audio',video:'Video file',embed:'YouTube / Vimeo',link:'Video link',upload:'Upload file',uploading:'Uploading…',private:'Private until published',save:'Save draft',saving:'Saving…',publish:'Publish course',republish:'Update published course',hide:'Unpublish',delete:'Archive',published:'Published',draft:'Draft',unsaved:'Unsaved changes',saved:'Saved on server',limit:'Photo 4 MB · audio 20 MB · video 25 MB. No autoplay.',share:'Share course',copied:'Link copied',preview:'Preview course',confirm:'Publish these slides to anyone with the link and in the public course search? Confirm you own the content rights and there is no client data.',remove:'Archive this course? Published course will disappear from search and shared links.',empty:'No courses yet. Create the first one.',select:'Choose a course',choose:'Choose a slide',up:'Up',down:'Down',removeSlide:'Remove slide',error:'Could not save changes',rev:'The course changed elsewhere. Reload to edit the newest version.',approved:'Your practitioner profile must be approved before publication.',search:'Published courses appear in Academy course search.',fileReady:'File uploaded and verified',photoAlt:'Image on slide',youtubePrep:'Prepare for YouTube (later)',youtubeDownload:'Download original',youtubeUploader:'Open Holistic House YouTube uploader',youtubeStudio:'Open YouTube Studio',youtubeNote:'Your video stays private here. Download a copy first, then choose a channel and explicitly upload it to YouTube. No automatic publishing; do not send private client videos.'},
- ru:{heading:'Редактор курсов',sub:'Уроки с текстом, фото, аудио, видео или ссылками. Черновики приватны.',unavailable:'Не удалось загрузить новые курсы. Остальные материалы доступны.',retry:'Повторить',
+ ru:{startTitle:'Чему будет посвящён ваш курс?',startHint:'Назовите курс — первый учебный экран мы добавим автоматически.',startExample:'Например, Пять шагов к спокойствию',createNow:'Создать курс и первый слайд',cancel:'Отмена',myCourses:'Мои курсы',stepName:'Название',stepBuild:'Слайды',stepPublish:'Публикация',moreSettings:'Описание и язык',nextScreen:'Следующий экран',addNext:'Добавить следующий экран',slideHint:'Одна полезная идея на экране. Выберите текст, фото, аудио или видео.',previewSlide:'Посмотреть экран',hideSlidePreview:'Скрыть предпросмотр',duplicate:'Дублировать экран',untitled:'Экран без названия',enterTitle:'Сначала введите название курса.',emptyScreen:'Перед публикацией добавьте текст или заголовок слайда.',missingFile:'Перед публикацией загрузите файл или добавьте ссылку на видео.',ready:'Можно проверить и опубликовать. Черновик пока приватный.',notReady:'Для публикации:',discard:'Отменить несохранённые изменения?',intro:'Начните с названия. Уроки, медиа и описание можно добавить позже.',createError:'Не удалось создать курс.',heading:'Редактор курсов',sub:'Уроки с текстом, фото, аудио, видео или ссылками. Черновики приватны.',unavailable:'Не удалось загрузить новые курсы. Остальные материалы доступны.',retry:'Повторить',
  new:'Новый курс',name:'Название курса',summary:'Краткое описание',lang:'Язык',slides:'Слайды',add:'Добавить слайд',slideTitle:'Заголовок слайда',body:'Текст / инструкция',type:'Тип содержимого',text:'Текст',image:'Фото',audio:'Аудио',video:'Видеофайл',embed:'YouTube / Vimeo',link:'Ссылка на видео',upload:'Загрузить файл',uploading:'Загрузка…',private:'Приватно до публикации',save:'Сохранить черновик',saving:'Сохраняем…',publish:'Опубликовать курс',republish:'Обновить публикацию',hide:'Снять с публикации',delete:'Архивировать',published:'Опубликован',draft:'Черновик',unsaved:'Не сохранено',saved:'Сохранено на сервере',limit:'Фото до 4 МБ · аудио до 20 МБ · видео до 25 МБ. Без автозапуска.',share:'Поделиться курсом',copied:'Ссылка скопирована',preview:'Открыть курс',confirm:'Опубликовать материалы для всех по ссылке и в поиске курсов? Подтвердите авторские права и отсутствие данных клиентов.',remove:'Архивировать курс? Публикация и ссылка перестанут работать.',empty:'Пока нет курсов. Создайте первый.',select:'Выберите курс',choose:'Выберите слайд',up:'Вверх',down:'Вниз',removeSlide:'Удалить слайд',error:'Не удалось сохранить',rev:'Курс изменён в другой вкладке. Обновите страницу.',approved:'Для публикации требуется одобренный профиль мастера.',search:'Опубликованные курсы появляются в поиске Академии.',fileReady:'Файл загружен и проверен',photoAlt:'Фото слайда',youtubePrep:'Подготовить для YouTube (позже)',youtubeDownload:'Скачать исходник',youtubeUploader:'Открыть загрузку YouTube',youtubeStudio:'Открыть YouTube Studio',youtubeNote:'Видео пока приватно. Сначала скачайте исходник, затем отдельно выберите канал и подтвердите загрузку в YouTube. Не отправляйте видео клиентов.'},
- es:{heading:'Editor de cursos',sub:'Lecciones con texto, fotos, audio, vídeo o enlaces. Los borradores son privados.',unavailable:'No se pudo cargar la biblioteca de cursos. Los otros materiales siguen disponibles.',retry:'Reintentar',
+ es:{startTitle:'¿Qué quieres enseñar en este curso?',startHint:'Pon un nombre al curso. Añadiremos automáticamente la primera pantalla.',startExample:'Por ejemplo, Cinco pasos hacia la calma',createNow:'Crear curso y primera pantalla',cancel:'Cancelar',myCourses:'Mis cursos',stepName:'Nombre',stepBuild:'Pantallas',stepPublish:'Publicar',moreSettings:'Descripción e idioma',nextScreen:'Pantalla siguiente',addNext:'Añadir otra pantalla',slideHint:'Una idea útil por pantalla. Elige texto, foto, audio o vídeo.',previewSlide:'Vista previa de la pantalla',hideSlidePreview:'Ocultar vista previa',duplicate:'Duplicar pantalla',untitled:'Pantalla sin título',enterTitle:'Primero escribe el título del curso.',emptyScreen:'Añade texto o un título a la pantalla antes de publicar.',missingFile:'Sube el archivo o añade un enlace de vídeo antes de publicar.',ready:'Listo para revisar y publicar. El borrador sigue privado.',notReady:'Para publicar:',discard:'¿Descartar cambios sin guardar?',intro:'Empieza con un nombre. Añade lecciones, archivos y descripción después.',createError:'No se pudo crear el curso.',heading:'Editor de cursos',sub:'Lecciones con texto, fotos, audio, vídeo o enlaces. Los borradores son privados.',unavailable:'No se pudo cargar la biblioteca de cursos. Los otros materiales siguen disponibles.',retry:'Reintentar',
  new:'Nuevo curso',name:'Título del curso',summary:'Descripción breve',lang:'Idioma',slides:'Diapositivas',add:'Añadir diapositiva',slideTitle:'Título de la diapositiva',body:'Texto / instrucciones',type:'Tipo de contenido',text:'Texto',image:'Foto',audio:'Audio',video:'Archivo de vídeo',embed:'YouTube / Vimeo',link:'Enlace de vídeo',upload:'Subir archivo',uploading:'Subiendo…',private:'Privado hasta publicar',save:'Guardar borrador',saving:'Guardando…',publish:'Publicar curso',republish:'Actualizar curso publicado',hide:'Dejar de publicar',delete:'Archivar',published:'Publicado',draft:'Borrador',unsaved:'Cambios sin guardar',saved:'Guardado en servidor',limit:'Foto 4 MB · audio 20 MB · vídeo 25 MB. Sin reproducción automática.',share:'Compartir curso',copied:'Enlace copiado',preview:'Ver curso',confirm:'¿Publicar para todos con el enlace y en el buscador? Confirma los derechos sobre el material y que no contiene datos de clientes.',remove:'¿Archivar el curso? El enlace dejará de funcionar.',empty:'Aún no hay cursos. Crea el primero.',select:'Elige un curso',choose:'Elige una diapositiva',up:'Subir',down:'Bajar',removeSlide:'Quitar diapositiva',error:'No se pudieron guardar los cambios',rev:'Otro dispositivo ha modificado el curso. Recarga la página.',approved:'Para publicar necesitas un perfil profesional aprobado.',search:'Los cursos publicados aparecen en la búsqueda de la Academia.',fileReady:'Archivo subido y verificado',photoAlt:'Imagen de diapositiva',youtubePrep:'Preparar para YouTube (más tarde)',youtubeDownload:'Descargar original',youtubeUploader:'Abrir cargador de YouTube',youtubeStudio:'Abrir YouTube Studio',youtubeNote:'Este vídeo sigue privado. Descarga el original y sube una copia a un canal de YouTube por separado, con confirmación. Nunca subas vídeos de clientes.'}
 }
 const makeSlide=()=>({id:crypto.randomUUID(),kind:'text',title:'',body:''})
@@ -33,6 +33,11 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  const [selected,setSelected]=useState(null)
  const [draft,setDraft]=useState(null)
  const [slideId,setSlideId]=useState(null)
+ const [creating,setCreating]=useState(false)
+ const [newTitle,setNewTitle]=useState('')
+ const [newLocale,setNewLocale]=useState(['en','ru','es'].includes(locale)?locale:'en')
+ const [listOpen,setListOpen]=useState(false)
+ const [showPreview,setShowPreview]=useState(false)
  const [loading,setLoading]=useState(true)
  const [loadFailed,setLoadFailed]=useState(false)
  const [retryKey,setRetryKey]=useState(0)
@@ -44,21 +49,29 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  const current=items.find(x=>x.id===selected)
  const active=draft?.slides?.find(x=>x.id===slideId)
  const dirty=!!current&&JSON.stringify(draft)!==JSON.stringify(current.draft)
+ const unfinishedSlide=draft?.slides?.find(slide=>
+  (slide.kind==='text'&&!String(slide.title||'').trim()&&!String(slide.body||'').trim())||
+  (['image','audio','video'].includes(slide.kind)&&!slide.assetId)||
+  (slide.kind==='embed'&&!String(slide.videoUrl||'').trim()))
+ const publishIssue=!draft?.title?.trim()?t.enterTitle:!draft.slides.length?t.add:unfinishedSlide?
+  (unfinishedSlide.kind==='text'?t.emptyScreen:t.missingFile):''
  const shareHref=current?.status==='published'?href(current):''
- function applyItem(item){
+ function applyItem(item,{keepSlide=false}={}){
   setItems(list=>[item,...list.filter(x=>x.id!==item.id)])
   setSelected(item.id)
   setDraft(JSON.parse(JSON.stringify(item.draft)))
-  setSlideId(item.draft.slides?.[0]?.id||null)
+  setSlideId(previous=>keepSlide&&item.draft.slides?.some(slide=>slide.id===previous)?previous:item.draft.slides?.[0]?.id||null)
+  setCreating(false);setListOpen(false)
  }
  useEffect(()=>{
   let alive=true
   setLoading(true);setLoadFailed(false);setError('')
-  setItems([]);setSelected(null);setDraft(null);setSlideId(null)
+  setItems([]);setSelected(null);setDraft(null);setSlideId(null);setCreating(false);setListOpen(false);setShowPreview(false)
   api().then(data=>{
    if(!alive)return
    const list=data.items||[]
    setItems(list)
+   setCreating(!list.length)
    if(list.length){setSelected(list[0].id);setDraft(JSON.parse(JSON.stringify(list[0].draft)));setSlideId(list[0].draft?.slides?.[0]?.id||null)}
   }).catch(()=>{if(alive)setLoadFailed(true)})
     .finally(()=>{if(alive)setLoading(false)})
@@ -66,8 +79,14 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  },[accountId,retryKey])
  function choose(item){
   if(busy||uploading||recording)return
-  if(dirty&&!window.confirm(locale==='ru'?'Отменить несохранённые изменения?':'Discard unsaved changes?'))return
-  setError('');setMessage('');applyItem(item)
+  if(dirty&&!creating&&!window.confirm(t.discard))return
+  setError('');setMessage('');setShowPreview(false);applyItem(item)
+ }
+ function openCreate(){
+  if(busy||uploading||recording)return
+  if(dirty&&!creating&&!window.confirm(t.discard))return
+  setError('');setMessage('');setNewTitle('');setNewLocale(['en','ru','es'].includes(locale)?locale:'en')
+  setCreating(true);setListOpen(false);setShowPreview(false)
  }
  function updateSlide(patch){
   setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideId?{...s,...patch}:s)}))
@@ -77,7 +96,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   if(busy||uploading||recording)return
   const slide=makeSlide()
   setDraft(d=>({...d,slides:[...d.slides,slide]}))
-  setSlideId(slide.id)
+  setSlideId(slide.id);setShowPreview(false)
   setMessage('')
  }
  function moveSlide(direction){
@@ -93,23 +112,41 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   if(busy||uploading||recording)return
   const slides=draft.slides.filter(s=>s.id!==slideId)
   setDraft(d=>({...d,slides}))
-  setSlideId(slides[0]?.id||null)
+  setSlideId(slides[0]?.id||null);setShowPreview(false)
  }
- async function create(){
-  if(busy||recording)return
+ function duplicateSlide(){
+  if(busy||uploading||recording||!active||draft.slides.length>=60)return
+  const copy={...active,id:crypto.randomUUID()}
+  setDraft(d=>{
+   const index=d.slides.findIndex(s=>s.id===slideId)
+   const slides=[...d.slides];slides.splice(index+1,0,copy)
+   return {...d,slides}
+  })
+  setSlideId(copy.id);setShowPreview(false);setMessage('')
+ }
+ function nextSlide(){
+  const index=draft.slides.findIndex(s=>s.id===slideId)
+  if(index>=0&&index<draft.slides.length-1){setSlideId(draft.slides[index+1].id);setShowPreview(false)}
+  else addSlide()
+ }
+ async function create(event){
+  event?.preventDefault()
+  if(busy||recording||uploading)return
+  const title=newTitle.trim()
+  if(!title){setError(t.enterTitle);return}
   setBusy(true);setError('');setMessage('')
   try{
-   const course={title:t.new,description:'',locale:['en','ru','es'].includes(locale)?locale:'en',slides:[]}
+   const course={title,description:'',locale:newLocale,slides:[makeSlide()]}
    const {item}=await api({action:'create',course})
    applyItem(item);setMessage(t.saved)
-  }catch(e){setError(e.message)}
+  }catch(e){setError(e.message||t.createError)}
   finally{setBusy(false)}
  }
  async function save(){
   if(!current||!draft)return null
   if(!dirty)return current
   const {item}=await api({action:'save',id:current.id,expectedRevision:current.revision,course:draft})
-  applyItem(item)
+  applyItem(item,{keepSlide:true})
   return item
  }
  async function operate(action){
@@ -125,7 +162,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
     const {item}=await api({action,id:saved.id,expectedRevision:saved.revision,reviewed:action==='publish'})
     if(action==='archive'){
      setItems(list=>list.filter(x=>x.id!==item.id));setSelected(null);setDraft(null);setSlideId(null)
-    }else applyItem(item)
+    }else applyItem(item,{keepSlide:true})
     setMessage(action==='publish'?t.search:t.saved)
    }
   }catch(e){setError(e.message==='REVISION_CONFLICT'?t.rev:e.message==='PRACTITIONER_REVIEW_REQUIRED'?t.approved:e.message||t.error)}
