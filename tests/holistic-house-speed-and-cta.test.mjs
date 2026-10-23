@@ -66,7 +66,7 @@ test("homepage prioritizes personal enquiry while retaining accessible free revi
   const belowFold = home.indexOf("<HomeMoreDisclosure");
   const more = read("components/home-more-disclosure.tsx");
   assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.ok(firstScreen < book && book < free && free < tests && tests < belowFold, "Personal enquiry is primary; the secondary catalogue remains expandable");
+  assert.ok(belowFold < firstScreen && firstScreen < book && book < free && free < tests, "Detailed personal enquiry follows the compact first fold inside the expandable catalogue");
   assert.ok(belowFold < home.indexOf("<HomepageContactCta locale={locale} />"), "Visible photo cards must precede bottom free capture");
 });
 
