@@ -5208,3 +5208,336 @@
   .page[data-course-portrait="v3"][data-reiki-first-lesson-gate="true"]
     [data-energywork-slide-id="flight-done"] .firstLessonSave .consentLabel { font-size: 11px; }
 }
+
+/* REIKI WELCOME CONVERSION V2 · 2026-10-23.
+   Only the five-day invitation changes. The teacher video, original meditations,
+   stable course slides, account saving, and initiation requirements are untouched. */
+.page[data-reiki-welcome="conversion-v2"] .journey { display: none; }
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.87);
+  border-radius: 26px;
+  background: #f8fdfb;
+  box-shadow: 0 16px 40px rgba(22, 82, 96, .12);
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .slideMain {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  width: 100%;
+  min-height: min(65svh, 650px);
+  padding: clamp(24px, 4vw, 45px);
+  overflow-x: hidden;
+  isolation: isolate;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .art {
+  display: block;
+  position: absolute;
+  inset: 0;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  opacity: 1;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .art img {
+  object-fit: cover;
+  object-position: 75% 36%;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .slideMain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(249,254,253,.98) 0%, rgba(249,254,253,.96) 43%, rgba(249,254,253,.66) 64%, rgba(249,254,253,.04) 100%);
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content {
+  position: relative;
+  z-index: 2;
+  width: min(62%, 600px);
+  max-width: 100%;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content > .eyebrow,
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content > h1,
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content > .description {
+  max-width: 100%;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .eyebrow {
+  color: #087c83;
+  font-size: 11px;
+  margin-bottom: 11px;
+  letter-spacing: .085em;
+  line-height: 1.3;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content h1 {
+  font-size: clamp(35px, 4.9vw, 59px);
+  line-height: 1.045;
+  letter-spacing: -.03em;
+  margin-bottom: 13px;
+  color: #0b3c4c;
+  text-shadow: none;
+  text-wrap: balance;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .description {
+  font-size: clamp(15px, 1.7vw, 19px);
+  line-height: 1.43;
+  color: #3b6470;
+  text-shadow: none;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 19px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 5px;
+  border: 1px solid rgba(179,220,218,.8);
+  border-radius: 12px;
+  background: rgba(245,253,250,.88);
+  color: #087c85;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits > div + div {
+  border-left: 1px solid rgba(179,220,218,.8);
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits strong {
+  color: #235764;
+  font-size: clamp(11px, 1.1vw, 13px);
+  line-height: 1.2;
+  text-align: center;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeReward {
+  position: relative;
+  z-index: 2;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #d7c39e;
+  border-radius: 16px;
+  background: rgba(255,248,233,.96);
+  box-shadow: 0 5px 15px rgba(103,74,36,.08);
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift strong {
+  color: #60471e;
+  font-size: clamp(13px, 1.35vw, 15px);
+  line-height: 1.22;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift p {
+  margin-top: 4px;
+  font-size: clamp(11px, 1.15vw, 13px);
+  line-height: 1.3;
+  color: #67573a;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeGiftDetails summary {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  color: #1b6875;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.page[data-reiki-welcome="conversion-v2"] .welcomeGiftDetails[open] {
+  padding-bottom: 5px;
+}
+.page[data-reiki-welcome="conversion-v2"] .progressHeader,
+.page[data-reiki-welcome="conversion-v2"] .progress { display: none; }
+.page[data-reiki-welcome="conversion-v2"] .progressFooter { order: 5; }
+.page[data-reiki-welcome="conversion-v2"] .savedLine:empty { display: none; }
+.page[data-reiki-welcome="conversion-v2"] .footer { order: 4; }
+.page[data-reiki-welcome="conversion-v2"] .next {
+  flex: 1 1 auto;
+  min-height: 59px;
+  background: linear-gradient(110deg, #048f9f, #0bbeb4);
+  border: 1px solid #46d8d1;
+  border-bottom: 3px solid #067b87;
+  box-shadow: 0 9px 22px rgba(4,128,135,.2);
+  border-radius: 17px;
+  font-size: clamp(16px, 2vw, 19px);
+}
+.page[data-reiki-welcome="conversion-v2"] .back {
+  flex: 0 0 50px;
+  width: 50px;
+  padding: 0;
+}
+.page[data-reiki-welcome="conversion-v2"] .programme {
+  order: 6;
+  width: 100%;
+  max-width: 100%;
+  border-color: rgba(154,204,209,.7);
+  background: rgba(244,253,251,.86);
+  box-shadow: none;
+}
+.page[data-reiki-welcome="conversion-v2"] .programme > .programmeSummary {
+  background: transparent;
+}
+@media (max-width: 760px) {
+  .page[data-reiki-welcome="conversion-v2"] .shell {
+    gap: 7px;
+    padding-inline: 11px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .top { min-height: 38px; }
+  .page[data-reiki-welcome="conversion-v2"] .courseMark { font-size: 14px; }
+  .page[data-reiki-welcome="conversion-v2"] .slide {
+    flex: 1 1 0;
+    min-height: 0;
+    border-radius: 21px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .slideMain {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    justify-content: safe flex-end;
+    padding: 12px 14px 13px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .art {
+    inset: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .art img { object-position: 67% 18%; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .slideMain::before {
+    background: linear-gradient(180deg, rgba(247,252,248,.04) 0%, rgba(249,253,250,.18) 27%, rgba(250,254,252,.87) 45%, rgba(250,254,252,.98) 61%, rgba(250,254,252,1) 100%);
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content {
+    width: 100%;
+    max-width: 100%;
+    margin-top: auto;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content > .eyebrow,
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content > h1,
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content > .description {
+    max-width: 100%;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .eyebrow {
+    font-size: 10px;
+    margin-bottom: 5px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content h1 {
+    font-size: clamp(28px, 7.4vw, 34px);
+    line-height: 1.06;
+    margin-bottom: 7px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .description {
+    font-size: clamp(12px, 3.55vw, 14px);
+    line-height: 1.32;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits {
+    gap: 5px;
+    margin-top: 10px;
+    padding: 0;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits > div {
+    padding: 7px 3px;
+    gap: 3px;
+    min-width: 0;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits > div svg {
+    width: 15px;
+    height: 15px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits strong {
+    font-size: clamp(10px, 2.95vw, 12px);
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeReward {
+    margin-top: 9px;
+    padding: 0;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift {
+    margin: 0;
+    padding: 9px 10px;
+    gap: 8px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift strong {
+    font-size: 12.5px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift p {
+    font-size: 11.5px;
+    line-height: 1.25;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeGiftDetails summary {
+    min-height: 32px;
+    font-size: 11px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .next { min-height: 55px; }
+  .page[data-reiki-welcome="conversion-v2"] .back {
+    flex-basis: 47px;
+    width: 47px;
+    min-height: 55px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .programme > .programmeSummary {
+    height: 34px;
+    min-height: 34px;
+  }
+}
+@media (max-width: 760px) and (max-height: 700px) {
+  .page[data-reiki-welcome="conversion-v2"] .shell { gap: 5px; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .slideMain {
+    padding: 8px 10px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .content h1 {
+    font-size: clamp(24px, 7vw, 29px);
+    margin-bottom: 5px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .description {
+    font-size: 12px;
+    line-height: 1.27;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits { margin-top: 6px; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits > div {
+    padding: 5px 2px;
+    gap: 2px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .benefits > div svg { width: 13px; height: 13px; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeReward { margin-top: 6px; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift {
+    padding: 7px 8px;
+  }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift strong { font-size: 11.5px; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .welcomeGift p { font-size: 11px; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeGiftDetails summary { min-height: 28px; }
+  .page[data-reiki-welcome="conversion-v2"] .next { min-height: 51px; }
+  .page[data-reiki-welcome="conversion-v2"] .back { min-height: 51px; }
+}
+@media print {
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .art { display:none; }
+  .page[data-reiki-welcome="conversion-v2"] .welcomeSlide .slideMain::before { display:none; }
+}
