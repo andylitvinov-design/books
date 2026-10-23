@@ -194,13 +194,22 @@ try {
         assert.equal(await showcase.locator("[data-services-slide-dot]").count(), 5);
         await showcase.locator('[data-services-slide-dot="business"]').click();
         await visible(showcase.locator('[data-services-slide="business"]'));
-        await showcase.locator('[data-services-slide-action="business"]').click();
+        const businessAction = showcase.locator('[data-services-slide-action="business"]');
+        // At 320px the secondary slide action is deliberately hidden to keep
+        // the primary request readable. The same Business filter is usable.
+        if (await businessAction.isVisible()) await businessAction.click();
+        else await showcase.locator('[data-services-kind="business"]').click();
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
         await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
         await showcase.locator('[data-services-mode="toronto"]').click();
         await expect(page.locator("[data-services-studio-free]")).toBeHidden();
         await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
         await showcase.locator('[data-services-kind="reiki"]').click();
+        // Reiki is online-only, so choosing it intentionally resets Toronto.
+        await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        // Explicitly switching back to Toronto must show the helpful empty state.
+        await showcase.locator('[data-services-mode="toronto"]').click();
         await visible(showcase.locator("[data-services-empty]"));
         await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
         await showcase.locator("[data-services-empty] button").click();

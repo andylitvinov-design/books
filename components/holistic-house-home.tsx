@@ -7,10 +7,11 @@ import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
 import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
 import { HomeConversationGuide } from "@/components/home-conversation-guide";
-import { ServicesSolutions } from "@/components/services-solutions";
-import { HomeExploreSections } from "@/components/home-explore-sections";
-import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
-import { TestSelectionCourseBanner } from "@/components/sitewide-antistress-banner";
+import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
+
+
+
+
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import { SiteNavigation } from "@/components/site-navigation";
 import { LOCAL_ACQUISITION } from "@/data/local-acquisition";
@@ -71,8 +72,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       <HomeSectionCarousel locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
-      <details className="service-home-more" id="more-directions">
-        <summary>{locale === "ru" ? "Все направления и услуги" : "All programmes and services"} <span aria-hidden="true">↓</span></summary>
+      <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
           <StaticPortrait
@@ -120,12 +120,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         </div>
       </section>
 
-      <ServicesSolutions locale={locale} variant="home" />
-      <HomepageTopicJourneys locale={locale} />
-      <TestSelectionCourseBanner locale={locale} />
-
-      <HomeExploreSections locale={locale} />
-      </details>
+      </HomeMoreDisclosure>
 
       {introVideoContent}
 
