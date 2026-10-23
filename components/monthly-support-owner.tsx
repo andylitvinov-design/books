@@ -2,6 +2,7 @@
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import styles from "./monthly-support-owner.module.css";
+import { MonthlySupportThread } from "@/components/monthly-support-thread";
 
 type Enquiry={id:string;referenceCode:string;createdAt:string};
 type Slot={ordinal:number;scheduledAt:string|null;completedAt:string|null};
@@ -130,6 +131,7 @@ function ProgrammeRow({program:p,busy,schedule,complete}:{program:Programme;busy
   schedule:(p:Programme,n:number,value:string)=>void;complete:(p:Programme,s:Slot)=>void}){
   const [date1,setDate1]=useState("");
   const [date2,setDate2]=useState("");
+  const [showMessages,setShowMessages]=useState(false);
   return <article className={styles.programCard}>
     <h3>{p.referenceCode} · {p.format} · {p.phase}</h3>
     <small>Client account: <code>{p.clientAccountId}</code></small>
@@ -149,5 +151,7 @@ function ProgrammeRow({program:p,busy,schedule,complete}:{program:Programme;busy
           onClick={()=>complete(p,slot)}>Mark actually completed</button>
       </>}
     </div>)}
+    <button type="button" onClick={()=>setShowMessages(!showMessages)}>{showMessages?"Close messages":"Open private messages"}</button>
+    {showMessages?<MonthlySupportThread programId={p.id} locale="en"/>:null}
   </article>;
 }

@@ -84,3 +84,25 @@ test("owner-only mutating API and client-only readback are separately authentica
   assert.match(home,/data-home-personal-support-cta/);
   assert.doesNotMatch(ui,/autoRenew|localStorage|sendBeacon|stripe/i);
 });
+
+
+test("encrypted monthly messages enforce participant RLS and neutral in-site delivery",()=>{
+  const migration=read("supabase/migrations/20261023210000_hh_personal_support_monthly_20261023.sql");
+  const service=read("lib/practitioners/monthly-support-messages.js");
+  const route=read("app/api/client/personal-support/[programId]/messages/route.js");
+  const component=read("components/monthly-support-thread.tsx");
+  const owner=read("components/monthly-support-owner.tsx");
+  const client=read("components/monthly-support-client.tsx");
+  for(const marker of ["personal_support_messages_participants_read","personal_support_messages_participants_send","FORCE ROW LEVEL SECURITY","GRANT SELECT,INSERT","FROM PUBLIC,anon,authenticated,hh_app_inbox"])
+    assert.ok(migration.includes(marker),marker);
+  for(const term of ["seal","openSealed","assertNoRelayContacts","transaction","PERSONAL_SUPPORT_CONVERSATION_CLOSED","IDEMPOTENCY_CONFLICT","pg_advisory_xact_lock"])
+    assert.ok(service.includes(term),term);
+  assert.match(route,/requireSameOrigin/);
+  assert.match(route,/auth\.verified/);
+  assert.match(route,/PRIVATE_HEADERS/);
+  assert.match(route,/consumeRate/);
+  assert.match(client,/MonthlySupportThread/);
+  assert.match(owner,/MonthlySupportThread/);
+  assert.match(component,/data-monthly-support-messages/);
+  assert.doesNotMatch(service+route+component,/wa\.me|t\.me|sendMessage\(|sendSms\(|sendEmail\(|analyticsEvent\(/);
+});

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect,useState } from "react";
 import { ArrowLeft,CalendarDays,CheckCircle2,LockKeyhole } from "lucide-react";
+import { MonthlySupportThread } from "@/components/monthly-support-thread";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./monthly-support-client.module.css";
 
@@ -17,6 +18,7 @@ const translations={
     online_call:"Online conversation",remote_no_call:"Remote session · no call",
     toronto_in_person:"In person · Toronto",back:"Back to my space",materials:"Open my private materials",
     reference:"My account reference (share only after confirming identity with Andrey)",
+    conversation:"Private messages",renew:"Request another month",
     privacy:"Payment is confirmed separately by the owner. This view cannot request payment or issue new session credits."},
   ru:{title:"Моё личное сопровождение",intro:"Ваши встречи и прогресс, доступные только после входа.",
     loading:"Загружаем защищённую программу…",empty:"У вас пока нет активированной месячной программы.",
@@ -26,6 +28,7 @@ const translations={
     online_call:"Онлайн со звонком",remote_no_call:"Дистанционно · без звонка",
     toronto_in_person:"Очно · Торонто",back:"Вернуться в кабинет",materials:"Мои приватные материалы",
     reference:"Номер моего аккаунта (передавайте только после подтверждения личности)",
+    conversation:"Защищённая переписка",renew:"Продлить ещё на месяц",
     privacy:"Оплату подтверждает владелец отдельно. Эта страница не принимает платежи и не выдаёт дополнительные сессии."},
   es:{title:"Mi acompañamiento personal",intro:"Tus sesiones y progreso, privados después de iniciar sesión.",
     loading:"Cargando tu programa privado…",empty:"Aún no tienes un programa mensual activado.",
@@ -35,6 +38,7 @@ const translations={
     online_call:"Conversación por vídeo",remote_no_call:"A distancia · sin llamada",
     toronto_in_person:"Presencial · Toronto",back:"Volver a mi espacio",materials:"Mis materiales privados",
     reference:"Mi referencia de cuenta (compártela solo tras verificar tu identidad)",
+    conversation:"Mensajes privados",renew:"Solicitar otro mes",
     privacy:"El propietario confirma el pago por separado. Esta página no cobra ni concede sesiones adicionales."},
 } as const;
 
@@ -43,6 +47,7 @@ export function MonthlySupportClient({locale}:{locale:PublicLocale}) {
   const formatNames={online_call:t.online_call,remote_no_call:t.remote_no_call,
     toronto_in_person:t.toronto_in_person};
   const [programmes,setProgrammes]=useState<Programme[]|null>(null);
+  const [openThread,setOpenThread]=useState<string|null>(null);
   const [accountReference,setAccountReference]=useState("");
   const [unauthorized,setUnauthorized]=useState(false);
   const [error,setError]=useState(false);
@@ -80,6 +85,9 @@ export function MonthlySupportClient({locale}:{locale:PublicLocale}) {
           <div className={styles.sessions}>{program.sessions.map(slot=><article key={slot.ordinal}>
             <span>{t.first} {slot.ordinal}</span><strong>{slot.completedAt?<><CheckCircle2 size={16}/>{t.done}</>:slot.scheduledAt?date(slot.scheduledAt):t.noDate}</strong>
           </article>)}</div>
+          <button type="button" className={styles.threadButton} onClick={()=>setOpenThread(openThread===program.id?null:program.id)}>{t.conversation}</button>
+          {openThread===program.id?<MonthlySupportThread programId={program.id} locale={locale}/>:null}
+          <Link className={styles.renewLink} href={"/"+locale+"/services/personal-support"}>{t.renew}</Link>
         </section>)
       }
       <Link className={styles.materials} href={"/"+accountLocale+"/app"}><LockKeyhole size={16}/>{t.materials}</Link>
