@@ -17,7 +17,9 @@ test('Ideas offers the public model chooser first and keeps local Tao insight',(
  assert.match(ui,/id="temple-insights"/)
  assert.ok(!ui.includes('styles.actions') && !ui.includes('aria-pressed={activeMode}'))
  assert.match(css,/\.heroActions\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
- for(const label of ['Ideas & Coaching','Идеи и коучинг','Ideas y coaching'])assert.ok(ui.includes(label)&&nav.includes(label))
+ const hub=read('components/tests-coaching-switchboard.tsx')
+ for(const label of ['Tests & Coaching','Тесты и коучинг','Tests y coaching'])assert.ok(hub.includes(label)&&nav.includes(label))
+ assert.match(ui,/<TestsCoachingSwitchboard locale=\{locale\} templeContent=/)
  for(const cta of ['Get free coaching session','Пройти бесплатную коуч-сессию','Sesión gratuita de coaching'])assert.ok(ui.includes(cta))
 })
 test('public coaching page reuses reviewed DB reference data without account session',()=>{
@@ -118,9 +120,9 @@ test('coaching lounge displays all formats by default and uses shared wish field
  assert.match(ui,/id="public-coaching-question"/)
  assert.doesNotMatch(ui,/format==='self'&&<>/)
  assert.match(ui,/onChange=\{e=>setQuestion\(e\.target\.value\)\}/)
- assert.match(ui,/onClick=\{\(\)=>setTopic\(signal\.tag\)\}/)
- assert.match(ui,/onClick=\{\(\)=>setDuration\(m\)\}/)
- assert.match(ui,/onClick=\{\(\)=>setStyle\(value\)\}/)
+ assert.match(ui,/setTopic\(e\.target\.value\)/)
+ assert.match(ui,/setDuration\(Number\(e\.target\.value\)\)/)
+ assert.match(ui,/setStyle\(e\.target\.value\)/)
  assert.match(ui,/format!=='human'&&<section/)
  assert.match(ui,/format!=='self'&&<section/)
  assert.match(ui,/traditionKey="egyptian"/)
@@ -382,28 +384,3 @@ test('all 19 published coaching schemes use useful EN/RU/ES client-goal names an
  assert.match(publicUi,/method=\{tr\(model\.name,lang\)\}/,
    'technical method remains available within details')
 })
-
-test('coaching filters render immediately as accessible pills, not popup selectors',()=>{
- const ui=read('components/public-coaching-discovery.jsx')
- const css=read('components/public-coaching-discovery.module.css')
- for(const line of [
-  'data-coaching-inline-filters','data-coaching-filter="topic"',
-  'data-coaching-filter="duration"','data-coaching-filter="approach"',
-  "topicGroup!=='all'&&<div",
-  '[0,10,20,30,60].map','onClick={()=>setDuration(m)}',
-  'onClick={()=>setTopic(signal.tag)}','onClick={()=>setStyle(value)}',
-  'aria-pressed={duration===m}','aria-pressed={style===value}',
-  'aria-pressed={topic===signal.tag}','role="group" aria-label={t.duration}',
-  'role="group" aria-label={t.style}'
- ])assert.ok(ui.includes(line),line)
- assert.ok(ui.indexOf('data-coaching-filter="approach"')<ui.indexOf('id="public-coaching-question"'),'visible choice filters precede the optional question')
- assert.ok(!ui.includes('<select'),'no dropdowns in lounge')
- assert.ok(!ui.includes('setDuration(Number(e.target.value))'))
- assert.ok(css.includes('.pillOptions button[aria-pressed="true"]'))
- assert.ok(css.includes('.pillScroller{flex-wrap:nowrap;overflow-x:auto'))
- assert.ok(css.includes('.filterRow[data-coaching-filter="duration"] .pillOptions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))'))
- assert.ok(css.includes('.filterRow[data-coaching-filter="approach"] .pillOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'))
- const narrow=css.slice(css.lastIndexOf('@media(max-width:360px){'))
- assert.ok(narrow.includes('.topicGroupGrid{grid-template-columns:repeat(3,minmax(0,1fr))}'))
- for(const line of ["leadCompact:'Choose a topic","leadCompact:'Выберите тему","leadCompact:'Elige un tema","anyShort:'Any'","anyShort:'Любое'","anyShort:'Cualquiera'"])assert.ok(ui.includes(line),line)
-});
