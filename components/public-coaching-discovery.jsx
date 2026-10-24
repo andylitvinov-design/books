@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
+import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
 
@@ -126,12 +127,12 @@ function traditionExplicitMatch(question,id){
 
 // Decorative first-party photography. Existing site assets only.
 const coachingArt={
-  grow_v1:'/images/holistic-house/report-lighthouse-coast.webp',
+  grow_v1:'/images/holistic-house/report-lighthouse-coast.avif',
   tgrow_v1:'/images/holistic-house/ideas-pine-sharp.avif',
   oskar_v1:'/images/holistic-house/hero-olive-incense.webp',
   clear_v1:'/images/holistic-house/video-posters/constellations-en-v1.webp',
   fuel_v1:'/images/holistic-house/books-library.webp',
-  solution_focus_v1:'/images/holistic-house/report-lighthouse-coast.webp',
+  solution_focus_v1:'/images/holistic-house/report-lighthouse-coast.avif',
   woop_v1:'/images/holistic-house/ideas-pine-sharp.avif',
   appreciative_5d_v1:'/images/holistic-house/hero-olive-incense.webp',
 }
@@ -290,7 +291,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                       <h3>{tr(model.name,lang)}</h3>
                       <p className={styles.schemeName}>{tr(s.name,lang)}</p>
                     </div>
-                    <Image className={styles.cardArt} src={coachingArt[s.modelKey]||coachingArt.grow_v1}
+                    <Image className={styles.cardArt} src={cardArtworkUrl(coachingArt[s.modelKey]||coachingArt.grow_v1)} unoptimized
                       alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
                   </div>
                   <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
@@ -311,7 +312,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
                 <div className={styles.cardMain}>
                    <div className={styles.cardHeading}><h3>{option.name}</h3></div>
-                   <Image className={styles.cardArt} src="/images/holistic-house/hero-olive-incense.webp"
+                   <Image className={styles.cardArt} src={cardArtworkUrl('/images/holistic-house/hero-olive-incense.webp')} unoptimized
                      alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
                  </div>
                  <p>{t.humanText}</p>
