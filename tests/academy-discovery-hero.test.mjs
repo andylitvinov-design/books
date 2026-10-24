@@ -53,7 +53,10 @@ test("EN RU ES course search includes Personal Coaching Session and existing des
   assert.match(discovery, /academy\?view=videos/);
   assert.match(hub, /<AcademyVideoCourses locale=\{locale\}/);
   assert.match(hub, /id="academy-video-courses"/);
-  assert.match(read("app/[locale]/academy/[[...slug]]/page.tsx"), /if \(key === "free-ai-courses"\) return <PublicGrowthCourses locale=\{locale\}/);
+  const academyRoute=read("app/[locale]/academy/[[...slug]]/page.tsx");
+  assert.match(academyRoute, /if \(key === "free-ai-courses"\) return/);
+  assert.match(academyRoute, /<PublicGrowthCourses locale=\{locale\}/);
+  assert.match(academyRoute, /<PublicPractitionerCourses locale=\{locale\}/);
   assert.doesNotMatch(discovery, /fetch\(|localStorage\.|sessionStorage\./);
 });
 
