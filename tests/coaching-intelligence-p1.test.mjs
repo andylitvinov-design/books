@@ -80,8 +80,10 @@ test('action recap never treats final review rating as the action and never clai
   const rows=buildCoachingRecap(session,questions,'en')
   assert.equal(rows.find(r=>r.key==='focus').value,'Clarity')
   assert.equal(rows.find(r=>r.key==='situation').value,'Not enough time')
-  assert.equal(rows.find(r=>r.key==='action').value,'This week')
-  assert.notEqual(rows.find(r=>r.key==='action').value,'Useful')
+  assert.equal(rows.find(r=>r.key==='action'),undefined,
+    'a selected time must never appear as a personal action')
+  assert.equal(rows.find(r=>r.key==='timing').value,'This week')
+  assert.equal(rows.find(r=>r.key==='direction').value,'A small step')
   assert.equal(rows.some(r=>r.key==='resources'),false)
   const text=coachingRecapClipboardText(session,questions,'ru')
   assert.match(text,/На неделе/)
@@ -90,6 +92,30 @@ test('action recap never treats final review rating as the action and never clai
   assert.doesNotMatch(text,/Полезно/)
   const noAnswer=buildCoachingRecap({answers:{review:'choice:useful'}},questions)
   assert.equal(noAnswer.length,0,'review-only answer cannot create an action plan')
+})
+test('a dated commitment, chosen direction and resource are semantically distinct',()=>{
+  const end=[
+    {id:'grow_will_q1_v1',stepKey:'will',type:'single_choice',
+      choices:[choice('prepare','Prepare one concrete item','Подготовить одно дело','Preparar algo'),
+        choice('pause','No action yet','Пока без шага','Aún no actuar')]},
+    {id:'tgrow_will_q1_v1',stepKey:'will',type:'single_choice',
+      choices:[choice('week','Within seven days','На этой неделе','Esta semana')]},
+    {id:'oskar_affirm_q1_v1',stepKey:'affirm',type:'single_choice',
+      choices:[choice('skills','My skills','Мои навыки','Mis habilidades')]},
+    {id:'oskar_review_q1_v1',stepKey:'review',type:'single_choice',
+      choices:[choice('useful','Useful','Полезно','Útil')]},
+  ]
+  const grow=buildCoachingRecap({answers:{grow_will_q1_v1:'choice:prepare'}},end)
+  assert.equal(grow.find(r=>r.key==='action').value,'Prepare one concrete item')
+  const tgrow=buildCoachingRecap({answers:{tgrow_will_q1_v1:'choice:week'}},end,'es')
+  assert.equal(tgrow.find(r=>r.key==='timing').value,'Esta semana')
+  assert.equal(tgrow.some(r=>r.key==='action'),false)
+  const oskar=buildCoachingRecap({answers:{oskar_affirm_q1_v1:'choice:skills',
+    oskar_review_q1_v1:'choice:useful'}},end,'ru')
+  assert.equal(oskar.find(r=>r.key==='resources').value,'Мои навыки')
+  assert.equal(oskar.some(r=>r.key==='action'),false)
+  const pause=buildCoachingRecap({answers:{grow_will_q1_v1:'choice:pause'}},end)
+  assert.equal(pause.some(r=>r.key==='action'),false)
 })
 test('legacy free-text questions and versioned question choices are reported without inventing meaning',()=>{
   const legacy=[
