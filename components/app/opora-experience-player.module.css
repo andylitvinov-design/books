@@ -412,6 +412,9 @@
   background:rgba(255,255,255,.82);border:1px solid rgba(150,205,204,.62);border-radius:14px
 }
 .summaryItem>span{flex:0 0 25px;font-size:20px;line-height:1.2}
+.summaryItem[data-opora-learning-summary="day-1"]{
+  border-color:#82c8be;background:rgba(249,255,252,.95)
+}
 .summaryItem div{display:grid;gap:3px;min-width:0}
 .summaryItem strong{font-size:clamp(14px,3.6vw,16px);line-height:1.24}
 .summaryItem small{font-size:clamp(13px,3.35vw,15px);line-height:1.32;color:#456b76}

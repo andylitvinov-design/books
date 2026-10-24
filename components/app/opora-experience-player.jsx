@@ -38,6 +38,9 @@ const WORDS={
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
     supportKicker:'МОМЕНТ ПОДДЕРЖКИ',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
     coreWhy:'ЗАЧЕМ ЭТО НУЖНО',tryPrompt:'Получилось попробовать?',
+    dayOneGoal:'Цель урока — научиться мягко возвращать внимание из тревожных мыслей к тому, что реально находится вокруг. Успокаиваться специально не нужно.',
+    dayOneLearning:'Обычная деталь вокруг может стать внешней опорой для внимания, даже если напряжение не исчезло.',
+    dayOnePracticeMeaning:'Рассматривая три обычных предмета, мы учимся замечать настоящий момент, а не заставлять себя расслабиться.',
     start:'Я попробую этот шаг',alternative:'Другой мягкий вариант',tryAfter:'Как прошло?',
     tried:'Я попробовал(а)',partly:'Удалось немного',read:'Сегодня только знакомлюсь',
     gentle:'Если некомфортно, просто посмотрите на нейтральный предмет.',
@@ -119,6 +122,9 @@ const WORDS={
     practiceText:'Try one small step, only if it feels comfortable.',
     supportKicker:'A MOMENT OF SUPPORT',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
     coreWhy:'WHY IT HELPS',tryPrompt:'Did you try it?',
+    dayOneGoal:'The goal is to learn a gentle way to bring attention from busy thoughts back to what is actually around you. You do not have to force calm.',
+    dayOneLearning:'An ordinary detail nearby can give your attention an external anchor, even if tension remains.',
+    dayOnePracticeMeaning:'Noticing three ordinary objects is a way to practise returning to the present, not a test of relaxation.',
     start:'I will try this step',alternative:'Another gentle option',tryAfter:'How did that go?',
     tried:'I tried it',partly:'I tried a little',read:'Just reading today',
     gentle:'If uncomfortable, simply look at a neutral object instead.',
@@ -201,6 +207,9 @@ WORDS.es = {
     practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
   supportKicker:'UN MOMENTO DE APOYO',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
   coreWhy:'POR QUÉ AYUDA',tryPrompt:'¿Lo intentaste?',tryAfter:'¿Cómo te fue?',
+  dayOneGoal:'La meta es aprender a llevar suavemente la atención de los pensamientos inquietos a lo que te rodea. No necesitas forzar la calma.',
+  dayOneLearning:'Un detalle cotidiano puede servir como referencia para la atención, aunque la tensión continúe.',
+  dayOnePracticeMeaning:'Observar tres objetos cotidianos permite practicar el regreso al presente, sin obligarte a relajarte.',
   tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
   gentle:'Si te incomoda, mira un objeto neutro.',
   feelText:'Nota si algo cambió, aunque sea un poco.',
@@ -637,7 +646,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     finally{setSaving(false)}
   }
   const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
-    moment==='recapPractice'?c.skill:
+    moment==='recapPractice'?j.recapPracticeTitle:
     moment==='recapNext'?j.recapNextTitle:
     moment==='closingMeditation'?t.meditationTitle:
     moment==='recapFeedback'?j.recapFeedbackTitle:
@@ -648,7 +657,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
     moment==='recall'?opening.recall:
-    moment==='arrive'?(cycle.day===1?t.arrivalWarmTitle:t.arriveTitle):
+    moment==='arrive'?(cycle.day===1?dayCopy?.title||t.arrivalWarmTitle:t.arriveTitle):
     moment==='support'?support?.title:
     moment==='why'?j.whyTitle:moment==='story'?j.storyTitle:
     moment==='options'?j.optionsTitle:moment==='settle'?j.settleTitle:
@@ -715,7 +724,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               moment==='closingMeditation'?t.meditationKicker:
               moment==='recapFeedback'?j.recapFeedbackKicker:
               moment==='invite'?c.inviteKicker:
-             moment==='welcome'?opening.welcomeKicker:
+             moment==='welcome'?(cycle.day===1?`${t.day} 1 · ${dayCopy?.title||opening.welcome}`:opening.welcomeKicker):
             moment==='baseline'?opening.baselineKicker:
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
@@ -778,7 +787,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {familiarSupport&&familiarSupport!=='other'&&<p className={styles.soft} role="status">{opening.recallReply}</p>}
           </>}
           {moment==='arrive'&&!neutralSupport&&<>
-            <p className={styles.lead}>{cycle.day===1?t.arrivalWarmText:t.arriveText}</p>
+            <p className={styles.lead} data-opora-lesson-goal={cycle.day===1?'day-1':undefined}>{cycle.day===1?t.dayOneGoal:t.arriveText}</p>
             {cycle.day!==1&&<>
               <div className={styles.moodChoices} role="group" aria-label={t.arriveTitle}
                 data-opora-start-mood="true">
@@ -902,14 +911,18 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               </div>}
           </>}
           {moment==='recap'&&<div className={styles.recapSummary} data-opora-lesson-recap="true">
-            <div className={styles.summaryItem}><span aria-hidden="true">🌿</span>
-              <div><strong>{showNewPlan?dailyPlan?.result:c.notice}</strong>
+            <div className={styles.summaryItem} data-opora-learning-summary={cycle.day===1?'day-1':undefined}>
+              <span aria-hidden="true">🌿</span>
+              <div><strong>{cycle.day===1?dayCopy?.title:(showNewPlan?dailyPlan?.result:c.notice)}</strong>
+                {cycle.day===1&&<small data-opora-learning-outcome="day-1">{t.dayOneLearning}</small>}
                 <small>{reportedAttempt?t.attempted:t.readOnly}</small></div></div>
           </div>}
           {moment==='recapPractice'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
               <div><strong>{(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn}</strong>
-                <small>{practiceGuide}</small></div></div>
+                <small data-opora-learning-method={cycle.day===1?'day-1':undefined}>
+                  {cycle.day===1?t.dayOnePracticeMeaning:practiceGuide}
+                </small></div></div>
           </div>}
           {moment==='recapNext'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
@@ -937,7 +950,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='receipt'&&<>
             <div className={styles.celebrationMark} aria-hidden="true"><CheckCircle2 size={36}/></div>
             <p className={styles.lead}>{c.congratsLead}</p>
-            <p className={styles.soft}>{t.savedText}</p>
+            {cycle.day===1
+              ?<p className={styles.soft} data-opora-receipt-learning="day-1">
+                <strong>{dayCopy?.title}:</strong> {t.dayOneLearning}
+              </p>
+              :<p className={styles.soft}>{t.savedText}</p>}
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
