@@ -265,6 +265,23 @@ test('full-bleed mobile lounge leaves site navigation intact but removes the dou
  assert.match(ui,/className=\{styles\.loungePhoto\}/)
  assert.match(css,/@media\(max-width:360px\)/)
 })
+test('zero-price coaching cards use localized red corner flags, not green €0 pills',()=>{
+ const ui=read('components/public-coaching-discovery.jsx')
+ const css=read('components/public-coaching-discovery.module.css')
+ const home=read('components/home-featured-workspace.module.css')
+ assert.match(ui,/const isFree=price==='€0'/)
+ assert.match(ui,/data-coaching-free=\{isFree\?'true':undefined\}/)
+ assert.match(ui,/\{isFree&&<span className=\{styles\.loungeFreeRibbon\}>\{t\.free\}<\/span>\}/)
+ assert.match(ui,/\{!isFree&&<strong>\{price\}<\/strong>\}/)
+ assert.match(css,/\.loungeFreeRibbon\{[\s\S]*?background:#be2940/)
+ assert.match(home,/\.offerFreeBadge\s*\{[\s\S]*?background:\s*#be2940/)
+ assert.match(css,/\.loungeCard\[data-coaching-free="true"\] \.loungeContent\{padding-top:35px\}/)
+ assert.match(css,/@media\(max-width:700px\)\{[\s\S]*?\.loungeCard\[data-coaching-free="true"\] \.loungeContent\{padding-top:29px\}/)
+ for(const label of ["free:'Free'","free:'Бесплатно'","free:'Gratis'"])assert.ok(ui.includes(label),label)
+ for(const price of ["price:'€50'","price:'€100'"])assert.ok(ui.includes(price),price)
+ assert.equal((ui.match(/price="€0"/g)||[]).length,4,'model, both traditions and free worksheet remain free')
+})
+
 test('Details expands a bottom panel, and every free or paid offer has a distinct full landing',()=>{
  const ui=read('components/public-coaching-discovery.jsx')
  const landing=read('app/[locale]/coaching/session/[sessionId]/page.jsx')
