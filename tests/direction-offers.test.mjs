@@ -51,7 +51,7 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
 
 test('all course CTAs open a real existing learning route, not the tests picker again', async () => {
   const cards = await readFile('components/direction-offers.tsx','utf8')
-  assert.match(cards, /direction === 'business'\s*\?\s*'\/' \+ appLocale \+ '\/app\/business'/)
+  assert.match(cards, /direction === 'business'\s*\?\s*'\/' \+ locale \+ '\/coaching'/)
   assert.match(cards, /: '\/' \+ locale \+ '\/courses\/antistress'/)
   assert.doesNotMatch(cards, /testHref \+ '&mode=course'/)
   assert.match(cards, /OPORA · Inner support/)
