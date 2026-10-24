@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { ArrowRight, BookOpen, ChevronDown, Compass, Layers3, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, BookOpen, ChevronDown, Compass, Layers3, RotateCcw, SlidersHorizontal, Lightbulb } from 'lucide-react'
 import { AcquisitionEventLink } from '@/components/acquisition-event-link'
 import { businessConsultingCopy } from '@/data/business-consulting-copy'
+import { BUSINESS_QUESTION_TOPICS, BUSINESS_TOPIC_GUIDE } from '@/lib/business-consulting/question-guide'
 import styles from './business-service-browser.module.css'
 
 type Locale = 'en' | 'ru' | 'es'
-type Topic = 'all' | 'clarity' | 'income' | 'growth' | 'project'
+export type BusinessTopic = 'all' | 'money' | 'clients' | 'start' | 'strategy' | 'career' | 'opportunities' | 'team' | 'focus'
+type Topic = BusinessTopic
 type Mode = 'all' | 'free' | 'session' | 'ongoing' | 'other'
 type IntakeFormat = 'free' | 'express' | 'full' | 'mentoring'
 type Offer = {
@@ -16,14 +18,15 @@ type Offer = {
   topics: readonly Topic[]; mode: Exclude<Mode, 'all'>;
   format?: IntakeFormat; href?: string
 }
-const topics = ['all', 'clarity', 'income', 'growth', 'project'] as const
+const topics = ['all', ...BUSINESS_QUESTION_TOPICS] as readonly Topic[]
 const modes = ['all', 'free', 'session', 'ongoing', 'other'] as const
 
 const copy = {
   en: {
-    filterTitle: 'Prefer to choose for yourself?', filterHint: 'Open filters — no quiz needed.',
-    byTopic: 'What would you like help with?', byFormat: 'Service type',
-    topics: {all:'All topics',clarity:'Clarity',income:'Income',growth:'Growth',project:'My project'},
+    filterTitle: 'Let’s clarify your business question', filterHint: 'Choose a theme, then one short follow-up. Or explore services below.',
+    byTopic: 'What is your question about?', byFormat: 'Filter by support format',
+    chooseTheme: 'Choose a theme above to see a relevant follow-up question.', ideaLabel: 'One possible next step',
+    topics: {all:'All topics'},
     modes: {all:'Any format',free:'Free',session:'Personal session',ongoing:'Ongoing support',other:'Other methods'},
     reset: 'Clear filters', kicker: 'CHOOSE YOUR WAY TO START',
     title: 'Services you can explore', lead: 'Three starting options, with more personal methods available below.',
@@ -38,9 +41,10 @@ const copy = {
     disclaimer: 'Enquiries are not confirmed appointments or payments. Specialist and pricing details are agreed separately.',
   },
   ru: {
-    filterTitle: 'Хотите выбрать самостоятельно?', filterHint: 'Откройте фильтры — квиз не обязателен.',
-    byTopic: 'Какая тема вас интересует?', byFormat: 'Формат услуги',
-    topics: {all:'Все темы',clarity:'Ясность',income:'Доход',growth:'Развитие',project:'Мой проект'},
+    filterTitle: 'Уточним ваш бизнес-вопрос', filterHint: 'Выберите тему и ответьте на один короткий вопрос. Или сразу смотрите предложения.',
+    byTopic: 'О чём ваш вопрос?', byFormat: 'Отобрать по формату помощи',
+    chooseTheme: 'Выберите тему, чтобы увидеть уточняющий вопрос.', ideaLabel: 'Возможный следующий шаг',
+    topics: {all:'Все темы'},
     modes: {all:'Любой формат',free:'Бесплатно',session:'Личная сессия',ongoing:'Длительное сопровождение',other:'Другие методы'},
     reset: 'Сбросить фильтры', kicker: 'ВЫБЕРИТЕ СВОЙ ФОРМАТ',
     title: 'Услуги для вашего запроса', lead: 'Три варианта для начала и другие форматы ниже.',
@@ -55,9 +59,10 @@ const copy = {
     disclaimer: 'Заявка — не запись и не оплата. Детали, специалист и стоимость уточняются отдельно.',
   },
   es: {
-    filterTitle: '¿Prefieres elegir directamente?', filterHint: 'Abre los filtros, sin completar el quiz.',
-    byTopic: '¿En qué necesitas ayuda?', byFormat: 'Tipo de servicio',
-    topics: {all:'Todos los temas',clarity:'Claridad',income:'Ingresos',growth:'Crecimiento',project:'Mi proyecto'},
+    filterTitle: 'Aclaremos tu pregunta de negocio', filterHint: 'Elige un tema y una respuesta breve, o explora directamente las opciones.',
+    byTopic: '¿De qué trata tu pregunta?', byFormat: 'Filtrar por modalidad',
+    chooseTheme: 'Elige un tema para ver una pregunta de seguimiento.', ideaLabel: 'Un posible siguiente paso',
+    topics: {all:'Todos los temas'},
     modes: {all:'Cualquier modalidad',free:'Gratis',session:'Sesión personal',ongoing:'Apoyo continuo',other:'Otros métodos'},
     reset: 'Borrar filtros', kicker: 'ELIGE CÓMO EMPEZAR',
     title: 'Servicios para explorar', lead: 'Tres opciones para empezar y otros enfoques disponibles.',
@@ -112,27 +117,38 @@ function businessOffers(locale: Locale): Offer[] {
   const offers = businessConsultingCopy[locale].offers
   return [
     {id:'free',name:offers[0].name,description:offers[0].description,price:offers[0].price,
-      format:'free',mode:'free',topics:['clarity','income','project']},
+      format:'free',mode:'free',topics:['money','clients','start','strategy','career','opportunities','team','focus']},
     {id:'express',name:offers[1].name,description:offers[1].description,price:offers[1].price,
-      format:'express',mode:'session',topics:['clarity','income','project']},
+      format:'express',mode:'session',topics:['money','clients','start','strategy','career','opportunities','team','focus']},
     {id:'full',name:offers[2].name,description:offers[2].description,price:offers[2].price,
-      format:'full',mode:'session',topics:['clarity','growth','project']},
+      format:'full',mode:'session',topics:['money','clients','start','strategy','opportunities','team','focus']},
     {id:'mentoring',name:businessConsultingCopy[locale].mentorTitle,
       description:businessConsultingCopy[locale].mentorText,price:t.mentoringPrice,
-      format:'mentoring',mode:'ongoing',topics:['growth','project']},
+      format:'mentoring',mode:'ongoing',topics:['career','strategy','opportunities','team','focus']},
     {id:'constellations',name:t.systemName,description:t.systemText,price:t.otherPrice,
-      mode:'other',topics:['clarity','project'],href:'/'+locale+'/services/systemic-constellations'},
+      mode:'other',topics:['team','strategy','opportunities'],href:'/'+locale+'/services/systemic-constellations'},
     {id:'imagery',name:t.imageryName,description:t.imageryText,price:t.otherPrice,
-      mode:'other',topics:['clarity','growth'],href:'/'+locale+'/services/imagery-therapy'},
+      mode:'other',topics:['career','focus','opportunities'],href:'/'+locale+'/services/imagery-therapy'},
   ]
 }
 
-export function BusinessServiceBrowser({locale}: {locale: Locale}) {
+export function BusinessServiceBrowser({locale, selectedTopic, onTopicChange}: {
+  locale: Locale; selectedTopic?: BusinessTopic; onTopicChange?: (topic: BusinessTopic) => void
+}) {
   const t = copy[locale]
-  const [topic,setTopic] = useState<Topic>('all')
+  const [ownTopic,setOwnTopic] = useState<Topic>('all')
+  const [clarification,setClarification] = useState<{topic: Topic; id: string} | null>(null)
+  const topic = selectedTopic ?? ownTopic
   const [mode,setMode] = useState<Mode>('all')
   const [visibleCount,setVisibleCount] = useState(3)
-  const [filterOpen,setFilterOpen] = useState(false)
+  const activeGuide = topic === 'all' ? null : BUSINESS_TOPIC_GUIDE[locale][topic]
+  const selectedAnswer = activeGuide?.options.find(answer=>clarification?.topic===topic && clarification.id===answer.id)
+  const changeTopic = (key: Topic) => {
+    if (onTopicChange) onTopicChange(key)
+    else setOwnTopic(key)
+    setClarification(null)
+    setVisibleCount(3)
+  }
   const catalog = businessOffers(locale)
   const filtered = catalog.filter(item =>
     (topic==='all'||item.topics.includes(topic)) &&
@@ -141,27 +157,46 @@ export function BusinessServiceBrowser({locale}: {locale: Locale}) {
   const remaining = Math.max(0,filtered.length-visibleCount)
   const resetCount = () => setVisibleCount(3)
   return <div className={styles.root} data-business-service-browser>
-    <details className={styles.filters} data-business-service-filter open={filterOpen}
-      onToggle={event=>setFilterOpen(event.currentTarget.open)}>
-      <summary>
+    <section className={styles.filters} id="business-topic-filter" data-business-service-filter
+      aria-labelledby="business-topic-filter-title">
+      <div className={styles.filterHeading}>
         <span className={styles.filterIcon}><SlidersHorizontal size={20} aria-hidden="true"/></span>
-        <span><strong>{t.filterTitle}</strong><small>{t.filterHint}</small></span>
-        <ChevronDown className={styles.chevron} size={20} aria-hidden="true"/>
-      </summary>
-      <div className={styles.filterBody}>
-        <fieldset><legend>{t.byTopic}</legend><div className={styles.chips}>
-          {topics.map(key=><button key={key} type="button" aria-pressed={topic===key}
-            data-service-filter-topic={key} onClick={()=>{setTopic(key);resetCount()}}>{t.topics[key]}</button>)}
-        </div></fieldset>
-        <fieldset><legend>{t.byFormat}</legend><div className={styles.chips}>
-          {modes.map(key=><button key={key} type="button" aria-pressed={mode===key}
-            data-service-filter-format={key} onClick={()=>{setMode(key);resetCount()}}>{t.modes[key]}</button>)}
-        </div></fieldset>
-        <button type="button" className={styles.reset} onClick={()=>{setTopic('all');setMode('all');resetCount()}}>
-          <RotateCcw size={14} aria-hidden="true"/>{t.reset}
-        </button>
+        <div><h2 id="business-topic-filter-title">{t.filterTitle}</h2><p>{t.filterHint}</p></div>
       </div>
-    </details>
+      <fieldset className={styles.topicField}><legend>{t.byTopic}</legend>
+        <div className={styles.chips} role="group" aria-label={t.byTopic}>
+          {topics.map(key=><button key={key} type="button" aria-pressed={topic===key}
+            data-service-filter-topic={key} onClick={()=>changeTopic(key)}>
+            {key==='all' ? t.topics.all : BUSINESS_TOPIC_GUIDE[locale][key].label}
+          </button>)}
+        </div>
+      </fieldset>
+      {activeGuide && <div className={styles.followUp} data-business-follow-up>
+        <p className={styles.followUpQuestion}>{activeGuide.question}</p>
+        <div className={styles.followUpOptions} role="group" aria-label={activeGuide.question}>
+          {activeGuide.options.map(answer=><button key={answer.id} type="button"
+            aria-pressed={selectedAnswer?.id===answer.id} data-business-clarification={answer.id}
+            onClick={()=>setClarification({topic,id:answer.id})}>{answer.label}</button>)}
+        </div>
+        {selectedAnswer && <p className={styles.followUpIdea} role="status" data-business-clarification-idea>
+          <Lightbulb size={16} aria-hidden="true"/><span><strong>{t.ideaLabel}:</strong> {selectedAnswer.tip}</span>
+        </p>}
+      </div>}
+      {topic==='all' && <p className={styles.pickHint}>{t.chooseTheme}</p>}
+      <details className={styles.modeDisclosure}>
+        <summary>{t.byFormat}<ChevronDown size={16} aria-hidden="true"/></summary>
+        <div className={styles.modeBody}>
+          <fieldset><legend>{t.byFormat}</legend><div className={styles.chips}>
+            {modes.map(key=><button key={key} type="button" aria-pressed={mode===key}
+              data-service-filter-format={key} onClick={()=>{setMode(key);resetCount()}}>{t.modes[key]}</button>)}
+          </div></fieldset>
+        </div>
+      </details>
+      {(topic!=='all'||mode!=='all') && <button type="button" className={styles.reset}
+        onClick={()=>{changeTopic('all');setMode('all')}}>
+        <RotateCcw size={14} aria-hidden="true"/>{t.reset}
+      </button>}
+    </section>
 
     <section className={styles.catalog} aria-labelledby="business-services-title" data-business-service-catalog>
       <p className={styles.kicker}>{t.kicker}</p>
