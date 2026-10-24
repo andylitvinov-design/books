@@ -35,18 +35,18 @@ async function scenario(locale, surface, fault, visible = true) {
     '/' + locale + '/' + surface;
   const tree = render(locale, pathname);
   const anchors = nodes(tree).filter(node => node.type === 'a');
-  assert.equal(anchors.length, 6);
+  assert.equal(anchors.length, 7);
   assert.ok(anchors.every(node => node.props.prefetch === false), 'No speculative tests or cabinet navigation');
-  if (fault === 'old courses slot') { anchors[4].props['data-nav-item'] = 'courses'; anchors[4].props.href = '/' + locale + '/courses'; }
-  if (fault === 'old cabinet slot') { anchors[5].props['data-nav-item'] = 'cabinet'; anchors[5].props.href = '/' + locale + '/client'; }
+  if (fault === 'old courses slot') { anchors[2].props.href = '/' + locale + '/courses'; }
+  if (fault === 'old cabinet slot') { anchors[3].props['data-nav-item'] = 'cabinet'; anchors[3].props.href = '/' + locale + '/client'; }
   if (fault === 'wrong business destination') anchors[3].props.href = '/' + locale + '/client';
-  if (fault === 'wrong house destination') anchors[5].props.href = '/es/app';
+  if (fault === 'wrong house destination') anchors[6].props.href = '/es/app';
   if (fault === 'wrong business label') anchors[3].props.children = 'My tests';
-  if (fault === 'wrong house label') anchors[5].props.children = 'My House';
+  if (fault === 'wrong house label') anchors[6].props.children = 'My House';
   if (fault === 'wrong accessible name') anchors[3].props['aria-label'] = 'Wrong';
   if (fault === 'missing link') anchors.pop();
   if (fault === 'extra link') anchors.push({ type: 'a', props: { href: '/extra', 'data-nav-item': 'extra' } });
-  if (fault === 'wrong order') [anchors[4], anchors[5]] = [anchors[5], anchors[4]];
+  if (fault === 'wrong order') [anchors[5], anchors[6]] = [anchors[6], anchors[5]];
   if (fault === 'missing active') anchors.forEach(node => delete node.props['aria-current']);
   if (fault === 'duplicate active') anchors[0].props['aria-current'] = 'page';
   if (fault === 'wrong active') { anchors.forEach(node => delete node.props['aria-current']); anchors[4].props['aria-current'] = 'page'; }
@@ -65,10 +65,10 @@ async function scenario(locale, surface, fault, visible = true) {
     async toHaveAttribute(name, value) { assert.equal(actual.selected.length, 1); assert.equal(actual.selected[0].props[name], value); },
   });
   const verify = new Function('assert', 'expect', 'getCompactNavigation', helper + '; return assertPublicBottomNavigation;')(assert, expect, model.getCompactNavigation);
-  await verify(bottom, { locale, surface: surface.startsWith('client') ? 'profile' : surface === 'holistic-support' ? 'support' : surface, label: pathname });
+  await verify(bottom, { locale, surface: surface.startsWith('client') ? 'profile' : ['holistic-support','temple-insights'].includes(surface) ? 'temple' : surface, label: pathname });
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'energy', 'love', 'business', 'library', 'client', 'client/tests', 'personality-profiles', 'coaching', 'temple-insights', 'holistic-support', 'pro']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
+  for (const surface of ['home', 'energy', 'love', 'business', 'library', 'client', 'client/tests', 'personality-profiles', 'coaching', 'temple-insights', 'holistic-support', 'services/free-situation-review', 'academy', 'pro']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
   for (const fault of ['old courses slot', 'old cabinet slot', 'wrong business destination', 'wrong house destination', 'wrong business label', 'wrong house label', 'wrong accessible name', 'missing link', 'extra link', 'wrong order', 'missing active', 'duplicate active', 'wrong active']) {
     test(locale + ' exact mobile verifier rejects ' + fault, () => assert.rejects(scenario(locale, 'client/tests', fault)));
   }
@@ -92,5 +92,5 @@ test('real browser gates retain viewport, keyboard, privacy, error and unfiltere
   assert.match(source, /response\.headers\(\)\['referrer-policy'\], 'no-referrer'/);
   assert.match(source, /assert\.deepEqual\(errors, \[\]\)/);
   assert.doesNotMatch(source, /errors\.filter|errors\.splice|errors\.length\s*=/);
-  assert.doesNotMatch(source, /mobileIds = \[[^\]]*'courses'/);
+  assert.ok(model.compactNavigationIds.includes('courses'));
 });
