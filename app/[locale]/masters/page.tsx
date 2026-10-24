@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { isPublicLocale } from "@/data/academy/catalog";
@@ -11,7 +10,7 @@ import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { ArticleDirectory } from "@/components/practitioner-article-directory";
 import { MentorCommunitySwitch } from "@/components/mentor-community-switch";
-import styles from "./masters-page.module.css";
+import { CommunityServiceHighlights } from "@/components/community-service-highlights";
 
 type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ view?: string | string[] }> };
 type PublicArticle = {
@@ -64,38 +63,18 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   ]);
   if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
   if (articlesResult.status === "fulfilled") articles = (articlesResult.value as PublicArticle[]).slice(0, 24);
+  // The existing repository returns approved public service snapshots for these practitioners.
+  const services = practitioners.flatMap((practitioner) => practitioner.services || []);
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
-      <section className={styles.hero} aria-labelledby="practitioners-title">
-        <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>
-            {ru ? "HOLISTIC HOUSE · СООБЩЕСТВО" : es
-              ? "HOLISTIC HOUSE · COMUNIDAD" : "HOLISTIC HOUSE · COMMUNITY"}
-          </p>
-          <h1 id="practitioners-title">{ru ? "Найдите своего наставника"
-            : es ? "Encuentra a tu mentor" : "Find your mentor"}</h1>
-          <p>{ru ? "Наставники, авторские статьи, личные практики и услуги — в одном месте."
-            : es ? "Mentores, artículos, prácticas y sesiones en un mismo lugar."
-              : "Meet practitioners, read their insights and explore their services."}</p>
-        </div>
-        <div className={styles.heroActions}>
-          <Link className={styles.supportAction} href={`/${locale}/services/remote-energy-support`}>
-            <span aria-hidden="true">✦</span>
-            {ru ? "Заказать энергоподдержку" : es ? "Solicitar apoyo energético" : "Request energy support"}
-            <span aria-hidden="true">→</span>
-          </Link>
-          <Link className={styles.servicesAction} href={`/${locale}/services`}>
-            {ru ? "Все услуги" : es ? "Todos los servicios" : "All services"} <span aria-hidden="true">→</span>
-          </Link>
-        </div>
-      </section>
-      <MentorCommunitySwitch locale={locale} initialView={requestedView === "mentors" ? "mentors" : undefined} hasArticles={articles.length > 0}
+      <MentorCommunitySwitch locale={locale} initialView={requestedView === "mentors" ? "mentors" : undefined} hasArticles={articles.length > 0} hasServices={services.length > 0}
         mastersUnavailable={mastersResult.status === "rejected"}
         articlesUnavailable={articlesResult.status === "rejected"}
         mentors={<MarketplaceMasterFinder practitioners={practitioners} locale={locale} />}
-        articles={<ArticleDirectory locale={locale} preview articles={articles.map((a) => ({
+        articles={<>
+          {articles.length > 0 && <ArticleDirectory locale={locale} preview articles={articles.map((a) => ({
           id: a.id,
           slug: a.slug,
           practitionerName: a.practitionerName,
@@ -106,6 +85,8 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
           coverPath: a.published.coverPath || "",
           tags: Array.isArray(a.published.tags) ? a.published.tags : [],
         }))} />}
+          <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0} />
+        </>}
       />
     </main>
   );
