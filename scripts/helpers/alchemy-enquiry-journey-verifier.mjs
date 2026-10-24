@@ -42,11 +42,22 @@ export function permittedAlchemyRead(request, origin, locale) {
     if (url.search === '') return true
     return /^\?_rsc=[a-zA-Z0-9_-]{1,128}$/.test(url.search) && type === 'fetch'
   }
-  if (url.search) return false
-  if (url.pathname === portrait) return type === 'image'
+  if (url.pathname === portrait) return type === 'image' && !url.search
+  // Next15 development getLayerAssets/renderCssResource append the request
+  // timestamp via getAssetQueryString(ctx,true). This is not an arbitrary query
+  // exemption: one decimal timestamp, only JS/CSS, with the same path/type gate.
+  if (url.search && !(['script','stylesheet'].includes(type) && /^\?v=[1-9][0-9]{12}$/.test(url.search))) return false
   const extension = {script:'js',stylesheet:'css',font:'woff2?'}[type]
   return Boolean(extension && new RegExp('^/_next/static/(?:(?:[a-zA-Z0-9_-]+|%5[Bb]locale%5[Dd]|\\[locale\\])/)*[a-zA-Z0-9_.-]+\\.(?:'+extension+')$').test(url.pathname)
     && !url.pathname.includes('..'))
+}
+
+export function alchemyBoundarySummary(blockedReads, failures, count, completed) {
+  return {completed,requestCount:count,failureCount:failures.length,blocked:blockedReads.map(read=>({
+    // No query values, contact details, response body, headers or arbitrary URL.
+    type:read.type,queryKind:read.queryKind || 'none',
+    asset: /^\/_next\/static\/[a-zA-Z0-9_./%[\]()-]+$/.test(read.path) ? read.path : 'other',
+  }))}
 }
 
 export function alchemyRequestGate(origin, locale, accept, failures, blockedReads) {
@@ -69,7 +80,7 @@ export function alchemyRequestGate(origin, locale, accept, failures, blockedRead
       // Speculative page/media reads are safely blocked, not evidence of a form
       // write failure. An API call or any unexpected mutation always fails CI.
       if (request.method() !== 'GET' || url.pathname.startsWith('/api/')) failures.push('Unexpected write/API blocked')
-      else blockedReads.push({path:url.pathname,type:request.resourceType()})
+      else blockedReads.push({path:url.pathname,type:request.resourceType(),queryKind:!url.search?'none':/^\?v=[1-9][0-9]{12}$/.test(url.search)?'next-dev-version':'other'})
       await route.abort()
     } catch (error) {
       failures.push(error.message)
@@ -173,6 +184,8 @@ async function verifyAlchemyInPage(page, expect, locale, {denyReceiptStorage=fal
   const chooser = pricing.locator('[data-contact-channel-chooser]')
   const receipt = syntheticAlchemyReceipt(locale), failures = [], blockedReads = []
   const handler = alchemyRequestGate(origin,locale,route=>receipt.accept(route),failures,blockedReads)
+  let completed = false
+  try {
   const result = await withAlchemyIsolation(page,handler,receipt,denyReceiptStorage,async () => {
   await pricing.locator('[data-alchemy-format="30"]').click()
   await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
@@ -236,7 +249,10 @@ async function verifyAlchemyInPage(page, expect, locale, {denyReceiptStorage=fal
   // not a snapshot while a late request could still escape or change evidence.
   assert.equal(receipt.count,2)
   assert.deepEqual(failures,[])
-  console.log('SYNTHETIC_ALCHEMY_BLOCKED_READS',JSON.stringify({locale,denyReceiptStorage,
-    count:blockedReads.length,types:[...new Set(blockedReads.map(read=>read.type))]}))
+  completed = true
   return result
+  } finally {
+    console.log('SYNTHETIC_ALCHEMY_BOUNDARY',JSON.stringify({locale,denyReceiptStorage,
+      ...alchemyBoundarySummary(blockedReads,failures,receipt.count,completed)}))
+  }
 }

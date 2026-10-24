@@ -1,19 +1,46 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import ts from "typescript";
+
+function assertHubCaptureSequence(source) {
+  const ast = ts.createSourceFile("landing.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  assert.equal(ast.parseDiagnostics.length, 0, "Landing JSX must parse");
+  const component = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "YggdrasilProgramLanding");
+  assert.ok(component, "Actual exported landing is required");
+  const returned = component.body.statements.find(ts.isReturnStatement)?.expression;
+  assert.ok(returned, "Actual returned landing is required");
+  const nodes = [];
+  const visit = node => {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) nodes.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(returned);
+  const attr = (node, name) => node.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.text === name)?.initializer;
+  const value = (node, name) => { const v = attr(node, name); return v && ts.isStringLiteral(v) ? v.text : undefined; };
+  const only = predicate => { const found = nodes.filter(predicate); assert.equal(found.length, 1, "Exactly one semantic section required"); return found[0]; };
+  // Merged #1313 deliberately adds viewport classes. Match class membership, not a whole attribute string.
+  const hero = only(n => n.tagName.getText(ast) === "section" && (value(n, "className") || "").split(/\s+/).includes("yggdrasil-program-hero"));
+  const top = only(n => n.tagName.getText(ast) === "YggdrasilLeadForms");
+  assert.equal(value(top, "placement"), "top");
+  assert.equal(attr(top, "locale")?.expression?.getText(ast), "locale");
+  const modules = only(n => value(n, "id") === "system-modules");
+  const meditation = only(n => n.tagName.getText(ast) === "YggdrasilMeditationFeature");
+  const reviews = only(n => n.tagName.getText(ast) === "YggdrasilTestimonials");
+  const archive = only(n => n.tagName.getText(ast) === "YggdrasilEnglishVideoGuide");
+  assert.equal(value(archive, "scope"), "all");
+  assert.equal(attr(archive, "locale")?.expression?.getText(ast), "locale");
+  const sequence = [hero, top, modules, meditation, reviews, archive];
+  assert.ok(sequence.every((node, index) => index === 0 || sequence[index - 1].pos < node.pos), "Hero → capture → modules → meditation → reviews → complete archive");
+}
+
 
 test("Reiki Yggdrasil restores a guide-first hero capture and a final capture after the video archive and resource links", async () => {
   const hub = await readFile("components/yggdrasil-program-landing.tsx", "utf8");
   const record = await readFile("components/academy-record-page.tsx", "utf8");
-  const hero = hub.indexOf('<section className="yggdrasil-program-hero">');
-  const top = hub.indexOf('<YggdrasilLeadForms locale={locale} placement="top" />');
-  const modules = hub.indexOf('id="system-modules"');
-  const meditation = hub.indexOf("<YggdrasilMeditationFeature");
-  const reviews = hub.indexOf("<YggdrasilTestimonials");
-  const archive = hub.indexOf('<YggdrasilEnglishVideoGuide locale={locale} scope="all" />');
+  assertHubCaptureSequence(hub);
   const resources = record.indexOf('className="academy-resource-links"');
   const bottom = record.indexOf('isCanonicalYggdrasil ? <YggdrasilLeadForms locale={locale} placement="bottom" />');
-  assert.ok(hero >= 0 && hero < top && top < modules && modules < meditation && meditation < reviews && reviews < archive);
   assert.ok(resources >= 0 && resources < bottom, "Bottom capture must follow the actual last archive/resource links");
   assert.equal((hub.match(/<YggdrasilLeadForms locale=\{locale\}/g) || []).length, 1);
   assert.equal((record.match(/<YggdrasilLeadForms locale=\{locale\}/g) || []).length, 1);
@@ -138,4 +165,22 @@ test("all six download links serve actual localized detailed course guides", asy
       assert.match(text, new RegExp("holistichouse\\.vercel\\.app/" + locale + "/academy/reiki/" + (course === "tantra" ? "tantra-reiki" : "yggdrasil")));
     }
   }
+});
+
+test("landing order rejects missing, duplicated, misplaced or misrouted conversion sections", async () => {
+  const hub = await readFile("components/yggdrasil-program-landing.tsx", "utf8");
+  const top = '<YggdrasilLeadForms locale={locale} placement="top" />';
+  const mutations = [
+    hub.replace('yggdrasil-program-hero reiki-screen', 'not-the-hero reiki-screen'),
+    hub.replace(top, ''),
+    hub.replace(top, top + top),
+    hub.replace(top, '').replace('<YggdrasilMeditationFeature', top + '<YggdrasilMeditationFeature'),
+    hub.replace(top, top.replace('placement="top"', 'placement="bottom"')),
+    hub.replace('scope="all"', 'scope="basic"'),
+    hub.replace('<YggdrasilEnglishVideoGuide locale={locale}', '<YggdrasilEnglishVideoGuide locale="en"'),
+    hub.replace('<YggdrasilEnglishVideoGuide locale={locale}', '<YggdrasilEnglishVideoGuide'),
+    hub.replace('<YggdrasilTestimonials locale={locale} />', ''),
+  ];
+  for (const changed of mutations) { assert.notEqual(changed, hub); assert.throws(() => assertHubCaptureSequence(changed)); }
+  assertHubCaptureSequence(hub.replace('yggdrasil-program-hero reiki-screen', 'extra-style yggdrasil-program-hero reiki-screen'));
 });

@@ -5,7 +5,7 @@ import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildOporaBrowserFixture, oporaFixturePath, oporaFixtureDocument,
-  oporaFixtureBundlePath, requireHostedOporaBrowser } from '../scripts/opora-as56-browser-fixture.mjs'
+  oporaFixtureBundlePath, requireHostedOporaBrowser, assertFixtureCompilation } from '../scripts/opora-as56-browser-fixture.mjs'
 
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
 test('OPORA browser fixture accepts only supported synthetic locales and no saved data', () => {
@@ -59,4 +59,12 @@ test('actual AS5.6 JSX, validators and CSS bundle unchanged with traceable sourc
     assert.ok(proof, path)
     assert.equal(proof.sha256, createHash('sha256').update(await read(path)).digest('hex'))
   }
+})
+
+test('OPORA fixture compilation still fails on every build error or warning', () => {
+  for (const [errors,warnings] of [[true,false],[false,true],[true,true]]) {
+    assert.throws(() => assertFixtureCompilation({hasErrors:()=>errors,hasWarnings:()=>warnings,
+      toString:()=>warnings?'Asset size warning':'Compilation error'}), /warning|error/)
+  }
+  assert.doesNotThrow(() => assertFixtureCompilation({hasErrors:()=>false,hasWarnings:()=>false}))
 })

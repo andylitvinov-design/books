@@ -86,13 +86,18 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
   assert.match(chooser, /stayAfterSave\?: boolean/);
   assert.match(chooser, /if \(!stayAfterSave\) router\.push/);
   assert.match(chooser, /fetch\("\/api\/service-enquiries", \{/);
-  assert.match(chooser, /operationId: nextId/);
+  assert.match(chooser, /operationId: crypto\.randomUUID\(\)/);
+  assert.match(chooser, /normalizePublicServiceEnquiry\(payload\)/);
+  assert.match(chooser, /body: JSON\.stringify\(payload\), context: contextKey/);
+  assert.match(chooser, /body: attempt\.body/);
   assert.match(chooser, /contactConsent: consent/);
   assert.match(chooser, /if \(!response\.ok \|\| data\.saved !== true/);
-  assert.match(chooser, /setSaved\(\{ saved: true, referenceCode: data\.referenceCode \}\)/);
+  assert.match(chooser, /setSaved\(\{ saved: true, referenceCode: data\.referenceCode, whatsappUrl: attempt\.whatsappUrl \}\)/);
   assert.match(chooser, /data-contact-channel": "whatsapp"/);
   assert.match(chooser, /data-contact-channel": "telegram"/);
   // An unsubmitted or failed request must never produce a fabricated CRM receipt.
-  assert.match(chooser, /if \(busy \|\| saved\) return/);
+  assert.match(chooser, /if \(busy \|\| googleBusy \|\| authAttempt\.current \|\| saved \|\| operationPending\.current\) return/);
+  assert.match(chooser, /if \(!mounted\.current \|\| activeContext\.current !== attempt\.context \|\| operation\.current !== attempt\) return/);
+  assert.match(chooser, /const \[consent, setConsent\] = useState\(false\)/);
   assert.match(chooser, /setError\(c\.error\)/);
 });

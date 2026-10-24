@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
-import {alchemyOrigin,alchemyService,assertAlchemyBody,permittedAlchemyRead,alchemyRequestGate,syntheticAlchemyReceipt,withAlchemyIsolation,ALCHEMY_CONTACT} from '../scripts/helpers/alchemy-enquiry-journey-verifier.mjs'
+import {alchemyOrigin,alchemyService,assertAlchemyBody,permittedAlchemyRead,alchemyRequestGate,syntheticAlchemyReceipt,withAlchemyIsolation,alchemyBoundarySummary,ALCHEMY_CONTACT} from '../scripts/helpers/alchemy-enquiry-journey-verifier.mjs'
 const origin='http://127.0.0.1:3100'
 const body = locale => JSON.stringify({operationId:'27d6bba7-fede-49b3-90d8-c655b72202fd',serviceTitle:alchemyService(locale),description:'',sourcePath:`/${locale}/services/alchemy-of-soul`,locale,contact:{displayName:'',email:ALCHEMY_CONTACT,phone:''},contactConsent:true,website:''})
 const request=(url,method='GET',type='fetch',raw=body('en'))=>({url:()=>url,method:()=>method,resourceType:()=>type,postData:()=>raw})
@@ -144,4 +144,37 @@ test('evaluated shim denies only receipt session write and restores popup/storag
 for (const [field,value] of [['contactConsent',false],['description','private text'],['serviceTitle','Alchemy only'],['operationId','not-a-uuid'],['contact',{displayName:'',email:'other@example.invalid',phone:''}],['sourcePath','/en/other'],['website','spam']]) test('first request rejects invalid '+field,()=>{
  const bad=JSON.parse(body('en'));bad[field]=value
  assert.throws(()=>assertAlchemyBody(JSON.stringify(bad),'en'))
+})
+
+
+for (const [path,type] of [['/_next/static/chunks/app/%5Blocale%5D/thank-you/page.js','script'],['/_next/static/chunks/app/[locale]/layout.js','script'],['/_next/static/css/app/[locale]/thank-you/page.css','stylesheet']]) test('Next15 development timestamp '+type+' '+path,()=>{
+ assert.equal(permittedAlchemyRead(request(origin+path+'?v=1792874902222','GET',type),origin,'en'),true)
+})
+for (const query of ['?v=1792874902222&contact=private','?v=1792874902222&v=1792874902222','?v=1792874902222&dpl=anything','?v=abc','?v=0000000000000','?v=1','?v=17928749022222222222','?v=-1792874902222','?v=1792874902222.0','?%76=1792874902222','?v=%31%37%39%32%38%37%34%39%30%32%32%32%32','?v=1792874902222#fragment']) test('reject noncanonical static query '+query,()=>{
+ assert.equal(permittedAlchemyRead(request(origin+'/_next/static/chunks/a.js'+query,'GET','script'),origin,'en'),false)
+})
+for (const [url,method,type] of [
+ ['https://external.invalid/_next/static/a.js?v=1792874902222','GET','script'],
+ [origin+'/_next/static/a.js?v=1792874902222','POST','script'],
+ [origin+'/_next/static/a.js?v=1792874902222','GET','fetch'],
+ [origin+'/_next/static/a.woff2?v=1792874902222','GET','font'],
+ [origin+'/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp?v=1792874902222','GET','image'],
+ [origin+'/api/service-enquiries?v=1792874902222','GET','script'],
+ [origin+'/en/thank-you?v=1792874902222','GET','document'],
+ [origin+'/_next/static/%2e%2e/a.js?v=1792874902222','GET','script'],
+]) test('timestamp cannot escape boundary '+url+' '+method+' '+type,()=>assert.equal(permittedAlchemyRead(request(url,method,type),origin,'en'),false))
+test('failure summary preserves safe asset evidence but omits arbitrary paths and query values',()=>{
+ const evidence=alchemyBoundarySummary([
+ {path:'/_next/static/chunks/app/%5Blocale%5D/thank-you/page.js',type:'script',queryKind:'next-dev-version'},
+ {path:'/private-personal-path',type:'fetch',queryKind:'other'},
+ ],['private error text'],2,false)
+ assert.equal(evidence.completed,false);assert.equal(evidence.requestCount,2);assert.equal(evidence.failureCount,1)
+ assert.equal(evidence.blocked[0].asset,'/_next/static/chunks/app/%5Blocale%5D/thank-you/page.js')
+ assert.equal(evidence.blocked[1].asset,'other');assert.ok(!JSON.stringify(evidence).includes('private'))
+})
+test('boundary evidence is emitted in finally even when receipt assertion fails',async()=>{
+ const source=await readFile(new URL('../scripts/helpers/alchemy-enquiry-journey-verifier.mjs',import.meta.url),'utf8')
+ assert.match(source,/finally \{\s*console\.log\('SYNTHETIC_ALCHEMY_BOUNDARY'/)
+ assert.match(source,/toContainText\(ALCHEMY_REFERENCE\)/)
+ assert.doesNotMatch(source,/timeout:\s*\d+/)
 })

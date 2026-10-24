@@ -44,10 +44,30 @@ test('public reads are scoped and posting requires verified, same-origin members
   assert.match(page,/<ServiceReviews serviceId=\{service\.id\} locale=\{locale\}/)
   assert.match(page,/<Link href="#reviews">/)
 })
+function assertServerChild(result){
+  assert.equal(result.error,undefined,'Child could not start')
+  assert.equal(result.signal,null,'Child was terminated')
+  assert.equal(result.status,0,result.stdout+result.stderr)
+  assert.match(result.stdout,/^# tests [1-9]\d*$/m, 'Child must actually execute tests')
+  assert.match(result.stdout,/^ok \d+ - validation trims names, keeps display content and rejects spoofed ratings$/m, 'Pure server contract must execute')
+}
+test('server-only wrapper rejects failed, skipped, missing and interrupted child results',()=>{
+  const success={status:0,signal:null,stdout:'ok 3 - validation trims names, keeps display content and rejects spoofed ratings\n# tests 3\n',stderr:''}
+  assert.doesNotThrow(()=>assertServerChild(success))
+  for(const failed of [
+    {...success,status:1}, {...success,status:null}, {...success,signal:'SIGTERM'},
+    {...success,error:new Error('SPAWN_FAILED')}, {...success,stdout:''},
+    {...success,stdout:'# tests 0\n'},
+    {...success,stdout:success.stdout.replace('ratings\n','ratings # SKIP\n')},
+    {...success,stdout:success.stdout.replace('ratings\n','ratings # TODO\n')}, {...success,stdout:'ok 1 - unrelated test\n# tests 1\n'},
+  ])assert.throws(()=>assertServerChild(failed))
+})
 if(!process.execArgv.includes('--conditions=react-server')){
   test('service review validation (server-only contract)',()=>{
-    const result=spawnSync(process.execPath,['--conditions=react-server','--test',fileURLToPath(import.meta.url)],{encoding:'utf8'})
-    assert.equal(result.status,0,result.stdout+result.stderr)
+    // Inheriting NODE_TEST_CONTEXT makes Node silently skip a nested --test run with status 0.
+    const env={...process.env};delete env.NODE_TEST_CONTEXT
+    const result=spawnSync(process.execPath,['--conditions=react-server','--test','--test-reporter=tap',fileURLToPath(import.meta.url)],{encoding:'utf8',env})
+    assertServerChild(result)
   })
 }else{
   const {checkReviewInput}=await import('../lib/practitioners/reviews.js')
@@ -63,6 +83,12 @@ if(!process.execArgv.includes('--conditions=react-server')){
     }
     assert.throws(()=>checkReviewInput({...base,serviceId:'fake'}),/INVALID_ID/)
     assert.throws(()=>checkReviewInput({...base,body:'bad'}),/INVALID_REVIEW/)
-    assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for results, please.'}),/REVIEW_PERSONAL_DATA/)
+    // The old 47-character fixture fails the minimum-length guard before PII checks.
+    assert.throws(()=>checkReviewInput({...base,body:'Email me at test@example.com for results, please.'}),/INVALID_REVIEW/)
+    for(const suffix of [' Email fictional@example.test for further details.', ' Contact +1 (416) 555-0123 for further details.', ' Disallowed control: \u0001']){
+      const body=base.body+suffix
+      assert.ok(Array.from(body).length>=50&&body.length<=1200,'PII fixture must reach the content filter')
+      assert.throws(()=>checkReviewInput({...base,body}),error=>error.code==='REVIEW_PERSONAL_DATA'&&error.status===422)
+    }
   })
 }
