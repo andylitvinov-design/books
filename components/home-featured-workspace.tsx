@@ -27,6 +27,12 @@ const photos = {
   "course": "/images/holistic-house/andy-about.png"
 } as const;
 type OfferId = keyof typeof photos;
+// Only explicitly no-cost offerings receive the red corner mark.
+// Academy is a mixed-price catalog; registration and paid services are not free offers.
+const freeOfferIds: ReadonlySet<OfferId> = new Set([
+  "reiki", "opora", "allTests", "review", "aiCoaching",
+]);
+const freeBadgeLabels = { en: "FREE", ru: "БЕСПЛАТНО", es: "GRATIS" } as const;
 type ModuleKey = "courses" | "personality" | "situation" | "coaching" | "alchemy" | "energy" | "master";
 const moduleIds: ModuleKey[] = ["courses","personality","situation","coaching","alchemy","energy","master"];
 const copy = {
@@ -710,6 +716,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
               <div className={styles.offers} data-home-module-offers={id}>
                 {section.offers.map(offer => {
                   const expanded = expandedOffer === offer.id;
+                  const isFree = freeOfferIds.has(offer.id);
                   const actionLabel = offer.id === "profile" && !signedIn ? t.guestProfile
                     : offer.id === "growth" && !signedIn ? t.guestGrowth : offer.cta;
                   const compactLabel = offer.id === "profile" && !signedIn ? compactActions[locale].guestProfile
@@ -717,7 +724,9 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                       : compactActions[locale][offer.id];
                   return (
                     <article key={offer.id} className={styles.offer} data-home-offer-card={offer.id}
-                      data-expanded={expanded ? "true" : "false"}>
+                      data-expanded={expanded ? "true" : "false"}
+                      data-home-offer-free={isFree ? "true" : undefined}>
+                      {isFree && <span className={styles.offerFreeBadge}>{freeBadgeLabels[locale]}</span>}
                       <span className={styles.photo} aria-hidden="true">
                         <Image src={photos[offer.id]} alt="" fill unoptimized loading="lazy"
                           sizes="(max-width: 350px) 100px, (max-width: 640px) 148px, (max-width: 920px) 180px, 230px" />

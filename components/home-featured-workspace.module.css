@@ -70,6 +70,7 @@
 
 /* The photograph and the full right-side offer share one row. Details open beneath. */
 .offer {
+  position: relative;
   display: grid;
   grid-template-columns: clamp(135px, 26%, 230px) minmax(0, 1fr);
   grid-template-areas: "photo content";
@@ -93,6 +94,26 @@
   row-gap: 10px;
 }
 .offer:hover { border-color: var(--accent); box-shadow: 0 6px 22px rgb(35 68 60 / 8%); }
+/* Red top-right offer status; card copy starts below the label on narrow phones. */
+.offerFreeBadge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 6px 12px;
+  border-radius: 0 18px 0 12px;
+  background: #be2940;
+  color: #fff;
+  font: 800 10px/1 Arial, Helvetica, sans-serif;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  box-shadow: -2px 2px 8px rgb(116 25 43 / 14%);
+}
+.offer[data-home-offer-free="true"] .offerBody { padding-top: 26px; }
 .photo {
   grid-area: photo;
   position: relative;
@@ -231,6 +252,8 @@
   .photo { align-self: stretch; height: auto; min-height: 171px; border-radius: 11px; }
   .offerContent { gap: 8px; padding: 3px 1px 3px 0; }
   .offerBody { gap: 6px; }
+  .offerFreeBadge { min-height: 23px; padding: 5px 9px; border-radius: 0 15px 0 10px; font-size: 10px; }
+  .offer[data-home-offer-free="true"] .offerBody { padding-top: 23px; }
   .offerTitle { font-size: clamp(15px, 4.15vw, 18px); line-height: 1.22; }
   .offerDetail { font-size: 12px; line-height: 1.4; }
   .offerControls { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 7px; margin-top: auto; }
