@@ -155,6 +155,8 @@ export default function PersonalCoaching({locale='en',accountId}){
   const visiblePrompt=adaptive&&!useStandardPrompt?adaptive.prompt:standardPrompt
   const recapRows=finished?buildCoachingRecap(session,activeQuestions,lang):[]
   const iCopy=intelligenceCopy[lang]
+  const lastApprovedPlan=[session,...(course?.history||[])]
+    .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
   function visit(indexToOpen,values,items=activeQuestions){
     const next=Math.max(0,Math.min(items.length-1,indexToOpen))
     setIndex(next)
@@ -205,11 +207,12 @@ export default function PersonalCoaching({locale='en',accountId}){
     titleRef.current?.focus({preventScroll:true})
   },[index,loading,session?.id,finished,pendingFollowup])
   useEffect(()=>{
-    if(!dirty)return
+    // Main answer AND optional dictated follow-up must survive accidental reloads.
+    if(!dirty&&!((pendingFollowup&&reflectionDraft.trim().length>0)))return
     const warn=event=>{event.preventDefault();event.returnValue=''}
     window.addEventListener('beforeunload',warn)
     return()=>window.removeEventListener('beforeunload',warn)
-  },[dirty])
+  },[dirty,pendingFollowup,reflectionDraft])
   async function command(action,fields={}){
     if(busyRef.current||!accountId)return null
     busyRef.current=true;setBusy(true);setError('');setNotice('')
@@ -330,7 +333,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
         </div>
         : (!course||newSelection) ? <PersonalCoachingPicker locale={lang} catalog={catalog}
-          onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
+          previousPlan={lastApprovedPlan} onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
         : finished ? <div className={styles.summary} data-coaching-summary>
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
