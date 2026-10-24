@@ -34,6 +34,16 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Square checkout syntax, TypeScript and focused lint
+        run: |
+          node --check lib/commerce/square-payment-links.js
+          node --check lib/commerce/square-gateway.js
+          node --check lib/commerce/square-cart-service.js
+          node --check app/api/payments/square/checkout/route.js
+          node --check app/api/payments/square/status/route.js
+          node --check app/api/payments/square/webhook/route.js
+          npx tsc --noEmit --pretty false
+          npx eslint lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
       - name: Square dynamic checkout signature, CAD price and provider-readback contracts
         run: node --test tests/service-square-api-cart.test.mjs
       - name: Square isolated payment-ledger FORCE RLS on PostgreSQL 17
