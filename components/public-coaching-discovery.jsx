@@ -191,7 +191,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     const viewport=window.visualViewport
     const sizeToVisibleViewport=()=>{
       if(!rootRef.current)return
-      rootRef.current.style.setProperty('--coach-visible-height',`${Math.max(280,Math.round(viewport?.height||window.innerHeight))}px`)
+      rootRef.current.style.setProperty('--coach-visible-height',`${Math.max(1,Math.round(viewport?.height||window.innerHeight))}px`)
       rootRef.current.style.setProperty('--coach-visible-top',`${Math.round(viewport?.offsetTop||0)}px`)
     }
     sizeToVisibleViewport()
