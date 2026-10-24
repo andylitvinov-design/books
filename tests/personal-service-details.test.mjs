@@ -49,7 +49,7 @@ test("free written review keeps personal scope, optional long questionnaire and 
   const css = read("components/free-entry-landing.module.css");
   assert.match(route, /kind="situation"/);
   assert.match(landing, /t\.steps\.map/);
-  assert.match(landing, /t\.faq\.map/);
+  assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
   assert.match(landing, /<details className=\{styles\.fullQuestionnaire\}>/);
   assert.match(landing, /"request-free-review"/);
