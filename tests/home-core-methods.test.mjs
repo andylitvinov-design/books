@@ -58,6 +58,10 @@ test("method cards are accessible and do not overflow a 320px mobile viewport", 
   assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 700px\)/);
   assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(ui, /className=\{styles\.summary\}/);
+  assert.match(ui, /className=\{styles\.details\}/);
+  assert.match(css, /grid-template-columns: minmax\(0, 35%\) minmax\(0, 1fr\)/);
+  assert.match(css, /display: contents;/);
   assert.match(css, /@media \(max-width: 370px\)/);
   assert.match(css, /min-width: 0/);
   assert.match(css, /overflow-wrap: anywhere/);

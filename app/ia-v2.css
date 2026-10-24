@@ -49,9 +49,22 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 .assessment-notice { padding: 14px 18px; background: #f2eade; border-radius: 12px; line-height: 1.6; }
 @media (max-width: 767px) {
   .ia222-bottom-navigation { padding: 5px max(4px, env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); }
-  .ia222-bottom-navigation a { padding: 4px 1px; gap: 3px; min-height: 76px; }
-  .ia222-bottom-navigation a svg { width: 22px; height: 22px; }
-  .ia222-bottom-navigation a span { font-size: clamp(9px,2.5vw,11px); line-height: 1.15; white-space: normal; overflow-wrap: anywhere; hyphens: auto; text-wrap: balance; }
+  .ia222-bottom-navigation a { padding: 4px 1px; gap: 2px; min-height: 58px; }
+  .ia222-bottom-navigation a svg { width: 20px; height: 20px; }
+  /* Preserve the full six destination names while avoiding three-line tabs. */
+  .ia222-bottom-navigation a span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-width: 100%;
+    font-size: clamp(9px,2.25vw,10px);
+    line-height: 1.13;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    hyphens: none;
+    text-wrap: balance;
+    overflow: hidden;
+  }
   body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,76px) !important; }
   body:has(.ia222-bottom-navigation) :is(input,textarea,button,a) { scroll-margin-bottom: calc(var(--ia222-bottom-height,76px) + 24px); }
   /* iOS Safari lifts position:fixed bars when the software keyboard opens.
@@ -75,7 +88,7 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 }
 @media (max-width: 600px) {
   .ia222-bottom-navigation { grid-template-columns: repeat(6,minmax(0,1fr)); }
-  .ia222-bottom-navigation a { min-height: 76px; }
+  .ia222-bottom-navigation a { min-height: 58px; }
   .library-shell { padding-inline: 10px; padding-top: 10px; }
   .library-media-switch { width: 100%; margin-top: 8px; }
   .library-media-switch a { min-height: 38px; font-size: 12px; }

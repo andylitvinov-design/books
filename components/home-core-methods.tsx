@@ -158,9 +158,12 @@ export function HomeCoreMethods({ locale }: { locale: PublicLocale }) {
                 <span className={styles.number}>0{index + 1}</span>
               </div>
               <div className={styles.content}>
-                <h3>{item.title}</h3>
-                <p className={styles.formula}>{item.formula}</p>
-                <p className={styles.description}>{item.description}</p>
+                <div className={styles.summary}>
+                  <h3>{item.title}</h3>
+                  <p className={styles.formula}>{item.formula}</p>
+                </div>
+                <div className={styles.details}>
+                  <p className={styles.description}>{item.description}</p>
                 <div className={styles.actions}>
                   <Link className={styles.primary} href={method.id === "coaching" && locale === "es" ? "/en/app/coaching" : "/" + locale + method.primaryPath} prefetch={false}>
                     {item.primary}<ArrowUpRight size={16} aria-hidden="true" />
@@ -172,6 +175,7 @@ export function HomeCoreMethods({ locale }: { locale: PublicLocale }) {
                   )}
                 </div>
                 <p className={styles.footnote}>{item.footnote}</p>
+                </div>
               </div>
             </article>
           );

@@ -82,5 +82,6 @@ test('descriptive Body, Stress and Money labels stay localized without changing 
   const css = readFileSync(new URL('../app/ia-v2.css', import.meta.url), 'utf8')
   assert.match(css, /\.ia222-bottom-navigation a span \{[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;/)
   assert.doesNotMatch(css, /\.ia222-bottom-navigation a span \{[^}]*white-space: nowrap;/)
-  assert.match(css, /\.ia222-bottom-navigation a \{[^}]*min-height: 76px;/)
+  assert.match(css, /\.ia222-bottom-navigation a \{[^}]*min-height: 58px;/)
+  assert.match(css, /-webkit-line-clamp: 2;/)
 })
