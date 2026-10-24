@@ -281,9 +281,9 @@ const copy = {
 
 // Reuse the real local-only symbolic engine inside Temple Support without duplicating its privacy model.
 const templeIntro = {
-  en: { eyebrow: "TEMPLE SUPPORT · SYMBOLIC REFLECTION", title: "Temple Insights", lead: "Share one question and reflect on an I Ching symbol and related aphorisms. Free, private and not a prediction.", ask: "Receive a free symbolic insight" },
-  ru: { eyebrow: "TEMPLE SUPPORT · СИМВОЛИЧЕСКИЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте один вопрос и получите символ И-Цзин с афоризмами для размышления. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку" },
-  es: { eyebrow: "TEMPLE SUPPORT · REFLEXIÓN SIMBÓLICA", title: "Reflexiones del templo", lead: "Haz una pregunta y explora un símbolo del I Ching con aforismos. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis" },
+  en: { eyebrow: "TEMPLE SUPPORT · SYMBOLIC REFLECTION", title: "Temple Insights", lead: "Share one question and reflect on an I Ching symbol and related aphorisms. Free, private and not a prediction.", ask: "Receive a free symbolic insight", diagnostic: "Request Free Personal Diagnostic" },
+  ru: { eyebrow: "TEMPLE SUPPORT · СИМВОЛИЧЕСКИЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте один вопрос и получите символ И-Цзин с афоризмами для размышления. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку", diagnostic: "Запросить бесплатную личную диагностику" },
+  es: { eyebrow: "TEMPLE SUPPORT · REFLEXIÓN SIMBÓLICA", title: "Reflexiones del templo", lead: "Haz una pregunta y explora un símbolo del I Ching con aforismos. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis", diagnostic: "Solicitar diagnóstico personal gratuito" },
 } as const;
 
 // Start a real, rights-cleared guest questionnaire, not a generic catalog.
@@ -633,6 +633,16 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
             <strong>{intro.ask}</strong>
           </span>
         </button>
+        {isTemple ? <Link
+          href={freeOfferHref(locale, "review")}
+          className={styles.diagnosticAction}
+          data-ideas-personal-diagnostic
+          prefetch={false}
+        >
+          <ClipboardCheck size={19} aria-hidden="true" />
+          <span>{templeIntro[locale].diagnostic}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link> : null}
       </div>
       {!isTemple ? <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
         <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
