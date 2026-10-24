@@ -7,7 +7,8 @@ create table app_private.square_service_orders (
  operation_id uuid not null,
  items text[] not null check (
    cardinality(items) between 1 and 2 and items <@ array['express-consultation-30','personal-session-60']::text[]
-   and cardinality(items) = cardinality(array(select distinct unnest(items)))
+   and array_position(items,null) is null
+   and (cardinality(items)=1 or items[1]<>items[2])
  ),
  cart_key text not null check (cart_key in (
    'express-consultation-30',
