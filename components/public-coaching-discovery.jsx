@@ -337,7 +337,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
               <Link href={'/'+lang+'/academy/coaching/greek'}
                 prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>
+            </article>}
             <article className={styles.morePath}>
               <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
               <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
