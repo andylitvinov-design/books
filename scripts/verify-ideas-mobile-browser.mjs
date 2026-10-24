@@ -101,9 +101,20 @@ async function verify(browserType, locale, width) {
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
+    // WebKit may dispatch a tap before React finishes the preceding text event.
+    // Keep the real tap and assert the on-page panel rather than masking navigation.
+    await page.waitForTimeout(120);
     await testAction.tap();
     const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
-    await filtered.waitFor({ state: "visible" });
+    try {
+      await filtered.waitFor({ state: "visible", timeout: 12000 });
+    } catch (cause) {
+      const current = page.url();
+      const input = await hub.locator("#ideas-question").inputValue().catch(() => "(unavailable)");
+      const expanded = await testAction.getAttribute("aria-expanded").catch(() => "(unavailable)");
+      throw new Error(label + ": free test chooser did not open; url=" + current +
+        "; inputLength=" + input.length + "; ariaExpanded=" + expanded, { cause });
+    }
     assert.equal(await testAction.getAttribute("aria-expanded"), "true");
     assert.equal(await filtered.locator("[data-ideas-test-start]").count(), 3, label + ": real filtered tests");
     assert.equal(await filtered.locator("[data-ideas-test-start]").first().getAttribute("href"),
