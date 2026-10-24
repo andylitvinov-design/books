@@ -5,3 +5,6 @@ body:has([data-reiki-choice-capture]) [data-sitewide-capture] { display: none; }
 
 /* The dedicated free-entry template places its own lead form last. */
 body:has([data-free-entry-landing]) [data-sitewide-capture] { display:none; }
+
+/* The immersive paid-service story already ends with a consented CRM form. */
+body:has([data-personal-service][data-visual-service-landing]) [data-sitewide-capture] { display: none; }
