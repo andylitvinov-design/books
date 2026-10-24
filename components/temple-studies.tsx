@@ -6,7 +6,7 @@ import { ArrowDown, ArrowRight, BookOpen, ChevronDown, Compass, ScrollText } fro
 import { AcademyBackLink } from "@/components/academy-hub";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TempleStudiesSideNavigation } from "@/components/reiki-course-side-nav";
-import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { AcademyVideoCourseJourney } from "@/components/academy-video-course-journey";
 import { TempleInitiationChooser } from "@/components/temple-initiation-chooser";
 import { TempleCourseHashSync } from "@/components/temple-course-hash-sync";
 import {
@@ -276,14 +276,19 @@ export function TempleStudies({ locale }: { locale: PublicLocale }) {
                                   <span className="temple-video-series-count">{vt.stageCount(collection.videos.length)}</span>
                                 </summary>
                                 <div className="temple-video-series-content">
-                                  <ol className="temple-video-grid">
-                                    {collection.videos.map((video) => (
-                                      <li className="temple-video-lesson" key={video.id}>
-                                        <AcademyVideoPlayer youtubeId={video.id} title={video.title} />
-                                        <p className="temple-video-lesson-title"><span>{vt.lesson(video.order)} · {vt.audio}</span>{video.title}</p>
-                                      </li>
-                                    ))}
-                                  </ol>
+                                  <AcademyVideoCourseJourney
+                                    locale={locale}
+                                    courseId={"temple:" + collection.key}
+                                    title={collection.title}
+                                    description={collection.description}
+                                    poster={collection.videos[0] ? "https://i.ytimg.com/vi/" + collection.videos[0].id + "/hqdefault.jpg" : undefined}
+                                    lessons={collection.videos.map((video, index) => ({
+                                      id: video.id,
+                                      title: video.title,
+                                      order: index + 1,
+                                      youtubeId: video.id,
+                                    }))}
+                                  />
                                   {collection.repeatedCount > 0 ? (
                                     <p className="temple-video-repeats">{vt.repeated(collection.repeatedCount)}</p>
                                   ) : null}
