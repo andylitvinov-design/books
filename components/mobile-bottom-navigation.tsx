@@ -9,9 +9,9 @@ import { useNavigationLocale } from './use-navigation-locale';
 
 // Compact two-line visual labels. Full translated names remain on aria-label.
 const mobileBarLabels = {
-  en: { home: 'Home', profile: 'My Profile', coaching: 'Coaching', insights: 'Temple', support: 'Support', pro: 'Pro Study' },
-  ru: { home: 'Домой', profile: 'Профиль', coaching: 'Коучинг', insights: 'Храм', support: 'Поддержка', pro: 'Pro Study' },
-  es: { home: 'Inicio', profile: 'Mi perfil', coaching: 'Coaching', insights: 'Templo', support: 'Apoyo', pro: 'Pro Study' },
+  en: { home: 'Home', analysis: 'Free Analysis', courses: 'Courses', profile: 'My Profile', coaching: 'Coaching', pro: 'Pro', temple: 'Temple Support' },
+  ru: { home: 'Домой', analysis: 'Разбор', courses: 'Курсы', profile: 'Профиль', coaching: 'Коучинг', pro: 'Pro', temple: 'Храм' },
+  es: { home: 'Inicio', analysis: 'Análisis', courses: 'Cursos', profile: 'Mi perfil', coaching: 'Coaching', pro: 'Pro', temple: 'Templo' },
 } as const;
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
@@ -91,7 +91,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {/* Six visitor journeys; topic directions stay in the expanded menu. My Profile also links to free tests. */}
+    {/* Seven public journeys; Temple Insights and legacy topics stay in the expanded menu. */}
     {mobileItems.map(item => {
       const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];
       const shortLabel = mobileBarLabels[locale][item.id as keyof typeof mobileBarLabels.en];
