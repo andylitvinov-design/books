@@ -9,8 +9,8 @@ const css = read("components/tests-coaching-switchboard.module.css");
 const legacy = read("components/ideas-discovery.tsx");
 
 test("Four-path hub is the canonical public first screen in EN/RU/ES", () => {
-  assert.match(legacy, /<TestsCoachingSwitchboard locale=\{locale\} templeContent=\{<>/);
-  assert.match(legacy, /aria-labelledby="tests-coaching-title"/);
+  assert.match(legacy, /<TestsCoachingSwitchboard locale=\{locale\} templeContent=\{templeContent\}/);
+  assert.match(legacy, /aria-labelledby=\{isTemple \? "ideas-title" : "tests-coaching-title"\}/);
   assert.match(ui, /const pathOrder: Path\[\] = \["profile", "temple", "coaching", "support"\]/);
   assert.match(ui, /data-tests-coaching-path=\{key\}/);
   assert.match(ui, /aria-expanded=\{path === key\}/);

@@ -53,16 +53,24 @@ async function go(page, path) {
 }
 
 function expectedMobileNavigation(locale) { return getCompactNavigation(locale) }
+function visibleMobileLabel(locale, id) {
+  const names = {
+    en: { home: 'Home', energy: 'Energy', love: 'Love', business: 'Business', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
+    ru: { home: 'Домой', energy: 'Энергия', love: 'Любовь', business: 'Бизнес', books: 'Идеи', pro: 'Профи', temple: 'Temple Support' },
+    es: { home: 'Inicio', energy: 'Energía', love: 'Amor', business: 'Negocios', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
+  }
+  return names[locale][id]
+}
 
 async function assertPublicBottomNavigation(bottom, { locale, surface, label }) {
   const expected = expectedMobileNavigation(locale)
   const links = bottom.locator('[data-nav-item]')
-  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expected.map(({ id, href }) => ({ id, href })), label + ': exact six bottom destinations')
-  await expect(links).toHaveCount(6)
+  assert.deepEqual(await links.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expected.map(({ id, href }) => ({ id, href })), label + ': exact seven bottom destinations')
+  await expect(links).toHaveCount(7)
   const visible = await bottom.isVisible()
   for (let index = 0; index < expected.length; index++) {
-    await expect(links.nth(index)).toHaveText(expected[index].label)
-    if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].label)
+    await expect(links.nth(index)).toHaveText(visibleMobileLabel(locale, expected[index].id))
+    if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].ariaLabel)
   }
   await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1)
   await expect(bottom.locator('[data-nav-item="' + (surface === 'library' ? 'books' : surface) + '"]')).toHaveAttribute('aria-current', 'page')
@@ -198,8 +206,8 @@ async function verifyPublicHeaderMatrix(page, engine) {
         const bottom = page.locator('.mobile-bottom-navigation')
         const expectedBottom = await assertPublicBottomNavigation(bottom, { locale, surface, label })
         const bottomLinks = bottom.locator('[data-nav-item]')
-        assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact six bottom destinations')
-        await expect(bottomLinks).toHaveCount(6)
+        assert.deepEqual(await bottomLinks.evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedBottom.map(item => ({ id: item.id, href: item.href })), label + ': exact seven bottom destinations')
+        await expect(bottomLinks).toHaveCount(7)
         await expect(bottom.locator('[aria-current="page"]')).toHaveCount(1)
         await expect(bottom.locator('[data-nav-item="' + (surface === 'library' ? 'books' : surface) + '"]')).toHaveAttribute('aria-current', 'page')
         if (width < 768) {
@@ -227,7 +235,7 @@ async function verifyPublicHeaderMatrix(page, engine) {
     }
   }
   await page.setViewportSize(originalViewport)
-  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at 320/360/374/375/390/430/768/1023/1024/1100/1280px; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible six-slot mobile bottom navigation')
+  pass(engine + ': public header Home/Energy/Love/Business/Library EN/RU/ES at 320/360/374/375/390/430/768/1023/1024/1100/1280px; visible Cabinet/language controls, menu bounds, keyboard Enter/Tab/Escape and focus return; exact accessible seven-slot mobile bottom navigation')
   } finally { diagnostic.stop() }
 }
 async function verifyPublicDiscoveryNavigation(page, engine) {
@@ -269,7 +277,7 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
     }
   }
   await resizePublicViewport(page, originalViewport)
-  pass(engine + ': public client and client/tests discovery retain six-slot navigation with Pro active on free tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
+  pass(engine + ': public client and client/tests discovery retain seven-slot navigation with Pro active on free tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
 }
 
 try {
@@ -362,10 +370,10 @@ try {
           await expect(current).toHaveCount(1)
           await expect(current).toHaveAttribute('href', '/' + locale + '/books')
         } else {
-          // Ideas is the fifth of six bottom-navigation slots; the full Library remains in the menu.
+          // Ideas is the fifth of seven bottom-navigation slots; the full Library remains in the menu.
           const expectedItems = await assertPublicBottomNavigation(nav, { locale, surface: 'library', label: locale + '/library/' + width })
           assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
-          await expect(nav.locator('[data-nav-item]')).toHaveCount(6)
+          await expect(nav.locator('[data-nav-item]')).toHaveCount(7)
           await expect(nav.locator('[aria-current="page"]')).toHaveCount(1)
           await expect(nav.locator('[data-nav-item="books"]')).toHaveAttribute('aria-current', 'page')
           await expect(nav.locator('[data-nav-item="business"]')).toHaveAttribute('href', '/' + locale + '/explore/business')
@@ -384,7 +392,7 @@ try {
       await page.screenshot({ path: `${evidence}/library-${locale}-${width}.png`, fullPage: true })
     }
   }
-  pass('Desktop Cabinet entry and six-slot mobile navigation with Books EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
+  pass('Desktop Cabinet entry and seven-slot mobile navigation with Books EN/RU/ES, active states, 320–1280px, tap targets and bottom spacing')
   await verifyPublicHeaderMatrix(page, 'chromium')
   await verifyPublicDiscoveryNavigation(page, 'chromium')
   for (const path of ['/en/books', '/ru/books', '/es/books', '/en/homeopathy', '/ru/homeopathy', '/es/homeopathy', '/en/services', '/ru/services', '/es/services', '/en/about', '/ru/about', '/es/about']) assert.equal((await go(page, path)).status(), 200, path)

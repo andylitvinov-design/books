@@ -273,6 +273,7 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
               </div>
             </div>
           </div>
+          <Link className={styles.primaryLink} href={`/${locale}/temple-support`} prefetch={false}>Temple Support <ArrowRight size={16} aria-hidden="true" /></Link>
           {templeContent}
         </div> : null}
         {path === "coaching" ? <div data-tests-coaching-sessions>
