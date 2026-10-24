@@ -548,7 +548,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
       aria-labelledby="hh-home-features-title">
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{t.eyebrow} · 01–07</p>
-        <h2 id="hh-home-features-title">{t.heading}</h2>
+        <h1 id="hh-home-features-title">{t.heading}</h1>
         <p>{t.summary}</p>
       </header>
       <nav className={styles.steps} aria-label={t.journeyLabel}>
@@ -578,7 +578,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
               data-home-module={id} aria-labelledby={"hh-home-" + id + "-title"} key={id}>
               <header className={styles.sectionHeading}>
                 <p className={styles.eyebrow}>{t.sectionCounter} {index + 1}/{moduleIds.length}</p>
-                <h3 id={"hh-home-" + id + "-title"}>{section.title}</h3>
+                <h2 id={"hh-home-" + id + "-title"}>{section.title}</h2>
                 <p className={styles.lead}>{section.lead}</p>
               </header>
               <div className={styles.offers} data-home-module-offers={id}>
@@ -587,7 +587,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                     className={styles.offer} data-home-module-action={offer.id}>
                     <span className={styles.photo} aria-hidden="true">
                       <Image src={photos[offer.id]} alt="" fill unoptimized loading="lazy"
-                        sizes="(max-width: 640px) 120px, (max-width: 920px) 160px, 190px" />
+                        sizes="(max-width: 350px) 92px, (max-width: 640px) 124px, (max-width: 920px) 160px, 190px" />
                     </span>
                     <span className={styles.offerBody}>
                       <strong className={styles.offerTitle}>{offer.title}</strong>

@@ -4,19 +4,21 @@ import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("EN/RU/ES lead with the real carousel, then free diagnosis, then the question dialogue", () => {
+test("EN/RU/ES show the seven-step path after the carousel, with free dialogue on demand", () => {
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
+  const more = read("components/home-more-disclosure.tsx");
   const carousel = read("components/home-section-carousel.tsx");
   for (const [page, locale] of [[home, "{locale}"], [es, '"es"']]) {
     const tag = locale === "{locale}" ? "locale={locale}" : 'locale="es"';
     const slider = page.indexOf("<HomeSectionCarousel " + tag + " />");
-    const banner = page.indexOf("<HomeFreeDiagnosisBanner " + tag + " />");
-    const question = page.indexOf("<HomeConversationGuide " + tag + " />");
-    assert.ok(slider >= 0 && slider < banner && banner < question, "Expected carousel → diagnosis → dialogue");
-    assert.ok(page.includes("paid-sessions"), "Paid consultation remains below the dialogue");
+    const journey = page.indexOf("<HomeFeaturedWorkspace " + tag + " />");
+    const disclosure = page.indexOf("<HomeMoreDisclosure " + tag + ">");
+    assert.ok(slider >= 0 && slider < journey && journey < disclosure);
+    assert.ok(page.includes("paid-sessions"));
   }
-  assert.doesNotMatch(carousel, /data-home-quick-booking|data-home-quick-cta/, "No paid strip before first slider");
+  assert.ok(more.indexOf("<HomeFreeDiagnosisBanner") < more.indexOf("<HomeConversationGuide"));
+  assert.doesNotMatch(carousel, /data-home-quick-booking|data-home-quick-cta/);
   assert.match(carousel, /data-home-hero-nav="true"/);
   assert.match(carousel, /data-home-slide-dot=\{item.key\}/);
 });
@@ -34,7 +36,8 @@ test("free diagnosis button reveals one compact messenger handoff inside its war
   assert.match(banner, /data-home-diagnosis-channel="telegram"/);
   assert.match(banner, /fetch\("\/api\/service-enquiries"/);
   assert.match(banner, /contactConsent: true/);
-  assert.match(banner, /sourcePath: "\/" \+ locale \+ "\/services\/free-situation-review"/);
+  assert.match(banner, /function sourcePath\(locale: PublicLocale, context\?: ExpressContext\)/);
+  assert.match(banner, /context \? contextPaths\[context\] : "\/services\/free-situation-review"/);
   assert.match(banner, /serviceTitle: SERVICE_TITLE/);
   assert.match(banner, /result\?\.saved !== true/);
   assert.match(banner, /setReference\(committedReference\)/);

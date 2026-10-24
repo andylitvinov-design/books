@@ -105,19 +105,19 @@ test("each conversation goal resolves to a real first-party destination without 
   assert.equal(homeGuideDestinations({ goal: "practice", topic: "work", locale: "es" }).secondary, "/es/explore/business");
 });
 
-test("EN/RU/ES homepages place the question dialogue directly after free assessment", () => {
+test("the optional free assessment and question guide are lazily available after the seven-step journey", () => {
   const home = read("components/holistic-house-home.tsx");
   const spanish = read("app/es/page.tsx");
   const russian = read("app/[locale]/page.tsx");
-  for (const [page, carousel, diagnosis, guide] of [
-    [home, "<HomeSectionCarousel locale={locale} />", "<HomeFreeDiagnosisBanner locale={locale} />", "<HomeConversationGuide locale={locale} />"],
-    [spanish, '<HomeSectionCarousel locale="es" />', '<HomeFreeDiagnosisBanner locale="es" />', '<HomeConversationGuide locale="es" />'],
-  ]) {
-    assert.ok(page.includes(guide));
-    assert.ok(page.indexOf(carousel) < page.indexOf(diagnosis) && page.indexOf(diagnosis) < page.indexOf(guide),
-      "Carousel → free diagnosis → question guide, without intervening paid banners");
-    assert.ok(page.includes("paid-sessions"), "Existing paid CTA must stay");
+  const more = read("components/home-more-disclosure.tsx");
+  for (const page of [home, spanish]) {
+    assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
+    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
+    assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomeConversationGuide/);
+    assert.ok(page.includes("paid-sessions"));
   }
+  assert.ok(more.indexOf("<HomeFreeDiagnosisBanner") < more.indexOf("<HomeConversationGuide"));
+  assert.match(more, /\{expanded && \(/);
   assert.ok(russian.includes("<HolisticHouseHome"));
 });
 
@@ -348,7 +348,7 @@ test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and fea
   const css = read("components/home-conversation-guide.module.css");
   const headerCss = read("app/holistic-house-home.css");
   assert.match(home, /<SiteNavigation locale=\{locale\} \/>/);
-  assert.match(home, /<HomeConversationGuide locale=\{locale\} \/>/);
+  assert.match(read("components/home-more-disclosure.tsx"), /<HomeConversationGuide locale=\{locale\} \/>/);
   assert.match(css, /ideas-pine-reference\.webp/, "Keep the approved local pine artwork");
   assert.match(css, /\.needCard:first-child \{/, "Featured topic visually mirrors Ideas but is not selected");
   assert.match(css, /#dcf1ed/, "First tile uses the evergreen Ideas accent");
@@ -360,13 +360,15 @@ test("Ideas visual parity: Home reuses pine, ivory masthead, warm action and fea
   }
 });
 
-test("home advisor replaces repeated service catalogs without changing #1537 free diagnosis",()=>{
+test("home advisor stays available on demand without interrupting the primary seven steps", () => {
  const home=read("components/holistic-house-home.tsx"),es=read("app/es/page.tsx");
+ const more=read("components/home-more-disclosure.tsx");
  for(const page of [home,es]){
    assert.match(page,/<HomeMoreDisclosure locale=/);
-   assert.ok(page.indexOf("<HomeFreeDiagnosisBanner") < page.indexOf("<HomeConversationGuide"));
-   assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<HomeMoreDisclosure locale='));
+   assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
+   assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomeConversationGuide/);
  }
+ assert.ok(more.indexOf("<HomeFreeDiagnosisBanner") < more.indexOf("<HomeConversationGuide"));
  const guide=read("components/home-conversation-guide.tsx");
  for(const token of ["data-home-guide-needs","data-home-guide-need={item.id}","data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
    assert.ok(guide.includes(token));

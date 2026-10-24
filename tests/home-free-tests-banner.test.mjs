@@ -17,10 +17,12 @@ test('broken legacy free-test promo is absent from all home locales and source',
   assert.equal(existsSync(new URL('../components/home-free-tests-banner.module.css', import.meta.url)), false)
 })
 
-test('existing photo-led services and five topic journeys stay in the right order', () => {
-  const serviceCardsAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />')
-  const topicCardsAt = home.indexOf('<HomepageTopicJourneys locale={locale} />')
-  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt)
+test('photo-led topics are available on demand while the primary CTA stays visible', () => {
+  const more = read('components/home-more-disclosure.tsx')
+  const serviceCardsAt = more.indexOf('<ServicesSolutions locale={locale} variant="home" />')
+  const topicCardsAt = more.indexOf('<HomepageTopicJourneys locale={locale} />')
+  assert.ok(serviceCardsAt >= 0 && topicCardsAt >= 0 && topicCardsAt < serviceCardsAt)
+  assert.ok(home.includes('<HomeFeaturedWorkspace locale={locale} />'))
   assert.match(journeys, /id="hh-topic-journeys"/)
   assert.ok(journeys.includes('TOPIC_JOURNEYS.map'))
   assert.ok(journeys.includes('explore/${journey.id}'))
