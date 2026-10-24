@@ -3,13 +3,13 @@
 .hero{position:relative;isolation:isolate;min-height:clamp(440px,53vw,550px);display:flex;align-items:center;overflow:hidden;border-radius:24px;background:#796855}
 .heroImage{z-index:-2;object-fit:cover;object-position:center 54%}
 .heroOverlay{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(31,31,30,.88) 0%,rgba(35,33,31,.79) 37%,rgba(39,35,31,.37) 75%,rgba(36,31,27,.05)),linear-gradient(0deg,rgba(33,28,26,.35),transparent 73%)}
-.heroContent{position:relative;width:min(710px,100%);padding:clamp(25px,5.4vw,65px);color:#fff9f0}
+.heroContent{position:relative;width:min(790px,100%);padding:clamp(25px,5.4vw,65px);color:#fff9f0}
 .kicker,.sectionKicker,.previewEyebrow{display:flex;align-items:center;gap:8px;margin:0;color:#a2795d;font:750 10px/1.45 Arial,Helvetica,sans-serif;letter-spacing:.13em;text-transform:uppercase}
 .kicker{color:#f8dbad}
 .hero h1{margin:13px 0 0;font:400 clamp(68px,8vw,109px)/.95 Georgia,"Times New Roman",serif;letter-spacing:-.055em}
 .heroHeadline{max-width:600px;margin:11px 0 10px;font:400 clamp(24px,3.5vw,41px)/1.13 Georgia,"Times New Roman",serif;letter-spacing:-.025em;text-wrap:balance}
 .heroLead{max-width:550px;margin:0;color:#eee2d7;font-size:15px;line-height:1.55}
-.pathControls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:650px;margin-top:28px}
+.pathControls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:760px;margin-top:28px}
 .pathControls a{min-width:0;display:flex;align-items:center;gap:9px;min-height:56px;border:1px solid rgba(255,242,223,.57);border-radius:14px;padding:11px 14px;background:rgba(255,249,241,.14);color:#fffaf3;font:750 13px/1.25 Arial,Helvetica,sans-serif;text-align:left;text-decoration:none;cursor:pointer;backdrop-filter:blur(9px)}
 .pathControls a>span{flex:1;min-width:0}
 .pathControls a>svg:last-child{flex:0 0 15px}
@@ -189,7 +189,7 @@
 .hero{min-height:clamp(420px,50vw,515px)}
 .hero h1{font-size:clamp(62px,7vw,92px)}
 .heroHeadline{font-size:clamp(27px,3.3vw,39px)}
-.heroContent{max-width:730px}
+.heroContent{max-width:790px}
 .facts{gap:6px}
 .facts span{border-radius:13px;background:#fffefa}
 .profileGateway{background:#f1e7da;box-shadow:0 12px 32px rgba(75,47,32,.055)}
@@ -416,6 +416,38 @@
 }
 @media(prefers-reduced-motion:reduce){
  .profileEntry,.lessonSelector,.offerGrid button{transition:none}
+}
+
+/* Pro has three distinct paths: find a practitioner, learn, publish. */
+.finder{
+ display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+ min-width:0;overflow:hidden;margin:16px 0 0;
+ border:1px solid #e4d3c1;border-radius:21px;background:#f0e5d8;
+ scroll-margin-top:calc(84px + env(safe-area-inset-top));
+}
+.finderPhoto{display:block;position:relative;min-height:245px;background:#e5d4c2}
+.finderPhoto img{object-fit:cover;object-position:center 48%}
+.finderCopy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:clamp(21px,3.6vw,39px)}
+.finderCopy h2{margin:7px 0 9px;font:400 clamp(27px,3.4vw,42px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.025em}
+.finderCopy>p:not(.sectionKicker,.micro){max-width:530px;margin:0 0 15px;color:#685448;font-size:14px;line-height:1.5}
+.finderCopy>.micro{margin:10px 0 0}
+@media(max-width:800px){
+ .finder{grid-template-columns:minmax(0,.72fr) minmax(0,1fr)}
+}
+@media(max-width:600px){
+ .hero{min-height:min(460px,calc(100svh - 144px))}
+ .pathControls{grid-template-columns:1fr;gap:7px}
+ .pathControls a{min-height:49px;line-height:1.35}
+ .finder{grid-template-columns:1fr;margin-top:11px;border-radius:17px}
+ .finderPhoto{height:120px;min-height:120px}
+ .finderCopy{padding:16px 17px 18px}
+ .finderCopy h2{font-size:clamp(25px,7vw,31px);margin:5px 0 7px}
+ .finderCopy>p:not(.sectionKicker,.micro){font-size:12px;line-height:1.43;margin-bottom:12px}
+ .finderCopy>.primary{width:100%;min-height:49px}
+ .finderCopy>.micro{font-size:10.5px}
+}
+@media(max-width:359px){
+ .pathControls a{padding:8px 10px;font-size:11.5px}
 }
 
 /* One free introductory course, followed by three separate paid master programmes. */

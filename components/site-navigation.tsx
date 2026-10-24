@@ -111,7 +111,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   // Additional editorial pages are grouped separately, never mixed into the bar.
   const mainMenuItems = getCompactNavigation(activeLocale);
   const extraMenuItems = getSiteNavigation(activeLocale).filter(
-    item => item.id === 'library' || item.id === 'courses' || item.id === 'events',
+    item => ['energy', 'love', 'business', 'library', 'courses', 'events'].includes(item.id),
   );
 
   // The full Academy catalog is reached through Courses; keep the legacy Services catalog.
@@ -190,7 +190,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
               data-nav-item={item.id}
               href={item.href}
               prefetch={false}
-              aria-current={menuCurrent === item.id ? 'page' : undefined}
+              aria-current={current === item.id ? 'page' : undefined}
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}

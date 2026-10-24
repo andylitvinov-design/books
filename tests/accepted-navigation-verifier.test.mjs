@@ -58,14 +58,14 @@ function publicPage(tree, locale) {
     assert.equal(selector, '[data-sitewide-personal-review-banner]'); return locator(locale === 'es' ? [] : [jsx('aside', {})])
   } }
 }
-for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact Tests and My House destinations and active Tests', async () => {
+for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact My Profile and coaching destinations with active My Profile', async () => {
   for (const path of ['/client', '/client/tests']) await assertPublicDiscoveryChrome(publicPage(mobile(locale, '/' + locale + path), locale), expect, locale)
   for (const path of ['/client/session', '/client/personal-selector', '/client/tests/hidden']) assert.equal(mobile(locale, '/' + locale + path), null)
   if (locale !== 'es') assert.equal(mobile(locale, '/' + locale + '/app/portrait'), null)
   assert.equal(mobile(locale, '/admin'), null)
 })
 for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplicate']) test('public mobile proof rejects ' + fault, async () => {
-  const tree = mobile('en', '/en/client/tests'), all = links(tree), target = all.find(node => node.props['data-nav-item'] === 'tests')
+  const tree = mobile('en', '/en/client/tests'), all = links(tree), target = all.find(node => node.props['data-nav-item'] === 'profile')
   if (fault === 'wrongName') target.props.children = 'My tests'
   if (fault === 'wrongHref') target.props.href = '/en/client'
   if (fault === 'wrongActive') target.props['data-nav-item'] = 'cabinet'

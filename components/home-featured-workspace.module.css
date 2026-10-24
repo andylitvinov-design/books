@@ -299,3 +299,18 @@
 @media (prefers-reduced-motion: reduce) {
   .root * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+
+/* A quiet progress signal ties the seven independent sections into one journey. */
+.sectionKicker { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 7px; }
+.sectionKicker .eyebrow { margin: 0; }
+.progressTrack { display: block; flex: 0 0 96px; height: 5px; overflow: hidden; border-radius: 99px; background: rgb(71 114 104 / 13%); }
+.progressTrack > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.section[data-home-module="personality"] { background: linear-gradient(125deg,#ecf6ed,#fffefa 68%); }
+.section[data-home-module="personality"] .offer { box-shadow: 0 9px 28px rgb(61 110 81 / 7%); }
+@media (max-width: 640px) {
+  .sectionKicker { margin-bottom: 8px; }
+  .progressTrack { flex-basis: 72px; height: 4px; }
+  .section[data-home-module="personality"] { padding-bottom: 17px; }
+  .section[data-home-module="personality"] .offer { box-shadow: 0 8px 22px rgb(61 110 81 / 8%); }
+}

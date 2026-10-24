@@ -95,7 +95,8 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(form, /window.crypto.randomUUID\(\)/);
   assert.match(form, /fetch\("\/api\/service-enquiries"/);
   assert.match(form, /result\?\.saved !== true/);
-  assert.match(form, /setReference\(result.referenceCode\)/);
+  assert.match(form, /committedReference = result.referenceCode/);
+  assert.match(form, /setReference\(committedReference\)/);
   assert.match(form, /RECEIPT_SESSION_KEY/);
   assert.doesNotMatch(form, /lead_created|booking_confirmed|payment_received|gtag\(/);
   assert.match(api, /createPublicServiceEnquiry/);
@@ -119,7 +120,7 @@ test("free landing's final slide is just the compact form, in all three language
   assert.match(page, /id=\{captureId\}/);
   assert.match(page, /disclaimer=\{common.limitations\}/);
   assert.ok(page.lastIndexOf("<CompactLeadCapture") > page.lastIndexOf("<PersonalTestimonials"));
-  assert.ok(page.lastIndexOf("<CompactLeadCapture") > page.lastIndexOf("<ServiceVideoShowcase"));
+  assert.ok(page.lastIndexOf("<CompactLeadCapture") > page.lastIndexOf("<SiteVideoPlayer"));
   assert.doesNotMatch(page, /<section className=\{styles\.end\}/);
   assert.doesNotMatch(page, /<FreeResourceEnquiry/);
   assert.match(page, /data-optional-written-review/);

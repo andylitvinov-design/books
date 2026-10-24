@@ -50,14 +50,14 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
 @media (max-width: 767px) {
   .ia222-bottom-navigation { padding: 5px max(4px, env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); }
   .ia222-bottom-navigation a { padding: 4px 1px; gap: 2px; min-height: 58px; }
-  .ia222-bottom-navigation a svg { width: 20px; height: 20px; }
-  /* Preserve the full six destination names while avoiding three-line tabs. */
+  .ia222-bottom-navigation a svg { width: 19px; height: 19px; }
+  /* Six accessible destinations, two-line names and 44px+ tap targets. */
   .ia222-bottom-navigation a span {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     max-width: 100%;
-    font-size: clamp(9px,2.25vw,10px);
+    font-size: clamp(9px,2.25vw,10.5px);
     line-height: 1.13;
     white-space: normal;
     overflow-wrap: anywhere;

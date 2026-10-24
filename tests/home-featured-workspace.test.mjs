@@ -38,8 +38,8 @@ test("seven ordered stages with unique media and one visible journey in EN/RU/ES
   for (const locale of ["en","ru","es"]) assert.deepEqual(Object.keys(copy[locale].modules), expected);
 });
 
-test("each of 16 offer cards has a clear primary CTA and independent accessible Details button", () => {
-  const size = [3,3,3,2,1,1,3];
+test("each of 14 offer cards has a clear primary CTA and independent accessible Details button", () => {
+  const size = [3,1,3,2,1,1,3];
   for (const locale of ["en","ru","es"]) {
     const list = [];
     expected.forEach((stage, i) => {
@@ -52,7 +52,7 @@ test("each of 16 offer cards has a clear primary CTA and independent accessible 
         assert.ok(facts[locale][o.id]?.length > 210, locale + " missing a useful multi-sentence explanation: " + o.id);
       }
     });
-    assert.equal(new Set(list).size, 16);
+    assert.equal(new Set(list).size, 14);
   }
   for (const path of Object.values(photos)) assert.ok(existsSync(new URL("../public" + path, import.meta.url)), path);
   assert.match(component, /data-home-module-action=\{offer\.id\}/);
@@ -80,7 +80,7 @@ test("each of 16 offer cards has a clear primary CTA and independent accessible 
 test("free labels stay free and paid requests never claim confirmed payments or appointments", () => {
   for (const locale of ["en","ru","es"]) {
     const byId = Object.fromEntries(expected.flatMap(id => copy[locale].modules[id].offers).map(x => [x.id,x.cta]));
-    for (const id of ["reiki","opora","allTests","review","aiCoaching"])
+    for (const id of ["reiki","opora","profile","review","aiCoaching"])
       assert.match(byId[id], /free|бесплатн|gratis/i, locale + " " + id + " should identify free entry");
     assert.match(byId.therapist, /€50|50 €/);
     assert.doesNotMatch(byId.alchemy + byId.energy + byId.businessConstellations, /бесплатн|gratis|\bfree\b/i);
@@ -94,14 +94,14 @@ test("free offer corner markers cover all seven sections without mislabeling pai
   const definition = component.match(/const freeOfferIds: ReadonlySet<OfferId> = new Set\(\[([\s\S]*?)\]\);/);
   assert.ok(definition, "Shared free-offer allowlist must be explicit");
   const freeIds = [...definition[1].matchAll(/"([^"]+)"/g)].map(match => match[1]);
-  assert.deepEqual(freeIds, ["reiki", "opora", "allTests", "review", "aiCoaching"]);
+  assert.deepEqual(freeIds, ["reiki", "opora", "profile", "review", "aiCoaching"]);
   const labelsMatch = component.match(/const freeBadgeLabels = (\{[^\n]+\}) as const;/);
   assert.ok(labelsMatch, "All locales must be labeled");
   const labels = Object.fromEntries([...labelsMatch[1].matchAll(/(en|ru|es): "([^"]+)"/g)].map(x => [x[1], x[2]]));
   assert.deepEqual(labels, { en: "FREE", ru: "БЕСПЛАТНО", es: "GRATIS" });
   for (const locale of ["en", "ru", "es"]) {
     const offers = expected.flatMap(stage => copy[locale].modules[stage].offers);
-    assert.equal(offers.length, 16);
+    assert.equal(offers.length, 14);
     for (const offer of offers) {
       const actualFree = freeIds.includes(offer.id);
       if (actualFree) assert.match(offer.cta, /free|бесплатн|gratis/i, locale + " " + offer.id);
@@ -121,15 +121,15 @@ test("free offer corner markers cover all seven sections without mislabeling pai
 
 test("private routes are guarded and Spanish public content uses English account fallback", () => {
   for (const dest of ["/academy/principles-of-energywork/learn","/courses/antistress",
-    "/client/tests","/portrait","/portfolio#hh-development-program","/services/free-situation-review",
+    "/client/tests","/personality-profiles","/portrait","/portfolio#hh-development-program","/services/free-situation-review",
     "/services/business-consulting","/services/systemic-constellations","/coaching",
     "/services#consultation","/services/alchemy-of-soul","/services/remote-energy-support",
     "/pro","/practice?panel=services","/practice?panel=materials&materialTab=courses"])
     assert.ok(component.includes(dest), dest);
   assert.match(component, /const signedIn = space\?\.status === "ready" && Boolean\(space\.summary\)/);
   assert.match(component, /locale === "es" \? "en" : locale/);
-  assert.match(component, /offer\.id === "profile" && !signedIn/);
-  assert.match(component, /offer\.id === "growth" && !signedIn/);
+  assert.match(component, /profile: "\/" \+ locale \+ "\/personality-profiles"/);
+  assert.match(component, /const actionLabel = offer\.cta/);
   assert.match(component, /\{signedIn && \(/);
   assert.match(component, /data-home-reports-cta/);
   assert.match(component, /data-home-development-cta/);

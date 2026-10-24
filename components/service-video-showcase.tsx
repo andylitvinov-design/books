@@ -22,6 +22,10 @@ const copy = {
       heading: "How systemic constellations work",
       context: "A short explanation of exploring roles, relationships and decisions through symbolic constellations.",
     },
+    "constellation-case": {
+      heading: "Business Constellations — see the approach",
+      context: "Andrey’s recording introduces symbolic systemic mapping. It is a method overview, not the free written review itself or a clinical diagnosis.",
+    },
     homeopathy: {
       heading: "My approach to homeopathy",
       context: "An educational overview of a complementary symbolic approach, not medical treatment or evidence of clinical effectiveness.",
@@ -45,6 +49,10 @@ const copy = {
       heading: "О подходах к личной работе",
       context: "Это общий русскоязычный ролик. Подробное видео о системных расстановках пока доступно на английском.",
     },
+    "constellation-case": {
+      heading: "Системные расстановки — видео Андрея",
+      context: "Запись об исследовании ситуаций и ролей через символическую карту. Не подменяет сам бесплатный письменный разбор или медицинскую диагностику.",
+    },
     homeopathy: {
       heading: "Мой подход к гомеопатии",
       context: "Образовательное знакомство с дополнительной символической практикой, не заменяющей медицинскую помощь.",
@@ -67,6 +75,10 @@ const copy = {
     constellations: {
       heading: "Constelaciones sistémicas",
       context: "Breve explicación del método, con audio en inglés.",
+    },
+    "constellation-case": {
+      heading: "Constelaciones sistémicas — vídeo de Andrey",
+      context: "Introducción al mapeo simbólico de situaciones y roles. No es la revisión escrita gratuita ni un diagnóstico médico.",
     },
     homeopathy: {
       heading: "Mi enfoque de la homeopatía",

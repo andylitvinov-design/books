@@ -127,7 +127,7 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
 })
 
 test('bottom bar and hamburger replace Tests with Pro while keeping six usable links',()=>{
-  const expected=['home','energy','love','business','books','pro']
+  const expected=['home','profile','coaching','insights','support','pro']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
@@ -163,8 +163,8 @@ test('Pro page contains a separate free-tests and private/personal-professional 
 })
 
 test('Pro keeps learning, practitioner offers and profiles visible in one scrollable page',()=>{
-  assert.match(hub,/learnChoice: "Я хочу обучиться"/)
-  assert.match(hub,/proChoice: "Я уже практик"/)
+  assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
+  assert.match(hub,/proChoice: "Я уже мастер — предложить услуги"/)
   assert.doesNotMatch(hub,/data-profi-active-path|path === "learn" \?|choosePath\(/)
   assert.match(css,/\.journey\[id\]\{scroll-margin-top:/)
   for (const locale of ['en','ru','es']) {
@@ -294,6 +294,32 @@ test('Pro includes the same consented express-written-review CTA as other direct
     assert.equal(offers.length,1,locale+': one free written-review request')
     assert.ok(offers[0].props.locale===locale)
   }
+})
+
+test('Pro starts with three localized, accessible paths, including real mentor discovery',()=>{
+  const masters = read('app/[locale]/masters/page.tsx')
+  const switcher = read('components/mentor-community-switch.tsx')
+  assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
+  assert.match(switcher,/initialView \?\? \(hasArticles \? "articles" : "mentors"\)/)
+  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.finderPhoto\{/
+  for(const locale of ['en','ru','es']){
+    const tree=mount(locale).render()
+    const paths=nodes(tree).filter(x=>x.props?.['data-profi-path']!==undefined)
+    assert.deepEqual(paths.map(x=>x.props['data-profi-path']),['find','learn','practice'])
+    assert.equal(paths[0].props.href,'/'+locale+'/masters?view=mentors')
+    assert.equal(paths[0].props.prefetch,false)
+    assert.equal(paths[1].props.href,'#profi-learning')
+    assert.equal(paths[2].props.href,'#profi-practice')
+    const finder=find(tree,'data-profi-action','find-master')
+    assert.equal(finder.props.href,'/'+locale+'/masters?view=mentors')
+    assert.ok(nodes(tree).some(x=>Object.hasOwn(x.props||{},'data-profi-finder')))
+    assert.ok(paths.every(x=>x.type==='a' || typeof x.type==='function'))
+  }
+  assert.match(hub,/findChoice: "Найти мастера"/)
+  assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
+  assert.match(hub,/proChoice: "Я уже мастер — предложить услуги"/)
+  assert.match(hub,/No earnings, number of clients or payments are guaranteed/)
 })
 
 test('Pro shows a single free introduction followed by three distinct paid master programmes in EN/RU/ES', () => {

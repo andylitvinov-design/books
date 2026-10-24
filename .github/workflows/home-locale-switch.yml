@@ -6,6 +6,11 @@ on:
       - 'components/home-featured-workspace.tsx'
       - 'components/home-featured-workspace.module.css'
       - 'tests/home-featured-workspace.test.mjs'
+      - 'tests/personality-profiles-builder.test.mjs'
+      - 'components/personality-profiles-builder.tsx'
+      - 'components/personality-profiles-builder.module.css'
+      - 'lib/profile/profile-battery.js'
+      - 'app/[locale]/personality-profiles/page.tsx'
       - 'tests/home-master-path.test.mjs'
       - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-core-methods.tsx'
@@ -23,6 +28,11 @@ on:
       - 'components/home-featured-workspace.tsx'
       - 'components/home-featured-workspace.module.css'
       - 'tests/home-featured-workspace.test.mjs'
+      - 'tests/personality-profiles-builder.test.mjs'
+      - 'components/personality-profiles-builder.tsx'
+      - 'components/personality-profiles-builder.module.css'
+      - 'lib/profile/profile-battery.js'
+      - 'app/[locale]/personality-profiles/page.tsx'
       - 'tests/home-master-path.test.mjs'
       - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-core-methods.tsx'
@@ -50,8 +60,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Seven-step immersion, existing methods, privacy, typecheck and lint
         run: |
-          node --test tests/home-featured-workspace.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs
-          npx eslint components/home-featured-workspace.tsx components/home-core-methods.tsx components/holistic-house-home.tsx app/es/page.tsx
+          node --test tests/home-featured-workspace.test.mjs tests/personality-profiles-builder.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs
+          npx eslint components/home-featured-workspace.tsx components/personality-profiles-builder.tsx lib/profile/profile-battery.js app/'[locale]'/personality-profiles/page.tsx components/home-core-methods.tsx components/holistic-house-home.tsx app/es/page.tsx
           npx tsc --noEmit
       - name: Build three home locales with reviewed dependencies
         run: npm run build
