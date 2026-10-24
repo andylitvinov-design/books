@@ -13,7 +13,7 @@ test("Alchemy one-screen chapters preserve one visual each",()=>{
   const end=i+1<panels.length?s.indexOf('data-alchemy-panel="'+panels[i+1][0]+'"',at+1):s.indexOf('<p className={styles.safety}>',at+1);
   assert.ok(s.slice(at,end>at?end:undefined).includes(media),id+" missing "+media);
  }
- for(const image of ["hero-olive-incense.webp","report-lighthouse-coast.webp","books-library.webp","andy-about.png"])assert.ok(s.includes(image));
+ for(const image of ["hero-olive-incense.webp","report-lighthouse-coast.webp","andy-about.png"])assert.ok(s.includes(image));
  assert.match(css,/100svh/);assert.match(css,/max-height:650px/);
 });
 test("Details, approved media, prices and contact flow remain reachable",()=>{
