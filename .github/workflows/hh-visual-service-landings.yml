@@ -21,6 +21,7 @@ on:
       - 'components/public-antistress-landing.module.css'
       - 'components/remote-energy-support-booking.module.css'
       - 'tests/visual-landing-sitewide-audit.test.mjs'
+      - 'scripts/verify-public-landing-matrix.mjs'
       - 'components/personal-service-landing.module.css'
       - 'components/core-service-detail.tsx'
       - 'components/core-service-detail.module.css'
@@ -90,6 +91,7 @@ jobs:
             if curl --silent --fail http://127.0.0.1:3100/en/services/imagery-therapy >/dev/null; then break; fi
             sleep 2
           done
+          node scripts/verify-public-landing-matrix.mjs
           node scripts/verify-visual-service-mobile.mjs
       - uses: actions/upload-artifact@v4
         if: always()
