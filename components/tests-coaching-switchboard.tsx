@@ -7,28 +7,9 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./tests-coaching-switchboard.module.css";
 
 type Path = "profile" | "temple" | "coaching" | "support";
-type ProfileKind = "personal" | "relationships" | "business" | "whole";
-type Scale = "personality" | "resources" | "wellbeing" | "balance" | "stress";
 type Stage = "invite" | "practice" | "done";
 
-const scaleOrder: Scale[] = ["personality", "resources", "wellbeing", "balance", "stress"];
-// All IDs are already cleared, guest-startable catalog entries. This public
-// selector is only a recommendation UI, never a parallel scorer or report DB.
-const startableTests: Record<Scale, string> = {
-  personality: "mini-ipip-20",
-  resources: "hh-resource-pulse",
-  wellbeing: "hh-weekly-pulse",
-  balance: "hh-monthly-profile",
-  stress: "hh-current-state",
-};
-const defaultScales: Record<ProfileKind, Scale[]> = {
-  personal: ["personality", "resources", "wellbeing"],
-  relationships: ["personality", "resources", "balance"],
-  business: ["personality", "resources", "balance"],
-  whole: [...scaleOrder],
-};
 const pathOrder: Path[] = ["profile", "temple", "coaching", "support"];
-const profileKinds: ProfileKind[] = ["personal", "relationships", "business", "whole"];
 
 const messages = {
   en: {
@@ -43,7 +24,8 @@ const messages = {
       support: { name: "Practice & Support", detail: "Small exercises, courses & personal care", cta: "Find support" },
     },
     close: "Back to four choices",
-    profileLead: "Choose a kind of profile, then the scales you want to explore. We will suggest a set of existing free assessments.",
+    profileLead: "Build a personal, business, wellbeing or comprehensive profile in the dedicated free Profile Builder.",
+    profileDetail: "Choose your life areas, select or customize the scales and free tests, then review your results and development options."
     profileKinds: { personal: "Personal", relationships: "Relationships", business: "Work & business", whole: "Whole-person" },
     scalesTitle: "What would you like to explore?",
     scales: {
@@ -99,7 +81,8 @@ const messages = {
       support: { name: "Практика и поддержка", detail: "Упражнения, курсы и личная помощь", cta: "Найти поддержку" },
     },
     close: "К четырём направлениям",
-    profileLead: "Выберите вид профиля и интересующие шкалы. Мы предложим набор существующих бесплатных тестов.",
+    profileLead: "Для личностного, бизнес-, ресурсного или комплексного профиля используйте единый бесплатный конструктор.",
+    profileDetail: "Выберите сферы и шкалы, отредактируйте набор бесплатных тестов и посмотрите результаты и направления развития."
     profileKinds: { personal: "Личность", relationships: "Отношения", business: "Работа и бизнес", whole: "Комплексный" },
     scalesTitle: "Что вы хотите исследовать?",
     scales: {
@@ -154,7 +137,8 @@ const messages = {
       support: { name: "Práctica y apoyo", detail: "Ejercicios, cursos y apoyo personal", cta: "Buscar apoyo" },
     },
     close: "Volver a las cuatro opciones",
-    profileLead: "Elige un tipo de perfil y las escalas que te interesan. Verás tests gratuitos ya disponibles.",
+    profileLead: "Crea tu perfil personal, empresarial, de bienestar o integral con nuestro único editor gratuito.",
+    profileDetail: "Elige áreas, escalas y pruebas gratuitas; después explora resultados y opciones de desarrollo."
     profileKinds: { personal: "Personal", relationships: "Relaciones", business: "Trabajo y negocios", whole: "Integral" },
     scalesTitle: "¿Qué quieres explorar?",
     scales: {
@@ -204,22 +188,11 @@ const pathIcons = { profile: ClipboardList, temple: Sparkles, coaching: Compass,
 export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: PublicLocale; templeContent: ReactNode }) {
   const t = messages[locale];
   const [path, setPath] = useState<Path | null>(null);
-  const [profileKind, setProfileKind] = useState<ProfileKind>("personal");
-  const [scales, setScales] = useState<Scale[]>(defaultScales.personal);
   const [stage, setStage] = useState<Stage>("invite");
-  const selectedTests = scaleOrder.filter(scale => scales.includes(scale));
 
   function open(next: Path) {
     setPath(current => current === next ? null : next);
   }
-  function chooseProfile(kind: ProfileKind) {
-    setProfileKind(kind);
-    setScales([...defaultScales[kind]]);
-  }
-  function toggleScale(key: Scale) {
-    setScales(current => current.includes(key) ? current.filter(item => item !== key) : [...current, key]);
-  }
-
   return <div className={styles.root} data-tests-coaching-hub>
     <header className={styles.intro}>
       <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" /> {t.eyebrow}</p>
@@ -250,38 +223,22 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
           <h2>{t.paths[path].name}</h2>
           <button type="button" className={styles.close} onClick={() => setPath(null)} aria-label={t.close}><X size={17} aria-hidden="true" /> {t.close}</button>
         </div>
-        {path === "profile" ? <div className={styles.profile} data-profile-builder>
+        {path === "profile" ? <div className={styles.profile} data-personality-profiles-entry>
           <p className={styles.detailLead}>{t.profileLead}</p>
-          <div className={styles.pills} role="group" aria-label={t.paths.profile.name}>
-            {profileKinds.map(kind => <button key={kind} type="button" aria-pressed={profileKind === kind}
-              onClick={() => chooseProfile(kind)}>{t.profileKinds[kind]}</button>)}
-          </div>
-          <h3>{t.scalesTitle}</h3>
-          <div className={styles.scaleActions}>
-            <button type="button" onClick={() => setScales([...scaleOrder])}>{t.selectAll}</button>
-            <button type="button" onClick={() => setScales([])}>{t.clear}</button>
-          </div>
-          <div className={styles.scaleGrid}>
-            {scaleOrder.map(key => <label key={key} className={styles.scale}>
-              <input type="checkbox" checked={scales.includes(key)} onChange={() => toggleScale(key)} />
-              <span>{t.scales[key]}</span>
-            </label>)}
-          </div>
-          <div className={styles.recommendations}>
-            <h3>{t.recommended} <span className={styles.count}>{selectedTests.length}</span></h3>
-            {selectedTests.length ? <>
-              <p className={styles.fine}>{t.steps}</p>
-              <ol className={styles.testList}>{selectedTests.map(scale => <li key={scale}>
-                <span><CheckCircle2 size={17} aria-hidden="true" /> {t.tests[scale]}</span>
-                <Link href={`/${locale === "es" ? "en" : locale}/client?startTests=${startableTests[scale]}`} prefetch={false}>{t.start} <ArrowRight size={15} aria-hidden="true" /></Link>
-              </li>)}</ol>
-            </> : <p className={styles.fine}>{t.noScale}</p>}
-            <div className={styles.links}>
-              <Link href={`/${locale}/client/tests`} prefetch={false}>{t.testCatalog} <ArrowRight size={16} aria-hidden="true" /></Link>
-              <Link href={`/${locale === "es" ? "en" : locale}/app`} prefetch={false}>{t.mySpace} <ArrowRight size={16} aria-hidden="true" /></Link>
+          <div className={styles.subchoices}>
+            <div>
+              <strong><ClipboardList size={18} aria-hidden="true" /> {t.paths.profile.name}</strong>
+              <p>{t.profileDetail}</p>
+              <Link className={styles.primaryLink} href={`/${locale}/personality-profiles`} prefetch={false}>
+                {t.paths.profile.cta} <ArrowRight size={16} aria-hidden="true" />
+              </Link>
             </div>
-            <p className={styles.fine}>{t.afterTests}</p>
           </div>
+          <div className={styles.links}>
+            <Link href={`/${locale}/client/tests`} prefetch={false}>{t.testCatalog} <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link href={`/${locale === "es" ? "en" : locale}/app`} prefetch={false}>{t.mySpace} <ArrowRight size={16} aria-hidden="true" /></Link>
+          </div>
+          <p className={styles.fine}>{t.afterTests}</p>
         </div> : null}
         {path === "temple" ? <div data-tests-coaching-temple>
           <p className={styles.detailLead}>{t.templeLead}</p>
