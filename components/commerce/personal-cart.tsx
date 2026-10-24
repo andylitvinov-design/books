@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, CreditCard, MessageCircle, ShoppingBasket, Trash2 } from "lucide-react";
 import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
 import { restoreServiceCart, SERVICE_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
 import { buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
-import { buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
+import { buildSquarePaymentForServices, formatSquareCadAmount, normalizeSquareCheckoutRedirect } from "@/lib/commerce/square-payment-links";
 import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
 import { buildPayPalHostedCartUrl } from "@/lib/commerce/paypal-hosted-links";
 import styles from "./personal-cart.module.css";
@@ -19,8 +19,8 @@ const copy = {
     back: "Shop", title: "Your cart", subtitle: "Review your consultations and choose how to pay.",
     empty: "Your cart is empty.", choose: "Choose a consultation", remove: "Remove",
     total: "Total", minute: "min", method: "Payment method", square: "Card · Square", paypal: "PayPal", interac: "Interac · Canada", zen: "ZEN.COM", wise: "Wise",
-    squareAction: "Pay by card with Square", interacAction: "Ask for Interac transfer details",
-    squareNote: "Square Canada charges in CAD, not EUR. Check the CAD price and payee on Square before paying. We verify receipt manually; no appointment is booked.",
+    squareAction: "Pay by card with Square", squarePending: "Opening secure Square checkout…", squareRefresh: "Check payment status", squareRepeat: "Buy another session", squareRepeatConfirm: "This selection was already paid. Confirm buying another session?", squareStatusPending: "Your Square payment is not confirmed yet. We will update it only after verifying Square’s record.", squareStatusPaid: "Payment received and verified by Square. Session time is confirmed separately.", squareStatusReview: "Payment needs review. Please contact us before booking.", squareSignIn: "Sign in to securely pay", squareFailed: "Square checkout could not be verified. You have not been charged by this request. Check your order before retrying.", interacAction: "Ask for Interac transfer details",
+    squareNote: "Square Canada charges in CAD, not EUR. Check the CAD price and payee on Square before paying. We verify receipt manually; no appointment is booked.", squareAutoNote: "Square charges the displayed CAD total; the order status is verified with Square automatically. Payment does not book a session.",
     cardUnavailable: "Card checkout is not connected yet. PayPal or Interac are available below; please never send card numbers in a message.",
     interacNote: "Canada only. Ask for the exact CAD quote and verified recipient before transferring. This button does not collect payment.",
     paypalAction: "Continue to PayPal.Me", hostedPayPalAction: "Secure PayPal checkout", hostedPayPalNote: "Verify the seller and EUR total on PayPal. Confirmation of funds is checked manually.", verifiedPayPalAction: "Secure checkout · auto confirmation", zenAction: "Request ZEN transfer details",
@@ -36,8 +36,8 @@ const copy = {
     back: "Магазин", title: "Корзина", subtitle: "Проверьте услуги и выберите способ оплаты.",
     empty: "Корзина пока пуста.", choose: "Выбрать консультацию", remove: "Убрать",
     total: "Итого", minute: "мин", method: "Способ оплаты", square: "Картой · Square", paypal: "PayPal", interac: "Interac · Канада", zen: "ZEN.COM", wise: "Wise",
-    squareAction: "Оплатить картой через Square", interacAction: "Запросить реквизиты Interac",
-    squareNote: "Square Canada списывает сумму в CAD, а не EUR. Проверьте получателя и сумму в CAD. Поступление проверяется вручную; время сеанса не бронируется.",
+    squareAction: "Оплатить картой через Square", squarePending: "Открываем защищённую оплату Square…", squareRefresh: "Проверить оплату", squareRepeat: "Купить ещё одну сессию", squareRepeatConfirm: "Такая сессия уже оплачена. Подтвердите покупку ещё одной.", squareStatusPending: "Оплата в Square ещё не подтверждена. Статус изменится только после проверки у провайдера.", squareStatusPaid: "Оплата подтверждена Square. Время сеанса согласуется отдельно.", squareStatusReview: "Оплата требует проверки. Свяжитесь с нами перед бронированием.", squareSignIn: "Войти для защищённой оплаты", squareFailed: "Не удалось подтвердить создание оплаты. Запрос не списывает деньги. Проверьте заказ перед повторной попыткой.", interacAction: "Запросить реквизиты Interac",
+    squareNote: "Square Canada списывает сумму в CAD, а не EUR. Проверьте получателя и сумму в CAD. Поступление проверяется вручную; время сеанса не бронируется.", squareAutoNote: "Square списывает указанную сумму CAD. Поступление проверяется автоматически у Square. Оплата не бронирует время сеанса.",
     cardUnavailable: "Оплата картой на сайте пока не подключена. Доступны PayPal или запрос Interac; не отправляйте данные карты в сообщениях.",
     interacNote: "Только Канада. До перевода уточните сумму в CAD и проверенные реквизиты. Эта кнопка не списывает деньги.",
     paypalAction: "Перейти в PayPal.Me", hostedPayPalAction: "Оплатить через PayPal", hostedPayPalNote: "Проверьте получателя и итоговую сумму EUR в PayPal. Поступление подтверждаем вручную.", verifiedPayPalAction: "Оплатить с автоподтверждением", zenAction: "Запросить реквизиты ZEN",
@@ -53,8 +53,8 @@ const copy = {
     back: "Tienda", title: "Tu carrito", subtitle: "Revisa las consultas y elige cómo pagar.",
     empty: "El carrito está vacío.", choose: "Elegir una consulta", remove: "Quitar",
     total: "Total", minute: "min", method: "Forma de pago", square: "Tarjeta · Square", paypal: "PayPal", interac: "Interac · Canadá", zen: "ZEN.COM", wise: "Wise",
-    squareAction: "Pagar con tarjeta mediante Square", interacAction: "Solicitar datos para Interac",
-    squareNote: "Square Canada cobra en CAD, no en EUR. Comprueba el precio en CAD y el destinatario. Verificamos el pago manualmente; no reserva cita.",
+    squareAction: "Pagar con tarjeta mediante Square", squarePending: "Abriendo pago seguro de Square…", squareRefresh: "Comprobar el pago", squareRepeat: "Comprar otra sesión", squareRepeatConfirm: "Esta selección ya fue pagada. Confirma si deseas comprar otra sesión.", squareStatusPending: "Square aún no ha confirmado el pago. Solo actualizaremos el estado tras verificarlo.", squareStatusPaid: "Pago recibido y verificado por Square. La cita se confirma aparte.", squareStatusReview: "El pago necesita revisión. Contáctanos antes de reservar.", squareSignIn: "Inicia sesión para pagar", squareFailed: "No se pudo verificar el inicio del pago. Esta solicitud no carga tu tarjeta. Comprueba el pedido antes de reintentar.", interacAction: "Solicitar datos para Interac",
+    squareNote: "Square Canada cobra en CAD, no en EUR. Comprueba el precio en CAD y el destinatario. Verificamos el pago manualmente; no reserva cita.", squareAutoNote: "Square cobra el importe CAD mostrado. Verificamos automáticamente el pago con Square; no reserva la cita.",
     cardUnavailable: "El pago directo con tarjeta aún no está conectado. Usa PayPal o solicita Interac; no compartas datos de la tarjeta por mensajes.",
     interacNote: "Solo Canadá. Solicita la cantidad exacta en CAD y un destinatario verificado antes de transferir. Esto no cobra dinero.",
     paypalAction: "Continuar a PayPal.Me", hostedPayPalAction: "Pagar con PayPal", hostedPayPalNote: "Comprueba el vendedor y el importe EUR en PayPal. Confirmamos manualmente los fondos recibidos.", verifiedPayPalAction: "Pago seguro · confirmación automática", zenAction: "Solicitar datos para ZEN",
@@ -68,20 +68,29 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, verifiedPayPalEnabled, hostedPayPalLinks }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
   hostedPayPalLinks: Record<string, string>;
   wiseEnabled: boolean;
   squareLinks: Record<string, {url: string; amountMinor: number; currency: string}>;
+  squareApiEnabled: boolean;
+  squareApiEnvironment: 'production' | 'sandbox';
+  squareApiPrices: Record<string, number>;
 }) {
   const t = copy[locale];
   const id = useId();
   const products = publicServiceCatalog(locale);
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
-  const [method, setMethod] = useState<Method>(Object.keys(squareLinks).length ? "square" : paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : "interac");
+  const [method, setMethod] = useState<Method>(squareApiEnabled || Object.keys(squareLinks).length ? "square" : paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : "interac");
+  const [squareBusy, setSquareBusy] = useState(false);
+  const [squareOrderId, setSquareOrderId] = useState<string | null>(null);
+  const [squareRepeatOf, setSquareRepeatOf] = useState<string | null>(null);
+  const [squareError, setSquareError] = useState<string | null>(null);
+  const [squareStatus, setSquareStatus] = useState<"paid" | "payment_review" | "pending" | "checkout_ready" | "failed" | null>(null);
+  const squareOperation = useRef<{key: string; id: string} | null>(null);
 
   useEffect(() => {
     let stored: string[] = [];
@@ -95,7 +104,24 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     try { window.sessionStorage.setItem(SERVICE_CART_STORAGE_KEY, JSON.stringify(initial)); }
     catch { /* No personal data is stored. */ }
     window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
-  }, []);
+    const orderId = new URLSearchParams(window.location.search).get("squareOrder");
+    if (squareApiEnabled && orderId && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(orderId)) {
+      setSquareOrderId(orderId);
+      fetch("/api/payments/square/status?orderId=" + encodeURIComponent(orderId) + "&refresh=1", {
+        credentials: "same-origin", cache: "no-store",
+      }).then(async response => {
+        const data = await response.json();
+        if (response.ok && data?.order?.status) {
+          setSquareStatus(data.order.status);
+          // Recover the server-owned items when Square returns in another tab
+          // or when sessionStorage has been cleared; never trust URL pricing.
+          if (Array.isArray(data.order.items))
+            setSelected(restoreServiceCart(JSON.stringify(data.order.items)));
+          if (data.order.status === "paid" || data.order.status === "payment_review") setMethod("square");
+        } else setSquareError(data?.error || "SQUARE_ORDER_UNAVAILABLE");
+      }).catch(() => setSquareError("SQUARE_ORDER_UNAVAILABLE"));
+    }
+  }, [squareApiEnabled]);
 
   const chosen = products.filter(product => selected.includes(product.id));
   const total = chosen.reduce((sum, product) => sum + product.amountMinor, 0);
@@ -104,6 +130,9 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   const zenUrl = buildZenTransferInquiry(chosen.map(product => product.id), locale);
   const interacUrl = buildInteracTransferInquiry(chosen.map(product => product.id), locale);
   const squarePayment = buildSquarePaymentForServices(chosen.map(product => product.id), squareLinks);
+  const squareApiCad = squareApiEnabled && chosen.length ? squareApiPrices[total] : null;
+  const squareAvailable = Boolean(squarePayment) || (Number.isSafeInteger(squareApiCad) && Number(squareApiCad) > 0);
+  const squareCadAmount = squareApiCad || squarePayment?.amountMinor || null;
   const description = chosen.map(product => product.title + " (" + product.durationMinutes + " min)").join(", ");
   const bookingMessage = locale === "ru"
     ? `Здравствуйте! Интересуют: ${description}. Сумма €${total / 100}. Подскажите доступное время и порядок оплаты. Пока не платил(а).`
@@ -111,7 +140,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
       ? `Hola. Me interesan: ${description}. Total €${total / 100}. ¿Qué horarios hay disponibles? Todavía no he pagado.`
       : `Hello! I am interested in: ${description}. Total €${total / 100}. Please confirm availability and payment instructions. I have not paid yet.`;
   const paymentLabel = ({ square: "Square card", paypal: "PayPal", interac: "Interac e-Transfer", zen: "ZEN.COM", wise: "Wise" } as const)[method];
-  const receiptAmount = method === "square" && squarePayment ? formatSquareCadAmount(squarePayment.amountMinor, locale) : method === "interac" ? "[agreed CAD amount]" : "€" + String(total / 100);
+  const receiptAmount = method === "square" && squareCadAmount ? formatSquareCadAmount(squareCadAmount, locale) : method === "interac" ? "[agreed CAD amount]" : "€" + String(total / 100);
   const receiptMessage = locale === "ru"
     ? `Здравствуйте! Хочу подтвердить перевод ${receiptAmount} за ${description}. Способ оплаты: ${paymentLabel}. ID транзакции: [введите ID]. Проверьте поступление и подтвердите время сеанса.`
     : locale === "es"
@@ -119,6 +148,55 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
       : `Hello! Please verify my ${receiptAmount} payment for ${description} via ${paymentLabel}. Transaction ID: [insert ID]. Please confirm receipt and session time.`;
   const bookingUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(bookingMessage);
   const receiptUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(receiptMessage);
+
+  async function refreshSquareStatus() {
+    if (!squareOrderId || squareBusy) return;
+    setSquareBusy(true);
+    setSquareError(null);
+    try {
+      const response = await fetch("/api/payments/square/status?orderId=" + encodeURIComponent(squareOrderId) + "&refresh=1", {
+        credentials: "same-origin", cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.order?.status) throw new Error(result?.error || "SQUARE_ORDER_UNAVAILABLE");
+      setSquareStatus(result.order.status);
+    } catch (error) {
+      setSquareError(error instanceof Error ? error.message : "SQUARE_ORDER_UNAVAILABLE");
+    } finally { setSquareBusy(false); }
+  }
+
+  async function beginSquareCheckout() {
+    if (squareBusy || !squareApiEnabled || !squareApiCad || squareStatus === "paid" || squareStatus === "payment_review") return;
+    const ids = chosen.map(product => product.id);
+    const key = ids.slice().sort().join("+");
+    if (!squareOperation.current || squareOperation.current.key !== key)
+      squareOperation.current = { key, id: window.crypto.randomUUID() };
+    setSquareBusy(true);
+    setSquareError(null);
+    try {
+      const response = await fetch("/api/payments/square/checkout", {
+        method: "POST", credentials: "same-origin", cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operationId: squareOperation.current.id, items: ids, locale,
+          ...(squareRepeatOf ? { repeatOf: squareRepeatOf } : {}) }),
+      });
+      const result = await response.json();
+      if (!response.ok || result?.error) throw new Error(result?.error || "SQUARE_CHECKOUT_UNAVAILABLE");
+      if (result?.repeatPurchaseRequired && typeof result?.order?.id === "string") {
+        setSquareRepeatOf(result.order.id);
+        squareOperation.current = null;
+        setSquareBusy(false);
+        return;
+      }
+      const redirect = result?.redirectUrl;
+      if (typeof redirect !== "string" || normalizeSquareCheckoutRedirect(redirect, squareApiEnvironment) !== redirect)
+        throw new Error("SQUARE_RECONCILIATION_REQUIRED");
+      window.location.assign(redirect);
+    } catch (error) {
+      setSquareError(error instanceof Error ? error.message : "SQUARE_CHECKOUT_UNAVAILABLE");
+      setSquareBusy(false);
+    }
+  }
 
   function remove(id: string) {
     const next = selected.filter(item => item !== id);
@@ -154,19 +232,48 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
         <fieldset className={styles.methods}>
           <legend>{t.method}</legend>
           <div className={styles.methodChoices}>
-            {squarePayment && <label data-chosen={method === "square"}><input type="radio" name={id + "-payment"} checked={method === "square"} onChange={() => setMethod("square")} />{t.square}</label>}
+            {squareAvailable && <label data-chosen={method === "square"}><input type="radio" name={id + "-payment"} checked={method === "square"} onChange={() => setMethod("square")} />{t.square}</label>}
             {(paypalEnabled || verifiedPayPalEnabled || Boolean(hostedPayPalUrl)) && <label data-chosen={method === "paypal"}><input type="radio" name={id + "-payment"} checked={method === "paypal"} onChange={() => setMethod("paypal")} />{t.paypal}</label>}
             <label data-chosen={method === "interac"}><input type="radio" name={id + "-payment"} checked={method === "interac"} onChange={() => setMethod("interac")} />{t.interac}</label>
             <label data-chosen={method === "zen"}><input type="radio" name={id + "-payment"} checked={method === "zen"} onChange={() => setMethod("zen")} />{t.zen}</label>
             {wiseEnabled && <label data-chosen={method === "wise"}><input type="radio" name={id + "-payment"} checked={method === "wise"} onChange={() => setMethod("wise")} />{t.wise}</label>}
           </div>
         </fieldset>
-        {!squarePayment && !hostedPayPalUrl && !verifiedPayPalEnabled && <p className={styles.hint} data-card-unavailable>{t.cardUnavailable}</p>}
+        {!squareAvailable && !hostedPayPalUrl && !verifiedPayPalEnabled && <p className={styles.hint} data-card-unavailable>{t.cardUnavailable}</p>}
         <div className={styles.payment} aria-live="polite">
-          {method === "square" && squarePayment ? <>
-            <a className={styles.primary} href={squarePayment.url} target="_blank" rel="noopener noreferrer" data-cart-square-payment-link>
+          {method === "square" && squareAvailable ? <>
+            {squareApiEnabled && squareApiCad ? <button className={styles.primary} type="button"
+              onClick={beginSquareCheckout} disabled={squareBusy || squareStatus === "paid" || squareStatus === "payment_review"}
+              data-cart-square-api-checkout>
+              <CreditCard size={18} aria-hidden="true" />
+              {squareBusy ? t.squarePending : t.squareAction + " · " + formatSquareCadAmount(squareApiCad, locale)}
+              <ArrowRight size={16} aria-hidden="true" />
+            </button> : null}
+            {squareApiEnabled && squareRepeatOf ? <p className={styles.hint} role="status" data-cart-square-buy-again-confirmation>
+              {t.squareRepeatConfirm}
+            </p> : null}
+            {squareApiEnabled && squareOrderId && squareStatus === "paid" ? <button
+              type="button" className={styles.booking} onClick={() => {
+                setSquareRepeatOf(squareOrderId);
+                setSquareStatus(null);
+                setSquareOrderId(null);
+                squareOperation.current = null;
+              }} data-cart-square-buy-again>{t.squareRepeat}</button> : null}
+            {squareApiEnabled && squareOrderId && squareStatus !== "paid" && squareStatus !== "payment_review" ? <button
+              type="button" className={styles.booking} disabled={squareBusy} onClick={refreshSquareStatus}
+              data-cart-square-refresh>{t.squareRefresh}</button> : null}
+            {squareApiEnabled && squareStatus ? <p className={styles.hint} role="status" data-cart-square-verified-status>
+              {squareStatus === "paid" ? t.squareStatusPaid :
+               squareStatus === "payment_review" ? t.squareStatusReview : t.squareStatusPending}
+            </p> : null}
+            {squareApiEnabled && squareError ? <p className={styles.hint} role="alert" data-cart-square-error>
+              {squareError === "SIGN_IN_REQUIRED" || squareError === "ACCOUNT_UNAVAILABLE" ?
+                <Link href={"/" + locale + "/app"}>{t.squareSignIn}</Link> :
+                t.squareFailed}
+            </p> : null}
+            {!squareApiEnabled && squarePayment ? <a className={styles.primary} href={squarePayment.url} target="_blank" rel="noopener noreferrer" data-cart-square-payment-link>
               <CreditCard size={18} aria-hidden="true" />{t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)}<ArrowRight size={16} aria-hidden="true" />
-            </a><p className={styles.hint}>{t.squareNote}</p>
+            </a> : null}<p className={styles.hint}>{squareApiEnabled ? t.squareAutoNote : t.squareNote}</p>
           </> : method === "paypal" && (paypalUrl || hostedPayPalUrl || verifiedPayPalEnabled) ? <>
             {verifiedPayPalEnabled ? <Link className={styles.primary}
               href={`/${locale}/services/checkout?items=${chosen.map(product => product.id).join(",")}`}
@@ -194,7 +301,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
               <CreditCard size={18} aria-hidden="true" />{t.wiseItem} {formatServiceAmount(product.amountMinor, locale)}<ArrowRight size={16} aria-hidden="true" />
             </a>)}<p className={styles.hint}>{t.wiseNote}</p>
           </> : null}
-          {(method === "paypal" || method === "wise" || method === "interac" || (method === "square" && Boolean(squarePayment))) && <a className={styles.receipt} href={receiptUrl} target="_blank" rel="noopener noreferrer">{t.afterPay}</a>}
+          {(method === "paypal" || method === "wise" || method === "interac" || (method === "square" && Boolean(squarePayment) && !squareApiEnabled)) && <a className={styles.receipt} href={receiptUrl} target="_blank" rel="noopener noreferrer">{t.afterPay}</a>}
         </div>
         <a className={styles.booking} href={bookingUrl} target="_blank" rel="noopener noreferrer">
           <MessageCircle size={16} aria-hidden="true" />{t.book}
