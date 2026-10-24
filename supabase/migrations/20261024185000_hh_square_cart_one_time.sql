@@ -134,7 +134,7 @@ create trigger square_service_order_guard before update on app_private.square_se
 -- Only a pending order may be inserted, regardless of the caller's column grants.
 -- Payment proof is generated later exclusively by the server with provider readback.
 create function app_private.square_service_order_insert_guard()
-returns trigger language plpgsql security invoker set search_path = '' as $
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
  if new.status <> 'pending' or new.square_link_id is not null or
     new.square_order_id is not null or new.square_payment_id is not null or
@@ -144,7 +144,7 @@ begin
    raise exception 'SQUARE_INSERT_UNVERIFIED';
  end if;
  return new;
-end $;
+end $$;
 revoke all on function app_private.square_service_order_insert_guard() from public,anon,authenticated,hh_app_inbox;
 grant execute on function app_private.square_service_order_insert_guard() to hh_app_backend;
 create trigger square_service_order_insert_guard
