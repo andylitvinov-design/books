@@ -20,7 +20,7 @@ const messages = {
     paths: {
       profile: { name: "Know Yourself", detail: "Tests, personal profile & growth plan", cta: "Build my profile" },
       temple: { name: "Temple Insights", detail: "Taoist symbols & temple archetypes", cta: "Explore insights" },
-      coaching: { name: "Coaching Sessions", detail: "Guided conversations and traditions", cta: "Find a session" },
+      coaching: { name: "Coaching Sessions", detail: "Choose your topic and discover suitable coaching sessions", cta: "Choose a session" },
       support: { name: "Practice & Support", detail: "Small exercises, courses & personal care", cta: "Find support" },
     },
     close: "All four paths",
@@ -50,12 +50,6 @@ const messages = {
     archetypeLabel: "Temple archetypes", archetypeDescription: "Explore the existing Greek and Egyptian guided traditions.",
     greek: "Greek tradition", egypt: "Egyptian tradition",
     personalReading: "Request a personal Daoist reading",
-    coachingLead: "Choose your own method and pace. Each session explains what it is for before you begin.",
-    lounge: "Explore all sessions by topic",
-    self: "Self-guided coaching", selfDetail: "Free models for decisions, goals, relationships and resources.",
-    traditions: "Temple traditions", traditionsDetail: "Greek and Egyptian guided courses.",
-    human: "Personal session", humanDetail: "Talk with Andrey · €50 / 30 min or €100 / 60 min. Request, not an instant booking.",
-    learn: "Choose a session", book: "Explore personal sessions",
     supportLead: "A little steadiness can begin in two minutes. Choose your pace; stop whenever you like.",
     immediate: "Find your ground", immediateDetail: "A gentle, guided way to notice support around you.",
     try: "Try a 2-minute practice", skip: "Not now",
@@ -77,7 +71,7 @@ const messages = {
     paths: {
       profile: { name: "Познать себя", detail: "Тесты, профиль и программа развития", cta: "Создать профиль" },
       temple: { name: "Храмовые подсказки", detail: "Даосские символы и архетипы", cta: "Получить подсказку" },
-      coaching: { name: "Коучинг-сессии", detail: "Беседа и разные традиции", cta: "Выбрать сессию" },
+      coaching: { name: "Коучинг-сессии", detail: "Выберите тему и найдите подходящую коуч-сессию", cta: "Подобрать сессию" },
       support: { name: "Практика и поддержка", detail: "Упражнения, курсы и личная помощь", cta: "Найти поддержку" },
     },
     close: "Все направления",
@@ -106,12 +100,6 @@ const messages = {
     archetypeLabel: "Храмовые архетипы", archetypeDescription: "Исследуйте существующие греческие и египетские традиции.",
     greek: "Греческая традиция", egypt: "Египетская традиция",
     personalReading: "Запросить личное даосское чтение",
-    coachingLead: "Выберите метод и темп. Перед началом каждая сессия объясняет свою задачу.",
-    lounge: "Все сессии с фильтром по темам",
-    self: "Самостоятельный коучинг", selfDetail: "Бесплатные модели для целей, решений, отношений и ресурсов.",
-    traditions: "Храмовые традиции", traditionsDetail: "Греческие и египетские программы.",
-    human: "Личная сессия", humanDetail: "С Андреем · €50 / 30 мин или €100 / 60 мин. Запрос, не мгновенная бронь.",
-    learn: "Выбрать сессию", book: "Изучить личные сессии",
     supportLead: "Иногда двух минут достаточно, чтобы почувствовать опору. Выберите свой темп; остановиться можно в любой момент.",
     immediate: "Найти опору прямо сейчас", immediateDetail: "Бережная практика внимания к тому, что поддерживает.",
     try: "Попробовать · 2 минуты", skip: "Не сейчас",
@@ -133,7 +121,7 @@ const messages = {
     paths: {
       profile: { name: "Conócete", detail: "Tests, perfil y plan de desarrollo", cta: "Crear mi perfil" },
       temple: { name: "Reflexiones del templo", detail: "Símbolos taoístas y arquetipos", cta: "Explorar símbolos" },
-      coaching: { name: "Sesiones de coaching", detail: "Conversaciones y tradiciones", cta: "Elegir sesión" },
+      coaching: { name: "Sesiones de coaching", detail: "Elige un tema y encuentra la sesión adecuada", cta: "Elegir sesión" },
       support: { name: "Práctica y apoyo", detail: "Ejercicios, cursos y apoyo personal", cta: "Buscar apoyo" },
     },
     close: "Las cuatro opciones",
@@ -162,12 +150,6 @@ const messages = {
     archetypeLabel: "Arquetipos del templo", archetypeDescription: "Explora las tradiciones guiadas griega y egipcia.",
     greek: "Tradición griega", egypt: "Tradición egipcia",
     personalReading: "Solicitar una lectura taoísta personal",
-    coachingLead: "Elige el método y el ritmo. Cada sesión explica su propósito antes de empezar.",
-    lounge: "Explorar sesiones por tema",
-    self: "Coaching autoguiado", selfDetail: "Modelos gratuitos para metas, decisiones, relaciones y recursos.",
-    traditions: "Tradiciones del templo", traditionsDetail: "Cursos guiados griegos y egipcios.",
-    human: "Sesión personal", humanDetail: "Con Andrey · €50 / 30 min o €100 / 60 min. Solicitud, no reserva instantánea.",
-    learn: "Elegir una sesión", book: "Explorar sesiones personales",
     supportLead: "Un poco de calma puede empezar en dos minutos. Elige tu ritmo; puedes parar cuando quieras.",
     immediate: "Encuentra tu punto de apoyo", immediateDetail: "Una práctica suave para notar lo que te sostiene.",
     try: "Probar · 2 minutos", skip: "Ahora no",
@@ -185,9 +167,9 @@ const messages = {
 
 const pathIcons = { profile: ClipboardList, temple: Sparkles, coaching: Compass, support: HeartHandshake };
 const quickCtas: Record<PublicLocale, Record<Path, string>> = {
-  en: { profile: "Start free", temple: "Get inspired", coaching: "Find a session", support: "Try 2 minutes" },
-  ru: { profile: "Начать", temple: "Подсказки", coaching: "К сессиям", support: "2 минуты" },
-  es: { profile: "Empezar", temple: "Inspirarme", coaching: "Ver sesiones", support: "Probar 2 min" },
+  en: { profile: "Start free", temple: "Get inspired", coaching: "Choose by topic", support: "Try 2 minutes" },
+  ru: { profile: "Начать", temple: "Подсказки", coaching: "Выбрать тему", support: "2 минуты" },
+  es: { profile: "Empezar", temple: "Inspirarme", coaching: "Elegir tema", support: "Probar 2 min" },
 };
 const supportTime: Record<PublicLocale, string> = {
   en: "01 · A 2-MINUTE PAUSE", ru: "01 · ПРАКТИКА НА 2 МИНУТЫ", es: "01 · PAUSA DE 2 MINUTOS",
@@ -219,13 +201,7 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
       {pathOrder.map((key, index) => {
         const Icon = pathIcons[key];
         const item = t.paths[key];
-        return <button type="button" key={key} className={styles.card}
-          ref={index === 0 ? firstCardRef : undefined}
-          data-tests-coaching-path={key}
-          data-active={path === key ? "true" : "false"}
-          aria-expanded={path === key}
-          aria-controls="tests-coaching-detail"
-          onClick={() => open(key)}>
+        const content = <>
           <span className={styles.cardTop}>
             <span className={styles.cardIcon}><Icon size={22} aria-hidden="true" /></span>
             <span className={styles.cardNumber} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
@@ -236,7 +212,23 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
             <span className={styles.cardCta}>{quickCtas[locale][key]}</span>
             <span className={styles.cardArrow}><ArrowRight size={15} aria-hidden="true" /></span>
           </span>
-        </button>;
+        </>;
+        // Coaching is already a topic-first chooser. Do not open another
+        // "self-guided / traditions / personal" interstitial before it.
+        return key === "coaching"
+          ? <Link key={key} className={styles.card} href={`/${locale}/coaching`}
+              data-tests-coaching-path={key} data-tests-coaching-direct prefetch={false}>
+              {content}
+            </Link>
+          : <button type="button" key={key} className={styles.card}
+              ref={index === 0 ? firstCardRef : undefined}
+              data-tests-coaching-path={key}
+              data-active={path === key ? "true" : "false"}
+              aria-expanded={path === key}
+              aria-controls="tests-coaching-detail"
+              onClick={() => open(key)}>
+              {content}
+            </button>;
       })}
     </nav>
     <section id="tests-coaching-detail" ref={detailRef} tabIndex={-1} className={styles.detail} hidden={!path} aria-live="polite" aria-label={path ? t.paths[path].name : undefined}>
@@ -275,21 +267,6 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
           </div>
           <Link className={styles.primaryLink} href={`/${locale}/temple-support`} prefetch={false}>Temple Support <ArrowRight size={16} aria-hidden="true" /></Link>
           {templeContent}
-        </div> : null}
-        {path === "coaching" ? <div data-tests-coaching-sessions>
-          <p className={styles.detailLead}>{t.coachingLead}</p>
-          <div className={styles.subchoices}>
-            <div><strong><Compass size={18} aria-hidden="true" /> {t.self}</strong><p>{t.selfDetail}</p>
-              <Link className={styles.primaryLink} href={`/${locale}/coaching`} prefetch={false}>{t.learn} <ArrowRight size={16} aria-hidden="true" /></Link></div>
-            <div><strong><BookOpen size={18} aria-hidden="true" /> {t.traditions}</strong><p>{t.traditionsDetail}</p>
-              <div className={styles.links}>
-                <Link href={`/${locale}/academy/coaching/greek`} prefetch={false}>{t.greek} <ArrowRight size={15} aria-hidden="true" /></Link>
-                <Link href={`/${locale}/academy/coaching/egyptian`} prefetch={false}>{t.egypt} <ArrowRight size={15} aria-hidden="true" /></Link>
-              </div></div>
-            <div><strong><HeartHandshake size={18} aria-hidden="true" /> {t.human}</strong><p>{t.humanDetail}</p>
-              <Link className={styles.primaryLink} href={`/${locale}/services#consultation`} prefetch={false}>{t.book} <ArrowRight size={16} aria-hidden="true" /></Link></div>
-          </div>
-          <Link className={styles.wideLink} href={`/${locale}/coaching`} prefetch={false}>{t.lounge} <ArrowRight size={18} aria-hidden="true" /></Link>
         </div> : null}
         {path === "support" ? <div className={styles.supportJourney} data-tests-coaching-support>
           <p className={styles.detailLead}>{t.supportLead}</p>
