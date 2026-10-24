@@ -5,8 +5,9 @@ import Link from 'next/link'
 import {ArrowRight,Check,ChevronLeft,LockKeyhole,Trash2,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
-import {coachingGentleGuide,coachingQuickChoicesAllowed} from '@/lib/personal-coaching/gentle-dialogue'
+import {coachingGentleGuide,coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
 import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
 import {coachingRequestTopicLabel} from '@/lib/coaching/session-onboarding'
 import base from './personal-coaching.module.css'
@@ -44,6 +45,11 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const question=questions[index]
  const quickChoices=coachingQuickChoicesAllowed(question,index)
  const gentleGuide=coachingGentleGuide(question,index,questions.length,lang)
+ const previousQuestion=questions[index-1]
+ const conversationTurn=coachingConversationTurn({
+  question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
+  index,total:questions.length,locale:lang,
+ })
  const stored=question?session?.answers?.[question.id]:undefined
  const dirty=Boolean(session?.status==='active'&&question&&(
    choice!==(stored?.choiceId||'')||note!==(stored?.note||'')
@@ -220,19 +226,17 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       </div>
       <div className={base.questionArea+' '+extra.courseScroll}>
         <span className={base.stage}>{question.title?.[lang]||question.title?.en||question.stage}</span>
+        {gentleGuide&&<div data-tradition-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
         <div className={extra.questionHeader}>
          <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
         </div>
-        <CoachingQuestionVoice key={question.id} text={question.question?.[lang]||''}
+        <CoachingQuestionVoice key={question.id} text={[conversationTurn?.speech,question.question?.[lang]||''].filter(Boolean).join(' ')}
            locale={lang} disabled={busy} onTranscript={value=>{
              setNote(old=>((old?old+' ':'')+value).slice(0,500))
              if(!quickChoices)setChoice('')
              setNotice('');setError('')
            }}/>
-        {quickChoices?<p className={extra.hint}>{question.hint?.[lang]||''}</p>
-          :gentleGuide&&<div className={extra.gentleGuide} data-tradition-gentle-guide>
-            <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
-          </div>}
+        {quickChoices&&<p className={extra.hint}>{question.hint?.[lang]||''}</p>}
         {quickChoices&&<div className={extra.choices} role="radiogroup" aria-label={question.question?.[lang]} onKeyDown={onChoiceKeyDown}>
           {question.choices?.map((option,optionIndex)=><button type="button" role="radio" key={option.id}
             tabIndex={choice===option.id||(!choice&&optionIndex===0)?0:-1}
