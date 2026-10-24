@@ -253,3 +253,10 @@
 
 /* Keep the newly focused section visible for keyboard users. */
 .detail:focus-visible { outline: 3px solid #187c7b; outline-offset: 3px; }
+
+/* Whole-card hit areas: every visual support row is one real accessible link. */
+.supportSmall { color: inherit; text-decoration: none; }
+.supportSmall:hover { background: #f6faf6; border-color: #7caa95; box-shadow: 0 6px 18px rgb(50 104 83 / 8%); }
+.supportSmall:focus-visible { outline: 3px solid #187c7b; outline-offset: 3px; }
+.supportSmallDescription { display: block; margin-top: 5px; color: #75695b; font: 12px/1.43 Arial,Helvetica,sans-serif; }
+@media (max-width: 600px) { .supportSmallDescription { font-size: 11px; line-height: 1.34; } }
