@@ -14,7 +14,8 @@ test("all three canonical service pages exist in EN/RU/ES with SEO and actual en
     assert.match(page,/isPublicLocale/);
   }
   const component = read("components/personal-service-landing.tsx");
-  assert.match(component, /<PersonalConsultationForm locale={locale} service={t.orderLabel}/);
+  assert.match(component, /<CompactLeadCapture/);
+  assert.match(component, /data-service-visual-screen="final-capture"/);
   assert.match(component, /id="request-session"/);
   assert.match(component, /href="#request-session"/);
   assert.match(component, /t\.questions\.map/);
@@ -82,7 +83,7 @@ test("all personal services have source-backed educational language, approved pr
   assert.match(css, /min-height:56px/);
 });
 
-test("paid individual services retain contextual handoff without a compulsory intake form", () => {
+test("paid individual services end in voluntary CRM capture with receipt", () => {
   const wrapper = read("components/personal-consultation-form.tsx");
   const shared = read("components/consultation-choice-capture.tsx");
   const landing = read("components/personal-service-landing.tsx");
@@ -95,6 +96,9 @@ test("paid individual services retain contextual handoff without a compulsory in
   assert.match(shared, /service: service \|\|/);
   assert.match(shared, /This is an enquiry, not a confirmed booking or payment/);
   assert.match(landing, /id="request-session"/);
-  assert.match(landing, /<PersonalConsultationForm locale=\{locale\} service=\{t.orderLabel\}/);
-  assert.match(css, /\.order :global\(\[data-consultation-capture="service"\]\)/);
+  assert.match(landing, /<CompactLeadCapture/);
+  assert.match(landing, /sourcePath=/);
+  assert.match(landing, /formatOptions=/);
+  assert.match(css, /\.captureContent :global/);
+  assert.match(read("components/compact-lead-capture.tsx"), /result\?\.saved !== true/);
 });
