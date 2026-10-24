@@ -118,9 +118,9 @@ test('coaching lounge displays all formats by default and uses shared wish field
  assert.match(ui,/id="public-coaching-question"/)
  assert.doesNotMatch(ui,/format==='self'&&<>/)
  assert.match(ui,/onChange=\{e=>setQuestion\(e\.target\.value\)\}/)
- assert.match(ui,/setTopic\(e\.target\.value\)/)
- assert.match(ui,/setDuration\(Number\(e\.target\.value\)\)/)
- assert.match(ui,/setStyle\(e\.target\.value\)/)
+ assert.match(ui,/onClick=\{\(\)=>setTopic\(signal\.tag\)\}/)
+ assert.match(ui,/onClick=\{\(\)=>setDuration\(m\)\}/)
+ assert.match(ui,/onClick=\{\(\)=>setStyle\(value\)\}/)
  assert.match(ui,/format!=='human'&&<section/)
  assert.match(ui,/format!=='self'&&<section/)
  assert.match(ui,/traditionKey="egyptian"/)
@@ -340,3 +340,70 @@ test('personal and authored coaching use the existing one-viewport course shell 
   assert.match(opora,/\.scroll\{overflow:auto/)
   assert.match(reiki,/position:fixed;inset:0;z-index:2147483000;height:100dvh/)
 })
+
+
+test('all 19 published coaching schemes use useful EN/RU/ES client-goal names and theme-matched static photos', async ()=>{
+ const {COACHING_SESSION_PRESENTATION,coachingSessionTitle,coachingSessionSummary} =
+   await import('../lib/coaching/session-presentation.js')
+ const {coachingSchemeArt} = await import('../lib/coaching/public-session-art.js')
+ const ids=Object.keys(COACHING_SESSION_PRESENTATION)
+ assert.equal(ids.length,19,'19 currently published free coaching schemes')
+ const original=read('supabase/migrations/20261023183100_hh_coaching_model_catalog_seed.sql')+
+   read('supabase/migrations/20261024171100_hh_tantric_intimacy_coaching_v1.sql')+
+   read('supabase/migrations/20261024175100_hh_coaching_topic_groups_v1.sql')
+ for(const id of ids){
+   assert.ok(original.includes("'"+id+"'"),'known reviewed scheme: '+id)
+   assert.ok(coachingSchemeArt[id],'topic-matched photo: '+id)
+   assert.ok(existsSync(new URL('../public'+coachingSchemeArt[id],import.meta.url)),
+     'first-party artwork exists: '+id)
+   for(const lang of ['en','ru','es']){
+     const title=coachingSessionTitle(id,lang)
+     const summary=coachingSessionSummary(id,lang)
+     assert.ok(title.length>=10&&title.length<=56,id+'/'+lang+' title length')
+     assert.ok(summary.length>=20&&summary.length<=145,id+'/'+lang+' summary length')
+     assert.doesNotMatch(title,/\b(?:GROW|TGROW|OSKAR|WOOP|CLEAR|FUEL|5D)\b/i,
+       'client-facing title is not an unexplained framework acronym: '+id+'/'+lang)
+   }
+ }
+ assert.equal(coachingSessionTitle('future_scheme_v2','ru','Original name'),'Original name')
+ assert.equal(coachingSessionSummary('future_scheme_v2','es','Original summary'),'Original summary')
+ const publicUi=read('components/public-coaching-discovery.jsx')
+ const landing=read('app/[locale]/coaching/session/[sessionId]/page.jsx')
+ const chooser=read('components/app/personal-coaching-picker.jsx')
+ const privatePlayer=read('components/app/personal-coaching.jsx')
+ assert.match(publicUi,/title=\{coachingSessionTitle\(s\.schemeKey,lang,/)
+ assert.match(publicUi,/description=\{coachingSessionSummary\(s\.schemeKey,lang,/)
+ assert.match(publicUi,/coachingSchemeArt\[s\.schemeKey\]/)
+ assert.match(publicUi,/coachingSessionTitle\(session\.schemeKey,lang,/)
+ assert.match(landing,/coachingSessionTitle\(scheme\.schemeKey,locale,/)
+ assert.match(landing,/coachingSchemeArt\[scheme\.schemeKey\]/)
+ assert.match(chooser,/coachingSessionTitle\(scheme\.schemeKey,lang,/)
+ assert.match(privatePlayer,/coachingSessionTitle\(scheme\.schemeKey,lang,/)
+ assert.match(publicUi,/method=\{tr\(model\.name,lang\)\}/,
+   'technical method remains available within details')
+})
+
+test('coaching filters render immediately as accessible pills, not popup selectors',()=>{
+ const ui=read('components/public-coaching-discovery.jsx')
+ const css=read('components/public-coaching-discovery.module.css')
+ for(const line of [
+  'data-coaching-inline-filters','data-coaching-filter="topic"',
+  'data-coaching-filter="duration"','data-coaching-filter="approach"',
+  "topicGroup!=='all'&&<div",
+  '[0,10,20,30,60].map','onClick={()=>setDuration(m)}',
+  'onClick={()=>setTopic(signal.tag)}','onClick={()=>setStyle(value)}',
+  'aria-pressed={duration===m}','aria-pressed={style===value}',
+  'aria-pressed={topic===signal.tag}','role="group" aria-label={t.duration}',
+  'role="group" aria-label={t.style}'
+ ])assert.ok(ui.includes(line),line)
+ assert.ok(ui.indexOf('data-coaching-filter="approach"')<ui.indexOf('id="public-coaching-question"'),'visible choice filters precede the optional question')
+ assert.ok(!ui.includes('<select'),'no dropdowns in lounge')
+ assert.ok(!ui.includes('setDuration(Number(e.target.value))'))
+ assert.ok(css.includes('.pillOptions button[aria-pressed="true"]'))
+ assert.ok(css.includes('.pillScroller{flex-wrap:nowrap;overflow-x:auto'))
+ assert.ok(css.includes('.filterRow[data-coaching-filter="duration"] .pillOptions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))'))
+ assert.ok(css.includes('.filterRow[data-coaching-filter="approach"] .pillOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))'))
+ const narrow=css.slice(css.lastIndexOf('@media(max-width:360px){'))
+ assert.ok(narrow.includes('.topicGroupGrid{grid-template-columns:repeat(3,minmax(0,1fr))}'))
+ for(const line of ["leadCompact:'Choose a topic","leadCompact:'Выберите тему","leadCompact:'Elige un tema","anyShort:'Any'","anyShort:'Любое'","anyShort:'Cualquiera'"])assert.ok(ui.includes(line),line)
+});

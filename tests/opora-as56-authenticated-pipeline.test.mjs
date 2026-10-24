@@ -5,7 +5,7 @@ import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs58Day} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels = {
@@ -64,7 +64,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
-      const daily=oporaAs58Day(day,locale)
+      const daily=oporaAs59Day(day,locale)
       assert.ok(realLifeChoice?.label,'Archive choices must remain available')
       assert.ok(textOf(player.tree).includes(daily.transfer),'The live player uses a single authored action')
       assert.ok(!textOf(player.tree).includes(realLifeChoice.label),'Old choices are hidden in live lessons')
@@ -104,7 +104,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.transferFeeling,undefined,
         'Free-text emotions must never be saved in plain JSONB')
       assert.equal(saved.signals.opora54.answers.transferPlanVersion,'one-v1')
-      assert.equal(saved.signals.opora54.answers.experienceEdition,'as-5.8-one-action-v1')
+      assert.equal(saved.signals.opora54.answers.experienceEdition,'as-5.9-seven-skills-v1')
       if(day===4){
         const answer=locale==='ru'?'спокойствие':'calm'
         assert.deepEqual(payload.practiceEmotion,{customText:answer})
@@ -148,7 +148,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)
     assert.deepEqual(saved.signals.opora54.answers, {
-        experienceEdition:'as-5.8-one-action-v1',lessonConfidence:'explored'})
+        experienceEdition:'as-5.9-seven-skills-v1',lessonConfidence:'explored'})
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
