@@ -417,10 +417,10 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
           </div>
           {situationVideo ? (
-            <div className={[styles.heroVisual, styles.situationVideo].join(" ")} data-featured-constellations-video>
+            <div className={[styles.heroVisual, styles.situationVideo].join(" ")} id="service-video" data-featured-constellations-video>
               <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal posterPriority fallbackPoster={situationVideo.poster} internalOnly />
               <a className={styles.videoSource} href={siteVideoWatchUrl(situationVideo.video)} target="_blank" rel="noopener noreferrer"
-                aria-label={situationFirstScreen[locale].source + " (opens a new tab)"}>
+                aria-label={situationFirstScreen[locale].source}>
                 {situationFirstScreen[locale].source}<ExternalLink size={13} aria-hidden="true" />
               </a>
             </div>
