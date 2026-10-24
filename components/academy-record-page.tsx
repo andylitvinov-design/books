@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 
 import { AcademyBackLink } from "@/components/academy-hub";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import { getServiceVideoMedia } from "@/data/service-video-library";
+import loveIntroStyles from "./academy-love-mysteries-intro.module.css";
 import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
 import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
@@ -104,6 +106,10 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const sourceNotice = sourceLanguageNotice(record, locale);
   const isCanonicalYggdrasil = record.routeKey === "reiki/yggdrasil";
   const isVerbatimTantraArchive = record.logicalId === "reiki/tantra-reiki";
+  // The RU approved overview mentions systemic constellations; the EN original is a real case.
+  const loveVideo = record.logicalId === "mysteries/archetypes-of-love"
+    ? getServiceVideoMedia(locale === "ru" ? "overview" : "constellation-case", locale)
+    : null;
   const archiveLocale: "en" | "ru" = locale === "ru" ? "ru" : "en";
   const mediaItems = mediaForRecord(record);
   const allVideos = mediaItems
@@ -138,6 +144,35 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <p className="homeopathy-kicker">{text.title}</p><h1>{academyDisplayTitle(record, locale)}</h1>
             <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
           </header>
+        ) : null}
+
+        {loveVideo?.video.youtubeId ? (
+          <section className={loveIntroStyles.intro} data-academy-love-intro data-video-language={loveVideo.video.language}
+            aria-label={locale === "ru" ? "Введение: личные расстановки-мистерии" : locale === "es" ? "Introducción: constelaciones personales" : "Introduction: personal constellation mysteries"}>
+            <div className={loveIntroStyles.media}>
+              <p className={loveIntroStyles.eyebrow}>{locale === "ru" ? "Видео · системные расстановки" : locale === "es" ? "Vídeo · constelaciones sistémicas" : "Video · systemic constellations"}</p>
+              <AcademyVideoPlayer youtubeId={loveVideo.video.youtubeId} title={loveVideo.video.title} locale={locale} posterLoading="eager" />
+              <p className={loveIntroStyles.caption}>{locale === "ru"
+                ? "На русском: Андрей объясняет, как выбирает метод, в том числе системные расстановки."
+                : locale === "es"
+                  ? "Audio en inglés: ejemplo de constelaciones aplicadas a una situación empresarial."
+                  : "In English: an example of systemic constellations in a business situation."}</p>
+            </div>
+            <div className={loveIntroStyles.copy}>
+              <p className={loveIntroStyles.eyebrow}>{locale === "ru" ? "О курсе" : locale === "es" ? "Sobre el curso" : "About the course"}</p>
+              <h2>{locale === "ru" ? "Личные расстановки-мистерии" : locale === "es" ? "Misterios de constelación personal" : "Personal constellation mysteries"}</h2>
+              <p>{locale === "ru"
+                ? "Этот курс — серия личных расстановок-мистерий по отдельным темам для внутренней трансформации."
+                : locale === "es"
+                  ? "Este curso es una serie de constelaciones-misterio personales, cada una dedicada a un tema para la transformación interior."
+                  : "This course is a series of personal constellation-mysteries, each exploring a theme for inner transformation."}</p>
+              <p>{locale === "ru"
+                ? "Восемь встреч приглашают исследовать любовь, близость, свободу и внутренние образы через символическую работу. Опыт и результаты индивидуальны."
+                : locale === "es"
+                  ? "Ocho encuentros para explorar el amor, la intimidad, la libertad y los arquetipos. Cada experiencia es individual."
+                  : "Eight themed sessions invite you to explore love, intimacy, freedom and archetypal patterns. Each person's experience is individual."}</p>
+            </div>
+          </section>
         ) : null}
         {["videos/egypt-osiris", "mysteries/egypt/high-wisdom"].includes(record.logicalId) ? (
           <aside className="academy-archive-notice" data-egypt-course-invitation>
