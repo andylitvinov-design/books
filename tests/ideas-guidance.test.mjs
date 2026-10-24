@@ -77,7 +77,7 @@ test("EN/RU/ES books now start with Ideas while retaining book catalogs and cano
   for (const locale of ["en", "ru", "es"]) {
     const books = getCompactNavigation(locale).find(item => item.id === "books");
     assert.equal(books.href, "/" + locale + "/books");
-    assert.equal(navigationCopy[locale].books, locale === "ru" ? "Идеи" : "Ideas");
+    assert.equal(navigationCopy[locale].books, { en: "Ideas & Coaching", ru: "Идеи и коучинг", es: "Ideas y coaching" }[locale]);
     assert.equal(getSiteNavigation(locale).find(item => item.id === "library").href, "/" + locale + "/library");
   }
 });
