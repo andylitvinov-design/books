@@ -65,10 +65,10 @@ async function scenario(locale, surface, fault, visible = true) {
     async toHaveAttribute(name, value) { assert.equal(actual.selected.length, 1); assert.equal(actual.selected[0].props[name], value); },
   });
   const verify = new Function('assert', 'expect', 'getCompactNavigation', helper + '; return assertPublicBottomNavigation;')(assert, expect, model.getCompactNavigation);
-  await verify(bottom, { locale, surface: surface.startsWith('client') ? 'pro' : surface === 'temple-support' ? 'temple' : surface, label: pathname });
+  await verify(bottom, { locale, surface: surface.startsWith('client') ? 'pro' : surface === 'holistic-support' ? 'temple' : surface, label: pathname });
 }
 for (const locale of ['en', 'ru', 'es']) {
-  for (const surface of ['home', 'energy', 'love', 'business', 'library', 'client', 'client/tests', 'temple-support']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
+  for (const surface of ['home', 'energy', 'love', 'business', 'library', 'client', 'client/tests', 'holistic-support']) test(locale + '/' + surface + ' exact verifier accepts real JSX destinations, names and active state', () => scenario(locale, surface));
   for (const fault of ['old courses slot', 'old cabinet slot', 'wrong business destination', 'wrong house destination', 'wrong business label', 'wrong house label', 'wrong accessible name', 'missing link', 'extra link', 'wrong order', 'missing active', 'duplicate active', 'wrong active']) {
     test(locale + ' exact mobile verifier rejects ' + fault, () => assert.rejects(scenario(locale, 'client/tests', fault)));
   }
