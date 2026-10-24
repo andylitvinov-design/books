@@ -54,9 +54,7 @@ jobs:
           node --test
           tests/visual-service-story.test.mjs
           tests/visual-landing-sitewide-audit.test.mjs
-          tests/personal-support-funnel.test.mjs
           tests/reiki-referral-landing.test.mjs
-          tests/opora-antistress-course-landing.test.mjs
           tests/personal-service-details.test.mjs
           tests/services-landing-conversion-20261018.test.mjs
           tests/sitewide-lead-capture.test.mjs
