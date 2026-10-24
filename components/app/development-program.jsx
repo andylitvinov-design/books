@@ -308,7 +308,7 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
           <span className={styles.sectionLinkCopy}><strong>{t.planLink}</strong><small>{t.planLinkHint}</small></span>
           <ChevronDown size={18} className={activePanel === 'plan' ? styles.rotated : ''} aria-hidden="true" />
         </button>
-        <Link href={'/' + lang + '/app/coaching'} prefetch={false} className={styles.sectionLink} data-development-personal-coaching-course>
+        <Link href={'/' + lang + '/coaching'} prefetch={false} className={styles.sectionLink} data-development-personal-coaching-course>
           <span className={styles.sectionLinkIcon}><Target size={18} aria-hidden="true" /></span>
           <span className={styles.sectionLinkCopy}><strong>{t.businessLink}</strong><small>{t.businessHint}</small></span>
           <ArrowRight size={18} aria-hidden="true" />

@@ -496,7 +496,7 @@ export function DirectionOffers({ locale, journey, suggestions }: {
   const selected = journey.topics.find(item => item.id === topicId)
   const appLocale = locale === 'es' ? 'en' : locale
   const courseHref = direction === 'business'
-    ? '/' + appLocale + '/app/coaching'
+    ? '/' + locale + '/coaching'
     : '/' + locale + '/courses/antistress'
   const serviceHref = '/' + locale + '/services/' + ({
     energy: 'alchemy-of-soul', relationships: 'systemic-constellations', business: 'business-consulting',
