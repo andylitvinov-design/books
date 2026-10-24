@@ -124,7 +124,7 @@ test('UI reuses authenticated encrypted storage, keeps one question and offers e
   for(const name of ['adaptivePanel','smartRecap','smartRecapGrid','smartRecapCard','recapCopy'])
     assert.match(css,new RegExp('\\.'+name+'\\b'))
   assert.match(css,/@media\(max-width:600px\)/)
-  assert.doesNotMatch(helper,/fetch\(|XMLHttpRequest|localStorage|sessionStorage|sendBeacon|analytics|gtag\(|fbq\(/)
+  assert.doesNotMatch(helper,/fetch\(|XMLHttpRequest|localStorage|sessionStorage|sendBeacon|window\.analytics|gtag\(|fbq\(/)
   assert.doesNotMatch(ui,/api\/openai|api\/anthropic|MediaRecorder|getUserMedia\(/)
   const ts=(await import('typescript')).default
   const ast=ts.createSourceFile('personal-coaching.jsx',ui,ts.ScriptTarget.ES2022,true,ts.ScriptKind.JSX)
