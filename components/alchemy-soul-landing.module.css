@@ -351,3 +351,128 @@
 .monthlyLearnMore{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-height:49px;border-radius:100px;padding:10px 15px;background:#ab5164;color:#fff!important;text-decoration:none;text-align:center;font-size:14px;font-weight:850;line-height:1.4}
 .monthlyLearnMore:hover{background:#923e55}
 .monthlyLearnMore:focus-visible{outline:3px solid #d1ab70;outline-offset:3px}
+
+
+/* Photo-led one-idea public Alchemy scenes. Preserve the existing verified
+   YouTube media and format/payment disclosures without auto-playing anything. */
+.page[data-public-visual-landing="alchemy"] .painGrid,
+.page[data-public-visual-landing="alchemy"] .methodSteps{display:grid;grid-template-columns:1fr;gap:12px}
+.page[data-public-visual-landing="alchemy"] .painCard,
+.page[data-public-visual-landing="alchemy"] .methodStep{
+  display:grid;grid-template-columns:minmax(0,.83fr) minmax(0,1.17fr);
+  gap:0;align-items:stretch;padding:0;overflow:hidden;
+  min-height:min(610px,calc(100svh - 166px));
+  border-radius:20px;border:1px solid #d8e9e5;background:#fff;
+}
+.page[data-public-visual-landing="alchemy"] .scenePhoto{
+  position:relative;min-width:0;min-height:260px;
+  overflow:hidden;background:#d0e4db;isolation:isolate;
+}
+.page[data-public-visual-landing="alchemy"] .scenePhoto img{
+  object-fit:cover;object-position:center;
+}
+.page[data-public-visual-landing="alchemy"] .sceneWords{
+  display:flex;flex-direction:column;justify-content:center;
+  align-items:flex-start;min-width:0;padding:clamp(20px,4vw,45px);
+}
+.page[data-public-visual-landing="alchemy"] .sceneWords h3{
+  margin:5px 0 10px;color:#164b57;
+  font:400 clamp(27px,3vw,40px)/1.16 Georgia,serif;
+  letter-spacing:-.025em;text-wrap:balance;
+}
+.page[data-public-visual-landing="alchemy"] .sceneWords p{
+  margin:0;color:#456771;font:clamp(14px,1.4vw,17px)/1.62 Arial,Helvetica,sans-serif;
+}
+.page[data-public-visual-landing="alchemy"] .methodStep .methodNumber{
+  font:750 13px/1.4 Arial,Helvetica,sans-serif;color:#088987;letter-spacing:.12em;
+}
+.page[data-public-visual-landing="alchemy"] .methodStep .sceneWords>div{
+  min-width:0;
+}
+.page[data-public-visual-landing="alchemy"] .methodStep .sceneWords h3{
+  font-family:Georgia,serif;font-weight:400;
+}
+.page[data-public-visual-landing="alchemy"] .illustratedChoice{
+  display:grid;grid-template-columns:minmax(0,.73fr) minmax(0,1.27fr);
+  align-items:stretch;gap:0;min-height:435px;
+  border:1px solid #d3e7e2;border-radius:21px;
+  background:#fff;overflow:hidden;
+}
+.page[data-public-visual-landing="alchemy"] .illustratedChoice .scenePhoto{
+  min-height:340px;
+}
+.page[data-public-visual-landing="alchemy"] .choiceWords{
+  min-width:0;padding:clamp(16px,2.7vw,32px);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.page[data-public-visual-landing="alchemy"] .choiceWords :global([data-inline-offer-form]){
+  margin:0;max-width:100%;width:100%;padding:13px 14px;
+  background:#fffefa;border:1px solid #e5ece7;
+}
+.page[data-public-visual-landing="alchemy"] .requestSection .sectionHeading{
+  margin-bottom:12px;
+}
+.page[data-public-visual-landing="alchemy"] .alternativeChannels{margin-top:9px}
+.page[data-public-visual-landing="alchemy"] .alternativeChannels summary{
+  display:flex;align-items:center;min-height:44px;cursor:pointer;
+  font:750 12px/1.4 Arial,Helvetica,sans-serif;color:#0e6a71;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.page[data-public-visual-landing="alchemy"] .alternativeChannels .leadForm{
+  margin-top:8px;padding:11px;border-radius:14px;background:#f5fbf8;
+}
+.page[data-public-visual-landing="alchemy"] .faqSection .safety{
+  margin:15px 0 0;font:12px/1.5 Arial,Helvetica,sans-serif;
+}
+.page[data-public-visual-landing="alchemy"] .panel[data-alchemy-panel="situations"],
+.page[data-public-visual-landing="alchemy"] .panel[data-alchemy-panel="method"]{
+  min-height:0;
+}
+.page[data-public-visual-landing="alchemy"] :is(a,button,input,select,summary):focus-visible{
+  outline:3px solid #e6af79;outline-offset:3px;
+}
+@media(max-width:680px){
+ .page[data-public-visual-landing="alchemy"] .painSection,
+ .page[data-public-visual-landing="alchemy"] .methodSection{
+   padding:16px 12px;
+ }
+ .page[data-public-visual-landing="alchemy"] .painSection .sectionHeading,
+ .page[data-public-visual-landing="alchemy"] .methodSection .sectionHeading{
+   margin-bottom:14px;
+ }
+ .page[data-public-visual-landing="alchemy"] .painCard,
+ .page[data-public-visual-landing="alchemy"] .methodStep{
+   display:flex;flex-direction:column;
+   min-height:min(615px,calc(100svh - 155px));
+   border-radius:17px;
+ }
+ .page[data-public-visual-landing="alchemy"] .painCard .scenePhoto,
+ .page[data-public-visual-landing="alchemy"] .methodStep .scenePhoto{
+   min-height:0;height:clamp(150px,25svh,232px);flex:none;
+ }
+ .page[data-public-visual-landing="alchemy"] .sceneWords{
+   padding:17px 18px;flex:1;
+ }
+ .page[data-public-visual-landing="alchemy"] .sceneWords h3{font-size:clamp(25px,7vw,35px);line-height:1.13}
+ .page[data-public-visual-landing="alchemy"] .sceneWords p{font-size:13px;line-height:1.5}
+ .page[data-public-visual-landing="alchemy"] .illustratedChoice{
+   display:flex;flex-direction:column;min-height:0;
+   border-radius:18px;
+ }
+ .page[data-public-visual-landing="alchemy"] .illustratedChoice .scenePhoto{
+   height:clamp(104px,17svh,175px);min-height:0;flex:none;
+ }
+ .page[data-public-visual-landing="alchemy"] .choiceWords{padding:12px}
+ .page[data-public-visual-landing="alchemy"] .choiceWords :global([data-inline-offer-form]){
+   padding:11px;
+ }
+ .page[data-public-visual-landing="alchemy"] .panel[data-alchemy-panel="request"]{
+   padding:15px 12px;
+ }
+}
+@media(max-width:350px){
+ .page[data-public-visual-landing="alchemy"] .painCard .scenePhoto,
+ .page[data-public-visual-landing="alchemy"] .methodStep .scenePhoto{height:145px}
+ .page[data-public-visual-landing="alchemy"] .sceneWords h3{font-size:25px}
+ .page[data-public-visual-landing="alchemy"] .illustratedChoice .scenePhoto{height:100px}
+}
