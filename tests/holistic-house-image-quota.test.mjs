@@ -20,9 +20,9 @@ test("Andy portrait uses already-built responsive static variants on all audited
   const serviceCards = read("components/services-studio-offers.tsx");
   const portrait = read("components/static-portrait.tsx");
   assert.match(player, /<StaticPortrait className="site-video-poster" src="\/images\/holistic-house\/andy-about\.png"/);
-  assert.equal((home.match(/<StaticPortrait\\b/g) || []).length, 1);
+  assert.equal((home.match(/<StaticPortrait\b/g) || []).length, 1);
   const spanish = read("app/es/page.tsx");
-  assert.equal((spanish.match(/<StaticPortrait\\b/g) || []).length, 1, "Spanish About keeps one verified photo");
+  assert.equal((spanish.match(/<StaticPortrait\b/g) || []).length, 1, "Spanish About keeps one verified photo");
   assert.match(serviceHero, /\{ kind: "business", image: "\/images\/holistic-house\/andy-about\.png"/);
   assert.match(serviceHero, /slide\.image === "\/images\/holistic-house\/andy-about\.png" \? \(/);
   assert.match(serviceHero, /<StaticPortrait src=(?:\{slide\.image\}|"\/images\/holistic-house\/andy-about\.png")/);
