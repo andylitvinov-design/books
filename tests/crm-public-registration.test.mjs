@@ -70,11 +70,11 @@ test('public registration never stores unconsented, malformed or unexpected cont
 })
 test('quick and standard public forms require unchecked explicit reply-only opt-in',()=>{
   const view=read('components/contact-channel-chooser.tsx')
-  assert.match(view,/const \\[consent, setConsent\\] = useState\\(false\\)/)
-  assert.doesNotMatch(view,/useState\\(quick\\)|setConsent\\(quick\\)/)
-  assert.match(view,/\\}\\s*<\\/>\\}\\s*<label className=\\{styles\\.consent\\}>/)
-  assert.match(view,/<input type="checkbox" required checked=\\{consent\\}/)
-  for(const locale of ['en','ru','es']) assert.match(view,new RegExp('  '+locale+': \\\\{'))
+  assert.match(view,/const \[consent, setConsent\] = useState\(false\)/)
+  assert.doesNotMatch(view,/useState\(quick\)|setConsent\(quick\)/)
+  assert.match(view,/\}\s*<\/>}\s*<label className=\{styles\.consent\}>/)
+  assert.match(view,/<input type="checkbox" required checked=\{consent\}/)
+  for(const locale of ['en','ru','es']) assert.match(view,new RegExp('  '+locale+': \\{'))
 })
 
 test('legacy contactless enquiry is backwards-compatible and contact-only consent is rejected',()=>{
