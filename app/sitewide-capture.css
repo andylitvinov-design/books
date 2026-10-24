@@ -14,3 +14,8 @@ body:has([data-core-service-visual="one-screen"]) [data-sitewide-capture] { disp
 
 /* Every visual service already ends with its own consented request; suppress second footer form. */
 body:has([data-public-visual-landing]) [data-sitewide-capture] { display:none; }
+
+/* Public editorial templates with their own explicit enquiry/start step must
+   not receive an unrelated second generic owner-CRM form (especially master
+   marketplace bookings). Existing free and personal selectors still work. */
+body:has([data-public-visual-landing]) [data-sitewide-capture] { display:none; }
