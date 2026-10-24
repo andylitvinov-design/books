@@ -49,6 +49,24 @@ test("intro → one video → its questions → next video, no advance restricti
   assert.match(css, /:focus-visible/);
 });
 
+test("parent rerenders cannot reset an in-progress course or erase local notes", async () => {
+  const journey = await source("components/academy-video-course-journey.tsx");
+  assert.match(journey, /const lessonIds = JSON\.stringify\(lessons\.map\(\(item\) => item\.id\)\)/);
+  assert.match(journey, /const allowedIds = useMemo\(/);
+  assert.match(journey, /\[key, total, allowedIds\]/);
+  assert.doesNotMatch(journey, /\[key, total, lessons\]/);
+  assert.match(journey, /allowedIds\.has\(id\)/);
+  assert.match(journey, /sessionStorage\.setItem\(key/);
+});
+
+test("a Russian course starts with the welcome screen, never a large archive outline", async () => {
+  const page = await source("components/academy-record-page.tsx");
+  assert.match(page, /record\.direction !== "videos" && !isRussianEmbeddedCourse && outline\.length >= 2/);
+  assert.ok(page.indexOf("<AcademyCourseVideoPlaylist") < page.indexOf('["videos/egypt-osiris", "mysteries/egypt/high-wisdom"]'),
+    "Egyptian alternate path comes after the course welcome");
+  assert.match(page, /description=\{academyVideoCourseIntro\(record\.logicalId, locale\)\}/);
+});
+
 test("native Academy page, Russian video index and Temple Studies reuse one runner", async () => {
   const [page, index, temple, playlist] = await Promise.all([
     source("components/academy-record-page.tsx"),
