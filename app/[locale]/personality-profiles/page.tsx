@@ -70,7 +70,8 @@ export default async function PersonalityProfilesPage({ params }: Props) {
     .map(entry => ({
       key: entry.key,
       title: entry.title,
-      axes: [...new Set(entry.scaleGuide.measurementAxes)],
+      axes: [...new Set((entry.scaleGuide.measurementAxes as unknown[])
+        .filter((axis): axis is string => typeof axis === "string" && axis.length > 0))],
       minutes: entry.durationMinutes || null,
       questions: entry.questionCount || null,
     }));
