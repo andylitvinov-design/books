@@ -24,10 +24,10 @@ export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
     <HomeSectionCarousel locale="es" />
+    <HomeFeaturedWorkspace locale="es" />
     <HomeFreeDiagnosisBanner locale="es" />
     <HomeConversationGuide locale="es" />
     <HomePersonalSpaceCard locale="es" />
-    <HomeFeaturedWorkspace locale="es" />
     <HomepageTopicJourneys locale="es" />
     <HomeMoreDisclosure locale="es">
     <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
