@@ -93,12 +93,20 @@ test('one question per screen, account persisted before Continue, explicit compl
   assert.doesNotMatch(ui,/localStorage|sessionStorage|dangerouslySetInnerHTML|autoComplete="off"/)
 })
 
-test('promotions link to short personal session without advertising 90 days',()=>{
+test('course promotions open the public Coaching Lounge without advertising 90 days',()=>{
   const courses=source('components/app/my-courses-dashboard.jsx')
   const development=source('components/app/development-program.jsx')
   const offers=source('components/direction-offers.tsx')
   const academy=source('components/academy-hub.tsx')
-  for(const file of [courses,development,offers,academy])assert.match(file,/app\/coaching/)
+  // The public guest catalogue replaced direct entry into the protected player.
+  // Keep owner-only app/coaching routes independent for saved authenticated courses.
+  for(const file of [courses,development,offers,academy])assert.match(file,/\/coaching/)
+  const academyStart=academy.indexOf('id: "academy-free-personal-coaching"')
+  const academyEnd=academy.indexOf('id: "academy-free-egyptian-goal-planning"',academyStart)
+  assert.ok(academyStart>=0&&academyEnd>academyStart)
+  const publicCard=academy.slice(academyStart,academyEnd)
+  assert.match(publicCard,/courseHref: "\/" \+ locale \+ "\/coaching"/)
+  assert.doesNotMatch(publicCard,/\/app\/coaching/)
   assert.match(courses,/data-personal-coaching-course-link/)
   assert.match(development,/data-development-personal-coaching-course/)
   assert.match(academy,/academy-free-personal-coaching/)
