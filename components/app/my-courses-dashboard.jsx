@@ -157,7 +157,7 @@ export default function MyCoursesDashboard({
       <div><span className={styles.micro}>{t.eyebrow} · HOLISTIC HOUSE</span><h2>{t.heading}</h2><p>{t.more}</p></div>
       <span className={styles.cap}><Sparkles size={15}/>{occupied} / {limit}</span>
     </header>
-    <Link href={'/' + (locale==='ru'?'ru':'en') + '/app/coaching'} prefetch={false}
+    <Link href={'/' + (locale==='ru'?'ru':'en') + '/coaching'} prefetch={false}
       className={styles.businessTrack} data-personal-coaching-course-link>
       <span className={styles.businessTrackPhoto} aria-hidden="true">
         <img src="/images/holistic-house/books-library.webp" alt=""
@@ -186,7 +186,7 @@ export default function MyCoursesDashboard({
         const progress=traditionProgress?.find(row=>row.template==='hh-'+item.id+'-goal-planning-v1')
         const started=progress?.status==='active',finished=progress?.status==='completed'
         const done=Number.isInteger(progress?.completed)?progress.completed:0
-        return <Link key={item.id} href={'/'+(locale==='ru'?'ru':'en')+'/app/coaching/'+item.id}
+        return <Link key={item.id} href={started || finished ? '/'+(locale==='ru'?'ru':'en')+'/app/coaching/'+item.id : '/'+(locale==='ru'?'ru':'en')+'/coaching#coaching-tradition-'+item.id}
           prefetch={false} className={styles.businessTrack} data-tradition-course-card={item.id}>
           <span className={styles.businessTrackPhoto} aria-hidden="true">
             <img src={item.photo} alt="" width={240} height={220} loading="lazy" decoding="async"/>
