@@ -140,7 +140,7 @@ test('business public entry offers current personal coaching while paused 90-day
   const cabinet=readFileSync(new URL('../app/[locale]/app/[[...path]]/page.jsx',import.meta.url),'utf8')
   assert.match(cabinet,/['"]business['"].*\.includes\(path\[0\]\)/)
   assert.match(page,/<DirectionOffers locale=\{locale as PublicLocale\}/)
-  assert.match(direction,/const courseHref = direction === 'business'[\s\S]*?'\/app\/coaching'/)
+  assert.match(direction,/const courseHref = direction === 'business'[\s\S]*?'\/coaching'/)
   assert.match(cabinet,/robots: \{ index: false, follow: false \}/)
 })
 
