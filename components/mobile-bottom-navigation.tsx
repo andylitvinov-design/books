@@ -99,7 +99,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       const content = <><Icon aria-hidden="true" /><span>{shortLabel}</span></>;
       return item.external
         ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{content}</a>
-        : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined} data-home-active={item.id === 'home' && current === 'home' ? 'true' : undefined}>{content}</Link>;
+        : <Link key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} prefetch={false} aria-current={current === item.id ? 'page' : undefined} data-home-active={item.id === 'home' && current === 'home' ? 'true' : undefined}>{content}</Link>;
     })}
   </nav>;
 }
