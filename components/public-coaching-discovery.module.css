@@ -274,9 +274,19 @@
 .root{width:100%;max-width:none;min-width:0;overflow-x:clip}
 .wrap{width:100%;max-width:1100px;min-width:0;margin-inline:auto}
 .cards,.morePathGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
-.loungeCard{display:block;width:100%;min-width:0;overflow:hidden;border:1px solid #d8cbbd;
+.loungeCard{display:block;position:relative;width:100%;min-width:0;overflow:hidden;border:1px solid #d8cbbd;
   border-radius:16px;background:#fffdfa;box-shadow:0 3px 14px #513d2a0d}
 .loungeCard:focus-within{border-color:#639587;box-shadow:0 0 0 2px #3d938b24}
+/* Match the home free-course corner flag; paid coaching prices remain separate. */
+.loungeFreeRibbon{
+  position:absolute;top:0;right:0;z-index:1;display:inline-flex;
+  align-items:center;justify-content:center;min-height:26px;padding:6px 12px;
+  border-radius:0 15px 0 12px;background:#be2940;color:#fff;
+  font:800 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.08em;
+  text-transform:uppercase;white-space:nowrap;
+  box-shadow:-2px 2px 8px rgb(116 25 43 / 14%);
+}
+.loungeCard[data-coaching-free="true"] .loungeContent{padding-top:35px}
 .loungeRow{display:grid;grid-template-columns:minmax(136px,28%) minmax(0,1fr);
   align-items:stretch;min-width:0;min-height:156px}
 .loungePhoto{display:block;position:relative;min-width:0;min-height:100%;overflow:hidden;
@@ -334,6 +344,7 @@
  .morePaths h2{font-size:clamp(25px,6.8vw,32px)}
  .loungeRow{grid-template-columns:minmax(104px,33%) minmax(0,1fr);min-height:150px}
  .loungeContent{padding:9px 10px;gap:5px}
+ .loungeCard[data-coaching-free="true"] .loungeContent{padding-top:29px}
  .loungeMeta{font-size:10px;gap:4px}
  .loungeMeta>strong{font-size:10px;padding:4px 6px}
  .loungeContent h3{font-size:clamp(15px,4.3vw,18px);line-height:1.15}
