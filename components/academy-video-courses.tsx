@@ -86,7 +86,7 @@ function titleImage(videoId: string) {
 }
 
 function countVideos(course: AcademyVideoCourse) {
-  return course.chapters.reduce((sum, chapter) => sum + chapter.videos.length, 0);
+  return course.chapters.reduce((sum, chapter) => sum + chapter.videos.filter((video) => !video.unavailable).length, 0);
 }
 
 function findSourceCourse(
