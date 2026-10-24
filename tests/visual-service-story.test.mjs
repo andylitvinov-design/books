@@ -78,7 +78,7 @@ test("Alchemy and business method pages show their own photo-led sections before
   const css = read("app/sitewide-capture.css");
   assert.match(alchemy, /data-public-visual-landing="alchemy"/);
   assert.match(alchemy, /data-alchemy-visual-screen=\{index\+1\}/);
-  assert.match(alchemy, /<StaticPortrait src=\{visualPhotos/);
+  assert.match(alchemy, /<Image src=\{visualPhotos/);
   assert.match(alchemy, /data-alchemy-visual-screen="final-capture"/);
   assert.match(alchemy, /<CompactLeadCapture/);
   assert.ok(alchemy.lastIndexOf("<CompactLeadCapture") > alchemy.lastIndexOf("t.faq.map"));
@@ -100,7 +100,7 @@ test("monthly support and all three free-entry paths retain visual media on each
   }
   assert.match(support, /data-public-visual-landing="personal-support"/);
   assert.match(support, /<CompactLeadCapture/);
-  assert.match(support, /<StaticPortrait src=\{photos/);
+  assert.match(support, /<Image src=\{photos/);
   assert.match(free, /data-free-visual-screen="final-capture"/);
   assert.match(free, /data-public-visual-landing="free"/);
   assert.match(free, /<CompactLeadCapture/);
