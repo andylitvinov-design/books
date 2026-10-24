@@ -22,3 +22,20 @@ test("Details, approved media, prices and contact flow remain reachable",()=>{
  assert.equal((s.match(/<AlchemySoulLeadForm locale=\{locale\}/g)||[]).length,1);
  for(const locale of ["ru: {","en: {","es: {"])assert.ok(s.includes(locale));
 });
+
+test("Very short iPhone keeps session descriptions and prices through progressive detail",()=>{
+ const form=read("components/alchemy-soul-lead-form.tsx");
+ const css=read("components/alchemy-soul-landing.module.css");
+ assert.match(form,/data-alchemy-format-details/);
+ assert.match(form,/data\.shortText/);
+ assert.match(form,/data\.longText/);
+ assert.match(form,/data\.monthNote/);
+ assert.match(form,/data-alchemy-format="30"/);
+ assert.match(form,/data-alchemy-format="60"/);
+ assert.match(form,/data-alchemy-format="month"/);
+ assert.match(css,/@media\(max-width:350px\) and \(max-height:650px\)/);
+ assert.match(css,/\.optionsSection \.formatMore\{display:block\}/);
+ assert.match(css,/\.featuredVideoMedia\{width:min\(100%,215px\)/);
+ assert.match(css,/\.heroPortrait\{height:74px\}/);
+ assert.match(css,/\.optionsSection \.paymentDisclosure summary\{min-height:40px/);
+});
