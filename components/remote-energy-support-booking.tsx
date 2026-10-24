@@ -56,6 +56,7 @@ const WORDS = {
     profile: "View profile",
     reviews: "Verified feedback",
     noReviews: "No published reviews yet",
+    bookingStatus: "Not booked · No payment yet",
   },
   ru: {
     eyebrow: "ЛИЧНАЯ ПРАКТИКА · ОНЛАЙН",
@@ -88,6 +89,7 @@ const WORDS = {
     profile: "Профиль мастера",
     reviews: "Отзывы после сеансов",
     noReviews: "Пока нет опубликованных отзывов",
+    bookingStatus: "Не подтверждено · Без оплаты",
   },
   es: {
     eyebrow: "PRÁCTICA PERSONAL · EN LÍNEA",
@@ -120,6 +122,7 @@ const WORDS = {
     profile: "Ver perfil",
     reviews: "Opiniones verificadas",
     noReviews: "Todavía no hay opiniones publicadas",
+    bookingStatus: "Sin confirmar · Sin pago",
   },
 } as const;
 
@@ -227,24 +230,30 @@ export function RemoteEnergySupportBooking({
         </div>
       ) : (
         <form className={styles.form} onSubmit={submit}>
-          <div className={styles.field}>
+          <div className={[styles.field, styles.practitionerField].join(" ")}>
             <label htmlFor="remote-master">{t.practitioner}</label>
-            <select id="remote-master" value={slug} onChange={(event) => setSlug(event.target.value)} required>
-              {masters.map((master) => <option value={master.slug} key={master.serviceId}>{master.name}{master.title ? ` — ${master.title}` : ""}</option>)}
-            </select>
-            {selected && <div className={styles.masterCard}>
-              {selected.photo && <img src={selected.photo} alt={selected.name} loading="lazy" />}
-              <div className={styles.masterCopy}>
-                <strong>{selected.name}</strong>
-                {selected.title && <p>{selected.title}</p>}
-                {selected.bio && <p>{selected.bio}</p>}
-                {selected.languages.length > 0 && <small>{selected.languages.join(" · ")}</small>}
-                <Link href={`/${locale}/masters/${selected.slug}`}>{t.profile} →</Link>
-                {selected.reviewCount > 0 ?
-                  <small>★ {selected.reviewAverage.toFixed(1)} · {selected.reviewCount} {t.reviews}</small>:
-                  <small>{t.noReviews}</small>}
-              </div>
-            </div>}
+            <div className={styles.masterPicker}>
+              {selected?.photo && <img className={styles.masterThumb} src={selected.photo} alt="" loading="lazy" />}
+              <select id="remote-master" value={slug} onChange={(event) => setSlug(event.target.value)} required>
+                {masters.map((master) => <option value={master.slug} key={master.serviceId}>{master.name}{master.title ? ` — ${master.title}` : ""}</option>)}
+              </select>
+              {selected && <details className={styles.masterDetails}>
+                <summary aria-label={t.profile + ": " + selected.name} title={t.profile}>ⓘ</summary>
+                <div className={styles.masterCard}>
+                  {selected.photo && <img src={selected.photo} alt={selected.name} loading="lazy" />}
+                  <div className={styles.masterCopy}>
+                    <strong>{selected.name}</strong>
+                    {selected.title && <p>{selected.title}</p>}
+                    {selected.bio && <p>{selected.bio}</p>}
+                    {selected.languages.length > 0 && <small>{selected.languages.join(" · ")}</small>}
+                    <Link href={`/${locale}/masters/${selected.slug}`}>{t.profile} →</Link>
+                    {selected.reviewCount > 0 ?
+                      <small>★ {selected.reviewAverage.toFixed(1)} · {selected.reviewCount} {t.reviews}</small>:
+                      <small>{t.noReviews}</small>}
+                  </div>
+                </div>
+              </details>}
+            </div>
           </div>
           <div className={styles.field}>
             <label htmlFor="remote-goal">{t.focus}</label>
@@ -273,11 +282,12 @@ export function RemoteEnergySupportBooking({
             <legend>{t.duration}</legend>
             {REMOTE_SUPPORT_DURATIONS.map((minutes) => {
               const published = options.find(option => option.duration === minutes);
-              return <label className={duration === minutes ? styles.activeDuration : ""} key={minutes}>
+              return <label className={duration === minutes ? styles.activeDuration : ""} key={minutes} title={!published ? t.unavailablePrice : undefined}>
                 <input type="radio" name="remote-duration" value={minutes}
                   disabled={!published} checked={duration === minutes}
-                  onChange={() => setDuration(minutes)}/>
-                {minutes} min {published ? "· " + priceLabel(published.price, selected?.currency || "CAD") : ""}
+                  onChange={() => setDuration(minutes)} aria-label={minutes + " min · " + (published ? priceLabel(published.price, selected?.currency || "CAD") : t.unavailablePrice)}/>
+                <span className={styles.durationMinutes}>{minutes} min</span>
+                <span className={styles.durationPrice}>{published ? priceLabel(published.price, selected?.currency || "CAD") : "—"}</span>
               </label>;
             })}
           </fieldset>
@@ -294,11 +304,14 @@ export function RemoteEnergySupportBooking({
               </div>
             </div>
           </div>
-          <div className={styles.review}>
+          <details className={styles.review}>
+            <summary className={styles.reviewSummary}>
+              <strong>{currentPrice && selected ? priceLabel(currentPrice.price, selected.currency) : t.unavailablePrice} {currentPrice ? "· " + duration + " min" : ""}</strong>
+              <span>{t.bookingStatus}</span>
+            </summary>
             <p>{t.noSlots}</p>
-            <strong>{currentPrice && selected ? priceLabel(currentPrice.price, selected.currency) : t.unavailablePrice} {currentPrice ? "· " + duration + " min" : ""}</strong>
             <p>{t.price}</p>
-          </div>
+          </details>
           <button className={styles.submit} type="submit" disabled={!currentPrice}>{t.send} <span aria-hidden="true">→</span></button>
           {error && <p role="alert" className={styles.error}>{t.needsStorage}</p>}
         </form>
