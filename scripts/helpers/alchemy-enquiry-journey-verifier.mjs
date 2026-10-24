@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { withAlchemyConsentDiagnostics } from './alchemy-consent-diagnostics.mjs'
 
 export const ALCHEMY_CONTACT = 'alchemy-browser-fixture@example.invalid'
 export const ALCHEMY_REFERENCE = 'HH-A1C4E0F12345'
@@ -192,6 +193,7 @@ async function verifyAlchemyInPage(page, expect, locale, {denyReceiptStorage=fal
   let completed = false
   try {
   const result = await withAlchemyIsolation(page,handler,receipt,denyReceiptStorage,async () => {
+  const {contact,consent,submit} = await withAlchemyConsentDiagnostics(page,{locale,denyReceiptStorage,expectedContact:ALCHEMY_CONTACT},async () => {
   await pricing.locator('[data-alchemy-format="30"]').click()
   await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
     await chooser.locator('[data-contact-order]').click()
@@ -205,6 +207,8 @@ async function verifyAlchemyInPage(page, expect, locale, {denyReceiptStorage=fal
     await expect(submit).toBeDisabled()
     assert.equal(receipt.count,0)
     await consent.check()
+    return {contact,consent,submit}
+  })
     await submit.click()
     await expect.poll(()=>receipt.count).toBe(1)
     await expect(chooser.locator('[role="alert"]')).toBeVisible()

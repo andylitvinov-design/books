@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { StaticPortrait } from "@/components/static-portrait";
@@ -10,6 +10,7 @@ import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsa
 import styles from "./compact-lead-capture.module.css";
 
 type Channel = "whatsapp" | "telegram";
+type EnquiryAttempt = { body: string; context: string; channel: Channel; whatsappUrl: string; referenceLabel: string; confirmed: boolean };
 
 const copy = {
   en: {
@@ -24,7 +25,8 @@ const copy = {
     notice: "Free to enquire · No confirmed booking or payment · Please don't enter health details.",
     invalid: "Enter a valid email or an international phone number starting with +.",
     consentRequired: "Please agree to a personal reply before continuing.",
-    error: "We couldn't save your contact, so the messenger wasn't opened. Please try again.",
+    error: "We could not confirm whether your request was saved. Retry the same request; do not submit a new one yet.",
+    contextChanged: "An earlier request is still unconfirmed. Return to its original service to retry it.",
     handoffError: "Your contact was saved, but the messenger did not open. Use either link below.",
     saved: "Your request is saved",
     next: "Continue in your preferred messenger. Sending the message is your choice.",
@@ -43,7 +45,8 @@ const copy = {
     notice: "Запрос бесплатный · Без подтверждённой записи и оплаты · Не пишите данные о здоровье.",
     invalid: "Укажите email или номер телефона с международным кодом +.",
     consentRequired: "Подтвердите согласие на личный ответ по заявке.",
-    error: "Контакт не сохранился, поэтому чат не открыт. Попробуйте ещё раз.",
+    error: "Пока не удалось подтвердить сохранение заявки. Повторите ту же заявку; пока не создавайте новую.",
+    contextChanged: "Предыдущая заявка ещё не подтверждена. Вернитесь к исходной услуге, чтобы повторить её.",
     handoffError: "Контакт сохранён, но чат не открылся. Выберите мессенджер по ссылке ниже.",
     saved: "Заявка сохранена",
     next: "Теперь можно написать в удобный мессенджер. Сообщение отправляете вы сами.",
@@ -62,7 +65,8 @@ const copy = {
     notice: "Consulta gratuita · Sin reserva ni pago confirmado · No incluyas datos de salud.",
     invalid: "Introduce un correo válido o un teléfono internacional que empiece por +.",
     consentRequired: "Confirma que aceptas recibir una respuesta personal.",
-    error: "No pudimos guardar tu contacto; no se abrió el mensajero. Inténtalo de nuevo.",
+    error: "No pudimos confirmar si se guardó tu solicitud. Reintenta la misma solicitud; no crees otra todavía.",
+    contextChanged: "Hay una solicitud anterior sin confirmar. Vuelve al servicio original para reintentarla.",
     handoffError: "Tu contacto se guardó, pero no se abrió el chat. Elige uno de los enlaces.",
     saved: "Solicitud guardada",
     next: "Continúa en el mensajero que prefieras. Tú decides si envías el mensaje.",
@@ -99,92 +103,134 @@ export function CompactLeadCapture({
 }) {
   const t = copy[locale];
   const pathname = usePathname();
+  const initialFormat = formatOptions?.[0]?.value || "";
   const [address, setAddress] = useState("");
-  const [selectedFormat, setSelectedFormat] = useState(formatOptions?.[0]?.value || "");
+  const [selectedFormat, setSelectedFormat] = useState(initialFormat);
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState<Channel | null>(null);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
-  const operationId = useRef<string | null>(null);
+  const [lockedChannel, setLockedChannel] = useState<Channel | null>(null);
+  const locked = lockedChannel !== null;
+  const [savedWhatsapp, setSavedWhatsapp] = useState("");
+  const [savedReferenceLabel, setSavedReferenceLabel] = useState("");
+  const operation = useRef<EnquiryAttempt | null>(null);
+  const inFlight = useRef(false);
+  const mounted = useRef(false);
+  const handoff = useRef<Window | null>(null);
+  const contextKey = JSON.stringify([locale, serviceTitle, sourcePath || pathname, formatOptions || null]);
+  const activeContext = useRef(contextKey);
 
-  function channelUrl(referenceCode: string, channel: Channel) {
-    // Never put visitor contact, private answers, or health details in the messenger draft.
-    const whatsapp = whatsappEnquiryUrl({
-      locale,
-      service: serviceTitle,
-      request: t.message + " " + t.reference + ": " + referenceCode,
+  const closeHandoff = (popup: Window | null) => {
+    try { popup?.close(); } catch { /* A popup failure never changes the save outcome. */ }
+    if (handoff.current === popup) handoff.current = null;
+  };
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; closeHandoff(handoff.current); };
+  }, []);
+  useLayoutEffect(() => {
+    activeContext.current = contextKey;
+    if (operation.current && !operation.current.confirmed) {
+      if (operation.current.context !== contextKey) closeHandoff(handoff.current);
+      setError(operation.current.context === contextKey ? t.error : t.contextChanged);
+      return;
+    }
+    operation.current = null;
+    setReference(""); setSavedWhatsapp(""); setSavedReferenceLabel("");
+    setLockedChannel(null); setAddress(""); setConsent(false); setError("");
+    setSelectedFormat(initialFormat);
+  }, [contextKey, initialFormat, t.contextChanged, t.error]);
+
+  function currentWhatsappUrl() {
+    // Contact and private answers never enter the public messenger draft.
+    return whatsappEnquiryUrl({ locale, service: serviceTitle, request: t.message,
       option: formatOptions?.length && selectedFormat ? selectedFormat : undefined,
-      pagePath: sourcePath || pathname || "/" + locale + "/services",
-    });
-    return channel === "whatsapp" ? whatsapp : telegramEnquiryUrlFromWhatsApp(whatsapp);
+      pagePath: sourcePath || pathname || "/" + locale + "/services" });
+  }
+  function channelUrl(referenceCode: string, channel: Channel,
+    base = savedWhatsapp || currentWhatsappUrl(), referenceLabel = savedReferenceLabel || t.reference) {
+    const draft = new URL(base);
+    draft.searchParams.set("text", (draft.searchParams.get("text") || "") + "\n\n" + referenceLabel + ": " + referenceCode);
+    return channel === "whatsapp" ? draft.toString() : telegramEnquiryUrlFromWhatsApp(draft.toString());
+  }
+  function mayEdit() {
+    return !inFlight.current && (!operation.current || operation.current.confirmed);
   }
 
   async function chooseChannel(channel: Channel) {
-    if (busy || reference) return;
-    const contact = parseContact(address);
-    if (!contact) { setError(t.invalid); return; }
-    if (!consent) { setError(t.consentRequired); return; }
-
-    // Reserve the new tab within the user's tap: asynchronous window.open is
-    // frequently blocked by mobile Safari after the CRM network request.
-    const handoffWindow = window.open("about:blank", "_blank");
-    if (handoffWindow) handoffWindow.opener = null;
-    const requestId = operationId.current || window.crypto.randomUUID();
-    operationId.current = requestId;
-    setBusy(channel);
-    setError("");
+    // Ref guard is synchronous, including two taps before React re-renders.
+    if (inFlight.current || reference || operation.current?.confirmed || !mounted.current || activeContext.current !== contextKey) return;
+    let attempt = operation.current;
+    if (attempt) {
+      if (attempt.context !== activeContext.current || attempt.context !== contextKey) {
+        setError(t.contextChanged); return;
+      }
+      if (channel !== attempt.channel) return;
+    } else {
+      const contact = parseContact(address);
+      if (!contact) { setError(t.invalid); return; }
+      if (!consent) { setError(t.consentRequired); return; }
+      const payload = {
+        operationId: window.crypto.randomUUID(), serviceTitle,
+        description: "Preferred reply channel: " + (channel === "whatsapp" ? "WhatsApp" : "Telegram") +
+          (formatOptions?.length && selectedFormat ? "; Preferred session format: " + selectedFormat : ""),
+        sourcePath: sourcePath || pathname || "/" + locale + "/services", locale,
+        contact: { displayName: "", ...contact }, contactConsent: true, website: "",
+      };
+      attempt = { body: JSON.stringify(payload), context: contextKey, channel,
+        whatsappUrl: currentWhatsappUrl(), referenceLabel: t.reference, confirmed: false };
+      operation.current = attempt;
+    }
+    const submitted = attempt;
+    inFlight.current = true;
+    setLockedChannel(submitted.channel); setBusy(submitted.channel); setError("");
+    let handoffWindow: Window | null = null;
+    // Reserve only a blank tab during the user's gesture. A blocked popup must
+    // not prevent registration; confirmed fallback links remain available.
+    try { handoffWindow = window.open("about:blank", "_blank");
+      if (handoffWindow) handoffWindow.opener = null;
+    } catch { /* Use confirmed links after the save. */ }
+    handoff.current = handoffWindow;
     let committedReference = "";
-
+    const stillCurrent = () => mounted.current && activeContext.current === submitted.context
+      && operation.current?.body === submitted.body;
     try {
       const response = await fetch("/api/service-enquiries", {
-        method: "POST",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          operationId: requestId,
-          serviceTitle,
-          description: "Preferred reply channel: " + (channel === "whatsapp" ? "WhatsApp" : "Telegram") +
-            (formatOptions?.length && selectedFormat ? "; Preferred session format: " + selectedFormat : ""),
-          sourcePath: sourcePath || pathname || "/" + locale + "/services",
-          locale,
-          contact: { displayName: "", ...contact },
-          contactConsent: true,
-          website: "",
-        }),
+        method: "POST", credentials: "same-origin", cache: "no-store",
+        headers: { "Content-Type": "application/json" }, body: submitted.body,
       });
       const result = await response.json().catch(() => null);
-      if (!response.ok || result?.saved !== true ||
-        !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
-        if (response.status === 409) operationId.current = null;
-        throw new Error("ENQUIRY_NOT_SAVED");
-      }
+      if (!response.ok || result?.saved !== true || typeof result.referenceCode !== "string" ||
+        !/^HH-[A-F0-9]{12}$/.test(result.referenceCode)) throw new Error("ENQUIRY_UNCONFIRMED");
+      if (!stillCurrent()) { closeHandoff(handoffWindow); return; }
       committedReference = result.referenceCode;
-      setReference(committedReference);
+      operation.current = { ...attempt, confirmed: true };
+      setReference(committedReference); setSavedWhatsapp(submitted.whatsappUrl);
+      setSavedReferenceLabel(submitted.referenceLabel); setLockedChannel(null);
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
           JSON.stringify({ referenceCode: committedReference, createdAt: Date.now() }));
-      } catch { /* Receipt storage is optional; the DB commit is already authoritative. */ }
+      } catch { /* The confirmed receipt remains on screen without storage. */ }
     } catch {
-      try { handoffWindow?.close(); } catch { /* Never navigate after a failed DB save. */ }
-      setError(t.error);
+      closeHandoff(handoffWindow);
+      // A transport, parsing or409 error does not prove no write. Preserve the
+      // original body/UUID and keep fields frozen, never create a second submitted.
+      if (stillCurrent()) setError(t.error);
       return;
     } finally {
-      setBusy(null);
+      inFlight.current = false;
+      if (mounted.current) setBusy(null);
     }
-
-    // A browser handoff can fail after the DB commit. Keep both fallback links
-    // visible under the saved reference; never resubmit or claim the CRM save failed.
+    if (!stillCurrent()) { closeHandoff(handoffWindow); return; }
     try {
-      const destination = channelUrl(committedReference, channel);
-      if (handoffWindow && !handoffWindow.closed) {
-        handoffWindow.location.replace(destination);
-      } else {
-        setError(t.handoffError);
-      }
+      const destination = channelUrl(committedReference, submitted.channel, submitted.whatsappUrl, submitted.referenceLabel);
+      if (handoffWindow && !handoffWindow.closed) handoffWindow.location.replace(destination);
+      else setError(t.handoffError);
+      // Successful handoff is no longer a pending blank tab owned by the form.
+      if (handoff.current === handoffWindow) handoff.current = null;
     } catch {
-      try { handoffWindow?.close(); } catch { /* Saved receipt remains on screen. */ }
-      setError(t.handoffError);
+      closeHandoff(handoffWindow); setError(t.handoffError);
     }
   }
 
@@ -229,8 +275,8 @@ export function CompactLeadCapture({
           {formatOptions?.length ? (
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>
-              <select value={selectedFormat} required disabled={busy !== null}
-                onChange={event => { setSelectedFormat(event.target.value); operationId.current = null; setError(""); }}>
+              <select value={selectedFormat} required disabled={locked || busy !== null}
+                onChange={event => { if (!mayEdit()) return; setSelectedFormat(event.target.value); setError(""); }}>
                 {formatOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
@@ -238,13 +284,13 @@ export function CompactLeadCapture({
           <label className={styles.field}>
             <span>{t.contact}</span>
             <input type="text" name="contact" inputMode="text" autoComplete="off"
-              value={address} maxLength={254} required disabled={busy !== null}
+              value={address} maxLength={254} required disabled={locked || busy !== null}
               placeholder={t.placeholder} aria-invalid={Boolean(error)}
-              onChange={event => { setAddress(event.target.value); operationId.current = null; setError(""); }} />
+              onChange={event => { if (!mayEdit()) return; setAddress(event.target.value); setError(""); }} />
           </label>
           <label className={styles.consent}>
-            <input type="checkbox" required checked={consent} disabled={busy !== null}
-              onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
+            <input type="checkbox" required checked={consent} disabled={locked || busy !== null}
+              onChange={event => { if (!mayEdit()) return; setConsent(event.target.checked); setError(""); }} />
             <span>{t.consent}</span>
           </label>
           <div className={styles.channelHeading}>
@@ -253,13 +299,13 @@ export function CompactLeadCapture({
           </div>
           <div className={styles.channels} role="group" aria-label={t.channelsTitle}>
             <button className={[styles.channel, styles.whatsapp].join(" ")} type="button"
-              disabled={busy !== null} onClick={() => { void chooseChannel("whatsapp"); }}
+              disabled={busy !== null || (locked && lockedChannel !== "whatsapp")} onClick={() => { void chooseChannel("whatsapp"); }}
               data-compact-channel="whatsapp">
               <MessageCircle size={19} aria-hidden="true" />
               <span>{busy === "whatsapp" ? t.saving : "WhatsApp"}</span>
             </button>
             <button className={[styles.channel, styles.telegram].join(" ")} type="button"
-              disabled={busy !== null} onClick={() => { void chooseChannel("telegram"); }}
+              disabled={busy !== null || (locked && lockedChannel !== "telegram")} onClick={() => { void chooseChannel("telegram"); }}
               data-compact-channel="telegram">
               <Send size={19} aria-hidden="true" />
               <span>{busy === "telegram" ? t.saving : "Telegram"}</span>

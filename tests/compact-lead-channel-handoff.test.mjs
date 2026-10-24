@@ -15,7 +15,10 @@ test("compact capture asks for an explicit opt-in and routes both messenger choi
   assert.match(source, /\(channel === "whatsapp" \? "WhatsApp" : "Telegram"\)/);
   assert.match(source, /checked=\{consent\}/);
   assert.match(source, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
-  assert.match(source, /if \(busy \|\| reference\) return;/);
+  assert.match(source, /const inFlight = useRef\(false\)/);
+  assert.match(choose, /if \(inFlight\.current \|\| reference \|\| operation\.current\?\.confirmed \|\| !mounted\.current \|\| activeContext\.current !== contextKey\) return;/);
+  assert.match(choose, /inFlight\.current = true;[\s\S]*window\.open\("about:blank", "_blank"\)[\s\S]*await fetch\(/);
+  assert.match(choose, /finally \{\s*inFlight\.current = false;/);
   assert.match(source, /window\.crypto\.randomUUID\(\)/);
   assert.match(source, /credentials: "same-origin"/);
   assert.match(source, /result\?\.saved !== true/);
@@ -35,8 +38,18 @@ test("compact capture asks for an explicit opt-in and routes both messenger choi
 
 test("messenger drafts carry only public service and reference, no submitted contact or health details", () => {
   const source = read("components/compact-lead-capture.tsx");
-  assert.match(source, /request: t\.message \+ " " \+ t\.reference \+ ": " \+ referenceCode/);
-  assert.match(source, /pagePath: sourcePath \|\| pathname/);
+  const publicDraft = source.slice(source.indexOf("function currentWhatsappUrl()"), source.indexOf("function mayEdit()"));
+  assert.match(publicDraft, /return whatsappEnquiryUrl\(\{ locale, service: serviceTitle, request: t\.message,/);
+  assert.match(publicDraft, /pagePath: sourcePath \|\| pathname/);
+  assert.match(publicDraft, /base = savedWhatsapp \|\| currentWhatsappUrl\(\), referenceLabel = savedReferenceLabel \|\| t\.reference/);
+  assert.match(publicDraft, /const draft = new URL\(base\)/);
+  assert.match(publicDraft, /draft\.searchParams\.set\("text", \(draft\.searchParams\.get\("text"\) \|\| ""\) \+ "\\n\\n" \+ referenceLabel \+ ": " \+ referenceCode\)/);
+  assert.match(publicDraft, /return channel === "whatsapp" \? draft\.toString\(\) : telegramEnquiryUrlFromWhatsApp\(draft\.toString\(\)\)/);
+  assert.match(source, /whatsappUrl: currentWhatsappUrl\(\), referenceLabel: t\.reference, confirmed: false/);
+  assert.match(source, /setSavedWhatsapp\(submitted\.whatsappUrl\)/);
+  assert.match(source, /setSavedReferenceLabel\(submitted\.referenceLabel\)/);
+  assert.match(source, /channelUrl\(committedReference, submitted\.channel, submitted\.whatsappUrl, submitted\.referenceLabel\)/);
+  assert.doesNotMatch(publicDraft, /\b(?:address|contact|payload|body)\b/);
   assert.doesNotMatch(source, /request: .*address|request: .*contact\.phone|request: .*contact\.email/);
 
   for (const locale of ["en", "ru", "es"]) {

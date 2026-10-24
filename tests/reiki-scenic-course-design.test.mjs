@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import ts from 'typescript'
+import { parse, one, ownerFunction, attributeText, assertLive, evaluate, nodes, textContent } from './helpers/reiki-current-course-contract.mjs'
 import {
   energyworkSequence, ENERGYWORK_LESSON_STARTS, ENERGYWORK_VERSION,
   ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
@@ -52,13 +54,48 @@ test('Every type of teaching screen uses existing glass typography and safe cont
 })
 
 test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
-  assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
-  assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
+  // Merged #1453 introduced five-day copy; #1636 binds the compact cover facts
+  // and the voluntary initiation request disclosure, not the retired benefit cards.
+  const ast = parse(learner), owner = ownerFunction(ast, 'EnergyworkAiLearner')
+  const declaration = one(ast, node => ts.isVariableDeclaration(node) && node.name.getText() === 'copy')
+  const localized = evaluate('module.exports = ' + declaration.initializer.getText())
+  assert.equal(one(owner.body, node => ts.isVariableDeclaration(node) && node.name.getText() === 't').initializer.getText(), 'copy[locale]')
+  const reward = one(owner, node => ts.isJsxElement(node) && attributeText(node.openingElement, 'className') === 'styles.welcomeReward')
+  assertLive(reward, owner, ['slide.kind === "welcome"'])
+  let conditional = reward.parent
+  while (ts.isParenthesizedExpression(conditional)) conditional = conditional.parent
+  assert.ok(ts.isConditionalExpression(conditional))
+  const expected = {
+    en: ['5 days · 3 Reiki traditions','5 short lessons','Guided meditations','At your own pace'],
+    ru: ['5 дней · 3 системы Рейки','5 коротких уроков','Медитации с сопровождением','В своём темпе'],
+  }
+  for (const locale of ['en','ru']) {
+    const t = localized.value[locale]
+    assert.equal(t.welcomeOffer, expected[locale][0])
+    const scope = {t, Sparkles:'icon',Check:'icon',Award:'icon',ChevronDown:'icon', styles: {
+      welcomeReward:'reward',welcomeRewardTitle:'ribbon',coverFacts:'facts',welcomeGift:'gift',welcomeGiftExpanded:'expanded',
+    }}
+    const rendered = evaluate('module.exports = ' + conditional.getText(), {...scope,slide:{kind:'welcome'}})
+    const tree = rendered.value
+    assert.equal(tree.props['aria-label'],expected[locale][0])
+    const facts = nodes(tree).filter(node => node.props.className === 'facts')
+    assert.equal(facts.length,1)
+    assert.equal(facts[0].props['aria-label'],t.benefits)
+    assert.deepEqual(nodes(facts[0]).filter(node => node.type === 'span').map(textContent),expected[locale].slice(1))
+    const gift = nodes(tree).filter(node => node.type === 'details' && Object.hasOwn(node.props,'data-reiki-initiation-gift'))
+    assert.equal(gift.length,1)
+    assert.ok(!gift[0].props.open,'Initiation detail is optional, not another required action')
+    assert.ok(textContent(gift[0]).includes(t.welcomeGiftShort))
+    assert.ok(textContent(gift[0]).includes(t.welcomeGiftText))
+    assert.match(t.welcomeGiftText,locale === 'en' ? /all five lessons.*request one free Level 1 initiation.*in chat.*does not confer initiation/ : /После пяти уроков.*запросить одну бесплатную инициацию.*в чате.*Сам курс не является инициацией/)
+    const hidden = evaluate('module.exports = ' + conditional.getText(), {...scope,slide:{kind:'reflection'}})
+    assert.equal(hidden.value,null)
+    rendered.clean(); hidden.clean()
+  }
+  localized.clean()
   assert.match(learner, /Want individual guidance\? Ask about a personal session with Andrey/)
   assert.match(learner, /styles\.welcomeReward/)
-  assert.match(learner, /styles\.benefits/)
-  for(const name of ['Short lessons','Practical tasks','Private progress'])
-    assert.ok(learner.includes(name),name)
+  assert.match(learner, /styles\.coverFacts/)
   assert.match(learner, /startFree: "Start free program"/)
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })

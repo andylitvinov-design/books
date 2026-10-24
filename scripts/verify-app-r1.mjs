@@ -1,3 +1,4 @@
+import { verifyHypnotherapyEnquiryJourney } from './helpers/hypnotherapy-enquiry-journey-verifier.mjs'
 import { verifyAlchemyEnquiryJourney } from './helpers/alchemy-enquiry-journey-verifier.mjs'
 import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs'
 import { verifyDaoLeadJourney } from './helpers/dao-lead-journey-verifier.mjs'
@@ -502,15 +503,13 @@ async function verifyPublicServiceConversionJourneys(){
     }else if(kind==='dao'){
      await verifyDaoLeadJourney(servicePage,expect,locale)
     }else{
-     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
-     await capture.scrollIntoViewIfNeeded()
-     await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
+     await expect(servicePage.locator('main[data-core-service-detail="hypnotherapy"] h1')).toHaveText(names[locale])
+     // The current sitewide footer uses CompactLeadCapture, not the old chooser.
+     await verifyHypnotherapyEnquiryJourney(servicePage,expect,locale)
+     await verifyHypnotherapyEnquiryJourney(servicePage,expect,locale,{channel:'telegram',denyReceiptStorage:true})
+     // The free alternative belongs to CoreServiceDetail's own final section.
+     const alternative=servicePage.locator('main[data-core-service-detail="hypnotherapy"] > section:last-child > details')
+     await expect(alternative).toHaveCount(1)
      assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
      await alternative.locator('summary').click()
      await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()

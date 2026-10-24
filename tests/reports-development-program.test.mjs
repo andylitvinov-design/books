@@ -1,3 +1,4 @@
+import { probeAppDbSetup, syntheticSetupEnvironment, GOALS_MIGRATION, FRESH_FIELDS } from './helpers/app-db-setup-probe.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -150,9 +151,42 @@ test('Development programme presents two independent, collapsed links for goals 
   assert.match(css, /\.panel\{/)
 })
 
-test('isolated App R1 initializes the encrypted goals schema needed by export', () => {
- const setup=file('tests/helpers/app-db-setup.mjs')
- assert.match(setup,/20261017165000_hh_reports_development_goals\.sql/)
- assert.match(setup,/Refusing to initialize nonempty test DB/)
- assert.match(setup,/Isolated loopback test database required/)
+test('isolated App R1 guards actual setup before mutations and applies the encrypted goals source', () => {
+  const assertSafeInitialization = result => {
+    assert.equal(result.error, null)
+    assert.deepEqual(result.calls.slice(0, 4).map(call => call.kind),
+      ['construct', 'connect', 'identity', 'freshness'])
+    const goalsRead = result.calls.findIndex(call => call.kind === 'read' && call.path === GOALS_MIGRATION)
+    const goalsApplied = result.calls.findIndex(call => call.kind === 'migration' && call.path === GOALS_MIGRATION)
+    assert.ok(goalsRead > 3 && goalsApplied > goalsRead, 'goals source must be dispatched only after freshness validation')
+    assert.equal(result.calls.at(-1).kind, 'end')
+  }
+  const assertRejectedBeforeMutation = (result, beforeClient = false) => {
+    assert.equal(result.error?.name, 'Error', 'the real guard must reject rather than a probe assertion failing')
+    assert.equal(typeof result.error?.message, 'string')
+    assert.equal(result.calls.some(call => ['mutation', 'migration', 'read', 'seed'].includes(call.kind)), false,
+      'unsafe setup must stop before any schema or fixture mutation')
+    if (beforeClient) assert.equal(result.calls.length, 0, 'unsafe destination must stop before Client construction')
+    else assert.deepEqual(result.calls.map(call => call.kind), ['construct', 'connect', 'identity', 'freshness', 'end'])
+  }
+  assertSafeInitialization(probeAppDbSetup())
+  for (const key of FRESH_FIELDS) assertRejectedBeforeMutation(probeAppDbSetup({ occupied: { [key]: true } }))
+  for (const environment of [
+    { ...syntheticSetupEnvironment(), CI: 'false' },
+    { ...syntheticSetupEnvironment(), HH_APP_TEST_RUNTIME: 'not-isolated' },
+    { ...syntheticSetupEnvironment(), HH_TEST_ADMIN_DATABASE_URL: 'postgres://postgres:synthetic-ci-admin@database.example.invalid/hh_app_test' },
+    { ...syntheticSetupEnvironment(), HH_APP_DATABASE_URL: 'postgres://hh_app_ci_login:synthetic-ci-only@database.example.invalid/hh_app_test' },
+  ]) assertRejectedBeforeMutation(probeAppDbSetup({ environment }), true)
+
+  // Prove this behavioral contract fails when a guard is removed/reordered or
+  // the goals source is merely read rather than sent to the database interface.
+  for (const mutation of ['skip-freshness-validation', 'write-before-freshness']) {
+    assert.throws(() => assertRejectedBeforeMutation(probeAppDbSetup({ mutation, occupied: { schemas: true } })),
+      { name: 'AssertionError' })
+  }
+  assert.throws(() => assertRejectedBeforeMutation(probeAppDbSetup({
+    mutation: 'skip-environment-validation', environment: { ...syntheticSetupEnvironment(), CI: 'false' },
+  }), true), { name: 'AssertionError' })
+  assert.throws(() => assertSafeInitialization(probeAppDbSetup({ mutation: 'read-goals-without-applying' })),
+    { name: 'AssertionError' })
 })

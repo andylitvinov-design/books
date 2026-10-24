@@ -85,10 +85,11 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(form, /data-compact-last-slide/);
   assert.match(form, /data-compact-lead-form/);
   assert.match(form, /contactConsent: true/);
-  assert.match(form, /if \(busy \|\| reference\) return;/);
+  assert.match(form, /const inFlight = useRef\(false\)/);
+  assert.match(form, /if \(inFlight\.current \|\| reference \|\| operation\.current\?\.confirmed \|\| !mounted\.current \|\| activeContext\.current !== contextKey\) return;/);
   assert.match(form, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
   assert.match(form, /whatsappEnquiryUrl\(\{/);
-  assert.match(form, /telegramEnquiryUrlFromWhatsApp\(whatsapp\)/);
+  assert.match(form, /telegramEnquiryUrlFromWhatsApp\(draft\.toString\(\)\)/);
   assert.match(form, /data-compact-channel="whatsapp"/);
   assert.match(form, /data-compact-channel="telegram"/);
   assert.match(form, /parseContact\(address\)/);

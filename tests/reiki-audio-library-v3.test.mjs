@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { assertCurrentCourse } from './helpers/reiki-current-course-contract.mjs'
 import {
   REIKI_AUDIO_MAX_BATCH, REIKI_AUDIO_MAX_TITLE, REIKI_AUDIO_MAX_DESCRIPTION,
   reikiAudioCleanLabel, reikiAudioUploadTitle, reikiAudioValidMetadataInput,
@@ -168,11 +169,6 @@ test('Approved private audio releases retain teacher titles without affecting st
   assert.doesNotMatch(publicRoute,/reiki-audio-metadata|storage\.list|private.*original/)
 })
 
-test('Current canonical Reiki course uses the complete 60-slide sequence', async () => {
-  const {energyworkSequence}=await import('../data/academy/energywork-ai-schema.js')
-  const ids=energyworkSequence()
-  assert.equal(ids.length,60)
-  assert.equal(new Set(ids).size,60)
-  for(const id of ['flight-01','tan-01','kun-01','ygg-01','paths-01'])
-    assert.ok(ids.includes(id))
+test('Current canonical Reiki course preserves the approved active curriculum and all lesson audio', () => {
+  assertCurrentCourse()
 })
