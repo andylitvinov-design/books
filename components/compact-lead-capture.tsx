@@ -1,58 +1,74 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import Link from "next/link";
+import { useRef, useState } from "react";
+import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { StaticPortrait } from "@/components/static-portrait";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
+import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./compact-lead-capture.module.css";
+
+type Channel = "whatsapp" | "telegram";
+type SavedEnquiry = { referenceCode: string; saved: true };
 
 const copy = {
   en: {
+    kicker: "PERSONAL REPLY · HOLISTIC HOUSE",
     preference: "Preferred session format",
-    contact: "Your email or phone",
+    contact: "Where can Andrey reply?",
     placeholder: "Email or +1…",
-    consent: "I agree to use my contact only for a reply to this request. No marketing.",
-    action: "Send request",
-    sending: "Sending…",
-    notice: "Free to enquire · No booking or payment · Please do not enter health details.",
-    invalid: "Enter a valid email or international phone starting with +.",
-    error: "Request not saved. Please retry or contact Andrey directly.",
-    direct: "Contact Andrey",
-    saved: "Request received",
-    next: "Andrey will reply about the next step. Nothing has been booked or charged.",
+    consent: "I agree to save my contact for one personal reply about this request. No marketing.",
+    channelsTitle: "Continue with Andrey",
+    channelsHint: "Choose a messenger. Your contact is saved first.",
+    saving: "Saving…",
+    notice: "Free to enquire · No confirmed booking or payment · Please don't enter health details.",
+    invalid: "Enter a valid email or an international phone number starting with +.",
+    consentRequired: "Please agree to a personal reply before continuing.",
+    error: "We couldn't save your contact, so the messenger wasn't opened. Please try again.",
+    handoffError: "Your contact was saved, but the messenger did not open. Use either link below.",
+    saved: "Your request is saved",
+    next: "Continue in your preferred messenger. Sending the message is your choice.",
     reference: "Reference",
+    message: "I would like to ask about this service. Please let me know the next step.",
   },
   ru: {
+    kicker: "ЛИЧНЫЙ ОТВЕТ · HOLISTIC HOUSE",
     preference: "Предпочитаемый формат",
-    contact: "Ваш email или телефон",
+    contact: "Как с вами связаться?",
     placeholder: "Email или +1…",
-    consent: "Согласен(-на) использовать контакт только для ответа на заявку, без рассылок.",
-    action: "Отправить заявку",
-    sending: "Отправляем…",
-    notice: "Запрос бесплатный · Без записи и оплаты · Не пишите сведения о здоровье.",
-    invalid: "Укажите email или номер с международным кодом +.",
-    error: "Заявка не сохранена. Повторите попытку или напишите Андрею.",
-    direct: "Написать Андрею",
-    saved: "Заявка получена",
-    next: "Андрей ответит и подскажет следующий шаг. Запись и оплата не оформлены.",
-    reference: "Номер",
+    consent: "Согласен(-на) сохранить контакт для личного ответа по этой заявке. Без рассылок.",
+    channelsTitle: "Напишите Андрею",
+    channelsHint: "Выберите мессенджер. Сначала контакт сохранится в CRM.",
+    saving: "Сохраняем…",
+    notice: "Запрос бесплатный · Без подтверждённой записи и оплаты · Не пишите данные о здоровье.",
+    invalid: "Укажите email или номер телефона с международным кодом +.",
+    consentRequired: "Подтвердите согласие на личный ответ по заявке.",
+    error: "Контакт не сохранился, поэтому чат не открыт. Попробуйте ещё раз.",
+    handoffError: "Контакт сохранён, но чат не открылся. Выберите мессенджер по ссылке ниже.",
+    saved: "Заявка сохранена",
+    next: "Теперь можно написать в удобный мессенджер. Сообщение отправляете вы сами.",
+    reference: "Номер заявки",
+    message: "Хочу узнать подробнее об этой услуге. Подскажите, пожалуйста, следующий шаг.",
   },
   es: {
+    kicker: "RESPUESTA PERSONAL · HOLISTIC HOUSE",
     preference: "Formato de sesión preferido",
-    contact: "Tu correo o teléfono",
+    contact: "¿Dónde puede responderte Andrey?",
     placeholder: "Correo o +1…",
-    consent: "Acepto usar mi contacto solo para responder a esta solicitud. Sin publicidad.",
-    action: "Enviar solicitud",
-    sending: "Enviando…",
-    notice: "Consulta gratuita · Sin reserva ni pago · No incluyas datos de salud.",
-    invalid: "Introduce un correo válido o un teléfono internacional con +.",
-    error: "No se guardó la solicitud. Inténtalo otra vez o escribe a Andrey.",
-    direct: "Contactar con Andrey",
-    saved: "Solicitud recibida",
-    next: "Andrey responderá sobre el siguiente paso. No se ha reservado ni cobrado nada.",
+    consent: "Acepto guardar mi contacto para una respuesta personal sobre esta solicitud. Sin publicidad.",
+    channelsTitle: "Escribe a Andrey",
+    channelsHint: "Elige un mensajero. Primero guardamos tu contacto.",
+    saving: "Guardando…",
+    notice: "Consulta gratuita · Sin reserva ni pago confirmado · No incluyas datos de salud.",
+    invalid: "Introduce un correo válido o un teléfono internacional que empiece por +.",
+    consentRequired: "Confirma que aceptas recibir una respuesta personal.",
+    error: "No pudimos guardar tu contacto; no se abrió el mensajero. Inténtalo de nuevo.",
+    handoffError: "Tu contacto se guardó, pero no se abrió el chat. Elige uno de los enlaces.",
+    saved: "Solicitud guardada",
+    next: "Continúa en el mensajero que prefieras. Tú decides si envías el mensaje.",
     reference: "Referencia",
+    message: "Me gustaría recibir información sobre este servicio y el próximo paso.",
   },
 } as const;
 
@@ -66,7 +82,7 @@ function parseContact(raw: string): { email: string; phone: string } | null {
   return /^\+[1-9][0-9]{7,14}$/.test(phone) ? { email: "", phone } : null;
 }
 
-/** One clear final action; a CRM lead only exists after the API confirms a DB commit. */
+/** Shared public intake: a server-confirmed CRM write always precedes messenger handoff. */
 export function CompactLeadCapture({
   locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant, formatOptions, formatLabel,
 }: {
@@ -76,7 +92,7 @@ export function CompactLeadCapture({
   lead: string;
   id?: string;
   disclaimer?: string;
-  /** Trustworthy service route for a form embedded on /, which is not an allowed enquiry source. */
+  /** Public source for a form embedded on /, which is not an allowed enquiry source. */
   sourcePath?: string;
   variant?: "inline";
   formatOptions?: readonly { readonly value: string; readonly label: string; readonly description?: string }[];
@@ -87,29 +103,50 @@ export function CompactLeadCapture({
   const [address, setAddress] = useState("");
   const [selectedFormat, setSelectedFormat] = useState(formatOptions?.[0]?.value || "");
   const [consent, setConsent] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [busy, setBusy] = useState<Channel | null>(null);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
   const operationId = useRef<string | null>(null);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!consent || sending || reference) return;
+  function channelUrl(referenceCode: string, channel: Channel) {
+    // Never put visitor contact, private answers, or health details in the messenger draft.
+    const whatsapp = whatsappEnquiryUrl({
+      locale,
+      service: serviceTitle,
+      request: t.message + " " + t.reference + ": " + referenceCode,
+      option: formatOptions?.length && selectedFormat ? selectedFormat : undefined,
+      pagePath: sourcePath || pathname || "/" + locale + "/services",
+    });
+    return channel === "whatsapp" ? whatsapp : telegramEnquiryUrlFromWhatsApp(whatsapp);
+  }
+
+  async function chooseChannel(channel: Channel) {
+    if (busy || reference) return;
     const contact = parseContact(address);
     if (!contact) { setError(t.invalid); return; }
-    setSending(true);
+    if (!consent) { setError(t.consentRequired); return; }
+
+    // Reserve the new tab within the user's tap: asynchronous window.open is
+    // frequently blocked by mobile Safari after the CRM network request.
+    const handoffWindow = window.open("about:blank", "_blank");
+    if (handoffWindow) handoffWindow.opener = null;
+    const requestId = operationId.current || window.crypto.randomUUID();
+    operationId.current = requestId;
+    setBusy(channel);
     setError("");
+    let committed: SavedEnquiry | null = null;
+
     try {
-      operationId.current ||= window.crypto.randomUUID();
       const response = await fetch("/api/service-enquiries", {
         method: "POST",
         credentials: "same-origin",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          operationId: operationId.current,
+          operationId: requestId,
           serviceTitle,
-          ...(formatOptions?.length && selectedFormat ? { description: "Preferred session format: " + selectedFormat } : {}),
+          ...(formatOptions?.length && selectedFormat
+            ? { description: "Preferred session format: " + selectedFormat } : {}),
           sourcePath: sourcePath || pathname || "/" + locale + "/services",
           locale,
           contact: { displayName: "", ...contact },
@@ -119,71 +156,121 @@ export function CompactLeadCapture({
       });
       const result = await response.json().catch(() => null);
       if (!response.ok || result?.saved !== true ||
-          !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
+        !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
         if (response.status === 409) operationId.current = null;
         throw new Error("ENQUIRY_NOT_SAVED");
       }
-      setReference(result.referenceCode);
+      committed = { saved: true, referenceCode: result.referenceCode };
+      setReference(committed.referenceCode);
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
-          JSON.stringify({ referenceCode: result.referenceCode, createdAt: Date.now() }));
-      } catch { /* Receipt storage is optional; a committed enquiry remains saved. */ }
+          JSON.stringify({ referenceCode: committed.referenceCode, createdAt: Date.now() }));
+      } catch { /* Receipt storage is optional; the DB commit is already authoritative. */ }
     } catch {
+      try { handoffWindow?.close(); } catch { /* Never navigate after a failed DB save. */ }
       setError(t.error);
+      return;
     } finally {
-      setSending(false);
+      setBusy(null);
+    }
+
+    // A browser handoff can fail after the DB commit. Keep both fallback links
+    // visible under the saved reference; never resubmit or claim the CRM save failed.
+    try {
+      const destination = channelUrl(committed.referenceCode, channel);
+      if (handoffWindow && !handoffWindow.closed) {
+        handoffWindow.location.replace(destination);
+      } else {
+        setError(t.handoffError);
+      }
+    } catch {
+      try { handoffWindow?.close(); } catch { /* Saved receipt remains on screen. */ }
+      setError(t.handoffError);
     }
   }
 
   return (
     <section id={id} className={[styles.section, variant === "inline" ? styles.inline : ""].filter(Boolean).join(" ")}
       data-compact-last-slide={variant === "inline" ? undefined : ""}
-      data-inline-offer-form={variant === "inline" ? "" : undefined} data-service-lead-capture
-      lang={locale} aria-label={title}>
+      data-inline-offer-form={variant === "inline" ? "" : undefined}
+      data-service-lead-capture lang={locale} aria-label={title}>
       <div className={styles.head}>
-        <h2>{title}</h2>
-        <p>{lead}</p>
+        <div className={styles.intro}>
+          <p className={styles.kicker}><ShieldCheck size={14} aria-hidden="true" />{t.kicker}</p>
+          <h2>{title}</h2>
+          <p>{lead}</p>
+        </div>
+        <StaticPortrait src="/images/holistic-house/andy-about.png" alt="Andrey Litvinov"
+          width={160} height={180} className={styles.portrait}
+          sizes="(max-width: 600px) 70px, 82px" loading="lazy" />
       </div>
       {reference ? (
-        <div className={styles.receipt} role="status" data-lead-saved>
-          <CheckCircle2 size={25} aria-hidden="true" />
-          <strong>{t.saved}</strong>
-          <p>{t.next}</p>
-          <small>{t.reference}: {reference}</small>
+        <div className={styles.confirmation}>
+          <div className={styles.receipt} role="status" data-lead-saved>
+            <CheckCircle2 size={24} aria-hidden="true" />
+            <div>
+              <strong>{t.saved}</strong>
+              <p>{t.next}</p>
+              <small>{t.reference}: {reference}</small>
+            </div>
+          </div>
+          <div className={styles.channels} role="group" aria-label={t.channelsTitle}>
+            <a href={channelUrl(reference, "whatsapp")} target="_blank" rel="noopener noreferrer"
+              className={[styles.channel, styles.whatsapp].join(" ")} data-compact-channel="whatsapp">
+              <MessageCircle size={19} aria-hidden="true" /><span>WhatsApp</span>
+            </a>
+            <a href={channelUrl(reference, "telegram")} target="_blank" rel="noopener noreferrer"
+              className={[styles.channel, styles.telegram].join(" ")} data-compact-channel="telegram">
+              <Send size={19} aria-hidden="true" /><span>Telegram</span>
+            </a>
+          </div>
         </div>
       ) : (
-        <form className={styles.form} onSubmit={event => { void submit(event); }} data-compact-lead-form>
+        <form className={styles.form} data-compact-lead-form onSubmit={event => event.preventDefault()}>
           {formatOptions?.length ? (
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>
-              <select value={selectedFormat} required
+              <select value={selectedFormat} required disabled={busy !== null}
                 onChange={event => { setSelectedFormat(event.target.value); operationId.current = null; setError(""); }}>
                 {formatOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
           ) : null}
-          <div className={styles.fieldRow}>
-            <label className={styles.field}>
-              <span>{t.contact}</span>
-              <input type="text" name="contact" inputMode="email" autoComplete="off"
-                value={address} maxLength={254} required placeholder={t.placeholder}
-                onChange={event => { setAddress(event.target.value); operationId.current = null; setError(""); }} />
-            </label>
-            <button className={styles.submit} type="submit" disabled={!consent || sending}>
-              {sending ? t.sending : t.action}<ArrowRight size={17} aria-hidden="true" />
-            </button>
-          </div>
+          <label className={styles.field}>
+            <span>{t.contact}</span>
+            <input type="text" name="contact" inputMode="text" autoComplete="off"
+              value={address} maxLength={254} required disabled={busy !== null}
+              placeholder={t.placeholder} aria-invalid={Boolean(error)}
+              onChange={event => { setAddress(event.target.value); operationId.current = null; setError(""); }} />
+          </label>
           <label className={styles.consent}>
-            <input type="checkbox" required checked={consent}
+            <input type="checkbox" required checked={consent} disabled={busy !== null}
               onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
             <span>{t.consent}</span>
           </label>
+          <div className={styles.channelHeading}>
+            <strong>{t.channelsTitle}</strong>
+            <span>{t.channelsHint}</span>
+          </div>
+          <div className={styles.channels} role="group" aria-label={t.channelsTitle}>
+            <button className={[styles.channel, styles.whatsapp].join(" ")} type="button"
+              disabled={busy !== null} onClick={() => { void chooseChannel("whatsapp"); }}
+              data-compact-channel="whatsapp">
+              <MessageCircle size={19} aria-hidden="true" />
+              <span>{busy === "whatsapp" ? t.saving : "WhatsApp"}</span>
+            </button>
+            <button className={[styles.channel, styles.telegram].join(" ")} type="button"
+              disabled={busy !== null} onClick={() => { void chooseChannel("telegram"); }}
+              data-compact-channel="telegram">
+              <Send size={19} aria-hidden="true" />
+              <span>{busy === "telegram" ? t.saving : "Telegram"}</span>
+            </button>
+          </div>
+          {error ? <p className={styles.error} role="alert">{error}</p> : null}
           <p className={styles.notice}>{t.notice}</p>
-          {error ? <p className={styles.error} role="alert">{error}{" "}
-            <Link href="https://t.me/AndyTherapist" target="_blank" rel="noopener noreferrer">{t.direct}</Link>
-          </p> : null}
         </form>
       )}
+      {reference && error ? <p className={styles.error} role="alert">{error}</p> : null}
       {disclaimer ? <p className={styles.disclaimer}>{disclaimer}</p> : null}
     </section>
   );
