@@ -17,14 +17,16 @@ test('broken legacy free-test promo is absent from all home locales and source',
   assert.equal(existsSync(new URL('../components/home-free-tests-banner.module.css', import.meta.url)), false)
 })
 
-test('existing photo-led services and five topic journeys stay in the right order', () => {
-  const serviceCardsAt = home.indexOf('<ServicesSolutions locale={locale} variant="home" />')
-  const topicCardsAt = home.indexOf('<HomepageTopicJourneys locale={locale} />')
-  assert.ok(serviceCardsAt >= 0 && topicCardsAt > serviceCardsAt)
+test('free courses and tests live in the seven steps; lower topics are compact filters', () => {
+  const feature = read('components/home-featured-workspace.tsx')
+  const filters = read('components/home-more-disclosure.tsx')
+  assert.match(feature, /"courses": \{/)
+  assert.match(feature, /"personality": \{/)
+  assert.match(feature, /"allTests":/)
+  assert.match(feature, /"opora":/)
   assert.match(journeys, /id="hh-topic-journeys"/)
   assert.ok(journeys.includes('TOPIC_JOURNEYS.map'))
-  assert.ok(journeys.includes('explore/${journey.id}'))
-  assert.match(home, /data-hero-cta": "free-tests"/)
-  assert.match(home, /event="self_check_start"/)
-  assert.ok(home.includes('<HomepageContactCta locale={locale} />'))
-})
+  assert.match(filters, /data-home-topic-filter="love"/)
+  assert.match(filters, /data-home-topic-filter="business"/)
+  assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/)
+});
