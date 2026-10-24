@@ -250,6 +250,11 @@
   .adaptivePanel{padding:9px 11px}
 }
 
+/* Adults choose intimacy self-coaching explicitly; no personal age data is collected. */
+.adultConfirm{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border:1px solid #dccfba;border-radius:10px;background:#fbf6ee;font-size:12px;line-height:1.4;color:#594637;cursor:pointer}
+.adultConfirm input{flex:none;width:19px;height:19px;margin:0;accent-color:#8a3851}
+.adultConfirm:focus-within{outline:2px solid #0a8290;outline-offset:2px}
+
 /* Existing owner-encrypted plan, reused only after an explicit tap in a new session. */
 .previousPlanPanel{display:grid;gap:7px;background:#eaf3ed;border:1px solid #bad6c8;
   border-radius:13px;padding:12px 14px;min-width:0}
