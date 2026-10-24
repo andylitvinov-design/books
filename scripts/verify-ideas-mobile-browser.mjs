@@ -274,6 +274,8 @@ async function verify(browserType, locale, width) {
       assert.equal(await firstPrompt.locator('[data-coaching-conversational-turn]').count(),1,
         label + ": coaching starts with a human-language welcome");
       const spoken = 'I would like a clearer conversation';
+      const ownWords = firstPrompt.locator('details:has(#public-coaching-answer)');
+      if (await ownWords.count()) await ownWords.locator('summary').tap();
       await guestSession.locator('#public-coaching-answer').fill(spoken);
       await guestSession.locator('footer button[class*="primary"]').tap();
       const reply = guestSession.locator('[data-coaching-conversational-turn]').first();
