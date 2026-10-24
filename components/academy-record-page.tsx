@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { AcademyBackLink } from "@/components/academy-hub";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
+import { AcademyVideoCourseJourney } from "@/components/academy-video-course-journey";
+import { academyVideoCourseIntro } from "@/data/academy/video-course-introductions";
 import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
 import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
@@ -124,6 +126,10 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
   const sourceVideos = isVerbatimTantraArchive ? tantraReikiFullArchive.html5Videos[archiveLocale] : [];
   const publicBlocks = isCanonicalYggdrasil ? [] : academyPublicBlocks(record, locale);
   const publicOmittedCount = isCanonicalYggdrasil ? 0 : academyPublicOmittedCount(record, locale);
+  const isRussianEmbeddedCourse = record.sourceLocale === "ru" && (
+    record.logicalId === "mysteries/archetypes-of-gods" ||
+    record.logicalId === "mysteries/guidance-of-gods"
+  ) && videos.length > 0;
   const hasBody = publicBlocks.some((block) => block.type !== "h1");
   const outline = publicBlocks.map((block, index) => ({ block, index })).filter(({ block }) => block.type === "h2" || block.type === "h3").slice(0, 32);
   return (
@@ -138,17 +144,6 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <p className="homeopathy-kicker">{text.title}</p><h1>{academyDisplayTitle(record, locale)}</h1>
             <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
           </header>
-        ) : null}
-        {["videos/egypt-osiris", "mysteries/egypt/high-wisdom"].includes(record.logicalId) ? (
-          <aside className="academy-archive-notice" data-egypt-course-invitation>
-            <strong>{locale === "ru" ? "Египетское жречество — новый видеокурс" : locale === "es" ? "Sacerdocio egipcio — nuevo videocurso" : "Egyptian Priesthood — interactive video course"}</strong>
-            <p>{locale === "ru" ? "Семь оригинальных записей Осириса, короткие экраны, вопросы и практика — по образцу курса «Практик Рейки»."
-              : locale === "es" ? "Siete vídeos originales de Osiris, prácticas y reflexión, una idea por pantalla."
-              : "Seven original Osiris videos, guided screens and reflective practice, based on the Reiki Practitioner format."}</p>
-            <Link href={"/" + locale + "/academy/egyptian-priesthood"} prefetch={false}>
-              {locale === "ru" ? "Открыть программу →" : locale === "es" ? "Abrir programa →" : "Open programme →"}
-            </Link>
-          </aside>
         ) : null}
         {isVerbatimTantraArchive ? (
           <>
@@ -190,6 +185,32 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 <figcaption>{locale === "ru" ? "Реальная фотография из архива практик" : locale === "es" ? "Fotografía real del archivo" : "Real photograph from the practice archive"}</figcaption>
               </figure>
             </section>
+            {isVerbatimTantraArchive && (videos.length > 0 || sourceVideos.length > 0) ? (
+              <div id="academy-tantra-video-course" className="academy-tantra-video-course">
+                <AcademyVideoCourseJourney
+                  locale={locale}
+                  courseId={"tantra-original:" + record.logicalId}
+                  title={locale === "ru" ? "Тантра Рейки — видеоматериалы" : locale === "es" ? "Tantra Reiki — videolecciones" : "Tantra Reiki — video lessons"}
+                  description={locale === "ru" ? "Видеозаписи из оригинальной авторской программы. Каждое видео сопровождается экраном вопросов и комментариев." : locale === "es" ? "Grabaciones originales con una reflexión después de cada vídeo." : "Original course recordings, each followed by a reflection slide."}
+                  poster={videos[0] ? "https://i.ytimg.com/vi/" + videos[0].id + "/hqdefault.jpg" : undefined}
+                  lessons={[
+                    ...videos.map((video, index) => ({
+                      id: video.id,
+                      title: video.lessonTitle ?? (locale === "ru" ? "Видеоурок " : "Video lesson ") + (index + 1),
+                      order: index + 1,
+                      youtubeId: video.id,
+                    })),
+                    ...sourceVideos.map((video, index) => ({
+                      id: "archive-video-" + index,
+                      title: (locale === "ru" ? "Видео из архива " : "Archive video ") + (index + 1),
+                      order: videos.length + index + 1,
+                      mediaUrl: video.src,
+                      poster: video.poster ?? undefined,
+                    })),
+                  ]}
+                />
+              </div>
+            ) : null}
             <section className="tantra-level-summary" aria-label={locale === "ru" ? "Первая ступень и остальные по желанию" : locale === "es" ? "Nivel 1 y niveles posteriores opcionales" : "Level 1 first; optional later levels"}><TantraReikiJourney locale={locale} /></section>
             <section className="tantra-mobile-guide tantra-mobile-guide--combined reiki-screen reiki-screen--feature" id="tantra-levels" aria-labelledby="tantra-mobile-guide-heading">
               <div className="tantra-mobile-guide__cover" aria-hidden="true">
@@ -214,12 +235,14 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <div className="reiki-screen reiki-screen--social"><TantraReikiTestimonials locale={locale} /></div>
           </>
         ) : null}
-        {!isVerbatimTantraArchive && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
+        {!isVerbatimTantraArchive && record.direction !== "videos" && !isRussianEmbeddedCourse && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
         {record.routeKey === "history" ? <section className="academy-history-links" aria-label="Academy history"><Link href={"/" + locale + "/academy/history/faculties"}>{locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions"}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/academy/history/student-experiences"}>{locale === "ru" ? "Исторические отзывы студентов" : locale === "es" ? "Experiencias históricas de estudiantes" : "Historical student experiences"}<span aria-hidden="true">→</span></Link></section> : null}
-        {record.direction === "videos" && videos.length > 0 ? (
+        {(record.direction === "videos" || isRussianEmbeddedCourse) && videos.length > 0 ? (
           <AcademyCourseVideoPlaylist
             locale={locale}
             courseTitle={academyDisplayTitle(record, locale)}
+            courseId={record.logicalId}
+            description={academyVideoCourseIntro(record.logicalId, locale)}
             lessons={videos.map((video, index) => ({
               id: video.id,
               title: video.lessonTitle ?? academyDisplayTitle(record, locale) + " · " + (index + 1),
@@ -227,12 +250,23 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             }))}
           />
         ) : null}
+        {["videos/egypt-osiris", "mysteries/egypt/high-wisdom"].includes(record.logicalId) ? (
+          <aside className="academy-archive-notice" data-egypt-course-invitation>
+            <strong>{locale === "ru" ? "Египетское жречество — новый видеокурс" : locale === "es" ? "Sacerdocio egipcio — nuevo videocurso" : "Egyptian Priesthood — interactive video course"}</strong>
+            <p>{locale === "ru" ? "Семь оригинальных записей Осириса, короткие экраны, вопросы и практика — по образцу курса «Практик Рейки»."
+              : locale === "es" ? "Siete vídeos originales de Osiris, prácticas y reflexión, una idea por pantalla."
+              : "Seven original Osiris videos, guided screens and reflective practice, based on the Reiki Practitioner format."}</p>
+            <Link href={"/" + locale + "/academy/egyptian-priesthood"} prefetch={false}>
+              {locale === "ru" ? "Открыть программу →" : locale === "es" ? "Abrir programa →" : "Open programme →"}
+            </Link>
+          </aside>
+        ) : null}
         {isCanonicalYggdrasil ? (
           <YggdrasilProgramLanding locale={locale} />
         ) : isVerbatimTantraArchive ? (
           <section className="reiki-screen reiki-screen--archive" aria-label={locale === "ru" ? "Материалы и история Тантра Рейки" : locale === "es" ? "Materiales e historia de Tantra Reiki" : "Tantra Reiki teaching & source archive"}><TantraReikiProgrammeModules locale={locale} publicBlocks={publicBlocks} /></section>
         ) : hasBody ? <div className="academy-source-content">{renderBlocks(publicBlocks)}</div> : <p className="academy-empty-source">{text.noContent}</p>}
-        {!isVerbatimTantraArchive && record.direction !== "videos" && (sourceVideos.length || videos.length) ? (
+        {!isVerbatimTantraArchive && record.direction !== "videos" && !isRussianEmbeddedCourse && (sourceVideos.length || videos.length) ? (
           <section className="academy-media-section" aria-label={text.videos}>
             <h2>{text.videos}</h2>
             {sourceVideos.length ? <div className="academy-native-video-grid">{sourceVideos.map((video, index) => <figure className="academy-native-video" key={video.src}><video controls playsInline preload="metadata" poster={video.poster ?? undefined}><source src={video.src} type={video.type} /></video><figcaption>{locale === "ru" ? "Видео из исходной страницы" : locale === "es" ? "Video de la página fuente" : "Video from the source page"} {index + 1}</figcaption></figure>)}</div> : null}

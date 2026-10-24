@@ -1,0 +1,96 @@
+.root {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 14px 0 22px;
+  padding: clamp(10px, 2vw, 18px);
+  border: 1px solid #ddcdbb;
+  border-radius: 19px;
+  background: #fffbf6;
+  color: #34271f;
+  box-shadow: 0 9px 26px rgb(74 52 36 / 7%);
+  scroll-margin-top: 75px;
+}
+.root *, .root *::before, .root *::after { box-sizing: border-box; }
+.root :is(button, textarea, a):focus-visible { outline: 3px solid #965b3e; outline-offset: 3px; }
+.progressHeader { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 7px; color: #805d44; font: 750 11px/1.3 system-ui, sans-serif; }
+.progress { display: block; width: 100%; height: 4px; border: 0; border-radius: 20px; margin: 0 0 12px; accent-color: #9a593a; overflow: hidden; }
+.progress::-webkit-progress-bar { border-radius: 20px; background: #ebddcf; }
+.progress::-webkit-progress-value { border-radius: 20px; background: #98563b; }
+.slide { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 9px; min-height: clamp(290px, 48svh, 500px); }
+.eyebrow { display: block; color: #995d3d; font: 800 10px/1.3 system-ui, sans-serif; letter-spacing: .09em; text-transform: uppercase; }
+.slide h2 { margin: 7px 0 0; color: #36261e; font: 500 clamp(20px, 2.9vw, 33px)/1.16 Georgia, serif; overflow-wrap: anywhere; }
+.introLayout { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .9fr); gap: clamp(12px, 2.5vw, 25px); align-items: center; }
+.introCopy { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.introCopy > p { max-width: 54ch; margin: 11px 0 0; color: #655548; font: 500 clamp(12px, 1.35vw, 15px)/1.52 system-ui, sans-serif; }
+.introCopy > .howItWorks { color: #84604a; }
+.heroImage { display: block; width: 100%; height: clamp(240px, 39svh, 420px); border-radius: 13px; object-fit: cover; background: #eee3d5; }
+.lessonHeading { min-width: 0; }
+.lessonHeading h2 { margin-top: 5px; font-size: clamp(19px, 2.5vw, 28px); }
+.videoStage { width: 100%; max-width: 850px; margin: 3px auto 0; min-width: 0; }
+.videoStage :global(.academy-video-choice) { width: 100%; }
+.videoStage :global(.academy-video-poster) { position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: 12px; background: #191a1e; color: #fff; cursor: pointer; overflow: hidden; }
+.videoStage :global(.academy-video-poster > img) { display: block; width: 100%; aspect-ratio: 16/9; max-height: min(44svh, 360px); object-fit: contain; }
+.videoStage :global(.academy-video-poster > span) { position: absolute; inset: auto 6px 6px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 8px; border-radius: 7px; background: rgb(27 27 27 / 80%); font: 700 12px/1.4 system-ui, sans-serif; }
+.videoStage :global(.academy-video-poster svg) { width: 17px; height: 17px; }
+.videoStage :global(.academy-video-frame) { width: 100%; aspect-ratio: 16/9; max-height: min(44svh, 360px); overflow: hidden; border-radius: 12px; background: #111; }
+.videoStage :global(.academy-video-frame iframe) { display: block; width: 100%; height: 100%; border: 0; }
+.videoStage :global(.academy-video-direct-link) { display: inline-block; margin: 5px 0 0; color: #805438; font: 600 11px/1.2 system-ui, sans-serif; }
+.nativeVideo, .externalFrame, .vimeoPlay { display: block; width: 100%; aspect-ratio: 16/9; max-height: min(44svh, 360px); border: 0; border-radius: 11px; object-fit: contain; background: #1a1920; }
+.vimeoPlay { position: relative; color: white; cursor: pointer; overflow: hidden; }
+.vimeoPlay img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .65; }
+.vimeoPlay svg { position: relative; z-index: 1; display: block; margin: auto; }
+.vimeoPlay span { position: relative; z-index: 1; font-weight: 700; }
+.videoCaption { margin: 7px 0; color: #66594e; font: 500 12px/1.4 system-ui, sans-serif; }
+.mediaError { padding: 32px; text-align: center; background: #f0e5d8; font-size: 13px; }
+.reflectionStage { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.reflectionImage { display: block; width: 125px; height: 76px; border-radius: 9px; object-fit: cover; background: #efe0d0; }
+.reflectionStage label { display: flex; align-items: center; gap: 9px; color: #50392b; font: 750 clamp(13px, 1.7vw, 16px)/1.35 system-ui, sans-serif; }
+.reflectionStage label svg { flex: 0 0 auto; color: #a66845; }
+.reflectionStage textarea, .finalNotes textarea { display: block; width: 100%; min-width: 0; min-height: 125px; resize: vertical; padding: 11px 12px; border: 1px solid #c9b69f; border-radius: 12px; background: #fff; color: #342b23; font: 500 14px/1.5 system-ui, sans-serif; }
+.reflectionStage textarea::placeholder { color: #877b70; }
+.privacy { max-width: 76ch; margin: 0; color: #756b64; font: 500 10px/1.42 system-ui, sans-serif; }
+.endSlide { display: flex; flex-direction: column; align-items: flex-start; gap: 11px; }
+.endSlide > svg { color: #79936a; }
+.endSlide h2 { margin: 0; }
+.endSlide > p { margin: 0; color: #736153; font: 500 13px/1.55 system-ui, sans-serif; }
+.finalNotes { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+.finalNotes textarea { min-height: 100px; }
+.finalNotes span { color: #70523f; font: 600 11px/1.3 system-ui, sans-serif; }
+.copyButton { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid #d4bcaa; border-radius: 8px; background: #f7eee5; color: #724934; font: 750 12px/1.4 system-ui, sans-serif; cursor: pointer; }
+.controls { display: flex; justify-content: space-between; align-items: stretch; gap: 8px; margin-top: 13px; }
+.controls button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 45px; padding: 9px 13px; border-radius: 9px; cursor: pointer; font: 750 12px/1.3 system-ui, sans-serif; }
+.back { border: 1px solid #cfbda9; color: #755642; background: #fff; }
+.back:disabled { opacity: .5; cursor: default; }
+.forward { border: 1px solid #85442d; background: #85442d; color: #fff; text-align: center; }
+.forward:hover { background: #6e3927; }
+@media (max-width: 700px) {
+  .root { width: 100%; margin: 10px 0 16px; padding: 10px; border-radius: 12px; }
+  .progress { margin-bottom: 8px; }
+  .slide { gap: 7px; min-height: 0; }
+  .introLayout { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+  .introLayout .heroImage { order: -1; width: 100%; height: clamp(105px, 22svh, 195px); }
+  .introCopy h2 { font-size: clamp(21px, 6vw, 27px); margin-top: 4px; }
+  .introCopy > p { margin-top: 6px; font-size: 12px; line-height: 1.38; }
+  .lessonHeading h2 { font-size: clamp(18px, 5.5vw, 24px); line-height: 1.15; }
+  .videoStage :global(.academy-video-frame), .videoStage :global(.academy-video-poster > img),
+  .nativeVideo, .externalFrame, .vimeoPlay { max-height: min(38svh, 290px); }
+  .reflectionStage { gap: 7px; }
+  .reflectionImage { width: 94px; height: 55px; }
+  .reflectionStage textarea { min-height: 115px; padding: 9px; }
+  .controls { margin-top: 10px; }
+  .controls button { min-height: 43px; padding: 8px 10px; font-size: 11px; }
+}
+@media (max-width: 360px), (max-height: 630px) {
+  .root { padding: 8px; }
+  .introLayout .heroImage { height: min(17svh, 120px); }
+  .introCopy > p { font-size: 11px; }
+  .videoStage :global(.academy-video-frame), .videoStage :global(.academy-video-poster > img),
+  .nativeVideo, .externalFrame, .vimeoPlay { max-height: min(33svh, 235px); }
+  .reflectionImage { height: 44px; width: 76px; }
+  .reflectionStage textarea { min-height: 90px; }
+  .controls button { padding: 7px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root * { scroll-behavior: auto; transition: none !important; }
+}

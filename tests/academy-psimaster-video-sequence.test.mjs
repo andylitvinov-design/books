@@ -39,46 +39,48 @@ test("all 45 PsiMaster video lessons retain original per-course order without du
   }
 });
 
-test("seven video course pages use the complete sorted manifest in a single selectable video player", async () => {
-  const [page, playlist, css, player] = await Promise.all([
+test("seven original video course pages keep all lessons but show one video and one reflection per slide", async () => {
+  const [page, wrapper, journey, css, player] = await Promise.all([
     read("components/academy-record-page.tsx"),
     read("components/academy-course-video-playlist.tsx"),
-    read("components/academy-course-video-playlist.module.css"),
+    read("components/academy-video-course-journey.tsx"),
+    read("components/academy-video-course-journey.module.css"),
     read("components/academy-video-player.tsx"),
   ]);
   assert.match(page, /record\.direction === "videos" \? allVideos : allVideos\.slice\(0, 48\)/);
   assert.match(page, /\.sort\(\(a, b\) => \(a\.order \?\? 999\) - \(b\.order \?\? 999\)\)/);
-  assert.match(page, /record\.direction === "videos" && videos\.length > 0/);
+  assert.match(page, /record\.direction === "videos" \|\| isRussianEmbeddedCourse/);
   assert.match(page, /<AcademyCourseVideoPlaylist/);
   assert.match(page, /lessons=\{videos\.map\(\(video, index\) => \(\{/);
-  assert.match(page, /record\.direction !== "videos" && \(sourceVideos\.length \|\| videos\.length\)/);
   assert.ok(page.indexOf("<AcademyCourseVideoPlaylist") < page.indexOf("hasBody ? <div className=\"academy-source-content\""),
-    "Video course player must be before long historical text");
-  assert.match(playlist, /data-video-lesson-count=\{lessons\.length\}/);
-  assert.match(playlist, /lessons\.map\(\(lesson, lessonIndex\) =>/);
-  assert.match(playlist, /data-academy-video-id=\{lesson\.id\}/);
-  assert.match(playlist, /data-source-order=\{lesson\.order\}/);
-  assert.match(playlist, /aria-current=\{lessonIndex === index \? "step" : undefined\}/);
-  assert.match(playlist, /setSelectedIndex\(indexToOpen\)/);
-  assert.match(playlist, /key=\{active\.id\}/);
-  assert.match(playlist, /onClick=\{\(\) => choose\(index - 1\)\}/);
-  assert.match(playlist, /onClick=\{\(\) => choose\(index \+ 1\)\}/);
-  assert.match(playlist, /posterLoading="eager"/);
-  assert.doesNotMatch(playlist, /\.slice\(/);
-  assert.match(css, /@media \(max-width: 720px\)/);
-  assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
+    "Video course must be before long historical text");
+  assert.match(wrapper, /data-video-lesson-count=\{lessons\.length\}/);
+  assert.match(wrapper, /<AcademyVideoCourseJourney/);
+  assert.match(wrapper, /youtubeId: lesson\.id/);
+  assert.match(journey, /const total = 2 \+ lessons\.length \* 2/);
+  assert.match(journey, /position % 2 === 1/);
+  assert.match(journey, /data-course-video-phase=/);
+  assert.match(journey, /data-academy-video-id=\{lesson\.id\}/);
+  assert.match(journey, /data-source-order=\{lesson\.order\}/);
+  assert.match(journey, /<textarea/);
+  assert.match(journey, /maxLength=\{2000\}/);
+  assert.match(journey, /sessionStorage\.setItem/);
+  assert.match(journey, /<AcademyVideoPlayer key=\{lesson\.id\}/);
+  assert.doesNotMatch(journey, /fetch\(|localStorage|\/api\/app\/|\/api\/crm\/|autoplay=1/);
+  assert.match(css, /@media \(max-width: 700px\)/);
+  assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(player, /youtube-nocookie\.com\/embed/);
   assert.match(player, /\{playing \? \(/);
-  assert.match(player, /loading=\{posterLoading\}/);
-  assert.match(player, /className="academy-video-direct-link"/);
 });
 
-test("poster-first playlist requires Play; lesson switches reset the previous iframe", async () => {
-  const [playlist, player] = await Promise.all([
-    read("components/academy-course-video-playlist.tsx"),
+test("video player remains poster-first and unmounts iframe between separate reflection slides", async () => {
+  const [journey, player] = await Promise.all([
+    read("components/academy-video-course-journey.tsx"),
     read("components/academy-video-player.tsx"),
   ]);
-  assert.match(playlist, /<AcademyVideoPlayer[\s\S]*?key=\{active\.id\}/);
+  assert.match(journey, /isVideo \? \(/);
+  assert.match(journey, /<AcademyVideoPlayer key=\{lesson\.id\}/);
+  assert.match(journey, /isReflection/);
   assert.match(player, /const \[playing, setPlaying\] = useState\(false\)/);
   assert.match(player, /onClick=\{\(\) => setPlaying\(true\)\}/);
   assert.match(player, /autoplay=1&playsinline=1&rel=0/);

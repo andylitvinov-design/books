@@ -6,6 +6,7 @@ import { ArrowUpRight, ChevronDown, Film, Play } from "lucide-react";
 import { useState } from "react";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import { AcademyVideoCourseJourney } from "@/components/academy-video-course-journey";
 import styles from "./academy-video-library.module.css";
 
 export type AcademyVideoLesson = { id: string; title: string; unavailable?: boolean };
@@ -14,6 +15,7 @@ export type AcademyVideoCourse = {
   id: string;
   title: string;
   category: string;
+  description?: string;
   poster: string;
   href: string;
   chapters: AcademyVideoChapter[];
@@ -108,7 +110,7 @@ function poster(videoId: string) {
 }
 
 function courseVideoCount(course: AcademyVideoCourse) {
-  return course.chapters.reduce((total, chapter) => total + chapter.videos.length, 0);
+  return course.chapters.reduce((total, chapter) => total + chapter.videos.filter((video) => !video.unavailable).length, 0);
 }
 
 function programVideoCount(program: AcademyVideoProgram) {
@@ -223,6 +225,34 @@ export function AcademyVideoLibraryClient({
                               </button>
                               {active ? (
                                 <div className={styles.lessonPanel} id={coursePanel}>
+                                  {group.language === "ru" ? (() => {
+                                    const available = course.chapters.flatMap((chapter) =>
+                                      chapter.videos.filter((video) => !video.unavailable && /^[A-Za-z0-9_-]{11}$/.test(video.id))
+                                        .map((video) => ({
+                                          id: chapter.id + "/" + video.id,
+                                          title: (chapter.title ? chapter.title + " · " : "") + video.title,
+                                          order: 0,
+                                          youtubeId: video.id,
+                                        })));
+                                    const unavailable = course.chapters.flatMap((chapter) =>
+                                      chapter.videos.filter((video) => video.unavailable));
+                                    if (!available.length) return <p className={styles.sourceNote}>{t.unavailable}</p>;
+                                    return <>
+                                      <AcademyVideoCourseJourney
+                                      key={course.id}
+                                      locale={locale}
+                                      courseId={"archive:" + course.id}
+                                      title={course.title}
+                                      description={course.description || course.category}
+                                      poster={course.poster}
+                                      lessons={available.map((video, index) => ({ ...video, order: index + 1 }))}
+                                      />
+                                      {unavailable.length ? <p className={styles.sourceNote} role="note">
+                                        {unavailable.length} · {t.unavailable}
+                                      </p> : null}
+                                    </>;
+                                  })() : (
+                                  <>
                                   {course.chapters.map((chapter) => (
                                     <section className={styles.chapter} key={chapter.id}>
                                       {chapter.title ? <h4>{chapter.title}</h4> : null}
@@ -273,6 +303,8 @@ export function AcademyVideoLibraryClient({
                                       })}
                                     </section>
                                   ))}
+                                  </>
+                                  )}
                                   <Link className={styles.details} href={course.href}>{t.details} <ArrowUpRight size={16} aria-hidden="true" /></Link>
                                 </div>
                               ) : null}

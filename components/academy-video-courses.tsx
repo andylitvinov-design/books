@@ -1,5 +1,6 @@
 import { AcademyVideoLibraryClient, type AcademyVideoCourse, type AcademyVideoGroup, type AcademyVideoLesson, type AcademyVideoProgram } from "@/components/academy-video-library-client";
 import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl, type AcademySourceRecord } from "@/data/academy/catalog";
+import { academyVideoCourseIntro } from "@/data/academy/video-course-introductions";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import yggdrasilCurriculum from "@/data/academy/yggdrasil-curriculum.json";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -70,11 +71,12 @@ type YggdrasilCourseSource = {
   levels: Array<{
     id: number;
     title: Record<PublicLocale, string>;
+    theme: Record<PublicLocale, string>;
     steps: Array<{
       id: string;
       number: number;
       title: Record<PublicLocale, string>;
-      video?: { videos?: Array<{ youtubeId?: string; title?: string; availability?: "unavailable" }> };
+      video?: { videos?: Array<{ youtubeId?: string; title?: string; label?: string; availability?: "unavailable" }> };
     }>;
   }>;
 };
@@ -84,7 +86,7 @@ function titleImage(videoId: string) {
 }
 
 function countVideos(course: AcademyVideoCourse) {
-  return course.chapters.reduce((sum, chapter) => sum + chapter.videos.length, 0);
+  return course.chapters.reduce((sum, chapter) => sum + chapter.videos.filter((video) => !video.unavailable).length, 0);
 }
 
 function findSourceCourse(
@@ -114,6 +116,7 @@ function findSourceCourse(
     id: record.logicalId,
     title: academyDisplayTitle(record, locale),
     category: section,
+    description: academyVideoCourseIntro(record.logicalId, locale),
     poster: titleImage(videos[0].id),
     href: "/" + locale + "/academy/" + (record.logicalId === "videos/egypt-osiris" ? "egyptian-priesthood" : record.routeKey),
     chapters: [{ id: record.logicalId + "-lessons", title: "", videos }],
@@ -126,7 +129,7 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
   return curriculum.levels.map((module) => {
     const chapters = module.steps.flatMap((step) => {
       const found = (step.video?.videos ?? []).filter(
-        (video): video is { youtubeId?: string; title?: string; availability?: "unavailable" } =>
+        (video): video is { youtubeId?: string; title?: string; label?: string; availability?: "unavailable" } =>
           (typeof video.youtubeId === "string" && validVideoId.test(video.youtubeId)) || video.availability === "unavailable",
       );
       const seen = new Set<string>();
@@ -137,7 +140,7 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
         seen.add(id);
         videos.push({
           id,
-          title: t.clip + " " + (videos.length + 1) + (found.length > 1 ? " / " + found.length : ""),
+          title: step.title[locale] + (video.label ? " · " + video.label : " · " + t.clip + " " + (videos.length + 1)),
           unavailable: video.availability === "unavailable",
         });
       });
@@ -152,6 +155,7 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
       id: "yggdrasil-module-" + module.id,
       title: module.title[locale],
       category: String(module.id).padStart(2, "0") + " · " + t.recordings,
+      description: module.theme[locale],
       poster: first ? titleImage(first) : "/academy/reiki-yggdrasil/source/basic-program.jpg",
       href: "/" + locale + "/academy/reiki/yggdrasil",
       chapters,

@@ -3,6 +3,7 @@ import {useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Share2,Check,BookOpen,MessageCircleQuestion,Link2,AlignLeft} from 'lucide-react'
 import styles from './public-practitioner-course-player.module.css'
+import {AcademyVideoCourseJourney} from './academy-video-course-journey'
 
 const copy={
  en:{lesson:'Slide',of:'of',prev:'Previous slide',next:'Next slide',back:'All courses',share:'Share course',copy:'Link copied',original:'Watch video',author:'Course author',reflection:'Question for reflection',instructions:'Practice / instructions'},
@@ -12,12 +13,13 @@ const copy={
 function safeEmbed(value){
  try{
   const url=new URL(value)
-  if(url.origin==='https://www.youtube.com'&&url.pathname==='/watch'){
-   const id=url.searchParams.get('v')||''
-   if(/^[a-zA-Z0-9_-]{11}$/.test(id))return 'https://www.youtube-nocookie.com/embed/'+id
+  if(url.protocol!=='https:')return null
+  if(['www.youtube.com','youtube.com','www.youtube-nocookie.com','youtu.be'].includes(url.hostname)){
+   const id=url.hostname==='youtu.be'?url.pathname.slice(1):url.pathname==='/watch'?url.searchParams.get('v'):(url.pathname.startsWith('/embed/')?url.pathname.slice(7):'')
+   if(/^[a-zA-Z0-9_-]{11}$/.test(id||''))return 'https://www.youtube-nocookie.com/embed/'+id
   }
-  if(url.origin==='https://vimeo.com'&&/^\/\d{6,12}$/.test(url.pathname))
-   return 'https://player.vimeo.com/video'+url.pathname
+  if(['vimeo.com','www.vimeo.com','player.vimeo.com'].includes(url.hostname)&&/^\/(?:video\/)?\d{6,12}$/.test(url.pathname))
+   return 'https://player.vimeo.com/video/'+url.pathname.replace(/^\/(?:video\/)?/,'')
  }catch{}
  return null
 }
@@ -38,6 +40,52 @@ export default function PublicPractitionerCoursePlayer({course,slug,practitioner
  const mediaUrl=slide.assetId?'/api/practitioner-course-media/'+slide.assetId:null
  const coverId=slide.coverAssetId||(slide.kind==='image'?slide.assetId:null)
  const coverUrl=coverId?'/api/practitioner-course-media/'+coverId:null
+ // A Russian course with playable embedded/uploaded video is a learning journey.
+ // Other slide-only courses keep their original unrestricted viewer.
+ const ruVideoSlides=course.locale==='ru'?slides.filter(item=>
+   (item.kind==='embed'&&!!safeEmbed(item.videoUrl))||(item.kind==='video'&&!!item.assetId)):[]
+ if(ruVideoSlides.length){
+  const nonVideoSlides=slides.filter(item=>!ruVideoSlides.includes(item))
+  const lessonSlides=ruVideoSlides.map((item,index)=>({
+   id:String(item.id||'video-'+index),
+   title:item.title||'Видеоурок '+(index+1),
+   order:index+1,
+   videoUrl:item.kind==='embed'?item.videoUrl:undefined,
+   mediaUrl:item.kind==='video'?'/api/practitioner-course-media/'+item.assetId:undefined,
+   poster:item.coverAssetId?'/api/practitioner-course-media/'+item.coverAssetId:undefined,
+   body:item.body||undefined,question:item.question||undefined
+  }))
+  const firstCover=slides.find(item=>item.coverAssetId)?.coverAssetId
+  return <main className={styles.root} data-public-master-course data-russian-video-slides lang="ru">
+   <div className={styles.top}>
+    <Link href={'/'+locale+'/academy/free-ai-courses#practitioner-courses'}><ArrowLeft size={17}/>{t.back}</Link>
+    <button type="button" onClick={()=>void share()}><Share2 size={16}/>{t.share}</button>
+   </div>
+   <AcademyVideoCourseJourney
+    locale="ru" courseId={'practitioner:'+slug} title={course.title}
+    description={course.description}
+    poster={firstCover?'/api/practitioner-course-media/'+firstCover:undefined}
+    lessons={lessonSlides}
+   />
+   {nonVideoSlides.length>0?<details className={styles.extras}>
+    <summary>Дополнительные материалы оригинального курса ({nonVideoSlides.length})</summary>
+    <div>
+     {nonVideoSlides.map((item,index)=>{
+      const asset=item.coverAssetId||(item.kind==='image'?item.assetId:null)
+      return <article key={item.id||index}>
+       <h3>{item.title||'Материал '+(index+1)}</h3>
+       {asset?<img src={'/api/practitioner-course-media/'+asset} alt={item.title||''} loading="lazy"/>:null}
+       {item.body?<p>{item.body}</p>:null}
+       {item.question?<p>{item.question}</p>:null}
+       {item.kind==='audio'&&item.assetId?<audio controls preload="none" src={'/api/practitioner-course-media/'+item.assetId}/>:null}
+       {item.ctaLabel&&item.ctaUrl?<a href={item.ctaUrl} target="_blank" rel="noopener noreferrer nofollow">{item.ctaLabel} ↗</a>:null}
+      </article>
+     })}
+    </div>
+   </details>:null}
+   {feedback&&<p className={styles.feedback} role="status">{feedback}</p>}
+  </main>
+ }
  return <main className={styles.root} data-public-master-course lang={course.locale||locale}>
   <div className={styles.top}>
    <Link href={'/'+locale+'/academy/free-ai-courses#practitioner-courses'}><ArrowLeft size={17}/>{t.back}</Link>
