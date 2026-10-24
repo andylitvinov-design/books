@@ -190,7 +190,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
               data-nav-item={item.id}
               href={item.href}
               prefetch={false}
-              aria-current={menuCurrent === item.id ? 'page' : undefined}
+              aria-current={current === item.id ? 'page' : undefined}
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}

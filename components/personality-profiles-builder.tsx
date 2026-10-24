@@ -241,9 +241,6 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <h1>{t.title}</h1>
         <p>{t.lead}</p>
         <div className={styles.benefits}>{t.benefits.map(value => <span key={value}><Check size={13} aria-hidden="true" />{value}</span>)}</div>
-        <Link className={styles.browseTests} href={"/" + locale + "/tests"} prefetch={false} data-profile-direct-tests>
-          {t.browseTests}<ArrowRight size={15} aria-hidden="true" />
-        </Link>
       </div>
     </header>
 
@@ -269,6 +266,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               <ArrowRight size={17} aria-hidden="true" className={styles.templateArrow} />
             </button>)}
         </div>
+        <Link className={styles.browseTests} href={'/' + locale + '/tests'} prefetch={false} data-profile-direct-tests>{t.browseTests}<ArrowRight size={15} aria-hidden='true' /></Link>
       </section>}
 
       {step === 1 && <section aria-labelledby="profile-builder-step-title">
