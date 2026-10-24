@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
-import {authoredFollowupFor} from '../lib/personal-coaching/offline-intelligence.js'
+import {authoredFollowupFor,contextualCoachingFollowup} from '../lib/personal-coaching/offline-intelligence.js'
 
 const source=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
 const server=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
@@ -52,9 +52,9 @@ function fixture(){
   traditionCourse:()=>null,traditionEndcaps:()=>[],
   loadSchemeQuestions:async(_db,schemeKey)=>schemeKey==='grow_quick_v1'
    ?{schemeKey,modelKey:'grow_v1',questions,requiredCustomPlan:false}:null,
-  authoredFollowupFor,
+  authoredFollowupFor,contextualCoachingFollowup,
  }
- const factory=runInNewContext('(deps)=>{const {randomUUID,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
+ const factory=runInNewContext('(deps)=>{const {randomUUID,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,contextualCoachingFollowup}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
  return {api:factory(deps),store}
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
@@ -116,4 +116,35 @@ test('user-confirmed plan is impossible before completion, validated after, pres
  assert.equal(store.size,1)
  await assert.rejects(()=>api.savePersonalCoaching({},b,{action:'plan',revision:s.revision,...fields}),
    err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
+})
+
+
+test('v2 contextual key must match actual saved selected answer, preserving v1 tabs',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,start)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time'})
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{
+   action:'reflection',revision:s.revision,questionId:'real',
+   followupKey:'reality_confidence_v2',note:'Forged choice',
+ }),err=>err.code==='PERSONAL_COACH_REFLECTION_UNAVAILABLE')
+ s=await api.savePersonalCoaching({},a,{action:'reflection',revision:s.revision,
+   questionId:'real',followupKey:'reality_time_v2',note:'Time tends to be tight before work'})
+ assert.equal(s.course.current.reflections.real.key,'reality_time_v2')
+ assert.equal((await api.readPersonalCoaching({},a)).course.current.reflections.real.text,'Time tends to be tight before work')
+})
+
+
+test('editing a source answer invalidates downstream combination notes, not other answers',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,start)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:'choice:try'})
+ s=await api.savePersonalCoaching({},a,{action:'reflection',revision:s.revision,
+   questionId:'options',followupKey:'options_time_v2',note:'Five-minute trial'})
+ assert.equal(s.course.current.reflections.options.key,'options_time_v2')
+ const oldOptions=s.course.current.answers.options
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,
+   questionId:'real',answer:'The issue is something different'})
+ assert.equal(s.course.current.reflections.options,undefined)
+ assert.equal(s.course.current.answers.options,oldOptions,'keep answers; only dependent reflections are dropped')
 })
