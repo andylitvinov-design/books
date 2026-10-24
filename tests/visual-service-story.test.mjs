@@ -70,3 +70,40 @@ test("portrait 320–430px and reduced-motion styles avoid text-heavy full-heigh
   assert.match(core, /@media\(max-width:350px\)/);
   assert.match(core, /\.captureScene/);
 });
+
+test("Alchemy and business method pages show their own photo-led sections before one last opt-in enquiry", () => {
+  const alchemy = read("components/alchemy-soul-landing.tsx");
+  const business = read("components/business-consulting-landing.tsx");
+  const businessForm = read("components/business-website-enquiry.tsx");
+  const css = read("app/sitewide-capture.css");
+  assert.match(alchemy, /data-public-visual-landing="alchemy"/);
+  assert.match(alchemy, /data-alchemy-visual-screen=\{index\+1\}/);
+  assert.match(alchemy, /<StaticPortrait src=\{visualPhotos/);
+  assert.match(alchemy, /data-alchemy-visual-screen="final-capture"/);
+  assert.match(alchemy, /<CompactLeadCapture/);
+  assert.ok(alchemy.lastIndexOf("<CompactLeadCapture") > alchemy.lastIndexOf("t.faq.map"));
+  assert.match(business, /data-public-visual-landing="business"/);
+  assert.match(business, /data-business-visual-screen="final-capture"/);
+  assert.match(business, /<BusinessWebsiteEnquiry locale=\{locale\}/);
+  assert.ok(business.lastIndexOf("<BusinessWebsiteEnquiry") > business.lastIndexOf("t.faqs.map"));
+  assert.match(businessForm, /fetch\("\/api\/services\/business-consulting"/);
+  assert.match(businessForm, /contactConsent:consent/);
+  assert.match(css, /body:has\(\[data-public-visual-landing\]\) \[data-sitewide-capture\]/);
+});
+
+test("monthly support and all three free-entry paths retain visual media on each step and an on-site final form", () => {
+  const support = read("components/personal-support-landing.tsx");
+  const free = read("components/free-entry-landing.tsx");
+  const css = read("components/personal-support-landing.module.css");
+  for(const stage of ['benefits','faq','final-capture']) {
+    assert.ok(support.includes('data-support-visual-screen="' + stage + '"'));
+  }
+  assert.match(support, /data-public-visual-landing="personal-support"/);
+  assert.match(support, /<CompactLeadCapture/);
+  assert.match(support, /<StaticPortrait src=\{photos/);
+  assert.match(free, /data-free-visual-screen="final-capture"/);
+  assert.match(free, /data-public-visual-landing="free"/);
+  assert.match(free, /<CompactLeadCapture/);
+  assert.match(free, /className=\{styles.miniScenePhoto\}/);
+  assert.match(css, /@media\(max-width:350px\)/);
+});
