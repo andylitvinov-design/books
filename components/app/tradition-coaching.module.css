@@ -123,7 +123,7 @@
 
 /* Optional per-session voice controls remain compact below Listen / Dictate. */
 .voiceSettingsToggle{
-  align-self:flex-start;min-height:30px;border:0;background:transparent;
+  align-self:flex-start;min-height:44px;border:0;background:transparent;
   padding:2px 0;font:inherit;font-size:12px;font-weight:700;color:#236c67;
   text-decoration:underline;text-underline-offset:3px;cursor:pointer
 }
@@ -140,7 +140,7 @@
   color:#315e5c;font-weight:700;font-size:12px
 }
 .voiceSettingsPanel select{
-  width:100%;min-height:42px;max-width:100%;border:1px solid #adcbc4;
+  width:100%;min-height:44px;max-width:100%;border:1px solid #adcbc4;
   border-radius:9px;background:#fff;color:#274754;padding:7px;
   font:inherit;font-size:13px
 }
