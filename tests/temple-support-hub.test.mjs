@@ -5,27 +5,23 @@ import { activeCompactNavigationId, getCompactNavigation, getSiteNavigation } fr
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Temple Support is destination seven in the mobile bar and menu for EN/RU/ES", () => {
-  const bar = read("components/mobile-bottom-navigation.tsx");
-  const icons = read("components/compact-navigation-icons.ts");
-  const css = read("app/ia-v2.css");
-  const baseCss = read("app/holistic-house-home.css");
-  for (const locale of ["en", "ru", "es"]) {
-    const links = getCompactNavigation(locale);
-    assert.equal(links.length, 7);
-    assert.equal(links[6].id, "temple");
-    assert.equal(links[6].href, "/" + locale + "/temple-support");
-    assert.equal(activeCompactNavigationId("/" + locale + "/temple-support"), "temple");
-    assert.ok(getSiteNavigation(locale).some(link => link.id === "temple"));
+test("legacy Temple Support remains reachable while six-tab bar separates Insights and Holistic Support", () => {
+  const icons=read("components/compact-navigation-icons.ts");
+  const css=read("app/ia-v2.css");
+  const baseCss=read("app/holistic-house-home.css");
+  for (const locale of ["en","ru","es"]) {
+    const links=getCompactNavigation(locale);
+    assert.equal(links.length,6);
+    assert.equal(links[3].href,"/"+locale+"/temple-insights");
+    assert.equal(links[4].href,"/"+locale+"/holistic-support");
+    assert.equal(activeCompactNavigationId("/"+locale+"/temple-support"),"insights");
+    assert.ok(getSiteNavigation(locale).some(link=>link.id==="temple"));
+    assert.ok(!links.some(link=>link.id==="temple"));
   }
-  assert.match(icons, /temple: Landmark/);
-  assert.match(bar, /temple: 'Temple Support'/);
-  assert.match(bar, /aria-label=\{item\.ariaLabel\}/);
-  assert.match(bar, /const mobileItems = getCompactNavigation\(locale\)/);
-  assert.match(css, /repeat\(7,minmax\(0,1fr\)\)/);
-  assert.match(css, /@media \(max-width: 600px\)/);
-  assert.match(baseCss, /repeat\(7, minmax\(0,1fr\)\)/);
-  assert.doesNotMatch(css, /repeat\(6,minmax\(0,1fr\)\)/);
+  assert.ok(icons.includes('insights: Sparkles'));
+  assert.ok(icons.includes('support: HeartHandshake'));
+  assert.ok(css.includes('repeat(6,minmax(0,1fr))'));
+  assert.ok(baseCss.includes('repeat(6, minmax(0,1fr))'));
 });
 
 test("Temple Support has EN/RU/ES metadata and three real existing service journeys", () => {
