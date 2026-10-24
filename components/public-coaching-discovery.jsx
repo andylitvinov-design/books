@@ -201,10 +201,11 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.format}>
             <legend>{t.format}</legend>
+            <button type="button" className={format==='all'?styles.active:''} aria-pressed={format==='all'} onClick={()=>setFormat('all')}><Sparkles size={18}/>{t.allFormats}</button>
             <button type="button" className={format==='self'?styles.active:''} aria-pressed={format==='self'} onClick={()=>setFormat('self')}><Compass size={18}/>{t.self}</button>
             <button type="button" className={format==='human'?styles.active:''} aria-pressed={format==='human'} onClick={()=>setFormat('human')}><UserRound size={18}/>{t.human}</button>
           </fieldset>
-          {format==='self'&&<>
+          <>
             <label className={styles.questionLabel} htmlFor="public-coaching-question">{t.question}</label>
             <textarea id="public-coaching-question" className={styles.questionInput} rows={2} maxLength={600}
               value={question} placeholder={t.placeholder} autoComplete="off"
@@ -221,7 +222,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               <label>{t.duration}
                 <select value={duration} onChange={e=>setDuration(Number(e.target.value))}>
                   <option value="0">{t.anyTime}</option>
-                  {[10,20,30].map(m=><option key={m} value={m}>{m} {t.minutes}</option>)}
+                  {[10,20,30,60].map(m=><option key={m} value={m}>{m} {t.minutes}</option>)}
                 </select>
               </label>
               <label>{t.style}
@@ -232,9 +233,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 </select>
               </label>
             </div>
-          </>}
+          </>
         </section>
-        {format==='self'?<section aria-labelledby="coaching-models-title" className={styles.catalog}>
+        {format!=='human'&&<section aria-labelledby="coaching-models-title" className={styles.catalog}>
           <div className={styles.sectionHeader}>
             <p className={styles.eyebrow}>{t.all}</p>
             <h2 id="coaching-models-title">{question.trim().length>=8&&recommendation.recognized?t.recommended:t.models}</h2>
@@ -259,10 +260,11 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               })}
             </div>}
           <p className={styles.disclaimer}>{t.safe}</p>
-        </section>:<section className={styles.catalog} aria-labelledby="human-coaching-title">
+        </section>}
+        {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title">
           <h2 id="human-coaching-title">{t.humanTitle}</h2><p>{t.humanText}</p>
           <div className={styles.cards}>
-            {[{name:t.half,minutes:30,price:'€50'},{name:t.hour,minutes:60,price:'€100'}].map(option=>
+            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}].filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style)).map(option=>
               <article className={styles.card} key={option.minutes}>
                 <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
                 <h3>{option.name}</h3><p>{t.humanText}</p>
