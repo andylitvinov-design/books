@@ -15,6 +15,15 @@ on:
       - 'tests/spanish-test-topic-collections.test.mjs'
       - 'tests/public-test-match-paging.test.mjs'
       - 'tests/tantric-reflections.test.mjs'
+      - 'components/personality-profiles-builder.tsx'
+      - 'components/personality-profiles-builder.module.css'
+      - 'components/app/cabinet-landing.jsx'
+      - 'components/app/guest-test-journey-progress.jsx'
+      - 'components/app/guest-test-journey-progress.module.css'
+      - 'lib/app/guest-test-journey.js'
+      - 'tests/personality-profiles-builder.test.mjs'
+      - 'tests/profile-test-course-journey.test.mjs'
+      - 'tests/guest-test-journey-progress.test.mjs'
       - '.github/workflows/hh-public-test-collections.yml'
 
 permissions:
@@ -43,6 +52,9 @@ jobs:
           tests/spanish-test-topic-collections.test.mjs
           tests/public-love-search.test.mjs
           tests/tantric-reflections.test.mjs
+          tests/personality-profiles-builder.test.mjs
+          tests/profile-test-course-journey.test.mjs
+          tests/guest-test-journey-progress.test.mjs
       - name: Lint modified application code
         run: >-
           npx --no-install eslint
@@ -51,6 +63,12 @@ jobs:
           lib/assessments/test-collection-membership.js
           lib/assessments/test-collections.js
           lib/assessments/test-explorer.js
+          lib/app/guest-test-journey.js
+          components/personality-profiles-builder.tsx
+          components/app/guest-test-journey-progress.jsx
+          components/app/cabinet-landing.jsx
+          tests/profile-test-course-journey.test.mjs
+          tests/guest-test-journey-progress.test.mjs
       - name: Verify Next.js production build
         run: npm run build
         env:
