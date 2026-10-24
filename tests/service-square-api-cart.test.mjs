@@ -157,6 +157,11 @@ test('cart, endpoints and SQL contain strict order ownership, no fake paid on re
   const sql=read('supabase/migrations/20261024185000_hh_square_cart_one_time.sql')
   assert.match(page,/squareApiEnabled=\{squareGateway.enabled\}/)
   assert.match(cart,/data-cart-square-api-checkout/)
+  assert.match(cart,/data-cart-square-buy-again/);
+  assert.match(cart,/data-cart-square-buy-again-confirmation/);
+  assert.match(cart,/repeatPurchaseRequired/);
+  assert.match(read('lib/commerce/square-cart-service.js'),/repeatPurchaseRequired: true/);
+
   assert.match(cart,/squareStatus === "paid"/)
   assert.match(cart, /normalizeSquareCheckoutRedirect/)
   assert.match(checkoutRoute,/await auth.verified\(\)/)
