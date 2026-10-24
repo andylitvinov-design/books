@@ -199,7 +199,7 @@ test('the public Coaching Lounge, Ideas and entry page all parse as JSX before a
    const source=read(path)
    const parsed=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,kind)
    const errors=parsed.parseDiagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error)
-   assert.equal(errors.length,0,path+': '+errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')).join('; '))
+   assert.equal(errors.length,0,path+': '+errors.map(d=>{const pos=parsed.getLineAndCharacterOfPosition(d.start||0);return (pos.line+1)+':'+(pos.character+1)+' '+ts.flattenDiagnosticMessageText(d.messageText,' ')}).join('; '))
  }
 })
 
