@@ -220,7 +220,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       block: "start",
     });
-  }, [started]);
+  }, [started, step]);
   const [template, setTemplate] = useState<Template>("personal");
   const [areas, setAreas] = useState<Area[]>(defaultAreas.personal);
   const [selectedAxes, setSelectedAxes] = useState<string[]>(allAxesFor(defaultAreas.personal));
