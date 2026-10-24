@@ -43,8 +43,8 @@ test('public route uses existing verified guest catalogue, with strict eligibili
     assert.ok(page.includes('/' + locale + '/personality-profiles'))
     assert.ok(component.includes(locale + ': {'))
   }
-  assert.match(component, /type Template = "personal" \| "business" \| "wellbeing" \| "comprehensive"/)
-  assert.match(component, /type Area = "body" \| "energy" \| "business" \| "money" \| "health" \| "growth"/)
+  assert.ok(component.includes('type Focus = "identity" | "wellbeing" | "relationships" | "work" | "purpose"'))
+  assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
   assert.match(component, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
   assert.match(component, /startTests=/)
@@ -75,7 +75,7 @@ test('first visit shows a single clear CTA and explanation before the profile wi
   assert.match(component, /setStarted\(false\); setStep\(0\)/)
   assert.match(component, /aria-labelledby="profile-builder-journey-title"/)
   assert.match(component, /styles\.templateBody/)
-  assert.match(component, /t\.selectTemplate/)
+  assert.ok(component.includes('data-profile-focus-selection'))
   assert.match(component, /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)/)
   for (const entry of ['entryButton: "Create my profile"',
     'entryButton: "Создать свой профиль"', 'entryButton: "Crear mi perfil"',
@@ -104,4 +104,23 @@ test('home Stage 2 is one free service while account reports remain separate and
   assert.match(source, /data-home-development-cta/)
   assert.match(source, /freeOfferIds: ReadonlySet<OfferId>/)
   assert.match(source, /"reiki", "opora", "profile", "review", "aiCoaching"/)
+})
+
+test('unified profile is multi-select and describes four separate analysis layers', () => {
+  const component = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  for (const focus of ['identity', 'wellbeing', 'relationships', 'work', 'purpose']) {
+    assert.ok(component.includes(focus + ': ['), focus)
+  }
+  for (const token of [
+    'data-profile-focus-selection', 'data-profile-focus={key}', 'data-profile-confirm-focus',
+    'aria-pressed={focuses.includes(key)}', 'disabled={focuses.length === 0}',
+    'const suggested = areasFor(focuses)', 'data-profile-four-layers', 't.layers.map',
+    'ONE PERSONAL PROFILE', 'ОДИН ЛИЧНЫЙ ПРОФИЛЬ', 'UN PERFIL PERSONAL',
+  ]) assert.ok(component.includes(token), token)
+  assert.ok(!component.includes('data-profile-kind='))
+  assert.ok(!component.includes('setTemplate('))
+  assert.ok(css.includes('.templateCard[aria-pressed="true"]'))
+  assert.ok(css.includes('.layerDetails'))
+  assert.ok(css.includes('@media (max-width: 350px)'))
 })

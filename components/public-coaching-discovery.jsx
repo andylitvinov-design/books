@@ -183,10 +183,12 @@ function CoachingLoungeCard({
   schemeKey,traditionKey,method,
 }){
   const t=copy[locale],panelId=useId()
+  const isFree=price==='€0'
   const [expanded,setExpanded]=useState(false)
   return <article id={traditionKey ? 'coaching-tradition-'+traditionKey : undefined} className={styles.loungeCard} data-coaching-item={id}
     data-coaching-scheme={schemeKey} data-coaching-tradition={traditionKey}
-    data-coaching-compact-card>
+    data-coaching-compact-card data-coaching-free={isFree?'true':undefined}>
+    {isFree&&<span className={styles.loungeFreeRibbon}>{t.free}</span>}
     <div className={styles.loungeRow}>
       <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
         aria-label={t.fullDetails+': '+title}>
@@ -195,7 +197,7 @@ function CoachingLoungeCard({
       </Link>
       <div className={styles.loungeContent}>
         <div className={styles.loungeMeta}>
-          <span>{meta}</span><strong>{price}</strong>
+          <span>{meta}</span>{!isFree&&<strong>{price}</strong>}
         </div>
         <h3>{title}</h3>
         {description&&<p className={styles.loungeSummary}>{description}</p>}
