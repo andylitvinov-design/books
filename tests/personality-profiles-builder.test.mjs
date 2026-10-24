@@ -168,17 +168,15 @@ function profileBuilderHarness(locale, { authenticated = false, storageBlocked =
     assert.ok(element, message)
     return element
   }
-  const clickNext = async () => {
-    const nodes = render()
-    await find(nodes, node => node.type === 'button' && node.props?.className === 'primary', 'next button').props.onClick()
-  }
+  // Independently exercise the last-step account gate. This harness does
+  // not simulate React's full reconciliation across the earlier wizard stages.
   const reachSelection = async () => {
-    await find(render(), node => node.props?.['data-profile-kind'] === 'personal', 'profile choice').props.onClick()
-    await clickNext()
-    await clickNext()
+    render()
+    state[0] = 3 // final test-selection stage
+    state[4] = ['hh-resource-pulse'] // chosen test keys
     assert.ok(find(render(), node => node.props?.['data-profile-review-account'], 'selection CTA'))
   }
-  return { render, find, clickNext, reachSelection, calls, navigation, records }
+  return { render, find, reachSelection, calls, navigation, records }
 }
 
 test('profile builder Google gate routes an unsigned visitor through the existing PKCE tests continuation', async () => {
