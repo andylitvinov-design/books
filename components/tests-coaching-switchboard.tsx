@@ -243,7 +243,7 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
       {path ? <>
         <div className={styles.detailHeader}>
           <h2>{t.paths[path].name}</h2>
-          <button type="button" className={styles.close} onClick={() => setPath(null)} aria-label={t.close}><X size={17} aria-hidden="true" /> {t.close}</button>
+          <button type="button" className={styles.close} data-tests-coaching-back onClick={() => setPath(null)} aria-label={t.close}><X size={17} aria-hidden="true" /> {t.close}</button>
         </div>
         {path === "profile" ? <div className={styles.profile} data-personality-profiles-entry>
           <p className={styles.detailLead}>{t.profileLead}</p>

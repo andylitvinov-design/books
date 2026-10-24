@@ -66,6 +66,7 @@ test("TSX parses cleanly and all CSS classes are declared", () => {
 
 test("four choices become an accessible, focused path instead of a wall of expanding cards", () => {
   assert.match(ui, /hidden=\{Boolean\(path\)\}/);
+  assert.match(ui, /data-tests-coaching-back/);
   assert.match(ui, /ref=\{detailRef\} tabIndex=\{-1\}/);
   assert.match(ui, /detailRef\.current\?\.focus\(\)/);
   assert.match(ui, /firstCardRef\.current\?\.focus\(\)/);
