@@ -98,6 +98,7 @@ test("empty community and server failures provide distinct, usable alternatives 
   assert.match(workflow, /HH_APP_TEST_RUNTIME: isolated/);
   assert.match(workflow, /HH_APP_PRODUCTION_APPROVED: 'false'/);
   assert.match(fixture, /assertIsolated\(\)/);
+  assert.match(fixture, /actor\(B, SB\)/);
   assert.match(fixture, /config\.test, true/);
   assert.match(fixture, /PRIVATE_PENDING_REVISION/);
   assert.match(browser, /chromium/);
