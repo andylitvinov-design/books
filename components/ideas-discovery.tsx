@@ -539,6 +539,19 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     setTestPickerOpen(open => !open);
   }
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
+  useEffect(() => {
+    if (!result) return;
+    // The interpretation appears below the photo/selector. Make the actual
+    // answer visible on iPhone rather than appearing to do nothing after a tap.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelector('[data-ideas-result]')?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth", block: "start",
+    });
+  }, [result]);
+  useEffect(() => {
+    if (!showSuggestedTests) return;
+    document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
+  }, [showSuggestedTests]);
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
       <div className={styles.hero} data-ideas-hero>
