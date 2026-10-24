@@ -16,6 +16,11 @@ import styles from './public-coaching-discovery.module.css'
 
 const copy={
   en:{
+    adultTitle:"Adults (18+) · Your conscious choice",
+    adultNotice:"A private-in-your-browser reflection about desire, sexuality, boundaries and consent. No explicit descriptions or physical exercises. Every question may be skipped.",
+    adultSafety:"For violence, fear, pressure, abuse or persistent pain, seek qualified human support instead.",
+    adultConfirm:"I confirm that I am 18+ and choose to begin",
+    skipSensitive:"Skip this question",
     eyebrow:'HOLISTIC HOUSE · COACHING LOUNGE',title:'Coaching Lounge',
     lead:'Describe what you need or filter by topic, time and format. Explore free guided methods, ancient planning courses and personal coaching together.',
     question:'What would you like to explore?',placeholder:'A goal, decision, relationship or challenge (optional)',
@@ -52,6 +57,11 @@ const copy={
     clarify:'A helpful follow-up',clarifyWhy:'Optional authored reflection, not an AI response.',clarifyAnswer:'Your reflection',clarifySave:'Save reflection & continue',clarifySkip:'Skip this reflection',clarifyShort:'Write at least 3 characters.',
   },
   ru:{
+    adultTitle:"Только для взрослых (18+) · ваш выбор",
+    adultNotice:"Практика размышления о желаниях, сексуальности, согласии и границах. Без интимных подробностей и телесных упражнений. Любой вопрос можно пропустить.",
+    adultSafety:"При насилии, давлении, страхе или стойкой боли обратитесь к квалифицированному специалисту.",
+    adultConfirm:"Подтверждаю, что мне 18+ и я добровольно начинаю",
+    skipSensitive:"Пропустить этот вопрос",
     eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга',
     lead:'Опишите, с чем хотите поработать, или выберите тему, время и формат. Здесь собраны бесплатные модели, авторские курсы и личные сессии.',
     question:'Какой вопрос хотите разобрать?',placeholder:'Цель, решение, отношения или сложность (необязательно)',
@@ -88,6 +98,11 @@ const copy={
     clarify:'Уточняющий вопрос',clarifyWhy:'Необязательный авторский вопрос, не генерация ИИ.',clarifyAnswer:'Ваше уточнение',clarifySave:'Сохранить и продолжить',clarifySkip:'Пропустить уточнение',clarifyShort:'Напишите не меньше 3 символов.',
   },
   es:{
+    adultTitle:"Solo adultos (18+) · una decisión consciente",
+    adultNotice:"Reflexión privada sobre deseo, sexualidad, límites y consentimiento. Sin detalles explícitos ni ejercicios físicos. Puedes omitir cualquier pregunta.",
+    adultSafety:"En casos de violencia, presión, miedo, abuso o dolor persistente, busca ayuda profesional.",
+    adultConfirm:"Confirmo que tengo 18 años o más y elijo comenzar",
+    skipSensitive:"Omitir esta pregunta",
     eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching',
     lead:'Describe tu pregunta o filtra por tema, duración y formato. Compara sesiones gratuitas, cursos simbólicos y coaching personal en un mismo lugar.',
     question:'¿Qué te gustaría explorar?',placeholder:'Una meta, decisión, relación o reto (opcional)',
@@ -218,6 +233,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [duration,setDuration]=useState(0)
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
+  const [adultAcknowledged,setAdultAcknowledged]=useState(false)
   const [index,setIndex]=useState(0)
   const [answers,setAnswers]=useState({})
   const [draft,setDraft]=useState('')
@@ -279,6 +295,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     openedLinkedScheme.current=true
     const selected=schemes.find(item=>item.schemeKey===schemeKey)
     if(selected){
+      setAdultAcknowledged(false)
       setSession(selected);setIndex(0);setAnswers({});setDraft('')
       setFinished(false);setError('');setCopied(false)
     }
@@ -303,12 +320,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
 
   function start(scheme){
     if(recommendation.blocked)return
+    setAdultAcknowledged(false)
     setSession(scheme);setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
-    setSession(null);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
+    setSession(null);setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
@@ -325,8 +343,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     setAnswers(updated)
     setIndex(prev);setDraft(updated[session.questions[prev].id]||'');setError('')
   }
-  function advance(){
-    const value=draft.trim()
+  function advance(skip=false){
+    const value=skip?'':draft.trim()
     if(current.required&&!value){setError(t.required);return}
     if(session.requiredCustomPlan&&index===session.questions.length-1&&(value.startsWith('choice:')||value.length<10)){
       setError(t.plan);return
@@ -490,7 +508,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
         </section>}
         
-      </>:<section className={styles.session} data-public-coaching-session>
+      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={session.modelKey==='tantric_intimacy_v1'?'true':undefined}>
         <header className={styles.sessionHeader}>
           <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
@@ -505,7 +523,16 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>
         </header>
         <div className={styles.sessionScroll} ref={sessionScrollRef} tabIndex={-1}>
-          {finished?<div className={styles.finish} data-public-coaching-complete>
+          {session.modelKey==='tantric_intimacy_v1'&&!adultAcknowledged?
+            <div className={styles.adultGate} data-coaching-age-confirm>
+              <Image src={cardArtworkUrl(coachingArt.tantric_intimacy_v1)} alt="" aria-hidden="true"
+                width={800} height={240} sizes="(max-width:600px) 100vw, 760px" unoptimized/>
+              <h1>{t.adultTitle}</h1><p>{t.adultNotice}</p>
+              <p className={styles.alert}>{t.adultSafety}</p>
+              <button type="button" className={styles.primary} onClick={()=>setAdultAcknowledged(true)}>
+                {t.adultConfirm}<ArrowRight size={17}/></button>
+            </div>
+          :finished?<div className={styles.finish} data-public-coaching-complete>
             <span className={styles.completed}><Check size={16}/>{t.completed}</span>
             <h1>{t.summary}</h1>
             <div className={styles.summary}>
@@ -556,14 +583,15 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>}
         </div>
-        {!finished&&<footer className={styles.sessionFooter}>
+        {!finished&&(session.modelKey!=='tantric_intimacy_v1'||adultAcknowledged)&&<footer className={styles.sessionFooter}>
           <div className={styles.sessionActions}>
             <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
             {pendingFollowup
               ?<button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>{t.clarifySave}<ArrowRight size={17}/></button>
-              :<button type="button" className={styles.primary} onClick={advance}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
+              :<button type="button" className={styles.primary} onClick={()=>advance(false)}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
           </div>
           {pendingFollowup&&<button type="button" className={styles.followupSkip} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
+           {session.modelKey==='tantric_intimacy_v1'&&!pendingFollowup&&<button type="button" className={styles.sensitiveSkip} onClick={()=>advance(true)}>{t.skipSensitive}</button>}
           <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
         </footer>}
       </section>}

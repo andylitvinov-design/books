@@ -509,3 +509,19 @@
   .sessionFooter{padding-top:5px;padding-bottom:calc(5px + env(safe-area-inset-bottom))}
   .sessionFooter .disclaimer{font-size:9px;line-height:1.2}
 }
+
+/* Adult consent gate and compact intimacy step in the already full-screen guest player */
+.session[data-intimacy-session="true"]{width:100%;max-width:100%;min-width:0}
+.adultGate{max-width:650px;margin:auto;display:flex;flex-direction:column;gap:12px;padding:clamp(10px,2vw,22px)}
+.adultGate>img{display:block;width:100%;height:clamp(118px,20vh,190px);object-fit:cover;border-radius:14px;background:#efe9df}
+.adultGate h1{font-size:clamp(27px,5vw,42px);margin:2px 0 0}
+.adultGate p{font-size:14px;line-height:1.52;color:#485c56;margin:0}
+.adultGate button{width:100%;min-height:48px;margin:2px 0}
+.sensitiveSkip{display:block;min-height:44px;padding:8px 16px;border:1px solid #d2c2b1;border-radius:10px;background:#fffaf5;color:#655649;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+.sensitiveSkip:hover{background:#f4eee4}
+@media(max-width:600px){
+ .session[data-intimacy-session="true"]{margin-inline:0}
+ .session[data-intimacy-session="true"] .choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .session[data-intimacy-session="true"] .choices button{min-height:44px;padding:7px 8px;font-size:12px}
+ .adultGate>img{height:clamp(110px,18vh,155px)}
+}

@@ -308,3 +308,7 @@
   .session .questionArea h1{margin:6px 0}
   .session .footer{padding-top:6px}
 }
+
+.adultConfirm{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border:1px solid #dccfba;border-radius:10px;background:#fbf6ee;font-size:12px;line-height:1.4;color:#594637;cursor:pointer}
+.adultConfirm input{flex:none;width:19px;height:19px;margin:0;accent-color:#8a3851}
+.adultConfirm:focus-within{outline:2px solid #0a8290;outline-offset:2px}

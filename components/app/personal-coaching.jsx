@@ -229,8 +229,9 @@ export default function PersonalCoaching({locale='en',accountId}){
       return null
     }finally{busyRef.current=false;setBusy(false)}
   }
-  async function begin(choice,clientQuestion){
-    const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion})
+  async function begin(choice,clientQuestion,adultConfirmed){
+    const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion,
+      ...(choice.modelKey==='tantric_intimacy_v1'?{adultConfirmed:adultConfirmed===true}:{})})
     if(result){
       const list=questionsFor(result.course,catalog)
       visit(firstUnanswered(list,result.course?.current?.answers),result.course?.current?.answers,list)

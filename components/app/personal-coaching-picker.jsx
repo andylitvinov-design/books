@@ -15,6 +15,8 @@ const copy={
  privacy:'Matching runs in your browser; no question is sent to AI or analytics. Your original question is saved privately only after you start the session.',
  crisis:'An urgent safety concern deserves direct human support, not self-coaching. If you are in immediate danger, contact local emergency services or a trusted qualified professional.',
  min:'Please enter at least eight characters.',time:'min',new:'A new private coaching session',
+  adultNote:'For adults (18+) only. Reflect on intimacy without explicit details, pressure or physical exercises.',
+  adultConfirm:'I confirm I am 18+ and choose this private reflection.',
  previousTitle:'My last confirmed action',previousUse:'Explore this action again',
  previousPrefix:'How can I move forward with this step?',previousNote:'Only you decide whether to reuse it. Nothing is sent until you start a new session.',
  },
@@ -28,6 +30,8 @@ const copy={
  privacy:'Подбор происходит в браузере: вопрос не отправляется в ИИ или аналитику. После начала он сохраняется только в защищённом личном кабинете.',
  crisis:'Вопрос о непосредственной опасности требует живой помощи, а не самостоятельного коучинга. При угрозе безопасности обращайтесь в местные экстренные службы или к квалифицированному специалисту.',
  min:'Введите вопрос не короче восьми символов.',time:'мин',new:'Новая личная коуч-сессия',
+  adultNote:'Только для взрослых (18+). Без интимных подробностей, давления и телесных упражнений.',
+  adultConfirm:'Подтверждаю, что мне 18+ и я добровольно выбираю эту сессию.',
  previousTitle:'Моё последнее подтверждённое действие',previousUse:'Продолжить работу над этим шагом',
  previousPrefix:'Как мне продвинуться в этом шаге?',previousNote:'Вы сами решаете, использовать ли его снова. До начала сессии ничего не отправляется.',
  },
@@ -41,6 +45,8 @@ const copy={
  privacy:'La selección se calcula en tu navegador. No se envía a IA ni a analíticas; se guarda de forma privada al iniciar.',
  crisis:'El peligro inmediato requiere ayuda humana directa, no autocoaching. Contacta los servicios de emergencia locales.',
  min:'Escribe al menos ocho caracteres.',time:'min',new:'Nueva sesión privada',
+  adultNote:'Solo adultos (18+). Sin detalles explícitos, presión ni ejercicios físicos.',
+  adultConfirm:'Confirmo que tengo 18 años o más y elijo esta reflexión.',
  previousTitle:'Mi última acción confirmada',previousUse:'Explorar de nuevo esta acción',
  previousPrefix:'¿Cómo puedo avanzar con este paso?',previousNote:'Tú decides si quieres reutilizarlo. No se envía nada hasta iniciar una nueva sesión.',
  }
@@ -52,6 +58,7 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
  const [minutes,setMinutes]=useState(20)
  const [showRecommendations,setShowRecommendations]=useState(false)
  const [showAll,setShowAll]=useState(false)
+ const [adultConfirmed,setAdultConfirmed]=useState(false)
  const previousAction=typeof previousPlan?.approvedAt==='string'&&
    typeof previousPlan?.actionText==='string'?previousPlan.actionText.trim().slice(0,300):''
  const selection=useMemo(()=>recommendCoachingForQuestion(question,catalog,{minutes}),[question,catalog,minutes])
@@ -80,6 +87,7 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
    translated(catalog.signals.find(signal=>signal.tag===tag)?.label,lang)).filter(Boolean)
  const renderCard=(suggestion,i,extra=false)=>{
    const model=suggestion.model,scheme=suggestion.scheme
+    const isAdultModel=suggestion.modelKey==='tantric_intimacy_v1'
    if(!model||!scheme)return null
    const matches=matchedNames(suggestion)
    return <article className={styles.modelCard} key={suggestion.schemeKey}
@@ -100,8 +108,12 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
        <summary>{t.caution}<ChevronDown size={14}/></summary>
        <p>{translated(model.caution,lang)}</p>
      </details>
-     <button type="button" className={styles.modelSelect} disabled={busy||selection.blocked}
-       onClick={()=>onChoose(suggestion,question.trim())}>
+     {isAdultModel&&<><p className={styles.modelFallback}>{t.adultNote}</p>
+       <label className={styles.adultConfirm}><input type="checkbox" checked={adultConfirmed}
+         onChange={event=>setAdultConfirmed(event.target.checked)} disabled={busy}/>
+         <span>{t.adultConfirm}</span></label></>}
+     <button type="button" className={styles.modelSelect} disabled={busy||selection.blocked||(isAdultModel&&!adultConfirmed)}
+       onClick={()=>onChoose(suggestion,question.trim(),isAdultModel?adultConfirmed:undefined)}>
        {busy?'…':t.select}<ArrowRight size={16}/>
      </button>
    </article>
