@@ -12,6 +12,23 @@ import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mj
 
 const next={en:'Continue',ru:'Продолжить',es:'Continuar'}
 const back={en:'Back',ru:'Назад',es:'Atrás'}
+const kicker={en:'WHY WE PRACTISE',ru:'ЗАЧЕМ ЭТО НУЖНО',es:'PARA QUÉ PRACTICAMOS'}
+const today={en:/Today/,ru:/Сегодня/u,es:/Hoy/}
+// A distinct daily explanation, not a generic reassurance or an extra task.
+const skillHint={
+  en:[/three nearby objects/,/edge of a nearby object/,/chair supports us/,
+    /mild emotion/,/having the thought that/,/answer later/,/short pause/,
+    /early sign/,/straight line/,/grip of one hand/,/mild feeling/,
+    /thought, not an order/,/need a little time/,/supportive action/],
+  ru:[/три предмета/,/край одного предмета/,/стул поддерживает/,
+    /несильную эмоцию/,/Мне пришла мысль/,/ответить позже/,/посильную паузу/,
+    /ранний признак/,/прямую линию/,/хват одной руки/,/несильное чувство/,
+    /Это мысль, не приказ/,/Мне нужно немного времени/,/поддерживающее действие/],
+  es:[/tres objetos cercanos/,/borde de un objeto cercano/,/nos sostiene la silla/,
+    /emoción leve/,/teniendo el pensamiento/,/Puedo responder después/,/pausa breve/,
+    /primera señal/,/línea recta/,/aflojar un poco una mano/,/emoción leve/,
+    /un pensamiento, no una orden/i,/Necesito un poco de tiempo/,/acción de apoyo/],
+}
 
 test('support is authored for 14 days in EN/RU/ES, with no homework or performance question',()=>{
   assert.equal(oporaExperienceSupportValid(),true)
@@ -19,6 +36,9 @@ test('support is authored for 14 days in EN/RU/ES, with no homework or performan
     for(let day=1;day<=14;day++){
       const copy=oporaExperienceSupport(day,locale)
       assert.ok(copy?.title&&copy?.body,locale+' '+day)
+      assert.ok(copy.title.length<=54&&copy.body.length<=225,'One-screen reading budget '+locale+':'+day)
+      assert.match(copy.body,today[locale],'Missing explicit daily purpose '+locale+':'+day)
+      assert.match(copy.body,skillHint[locale][day-1],'Second screen does not explain actual skill '+locale+':'+day)
       assert.doesNotMatch(copy.title+' '+copy.body,/\?|\b(how did that go|i tried it|you should|you must|your task|tarea|задание|оцените|сделайте|попробуйте)\b/iu)
     }
   }
@@ -41,6 +61,7 @@ test('support is the SECOND visible screen of each of 14 days in all 3 languages
         findButton(h.tree,next[locale]).props.onClick();await h.settle()
         const supporting=nodes(h.tree).filter(x=>x.props?.['data-opora-daily-support']===day)
         assert.equal(supporting.length,1,'Missing supportive step '+locale+':'+day)
+        assert.ok(textOf(h.tree).includes(kicker[locale]),'Missing WHY label '+locale)
         assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,locale).title))
         assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,locale).body))
         assert.ok(!textOf(h.tree).includes(oporaAs58Day(day,locale).practice),'Task shown too early')

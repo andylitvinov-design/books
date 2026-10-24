@@ -73,7 +73,7 @@ try {
       }))
       assert.ok(bounds.document <= width + 1, `${locale}/${width}/${state}: document overflows`)
       assert.ok(bounds.stage.scroll <= bounds.stage.client + 1, `${locale}/${width}/${state}: stage overflows horizontally`)
-      if (['why','story','options','settle'].includes(state) && bounds.panel)
+      if (['support','why','story','options','settle'].includes(state) && bounds.panel)
         assert.ok(bounds.panel.scroll <= bounds.panel.client + 2, `${locale}/${width}/${state}: teaching step requires vertical scrolling`)
       for (const r of bounds.fixed) assert.ok(r.left >= -1 && r.right <= width + 1 && r.top >= -1 && r.bottom <= bounds.height + 1,
         `${locale}/${width}/${state}: header/footer clipped`)

@@ -24,7 +24,6 @@ import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
-
 import { TestDynamics } from '@/components/app/test-dynamics'
 import { periodComparison } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
@@ -138,7 +137,6 @@ export default function AppWorkspace({ locale, path = [] }) {
   const pendingSaveInstallAccountId=useRef(null)
   const savedExitDestination=useRef(null)
   useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
-  const quickAuthAttempted = useRef(false)
   const signinAttempted = useRef(false)
   const page = path[0] || 'portrait',
     recordId = path[1],
@@ -282,19 +280,8 @@ export default function AppWorkspace({ locale, path = [] }) {
       setBusy(false)
     }
   }
-  // The user already opted to enter OPORA by clicking the sitewide
-  // Start free CTA. Open existing OAuth once without requiring another
-  // intermediate guest marketing screen. Authentication itself remains real.
-  useEffect(() => {
-    if (state === 'signed-out' && stressSignup &&
-        searchParams.get('entry') === 'quick' && !quickAuthAttempted.current) {
-      quickAuthAttempted.current = true
-      void signin()
-    }
-  // The auth request is intentionally single-shot. On an error the visible
-  // guest screen retains its ordinary retry button, not a redirect loop.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, stressSignup, searchParams])
+  // OPORA quick links must show the first-week programme before Google OAuth.
+  // Consent on that slide is a real user click, not an effect of opening a URL.
 
   async function logout(allDevices = false) {
     setBusy(true)

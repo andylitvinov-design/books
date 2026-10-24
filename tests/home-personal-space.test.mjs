@@ -53,26 +53,26 @@ test('only real account state determines action and professional permissions', (
   assert.equal(results.professional, false);
 });
 
-test('homepage uses shared client-only provider and keeps existing hero/banner/dialogue order', () => {
+test('homepage uses shared client-only My Space and avoids a duplicate footer card', () => {
   const home = readFileSync(new URL('../components/holistic-house-home.tsx', import.meta.url),'utf8');
   const es = readFileSync(new URL('../app/es/page.tsx', import.meta.url),'utf8');
   const nav = readFileSync(new URL('../components/site-navigation.tsx', import.meta.url),'utf8');
   const layout = readFileSync(new URL('../app/layout.tsx', import.meta.url),'utf8');
   const panel = readFileSync(new URL('../components/home-personal-space.tsx', import.meta.url),'utf8');
-  for (const source of [home, es]) {
-    assert.doesNotMatch(source, /HomePersonalSpaceProvider/);
-    assert.match(source, /HomePersonalSpaceCard/);
-    assert.ok(source.indexOf('<HomeSectionCarousel') < source.indexOf('<HomeFreeDiagnosisBanner'));
-    assert.ok(source.indexOf('<HomeFreeDiagnosisBanner') < source.indexOf('<HomeConversationGuide'));
-    assert.ok(source.indexOf('<HomeConversationGuide') < source.indexOf('<HomePersonalSpaceCard'));
+  const stage = readFileSync(new URL('../components/home-featured-workspace.tsx', import.meta.url),'utf8');
+  for (const source of [home,es]) {
+    assert.doesNotMatch(source, /HomePersonalSpaceProvider|<HomePersonalSpaceCard/);
+    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeFeaturedWorkspace"));
+    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomeMoreDisclosure"));
   }
+  assert.match(stage, /data-home-reports-cta/);
   assert.match(layout, /<HomePersonalSpaceProvider locale=\{lang\}>\{children\}<\/HomePersonalSpaceProvider>/);
   assert.match(nav, /<HomePersonalSpaceNavEntry/);
   assert.doesNotMatch(nav, /pathname === '\/' \|\| pathname === '\/ru' \|\| pathname === '\/es'/);
   assert.match(panel, /bootstrap\?view=portrait/);
   assert.match(panel, /accountId: first.accountId/);
   assert.match(panel, /IntersectionObserver/);
-  assert.match(panel, /BroadcastChannel\([\"']hh-app-session[\"']\)/);
+  assert.match(panel, /BroadcastChannel\(["']hh-app-session["']\)/);
   assert.match(panel, /showModal\(/);
   assert.match(panel, /usePathname\(\)/);
   assert.match(panel, /activeLocale/);

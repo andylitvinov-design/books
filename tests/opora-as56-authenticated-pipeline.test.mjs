@@ -45,7 +45,8 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         for(let i=0;i<5;i++)await click(player,t.next)
         await click(player,t.vote)
         await click(player,t.next)
-        await click(player,t.next)
+        // The invitation requires an affirmative answer before the first action.
+        await click(player,locale==='ru'?'Да, готов(а)':"Yes, I’m ready")
       }else{
         // Preserve the existing warm first screen and feedback on Days 2–14.
         await click(player, locale==='ru'?'Напряжённо':'Tense')

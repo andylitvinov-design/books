@@ -52,6 +52,62 @@ test('action plan draft uses direct user evidence and leaves missing entries bla
   assert.equal(draftCoachingActionPlan(q,{},'','en').actionText,'')
 })
 
+test('approved plan seeds never invent actions from TGROW timing, OSKAR resources or directions',()=>{
+  const option=(id,en,ru,es)=>({id,label:{en,ru,es}})
+  const cases=[
+    {questions:[
+      {id:'tgrow_goal',stepKey:'goal'},
+      {id:'tgrow_will',stepKey:'will',type:'single_choice',
+        choices:[option('week','Within seven days','На этой неделе','Esta semana')]},
+    ],answers:{tgrow_goal:'Clear career options',tgrow_will:'choice:week'},
+      expected:{goal:'Clear career options',actionText:'',when:'Within seven days'}},
+    {questions:[{id:'oskar_affirm',stepKey:'affirm',type:'single_choice',
+      choices:[option('skills','My existing skills','Мои навыки','Mis habilidades')]}],
+      answers:{oskar_affirm:'choice:skills'},expected:{goal:'',actionText:'',when:''}},
+    {questions:[{id:'ap_design',stepKey:'design',type:'single_choice',
+      choices:[option('routine','My daily routine','Мои привычки','Mi rutina')]}],
+      answers:{ap_design:'choice:routine'},expected:{goal:'',actionText:'',when:''}},
+    {questions:[{id:'grow_options',stepKey:'options',type:'single_choice',
+      choices:[option('learn','Gather information','Собрать факты','Recopilar información')]},
+      {id:'grow_will',stepKey:'will',type:'single_choice',
+      choices:[option('pause','No action yet','Пока без шага','No actuar aún')]}],
+      answers:{grow_options:'choice:learn',grow_will:'choice:pause'},
+      expected:{goal:'',actionText:'',when:''}},
+    {questions:[{id:'woop_plan',stepKey:'plan'}],
+      answers:{woop_plan:'If the obstacle appears, then I will start for two minutes.'},
+      expected:{goal:'',actionText:'If the obstacle appears, then I will start for two minutes.',when:''}},
+  ]
+  for(const {questions,answers,expected} of cases){
+    const draft=draftCoachingActionPlan(questions,answers,'This is my concern, not necessarily a goal','en')
+    for(const [key,value] of Object.entries(expected))assert.equal(draft[key],value,key)
+    assert.equal(draft.confidence,null)
+  }
+  const oskar=cases[1]
+  assert.equal(draftCoachingActionPlan(oskar.questions,oskar.answers,'','ru').actionText,'')
+})
+
+test('continuity and unsubmitted followup safeguards reuse the same private account',async()=>{
+  const ui=source('components/app/personal-coaching.jsx')
+  const picker=source('components/app/personal-coaching-picker.jsx')
+  const css=source('components/app/personal-coaching.module.css')
+  const helper=source('lib/personal-coaching/offline-intelligence.js')
+  assert.match(helper,/buildCoachingRecap\(\{answers\},items,locale\)/)
+  assert.match(ui,/const lastApprovedPlan=\[session/)
+  assert.match(ui,/previousPlan=\{lastApprovedPlan\}/)
+  assert.match(ui,/pendingFollowup&&reflectionDraft\.trim\(\)\.length>0/)
+  assert.match(picker,/isNew&&previousAction&&/)
+  assert.match(picker,/previousPlan\?\.approvedAt/)
+  assert.match(picker,/onClick=\{revisitPrevious\}/)
+  assert.match(picker,/setShowRecommendations\(false\)/)
+  assert.match(css,/\.previousPlanPanel\{/)
+  assert.match(css,/@media\(max-width:370px\)/)
+  assert.doesNotMatch(picker,/\blocalStorage\b|\bsessionStorage\b|\bsendBeacon\b|\bfetch\(/)
+  const ts=(await import('typescript')).default
+  const parsed=ts.createSourceFile('components/app/personal-coaching-picker.jsx',picker,
+    ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0)
+})
+
 test('backend keeps saved reflections and approved plans owner encrypted and optimistic-revision guarded',()=>{
   const src=source('lib/app/personal-coaching.js'),api=source('app/api/app/[...path]/route.js')
   for(const literal of ["input.action==='reflection'","input.action==='plan'",

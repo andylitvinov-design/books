@@ -15,6 +15,8 @@ const copy={
  privacy:'Matching runs in your browser; no question is sent to AI or analytics. Your original question is saved privately only after you start the session.',
  crisis:'An urgent safety concern deserves direct human support, not self-coaching. If you are in immediate danger, contact local emergency services or a trusted qualified professional.',
  min:'Please enter at least eight characters.',time:'min',new:'A new private coaching session',
+ previousTitle:'My last confirmed action',previousUse:'Explore this action again',
+ previousPrefix:'How can I move forward with this step?',previousNote:'Only you decide whether to reuse it. Nothing is sent until you start a new session.',
  },
  ru:{eyebrow:'ВАШ ВОПРОС · ВАША МОДЕЛЬ',title:'Какой вопрос хотите разобрать?',
  placeholder:'Например: как перестать откладывать важную цель?',
@@ -26,6 +28,8 @@ const copy={
  privacy:'Подбор происходит в браузере: вопрос не отправляется в ИИ или аналитику. После начала он сохраняется только в защищённом личном кабинете.',
  crisis:'Вопрос о непосредственной опасности требует живой помощи, а не самостоятельного коучинга. При угрозе безопасности обращайтесь в местные экстренные службы или к квалифицированному специалисту.',
  min:'Введите вопрос не короче восьми символов.',time:'мин',new:'Новая личная коуч-сессия',
+ previousTitle:'Моё последнее подтверждённое действие',previousUse:'Продолжить работу над этим шагом',
+ previousPrefix:'Как мне продвинуться в этом шаге?',previousNote:'Вы сами решаете, использовать ли его снова. До начала сессии ничего не отправляется.',
  },
  es:{eyebrow:'TU PREGUNTA · TU MODELO',title:'¿Qué pregunta quieres explorar?',
  placeholder:'Por ejemplo: ¿cómo dejo de posponer un objetivo importante?',
@@ -37,15 +41,19 @@ const copy={
  privacy:'La selección se calcula en tu navegador. No se envía a IA ni a analíticas; se guarda de forma privada al iniciar.',
  crisis:'El peligro inmediato requiere ayuda humana directa, no autocoaching. Contacta los servicios de emergencia locales.',
  min:'Escribe al menos ocho caracteres.',time:'min',new:'Nueva sesión privada',
+ previousTitle:'Mi última acción confirmada',previousUse:'Explorar de nuevo esta acción',
+ previousPrefix:'¿Cómo puedo avanzar con este paso?',previousNote:'Tú decides si quieres reutilizarlo. No se envía nada hasta iniciar una nueva sesión.',
  }
 }
 const translated=(value,lang)=>value?.[lang]||value?.en||''
-export default function PersonalCoachingPicker({locale='en',catalog,onChoose,busy=false,error='',isNew=false}){
+export default function PersonalCoachingPicker({locale='en',catalog,onChoose,busy=false,error='',isNew=false,previousPlan=null}){
  const lang=copy[locale]?locale:'en',t=copy[lang]
  const [question,setQuestion]=useState('')
  const [minutes,setMinutes]=useState(20)
  const [showRecommendations,setShowRecommendations]=useState(false)
  const [showAll,setShowAll]=useState(false)
+ const previousAction=typeof previousPlan?.approvedAt==='string'&&
+   typeof previousPlan?.actionText==='string'?previousPlan.actionText.trim().slice(0,300):''
  const selection=useMemo(()=>recommendCoachingForQuestion(question,catalog,{minutes}),[question,catalog,minutes])
  const all=useMemo(()=>{
    const unique=new Set()
@@ -57,6 +65,11 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
        model:(catalog.models||[]).find(m=>m.modelKey===s.modelKey),
        fallback:true,matchedTags:[]}))
  },[catalog])
+ function revisitPrevious(){
+   if(!previousAction)return
+   setQuestion((t.previousPrefix+' '+previousAction).slice(0,600))
+   setShowRecommendations(false);setShowAll(false)
+ }
  function search(e){
    e.preventDefault()
    if(question.trim().length<8)return
@@ -98,6 +111,12 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
    {isNew&&<p className={styles.modelFallback}>{t.new}</p>}
    <h1>{t.title}</h1>
    <p className={styles.lead}>{t.hint}</p>
+   {isNew&&previousAction&&<aside className={styles.previousPlanPanel} data-coaching-previous-plan>
+     <strong>{t.previousTitle}</strong>
+     <p>{previousAction}</p>
+     <button type="button" disabled={busy} onClick={revisitPrevious}>{t.previousUse}<ArrowRight size={16}/></button>
+     <small>{t.previousNote}</small>
+   </aside>}
    <form className={styles.questionForm} onSubmit={search}>
      <label htmlFor="hh-coaching-client-question" className={styles.answerLabel}>{t.title}</label>
      <textarea id="hh-coaching-client-question" name="coaching-question"

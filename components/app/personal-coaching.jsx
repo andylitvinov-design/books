@@ -102,17 +102,20 @@ const intelligenceCopy={
     tailored:'Use the tailored question',recap:'Your reflection, in your own words',
     recapNote:'Only your saved answers appear here, not inferred results, diagnoses or AI advice.',
     copy:'Copy my reflection',copied:'Copied. You choose whether to share it.',
-    copyError:'Copy is unavailable; your private notes remain saved.'},
+    copyError:'Copy is unavailable. You can select the text below manually.',
+    manual:'Select and copy my private reflection'},
   ru:{adaptive:'С учётом вашего предыдущего ответа',standard:'Вернуть вопрос из модели',
     tailored:'Вернуть уточнённый вопрос',recap:'Ваши выводы — вашими словами',
     recapNote:'Только ваши сохранённые ответы, без выдуманных выводов, диагнозов или советов ИИ.',
     copy:'Скопировать мои выводы',copied:'Скопировано. Только вы решаете, делиться ли ими.',
-    copyError:'Копирование недоступно, приватные записи сохранены.'},
+    copyError:'Автоматическое копирование недоступно. Текст ниже можно выделить и скопировать.',
+    manual:'Выделите и скопируйте мои личные выводы'},
   es:{adaptive:'Según tu respuesta anterior',standard:'Usar la pregunta original del modelo',
     tailored:'Usar la pregunta adaptada',recap:'Tu reflexión, con tus propias palabras',
     recapNote:'Solo se muestran tus respuestas guardadas, sin diagnósticos ni consejos de IA.',
     copy:'Copiar mi reflexión',copied:'Copiado. Tú decides si lo compartes.',
-    copyError:'No se pudo copiar. Tus notas privadas siguen guardadas.'},
+    copyError:'No se pudo copiar automáticamente. Selecciona el texto abajo.',
+    manual:'Selecciona y copia mi reflexión privada'},
 }
 const translated=(value,lang)=>value?.[lang]||value?.en||''
 const questionsFor=(course,catalog)=>{
@@ -155,6 +158,8 @@ export default function PersonalCoaching({locale='en',accountId}){
   const visiblePrompt=adaptive&&!useStandardPrompt?adaptive.prompt:standardPrompt
   const recapRows=finished?buildCoachingRecap(session,activeQuestions,lang):[]
   const iCopy=intelligenceCopy[lang]
+  const lastApprovedPlan=[session,...(course?.history||[])]
+    .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
   function visit(indexToOpen,values,items=activeQuestions){
     const next=Math.max(0,Math.min(items.length-1,indexToOpen))
     setIndex(next)
@@ -205,11 +210,12 @@ export default function PersonalCoaching({locale='en',accountId}){
     titleRef.current?.focus({preventScroll:true})
   },[index,loading,session?.id,finished,pendingFollowup])
   useEffect(()=>{
-    if(!dirty)return
+    // Main answer AND optional dictated follow-up must survive accidental reloads.
+    if(!dirty&&!((pendingFollowup&&reflectionDraft.trim().length>0)))return
     const warn=event=>{event.preventDefault();event.returnValue=''}
     window.addEventListener('beforeunload',warn)
     return()=>window.removeEventListener('beforeunload',warn)
-  },[dirty])
+  },[dirty,pendingFollowup,reflectionDraft])
   async function command(action,fields={}){
     if(busyRef.current||!accountId)return null
     busyRef.current=true;setBusy(true);setError('');setNotice('')
@@ -330,7 +336,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
         </div>
         : (!course||newSelection) ? <PersonalCoachingPicker locale={lang} catalog={catalog}
-          onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
+          previousPlan={lastApprovedPlan} onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
         : finished ? <div className={styles.summary} data-coaching-summary>
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
@@ -363,6 +369,11 @@ export default function PersonalCoaching({locale='en',accountId}){
             {clipboardState&&<small role="status" className={styles.subtle}>
               {clipboardState==='copied'?iCopy.copied:iCopy.copyError}
             </small>}
+            {clipboardState==='error'&&<label className={styles.recapFallback}>
+              {iCopy.manual}
+              <textarea readOnly rows={7} value={coachingRecapClipboardText(session,activeQuestions,lang)}
+                onFocus={event=>event.target.select()} />
+            </label>}
           </section>}
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>

@@ -40,8 +40,10 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(route.includes('<DirectionExtras'))
   assert.ok(route.includes('<TopicJourneySelector'))
   assert.ok(home.includes("direction.id === 'relationships' ? 'love'"))
-  assert.ok(spanish.includes('<HomepageTopicJourneys locale="es" />'))
+  assert.ok(spanish.includes('<HomeMoreDisclosure locale="es" />'))
   assert.ok(!more.includes('<HomepageTopicJourneys locale='))
+  assert.ok(more.includes('data-home-topic-filter="energy"'))
+  assert.ok(more.includes('data-home-topic-filter="business"'))
   assert.ok(site.includes("id: 'services'"))
   assert.ok(site.includes("id: 'academy'"))
 })
@@ -49,7 +51,7 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
 
 test('all course CTAs open a real existing learning route, not the tests picker again', async () => {
   const cards = await readFile('components/direction-offers.tsx','utf8')
-  assert.match(cards, /direction === 'business'\s*\?\s*'\/' \+ appLocale \+ '\/app\/business'/)
+  assert.match(cards, /direction === 'business'\s*\?\s*'\/' \+ locale \+ '\/coaching'/)
   assert.match(cards, /: '\/' \+ locale \+ '\/courses\/antistress'/)
   assert.doesNotMatch(cards, /testHref \+ '&mode=course'/)
   assert.match(cards, /OPORA · Inner support/)

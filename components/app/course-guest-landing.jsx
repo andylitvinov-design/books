@@ -6,6 +6,7 @@ import {
   Compass, HeartHandshake, Leaf, LockKeyhole, ShieldCheck, Sparkles, Waves,
 } from 'lucide-react'
 import Course14DayOverview from './course-14-day-overview'
+import OporaFirstWeekInvite from './opora-first-week-invite'
 import { PublicAntistressRouteMap } from '../public-antistress-route-map'
 import { ANTISTRESS_ROUTER_VERSION } from '@/lib/inner-growth/antistress-module-router'
 import styles from './course-guest-landing.module.css'
@@ -135,6 +136,11 @@ export default function CourseGuestLanding({
 }) {
   const t = COPY[locale] || COPY.en
   const [previewModuleId,setPreviewModuleId]=useState('AS2')
+  // The seven-day preview is mandatory before a guest may request OAuth.
+  if (compact && stressSignup) return <div data-opora-guest-landing data-course-guest-invite>
+    <OporaFirstWeekInvite locale={locale} signedOut onAccept={onStart} busy={busy}
+      errorMessage={errorMessage} onRetry={onRetry} />
+  </div>
   if (compact) return (
     <section className={styles.compactRoot} data-opora-guest-landing data-course-guest-invite aria-labelledby="course-guest-invite-title">
       <figure className={styles.compactPhoto}>

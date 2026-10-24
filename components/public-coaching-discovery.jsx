@@ -1,15 +1,16 @@
 'use client'
 
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ArrowRight, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
-import { takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
+import { coachingArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
+import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
 
 
@@ -26,10 +27,11 @@ const copy={
     noExact:'No specific match found. You can choose any model below.',
     empty:'No models match these filters. Try a different topic or duration.',
     unavailable:'Coaching models are temporarily unavailable. You can still request a personal session.',
-    free:'Free',minutes:'min',start:'Start this free session',result:'What you will work toward',
+    free:'Free',minutes:'min',start:'Start free',result:'What you will work toward',
     recommendedLabel:'Suggested',different:'Other options',about:'About this approach',
+    details:'Details',lessDetails:'Less details',fullDetails:'More about this session',expect:'Expected outcome',limits:'Good to know',examples:'Example questions',freeMeta:'Self-guided',
     humanTitle:'Personal coaching with Andrey',humanText:'Live, individual coaching or therapeutic conversation, online. Choose the duration and send a request.',
-    half:'30-minute session',hour:'60-minute session',request:'Request this session',
+    half:'30-minute session',hour:'60-minute session',request:'Request session',
     notBooking:'A request is not a confirmed booking or payment. The coach must accept and arrange the session.',
     safe:'Self-coaching is educational reflection, not psychotherapy, medical care or an AI conversation.',
     alert:'If you face an immediate safety concern, seek qualified human or emergency support instead of self-coaching.',
@@ -61,10 +63,11 @@ const copy={
     noExact:'Точного совпадения нет. Выберите подходящую модель самостоятельно.',
     empty:'Нет моделей с такими фильтрами. Измените тему или длительность.',
     unavailable:'Каталог моделей временно недоступен. Можно запросить личную сессию.',
-    free:'Бесплатно',minutes:'мин',start:'Начать бесплатную сессию',result:'Результат практики',
+    free:'Бесплатно',minutes:'мин',start:'Начать бесплатно',result:'Результат практики',
     recommendedLabel:'Подходит по запросу',different:'Другие модели',about:'Об этом подходе',
+    details:'Детали',lessDetails:'Свернуть',fullDetails:'Ещё больше подробностей',expect:'Результат',limits:'Важно учитывать',examples:'Примеры вопросов',freeMeta:'Самостоятельно',
     humanTitle:'Личный коучинг с Андреем',humanText:'Индивидуальная коучинговая или терапевтическая беседа онлайн. Выберите длительность и отправьте запрос.',
-    half:'Сессия 30 минут',hour:'Сессия 60 минут',request:'Запросить сессию',
+    half:'Сессия 30 минут',hour:'Сессия 60 минут',request:'Заказать',
     notBooking:'Запрос не является подтверждённой записью или оплатой. Специалист согласует условия и время.',
     safe:'Самостоятельный коучинг — практика размышления, не психотерапия, медпомощь или чат с ИИ.',
     alert:'При непосредственной угрозе безопасности обратитесь за квалифицированной или экстренной помощью.',
@@ -96,8 +99,9 @@ const copy={
     noExact:'No hay una coincidencia específica. Puedes elegir cualquier modelo.',
     empty:'No hay modelos con esos filtros. Cambia el tema o la duración.',
     unavailable:'El catálogo no está disponible temporalmente. Puedes solicitar una sesión personal.',
-    free:'Gratis',minutes:'min',start:'Empezar sesión gratis',result:'Resultado de la práctica',
+    free:'Gratis',minutes:'min',start:'Empezar gratis',result:'Resultado de la práctica',
     recommendedLabel:'Sugerido',different:'Otras opciones',about:'Sobre este enfoque',
+    details:'Detalles',lessDetails:'Ocultar',fullDetails:'Más detalles de esta sesión',expect:'Resultado',limits:'A tener en cuenta',examples:'Preguntas de ejemplo',freeMeta:'Autoguiado',
     humanTitle:'Coaching personal con Andrey',humanText:'Conversación individual de coaching o terapia en línea. Elige una duración y envía una solicitud.',
     half:'Sesión de 30 minutos',hour:'Sesión de 60 minutos',request:'Solicitar sesión',
     notBooking:'Una solicitud no confirma una reserva ni un pago. El profesional debe confirmar.',
@@ -133,17 +137,6 @@ function traditionExplicitMatch(question,id){
 }
 
 
-// Decorative first-party photography. Existing site assets only.
-const coachingArt={
-  grow_v1:'/images/holistic-house/report-lighthouse-coast.avif',
-  tgrow_v1:'/images/holistic-house/ideas-pine-sharp.avif',
-  oskar_v1:'/images/holistic-house/hero-olive-incense.webp',
-  clear_v1:'/images/holistic-house/video-posters/constellations-en-v1.webp',
-  fuel_v1:'/images/holistic-house/books-library.webp',
-  solution_focus_v1:'/images/holistic-house/report-lighthouse-coast.avif',
-  woop_v1:'/images/holistic-house/ideas-pine-sharp.avif',
-  appreciative_5d_v1:'/images/holistic-house/hero-olive-incense.webp',
-}
 const tr=(value,locale)=>value?.[locale]||value?.en||''
 const answerText=(value,item,locale,t)=>{
   if(typeof value!=='string'||!value)return t.noAnswer
@@ -153,6 +146,63 @@ const answerText=(value,item,locale,t)=>{
   return tr((item.choices||[]).find(c=>c.id===id)?.label,locale)||t.noAnswer
 }
 
+
+// The same compact card contract is used for free models, private author
+// programmes, the preparation questionnaire and paid session requests.
+function CoachingLoungeCard({
+  locale,id,title,meta,price,image,description,detail,outcome,caution,examples,
+  primaryLabel,primaryHref,onPrimary,landingHref,onLanding,suggested=false,
+  schemeKey,traditionKey,
+}){
+  const t=copy[locale],panelId=useId()
+  const [expanded,setExpanded]=useState(false)
+  return <article id={traditionKey ? 'coaching-tradition-'+traditionKey : undefined} className={styles.loungeCard} data-coaching-item={id}
+    data-coaching-scheme={schemeKey} data-coaching-tradition={traditionKey}
+    data-coaching-compact-card>
+    <div className={styles.loungeRow}>
+      <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
+        aria-label={t.fullDetails+': '+title}>
+        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized
+          sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
+      </Link>
+      <div className={styles.loungeContent}>
+        <div className={styles.loungeMeta}>
+          <span>{meta}</span><strong>{price}</strong>
+        </div>
+        <h3>{title}</h3>
+        {description&&<p className={styles.loungeSummary}>{description}</p>}
+        {suggested&&<span className={styles.loungeSuggested}><Sparkles size={12}/>{t.recommendedLabel}</span>}
+        <div className={styles.loungeActions}>
+          <button type="button" className={styles.loungeDetails} aria-controls={panelId}
+            aria-expanded={expanded} onClick={()=>setExpanded(prev=>!prev)}>
+            {expanded?t.lessDetails:t.details}
+            <ChevronDown size={15} aria-hidden="true" className={expanded?styles.chevronOpen:styles.chevron}/>
+          </button>
+          {onPrimary
+            ? <button type="button" className={styles.loungePrimary} onClick={onPrimary}>
+                {primaryLabel}<ArrowRight size={15} aria-hidden="true"/>
+              </button>
+            : <Link className={styles.loungePrimary} href={primaryHref} prefetch={false}>
+                {primaryLabel}<ArrowRight size={15} aria-hidden="true"/>
+              </Link>}
+        </div>
+      </div>
+    </div>
+    <div className={styles.loungePanel} id={panelId} hidden={!expanded}
+      aria-label={t.details+': '+title} data-coaching-details-panel>
+      {detail&&<p>{detail}</p>}
+      {outcome&&<p><strong>{t.expect}:</strong> {outcome}</p>}
+      {caution&&<p><strong>{t.limits}:</strong> {caution}</p>}
+      {Array.isArray(examples)&&examples.length>0&&<div>
+        <strong>{t.examples}:</strong>
+        <ul>{examples.slice(0,3).map((text,i)=><li key={i}>{text}</li>)}</ul>
+      </div>}
+      <Link href={landingHref} className={styles.loungeLanding} prefetch={false} onClick={onLanding}>
+        {t.fullDetails}<ArrowRight size={15} aria-hidden="true"/>
+      </Link>
+    </div>
+  </article>
+}
 
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
@@ -180,14 +230,59 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [copyError,setCopyError]=useState(false)
   const [copied,setCopied]=useState(false)
   const titleRef=useRef(null)
+  const sessionScrollRef=useRef(null)
+  const rootRef=useRef(null)
+  useEffect(()=>{
+    if(!session)return
+    // The public session is an immersive viewport, not a card inside the site.
+    // Keep the original scroll state when returning to the model lounge.
+    const previousOverflow=document.body.style.overflow
+    document.body.style.overflow='hidden'
+    const viewport=window.visualViewport
+    const sizeToVisibleViewport=()=>{
+      if(!rootRef.current)return
+      rootRef.current.style.setProperty('--coach-visible-height',`${Math.max(1,Math.round(viewport?.height||window.innerHeight))}px`)
+      rootRef.current.style.setProperty('--coach-visible-top',`${Math.round(viewport?.offsetTop||0)}px`)
+    }
+    sizeToVisibleViewport()
+    window.addEventListener('resize',sizeToVisibleViewport)
+    viewport?.addEventListener('resize',sizeToVisibleViewport)
+    viewport?.addEventListener('scroll',sizeToVisibleViewport)
+    return ()=>{
+      document.body.style.overflow=previousOverflow
+      window.removeEventListener('resize',sizeToVisibleViewport)
+      viewport?.removeEventListener('resize',sizeToVisibleViewport)
+      viewport?.removeEventListener('scroll',sizeToVisibleViewport)
+      rootRef.current?.style.removeProperty('--coach-visible-height')
+      rootRef.current?.style.removeProperty('--coach-visible-top')
+    }
+  },[session])
   // On phones, the next question must not appear below the old viewport.
   // Focus the freshly rendered heading after each guest step; never autofocus
   // an input or open the keyboard without the visitor's action.
   useEffect(()=>{
-    if(session&&!finished)titleRef.current?.focus({preventScroll:false})
+    if(session&&!finished){
+      if(sessionScrollRef.current)sessionScrollRef.current.scrollTop=0
+      titleRef.current?.focus({preventScroll:true})
+    }
   },[session,index,finished,pendingFollowup])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
+  // A dedicated public scheme landing may link back to an explicit Start action.
+  // Only a whitelisted, published scheme key is read from the URL; never a
+  // visitor's raw question or response. No session is stored by this handoff.
+  const openedLinkedScheme=useRef(false)
+  useEffect(()=>{
+    if(openedLinkedScheme.current||!schemes.length)return
+    const schemeKey=new URLSearchParams(window.location.search).get('start')
+    if(!schemeKey)return
+    openedLinkedScheme.current=true
+    const selected=schemes.find(item=>item.schemeKey===schemeKey)
+    if(selected){
+      setSession(selected);setIndex(0);setAnswers({});setDraft('')
+      setFinished(false);setError('');setCopied(false)
+    }
+  },[schemes])
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
   const suggestionKeys=useMemo(()=>new Set(question.trim().length>=8&&recommendation.recognized?recommendation.suggestions.filter(s=>s.matchedTags.length>0).map(s=>s.schemeKey):[]),[question,recommendation])
   const shown=useMemo(()=>schemes.filter(s=>(topic==='all'||s.tags?.includes(topic))&&(duration===0||s.minutes<=duration)&&(style==='all'||s.style===style))
@@ -200,6 +295,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       traditionExplicitMatch(question,id)||fit.tags.some(tag=>(recommendation.tags||[]).includes(tag)))
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
+  const needsCustomPlan=Boolean(session?.requiredCustomPlan&&index===session.questions.length-1)
   const options=current?.type==='scale_0_10'
     ?Array.from({length:11},(_,n)=>({id:String(n),label:{en:String(n),ru:String(n),es:String(n)}}))
     :(current?.choices||[])
@@ -209,7 +305,6 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     if(recommendation.blocked)return
     setSession(scheme);setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
-    window.scrollTo({top:0,behavior:'smooth'})
   }
   function backToModels(){
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
@@ -275,7 +370,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     try{await navigator.clipboard.writeText(summaryText());setCopied(true);setCopyError(false)}
     catch{setCopyError(true)}
   }
-  return <main className={styles.root} data-public-coaching lang={lang}>
+  return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?<>
         <header className={styles.hero}>
@@ -332,24 +427,20 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <div className={styles.cards} data-public-coaching-models>
               {shown.map(s=>{
                 const model=models.get(s.modelKey)
-                return <article key={s.schemeKey} className={styles.card} data-coaching-scheme={s.schemeKey}>
-                  <div className={styles.cardVisual}>
-                    <Image className={styles.cardArt} src={cardArtworkUrl(coachingArt[s.modelKey]||coachingArt.grow_v1)} unoptimized
-                      alt="" aria-hidden="true" width={640} height={270} sizes="(max-width:600px) 100vw, (max-width:800px) 50vw, 350px"/>
-                  </div>
-                  <div className={styles.cardTop}><span>{s.style==='quick'?t.quick:t.reflective} · {s.minutes} {t.minutes}</span><strong>{t.free} · €0</strong></div>
-                  <div className={styles.cardMain}>
-                    <div className={styles.cardHeading}>
-                      <h3>{tr(model.name,lang)}</h3>
-                      <p className={styles.schemeName}>{tr(s.name,lang)}</p>
-                    </div>
-                  </div>
-                  <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
-                  <p className={styles.outcome}><Check size={15}/>{t.result}: {tr(s.result,lang)}</p>
-                  {suggestionKeys.has(s.schemeKey)&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-                  <details><summary>{t.about}</summary><p>{tr(model.caution,lang)}</p></details>
-                  <button type="button" className={styles.cardButton} onClick={()=>start(s)}>{t.start}<ArrowRight size={17}/></button>
-                </article>
+                return <CoachingLoungeCard key={s.schemeKey} locale={lang} id={s.schemeKey}
+                  title={tr(model.name,lang)}
+                  meta={(s.style==='quick'?t.quick:t.reflective)+' · '+s.minutes+' '+t.minutes}
+                  price="€0" image={coachingArt[s.modelKey]||coachingArt.grow_v1}
+                  description={tr(model.selectionComment,lang)||tr(model.focus,lang)}
+                  detail={tr(model.focus,lang)}
+                  outcome={tr(s.result,lang)}
+                  caution={tr(model.caution,lang)}
+                  examples={model.exampleQuestions?.[lang]||model.exampleQuestions?.en||[]}
+                  suggested={suggestionKeys.has(s.schemeKey)}
+                  schemeKey={s.schemeKey} primaryLabel={t.start}
+                  onPrimary={()=>start(s)}
+                  onLanding={()=>stageIdeasCoachingQuestion(question)}
+                  landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
               })}
             </div>}
           <p className={styles.disclaimer}>{t.safe}</p>
@@ -358,113 +449,124 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <h2 id="coaching-more-paths">{t.otherWays}</h2>
           <p>{t.otherWaysNote}</p>
           <div className={styles.morePathGrid}>
-            {shownTraditions.includes('egyptian')&&<article className={styles.morePath} data-coaching-tradition="egyptian" data-suggested={suggestedTraditions.has('egyptian')}>
-              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
-              {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link className={styles.moreSelect} href={traditionHref('egyptian')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/egyptian'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>}
-            {shownTraditions.includes('greek')&&<article className={styles.morePath} data-coaching-tradition="greek" data-suggested={suggestedTraditions.has('greek')}>
-              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.greek}</h3><p>{t.greekNote}</p>
-              {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link className={styles.moreSelect} href={traditionHref('greek')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/greek'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>}
-            <article className={styles.morePath}>
-              <Image className={styles.morePhoto} src="/images/holistic-house/course-start-heron.webp"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
-              <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
-                {t.openWorksheet}<ArrowRight size={16}/>
-              </Link>
-            </article>
+            {shownTraditions.includes('egyptian')&&<CoachingLoungeCard
+              key="egyptian" locale={lang} id="egyptian" traditionKey="egyptian"
+              title={t.egyptian} meta={t.freeMeta} price="€0"
+              image={traditionCoachingArt} description={t.egyptianNote}
+              detail={t.egyptianNote} caution={t.safe}
+              suggested={suggestedTraditions.has('egyptian')}
+              primaryHref={traditionHref('egyptian')} primaryLabel={t.chooseTradition}
+              landingHref={'/'+lang+'/academy/coaching/egyptian'}/>}
+            {shownTraditions.includes('greek')&&<CoachingLoungeCard
+              key="greek" locale={lang} id="greek" traditionKey="greek"
+              title={t.greek} meta={t.freeMeta} price="€0"
+              image={traditionCoachingArt} description={t.greekNote}
+              detail={t.greekNote} caution={t.safe}
+              suggested={suggestedTraditions.has('greek')}
+              primaryHref={traditionHref('greek')} primaryLabel={t.chooseTradition}
+              landingHref={'/'+lang+'/academy/coaching/greek'}/>}
+            <CoachingLoungeCard key="worksheet" locale={lang} id="worksheet"
+              title={t.worksheet} meta={t.freeMeta} price="€0"
+              image={coachingWorksheetArt} description={t.worksheetNote}
+              detail={t.worksheetNote}
+              primaryHref={'/'+lang+'/coaching/intake'} primaryLabel={t.openWorksheet}
+              landingHref={'/'+lang+'/coaching/intake'}/>
           </div>
         </section>}
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title">
           <h2 id="human-coaching-title">{t.humanTitle}</h2><p>{t.humanText}</p>
-          <div className={styles.cards}>
-            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}].filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style)).map(option=>
-              <article className={styles.card} key={option.minutes}>
-                <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
-                <div className={styles.cardMain}>
-                   <div className={styles.cardHeading}><h3>{option.name}</h3></div>
-                   <Image className={styles.cardArt} src={cardArtworkUrl('/images/holistic-house/hero-olive-incense.webp')} unoptimized
-                     alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
-                 </div>
-                 <p>{t.humanText}</p>
-                <Link className={styles.cardButton} href={'/'+lang+'/services#consultation'}>{t.request}<ArrowRight size={17}/></Link>
-              </article>)}
+          <div className={styles.cards} data-coaching-paid-sessions>
+            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}]
+              .filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style))
+              .map(option=><CoachingLoungeCard key={option.minutes} locale={lang}
+                id={'personal-'+option.minutes} title={option.name}
+                meta={option.minutes+' '+t.minutes} price={option.price}
+                image={humanCoachingArt} description={t.humanText}
+                detail={t.humanText} caution={t.notBooking}
+                primaryHref={'/'+lang+'/services#consultation'} primaryLabel={t.request}
+                landingHref={'/'+lang+'/coaching/session/personal-'+option.minutes}/>)}
           </div>
           <p className={styles.disclaimer}>{t.notBooking}</p>
           <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
         </section>}
         
       </>:<section className={styles.session} data-public-coaching-session>
-        <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
-        <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
-        {finished?<div className={styles.finish} data-public-coaching-complete>
-          <span className={styles.completed}><Check size={16}/>{t.completed}</span>
-          <h1>{t.summary}</h1>
-          <div className={styles.summary}>
-            {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {session.questions.map(item=><div key={item.id}><strong>{tr(item.prompt,lang)}</strong><p>{answerText(answers[item.id],item,lang,t)}</p>
-              {reflections[item.id]?.text&&<p><em>{t.clarifyAnswer}:</em> {reflections[item.id].text}</p>}
-            </div>)}
+        <header className={styles.sessionHeader}>
+          <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
+          <div className={styles.sessionHeaderInfo}>
+            <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
+            {!finished&&<div className={styles.progress}>
+              <span>{t.stage} {index+1} {t.of} {session.questions.length}</span>
+              <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length}
+                aria-valuenow={index+1} aria-label={t.stage}>
+                <span style={{width:((index+1)/session.questions.length*100)+'%'}}/>
+              </div>
+            </div>}
           </div>
-          <CoachingActionPlan key={session.schemeKey||session.modelKey} locale={lang}
-            initial={draftCoachingActionPlan(session.questions,answers,question,lang)}
-            onSave={value=>{setApprovedPlan(value);return true}}/>
-          <button type="button" className={styles.primary} onClick={copySummary}><ClipboardCopy size={17}/>{copied?t.copied:t.copy}</button>
-          {copyError&&<><p className={styles.alert} role="alert">{t.copyFallback}</p><textarea className={styles.copyFallback} readOnly value={summaryText()} rows={7}/></>}
-          <button type="button" className={styles.secondary} onClick={backToModels}>{t.restart}</button>
-        </div>:pendingFollowup?<div data-public-coaching-followup>
-          <div className={styles.progress}><span>{t.stage} {index+1} {t.of} {session.questions.length}</span>
-            <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length}
-              aria-valuenow={index+1} aria-label={t.stage}><span style={{width:((index+1)/session.questions.length*100)+'%'}}/></div>
-          </div>
-          <p className={styles.stage}>{t.clarify}</p>
-          <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
-          <p className={styles.hint}>{t.clarifyWhy}</p>
-          <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
-          <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
-            maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
-          {error&&<p className={styles.alert} role="alert">{error}</p>}
+        </header>
+        <div className={styles.sessionScroll} ref={sessionScrollRef} tabIndex={-1}>
+          {finished?<div className={styles.finish} data-public-coaching-complete>
+            <span className={styles.completed}><Check size={16}/>{t.completed}</span>
+            <h1>{t.summary}</h1>
+            <div className={styles.summary}>
+              {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
+              {session.questions.map(item=><div key={item.id}><strong>{tr(item.prompt,lang)}</strong><p>{answerText(answers[item.id],item,lang,t)}</p>
+                {reflections[item.id]?.text&&<p><em>{t.clarifyAnswer}:</em> {reflections[item.id].text}</p>}
+              </div>)}
+            </div>
+            <CoachingActionPlan key={session.schemeKey||session.modelKey} locale={lang}
+              initial={draftCoachingActionPlan(session.questions,answers,question,lang)}
+              onSave={value=>{setApprovedPlan(value);return true}}/>
+            <button type="button" className={styles.primary} onClick={copySummary}><ClipboardCopy size={17}/>{copied?t.copied:t.copy}</button>
+            {copyError&&<><p className={styles.alert} role="alert">{t.copyFallback}</p>
+              <textarea className={styles.copyFallback} readOnly value={summaryText()} rows={7}/></>}
+            <button type="button" className={styles.secondary} onClick={backToModels}>{t.restart}</button>
+            <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
+          </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
+            <p className={styles.stage}>{t.clarify}</p>
+            <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            <p className={styles.hint}>{t.clarifyWhy}</p>
+            <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
+            <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
+              maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+            {error&&<p className={styles.alert} role="alert">{error}</p>}
+          </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
+            <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
+            <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+            {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
+            {tr(current.reflection,lang)&&<p className={styles.hint}>{tr(current.reflection,lang)}</p>}
+            {options.length>0&&!needsCustomPlan&&<>
+              <p className={styles.questionLabel}>{t.choices}</p>
+              <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
+                {options.map(option=><button type="button" key={option.id}
+                  aria-pressed={draft==='choice:'+option.id} onClick={()=>{setDraft('choice:'+option.id);setError('')}}>{tr(option.label,lang)}</button>)}
+              </div>
+            </>}
+            {options.length>0&&!needsCustomPlan
+              ?<details key={current.id} className={styles.customAnswer} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
+                <summary>{t.ownAnswer}</summary>
+                <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer}
+                  rows={2} maxLength={800} placeholder={t.answerPlaceholder}
+                  value={draft.startsWith('choice:')?'':draft} onChange={e=>{setDraft(e.target.value);setError('')}}/>
+              </details>
+              :<><label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.ownAnswer}</label>
+                <textarea id="public-coaching-answer" className={styles.questionInput} rows={3} maxLength={800}
+                  placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
+                  onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
+            {error&&<p className={styles.alert} role="alert">{error}</p>}
+          </div>}
+        </div>
+        {!finished&&<footer className={styles.sessionFooter}>
           <div className={styles.sessionActions}>
             <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
-            <button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>
-              {t.clarifySave}<ArrowRight size={17}/></button>
+            {pendingFollowup
+              ?<button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>{t.clarifySave}<ArrowRight size={17}/></button>
+              :<button type="button" className={styles.primary} onClick={advance}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
           </div>
-          <button type="button" className={styles.secondary} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>
-        </div>:<>
-          <div className={styles.progress}><span>{t.stage} {index+1} {t.of} {session.questions.length}</span><div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length} aria-valuenow={index+1} aria-label={t.stage}><span style={{width:((index+1)/session.questions.length*100)+'%'}}/></div></div>
-          <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
-          <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
-          {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-          {tr(current.reflection,lang)&&<p className={styles.hint}>{tr(current.reflection,lang)}</p>}
-          {options.length>0&&!(session.requiredCustomPlan&&index===session.questions.length-1)&&<>
-            <p className={styles.questionLabel}>{t.choices}</p>
-            <div className={styles.choices}>{options.map(option=><button type="button" key={option.id}
-              aria-pressed={draft==='choice:'+option.id} onClick={()=>{setDraft('choice:'+option.id);setError('')}}>{tr(option.label,lang)}</button>)}</div>
-          </>}
-          <label className={styles.questionLabel} htmlFor="public-coaching-answer">{session.requiredCustomPlan&&index===session.questions.length-1?t.plan:t.ownAnswer}</label>
-          <textarea id="public-coaching-answer" className={styles.questionInput} rows={3} maxLength={800}
-            placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
-            onChange={e=>{setDraft(e.target.value);setError('')}}/>
-          {error&&<p className={styles.alert} role="alert">{error}</p>}
-          <div className={styles.sessionActions}>
-            <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
-            <button type="button" className={styles.primary} onClick={advance}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>
-          </div>
-        </>}
-        <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
+          {pendingFollowup&&<button type="button" className={styles.followupSkip} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
+          <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
+        </footer>}
       </section>}
     </div>
   </main>
 }
-

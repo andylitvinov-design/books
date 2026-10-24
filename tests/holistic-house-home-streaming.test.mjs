@@ -21,28 +21,25 @@ test("EN and RU heroes stream public video without awaiting Redis", () => {
   assert.match(section, /data-video-slot="home-intro"/);
 });
 
-test("EN/RU/ES first screen clearly distinguishes free written review, tests and paid booking", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx"), esServices = read("app/es/services/page.tsx");
-  const seo = read("lib/home-seo.ts"), css = read("app/holistic-house-home.css");
-  assert.match(home, /heroTitle: "Stuck in relationships, work or an important decision\?"/);
-  assert.match(home, /heroTitle: "Сложности в отношениях, работе или важном решении\?"/);
-  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
-  assert.match(seo, /Personal Sessions in Toronto & Online/);
-  assert.match(seo, /openGraph:/);
-  assert.match(seo, /twitter:/);
-  for (const page of [home, es]) {
-    assert.match(page, /data-hero-cta": "free-written-review"|data-hero-cta="free-written-review"/);
-    assert.match(page, /data-hero-cta": "free-tests"|data-hero-cta="free-tests"/);
-    assert.match(page, /data-hero-cta": "paid-sessions"|data-hero-cta="paid-sessions"/);
-    assert.ok(page.indexOf('service-home-button--primary') < page.indexOf('service-home-button--secondary'));
-    assert.doesNotMatch(page, /HomeFreePaths/);
+test("EN/RU/ES first screen presents seven visible steps and genuine free/paid routes", () => {
+  const en = read("components/holistic-house-home.tsx");
+  const es = read("app/es/page.tsx");
+  const stage = read("components/home-featured-workspace.tsx");
+  const seo = read("lib/home-seo.ts");
+  for (const page of [en,es]) {
+    assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
+    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
+    assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|service-home-hero/);
   }
-  assert.match(home, /href=\{\x60\/\$\{locale\}\/services#consultation\x60\}/);
-  assert.match(es, /href="\/es\/services#consultation"/);
-  assert.match(esServices, /<PublicConsultationCta locale="es" id="consultation" serviceBooking wiseEnabled=\{wisePaymentsEnabled\(\)\} paypalPersonalEnabled=\{personalPayPalEnabled\(\)\} \/>/);
-  assert.match(css, /\.house-home--services \.service-home-button--primary \{/);
-  assert.match(css, /\.house-home--services \.service-home-button--secondary \{ display: inline-flex; \}/);
+  for (const name of ["Free courses","Бесплатные курсы","Cursos gratuitos",
+    "Заказать бесплатный письменный разбор","Start free coaching","Request a session · from €50"]) {
+    assert.ok(stage.includes(name), "Missing offer: " + name);
+  }
+  for (const route of ["/services/free-situation-review","/client/tests","/services#consultation"])
+    assert.ok(stage.includes(route), "Missing conversion route "+route);
+  assert.match(stage, /<h1 id="hh-home-features-title">/);
+  assert.match(seo, /Personal Sessions in Toronto & Online/);
+  assert.match(read("app/es/services/page.tsx"), /<PublicConsultationCta locale="es" id="consultation"/);
 });
 
 test("canonical TTFB measurement and nonce safety remain intact", () => {

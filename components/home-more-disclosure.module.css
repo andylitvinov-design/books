@@ -1,0 +1,26 @@
+/* Five compact navigation filters replace repeated bottom landing sections. */
+.root { width: min(1120px, calc(100% - 28px)); margin: 17px auto 28px; padding: clamp(16px,3vw,25px);
+  border: 1px solid #d9e3da; border-radius: 21px; background: #f7faf6;
+  color: #295a50; font-family: Arial, Helvetica, sans-serif; }
+.heading { margin-bottom: 13px; }
+.eyebrow { margin: 0 0 6px; color: #7d624d; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.heading h2 { margin: 0 0 6px; font: 400 clamp(23px,3.1vw,31px)/1.15 Georgia,"Times New Roman",serif; }
+.heading > p:last-child { max-width: 600px; margin: 0; font-size: 13px; line-height: 1.5; color: #60776e; }
+.filters { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+.chip { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 17px;
+  border-radius: 999px; border: 1px solid #b9cec4; background: #fffefa; text-decoration: none;
+  font-size: 13px; line-height: 1.25; font-weight: 750; color: #295f55; }
+.chip:hover { border-color: #286c61; background: #edf6f0; }
+.ask { margin-top: 15px; border-top: 1px solid #dae6dd; padding-top: 11px; }
+.ask > summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 7px 0;
+  cursor: pointer; font-size: 13px; font-weight: 750; color: #742c42; }
+.ask > summary span { display: inline-block; transition: transform .15s ease; }
+.ask[open] > summary span { transform: rotate(180deg); }
+.root :is(a,summary):focus-visible { outline: 3px solid #a37d58; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .root { width: calc(100% - 24px); margin: 15px auto 23px; padding: 16px 14px; border-radius: 17px; }
+  .filters { gap: 7px; }
+  .chip { font-size: 12px; padding: 9px 12px; }
+  .heading > p:last-child { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .root * { transition: none !important; } }

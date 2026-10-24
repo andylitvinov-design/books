@@ -62,7 +62,9 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
       await advanceOporaTo(f.h,'practice',t.next)
-      assert.ok(textOf(f.h.tree).includes(oporaAs58Day(day,locale).title))
+      const title=day===1?{en:'Look at three objects',ru:'Посмотрите на три предмета',es:'Mira tres objetos'}[locale]
+        :oporaAs58Day(day,locale).title
+      assert.ok(textOf(f.h.tree).includes(title))
       assert.ok(textOf(f.h.tree).includes(oporaAs58Day(day,locale).practice))
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],false)
