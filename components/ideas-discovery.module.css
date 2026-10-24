@@ -1119,7 +1119,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   font:800 13px/1.28 Arial,Helvetica,sans-serif;
 }
 .exploreCopy small{
-  display:block;margin-top:5px;color:#816f5e;
+  display:block;margin-top:5px;color:#705e4c;
   font:500 11px/1.32 Arial,Helvetica,sans-serif;
 }
 .exploreArrow{color:#94765a;justify-self:end;flex-shrink:0}
@@ -1129,7 +1129,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 }
 .exploreTemple:hover{background:linear-gradient(125deg,#f1f8f4,#deebe4);border-color:#84aca0}
 .exploreTemple .exploreIcon{background:#e2eee9;border-color:#c9e0d7;color:#2a7770}
-.exploreTemple .exploreCopy small{color:#648079}
+.exploreTemple .exploreCopy small{color:#446760}
 .exploreTemple .exploreArrow{color:#52837a}
 .templeHeading{
   display:flex;align-items:center;gap:8px;
@@ -1147,7 +1147,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   text-align:left;
 }
 .heroActions .testButton .testButtonKicker{
-  color:#527872;font-size:11px;font-weight:750;line-height:1.2;
+  color:#316963;font-size:11px;font-weight:750;line-height:1.2;
 }
 .heroActions .testButton .testButtonText strong{
   color:#285d58;font-size:clamp(13px,1.3vw,16px);line-height:1.25;
