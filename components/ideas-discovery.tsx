@@ -10,6 +10,7 @@ import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle }
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
 import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, getIdeasTestSuggestions, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import { rotateIdeasPreviewAphorisms } from "@/lib/ideas-preview-rotation.mjs";
+import { stageIdeasCoachingQuestion } from "@/lib/ideas-coaching-handoff";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -550,7 +551,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           <span className={styles.decor} aria-hidden="true">✦</span>
         </div>
 
-        <form className={styles.question} onSubmit={submitQuestion}>
+        <form id="ideas-question-form" className={styles.question} onSubmit={submitQuestion}>
         <label htmlFor="ideas-question">{t.question}</label>
         <div className={styles.questionFields}>
           <Sparkles className={styles.inputSparkle} size={21} aria-hidden="true" />
@@ -582,52 +583,61 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             <Paperclip size={20} aria-hidden="true" />
           </button>
         </div>
-        <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={t.choose}>
-          <Link href={coachingHref} prefetch={false} className={styles.submit}
-            data-ideas-free-coaching aria-label={t.testAria}>
-            <ClipboardCheck size={19} aria-hidden="true" />
-            <span className={styles.testButtonText}><span className={styles.testButtonKicker}>{t.testOverline}</span><strong>{t.test}</strong></span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-          <button type="submit" className={styles.testButton} data-ideas-tao>
-            <span className={styles.modeYin} aria-hidden="true">☯</span><span>{t.ask}</span>
-          </button>
-        </div>
-        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
-        <details className={styles.privacyDisclosure}>
-          <summary id="ideas-question-privacy">{t.privacyShort}</summary>
-          <p className={styles.privacy}>{t.privacy}</p>
-        </details>
-        <button type="button" className={styles.freeTestLink} data-ideas-free-test
-          aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-          onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
-        </form>
-        <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
-          hidden={!showSuggestedTests} aria-label={t.testsTitle}>
-          <div className={styles.testPickerHeading}>
-            <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
-              {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
-            </div>
-            <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
-              aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
-          </div>
-          <ul className={styles.testPickerList}>
-            {suggestedTests.keys.map(key => (
-              <li key={key}>
-                <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
-                  className={styles.testPickerItem} data-ideas-test-start={key}>
-                  <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <Link href={suggestedTestBrowserHref} prefetch={false}
-            className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
-          <p className={styles.testPickerNote}>{t.testsNote}</p>
-        </section>
+       </form>
       </div>
+      <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={t.choose}>
+        <Link href={coachingHref} prefetch={false} className={styles.submit}
+          onClick={() => stageIdeasCoachingQuestion(question)}
+          data-ideas-free-coaching aria-label={t.testAria}>
+          <ClipboardCheck size={20} aria-hidden="true" />
+          <span className={styles.testButtonText}>
+            <span className={styles.testButtonKicker}>{t.testOverline}</span>
+            <strong>{t.test}</strong>
+          </span>
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link>
+        <button type="submit" form="ideas-question-form" className={styles.testButton} data-ideas-tao>
+          <span className={styles.modeYin} aria-hidden="true">☯</span>
+          <span>{t.ask}</span>
+        </button>
+      </div>
+      <div className={styles.heroUtility} data-ideas-hero-utility>
+        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
+        <div className={styles.utilityLinks}>
+          <details className={styles.privacyDisclosure}>
+            <summary id="ideas-question-privacy">{t.privacyShort}</summary>
+            <p className={styles.privacy}>{t.privacy}</p>
+          </details>
+          <button type="button" className={styles.freeTestLink} data-ideas-free-test
+            aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+            onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+        </div>
+      </div>
+      <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
+        hidden={!showSuggestedTests} aria-label={t.testsTitle}>
+        <div className={styles.testPickerHeading}>
+          <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
+            {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
+          </div>
+          <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
+            aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
+        </div>
+        <ul className={styles.testPickerList}>
+          {suggestedTests.keys.map(key => (
+            <li key={key}>
+              <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
+                className={styles.testPickerItem} data-ideas-test-start={key}>
+                <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href={suggestedTestBrowserHref} prefetch={false}
+          className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
+        <p className={styles.testPickerNote}>{t.testsNote}</p>
+      </section>
 
-      <p className={styles.actionLabel}>{t.choose}</p>
+            <p className={styles.actionLabel}>{t.choose}</p>
       <div className={styles.actions}>
         <button type="button" onClick={() => choose("dao")} aria-pressed={activeMode === "dao"} className={styles.action}>
           <span className={styles.modeYin} aria-hidden="true">☯</span><span>{t.dao}</span>
