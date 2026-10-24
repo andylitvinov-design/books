@@ -59,6 +59,9 @@ const copy = {
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Situation analysis, constellation-informed reflection and optional homeopathic discussion as a symbolic or complementary approach — not medical treatment.",
     alchemyAction: "Explore Psychic Alchemy",
+    practitionerOfferTitle: "I'm a Master — Offer My Services",
+    practitionerOfferBody: "Already a practitioner? Create your professional profile, describe your sessions or courses in My Practice, then submit them for review. Listings appear only after approval.",
+    practitionerOfferAction: "Start offering my services",
     practitionersTitle: "Choose a practitioner",
     practitionersBody: "Only published energy and spiritual practitioners appear below. You can also explore the full directory.",
     allPractitioners: "Find all practitioners",
@@ -104,6 +107,9 @@ const copy = {
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Разбор ситуации, символическая расстановочная работа и при желании обсуждение гомеопатии как дополнительного подхода — не лечение.",
     alchemyAction: "Подробнее об Алхимии души",
+    practitionerOfferTitle: "Я мастер — предложить свои услуги",
+    practitionerOfferBody: "Создайте профиль специалиста, добавьте сессии или курсы в «Моей практике» и отправьте на модерацию. Услуги публикуются только после одобрения.",
+    practitionerOfferAction: "Предложить свои услуги",
     practitionersTitle: "Выберите мастера",
     practitionersBody: "Ниже — только опубликованные специалисты по энергетическим и духовным практикам. Можно открыть полный каталог.",
     allPractitioners: "Все специалисты",
@@ -149,6 +155,9 @@ const copy = {
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Análisis simbólico de situaciones, constelaciones y reflexión homeopática opcional como práctica complementaria; no es tratamiento médico.",
     alchemyAction: "Explorar Alquimia del Alma",
+    practitionerOfferTitle: "Soy profesional — ofrecer mis servicios",
+    practitionerOfferBody: "Crea tu perfil profesional, prepara sesiones o cursos en My Practice y envíalos a revisión. Los servicios se publican solo después de la aprobación.",
+    practitionerOfferAction: "Ofrecer mis servicios",
     practitionersTitle: "Encuentra un profesional",
     practitionersBody: "Solo aparecen profesionales publicados con prácticas energéticas o espirituales. También puedes abrir el directorio completo.",
     allPractitioners: "Todos los profesionales",
@@ -323,6 +332,18 @@ export default async function HolisticSupportPage({ params }: Props) {
                 <p>{t.alchemyBody}</p>
                 <Link href={"/" + locale + "/services/alchemy-of-soul"} className={styles.secondaryAction} prefetch={false}>
                   {t.alchemyAction}<span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
+            <article className={styles.option} data-holistic-offer="practitioner">
+              <div className={styles.optionPhoto}>
+                <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
+              </div>
+              <div className={styles.optionContent}>
+                <h3>{t.practitionerOfferTitle}</h3>
+                <p>{t.practitionerOfferBody}</p>
+                <Link href={"/" + locale + "/pro#profi-practice"} className={styles.primaryAction} prefetch={false} data-holistic-practitioner-cta>
+                  {t.practitionerOfferAction}<span aria-hidden="true">→</span>
                 </Link>
               </div>
             </article>
