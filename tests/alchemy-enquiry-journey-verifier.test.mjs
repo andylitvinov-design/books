@@ -106,7 +106,7 @@ test('context stays guarded until close and drains late allowed-read failure',as
    return 'pre-cleanup snapshot'
  }).then(value=>{settled=true;return value})
  await new Promise(resolve=>setImmediate(resolve))
- assert.equal(closed,true);assert.equal(settled,false,'Cannot return before active read settles')
+ assert.equal(closed,false,'Context must remain alive until active reads settle');assert.equal(settled,false,'Cannot return before active read settles')
  resolveRead({url:()=>origin+'/en/thank-you',status:()=>500,dispose:async()=>{}})
  await result
  assert.equal(failures.length,1,'Caller terminal assertion receives the late failure')
@@ -213,4 +213,48 @@ test('HMR redirect is still rejected rather than fetched externally',async()=>{
  r.fetch=async options=>{assert.deepEqual(options,{maxRedirects:0});return{url:()=>r.request().url(),status:()=>302,dispose:async()=>r.log.push('dispose')}}
  await alchemyRequestGate(origin,'en',()=>assert.fail(),failures,[])(r)
  assert.equal(failures.length,1);assert.deepEqual(r.log,['dispose','abort'])
+})
+
+test('admitted portrait fetch settles before context disposal; newly arriving reads never fetch',async()=>{
+ let handler,release,closed=false,finished=false
+ const failures=[],blocked=[]
+ const ready=new Promise(resolve=>{release=resolve})
+ const path=origin+'/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp'
+ const admitted=route(request(path,'GET','image'))
+ admitted.fetch=async()=>{await ready;if(closed)throw Error('Request context disposed');return {url:()=>path,status:()=>200,dispose:async()=>{finished=true}}}
+ const late=route(request(path,'GET','image'))
+ late.fetch=async()=>assert.fail('No new fetch may start after teardown')
+ const ctx={route:async(_pattern,fn)=>{handler=fn},close:async()=>{assert.equal(finished,true);closed=true;await handler(late)}}
+ const page={context:()=>ctx,evaluate:async()=>{}}
+ const result=withAlchemyIsolation(page,alchemyRequestGate(origin,'en',()=>assert.fail(),failures,blocked),{close:async()=>{}},false,async()=>{void handler(admitted)})
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(closed,false)
+ release();await result
+ assert.equal(closed,true);assert.equal(finished,true)
+ assert.deepEqual(failures,[]);assert.deepEqual(late.log,['abort'])
+ assert.equal(admitted.log.length,1,'Original real response is fulfilled, not discarded')
+})
+
+test('teardown retains unexpected API/write errors and closed synthetic receipt rejection',async()=>{
+ const failures=[],receipt=syntheticAlchemyReceipt('en')
+ const gate=alchemyRequestGate(origin,'en',route=>receipt.accept(route),failures,[])
+ gate.beginTeardown();await receipt.close()
+ for(const req of [request(origin+'/api/private'),request(origin+'/api/other','POST'),request(origin+'/api/service-enquiries','POST')]) {
+   const r=route(req);r.fetch=async()=>assert.fail('Never forward API');await gate(r);assert.deepEqual(r.log,['abort'])
+ }
+ assert.equal(failures.length,3)
+ assert.match(failures[2],/fixture closes/)
+})
+
+for(const fault of ['fetch','fulfill','dispose']) test('admitted read '+fault+' failure survives teardown',async()=>{
+ let handler,release
+ const ready=new Promise(resolve=>{release=resolve}),failures=[]
+ const r=route(request(origin+'/en/thank-you'))
+ r.fetch=async()=>{await ready;if(fault==='fetch')throw Error('actual-fetch');return {url:()=>origin+'/en/thank-you',status:()=>200,dispose:async()=>{if(fault==='dispose')throw Error('actual-dispose')}}}
+ if(fault==='fulfill')r.fulfill=async()=>{throw Error('actual-fulfill')}
+ const page={context:()=>ctx,evaluate:async()=>{}}
+ const ctx={route:async(_pattern,fn)=>{handler=fn},close:async()=>{}}
+ const result=withAlchemyIsolation(page,alchemyRequestGate(origin,'en',()=>assert.fail(),failures,[]),{close:async()=>{}},false,async()=>{void handler(r)})
+ await new Promise(resolve=>setImmediate(resolve));release();await result
+ assert.deepEqual(failures,['actual-'+fault]);assert.equal(r.log.at(-1),'abort')
 })

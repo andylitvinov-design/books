@@ -67,11 +67,15 @@ export function alchemyBoundarySummary(blockedReads, failures, count, completed)
 }
 
 export function alchemyRequestGate(origin, locale, accept, failures, blockedReads) {
-  return async route => {
+  let draining = false
+  const gate = async route => {
     const request = route.request()
     try {
       if (request.url() === origin + '/api/service-enquiries' && request.method() === 'POST') return await accept(route)
       if (permittedAlchemyRead(request, origin, locale)) {
+        // Teardown stops admitting reads, but never exempts API/write validation.
+        // Already admitted reads still settle and retain every error.
+        if (draining) return await route.abort()
         // continue() follows redirects outside a route guard. Fetch zero redirects,
         // verify the response and deliver the real response to the genuine router.
         const response = await route.fetch({maxRedirects:0})
@@ -93,6 +97,8 @@ export function alchemyRequestGate(origin, locale, accept, failures, blockedRead
       await route.abort()
     }
   }
+  gate.beginTeardown = () => { draining = true }
+  return gate
 }
 
 export function syntheticAlchemyReceipt(locale) {
@@ -149,15 +155,14 @@ export async function withAlchemyIsolation(page, handler, receipt, denyStorage, 
     result = await run()
   } catch (error) { primary = error }
   finally {
-    for (const cleanup of [() => receipt.close(), () => page.evaluate(key => {
+    const drain = async () => {
+      while (active.size) await Promise.allSettled([...active])
+    }
+    for (const cleanup of [() => handler.beginTeardown?.(), () => receipt.close(), () => page.evaluate(key => {
       const fixture = window.__alchemyFixture
       if (fixture) { window.open = fixture.open; Storage.prototype.setItem = fixture.setItem; delete window.__alchemyFixture }
       sessionStorage.removeItem(key)
-    }, ALCHEMY_RECEIPT_KEY), () => page.context().close(), async () => {
-      // The guard stays installed until the disposable context is closed.
-      // Drain even callbacks which began while close was settling.
-      while (active.size) await Promise.allSettled([...active])
-    }]) {
+    }, ALCHEMY_RECEIPT_KEY), drain, () => page.context().close(), drain]) {
       try { await cleanup() } catch (error) { errors.push(error) }
     }
   }

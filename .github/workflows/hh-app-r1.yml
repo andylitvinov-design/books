@@ -20,7 +20,7 @@ jobs:
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
       - name: Verify fail-closed synthetic DAO enquiry journey
-        run: node --test tests/dao-lead-journey-verifier.test.mjs tests/alchemy-enquiry-journey-verifier.test.mjs tests/alchemy-consent-diagnostics.test.mjs tests/hypnotherapy-enquiry-journey-verifier.test.mjs tests/alchemy-panel-contract.test.mjs
+        run: node --test tests/dao-lead-journey-verifier.test.mjs tests/alchemy-enquiry-journey-verifier.test.mjs tests/alchemy-consent-diagnostics.test.mjs tests/contact-consent-scroll-clearance.test.mjs tests/hypnotherapy-enquiry-journey-verifier.test.mjs tests/alchemy-panel-contract.test.mjs
       - name: Practice service action visibility and Hobby quota regressions
         run: node --test tests/practice-service-action-render.test.mjs tests/practice-hobby-service-quota.test.mjs
       - name: Public enquiry selected-format and immutable retry lifecycle
