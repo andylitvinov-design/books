@@ -185,6 +185,32 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 <figcaption>{locale === "ru" ? "Реальная фотография из архива практик" : locale === "es" ? "Fotografía real del archivo" : "Real photograph from the practice archive"}</figcaption>
               </figure>
             </section>
+            {isVerbatimTantraArchive && (videos.length > 0 || sourceVideos.length > 0) ? (
+              <div id="academy-tantra-video-course" className="academy-tantra-video-course">
+                <AcademyVideoCourseJourney
+                  locale={locale}
+                  courseId={"tantra-original:" + record.logicalId}
+                  title={locale === "ru" ? "Тантра Рейки — видеоматериалы" : locale === "es" ? "Tantra Reiki — videolecciones" : "Tantra Reiki — video lessons"}
+                  description={locale === "ru" ? "Видеозаписи из оригинальной авторской программы. Каждое видео сопровождается экраном вопросов и комментариев." : locale === "es" ? "Grabaciones originales con una reflexión después de cada vídeo." : "Original course recordings, each followed by a reflection slide."}
+                  poster={videos[0] ? "https://i.ytimg.com/vi/" + videos[0].id + "/hqdefault.jpg" : undefined}
+                  lessons={[
+                    ...videos.map((video, index) => ({
+                      id: video.id,
+                      title: video.lessonTitle ?? (locale === "ru" ? "Видеоурок " : "Video lesson ") + (index + 1),
+                      order: index + 1,
+                      youtubeId: video.id,
+                    })),
+                    ...sourceVideos.map((video, index) => ({
+                      id: "archive-video-" + index,
+                      title: (locale === "ru" ? "Видео из архива " : "Archive video ") + (index + 1),
+                      order: videos.length + index + 1,
+                      mediaUrl: video.src,
+                      poster: video.poster ?? undefined,
+                    })),
+                  ]}
+                />
+              </div>
+            ) : null}
             <section className="tantra-level-summary" aria-label={locale === "ru" ? "Первая ступень и остальные по желанию" : locale === "es" ? "Nivel 1 y niveles posteriores opcionales" : "Level 1 first; optional later levels"}><TantraReikiJourney locale={locale} /></section>
             <section className="tantra-mobile-guide tantra-mobile-guide--combined reiki-screen reiki-screen--feature" id="tantra-levels" aria-labelledby="tantra-mobile-guide-heading">
               <div className="tantra-mobile-guide__cover" aria-hidden="true">
@@ -234,32 +260,6 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               {locale === "ru" ? "Открыть программу →" : locale === "es" ? "Abrir programa →" : "Open programme →"}
             </Link>
           </aside>
-        ) : null}
-        {isVerbatimTantraArchive && (videos.length > 0 || sourceVideos.length > 0) ? (
-          <div className="academy-tantra-video-course">
-            <AcademyVideoCourseJourney
-              locale={locale}
-              courseId={"tantra-original:" + record.logicalId}
-              title={locale === "ru" ? "Тантра Рейки — видеоматериалы" : locale === "es" ? "Tantra Reiki — videolecciones" : "Tantra Reiki — video lessons"}
-              description={locale === "ru" ? "Видеозаписи из оригинальной авторской программы. Каждое видео сопровождается экраном вопросов и комментариев." : locale === "es" ? "Grabaciones originales con una reflexión después de cada vídeo." : "Original course recordings, each followed by a reflection slide."}
-              poster={videos[0] ? "https://i.ytimg.com/vi/" + videos[0].id + "/hqdefault.jpg" : undefined}
-              lessons={[
-                ...videos.map((video, index) => ({
-                  id: video.id,
-                  title: video.lessonTitle ?? (locale === "ru" ? "Видеоурок " : "Video lesson ") + (index + 1),
-                  order: index + 1,
-                  youtubeId: video.id,
-                })),
-                ...sourceVideos.map((video, index) => ({
-                  id: "archive-video-" + index,
-                  title: (locale === "ru" ? "Видео из архива " : "Archive video ") + (index + 1),
-                  order: videos.length + index + 1,
-                  mediaUrl: video.src,
-                  poster: video.poster ?? undefined,
-                })),
-              ]}
-            />
-          </div>
         ) : null}
         {isCanonicalYggdrasil ? (
           <YggdrasilProgramLanding locale={locale} />
