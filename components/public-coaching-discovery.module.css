@@ -275,6 +275,41 @@
 .moreSelect{min-height:46px}
 
 
+/* Consent-led intimacy flow: warm, full-width, one short question per screen.
+   Site-owned scenic artwork only; the input never reaches an image vendor. */
+.session[data-intimacy-session="true"]{width:100%;max-width:100%;min-width:0}
+.session[data-intimacy-session="true"]::before{
+ background:linear-gradient(120deg,rgba(255,253,247,.95),rgba(255,253,247,.79)),
+   url("/images/holistic-house/hero-olive-incense.webp") 70% center / cover no-repeat;
+ opacity:.28
+}
+.adultGate{max-width:650px;margin:auto;display:flex;flex-direction:column;gap:12px}
+.adultGate>img{display:block;width:100%;height:clamp(125px,20vh,205px);object-fit:cover;border-radius:14px;background:#efe9df}
+.adultGate h1{font-size:clamp(28px,5vw,42px);margin:0}
+.adultGate p{font-size:14px;line-height:1.55;color:#485c56;margin:0}
+.adultGate>.alert{color:#7a473b}
+.adultGate button{width:100%;min-height:48px;margin:3px 0}
+.sensitiveSkip{display:block;margin:10px auto 0;padding:8px 16px;min-height:44px;
+ border:1px solid #d2c2b1;border-radius:10px;background:#fffaf5;color:#655649;
+ font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+.sensitiveSkip:hover{background:#f4eee4}
+@media(max-width:600px){
+ .session[data-intimacy-session="true"]{padding:12px 10px;margin-inline:0;border-radius:14px}
+ .session[data-intimacy-session="true"] .back{margin-bottom:7px}
+ .session[data-intimacy-session="true"] .eyebrow{margin-bottom:8px}
+ .session[data-intimacy-session="true"] h1{font-size:clamp(23px,6.7vw,33px);margin:7px 0 9px}
+ .session[data-intimacy-session="true"] .stage{margin:9px 0 4px}
+ .session[data-intimacy-session="true"] .choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:5px}
+ .session[data-intimacy-session="true"] .choices button{min-height:44px;padding:7px 8px;font-size:12px}
+ .session[data-intimacy-session="true"] .hint{margin:5px 0;font-size:12px}
+ .session[data-intimacy-session="true"] .context{max-height:3.1em;overflow:auto}
+ .session[data-intimacy-session="true"] .questionLabel{margin:8px 0 5px}
+ .session[data-intimacy-session="true"] .questionInput{min-height:48px;padding:8px 10px}
+ .session[data-intimacy-session="true"] .sessionActions{margin-top:9px}
+ .adultGate>img{height:clamp(115px,18vh,165px)}
+}
+
+
 /* Coaching Lounge · standard photo-left, content-right and bottom Details panel.
    No carousel, no full-width hero images inside selection cards. This block is
    intentionally last, overriding the retired three-column/photo-top rules. */
