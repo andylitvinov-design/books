@@ -49,15 +49,16 @@ async function verify(browserType, locale, width) {
     assert.ok(heroBounds && headingBounds && inputBounds &&
       inputBounds.y > headingBounds.y && inputBounds.y + inputBounds.height <= heroBounds.y + heroBounds.height,
       label + ": question overlays same full-height scenic card");
-    const primary = await hero.locator('button[type="submit"]').boundingBox();
-    const coachingAction = hero.locator("[data-ideas-free-coaching]");
+    const primary = await hub.locator('[data-ideas-tao]').boundingBox();
+    const coachingAction = hub.locator("[data-ideas-free-coaching]");
     const secondary = await coachingAction.boundingBox();
     assert.equal(await coachingAction.getAttribute("href"), "/" + locale + "/coaching",
       label + ": public model catalog without cabinet redirect");
-    const testAction = hero.locator("[data-ideas-free-test]");
+    const testAction = hub.locator("[data-ideas-free-test]");
     assert.ok(primary && secondary && primary.height >= 44 && secondary.height >= 44 &&
-      Math.abs(secondary.y - primary.y) <= 2 && secondary.width > width * .25,
-      label + ": compact side-by-side coaching and Dao switch");
+      Math.abs(secondary.y - primary.y) <= 2 && secondary.width > width * .25 &&
+       secondary.y >= heroBounds.y + heroBounds.height - 1,
+      label + ": two post-banner choices are side by side and at least 44px tall");
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
@@ -137,7 +138,7 @@ async function verify(browserType, locale, width) {
     // The submit action is always Dao-first, even if a visitor previously tapped another mode.
     await modeButtons.nth(1).tap();
     await textarea.fill(phrases[locale]);
-    await hub.locator('button[type="submit"]').tap();
+    await hub.locator('[data-ideas-tao]').tap();
     const daoResult = hub.locator('[data-ideas-result="dao"]');
     await daoResult.waitFor({ state: "visible" });
     assert.equal(await daoResult.locator('[data-ideas-dao-summary]').count(), 1,
