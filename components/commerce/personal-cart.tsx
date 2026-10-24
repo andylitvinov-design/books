@@ -7,7 +7,7 @@ import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@
 import { restoreServiceCart, SERVICE_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
 import { buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
-import { buildSquarePaymentForServices, formatSquareCadAmount, normalizeSquarePaymentLink } from "@/lib/commerce/square-payment-links";
+import { buildSquarePaymentForServices, formatSquareCadAmount, normalizeSquareCheckoutRedirect } from "@/lib/commerce/square-payment-links";
 import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
 import { buildPayPalHostedCartUrl } from "@/lib/commerce/paypal-hosted-links";
 import styles from "./personal-cart.module.css";
@@ -68,7 +68,7 @@ const copy = {
   },
 } as const;
 
-export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks }: {
+export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks }: {
   locale: ServiceLocale;
   paypalEnabled: boolean;
   verifiedPayPalEnabled: boolean;
@@ -76,6 +76,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   wiseEnabled: boolean;
   squareLinks: Record<string, {url: string; amountMinor: number; currency: string}>;
   squareApiEnabled: boolean;
+  squareApiEnvironment: 'production' | 'sandbox';
   squareApiPrices: Record<string, number>;
 }) {
   const t = copy[locale];
@@ -176,7 +177,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
       const result = await response.json();
       if (!response.ok || result?.error) throw new Error(result?.error || "SQUARE_CHECKOUT_UNAVAILABLE");
       const redirect = result?.redirectUrl;
-      if (typeof redirect !== "string" || normalizeSquarePaymentLink(redirect) !== redirect)
+      if (typeof redirect !== "string" || normalizeSquareCheckoutRedirect(redirect, squareApiEnvironment) !== redirect)
         throw new Error("SQUARE_RECONCILIATION_REQUIRED");
       window.location.assign(redirect);
     } catch (error) {
