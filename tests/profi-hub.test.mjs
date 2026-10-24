@@ -301,7 +301,7 @@ test('Pro shows a single free introduction followed by three distinct paid maste
   assert.deepEqual(Array.from(masterModule.masterProgramIds),expectedIds)
   for(const locale of ['en','ru','es']){
     const tree=mount(locale).render()
-    assert.equal(find(tree,'data-profi-free-course',undefined)?.type,'details')
+    assert.equal(nodes(tree).find(n=>Object.hasOwn(n.props||{},'data-profi-free-course'))?.type,'details')
     assert.ok(find(tree,'data-profi-action','start-free-course'))
     const masters=nodes(tree).filter(n=>Object.hasOwn(n.props||{},'data-profi-paid-program'))
     assert.equal(masters.length,3,locale+': paid master count')
