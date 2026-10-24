@@ -8,9 +8,9 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, Lock
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
-import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
-import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
+import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
@@ -63,7 +63,7 @@ const copy={
     greek:'Turn an intention into action',greekNote:'From intention and courage to a meaningful next step · 10 screens · private account',
     worksheet:'Coaching preparation questionnaire',worksheetNote:'Write your question and prepare for a meeting on one editable page. Optional private Google-account save.',
     openProgramme:'Explore programme',chooseTradition:'Choose this session',openWorksheet:'Open questionnaire',
-    clarify:'A helpful follow-up',clarifyWhy:'Optional authored reflection, not an AI response.',clarifyAnswer:'Your reflection',clarifySave:'Save reflection & continue',clarifySkip:'Skip this reflection',clarifyShort:'Write at least 3 characters.',
+    clarify:'A helpful follow-up',clarifyWhy:'Optional authored reflection, not an AI response.',clarifyAnswer:'Your reflection',clarifySave:'Save reflection & continue',clarifySkip:'Skip this reflection',clarifyShort:'Write at least 3 characters.',stopMic:'Stop dictation and review the recognized text before moving on.',
   },
   ru:{
     adultTitle:"Только для взрослых (18+) · ваш выбор",
@@ -106,7 +106,7 @@ const copy={
     greek:'От намерения к действию',greekNote:'От намерения и смелости к осмысленному шагу · 10 экранов · личный кабинет',
     worksheet:'Анкета для подготовки к коучингу',worksheetNote:'Подробная анкета на одной странице, чтобы сформулировать вопрос и подготовиться к разговору. Можно сохранить приватно после входа.',
     openProgramme:'Подробнее о программе',chooseTradition:'Выбрать сессию',openWorksheet:'Открыть анкету',
-    clarify:'Уточняющий вопрос',clarifyWhy:'Необязательный авторский вопрос, не генерация ИИ.',clarifyAnswer:'Ваше уточнение',clarifySave:'Сохранить и продолжить',clarifySkip:'Пропустить уточнение',clarifyShort:'Напишите не меньше 3 символов.',
+    clarify:'Уточняющий вопрос',clarifyWhy:'Необязательный авторский вопрос, не генерация ИИ.',clarifyAnswer:'Ваше уточнение',clarifySave:'Сохранить и продолжить',clarifySkip:'Пропустить уточнение',clarifyShort:'Напишите не меньше 3 символов.',stopMic:'Остановите диктовку и проверьте текст перед переходом.',
   },
   es:{
     adultTitle:"Solo adultos (18+) · una decisión consciente",
@@ -149,7 +149,7 @@ const copy={
     greek:'Pasar de intención a acción',greekNote:'Voluntad, sentido y un siguiente paso · 10 pantallas · cuenta privada',
     worksheet:'Cuestionario de preparación para coaching',worksheetNote:'Prepara tu consulta en una página. Guardado privado opcional después de iniciar sesión.',
     openProgramme:'Conocer programa',chooseTradition:'Elegir sesión',openWorksheet:'Abrir cuestionario',
-    clarify:'Una pregunta de aclaración',clarifyWhy:'Reflexión original opcional, no una respuesta de IA.',clarifyAnswer:'Tu reflexión',clarifySave:'Guardar y continuar',clarifySkip:'Omitir esta reflexión',clarifyShort:'Escribe al menos 3 caracteres.',
+    clarify:'Una pregunta de aclaración',clarifyWhy:'Reflexión original opcional, no una respuesta de IA.',clarifyAnswer:'Tu reflexión',clarifySave:'Guardar y continuar',clarifySkip:'Omitir esta reflexión',clarifyShort:'Escribe al menos 3 caracteres.',stopMic:'Detén el dictado y revisa el texto antes de continuar.',
   },
 }
 // Editorial topical hints for existing authored course routes. They are not
@@ -254,10 +254,11 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [index,setIndex]=useState(0)
   const [answers,setAnswers]=useState({})
   const [draft,setDraft]=useState('')
+  const [dictating,setDictating]=useState(false)
+  const [speechConsent,setSpeechConsent]=useState(false)
   const [finished,setFinished]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null)
   const [reflectionDraft,setReflectionDraft]=useState('')
-  const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const [reflections,setReflections]=useState({})
   const [approvedPlan,setApprovedPlan]=useState(null)
   const [error,setError]=useState('')
@@ -266,6 +267,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const titleRef=useRef(null)
   const sessionScrollRef=useRef(null)
   const rootRef=useRef(null)
+  const customAnswerRef=useRef(null)
   useEffect(()=>{
     if(!session)return
     // The public session is an immersive viewport, not a card inside the site.
@@ -347,18 +349,19 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   }
   function start(scheme){
     if(recommendation.blocked)return
+    setDictating(false)
     setAdultAcknowledged(false)
     setSession(scheme);setEntryStep('intro');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
-    if(dictating)return
+    if(dictating){setError(t.stopMic);return}
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
     setSession(null);setEntryStep('intro');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
-    if(dictating)return
+    if(dictating){setError(t.stopMic);return}
     if(entryStep==='intro'){backToModels();return}
     if(entryStep==='topic'){setEntryStep('intro');setError('');return}
     if(pendingFollowup){
@@ -375,7 +378,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     setIndex(prev);setDraft(updated[session.questions[prev].id]||'');setError('')
   }
   function advance(skip=false){
-    if(dictating)return
+    if(dictating){setError(t.stopMic);return}
     const value=skip?'':draft.trim()
     if(current.required&&!skip&&!value){setError(t.required);return}
     if(!skip&&session.requiredCustomPlan&&index===session.questions.length-1&&(value.startsWith('choice:')||value.length<10)){
@@ -395,7 +398,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     const next=index+1;setIndex(next);setDraft(nextAnswers[session.questions[next].id]||'')
   }
   function finishFollowup(skip=false){
-    if(!pendingFollowup||dictating)return
+    if(dictating){setError(t.stopMic);return}
+    if(!pendingFollowup)return
     const text=reflectionDraft.trim()
     if(!skip&&text.length<3){setError(t.clarifyShort);return}
     if(!skip)setReflections(previous=>({...previous,[pendingFollowup.questionId]:{
@@ -571,7 +575,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>
         <header className={styles.sessionHeader}>
-          <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
+          <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
             <p className={styles.eyebrow}>{coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} · {t.free}</p>
             {!finished&&<div className={styles.progress}>
@@ -621,13 +625,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
             <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
-            <p className={styles.hint}>{t.clarifyWhy}</p>
-            <CoachingQuestionVoice key={'guest-followup-'+pendingFollowup.questionId+'-'+lang}
+            <CoachingQuestionVoice key={'guest-followup-'+pendingFollowup.key+'-'+pendingFollowup.questionId+'-'+lang}
               text={tr(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
               speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-              onListeningChange={setDictating} onTranscript={words=>{
-                setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')
-              }}/>
+              onListeningChange={setDictating}
+              onTranscript={words=>{setReflectionDraft(previous=>appendSpokenAnswer(previous,words,500));setError('')}}/>
+            {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
+            <p className={styles.hint}>{t.clarifyWhy}</p>
             <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
             <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
               maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
@@ -635,25 +639,29 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+            <CoachingQuestionVoice key={'guest-question-'+current.id+'-'+lang}
+              text={tr(current.prompt,lang)} locale={lang} mode="answer"
+              speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+              onListeningChange={active=>{setDictating(active);if(active&&customAnswerRef.current)customAnswerRef.current.open=true}}
+              onTranscript={words=>{
+                if(customAnswerRef.current)customAnswerRef.current.open=true
+                setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
+                setError('')
+              }}/>
+            {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
             {gentleGuide&&<div className={styles.gentleGuide} data-public-coaching-gentle-guide>
               <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
             </div>}
-            <CoachingQuestionVoice key={'guest-question-'+current.id+'-'+lang}
-              text={tr(current.prompt,lang)} locale={lang} mode="answer"
-              speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-              onListeningChange={setDictating} onTranscript={words=>{
-                setDraft(v=>appendSpokenAnswer(v.startsWith('choice:')?'':v,words));setError('')
-              }}/>
             {quickChoices&&options.length>0&&!needsCustomPlan&&<>
               <p className={styles.questionLabel}>{t.choices}</p>
               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
                 {options.map(option=><button type="button" key={option.id}
-                  aria-pressed={draft==='choice:'+option.id} onClick={()=>{setDraft('choice:'+option.id);setError('')}}>{tr(option.label,lang)}</button>)}
+                  aria-pressed={draft==='choice:'+option.id} disabled={dictating} onClick={()=>{setDraft('choice:'+option.id);if(customAnswerRef.current)customAnswerRef.current.open=false;setError('')}}>{tr(option.label,lang)}</button>)}
               </div>
             </>}
             {quickChoices&&options.length>0&&!needsCustomPlan
-              ?<details key={current.id} className={styles.customAnswer} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
+              ?<details key={current.id} className={styles.customAnswer} ref={customAnswerRef} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
                 <summary>{t.ownAnswer}</summary>
                 <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer}
                   rows={2} maxLength={800} placeholder={t.answerPlaceholder}

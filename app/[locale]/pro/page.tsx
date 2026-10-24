@@ -11,9 +11,9 @@ function supported(locale: string): locale is PublicLocale {
 }
 
 const seo = {
-  en: { title: "Pro | Learn Reiki & Share Your Practice", description: "Take free self-checks, build a private personal profile or become a Reiki practitioner. Experienced practitioners can create a profile, course and services on Holistic House." },
-  ru: { title: "Профи | Обучение Рейки и свои услуги", description: "Пройдите бесплатные тесты, создайте личный или профессиональный профиль, начните обучение Рейки или разместите свои услуги и курсы на Holistic House." },
-  es: { title: "Pro | Aprende Reiki y comparte tu práctica", description: "Haz pruebas gratuitas, crea tu perfil personal o profesional y comienza a aprender Reiki. Si ya practicas, ofrece servicios o crea cursos en Holistic House." },
+  en: { title: "Pro | Learn Reiki & Share Your Practice", description: "Start with five free Reiki lessons, then explore three paid master programmes: Tantra Reiki, Kundalini Reiki and Reiki Yggdrasil with temple traditions. Practitioners can also offer services." },
+  ru: { title: "Профи | Обучение Рейки и свои услуги", description: "Начните с пяти бесплатных уроков Рейки, затем выберите платную мастерскую программу: Тантра Рейки, Кундалини Рейки или Рейки Иггдрасиль и храмовые традиции." },
+  es: { title: "Pro | Aprende Reiki y comparte tu práctica", description: "Empieza con cinco lecciones Reiki gratuitas y explora tres programas de maestría de pago: Tantra Reiki, Kundalini Reiki y Reiki Yggdrasil con tradiciones de templo." },
 } as const;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

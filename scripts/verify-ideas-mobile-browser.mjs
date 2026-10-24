@@ -71,10 +71,12 @@ async function verify(browserType, locale, width) {
     assert.equal(await cards.filter({ visible: true }).count(), 4,
       label + ": four routes return after using Back");
     const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
-    await coachingPath.tap();
-    assert.equal(await switchboard.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').count() > 0, true,
-      label + ": public guest coaching catalog");
-    await backPath.tap();
+    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching",
+      label + ": coaching card is a direct link to the topic-first chooser");
+    assert.notEqual(await coachingPath.getAttribute("data-tests-coaching-direct"), null,
+      label + ": coaching entry must not open a second interstitial slide");
+    assert.equal(await switchboard.locator("[data-tests-coaching-sessions]").count(), 0,
+      label + ": redundant format-selection slide is removed");
     const supportPath = switchboard.locator('[data-tests-coaching-path="support"]');
     await supportPath.tap();
     const support = switchboard.locator("[data-tests-coaching-support]");
@@ -99,9 +101,20 @@ async function verify(browserType, locale, width) {
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
+    // WebKit may dispatch a tap before React finishes the preceding text event.
+    // Keep the real tap and assert the on-page panel rather than masking navigation.
+    await page.waitForTimeout(120);
     await testAction.tap();
     const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
-    await filtered.waitFor({ state: "visible" });
+    try {
+      await filtered.waitFor({ state: "visible", timeout: 12000 });
+    } catch (cause) {
+      const current = page.url();
+      const input = await hub.locator("#ideas-question").inputValue().catch(() => "(unavailable)");
+      const expanded = await testAction.getAttribute("aria-expanded").catch(() => "(unavailable)");
+      throw new Error(label + ": free test chooser did not open; url=" + current +
+        "; inputLength=" + input.length + "; ariaExpanded=" + expanded, { cause });
+    }
     assert.equal(await testAction.getAttribute("aria-expanded"), "true");
     assert.equal(await filtered.locator("[data-ideas-test-start]").count(), 3, label + ": real filtered tests");
     assert.equal(await filtered.locator("[data-ideas-test-start]").first().getAttribute("href"),
@@ -237,13 +250,16 @@ async function verify(browserType, locale, width) {
 
     if (width === 390) {
       await backPath.tap();
-      await hub.locator('[data-tests-coaching-path="coaching"]').tap();
-      const exploreCoaching = hub.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').first();
-      const destination = await exploreCoaching.getAttribute("href");
-      await exploreCoaching.tap();
+      const directCoaching = hub.locator('[data-tests-coaching-direct]');
+      const destination = await directCoaching.getAttribute("href");
+      await directCoaching.tap();
       await page.waitForURL(url => url.pathname === destination, { timeout: 30000 });
-      assert.ok((await page.locator("h1").first().textContent())?.length,
-        label + ": public Coaching Options page renders");
+      const topicChooser = page.locator("[data-coaching-topic-first]");
+      await topicChooser.waitFor({ state: "visible", timeout: 30000 });
+      const businessTopic = topicChooser.locator('[data-coaching-topic-group="business"]');
+      await businessTopic.tap();
+      assert.equal(await businessTopic.getAttribute("aria-pressed"), "true",
+        label + ": guest can choose coaching topic without an extra format slide");
     }
     assert.deepEqual(errors, [], label + ": unhandled client errors");
     evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390 });

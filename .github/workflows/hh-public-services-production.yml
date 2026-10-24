@@ -25,6 +25,11 @@ jobs:
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund
+      - name: Holistic Support practitioner path EN/RU/ES
+        run: |
+          node --test tests/temple-support-hub.test.mjs
+          npx eslint 'app/[locale]/holistic-support/page.tsx'
+          npx tsc --noEmit
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       - name: Install Chromium and WebKit for isolated public acceptance
@@ -47,6 +52,7 @@ jobs:
           status=0
           node scripts/verify-business-quiz-mobile.mjs || status=$?
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
+          node scripts/verify-holistic-master-browser.mjs || status=$?
           node scripts/verify-direction-focus-mobile.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-home-consultation-first-screen.mjs || status=$?

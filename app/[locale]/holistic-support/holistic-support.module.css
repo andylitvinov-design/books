@@ -22,6 +22,8 @@
 .options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
 .option{display:grid;grid-template-columns:clamp(108px,13vw,154px) minmax(0,1fr);gap:11px;min-width:0;padding:9px;border:1px solid #e6d9c9;border-radius:18px;background:#fffaf4}
 .option[data-holistic-offer="master"]{grid-column:1/-1;background:#f8f4ec}
+.option[data-holistic-offer="practitioner"]{grid-column:1/-1;border-color:#d9c4a9;background:linear-gradient(105deg,#f1e7d8,#fffbf4)}
+.option[data-holistic-offer="practitioner"] .optionPhoto{min-height:124px}
 .optionPhoto{position:relative;min-height:151px;overflow:hidden;border-radius:12px;background:#e9e1d8}
 .optionPhoto img{object-fit:cover;object-position:center}
 .optionContent{display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:6px 3px 5px 0;gap:7px}

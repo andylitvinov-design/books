@@ -236,3 +236,11 @@
  .situationScene .sectionLead{margin-bottom:6px}
  .situationScene .outcomeList article,.situationScene .steps li{padding:6px 0}
 }
+
+
+/* Keep the video title beside Play rather than beneath the circular control.
+   These offsets follow the existing minimal player's 56px/46px Play button. */
+.situationVideo :global(.site-video-poster-title){left:86px;right:12px;bottom:16px;max-width:calc(100% - 100px);font-size:clamp(15px,2vw,23px);line-height:1.15;pointer-events:none}
+@media(max-width:600px){
+ .situationVideo :global(.site-video-poster-title){left:72px;right:10px;bottom:14px;max-width:calc(100% - 82px);font-size:clamp(13px,3.6vw,16px)}
+}
