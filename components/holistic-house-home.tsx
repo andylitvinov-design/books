@@ -5,13 +5,11 @@ import type { ReactNode } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
-import { HomeCoreMethods } from "@/components/home-core-methods";
 import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
 import { HomeConversationGuide } from "@/components/home-conversation-guide";
 import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
 import { HomePersonalSpaceCard } from "@/components/home-personal-space";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
-import { HomeMasterPath } from "@/components/home-master-path";
 import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
 
 
@@ -75,7 +73,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </header>
 
       <HomeSectionCarousel locale={locale} />
-      <HomeCoreMethods locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
       <HomePersonalSpaceCard locale={locale} />
@@ -161,7 +158,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </section>
 
       <HomepageContactCta locale={locale} />
-      <HomeMasterPath locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} prefetch={false}>Holistic House</Link>
