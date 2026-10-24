@@ -51,12 +51,13 @@ const axesCopy: Record<string, Record<Locale, string>> = {
 
 const copy = {
   en: {
-    kicker: "FREE PROFILE BUILDER", title: "Personality Profiles",
+    kicker: "FREE PROFILE BUILDER", title: "My Profile",
     lead: "Create a personal or business portrait with real self-tests, a reflective SWOT and a development path tailored to your priorities.",
     benefits: ["Choose what to explore", "Free tests with clear scales", "SWOT + personal development"],
     stages: ["Profile", "Topics", "Scales", "Tests"],
     profileTitle: "What kind of profile would you like to create?",
     profileHelp: "You can build another profile for a different purpose later. Nothing is saved or sent by choosing an option.",
+    browseTests: "Or take free tests without creating a profile",
     templates: {
       personal: ["Personal profile", "Personality, relationships, resources and growth."],
       business: ["Business profile", "Focus, work capacity and money-related choices."],
@@ -93,12 +94,13 @@ const copy = {
     esNote: "", disclaimer: "Educational self-reflection only; not a medical diagnosis, financial assessment, or guaranteed outcome.",
   },
   ru: {
-    kicker: "БЕСПЛАТНЫЙ КОНСТРУКТОР", title: "Профили личности",
+    kicker: "БЕСПЛАТНЫЙ КОНСТРУКТОР", title: "Мой профиль",
     lead: "Соберите личностный или бизнес-профиль: реальные тесты, рефлексивный SWOT-анализ и индивидуальные направления развития.",
     benefits: ["Выберите темы", "Бесплатные тесты и шкалы", "SWOT + программа развития"],
     stages: ["Профиль", "Темы", "Шкалы", "Тесты"],
     profileTitle: "Какой профиль вы хотите создать?",
     profileHelp: "Позже можно собрать другой профиль для новой задачи. Сам выбор пока никуда не отправляется.",
+    browseTests: "Или пройти бесплатные тесты без создания профиля",
     templates: {
       personal: ["Личностный профиль", "Личность, отношения, ресурсы, развитие."],
       business: ["Бизнес-профиль", "Концентрация, работа и решения о деньгах."],
@@ -135,12 +137,13 @@ const copy = {
     esNote: "", disclaimer: "Для самопознания; не является медицинской диагностикой, финансовой оценкой или гарантией результата.",
   },
   es: {
-    kicker: "CREADOR DE PERFILES GRATIS", title: "Perfiles personales",
+    kicker: "CREADOR DE PERFILES GRATIS", title: "Mi perfil",
     lead: "Crea un perfil personal o empresarial con pruebas reales, una reflexión DAFO y tu propio camino de desarrollo.",
     benefits: ["Elige tus temas", "Pruebas y escalas gratis", "DAFO + desarrollo"],
     stages: ["Perfil", "Temas", "Escalas", "Pruebas"],
     profileTitle: "¿Qué tipo de perfil quieres crear?",
     profileHelp: "Después podrás crear otro perfil para una meta diferente. Tu elección aún no se envía.",
+    browseTests: "O hacer pruebas gratuitas sin crear un perfil",
     templates: {
       personal: ["Perfil personal", "Personalidad, relaciones, recursos y desarrollo."],
       business: ["Perfil empresarial", "Concentración, trabajo y decisiones económicas."],
@@ -238,6 +241,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <h1>{t.title}</h1>
         <p>{t.lead}</p>
         <div className={styles.benefits}>{t.benefits.map(value => <span key={value}><Check size={13} aria-hidden="true" />{value}</span>)}</div>
+        <Link className={styles.browseTests} href={"/" + locale + "/tests"} prefetch={false} data-profile-direct-tests>
+          {t.browseTests}<ArrowRight size={15} aria-hidden="true" />
+        </Link>
       </div>
     </header>
 

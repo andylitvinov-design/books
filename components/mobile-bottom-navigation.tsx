@@ -7,11 +7,11 @@ import type { PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
-// Short visual labels fit seven buttons even at 320px. Screen readers use full translated aria labels.
+// Compact two-line visual labels. Full translated names remain on aria-label.
 const mobileBarLabels = {
-  en: { home: 'Home', energy: 'Energy', love: 'Love', business: 'Business', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
-  ru: { home: 'Домой', energy: 'Энергия', love: 'Любовь', business: 'Бизнес', books: 'Идеи', pro: 'Профи', temple: 'Temple Support' },
-  es: { home: 'Inicio', energy: 'Energía', love: 'Amor', business: 'Negocios', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
+  en: { home: 'Home', profile: 'My Profile', coaching: 'Coaching', insights: 'Temple', support: 'Support', pro: 'Pro Study' },
+  ru: { home: 'Домой', profile: 'Профиль', coaching: 'Коучинг', insights: 'Храм', support: 'Поддержка', pro: 'Pro Study' },
+  es: { home: 'Inicio', profile: 'Mi perfil', coaching: 'Coaching', insights: 'Templo', support: 'Apoyo', pro: 'Pro Study' },
 } as const;
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
@@ -91,8 +91,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {/* Seven visible destinations, with Temple Support after Pro. Free tests are on the Pro page;
-        Cabinet remains in the top header, with the full Library in the expanded menu. */}
+    {/* Six visitor journeys; topic directions stay in the expanded menu. My Profile also links to free tests. */}
     {mobileItems.map(item => {
       const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];
       const shortLabel = mobileBarLabels[locale][item.id as keyof typeof mobileBarLabels.en];

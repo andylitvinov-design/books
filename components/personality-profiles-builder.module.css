@@ -34,6 +34,7 @@
 .heroCopy > p:not(.kicker) { margin: 10px 0 0; max-width: 65ch; color: #47655a; font-size: clamp(13px, 1.75vw, 16px); line-height: 1.5; }
 .benefits { display: flex; flex-wrap: wrap; gap: 7px 13px; margin-top: 15px; }
 .benefits span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #315c50; font-weight: 700; }
+.browseTests { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 11px; color: #742b45; font-size: 13px; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; }
 .progress {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
