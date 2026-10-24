@@ -7,6 +7,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createArticleRepository } from "@/lib/practitioners/article-repository";
+import { createArticleSocialRepository } from "@/lib/practitioners/article-social-repository";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { ArticleDirectory } from "@/components/practitioner-article-directory";
@@ -25,6 +26,8 @@ type PublicArticle = {
     excerpt: string;
     coverPath?: string;
     tags?: string[];
+    kind?: "note" | "article";
+    locale?: "en" | "ru" | "es";
   };
 };
 
@@ -59,10 +62,20 @@ export default async function MastersPage({ params }: PageProps) {
   const config = getAppConfig();
   const [mastersResult, articlesResult] = await Promise.allSettled([
     createPractitionerRepository(config).listPublicPractitioners(locale),
-    createArticleRepository(config).publicList(locale),
+    createArticleRepository(config).publicFeed(),
   ]);
   if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
   if (articlesResult.status === "fulfilled") articles = (articlesResult.value as PublicArticle[]).slice(0, 24);
+  let social: Record<string, {likes:number;comments:number}> = {};
+  let socialAvailable = false;
+  if (articles.length) {
+    try {
+      social = await createArticleSocialRepository(config).publicStats(articles.map(article=>article.id));
+      socialAvailable = true;
+    } catch {
+      // No fabricated zero counts while the social DB is unavailable.
+    }
+  }
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
@@ -94,7 +107,8 @@ export default async function MastersPage({ params }: PageProps) {
         mastersUnavailable={mastersResult.status === "rejected"}
         articlesUnavailable={articlesResult.status === "rejected"}
         mentors={<MarketplaceMasterFinder practitioners={practitioners} locale={locale} />}
-        articles={<ArticleDirectory locale={locale} preview articles={articles.map((a) => ({
+        articles={<ArticleDirectory locale={locale} preview social={social} socialAvailable={socialAvailable}
+          articles={articles.map((a) => ({
           id: a.id,
           slug: a.slug,
           practitionerName: a.practitionerName,
@@ -104,6 +118,8 @@ export default async function MastersPage({ params }: PageProps) {
           excerpt: a.published.excerpt,
           coverPath: a.published.coverPath || "",
           tags: Array.isArray(a.published.tags) ? a.published.tags : [],
+          kind: a.published.kind === "note" ? "note" : "article",
+          language: a.published.locale || locale,
         }))} />}
       />
     </main>
