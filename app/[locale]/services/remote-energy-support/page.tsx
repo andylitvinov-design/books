@@ -23,10 +23,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     metadataBase: metadataBaseFor(),
     title: (locale === "ru" ? "Энергетическая поддержка цели" : locale === "es" ? "Apoyo energético para tu objetivo" : "Energy support for your goal") + " | Holistic House",
     description: locale === "ru"
-      ? "Выберите формат, мастера и предпочтительное время дистанционной практики. Заявка подтверждается мастером."
+      ? "Сначала опишите запрос, затем выберите специалиста Рейки, узнайте стоимость и отправьте заявку на удобное время."
       : locale === "es"
-        ? "Elige el formato, profesional y horario preferido. El profesional confirmará la solicitud."
-        : "Choose a practitioner, type of remote practice and preferred time. Requests are subject to practitioner confirmation.",
+        ? "Describe tu intención, consulta profesionales Reiki con precios publicados y solicita un horario."
+        : "Describe the support you need, browse real Reiki practitioners and published prices, then request a preferred time.",
     alternates: {
       canonical: `/${locale}/services/remote-energy-support`,
       languages: {
@@ -59,6 +59,7 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
         serviceId: service.id,
         methods: service.methods?.length ? service.methods : ["Remote support"],
         bio: record.profile.shortBio || "",
+        description: service.copy?.shortDescription || service.copy?.description || "",
         languages: service.languages || [],
         currency: service.currency || "",
         reviewCount: 0,
