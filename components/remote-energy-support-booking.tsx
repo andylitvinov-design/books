@@ -29,7 +29,7 @@ const WORDS = {
   en: {
     eyebrow: "PERSONAL PRACTICE · ONLINE",
     title: "Energy support for your goal",
-    intro: "Choose a practice, practitioner and preferred time. Your request goes to the practitioner for confirmation.",
+    intro: "Tell us what you need first. Then explore practitioners, prices and request a session."
     practitioner: "Practitioner",
     focus: "Your focus",
     method: "Practice",
@@ -49,7 +49,7 @@ const WORDS = {
     freeReiki: "Explore the free Reiki introduction",
     durations: "10, 20, 30 or 60 minutes",
     pending: "Availability and price confirmed before any payment",
-    steps: "Choose a practice · Pick a time · Send your request",
+    steps: "Your intention · Choose a practitioner · Request a time",
     safety: "An optional complementary wellbeing practice, not medical treatment, diagnosis or emergency care.",
     needsStorage: "This browser could not hold your choices. Please allow temporary session storage and try again.",
     select: "Choose",
@@ -86,7 +86,7 @@ const WORDS = {
   ru: {
     eyebrow: "ЛИЧНАЯ ПРАКТИКА · ОНЛАЙН",
     title: "Энергетическая поддержка цели",
-    intro: "Выберите практику, мастера и удобное время. Мастер рассмотрит вашу заявку и подтвердит возможность проведения.",
+    intro: "Сначала опишите вашу цель. Затем посмотрите специалистов, цены и запросите удобное время."
     practitioner: "Мастер",
     focus: "Запрос",
     method: "Метод",
@@ -106,7 +106,7 @@ const WORDS = {
     freeReiki: "Открыть бесплатное знакомство с Рейки",
     durations: "10, 20, 30 или 60 минут",
     pending: "Наличие времени и стоимость уточняются до оплаты",
-    steps: "Выберите практику · Время · Отправьте заявку",
+    steps: "Ваш запрос · Специалисты · Заявка на время",
     safety: "Дополнительная практика для самочувствия, не замена медицинской помощи, диагностики или неотложной помощи.",
     needsStorage: "Не удалось сохранить выбор в браузере. Разрешите временное хранение данных и попробуйте ещё раз.",
     select: "Выберите",
@@ -143,7 +143,7 @@ const WORDS = {
   es: {
     eyebrow: "PRÁCTICA PERSONAL · EN LÍNEA",
     title: "Apoyo energético para tu objetivo",
-    intro: "Elige la práctica, el profesional y la hora preferida. Tu solicitud necesita confirmación del profesional.",
+    intro: "Primero describe lo que necesitas. Después elige profesional, precio y horario."
     practitioner: "Profesional",
     focus: "Tu objetivo",
     method: "Práctica",
@@ -163,7 +163,7 @@ const WORDS = {
     freeReiki: "Explorar la introducción gratuita a Reiki",
     durations: "10, 20, 30 o 60 minutos",
     pending: "Disponibilidad y precio confirmados antes del pago",
-    steps: "Elige la práctica · La hora · Envía la solicitud",
+    steps: "Tu intención · Profesionales · Solicitar horario",
     safety: "Práctica complementaria de bienestar, no diagnóstico ni sustituto de atención médica o urgente.",
     needsStorage: "No se pudieron guardar tus preferencias temporalmente. Permite el almacenamiento de sesión e inténtalo de nuevo.",
     select: "Elige",
