@@ -37,6 +37,7 @@ test("every key section has an actual route and approved local photo", () => {
     ["academy", "/academy", "reiki-approved-sunrise-v3.webp"],
     ["business", "/explore/business", "andy-about.png"],
     ["ideas", "/books", "books-library.webp"],
+    ["temple", "/temple-support", "ideas-zen-landscape.svg"],
   ]) {
     assert.ok(component.includes('id: "' + id + '"'), id + " section missing");
     assert.ok(component.includes('path: "' + path + '"'), id + " route missing");
@@ -61,6 +62,7 @@ test("each site destination explains the benefit and CTA in EN, RU and ES", () =
   assert.equal((component.match(/academy: \{ eyebrow:/g) || []).length, 3);
   assert.equal((component.match(/business: \{ eyebrow:/g) || []).length, 3);
   assert.equal((component.match(/ideas: \{ eyebrow:/g) || []).length, 3);
+  assert.equal((component.match(/temple: \{ eyebrow:/g) || []).length, 3);
   for (const locale of segments) assert.ok(component.includes(locale), "Missing " + locale);
   assert.match(component, /without a live call/);
   assert.match(component, /sin llamada/);

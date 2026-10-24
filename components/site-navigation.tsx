@@ -107,7 +107,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     return available ? publicCounterpart(pathname, next) : localePath(pathname, next as Locale);
   }
 
-  // One canonical six-item navigation, shared by the hamburger and bottom bar.
+  // One canonical seven-item navigation, shared by the hamburger and bottom bar.
   // Additional editorial pages are grouped separately, never mixed into the bar.
   const mainMenuItems = getCompactNavigation(activeLocale);
   const extraMenuItems = getSiteNavigation(activeLocale).filter(
