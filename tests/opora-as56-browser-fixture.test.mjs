@@ -39,7 +39,7 @@ test('hosted verification has exact mobile coverage, fully intercepted requests 
   assert.match(entry, /createRoot\(/)
   assert.doesNotMatch(entry, /fetch\(|\/api\/|localStorage|sessionStorage|cookie/i)
   assert.match(entry, /Object\.freeze\(value\)/)
-  for (const fragment of ["['ru', 'en', 'es']", '[320, 360, 390]', '[false, true]', "serviceWorkers: 'block'",
+  for (const fragment of ["['ru', 'en', 'es']", '[320, 360, 390, 430]', '[false, true]', "serviceWorkers: 'block'",
     "route.abort('blockedbyclient')", 'assert.equal(state.saves, 0', 'assert.deepEqual(unexpectedRequests, []',
     'assert.equal(state.finalData, state.initialData', 'await click(t.previous)', 'await click(t.neutral)',
     "await page.keyboard.press('Escape')", 'assert.equal(evidence.cases.length, 24)']) assert.ok(browser.includes(fragment), fragment)

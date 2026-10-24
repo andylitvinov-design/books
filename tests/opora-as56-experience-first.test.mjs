@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
+import {runInNewContext} from 'node:vm'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
@@ -145,7 +147,8 @@ test('day one restores five opening screens and all days add untracked support a
     assert.ok(textOf(h.tree).includes(daily.transfer))
     assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-practice-overview']===day),
       'Practice preview must not repeat after the actual exercise')
-    if(day===4)assert.ok(textOf(h.tree).includes(spokenFeeling))
+    // Private emotion labels are separate from the shared daily homework.
+    // Their payload and confirmed receipt are checked below.
     await click(h,d.next)
     if(day===14){
       const final=nodes(h.tree).find(n=>n.props?.['data-opora-final-meditation']==='day-14')
@@ -187,8 +190,14 @@ test('day one restores five opening screens and all days add untracked support a
       // Skipping the optional mood choice is represented as null, never a fabricated feeling.
       assert.equal(f.payload.welcomeFeeling,null)
     }
-    assert.match(textOf(h.tree),new RegExp(d.saved))
+    const ending=oporaEndingCopy(lang)
+    const savedTitle=day===14?ending.congratsFinal:ending.congratsTitle.replace('{day}',String(day))
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-current-screen']==='receipt'),
+      'A confirmed save opens the receipt, never just another lesson screen')
+    assert.ok(textOf(h.tree).includes(savedTitle),'Exact localized congratulations for the saved day')
     assert.ok(textOf(h.tree).includes(daily.transfer),'Confirmed receipt shows the one selected step')
+    if(day===4)assert.ok(textOf(h.tree).includes(spokenFeeling),
+      'The confirmed receipt retains the selected private emotion separately from homework')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
     assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
       'The inline grounding timer must not repeat after congratulations')
@@ -241,16 +250,18 @@ test('two unique optional action ideas per day, in EN/RU/ES, without rewriting l
 })
 
 test('Day 4 spoken feeling is optional, localized and cleared by Not today',async()=>{
-  for(const [lang,next,skip,instruction] of [
-    ['en','Continue','Not today','Before one routine task'],
-    ['ru','Продолжить','Не сегодня','Перед одним привычным делом'],
-    ['es','Continuar','Hoy no','Antes de una tarea cotidiana'],
+  for(const [lang,next,skip] of [
+    ['en','Continue','Not today'],
+    ['ru','Продолжить','Не сегодня'],
+    ['es','Continuar','Hoy no'],
   ]){
     const f=fixture(lang,4),h=f.h
     await advanceOporaTo(h,'save',next)
     const single=nodes(h.tree).find(n=>n.props?.['data-opora-everyday-choice']==='one-feeling-and-field')
     assert.ok(single,'one and only one learning task for '+lang)
-    assert.ok(textOf(h.tree).includes(instruction))
+    const task=nodes(single).find(n=>n.props?.['data-opora-single-transfer']===4)
+    assert.equal(textOf(task),oporaAs59Day(4,lang).transfer,
+      'Day 4 preserves the complete currently authored spoken-feeling task')
     const field=nodes(h.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
     assert.ok(field)
     field.props.onChange({target:{value:'calma'}})
@@ -404,7 +415,27 @@ test('only active V7 can submit five moments; old 14-step lesson sequences stay 
   assert.match(server,/oporaOpening/)
   assert.match(server,/as-5\.6-five-moments-v1/)
   assert.match(server,/verifyCourseSlideVisitOrder\(requiredSlides,input\.visitedSlideKeys\)/)
-  assert.match(today,/data\?\.lesson\?\.version===COURSE_ANTISTRESS_SKILLS_V7/)
+  const parsedToday=ts.createSourceFile('course-today.jsx',today,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  const gates=[]
+  function findVersionGate(node){
+    if(ts.isConditionalExpression(node)&&ts.isJsxSelfClosingElement(node.whenTrue)&&
+      node.whenTrue.tagName.getText(parsedToday)==='OporaExperiencePlayer')gates.push(node.condition)
+    ts.forEachChild(node,findVersionGate)
+  }
+  findVersionGate(parsedToday)
+  assert.equal(gates.length,1,'Exactly one version gate chooses the V7 player')
+  const versions=[COURSE_ANTISTRESS_SKILLS_V7,COURSE_ANTISTRESS_SKILLS_V6,'unknown',undefined]
+  for(const displayedVersion of versions)for(const currentVersion of versions){
+    const selected=runInNewContext(gates[0].getText(parsedToday),{
+      playerData:{lesson:{version:displayedVersion}},data:{lesson:{version:currentVersion}},
+      COURSE_ANTISTRESS_SKILLS_V7,
+    })
+    assert.equal(selected,displayedVersion===COURSE_ANTISTRESS_SKILLS_V7,
+      'The displayed/replayed lesson, not an unrelated current lesson, controls V7 selection')
+  }
+  assert.equal(runInNewContext(gates[0].getText(parsedToday),{
+    playerData:null,data:{lesson:{version:COURSE_ANTISTRESS_SKILLS_V7}},COURSE_ANTISTRESS_SKILLS_V7,
+  }),false,'Missing displayed lesson cannot select the V7 player')
   assert.match(today,/<OporaExperiencePlayer/)
   assert.match(today,/<OporaV6SlidePlayer/)
   assert.match(css,/100dvh/)
