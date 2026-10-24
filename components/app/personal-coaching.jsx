@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, ChevronLeft, LockKeyhole, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, Copy, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
+import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
 import styles from './personal-coaching.module.css'
 
 const copy={
@@ -87,6 +88,23 @@ const extraCopy={
     woop:'Para completar WOOP, escribe tu propio plan específico «si — entonces».',
     chosen:'Modelo elegido',yourQuestion:'Tu pregunta original',loadingCatalog:'Cargando las preguntas de tu modelo…'},
 }
+const intelligenceCopy={
+  en:{adaptive:'Tailored to your earlier answer',standard:'Use the original model question',
+    tailored:'Use the tailored question',recap:'Your reflection, in your own words',
+    recapNote:'Only your saved answers appear here, not inferred results, diagnoses or AI advice.',
+    copy:'Copy my reflection',copied:'Copied. You choose whether to share it.',
+    copyError:'Copy is unavailable; your private notes remain saved.'},
+  ru:{adaptive:'С учётом вашего предыдущего ответа',standard:'Вернуть вопрос из модели',
+    tailored:'Вернуть уточнённый вопрос',recap:'Ваши выводы — вашими словами',
+    recapNote:'Только ваши сохранённые ответы, без выдуманных выводов, диагнозов или советов ИИ.',
+    copy:'Скопировать мои выводы',copied:'Скопировано. Только вы решаете, делиться ли ими.',
+    copyError:'Копирование недоступно, приватные записи сохранены.'},
+  es:{adaptive:'Según tu respuesta anterior',standard:'Usar la pregunta original del modelo',
+    tailored:'Usar la pregunta adaptada',recap:'Tu reflexión, con tus propias palabras',
+    recapNote:'Solo se muestran tus respuestas guardadas, sin diagnósticos ni consejos de IA.',
+    copy:'Copiar mi reflexión',copied:'Copiado. Tú decides si lo compartes.',
+    copyError:'No se pudo copiar. Tus notas privadas siguen guardadas.'},
+}
 const translated=(value,lang)=>value?.[lang]||value?.en||''
 const questionsFor=(course,catalog)=>{
   const key=course?.current?.schemeKey
@@ -106,12 +124,13 @@ const prettyAnswer=(value,item,lang,missing)=>{
   return translated(item?.choices?.find(c=>c.id===id)?.label,lang)||missing
 }
 export default function PersonalCoaching({locale='en',accountId}){
-  const lang=['en','ru','es'].includes(locale)?locale:'en',t=copy[lang],root='/'+(locale==='ru'?'ru':'en')+'/app'
+  const lang=['en','ru','es'].includes(locale)?locale:'en',t=copy[lang],root='/'+lang+'/app'
   const [state,setState]=useState(null),[catalog,setCatalog]=useState(null)
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[newSelection,setNewSelection]=useState(false)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
+  const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
@@ -120,12 +139,20 @@ export default function PersonalCoaching({locale='en',accountId}){
   const persisted=session?.answers?.[question?.id]
   const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
+  const adaptive=coachingAdaptivePrompt({question,questions:activeQuestions,index,
+    answers:session?.answers||{},locale:lang,requiredCustomPlan:Boolean(scheme?.requiredCustomPlan)})
+  const standardPrompt=translated(question?.prompt||question?.question,lang)
+  const visiblePrompt=adaptive&&!useStandardPrompt?adaptive.prompt:standardPrompt
+  const recapRows=finished?buildCoachingRecap(session,activeQuestions,lang):[]
+  const iCopy=intelligenceCopy[lang]
   function visit(indexToOpen,values,items=activeQuestions){
     const next=Math.max(0,Math.min(items.length-1,indexToOpen))
     setIndex(next)
     const saved=values?.[items[next]?.id]
     setDraft(typeof saved==='string'?saved:'')
     setDictating(false)
+    setUseStandardPrompt(false)
+    setClipboardState('')
     setNotice('')
     setError('')
   }
@@ -237,6 +264,13 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(dictating){event.preventDefault();setError(t.stopMic);return}
     if(dirty&&!window.confirm(t.unsaved))event.preventDefault()
   }
+  async function copyRecap(){
+    if(!finished||!navigator.clipboard?.writeText){setClipboardState('error');return}
+    try{
+      await navigator.clipboard.writeText(coachingRecapClipboardText(session,activeQuestions,lang))
+      setClipboardState('copied')
+    }catch{setClipboardState('error')}
+  }
   async function erase(){
     if(!window.confirm(t.deleteConfirm))return
     const result=await command('delete',{confirmed:true})
@@ -270,12 +304,22 @@ export default function PersonalCoaching({locale='en',accountId}){
               <p>{prettyAnswer(session.answers[item.id],item,lang,t.noAnswer)}</p>
             </div>)}
           </div>
-          <div className={styles.actionRecap}>
-            <span>{t.plan}</span>
-            <strong>{scheme?prettyAnswer(session.answers[activeQuestions.at(-1)?.id],
-              activeQuestions.at(-1),lang,t.noAnswer):session.answers.first_step||t.noAnswer}</strong>
-            {!scheme&&session.answers.when&&<small>{session.answers.when}</small>}
-          </div>
+          {recapRows.length>0&&<section className={styles.smartRecap} data-coaching-evidence-recap aria-label={iCopy.recap}>
+            <h2>{iCopy.recap}</h2>
+            <p>{iCopy.recapNote}</p>
+            <div className={styles.smartRecapGrid}>
+              {recapRows.map(row=><div className={styles.smartRecapCard} key={row.key}
+                data-coaching-recap-key={row.key}>
+                <span>{row.label}</span><strong>{row.value}</strong>
+              </div>)}
+            </div>
+            <button type="button" className={styles.recapCopy} onClick={copyRecap}>
+              <Copy size={16}/>{iCopy.copy}
+            </button>
+            {clipboardState&&<small role="status" className={styles.subtle}>
+              {clipboardState==='copied'?iCopy.copied:iCopy.copyError}
+            </small>}
+          </section>}
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
             <summary>{t.history} ({course.history.length})</summary>
@@ -310,9 +354,17 @@ export default function PersonalCoaching({locale='en',accountId}){
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</span>}
-            <h1 ref={titleRef} tabIndex={-1}>{translated(question.prompt||question.question,lang)}</h1>
-            <CoachingQuestionVoice key={question.id+'-'+lang}
-              text={translated(question.prompt||question.question,lang)} locale={lang}
+            <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
+            {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
+              <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
+              <p>{adaptive.why}</p>
+              <button type="button" disabled={busy||dictating}
+                onClick={()=>setUseStandardPrompt(value=>!value)}>
+                {useStandardPrompt?iCopy.tailored:iCopy.standard}
+              </button>
+            </div>}
+            <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')}
+              text={visiblePrompt} locale={lang}
               mode="answer" disabled={busy} speechConsent={speechConsent}
               onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
               onTranscript={words=>{
