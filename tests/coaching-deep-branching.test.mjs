@@ -16,22 +16,34 @@ const visit=(questions,answers,index,reflections={},clientQuestion='')=>
 const publishedFlows={
   appreciative_future_v1:['define','discover','dream','design','destiny'],
   clear_dialogue_v1:['contract','listen','explore','action','review'],
+  clear_intimacy_dialogue_v1:['contract','listen','explore','action','review'],
   fuel_development_v1:['frame','understand','explore','plan'],
   grow_quick_v1:['goal','reality','options','will'],
   grow_reflect_v1:['frame','goal','reality','options','will','review'],
   oskar_resources_v1:['outcome','scaling','knowhow','affirm','review'],
+  oskar_money_confidence_v1:['outcome','scaling','knowhow','affirm','review'],
+  oskar_wellbeing_resources_v1:['outcome','scaling','knowhow','affirm','review'],
   solution_focus_quick_v1:['preferred','scale','step'],
   solution_focus_reflect_v1:['preferred','exceptions','scale','resources','step'],
+  solution_relationship_dialogue_v1:['preferred','scale','step'],
   tgrow_compass_v1:['topic','goal','reality','options','will'],
+  tantric_consent_quick_v1:['intention','boundaries','consent','dialogue','step'],
+  tantric_desire_presence_v1:['intention','presence','desire','boundaries','review'],
+  tantric_intimacy_reflective_v1:['intention','presence','desire','boundaries','consent','dialogue','step','review'],
   woop_habit_v1:['wish','outcome','obstacle','plan'],
+  woop_money_habit_v1:['wish','outcome','obstacle','plan'],
+  woop_wellbeing_routine_v1:['wish','outcome','obstacle','plan'],
 }
 
-test('all 10 published course structures receive an optional authored micro-slide',()=>{
-  assert.equal(Object.keys(publishedFlows).length,10)
+test('all 19 published course structures keep their reviewed stages, with safe optional micro-slides',()=>{
+  assert.equal(Object.keys(publishedFlows).length,19)
   for(const [model,steps] of Object.entries(publishedFlows)){
     const questions=steps.map((s,i)=>q(s,'step-'+i,['scale','scaling'].includes(s)?'scale_0_10':'single_choice'))
     const index=questions.findIndex((x,i)=>i<questions.length-1&&['reality','options'].includes(coachingStageKey(x)))
-    assert.ok(index>=0,model+' eligible stage')
+    if(index<0){
+      assert.ok(model.startsWith('tantric_'),model+' is a consent-first course, not a probing flow')
+      continue
+    }
     const answers=Object.fromEntries(questions.slice(0,index+1).map(item=>[item.id,item.type==='scale_0_10'?'choice:5':'choice:visible_result']))
     const path=visit(questions,answers,index)
     assert.ok(path?.key?.endsWith('_v2'),model+' followup')
@@ -151,5 +163,20 @@ test('guest and private UIs share contextual choices; backend checks owner-persi
   for(const file of ['components/app/personal-coaching.jsx','components/public-coaching-discovery.jsx']){
     const parsed=ts.createSourceFile(file,source(file),ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
     assert.deepEqual(parsed.parseDiagnostics.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')),[])
+  }
+})
+
+
+test('all adult consent/presence slides are respectful EN/RU/ES and cannot force probing',()=>{
+  for(const step of ['intention','presence','desire','boundaries','consent','dialogue']){
+    for(const lang of ['en','ru','es']){
+      const p=coachingSlidePurpose(q(step),lang)
+      assert.ok(p.length>32,step+' '+lang)
+      assert.ok(!p.includes('?')&&!p.includes('¿'),step+' must be a statement, not another question')
+    }
+    const item=q(step)
+    assert.equal(contextualCoachingFollowup(item,'choice:private',{},{
+      questions:[item],answers:{[item.id]:'choice:private'}
+    }),null,'no extra probe for '+step)
   }
 })
