@@ -19,7 +19,7 @@ function safeEmbed(value){
    if(/^[a-zA-Z0-9_-]{11}$/.test(id||''))return 'https://www.youtube-nocookie.com/embed/'+id
   }
   if(['vimeo.com','www.vimeo.com','player.vimeo.com'].includes(url.hostname)&&/^\/(?:video\/)?\d{6,12}$/.test(url.pathname))
-   return 'https://player.vimeo.com/video/'+url.pathname.replace(/^\/video\//,'/')
+   return 'https://player.vimeo.com/video/'+url.pathname.replace(/^\/(?:video\/)?/,'')
  }catch{}
  return null
 }
