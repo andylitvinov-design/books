@@ -651,7 +651,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                   const actionLabel = offer.id === "profile" && !signedIn ? t.guestProfile
                     : offer.id === "growth" && !signedIn ? t.guestGrowth : offer.cta;
                   return (
-                    <article key={offer.id} className={styles.offer} data-home-module-action={offer.id}>
+                    <article key={offer.id} className={styles.offer} data-home-offer-card={offer.id}>
                       <span className={styles.photo} aria-hidden="true">
                         <Image src={photos[offer.id]} alt="" fill unoptimized loading="lazy"
                           sizes="(max-width: 350px) 92px, (max-width: 640px) 124px, (max-width: 920px) 160px, 190px" />
@@ -662,7 +662,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                       </div>
                       <div className={styles.offerControls}>
                         <Link href={hrefs[offer.id]} prefetch={false} className={styles.offerPrimary}
-                          data-home-offer-primary={offer.id}>
+                          data-home-module-action={offer.id} data-home-offer-primary={offer.id}>
                           {actionLabel}<ArrowRight size={16} aria-hidden="true" />
                         </Link>
                         <button type="button" className={styles.offerSecondary}
