@@ -26,8 +26,8 @@ test("the home has seven ordered, translated steps with no repeated Master or me
     const home = read(page);
     assert.equal((home.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1, page);
     assert.doesNotMatch(home, /<HomeCoreMethods\b|<HomeMasterPath\b/, "no duplicate method/master funnels");
-    const order = ["HomeSectionCarousel", "HomeFreeDiagnosisBanner",
-      "HomeConversationGuide", "HomePersonalSpaceCard", "HomeFeaturedWorkspace",
+    const order = ["HomeSectionCarousel", "HomeFeaturedWorkspace",
+      "HomeFreeDiagnosisBanner", "HomeConversationGuide", "HomePersonalSpaceCard",
       "HomepageTopicJourneys", "HomeMoreDisclosure"];
     let previous = -1;
     for (const tag of order) {
