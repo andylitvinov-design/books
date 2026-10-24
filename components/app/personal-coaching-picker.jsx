@@ -87,7 +87,7 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
    translated(catalog.signals.find(signal=>signal.tag===tag)?.label,lang)).filter(Boolean)
  const renderCard=(suggestion,i,extra=false)=>{
    const model=suggestion.model,scheme=suggestion.scheme
-    const isAdultModel=suggestion.modelKey==='tantric_intimacy_v1'
+    const isAdultModel=suggestion.modelKey==='tantric_intimacy_v1'||scheme.tags?.includes('sexuality')
    if(!model||!scheme)return null
    const matches=matchedNames(suggestion)
    return <article className={styles.modelCard} key={suggestion.schemeKey}
