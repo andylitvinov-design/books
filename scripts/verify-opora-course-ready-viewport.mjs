@@ -79,7 +79,10 @@ try {
         }
         cases.push({ locale,width,height,expanded,ctaVisible:true,internalPickerScroll:expanded && b.list.scroll>b.list.client+1 })
       }
-      if (width === 390 && height === 844) await page.screenshot({ path: output + '/' + locale + '-390-ready.png', fullPage:false })
+      if (width === 390 && height === 844) {
+        await page.locator('details.routeDisclosure').evaluate(node => { node.open = false })
+        await page.screenshot({ path: output + '/' + locale + '-390-ready.png', fullPage:false })
+      }
     } finally { await page.close() }
   }
   await writeFile(output + '/geometry.json',JSON.stringify({scope:'ISOLATED_OPORA_WELCOME_CSS_ONLY_NO_AUTH',engine:browserName,cases},null,2))
