@@ -50,6 +50,8 @@ jobs:
             sleep 2
           done
           status=0
+          # Measure actual public Alchemy panels before unrelated catalogue checks.
+          node scripts/verify-alchemy-one-screen.mjs || status=$?
           node scripts/verify-business-quiz-mobile.mjs || status=$?
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-holistic-master-browser.mjs || status=$?
