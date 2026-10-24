@@ -4,21 +4,23 @@ import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
+import PracticeServiceStatistics from './practice-service-statistics'
+import PracticeRequestsOverview from './practice-requests-overview'
+import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
+import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
+import './practice-dashboard.css'
+
+// Keep the compact entry responsive: private editors and CRM mount only on demand.
 const CrmManager = dynamic(() => import('./crm-manager'))
 const PractitionerClientProfiles = dynamic(() => import('./practitioner-client-profiles'))
 const PracticeMaterials = dynamic(() => import('./practice-materials'))
 const PracticeEvents = dynamic(() => import('./practice-events'))
-import PracticeServiceStatistics from './practice-service-statistics'
-import PracticeRequestsOverview from './practice-requests-overview'
 const PublicEnquiryContact = dynamic(() => import('./public-enquiry-contact'))
 const MyServicesDashboard = dynamic(() => import('./my-services-dashboard'))
 const SimpleServiceEditor = dynamic(() => import('./simple-service-editor'))
 const RemoteGoalPhoto = dynamic(() => import('./remote-goal-photo'))
 const PracticePhotoUpload = dynamic(() => import('./practice-photo-upload'))
 const PracticeVideoField = dynamic(() => import('./practice-video-field'))
-import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
-import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
-import './practice-dashboard.css'
 
 async function practiceFetch(path='',body){
   const response=await fetch('/api/app/practice'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined})
