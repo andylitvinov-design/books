@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowRight, Check, Clock3, ShieldCheck } from "lucide-react";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
@@ -103,7 +104,7 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
 
         <section className={[styles.screen, styles.story].join(" ")} data-service-visual-screen="questions" aria-labelledby="questions-title">
           <div className={styles.sceneMedia}>
-            <Image src={illustrations[0]} alt="" fill sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
+            <Image src={illustrations[0]} alt="" fill unoptimized sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
           </div>
           <div className={styles.sceneCopy}>
             <p className={styles.smallEyebrow}>{microcopy.stage}</p>
@@ -119,7 +120,7 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
           <section key={step.title} className={[styles.screen, styles.story, styles.processScene].join(" ")}
             data-service-visual-screen={`process-${index + 1}`} aria-labelledby={`process-title-${index}`}>
             <div className={styles.sceneMedia}>
-              <Image src={illustrations[(index + 1) % illustrations.length]} alt="" fill
+              <Image src={illustrations[(index + 1) % illustrations.length]} alt="" fill unoptimized
                 sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
             </div>
             <div className={styles.sceneCopy}>
@@ -133,7 +134,7 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
 
         <section className={[styles.screen, styles.story].join(" ")} data-service-visual-screen="takeaways" aria-labelledby="takeaways-title">
           <div className={styles.sceneMedia}>
-            <Image src="/images/holistic-house/report-lighthouse-coast.avif" alt="" fill
+            <Image src="/images/holistic-house/report-lighthouse-coast.avif" alt="" fill unoptimized
               sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
           </div>
           <div className={styles.sceneCopy}>
@@ -162,7 +163,7 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
         <section className={[styles.screen, styles.captureScreen].join(" ")} id="request-session"
           data-service-visual-screen="final-capture" aria-labelledby="capture-heading">
           <div className={styles.capturePortrait}>
-            <Image src="/images/holistic-house/andy-about.png" alt="" fill
+            <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
               sizes="(max-width: 767px) 100vw, 43vw" className={styles.sceneImage} />
           </div>
           <div className={styles.captureContent}>
