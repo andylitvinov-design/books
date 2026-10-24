@@ -365,7 +365,7 @@ test("home advisor replaces repeated service catalogs without changing #1537 fre
  for(const page of [home,es]){
    assert.match(page,/<HomeMoreDisclosure locale=/);
    assert.ok(page.indexOf("<HomeFreeDiagnosisBanner") < page.indexOf("<HomeConversationGuide"));
-   assert.ok(page.indexOf("<HomeConversationGuide") < page.indexOf('<HomeMoreDisclosure locale='));
+   assert.ok(page.indexOf('<HomeMoreDisclosure locale=') < page.indexOf("<HomeFreeDiagnosisBanner"), "The conversation and legacy diagnostic panel remain available on expansion");
  }
  const guide=read("components/home-conversation-guide.tsx");
  for(const token of ["data-home-guide-needs","data-home-guide-need={item.id}","data-home-guide-launcher","styles.advisorPortrait","homeGuideQuickStarts"])
