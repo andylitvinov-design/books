@@ -2,16 +2,17 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, CheckCircle2, ChevronDown, CircleHelp, LockKeyhole, Sparkles } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
+import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import styles from './personal-coaching.module.css'
 
 const copy={
- en:{eyebrow:'YOUR QUESTION · YOUR COACHING MODEL',title:'What would you like to explore?',
+ en:{eyebrow:'YOUR QUESTION · YOUR COACHING SESSION',title:'What would you like to explore?',
  placeholder:'For example: How do I stop putting off an important goal?',
- hint:'Write one question in your own words. It stays on this device until you select a model.',
+ hint:'Write one question in your own words. It stays on this device until you choose a session.',
  duration:'Time I have',recommend:'Find three coaching approaches',
- heading:'Choose the approach that suits you',notSure:'Your topic is not clear enough for a specific match. These are three general starting points; you can still choose a different model.',
+ heading:'Choose the approach that suits you',notSure:'Your topic is not clear enough for a specific match. These are three general starting points; you can still choose a different session.',
  matches:'Relevant to your question',alternative:'Alternative to consider',suits:'Good for',caution:'Keep in mind',
- select:'Start this model',all:'See all available approaches',hide:'Hide other approaches',
+ select:'Start this session',all:'See all available approaches',hide:'Hide other approaches',
  privacy:'Matching runs in your browser; no question is sent to AI or analytics. Your original question is saved privately only after you start the session.',
  crisis:'An urgent safety concern deserves direct human support, not self-coaching. If you are in immediate danger, contact local emergency services or a trusted qualified professional.',
  min:'Please enter at least eight characters.',time:'min',new:'A new private coaching session',
@@ -20,13 +21,13 @@ const copy={
  previousTitle:'My last confirmed action',previousUse:'Explore this action again',
  previousPrefix:'How can I move forward with this step?',previousNote:'Only you decide whether to reuse it. Nothing is sent until you start a new session.',
  },
- ru:{eyebrow:'ВАШ ВОПРОС · ВАША МОДЕЛЬ',title:'Какой вопрос хотите разобрать?',
+ ru:{eyebrow:'ВАШ ВОПРОС · ВАША СЕССИЯ',title:'Какой вопрос хотите разобрать?',
  placeholder:'Например: как перестать откладывать важную цель?',
- hint:'Напишите вопрос своими словами. До выбора модели он остаётся только на вашем устройстве.',
- duration:'Время сессии',recommend:'Подобрать три модели коучинга',
- heading:'Выберите подходящий подход',notSure:'Недостаточно признаков для точного подбора. Ниже три универсальных варианта; вы можете выбрать другую модель.',
+ hint:'Напишите вопрос своими словами. До выбора сессии он остаётся только на вашем устройстве.',
+ duration:'Время сессии',recommend:'Подобрать три коуч-сессии',
+ heading:'Выберите подходящий подход',notSure:'Недостаточно признаков для точного подбора. Ниже три универсальных варианта; вы можете выбрать другую сессию.',
  matches:'По вашему запросу',alternative:'Дополнительный вариант',suits:'Когда подходит',caution:'Важно учитывать',
- select:'Пройти по этой модели',all:'Все доступные модели',hide:'Скрыть остальные',
+ select:'Начать эту сессию',all:'Все доступные сессии',hide:'Скрыть остальные',
  privacy:'Подбор происходит в браузере: вопрос не отправляется в ИИ или аналитику. После начала он сохраняется только в защищённом личном кабинете.',
  crisis:'Вопрос о непосредственной опасности требует живой помощи, а не самостоятельного коучинга. При угрозе безопасности обращайтесь в местные экстренные службы или к квалифицированному специалисту.',
  min:'Введите вопрос не короче восьми символов.',time:'мин',new:'Новая личная коуч-сессия',
@@ -35,13 +36,13 @@ const copy={
  previousTitle:'Моё последнее подтверждённое действие',previousUse:'Продолжить работу над этим шагом',
  previousPrefix:'Как мне продвинуться в этом шаге?',previousNote:'Вы сами решаете, использовать ли его снова. До начала сессии ничего не отправляется.',
  },
- es:{eyebrow:'TU PREGUNTA · TU MODELO',title:'¿Qué pregunta quieres explorar?',
+ es:{eyebrow:'TU PREGUNTA · TU SESIÓN',title:'¿Qué pregunta quieres explorar?',
  placeholder:'Por ejemplo: ¿cómo dejo de posponer un objetivo importante?',
- hint:'Escribe una pregunta. Permanece en este dispositivo hasta que elijas un modelo.',
+ hint:'Escribe una pregunta. Permanece en este dispositivo hasta que elijas una sesión.',
  duration:'Tiempo disponible',recommend:'Encontrar tres enfoques',
  heading:'Elige el enfoque que prefieras',notSure:'No hay suficientes señales para una coincidencia específica; estos son tres enfoques generales.',
  matches:'Relacionados con tu pregunta',alternative:'Otra opción',suits:'Adecuado para',caution:'Ten en cuenta',
- select:'Empezar con este modelo',all:'Ver todos los enfoques',hide:'Ocultar los demás',
+ select:'Empezar esta sesión',all:'Ver todos los enfoques',hide:'Ocultar los demás',
  privacy:'La selección se calcula en tu navegador. No se envía a IA ni a analíticas; se guarda de forma privada al iniciar.',
  crisis:'El peligro inmediato requiere ayuda humana directa, no autocoaching. Contacta los servicios de emergencia locales.',
  min:'Escribe al menos ocho caracteres.',time:'min',new:'Nueva sesión privada',
@@ -95,11 +96,11 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
      <div className={styles.modelCardHeading}>
        <span className={styles.modelNumber}>{extra?<CircleHelp size={17}/>:i+1}</span>
        <div>
-         <h3>{translated(model.name,lang)}</h3>
-         <span>{translated(scheme.name,lang)} · {scheme.minutes} {t.time}</span>
+         <h3>{coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</h3>
+         <span>{translated(model.name,lang)} · {scheme.minutes} {t.time}</span>
        </div>
      </div>
-     <p className={styles.modelDescription}>{translated(model.selectionComment,lang)||translated(model.focus,lang)}</p>
+     <p className={styles.modelDescription}>{coachingSessionSummary(scheme.schemeKey,lang,translated(model.selectionComment,lang)||translated(model.focus,lang))}</p>
      {matches.length>0 && <p className={styles.modelMatch}><CheckCircle2 size={15}/>
        {t.matches}: {matches.join(' · ')}</p>}
      {(!matches.length||suggestion.fallback)&&

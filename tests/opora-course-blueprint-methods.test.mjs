@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {antiStressBlueprint,OPORA_SKILLS,OPORA_TESTS,OPORA_METRICS,OPORA_APPROACHES} from '../lib/inner-growth/anti-stress-blueprint.js'
 import {antiStressDay,antiStressSkillCards} from '../lib/inner-growth/anti-stress-outcomes-v3.js'
-import {oporaSkillForDay} from '../lib/inner-growth/anti-stress-skills-v5.js'
+import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {getAssessmentDefinition} from '../lib/assessments/definitions.js'
 import {antiStressMethodActivity,validateAntiStressMethodChoice,ANTI_STRESS_METHOD_ACTIVITIES} from '../lib/inner-growth/anti-stress-method-activities.js'
 
@@ -22,7 +22,7 @@ test('the public landing and the learner share exactly seven verified skills and
       assert.equal(p.day,day)
       assert.equal(p.skillId, 'S'+((day-1)%7+1))
       assert.equal(p.title,day===p.day?b.days[day-1].title:'')
-      if(locale!=='es')assert.equal(p.title,oporaSkillForDay(day,locale).title)
+      if(locale!=='es')assert.equal(p.title,oporaAs59Day(day,locale).title)
       assert.ok(p.methodNames.length>=3)
    }
  }

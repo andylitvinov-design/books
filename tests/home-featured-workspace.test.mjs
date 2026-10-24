@@ -136,6 +136,41 @@ test("private routes are guarded and Spanish public content uses English account
   assert.doesNotMatch(component, /medicalResults|privateAnswers|testAnswers|symptomScores/);
 });
 
+test("mobile actions are inline, compact, and accessible for EN/RU/ES at 320–430px", () => {
+  const start = css.indexOf("@media (max-width: 640px)");
+  const narrowAt = css.indexOf("@media (max-width: 350px)");
+  assert.ok(start >= 0 && narrowAt > start);
+  const mobile = css.slice(start, narrowAt);
+  const narrow = css.slice(narrowAt);
+  assert.ok(mobile.includes(".offerControls { display: grid; grid-template-columns: max-content minmax(0, 1fr);"),
+    "Details and Start must occupy two columns in one mobile row");
+  assert.doesNotMatch(mobile, /\.offerControls \{[^}]*flex-direction: column/);
+  assert.ok(mobile.includes(".offerSecondary { align-self: stretch; min-width: 0; min-height: 44px;"));
+  assert.ok(mobile.includes(".offerPrimary { align-self: stretch; width: 100%; min-width: 0; min-height: 44px;"));
+  assert.ok(mobile.includes("min-height: 158px;"));
+  assert.ok(mobile.includes(".photo { align-self: stretch; height: auto; min-height: 144px;"));
+  assert.ok(narrow.includes("min-height: 142px;"));
+  assert.ok(narrow.includes(".photo { min-height: 130px; }"));
+  assert.ok(narrow.includes(".offerControls { gap: 4px; }"));
+  assert.ok(component.includes("aria-label={expanded ? detailLabels[locale].close : detailLabels[locale].open}"));
+  assert.ok(component.includes("detailLabels[locale].mobileClose"));
+  for (const text of ['mobileClose: "Close"', 'mobileClose: "Скрыть"', 'mobileClose: "Cerrar"']) {
+    assert.ok(component.includes(text), text);
+  }
+  const compact = catalog("compactActions");
+  for (const locale of ["en", "ru", "es"]) {
+    assert.equal(Object.keys(compact[locale]).length, 18);
+    for (const [id, label] of Object.entries(compact[locale])) {
+      assert.ok(label.length <= 12, locale + "/" + id + " exceeds narrow mobile label limit");
+    }
+  }
+  assert.equal(compact.en.reiki, "Start free");
+  assert.equal(compact.en.opora, "Start free");
+  assert.equal(compact.en.aiCoaching, "Start free");
+  assert.equal(compact.ru.reiki, "Начать");
+  assert.equal(compact.es.reiki, "Empezar");
+});
+
 test("full-height photo stays left and Details → Request stays right at 320–430px", () => {
   for (const needle of [
     ".offerContent", ".offerControls", ".offerPrimary", ".offerSecondary",
@@ -145,7 +180,7 @@ test("full-height photo stays left and Details → Request stays right at 320–
     "@media (max-width: 640px)", "@media (max-width: 350px)",
     "prefers-reduced-motion", ":focus-visible", "overflow-wrap: anywhere",
     ".photo { align-self: stretch; height: auto;",
-    ".offerControls { flex-direction: column;",
+    ".offerControls { display: grid; grid-template-columns: max-content minmax(0, 1fr);",
     ".actionFull { display: none; }", ".actionCompact { display: inline; }"
   ]) assert.ok(css.includes(needle), "Missing mobile geometry or accessibility: " + needle);
   const mobile = css.slice(css.indexOf("@media (max-width: 640px)"),

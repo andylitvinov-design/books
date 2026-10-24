@@ -238,28 +238,31 @@
   .lead { margin-top: 5px; font-size: 12px; line-height: 1.45; }
   .offers { gap: 9px; }
   .offer {
-    grid-template-columns: clamp(94px, 33%, 142px) minmax(0, 1fr);
+    grid-template-columns: clamp(86px, 28%, 132px) minmax(0, 1fr);
     grid-template-areas: "photo content";
-    column-gap: 11px;
+    column-gap: 9px;
     row-gap: 0;
     align-items: stretch;
     padding: 7px;
-    min-height: 185px;
+    min-height: 158px;
     max-height: none;
     border-radius: 16px;
   }
   .offer[data-expanded="true"] { grid-template-areas: "photo content" "more more"; row-gap: 9px; }
-  .photo { align-self: stretch; height: auto; min-height: 171px; border-radius: 11px; }
-  .offerContent { gap: 8px; padding: 3px 1px 3px 0; }
-  .offerBody { gap: 6px; }
+  .photo { align-self: stretch; height: auto; min-height: 144px; border-radius: 11px; }
+  .offerContent { gap: 7px; padding: 2px 0; }
+  .offerBody { gap: 5px; }
   .offerFreeBadge { min-height: 23px; padding: 5px 9px; border-radius: 0 15px 0 10px; font-size: 10px; }
   .offer[data-home-offer-free="true"] .offerBody { padding-top: 23px; }
   .offerTitle { font-size: clamp(15px, 4.15vw, 18px); line-height: 1.22; }
   .offerDetail { font-size: 12px; line-height: 1.4; }
-  .offerControls { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 7px; margin-top: auto; }
-  .offerSecondary { align-self: flex-start; min-width: 0; min-height: 44px; padding: 8px 12px; }
-  .offerPrimary { align-self: stretch; width: 100%; min-width: 0; min-height: 44px; padding: 9px 10px; }
+  /* Details + primary CTA share one line to the right of the full-height photograph. */
+  .offerControls { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px; align-items: stretch; margin-top: auto; min-width: 0; }
+  .offerSecondary { align-self: stretch; min-width: 0; min-height: 44px; padding: 8px 8px; white-space: nowrap; gap: 4px; }
+  .offerPrimary { align-self: stretch; width: 100%; min-width: 0; min-height: 44px; padding: 8px 6px; white-space: nowrap; gap: 4px; }
   .offerPrimary, .offerSecondary { font-size: 12px; }
+  .offerPrimary svg { width: 14px; height: 14px; }
+  .detailChevron { width: 12px; height: 12px; }
   .actionFull { display: none; }
   .actionCompact { display: inline; }
   .offerMore { padding: 12px 13px; font-size: 12px; line-height: 1.55; }
@@ -280,16 +283,17 @@
   .lead { font-size: 12px; }
   .offers { gap: 8px; }
   .offer {
-    grid-template-columns: clamp(89px, 31%, 105px) minmax(0, 1fr);
-    column-gap: 9px;
-    padding: 7px;
-    min-height: 172px;
+    grid-template-columns: clamp(84px, 28%, 103px) minmax(0, 1fr);
+    column-gap: 7px;
+    padding: 6px;
+    min-height: 142px;
   }
-  .photo { min-height: 158px; }
-  .offerContent { gap: 7px; }
-  .offerTitle { font-size: 15px; }
-  .offerDetail { font-size: 12px; }
-  .offerPrimary, .offerSecondary { font-size: 12px; padding: 9px 8px; }
+  .photo { min-height: 130px; }
+  .offerContent { gap: 5px; }
+  .offerTitle { font-size: 14px; }
+  .offerDetail { font-size: 11.5px; }
+  .offerControls { gap: 4px; }
+  .offerPrimary, .offerSecondary { font-size: 11px; padding: 7px 5px; }
   .offerMore { padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
