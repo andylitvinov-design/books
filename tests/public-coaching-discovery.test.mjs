@@ -17,7 +17,9 @@ test('Ideas offers the public model chooser first and keeps local Tao insight',(
  assert.match(ui,/id="temple-insights"/)
  assert.ok(!ui.includes('styles.actions') && !ui.includes('aria-pressed={activeMode}'))
  assert.match(css,/\.heroActions\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
- for(const label of ['Ideas & Coaching','Идеи и коучинг','Ideas y coaching'])assert.ok(ui.includes(label)&&nav.includes(label))
+ const hub=read('components/tests-coaching-switchboard.tsx')
+ for(const label of ['Tests & Coaching','Тесты и коучинг','Tests y coaching'])assert.ok(hub.includes(label)&&nav.includes(label))
+ assert.match(ui,/<TestsCoachingSwitchboard locale=\{locale\} templeContent=/)
  for(const cta of ['Get free coaching session','Пройти бесплатную коуч-сессию','Sesión gratuita de coaching'])assert.ok(ui.includes(cta))
 })
 test('public coaching page reuses reviewed DB reference data without account session',()=>{
