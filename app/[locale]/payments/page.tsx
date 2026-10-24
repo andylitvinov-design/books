@@ -179,7 +179,7 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
               </a> : null}
               {verifiedPayPalCheckout ? <Link
                 href={`/${locale}/services/checkout?service=${encodeURIComponent(product.id)}`}
-                className={squarePayment ? styles.zenButton : styles.payButton} data-verified-paypal-checkout={product.id}>
+                className={squareApiEnabled || squarePayment ? styles.zenButton : styles.payButton} data-verified-paypal-checkout={product.id}>
                 {t.autoPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
               </Link> : !hostedPayPalUrl ? null :
                 <a className={squarePayment ? styles.zenButton : styles.payButton} href={hostedPayPalUrl} target="_blank"
@@ -235,7 +235,7 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
               {t.combinedSquare} · {formatSquareCadAmount(combinedSquarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
             </a> : null}
             {verifiedPayPalCheckout ? <Link href={`/${locale}/services/checkout?items=${combinedIds.join(",")}`}
-              className={styles.payButton} data-verified-paypal-combined>
+              className={squareApiEnabled || combinedSquarePayment ? styles.zenButton : styles.payButton} data-verified-paypal-combined>
               {t.autoPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
             </Link> : combinedHostedUrl ? <a href={combinedHostedUrl}
               className={styles.payButton} target="_blank" rel="noopener noreferrer" data-paypal-hosted-combined>
