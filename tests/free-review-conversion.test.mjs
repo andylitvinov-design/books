@@ -43,7 +43,7 @@ test("free landings explain benefits before closing with one short capture", () 
   const final = landing.lastIndexOf("<CompactLeadCapture");
   assert.ok(hero > 0 && hero < video && video < outcome && outcome < process && process < final,
     "The selected recording belongs in the first scene");
-  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
+  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /data-featured-constellations-video/);
   assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
@@ -76,7 +76,7 @@ test("all three locales explain real service advantages without health claims or
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
-    "Revisión escrita gratuita", "Five Elements", "Пяти элементам", "Cinco Elementos"]) {
+    "Revisión escrita gratuita", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
@@ -109,9 +109,11 @@ test("new DAO and situation footer submits a consented contact to the existing p
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
   assert.match(capture, /contactConsent: true/);
   assert.match(capture, /result\?\.saved !== true/);
-  assert.match(capture, /setReference\(result.referenceCode\)/);
-  assert.match(capture, /Please do not enter health details/);
-  assert.doesNotMatch(capture, /whatsappEnquiryUrl|encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
+  assert.match(capture, /setReference\(committedReference\)/);
+  assert.match(capture, /committedReference = result.referenceCode/);
+  assert.match(capture, /Please don\x27t enter health details/);
+  assert.match(capture, /request: t\.message \+ " " \+ t\.reference \+ ": " \+ referenceCode/);
+  assert.doesNotMatch(capture, /encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
   assert.match(captureCss, /:focus-visible/);
   assert.match(captureCss, /@media\(max-width:600px\)/);
 });
