@@ -8,6 +8,7 @@ import {dayOneAphorism} from '@/lib/inner-growth/anti-stress-day-one'
 import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/course-welcome'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,oporaExperienceTransferChoices,oporaExperienceDepth,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import {oporaAs58Day,OPORA_PRIMARY_EMOTIONS,OPORA_EMOTION_DAYS,OPORA_ONE_ACTION_VERSION} from '@/lib/inner-growth/opora-as58-one-action'
+import {OPORA_PRACTICAL_EDITION,oporaPracticalDay} from '@/lib/inner-growth/opora-seven-practical-skills'
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner-growth/opora-gentle-journey'
@@ -345,7 +346,7 @@ function OpeningRating({label,value,onChange,disabled,low,high}){
  * Read-only course roadmap. Previewing a locked card never changes the
  * learner's schedule, progress or server-owned completion state.
  */
-function OporaCoursePath({locale,cycle,saved,roadmap,words,oneAction=false}){
+function OporaCoursePath({locale,cycle,saved,roadmap,words,oneAction=false,practical=false}){
   const courseDay=Number.isInteger(cycle.day)?cycle.day:1
   const previouslySaved=new Set((Array.isArray(roadmap)?roadmap:[])
     .filter(item=>item.status==='completed').map(item=>item.day))
@@ -353,7 +354,7 @@ function OporaCoursePath({locale,cycle,saved,roadmap,words,oneAction=false}){
     const day=index+1
     const completed=previouslySaved.has(day)||day<courseDay||(day===courseDay&&saved)
     const status=completed?'completed':day===courseDay?'today':day===courseDay+1?'next':'locked'
-    return {day,status,copy:oneAction?oporaAs58Day(day,locale):oporaExperienceDay(day,locale)}
+    return {day,status,copy:practical?oporaPracticalDay(day,locale):oneAction?oporaAs58Day(day,locale):oporaExperienceDay(day,locale)}
   })
   const count=days.filter(item=>item.status==='completed').length
   const p=words.preview
@@ -458,7 +459,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   // a full refresh. Historic sessions without this key still use old copy.
   const [answers,setAnswers]=useState(()=>{
     const prior=data?.currentSession?.signals?.opora54?.answers||{}
-    return hasSaved?prior:{...prior,experienceEdition:'as-5.8-one-action-v1'}
+    return hasSaved?prior:{...prior,experienceEdition:OPORA_PRACTICAL_EDITION}
   })
   const [practiceEmotionChoice,setPracticeEmotionChoice]=useState(
     data?.currentSession?.signals?.practiceEmotion?.choice||null)
@@ -500,11 +501,16 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const opening=OPENING[lang]
   const c=oporaEndingCopy(lang),j=oporaGentleCopy(lang)
   const dayCopy=oporaExperienceDay(cycle.day,lang)
-  // Completed older records retain their original course copy and choice labels.
-  const dailyPlan=oporaAs58Day(cycle.day,lang)
-  const showNewPlan=!hasSaved||answers.experienceEdition==='as-5.8-one-action-v1'
-  const support=oporaExperienceSupport(cycle.day,lang)
-  const depth=oporaExperienceDepth(cycle.day,lang)
+  // Completed sessions retain their recorded edition. No changes to lesson IDs or DB.
+  const practicalEdition=answers.experienceEdition===OPORA_PRACTICAL_EDITION
+  const practicalDay=practicalEdition?oporaPracticalDay(cycle.day,lang):null
+  const dailyPlan=practicalDay||oporaAs58Day(cycle.day,lang)
+  const showNewPlan=!hasSaved||practicalEdition||answers.experienceEdition==='as-5.8-one-action-v1'
+  const support=practicalDay?{title:practicalDay.supportTitle,body:practicalDay.supportBody}:
+    oporaExperienceSupport(cycle.day,lang)
+  const depth=practicalDay?{why:practicalDay.why,scenario:practicalDay.scenario,
+    alternative:practicalDay.alternative,everyday:practicalDay.everyday}:
+    oporaExperienceDepth(cycle.day,lang)
   const practiceGuide=(showNewPlan?dailyPlan?.practice:null)||
     oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const legacyPlan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
@@ -515,7 +521,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const plan=answers.transferPlanVersion==='one-v1'?dailyPlan?.transfer||'':
     cycle.day===4&&answers.transferFeeling?.trim()?t.day4Task:
     answers.transferChoice==='one'?legacyPlan:selectedTransfer||''
-  const originalQuote=(lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
+  const originalQuote=(practicalDay?.quote||(lang==='es'?dayCopy?.quote:null))||authored.quote||lesson.aphorism||''
   const quote=cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
   const vote=answers.aphorism
@@ -707,7 +713,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     :null
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
-    aria-label={t.day+' '+cycle.day+': '+lesson.title}
+    aria-label={t.day+' '+cycle.day+': '+(practicalDay?.title||lesson.title)}
     data-opora-experience-first="as-5.6" data-opora-one-action-version={OPORA_ONE_ACTION_VERSION} data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
     data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}
     data-course-history-review={reviewOnly?'true':undefined}
@@ -928,7 +934,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
           </>}
           {moment==='nextStep'&&<OporaCoursePath locale={lang} cycle={cycle}
-            saved={saved} roadmap={data?.roadmap} words={t} oneAction={showNewPlan}/>}
+            saved={saved} roadmap={data?.roadmap} words={t} oneAction={showNewPlan} practical={practicalEdition}/>}
           {moment==='habit'&&<>
             <p className={styles.lead}>{t.habitLead}</p>
             {!habitSetup
