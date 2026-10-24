@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
@@ -8,7 +8,7 @@ import styles from './public-coaching-discovery.module.css'
 
 const copy={
   en:{
-    eyebrow:'HOLISTIC HOUSE · IDEAS & COACHING',title:'Find your coaching session',
+    eyebrow:'HOLISTIC HOUSE · IDEAS & COACHING',title:'Coaching Lounge · Find your session',
     lead:'Choose a self-guided method for free, or request a personal session with Andrey.',
     question:'What would you like to explore?',placeholder:'A goal, decision, relationship or challenge (optional)',
     privateQuestion:'Your question is matched only in this browser. It is not sent to AI, analytics or a coach.',
@@ -34,9 +34,15 @@ const copy={
     copied:'Copied',copyFallback:'Select and copy your notes below.',
     restart:'Choose another model',memory:'This free session stays in this tab only. Nothing is saved to an account or sent to a coach.',
     discard:'Leave this session? Your unsaved answers will be lost.',noAnswer:'Skipped',
+    otherWays:'More ways to work with your question',
+    otherWaysNote:'Author-created programmes and a longer questionnaire. These are separate experiences; guest answers do not transfer automatically.',
+    egyptian:'Egyptian Goal Planning',egyptianNote:'Explore desire, values and personal resources · 11 guided screens · private account',
+    greek:'Greek Goal Planning',greekNote:'From intention and courage to a meaningful next step · 10 screens · private account',
+    worksheet:'Coaching preparation questionnaire',worksheetNote:'Write your question and prepare for a meeting on one editable page. Optional private Google-account save.',
+    openProgramme:'Explore programme',openWorksheet:'Open questionnaire',
   },
   ru:{
-    eyebrow:'HOLISTIC HOUSE · ИДЕИ И КОУЧИНГ',title:'Выберите свою коуч-сессию',
+    eyebrow:'HOLISTIC HOUSE · ИДЕИ И КОУЧИНГ',title:'Гостиная коучинга · Выберите сессию',
     lead:'Пройдите самостоятельную модель бесплатно или запросите личную сессию с Андреем.',
     question:'Какой вопрос хотите разобрать?',placeholder:'Цель, решение, отношения или сложность (необязательно)',
     privateQuestion:'Подбор по вопросу выполняется в браузере. Текст не отправляется в ИИ, аналитику или коучу.',
@@ -62,9 +68,15 @@ const copy={
     copied:'Скопировано',copyFallback:'Выделите и скопируйте текст ниже.',
     restart:'Выбрать другую модель',memory:'Бесплатная сессия хранится только в открытой вкладке. В личный кабинет или коучу ничего не отправляется.',
     discard:'Выйти из сессии? Несохранённые ответы будут потеряны.',noAnswer:'Пропущено',
+    otherWays:'Другие способы разобраться в своём вопросе',
+    otherWaysNote:'Авторские программы и отдельная подробная анкета. Гостевые ответы не переносятся в кабинет автоматически.',
+    egyptian:'Египетский коучинг',egyptianNote:'От желания к ценностям, действиям и ресурсам · 11 экранов · личный кабинет',
+    greek:'Греческий коучинг',greekNote:'От намерения и смелости к осмысленному шагу · 10 экранов · личный кабинет',
+    worksheet:'Анкета для подготовки к коучингу',worksheetNote:'Подробная анкета на одной странице, чтобы сформулировать вопрос и подготовиться к разговору. Можно сохранить приватно после входа.',
+    openProgramme:'Смотреть программу',openWorksheet:'Открыть анкету',
   },
   es:{
-    eyebrow:'HOLISTIC HOUSE · IDEAS Y COACHING',title:'Elige tu sesión de coaching',
+    eyebrow:'HOLISTIC HOUSE · IDEAS Y COACHING',title:'Sala de coaching · Elige tu sesión',
     lead:'Prueba un método autoguiado gratis o solicita una sesión personal con Andrey.',
     question:'¿Qué te gustaría explorar?',placeholder:'Una meta, decisión, relación o reto (opcional)',
     privateQuestion:'Tu pregunta se analiza solo en este navegador. No se envía a IA, analíticas ni al coach.',
@@ -90,6 +102,12 @@ const copy={
     copied:'Copiado',copyFallback:'Selecciona y copia tu texto abajo.',
     restart:'Elegir otro modelo',memory:'Esta sesión gratis solo vive en esta pestaña. No se guarda ni se envía al coach.',
     discard:'¿Salir? Se perderán tus respuestas.',noAnswer:'Omitido',
+    otherWays:'Otras formas de explorar tu pregunta',
+    otherWaysNote:'Programas de autor y cuestionario detallado. Las respuestas de invitado no se transfieren a tu cuenta automáticamente.',
+    egyptian:'Planificación egipcia',egyptianNote:'Deseos, valores, recursos y acción · 11 pantallas · cuenta privada',
+    greek:'Planificación griega',greekNote:'Voluntad, sentido y un siguiente paso · 10 pantallas · cuenta privada',
+    worksheet:'Cuestionario de preparación para coaching',worksheetNote:'Prepara tu consulta en una página. Guardado privado opcional después de iniciar sesión.',
+    openProgramme:'Explorar programa',openWorksheet:'Abrir cuestionario',
   },
 }
 const tr=(value,locale)=>value?.[locale]||value?.en||''
@@ -117,6 +135,12 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [copyError,setCopyError]=useState(false)
   const [copied,setCopied]=useState(false)
   const titleRef=useRef(null)
+  // On phones, the next question must not appear below the old viewport.
+  // Focus the freshly rendered heading after each guest step; never autofocus
+  // an input or open the keyboard without the visitor's action.
+  useEffect(()=>{
+    if(session&&!finished)titleRef.current?.focus({preventScroll:false})
+  },[session,index,finished])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
@@ -243,6 +267,28 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>
           <p className={styles.disclaimer}>{t.notBooking}</p>
         </section>}
+        <section className={styles.morePaths} aria-labelledby="coaching-more-paths">
+          <h2 id="coaching-more-paths">{t.otherWays}</h2>
+          <p>{t.otherWaysNote}</p>
+          <div className={styles.morePathGrid}>
+            <article className={styles.morePath}>
+              <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
+              <Link href={'/'+(lang==='es'?'en':lang)+'/app/coaching/egyptian'+(lang==='es'?'?lang=es':'')}
+                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
+            </article>
+            <article className={styles.morePath}>
+              <h3>{t.greek}</h3><p>{t.greekNote}</p>
+              <Link href={'/'+(lang==='es'?'en':lang)+'/app/coaching/greek'+(lang==='es'?'?lang=es':'')}
+                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
+            </article>
+            <article className={styles.morePath}>
+              <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
+              <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
+                {t.openWorksheet}<ArrowRight size={16}/>
+              </Link>
+            </article>
+          </div>
+        </section>
       </>:<section className={styles.session} data-public-coaching-session>
         <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
         <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
