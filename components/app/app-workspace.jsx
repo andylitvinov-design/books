@@ -66,7 +66,7 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
-import { REMOTE_SUPPORT_DRAFT_KEY, readRemoteSupportDraft, formatRemoteSupportDraft } from '@/lib/practitioners/remote-energy-support'
+import { REMOTE_SUPPORT_DRAFT_KEY, readRemoteSupportDraft, formatRemoteSupportDraft, takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -3844,7 +3844,12 @@ function RequestForm({ service, locale, data, close, onDone }) {
     if (typeof window === 'undefined') return
     const draft = readRemoteSupportDraft(window.sessionStorage, service.id)
     if (!draft) return
-    setNote((current) => current || formatRemoteSupportDraft(draft))
+    // User-entered free text travels only in client memory during same-tab
+    // navigation; no sensitive intention is written to sessionStorage or URLs.
+    const privateIntention = takeRemoteSupportPrivateIntention(service.id)
+    const prefilling = formatRemoteSupportDraft(draft) +
+      (privateIntention ? '\n\n' + (locale === 'ru' ? 'Мой запрос: ' : locale === 'es' ? 'Mi intención: ' : 'My intention: ') + privateIntention : '')
+    setNote((current) => current || prefilling)
     setEnergyPrefill(true)
     if (draft.version === 2) setRemoteDraft(draft)
   }, [service.id])
