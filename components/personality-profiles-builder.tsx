@@ -461,7 +461,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             : selectedKeys.length > 0
               ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
                   {t.start}<ArrowRight size={17} /></Link>
-              : <button type="button" disabled className={styles.primary}>{t.start}</button>
+              : <button type="button" disabled className={styles.primary}>{t.start}</button>}
       </div>}
     </div>
 
