@@ -953,11 +953,15 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <p>{cycle.day===1?j.dayOnePurpose:depth?.why}</p>
             </div>
           </>}
-          {moment==='recapNext'&&<div className={styles.recapSummary}>
+          {moment==='recapNext'&&<div className={styles.recapSummary}
+            data-opora-daily-homework={cycle.day}>
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
-              <div><strong>{answers.transfer==='planned'?plan:
-                (showNewPlan||cycle.day===4?j.noPlan:(depth?.everyday||j.noPlan))}</strong>
-                {cycle.day===4&&namedEmotion&&<small>{t.emotionSummary}: {namedEmotion}</small>}</div></div>
+              <div>
+                <strong>{answers.transfer==='planned'&&plan
+                  ?plan:(dailyPlan?.transfer||depth?.everyday||j.noPlan)}</strong>
+                <small>{j.homeworkNote}</small>
+              </div>
+            </div>
           </div>}
           {moment==='closingMeditation'&&<div className={styles.closingMeditationBlock}
             data-opora-final-meditation="day-14">

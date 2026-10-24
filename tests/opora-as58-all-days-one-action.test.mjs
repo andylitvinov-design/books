@@ -103,3 +103,39 @@ test('42 learner flows render ONE distinct task, a real status choice, skip, and
     }
   }
 })
+
+test('Skipped plans keep a visible daily homework assignment without claiming commitment, for 14 days × 3 locales',async()=>{
+  for(const locale of Object.keys(LANGUAGE)){
+    const labels=LANGUAGE[locale]
+    for(let day=1;day<=14;day++){
+      const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
+      const data={cycle:{id:'00000000-0000-4000-8000-000000002058',day,durationDays:14},
+        programme:{id:'stress'},lesson,currentSession:null}
+      let payload,writes=0
+      const player=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},
+        async onSession(value){payload=structuredClone(value);writes++;return true}})
+      try{
+        await advanceOporaTo(player,'save',labels.next)
+        await click(player,labels.skip)
+        await advanceOporaTo(player,'recapNext',labels.next)
+        const homework=nodes(player.tree).find(n=>n.props?.['data-opora-daily-homework']===day)
+        assert.ok(homework,'Missing homework for day '+day+' '+locale)
+        assert.ok(textOf(homework).includes(oporaAs58Day(day,locale).transfer),
+          'Keep the one specific daily exercise visible when the future plan is declined: '+day+' '+locale)
+        assert.ok(!textOf(homework).includes('Nothing to plan today'))
+        assert.equal(writes,0,'Reading homework does not record an action')
+        await advanceOporaTo(player,'recapFeedback',labels.next)
+        await click(player,labels.review)
+        await click(player,labels.save)
+        assert.equal(writes,1)
+        assert.equal(payload.opora54.answers.transfer,'not_planning')
+        assert.equal(payload.opora54.answers.transferChoice,undefined)
+        assert.equal(payload.practiceAttempt,null)
+        if(day===1){
+          assert.match(oporaAs58Day(day,locale).transfer,/three ordinary objects|три обычных предмета|tres objetos cotidianos/)
+          assert.match(oporaAs58Day(day,locale).transfer,/Two or three times today|Два-три раза за день|Dos o tres veces durante el día/)
+        }
+      }finally{player.unmount()}
+    }
+  }
+})
