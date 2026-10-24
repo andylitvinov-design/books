@@ -23,7 +23,7 @@ test("localized card copy explains methods and avoids overstating active AI or b
     "Алхимия души", "Гипнотерапия · гомеопатия · расстановки",
     "Энергетическая коррекция", "Сессия · персональный талисман",
     "Получить поддержку", "Обучиться",
-    "Коучинг / психотерапия", "ИИ-коучинг · бесплатно", "Подобрать специалиста",
+    "Коучинг / психотерапия", "Коучинг · бесплатно", "Подобрать специалиста",
     "Alchemy of the Soul", "Energy correction", "Coaching / psychotherapy",
     "Alquimia del alma", "Corrección energética", "Coaching / psicoterapia",
   ]) assert.ok(ui.includes(label), "Missing localized copy: " + label);
@@ -39,11 +39,11 @@ test("actions use real localized routes and remain navigation only", () => {
     "/services/alchemy-of-soul",
     "/services/remote-energy-support",
     "/academy/principles-of-energywork",
-    "/app/coaching",
+    "/coaching",
     "/services/catalog#service-listings",
   ]) assert.ok(ui.includes(route), "Missing destination: " + route);
-  assert.match(ui, /method\.id === "coaching" && locale === "es" \? "\/en\/app\/coaching"/);
-  assert.match(ui, /: "\/" \+ locale \+ method\.primaryPath/);
+  assert.doesNotMatch(ui, /\/en\/app\/coaching/);
+  assert.match(ui, /href=\{"\/" \+ locale \+ method\.primaryPath\}/);
   assert.match(ui, /href=\{"\/" \+ locale \+ method\.secondaryPath\}/);
   for (const photo of [
     "hero-olive-incense.webp", "reiki-approved-sunrise-v3.webp", "course-start-heron.webp",
