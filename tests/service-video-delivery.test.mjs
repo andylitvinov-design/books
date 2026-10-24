@@ -78,7 +78,7 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   const css = read("components/service-video-showcase.module.css");
   const core = read("components/core-service-detail.tsx");
   const personal = read("components/personal-service-landing.tsx");
-  const free = read("app/[locale]/services/free-situation-review/page.tsx");
+  const free = read("components/free-entry-landing.tsx");
   assert.match(core, /<ServiceVideoShowcase topic=\{kind === "dao" \? "overview" : kind\} locale=\{locale\} id="service-video"/);
   assert.match(personal, /<ServiceVideoShowcase/);
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
