@@ -132,3 +132,41 @@ test('coaching lounge displays all formats by default and uses shared wish field
  assert.match(page,/unstable_cache/)
  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon\(|gtag\(|fbq\(|\bfetch\(/)
 })
+
+
+test('the mobile question banner ends before its two choices and shares a one-use memory handoff', async()=>{
+ const ui=read('components/ideas-discovery.tsx')
+ const picker=read('components/public-coaching-discovery.jsx')
+ const handoff=read('lib/ideas-coaching-handoff.js')
+ const css=read('components/ideas-discovery.module.css')
+ assert.match(ui,/<\\/form>\\s*<\\/div>\\s*<div className=\\{styles\\.heroActions\\}/)
+ assert.match(ui,/form="ideas-question-form"/)
+ assert.match(ui,/stageIdeasCoachingQuestion\\(question\\)/)
+ assert.match(picker,/takeIdeasCoachingQuestion\\(\\)/)
+ assert.match(css,/\\.hero\\{[\\s\\S]*?min-height:clamp\\(260px,30vw,345px\\)/)
+ assert.match(css,/\\.heroActions\\{[\\s\\S]*?grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/)
+ assert.doesNotMatch(handoff,/localStorage|sessionStorage|document\\.cookie|fetch\\(|analytics|sendBeacon/)
+ const {stageIdeasCoachingQuestion,takeIdeasCoachingQuestion}=await import('../lib/ideas-coaching-handoff.js')
+ stageIdeasCoachingQuestion('How can I improve my career?')
+ assert.equal(takeIdeasCoachingQuestion(),'How can I improve my career?')
+ assert.equal(takeIdeasCoachingQuestion(),'')
+ stageIdeasCoachingQuestion('x'.repeat(501))
+ assert.equal(takeIdeasCoachingQuestion().length,500)
+})
+test('public model cards include only known first-party photographs with mobile-size art slots',()=>{
+ const ui=read('components/public-coaching-discovery.jsx')
+ const css=read('components/public-coaching-discovery.module.css')
+ for(const path of [
+  'public/images/holistic-house/report-lighthouse-coast.webp',
+  'public/images/holistic-house/ideas-pine-sharp.avif',
+  'public/images/holistic-house/hero-olive-incense.webp',
+  'public/images/holistic-house/video-posters/constellations-en-v1.webp',
+  'public/images/holistic-house/books-library.webp',
+ ])assert.ok(existsSync(new URL('../'+path,import.meta.url)),path)
+ assert.match(ui,/import Image from 'next\\/image'/)
+ assert.match(ui,/className=\\{styles\\.cardMain\\}/)
+ assert.match(ui,/className=\\{styles\\.cardArt\\}/)
+ assert.match(css,/\\.cardMain\\{display:grid/)
+ assert.match(css,/\\.cardArt\\{/)
+ assert.match(css,/@media\\(max-width:360px\\)/)
+})
