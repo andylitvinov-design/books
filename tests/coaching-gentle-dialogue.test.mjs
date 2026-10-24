@@ -63,7 +63,7 @@ test('answer-aware coach replies vary by actual choice, words, score, uncertaint
     assert.equal(turn.quote,choice)
     assert.equal(turn.response,selected)
     assert.ok(turn.bridge.length>30)
-    assert.match(turn.speech,new RegExp(choice))
+    assert.doesNotMatch(turn.speech,new RegExp(choice),'never send the private answer to device TTS')
     assert.ok(!turn.speech.includes('choice:'))
   }
   const uncertain=coachingConversationTurn({question:next,previousQuestion:first,
@@ -98,6 +98,7 @@ test('spoken coaching reply uses only redacted, bounded user words; reflections 
   assert.ok(safe.quote.length<=97)
   assert.ok(!safe.speech.includes('person@example.com'))
   assert.ok(!safe.speech.includes('https://'))
+  assert.ok(!safe.speech.includes('specific words'))
   const symbolic=coachingConversationTurn({question:now,previousQuestion:prior,
     previousAnswer:{choiceId:'a',note:'I could ask for feedback'},index:3,total:4,locale:'en'})
   assert.equal(symbolic.quote,'I could ask for feedback')
