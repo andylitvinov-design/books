@@ -13,7 +13,7 @@ import { ArticleDirectory } from "@/components/practitioner-article-directory";
 import { MentorCommunitySwitch } from "@/components/mentor-community-switch";
 import styles from "./masters-page.module.css";
 
-type PageProps = { params: Promise<{ locale: string }> };
+type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ view?: string | string[] }> };
 type PublicArticle = {
   id: string;
   slug: string;
@@ -50,8 +50,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function MastersPage({ params }: PageProps) {
+export default async function MastersPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
+  const requestedView = (await searchParams)?.view;
   if (!isPublicLocale(locale)) notFound();
   const ru = locale === "ru", es = locale === "es";
   let practitioners: PublicPractitioner[] = [];
@@ -90,7 +91,7 @@ export default async function MastersPage({ params }: PageProps) {
           </Link>
         </div>
       </section>
-      <MentorCommunitySwitch locale={locale} hasArticles={articles.length > 0}
+      <MentorCommunitySwitch locale={locale} initialView={requestedView === "mentors" ? "mentors" : undefined} hasArticles={articles.length > 0}
         mastersUnavailable={mastersResult.status === "rejected"}
         articlesUnavailable={articlesResult.status === "rejected"}
         mentors={<MarketplaceMasterFinder practitioners={practitioners} locale={locale} />}
