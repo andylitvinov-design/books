@@ -42,19 +42,19 @@ test('every Pro card has existing locally-hosted photography and a real action',
     let view=widget.render()
     const entries=nodes(view).filter(x=>Object.hasOwn(x.props||{},'data-profi-entry'))
     assert.equal(entries.length,3)
-    for(const card of entries) assert.ok(nodes(card).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'profile image at left')
+    for(const card of entries) assert.ok(nodes(card).some(node=>node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'profile image at left')
     for(let lesson=1;lesson<=5;lesson++){
       const button=find(view,'data-profi-lesson',lesson)
-      assert.ok(nodes(button).some(node=>node.type==='img' || typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'lesson image at left')
+      assert.ok(nodes(button).some(node=>node.type==='img' || node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'lesson image at left')
     }
     assert.ok(find(view,'data-profi-action','start-course-overview'),'direct course CTA above the fold')
     assert.equal(find(view,'data-profi-path','practice').props.href,'#profi-practice')
     for(const key of ['session','intro','workshop','course']){
       const offer=find(view,'data-profi-offer',key)
-      assert.ok(nodes(offer).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'offer image at left: '+key)
+      assert.ok(nodes(offer).some(node=>node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'offer image at left: '+key)
     }
     const preview=find(view,'data-profi-preview','session')
-    assert.ok(nodes(preview).some(node=>typeof node.type==='function' && String(node.props?.src||'').startsWith('/images/holistic-house/')))
+    assert.ok(nodes(preview).some(node=>node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')))
     assert.equal(nodes(preview).filter(node=>node.props?.className==='fakeButton').length,0)
     assert.equal(find(view,'data-profi-action','create-service').props.prefetch,false)
   }
@@ -91,8 +91,8 @@ function mount(locale) {
   const modules = {
     'react/jsx-runtime': { jsx, jsxs:jsx },
     react: { useState },
-    'next/link': { default:props => jsx('a',props) },
-    'next/image': { default:props => jsx('img',props) },
+    'next/link': { __esModule:true,default:props => jsx('a',props) },
+    'next/image': { __esModule:true,default:props => jsx('img',props) },
     'lucide-react': new Proxy({}, { get: () => () => null }),
     '@/components/public-site-header': { PublicSiteHeader:props=>jsx('header',props) },
     '@/components/home-free-diagnosis-banner': { HomeFreeDiagnosisBanner:props=>jsx('aside',props) },
@@ -155,7 +155,7 @@ test('Pro page contains a separate free-tests and private/personal-professional 
     ])
     assert.ok(nodes(tree).some(x=>x.props && Object.hasOwn(x.props,'data-profi-profiles')))
     assert.ok(entries.every(x=>x.props.prefetch===false))
-    assert.equal(activeCompactNavigationId('/'+locale+'/client/tests'),'pro')
+    assert.equal(activeCompactNavigationId('/'+locale+'/client/tests'),'profile')
   }
   assert.match(hub,/Личные результаты тестов не публикуются/)
   assert.match(css,/\.profileEntries\{display:grid/)
@@ -228,7 +228,7 @@ test('offer studio really switches all four starter destinations, not fake publi
 test('safe Google OAuth continuation validates and maps only categorical Pro intents',()=>{
   assert.match(app,/page === 'practice' \? \{ continueTo: 'my-practice'/)
   assert.match(app,/proPanel === 'services' && proCreate/)
-  assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'\]\)/)
+  assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'[^\]]*\]\)/)
   assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'course', 'profile', 'requests'\]/g)||[]).length,2)
   assert.match(auth,/profi === 'course' \? '\?panel=materials&materialTab=courses&create=1'/)
   assert.match(auth,/profi === 'profile' \? '\?panel=profile'/)
