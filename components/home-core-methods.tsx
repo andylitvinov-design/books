@@ -37,7 +37,7 @@ const methods: { id: MethodId; image: string; primaryPath: string; secondaryPath
   {
     id: "coaching",
     image: "/images/holistic-house/course-start-heron.webp",
-    primaryPath: "/app/coaching",
+    primaryPath: "/coaching",
     secondaryPath: "/services/catalog#service-listings",
   },
 ];
@@ -165,7 +165,7 @@ export function HomeCoreMethods({ locale }: { locale: PublicLocale }) {
                 <div className={styles.details}>
                   <p className={styles.description}>{item.description}</p>
                 <div className={styles.actions}>
-                  <Link className={styles.primary} href={method.id === "coaching" && locale === "es" ? "/en/app/coaching" : "/" + locale + method.primaryPath} prefetch={false}>
+                  <Link className={styles.primary} href={"/" + locale + method.primaryPath} prefetch={false}>
                     {item.primary}<ArrowUpRight size={16} aria-hidden="true" />
                   </Link>
                   {method.secondaryPath && item.secondary && (
