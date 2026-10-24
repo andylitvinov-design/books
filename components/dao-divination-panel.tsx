@@ -167,7 +167,7 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
                     <div lang={locale === "en" ? "en" : "ru"} className={styles.authorText}>
                       {(locale === "en" ? localizedEditorial?.text ?? "" : author.text).split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
                     </div>
-                  ) : <p className={styles.languageNote}>{localizedEditorial?.text === null ? t.noAuthor : t.loading}</p>
+                  ) : <p className={styles.languageNote}>{localizedEditorial?.text === null ? t.noAuthor : t.loading}</p>}
                   <p className={styles.languageNote}>{t.originalLanguage}</p>
                   {author.source ? <a href={author.source} rel="noopener noreferrer" target="_blank">{t.source} ↗</a> : null}
                 </details>
