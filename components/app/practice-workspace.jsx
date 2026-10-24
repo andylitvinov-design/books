@@ -420,10 +420,24 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
 
     {!activePanel&&<div className="hh-practice-v4-requests"><PracticeRequestsOverview requests={requests} services={services} locale={locale}
       canAdd={serviceQuota.canAdd}
+      showServiceAction={needsOnboarding}
       onAddService={needsOnboarding
         ? ()=>document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
         : addService}
       onViewAll={()=>choosePanel('requests')} /></div>}
+    {!needsOnboarding&&!activePanel&&<div className="hh-practice-top-cta" data-practice-service-action aria-label={marketplaceCopy.add}>
+        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
+          aria-pressed={activePanel==='services'} onClick={addService}>
+          <Plus aria-hidden="true" />
+          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        <p className="hh-practice-marketplace-cta-note">
+          <span>{marketplaceCopy.hobby}</span>
+          <span aria-hidden="true">·</span>
+          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
+        </p>
+      </div>}
     {readySteps<3&&!activePanel&&<section className="hh-practice-setup" aria-label={ru?'Настройка практики':'Practice setup'}>
       <div className="hh-practice-setup-head">
         <div><h2>{ru?'Настройте свою практику':'Set up your practice'}</h2><p>{ru?'Три шага к первым клиентам':'Three steps to welcome clients'}</p></div>
@@ -616,19 +630,6 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <h2 id="hh-practice-marketplace-title">{marketplaceCopy.title}</h2>
           <p className="hh-practice-marketplace-intro">{marketplaceCopy.subtitle}</p>
         </div>
-      </div>
-      <div className="hh-practice-top-cta" aria-label={marketplaceCopy.add}>
-        <button className="hh-practice-top-cta-button" type="button" disabled={!serviceQuota.canAdd}
-          aria-pressed={activePanel==='services'} onClick={addService}>
-          <Plus aria-hidden="true" />
-          <span>{serviceQuota.canAdd?marketplaceCopy.add:marketplaceCopy.limit}</span>
-          <ChevronRight aria-hidden="true" />
-        </button>
-        <p className="hh-practice-marketplace-cta-note">
-          <span>{marketplaceCopy.hobby}</span>
-          <span aria-hidden="true">·</span>
-          <span>{serviceQuota.used+' / '+serviceQuota.limit+' '+marketplaceCopy.slots}</span>
-        </p>
       </div>
       <div className="hh-practice-marketplace-latest">
         <div className="hh-practice-marketplace-latest-heading">

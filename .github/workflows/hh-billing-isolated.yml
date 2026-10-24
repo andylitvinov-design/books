@@ -46,6 +46,8 @@ jobs:
           npx eslint lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
       - name: Square dynamic checkout signature, CAD price and provider-readback contracts
         run: node --test tests/service-square-api-cart.test.mjs
+      - name: Square isolated database guard (pure, no database connection)
+        run: node --test tests/square-isolated-guard.test.mjs
       - name: Square isolated payment-ledger FORCE RLS on PostgreSQL 17
         run: node --test tests/square-ledger-isolated.integration.mjs
       - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression

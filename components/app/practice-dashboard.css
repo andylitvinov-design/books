@@ -752,28 +752,34 @@
   margin:6px 0 0;color:#706258;font:460 12px/1.48 system-ui,sans-serif;
   max-width:58ch;
 }
-.hh-app .hh-practice-marketplace .hh-practice-top-cta{
+.hh-app .hh-practice-marketplace .hh-practice-top-cta,
+.hh-app .hh-practice-top-cta[data-practice-service-action]{
   display:flex;flex-direction:column;gap:7px;max-width:none;margin:0 0 19px;
 }
-.hh-app .hh-practice-marketplace .hh-practice-top-cta-button{
+.hh-app .hh-practice-marketplace .hh-practice-top-cta-button,
+.hh-app [data-practice-service-action] .hh-practice-top-cta-button{
   width:100%;min-height:55px;padding:12px 17px;
   border:1px solid #872849;border-radius:14px;
   background:linear-gradient(110deg,#8d2b50 0%,#742440 100%);
   color:#fff;box-shadow:0 5px 15px #7c2d461e;
   font:760 15px/1.3 system-ui,sans-serif;
 }
-.hh-app .hh-practice-marketplace .hh-practice-top-cta-button:hover:not(:disabled){
+.hh-app .hh-practice-marketplace .hh-practice-top-cta-button:hover:not(:disabled),
+.hh-app [data-practice-service-action] .hh-practice-top-cta-button:hover:not(:disabled){
   background:linear-gradient(110deg,#70213f 0%,#5e1d38 100%);
   border-color:#70213f;
 }
-.hh-app .hh-practice-marketplace .hh-practice-top-cta-button:focus-visible{
+.hh-app .hh-practice-marketplace .hh-practice-top-cta-button:focus-visible,
+.hh-app [data-practice-service-action] .hh-practice-top-cta-button:focus-visible{
   outline:3px solid #a66783;outline-offset:3px;
 }
-.hh-app .hh-practice-marketplace .hh-practice-marketplace-cta-note{
+.hh-app .hh-practice-marketplace .hh-practice-marketplace-cta-note,
+.hh-app [data-practice-service-action] .hh-practice-marketplace-cta-note{
   display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:0 2px;
   color:#7b695c;font:650 11px/1.35 system-ui,sans-serif;
 }
-.hh-app .hh-practice-marketplace .hh-practice-marketplace-cta-note span:first-child{
+.hh-app .hh-practice-marketplace .hh-practice-marketplace-cta-note span:first-child,
+.hh-app [data-practice-service-action] .hh-practice-marketplace-cta-note span:first-child{
   color:#2c6d5e;
 }
 .hh-app .hh-practice-marketplace-latest{display:block;margin:0}
@@ -859,8 +865,10 @@
   .hh-app .hh-practice-marketplace-kicker{font-size:9px;margin-bottom:4px}
   .hh-app .hh-practice-marketplace-heading h2{font-size:23px}
   .hh-app .hh-practice-marketplace-intro{font-size:11px;margin-top:4px}
-  .hh-app .hh-practice-marketplace .hh-practice-top-cta{margin-bottom:15px;gap:6px}
-  .hh-app .hh-practice-marketplace .hh-practice-top-cta-button{min-height:51px;padding:10px 13px;font-size:14px}
+  .hh-app .hh-practice-marketplace .hh-practice-top-cta,
+  .hh-app .hh-practice-top-cta[data-practice-service-action]{margin-bottom:15px;gap:6px}
+  .hh-app .hh-practice-marketplace .hh-practice-top-cta-button,
+  .hh-app [data-practice-service-action] .hh-practice-top-cta-button{min-height:51px;padding:10px 13px;font-size:14px}
   .hh-app .hh-practice-marketplace-latest-heading{margin-bottom:9px}
   .hh-app .hh-practice-marketplace-latest-heading h3{font-size:17px}
   .hh-app .hh-practice-marketplace-card{border-radius:13px;gap:10px;padding:6px;min-height:120px}

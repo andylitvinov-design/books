@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
@@ -102,12 +102,17 @@ const copy = {
 export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
   const t = copy[locale];
   const formId = useId();
+  const [submissionLockOwner, setSubmissionLockOwner] = useState<string | null>(null);
+  const submissionLocked = submissionLockOwner !== null;
+  const setSubmissionLocked = useCallback((locked: boolean, owner: string) => {
+    setSubmissionLockOwner(current => locked ? owner : current === owner ? null : current);
+  }, []);
   const [format, setFormat] = useState<Format>("60");
   const [topic, setTopic] = useState<Topic>("relationships");
 
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
-    service: locale === "ru" ? "Алхимия души / Психогомеопатия" : locale === "es" ? "Alquimia del Alma / Psicohomeopatía" : "Alchemy of the Soul / Psycho-homeopathy",
+    service: (locale === "ru" ? "Алхимия души / Психогомеопатия" : locale === "es" ? "Alquimia del Alma / Psicohomeopatía" : "Alchemy of the Soul / Psycho-homeopathy") + " · " + t.formatNames[format],
     request: t.greeting + " " + t.question,
     option: t.formatNames[format],
     topic: t.topicNames[topic],
@@ -117,14 +122,14 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
   return (
     <div className={styles.leadForm} data-alchemy-lead-form="single">
       <label htmlFor={formId + "-format"}>{t.format}
-        <select id={formId + "-format"} value={format} onChange={(value) => setFormat(value.target.value as Format)}>
+        <select disabled={submissionLocked} id={formId + "-format"} value={format} onChange={(value) => setFormat(value.target.value as Format)}>
           <option value="60">{t.formatNames["60"]}</option>
           <option value="30">{t.formatNames["30"]}</option>
           <option value="month">{t.formatNames.month}</option>
         </select>
       </label>
       <label htmlFor={formId + "-topic"}>{t.topics}
-        <select id={formId + "-topic"} value={topic} onChange={(value) => setTopic(value.target.value as Topic)}>
+        <select disabled={submissionLocked} id={formId + "-topic"} value={topic} onChange={(value) => setTopic(value.target.value as Topic)}>
           {(["relationships", "stress", "business", "direction", "other"] as const).map(key => (
             <option value={key} key={key}>{t.topicNames[key]}</option>
           ))}
@@ -136,7 +141,7 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
             {locale === "ru" ? "Условия и заявка · €200" : locale === "es" ? "Detalles y solicitud · 200 €" : "Details & enquiry · €200"}
           </Link>
         ) : (
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+          <ContactChannelChooser onSubmissionLockChange={setSubmissionLocked} locale={locale} whatsappUrl={whatsappUrl} label={t.action}
             event="service_request_start" className={styles.formOrderButton}
             attributes={{ "data-alchemy-booking": "personalised" }} />
         )}
@@ -154,6 +159,11 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
  */
 export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalPersonalEnabled = false }: { locale: AlchemyLocale; wiseEnabled?: boolean; paypalPersonalEnabled?: boolean }) {
   const t = copy[locale];
+  const [submissionLockOwner, setSubmissionLockOwner] = useState<string | null>(null);
+  const submissionLocked = submissionLockOwner !== null;
+  const setSubmissionLocked = useCallback((locked: boolean, owner: string) => {
+    setSubmissionLockOwner(current => locked ? owner : current === owner ? null : current);
+  }, []);
   const [selected, setSelected] = useState<Format>("60");
   const zenInquiryUrl = selected === "month" ? null :
     buildZenTransferInquiry([selected === "30" ? "express-consultation-30" : "personal-session-60"], locale);
@@ -196,7 +206,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
   };
   const whatsappUrl = whatsappEnquiryUrl({
     locale,
-    service: locale === "ru" ? "Алхимия души / Психогомеопатия" : locale === "es" ? "Alquimia del Alma / Psicohomeopatía" : "Alchemy of the Soul / Psycho-homeopathy",
+    service: (locale === "ru" ? "Алхимия души / Психогомеопатия" : locale === "es" ? "Alquimia del Alma / Psicohomeopatía" : "Alchemy of the Soul / Psycho-homeopathy") + " · " + t.formatNames[selected],
     request: data.request,
     option: t.formatNames[selected],
     pagePath: "/" + locale + "/services/alchemy-of-soul",
@@ -204,7 +214,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
   return (
     <div data-alchemy-booking-formats>
       <div className={styles.optionGrid} role="group" aria-label={data.choice}>
-        <button type="button" data-alchemy-format="30" aria-pressed={selected === "30"}
+        <button type="button" disabled={submissionLocked} data-alchemy-format="30" aria-pressed={selected === "30"}
           onClick={() => setSelected("30")}
           className={[styles.optionCard, selected === "30" ? styles.optionSelected : ""].filter(Boolean).join(" ")}>
           <span className={styles.optionTime}>{locale === "ru" ? "30 минут" : locale === "es" ? "30 minutos" : "30 minutes"}</span>
@@ -212,7 +222,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
           <span className={styles.optionDescription}>{data.shortText}</span>
           <span className={styles.optionCheck} aria-hidden="true"><Check size={15} /></span>
         </button>
-        <button type="button" data-alchemy-format="60" aria-pressed={selected === "60"}
+        <button type="button" disabled={submissionLocked} data-alchemy-format="60" aria-pressed={selected === "60"}
           onClick={() => setSelected("60")}
           className={[styles.optionCard, styles.optionFeatured, selected === "60" ? styles.optionSelected : ""].filter(Boolean).join(" ")}>
           <span className={styles.optionTime}>{locale === "ru" ? "60 минут" : locale === "es" ? "60 minutos" : "60 minutes"}</span>
@@ -221,7 +231,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
           <span className={styles.optionCheck} aria-hidden="true"><Check size={15} /></span>
         </button>
       </div>
-      <button type="button" data-alchemy-format="month" aria-pressed={selected === "month"}
+      <button type="button" disabled={submissionLocked} data-alchemy-format="month" aria-pressed={selected === "month"}
         onClick={() => setSelected("month")}
         className={[styles.monthlyCard, selected === "month" ? styles.monthlySelected : ""].filter(Boolean).join(" ")}>
         <span><span className={styles.monthlyName}>{data.monthTitle}</span>
@@ -236,7 +246,7 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
             {locale === "ru" ? "Подробнее и запросить · €200" : locale === "es" ? "Detalles y solicitud · 200 €" : "View monthly support · €200"}
           </Link>
         ) : (
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+          <ContactChannelChooser onSubmissionLockChange={setSubmissionLocked} locale={locale} whatsappUrl={whatsappUrl} label={t.action}
             event="service_request_start" className={styles.optionsOrderButton}
             attributes={{ "data-alchemy-booking": "formats" }} />
         )}

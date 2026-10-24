@@ -1,3 +1,4 @@
+import { verifyAlchemyEnquiryJourney } from './helpers/alchemy-enquiry-journey-verifier.mjs'
 import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs'
 import { verifyDaoLeadJourney } from './helpers/dao-lead-journey-verifier.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
@@ -434,7 +435,7 @@ async function verifyPublicServiceConversionJourneys(){
  ]
  for(const locale of ['en','ru']){
   for(const [slug,kind,names] of services){
-   const serviceContext=kind==='dao'?await browser.newContext({serviceWorkers:'block'}):publicContext
+   const serviceContext=kind==='dao'||kind==='alchemy'?await browser.newContext({serviceWorkers:'block'}):publicContext
    const servicePage=await serviceContext.newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
@@ -493,14 +494,11 @@ async function verifyPublicServiceConversionJourneys(){
        'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
      assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
        'Vertical testimonial stack cannot overflow horizontally')
-     const pricing=servicePage.locator('[data-alchemy-booking-formats]')
-     await pricing.locator('[data-alchemy-format="30"]').click()
-     await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const order=await openContactChannelChooser(pricing,expect)
-     const prepared=await assertPreparedContactChannels(order,expect)
-     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-       'Selected 30-minute format must be carried into WhatsApp and Telegram')
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+     await verifyAlchemyEnquiryJourney(servicePage,expect,locale)
+     // Each scenario owns a disposable guarded context. Default save really
+     // navigates; the other exercises the genuine storage-denied fallback.
+     await verifyAlchemyEnquiryJourney(servicePage,expect,locale,{denyReceiptStorage:true})
     }else if(kind==='dao'){
      await verifyDaoLeadJourney(servicePage,expect,locale)
     }else{
@@ -519,7 +517,7 @@ async function verifyPublicServiceConversionJourneys(){
     }
    }
    await servicePage.close()
-   if(kind==='dao')await serviceContext.close()
+   if(kind==='dao'||kind==='alchemy')await serviceContext.close()
   }
  }
  for(const locale of ['en','ru']){
