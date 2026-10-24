@@ -134,6 +134,26 @@ test('legacy free-text questions and versioned question choices are reported wit
   assert.equal(coachingAnswerText('choice:0',{type:'scale_0_10'}),'0/10')
   assert.equal(coachingAnswerText(null,questions[0]),'')
 })
+test('manual clipboard export includes only the client-approved plan and has a Safari fallback',()=>{
+  const session={clientQuestion:'What can I do next?',answers:{will:'choice:week'},
+    actionPlan:{goal:'Improve consistency',obstacle:'Not enough time',
+      actionText:'Write my first paragraph',when:'Tomorrow morning',
+      confidence:6,approvedAt:'2026-10-24T00:00:00Z'}}
+  const approved=coachingRecapClipboardText(session,questions,'en')
+  assert.match(approved,/My confirmed action plan/)
+  assert.match(approved,/Write my first paragraph/)
+  assert.match(approved,/My confidence: 6\/10/)
+  const unapproved=coachingRecapClipboardText({...session,actionPlan:{
+    ...session.actionPlan,approvedAt:null}},questions,'ru')
+  assert.doesNotMatch(unapproved,/подтверждённый план|Write my first paragraph/)
+  assert.match(coachingRecapClipboardText(session,questions,'es'),/Mi plan de acción confirmado/)
+  const player=source('components/app/personal-coaching.jsx')
+  const css=source('components/app/personal-coaching.module.css')
+  assert.match(player,/clipboardState==='error'&&<label className=\{styles\.recapFallback\}/)
+  assert.match(player,/<textarea readOnly rows=\{7\}/)
+  assert.match(css,/\.recapFallback\{/)
+})
+
 test('UI reuses authenticated encrypted storage, keeps one question and offers explicit standard wording',async()=>{
   const ui=source('components/app/personal-coaching.jsx')
   const css=source('components/app/personal-coaching.module.css')
