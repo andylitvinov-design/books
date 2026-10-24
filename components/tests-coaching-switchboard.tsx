@@ -273,7 +273,7 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
               <p className={styles.fine}>{t.steps}</p>
               <ol className={styles.testList}>{selectedTests.map(scale => <li key={scale}>
                 <span><CheckCircle2 size={17} aria-hidden="true" /> {t.tests[scale]}</span>
-                <Link href={`/${locale === "es" ? "es" : locale}/client?startTests=${startableTests[scale]}`} prefetch={false}>{t.start} <ArrowRight size={15} aria-hidden="true" /></Link>
+                <Link href={`/${locale === "es" ? "en" : locale}/client?startTests=${startableTests[scale]}`} prefetch={false}>{t.start} <ArrowRight size={15} aria-hidden="true" /></Link>
               </li>)}</ol>
             </> : <p className={styles.fine}>{t.noScale}</p>}
             <div className={styles.links}>
