@@ -11,9 +11,11 @@ test("home reuses seven offers and no longer repeats reviews, method promos or d
     assert.match(source, /<HomeMoreDisclosure locale=/);
     assert.doesNotMatch(source, /<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|<HomeCoreMethods|<HomeMasterPath|service-home-hero/);
     assert.doesNotMatch(source, /<ServicesSolutions|<HomeExploreSections|<TestSelectionCourseBanner/);
-    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomeMoreDisclosure"));
-    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<PersonalTestimonials"));
+    // "Explore by topic" is intentionally above the seven-stage service list.
+    // Keep the carousel first and testimonials below without duplicating offers.
+    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMoreDisclosure"));
+    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeFeaturedWorkspace"));
+    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<PersonalTestimonials"));
   }
   assert.match(filters, /data-home-topic-filters/);
   assert.match(filters, /data-home-more-deferred="true"/);
@@ -34,7 +36,7 @@ test("filter chips link existing localized routes with compact, accessible styli
   for (const route of ["/explore/energy","/explore/love","/explore/business","/services","/academy"]) {
     assert.ok(jsx.includes(route), route);
   }
-  for (const label of ["ФИЛЬТРЫ ПО ТЕМЕ","EXPLORE BY TOPIC","FILTRAR POR TEMA"])
+  for (const label of ["ВЫБЕРИТЕ НАПРАВЛЕНИЕ","CHOOSE YOUR DIRECTION","ELIGE TU DIRECCIÓN"])
     assert.ok(jsx.includes(label));
   for (const style of ["min-height: 44px","@media (max-width: 640px)",":focus-visible","flex-wrap: wrap","prefers-reduced-motion"])
     assert.ok(css.includes(style));
