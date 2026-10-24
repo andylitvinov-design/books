@@ -78,6 +78,21 @@ test("four choices become an accessible, focused path instead of a wall of expan
   assert.match(css, /\.cardIcon/);
 });
 
+test("Coaching entry goes straight to the topic-based session chooser, without the extra session-type slide", () => {
+  assert.match(ui, /key === "coaching"/);
+  assert.match(ui, /data-tests-coaching-direct/);
+  assert.match(ui, /href=\{\`\/\$\{locale\}\/coaching\`\}/);
+  assert.doesNotMatch(ui, /data-tests-coaching-sessions/);
+  assert.match(ui, /aria-controls="tests-coaching-detail"/);
+  const lounge = read("components/public-coaching-discovery.jsx");
+  assert.match(lounge, /data-coaching-topic-first/);
+  assert.match(lounge, /data-public-coaching-models/);
+  assert.match(lounge, /coachingSessionTitle\(s\.schemeKey,lang,/);
+  for (const text of ["Choose your topic", "Выберите тему", "Elige un tema"]) {
+    assert.ok(ui.includes(text), "Missing a clear localized next step: " + text);
+  }
+});
+
 test("2-minute support is the single primary offer, followed by smaller course and human support links", () => {
   assert.match(ui, /className=\{styles\.supportFeatured\}/);
   assert.match(ui, /className=\{styles\.supportNext\}/);

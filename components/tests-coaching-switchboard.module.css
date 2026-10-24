@@ -24,7 +24,7 @@
 .card {
   appearance:none; display:flex; flex-direction:column; align-items:stretch; text-align:left;
   min-height:176px; min-width:0; padding:15px; cursor:pointer;
-  background:#fffdf9; border:1px solid #dfd0bd; border-radius:18px; color:#4c3527;
+  background:#fffdf9; border:1px solid #dfd0bd; border-radius:18px; color:#4c3527; text-decoration:none;
   box-shadow:0 3px 12px rgba(70,48,35,.045);
   transition:background .18s,border-color .18s,transform .18s;
 }
