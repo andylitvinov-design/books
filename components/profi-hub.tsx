@@ -365,7 +365,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 <h2 id="profi-learning-title">{t.learnChoice}</h2>
                 <p className={styles.freeKicker}>{masterT.freeLabel}</p>
                 <h3 className={styles.sectionSubtitle}>{masterT.freeHeading}</h3>
-                <p>{masterT.freeText}</p>
+                <p className={styles.freeBlurb}>{masterT.freeText}</p>
                 <Link href={trainingHref} prefetch={false} className={styles.freeLaunch} data-profi-action="start-free-course">
                   {t.studyCta}<ArrowRight size={16} aria-hidden="true" />
                 </Link>
