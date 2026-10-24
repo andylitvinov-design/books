@@ -83,8 +83,8 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' puts the goal ahead of p
     assert.ok(!textOf(screen(h,'recap')).includes(oporaPracticalDay(4,lang).practice))
     await advanceOporaTo(h,'recapNext',t.next)
     assert.ok(!screen(h,'recapPractice'),'Introduction must not reappear in the recap')
-    assert.ok(!textOf(screen(h,'recapNext')).includes(content.everyday),
-      'No action can be assumed when the learner has not chosen a plan')
+    assert.ok(textOf(screen(h,'recapNext')).includes(content.everyday),
+      'Optional homework remains visible without treating it as a commitment')
     await advanceOporaTo(h,'recapFeedback',t.next)
     assert.equal(nodes(screen(h,'recapFeedback')).filter(n=>n.props?.['data-opora-lesson-confidence']==='true').length,1)
     assert.equal(f.writes,0)
