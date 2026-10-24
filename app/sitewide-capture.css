@@ -11,3 +11,6 @@ body:has([data-personal-service][data-visual-service-landing]) [data-sitewide-ca
 
 /* Core-method narrative also owns the final consented request form. */
 body:has([data-core-service-visual="one-screen"]) [data-sitewide-capture] { display:none; }
+
+/* Every visual service already ends with its own consented request; suppress second footer form. */
+body:has([data-public-visual-landing]) [data-sitewide-capture] { display:none; }
