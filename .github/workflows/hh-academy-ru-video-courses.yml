@@ -1,0 +1,45 @@
+name: HH Russian video course slides
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/academy-video-course-journey.*'
+      - 'components/academy-video-courses.tsx'
+      - 'components/academy-course-video-playlist.tsx'
+      - 'components/academy-video-library-client.tsx'
+      - 'components/academy-record-page.tsx'
+      - 'components/temple-studies.tsx'
+      - 'components/public-practitioner-course-player.*'
+      - 'data/academy/video-course-introductions.ts'
+      - 'tests/academy-russian-video-journey.test.mjs'
+      - 'tests/academy-psimaster-video-sequence.test.mjs'
+      - 'tests/temple-studies.test.mjs'
+      - '.github/workflows/hh-academy-ru-video-courses.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-ru-video-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    name: Lesson sequence, lint, TypeScript and Next build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --no-audit --no-fund
+      - name: Russian lesson inventory, slide sequence and legacy regression checks
+        run: node --test tests/academy-russian-video-journey.test.mjs tests/academy-psimaster-video-sequence.test.mjs tests/academy-video-course-browser.test.mjs tests/academy-psimaster-buttons.test.mjs tests/temple-studies.test.mjs tests/practitioner-course-builder.test.mjs tests/practitioner-course-visual-canvas.test.mjs
+      - name: ESLint only affected source files
+        run: |
+          npx eslint components/academy-video-course-journey.tsx components/academy-video-courses.tsx components/academy-course-video-playlist.tsx components/academy-video-library-client.tsx components/academy-record-page.tsx components/temple-studies.tsx components/public-practitioner-course-player.jsx data/academy/video-course-introductions.ts
+      - name: Full TypeScript project check
+        run: npx tsc --noEmit
+      - name: Production Next.js compile and prebuild gate
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
