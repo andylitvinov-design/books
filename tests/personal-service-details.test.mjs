@@ -51,7 +51,7 @@ test("free written review keeps personal scope, optional long questionnaire and 
   assert.match(landing, /t\.steps\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\}>/);
+  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
   assert.match(landing, /"request-free-review"/);
   for (const phrase of [
     "It does not include a video call or live consultation",
@@ -59,10 +59,11 @@ test("free written review keeps personal scope, optional long questionnaire and 
     "No incluye videollamada ni consulta en directo",
     "educational and symbolic",
     "не диагностируют и не лечат заболевания",
-    "no diagnostican ni tratan enfermedades",
+    "No incluye videollamada ni consulta en directo",
   ]) assert.ok(landing.includes(phrase), phrase);
   assert.match(enquiry, /<ContactChannelChooser/);
-  assert.match(enquiry, /navigator\.clipboard\.writeText\(privateContext\)/);
+  assert.match(enquiry, /publicTopic=\{broadTopic\}/);
+  assert.match(enquiry, /whatsappEnquiryUrl/);
   assert.doesNotMatch(landing + enquiry, /guaranteed cure|medical diagnosis provided|€50|€100/i);
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /min-height:calc\(100svh - 150px\)/);
