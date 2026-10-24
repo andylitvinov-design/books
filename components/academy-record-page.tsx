@@ -145,17 +145,6 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <div className="academy-reading-meta"><span>{statusLabel(record, locale)}</span>{sourceNotice ? <span>{sourceNotice}</span> : null}</div>
           </header>
         ) : null}
-        {["videos/egypt-osiris", "mysteries/egypt/high-wisdom"].includes(record.logicalId) ? (
-          <aside className="academy-archive-notice" data-egypt-course-invitation>
-            <strong>{locale === "ru" ? "Египетское жречество — новый видеокурс" : locale === "es" ? "Sacerdocio egipcio — nuevo videocurso" : "Egyptian Priesthood — interactive video course"}</strong>
-            <p>{locale === "ru" ? "Семь оригинальных записей Осириса, короткие экраны, вопросы и практика — по образцу курса «Практик Рейки»."
-              : locale === "es" ? "Siete vídeos originales de Osiris, prácticas y reflexión, una idea por pantalla."
-              : "Seven original Osiris videos, guided screens and reflective practice, based on the Reiki Practitioner format."}</p>
-            <Link href={"/" + locale + "/academy/egyptian-priesthood"} prefetch={false}>
-              {locale === "ru" ? "Открыть программу →" : locale === "es" ? "Abrir programa →" : "Open programme →"}
-            </Link>
-          </aside>
-        ) : null}
         {isVerbatimTantraArchive ? (
           <>
             <section className="tantra-course-hero reiki-screen reiki-screen--hero" aria-labelledby="tantra-course-hero-title">
@@ -220,7 +209,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             <div className="reiki-screen reiki-screen--social"><TantraReikiTestimonials locale={locale} /></div>
           </>
         ) : null}
-        {!isVerbatimTantraArchive && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
+        {!isVerbatimTantraArchive && record.direction !== "videos" && !isRussianEmbeddedCourse && outline.length >= 2 ? <nav className="academy-outline" aria-label={locale === "ru" ? "Содержание программы" : locale === "es" ? "Contenido del programa" : "Program contents"}><p>{locale === "ru" ? "Содержание" : locale === "es" ? "Contenido" : "Contents"}</p><ol>{outline.map(({ block, index }) => <li className={block.type === "h3" ? "academy-outline-subitem" : undefined} key={index}><a href={"#academy-section-" + index}>{block.text}</a></li>)}</ol></nav> : null}
         {record.routeKey === "history" ? <section className="academy-history-links" aria-label="Academy history"><Link href={"/" + locale + "/academy/history/faculties"}>{locale === "ru" ? "Исторические факультеты и традиции" : locale === "es" ? "Facultades y tradiciones históricas" : "Historical faculties & traditions"}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/academy/history/student-experiences"}>{locale === "ru" ? "Исторические отзывы студентов" : locale === "es" ? "Experiencias históricas de estudiantes" : "Historical student experiences"}<span aria-hidden="true">→</span></Link></section> : null}
         {(record.direction === "videos" || isRussianEmbeddedCourse) && videos.length > 0 ? (
           <AcademyCourseVideoPlaylist
@@ -234,6 +223,17 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               order: video.order ?? index + 1,
             }))}
           />
+        ) : null}
+        {["videos/egypt-osiris", "mysteries/egypt/high-wisdom"].includes(record.logicalId) ? (
+          <aside className="academy-archive-notice" data-egypt-course-invitation>
+            <strong>{locale === "ru" ? "Египетское жречество — новый видеокурс" : locale === "es" ? "Sacerdocio egipcio — nuevo videocurso" : "Egyptian Priesthood — interactive video course"}</strong>
+            <p>{locale === "ru" ? "Семь оригинальных записей Осириса, короткие экраны, вопросы и практика — по образцу курса «Практик Рейки»."
+              : locale === "es" ? "Siete vídeos originales de Osiris, prácticas y reflexión, una idea por pantalla."
+              : "Seven original Osiris videos, guided screens and reflective practice, based on the Reiki Practitioner format."}</p>
+            <Link href={"/" + locale + "/academy/egyptian-priesthood"} prefetch={false}>
+              {locale === "ru" ? "Открыть программу →" : locale === "es" ? "Abrir programa →" : "Open programme →"}
+            </Link>
+          </aside>
         ) : null}
         {isVerbatimTantraArchive && (videos.length > 0 || sourceVideos.length > 0) ? (
           <div className="academy-tantra-video-course">
