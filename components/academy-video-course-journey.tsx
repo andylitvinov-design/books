@@ -169,7 +169,7 @@ export function AcademyVideoCourseJourney({
     go(0);
   }
 
-  if (!lessons.length) return null;
+  if (!lessons.length || !lesson) return null;
 
   const nextLabel = intro ? t.start : isVideo ? t.toReflection
     : isReflection && lessonIndex < lessons.length - 1 ? t.nextVideo
