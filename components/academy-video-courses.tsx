@@ -1,5 +1,6 @@
 import { AcademyVideoLibraryClient, type AcademyVideoCourse, type AcademyVideoGroup, type AcademyVideoLesson, type AcademyVideoProgram } from "@/components/academy-video-library-client";
 import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl, type AcademySourceRecord } from "@/data/academy/catalog";
+import { academyVideoCourseIntro } from "@/data/academy/video-course-introductions";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
 import yggdrasilCurriculum from "@/data/academy/yggdrasil-curriculum.json";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -70,6 +71,7 @@ type YggdrasilCourseSource = {
   levels: Array<{
     id: number;
     title: Record<PublicLocale, string>;
+    theme: Record<PublicLocale, string>;
     steps: Array<{
       id: string;
       number: number;
@@ -114,6 +116,7 @@ function findSourceCourse(
     id: record.logicalId,
     title: academyDisplayTitle(record, locale),
     category: section,
+    description: academyVideoCourseIntro(record.logicalId, locale),
     poster: titleImage(videos[0].id),
     href: "/" + locale + "/academy/" + (record.logicalId === "videos/egypt-osiris" ? "egyptian-priesthood" : record.routeKey),
     chapters: [{ id: record.logicalId + "-lessons", title: "", videos }],
@@ -152,6 +155,7 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
       id: "yggdrasil-module-" + module.id,
       title: module.title[locale],
       category: String(module.id).padStart(2, "0") + " · " + t.recordings,
+      description: module.theme[locale],
       poster: first ? titleImage(first) : "/academy/reiki-yggdrasil/source/basic-program.jpg",
       href: "/" + locale + "/academy/reiki/yggdrasil",
       chapters,
