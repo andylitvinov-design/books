@@ -189,7 +189,7 @@ test("Ideas full-photo first screen embeds the question and two real CTAs in one
   const css = read("components/ideas-discovery.module.css");
   const catalog = read("data/assessments/catalog.js");
   assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
-  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions>/);
+  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions role="group" aria-label=\{t\.choose\}>/);
   assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.submit\}/);
   assert.ok(ui.includes("data-ideas-free-coaching"));
   assert.ok(ui.includes("data-ideas-free-test"));
