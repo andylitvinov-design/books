@@ -113,3 +113,10 @@
  .courseIntro[data-tradition-coaching-onboarding]{padding:15px 13px calc(14px + env(safe-area-inset-bottom))}
  .introActions button{font-size:13px}
 }
+
+/* Writing-first reflection replaces answer grids after the opening topic. */
+.gentleGuide{background:#eff8f4;border-left:3px solid #62a9a1;border-radius:8px;margin:5px 0 12px;padding:9px 12px;color:#345961}
+.gentleGuide strong{display:block;font-size:12px;margin-bottom:4px}
+.gentleGuide p{font-size:12px;line-height:1.45;margin:0}
+.legacyChoice{font-size:12px;line-height:1.4;color:#496b70;margin:4px 0 10px}
+@media(max-width:380px){.gentleGuide{padding:8px 10px;margin-bottom:8px}}

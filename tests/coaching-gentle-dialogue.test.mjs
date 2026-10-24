@@ -40,6 +40,6 @@ test('the existing personal and two symbolic runners share the same written-firs
   assert.match(ui,/data-coaching-open-reflection/)
   assert.match(symbolic,/coachingQuickChoicesAllowed\(question,index\)/)
   assert.match(symbolic,/data-tradition-open-reflection/)
-  assert.match(backend,/answer\.choiceId\|\|/)
+  assert.match(backend,/answer\?\.choiceId/)
   assert.doesNotMatch(ui+symbolic,/localStorage|sessionStorage|sendBeacon|MediaRecorder/)
 })
