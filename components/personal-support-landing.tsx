@@ -175,7 +175,7 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
           </div>
         </section>
         <section className={styles.benefitScene} data-support-visual-screen="benefits">
-          <div className={styles.scenePhoto}><Image src={photos[0]} alt="" fill
+          <div className={styles.scenePhoto}><Image src={photos[0]} alt="" fill unoptimized
             sizes="(max-width: 640px) 100vw, 40vw" /></div>
           <div className={styles.sceneWords}>
             <h2>{t.sessions}</h2>
@@ -193,7 +193,7 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
           <div className={styles.formatGrid}>
             {t.formats.map((format, index) => (
               <article className={styles.formatCard} key={format.value} data-support-visual-screen={format.value}>
-                <div className={styles.scenePhoto}><Image src={photos[index % photos.length]} alt="" fill
+                <div className={styles.scenePhoto}><Image src={photos[index % photos.length]} alt="" fill unoptimized
                   sizes="(max-width: 640px) 100vw, 40vw" /></div>
                 <div className={styles.sceneWords}>
                   <span className={styles.number}>0{index + 1}</span>
@@ -208,7 +208,7 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
           <ol className={styles.steps}>
             {t.steps.map((step, index) => <li key={step} data-support-visual-screen={index+1}>
                 <div className={styles.scenePhoto}><Image src={photos[(index+1)%photos.length]}
-                  alt="" fill sizes="(max-width: 640px) 100vw, 40vw" /></div>
+                  alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 40vw" /></div>
                 <div className={styles.sceneWords}>
                   <span>{index + 1}</span><p>{step}</p>
                 </div>
@@ -221,7 +221,7 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
           <Link className={styles.about} href={"/" + locale + "/about"}>{t.about}<ArrowRight size={16} aria-hidden="true" /></Link>
         </section>
         <section className={[styles.section,styles.faqScene].join(" ")} aria-labelledby="support-faq" data-support-visual-screen="faq">
-          <div className={styles.scenePhoto}><Image src={photos[2]} alt="" fill
+          <div className={styles.scenePhoto}><Image src={photos[2]} alt="" fill unoptimized
             sizes="(max-width: 640px) 100vw, 40vw" /></div>
           <div className={styles.sceneWords}>
             <h2 id="support-faq">{t.faqTitle}</h2>
