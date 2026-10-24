@@ -158,7 +158,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     const epoch = ++loadEpoch.current
     setError(null)
     try {
-      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : 'bootstrap')
+      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : page === 'practice' ? 'bootstrap?view=practice' : 'bootstrap')
       if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
