@@ -40,25 +40,53 @@ async function verify(browserType, locale, width) {
     assert.equal(response?.status(), 200, label + ": route");
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
+    const switchboard = hub.locator("[data-tests-coaching-hub]");
+    await switchboard.waitFor({ state: "visible" });
+    const cards = switchboard.locator("[data-tests-coaching-path]");
+    assert.equal(await cards.count(), 4, label + ": exactly four clear opening journeys");
+    const heading = switchboard.locator("#tests-coaching-title");
+    assert.ok((await heading.innerText()).length > 8, label + ": localized hub heading");
+    const photo = await switchboard.locator("header").first()
+      .evaluate(node => getComputedStyle(node, "::before").backgroundImage);
+    assert.ok(photo.includes("ideas-pine-sharp.avif"), label + ": first-party scenic hero");
+    const cardRects = await Promise.all([0, 1, 2, 3].map(i => cards.nth(i).boundingBox()));
+    assert.ok(cardRects.every(box => box && box.height >= 130 && box.width > 110),
+      label + ": four thumb-sized readable cards");
+    assert.ok(closeEnough(cardRects[0].y, cardRects[1].y) && closeEnough(cardRects[2].y, cardRects[3].y) &&
+      cardRects[2].y > cardRects[0].y, label + ": two-by-two mobile cards");
+    assert.equal(await switchboard.locator("[data-tests-coaching-detail]").count(), 0);
+    const profilePath = switchboard.locator('[data-tests-coaching-path="profile"]');
+    await profilePath.tap();
+    assert.equal(await profilePath.getAttribute("aria-expanded"), "true");
+    assert.equal(await switchboard.locator('[data-personality-profiles-entry] a[href="/' + locale + '/personality-profiles"]').count(), 1,
+      label + ": canonical profile builder, no duplicate tests or storage");
+    await profilePath.tap();
+    const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
+    await coachingPath.tap();
+    assert.equal(await switchboard.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').count() > 0, true,
+      label + ": public guest coaching catalog");
+    await coachingPath.tap();
+    const supportPath = switchboard.locator('[data-tests-coaching-path="support"]');
+    await supportPath.tap();
+    const support = switchboard.locator("[data-tests-coaching-support]");
+    await support.waitFor({ state: "visible" });
+    assert.equal(await support.getByRole("region").count(), 0, label + ": no unsolicited exercise");
+    await support.getByRole("button").first().tap();
+    await support.getByRole("region").waitFor({ state: "visible" });
+    await support.getByRole("region").getByRole("button").first().tap();
+    assert.equal(await support.getByRole("status").count(), 1,
+      label + ": consent, practice and completion work");
+    await supportPath.tap();
+    const templePath = switchboard.locator('[data-tests-coaching-path="temple"]');
+    await templePath.tap();
+    assert.equal(await templePath.getAttribute("aria-expanded"), "true");
     const hero = hub.locator("[data-ideas-hero]");
-    const heroBounds = await hero.boundingBox();
-    const headingBounds = await hero.locator("[class*=heading]").first().boundingBox();
     const inputBounds = await hero.locator("#ideas-question").boundingBox();
-    const photo = await hero.evaluate(node => getComputedStyle(node, "::before").backgroundImage);
-    assert.ok(photo.includes("ideas-pine-sharp.avif"), label + ": new sharp scenic image spans first card");
-    assert.ok(heroBounds && headingBounds && inputBounds &&
-      inputBounds.y > headingBounds.y && inputBounds.y + inputBounds.height <= heroBounds.y + heroBounds.height,
-      label + ": question overlays same full-height scenic card");
+    assert.ok(inputBounds && inputBounds.width > width * .4,
+      label + ": optional question only inside Temple Insights");
     const primary = await hub.locator('[data-ideas-tao]').boundingBox();
-    const coachingAction = hub.locator("[data-ideas-free-coaching]");
-    const secondary = await coachingAction.boundingBox();
-    assert.equal(await coachingAction.getAttribute("href"), "/" + locale + "/coaching",
-      label + ": public model catalog without cabinet redirect");
+    assert.ok(primary && primary.height >= 44, label + ": Dao CTA is finger sized");
     const testAction = hub.locator("[data-ideas-free-test]");
-    assert.ok(primary && secondary && primary.height >= 44 && secondary.height >= 44 &&
-      Math.abs(secondary.y - primary.y) <= 2 && secondary.width > width * .25 &&
-       secondary.y >= heroBounds.y + heroBounds.height - 1,
-      label + ": two post-banner choices are side by side and at least 44px tall");
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
@@ -86,6 +114,7 @@ async function verify(browserType, locale, width) {
       const before = await previewAphorisms.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-ideas-aphorism-id")));
       assert.equal(new Set(before).size, 3, label + ": unique on first open");
       await page.reload({ waitUntil: "domcontentloaded" });
+      await hub.locator('[data-tests-coaching-path="temple"]').tap();
       await hub.locator("[data-ideas-preview-ready]").waitFor({ state: "visible" });
       const after = await previewAphorisms.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-ideas-aphorism-id")));
       assert.equal(new Set(after).size, 3, label + ": unique after reload");
@@ -106,23 +135,10 @@ async function verify(browserType, locale, width) {
     assert.equal(await hub.locator("[data-ideas-result]").count(), 0, label + ": example not a false result");
     const initialPreviewLabel = await hub.locator("[data-ideas-preview] [class*=daoEyebrow]").first().innerText();
     assert.ok(initialPreviewLabel.length > 4, label + ": clearly labelled editorial preview");
-    const exploreCoaching = hub.locator("[data-ideas-explore-coaching]");
-    const exploreTemple = hub.locator("[data-ideas-explore-temple]");
-    const exploreLinks = hub.locator("[data-ideas-explore] a");
-    assert.equal(await exploreLinks.count(), 2, label + ": exactly two exploration links");
-    assert.equal(await exploreCoaching.getAttribute("href"), "/" + locale + "/coaching",
-      label + ": Coaching Options opens the existing public guest chooser");
-    assert.equal(await exploreTemple.getAttribute("href"), "#temple-insights",
-      label + ": Temple Insights opens the existing editorial section");
-    assert.equal(await hub.locator("button[aria-pressed]").count(), 0,
-      label + ": old three mode buttons are gone");
-    const exploreRects = await Promise.all([exploreCoaching, exploreTemple].map(item => item.boundingBox()));
-    assert.ok(exploreRects.every(rect => rect && rect.width >= 100 && rect.height >= 44),
-      label + ": both links are finger-sized at 320–430px");
-    assert.ok(closeEnough(exploreRects[0].y, exploreRects[1].y),
-      label + ": two links share one compact row");
-    assert.ok(await exploreCoaching.evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 11.5),
-      label + ": exploration text remains readable");
+    assert.equal(await switchboard.locator('[data-tests-coaching-path="temple"]').getAttribute("aria-expanded"), "true",
+      label + ": visitor explicitly chose symbolic reflection");
+    assert.equal(await switchboard.locator('[data-personality-profiles-entry]').count(), 0,
+      label + ": no duplicated profile form under Temple");
     const bounds = await page.evaluate(() => ({
       viewport: window.innerWidth,
       content: document.documentElement.scrollWidth,
@@ -131,8 +147,8 @@ async function verify(browserType, locale, width) {
 
     if (browserType === webkit && locale === "en" && width === 390) {
       await page.screenshot({ path: output + "/ideas-first-screen-webkit-390.png", fullPage: false });
-      const discover = await hub.locator("[data-ideas-explore]").boundingBox();
-      assert.ok(discover && discover.y < 844, label + ": new exploration links stay near the first screen");
+      const discover = await hub.locator('[data-tests-coaching-path="support"]').boundingBox();
+      assert.ok(discover && discover.y < 844, label + ": four choices fit near the first screen");
     }
 
     const textarea = hub.locator("#ideas-question");
@@ -144,10 +160,9 @@ async function verify(browserType, locale, width) {
     }
     assert.ok(await textarea.evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 16),
       label + ": iPhone input does not zoom");
-    // Explore Temple Insights must jump to the current in-page editorial content.
-    await exploreTemple.tap();
-    assert.equal(await page.evaluate(() => window.location.hash), "#temple-insights",
-      label + ": Temple Insights anchor works");
+    // Temple choice is an explicit in-place panel, never a jump to a duplicate page.
+    assert.equal(await templePath.getAttribute("aria-expanded"), "true",
+      label + ": Temple Insights in-place panel remains open");
     // Free Taoist guidance still produces a fresh symbolic response to the typed question.
     await textarea.fill(phrases[locale]);
     await hub.locator('[data-ideas-tao]').tap();
@@ -212,6 +227,8 @@ async function verify(browserType, locale, width) {
     assert.equal(await daoResult.locator('[role="img"]').count(), 0, label + ": collapsed content removed");
 
     if (width === 390) {
+      await hub.locator('[data-tests-coaching-path="coaching"]').tap();
+      const exploreCoaching = hub.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').first();
       const destination = await exploreCoaching.getAttribute("href");
       await exploreCoaching.tap();
       await page.waitForURL(url => url.pathname === destination, { timeout: 30000 });

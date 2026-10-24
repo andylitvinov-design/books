@@ -1,0 +1,177 @@
+.shell {
+  --forest: #315f52;
+  --sage: #e9f2ec;
+  --wine: #742b45;
+  --ink: #263c35;
+  --line: #c8dfd1;
+  width: min(1060px, 100%);
+  margin: 0 auto;
+  padding: clamp(12px, 3vw, 28px) clamp(12px, 2.8vw, 28px) 64px;
+  color: var(--ink);
+}
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 204px;
+  overflow: hidden;
+  border: 1px solid #c9dfd1;
+  border-radius: 23px;
+  background: #edf5ed;
+  box-shadow: 0 8px 28px #254d3820;
+}
+.heroPhoto {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, #f1f7f0 5%, #eef6eedc 58%, #e6f4e7bb 100%),
+    url("/images/holistic-house/report-lighthouse-coast.webp") center 44% / cover no-repeat;
+}
+.heroCopy { padding: clamp(18px, 3.5vw, 34px); max-width: 760px; }
+.kicker { display: flex; align-items: center; gap: 8px; margin: 0 0 7px; color: #356c5c; font-size: 11px; font-weight: 800; letter-spacing: .16em; }
+.hero h1 { margin: 0; color: #315e51; font-size: clamp(30px, 5vw, 49px); line-height: 1.06; font-family: Georgia, serif; font-weight: 600; }
+.heroCopy > p:not(.kicker) { margin: 10px 0 0; max-width: 65ch; color: #47655a; font-size: clamp(13px, 1.75vw, 16px); line-height: 1.5; }
+.benefits { display: flex; flex-wrap: wrap; gap: 7px 13px; margin-top: 15px; }
+.benefits span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #315c50; font-weight: 700; }
+.progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin: 16px 0 12px;
+}
+.progress button {
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+  min-width: 0; min-height: 44px;
+  border: 1px solid var(--line); border-radius: 13px; background: #fffdf9;
+  color: #607b6e; font-size: 12px; font-weight: 750;
+}
+.progress button:disabled { opacity: .65; cursor: default; }
+.progress button span {
+  width: 24px; height: 24px; flex: none; display: grid; place-items: center;
+  border-radius: 50%; background: #edf3ed; color: #527464;
+}
+.progress .activeStage { background: #315f52; color: #fff; border-color: #315f52; }
+.progress .activeStage span { background: #fff; color: #315f52; }
+.panel {
+  min-height: 320px; padding: clamp(16px, 2.6vw, 28px);
+  border: 1px solid var(--line); background: #fffefa;
+  border-radius: 20px; box-shadow: 0 6px 23px #244d3b11;
+}
+.panel h2 { margin: 0; font-family: Georgia, serif; font-weight: 600; font-size: clamp(22px, 3vw, 30px); color: var(--forest); line-height: 1.2; }
+.templateLabel { margin: 0 0 7px; color: #7b4e48; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 800; }
+.help { margin: 8px 0 18px; max-width: 72ch; font-size: 13px; line-height: 1.5; color: #607367; }
+.templateGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.templateCard {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start;
+  gap: 7px; min-width: 0; min-height: 138px; padding: 16px 43px 15px 16px;
+  border: 1px solid #cce0d0; border-radius: 17px; background: #f6faf5;
+  color: var(--ink); text-align: left; cursor: pointer;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.templateCard:hover { transform: translateY(-1px); border-color: #709e85; box-shadow: 0 8px 18px #204b3220; }
+.templateCard strong { font-size: 17px; line-height: 1.25; color: var(--forest); }
+.templateCard > span:not(.templateIcon) { color: #5f7468; font-size: 12px; line-height: 1.45; }
+.templateIcon { width: 30px; height: 30px; display: grid; place-items: center; color: #754253; background: #f1e7df; border-radius: 10px; font-size: 20px; }
+.templateArrow { position: absolute; right: 14px; bottom: 15px; color: var(--wine); }
+.areaGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.areaCard {
+  min-width: 0; min-height: 93px; display: flex; align-items: flex-start; gap: 9px;
+  padding: 13px 11px; text-align: left; border: 1px solid #d6e4d7;
+  border-radius: 14px; background: #fff; color: var(--ink); cursor: pointer;
+}
+.areaCard[aria-pressed="true"] { background: #ecf5ed; border-color: #477c68; box-shadow: inset 0 0 0 1px #477c68; }
+.selectDot { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid #a8c3b2; border-radius: 6px; background: #fff; color: #fff; }
+[aria-pressed="true"] > .selectDot { background: #366f5b; border-color: #366f5b; }
+.areaCard span:last-child { min-width: 0; }
+.areaCard strong { display: block; color: #315f52; font-size: 14px; line-height: 1.3; }
+.areaCard small { display: block; margin-top: 4px; color: #64776a; font-size: 11px; line-height: 1.38; }
+.scaleBar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; font-size: 12px; color: #49675a; }
+.scaleBar div { display: flex; gap: 7px; }
+.scaleBar button, .moreTests { min-height: 36px; border: 1px solid #b8d1c0; border-radius: 20px; padding: 7px 13px; background: #fff; color: var(--forest); font-size: 12px; font-weight: 750; cursor: pointer; }
+.scaleList { display: flex; flex-wrap: wrap; gap: 8px; }
+.scaleChip {
+  min-height: 42px; display: inline-flex; align-items: center; gap: 9px;
+  border: 1px solid #d0e1d5; border-radius: 22px;
+  padding: 8px 12px; background: #fff; color: #375b4d;
+  font-size: 13px; font-weight: 650; cursor: pointer;
+}
+.scaleChip[aria-pressed="true"] { border-color: #568c74; background: #edf6ee; }
+.testCount { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 12px; color: #536c5e; margin: -4px 0 13px; }
+.testCount strong { color: #2e6251; }
+.testList { display: flex; flex-direction: column; gap: 7px; }
+.testRow { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid #d8e5da; border-radius: 12px; background: #fff; cursor: pointer; }
+.testRow:has(input:checked) { border-color: #9dc5ae; background: #f3f9f3; }
+.testRow input { flex: none; width: 19px; height: 19px; accent-color: #386c58; margin: 3px 0; }
+.testText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.testText strong { color: #325d4e; font-size: 13px; line-height: 1.3; }
+.testText small { color: #6b7a71; font-size: 11px; }
+.testText > span { color: #597369; font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; }
+.moreTests { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+.caution { padding: 10px 12px; margin: 10px 0; border-left: 3px solid #c69a63; background: #fff8ee; color: #705841; font-size: 12px; line-height: 1.5; }
+.swot { margin-top: 15px; padding: 0 12px; border: 1px solid #e0dfd2; border-radius: 12px; background: #fbf9f3; }
+.swot summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 43px; cursor: pointer; font-size: 12px; font-weight: 750; color: #55624e; list-style: none; }
+.swot summary::-webkit-details-marker { display: none; }
+.swot[open] summary svg { transform: rotate(180deg); }
+.swotGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 4px 0; }
+.swotGrid div { min-width: 0; border-radius: 9px; padding: 9px; background: #fff; }
+.swotGrid strong { font-size: 12px; color: #315f52; }
+.swotGrid p, .swotNote { margin: 4px 0; font-size: 11px; line-height: 1.45; color: #65786a; }
+.actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 19px; }
+.actions button, .actions a { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 46px; border-radius: 24px; padding: 10px 17px; text-decoration: none; font-weight: 750; font-size: 13px; cursor: pointer; }
+.back { background: #fff; border: 1px solid #b7d1c2; color: #426b59; }
+.primary { background: var(--wine); border: 1px solid var(--wine); color: #fff; text-align: center; }
+.primary:hover { background: #602138; }
+.primary:disabled { opacity: .45; cursor: not-allowed; }
+.privateInfo { display: flex; gap: 11px; align-items: flex-start; margin: 17px 2px 4px; padding: 15px; border: 1px solid #c8ddd0; border-radius: 15px; background: #f1f8f2; color: #3e6757; }
+.privateInfo > svg { flex: none; }
+.privateInfo p { margin: 0 0 9px; font-size: 12px; line-height: 1.5; }
+.privateLinks { display: flex; flex-wrap: wrap; gap: 8px 17px; }
+.privateLinks a { display: inline-flex; align-items: center; gap: 5px; color: #74334a; text-decoration: underline; text-underline-offset: 3px; font-size: 12px; font-weight: 750; }
+.languageNotice, .disclaimer { margin: 10px 3px 0; color: #67786b; font-size: 11px; line-height: 1.5; }
+.shell button:focus-visible, .shell a:focus-visible, .swot summary:focus-visible, .shell input:focus-visible { outline: 3px solid #a97748; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .shell { padding: 9px 11px 46px; }
+  .hero { min-height: 0; border-radius: 16px; }
+  .heroCopy { padding: 15px 14px 14px; }
+  .hero h1 { font-size: clamp(28px, 7.5vw, 37px); }
+  .heroCopy > p:not(.kicker) { font-size: 12px; line-height: 1.42; margin-top: 7px; }
+  .benefits { gap: 6px 9px; margin-top: 10px; }
+  .benefits span { font-size: 10px; }
+  .progress { margin: 10px 0; gap: 5px; }
+  .progress button { font-size: 10px; gap: 4px; padding: 4px 1px; border-radius: 10px; }
+  .progress button span { width: 18px; height: 18px; font-size: 10px; }
+  .panel { min-height: 0; padding: 15px 12px; border-radius: 16px; }
+  .panel h2 { font-size: clamp(21px, 5.5vw, 26px); }
+  .help { font-size: 12px; margin: 7px 0 13px; }
+  .templateGrid { gap: 8px; }
+  .templateCard { min-height: 134px; padding: 12px 9px; gap: 5px; }
+  .templateCard strong { font-size: 14px; }
+  .templateCard > span:not(.templateIcon) { font-size: 11px; padding-right: 6px; }
+  .templateArrow { right: 8px; bottom: 8px; width: 14px; }
+  .templateIcon { width: 25px; height: 25px; font-size: 17px; }
+  .areaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .areaCard { min-height: 84px; padding: 10px 8px; gap: 7px; }
+  .areaCard strong { font-size: 13px; }
+  .areaCard small { font-size: 10px; }
+  .scaleList { gap: 6px; }
+  .scaleChip { font-size: 12px; min-height: 42px; padding: 7px 10px; }
+  .testRow { padding: 8px 10px; gap: 8px; }
+  .testText strong { font-size: 12px; }
+  .testText > span { font-size: 10px; }
+  .actions { gap: 8px; }
+  .actions button, .actions a { min-height: 45px; padding: 8px 12px; font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .shell { padding-inline: 7px; }
+  .progress button { font-size: 9px; }
+  .templateCard { min-height: 144px; padding: 10px 8px; }
+  .templateCard strong { font-size: 13px; }
+  .areaCard { min-height: 94px; gap: 5px; }
+  .areaCard strong { font-size: 12px; }
+  .swotGrid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .templateCard { transition: none; }
+  .templateCard:hover { transform: none; }
+}
