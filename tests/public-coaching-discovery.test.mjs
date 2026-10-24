@@ -170,3 +170,34 @@ test('public model cards include only known first-party photographs with mobile-
  assert.match(css,/\.cardArt\{/)
  assert.match(css,/@media\(max-width:360px\)/)
 })
+
+
+test('all Ideas and public-coaching entrypoints parse before the Next.js production build',async()=>{
+ const ts=(await import('typescript')).default
+ for(const file of [
+  'components/ideas-discovery.tsx',
+  'components/public-coaching-discovery.jsx',
+  'app/[locale]/coaching/page.jsx',
+  'components/home-core-methods.tsx',
+  'components/direction-offers.tsx',
+  'components/academy-hub.tsx',
+ ]){
+  const kind=file.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.JSX
+  const parsed=ts.createSourceFile(file,read(file),ts.ScriptTarget.ES2022,true,kind)
+  const errors=parsed.parseDiagnostics.map(item=>{
+   const line=parsed.getLineAndCharacterOfPosition(item.start||0)
+   return file+':'+(line.line+1)+': '+ts.flattenDiagnosticMessageText(item.messageText,' ')
+  })
+  assert.deepEqual(errors,[],file+' contains malformed JSX or TypeScript')
+ }
+})
+test('public entrypoints all lead to the guest coaching chooser, not a sign-in wall',()=>{
+ const home=read('components/home-core-methods.tsx')
+ const academy=read('components/academy-hub.tsx')
+ const directions=read('components/direction-offers.tsx')
+ assert.match(home,/primaryPath: "\/coaching"/)
+ assert.match(home,/href=\{"\/" \+ locale \+ method\.primaryPath\}/)
+ assert.match(academy,/courseHref: "\/" \+ locale \+ "\/coaching"/)
+ assert.match(directions,/\? '\/' \+ locale \+ '\/coaching'/)
+ assert.doesNotMatch(home,/\/app\/coaching/)
+})
