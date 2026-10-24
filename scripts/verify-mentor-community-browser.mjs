@@ -85,24 +85,49 @@ try {
         await noHorizontalOverflow(page, label + " initial");
 
         if (phase === "empty") {
-          assert.equal(await mentorTab.getAttribute("aria-selected"), "true",
-            label + ": a zero-publication directory defaults to real mentors");
-          await articleTab.tap();
-          await articlePanel.locator('[data-community-empty="articles"]').waitFor();
-          assert.equal(await articlePanel.locator("article").count(), 0);
-          const invite = articlePanel.locator('[data-community-empty="articles"]');
-          await assertTouchSize(invite.getByRole("button"), label + " empty CTA");
-          const write = invite.locator('a[href*="materialTab=articles"]');
-          assert.equal(await write.count(), 1, "Author shortcut opens existing editor");
-          await assertTouchSize(write, label + " author action");
-          if (locale === "en") await community.screenshot({
-            path: output + "/empty-" + engineName + "-" + width + ".png",
-            animations: "disabled",
-          });
-          await invite.getByRole("button").tap();
-          assert.equal(await mentorTab.getAttribute("aria-selected"), "true");
-          await mentorPanel.waitFor({ state: "visible" });
-          await noHorizontalOverflow(page, label + " empty CTA");
+          // The isolated application seed can contain approved public services
+          // before any article is published. That is a valid services-only feed.
+          const services = articlePanel.locator("[data-community-service]");
+          const serviceCount = await services.count();
+          assert.equal(await articlePanel.locator("article").count(), 0,
+            label + ": do not invent approved articles");
+          if (serviceCount > 0) {
+            assert.equal(await articleTab.getAttribute("aria-selected"), "true",
+              label + ": real published services, not absent articles, activate the combined feed");
+            await articlePanel.waitFor({ state: "visible" });
+            await assertTouchSize(services.first().locator("a").last(), label + " service details CTA");
+            assert.equal(await articlePanel.locator("[data-community-empty='articles']").count(), 0);
+            const authorLinks = community.locator('nav a[href*="materialTab="]');
+            assert.equal(await authorLinks.count(), 2,
+              label + ": article and service editors are real existing destinations");
+            await noHorizontalOverflow(page, label + " services-only");
+            if (locale === "en") await community.screenshot({
+              path: output + "/services-only-" + engineName + "-" + width + ".png",
+              animations: "disabled",
+            });
+            await mentorTab.tap();
+            assert.equal(await mentorTab.getAttribute("aria-selected"), "true");
+            await articleTab.tap();
+            assert.equal(await articleTab.getAttribute("aria-selected"), "true");
+          } else {
+            assert.equal(await mentorTab.getAttribute("aria-selected"), "true",
+              label + ": no published articles or services defaults to mentor search");
+            await articleTab.tap();
+            await articlePanel.locator('[data-community-empty="articles"]').waitFor();
+            const invite = articlePanel.locator('[data-community-empty="articles"]');
+            await assertTouchSize(invite.getByRole("button"), label + " empty CTA");
+            const write = invite.locator('a[href*="materialTab=articles"]');
+            assert.equal(await write.count(), 1, "Author shortcut opens existing editor");
+            await assertTouchSize(write, label + " author action");
+            if (locale === "en") await community.screenshot({
+              path: output + "/empty-" + engineName + "-" + width + ".png",
+              animations: "disabled",
+            });
+            await invite.getByRole("button").tap();
+            assert.equal(await mentorTab.getAttribute("aria-selected"), "true");
+            await mentorPanel.waitFor({ state: "visible" });
+          }
+          await noHorizontalOverflow(page, label + " zero published articles");
         } else {
           assert.equal(await articleTab.getAttribute("aria-selected"), "true",
             label + ": only approved articles may activate initial feed");
