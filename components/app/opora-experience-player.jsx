@@ -950,10 +950,11 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='receipt'&&<>
             <div className={styles.celebrationMark} aria-hidden="true"><CheckCircle2 size={36}/></div>
             <p className={styles.lead}>{c.congratsLead}</p>
-            <p className={styles.soft}>{t.savedText}</p>
-            {cycle.day===1&&<p className={styles.soft} data-opora-receipt-learning="day-1">
-              <strong>{dayCopy?.title}:</strong> {t.dayOneLearning}
-            </p>}
+            {cycle.day===1
+              ?<p className={styles.soft} data-opora-receipt-learning="day-1">
+                <strong>{dayCopy?.title}:</strong> {t.dayOneLearning}
+              </p>
+              :<p className={styles.soft}>{t.savedText}</p>}
             <div className={styles.receiptNote}>
               <ShieldCheck size={22}/><span>{reportedAttempt?t.attempted:t.readOnly}</span>
             </div>
