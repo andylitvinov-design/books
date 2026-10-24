@@ -137,7 +137,7 @@ test('campaign builder rejects arbitrary URLs, contact details, secrets and unsu
 test('admin report remains discoverable, responsive and isolated from public/private analytics', () => {
   // Marketing moved to the canonical owner My Practice panel; the report is
   // reachable there through the existing authenticated destination allowlist.
-  assert.match(read('components/practitioner-cabinet.jsx'), /app\\/practice\\?panel=marketing/)
+  assert.ok(read('components/practitioner-cabinet.jsx').includes('app/practice?panel=marketing'))
   assert.match(read('components/app/practice-workspace.jsx'), /destination:'acquisition'/)
   assert.match(read('lib/public-analytics.ts'), /PUBLIC_ANALYTICS_AVAILABLE\s*=\s*false/)
   const page = read('app/admin/acquisition/page.jsx')
