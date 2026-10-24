@@ -17,6 +17,7 @@ type ArticleCard = {
   coverPath: string;
   tags: string[];
   kind?: "article" | "note";
+  language?: PublicLocale;
 };
 type SocialCounts = Record<string, { likes: number; comments: number }>;
 
@@ -117,13 +118,14 @@ export function ArticleDirectory({
       </p>
       <div className={styles.grid}>
         {visible.map((article) => {
+          const articleLocale = article.language || locale;
           const authorHref = article.practitionerSlug
             ? "/" + locale + "/masters/" + encodeURIComponent(article.practitionerSlug) : null;
           const date = new Date(article.publishedAt);
           const hasDate = article.publishedAt && !Number.isNaN(date.getTime());
           return (
             <article className={styles.card} key={article.id}>
-              <Link className={styles.articleThumb} href={"/" + locale + "/articles/" + article.slug}
+              <Link className={styles.articleThumb} href={"/" + articleLocale + "/articles/" + article.slug}
                 aria-label={article.title}>
                 {article.coverPath
                   ? <img src={article.coverPath} alt="" loading="lazy" />
@@ -131,21 +133,22 @@ export function ArticleDirectory({
               </Link>
               <div className={styles.articleContent}>
                 <p className={styles.byline}>
-                  <span className={styles.kind}>{article.kind === "note"
+                  <span className={styles.kind}>{article.language && article.language !== locale ? article.language.toUpperCase()+" · " : ""}
+                    {article.kind === "note"
                     ? (ru ? "Заметка" : es ? "Nota" : "Note")
                     : (ru ? "Статья" : es ? "Artículo" : "Article")}</span>
                   {authorHref ? <Link href={authorHref}>{article.practitionerName}</Link>
                     : article.practitionerName}
                   {hasDate ? <> · <time dateTime={article.publishedAt}>{date.toLocaleDateString(locale)}</time></> : null}
                 </p>
-                <h2><Link href={"/" + locale + "/articles/" + article.slug}>{article.title}</Link></h2>
+                <h2><Link href={"/" + articleLocale + "/articles/" + article.slug}>{article.title}</Link></h2>
                 <p className={styles.excerpt}>{article.excerpt}</p>
                 {socialAvailable && <ArticleSocialBar locale={locale} articleId={article.id}
-                  commentHref={"/" + locale + "/articles/" + article.slug + "#discussion"}
+                  commentHref={"/" + articleLocale + "/articles/" + article.slug + "#discussion"}
                   initialLikes={social[article.id]?.likes || 0}
                   commentCount={social[article.id]?.comments || 0}/>}
                 <div className={styles.articleActions}>
-                  <Link href={"/" + locale + "/articles/" + article.slug} className={styles.primary}>
+                  <Link href={"/" + articleLocale + "/articles/" + article.slug} className={styles.primary}>
                     {ru ? "Читать статью" : es ? "Leer artículo" : "Read article"} →
                   </Link>
                   {authorHref ? <Link href={authorHref} className={styles.authorLink}>
