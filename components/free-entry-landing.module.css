@@ -189,3 +189,124 @@
 .coachingLink a{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:44px;padding:10px 15px;border-radius:11px;border:1px solid #b1d0c5;background:#eaf5f0;color:#155e66;text-decoration:none;font-size:13px;font-weight:750;line-height:1.35}
 .coachingLink a:hover{text-decoration:underline}
 .coachingLink a:focus-visible{outline:3px solid #e5a868;outline-offset:3px}
+
+
+/* Free written review, Wu Xing and free testing now share a true photograph
+   for every benefit and practice step; the CRM capture is the final screen. */
+.page[data-public-visual-landing="free"] .outcomeScene,
+.page[data-public-visual-landing="free"] .processScene{
+  display:flex;flex-direction:column;align-items:stretch;gap:14px;
+  min-height:0;padding:clamp(16px,2.7vw,30px);
+}
+.page[data-public-visual-landing="free"] .outcomeScene>.sceneImage,
+.page[data-public-visual-landing="free"] .processScene>.sceneImage{
+  height:clamp(135px,22svh,250px);min-height:0;flex:none;width:100%;max-width:none;
+}
+.page[data-public-visual-landing="free"] .outcomeScene .sceneText,
+.page[data-public-visual-landing="free"] .processScene .sceneText{
+  width:100%;max-width:100%;
+}
+.page[data-public-visual-landing="free"] .outcomeList,
+.page[data-public-visual-landing="free"] .steps{
+  display:grid;grid-template-columns:1fr;gap:12px;width:100%;
+}
+.page[data-public-visual-landing="free"] .outcomeList article,
+.page[data-public-visual-landing="free"] .steps li{
+  display:grid;grid-template-columns:minmax(0,.83fr) minmax(0,1.17fr);
+  grid-template-rows:auto 1fr;
+  gap:0;align-items:stretch;min-height:min(590px,calc(100svh - 155px));
+  border:1px solid #d8e8e2;border-radius:18px;
+  padding:0;overflow:hidden;background:#fffefa;
+}
+.page[data-public-visual-landing="free"] .miniScenePhoto{
+  position:relative;min-width:0;min-height:0;height:100%;
+  grid-column:1;grid-row:1/3;overflow:hidden;background:#c3ddd5;
+}
+.page[data-public-visual-landing="free"] .miniScenePhoto img{object-fit:cover;object-position:center}
+.page[data-public-visual-landing="free"] .outcomeList article>span{
+  grid-column:2;grid-row:1;
+  align-self:end;padding:clamp(20px,4vw,48px) clamp(20px,4vw,48px) 7px;
+  font:800 12px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.12em;
+}
+.page[data-public-visual-landing="free"] .outcomeList article>div:not(.miniScenePhoto){
+  grid-column:2;grid-row:2;align-self:start;
+  padding:0 clamp(20px,4vw,48px) clamp(20px,4vw,48px);
+}
+.page[data-public-visual-landing="free"] .steps li .miniSceneWords{
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  grid-column:2;grid-row:1/3;padding:clamp(20px,4vw,48px);
+}
+.page[data-public-visual-landing="free"] .steps li .miniSceneWords span{
+  color:#a75a61;letter-spacing:.11em;font:800 12px/1.45 Arial,Helvetica,sans-serif;
+}
+.page[data-public-visual-landing="free"] .outcomeList h3,
+.page[data-public-visual-landing="free"] .steps h3{
+  margin:0 0 11px;color:#174856;
+  font:400 clamp(28px,3.1vw,43px)/1.15 Georgia,serif;
+  letter-spacing:-.02em;text-wrap:balance;
+}
+.page[data-public-visual-landing="free"] .outcomeList p,
+.page[data-public-visual-landing="free"] .steps p{
+  color:#526d6f;font:clamp(14px,1.3vw,17px)/1.5 Arial,Helvetica,sans-serif;
+}
+.page[data-public-visual-landing="free"] .finalCaptureScene{
+  display:grid;grid-template-columns:minmax(0,.73fr) minmax(0,1.27fr);
+  align-items:stretch;min-height:0;gap:0;margin:13px 0;
+  background:#fffefa;border:1px solid #d7e8e2;
+  border-radius:20px;overflow:hidden;
+}
+.page[data-public-visual-landing="free"] .finalCaptureScene>.miniScenePhoto{
+  grid-column:1;grid-row:1;min-height:340px;
+}
+.page[data-public-visual-landing="free"] .finalCaptureScene :global([data-service-lead-capture]){
+  grid-column:2;grid-row:1;align-self:center;
+  margin:0;padding:clamp(20px,3vw,36px);width:100%;max-width:100%;
+  border:0;border-radius:0;background:transparent;
+}
+@media(max-width:600px){
+  .page[data-public-visual-landing="free"] .outcomeScene,
+  .page[data-public-visual-landing="free"] .processScene{padding:13px;gap:10px}
+  .page[data-public-visual-landing="free"] .outcomeScene>.sceneImage,
+  .page[data-public-visual-landing="free"] .processScene>.sceneImage{
+    height:clamp(120px,17svh,160px);
+  }
+  .page[data-public-visual-landing="free"] .outcomeList article,
+  .page[data-public-visual-landing="free"] .steps li{
+    display:flex;flex-direction:column;min-height:min(600px,calc(100svh - 154px));
+    margin:0;border-radius:17px;
+  }
+  .page[data-public-visual-landing="free"] .miniScenePhoto{
+    width:100%;height:clamp(148px,25svh,220px);min-height:0;flex:none;
+    grid-column:auto;grid-row:auto;order:-1;
+  }
+  .page[data-public-visual-landing="free"] .outcomeList article>span{
+    padding:17px 17px 5px;font-size:10px;align-self:stretch;
+  }
+  .page[data-public-visual-landing="free"] .outcomeList article>div:not(.miniScenePhoto){
+    padding:0 17px 17px;align-self:stretch;
+  }
+  .page[data-public-visual-landing="free"] .steps li .miniSceneWords{
+    padding:17px;flex:1;
+  }
+  .page[data-public-visual-landing="free"] .outcomeList h3,
+  .page[data-public-visual-landing="free"] .steps h3{
+    font-size:clamp(26px,7vw,35px);
+  }
+  .page[data-public-visual-landing="free"] .outcomeList p,
+  .page[data-public-visual-landing="free"] .steps p{
+    font-size:13px;line-height:1.45;
+  }
+  .page[data-public-visual-landing="free"] .finalCaptureScene{
+    display:flex;flex-direction:column;margin:9px 0;border-radius:17px;
+  }
+  .page[data-public-visual-landing="free"] .finalCaptureScene>.miniScenePhoto{
+    flex:none;min-height:0;height:clamp(95px,17svh,152px);
+  }
+  .page[data-public-visual-landing="free"] .finalCaptureScene :global([data-service-lead-capture]){
+    padding:13px;align-self:stretch;
+  }
+}
+@media(max-width:350px){
+  .page[data-public-visual-landing="free"] .miniScenePhoto{height:140px}
+  .page[data-public-visual-landing="free"] .finalCaptureScene>.miniScenePhoto{height:95px}
+}
