@@ -19,7 +19,7 @@ const copy = {
     back: "Shop", title: "Your cart", subtitle: "Review your consultations and choose how to pay.",
     empty: "Your cart is empty.", choose: "Choose a consultation", remove: "Remove",
     total: "Total", minute: "min", method: "Payment method", square: "Card · Square", paypal: "PayPal", interac: "Interac · Canada", zen: "ZEN.COM", wise: "Wise",
-    squareAction: "Pay by card with Square", squarePending: "Opening secure Square checkout…", squareStatusPending: "Your Square payment is not confirmed yet. We will update it only after verifying Square’s record.", squareStatusPaid: "Payment received and verified by Square. Session time is confirmed separately.", squareStatusReview: "Payment needs review. Please contact us before booking.", squareSignIn: "Sign in to securely pay", squareFailed: "Square checkout could not be verified. You have not been charged by this request. Check your order before retrying.", interacAction: "Ask for Interac transfer details",
+    squareAction: "Pay by card with Square", squarePending: "Opening secure Square checkout…", squareRefresh: "Check payment status", squareStatusPending: "Your Square payment is not confirmed yet. We will update it only after verifying Square’s record.", squareStatusPaid: "Payment received and verified by Square. Session time is confirmed separately.", squareStatusReview: "Payment needs review. Please contact us before booking.", squareSignIn: "Sign in to securely pay", squareFailed: "Square checkout could not be verified. You have not been charged by this request. Check your order before retrying.", interacAction: "Ask for Interac transfer details",
     squareNote: "Square Canada charges in CAD, not EUR. Check the CAD price and payee on Square before paying. We verify receipt manually; no appointment is booked.",
     cardUnavailable: "Card checkout is not connected yet. PayPal or Interac are available below; please never send card numbers in a message.",
     interacNote: "Canada only. Ask for the exact CAD quote and verified recipient before transferring. This button does not collect payment.",
@@ -36,7 +36,7 @@ const copy = {
     back: "Магазин", title: "Корзина", subtitle: "Проверьте услуги и выберите способ оплаты.",
     empty: "Корзина пока пуста.", choose: "Выбрать консультацию", remove: "Убрать",
     total: "Итого", minute: "мин", method: "Способ оплаты", square: "Картой · Square", paypal: "PayPal", interac: "Interac · Канада", zen: "ZEN.COM", wise: "Wise",
-    squareAction: "Оплатить картой через Square", squarePending: "Открываем защищённую оплату Square…", squareStatusPending: "Оплата в Square ещё не подтверждена. Статус изменится только после проверки у провайдера.", squareStatusPaid: "Оплата подтверждена Square. Время сеанса согласуется отдельно.", squareStatusReview: "Оплата требует проверки. Свяжитесь с нами перед бронированием.", squareSignIn: "Войти для защищённой оплаты", squareFailed: "Не удалось подтвердить создание оплаты. Запрос не списывает деньги. Проверьте заказ перед повторной попыткой.", interacAction: "Запросить реквизиты Interac",
+    squareAction: "Оплатить картой через Square", squarePending: "Открываем защищённую оплату Square…", squareRefresh: "Проверить оплату", squareStatusPending: "Оплата в Square ещё не подтверждена. Статус изменится только после проверки у провайдера.", squareStatusPaid: "Оплата подтверждена Square. Время сеанса согласуется отдельно.", squareStatusReview: "Оплата требует проверки. Свяжитесь с нами перед бронированием.", squareSignIn: "Войти для защищённой оплаты", squareFailed: "Не удалось подтвердить создание оплаты. Запрос не списывает деньги. Проверьте заказ перед повторной попыткой.", interacAction: "Запросить реквизиты Interac",
     squareNote: "Square Canada списывает сумму в CAD, а не EUR. Проверьте получателя и сумму в CAD. Поступление проверяется вручную; время сеанса не бронируется.",
     cardUnavailable: "Оплата картой на сайте пока не подключена. Доступны PayPal или запрос Interac; не отправляйте данные карты в сообщениях.",
     interacNote: "Только Канада. До перевода уточните сумму в CAD и проверенные реквизиты. Эта кнопка не списывает деньги.",
@@ -53,7 +53,7 @@ const copy = {
     back: "Tienda", title: "Tu carrito", subtitle: "Revisa las consultas y elige cómo pagar.",
     empty: "El carrito está vacío.", choose: "Elegir una consulta", remove: "Quitar",
     total: "Total", minute: "min", method: "Forma de pago", square: "Tarjeta · Square", paypal: "PayPal", interac: "Interac · Canadá", zen: "ZEN.COM", wise: "Wise",
-    squareAction: "Pagar con tarjeta mediante Square", squarePending: "Abriendo pago seguro de Square…", squareStatusPending: "Square aún no ha confirmado el pago. Solo actualizaremos el estado tras verificarlo.", squareStatusPaid: "Pago recibido y verificado por Square. La cita se confirma aparte.", squareStatusReview: "El pago necesita revisión. Contáctanos antes de reservar.", squareSignIn: "Inicia sesión para pagar", squareFailed: "No se pudo verificar el inicio del pago. Esta solicitud no carga tu tarjeta. Comprueba el pedido antes de reintentar.", interacAction: "Solicitar datos para Interac",
+    squareAction: "Pagar con tarjeta mediante Square", squarePending: "Abriendo pago seguro de Square…", squareRefresh: "Comprobar el pago", squareStatusPending: "Square aún no ha confirmado el pago. Solo actualizaremos el estado tras verificarlo.", squareStatusPaid: "Pago recibido y verificado por Square. La cita se confirma aparte.", squareStatusReview: "El pago necesita revisión. Contáctanos antes de reservar.", squareSignIn: "Inicia sesión para pagar", squareFailed: "No se pudo verificar el inicio del pago. Esta solicitud no carga tu tarjeta. Comprueba el pedido antes de reintentar.", interacAction: "Solicitar datos para Interac",
     squareNote: "Square Canada cobra en CAD, no en EUR. Comprueba el precio en CAD y el destinatario. Verificamos el pago manualmente; no reserva cita.",
     cardUnavailable: "El pago directo con tarjeta aún no está conectado. Usa PayPal o solicita Interac; no compartas datos de la tarjeta por mensajes.",
     interacNote: "Solo Canadá. Solicita la cantidad exacta en CAD y un destinatario verificado antes de transferir. Esto no cobra dinero.",
@@ -85,6 +85,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   const [restored, setRestored] = useState(false);
   const [method, setMethod] = useState<Method>(squareApiEnabled || Object.keys(squareLinks).length ? "square" : paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : "interac");
   const [squareBusy, setSquareBusy] = useState(false);
+  const [squareOrderId, setSquareOrderId] = useState<string | null>(null);
   const [squareError, setSquareError] = useState<string | null>(null);
   const [squareStatus, setSquareStatus] = useState<"paid" | "payment_review" | "pending" | "checkout_ready" | "failed" | null>(null);
   const squareOperation = useRef<{key: string; id: string} | null>(null);
@@ -103,6 +104,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
     const orderId = new URLSearchParams(window.location.search).get("squareOrder");
     if (squareApiEnabled && orderId && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(orderId)) {
+      setSquareOrderId(orderId);
       fetch("/api/payments/square/status?orderId=" + encodeURIComponent(orderId) + "&refresh=1", {
         credentials: "same-origin", cache: "no-store",
       }).then(async response => {
@@ -140,6 +142,22 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
       : `Hello! Please verify my ${receiptAmount} payment for ${description} via ${paymentLabel}. Transaction ID: [insert ID]. Please confirm receipt and session time.`;
   const bookingUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(bookingMessage);
   const receiptUrl = "https://wa.me/14376066502?text=" + encodeURIComponent(receiptMessage);
+
+  async function refreshSquareStatus() {
+    if (!squareOrderId || squareBusy) return;
+    setSquareBusy(true);
+    setSquareError(null);
+    try {
+      const response = await fetch("/api/payments/square/status?orderId=" + encodeURIComponent(squareOrderId) + "&refresh=1", {
+        credentials: "same-origin", cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.order?.status) throw new Error(result?.error || "SQUARE_ORDER_UNAVAILABLE");
+      setSquareStatus(result.order.status);
+    } catch (error) {
+      setSquareError(error instanceof Error ? error.message : "SQUARE_ORDER_UNAVAILABLE");
+    } finally { setSquareBusy(false); }
+  }
 
   async function beginSquareCheckout() {
     if (squareBusy || !squareApiEnabled || !squareApiCad || squareStatus === "paid" || squareStatus === "payment_review") return;
@@ -218,6 +236,9 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
               {squareBusy ? t.squarePending : t.squareAction + " · " + formatSquareCadAmount(squareApiCad, locale)}
               <ArrowRight size={16} aria-hidden="true" />
             </button> : null}
+            {squareApiEnabled && squareOrderId && squareStatus !== "paid" && squareStatus !== "payment_review" ? <button
+              type="button" className={styles.booking} disabled={squareBusy} onClick={refreshSquareStatus}
+              data-cart-square-refresh>{t.squareRefresh}</button> : null}
             {squareApiEnabled && squareStatus ? <p className={styles.hint} role="status" data-cart-square-verified-status>
               {squareStatus === "paid" ? t.squareStatusPaid :
                squareStatus === "payment_review" ? t.squareStatusReview : t.squareStatusPending}
