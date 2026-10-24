@@ -78,7 +78,7 @@ try {
         "Default Spanish payment details are collapsed before geometry measurement");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-      assert.equal(panelHeights.length, 8, "Eight compact Spanish Alchemy panels");
+      assert.equal(panelHeights.length, 9, "Nine Alchemy chapters including the featured owner video");
       if (width <= 390) {
         if (panelHeights.some(p => p.height > p.max)) {
           try {
@@ -449,7 +449,7 @@ try {
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-          assert.equal(panelHeights.length, 8, "Eight compact Alchemy panels");
+          assert.equal(panelHeights.length, 9, "Nine compact Alchemy chapters including featured video");
           if (panelHeights.some(p => p.height > p.max)) {
             try {
               await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
