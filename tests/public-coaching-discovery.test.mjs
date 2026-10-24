@@ -270,6 +270,7 @@ test('Details expands a bottom panel, and every free or paid offer has a distinc
  assert.match(ui,/landingHref=\{'\/'\+lang\+'\/coaching\/session\/personal-'\+option\.minutes\}/)
  assert.match(ui,/primaryHref=\{'\/'\+lang\+'\/services#consultation'\}/)
  assert.match(ui,/primaryLabel=\{t\.start\}/)
+ assert.match(ui,/onLanding=\{\(\)=>stageIdeasCoachingQuestion\(question\)\}/)
  assert.match(ui,/primaryLabel=\{t\.request\}/)
  assert.match(ui,/t\.notBooking/)
  assert.match(landing,/getPublicCoachingCatalog\(\)/)
