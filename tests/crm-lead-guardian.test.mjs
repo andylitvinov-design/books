@@ -45,7 +45,10 @@ test('owner CRM visit creates only bounded, idempotent reply tasks for website/c
     assert.match(item.sql,/c.lifecycle='lead'/)
     assert.match(item.sql,/c.suppressed=false/)
     assert.match(item.sql,/c.source in \('website','academy'\)/)
-    assert.match(item.sql,/status='open'/)
+    // Once a visitor lead had any completed or cancelled follow-up, it must
+    // never be recreated automatically by a later owner tab visit.
+    assert.match(item.sql,/not exists \(select 1 from app\.crm_followups f/)
+    assert.doesNotMatch(item.sql,/status='open'/)
     assert.match(item.sql,/limit 12 for update of c skip locked/)
   }
   assert.ok(!calls.some(x=>/send_sms|send_email|provider_|payment|marketing/i.test(x.sql)))
@@ -62,6 +65,19 @@ test('concurrent manually planned reply wins over automatic queue',async()=>{
   const result=await createCrmWorkflowStore(db,{id:owner},{}).autoPlanWebsiteLeadReplies()
   assert.equal(result.planned,0)
   assert.ok(calls.every(c=>c.args[0]===owner))
+})
+
+test('closed or cancelled prior followup prevents duplicate automatic work',async()=>{
+  const seen=[]
+  const db={query:async(sql,args)=>{
+    seen.push({sql,args})
+    if(sql.startsWith('select c.id from app.crm_contacts'))return {rows:[]}
+    throw Error('Must not create a repeat task for a previously completed lead')
+  }}
+  const result=await createCrmWorkflowStore(db,{id:owner},{}).autoPlanWebsiteLeadReplies()
+  assert.equal(result.planned,0)
+  assert.match(seen[0].sql,/not exists/)
+  assert.doesNotMatch(seen[0].sql,/status='open'/)
 })
 
 test('database/authorization failures fail closed instead of claiming planned work',async()=>{
