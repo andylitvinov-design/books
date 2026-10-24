@@ -403,7 +403,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             {t.pains.map((item, index) => (
               <article className={styles.painCard} key={item.title} data-alchemy-visual-screen={index+1}>
                 <div className={styles.scenePhoto}><Image src={visualPhotos[index % visualPhotos.length]}
-                  alt="" fill sizes="(max-width: 680px) 100vw, 44vw" /></div>
+                  alt="" fill unoptimized sizes="(max-width: 680px) 100vw, 44vw" /></div>
                 <div className={styles.sceneWords}>
                 <span className={styles.iconCircle} aria-hidden="true">{index === 0 ? <Heart size={20} /> : index === 1 ? <Waves size={20} /> : index === 2 ? <BriefcaseBusiness size={20} /> : <Compass size={20} />}</span>
                 <h3>{item.title}</h3><p>{item.text}</p>
@@ -424,7 +424,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             {t.steps.map((item, index) => (
               <article className={styles.methodStep} key={item.title} data-alchemy-visual-screen={index+1}>
                 <div className={styles.scenePhoto}><Image src={visualPhotos[(index+1) % visualPhotos.length]}
-                  alt="" fill sizes="(max-width: 680px) 100vw, 44vw" /></div>
+                  alt="" fill unoptimized sizes="(max-width: 680px) 100vw, 44vw" /></div>
                 <div className={styles.sceneWords}>
                 <span className={styles.methodNumber}>{"0" + (index + 1)}</span>
                 <div><h3>{item.title}</h3><p>{item.text}</p></div>
@@ -477,7 +477,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
           </header>
           <div className={styles.illustratedChoice} data-alchemy-visual-screen="formats">
-            <div className={styles.scenePhoto}><Image src={visualPhotos[1]} alt="" fill sizes="(max-width: 680px) 100vw, 38vw" /></div>
+            <div className={styles.scenePhoto}><Image src={visualPhotos[1]} alt="" fill unoptimized sizes="(max-width: 680px) 100vw, 38vw" /></div>
             <div className={styles.choiceWords}>
               <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
             </div>
@@ -490,7 +490,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <h2 id="alchemy-faq-title">{t.faqTitle}</h2>
           </header>
           <div className={styles.illustratedChoice} data-alchemy-visual-screen="faq">
-            <div className={styles.scenePhoto}><Image src={visualPhotos[0]} alt="" fill sizes="(max-width: 680px) 100vw, 38vw" /></div>
+            <div className={styles.scenePhoto}><Image src={visualPhotos[0]} alt="" fill unoptimized sizes="(max-width: 680px) 100vw, 38vw" /></div>
             <div className={styles.choiceWords}>
               <div className={styles.faqList}>
                 {t.faq.map((item) => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
