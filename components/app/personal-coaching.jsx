@@ -11,6 +11,7 @@ import CoachingQuestionVoice from './coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
 import styles from './personal-coaching.module.css'
 
@@ -342,7 +343,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
           <p>{t.finished}</p>
-          {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</p>}
+          {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
           <div className={styles.answers}>
             {activeQuestions.map(item=><div className={styles.answer} key={item.id}>
@@ -444,7 +445,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
-            {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</span>}
+            {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
             <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
             {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
               <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
