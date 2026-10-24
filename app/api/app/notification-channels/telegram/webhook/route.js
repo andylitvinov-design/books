@@ -1,8 +1,10 @@
-import {NextResponse} from 'next/server'
+import {NextResponse,after} from 'next/server'
 import {getAppConfig} from '@/lib/app/config'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {verifyClientTelegramSecret} from '@/lib/app/client-telegram-policy'
 import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
+import {dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
+import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
 
 export const runtime='nodejs'
@@ -24,7 +26,18 @@ export async function POST(request){
  try{
   const config=getAppConfig()
   const owner=await receiveOwnerAiTelegramWebhook(config,update)
-  if(!owner.handled)await receiveClientTelegramWebhook(config,update)
+  if(!owner.handled){
+   const customer=await receiveClientTelegramWebhook(config,update)
+   if(customer.relayMessageId){
+    // The encrypted database insert committed. External alerts remain optional,
+    // neutral and recipient-consent gated, never containing the reply body.
+    const id=customer.relayMessageId
+    after(async()=>{await Promise.allSettled([
+      dispatchPractitionerMessagePush(config,id),
+      dispatchClientTelegramNotification(config,id),
+    ])})
+   }
+  }
   // No account existence, token status, or chat ID is returned to Telegram.
   return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
  }catch{
