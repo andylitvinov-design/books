@@ -102,7 +102,7 @@ begin
    new.status in ('paid','payment_review') and
    (new.status is distinct from old.status or new.square_payment_id is distinct from old.square_payment_id
     or new.refunded_minor is distinct from old.refunded_minor)
- ) and current_setting('hh.square_payment_verified',true) <> 'true' then
+ ) and current_setting('hh.square_payment_verified',true) is distinct from 'true' then
    raise exception 'SQUARE_PAYMENT_REQUIRES_PROVIDER_VERIFICATION';
  end if;
  if old.status in ('paid','payment_review') and new.status not in ('paid','payment_review') then
