@@ -190,6 +190,14 @@
 /* Day 1 names the core orientation skill and explains its value before trying it. */
 .corePractice{gap:9px;padding:clamp(15px,3.2vw,22px)}
 .corePractice .lead{font-size:clamp(17px,4.25vw,19px);line-height:1.38;font-weight:650}
+.practiceDetail{display:block;margin-top:9px;color:#2e6870;
+  font-size:clamp(15px,3.9vw,18px);line-height:1.4;font-weight:570}
+.frame.arrive .panel[data-opora-first-exercise-consent="true"]{
+  gap:clamp(12px,1.8vh,18px);padding:clamp(17px,4vw,25px)
+}
+.frame.arrive .panel[data-opora-first-exercise-consent="true"] .lead{
+  font-size:clamp(17px,4.1vw,20px);line-height:1.43
+}
 .coreWhy{
   padding:9px 12px;border-left:3px solid #30a9a2;border-radius:10px;
   background:rgba(255,255,255,.66);color:#295868;

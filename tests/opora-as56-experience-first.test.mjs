@@ -70,9 +70,10 @@ test('day one restores five opening screens and all days add untracked support a
       await click(h,d.vote)
       await click(h,d.next)
     }
-    assert.match(textOf(h.tree),lang==='ru'?(day===1?/Можно просто побыть здесь/:/Как вы сейчас себя чувствуете/):
-      (day===1?/You can arrive just as you are/:/How are you feeling right now/))
-    await click(h,d.next)
+    assert.match(textOf(h.tree),lang==='ru'?(day===1?/Упражнение № 1/:/Как вы сейчас себя чувствуете/):
+      (day===1?/Exercise 1/:/How are you feeling right now/))
+    if(day===1)await click(h,lang==='ru'?'Да, готов(а)':"Yes, I’m ready")
+    else await click(h,d.next)
     if(day!==1){
       assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
       assert.ok(!findButton(h.tree,d.try),'Step two must never ask for practice proof')
