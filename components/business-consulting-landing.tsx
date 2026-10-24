@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, ChevronDown, ClipboardCheck, Compass, Lightbulb, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
@@ -161,7 +162,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           <div className={styles.problemGrid}>
             {t.pains.map((item, index) => (
               <article key={item.title} className={styles.problemCard} data-business-visual-screen={index+1}>
-                <div className={styles.scenePhoto}><Image src={visualPhotos[index % visualPhotos.length]} alt="" fill
+                <div className={styles.scenePhoto}><Image src={visualPhotos[index % visualPhotos.length]} alt="" fill unoptimized
                   sizes="(max-width: 767px) 100vw, 42vw" /></div>
                 <div className={styles.sceneWords}>
                   <span className={styles.cardNum}>0{index + 1}</span>
@@ -178,7 +179,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           <ol className={styles.workflowGrid}>
             {t.process.map((step, index) => (
               <li key={step.title} data-business-visual-screen={index+1}>
-                <div className={styles.scenePhoto}><Image src={visualPhotos[(index+1) % visualPhotos.length]} alt="" fill
+                <div className={styles.scenePhoto}><Image src={visualPhotos[(index+1) % visualPhotos.length]} alt="" fill unoptimized
                   sizes="(max-width: 767px) 100vw, 42vw" /></div>
                 <div className={styles.sceneWords}>
                   <span className={styles.workflowNum}>{String(index + 1).padStart(2, "0")}</span>
@@ -188,7 +189,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
             ))}
           </ol>
           <div className={styles.twoApproaches} data-business-visual-screen="approaches">
-            <div className={styles.scenePhoto}><Image src={visualPhotos[2]} alt="" fill
+            <div className={styles.scenePhoto}><Image src={visualPhotos[2]} alt="" fill unoptimized
               sizes="(max-width: 767px) 100vw, 42vw" /></div>
             <div className={styles.sceneWords}>
             <h3>{t.distinctionTitle}</h3>
@@ -201,7 +202,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
 
         <section className={styles.results} aria-labelledby="business-results-title" data-business-visual-screen="results">
-          <div className={styles.scenePhoto}><Image src={visualPhotos[1]} alt="" fill
+          <div className={styles.scenePhoto}><Image src={visualPhotos[1]} alt="" fill unoptimized
             sizes="(max-width: 767px) 100vw, 42vw" /></div>
           <div className={styles.resultCopy}>
           <div>
@@ -213,7 +214,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
 
         <section className={styles.mentor} aria-labelledby="business-mentoring-title" data-business-visual-screen="mentoring">
-          <div className={styles.scenePhoto}><Image src={visualPhotos[3]} alt="" fill
+          <div className={styles.scenePhoto}><Image src={visualPhotos[3]} alt="" fill unoptimized
             sizes="(max-width: 767px) 100vw, 42vw" /></div>
           <div className={styles.mentorCopy}>
           <div>
@@ -228,7 +229,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
 
         <section className={styles.request} id="request-session" aria-labelledby="business-request-title" data-business-visual-screen="request-formats">
-          <div className={styles.scenePhoto}><Image src={visualPhotos[0]} alt="" fill
+          <div className={styles.scenePhoto}><Image src={visualPhotos[0]} alt="" fill unoptimized
             sizes="(max-width: 767px) 100vw, 42vw" /></div>
           <div className={styles.requestCopy}>
           <div>
@@ -253,7 +254,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
 
         <section className={styles.faq} aria-labelledby="business-faq-title" data-business-visual-screen="faq">
-          <div className={styles.scenePhoto}><Image src={visualPhotos[3]} alt="" fill
+          <div className={styles.scenePhoto}><Image src={visualPhotos[3]} alt="" fill unoptimized
             sizes="(max-width: 767px) 100vw, 42vw" /></div>
           <div className={styles.faqCopy}>
           <h2 id="business-faq-title">{t.faqTitle}</h2>
@@ -263,7 +264,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
 
         <section className={styles.bottom} data-business-visual-screen="free-alternative">
-          <div className={styles.scenePhoto}><Image src={visualPhotos[2]} alt="" fill sizes="(max-width: 767px) 100vw, 42vw" /></div>
+          <div className={styles.scenePhoto}><Image src={visualPhotos[2]} alt="" fill unoptimized sizes="(max-width: 767px) 100vw, 42vw" /></div>
           <div className={styles.bottomCopy}>
           <h2>{t.finalTitle}</h2>
           <AcquisitionEventLink href={freeHref} event="service_request_start" prefetch={false}
@@ -274,7 +275,7 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
         </section>
         <section className={styles.businessFinalScreen} data-business-visual-screen="final-capture">
           <div className={styles.scenePhoto}>
-            <Image src="/images/holistic-house/andy-about.png" alt="" fill
+            <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
               sizes="(max-width: 767px) 100vw, 42vw" />
           </div>
           <BusinessWebsiteEnquiry locale={locale} />
