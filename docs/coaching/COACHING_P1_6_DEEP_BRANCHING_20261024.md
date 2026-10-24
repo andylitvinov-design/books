@@ -19,22 +19,31 @@ A single authored coaching question stays the focal point of each screen; the or
 
 This is **not** a fixed psychological questionnaire: choices guide reflection and do not produce clinical scores or inferred traits. On 320–430px / iPhone Safari use 2×2 reply chips with minimum 44px targets and fixed footer; question area may scroll internally with the keyboard, never pushing navigation outside the viewport.
 
-## 2. Verified model-specific attachment points
+## 2. Model-specific attachment points · 19 currently published schemes
 
 | Published scheme | Primary stages | Eligible deep reflection |
 | --- | --- | --- |
 | grow_quick_v1 | Goal → Reality → Options → Will | Reality; Options |
 | grow_reflect_v1 | Frame → Goal → Reality → Options → Will → Review | Reality; Options |
 | tgrow_compass_v1 | Topic → Goal → Reality → Options → Will | Reality; Options |
+| tantric_consent_quick_v1 | Intention → Boundaries → Consent → Dialogue → Step | Consent-first stage purposes only, no sensitive follow-up |
+| tantric_desire_presence_v1 | Intention → Presence → Desire → Boundaries → Review | Consent-first stage purposes only, no sensitive follow-up |
+| tantric_intimacy_reflective_v1 | Intention → Presence → Desire → Boundaries → Consent → Dialogue → Step → Review | Consent-first stage purposes only, no sensitive follow-up |
 | woop_habit_v1 | Wish → Outcome → Obstacle → if–then Plan | Obstacle only; final authored if–then plan never rewritten |
+| woop_money_habit_v1 | Same WOOP stages, money context | Obstacle only; no investment advice |
+| woop_wellbeing_routine_v1 | Same WOOP stages, wellbeing context | Obstacle only; no diagnosis |
 | oskar_resources_v1 | Outcome → 0–10 Scaling → Know-how → Affirm → Review | Scaling; Know-how (at most one `reality` follow-up) |
+| oskar_money_confidence_v1 | Same OSKAR stages, money context | Scale/Know-how; no financial advice |
+| oskar_wellbeing_resources_v1 | Same OSKAR stages, wellbeing context | Scale/Know-how; no diagnosis |
 | solution_focus_quick_v1 | Preferred → 0–10 Scale → Step | Scale |
 | solution_focus_reflect_v1 | Preferred → Exceptions → Scale → Resources → Step | Exceptions; Scale or Resources (bounded to 2) |
+| solution_relationship_dialogue_v1 | Preferred → Scale → Step | Self-rating as reflection only |
 | clear_dialogue_v1 | Contract → Listen → Explore → Action → Review | Listen / Explore (one `reality` slot) |
+| clear_intimacy_dialogue_v1 | Same CLEAR stages, intimate-context 18+ gating | Adult opt-in; reality clarification only |
 | fuel_development_v1 | Frame → Understand → Explore → Plan | Understand; Explore |
 | appreciative_future_v1 | Define → Discover → Dream → Design → Destiny | Discover; Dream / Design |
 
-The catalogue and official question/choice order are **not** mutated.
+The catalogue and official question/choice order are **not** mutated. Model-specific 18+ consent boundaries, optional skipping, and safety gates remain enforced; no intrusive follow-up is created for intimate-specific step keys.
 
 ## 3. Explainable decision priority
 
@@ -59,6 +68,6 @@ Each micro-slide includes a grounded why-line, max four compact authored respons
 
 ## 5. Acceptance / QA
 
-Focused tests: all 10 actual published scheme stage sequences, all three locales, v1 backward compatibility, four pair paths, five explicit choices (pause/ask/learn/reframe/plain), 0/3/5/8/10 score boundaries, forged key/stale answer rejection, optional note caps, direct owner-save transitions, no provider calls, JSX parse, 320/375/390/430 CSS. Run existing `npm run test:coaching:release`, `tests/public-coaching-discovery.test.mjs`, build/typecheck/lint, and relevant SQL/RLS read-only checks.
+Focused tests: all 19 currently published scheme stage sequences, all three locales, v1 backward compatibility, four pair paths, five explicit choices (pause/ask/learn/reframe/plain), 0/3/5/8/10 score boundaries, forged key/stale answer rejection, optional note caps, direct owner-save transitions, no provider calls, JSX parse, 320/375/390/430 CSS. Run existing `npm run test:coaching:release`, `tests/public-coaching-discovery.test.mjs`, build/typecheck/lint, and relevant SQL/RLS read-only checks.
 
 Merge only into live `codex/public-book-library` after reviewing intervening concurrent changes; Vercel READY on same exact SHA and canonical alias must be verified. Physical authenticated iPhone Safari save → reload/relogin → copy/export/delete and independent second-account negative E2E remain open until genuinely exercised. Production READY ≠ true client E2E.
