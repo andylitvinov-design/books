@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import styles from "./core-service-detail.module.css";
 
 export type DetailKind = "dao" | "alchemy" | "hypnotherapy";
@@ -276,60 +277,116 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
     option: t.action,
     pagePath: "/" + locale + "/services/" + serviceSlug,
   });
+
+  const screen = {
+    en: { stages: "What happens in the session", guide: "Your experience comes first", full: "Read the full introduction", caution: "A clear, safe scope", contact: "A personal reply about format and timing — no automatic booking or charge", ask: "Choose how to begin", other: "Other ways to ask" },
+    ru: { stages: "Этапы личной работы", guide: "Ваш опыт — в центре внимания", full: "Читать полное описание", caution: "Границы и безопасность", contact: "Личный ответ о формате и времени — без автоматической записи и оплаты", ask: "Выберите первый шаг", other: "Другие способы связаться" },
+    es: { stages: "Etapas de la sesión", guide: "Tu experiencia es lo primero", full: "Leer descripción completa", caution: "Límites y seguridad", contact: "Respuesta personal sobre formato y horario, sin reserva ni cobro automático", ask: "Elige cómo empezar", other: "Otras formas de contactar" },
+  }[locale];
+  const visualPhotos = [
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/course-start-heron.webp",
+    "/images/holistic-house/report-lighthouse-coast.avif",
+    "/images/holistic-house/course-focus-mountain-boy.webp",
+  ];
+  const introductorySentence = t.lead.split(/(?<=[.!?])\s+/)[0];
   return (
-    <main className={styles.main} lang={locale} data-core-service-detail={kind}>
-      <div className={styles.breadcrumb}><Link href={"/" + locale + "/services"}><ArrowLeft size={17} aria-hidden="true"/>{locale === "ru" ? "Все услуги" : locale === "es" ? "Todos los servicios" : "All services"}</Link></div>
-      <section className={styles.hero}>
+    <main className={styles.main} lang={locale} data-core-service-detail={kind} data-core-service-visual="one-screen">
+      <div className={styles.breadcrumb}>
+        <Link href={"/" + locale + "/services"}><ArrowLeft size={17} aria-hidden="true" />
+          {locale === "ru" ? "Все услуги" : locale === "es" ? "Todos los servicios" : "All services"}
+        </Link>
+      </div>
+      <section className={styles.hero} data-core-visual-screen="introduction" aria-labelledby="core-hero-heading">
+        <div className={styles.photo}>
+          <Image src={cardArtworkUrl(t.image, "feature")} unoptimized={hasCardArtwork(t.image)}
+            alt="" fill priority sizes="(max-width: 760px) 100vw, 44vw" />
+        </div>
         <div className={styles.intro}>
           <p className={styles.eyebrow}>{t.eyebrow}</p>
-          <h1>{t.title}</h1>
-          <p className={styles.lead}>{t.lead}</p>
-          <p className={styles.benefit}><Check size={17} aria-hidden="true"/>{t.benefit}</p>
+          <h1 id="core-hero-heading">{t.title}</h1>
+          <p className={styles.lead}>{introductorySentence}</p>
           <div className={styles.quickFacts} aria-label={locale === "ru" ? "Условия" : locale === "es" ? "Condiciones" : "Session details"}>
             <strong>{kind === "dao" ? pathFacts.free : kind === "alchemy" ? pathFacts.alchemy : pathFacts.session}</strong>
             <span>{pathFacts.noPayment}</span>
           </div>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.primary} id={kind === "dao" ? "request-free-wu-xing" : undefined} event="service_request_start" attributes={{ "data-service-request": kind }}/>
-          <p className={styles.note}>{t.note}</p>
-          <aside className={styles.andrey}>
-            <strong>{locale === "ru" ? "С Андреем Литвиновым" : locale === "es" ? "Con Andrey Litvinov" : "With Andrey Litvinov"}</strong>
-            <span>{locale === "ru" ? "После запроса уточняем вопрос и формат; затем можно посмотреть короткое видео о подходе ниже." : locale === "es" ? "Después de enviar la solicitud, aclaramos tu pregunta y el formato. Más abajo puedes ver un vídeo breve sobre el enfoque." : "After your enquiry, we clarify your question and format; then you can watch the short approach video below."}</span>
-            <Link href={"/" + locale + "/about"}>{locale === "ru" ? "Об Андрее" : locale === "es" ? "Sobre Andrey" : "About Andrey"}<ArrowUpRight size={14} aria-hidden="true"/></Link>
-          </aside>
+          <a className={styles.primary} href="#core-final-capture">{t.action}<ArrowUpRight size={17} aria-hidden="true" /></a>
         </div>
-        <div className={styles.photo}><Image src={cardArtworkUrl(t.image, "feature")} unoptimized={hasCardArtwork(t.image)} alt="" fill priority sizes="(max-width: 760px) 100vw, 38vw" /></div>
       </section>
-      <ServiceVideoShowcase topic={kind === "dao" ? "overview" : kind} locale={locale} id="service-video" />
-      <section className={styles.outcomes} aria-labelledby="core-service-process-heading">
-        <h2 id="core-service-process-heading">{t.sectionsTitle}</h2>
+      <div className={styles.videoScreen} data-core-visual-screen="video">
+        <ServiceVideoShowcase topic={kind === "dao" ? "overview" : kind} locale={locale} id="service-video" />
+      </div>
+      <section className={styles.outcomes} aria-label={t.sectionsTitle}>
         <div className={styles.items}>
-          {t.sections.map(step => <article key={step.title}><h3>{step.title}</h3><p>{step.text}</p></article>)}
+          {t.sections.map((step,index) => (
+            <article key={step.title} className={styles.topicScene} data-core-visual-screen={`step-${index + 1}`}>
+              <div className={styles.topicPhoto}>
+                <Image src={visualPhotos[index % visualPhotos.length]} alt="" fill
+                  sizes="(max-width: 760px) 100vw, 44vw" />
+              </div>
+              <div className={styles.topicCopy}>
+                <p className={styles.eyebrow}>{t.sectionsTitle} · 0{index + 1}</p>
+                <h2>{step.title}</h2>
+                <p>{step.text}</p>
+                {index === 0 ? <details className={styles.more}><summary>{screen.full}</summary><p>{t.lead}</p></details> : null}
+              </div>
+            </article>
+          ))}
         </div>
       </section>
       {kind === "alchemy" ? (
-        <section className={styles.alchemySupport} aria-labelledby="alchemy-support-heading">
-          <div className={styles.alchemySupportCopy}>
-            <span className={styles.alchemySupportKicker}>{copy[locale].alchemy.supportKicker}</span>
+        <section className={[styles.topicScene, styles.alchemySupport].join(" ")} data-core-visual-screen="extended-support" aria-labelledby="alchemy-support-heading">
+          <div className={styles.topicPhoto}>
+            <Image src={visualPhotos[2]} alt="" fill sizes="(max-width: 760px) 100vw, 44vw" />
+          </div>
+          <div className={styles.topicCopy}>
+            <p className={styles.eyebrow}>{copy[locale].alchemy.supportKicker}</p>
             <h2 id="alchemy-support-heading">{copy[locale].alchemy.supportTitle}</h2>
             <p>{copy[locale].alchemy.supportLead}</p>
-          </div>
-          <div className={styles.alchemyOptions}>
-            <ul>{copy[locale].alchemy.supportItems.map(item => <li key={item}><Check size={17} aria-hidden="true" />{item}</li>)}</ul>
-            <p>{copy[locale].alchemy.supportFootnote}</p>
-            <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} className={styles.alchemySupportAction} event="service_request_start" attributes={{ "data-service-request": kind, "data-alchemy-monthly": "true" }} />
+            <ul className={styles.supportList}>
+              {copy[locale].alchemy.supportItems.map(item => <li key={item}><Check size={16} aria-hidden="true" />{item}</li>)}
+            </ul>
+            <small>{copy[locale].alchemy.supportFootnote}</small>
           </div>
         </section>
       ) : null}
-      <section className={styles.footer}>
-        <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true"/>{t.safety}</p>
-        <div className={styles.links}>
-          <Link href={t.secondaryHref}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-          <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action} className={styles.footerCta} event="service_request_start" attributes={{ "data-service-request": kind }}/>
+      <section className={[styles.topicScene, styles.safetyScreen].join(" ")} data-core-visual-screen="limitations" aria-labelledby="core-safety-heading">
+        <div className={styles.topicPhoto}>
+          <Image src={visualPhotos[3]} alt="" fill sizes="(max-width: 760px) 100vw, 44vw" />
         </div>
-        <details className={styles.freeAlternative}>
-          <summary>{locale === "ru" ? "Предпочитаете сначала бесплатный письменный разбор ситуации?" : locale === "es" ? "¿Prefieres comenzar con una revisión gratuita por escrito?" : "Prefer to start with a free written situation review?"}</summary>
-          <Link href={"/" + locale + "/services/free-situation-review"}>{locale === "ru" ? "Открыть бесплатный разбор" : locale === "es" ? "Abrir revisión gratuita" : "Open the free written review"}<ArrowUpRight size={16} aria-hidden="true"/></Link>
-        </details>
+        <div className={styles.topicCopy}>
+          <p className={styles.eyebrow}>{screen.guide}</p>
+          <h2 id="core-safety-heading"><ShieldCheck size={24} aria-hidden="true" />{screen.caution}</h2>
+          <p>{t.safety}</p>
+          <Link href={t.secondaryHref} className={styles.related}>{t.secondary}<ArrowUpRight size={16} aria-hidden="true" /></Link>
+        </div>
+      </section>
+      <section className={styles.captureScene} data-core-visual-screen="final-capture" id="core-final-capture" aria-labelledby="core-capture-heading">
+        <div className={styles.topicPhoto}>
+          <Image src="/images/holistic-house/andy-about.png" alt="" fill
+            sizes="(max-width: 760px) 100vw, 40vw" />
+        </div>
+        <div className={styles.topicCopy}>
+          <h2 id="core-capture-heading">{screen.ask}</h2>
+          <p>{screen.contact}</p>
+          <CompactLeadCapture locale={locale} serviceTitle={t.title}
+            title={t.action} lead={pathFacts.noPayment} variant="inline"
+            sourcePath={"/" + locale + "/services/" + serviceSlug}
+            {...(kind !== "dao" ? { formatOptions: [
+              {value:"30-min",label: locale === "ru" ? "30 минут · €50" : "30 min · €50"},
+              {value:"60-min",label: locale === "ru" ? "60 минут · €100" : "60 min · €100"},
+            ] } : {})}
+          />
+          <details className={styles.more}><summary>{screen.other}</summary>
+            <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+              id={kind === "dao" ? "request-free-wu-xing" : undefined}
+              event="service_request_start" attributes={{ "data-service-request": kind }} />
+          </details>
+          <Link href={"/" + locale + "/services/free-situation-review"} className={styles.related}>
+            {locale === "ru" ? "Начать с бесплатного письменного разбора" : locale === "es" ? "Empezar con una revisión gratuita por escrito" : "Start with a free written review"}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
       </section>
     </main>
   );
