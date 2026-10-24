@@ -122,7 +122,8 @@ test('home Stage 2 is one free service while account reports remain separate and
   assert.match(source, /freeOfferIds: ReadonlySet<OfferId>/)
   assert.match(source, /"reiki", "opora", "profile", "review", "aiCoaching"/)
 })
-\nfunction profileBuilderHarness(locale, { authenticated = false, storageBlocked = false, authStatus = 401 } = {}) {
+ 
+function profileBuilderHarness(locale, { authenticated = false, storageBlocked = false, authStatus = 401 } = {}) {
   const ts = require('typescript')
   const source = read('components/personality-profiles-builder.tsx')
   const compiled = ts.transpileModule(source, {
