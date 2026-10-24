@@ -37,7 +37,7 @@ const methods: { id: MethodId; image: string; primaryPath: string; secondaryPath
   {
     id: "coaching",
     image: "/images/holistic-house/course-start-heron.webp",
-    primaryPath: "/app/coaching",
+    primaryPath: "/coaching",
     secondaryPath: "/services/catalog#service-listings",
   },
 ];
@@ -68,7 +68,7 @@ const copy: Record<PublicLocale, SectionCopy> = {
         title: "Коучинг / психотерапия",
         formula: "Самостоятельный коучинг · специалист",
         description: "Разберите свою цель по шагам, сравните коучинговые модели или найдите специалиста для личной работы.",
-        primary: "ИИ-коучинг · бесплатно",
+        primary: "Коучинг · бесплатно",
         secondary: "Подобрать специалиста",
         footnote: "Сейчас доступна бесплатная самостоятельная коуч-сессия с автоподбором модели, без ИИ-чата и живого специалиста.",
       },
@@ -99,7 +99,7 @@ const copy: Record<PublicLocale, SectionCopy> = {
         title: "Coaching / psychotherapy",
         formula: "Self-guided coaching · practitioner support",
         description: "Work through a goal step by step, compare coaching approaches or find a practitioner for personal sessions.",
-        primary: "AI coaching · free",
+        primary: "Free coaching",
         secondary: "Find a practitioner",
         footnote: "Currently this opens a free self-guided session with automated model matching, not a live AI chat or therapist.",
       },
@@ -130,7 +130,7 @@ const copy: Record<PublicLocale, SectionCopy> = {
         title: "Coaching / psicoterapia",
         formula: "Coaching autoguiado · profesionales",
         description: "Explora tu objetivo paso a paso, compara modelos de coaching o encuentra un profesional.",
-        primary: "Coaching con IA · gratis",
+        primary: "Coaching gratis",
         secondary: "Elegir profesional",
         footnote: "Por ahora: sesión autoguiada gratuita con selección automática de modelo; no es chat con IA ni terapia en vivo.",
       },
@@ -165,7 +165,7 @@ export function HomeCoreMethods({ locale }: { locale: PublicLocale }) {
                 <div className={styles.details}>
                   <p className={styles.description}>{item.description}</p>
                 <div className={styles.actions}>
-                  <Link className={styles.primary} href={method.id === "coaching" && locale === "es" ? "/en/app/coaching" : "/" + locale + method.primaryPath} prefetch={false}>
+                  <Link className={styles.primary} href={"/" + locale + method.primaryPath} prefetch={false}>
                     {item.primary}<ArrowUpRight size={16} aria-hidden="true" />
                   </Link>
                   {method.secondaryPath && item.secondary && (
