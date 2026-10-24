@@ -20,7 +20,7 @@ const copy = {
     empty: "Your cart is empty.", choose: "Choose a consultation", remove: "Remove",
     total: "Total", minute: "min", method: "Payment method", square: "Card · Square", paypal: "PayPal", interac: "Interac · Canada", zen: "ZEN.COM", wise: "Wise",
     squareAction: "Pay by card with Square", squarePending: "Opening secure Square checkout…", squareRefresh: "Check payment status", squareStatusPending: "Your Square payment is not confirmed yet. We will update it only after verifying Square’s record.", squareStatusPaid: "Payment received and verified by Square. Session time is confirmed separately.", squareStatusReview: "Payment needs review. Please contact us before booking.", squareSignIn: "Sign in to securely pay", squareFailed: "Square checkout could not be verified. You have not been charged by this request. Check your order before retrying.", interacAction: "Ask for Interac transfer details",
-    squareNote: "Square Canada charges in CAD, not EUR. Check the CAD price and payee on Square before paying. We verify receipt manually; no appointment is booked.",
+    squareNote: "Square Canada charges in CAD, not EUR. Check the CAD price and payee on Square before paying. We verify receipt manually; no appointment is booked.", squareAutoNote: "Square charges the displayed CAD total; the order status is verified with Square automatically. Payment does not book a session.",
     cardUnavailable: "Card checkout is not connected yet. PayPal or Interac are available below; please never send card numbers in a message.",
     interacNote: "Canada only. Ask for the exact CAD quote and verified recipient before transferring. This button does not collect payment.",
     paypalAction: "Continue to PayPal.Me", hostedPayPalAction: "Secure PayPal checkout", hostedPayPalNote: "Verify the seller and EUR total on PayPal. Confirmation of funds is checked manually.", verifiedPayPalAction: "Secure checkout · auto confirmation", zenAction: "Request ZEN transfer details",
@@ -37,7 +37,7 @@ const copy = {
     empty: "Корзина пока пуста.", choose: "Выбрать консультацию", remove: "Убрать",
     total: "Итого", minute: "мин", method: "Способ оплаты", square: "Картой · Square", paypal: "PayPal", interac: "Interac · Канада", zen: "ZEN.COM", wise: "Wise",
     squareAction: "Оплатить картой через Square", squarePending: "Открываем защищённую оплату Square…", squareRefresh: "Проверить оплату", squareStatusPending: "Оплата в Square ещё не подтверждена. Статус изменится только после проверки у провайдера.", squareStatusPaid: "Оплата подтверждена Square. Время сеанса согласуется отдельно.", squareStatusReview: "Оплата требует проверки. Свяжитесь с нами перед бронированием.", squareSignIn: "Войти для защищённой оплаты", squareFailed: "Не удалось подтвердить создание оплаты. Запрос не списывает деньги. Проверьте заказ перед повторной попыткой.", interacAction: "Запросить реквизиты Interac",
-    squareNote: "Square Canada списывает сумму в CAD, а не EUR. Проверьте получателя и сумму в CAD. Поступление проверяется вручную; время сеанса не бронируется.",
+    squareNote: "Square Canada списывает сумму в CAD, а не EUR. Проверьте получателя и сумму в CAD. Поступление проверяется вручную; время сеанса не бронируется.", squareAutoNote: "Square списывает указанную сумму CAD. Поступление проверяется автоматически у Square. Оплата не бронирует время сеанса.",
     cardUnavailable: "Оплата картой на сайте пока не подключена. Доступны PayPal или запрос Interac; не отправляйте данные карты в сообщениях.",
     interacNote: "Только Канада. До перевода уточните сумму в CAD и проверенные реквизиты. Эта кнопка не списывает деньги.",
     paypalAction: "Перейти в PayPal.Me", hostedPayPalAction: "Оплатить через PayPal", hostedPayPalNote: "Проверьте получателя и итоговую сумму EUR в PayPal. Поступление подтверждаем вручную.", verifiedPayPalAction: "Оплатить с автоподтверждением", zenAction: "Запросить реквизиты ZEN",
@@ -54,7 +54,7 @@ const copy = {
     empty: "El carrito está vacío.", choose: "Elegir una consulta", remove: "Quitar",
     total: "Total", minute: "min", method: "Forma de pago", square: "Tarjeta · Square", paypal: "PayPal", interac: "Interac · Canadá", zen: "ZEN.COM", wise: "Wise",
     squareAction: "Pagar con tarjeta mediante Square", squarePending: "Abriendo pago seguro de Square…", squareRefresh: "Comprobar el pago", squareStatusPending: "Square aún no ha confirmado el pago. Solo actualizaremos el estado tras verificarlo.", squareStatusPaid: "Pago recibido y verificado por Square. La cita se confirma aparte.", squareStatusReview: "El pago necesita revisión. Contáctanos antes de reservar.", squareSignIn: "Inicia sesión para pagar", squareFailed: "No se pudo verificar el inicio del pago. Esta solicitud no carga tu tarjeta. Comprueba el pedido antes de reintentar.", interacAction: "Solicitar datos para Interac",
-    squareNote: "Square Canada cobra en CAD, no en EUR. Comprueba el precio en CAD y el destinatario. Verificamos el pago manualmente; no reserva cita.",
+    squareNote: "Square Canada cobra en CAD, no en EUR. Comprueba el precio en CAD y el destinatario. Verificamos el pago manualmente; no reserva cita.", squareAutoNote: "Square cobra el importe CAD mostrado. Verificamos automáticamente el pago con Square; no reserva la cita.",
     cardUnavailable: "El pago directo con tarjeta aún no está conectado. Usa PayPal o solicita Interac; no compartas datos de la tarjeta por mensajes.",
     interacNote: "Solo Canadá. Solicita la cantidad exacta en CAD y un destinatario verificado antes de transferir. Esto no cobra dinero.",
     paypalAction: "Continuar a PayPal.Me", hostedPayPalAction: "Pagar con PayPal", hostedPayPalNote: "Comprueba el vendedor y el importe EUR en PayPal. Confirmamos manualmente los fondos recibidos.", verifiedPayPalAction: "Pago seguro · confirmación automática", zenAction: "Solicitar datos para ZEN",
@@ -250,7 +250,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
             </p> : null}
             {!squareApiEnabled && squarePayment ? <a className={styles.primary} href={squarePayment.url} target="_blank" rel="noopener noreferrer" data-cart-square-payment-link>
               <CreditCard size={18} aria-hidden="true" />{t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)}<ArrowRight size={16} aria-hidden="true" />
-            </a> : null}<p className={styles.hint}>{t.squareNote}</p>
+            </a> : null}<p className={styles.hint}>{squareApiEnabled ? t.squareAutoNote : t.squareNote}</p>
           </> : method === "paypal" && (paypalUrl || hostedPayPalUrl || verifiedPayPalEnabled) ? <>
             {verifiedPayPalEnabled ? <Link className={styles.primary}
               href={`/${locale}/services/checkout?items=${chosen.map(product => product.id).join(",")}`}
