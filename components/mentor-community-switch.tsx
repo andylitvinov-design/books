@@ -11,6 +11,7 @@ type Props = {
   mentors: ReactNode;
   articles: ReactNode;
   hasArticles: boolean;
+  initialView?: View;
   mastersUnavailable?: boolean;
   articlesUnavailable?: boolean;
 };
@@ -61,11 +62,11 @@ const COPY = {
 } as const;
 
 export function MentorCommunitySwitch({
-  locale, mentors, articles, hasArticles,
+  locale, mentors, articles, hasArticles, initialView,
   mastersUnavailable = false, articlesUnavailable = false,
 }: Props) {
   const t = COPY[locale === "ru" || locale === "es" ? locale : "en"];
-  const [view, setView] = useState<View>(hasArticles ? "articles" : "mentors");
+  const [view, setView] = useState<View>(initialView ?? (hasArticles ? "articles" : "mentors"));
 
   function activate(next: View, moveFocus = false) {
     setView(next);
