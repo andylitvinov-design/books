@@ -8,6 +8,8 @@ on:
       - 'lib/practitioners/council-telegram-archive.mjs'
       - 'lib/practitioners/chatgpt-telegram-report.mjs'
       - 'lib/practitioners/council-telegram-delivery.js'
+      - 'lib/practitioners/council-one-shot-guard.mjs'
+      - 'tests/council-one-shot-guard.test.mjs'
       - 'lib/practitioners/council-free-models.mjs'
       - 'lib/practitioners/owner-ai-provider-settings.js'
       - 'tests/practitioner-owner-ai-provider-setup.test.mjs'
@@ -59,8 +61,9 @@ jobs:
           node --check lib/practitioners/council-telegram-archive.mjs
           node --check lib/practitioners/chatgpt-telegram-report.mjs
           node --check lib/practitioners/council-telegram-delivery.js
+          node --check lib/practitioners/council-one-shot-guard.mjs
           node --check lib/practitioners/council-free-models.mjs
           node --check lib/practitioners/owner-ai-provider-settings.js
           node --check app/api/internal/telegram-hub/route.js
           node --check app/api/internal/council-archive-telegram/route.js
-          node --test tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-free-models.test.mjs tests/telegram-ai-daily-nonempty.test.mjs tests/practitioner-chatgpt-daily-telegram.test.mjs tests/practitioner-telegram-owner-ui.test.mjs tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+          node --test tests/council-one-shot-guard.test.mjs tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-free-models.test.mjs tests/telegram-ai-daily-nonempty.test.mjs tests/practitioner-chatgpt-daily-telegram.test.mjs tests/practitioner-telegram-owner-ui.test.mjs tests/telegram-owner-pairing-contract.test.mjs tests/telegram-owner-discovery.test.mjs tests/practitioner-telegram-hub.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
