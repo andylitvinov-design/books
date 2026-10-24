@@ -10,7 +10,7 @@ test('Ideas offers the public model chooser first and keeps local Tao insight',(
  assert.match(ui,/const coachingHref = "\/" \+ locale \+ "\/coaching"/)
  assert.match(ui,/data-ideas-hero-actions[\s\S]*data-ideas-free-coaching[\s\S]*data-ideas-tao/)
  assert.doesNotMatch(ui,/\/app\/coaching/)
- assert.match(css,/\.heroActions\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+ assert.match(css,/\.heroActions\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
  for(const label of ['Ideas & Coaching','Идеи и коучинг','Ideas y coaching'])assert.ok(ui.includes(label)&&nav.includes(label))
  for(const cta of ['Get free coaching session','Пройти бесплатную коуч-сессию','Sesión gratuita de coaching'])assert.ok(ui.includes(cta))
 })
