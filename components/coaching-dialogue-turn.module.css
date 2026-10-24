@@ -1,0 +1,13 @@
+.turn{
+  min-width:0;max-width:100%;margin:8px 0 14px;padding:10px 13px;
+  border-inline-start:3px solid #69a699;border-radius:0 12px 12px 0;
+  background:#edf5ef;color:#355e57;overflow-wrap:anywhere;
+}
+.label{display:block;font-size:10px;line-height:1.4;font-weight:800;
+  letter-spacing:.09em;text-transform:uppercase;color:#346961}
+.body{font-size:clamp(13px,2vw,15px);line-height:1.48;margin:4px 0 0;font-weight:500}
+.quote{font-weight:750;color:#234f4e;quotes:"«" "»" "‘" "’"}
+@media(max-width:430px){
+  .turn{padding:8px 11px;margin:6px 0 10px;border-radius:0 10px 10px 0}
+  .body{font-size:13px;line-height:1.4}
+}
