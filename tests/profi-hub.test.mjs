@@ -249,7 +249,7 @@ test('actual protected editors open the requested draft without saving before us
   assert.match(materials,/setCourseComposerOpen\(true\)/)
   const learner=read('components/energywork-ai-learner.tsx')
   assert.match(learner,/data-reiki-profi-continuation/)
-  assert.match(learner,/href=\{"/" \+ locale \+ "\/pro"\}/)
+  assert.match(learner,/href=\{"\/" \+ locale \+ "\/pro"\}/)
   assert.match(learner,/slide.kind === "finish"/)
   assert.match(materials,/startCreate=\{quickCreateCourse\}/)
   assert.match(builder,/setCreating\(Boolean\(startCreate\)\|\|!list\.length\)/)
