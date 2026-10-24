@@ -61,7 +61,7 @@
 .wizardKicker { display: inline-flex; align-items: center; gap: 6px; color: #446e5d; font-size: 12px; font-weight: 700; }
 .progress {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 7px;
   margin: 16px 0 12px;
 }
@@ -157,6 +157,24 @@
 .privateLinks a { display: inline-flex; align-items: center; gap: 5px; color: #74334a; text-decoration: underline; text-underline-offset: 3px; font-size: 12px; font-weight: 750; }
 .languageNotice, .disclaimer { margin: 10px 3px 0; color: #67786b; font-size: 11px; line-height: 1.5; }
 .shell button:focus-visible, .shell a:focus-visible, .swot summary:focus-visible, .shell input:focus-visible { outline: 3px solid #a97748; outline-offset: 3px; }
+
+/* Course-style confirmation comes AFTER the visitor edits the test set. */
+.reviewIntro { text-align: center; max-width: 680px; margin: 0 auto; }
+.reviewIcon { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 auto 13px; border: 1px solid #c7ddcc; border-radius: 18px; background: #eaf4eb; color: #315f52; }
+.reviewIntro .templateLabel { margin-bottom: 8px; color: #8a5c4c; letter-spacing: .12em; }
+.reviewIntro .help { margin: 10px auto 0; max-width: 58ch; }
+.reviewTotal { display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 10px 0 16px; padding: 7px 15px; border-radius: 99px; background: #edf5ed; color: #476d5d; font-size: 12px; }
+.reviewTotal strong { color: #315f52; }
+.reviewTests { display: grid; gap: 9px; list-style: none; margin: 2px auto 0; padding: 0; max-width: 720px; }
+.reviewTest { display: grid; grid-template-columns: 42px minmax(0, 1fr) 27px; align-items: center; gap: 12px; min-width: 0; padding: 13px 16px; border: 1px solid #d2e2d5; border-radius: 15px; background: linear-gradient(110deg, #f5faf4, #fffdfa 75%); box-shadow: 0 2px 8px #244d3b08; }
+.reviewNumber { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e3eee4; color: #376e59; font-size: 13px; font-weight: 850; font-variant-numeric: tabular-nums; }
+.reviewTestText { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.reviewTestText strong { color: #315e50; font-size: 15px; font-weight: 750; line-height: 1.28; overflow-wrap: anywhere; }
+.reviewTestText small { font-size: 12px; color: #637b6c; line-height: 1.35; }
+.reviewCheck { justify-self: end; color: #4b8469; }
+.reviewFoot { display: flex; align-items: flex-start; gap: 10px; margin: 18px auto 3px; padding: 12px 14px; max-width: 720px; border-radius: 12px; background: #f6f1e8; color: #69604f; font-size: 12px; line-height: 1.5; }
+.reviewFoot svg { flex: none; margin-top: 1px; }
+
 @media (max-width: 640px) {
   .shell { padding: 9px 11px 46px; }
   .hero { border-radius: 17px; }
@@ -178,7 +196,7 @@
   .wizardTop { gap: 7px; }
   .wizardKicker { font-size: 11px; }
   .progress { margin: 10px 0; gap: 5px; }
-  .progress button { font-size: 10px; gap: 4px; padding: 4px 1px; border-radius: 10px; }
+  .progress button { flex-direction: column; font-size: 10px; gap: 3px; padding: 6px 1px; border-radius: 10px; line-height: 1.15; }
   .progress button span { width: 18px; height: 18px; font-size: 10px; }
   .panel { min-height: 0; padding: 15px 12px; border-radius: 16px; }
   .panel h2 { font-size: clamp(21px, 5.5vw, 26px); }
@@ -199,12 +217,19 @@
   .testRow { padding: 8px 10px; gap: 8px; }
   .testText strong { font-size: 12px; }
   .testText > span { font-size: 10px; }
+  .reviewIcon { width: 48px; height: 48px; border-radius: 14px; }
+  .reviewTest { grid-template-columns: 33px minmax(0, 1fr) 18px; gap: 9px; padding: 10px 11px; border-radius: 12px; }
+  .reviewNumber { width: 33px; height: 33px; border-radius: 10px; font-size: 12px; }
+  .reviewTestText strong { font-size: 13px; }
+  .reviewTestText small { font-size: 11px; }
+  .reviewFoot { font-size: 11px; padding: 11px; }
+  .reviewIntro .help { font-size: 12px; }
   .actions { gap: 8px; }
   .actions button, .actions a { min-height: 45px; padding: 8px 12px; font-size: 12px; }
 }
 @media (max-width: 350px) {
   .shell { padding-inline: 7px; }
-  .progress button { font-size: 9px; }
+  .progress button { font-size: 9px; letter-spacing: -.02em; }
   .templateCard { min-height: 91px; padding: 10px 9px; }
   .templateBody strong { font-size: 14px; }
   .roadmap { padding-inline: 12px; }
