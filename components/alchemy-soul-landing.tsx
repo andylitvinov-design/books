@@ -7,6 +7,7 @@ import {
 import type { Locale } from "@/data/remedies";
 type AlchemyLocale = Locale | "es";
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { AlchemySoulFormatSelector, AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
@@ -318,6 +319,12 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   const featuredIntroVideo = locale === "ru" ? featuredIntroVideoRu : featuredIntroVideoEn;
   const video = getServiceVideoMedia("alchemy", locale);
   const reviews = testimonials[locale];
+  const visualPhotos = [
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/report-lighthouse-coast.avif",
+    "/images/holistic-house/course-start-heron.webp",
+    "/images/holistic-house/books-library.webp",
+  ] as const;
   const freeReview = "/" + locale + "/services/free-situation-review";
   const heroWhatsApp = whatsappEnquiryUrl({
     locale,
@@ -330,7 +337,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   });
 
   return (
-    <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-one-screen-v2">
+    <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-one-screen-v2" data-public-visual-landing="alchemy">
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label={locale === "ru" ? "Навигация" : locale === "es" ? "Ruta de navegación" : "Breadcrumb"}>
           <Link href={"/" + locale + "/services"}><ArrowLeft size={15} aria-hidden="true" />{t.back}</Link>
@@ -393,9 +400,13 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           </header>
           <div className={styles.painGrid}>
             {t.pains.map((item, index) => (
-              <article className={styles.painCard} key={item.title}>
+              <article className={styles.painCard} key={item.title} data-alchemy-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><StaticPortrait src={visualPhotos[index % visualPhotos.length]}
+                  alt="" fill sizes="(max-width: 680px) 100vw, 44vw" /></div>
+                <div className={styles.sceneWords}>
                 <span className={styles.iconCircle} aria-hidden="true">{index === 0 ? <Heart size={20} /> : index === 1 ? <Waves size={20} /> : index === 2 ? <BriefcaseBusiness size={20} /> : <Compass size={20} />}</span>
                 <h3>{item.title}</h3><p>{item.text}</p>
+                </div>
               </article>
             ))}
           </div>
@@ -410,9 +421,13 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           </header>
           <div className={styles.methodSteps}>
             {t.steps.map((item, index) => (
-              <article className={styles.methodStep} key={item.title}>
+              <article className={styles.methodStep} key={item.title} data-alchemy-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><StaticPortrait src={visualPhotos[(index+1) % visualPhotos.length]}
+                  alt="" fill sizes="(max-width: 680px) 100vw, 44vw" /></div>
+                <div className={styles.sceneWords}>
                 <span className={styles.methodNumber}>{"0" + (index + 1)}</span>
                 <div><h3>{item.title}</h3><p>{item.text}</p></div>
+                </div>
               </article>
             ))}
           </div>
@@ -460,7 +475,12 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <span className={styles.eyebrow}>{t.optionsKicker}</span>
             <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
           </header>
-          <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+          <div className={styles.illustratedChoice} data-alchemy-visual-screen="formats">
+            <div className={styles.scenePhoto}><StaticPortrait src={visualPhotos[1]} alt="" fill sizes="(max-width: 680px) 100vw, 38vw" /></div>
+            <div className={styles.choiceWords}>
+              <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+            </div>
+          </div>
         </section>
 
         <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" aria-labelledby="alchemy-faq-title">
@@ -468,8 +488,14 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <span className={styles.eyebrow}>{t.faqKicker}</span>
             <h2 id="alchemy-faq-title">{t.faqTitle}</h2>
           </header>
-          <div className={styles.faqList}>
-            {t.faq.map((item) => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+          <div className={styles.illustratedChoice} data-alchemy-visual-screen="faq">
+            <div className={styles.scenePhoto}><StaticPortrait src={visualPhotos[0]} alt="" fill sizes="(max-width: 680px) 100vw, 38vw" /></div>
+            <div className={styles.choiceWords}>
+              <div className={styles.faqList}>
+                {t.faq.map((item) => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+              </div>
+              <p className={styles.safety}><ShieldCheck size={16} aria-hidden="true" />{t.safety}</p>
+            </div>
           </div>
         </section>
 
@@ -479,10 +505,31 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <h2 id="alchemy-request-title">{t.requestTitle}</h2>
             <p>{t.requestIntro}</p>
           </div>
-          <AlchemySoulLeadForm locale={locale} />
+          <div className={styles.illustratedChoice} data-alchemy-visual-screen="final-capture">
+            <div className={styles.scenePhoto}>
+              <StaticPortrait src="/images/holistic-house/andy-about.png" alt=""
+                fill sizes="(max-width: 680px) 100vw, 38vw" />
+            </div>
+            <div className={styles.choiceWords}>
+              <CompactLeadCapture
+                locale={locale}
+                serviceTitle={locale === "ru" ? "Алхимия души · индивидуальная сессия" : locale === "es" ? "Alquimia del Alma · sesión personal" : "Alchemy of the Soul · personal session"}
+                sourcePath={"/" + locale + "/services/alchemy-of-soul"}
+                title={t.requestTitle}
+                lead={t.requestIntro}
+                variant="inline"
+                formatOptions={[
+                  { value: "30-min", label: locale === "ru" ? "30 минут · €50" : "30 min · €50" },
+                  { value: "60-min", label: locale === "ru" ? "60 минут · €100" : "60 min · €100" },
+                ]}
+              />
+              <details className={styles.alternativeChannels}>
+                <summary>{locale === "ru" ? "Или связаться через WhatsApp / Telegram" : locale === "es" ? "O contactar por WhatsApp / Telegram" : "Or contact via WhatsApp / Telegram"}</summary>
+                <AlchemySoulLeadForm locale={locale} />
+              </details>
+            </div>
+          </div>
         </section>
-
-        <p className={styles.safety}><ShieldCheck size={16} aria-hidden="true" />{t.safety}</p>
       </div>
     </main>
   );
