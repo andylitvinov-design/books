@@ -260,6 +260,33 @@ async function verify(browserType, locale, width) {
       await businessTopic.tap();
       assert.equal(await businessTopic.getAttribute("aria-pressed"), "true",
         label + ": guest can choose coaching topic without an extra format slide");
+      // Real guest coaching dialogue, not only a static chooser or server 200.
+      const firstScheme = page.locator('[data-public-coaching-models] [data-coaching-scheme]').first();
+      await firstScheme.locator('button[type="button"]').last().tap();
+      const guestSession = page.locator('[data-public-coaching-session]');
+      await guestSession.locator('[data-coaching-intro-slide]').waitFor({state:'visible'});
+      await guestSession.locator('footer button[class*="primary"]').tap();
+      await guestSession.locator('[data-coaching-topic-slide]').waitFor({state:'visible'});
+      await guestSession.locator('[data-coaching-topic-choice="business"]').tap();
+      await guestSession.locator('footer button[class*="primary"]').tap();
+      const firstPrompt = guestSession.locator('[data-public-coaching-slide]').first();
+      await firstPrompt.waitFor({state:'visible'});
+      assert.equal(await firstPrompt.locator('[data-coaching-conversational-turn]').count(),1,
+        label + ": coaching starts with a human-language welcome");
+      const spoken = 'I would like a clearer conversation';
+      await guestSession.locator('#public-coaching-answer').fill(spoken);
+      await guestSession.locator('footer button[class*="primary"]').tap();
+      const reply = guestSession.locator('[data-coaching-conversational-turn]').first();
+      await reply.waitFor({state:'visible'});
+      assert.ok((await reply.innerText()).includes(spoken),
+        label + ": next coach reply references the real answer, not a generic form step");
+      assert.equal(await guestSession.locator('[data-coaching-conversational-turn]').count(),1,
+        label + ": one contextual reply on the active slide");
+      const guestBounds = await page.evaluate(() => ({
+        viewport:window.innerWidth,content:document.documentElement.scrollWidth,
+      }));
+      assert.ok(guestBounds.content<=guestBounds.viewport+1,
+        label + ": no horizontal scroll in the speaking coaching session");
     }
     assert.deepEqual(errors, [], label + ": unhandled client errors");
     evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390 });
