@@ -382,24 +382,19 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <div className={styles.cards} data-public-coaching-models>
               {shown.map(s=>{
                 const model=models.get(s.modelKey)
-                return <article key={s.schemeKey} className={styles.card} data-coaching-scheme={s.schemeKey}>
-                  <div className={styles.cardVisual}>
-                    <Image className={styles.cardArt} src={cardArtworkUrl(coachingArt[s.modelKey]||coachingArt.grow_v1)} unoptimized
-                      alt="" aria-hidden="true" width={640} height={270} sizes="(max-width:600px) 100vw, (max-width:800px) 50vw, 350px"/>
-                  </div>
-                  <div className={styles.cardTop}><span>{s.style==='quick'?t.quick:t.reflective} · {s.minutes} {t.minutes}</span><strong>{t.free} · €0</strong></div>
-                  <div className={styles.cardMain}>
-                    <div className={styles.cardHeading}>
-                      <h3>{tr(model.name,lang)}</h3>
-                      <p className={styles.schemeName}>{tr(s.name,lang)}</p>
-                    </div>
-                  </div>
-                  <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
-                  <p className={styles.outcome}><Check size={15}/>{t.result}: {tr(s.result,lang)}</p>
-                  {suggestionKeys.has(s.schemeKey)&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-                  <details><summary>{t.about}</summary><p>{tr(model.caution,lang)}</p></details>
-                  <button type="button" className={styles.cardButton} onClick={()=>start(s)}>{t.start}<ArrowRight size={17}/></button>
-                </article>
+                return <CoachingLoungeCard key={s.schemeKey} locale={lang} id={s.schemeKey}
+                  title={tr(model.name,lang)}
+                  meta={(s.style==='quick'?t.quick:t.reflective)+' · '+s.minutes+' '+t.minutes}
+                  price="€0" image={coachingArt[s.modelKey]||coachingArt.grow_v1}
+                  description={tr(model.selectionComment,lang)||tr(model.focus,lang)}
+                  detail={tr(model.focus,lang)}
+                  outcome={tr(s.result,lang)}
+                  caution={tr(model.caution,lang)}
+                  examples={model.exampleQuestions?.[lang]||model.exampleQuestions?.en||[]}
+                  suggested={suggestionKeys.has(s.schemeKey)}
+                  schemeKey={s.schemeKey} primaryLabel={t.start}
+                  onPrimary={()=>start(s)}
+                  landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
               })}
             </div>}
           <p className={styles.disclaimer}>{t.safe}</p>
@@ -408,48 +403,42 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <h2 id="coaching-more-paths">{t.otherWays}</h2>
           <p>{t.otherWaysNote}</p>
           <div className={styles.morePathGrid}>
-            {shownTraditions.includes('egyptian')&&<article className={styles.morePath} data-coaching-tradition="egyptian" data-suggested={suggestedTraditions.has('egyptian')}>
-              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
-              {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link className={styles.moreSelect} href={traditionHref('egyptian')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/egyptian'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>}
-            {shownTraditions.includes('greek')&&<article className={styles.morePath} data-coaching-tradition="greek" data-suggested={suggestedTraditions.has('greek')}>
-              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.greek}</h3><p>{t.greekNote}</p>
-              {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link className={styles.moreSelect} href={traditionHref('greek')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/greek'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>}
-            <article className={styles.morePath}>
-              <Image className={styles.morePhoto} src="/images/holistic-house/course-start-heron.webp"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
-              <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
-                {t.openWorksheet}<ArrowRight size={16}/>
-              </Link>
-            </article>
+            {shownTraditions.includes('egyptian')&&<CoachingLoungeCard
+              key="egyptian" locale={lang} id="egyptian" traditionKey="egyptian"
+              title={t.egyptian} meta={t.freeMeta} price="€0"
+              image={traditionCoachingArt} description={t.egyptianNote}
+              detail={t.egyptianNote} caution={t.safe}
+              suggested={suggestedTraditions.has('egyptian')}
+              primaryHref={traditionHref('egyptian')} primaryLabel={t.chooseTradition}
+              landingHref={'/'+lang+'/academy/coaching/egyptian'}/>}
+            {shownTraditions.includes('greek')&&<CoachingLoungeCard
+              key="greek" locale={lang} id="greek" traditionKey="greek"
+              title={t.greek} meta={t.freeMeta} price="€0"
+              image={traditionCoachingArt} description={t.greekNote}
+              detail={t.greekNote} caution={t.safe}
+              suggested={suggestedTraditions.has('greek')}
+              primaryHref={traditionHref('greek')} primaryLabel={t.chooseTradition}
+              landingHref={'/'+lang+'/academy/coaching/greek'}/>}
+            <CoachingLoungeCard key="worksheet" locale={lang} id="worksheet"
+              title={t.worksheet} meta={t.freeMeta} price="€0"
+              image={coachingWorksheetArt} description={t.worksheetNote}
+              detail={t.worksheetNote}
+              primaryHref={'/'+lang+'/coaching/intake'} primaryLabel={t.openWorksheet}
+              landingHref={'/'+lang+'/coaching/intake'}/>
           </div>
         </section>}
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title">
           <h2 id="human-coaching-title">{t.humanTitle}</h2><p>{t.humanText}</p>
-          <div className={styles.cards}>
-            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}].filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style)).map(option=>
-              <article className={styles.card} key={option.minutes}>
-                <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
-                <div className={styles.cardMain}>
-                   <div className={styles.cardHeading}><h3>{option.name}</h3></div>
-                   <Image className={styles.cardArt} src={cardArtworkUrl('/images/holistic-house/hero-olive-incense.webp')} unoptimized
-                     alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
-                 </div>
-                 <p>{t.humanText}</p>
-                <Link className={styles.cardButton} href={'/'+lang+'/services#consultation'}>{t.request}<ArrowRight size={17}/></Link>
-              </article>)}
+          <div className={styles.cards} data-coaching-paid-sessions>
+            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}]
+              .filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style))
+              .map(option=><CoachingLoungeCard key={option.minutes} locale={lang}
+                id={'personal-'+option.minutes} title={option.name}
+                meta={option.minutes+' '+t.minutes} price={option.price}
+                image={humanCoachingArt} description={t.humanText}
+                detail={t.humanText} caution={t.notBooking}
+                primaryHref={'/'+lang+'/services#consultation'} primaryLabel={t.request}
+                landingHref={'/'+lang+'/coaching/session/personal-'+option.minutes}/>)}
           </div>
           <p className={styles.disclaimer}>{t.notBooking}</p>
           <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
