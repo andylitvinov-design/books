@@ -114,3 +114,28 @@
  .sessionActions button{font-size:12px;padding:8px}
 }
 @media(prefers-reduced-motion:reduce){.progress>div>span{transition:none}}
+
+
+/* Coaching lounge · distinct author programmes remain accessible without
+   misrepresenting their private sessions as public guest flow. */
+.morePaths{padding:25px 0 15px;border-top:1px solid #e0d2bf}
+.morePaths h2{font:400 clamp(26px,3.5vw,37px)/1.18 Georgia,"Times New Roman",serif;color:#344139;margin:0 0 7px}
+.morePaths>p{color:#58685f;line-height:1.45;margin:0 0 17px;max-width:720px;font-size:14px}
+.morePathGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.morePath{display:flex;flex-direction:column;min-width:0;gap:8px;padding:19px;
+  border:1px solid #d9c7b2;border-radius:18px;background:linear-gradient(145deg,#fcf9f3,#f1e7d8)}
+.morePath:nth-child(2){background:linear-gradient(145deg,#f5f5ee,#e8ece7);border-color:#cbd5cc}
+.morePath:nth-child(3){background:linear-gradient(145deg,#fffef9,#f5eeee);border-color:#e0d0d2}
+.morePath h3{font:400 clamp(21px,2.5vw,25px)/1.2 Georgia,"Times New Roman",serif;margin:0;color:#3d4440}
+.morePath p{font-size:13px;line-height:1.5;color:#52645d;margin:0 0 10px;flex:1}
+.morePath a{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;
+  border-radius:11px;text-decoration:none;background:#296964;color:white;
+  font-size:13px;font-weight:800;padding:10px 12px;text-align:center}
+.morePath a:hover{color:#fff;background:#1e5556}
+.session h1{scroll-margin-top:16px}
+@media(max-width:700px){
+ .morePathGrid{grid-template-columns:1fr}
+ .morePath{padding:16px}
+ .morePath h3{font-size:23px}
+ .morePaths{padding-top:21px}
+}
