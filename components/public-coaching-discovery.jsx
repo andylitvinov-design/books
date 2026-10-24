@@ -8,6 +8,8 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, Lock
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
+import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
 import { COACHING_TOPIC_GROUPS, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent } from '@/lib/coaching/coaching-topic-groups'
@@ -22,6 +24,7 @@ const copy={
     adultSafety:"For violence, fear, pressure, abuse or persistent pain, seek qualified human support instead.",
     adultConfirm:"I confirm that I am 18+ and choose to begin",
     skipSensitive:"Skip this question",
+    continueSession:'Continue coaching session',beginQuestions:'Continue to the questions',yourTopic:'Your topic',
     groupHeading:"Choose your topic first",groupNote:"Select what you want to explore. Matching coaching methods appear below.",groupRefine:"Specific question",groupCount:"Methods available",groupDesc:"Different methods, one question at a time.",healthNote:"Wellbeing coaching is about everyday habits, not diagnosis or treatment.",groupAll:"All topics",
     eyebrow:'HOLISTIC HOUSE · COACHING LOUNGE',title:'Coaching Lounge',
     lead:'Describe what you need or filter by topic, time and format. Explore free guided methods, ancient planning courses and personal coaching together.',
@@ -64,6 +67,7 @@ const copy={
     adultSafety:"При насилии, давлении, страхе или стойкой боли обратитесь к квалифицированному специалисту.",
     adultConfirm:"Подтверждаю, что мне 18+ и я добровольно начинаю",
     skipSensitive:"Пропустить этот вопрос",
+    continueSession:'Продолжить коучинг-сессию',beginQuestions:'Перейти к вопросам',yourTopic:'Тема запроса',
     groupHeading:"Сначала выберите тему",groupNote:"Ниже появятся подходящие модели и методики коучинга.",groupRefine:"Уточните запрос",groupCount:"Доступно моделей",groupDesc:"Разные методики — один вопрос на экране.",healthNote:"Коучинг здоровья касается привычек и ресурсов, а не диагностики и лечения.",groupAll:"Все темы",
     eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга',
     lead:'Опишите, с чем хотите поработать, или выберите тему, время и формат. Здесь собраны бесплатные модели, авторские курсы и личные сессии.',
@@ -106,6 +110,7 @@ const copy={
     adultSafety:"En casos de violencia, presión, miedo, abuso o dolor persistente, busca ayuda profesional.",
     adultConfirm:"Confirmo que tengo 18 años o más y elijo comenzar",
     skipSensitive:"Omitir esta pregunta",
+    continueSession:'Continuar la sesión de coaching',beginQuestions:'Ir a las preguntas',yourTopic:'Tu tema',
     groupHeading:"Primero elige un tema",groupNote:"Verás los enfoques y modelos de coaching adecuados.",groupRefine:"Pregunta específica",groupCount:"Modelos disponibles",groupDesc:"Varios métodos, una pregunta por pantalla.",healthNote:"El bienestar trata hábitos y recursos, no diagnóstico ni tratamiento.",groupAll:"Todos",
     eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching',
     lead:'Describe tu pregunta o filtra por tema, duración y formato. Compara sesiones gratuitas, cursos simbólicos y coaching personal en un mismo lugar.',
@@ -238,6 +243,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [duration,setDuration]=useState(0)
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
+  const [entryStep,setEntryStep]=useState('intro')
+  const [sessionTopic,setSessionTopic]=useState('')
   const [adultAcknowledged,setAdultAcknowledged]=useState(false)
   const [index,setIndex]=useState(0)
   const [answers,setAnswers]=useState({})
@@ -286,7 +293,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       if(sessionScrollRef.current)sessionScrollRef.current.scrollTop=0
       titleRef.current?.focus({preventScroll:true})
     }
-  },[session,index,finished,pendingFollowup])
+  },[session,index,finished,pendingFollowup,entryStep])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
   // A dedicated public scheme landing may link back to an explicit Start action.
@@ -301,7 +308,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     const selected=schemes.find(item=>item.schemeKey===schemeKey)
     if(selected){
       setAdultAcknowledged(false)
-      setSession(selected);setIndex(0);setAnswers({});setDraft('')
+      setSession(selected);setEntryStep('intro');setSessionTopic('');setIndex(0);setAnswers({});setDraft('')
       setFinished(false);setError('');setCopied(false)
     }
   },[schemes])
@@ -319,6 +326,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
   const needsCustomPlan=Boolean(session?.requiredCustomPlan&&index===session.questions.length-1)
+  const requiresAdult=Boolean(session&&(coachingSchemeRequiresAdultConsent(session)||sessionTopic==='sexuality'))
+  const progressPosition=entryStep==='intro'?1:entryStep==='topic'?2:index+3
   const options=current?.type==='scale_0_10'
     ?Array.from({length:11},(_,n)=>({id:String(n),label:{en:String(n),ru:String(n),es:String(n)}}))
     :(current?.choices||[])
@@ -331,21 +340,23 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   function start(scheme){
     if(recommendation.blocked)return
     setAdultAcknowledged(false)
-    setSession(scheme);setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
+    setSession(scheme);setEntryStep('intro');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
-    setSession(null);setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
+    setSession(null);setEntryStep('intro');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
+    if(entryStep==='intro'){backToModels();return}
+    if(entryStep==='topic'){setEntryStep('intro');setError('');return}
     if(pendingFollowup){
       if(reflectionDraft.trim()&&!window.confirm(t.discard))return
       setPendingFollowup(null);setReflectionDraft('');setError('')
       return
     }
-    if(index===0){backToModels();return}
+    if(index===0){setEntryStep('topic');setError('');return}
     // A guest can move between steps without discarding an unsubmitted draft.
     // This remains in React memory only; no server call or persistent storage.
     const updated={...answers,[current.id]:draft}
@@ -384,7 +395,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   }
   function summaryText(){
     if(!session)return ''
-    return [t.summary+' · '+tr(session.name,lang),question.trim()?t.yourQuestion+': '+question.trim():'',
+    return [t.summary+' · '+tr(session.name,lang),sessionTopic?t.yourTopic+': '+coachingRequestTopicLabel(sessionTopic,lang):'',question.trim()?t.yourQuestion+': '+question.trim():'',
       ...session.questions.flatMap(item=>[
         tr(item.prompt,lang)+': '+answerText(answers[item.id],item,lang,t),
         reflections[item.id]?.text?t.clarifyAnswer+': '+reflections[item.id].text:'',
@@ -536,22 +547,29 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
         </section>}
         
-      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={coachingSchemeRequiresAdultConsent(session)?'true':undefined}>
+      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>
         <header className={styles.sessionHeader}>
           <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
             <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
             {!finished&&<div className={styles.progress}>
-              <span>{t.stage} {index+1} {t.of} {session.questions.length}</span>
-              <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length}
-                aria-valuenow={index+1} aria-label={t.stage}>
-                <span style={{width:((index+1)/session.questions.length*100)+'%'}}/>
+              <span>{entryStep==='questions'?t.stage+' '+(index+1)+' '+t.of+' '+session.questions.length:progressPosition+' / '+(session.questions.length+2)}</span>
+              <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length+2}
+                aria-valuenow={progressPosition} aria-label={t.stage}>
+                <span style={{width:(progressPosition/(session.questions.length+2)*100)+'%'}}/>
               </div>
             </div>}
           </div>
         </header>
         <div className={styles.sessionScroll} ref={sessionScrollRef} tabIndex={-1}>
-          {coachingSchemeRequiresAdultConsent(session)&&!adultAcknowledged?
+          {entryStep==='intro'?<CoachingSessionIntroduction locale={lang}
+            name={tr(session.name,lang)} modelName={tr(models.get(session.modelKey)?.name,lang)}
+            minutes={session.minutes} questionCount={session.questions.length} style={session.style}
+            approach={tr(models.get(session.modelKey)?.focus,lang)} outcome={tr(session.result,lang)}
+            imageSrc={cardArtworkUrl(coachingArt[session.modelKey]||coachingArt.grow_v1)} headingRef={titleRef}/>
+          :entryStep==='topic'?<CoachingSessionTopic locale={lang} value={sessionTopic}
+            onChange={value=>{setSessionTopic(value);setAdultAcknowledged(false)}} headingRef={titleRef}/>
+          :requiresAdult&&!adultAcknowledged?
             <div className={styles.adultGate} data-coaching-age-confirm>
               <Image src={cardArtworkUrl(coachingArt.tantric_intimacy_v1)} alt="" aria-hidden="true"
                 width={800} height={240} sizes="(max-width:600px) 100vw, 760px" unoptimized/>
@@ -564,6 +582,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <span className={styles.completed}><Check size={16}/>{t.completed}</span>
             <h1>{t.summary}</h1>
             <div className={styles.summary}>
+              {sessionTopic&&<p><strong>{t.yourTopic}:</strong> {coachingRequestTopicLabel(sessionTopic,lang)}</p>}
               {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
               {session.questions.map(item=><div key={item.id}><strong>{tr(item.prompt,lang)}</strong><p>{answerText(answers[item.id],item,lang,t)}</p>
                 {reflections[item.id]?.text&&<p><em>{t.clarifyAnswer}:</em> {reflections[item.id].text}</p>}
@@ -611,15 +630,19 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>}
         </div>
-        {!finished&&(!coachingSchemeRequiresAdultConsent(session)||adultAcknowledged)&&<footer className={styles.sessionFooter}>
+        {!finished&&(entryStep!=='questions'||!requiresAdult||adultAcknowledged)&&<footer className={styles.sessionFooter}>
           <div className={styles.sessionActions}>
             <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
-            {pendingFollowup
+            {entryStep==='intro'
+              ?<button type="button" className={styles.primary} onClick={()=>setEntryStep('topic')}>{t.continueSession}<ArrowRight size={17}/></button>
+              :entryStep==='topic'
+              ?<button type="button" className={styles.primary} disabled={!sessionTopic} onClick={()=>setEntryStep('questions')}>{t.beginQuestions}<ArrowRight size={17}/></button>
+              :pendingFollowup
               ?<button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>{t.clarifySave}<ArrowRight size={17}/></button>
               :<button type="button" className={styles.primary} onClick={()=>advance(false)}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
           </div>
-          {pendingFollowup&&<button type="button" className={styles.followupSkip} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
-           {coachingSchemeRequiresAdultConsent(session)&&!pendingFollowup&&<button type="button" className={styles.sensitiveSkip} onClick={()=>advance(true)}>{t.skipSensitive}</button>}
+          {entryStep==='questions'&&pendingFollowup&&<button type="button" className={styles.followupSkip} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
+           {entryStep==='questions'&&requiresAdult&&!pendingFollowup&&<button type="button" className={styles.sensitiveSkip} onClick={()=>advance(true)}>{t.skipSensitive}</button>}
           <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
         </footer>}
       </section>}
