@@ -313,24 +313,20 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
             </div> : null}
           </div>
           <div className={styles.supportNext}>
-            <article className={styles.supportSmall}>
+            <Link href={`/${locale}/courses/antistress`} prefetch={false} className={styles.supportSmall} aria-label={t.programme}>
               <span className={styles.supportSmallIcon} aria-hidden="true"><ClipboardList size={21} /></span>
-              <div className={styles.supportSmallText}>
-                <strong>{t.programme}</strong><p>{t.programmeDetail}</p>
-              </div>
-              <Link href={`/${locale}/courses/antistress`} prefetch={false} className={styles.supportArrow} aria-label={t.programme}>
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-            </article>
-            <article className={styles.supportSmall}>
+              <span className={styles.supportSmallText}>
+                <strong>{t.programme}</strong><span className={styles.supportSmallDescription}>{t.programmeDetail}</span>
+              </span>
+              <span className={styles.supportArrow} aria-hidden="true"><ArrowRight size={18} /></span>
+            </Link>
+            <Link href={`/${locale}/services#consultation`} prefetch={false} className={styles.supportSmall} aria-label={t.personalSupport}>
               <span className={styles.supportSmallIcon} aria-hidden="true"><HeartHandshake size={21} /></span>
-              <div className={styles.supportSmallText}>
-                <strong>{t.personalSupport}</strong><p>{t.personalSupportDetail}</p>
-              </div>
-              <Link href={`/${locale}/services#consultation`} prefetch={false} className={styles.supportArrow} aria-label={t.personalSupport}>
-                <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-            </article>
+              <span className={styles.supportSmallText}>
+                <strong>{t.personalSupport}</strong><span className={styles.supportSmallDescription}>{t.personalSupportDetail}</span>
+              </span>
+              <span className={styles.supportArrow} aria-hidden="true"><ArrowRight size={18} /></span>
+            </Link>
           </div>
         </div> : null}
         <p className={styles.disclaimer}>{t.disclaimer}</p>
