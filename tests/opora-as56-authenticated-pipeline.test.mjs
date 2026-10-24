@@ -47,6 +47,8 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         await click(player,t.next)
         // The invitation requires an affirmative answer before the first action.
         await click(player,locale==='ru'?'Да, готов(а)':"Yes, I’m ready")
+        assert.ok(nodes(player.tree).some(n=>n.props?.['data-opora-practice-overview']===1))
+        await click(player,t.next) // Goal preview -> actual practice.
       }else{
         // Preserve the existing warm first screen and feedback on Days 2–14.
         await click(player, locale==='ru'?'Напряжённо':'Tense')
