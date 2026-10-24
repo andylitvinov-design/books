@@ -30,7 +30,7 @@ const copy = {
     choose: "Выберите способ получить подсказку",
     ask: "Получить бесплатную даосскую подсказку",
     testOverline: "Самостоятельно · €0", test: "Пройти бесплатную коуч-сессию", testAria: "Выбрать модель бесплатной коуч-сессии", testLink: "Или подобрать бесплатный тест",
-    exploreMore: "Другие возможности", exploreCoaching: "Выбрать коучинг", exploreTemple: "Исследовать храмовые подсказки", templeHeading: "Храмовые подсказки",
+    exploreMore: "Другие возможности", exploreCoaching: "Выбрать коучинг", exploreCoachingHint: "Модели и сессии", exploreTemple: "Исследовать храмовые подсказки", exploreTempleHint: "Символы и смыслы", taoOverline: "Символическая практика · €0", templeHeading: "Храмовые подсказки",
     testsTitle: "Бесплатные тесты по теме", testsFallback: "С чего можно начать",
     testsClose: "Скрыть подборку", testsMore: "Все тесты по теме",
     testsNote: "Это подбор по теме, не медицинская оценка. Ваш вопрос остаётся в браузере.",
@@ -115,7 +115,7 @@ const copy = {
     choose: "Choose how to explore your question",
     ask: "Get free Taoist insight",
     testOverline: "Self-guided · €0", test: "Get free coaching session", testAria: "Choose a free coaching session model", testLink: "Or explore a free test",
-    exploreMore: "More ways to explore", exploreCoaching: "Explore Coaching Options", exploreTemple: "Explore Temple Insights", templeHeading: "Temple Insights",
+    exploreMore: "More ways to explore", exploreCoaching: "Explore Coaching Options", exploreCoachingHint: "Methods and sessions", exploreTemple: "Explore Temple Insights", exploreTempleHint: "Symbols and reflections", taoOverline: "Symbolic reflection · €0", templeHeading: "Temple Insights",
     testsTitle: "Free tests for your topic", testsFallback: "A few ways to start",
     testsClose: "Close suggested tests", testsMore: "Explore all matching tests",
     testsNote: "Matched by topic only, not a diagnosis. Your question stays in this browser.",
@@ -200,7 +200,7 @@ const copy = {
     choose: "Elige cómo explorar tu pregunta",
     ask: "Recibir consejo taoísta gratuito",
     testOverline: "Autoguiado · €0", test: "Sesión gratuita de coaching", testAria: "Elegir un modelo de coaching gratuito", testLink: "O explorar un test gratuito",
-    exploreMore: "Más opciones para explorar", exploreCoaching: "Explorar opciones de coaching", exploreTemple: "Explorar reflexiones del templo", templeHeading: "Reflexiones del templo",
+    exploreMore: "Más opciones para explorar", exploreCoaching: "Explorar opciones de coaching", exploreCoachingHint: "Métodos y sesiones", exploreTemple: "Explorar reflexiones del templo", exploreTempleHint: "Símbolos y reflexión", taoOverline: "Reflexión simbólica · €0", templeHeading: "Reflexiones del templo",
     testsTitle: "Tests gratuitos para tu tema", testsFallback: "Opciones para empezar",
     testsClose: "Cerrar tests sugeridos", testsMore: "Ver todos los tests relacionados",
     testsNote: "Selección por tema, no un diagnóstico. La pregunta permanece en tu navegador. Algunos tests están en inglés.",
@@ -611,10 +611,33 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
         <button type="submit" form="ideas-question-form" className={styles.testButton} data-ideas-tao>
-          <span className={styles.modeYin} aria-hidden="true">☯</span>
-          <span>{t.ask}</span>
+          <span className={styles.modeYin} aria-hidden="true">☯︎</span>
+          <span className={styles.testButtonText}>
+            <span className={styles.testButtonKicker}>{t.taoOverline}</span>
+            <strong>{t.ask}</strong>
+          </span>
         </button>
       </div>
+      <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
+        <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
+          onClick={() => stageIdeasCoachingQuestion(question)} data-ideas-explore-coaching>
+          <span className={styles.exploreIcon} aria-hidden="true"><Compass size={18} /></span>
+          <span className={styles.exploreCopy}>
+            <strong>{t.exploreCoaching}</strong>
+            <small>{t.exploreCoachingHint}</small>
+          </span>
+          <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
+        </Link>
+        <a href="#temple-insights" className={`${styles.exploreLink} ${styles.exploreTemple}`}
+          data-ideas-explore-temple>
+          <span className={styles.exploreIcon} aria-hidden="true"><BookOpen size={18} /></span>
+          <span className={styles.exploreCopy}>
+            <strong>{t.exploreTemple}</strong>
+            <small>{t.exploreTempleHint}</small>
+          </span>
+          <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
+        </a>
+      </nav>
       <div className={styles.heroUtility} data-ideas-hero-utility>
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <div className={styles.utilityLinks}>
@@ -651,16 +674,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
         <p className={styles.testPickerNote}>{t.testsNote}</p>
       </section>
 
-      <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
-        <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
-          onClick={() => stageIdeasCoachingQuestion(question)} data-ideas-explore-coaching>
-          <span>{t.exploreCoaching}</span><ArrowRight size={17} aria-hidden="true" />
-        </Link>
-        <a href="#temple-insights" className={`${styles.exploreLink} ${styles.exploreTemple}`}
-          data-ideas-explore-temple>
-          <span>{t.exploreTemple}</span><ArrowRight size={17} aria-hidden="true" />
-        </a>
-      </nav>
+
       <h2 id="temple-insights" className={styles.templeHeading}>
         <Sparkles size={15} aria-hidden="true" />{t.templeHeading}
       </h2>
