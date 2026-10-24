@@ -25,12 +25,12 @@ const copy={
     skipSensitive:"Skip this question",
     groupHeading:"Choose your topic first",groupNote:"Select what you want to explore. Matching coaching methods appear below.",groupRefine:"Specific question",groupCount:"Sessions available",groupDesc:"Different methods, one question at a time.",healthNote:"Wellbeing coaching is about everyday habits, not diagnosis or treatment.",groupAll:"All topics",
     eyebrow:'HOLISTIC HOUSE · COACHING LOUNGE',title:'Coaching Lounge',
-    lead:'Describe what you need or filter by topic, time and format. Explore free guided methods, ancient planning courses and personal coaching together.',
+    lead:'Describe what you need or filter by topic, time and format. Explore free guided methods, ancient planning courses and personal coaching together.',leadCompact:'Choose a topic and explore a free coaching session or work personally with Andrey.',
     question:'What would you like to explore?',placeholder:'A goal, decision, relationship or challenge (optional)',
     privateQuestion:'Your question is matched only in this browser. It is not sent to AI, analytics or a coach.',
     format:'Session format',allFormats:'All sessions',self:'Free self-guided',human:'With Andrey',filters:'Find a session',
     topic:'Topic',allTopics:'All topics',duration:'Time available',anyTime:'Any duration',
-    style:'Approach',allStyles:'Any approach',quick:'Focused',reflective:'In-depth',
+    style:'Approach',allStyles:'Any approach',quick:'Focused',reflective:'In-depth',anyShort:'Any',upTo:'Up to',
     models:'Choose a session',all:'All coaching sessions',recommended:'Suggested for your question',
     noExact:'No specific match found. You can choose any model below.',
     empty:'No models match these filters. Try a different topic or duration.',
@@ -67,12 +67,12 @@ const copy={
     skipSensitive:"Пропустить этот вопрос",
     groupHeading:"Сначала выберите тему",groupNote:"Ниже появятся подходящие модели и методики коучинга.",groupRefine:"Уточните запрос",groupCount:"Доступно сессий",groupDesc:"Разные методики — один вопрос на экране.",healthNote:"Коучинг здоровья касается привычек и ресурсов, а не диагностики и лечения.",groupAll:"Все темы",
     eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга',
-    lead:'Опишите, с чем хотите поработать, или выберите тему, время и формат. Здесь собраны бесплатные модели, авторские курсы и личные сессии.',
+    lead:'Опишите, с чем хотите поработать, или выберите тему, время и формат. Здесь собраны бесплатные модели, авторские курсы и личные сессии.',leadCompact:'Выберите тему и начните бесплатную сессию или личную работу с Андреем.',
     question:'Какой вопрос хотите разобрать?',placeholder:'Цель, решение, отношения или сложность (необязательно)',
     privateQuestion:'Подбор по вопросу выполняется в браузере. Текст не отправляется в ИИ, аналитику или коучу.',
     format:'Формат сессии',allFormats:'Все сессии',self:'Бесплатные',human:'С Андреем',filters:'Подобрать сессию',
     topic:'Тема',allTopics:'Все темы',duration:'Время',anyTime:'Любая длительность',
-    style:'Стиль',allStyles:'Любой подход',quick:'Короткая',reflective:'Глубокая',
+    style:'Стиль',allStyles:'Любой подход',quick:'Короткая',reflective:'Глубокая',anyShort:'Любое',upTo:'До',
     models:'Выберите сессию',all:'Все коуч-сессии',recommended:'Рекомендуем по вашему вопросу',
     noExact:'Точного совпадения нет. Выберите подходящую модель самостоятельно.',
     empty:'Нет моделей с такими фильтрами. Измените тему или длительность.',
@@ -109,12 +109,12 @@ const copy={
     skipSensitive:"Omitir esta pregunta",
     groupHeading:"Primero elige un tema",groupNote:"Verás los enfoques y modelos de coaching adecuados.",groupRefine:"Pregunta específica",groupCount:"Sesiones disponibles",groupDesc:"Varios métodos, una pregunta por pantalla.",healthNote:"El bienestar trata hábitos y recursos, no diagnóstico ni tratamiento.",groupAll:"Todos",
     eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching',
-    lead:'Describe tu pregunta o filtra por tema, duración y formato. Compara sesiones gratuitas, cursos simbólicos y coaching personal en un mismo lugar.',
+    lead:'Describe tu pregunta o filtra por tema, duración y formato. Compara sesiones gratuitas, cursos simbólicos y coaching personal en un mismo lugar.',leadCompact:'Elige un tema y comienza una sesión gratis o trabaja personalmente con Andrey.',
     question:'¿Qué te gustaría explorar?',placeholder:'Una meta, decisión, relación o reto (opcional)',
     privateQuestion:'Tu pregunta se analiza solo en este navegador. No se envía a IA, analíticas ni al coach.',
     format:'Formato',allFormats:'Todas las sesiones',self:'Gratis',human:'Con Andrey',filters:'Encontrar sesión',
     topic:'Tema',allTopics:'Todos los temas',duration:'Tiempo disponible',anyTime:'Cualquier duración',
-    style:'Estilo',allStyles:'Cualquier enfoque',quick:'Breve',reflective:'Profundo',
+    style:'Estilo',allStyles:'Cualquier enfoque',quick:'Breve',reflective:'Profundo',anyShort:'Cualquiera',upTo:'Hasta',
     models:'Elige una sesión',all:'Todas las sesiones de coaching',recommended:'Sugeridos para tu pregunta',
     noExact:'No hay una coincidencia específica. Puedes elegir cualquier modelo.',
     empty:'No hay modelos con esos filtros. Cambia el tema o la duración.',
@@ -406,7 +406,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         <header className={styles.hero}>
           <p className={styles.eyebrow}><Sparkles size={16}/>{t.eyebrow}</p>
           <h1>{t.title}</h1>
-          <p>{t.lead}</p>
+          <p><span className={styles.leadFull}>{t.lead}</span><span className={styles.leadShort}>{t.leadCompact}</span></p>
         </header>
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.topicGroups} data-coaching-topic-first>
@@ -430,33 +430,42 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <button type="button" className={format==='human'?styles.active:''} aria-pressed={format==='human'} onClick={()=>setFormat('human')}><UserRound size={18}/>{t.human}</button>
           </fieldset>
           <>
+            <div className={styles.filters} data-coaching-inline-filters>
+              {topicGroup!=='all'&&<div className={styles.filterRow} data-coaching-filter="topic">
+                <span className={styles.filterName}>{t.groupRefine}</span>
+                <div className={[styles.pillOptions,styles.pillScroller].join(' ')} role="group" aria-label={t.groupRefine}>
+                  <button type="button" aria-pressed={topic==='all'} className={topic==='all'?styles.selectedPill:undefined}
+                    onClick={()=>setTopic('all')}>{t.anyShort}</button>
+                  {(catalog?.signals||[]).filter(signal=>coachingSignalInGroup(signal,topicGroup)&&schemes.some(s=>coachingSchemeInGroup(s,topicGroup)&&s.tags?.includes(signal.tag))).map(signal=>
+                    <button type="button" key={signal.tag} aria-pressed={topic===signal.tag}
+                      className={topic===signal.tag?styles.selectedPill:undefined}
+                      onClick={()=>setTopic(signal.tag)}>{tr(signal.label,lang)}</button>)}
+                </div>
+              </div>}
+              <div className={styles.filterRow} data-coaching-filter="duration">
+                <span className={styles.filterName}>{t.duration} <small>· {t.minutes}</small></span>
+                <div className={styles.pillOptions} role="group" aria-label={t.duration}>
+                  {[0,10,20,30,60].map(m=><button type="button" key={m} aria-pressed={duration===m}
+                    aria-label={m===0?t.anyTime:t.upTo+' '+m+' '+t.minutes}
+                    className={duration===m?styles.selectedPill:undefined}
+                    onClick={()=>setDuration(m)}>{m===0?t.anyShort:'≤'+m}</button>)}
+                </div>
+              </div>
+              <div className={styles.filterRow} data-coaching-filter="approach">
+                <span className={styles.filterName}>{t.style}</span>
+                <div className={styles.pillOptions} role="group" aria-label={t.style}>
+                  {[['all',t.anyShort],['quick',t.quick],['reflective',t.reflective]].map(([value,label])=>
+                    <button type="button" key={value} aria-pressed={style===value}
+                      className={style===value?styles.selectedPill:undefined}
+                      onClick={()=>setStyle(value)}>{label}</button>)}
+                </div>
+              </div>
+            </div>
             <label className={styles.questionLabel} htmlFor="public-coaching-question">{t.question}</label>
-            <textarea id="public-coaching-question" className={styles.questionInput} rows={2} maxLength={600}
+            <textarea id="public-coaching-question" className={styles.questionInput} rows={1} maxLength={600}
               value={question} placeholder={t.placeholder} autoComplete="off"
               onChange={e=>setQuestion(e.target.value)}/>
             <p className={styles.privacy}><LockKeyhole size={14}/>{t.privateQuestion}</p>
-            <div className={styles.filters}>
-              <label>{t.groupRefine}
-                <select value={topic} onChange={e=>setTopic(e.target.value)}>
-                  <option value="all">{t.allTopics}</option>
-                  {(catalog?.signals||[]).filter(signal=>coachingSignalInGroup(signal,topicGroup)&&schemes.some(s=>coachingSchemeInGroup(s,topicGroup)&&s.tags?.includes(signal.tag))).map(signal=>
-                    <option key={signal.tag} value={signal.tag}>{tr(signal.label,lang)}</option>)}
-                </select>
-              </label>
-              <label>{t.duration}
-                <select value={duration} onChange={e=>setDuration(Number(e.target.value))}>
-                  <option value="0">{t.anyTime}</option>
-                  {[10,20,30,60].map(m=><option key={m} value={m}>{m} {t.minutes}</option>)}
-                </select>
-              </label>
-              <label>{t.style}
-                <select value={style} onChange={e=>setStyle(e.target.value)}>
-                  <option value="all">{t.allStyles}</option>
-                  <option value="quick">{t.quick}</option>
-                  <option value="reflective">{t.reflective}</option>
-                </select>
-              </label>
-            </div>
           </>
         </section>
         {format!=='human'&&<section aria-labelledby="coaching-models-title" className={styles.catalog}>
