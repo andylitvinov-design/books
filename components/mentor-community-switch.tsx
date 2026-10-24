@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import styles from "./mentor-community-switch.module.css";
 
@@ -67,6 +67,12 @@ export function MentorCommunitySwitch({
 }: Props) {
   const t = COPY[locale === "ru" || locale === "es" ? locale : "en"];
   const [view, setView] = useState<View>(initialView ?? (hasArticles ? "articles" : "mentors"));
+  const shellRef = useRef<HTMLElement>(null);
+  // SSR markup can be visible before React attaches tab click handlers.
+  // Mark the actual hydrated widget so mobile browser QA tests real interaction.
+  useEffect(() => {
+    shellRef.current?.setAttribute("data-community-hydrated", "true");
+  }, []);
 
   function activate(next: View, moveFocus = false) {
     setView(next);
@@ -91,7 +97,7 @@ export function MentorCommunitySwitch({
   );
 
   return (
-    <section className={styles.shell} aria-labelledby="mentor-community-title" data-mentor-community>
+    <section ref={shellRef} className={styles.shell} aria-labelledby="mentor-community-title" data-mentor-community>
       <header className={styles.head}>
         <div>
           <p className={styles.eyebrow}>HOLISTIC HOUSE · COMMUNITY</p>
