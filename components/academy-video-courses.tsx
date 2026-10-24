@@ -76,7 +76,7 @@ type YggdrasilCourseSource = {
       id: string;
       number: number;
       title: Record<PublicLocale, string>;
-      video?: { videos?: Array<{ youtubeId?: string; title?: string; availability?: "unavailable" }> };
+      video?: { videos?: Array<{ youtubeId?: string; title?: string; label?: string; availability?: "unavailable" }> };
     }>;
   }>;
 };
@@ -129,7 +129,7 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
   return curriculum.levels.map((module) => {
     const chapters = module.steps.flatMap((step) => {
       const found = (step.video?.videos ?? []).filter(
-        (video): video is { youtubeId?: string; title?: string; availability?: "unavailable" } =>
+        (video): video is { youtubeId?: string; title?: string; label?: string; availability?: "unavailable" } =>
           (typeof video.youtubeId === "string" && validVideoId.test(video.youtubeId)) || video.availability === "unavailable",
       );
       const seen = new Set<string>();
@@ -140,7 +140,7 @@ function yggdrasilCourses(locale: PublicLocale): AcademyVideoCourse[] {
         seen.add(id);
         videos.push({
           id,
-          title: t.clip + " " + (videos.length + 1) + (found.length > 1 ? " / " + found.length : ""),
+          title: step.title[locale] + (video.label ? " · " + video.label : " · " + t.clip + " " + (videos.length + 1)),
           unavailable: video.availability === "unavailable",
         });
       });
