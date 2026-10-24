@@ -52,12 +52,12 @@ async function verify(browserType, locale, width) {
     const primary = await hero.locator('button[type="submit"]').boundingBox();
     const coachingAction = hero.locator("[data-ideas-free-coaching]");
     const secondary = await coachingAction.boundingBox();
-    assert.equal(await coachingAction.getAttribute("href"), "/" + (locale === "es" ? "en" : locale) + "/app/coaching",
-      label + ": direct existing personal coaching course");
+    assert.equal(await coachingAction.getAttribute("href"), "/" + locale + "/coaching",
+      label + ": public model catalog without cabinet redirect");
     const testAction = hero.locator("[data-ideas-free-test]");
     assert.ok(primary && secondary && primary.height >= 44 && secondary.height >= 44 &&
-      secondary.y >= primary.y + primary.height - 1,
-      label + ": two vertically stacked full-width actions");
+      Math.abs(secondary.y - primary.y) <= 2 && secondary.width > width * .25,
+      label + ": compact side-by-side coaching and Dao switch");
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
