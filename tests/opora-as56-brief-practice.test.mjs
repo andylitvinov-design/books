@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs58Day,oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaPracticalDay} from '../lib/inner-growth/opora-seven-practical-skills.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -63,9 +64,9 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
       // five original opening screens before arriving at practical work.
       await advanceOporaTo(f.h,'practice',t.next)
       const title=day===1?{en:'Look at three objects',ru:'Посмотрите на три предмета',es:'Mira tres objetos'}[locale]
-        :oporaAs58Day(day,locale).title
+        :oporaPracticalDay(day,locale).title
       assert.ok(textOf(f.h.tree).includes(title))
-      assert.ok(textOf(f.h.tree).includes(oporaAs58Day(day,locale).practice))
+      assert.ok(textOf(f.h.tree).includes(oporaPracticalDay(day,locale).practice))
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],false)
       await f.click(t.help)

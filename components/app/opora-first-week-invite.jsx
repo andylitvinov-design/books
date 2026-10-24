@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, LockKeyhole } from 'lucide-react'
-import { antiStressBlueprint } from '@/lib/inner-growth/anti-stress-blueprint'
+import { oporaPracticalSkillCards } from '@/lib/inner-growth/opora-seven-practical-skills'
 import styles from './opora-first-week-invite.module.css'
 
 // Pre-enrolment preview: labels come from the existing versioned V7 day map,
@@ -59,7 +59,8 @@ export default function OporaFirstWeekInvite({
 }) {
   const lang = COPY[locale] ? locale : 'en'
   const t = COPY[lang]
-  const firstWeek = antiStressBlueprint(lang).days.slice(0, 7)
+  // The actual first seven learning skills, also used by the new lesson player.
+  const firstWeek = oporaPracticalSkillCards(lang)
   return <section className={styles.slide} data-opora-first-week-intro data-opora-week-one-count={firstWeek.length}
     aria-labelledby="opora-week-one-title">
     <header className={styles.header}>
