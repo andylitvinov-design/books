@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import { cardArtworkUrl, hasCardArtwork } from "@/lib/public-card-artwork";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
@@ -321,7 +322,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
           {t.sections.map((step,index) => (
             <article key={step.title} className={styles.topicScene} data-core-visual-screen={`step-${index + 1}`}>
               <div className={styles.topicPhoto}>
-                <Image src={visualPhotos[index % visualPhotos.length]} alt="" fill
+                <Image src={visualPhotos[index % visualPhotos.length]} alt="" fill unoptimized
                   sizes="(max-width: 760px) 100vw, 44vw" />
               </div>
               <div className={styles.topicCopy}>
@@ -337,7 +338,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
       {kind === "alchemy" ? (
         <section className={[styles.topicScene, styles.alchemySupport].join(" ")} data-core-visual-screen="extended-support" aria-labelledby="alchemy-support-heading">
           <div className={styles.topicPhoto}>
-            <Image src={visualPhotos[2]} alt="" fill sizes="(max-width: 760px) 100vw, 44vw" />
+            <Image src={visualPhotos[2]} alt="" fill unoptimized sizes="(max-width: 760px) 100vw, 44vw" />
           </div>
           <div className={styles.topicCopy}>
             <p className={styles.eyebrow}>{copy[locale].alchemy.supportKicker}</p>
@@ -352,7 +353,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
       ) : null}
       <section className={[styles.topicScene, styles.safetyScreen].join(" ")} data-core-visual-screen="limitations" aria-labelledby="core-safety-heading">
         <div className={styles.topicPhoto}>
-          <Image src={visualPhotos[3]} alt="" fill sizes="(max-width: 760px) 100vw, 44vw" />
+          <Image src={visualPhotos[3]} alt="" fill unoptimized sizes="(max-width: 760px) 100vw, 44vw" />
         </div>
         <div className={styles.topicCopy}>
           <p className={styles.eyebrow}>{screen.guide}</p>
@@ -363,7 +364,7 @@ export function CoreServiceDetail({ locale, kind }: { locale: PublicLocale; kind
       </section>
       <section className={styles.captureScene} data-core-visual-screen="final-capture" id="core-final-capture" aria-labelledby="core-capture-heading">
         <div className={styles.topicPhoto}>
-          <Image src="/images/holistic-house/andy-about.png" alt="" fill
+          <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
             sizes="(max-width: 760px) 100vw, 40vw" />
         </div>
         <div className={styles.topicCopy}>
