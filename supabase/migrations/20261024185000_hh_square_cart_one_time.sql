@@ -27,7 +27,7 @@ create table app_private.square_service_orders (
  square_link_id text unique check (square_link_id ~ '^[A-Za-z0-9_-]{5,192}$'),
  square_order_id text unique check (square_order_id ~ '^[A-Za-z0-9_-]{5,192}$'),
  square_payment_id text unique check (square_payment_id ~ '^[A-Za-z0-9_-]{5,192}$'),
- checkout_url text check (checkout_url ~ '^https://(square[.]link/u/|checkout[.]square[.]site/)[A-Za-z0-9_-]{5,120}$'),
+ checkout_url text check (checkout_url ~ '^https://(square[.]link/u/|sandbox[.]square[.]link/u/|checkout[.]square[.]site/)[A-Za-z0-9_-]{5,120}$'),
  refunded_minor integer not null default 0 check (refunded_minor>=0 and refunded_minor<=cad_minor),
  paid_at timestamptz,
  revision integer not null default 0 check (revision>=0),
