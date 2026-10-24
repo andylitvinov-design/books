@@ -7,8 +7,8 @@ const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf
 test("approved Ideas design keeps question, submit button and three touch-sized choices on one mobile row", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
-  assert.match(ui, /<form className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
-  assert.match(ui, /<button type="submit" className=\{styles\.testButton\} data-ideas-tao>/);
+  assert.match(ui, /<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
+  assert.match(ui, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
   assert.match(ui, /type="button" onClick=\{\(\) => choose\("dao"\)\}/);
   assert.match(ui, /type="button" onClick=\{\(\) => choose\("aphorisms"\)\}/);
   assert.match(ui, /type="button" onClick=\{\(\) => choose\("personal"\)\}/);
@@ -184,11 +184,11 @@ test("Ideas example rotates on client mount, keeping private question matching i
 });
 
 
-test("Ideas full-photo first screen embeds the question and two real CTAs in one scenic card", () => {
+test("Ideas has one compact photographic question banner and two choices immediately beneath", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
   const catalog = read("data/assessments/catalog.js");
-  assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
+  assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
   assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions role="group" aria-label=\{t\.choose\}>/);
   assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.submit\}/);
   assert.ok(ui.includes("data-ideas-free-coaching"));
@@ -207,7 +207,7 @@ test("Ideas full-photo first screen embeds the question and two real CTAs in one
   assert.match(css, /\.hero::after \{[\s\S]*?linear-gradient/);
   assert.match(css, /saturate\(1\.08\)/);
   assert.match(css, /\.heading \{\s*display: block;[\s\S]*?background: transparent/);
-  assert.match(css, /\.heroActions\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.heroActions\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(ui, /testOverline: "Self-guided · €0"/);
   assert.match(ui, /ask: "Get free Taoist insight"/);
   assert.match(css, /\.testPicker\[hidden\] \{ display: none; \}/);
