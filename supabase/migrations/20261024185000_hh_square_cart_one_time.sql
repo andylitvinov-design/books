@@ -14,9 +14,19 @@ create table app_private.square_service_orders (
    'express-consultation-30',
    'personal-session-60',
    'express-consultation-30+personal-session-60'
- )),
+  )),
+ constraint square_exact_cart_check check (
+   (cart_key='express-consultation-30' and items=array['express-consultation-30']::text[])
+   or (cart_key='personal-session-60' and items=array['personal-session-60']::text[])
+   or (cart_key='express-consultation-30+personal-session-60' and
+       items=array['express-consultation-30','personal-session-60']::text[])
+ ),
  locale text not null check (locale in ('en','ru','es')),
- eur_minor integer not null check (eur_minor in (5000,10000,15000)),
+ eur_minor integer not null check (
+   (cart_key='express-consultation-30' and eur_minor=5000) or
+   (cart_key='personal-session-60' and eur_minor=10000) or
+   (cart_key='express-consultation-30+personal-session-60' and eur_minor=15000)
+ ),
  cad_minor integer not null check (cad_minor between 100 and 10000000),
  currency text not null default 'CAD' check (currency='CAD'),
  environment text not null check (environment in ('production','sandbox')),
@@ -120,6 +130,26 @@ revoke all on function app_private.square_service_order_guard() from public,anon
 grant execute on function app_private.square_service_order_guard() to hh_app_backend;
 create trigger square_service_order_guard before update on app_private.square_service_orders
  for each row execute function app_private.square_service_order_guard();
+
+-- Only a pending order may be inserted, regardless of the caller's column grants.
+-- Payment proof is generated later exclusively by the server with provider readback.
+create function app_private.square_service_order_insert_guard()
+returns trigger language plpgsql security invoker set search_path = '' as $
+begin
+ if new.status <> 'pending' or new.square_link_id is not null or
+    new.square_order_id is not null or new.square_payment_id is not null or
+    new.checkout_url is not null or new.paid_at is not null or
+    new.refunded_minor <> 0 or new.revision <> 0 or
+    new.currency <> 'CAD' then
+   raise exception 'SQUARE_INSERT_UNVERIFIED';
+ end if;
+ return new;
+end $;
+revoke all on function app_private.square_service_order_insert_guard() from public,anon,authenticated,hh_app_inbox;
+grant execute on function app_private.square_service_order_insert_guard() to hh_app_backend;
+create trigger square_service_order_insert_guard
+ before insert on app_private.square_service_orders for each row
+ execute function app_private.square_service_order_insert_guard();
 
 comment on table app_private.square_service_orders is
  'Square only: authenticated one-time service checkout, private order/payment IDs and no clinical/marketing data. Not subscription or automatic booking.';
