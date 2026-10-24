@@ -111,3 +111,18 @@ test('owner status copy parses as valid JavaScript even when no JSX bundler runs
  assert.match(actions,/else if\(result\.status==='already_claimed'\)outcome='council_duplicate'/)
  assert.doesNotMatch(actions,/already_claimed'outcome/)
 })
+
+test('mobile Council send has an immediate progress label and returns to the tapped section',()=>{
+ const page=read('app/admin/telegram-setup/page.js')
+ const actions=read('app/admin/telegram-setup/actions.js')
+ const button=read('app/admin/telegram-setup/send-daily-council-button.jsx')
+ assert.match(page,/id="daily-council-report"/)
+ assert.match(page,/acceptedToday/)
+ assert.match(page,/SendDailyCouncilButton/)
+ assert.match(page,/!acceptedToday&&!activeSendingToday/)
+ assert.match(button,/useFormStatus/)
+ assert.match(button,/disabled=\{disabled\|\|pending\}/)
+ assert.match(button,/Sending report…/)
+ assert.match(actions,/#daily-council-report/)
+ assert.match(page,/https:\/\/t\.me\/Andydotbot/)
+})
