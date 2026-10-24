@@ -25,7 +25,7 @@ export function CommunityServiceHighlights({
 }: { locale: string; services: PublicService[]; articlesAvailable?: boolean }) {
   const language: Locale = locale === "ru" || locale === "es" ? locale : "en";
   const t = COPY[language];
-  // The repository supplies approved public snapshots. Never expose draft_copy.
+  // The repository supplies approved public snapshots; private author fields are not used.
   const published = services.filter((service) => service.active && Boolean(service.copy?.title));
   if (!published.length) return null;
   return (
