@@ -6,6 +6,8 @@ import { getHexagram, hexagramEssence, hexagramTitle, archivePhotoFor, trigramIn
 import { drawRandomHexagram, validHexagramNumber } from "@/lib/dao-divination.mjs";
 import authorRecords from "@/data/dao-hexagram-author.json";
 import { DaoHexagramGlyph } from "./dao-hexagram-glyph";
+import { DaoSunTzuStrategy } from "./dao-sunzi-strategy";
+import { prepareDaoReadingForSunTzu, SUN_TZU_PLACEHOLDER } from "@/data/dao-sunzi-display.mjs";
 import styles from "./dao-divination.module.css";
 
 type Locale = "en" | "ru" | "es";
@@ -162,7 +164,7 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
                 <details className={styles.fullReading} open key={item.number}>
                   <summary>{t.authorFull} <span aria-hidden="true">⌄</span></summary>
                   <div lang="ru" className={styles.authorText}>
-                    {author.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+                    {prepareDaoReadingForSunTzu(author.text).split(/\n\n+/).filter(Boolean).map((part, index) => part.trim() === SUN_TZU_PLACEHOLDER ? <DaoSunTzuStrategy key={index} number={item.number} locale={locale} /> : <p key={index}>{part}</p>)}
                   </div>
                   <p className={styles.languageNote}>{t.originalLanguage}</p>
                   {author.source ? <a href={author.source} rel="noopener noreferrer" target="_blank">{t.source} ↗</a> : null}
@@ -173,7 +175,7 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
                   <p className={styles.languageNote}>{t.newNote}</p>
                   {editorial?.number === item.number && editorial.text ? (
                     <div lang="ru" className={styles.authorText}>
-                      {editorial.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+                      {editorial.text.split(/\n\n+/).filter(Boolean).map((part, index) => part.trim() === SUN_TZU_PLACEHOLDER ? <DaoSunTzuStrategy key={index} number={item.number} locale={locale} /> : <p key={index}>{part}</p>)}
                     </div>
                   ) : (
                     <p className={styles.languageNote}>{editorial?.number === item.number && editorial.text === null ? t.noAuthor : t.loading}</p>

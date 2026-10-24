@@ -12,6 +12,7 @@ import batch08 from "./dao-hexagrams-editorial/50-54.mjs";
 import batch09 from "./dao-hexagrams-editorial/55-60.mjs";
 import batch10 from "./dao-hexagrams-editorial/61-63.mjs";
 import { getHexagram, trigramInfo, daoAuthorHexagramNumbers } from "./dao-hexagrams.mjs";
+import { SUN_TZU_PLACEHOLDER } from "./dao-sunzi-display.mjs";
 
 const archived = new Set(daoAuthorHexagramNumbers);
 const drafts = Object.freeze([
@@ -56,8 +57,7 @@ function formatReading(draft) {
     draft.risks.join("\n"),
     "🐲 Императорская подсказка:",
     draft.guidance,
-    "📖 Стратегия в духе Сунь-цзы (современная стилизация, не цитата):",
-    draft.strategy,
+    SUN_TZU_PLACEHOLDER,
     "🧬 Психотерапевтический смысл:",
     draft.psyche,
     "🪞 Аффирмации:",

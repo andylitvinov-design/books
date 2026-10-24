@@ -1,0 +1,7 @@
+.block{margin:14px 0;padding:14px 16px;background:#f7f4ee;border:1px solid #e3d9cb;border-radius:14px;color:#423c33;display:grid;gap:8px}
+.block h3{font-size:1rem;font-weight:700;line-height:1.4;margin:0;color:#443b30}
+.block blockquote{margin:0;padding:0;border:0;color:#59442f;font-size:.97rem;line-height:1.5;font-style:italic}
+.block p{margin:0;line-height:1.52;font-size:.92rem}
+.block small{font-size:.74rem;line-height:1.4}
+.source{color:#746453}.source a{color:#356b65;text-underline-offset:2px}.note{color:#82796e}
+@media(max-width:430px){.block{margin:12px 0;padding:12px;border-radius:12px;gap:7px}.block h3{font-size:.96rem}.block blockquote{font-size:.94rem}.block p{font-size:.9rem}}

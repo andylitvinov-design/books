@@ -6,6 +6,8 @@ import { PublicConsultationCta } from "@/components/public-consultation-cta";
 import { DaoHexagramDirectory, type DaoHexagramEntry } from "./dao-hexagram-directory";
 import { DaoHexagramGlyph } from "./dao-hexagram-glyph";
 import { DaoDivinationPanel } from "./dao-divination-panel";
+import { DaoSunTzuStrategy } from "./dao-sunzi-strategy";
+import { prepareDaoReadingForSunTzu, SUN_TZU_PLACEHOLDER } from "@/data/dao-sunzi-display.mjs";
 import { archivePhotoFor, daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle, hexagrams, trigramInfo } from "@/data/dao-hexagrams.mjs";
 import authorRecords from "@/data/dao-hexagram-author.json";
 import { getDaoEditorialHexagramText } from "@/data/dao-hexagrams-editorial.mjs";
@@ -126,7 +128,7 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
           <p className={styles.kicker}>{labels.authorHeading}</p>
           <h2>{item.hanzi} · {title}</h2>
           <div className={styles.originalText} lang="ru">
-            {author.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+            {prepareDaoReadingForSunTzu(author.text).split(/\n\n+/).filter(Boolean).map((part, index) => part.trim() === SUN_TZU_PLACEHOLDER ? <DaoSunTzuStrategy key={index} number={item.number} locale={locale} /> : <p key={index}>{part}</p>)}
           </div>
           <p className={styles.provenance}>{labels.strategyNote}</p>
           {author.source ? (
@@ -139,7 +141,7 @@ export function DaoHexagramDetails({ locale, number }: { locale: DaoLocale; numb
           <h2>{item.hanzi} · {title}</h2>
           <p className={styles.provenance}>{labels.editorialNote}</p>
           <div className={styles.originalText} lang="ru">
-            {editorialText.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+            {editorialText.split(/\n\n+/).filter(Boolean).map((part, index) => part.trim() === SUN_TZU_PLACEHOLDER ? <DaoSunTzuStrategy key={index} number={item.number} locale={locale} /> : <p key={index}>{part}</p>)}
           </div>
           <p className={styles.provenance}>{labels.caution}</p>
         </article>
