@@ -262,12 +262,15 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           </div>
         </section>
 
-        <section className={styles.bottom}>
+        <section className={styles.bottom} data-business-visual-screen="free-alternative">
+          <div className={styles.scenePhoto}><Image src={visualPhotos[2]} alt="" fill sizes="(max-width: 767px) 100vw, 42vw" /></div>
+          <div className={styles.bottomCopy}>
           <h2>{t.finalTitle}</h2>
           <AcquisitionEventLink href={freeHref} event="service_request_start" prefetch={false}
             className={styles.bottomAction} attributes={{ "data-business-cta": "free-bottom" }}>
             {t.finalCta}<ArrowRight size={18} aria-hidden="true"/>
           </AcquisitionEventLink>
+          </div>
         </section>
         <section className={styles.businessFinalScreen} data-business-visual-screen="final-capture">
           <div className={styles.scenePhoto}>
