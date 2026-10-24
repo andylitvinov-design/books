@@ -1,0 +1,5 @@
+stable_key,instrument,locale,items,domains,study_n,doi,rights_gate,verification_status
+muis-gomeziglesias2026-eses33,MUIS-A Spanish adapted original,es-ES,33,4 original theoretical domains,174,10.1186/s40359-026-04990-9,licensed_only,research_only preliminary PCA
+muis-gomeziglesias2026-eses26,MUIS-A Spanish shortened derived,es-ES,26,4 exploratory factors,174,10.1186/s40359-026-04990-9,licensed_only,research_only same sample as 33 item form
+ice-kryazhbaranov2026-ukua32,Inventory of Climate Emotions Ukrainian,uk-UA,32,8 climate emotion dimensions,673,10.1186/s40359-026-05661-5,permission_required,research_only respondent-language validated; parent instrument permission to confirm
+eaq-sala2026-eses22,Eco-Anxiety Questionnaire Spanish,es-ES,22,habitual worry and negative consequences,292,10.1186/s12889-026-29761-4,licensed_only,research_only gender metric invariance failed
