@@ -65,7 +65,7 @@ const copy = {
     ],
     entryNote: "You can explore without an account. Sign in only when you want to save results privately.",
     returnIntro: "How it works", wizardKicker: "Your free profile", selectTemplate: "Choose this",
-    stages: ["Profile", "Topics", "Scales", "Tests"],
+    stages: ["Profile", "Topics", "Scales", "Tests", "Ready"],
     profileTitle: "What would you like to explore first?",
     profileHelp: "Choose the starting point closest to your goal. You can adjust the topics, scales and tests before you begin.",
     templates: {
@@ -97,7 +97,11 @@ const copy = {
       ["Challenges", "Which practical obstacles deserve attention?"],
     ],
     swotNote: "SWOT is a guided reflection using your own interpretation, not an automatically inferred personality verdict.",
-    next: "Continue", back: "Back", start: "Start selected free tests",
+    next: "Continue", back: "Back", start: "Yes, take these tests",
+    review: "Review my test path", readyKicker: "YOUR PERSONAL TEST PATH",
+    readyTitle: "Ready to build your profile?",
+    readyHelp: "To create your profile, take the following free tests in order. You can review this list before starting.",
+    readyFoot: "One test at a time. You will see your progress at the top, and you can choose to save results privately in your Cabinet.",
     noTests: "No eligible free test measures this selection. Go back and choose other scales.",
     private: "Results can be saved in your protected account. Build your profile and set voluntary development goals there, after the tests.",
     myProfile: "My saved profile", myPath: "My development path",
@@ -118,7 +122,7 @@ const copy = {
     ],
     entryNote: "Выбирать темы можно без регистрации. Для приватного сохранения результатов понадобится вход в кабинет.",
     returnIntro: "Как это работает", wizardKicker: "Ваш бесплатный профиль", selectTemplate: "Выбрать",
-    stages: ["Профиль", "Темы", "Шкалы", "Тесты"],
+    stages: ["Профиль", "Темы", "Шкалы", "Тесты", "Начало"],
     profileTitle: "Что вы хотите изучить в первую очередь?",
     profileHelp: "Начните с самой важной задачи. На следующих шагах можно изменить темы, шкалы и набор тестов.",
     templates: {
@@ -150,7 +154,11 @@ const copy = {
       ["Препятствия", "Какие обстоятельства важно учитывать?"],
     ],
     swotNote: "SWOT — упражнение для собственной рефлексии, а не автоматически поставленный психологический вердикт.",
-    next: "Далее", back: "Назад", start: "Пройти выбранные тесты бесплатно",
+    next: "Далее", back: "Назад", start: "Да, пройти эти тесты",
+    review: "Проверить план тестов", readyKicker: "ВАШ ПУТЬ К ЛИЧНОМУ ПРОФИЛЮ",
+    readyTitle: "Всё готово для создания профиля",
+    readyHelp: "Для создания профиля предлагаем пройти следующие бесплатные тесты по порядку. Подтвердите список перед началом.",
+    readyFoot: "Тесты идут один за другим. Сверху будет виден общий прогресс, а результаты можно сохранить в защищённом кабинете по вашему желанию.",
     noTests: "Для выбранных шкал пока нет подходящего бесплатного теста. Вернитесь к выбору шкал.",
     private: "Результаты можно сохранить в защищённом кабинете. Там доступен личный профиль и цели программы развития.",
     myProfile: "Мой профиль", myPath: "Моя программа развития",
@@ -171,7 +179,7 @@ const copy = {
     ],
     entryNote: "Puedes explorar sin cuenta. Inicia sesión solo si quieres guardar los resultados de forma privada.",
     returnIntro: "Cómo funciona", wizardKicker: "Tu perfil gratuito", selectTemplate: "Elegir",
-    stages: ["Perfil", "Temas", "Escalas", "Pruebas"],
+    stages: ["Perfil", "Temas", "Escalas", "Pruebas", "Inicio"],
     profileTitle: "¿Qué te gustaría explorar primero?",
     profileHelp: "Empieza por tu objetivo más importante. Podrás ajustar áreas, escalas y pruebas antes de comenzar.",
     templates: {
@@ -203,7 +211,11 @@ const copy = {
       ["Desafíos", "¿Qué obstáculos prácticos debes considerar?"],
     ],
     swotNote: "El DAFO es una reflexión guiada, no un veredicto automático sobre tu personalidad.",
-    next: "Continuar", back: "Atrás", start: "Comenzar pruebas gratuitas",
+    next: "Continuar", back: "Atrás", start: "Sí, empezar estas pruebas",
+    review: "Revisar mi plan de pruebas", readyKicker: "TU RUTA DE PRUEBAS PERSONALES",
+    readyTitle: "Tu perfil empieza aquí",
+    readyHelp: "Para crear tu perfil, realiza estas pruebas gratuitas en orden. Confirma la lista antes de empezar.",
+    readyFoot: "Avanza prueba por prueba. Verás el progreso total arriba y podrás guardar los resultados de forma privada si lo deseas.",
     noTests: "No hay una prueba gratuita adecuada para estas escalas. Regresa y cambia tu elección.",
     private: "Guarda tus resultados en tu cuenta protegida y define tus propias metas de desarrollo.",
     myProfile: "Mi perfil guardado", myPath: "Mi plan de desarrollo",
@@ -239,7 +251,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key))
     .slice(0, 24), [tests, selectedAxes]);
   const displayTests = showMore ? matches : matches.slice(0, 6);
-  const chosenTests = matches.filter(test => selectedKeys.includes(test.key));
+  const chosenTests = selectedKeys.flatMap(key => matches.filter(test => test.key === key));
   const coverage = new Set(chosenTests.flatMap(test => test.matches));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
 
@@ -267,6 +279,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       setShowMore(false);
       setStep(3);
     }
+    if (step === 3 && selectedKeys.length > 0) setStep(4);
   }
 
   const base = "/" + accountLocale;
@@ -409,15 +422,46 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </details>
       </section>}
 
+      {step === 4 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
+        <div className={styles.reviewIntro}>
+          <div className={styles.reviewIcon} aria-hidden="true"><ClipboardList size={24} /></div>
+          <p className={styles.templateLabel}>{t.readyKicker}</p>
+          <h2 id="profile-builder-step-title">{t.readyTitle}</h2>
+          <p className={styles.help}>{t.readyHelp}</p>
+          <p className={styles.reviewTotal}>
+            <ClipboardList size={17} aria-hidden="true" />
+            <strong>{chosenTests.length} {t.testCount}</strong>
+            {minutes > 0 && <span>· ~{minutes} {t.minutes}</span>}
+          </p>
+        </div>
+        <ol className={styles.reviewTests}>
+          {chosenTests.map((test, index) =>
+            <li key={test.key} className={styles.reviewTest} data-profile-review-test={test.key}>
+              <span className={styles.reviewNumber} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              <span className={styles.reviewTestText}>
+                <strong>{test.title}</strong>
+                <small>{test.questions ? test.questions + " " + t.questions : ""}
+                  {test.questions && test.minutes ? " · " : ""}
+                  {test.minutes ? "~" + test.minutes + " " + t.minutes : ""}</small>
+              </span>
+              <Check size={18} className={styles.reviewCheck} aria-hidden="true" />
+            </li>)}
+        </ol>
+        <p className={styles.reviewFoot}><LockKeyhole size={16} aria-hidden="true" />{t.readyFoot}</p>
+      </section>}
+
       {step > 0 && <div className={styles.actions}>
         <button type="button" className={styles.back} onClick={() => setStep(step - 1)}><ArrowLeft size={17} />{t.back}</button>
         {step < 3
           ? <button type="button" className={styles.primary} disabled={step === 1 ? areas.length === 0 : selectedAxes.length === 0}
               onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
-          : selectedKeys.length > 0
-            ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
-                {t.start}<ArrowRight size={17} /></Link>
-            : <button type="button" disabled className={styles.primary}>{t.start}</button>}
+          : step === 3
+            ? <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
+                onClick={goForward} data-profile-review-tests>{t.review}<ArrowRight size={17} /></button>
+            : selectedKeys.length > 0
+              ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
+                  {t.start}<ArrowRight size={17} /></Link>
+              : <button type="button" disabled className={styles.primary}>{t.start}</button>
       </div>}
     </div>
 
