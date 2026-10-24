@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, ChevronDown, ClipboardList, Compass, LockKeyhole, Sparkles, Sun, UserRound } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
+import { appFetch } from "@/lib/app/client-fetch";
+import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 import { recommendProfileBattery } from "@/lib/profile/profile-battery";
 
 type Locale = "en" | "ru" | "es";
@@ -97,6 +99,18 @@ const copy = {
     ],
     swotNote: "SWOT is a guided reflection using your own interpretation, not an automatically inferred personality verdict.",
     next: "Continue", back: "Back", start: "Start selected free tests",
+    saveAndContinue: "Save my selection & continue",
+    gateTitle: "Save your tests in your personal Cabinet",
+    gateIntro: "Your selection is ready. Continue with Google to keep these tests in My Tests, save future answers and results privately, and return to your progress.",
+    gateBenefits: ["Your selected test plan", "Results and progress over time", "Reflective SWOT and development goals"],
+    gateGoogle: "Continue with Google", gateGoogleBusy: "Opening Google…",
+    gateGuest: "Take tests without signing in",
+    gateGuestNote: "Guest results are temporary and are not automatically transferred to a Google account later.",
+    gateExisting: "Already have a Cabinet? Use the same Google sign-in. No duplicate account.",
+    gateChecking: "Checking your Cabinet…",
+    gateStorageError: "Your browser could not keep this selection for Google sign-in. Enable site storage and try again, or start as a guest.",
+    gateCheckError: "Could not verify your account. You can still continue with Google or take tests as a guest.",
+    gateGoogleError: "Google sign-in could not start. Please try again, or take tests as a guest.",
     noTests: "No eligible free test measures this selection. Go back and choose other scales.",
     private: "Results can be saved in your protected account. Build your profile and set voluntary development goals there, after the tests.",
     myProfile: "My saved profile", myPath: "My development path",
@@ -149,6 +163,18 @@ const copy = {
     ],
     swotNote: "SWOT — упражнение для собственной рефлексии, а не автоматически поставленный психологический вердикт.",
     next: "Далее", back: "Назад", start: "Пройти выбранные тесты бесплатно",
+    saveAndContinue: "Сохранить подборку и продолжить",
+    gateTitle: "Сохраните тесты в личном кабинете",
+    gateIntro: "Подборка готова. Войдите через Google, чтобы сохранить тесты в «Моих тестах», безопасно хранить будущие ответы и результаты и возвращаться к прогрессу.",
+    gateBenefits: ["Ваша подборка тестов", "Результаты и динамика изменений", "SWOT и личные цели развития"],
+    gateGoogle: "Войти через Google", gateGoogleBusy: "Открываем Google…",
+    gateGuest: "Пройти тесты без входа",
+    gateGuestNote: "Гостевые результаты временные и не переносятся автоматически в Google-кабинет.",
+    gateExisting: "Кабинет уже есть? Войдите через тот же Google. Повторная регистрация не нужна.",
+    gateChecking: "Проверяем вход…",
+    gateStorageError: "Браузер не смог сохранить подборку для входа через Google. Разрешите хранение данных сайта или начните как гость.",
+    gateCheckError: "Не удалось проверить вход в кабинет. Можно попробовать Google или пройти тесты как гость.",
+    gateGoogleError: "Не удалось начать вход через Google. Повторите попытку или пройдите тесты как гость.",
     noTests: "Для выбранных шкал пока нет подходящего бесплатного теста. Вернитесь к выбору шкал.",
     private: "Результаты можно сохранить в защищённом кабинете. Там доступен личный профиль и цели программы развития.",
     myProfile: "Мой профиль", myPath: "Моя программа развития",
@@ -201,6 +227,18 @@ const copy = {
     ],
     swotNote: "El DAFO es una reflexión guiada, no un veredicto automático sobre tu personalidad.",
     next: "Continuar", back: "Atrás", start: "Comenzar pruebas gratuitas",
+    saveAndContinue: "Guardar mi selección y continuar",
+    gateTitle: "Guarda las pruebas en tu espacio personal",
+    gateIntro: "Tu selección está lista. Entra con Google para guardar estas pruebas en Mis pruebas, mantener privados tus futuros resultados y volver a tu progreso.",
+    gateBenefits: ["Tu selección de pruebas", "Resultados y evolución personal", "DAFO y objetivos de desarrollo"],
+    gateGoogle: "Continuar con Google", gateGoogleBusy: "Abriendo Google…",
+    gateGuest: "Hacer las pruebas sin iniciar sesión",
+    gateGuestNote: "Los resultados como invitado son temporales y no se transfieren automáticamente a tu cuenta de Google.",
+    gateExisting: "¿Ya tienes una cuenta? Usa el mismo acceso de Google, sin crear otra.",
+    gateChecking: "Comprobando tu cuenta…",
+    gateStorageError: "El navegador no pudo conservar esta selección para Google. Permite almacenar datos del sitio o continúa como invitado.",
+    gateCheckError: "No se pudo verificar la sesión. Puedes probar Google o realizar las pruebas como invitado.",
+    gateGoogleError: "No se pudo iniciar el acceso con Google. Inténtalo de nuevo o continúa como invitado.",
     noTests: "No hay una prueba gratuita adecuada para estas escalas. Regresa y cambia tu elección.",
     private: "Guarda tus resultados en tu cuenta protegida y define tus propias metas de desarrollo.",
     myProfile: "Mi perfil guardado", myPath: "Mi plan de desarrollo",
@@ -226,6 +264,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [selectedAxes, setSelectedAxes] = useState<string[]>(allAxesFor(defaultAreas.personal));
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
+  const [showAccountGate, setShowAccountGate] = useState(false);
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountError, setAccountError] = useState("");
   const accountLocale = locale === "es" ? "en" : locale;
 
   const availableAxes = allAxesFor(areas);
@@ -269,6 +310,57 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const base = "/" + accountLocale;
   const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","));
 
+  // Only rights-cleared catalogue keys cross the login redirect. Never persist
+  // topic choices, health concerns, questionnaire answers or scores in a URL or
+  // browser storage. The existing account planner validates every key again.
+  function keepSelectionForCabinet() {
+    try {
+      window.sessionStorage.setItem(
+        PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent(selectedKeys),
+      );
+      return true;
+    } catch {
+      setAccountError(t.gateStorageError);
+      return false;
+    }
+  }
+
+  async function reviewAccount() {
+    if (accountBusy || selectedKeys.length === 0) return;
+    setAccountBusy(true);
+    setAccountError("");
+    try {
+      // Already authenticated: skip another Google prompt and let My Tests
+      // append the selection to the existing private account plan.
+      await appFetch("auth/contact-profile");
+      if (!keepSelectionForCabinet()) {
+        setShowAccountGate(true);
+        return;
+      }
+      window.location.assign(base + "/app/tests?selection=pending");
+    } catch (cause) {
+      setShowAccountGate(true);
+      if ((cause as { status?: number })?.status !== 401) setAccountError(t.gateCheckError);
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function continueWithGoogle() {
+    if (accountBusy || !selectedKeys.length) return;
+    setAccountError("");
+    if (!keepSelectionForCabinet()) return;
+    setAccountBusy(true);
+    try {
+      const response = await appFetch("auth/start", { locale: accountLocale, continueTo: "tests" });
+      if (!response?.redirectUrl || typeof response.redirectUrl !== "string") throw new Error("SIGN_IN_UNAVAILABLE");
+      window.location.assign(response.redirectUrl);
+    } catch {
+      setAccountError(t.gateGoogleError);
+      setAccountBusy(false);
+    }
+  }
+
   return <div className={styles.shell} data-personality-profile-builder>
     {!started ? <>
       <header className={styles.hero}>
@@ -296,7 +388,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       </section>
     </> : <>
     <div className={styles.wizardTop} ref={wizardRef}>
-      <button type="button" className={styles.returnIntro} onClick={() => { setStarted(false); setStep(0); }}>
+      <button type="button" className={styles.returnIntro} onClick={() => { setStarted(false); setStep(0); setShowAccountGate(false); setAccountError(""); }}>
         <ArrowLeft size={16} aria-hidden="true" />{t.returnIntro}
       </button>
       <span className={styles.wizardKicker}><Sparkles size={15} aria-hidden="true" />{t.wizardKicker}</span>
@@ -304,7 +396,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     <nav className={styles.progress} aria-label={locale === "ru" ? "Шаги конструктора" : locale === "es" ? "Pasos" : "Builder steps"}>
       {t.stages.map((label, index) =>
         <button key={label} type="button" aria-current={step === index ? "step" : undefined}
-          disabled={index > step} onClick={() => setStep(index)} className={step === index ? styles.activeStage : ""}>
+          disabled={index > step} onClick={() => { setShowAccountGate(false); setAccountError(""); setStep(index); }} className={step === index ? styles.activeStage : ""}>
           <span>{index + 1}</span>{label}
         </button>)}
     </nav>
@@ -366,7 +458,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </div>
       </section>}
 
-      {step === 3 && <section aria-labelledby="profile-builder-step-title">
+      {step === 3 && !showAccountGate && <section aria-labelledby="profile-builder-step-title">
         <h2 id="profile-builder-step-title">{t.testTitle}</h2>
         <p className={styles.help}>{t.testHelp}</p>
         <div className={styles.testCount}><ClipboardList size={17} aria-hidden="true" />
@@ -403,15 +495,43 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </details>
       </section>}
 
+      {step === 3 && showAccountGate && <section className={styles.accountGate} data-profile-account-gate aria-labelledby="profile-builder-account-title">
+        <div className={styles.gateIcon}><LockKeyhole size={22} aria-hidden="true" /></div>
+        <p className={styles.templateLabel}>{chosenTests.length} {t.testCount}{minutes > 0 ? " · " + minutes + " " + t.minutes : ""}</p>
+        <h2 id="profile-builder-account-title">{t.gateTitle}</h2>
+        <p className={styles.help}>{t.gateIntro}</p>
+        <ul className={styles.gateBenefits}>
+          {t.gateBenefits.map(benefit => <li key={benefit}><Check size={17} aria-hidden="true" />{benefit}</li>)}
+        </ul>
+        <button className={styles.gateGoogle} type="button" data-profile-google-signin
+          onClick={continueWithGoogle} disabled={accountBusy}>
+          <span className={styles.googleMark} aria-hidden="true">G</span>
+          {accountBusy ? t.gateGoogleBusy : t.gateGoogle}
+          <ArrowRight size={18} aria-hidden="true" />
+        </button>
+        {accountError && <p className={styles.gateError} role="alert">{accountError}</p>}
+        <p className={styles.gateExisting}>{t.gateExisting}</p>
+        <Link href={testHref} prefetch={false} className={styles.gateGuest} data-profile-start-tests>
+          {t.gateGuest}<ArrowRight size={17} aria-hidden="true" />
+        </Link>
+        <p className={styles.gateGuestNote}>{t.gateGuestNote}</p>
+      </section>}
+
       {step > 0 && <div className={styles.actions}>
-        <button type="button" className={styles.back} onClick={() => setStep(step - 1)}><ArrowLeft size={17} />{t.back}</button>
+        <button type="button" className={styles.back} onClick={() => {
+          setAccountError("");
+          if (showAccountGate) setShowAccountGate(false);
+          else setStep(step - 1);
+        }}><ArrowLeft size={17} />{t.back}</button>
         {step < 3
           ? <button type="button" className={styles.primary} disabled={step === 1 ? areas.length === 0 : selectedAxes.length === 0}
               onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
-          : selectedKeys.length > 0
-            ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
-                {t.start}<ArrowRight size={17} /></Link>
-            : <button type="button" disabled className={styles.primary}>{t.start}</button>}
+          : !showAccountGate
+            ? <button type="button" className={styles.primary} data-profile-review-account
+                disabled={!selectedKeys.length || accountBusy} onClick={reviewAccount}>
+                {accountBusy ? t.gateChecking : t.saveAndContinue}<ArrowRight size={17} aria-hidden="true" />
+              </button>
+            : null}
       </div>}
     </div>
 
