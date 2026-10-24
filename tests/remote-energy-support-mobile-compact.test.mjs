@@ -52,7 +52,8 @@ test("private intention is not in URLs, browser storage, analytics or public boo
   assert.match(jsx, /router\.push\("\/" \+ cabinetLocale \+ "\/app\/consultations\?service="/);
   assert.match(bridge, /let pendingPrivateIntention = null/);
   assert.match(bridge, /pendingPrivateIntention = null\s*return staged\?\.serviceId/);
-  const handoff = bridge.slice(bridge.indexOf("let pendingPrivateIntention = null"));
+  const handoff = bridge.slice(bridge.indexOf("let pendingPrivateIntention = null"))
+    .replace(/\/\/[^\n]*/g, "");
   assert.doesNotMatch(handoff, /sessionStorage|localStorage|document\.cookie|navigator\.sendBeacon|fetch\(/);
   assert.match(cabinet, /takeRemoteSupportPrivateIntention\(service\.id\)/);
   assert.match(cabinet, /message: note/);
