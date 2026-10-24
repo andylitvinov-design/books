@@ -170,3 +170,16 @@ test('public model cards include only known first-party photographs with mobile-
  assert.match(css,/\.cardArt\{/)
  assert.match(css,/@media\(max-width:360px\)/)
 })
+
+
+test('special coaching programme JSX conditionals close before the next card',()=>{
+ const ui=read('components/public-coaching-discovery.jsx')
+ for(const slug of ['egyptian','greek']){
+   const start=ui.indexOf("shownTraditions.includes('"+slug+"')&&<article")
+   assert.ok(start>=0,'Expected gated '+slug+' card')
+   const close=ui.indexOf('</article>}',start)
+   const next=ui.indexOf('<article',start+1)
+   assert.ok(close>=0 && (next<0||close<next),
+     'Close '+slug+' conditional before rendering any following card')
+ }
+})
