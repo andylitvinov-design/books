@@ -172,7 +172,7 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
             {t.benefits.map((item, index) => {
               const Icon = [PlayCircle, Leaf, HeartHandshake][index];
               return <article className={styles.benefit} key={item.title} data-reiki-visual-screen={index+1}>
-                <div className={styles.scenePhoto}><Image src={art[index%art.length]} alt="" fill
+                <div className={styles.scenePhoto}><Image src={art[index%art.length]} alt="" fill unoptimized
                   sizes="(max-width: 700px) 100vw, 44vw" /></div>
                 <div className={styles.sceneWords}>
                   <span className={styles.benefitIcon}><Icon size={23} aria-hidden="true" /></span>
@@ -187,7 +187,7 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
           <div><p className={styles.sectionEyebrow}>{t.howEyebrow}</p><h2 id="reiki-referral-how">{t.howTitle}</h2></div>
           <ol className={styles.steps}>
             {t.steps.map((step, index) => <li key={step.title} data-reiki-visual-screen={index+1}>
-              <div className={styles.scenePhoto}><Image src={art[(index+1)%art.length]} alt="" fill
+              <div className={styles.scenePhoto}><Image src={art[(index+1)%art.length]} alt="" fill unoptimized
                 sizes="(max-width: 700px) 100vw, 44vw" /></div>
               <div className={styles.sceneWords}>
                 <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
@@ -198,7 +198,7 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
         </section>
 
         <section className={styles.faq} aria-labelledby="reiki-referral-faq" data-reiki-visual-screen="faq">
-          <div className={styles.scenePhoto}><Image src={art[1]} alt="" fill sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <div className={styles.scenePhoto}><Image src={art[1]} alt="" fill unoptimized sizes="(max-width: 700px) 100vw, 44vw" /></div>
           <div className={styles.sceneWords}>
             <h2 id="reiki-referral-faq">{t.faqTitle}</h2>
             <div className={styles.faqItems}>{t.faq.map((item) => <details key={item.question}>
@@ -213,7 +213,7 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
         </section>
 
         <section className={styles.bottomCta} aria-labelledby="reiki-referral-end" data-reiki-visual-screen="start">
-          <div className={styles.scenePhoto}><Image src={art[0]} alt="" fill sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <div className={styles.scenePhoto}><Image src={art[0]} alt="" fill unoptimized sizes="(max-width: 700px) 100vw, 44vw" /></div>
           <div className={styles.sceneWords}>
             <h2 id="reiki-referral-end">{t.bottomTitle}</h2><p>{t.bottomLead}</p>
           <AcquisitionEventLink href={courseHref} event="academy_course_enquiry_click" attributes={{ "data-reiki-cta": "footer" }} className={styles.mainCta} prefetch={false}>
