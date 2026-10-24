@@ -24,7 +24,7 @@ test("seven ordered stages with unique media and one visible journey in EN/RU/ES
   assert.match(component, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
   for (const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]) {
     const home = read(page);
-    const tags = ["HomeSectionCarousel","HomeFeaturedWorkspace","HomeMoreDisclosure"];
+    const tags = ["HomeSectionCarousel","HomeMoreDisclosure","HomeFeaturedWorkspace"];
     let last = -1;
     for (const tag of tags) {
       const at = home.indexOf("<" + tag);
