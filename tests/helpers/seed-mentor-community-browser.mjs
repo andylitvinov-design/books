@@ -8,13 +8,14 @@ import { createAppRepository } from "../../lib/app/repository.js";
 import { createPractitionerRepository } from "../../lib/practitioners/repository.js";
 import { createArticleRepository } from "../../lib/practitioners/article-repository.js";
 import { closeDatabase } from "../../lib/app/database.js";
-import { assertIsolated, actor, B } from "./app-db-setup.mjs";
+import { assertIsolated, actor, B, SB } from "./app-db-setup.mjs";
 
 assertIsolated();
 const config = getAppConfig();
 assert.equal(config.test, true, "Test data must never be written to production");
 const masterActor = actor();
-const otherActor = actor(B);
+// Account B needs its own session; A’s token must never authenticate as B.
+const otherActor = actor(B, SB);
 const accountRepo = createAppRepository(config);
 const practice = createPractitionerRepository(config);
 const articles = createArticleRepository(config);
