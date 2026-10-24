@@ -85,7 +85,7 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
           coverPath: a.published.coverPath || "",
           tags: Array.isArray(a.published.tags) ? a.published.tags : [],
         }))} />}
-          <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0} />
+          <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0 || articlesResult.status === "rejected"} />
         </>}
       />
     </main>
