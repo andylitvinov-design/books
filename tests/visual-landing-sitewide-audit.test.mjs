@@ -42,6 +42,18 @@ const templates = [
     image:"<StaticPortrait src={photos", final:"final-capture",
   },
   {
+    id:"free-reiki", route:"/en/academy/reiki/free-practitioner-course",
+    path:"components/reiki-referral-landing.tsx",
+    prefix:"data-reiki-visual-screen", capture:"<CompactLeadCapture",
+    image:"<Image src={art[", final:"final-capture",
+  },
+  {
+    id:"antistress", route:"/en/courses/antistress",
+    path:"components/public-antistress-landing.tsx",
+    prefix:"data-antistress-visual-screen", capture:"<CompactLeadCapture",
+    image:"<img src={scenePhotos", final:"final-capture",
+  },
+  {
     id:"coaching-traditions", route:"/en/academy/coaching/egyptian",
     path:"components/academy-tradition-coaching-landing.tsx",
     prefix:"data-tradition-visual-screen", capture:"<CompactLeadCapture",
