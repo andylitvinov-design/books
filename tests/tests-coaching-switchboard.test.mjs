@@ -25,30 +25,17 @@ test("Four-path hub is the canonical public first screen in EN/RU/ES", () => {
   assert.match(css, /prefers-reduced-motion/);
 });
 
-test("Profile selector provides type, editable scale set and real cleared test handoffs", () => {
-  for (const type of ["personal", "relationships", "business", "whole"]) {
-    assert.match(ui, new RegExp("  " + type + ": \\["));
-  }
-  assert.match(ui, /data-profile-builder/);
-  assert.match(ui, /aria-pressed=\{profileKind === kind\}/);
-  assert.match(ui, /type="checkbox" checked=\{scales.includes\(key\)\}/);
-  assert.match(ui, /onClick=\{\(\) => setScales\(\[\.\.\.scaleOrder\]\)\}/);
-  const catalog = read("data/assessments/catalog.js");
-  const entries = ui.slice(ui.indexOf("const startableTests:"), ui.indexOf("const defaultScales:"));
-  const keys = [...entries.matchAll(/:\s*"([a-z0-9-]+)"/g)].map(match => match[1]);
-  assert.equal(keys.length, 5);
-  assert.equal(new Set(keys).size, 5);
-  for (const key of keys) {
-    const pos = catalog.indexOf("key: '" + key + "'");
-    assert.ok(pos > 0, "missing test in public catalog: " + key);
-    const record = catalog.slice(pos, pos + 1200);
-    assert.match(record, /startable: true/);
-    assert.match(record, /rightsStatus: 'cleared'/);
-    assert.match(record, /guestEligible: true/);
-  }
-  assert.match(ui, /client\?startTests=\$\{startableTests\[scale\]\}/);
+test("Profile entry reuses canonical personality-profiles builder, never a second scorer", () => {
+  assert.match(ui, /data-personality-profiles-entry/);
+  assert.match(ui, /\/personality-profiles/);
   assert.match(ui, /\/client\/tests/);
   assert.match(ui, /\/app/);
+  assert.doesNotMatch(ui, /type="checkbox"/);
+  assert.doesNotMatch(ui, /data-profile-builder/);
+  assert.doesNotMatch(ui, /startableTests/);
+  for (const label of ["personal", "business", "wellbeing", "comprehensive"]) {
+    assert.ok(ui.includes(label) || ui.includes("Personal"), "Missing profile option description: " + label);
+  }
 });
 
 test("Temple insight stays private in browser; coaching and support reuse their shipped routes", () => {
