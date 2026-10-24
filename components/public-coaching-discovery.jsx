@@ -529,7 +529,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.groupResults} aria-live="polite">{shown.length} · {t.groupCount}</p>
             {topicGroup==='wellbeing'&&<p className={styles.groupResults}>{t.healthNote}</p>}
             {question.trim().length>=8&&!recommendation.recognized&&!recommendation.blocked&&<p>{t.noExact}</p>}
-            {outcome&&<p className={styles.outcomeHelp} role="status">{t.outcomeRankingNote}</p>}}
+            {outcome&&<p className={styles.outcomeHelp} role="status">{t.outcomeRankingNote}</p>}
           </div>
           {recommendation.blocked?<p className={styles.alert} role="alert">{t.alert}</p>:
             !catalog?<p className={styles.alert} role="status">{t.unavailable}</p>:
