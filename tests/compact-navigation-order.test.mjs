@@ -60,7 +60,9 @@ test('My Profile guest tests and separate support journeys are all localized and
   for (const section of ['temple-insights','holistic-support']) {
     const page=read('app/[locale]/'+section+'/page.tsx')
     assert.ok(page.includes('generateMetadata'))
-    assert.ok(page.includes('generateStaticParams'))
+    // The published Holistic Support hub is intentionally dynamic for approved practitioner listings.
+    if (section === 'temple-insights') assert.ok(page.includes('generateStaticParams'))
+    else assert.ok(page.includes('force-dynamic'))
     assert.ok(sitemap.includes(section))
     assert.ok(locales.includes(section))
     for (const locale of ['en','ru','es']) assert.ok(page.includes(locale+': "/'+locale+'/'+section+'"'))

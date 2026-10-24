@@ -74,7 +74,7 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
   }
   const active = ({home:'home',pro:'pro',profile:'profile',coaching:'coaching',
     insights:'insights',support:'support','temple-support':'insights',
-    'client':'profile','client/tests':'profile'})[surface]
+    'client':'profile','client/tests':'profile','personality-profiles':'profile','temple-insights':'insights','holistic-support':'support'})[surface]
   await expect(bottom.locator('[aria-current="page"]')).toHaveCount(active ? 1 : 0)
   if (active) await expect(bottom.locator('[data-nav-item="' + active + '"]')).toHaveAttribute('aria-current', 'page')
   return expected
