@@ -238,6 +238,21 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   },[session,index,finished,pendingFollowup])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
+  // A dedicated public scheme landing may link back to an explicit Start action.
+  // Only a whitelisted, published scheme key is read from the URL; never a
+  // visitor's raw question or response. No session is stored by this handoff.
+  const openedLinkedScheme=useRef(false)
+  useEffect(()=>{
+    if(openedLinkedScheme.current||!schemes.length)return
+    const schemeKey=new URLSearchParams(window.location.search).get('start')
+    if(!schemeKey)return
+    openedLinkedScheme.current=true
+    const selected=schemes.find(item=>item.schemeKey===schemeKey)
+    if(selected){
+      setSession(selected);setIndex(0);setAnswers({});setDraft('')
+      setFinished(false);setError('');setCopied(false)
+    }
+  },[schemes])
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
   const suggestionKeys=useMemo(()=>new Set(question.trim().length>=8&&recommendation.recognized?recommendation.suggestions.filter(s=>s.matchedTags.length>0).map(s=>s.schemeKey):[]),[question,recommendation])
   const shown=useMemo(()=>schemes.filter(s=>(topic==='all'||s.tags?.includes(topic))&&(duration===0||s.minutes<=duration)&&(style==='all'||s.style===style))
