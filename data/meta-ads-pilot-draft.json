@@ -1,6 +1,6 @@
 {
   "project": "Holistic House",
-  "revision": "2026-10-20",
+  "revision": "2026-10-24",
   "platform": "Meta Ads",
   "status": "DRAFT_ONLY_NOT_IMPORTED_NOT_ACTIVE",
   "campaignCreated": false,
@@ -48,7 +48,10 @@
         "primaryText": "Sometimes a fresh perspective helps clarify what matters. Holistic House offers a free personal written situation review, beginning with a simple reflection exercise and a hand-drawn picture. Learn how it works, at your own pace.",
         "cta": "Learn More",
         "landingUrl": "https://holistichouse.vercel.app/en/services/free-situation-review?utm_source=facebook&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_a",
-        "asset": "Approved real Andrey photo; Facebook feed format 4:5 after rights and crop review"
+        "asset": "Approved real Andrey photo; Facebook feed format 4:5 after rights and crop review",
+        "adsManagerWebsiteUrl": "https://holistichouse.vercel.app/en/services/free-situation-review",
+        "adsManagerUrlParameters": "utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_a",
+        "landingUrlRole": "PREVIEW_ONLY_NOT_META_DELIVERY_URL"
       },
       {
         "id": "ad_b",
@@ -57,9 +60,37 @@
         "primaryText": "Meet Andy and discover a gentle, structured way to look at your goals and resources. Start with a free written reflection request. There is no obligation to book a paid session.",
         "cta": "Learn More",
         "landingUrl": "https://holistichouse.vercel.app/en/services/free-situation-review?utm_source=instagram&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_b",
-        "asset": "Second approved real photo; Instagram placements only if correctly cropped and connected"
+        "asset": "Second approved real photo; Instagram placements only if correctly cropped and connected",
+        "adsManagerWebsiteUrl": "https://holistichouse.vercel.app/en/services/free-situation-review",
+        "adsManagerUrlParameters": "utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_b",
+        "landingUrlRole": "PREVIEW_ONLY_NOT_META_DELIVERY_URL"
       }
-    ]
+    ],
+    "placementPolicy": {
+      "mode": "MANUAL_UNTIL_MEDIA_QA",
+      "oneSharedCampaignAndAdSet": true,
+      "eligibleAfterRealPreviewQA": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories"
+      ],
+      "excluded": [
+        "audience_network",
+        "messenger",
+        "threads"
+      ],
+      "note": "Never assume a creative belongs to Facebook or Instagram by its ad name. Inspect every actual placement and its photo crop before enabling it."
+    },
+    "attribution": {
+      "setup": "ADS_MANAGER_WEBSITE_URL_PLUS_URL_PARAMETERS_FIELD",
+      "sourceMacro": "{{site_source_name}}",
+      "resolvedAllowlist": {
+        "fb": "facebook",
+        "ig": "instagram"
+      },
+      "otherSources": "REJECT_UNATTRIBUTED_NO_MESSENGER_LABEL",
+      "note": "In each ad, set a clean Website URL and paste URL parameters separately in Tracking. Static landingUrl is a manual channel preview only; it must NOT be used for Advantage+ or cross-platform delivery. Verify live preview resolves fb/ig, and pause if Meta changes macro support."
+    }
   },
   "exclusions": [
     "No clinical or medical efficacy promises",
