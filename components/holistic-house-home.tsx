@@ -73,10 +73,10 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </header>
 
       <HomeSectionCarousel locale={locale} />
+      <HomeFeaturedWorkspace locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
       <HomePersonalSpaceCard locale={locale} />
-      <HomeFeaturedWorkspace locale={locale} />
       <HomepageTopicJourneys locale={locale} />
       <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
