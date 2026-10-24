@@ -8,18 +8,16 @@ const css = read("components/home-core-methods.module.css");
 const enRu = read("components/holistic-house-home.tsx");
 const es = read("app/es/page.tsx");
 
-test("the three signature approaches appear in separate stages without a duplicate top showcase", () => {
-  const feature = read("components/home-featured-workspace.tsx");
-  for (const home of [enRu, es]) {
-    assert.match(home, /<HomeFeaturedWorkspace locale=/);
-    assert.doesNotMatch(home, /<HomeCoreMethods locale=/);
+test("three reusable methods remain available without duplicating the seven-stage homepage", () => {
+  assert.doesNotMatch(enRu, /<HomeCoreMethods/);
+  assert.doesNotMatch(es, /<HomeCoreMethods/);
+  assert.match(enRu, /<HomeFeaturedWorkspace locale=\{locale\} \/>/);
+  assert.match(es, /<HomeFeaturedWorkspace locale="es" \/>/);
+  assert.match(ui, /data-home-core-methods/);
+  for (const id of ["alchemy", "energy", "coaching"]) {
+    assert.match(ui, new RegExp('id: "' + id + '"'));
   }
-  for (const stage of ["coaching", "alchemy", "energy"]) {
-    assert.ok(feature.includes('"'+stage+'": {'), "Missing stage: " + stage);
-  }
-  for (const action of ["aiCoaching", "therapist", "alchemy", "energy"]) {
-    assert.ok(feature.includes('"'+action+'": "/images/holistic-house/'), "Missing method card: " + action);
-  }
+  assert.match(ui, /methods\.map\(/);
 });
 
 test("localized card copy explains methods and avoids overstating active AI or booking", () => {
@@ -27,7 +25,7 @@ test("localized card copy explains methods and avoids overstating active AI or b
     "Алхимия души", "Гипнотерапия · гомеопатия · расстановки",
     "Энергетическая коррекция", "Сессия · персональный талисман",
     "Получить поддержку", "Обучиться",
-    "Коучинг / психотерапия", "ИИ-коучинг · бесплатно", "Подобрать специалиста",
+    "Коучинг / психотерапия", "Коучинг · бесплатно", "Подобрать специалиста",
     "Alchemy of the Soul", "Energy correction", "Coaching / psychotherapy",
     "Alquimia del alma", "Corrección energética", "Coaching / psicoterapia",
   ]) assert.ok(ui.includes(label), "Missing localized copy: " + label);
@@ -43,11 +41,11 @@ test("actions use real localized routes and remain navigation only", () => {
     "/services/alchemy-of-soul",
     "/services/remote-energy-support",
     "/academy/principles-of-energywork",
-    "/app/coaching",
+    "/coaching",
     "/services/catalog#service-listings",
   ]) assert.ok(ui.includes(route), "Missing destination: " + route);
-  assert.match(ui, /method\.id === "coaching" && locale === "es" \? "\/en\/app\/coaching"/);
-  assert.match(ui, /: "\/" \+ locale \+ method\.primaryPath/);
+  assert.doesNotMatch(ui, /\/en\/app\/coaching/);
+  assert.match(ui, /href=\{"\/" \+ locale \+ method\.primaryPath\}/);
   assert.match(ui, /href=\{"\/" \+ locale \+ method\.secondaryPath\}/);
   for (const photo of [
     "hero-olive-incense.webp", "reiki-approved-sunrise-v3.webp", "course-start-heron.webp",
