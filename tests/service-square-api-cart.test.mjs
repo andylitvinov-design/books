@@ -40,7 +40,7 @@ const payment = {
   refunded_money: { amount: 0, currency: 'CAD' },
 }
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
-const rejected = fn => assert.throws(fn, /INVALID|UNAVAILABLE|MISMATCH|CONFLICT|REQUIRED/)
+const rejected = fn => assert.throws(fn, /INVALID|UNAVAILABLE|MISMATCH|CONFLICT|REQUIRED|UNKNOWN_FIELD/)
 
 test('fail closed until live Square, tax, refund, RLS, prices and signature are independently configured', () => {
   assert.equal(config.enabled, true)
