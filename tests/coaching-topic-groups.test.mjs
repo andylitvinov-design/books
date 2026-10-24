@@ -29,7 +29,7 @@ test('the topic FIRST chooser covers business, money, relationships, health, sex
   assert.match(css,/\.topicGroupGrid\{/)
   assert.match(css,/@media\(max-width:390px\)/)
   assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
-  assert.match(ui,/title=\{tr\(s.name,lang\)\|\|tr\(model.name,lang\)\}/)
+  assert.match(ui,/title=\{coachingSessionTitle\(s\.schemeKey,lang,/)
   assert.doesNotMatch(ui,/localStorage|sessionStorage|\bfetch\(|sendBeacon\(|gtag\(|fbq\(/)
   const parsed=ts.createSourceFile('components/public-coaching-discovery.jsx',ui,
     ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
