@@ -123,3 +123,26 @@ test('rejects invented choices and excessive notes; deleting Greek keeps Egyptia
  assert.equal((await actions.readTraditionCoaching(config,actorA,e)).course.current.status,'active')
  await assert.rejects(()=>actions.readTraditionCoaching(config,actorA,'unknown'),err=>err.code==='COACHING_COURSE_NOT_FOUND')
 })
+
+test('selected request topic is owner scoped, and sexual subject requires adult confirmation',async()=>{
+ const {actions,store}=fixture()
+ const config={},template='hh-egyptian-goal-planning-v1'
+ await assert.rejects(()=>actions.saveTraditionCoaching(config,actorA,template,{
+   action:'start',revision:0,clientTopic:'unknown-model-topic'
+ }),err=>err.code==='PERSONAL_COACH_INVALID_TOPIC')
+ await assert.rejects(()=>actions.saveTraditionCoaching(config,actorA,template,{
+   action:'start',revision:0,clientTopic:'sexuality'
+ }),err=>err.code==='PERSONAL_COACH_ADULT_CONFIRMATION_REQUIRED')
+ assert.equal(store.size,0,'invalid topic and missing adult opt-in create no private rows')
+ const value=await actions.saveTraditionCoaching(config,actorA,template,{
+   action:'start',revision:0,clientTopic:'love'
+ })
+ assert.equal(value.course.current.clientTopic,'love')
+ const resumed=await actions.readTraditionCoaching(config,actorA,template)
+ assert.equal(resumed.course.current.clientTopic,'love','round-trip retained in owner ciphertext')
+ assert.equal((await actions.readTraditionCoaching(config,actorB,template)).course,null)
+ const resumedAgain=await actions.saveTraditionCoaching(config,actorA,template,{
+   action:'start',revision:value.revision,clientTopic:'money'
+ })
+ assert.equal(resumedAgain.course.current.clientTopic,'love','resume never silently overwrites the selected topic')
+})

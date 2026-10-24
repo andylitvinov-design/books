@@ -30,7 +30,7 @@ type OfferId = keyof typeof photos;
 // Only explicitly no-cost offerings receive the red corner mark.
 // Academy is a mixed-price catalog; registration and paid services are not free offers.
 const freeOfferIds: ReadonlySet<OfferId> = new Set([
-  "reiki", "opora", "allTests", "review", "aiCoaching",
+  "reiki", "opora", "profile", "review", "aiCoaching",
 ]);
 const freeBadgeLabels = { en: "FREE", ru: "БЕСПЛАТНО", es: "GRATIS" } as const;
 type ModuleKey = "courses" | "personality" | "situation" | "coaching" | "alchemy" | "energy" | "master";
@@ -68,26 +68,14 @@ const copy = {
         ]
       },
       "personality": {
-        "title": "Personality discovery",
-        "lead": "Free self-tests can help you reflect, save a personal profile and plan your next steps.",
+        "title": "Personality Profiles",
+        "lead": "One personal or business profile, with free tests, a reflective SWOT and a private development path.",
         "offers": [
           {
-            "id": "allTests",
-            "title": "Free personality tests",
-            "body": "Choose a topic, complete a self-check and explore your results.",
-            "cta": "Take a free test"
-          },
-          {
             "id": "profile",
-            "title": "Build my personal profile",
-            "body": "Collect your results and private reports in My Space.",
-            "cta": "Create my profile"
-          },
-          {
-            "id": "growth",
-            "title": "My development plan",
-            "body": "Turn your reflections into a private path with next steps.",
-            "cta": "Open my development plan"
+            "title": "Personality Profiles · free",
+            "body": "Choose the themes and scales that matter to you. Build a test set and plan your next steps.",
+            "cta": "Build my free profile"
           }
         ]
       },
@@ -228,26 +216,14 @@ const copy = {
         ]
       },
       "personality": {
-        "title": "Диагностика личности",
-        "lead": "Бесплатное тестирование, личный профиль и индивидуальный план развития.",
+        "title": "Профили личности",
+        "lead": "Одна услуга: личностный или бизнес-профиль, бесплатные тесты, SWOT и программа развития.",
         "offers": [
           {
-            "id": "allTests",
-            "title": "Бесплатные тесты личности",
-            "body": "Выберите тему, пройдите тест и изучите результаты.",
-            "cta": "Пройти тест бесплатно"
-          },
-          {
             "id": "profile",
-            "title": "Создать профиль личности",
-            "body": "Соберите результаты тестов и отчёты в приватном кабинете.",
-            "cta": "Создать профиль личности"
-          },
-          {
-            "id": "growth",
-            "title": "Создать план развития",
-            "body": "Переведите результаты в индивидуальные шаги развития.",
-            "cta": "Открыть план развития"
+            "title": "Профили личности · бесплатно",
+            "body": "Выберите интересующие сферы и шкалы, настройте тесты и свой путь развития.",
+            "cta": "Создать профиль бесплатно"
           }
         ]
       },
@@ -388,26 +364,14 @@ const copy = {
         ]
       },
       "personality": {
-        "title": "Descubre tu personalidad",
-        "lead": "Pruebas gratuitas, perfil personal y plan privado de desarrollo.",
+        "title": "Perfiles personales",
+        "lead": "Un único servicio: perfil personal o empresarial, pruebas gratuitas, DAFO y desarrollo.",
         "offers": [
           {
-            "id": "allTests",
-            "title": "Pruebas gratuitas de personalidad",
-            "body": "Elige un tema, realiza una prueba y explora tus resultados.",
-            "cta": "Hacer prueba gratis"
-          },
-          {
             "id": "profile",
-            "title": "Crear mi perfil personal",
-            "body": "Reúne resultados e informes en tu espacio privado.",
-            "cta": "Crear mi perfil"
-          },
-          {
-            "id": "growth",
-            "title": "Mi plan de desarrollo",
-            "body": "Convierte tus resultados en próximos pasos personales.",
-            "cta": "Abrir mi plan"
+            "title": "Perfiles personales · gratis",
+            "body": "Elige áreas y escalas, prepara tus pruebas y planifica tus próximos pasos.",
+            "cta": "Crear mi perfil gratis"
           }
         ]
       },
@@ -524,7 +488,7 @@ const offerDetails = {
     "opora": "Fourteen days of guided self-support. Open the course page to select a suitable route and start; progress is not a medical result. The course introduces the aim of each practice and a manageable exercise for the day. You decide whether the format suits you before starting; no improvement is guaranteed.",
     "academy": "Explore existing programmes and their access terms. Some courses may require payment. Open the catalogue to compare topics, format and availability. Pick a specific programme to see its full description and conditions instead of enrolling automatically.",
     "allTests": "Choose a topic and complete a self-check. The result supports reflection, not medical diagnosis. The test explorer lets you choose a topic and view the relevant explanation of results. Use the outcome as a starting point for your own development rather than a medical assessment.",
-    "profile": "Save reports together inside your protected account. Sign-in is required; results are not made public. Open the protected personal area to organise the tests and reports belonging to your account. This button only navigates; it does not share anything with practitioners or other visitors.",
+    "profile": "Choose a personal, business, wellbeing or comprehensive profile on a public page. Select your themes and scales; the suggested free tests match actual questionnaire axes, not fictional financial or medical scores. Edit the test set before beginning. After the tests, sign in if you want to save available results, reflect with SWOT and set voluntary goals in your private development path.",
     "growth": "Your private development path links available insights with next steps; an account is required to retain progress. See your development area after signing in and choose the next activities that make sense to you. Your saved steps belong to the protected account, not the public page.",
     "review": "Share one question, a short form and a drawing. This is a request for a written response, not a call or confirmed booking. On the service page you can learn which information and simple drawing to provide. Andrey reviews your request before any personal written response; no live consultation or instant result is implied.",
     "businessConstellations": "Review business constellations and request a session. Availability and any fees must be confirmed with the practitioner. The service description explains what can be explored in a work or organisational situation. You can then request a meeting and agree its scope, time and price with the practitioner.",
@@ -542,7 +506,7 @@ const offerDetails = {
     "opora": "Четырнадцать дней самостоятельной поддержки. На странице курса можно выбрать маршрут; прогресс не является медицинским результатом. Перед упражнением объясняется его цель и предлагается конкретная задача на день. Вы сами выбираете комфортный темп; программа не обещает медицинского результата.",
     "academy": "Посмотрите программы и условия доступа. Некоторые курсы Академии могут быть платными. Откройте каталог, сравните темы и форматы обучения. На странице выбранного курса указаны подробности и условия доступа; автоматической записи здесь нет.",
     "allTests": "Выберите тему и пройдите самопроверку. Результат служит самопознанию, а не медицинскому диагнозу. Каталог поможет выбрать тест по интересующей теме и познакомиться с объяснением результата. Используйте его как основу для размышления и планирования, а не для постановки диагноза.",
-    "profile": "Результаты и отчёты сохраняются в защищённом кабинете после входа и не публикуются. В защищённом кабинете можно собрать свои тесты и доступные отчёты. Кнопка только открывает личное пространство: данные не публикуются и не пересылаются специалистам.",
+    "profile": "Выберите личностный, бизнес-, ресурсный или комплексный профиль на отдельной публичной странице. Отметьте сферы и шкалы; бесплатные тесты предлагаются по реально заявленным шкалам, без вымышленных финансовых или медицинских баллов. Перед началом измените подбор. После тестов можно сохранить результаты в защищённом кабинете, осмыслить SWOT и поставить добровольные цели развития.",
     "growth": "Путь развития собирает доступные рекомендации и следующие шаги. Для сохранения нужен аккаунт. После входа откройте индивидуальный раздел развития, посмотрите доступные рекомендации и выберите следующий шаг. Личный прогресс не выводится на общедоступную страницу.",
     "review": "Один вопрос, краткая анкета и рисунок от руки. Это заявка на письменный ответ, не видеозвонок или подтверждённая бронь. На странице услуги подробно объясняется, какой вопрос, анкета и рисунок нужны для разбора. Андрей сначала получает заявку; письменный ответ не является мгновенной услугой или живой сессией.",
     "businessConstellations": "Изучите метод и запросите сессию. Время и стоимость подтверждаются со специалистом. На странице метода описаны возможные темы для работы с бизнесом, ролями и командой. После ознакомления можно запросить встречу и согласовать цели, время и стоимость.",
@@ -560,7 +524,7 @@ const offerDetails = {
     "opora": "Catorce días de apoyo autoguiado. Abre el programa para elegir un recorrido; el avance no es un resultado médico. Antes de cada práctica se explica su objetivo y una tarea cotidiana concreta. Elige tu propio ritmo; no se promete un resultado clínico.",
     "academy": "Explora los programas y sus condiciones; algunos cursos pueden ser de pago. Abre el catálogo para comparar temas, formato y condiciones de acceso. Cada curso tiene su propia información y no se reserva automáticamente.",
     "allTests": "Elige un tema y haz una prueba de autorreflexión. No es un diagnóstico médico. El explorador permite elegir el tema y leer la explicación de los resultados. Úsalo para reflexionar y planificar, no como evaluación médica.",
-    "profile": "Guarda informes y resultados en tu cuenta privada. Necesitas iniciar sesión. Reúne tus pruebas e informes en un espacio de cuenta protegido. Este enlace no publica tus datos ni los comparte con profesionales. Solo tú decides qué información conservar.",
+    "profile": "Elige un perfil personal, empresarial, de bienestar o integral en una página pública. Selecciona temas y escalas; las pruebas gratuitas corresponden a escalas reales, sin inventar puntuaciones de salud ni dinero. Ajusta la selección antes de empezar. Luego puedes guardar resultados disponibles, reflexionar con DAFO y definir metas privadas de desarrollo.",
     "growth": "Tu plan privado reúne ideas y próximos pasos. Necesitas una cuenta para guardar avances. Después de iniciar sesión, revisa recomendaciones y elige los siguientes pasos de desarrollo. Tus avances privados no aparecen en la página pública.",
     "review": "Una pregunta, un formulario breve y un dibujo. Es una solicitud de revisión escrita, no una cita confirmada. La página explica qué pregunta, formulario y dibujo preparar. La solicitud se revisa antes de la respuesta escrita; no es una llamada ni un resultado inmediato.",
     "businessConstellations": "Conoce el método y solicita una sesión empresarial. Precio y disponibilidad se confirman aparte. Conoce qué problemas de equipo y decisiones se pueden explorar. Después solicita una reunión para confirmar objetivos, duración y precio con el profesional.",
@@ -575,70 +539,70 @@ const offerDetails = {
   }
 } as const;
 const detailLabels = {
-  en: { open: "Details", close: "Hide details", heading: "What to expect", full: "View full information" },
-  ru: { open: "Детали", close: "Скрыть детали", heading: "Как это работает", full: "Открыть полное описание" },
-  es: { open: "Detalles", close: "Ocultar detalles", heading: "Cómo funciona", full: "Ver información completa" },
+  en: { open: "Details", close: "Hide details", mobileClose: "Close", heading: "What to expect", full: "View full information" },
+  ru: { open: "Детали", close: "Скрыть детали", mobileClose: "Скрыть", heading: "Как это работает", full: "Открыть полное описание" },
+  es: { open: "Detalles", close: "Ocultar detalles", mobileClose: "Cerrar", heading: "Cómo funciona", full: "Ver información completa" },
 } as const;
 const compactActions = {
   "en": {
     "reiki": "Start free",
     "opora": "Start free",
-    "academy": "Explore courses",
-    "allTests": "Test for free",
-    "profile": "Open profile",
-    "growth": "Open my plan",
-    "review": "Request free review",
-    "businessConstellations": "Request session",
-    "constellations": "Request session",
+    "academy": "Courses",
+    "allTests": "Free test",
+    "profile": "Profile",
+    "growth": "My plan",
+    "review": "Free review",
+    "businessConstellations": "Request",
+    "constellations": "Request",
     "aiCoaching": "Start free",
-    "therapist": "Request · €50+",
-    "alchemy": "Request session",
-    "energy": "Request support",
-    "pro": "Explore training",
-    "service": "List service",
-    "course": "Create course",
-    "guestProfile": "Sign in · profile",
-    "guestGrowth": "Sign in · plan"
+    "therapist": "Request",
+    "alchemy": "Request",
+    "energy": "Support",
+    "pro": "Training",
+    "service": "List",
+    "course": "Create",
+    "guestProfile": "Sign in",
+    "guestGrowth": "Sign in"
   },
   "ru": {
-    "reiki": "Начать бесплатно",
-    "opora": "Начать бесплатно",
-    "academy": "Все курсы",
-    "allTests": "Пройти бесплатно",
-    "profile": "Мой профиль",
+    "reiki": "Начать",
+    "opora": "Начать",
+    "academy": "Курсы",
+    "allTests": "Тест",
+    "profile": "Профиль",
     "growth": "Мой план",
-    "review": "Заказать бесплатно",
-    "businessConstellations": "Запросить сессию",
-    "constellations": "Запросить сессию",
-    "aiCoaching": "Начать бесплатно",
-    "therapist": "Запросить · €50+",
-    "alchemy": "Запросить сессию",
-    "energy": "Запросить поддержку",
-    "pro": "Выбрать обучение",
-    "service": "Разместить услугу",
-    "course": "Создать курс",
-    "guestProfile": "Войти · профиль",
-    "guestGrowth": "Войти · план"
+    "review": "Разбор",
+    "businessConstellations": "Запросить",
+    "constellations": "Запросить",
+    "aiCoaching": "Начать",
+    "therapist": "Запросить",
+    "alchemy": "Запросить",
+    "energy": "Поддержка",
+    "pro": "Обучение",
+    "service": "Услуга",
+    "course": "Курс",
+    "guestProfile": "Войти",
+    "guestGrowth": "Войти"
   },
   "es": {
-    "reiki": "Empezar gratis",
-    "opora": "Empezar gratis",
-    "academy": "Ver cursos",
-    "allTests": "Prueba gratis",
-    "profile": "Mi perfil",
+    "reiki": "Empezar",
+    "opora": "Empezar",
+    "academy": "Cursos",
+    "allTests": "Test gratis",
+    "profile": "Perfil",
     "growth": "Mi plan",
-    "review": "Solicitar gratis",
-    "businessConstellations": "Solicitar sesión",
-    "constellations": "Solicitar sesión",
-    "aiCoaching": "Empezar gratis",
-    "therapist": "Solicitar · 50 €+",
-    "alchemy": "Solicitar sesión",
-    "energy": "Solicitar apoyo",
-    "pro": "Explorar formación",
-    "service": "Publicar servicio",
-    "course": "Crear curso",
-    "guestProfile": "Entrar · perfil",
-    "guestGrowth": "Entrar · plan"
+    "review": "Revisión",
+    "businessConstellations": "Solicitar",
+    "constellations": "Solicitar",
+    "aiCoaching": "Empezar",
+    "therapist": "Solicitar",
+    "alchemy": "Solicitar",
+    "energy": "Apoyo",
+    "pro": "Formación",
+    "service": "Publicar",
+    "course": "Crear",
+    "guestProfile": "Entrar",
+    "guestGrowth": "Entrar"
   }
 } as const;
 
@@ -660,7 +624,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
     opora: "/" + locale + "/courses/antistress",
     academy: "/" + locale + "/academy",
     allTests: "/" + locale + "/client/tests",
-    profile: accountRoot + "/portrait",
+    profile: "/" + locale + "/personality-profiles",
     growth: accountRoot + "/portfolio#hh-development-program",
     review: "/" + locale + "/services/free-situation-review",
     businessConstellations: "/" + locale + "/services/business-consulting",
@@ -717,11 +681,8 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                 {section.offers.map(offer => {
                   const expanded = expandedOffer === offer.id;
                   const isFree = freeOfferIds.has(offer.id);
-                  const actionLabel = offer.id === "profile" && !signedIn ? t.guestProfile
-                    : offer.id === "growth" && !signedIn ? t.guestGrowth : offer.cta;
-                  const compactLabel = offer.id === "profile" && !signedIn ? compactActions[locale].guestProfile
-                    : offer.id === "growth" && !signedIn ? compactActions[locale].guestGrowth
-                      : compactActions[locale][offer.id];
+                  const actionLabel = offer.cta;
+                  const compactLabel = compactActions[locale][offer.id];
                   return (
                     <article key={offer.id} className={styles.offer} data-home-offer-card={offer.id}
                       data-expanded={expanded ? "true" : "false"}
@@ -740,8 +701,10 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                           <button type="button" className={styles.offerSecondary}
                             onClick={() => setExpandedOffer(expanded ? null : offer.id)}
                             aria-controls={"home-offer-info-" + offer.id} aria-expanded={expanded}
-                            data-home-offer-details={offer.id}>
-                            {expanded ? detailLabels[locale].close : detailLabels[locale].open}
+                            data-home-offer-details={offer.id}
+                            aria-label={expanded ? detailLabels[locale].close : detailLabels[locale].open}>
+                            <span className={styles.actionFull} aria-hidden="true">{expanded ? detailLabels[locale].close : detailLabels[locale].open}</span>
+                            <span className={styles.actionCompact} aria-hidden="true">{expanded ? detailLabels[locale].mobileClose : detailLabels[locale].open}</span>
                             <ChevronDown className={styles.detailChevron} size={16} aria-hidden="true" />
                           </button>
                           <Link href={hrefs[offer.id]} prefetch={false} className={styles.offerPrimary}

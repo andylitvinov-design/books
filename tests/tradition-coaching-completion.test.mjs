@@ -12,7 +12,7 @@ test('each coaching course has its own localized public Academy detail page',()=
   for(const slug of ['egyptian','greek']){
     assert.ok(page.includes('if (key === "coaching/'+slug+'") return <AcademyTraditionCoachingLanding'),slug)
     assert.ok(hub.includes('href: "/" + locale + "/academy/coaching/'+slug+'"'),slug+' Details destination')
-    assert.ok(hub.includes('"/app/coaching/'+slug+'"'),slug+' Start destination')
+    assert.ok(landing.includes('"/"+locale+"/coaching#coaching-tradition-"+slug'),slug+' Start through public coaching lounge')
     assert.ok(landing.includes(slug+': {'),slug+' original eight-level course')
     assert.ok(landing.includes('slug:TraditionSlug'),slug+' typed route')
   }
@@ -21,7 +21,7 @@ test('each coaching course has its own localized public Academy detail page',()=
   assert.ok(page.includes('ancientCourse.description[locale]'))
   assert.ok(landing.includes('steps[slug][locale].map('))
   for(const language of ['en','ru','es'])assert.match(landing,new RegExp('\\b'+language+':\\s*\\{'))
-  assert.ok(landing.includes('locale==="es"?"?lang=es":""'), 'Spanish resumes in Spanish from en auth route')
+  assert.ok(landing.includes('const courseHref=(locale:PublicLocale,slug:TraditionSlug)'), 'Public session link carries the original EN/RU/ES locale')
   assert.ok(landing.includes('courseHref(locale,slug)'), 'prominent start link')
   assert.ok(landing.includes('<PublicSiteHeader'), 'same site navigation')
   assert.ok(css.includes('@media(max-width:420px)'), 'mobile layout')

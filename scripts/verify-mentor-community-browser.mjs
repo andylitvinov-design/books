@@ -69,6 +69,10 @@ try {
         assert.equal(response?.status(), 200, label + ": /masters HTTP 200");
         const community = page.locator("[data-mentor-community]");
         await community.waitFor({ state: "visible", timeout: 30000 });
+        // A server-rendered tab is visible before its React event handler is ready.
+        // Wait for the real client hydration gate before the first touch action.
+        await page.locator('[data-mentor-community][data-community-hydrated="true"]')
+          .waitFor({ state: "visible", timeout: 30000 });
         const mentorTab = page.locator("#mentor-community-tab-mentors");
         const articleTab = page.locator("#mentor-community-tab-articles");
         const mentorPanel = page.locator("#mentor-community-panel-mentors");

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {oporaAs58Day,oporaAs58Valid,OPORA_ONE_ACTION_VERSION,OPORA_PRIMARY_EMOTIONS} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaAs59Day,OPORA_SEVEN_SKILLS_EDITION} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,nodes,findButton,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -59,7 +60,7 @@ test('42 learner flows render ONE distinct task, a real status choice, skip, and
       try{
         assert.equal(nodes(player.tree).filter(n=>n.props?.['data-opora-one-action-version']===OPORA_ONE_ACTION_VERSION).length,1)
         await advanceOporaTo(player,'practice',labels.next)
-        const focused=oporaAs58Day(day,locale)
+        const focused=oporaAs59Day(day,locale)
         assert.ok(textOf(player.tree).includes(focused.practice))
         if(day===11){
           const picker=nodes(player.tree).find(n=>n.props?.['data-opora-emotion-picker']==='true')
@@ -93,12 +94,48 @@ test('42 learner flows render ONE distinct task, a real status choice, skip, and
         assert.equal(payload.opora54.answers.transfer,'planned')
         assert.equal(payload.opora54.answers.transferChoice,'two')
         assert.equal(payload.opora54.answers.transferPlanVersion,'one-v1')
-        assert.equal(payload.opora54.answers.experienceEdition,'as-5.8-one-action-v1')
+        assert.equal(payload.opora54.answers.experienceEdition,OPORA_SEVEN_SKILLS_EDITION)
         assert.equal(payload.practiceAttempt,null,'Clicked Continue and chose a future plan, not a practice attempt')
         assert.equal(payload.opora54.answers.transferFeeling,undefined)
         assert.deepEqual(payload.practiceEmotion,[4,11].includes(day)?{choice:'joy'}:undefined)
         assert.deepEqual(payload.visitedSlideKeys,
           day===1?[...OPORA_DAY_ONE_RESTORED_KEYS]:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
+      }finally{player.unmount()}
+    }
+  }
+})
+
+test('Skipped plans keep a visible daily homework assignment without claiming commitment, for 14 days × 3 locales',async()=>{
+  for(const locale of Object.keys(LANGUAGE)){
+    const labels=LANGUAGE[locale]
+    for(let day=1;day<=14;day++){
+      const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
+      const data={cycle:{id:'00000000-0000-4000-8000-000000002058',day,durationDays:14},
+        programme:{id:'stress'},lesson,currentSession:null}
+      let payload,writes=0
+      const player=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},
+        async onSession(value){payload=structuredClone(value);writes++;return true}})
+      try{
+        await advanceOporaTo(player,'save',labels.next)
+        await click(player,labels.skip)
+        await advanceOporaTo(player,'recapNext',labels.next)
+        const homework=nodes(player.tree).find(n=>n.props?.['data-opora-daily-homework']===day)
+        assert.ok(homework,'Missing homework for day '+day+' '+locale)
+        assert.ok(textOf(homework).includes(oporaAs59Day(day,locale).transfer),
+          'Keep the one specific daily exercise visible when the future plan is declined: '+day+' '+locale)
+        assert.ok(!textOf(homework).includes('Nothing to plan today'))
+        assert.equal(writes,0,'Reading homework does not record an action')
+        await advanceOporaTo(player,'recapFeedback',labels.next)
+        await click(player,labels.review)
+        await click(player,labels.save)
+        assert.equal(writes,1)
+        assert.equal(payload.opora54.answers.transfer,'not_planning')
+        assert.equal(payload.opora54.answers.transferChoice,undefined)
+        assert.equal(payload.practiceAttempt,null)
+        if(day===1){
+          assert.match(oporaAs59Day(day,locale).transfer,/three ordinary objects|три обычных предмета|tres objetos cotidianos/)
+          assert.match(oporaAs59Day(day,locale).transfer,/Two or three times today|Два-три раза за день|Dos o tres veces durante el día/)
+        }
       }finally{player.unmount()}
     }
   }

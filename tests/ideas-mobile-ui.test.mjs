@@ -4,9 +4,13 @@ import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Ideas first screen has two free actions and two compact discovery links, not three mode cards", () => {
+test("Tests & Coaching first screen offers four paths, with original private Dao panel preserved on demand", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
+  const hub = read("components/tests-coaching-switchboard.tsx");
+  assert.match(ui, /<TestsCoachingSwitchboard locale=\{locale\} templeContent=/);
+  for (const path of ["profile", "temple", "coaching", "support"]) assert.ok(hub.includes("data-tests-coaching-path={key}"), path);
+  assert.match(hub, /const pathOrder: Path\[\] = \["profile", "temple", "coaching", "support"\]/);
   assert.match(ui, /<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
   assert.match(ui, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
   assert.match(ui, /<nav className=\{styles\.exploreLinks\} aria-label=\{t\.exploreMore\} data-ideas-explore>/);
@@ -20,7 +24,16 @@ test("Ideas first screen has two free actions and two compact discovery links, n
   }
   assert.doesNotMatch(ui, /styles\.actionLabel|styles\.actions|aria-pressed=\{activeMode\}/);
   assert.match(css, /\.exploreLinks\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.exploreLink\{[\s\S]*?min-height:52px/);
+  assert.match(css, /\.exploreLink\{[\s\S]*?min-height:76px/);
+  assert.match(css, /\.exploreIcon\{/);
+  assert.match(css, /\.exploreCopy strong\{/);
+  assert.match(css, /font-variant-emoji:text/);
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.exploreLink\{[\s\S]*?min-height:80px/);
+  assert.ok(ui.indexOf("data-ideas-explore>") < ui.indexOf("data-ideas-hero-utility"),
+    "Explore cards appear before privacy and free-test utility text");
+  assert.match(ui, /t\.taoOverline/);
+  assert.match(ui, /<Compass size=\{18\} \/>/);
+  assert.match(ui, /<BookOpen size=\{18\} \/>/);
   assert.match(css, /\.templeHeading\{[\s\S]*?scroll-margin-top:95px/);
   assert.match(css, /@media\(max-width:360px\)/);
   assert.match(css, /\.question textarea \{ min-height: 47px;[\s\S]*?font-size: 16px/);

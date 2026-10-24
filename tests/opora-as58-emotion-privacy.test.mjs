@@ -54,7 +54,7 @@ test('EN/RU/ES Day 4 and 11 free-text emotions are voluntary, owner-only and sea
       assert.equal(JSON.stringify(saved.signals).includes(feeling),false)
       assert.equal(JSON.stringify(saved.signals.opora54).includes(feeling),false)
       assert.equal(saved.signals.opora54.answers.transferFeeling,undefined)
-      assert.equal(saved.signals.opora54.answers.experienceEdition,'as-5.8-one-action-v1')
+      assert.equal(saved.signals.opora54.answers.experienceEdition,'as-5.9-seven-skills-v1')
       assert.equal(saved.signals.opora54.answers.transferPlanVersion,day===4?'one-v1':undefined)
       const back=await owner.read(lang)
       assert.equal(back.currentSession.signals.practiceEmotion.customText,feeling)

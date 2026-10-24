@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   ArrowRight, BookOpen, CheckCircle2, ChevronRight, CircleDollarSign,
-  ClipboardList, GraduationCap, HeartHandshake, LockKeyhole,
+  ClipboardList, GraduationCap, HeartHandshake, LockKeyhole, Search,
   MessageSquare, Rocket, ShieldCheck, Sparkles,
 } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -52,11 +52,17 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · PRO",
     name: "Pro",
-    headline: "Learn Reiki. Build your own practice.",
-    lead: "A practical route from your first lesson to an offer clients can discover. Start learning—or publish the experience you already have.",
-    choose: "Choose where you are today",
-    learnChoice: "I want to learn",
-    proChoice: "I'm already a practitioner",
+    headline: "Find a Master. Learn. Share your practice.",
+    lead: "Find the right practitioner, develop your Reiki skills or introduce your own services.",
+    choose: "Choose your Pro path",
+    findChoice: "Find a Master",
+    findEyebrow: "FIND A PRACTITIONER",
+    findTitle: "Meet a Master who fits your needs.",
+    findLead: "Explore published practitioner profiles, approaches and available services. Choose who you would like to contact.",
+    findCta: "Explore Masters",
+    findNote: "Profiles and services appear after review. Sending an enquiry is not a confirmed booking.",
+    learnChoice: "Learn & become a Master",
+    proChoice: "I'm a Master — offer services",
     facts: ["Free learning entry", "Free basic service listing", "One protected My Practice"],
     profilesKicker: "YOUR FIRST STEP · FREE",
     profilesTitle: "Explore yourself. Choose your profile.",
@@ -139,11 +145,17 @@ const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · ПРОФИ",
     name: "Профи",
-    headline: "Освой Рейки. Создай свою практику.",
-    lead: "Понятный путь от первого урока до своей услуги, которую могут найти клиенты. Начни учиться или используй уже накопленный опыт.",
-    choose: "Выбери, где ты сейчас",
-    learnChoice: "Я хочу обучиться",
-    proChoice: "Я уже практик",
+    headline: "Найди мастера. Обучайся. Предлагай услуги.",
+    lead: "Подбери специалиста для поддержки, изучай Рейки или представь собственную практику.",
+    choose: "Выбери своё направление",
+    findChoice: "Найти мастера",
+    findEyebrow: "НАЙТИ СПЕЦИАЛИСТА",
+    findTitle: "Выбери мастера для своей задачи.",
+    findLead: "Познакомься с опубликованными профилями, методами и услугами. Выбери специалиста, которому хочешь написать.",
+    findCta: "Смотреть каталог мастеров",
+    findNote: "В каталоге — прошедшие модерацию профили. Запрос ещё не означает подтверждённую запись.",
+    learnChoice: "Обучиться и стать мастером",
+    proChoice: "Я уже мастер — предложить услуги",
     facts: ["Бесплатный старт обучения", "Бесплатное базовое размещение", "Единая «Моя практика»"],
     profilesKicker: "ПЕРВЫЙ ШАГ · БЕСПЛАТНО",
     profilesTitle: "Пройди тесты. Создай свой профиль.",
@@ -226,11 +238,17 @@ const copy = {
   es: {
     eyebrow: "HOLISTIC HOUSE · PRO",
     name: "Pro",
-    headline: "Aprende Reiki. Construye tu práctica.",
-    lead: "Un camino claro desde la primera lección hasta una oferta que los clientes puedan encontrar. Empieza a aprender o comparte tu experiencia.",
-    choose: "Elige tu etapa actual",
-    learnChoice: "Quiero aprender",
-    proChoice: "Ya soy practicante",
+    headline: "Encuentra un maestro. Aprende. Comparte tu práctica.",
+    lead: "Encuentra un profesional, aprende Reiki o presenta tus propios servicios.",
+    choose: "Elige tu camino Pro",
+    findChoice: "Encontrar un maestro",
+    findEyebrow: "ENCUENTRA UN PROFESIONAL",
+    findTitle: "Elige un maestro adecuado para ti.",
+    findLead: "Explora perfiles publicados, enfoques y servicios. Decide a quién quieres contactar.",
+    findCta: "Ver el catálogo de maestros",
+    findNote: "Los perfiles requieren revisión. Una solicitud no es una reserva confirmada.",
+    learnChoice: "Aprender y ser maestro",
+    proChoice: "Ya soy maestro — ofrecer servicios",
     facts: ["Aprendizaje inicial gratis", "Ficha básica de servicio gratis", "Un único espacio de práctica"],
     profilesKicker: "PRIMER PASO · GRATIS",
     profilesTitle: "Haz pruebas. Crea tu perfil.",
@@ -319,6 +337,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const appLocale = locale === "es" ? "en" : locale;
   const practiceRoot = "/" + appLocale + "/app/practice";
   const publicRoot = "/" + locale;
+  const mastersHref = publicRoot + "/masters?view=mentors";
   const trainingHref = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
   const academyHref = publicRoot + "/academy/reiki";
   const profileHref = practiceRoot + "?panel=profile";
@@ -342,6 +361,9 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
             <p className={styles.heroHeadline}>{t.headline}</p>
             <p className={styles.heroLead}>{t.lead}</p>
             <nav className={styles.pathControls} aria-label={t.choose}>
+              <Link href={mastersHref} prefetch={false} data-profi-path="find">
+                <Search size={19} aria-hidden="true" /><span>{t.findChoice}</span><ArrowRight size={16} aria-hidden="true" />
+              </Link>
               <a href="#profi-learning" data-profi-path="learn">
                 <GraduationCap size={19} aria-hidden="true" /><span>{t.learnChoice}</span><ArrowRight size={16} aria-hidden="true" />
               </a>
@@ -357,6 +379,18 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
         </div>
 
         <div className={styles.pathContent} data-profi-single-page>
+            <section id="profi-find-master" className={styles.finder} aria-labelledby="profi-finder-title" data-profi-finder>
+              <Photo src={PHOTOS.professional} className={styles.finderPhoto} sizes="(max-width: 600px) 100vw, 430px" />
+              <div className={styles.finderCopy}>
+                <p className={styles.sectionKicker}><HeartHandshake size={16} aria-hidden="true" />{t.findEyebrow}</p>
+                <h2 id="profi-finder-title">{t.findTitle}</h2>
+                <p>{t.findLead}</p>
+                <Link href={mastersHref} prefetch={false} className={styles.primary} data-profi-action="find-master">
+                  {t.findCta}<ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                <p className={styles.micro}>{t.findNote}</p>
+              </div>
+            </section>
             <section id="profi-learning" className={styles.journey} aria-labelledby="profi-learning-title" data-profi-learning>
               <div className={styles.sectionIntro}>
                 <Photo src={PHOTOS.lessons[0]} className={styles.introPhoto} sizes="(max-width: 600px) 90px, 190px" />
@@ -505,7 +539,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
               </details>
               <nav className={styles.directoryLinks} aria-label={t.discoverTitle}>
                 <Link href={publicRoot + "/services?catalog=1#service-listings"} prefetch={false}>{t.catalog}<ArrowRight size={16} aria-hidden="true" /></Link>
-                <Link href={publicRoot + "/masters"} prefetch={false}>{t.masters}<ArrowRight size={16} aria-hidden="true" /></Link>
+                <Link href={mastersHref} prefetch={false}>{t.masters}<ArrowRight size={16} aria-hidden="true" /></Link>
               </nav>
             </section>
         </div>

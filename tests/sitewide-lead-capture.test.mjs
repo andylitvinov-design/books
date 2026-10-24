@@ -85,7 +85,12 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(form, /data-compact-last-slide/);
   assert.match(form, /data-compact-lead-form/);
   assert.match(form, /contactConsent: true/);
-  assert.match(form, /!consent \|\| sending \|\| reference/);
+  assert.match(form, /if \(busy \|\| reference\) return;/);
+  assert.match(form, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
+  assert.match(form, /whatsappEnquiryUrl\(\{/);
+  assert.match(form, /telegramEnquiryUrlFromWhatsApp\(whatsapp\)/);
+  assert.match(form, /data-compact-channel="whatsapp"/);
+  assert.match(form, /data-compact-channel="telegram"/);
   assert.match(form, /parseContact\(address\)/);
   assert.match(form, /window.crypto.randomUUID\(\)/);
   assert.match(form, /fetch\("\/api\/service-enquiries"/);

@@ -2,10 +2,12 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Check,ChevronLeft,LockKeyhole,ScrollText,Trash2,X} from 'lucide-react'
+import {ArrowRight,Check,ChevronLeft,LockKeyhole,Trash2,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
 import CoachingQuestionVoice from './coaching-question-voice'
+import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
+import {coachingRequestTopicLabel} from '@/lib/coaching/session-onboarding'
 import base from './personal-coaching.module.css'
 import extra from './tradition-coaching.module.css'
 
@@ -34,6 +36,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const [data,setData]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
  const [error,setError]=useState(''),[notice,setNotice]=useState('')
  const [index,setIndex]=useState(0),[choice,setChoice]=useState(''),[note,setNote]=useState('')
+ const [entryStep,setEntryStep]=useState('intro'),[clientTopic,setClientTopic]=useState(''),[topicAdultConfirmed,setTopicAdultConfirmed]=useState(false),[restartRequested,setRestartRequested]=useState(false)
  const busyRef=useRef(false),heading=useRef(null)
  const course=data?.course,session=course?.current
  const questions=data?.questions||[]
@@ -70,6 +73,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   return ()=>{active=false}
  },[accountId,endpoint,visit,t.loadError,def])
  useEffect(()=>{if(!loading&&question&&!completed)heading.current?.focus({preventScroll:true})},[index,loading,completed,question])
+ useEffect(()=>{if(!loading&&(!course||restartRequested))heading.current?.focus({preventScroll:true})},[entryStep,loading,course?.current?.id,restartRequested])
  useEffect(()=>{
   if(!dirty)return
   const warn=e=>{e.preventDefault();e.returnValue=''}
@@ -83,8 +87,9 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   if(busyRef.current)return
   busyRef.current=true;setBusy(true);setError('')
   try{
-   const result=await send('start')
+   const result=await send('start',{clientTopic,adultConfirmed:topicAdultConfirmed})
    setData(result)
+   setRestartRequested(false)
    visit(nextIndex(result.questions,result.course?.current?.answers),result.course?.current?.answers,result.questions)
   }catch(e){setError(e?.code==='PERSONAL_COACH_REVISION_CONFLICT'?t.conflict:t.error)}
   finally{busyRef.current=false;setBusy(false)}
@@ -151,23 +156,33 @@ export default function TraditionCoaching({locale='en',accountId,template}){
    </header>
    <section className={base.sheet+' '+extra.courseSheet}>
     {loading?<div className={base.center} role="status">{t.load}</div>
-    : !course?<div className={base.intro+' '+extra.courseIntro} data-tradition-start>
-      <span className={base.eyebrow}>HOLISTIC HOUSE · COACHING</span>
-      <img src={def.art} width={850} height={250} alt="" className={extra.heroArt} loading="lazy"/>
-      <h1>{def.name[lang]}</h1>
-      <p className={base.lead}>{def.description[lang]}</p>
-      <p className={base.subtle}><ScrollText size={16} aria-hidden="true"/> {def.totalScreens} {t.question.toLowerCase()} · {t.pace}</p>
-      <p className={base.subtle}>{def.note[lang]}</p>
+    : (!course||restartRequested)?<div className={base.intro+' '+extra.courseIntro} data-tradition-start data-tradition-coaching-onboarding>
+      {entryStep==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={heading}
+        name={def.name[lang]} modelName={def.name[lang]} minutes={def.totalScreens*2}
+        questionCount={def.totalScreens} style="reflective" imageSrc={def.art}
+        approach={def.description[lang]} outcome={def.note[lang]}/>
+      :<CoachingSessionTopic locale={lang} headingRef={heading} value={clientTopic}
+        onChange={value=>{setClientTopic(value);setTopicAdultConfirmed(false)}}
+        ageConfirmed={topicAdultConfirmed} onAgeConfirm={setTopicAdultConfirmed}/>}
       {error&&<p role="alert" className={base.error}>{error}</p>}
-      <button type="button" className={base.primary} disabled={busy} onClick={error&&!data?reload:start}>
-        {busy?t.save:error&&!data?t.retry:t.start}<ArrowRight size={18}/>
-      </button>
+      <div className={extra.introActions}>
+        {entryStep==='topic'&&<button type="button" className={base.back} disabled={busy} onClick={()=>setEntryStep('intro')}>
+          <ChevronLeft size={17}/>{t.back}</button>}
+        <button type="button" className={base.primary}
+          disabled={busy||(entryStep==='topic'&&(!clientTopic||(clientTopic==='sexuality'&&!topicAdultConfirmed)))}
+          onClick={()=>entryStep==='intro'?setEntryStep('topic'):(error&&!data?reload():start())}>
+          {busy?t.save:entryStep==='intro'?{en:'Continue coaching session',ru:'Продолжить коучинг-сессию',es:'Continuar la sesión de coaching'}[lang]
+            :error&&!data?t.retry:{en:'Continue to questions',ru:'Перейти к вопросам',es:'Ir a las preguntas'}[lang]}
+          <ArrowRight size={18}/>
+        </button>
+      </div>
       <Link href={home} className={base.secondary}>{t.home}</Link>
     </div>
     :completed?<div className={base.summary+' '+extra.courseSummary} data-tradition-summary>
       <span className={base.completed}><Check size={16}/>{t.complete}</span>
       <h1>{t.result}</h1>
       <p>{def.name[lang]}</p>
+      {session?.clientTopic&&<p>{coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
       <div className={base.answers}>{questions.map((q,i)=><div key={q.id} className={base.answer}>
        <strong>{i+1}. {q.title?.[lang]||q.title?.en||q.stage}</strong>
        <p>{q.question[lang]}</p>
@@ -185,7 +200,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       </details>}
       <p className={base.privacyNote}>{t.privacy}</p>
       {error&&<p role="alert" className={base.error}>{error}</p>}
-      <button type="button" className={base.primary} disabled={busy} onClick={start}>{t.again}<ArrowRight size={18}/></button>
+      <button type="button" className={base.primary} disabled={busy} onClick={()=>{setEntryStep('intro');setClientTopic('');setTopicAdultConfirmed(false);setRestartRequested(true)}}>{t.again}<ArrowRight size={18}/></button>
       <Link className={base.secondary} href={home}>{t.home}</Link>
       <button type="button" className={base.delete} disabled={busy} onClick={erase}><Trash2 size={16}/>{t.delete}</button>
       <small className={base.disclaimer}>{t.introNote}</small>

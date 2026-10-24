@@ -45,7 +45,11 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(more.includes('data-home-topic-filter="energy"'))
   assert.ok(more.includes('data-home-topic-filter="business"'))
   assert.ok(site.includes("id: 'services'"))
-  assert.ok(site.includes("id: 'academy'"))
+  // The old hard-coded Academy nav item was replaced by the canonical
+  // Courses item; it still resolves to the Academy catalog.
+  const model = await readFile('lib/site-navigation-model.js', 'utf8')
+  assert.ok(site.includes("item.id === 'courses'"))
+  assert.ok(model.includes("courses: 'academy'"))
 })
 
 
