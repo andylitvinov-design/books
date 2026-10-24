@@ -419,6 +419,7 @@
 }
 
 /* One free introductory course, followed by three separate paid master programmes. */
+.freeBlurb{max-width:660px;margin:0;color:#76675b;font-size:13px;line-height:1.48}
 .freeKicker{color:#963e58;font-size:11px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
 .freeLaunch{display:inline-flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px;padding:11px 16px;min-height:46px;border-radius:12px;background:#87314d;color:#fffaf5;text-decoration:none;font-size:13px;font-weight:800}
 .freeCourseDisclosure{margin:12px 0;border:1px solid #dfd0c0;border-radius:17px;overflow:hidden;background:#fffaf4}
@@ -476,3 +477,5 @@
  .masterCard>summary{grid-template-columns:74px minmax(0,1fr) 16px}
 }
 @media(prefers-reduced-motion:reduce){.masterChevron{transition:none}}
+
+@media(max-width:430px){.freeBlurb{font-size:11px;line-height:1.37}}
