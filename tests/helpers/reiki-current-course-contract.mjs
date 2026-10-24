@@ -46,13 +46,13 @@ export function evaluate(source, scope = {}) {
   const runtime = new Proxy({ jsx: element, jsxs: element, Fragment: 'fragment' }, {
     get(target, name) { if (!Object.hasOwn(target, name)) return forbidden(); return target[name] },
   })
-  const module = { exports: {} }
+  const moduleValue = { exports: {} }
   const js = ts.transpileModule(source, { fileName: 'production-fragment.tsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
-  vm.runInNewContext(js, { ...scope, module, exports: module.exports,
+  vm.runInNewContext(js, { ...scope, module:moduleValue, exports: moduleValue.exports,
     fetch: forbidden, appFetch: forbidden, WebSocket: forbidden, XMLHttpRequest: forbidden,
     require(name) { if (name !== 'react/jsx-runtime') return forbidden(); return runtime },
   }, { timeout: 5000 })
-  return { value: module.exports, clean() { assert.deepEqual(denied, [], 'No external attempts, including caught failures') } }
+  return { value: moduleValue.exports, clean() { assert.deepEqual(denied, [], 'No external attempts, including caught failures') } }
 }
 
 // Merged #1569 retains this six-screen final lesson; #1620 retires flight-save

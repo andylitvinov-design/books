@@ -30,13 +30,13 @@ export function mountPractice(source,props={},respond=async()=>({ok:true,status:
   '@/lib/practitioners/presentation-contract.js':{normalizeVideoPresentation},
   './practitioner-course-builder.module.css':{default:{}},'./practice-materials.module.css':{default:{}},
  }
- const module={exports:{}}
+ const moduleValue={exports:{}}
  const code=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
- vm.runInNewContext(code,{module,exports:module.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected import: '+id);return imports[id]},window,URL,URLSearchParams,crypto:{randomUUID},fetch:async(url,options)=>{
+ vm.runInNewContext(code,{module:moduleValue,exports:moduleValue.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected import: '+id);return imports[id]},window,URL,URLSearchParams,crypto:{randomUUID},fetch:async(url,options)=>{
   assert.ok(['/api/app/practice/courses','/api/app/practice/report-materials'].includes(url),'Unexpected request: '+url)
   assert.equal(options.credentials,'same-origin');requests.push({url,options});return respond(url,options)
  }})
- function flush(){for(let count=0;dirty;count++){assert.ok(count<30,'Render loop');dirty=false;index=0;pending=[];tree=module.exports.default(props);for(const run of pending)run()}}
+ function flush(){for(let count=0;dirty;count++){assert.ok(count<30,'Render loop');dirty=false;index=0;pending=[];tree=moduleValue.exports.default(props);for(const run of pending)run()}}
  function nodes(){const out=[];const visit=node=>{if(Array.isArray(node))return node.forEach(visit);if(!node||typeof node!=='object'||!('type'in node))return;out.push(node);visit(node.props.children)};visit(tree);return out}
  const api={requests,urls,flush,nodes,find:(type,predicate=()=>true)=>{const found=nodes().find(n=>n.type===type&&predicate(n.props));assert.ok(found,'Missing '+type);return found},update:next=>{props={...props,...next};dirty=true;flush()},unmount:()=>{for(const slot of slots)slot?.cleanup?.()},settle:async()=>{for(let i=0;i<12;i++){await Promise.resolve();flush()}}}
  flush();return api

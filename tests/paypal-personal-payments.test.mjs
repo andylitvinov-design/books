@@ -85,11 +85,11 @@ async function renderedCart(locale,disabled){
   '@/lib/commerce/square-gateway':{getSquareGatewayConfig:()=>({enabled:false,environment:'sandbox',prices:{}})},
   '@/lib/commerce/paypal-hosted-links':{configuredPayPalHostedLinks:()=>({})},
  }
- const module={exports:{}}
+ const moduleValue={exports:{}}
  vm.runInNewContext(ts.transpileModule(file('app/[locale]/cart/page.tsx'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
-  module,exports:module.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected cart page import: '+id);return imports[id]},
+  module:moduleValue,exports:moduleValue.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected cart page import: '+id);return imports[id]},
  })
- return module.exports.default({params:Promise.resolve({locale})})
+ return moduleValue.exports.default({params:Promise.resolve({locale})})
 }
 for(const locale of ['en','ru','es'])for(const disabled of [false,true])test(`${locale} cart receives the real server PayPal gate (disabled=${disabled}) without enabling other providers`,async()=>{
  const tree=await renderedCart(locale,disabled)

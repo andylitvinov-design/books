@@ -75,13 +75,13 @@ function renderStudioMedia(name,locale){
     '@/components/service-video-showcase':{ServiceVideoShowcase:'showcase'},
     './services-studio-extras.module.css':{default:{}},
   };
-  const module={exports:{}};
+  const moduleValue={exports:{}};
   vm.runInNewContext(ts.transpileModule(read('components/services-studio-extras.tsx'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
-    module,exports:module.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected studio dependency: '+id);return imports[id]},
+    module:moduleValue,exports:moduleValue.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected studio dependency: '+id);return imports[id]},
   });
   const nodes=[];
   const visit=(node,parents=[])=>{if(Array.isArray(node))return node.forEach(n=>visit(n,parents));if(!node||typeof node!=='object'||!('type'in node))return;nodes.push({...node,parents});visit(node.props.children,[...parents,node])};
-  visit(module.exports[name]({locale}));return nodes;
+  visit(moduleValue.exports[name]({locale}));return nodes;
 }
 test("Services preserves current testimonials → open method gallery → booking order in EN/RU/ES", () => {
   assertServicePageOrder(read('app/[locale]/services/page.tsx'));

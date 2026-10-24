@@ -337,9 +337,9 @@ test('JSX fixture rejects erased unknown imports, unknown exports and caught for
   ]) assert.throws(() => sourceFixture().load(source, 'invalid.js', imports, { exports: ['value'] }))
   for (const body of ['attempt()', 'const ignored = attempt', 'require("allowed").unknown', 'new WebSocket("wss://fixture.invalid")', 'new XMLHttpRequest()']) {
     const fixture = sourceFixture()
-    const module = fixture.load('import { attempt } from "allowed"; export function action() { try { ' + body + '; } catch {} }',
+    const moduleValue = fixture.load('import { attempt } from "allowed"; export function action() { try { ' + body + '; } catch {} }',
       'caught.js', { allowed: fixture.forbiddenModule(['attempt']) }, { exports: ['action'] })
-    module.action()
+    moduleValue.action()
     assert.throws(() => fixture.assertNoExternalOperations(), /deep-equal/)
   }
 })

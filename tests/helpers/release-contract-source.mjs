@@ -21,11 +21,11 @@ export function sourceModule(path,modules) {
     jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true,
   }})
   assert.equal((result.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error).length,0)
-  const module={exports:{}}
-  runInNewContext(result.outputText,{module,exports:module.exports,require:name=>{
+  const moduleValue={exports:{}}
+  runInNewContext(result.outputText,{module:moduleValue,exports:moduleValue.exports,require:name=>{
     assert.ok(Object.hasOwn(modules,name),'Unexpected dependency '+name+' in '+path)
     return modules[name]
   }})
-  return module.exports
+  return moduleValue.exports
 }
 

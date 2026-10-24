@@ -46,7 +46,7 @@ function fixture() {
 
 test('passive scoped probe records the normal explicit consent transition without altering state', () => {
   const f = fixture(); f.install()
-  assert.equal(f.listeners.length, 17)
+  assert.equal(f.listeners.length, 18)
   assert.ok(f.listeners.every(x => x.passive === true))
   assert.deepEqual(Array.from(f.observations[0].options.attributeFilter), ['disabled', 'checked', 'data-open', 'aria-pressed', 'hidden'])
   f.refs.selected = '30'; f.refs.open = true; f.refs.email.value = 'synthetic@example.invalid'
@@ -124,7 +124,7 @@ test('bounded transcript retains final state and cleans listeners/observer/pendi
   const data = f.finish(); f.drain()
   assert.equal(data.entries.length, 120); assert.ok(data.dropped > 0)
   assert.equal(data.droppedScroll, 12); assert.equal(data.final.checked, true)
-  assert.equal(f.removed.length, 17); assert.equal(f.observations[0].disconnected, true)
+  assert.equal(f.removed.length, 18); assert.equal(f.observations[0].disconnected, true)
   assert.equal(f.window.__alchemyConsentProbe, undefined)
   assert.equal(data.entries.filter(x => x.kind === 'scroll').length, 8)
 })
@@ -145,7 +145,7 @@ test('wrapper runs native action once and preserves its exact failure through di
   } finally { console.log = original }
   assert.deepEqual(calls, ['evaluate', 'run', 'evaluate'])
   assert.equal(logs.length, 1); assert.equal(logs[0][0], 'SYNTHETIC_ALCHEMY_CONSENT')
-  assert.deepEqual(JSON.parse(logs[0][1]), {locale: 'en', denyReceiptStorage: false, schemaVersion: 1, outcome: 'unavailable'})
+  assert.deepEqual(JSON.parse(logs[0][1]), {locale: 'en', denyReceiptStorage: false, schemaVersion: 2, outcome: 'unavailable'})
 })
 
 test('wrapper emits captured success before returning and removes its global', async () => {
@@ -167,4 +167,123 @@ test('integration preserves one native check and every following receipt/guard a
   assert.match(source, /await consent\.check\(\)\s*return \{contact,consent,submit\}\s*\}\)/)
   assert.doesNotMatch(source, /force\s*:|timeout\s*:|waitForTimeout|reducedMotion\s*:/)
   for (const assertion of ['assert.equal(receipt.count,0)', 'assert.equal(receipt.count,2)', 'assert.deepEqual(failures,[])', 'toContainText(ALCHEMY_REFERENCE)', 'toHaveURL(origin+`/${locale}/thank-you`)']) assert.ok(source.includes(assertion))
+})
+
+function enableGeometry(f, depth = 4) {
+  const sized = (tagName, parentElement = null) => ({tagName, parentElement,
+    getBoundingClientRect: () => ({x: 0, y: 100, width: 390, height: 844}),
+    scrollLeft: 0, scrollTop: 0, clientWidth: 390, clientHeight: 844, scrollWidth: 390, scrollHeight: 9000})
+  const html = sized('HTML'), body = sized('BODY', html), nav = sized('NAV')
+  let parent = body
+  for (let i = 0; i < depth; i++) parent = sized(i === depth - 1 ? 'LABEL' : 'DIV', parent)
+  f.refs.checkbox.parentElement = parent
+  const styles = new Map()
+  const makeStyle = () => ({scrollMarginTop: '0px', scrollMarginRight: '0px', scrollMarginBottom: '170px', scrollMarginLeft: '0px',
+    overflowX: 'visible', overflowY: 'visible', position: 'static', scrollBehavior: 'smooth', scrollSnapType: 'none',
+    scrollPaddingTop: '0px', scrollPaddingBottom: '0px', paddingTop: '0px', paddingBottom: '0px', display: 'grid', visibility: 'hidden',
+    getPropertyValue: property => { assert.equal(property, '--ia222-bottom-height'); return '84px' }})
+  f.sandbox.getComputedStyle = node => { if (!styles.has(node)) styles.set(node, makeStyle()); return styles.get(node) }
+  f.document.documentElement = html; f.document.body = body; f.document.onscrollend = null
+  f.document.querySelector = selector => selector === '.ia222-bottom-navigation' ? nav : f.refs.root
+  f.window.innerWidth = 390; f.window.innerHeight = 844
+  f.window.visualViewport = {width: 390, height: 844, offsetLeft: 0, offsetTop: 0, scale: 1.25}
+  return {html, body, nav, styles, style: node => f.sandbox.getComputedStyle(node)}
+}
+
+test('geometry captures stable clearance and focus-triggered body/nav changes without mutation', () => {
+  const f = fixture(), g = enableGeometry(f); f.install()
+  g.style(g.body).paddingBottom = '0px'; g.style(g.nav).display = 'none'
+  f.emit('pointerdown', f.refs.checkbox)
+  g.style(g.body).paddingBottom = '84px'; g.style(g.nav).display = 'grid'
+  f.document.activeElement = f.refs.checkbox
+  f.emit('focusin', f.refs.checkbox); f.emit('scroll', f.document); f.emit('pointerup', {})
+  const data = f.finish()
+  assert.equal(data.schemaVersion, 2); assert.equal(data.layouts.length, 5)
+  assert.equal(data.layouts[0].geometry.nav.display, 'none')
+  assert.deepEqual(data.layouts[0].geometry.bodyPadding, [0, 0])
+  assert.deepEqual(data.layouts[1].geometry.bodyPadding, [0, 84])
+  assert.equal(data.finalGeometry.available, true); assert.equal(data.finalGeometry.navHeightVariable, 84)
+  assert.deepEqual(data.finalGeometry.clearance, [0, 0, 170, 0])
+  assert.deepEqual(data.finalGeometry.viewport, [390, 844, 390, 844, 0, 0])
+  assert.equal(data.finalGeometry.viewportScale, 1.25)
+  assert.equal(data.finalGeometry.root.snap, 'none')
+  assert.equal(f.refs.checkbox.checked, false); assert.equal(f.refs.email.value, '')
+})
+
+test('root scrollend is passive, counted only for document scrollers and removed at teardown', () => {
+  const f = fixture(); enableGeometry(f); f.install(); f.refs.open = true
+  f.emit('scrollend', {}); f.emit('scrollend', f.document); f.emit('scrollend', f.document.documentElement)
+  const data = f.finish()
+  assert.equal(data.scrollEnds, 2); assert.equal(data.scrollEndSupported, true)
+  assert.equal(data.entries.filter(row => row.kind === 'scrollend').length, 2)
+  assert.equal(data.layouts.length, 2)
+  assert.ok(f.listeners.find(row => row.type === 'scrollend').passive)
+  assert.ok(f.removed.find(row => row.type === 'scrollend'))
+})
+
+test('geometry reports bounded ancestors, layouts and dropped count, retaining final geometry', () => {
+  const f = fixture(); enableGeometry(f, 20); f.install(); f.refs.open = true
+  for (let i = 0; i < 11; i++) f.emit('scrollend', f.document)
+  const data = f.finish()
+  assert.equal(data.layouts.length, 8); assert.equal(data.droppedLayouts, 3)
+  assert.equal(data.finalGeometry.ancestors.length, 12); assert.equal(data.finalGeometry.ancestorLimitReached, true)
+  assert.ok(data.layouts.every(row => row.geometry.ancestors.length === 12))
+  assert.deepEqual(data.finalGeometry.ancestors.map(row => row.depth), Array.from({length: 12}, (_, i) => i))
+})
+
+test('computed geometry permits only numbers and fixed enums, never arbitrary style/DOM data', () => {
+  const f = fixture(), g = enableGeometry(f)
+  const secret = 'PRIVATE_STYLE_OR_DOM_VALUE'
+  for (const node of [f.refs.checkbox, g.html, g.body, g.nav]) {
+    const style = g.style(node)
+    for (const key of ['scrollMarginTop','scrollMarginBottom','paddingTop','paddingBottom','scrollPaddingTop','scrollPaddingBottom','overflowX','overflowY','position','scrollBehavior','scrollSnapType','display','visibility']) style[key] = secret
+    style.getPropertyValue = () => secret
+    for (const key of ['textContent','innerHTML','outerHTML','className','id','name','href']) Object.defineProperty(node, key, {get() {throw Error(secret)}})
+  }
+  f.refs.checkbox.parentElement.tagName = secret
+  f.install(); f.emit('pointerdown', f.refs.checkbox)
+  const data = f.finish(), text = JSON.stringify(data)
+  assert.ok(!text.includes(secret)); assert.equal(data.finalGeometry.available, true)
+  assert.equal(data.finalGeometry.ancestors[0].tag, 'other')
+  assert.deepEqual(data.finalGeometry.clearance, [null, 0, null, 0])
+  assert.equal(data.finalGeometry.nav.display, 'other'); assert.equal(data.finalGeometry.navHeightVariable, null)
+  assert.deepEqual(data.finalGeometry.root.overflow, ['other', 'other'])
+  assert.equal(data.finalGeometry.root.snap, 'other')
+})
+
+test('geometry errors are redacted and cannot abort event observation or cleanup', () => {
+  const f = fixture(); enableGeometry(f); f.sandbox.getComputedStyle = () => {throw Error('PRIVATE_GEOMETRY_FAILURE')}
+  f.install(); f.emit('pointerdown', f.refs.checkbox)
+  const data = f.finish()
+  assert.deepEqual(data.finalGeometry, {available: false})
+  assert.deepEqual(data.layouts[0].geometry, {available: false})
+  assert.equal(f.removed.length, 18); assert.equal(f.window.__alchemyConsentProbe, undefined)
+  assert.ok(!JSON.stringify(data).includes('PRIVATE_GEOMETRY_FAILURE'))
+})
+
+test('geometry observers neither write control/layout state nor schedule or suppress native input', () => {
+  const f = fixture(), g = enableGeometry(f), attempts = []
+  const forbidden = name => () => { attempts.push(name); throw Error('Unexpected diagnostic side effect') }
+  for (const [node, keys] of [[f.refs.checkbox, ['checked','disabled']], [f.refs.email, ['value']],
+    [g.html, ['scrollLeft','scrollTop']], [g.body, ['scrollLeft','scrollTop']]]) {
+    for (const key of keys) {
+      const value = node[key]
+      Object.defineProperty(node, key, {get: () => value, set: forbidden(key)})
+    }
+    for (const method of ['click','focus','blur','scrollIntoView','setAttribute','dispatchEvent']) node[method] = forbidden(method)
+  }
+  for (const method of ['scrollTo','scrollBy','requestAnimationFrame','setTimeout','setInterval']) {
+    f.window[method] = forbidden(method); f.sandbox[method] = forbidden(method)
+  }
+  f.install(); f.refs.open = true
+  for (const type of ['pointerdown','focusin','scroll','pointerup','scrollend']) {
+    if (type === 'focusin') f.document.activeElement = f.refs.checkbox
+    const event = {target: type === 'scrollend' ? f.document : f.refs.checkbox,
+      preventDefault: forbidden('preventDefault'), stopPropagation: forbidden('stopPropagation'),
+      stopImmediatePropagation: forbidden('stopImmediatePropagation')}
+    for (const entry of f.listeners.filter(row => row.type === type)) entry.listener(event)
+  }
+  const data = f.finish(); f.drain()
+  assert.deepEqual(attempts, []); assert.equal(data.finalGeometry.available, true)
+  assert.equal(data.final.checked, false); assert.equal(data.final.emailState, 'empty')
 })

@@ -82,11 +82,11 @@ function loadThankYouPage(getPublishedSiteVideo){
     '@/components/service-enquiry-thank-you':{ServiceEnquiryThankYou:'thank-you'},
     '@/lib/site-videos/public':{getPublishedSiteVideo},
   }
-  const module={exports:{}}
+  const moduleValue={exports:{}}
   vm.runInNewContext(ts.transpileModule(source('app/[locale]/thank-you/page.tsx'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
-    module,exports:module.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected page dependency: '+id);return imports[id]},
+    module:moduleValue,exports:moduleValue.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected page dependency: '+id);return imports[id]},
   })
-  return module.exports.default
+  return moduleValue.exports.default
 }
 for(const locale of ['en','ru','es'])test(`${locale} thank-you reads only its exact public video key and keeps missing/draft/hidden media absent`,async()=>{
   const draft=prepareVideoChange(null,{slot:'thank-you',locale,intent:'draft',youtubeUrl:'https://youtu.be/OkLEN8Zb-sY',title:'Fictional thank-you'})

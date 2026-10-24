@@ -90,14 +90,14 @@ export function sourceFixture(globals = {}) {
         return target[name]
       } })]
     }))
-    const module = { exports: {} }
+    const moduleValue = { exports: {} }
     vm.runInNewContext(compiled, {
-      ...globals, module, exports: module.exports,
+      ...globals, module:moduleValue, exports: moduleValue.exports,
       require: name => { if (!Object.hasOwn(dependencies, name)) return denyExternal('unknown import: ' + name); return dependencies[name] },
       fetch: denyExternal, XMLHttpRequest: denyExternal, WebSocket: denyExternal,
     }, { filename, timeout: 5000 })
-    assert.deepEqual(Object.keys(module.exports).sort(), [...expectedExports, ...expose].sort(), 'Exact evaluated module exports')
-    return module.exports
+    assert.deepEqual(Object.keys(moduleValue.exports).sort(), [...expectedExports, ...expose].sort(), 'Exact evaluated module exports')
+    return moduleValue.exports
   }
   function mount(Component, props) {
     const state = { slots: [], dirty: true, index: 0, effects: [], tree: null }
@@ -212,12 +212,12 @@ export function accountNavigation(source, bindings) {
     const compiled = ts.transpileModule('module.exports = (' + callback.getText(ast) + ');', {
       fileName: 'consumer.jsx', compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     }).outputText
-    const module = { exports: {} }
-    vm.runInNewContext(compiled, { ...bindings, module, exports: module.exports, Link: 'a', navIsActive: id => id === 'course',
+    const moduleValue = { exports: {} }
+    vm.runInNewContext(compiled, { ...bindings, module:moduleValue, exports: moduleValue.exports, Link: 'a', navIsActive: id => id === 'course',
       require: name => { assert.equal(name, 'react/jsx-runtime'); return { jsx: element, jsxs: element } },
     }, { timeout: 5000 })
     for (const entry of entries) {
-      const renderedEntry = module.exports(entry)
+      const renderedEntry = moduleValue.exports(entry)
       assert.equal(renderedEntry.type, 'a', className)
       assert.equal(renderedEntry.props.href, entry.href, className + ' binds actual href')
       assert.equal(renderedEntry.props.prefetch, false, className)

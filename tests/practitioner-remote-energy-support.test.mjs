@@ -98,11 +98,11 @@ async function renderSupport(locale,{unavailable=false,source=read('app/[locale]
   }},
   './holistic-support.module.css':{default:{}},
  }
- const module={exports:{}}
+ const moduleValue={exports:{}}
  vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
-  module,exports:module.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected public-page import: '+id);return imports[id]},URL,
+  module:moduleValue,exports:moduleValue.exports,require:id=>{assert.ok(Object.hasOwn(imports,id),'Unexpected public-page import: '+id);return imports[id]},URL,
  })
- const tree=await module.exports.default({params:Promise.resolve({locale})})
+ const tree=await moduleValue.exports.default({params:Promise.resolve({locale})})
  const nodes=[]
  const visit=(node,parents=[])=>{if(Array.isArray(node))return node.forEach(n=>visit(n,parents));if(!node||typeof node!=='object'||!('type'in node))return;nodes.push({...node,parents});visit(node.props.children,[...parents,node])}
  visit(tree);return {nodes,reads}
