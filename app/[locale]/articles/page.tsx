@@ -35,9 +35,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isPublicLocale(locale)) return { robots: { index: false, follow: false } };
   return {
     metadataBase: metadataBaseFor(),
-    title: locale === "ru" ? "Статьи практиков | Holistic House"
-      : locale === "es" ? "Artículos de profesionales | Holistic House"
-        : "Practitioner articles | Holistic House",
+    title: locale === "ru" ? "Статьи и услуги | Holistic House"
+      : locale === "es" ? "Artículos y servicios | Holistic House"
+        : "Articles & services | Holistic House",
     description: locale === "ru"
       ? "Практические статьи и объяснения от авторов Holistic House."
       : "Educational articles and practical insights by Holistic House practitioners.",
@@ -63,7 +63,7 @@ export default async function Articles({ params }: Props) {
       <PublicSiteHeader locale={locale} />
       <section className={styles.hero}>
         <p className="homeopathy-kicker">Holistic House · Journal</p>
-        <h1>{ru ? "Статьи наших практиков" : es ? "Artículos de profesionales" : "Practitioner articles"}</h1>
+        <h1>{ru ? "Статьи и услуги" : es ? "Artículos y servicios" : "Articles & services"}</h1>
         <p>{ru ? "Опубликованные статьи и услуги наших мастеров."
           : es ? "Artículos y servicios publicados por nuestra comunidad."
             : "Published articles and real services from our community."}</p>
@@ -72,6 +72,7 @@ export default async function Articles({ params }: Props) {
           <Link href={"/" + (es ? "en" : locale) + "/app/practice?panel=materials&materialTab=services"}>{ru ? "Добавить услугу" : es ? "Añadir servicio" : "Add a service"} ↗</Link>
         </div>
       </section>
+      {serviceResult.status === "rejected" && <p className={styles.readError} role="alert">{ru ? "Каталог услуг временно недоступен." : es ? "Los servicios no están disponibles temporalmente." : "Services are temporarily unavailable."}</p>}
       {articleResult.status === "rejected" && <p className={styles.readError} role="alert">{ru ? "Статьи временно недоступны." : es ? "Los artículos no están disponibles temporalmente." : "Articles are temporarily unavailable."}</p>}
       {articles.length > 0 && <ArticleDirectory locale={locale} articles={articles.map((a) => ({
         id: a.id,
@@ -84,8 +85,8 @@ export default async function Articles({ params }: Props) {
         coverPath: a.published.coverPath || "",
         tags: Array.isArray(a.published.tags) ? a.published.tags : [],
       }))} />}
-      <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0} />
-      {articleResult.status === "fulfilled" && !articles.length && !services.length && <p className={styles.empty}>{ru ? "Публикации готовятся. Напишите свою статью через My Practice." : es ? "Aún no hay publicaciones aprobadas. Escribe desde My Practice." : "No approved publications yet. Submit an article through My Practice."}</p>}
+      <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0 || articleResult.status === "rejected"} />
+      {articleResult.status === "fulfilled" && serviceResult.status === "fulfilled" && !articles.length && !services.length && <p className={styles.empty}>{ru ? "Публикации готовятся. Напишите свою статью через My Practice." : es ? "Aún no hay publicaciones aprobadas. Escribe desde My Practice." : "No approved publications yet. Submit an article through My Practice."}</p>}
     </main>
   );
 }
