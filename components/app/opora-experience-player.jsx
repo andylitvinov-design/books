@@ -11,6 +11,7 @@ import {oporaAs58Day,OPORA_PRIMARY_EMOTIONS,OPORA_EMOTION_DAYS,OPORA_ONE_ACTION_
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner-growth/opora-gentle-journey'
+import {needsOporaFirstExerciseConsent,canAdvanceOporaFirstExercise} from '@/lib/inner-growth/opora-first-exercise-consent'
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
@@ -34,6 +35,11 @@ const WORDS={
     ],
     arrivalWarmTitle:'Можно просто побыть здесь',
     arrivalWarmText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
+    firstExerciseTitle:'Упражнение № 1. Чуть спокойнее',
+    firstExerciseInvite:'Предлагаю упражнение на одну минуту. Оно может помочь переключиться с тревожных мыслей на то, что вокруг, и немного снизить напряжение. Хотите попробовать?',
+    firstExerciseYes:'Да, готов(а)',firstExerciseNo:'Не сейчас',
+    firstExerciseAction:'Посмотрите на три предмета',
+    firstExerciseDetail:'Для каждого мысленно назовите цвет или форму. Можно остановиться в любой момент.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
     supportKicker:'МОМЕНТ ПОДДЕРЖКИ',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
@@ -115,6 +121,11 @@ const WORDS={
     ],
     arrivalWarmTitle:'You can arrive just as you are',
     arrivalWarmText:'Find one calm or pleasant detail around you.',
+    firstExerciseTitle:'Exercise 1. Find a little calm',
+    firstExerciseInvite:'I’d like to offer a one-minute exercise. It may help shift your attention away from stressful thoughts and ease tension a little. Would you like to try it?',
+    firstExerciseYes:"Yes, I’m ready",firstExerciseNo:'Not now',
+    firstExerciseAction:'Look at three objects',
+    firstExerciseDetail:'For each one, notice its colour or shape. You can stop at any time.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
     supportKicker:'A MOMENT OF SUPPORT',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
@@ -197,6 +208,11 @@ WORDS.es = {
   ],
     arrivalWarmTitle:'Puedes llegar tal como estás',
     arrivalWarmText:'Encuentra con la mirada un detalle agradable o neutro.',
+    firstExerciseTitle:'Ejercicio 1. Un poco más de calma',
+    firstExerciseInvite:'Te propongo un ejercicio de un minuto. Puede ayudarte a apartar la atención de las preocupaciones y aliviar algo de tensión. ¿Quieres probarlo?',
+    firstExerciseYes:'Sí, quiero probar',firstExerciseNo:'Ahora no',
+    firstExerciseAction:'Mira tres objetos',
+    firstExerciseDetail:'Fíjate en el color o la forma de cada uno. Puedes parar cuando quieras.',
     arriveHint:'Mira un objeto estable a tu alrededor; no necesitas cambiar tu respiración.',
     practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
   supportKicker:'UN MOMENTO DE APOYO',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
@@ -453,6 +469,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
   const [showHelp,setShowHelp]=useState(false)
+  const [firstExerciseAccepted,setFirstExerciseAccepted]=useState(false)
   const [neutralSupport,setNeutralSupport]=useState(false)
   const [safety,setSafety]=useState(false)
   const [error,setError]=useState('')
@@ -469,6 +486,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const inPreview=receipt&&previewIndex>=0&&!inviteOpen
   const moment=inviteOpen?'invite':inPreview?previewScreens[previewIndex]:
     receipt?'receipt':flowScenes[step]
+  const newDayOneIntro=cycle.day===1&&!hasSaved&&!reviewOnly
+  const firstExerciseInvite=needsOporaFirstExerciseConsent({day:cycle.day,moment,hasSaved,reviewOnly})
   const previewTotal=flowScenes.length+2+previewScreens.length
   const previewStep=inviteOpen?previewTotal:inPreview?flowScenes.length+2+previewIndex:
     receipt?flowScenes.length+1:Math.min(step+1,previewTotal)
@@ -555,8 +574,16 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     setNeutralSupport(true)
     setSafety(false)
   }
+  function acceptFirstExercise(){
+    if(locked||!firstExerciseInvite)return
+    setFirstExerciseAccepted(true)
+    setError('');setShowHelp(false)
+    setStep(s=>Math.min(flowScenes.length-1,s+1))
+  }
   function next(){
-    if(locked)return
+    if(locked||!canAdvanceOporaFirstExercise({
+      day:cycle.day,moment,hasSaved,reviewOnly,ready:firstExerciseAccepted,
+    }))return
     setError('')
     setShowHelp(false)
     setStep(s=>Math.min(flowScenes.length-1,s+1))
@@ -648,17 +675,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
     moment==='recall'?opening.recall:
-    moment==='arrive'?(cycle.day===1?t.arrivalWarmTitle:t.arriveTitle):
+    moment==='arrive'?(cycle.day===1?(newDayOneIntro?t.firstExerciseTitle:t.arrivalWarmTitle):t.arriveTitle):
     moment==='support'?support?.title:
     moment==='why'?j.whyTitle:moment==='story'?j.storyTitle:
     moment==='options'?j.optionsTitle:moment==='settle'?j.settleTitle:
-    moment==='practice'?(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn:
+    moment==='practice'?(newDayOneIntro?t.firstExerciseAction:(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn):
     moment==='feel'?t.feelTitle:
     moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
   // One optional helper across the experiential steps; ratings and completion never depend on opening it.
   const guidanceForMoment=moment==='practice'
     ?(lang==='es'?t.gentle:lesson.antiStress?.neutralText||t.gentle)
-    :moment==='arrive'?t.arriveHint
+    :moment==='arrive'&&!newDayOneIntro?t.arriveHint
     :moment==='recall'
       ?(lang==='ru'?'Если ничего не вспоминается, посмотрите на один обычный предмет рядом.'
         :lang==='es'?'Si no recuerdas nada, mira un objeto normal a tu lado.'
@@ -703,7 +730,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           moment==='welcome'||(moment==='arrive'&&cycle.day!==1)?styles.arrivalPanel:''
         )+(moment==='practice'&&cycle.day===1?' '+styles.corePractice:'')
           +(moment==='practice'&&cycle.day===11&&showNewPlan?' '+styles.emotionPractice:'')}
-          aria-live="off" data-opora-current-screen={moment}>
+          aria-live="off" data-opora-current-screen={moment}
+          data-opora-first-exercise-consent={firstExerciseInvite?'true':undefined}>
           {inPreview&&<span className={styles.eyebrow}>
             {moment==='habit'?t.habitKicker:t.preview.nextKicker}
             {' · '}{previewIndex+1}/{previewScreens.length}
@@ -778,7 +806,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {familiarSupport&&familiarSupport!=='other'&&<p className={styles.soft} role="status">{opening.recallReply}</p>}
           </>}
           {moment==='arrive'&&!neutralSupport&&<>
-            <p className={styles.lead}>{cycle.day===1?t.arrivalWarmText:t.arriveText}</p>
+            <p className={styles.lead}>{cycle.day===1?(newDayOneIntro?t.firstExerciseInvite:t.arrivalWarmText):t.arriveText}</p>
             {cycle.day!==1&&<>
               <div className={styles.moodChoices} role="group" aria-label={t.arriveTitle}
                 data-opora-start-mood="true">
@@ -808,11 +836,13 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.soft}>{j.settleNote}</p>
           </>}
           {moment==='practice'&&<>
-            {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&
+            {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&!newDayOneIntro&&
               <div className={styles.coreWhy} data-opora-core-purpose="true">
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
-            {!neutralSupport&&<p className={styles.lead} data-opora-one-daily-practice={cycle.day}>{practiceGuide}</p>}
+            {!neutralSupport&&<p className={styles.lead} data-opora-one-daily-practice={cycle.day}>
+              {practiceGuide}{newDayOneIntro?<span className={styles.practiceDetail}> {t.firstExerciseDetail}</span>:null}
+            </p>}
             {!neutralSupport&&cycle.day===11&&showNewPlan&&
               <EmotionVocabulary locale={lang} day={cycle.day} choice={practiceEmotionChoice}
                 textValue={practiceEmotionText} onChoice={updateEmotionChoice}
@@ -976,7 +1006,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
       </main>
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.footer}>
-        {inviteOpen?<button type="button" className={styles.back} disabled={locked}
+        {firstExerciseInvite?<button type="button" className={styles.back} disabled={locked}
+          data-opora-practice-consent-choice="no" onClick={onClose}>{t.firstExerciseNo}</button>:
+        inviteOpen?<button type="button" className={styles.back} disabled={locked}
           onClick={()=>{setInviteOpen(false);setPreviewIndex(previewScreens.length-1)}}>
           <ArrowLeft size={17}/>{t.back}</button>:
         receipt?<button type="button" className={styles.back} disabled={locked}
@@ -985,7 +1017,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           <ArrowLeft size={17}/>{t.back}
         </button>:<button type="button" className={styles.back}
           onClick={step===0?onClose:back} disabled={locked}><ArrowLeft size={17}/>{t.back}</button>}
-        <button type="button" className={styles.primary} disabled={locked}
+        {firstExerciseInvite?<button type="button" className={styles.primary} disabled={locked}
+          data-opora-practice-consent-choice="yes" onClick={acceptFirstExercise}>
+          {t.firstExerciseYes}<ArrowRight size={18}/>
+        </button>:<button type="button" className={styles.primary} disabled={locked}
           onClick={inviteOpen?(onFinish||onClose):
             moment==='habit'?(habitSetup?()=>{setPreviewIndex(-1);setInviteOpen(true)}:()=>setHabitSetup(true)):
             inPreview?advancePreview:receipt?openPreview:
@@ -994,7 +1029,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             inPreview?(moment==='nextStep'&&cycle.day===1?c.commit:previewIndex===previewScreens.length-1?c.commit:t.next):
             receipt?t.seeProgram:moment==='recapFeedback'&&!saved?(saving?t.saving:t.save):t.next}
           {inviteOpen||(moment==='recapFeedback'&&!saved)||(moment==='habit'&&habitSetup)?<CheckCircle2 size={18}/>:<ArrowRight size={18}/>}
-        </button>
+        </button>}
       </footer>
     </div>
     {safety&&<div className={styles.shade} role="alertdialog" aria-modal="true"
