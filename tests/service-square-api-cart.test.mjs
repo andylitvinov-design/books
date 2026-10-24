@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHmac } from 'node:crypto'
 import { test } from 'node:test'
+import { normalizeSquareCheckoutRedirect } from '../lib/commerce/square-payment-links.js'
 import {
   createSquarePaymentLink, getSquareGatewayConfig, paymentIdFromSquareEvent,
   squareCheckoutPayload, squareWebhookValid, squareApiRequest,
@@ -88,6 +89,15 @@ test('provider checkout is per-order, fixed CAD, no tip/shipping/PII and safe re
   assert.equal(body.checkout_options.redirect_url,'https://holistichouse.vercel.app/ru/cart?squareOrder='+id)
   assert.doesNotMatch(JSON.stringify(body),/diagnos|symptom|test_result|email|phone|health/i)
   rejected(() => squareCheckoutPayload(row,config.locationId,'https://other.example'))
+})
+
+test('dynamic Square Sandbox checkout uses sandbox host without leaking it into production', () => {
+  assert.equal(normalizeSquareCheckoutRedirect('https://sandbox.square.link/u/ABCDE12345','sandbox'),
+    'https://sandbox.square.link/u/ABCDE12345')
+  assert.equal(normalizeSquareCheckoutRedirect('https://sandbox.square.link/u/ABCDE12345','production'),null)
+  assert.equal(normalizeSquareCheckoutRedirect('https://square.link/u/ABCDE12345','sandbox'),null)
+  assert.equal(normalizeSquareCheckoutRedirect('https://sandbox.square.link.evil.test/u/ABCDE12345','sandbox'),null)
+  assert.equal(normalizeSquareCheckoutRedirect('https://sandbox.square.link/u/ABCDE12345?amount=1','sandbox'),null)
 })
 
 test('signed Square raw bytes + exact webhook URL are mandatory', () => {
