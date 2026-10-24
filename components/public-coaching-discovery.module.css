@@ -14,7 +14,7 @@
 .hero>p:last-child{margin:15px 0 0;max-width:600px;font-size:clamp(15px,2vw,19px);line-height:1.45}
 .controls{position:relative;margin:-13px auto 0;max-width:980px;padding:clamp(14px,2vw,24px);border:1px solid #e7dace;
   border-radius:19px;background:#fffcf8;box-shadow:0 10px 28px #6e57431a}
-.format{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0;margin:0 0 15px;border:0;min-width:0}
+.format{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:0;margin:0 0 15px;border:0;min-width:0}
 .format legend{font-size:12px;font-weight:800;color:#6c5c4b;margin-bottom:8px}
 .format button{display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid #c9d0c7;background:#fffdfb;
   border-radius:13px;min-height:52px;padding:11px 13px;color:#49625e;font-size:15px;font-weight:800;cursor:pointer;text-align:center}
@@ -91,7 +91,7 @@
  .eyebrow{font-size:10px;letter-spacing:.1em}
  .controls{padding:12px;border-radius:13px;margin-top:-8px}
  .format{gap:6px}
- .format button{font-size:12px;min-height:53px;gap:6px;padding:7px 6px}
+ .format button{font-size:12px;min-height:55px;gap:6px;padding:7px 6px;line-height:1.2}
  .format button svg{width:16px;flex:none}
  .filters{grid-template-columns:1fr 1fr;gap:9px}
  .filters label:first-child{grid-column:1/-1}
@@ -108,7 +108,7 @@
  .root{padding:6px 6px 90px}
  .hero{padding:16px}
  .hero h1{font-size:33px}
- .format button{font-size:11.5px;min-height:56px}
+ .format button{font-size:11px;min-height:58px;flex-direction:column;gap:3px}
  .choices{grid-template-columns:1fr}
  .cardTop{font-size:11px}
  .sessionActions button{font-size:12px;padding:8px}
@@ -139,3 +139,10 @@
  .morePath h3{font-size:23px}
  .morePaths{padding-top:21px}
 }
+
+/* Visitors can select all session formats or narrow the same room without navigation. */
+.format button{min-width:0;overflow-wrap:anywhere}
+.catalog+.catalog{padding-top:12px;border-top:1px solid #e7d9c8}
+.morePath[data-suggested="true"]{border-color:#8b5d46;box-shadow:0 0 0 2px #d3b18f33}
+.filterNote{font-size:12px;color:#546e65;margin:8px 0 0;line-height:1.45}
+.morePaths[hidden]{display:none}
