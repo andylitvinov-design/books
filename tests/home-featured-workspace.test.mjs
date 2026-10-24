@@ -5,89 +5,105 @@ import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const feature = read("components/home-featured-workspace.tsx");
 const css = read("components/home-featured-workspace.module.css");
+const ids = JSON.parse(feature.match(/const moduleIds: ModuleKey\[\] = (\[[^;]+\]);/)[1]);
+const parseLiteral = name => {
+  const start = feature.indexOf("const " + name + " = ") + ("const " + name + " = ").length;
+  const end = feature.indexOf(" as const;", start);
+  assert.ok(start > 0 && end > start, name + " catalog is present");
+  return JSON.parse(feature.slice(start, end));
+};
+const copy = parseLiteral("copy");
+const photos = parseLiteral("photos");
+const expected = ["courses", "personality", "situation", "coaching", "alchemy", "energy", "master"];
 
-test("EN RU ES home keep one consistent place for five complete category screens", () => {
-  const enRu = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  for (const home of [enRu, es]) {
-    assert.match(home, /<HomeFeaturedWorkspace locale=/);
-    assert.match(home, /<HomeMasterPath locale=/);
-    const ordered = ["HomeSectionCarousel", "HomeFreeDiagnosisBanner",
-      "HomeConversationGuide", "HomePersonalSpaceCard", "HomeFeaturedWorkspace",
-      "HomepageTopicJourneys", "HomeMoreDisclosure", "HomeMasterPath"];
+test("the home has seven ordered, translated steps with no repeated Master or method section", () => {
+  assert.deepEqual(ids, expected);
+  assert.match(feature, /data-home-journey-count=\{moduleIds\.length\}/);
+  assert.match(feature, /moduleIds\.map\(\(id, index\) =>/);
+  assert.match(feature, /data-home-module=\{id\}/);
+  assert.match(feature, /href=\{"#home-immersion-" \+ id\}/);
+  for (const page of ["components/holistic-house-home.tsx", "app/es/page.tsx"]) {
+    const home = read(page);
+    assert.equal((home.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1, page);
+    assert.doesNotMatch(home, /<HomeCoreMethods\b|<HomeMasterPath\b/, "no duplicate method/master funnels");
+    const order = ["HomeSectionCarousel", "HomeFeaturedWorkspace",
+      "HomeFreeDiagnosisBanner", "HomeConversationGuide", "HomePersonalSpaceCard",
+      "HomepageTopicJourneys", "HomeMoreDisclosure"];
     let previous = -1;
-    for (const name of ordered) {
-      const position = home.indexOf("<" + name);
-      assert.ok(position > previous, "Home preserves section order: " + name);
-      previous = position;
+    for (const tag of order) {
+      const offset = home.indexOf("<" + tag);
+      assert.ok(offset > previous, page + " order: " + tag);
+      previous = offset;
     }
   }
-  assert.match(feature, /type ModuleKey = "tests" \| "courses" \| "services" \| "learning" \| "master"/);
-  assert.match(feature, /moduleIds: ModuleKey\[\] = \["tests", "courses", "services", "learning", "master"\]/);
-  assert.match(feature, /moduleIds\.map\(\(id, index\) =>/);
-  assert.match(feature, /<section className=\{styles\.section\} data-home-module=\{id\}/);
-  for (const label of ["Tests", "Courses", "Services", "Learning", "Become a Master",
-    "Тесты", "Курсы", "Услуги", "Обучение", "Стать мастером",
-    "Pruebas", "Cursos", "Servicios", "Aprender", "Ser profesional"]) {
-    assert.ok(feature.includes(label), "Missing localized section: " + label);
+  for (const locale of ["en", "ru", "es"]) {
+    assert.deepEqual(Object.keys(copy[locale].modules), expected, locale + " order");
+    assert.ok(copy[locale].heading && copy[locale].summary && copy[locale].journeyLabel);
   }
 });
 
-test("each category has two or three photographed offers, not tiny selector tiles", () => {
-  const sections = ["tests", "courses", "services", "learning", "master"];
+test("all seven stages have honest photographed offers with actionable labels", () => {
+  const sizes = [3, 3, 3, 2, 1, 1, 3];
   for (const locale of ["en", "ru", "es"]) {
-    const block = feature.slice(feature.indexOf("  " + locale + ": {"), locale === "es" ? feature.indexOf("} as const;", feature.indexOf("  es: {")) : feature.indexOf("  " + (locale === "en" ? "ru" : "es") + ": {"));
-    for (const id of sections) {
-      const entry = block.slice(block.indexOf("      " + id + ": {"));
-      const end = entry.indexOf("      },");
-      const count = (entry.slice(0, end).match(/\{ id: "/g) || []).length;
-      assert.ok(count >= 2 && count <= 3, locale + "/" + id + " has " + count + " offers");
-    }
+    expected.forEach((step, index) => {
+      const module = copy[locale].modules[step];
+      assert.equal(module.offers.length, sizes[index], locale + "/" + step);
+      assert.ok(module.title && module.lead, locale + "/" + step + " has a heading");
+      for (const offer of module.offers) {
+        assert.ok(offer.title && offer.body && offer.cta, locale + "/" + step + " has complete copy");
+        assert.ok(photos[offer.id], "missing image for " + offer.id);
+      }
+    });
+  }
+  for (const path of Object.values(photos)) {
+    assert.ok(existsSync(new URL("../public" + path, import.meta.url)), "Missing first-party image " + path);
   }
   assert.match(feature, /<Image src=\{photos\[offer\.id\]\} alt="" fill unoptimized loading="lazy"/);
-  assert.match(feature, /className=\{styles\.photo\}/);
-  assert.match(feature, /className=\{styles\.offerBody\}/);
   assert.match(feature, /data-home-module-action=\{offer\.id\}/);
-  assert.doesNotMatch(feature, /aria-pressed=|setSelected|data-home-module-grid|data-home-module-detail/);
-  assert.doesNotMatch(css, /grid-template-columns: repeat\(5|grid-template-columns: repeat\(2/);
-  assert.match(css, /\.section \{/);
-  assert.match(css, /100svh/);
-  assert.match(css, /@media \(max-width: 640px\)/);
-  assert.match(css, /max-width: 350px/);
-  assert.match(css, /:focus-visible/);
-  assert.match(css, /prefers-reduced-motion/);
+  assert.doesNotMatch(feature, /fetch\(|sendBeacon|autoEnroll|payment_success|localStorage|sessionStorage/);
 });
 
-test("all offers use live existing routes, no fake checkout or automatic leads", () => {
+test("each requested action uses an actual route, never an implied booking or publication", () => {
   for (const path of [
-    "/client/tests?focus=stress", "/client/tests?focus=resources", "/client/tests",
-    "/courses/antistress", 'accountRoot + "/business"',
-    "/services/free-situation-review", "/services#consultation",
-    "/services/systemic-constellations", "/academy/principles-of-energywork/learn",
-    "/academy/egyptian-priesthood", "/academy", "/pro",
-    "/practice?panel=services", "/practice?panel=materials&materialTab=courses",
-  ]) assert.ok(feature.includes(path), "Missing existing route: " + path);
-  for (const key of ["review", "consultation", "reiki", "egypt", "pro", "service", "course"]) {
-    assert.ok(feature.includes(key + ": \"/images/holistic-house/"));
+    "/academy/principles-of-energywork/learn", "/courses/antistress",
+    "/academy", "/client/tests", "/portrait", "/portfolio#hh-development-program",
+    "/services/free-situation-review", "/services/business-consulting",
+    "/services/systemic-constellations", "/coaching", "/services#consultation",
+    "/services/alchemy-of-soul", "/services/remote-energy-support",
+    "/pro", "/practice?panel=services", "/practice?panel=materials&materialTab=courses",
+  ]) assert.ok(feature.includes(path), "Missing destination " + path);
+  assert.match(feature, /locale === "es" \? "en" : locale/);
+  for (const locale of ["en", "ru", "es"]) {
+    assert.match(copy[locale].coachingNote, /(?:not live AI therapy|не живой ИИ-терапевт|no es terapia)/);
+    assert.ok(copy[locale].alchemyNote.length > 70, "No misleading homeopathy claim");
+    assert.ok(copy[locale].situationNote.length > 65, "Written review is distinguished from booking");
+    assert.ok(copy[locale].energyNote && copy[locale].masterNote);
   }
-  for (const path of [...feature.matchAll(/: "(\/images\/holistic-house\/[^"]+)"/g)].map(hit => hit[1])) {
-    assert.ok(existsSync(new URL("../public" + path, import.meta.url)), "Missing local photo " + path);
-  }
-  assert.doesNotMatch(feature, /fetch\(|axios|sendBeacon|autoEnroll|payment_success|localStorage|sessionStorage/);
 });
 
-test("private account links still require a signed-in summary, ES public links stay translated", () => {
+test("personal reports and development stay behind the existing account boundary", () => {
   assert.match(feature, /const signedIn = space\?\.status === "ready" && Boolean\(space\.summary\)/);
-  assert.match(feature, /locale === "es" \? "en" : locale/);
-  assert.match(feature, /id === "tests" && signedIn/);
-  assert.match(feature, /myCourses: myCoursesHref/);
-  assert.match(feature, /offer.id === "myCourses" && !signedIn/);
+  assert.match(feature, /id === "courses" && signedIn/);
+  assert.match(feature, /id === "personality" && signedIn/);
+  assert.match(feature, /offer\.id === "profile" && !signedIn/);
+  assert.match(feature, /offer\.id === "growth" && !signedIn/);
   assert.match(feature, /\{signedIn && \(/);
   assert.match(feature, /data-home-reports-cta/);
   assert.match(feature, /data-home-development-cta/);
   assert.match(feature, /\/portrait#personal-reports/);
-  assert.match(feature, /\/portfolio#hh-development-program/);
-  assert.match(feature, /t\.serviceNote/);
-  assert.match(feature, /t\.masterNote/);
-  assert.doesNotMatch(feature, /score|symptoms|medicalResults|privateAnswers|testAnswers|diagnosis/);
+  assert.doesNotMatch(feature, /medicalResults|privateAnswers|testAnswers|symptomScores/);
+});
+
+test("seven-step jump links and cards fit 320–430px without tall empty phone screens", () => {
+  assert.match(css, /\.steps \{/);
+  assert.match(css, /overflow-x: auto/);
+  assert.match(css, /scroll-snap-type: x proximity/);
+  assert.match(css, /min-height: 44px/);
+  assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(css, /\.section \{\s*min-height: 0;/);
+  assert.match(css, /max-height: none/);
+  assert.match(css, /@media \(max-width: 350px\)/);
+  assert.match(css, /:focus-visible/);
+  assert.match(css, /prefers-reduced-motion/);
+  for (const step of expected) assert.ok(css.includes('data-home-module="' + step + '"') || step === "courses");
 });

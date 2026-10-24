@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'components/holistic-house-home.tsx'
+      - 'components/home-featured-workspace.tsx'
+      - 'components/home-featured-workspace.module.css'
+      - 'tests/home-featured-workspace.test.mjs'
+      - 'tests/home-master-path.test.mjs'
+      - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-core-methods.tsx'
       - 'components/home-core-methods.module.css'
       - 'app/es/page.tsx'
@@ -15,6 +20,11 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-house-home.tsx'
+      - 'components/home-featured-workspace.tsx'
+      - 'components/home-featured-workspace.module.css'
+      - 'tests/home-featured-workspace.test.mjs'
+      - 'tests/home-master-path.test.mjs'
+      - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-core-methods.tsx'
       - 'components/home-core-methods.module.css'
       - 'app/es/page.tsx'
@@ -38,10 +48,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: New home method cards, affected lint and types
+      - name: Seven-step immersion, existing methods, privacy, typecheck and lint
         run: |
-          node --test tests/home-core-methods.test.mjs
-          npx eslint components/home-core-methods.tsx components/holistic-house-home.tsx app/es/page.tsx
+          node --test tests/home-featured-workspace.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs
+          npx eslint components/home-featured-workspace.tsx components/home-core-methods.tsx components/holistic-house-home.tsx app/es/page.tsx
           npx tsc --noEmit
       - name: Build three home locales with reviewed dependencies
         run: npm run build
