@@ -20,6 +20,7 @@ on:
       - 'supabase/migrations/20261024193000_hh_master_news_feed_social.sql'
       - 'tests/practitioner-news-feed.test.mjs'
       - 'tests/helpers/app-db-setup.mjs'
+      - 'tests/helpers/verify-practitioner-article-social-db.mjs'
       - 'tests/mentor-community-v1.test.mjs'
       - 'tests/helpers/seed-mentor-community-browser.mjs'
       - 'scripts/verify-mentor-community-browser.mjs'
@@ -92,6 +93,7 @@ jobs:
           done
           HH_COMMUNITY_PHASE=empty HH_TEST_BROWSER=chromium node scripts/verify-mentor-community-browser.mjs
           node --conditions=react-server tests/helpers/seed-mentor-community-browser.mjs
+          node --conditions=react-server tests/helpers/verify-practitioner-article-social-db.mjs
           HH_COMMUNITY_PHASE=populated HH_TEST_BROWSER=chromium node scripts/verify-mentor-community-browser.mjs
           HH_COMMUNITY_PHASE=populated HH_TEST_BROWSER=webkit node scripts/verify-mentor-community-browser.mjs
       - name: Sanitized application errors only
