@@ -435,13 +435,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
   // Day 1 retains the five restored opening screens. Days 2–14 have four
   // extra editorial moments before practice, all private and non-persisted.
+  // The existing Today's Practice card now introduces the goal immediately
+  // before the actual activity. Keep its editorial key unpersisted and render
+  // it only once; the server's visitedSlideKeys retain their original order.
+  const openingScenes=scenes.slice(1).flatMap(scene=>
+    scene==='practice'?['recapPractice',scene]:[scene])
   const displayScenes=cycle.day===1
-    ?[scenes[0],'support',...scenes.slice(1)]
-    :[scenes[0],'support',...OPORA_GENTLE_INTRO,...scenes.slice(1)]
+    ?[scenes[0],'support',...openingScenes]
+    :[scenes[0],'support',...OPORA_GENTLE_INTRO,...openingScenes]
   // The optional 2-minute closing meditation belongs near the end of the
   // 14-day programme, not inside every daily practice card. This editorial
   // screen never changes persisted visit keys or reports a practice attempt.
-  const flowScenes=[...displayScenes,...OPORA_GENTLE_RECAP.flatMap(scene=>
+  const flowScenes=[...displayScenes,...OPORA_GENTLE_RECAP.filter(scene=>
+    scene!=='recapPractice').flatMap(scene=>
     cycle.day===14&&scene==='recapFeedback'?['closingMeditation',scene]:[scene])]
   const [step,setStep]=useState(reviewOnly?0:hasSaved?flowScenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
@@ -664,7 +670,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     finally{setSaving(false)}
   }
   const title=moment==='habit'?t.habitTitle:moment==='recap'?c.recapTitle:
-    moment==='recapPractice'?c.skill:
+    moment==='recapPractice'?j.practiceOverviewTitle:
     moment==='recapNext'?j.recapNextTitle:
     moment==='closingMeditation'?t.meditationTitle:
     moment==='recapFeedback'?j.recapFeedbackTitle:
@@ -936,11 +942,17 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <div><strong>{showNewPlan?dailyPlan?.result:c.notice}</strong>
                 <small>{reportedAttempt?t.attempted:t.readOnly}</small></div></div>
           </div>}
-          {moment==='recapPractice'&&<div className={styles.recapSummary}>
-            <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
-              <div><strong>{(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn}</strong>
-                <small>{practiceGuide}</small></div></div>
-          </div>}
+          {moment==='recapPractice'&&<>
+            <div className={styles.recapSummary} data-opora-practice-overview={cycle.day}>
+              <div className={styles.summaryItem}><span aria-hidden="true">☀️</span>
+                <div><strong>{(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn}</strong>
+                  <small>{practiceGuide}</small></div></div>
+            </div>
+            <div className={styles.overviewPurpose} data-opora-overview-purpose="true">
+              <strong>{j.overviewPurposeLabel}</strong>
+              <p>{cycle.day===1?j.dayOnePurpose:depth?.why}</p>
+            </div>
+          </>}
           {moment==='recapNext'&&<div className={styles.recapSummary}>
             <div className={styles.summaryItem}><span aria-hidden="true">✨</span>
               <div><strong>{answers.transfer==='planned'?plan:

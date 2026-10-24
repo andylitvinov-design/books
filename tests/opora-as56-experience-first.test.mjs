@@ -5,7 +5,8 @@ import ts from 'typescript'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid,oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaExperienceDay,oporaExperienceDepth,oporaExperienceGuide,oporaExperienceGuidesValid,oporaExperienceSupport,oporaExperienceSupportValid,oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaGentleCopy} from '../lib/inner-growth/opora-gentle-journey.js'
 import {oporaAs58Day,oporaAs58Valid,OPORA_PRIMARY_EMOTIONS} from '../lib/inner-growth/opora-as58-one-action.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -77,9 +78,19 @@ test('day one restores five opening screens and all days add untracked support a
     if(day!==1){
       assert.ok(textOf(h.tree).includes(oporaExperienceSupport(day,lang).body))
       assert.ok(!findButton(h.tree,d.try),'Step two must never ask for practice proof')
-      await advanceOporaTo(h,'practice',d.next)
+      await advanceOporaTo(h,'recapPractice',d.next)
     }
-    // Practical work always comes after the voluntary acceptance screen.
+    // The same practice overview appears before (not after) the activity,
+    // with a clear purpose in the learner's language, never an attempt claim.
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-practice-overview']===day))
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-overview-purpose']==='true'))
+    const goal=day===1?oporaGentleCopy(lang).dayOnePurpose:oporaExperienceDepth(day,lang).why
+    assert.ok(textOf(h.tree).includes(goal))
+    assert.ok(textOf(h.tree).includes(oporaAs58Day(day,lang).practice))
+    assert.ok(!findButton(h.tree,d.try),'Overview is an invitation, not a practice report')
+    await click(h,d.next)
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-current-screen']==='practice'))
+    // Practical work always comes after the voluntary acceptance and overview.
     assert.ok(textOf(h.tree).includes(oporaAs58Day(day,lang).practice))
     assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-guided-meditation']==='true'),
       'Early meditation must not appear on an everyday practice card')
@@ -125,15 +136,14 @@ test('day one restores five opening screens and all days add untracked support a
     assert.ok(!textOf(h.tree).includes(oporaExperienceDay(day,lang).reminder))
     assert.ok(!textOf(h.tree).includes(f.lesson.aphorism))
     await click(h,d.next)
-    // Each takeaway now has its own screen; the personal self-report is last.
+    // Each takeaway now has its own screen; the practice preview was earlier.
     assert.match(textOf(h.tree),lang==='ru'?/Что вы освоили сегодня/:/What you learned today/)
     assert.ok(textOf(h.tree).includes(daily.result))
     assert.ok(!textOf(h.tree).includes(daily.practice))
     await click(h,d.next)
-    assert.ok(textOf(h.tree).includes(daily.practice))
-    assert.ok(!textOf(h.tree).includes(daily.result))
-    await click(h,d.next)
     assert.ok(textOf(h.tree).includes(daily.transfer))
+    assert.ok(!nodes(h.tree).some(n=>n.props?.['data-opora-practice-overview']===day),
+      'Practice preview must not repeat after the actual exercise')
     if(day===4)assert.ok(textOf(h.tree).includes(spokenFeeling))
     await click(h,d.next)
     if(day===14){

@@ -56,7 +56,7 @@ test('14 days × 3 languages reuse distinct reviewed guidance with optional non-
   assert.equal(oporaExperienceDepth(15,'ru'),null)
 })
 
-for(const lang of ['en','ru','es'])test('Day 4 '+lang+' gets four short teaching slides and four separate honest takeaway/feedback stages',async()=>{
+for(const lang of ['en','ru','es'])test('Day 4 '+lang+' puts the goal ahead of practice and keeps three honest recap stages',async()=>{
   const f=fixture(lang,4),h=f.h,t=labels[lang],content=oporaExperienceDepth(4,lang)
   try{
     for(const [stage,source] of [
@@ -67,6 +67,12 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' gets four short teaching
       assert.ok(textOf(screen(h,stage)).includes(source),stage+' '+lang)
       assert.equal(f.writes,0)
     }
+    await advanceOporaTo(h,'recapPractice',t.next)
+    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs58Day(4,lang).practice))
+    assert.ok(textOf(screen(h,'recapPractice')).includes(content.why),
+      'Clear purpose must be readable before trying the activity')
+    assert.ok(nodes(screen(h,'recapPractice')).some(node=>
+      node.props?.['data-opora-practice-overview']===4))
     await advanceOporaTo(h,'practice',t.next)
     assert.ok(textOf(screen(h,'practice')).includes(oporaAs58Day(4,lang).practice))
     assert.equal(nodes(h.tree).filter(n=>n.type==='details'&&
@@ -75,9 +81,8 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' gets four short teaching
     await advanceOporaTo(h,'recap',t.next)
     assert.equal(nodes(screen(h,'recap')).filter(n=>n.props?.className?.includes?.('summaryItem')).length,1)
     assert.ok(!textOf(screen(h,'recap')).includes(oporaAs58Day(4,lang).practice))
-    await advanceOporaTo(h,'recapPractice',t.next)
-    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs58Day(4,lang).practice))
     await advanceOporaTo(h,'recapNext',t.next)
+    assert.ok(!screen(h,'recapPractice'),'Introduction must not reappear in the recap')
     assert.ok(!textOf(screen(h,'recapNext')).includes(content.everyday),
       'No action can be assumed when the learner has not chosen a plan')
     await advanceOporaTo(h,'recapFeedback',t.next)
@@ -94,6 +99,19 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' gets four short teaching
     assert.equal(f.payload.practiceWindow,'practice_v6')
     assert.ok(screen(h,'receipt'),'Server-accepted save leads to a receipt')
   }finally{h.unmount()}
+})
+
+for (const lang of ['en','ru','es']) test('Day 1 '+lang+' explains the first grounding goal before practice without saving',async()=>{
+  const f=fixture(lang,1),h=f.h
+  try {
+    await advanceOporaTo(h,'recapPractice',labels[lang].next)
+    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaGentleCopy(lang).dayOnePurpose))
+    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs58Day(1,lang).practice))
+    assert.ok(nodes(screen(h,'recapPractice')).some(node=>node.props?.['data-opora-practice-overview']===1))
+    assert.equal(f.writes,0)
+    await advanceOporaTo(h,'practice',labels[lang].next)
+    assert.ok(!screen(h,'recapPractice'),'Intro must appear exactly once before practice')
+  } finally { h.unmount() }
 })
 
 test('Day 1 keeps the original five gentle introduction screens and historical server visit keys',async()=>{
