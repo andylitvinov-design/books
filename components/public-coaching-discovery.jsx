@@ -180,11 +180,41 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [copyError,setCopyError]=useState(false)
   const [copied,setCopied]=useState(false)
   const titleRef=useRef(null)
+  const sessionScrollRef=useRef(null)
+  const rootRef=useRef(null)
+  useEffect(()=>{
+    if(!session)return
+    // The public session is an immersive viewport, not a card inside the site.
+    // Keep the original scroll state when returning to the model lounge.
+    const previousOverflow=document.body.style.overflow
+    document.body.style.overflow='hidden'
+    const viewport=window.visualViewport
+    const sizeToVisibleViewport=()=>{
+      if(!rootRef.current)return
+      rootRef.current.style.setProperty('--coach-visible-height',`${Math.max(280,Math.round(viewport?.height||window.innerHeight))}px`)
+      rootRef.current.style.setProperty('--coach-visible-top',`${Math.round(viewport?.offsetTop||0)}px`)
+    }
+    sizeToVisibleViewport()
+    window.addEventListener('resize',sizeToVisibleViewport)
+    viewport?.addEventListener('resize',sizeToVisibleViewport)
+    viewport?.addEventListener('scroll',sizeToVisibleViewport)
+    return ()=>{
+      document.body.style.overflow=previousOverflow
+      window.removeEventListener('resize',sizeToVisibleViewport)
+      viewport?.removeEventListener('resize',sizeToVisibleViewport)
+      viewport?.removeEventListener('scroll',sizeToVisibleViewport)
+      rootRef.current?.style.removeProperty('--coach-visible-height')
+      rootRef.current?.style.removeProperty('--coach-visible-top')
+    }
+  },[session])
   // On phones, the next question must not appear below the old viewport.
   // Focus the freshly rendered heading after each guest step; never autofocus
   // an input or open the keyboard without the visitor's action.
   useEffect(()=>{
-    if(session&&!finished)titleRef.current?.focus({preventScroll:false})
+    if(session&&!finished){
+      if(sessionScrollRef.current)sessionScrollRef.current.scrollTop=0
+      titleRef.current?.focus({preventScroll:true})
+    }
   },[session,index,finished,pendingFollowup])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
@@ -200,6 +230,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       traditionExplicitMatch(question,id)||fit.tags.some(tag=>(recommendation.tags||[]).includes(tag)))
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
+  const needsCustomPlan=Boolean(session?.requiredCustomPlan&&index===session.questions.length-1)
   const options=current?.type==='scale_0_10'
     ?Array.from({length:11},(_,n)=>({id:String(n),label:{en:String(n),ru:String(n),es:String(n)}}))
     :(current?.choices||[])
@@ -209,7 +240,6 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     if(recommendation.blocked)return
     setSession(scheme);setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
-    window.scrollTo({top:0,behavior:'smooth'})
   }
   function backToModels(){
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
@@ -275,7 +305,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     try{await navigator.clipboard.writeText(summaryText());setCopied(true);setCopyError(false)}
     catch{setCopyError(true)}
   }
-  return <main className={styles.root} data-public-coaching lang={lang}>
+  return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?<>
         <header className={styles.hero}>
@@ -406,65 +436,82 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         </section>}
         
       </>:<section className={styles.session} data-public-coaching-session>
-        <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
-        <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
-        {finished?<div className={styles.finish} data-public-coaching-complete>
-          <span className={styles.completed}><Check size={16}/>{t.completed}</span>
-          <h1>{t.summary}</h1>
-          <div className={styles.summary}>
-            {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {session.questions.map(item=><div key={item.id}><strong>{tr(item.prompt,lang)}</strong><p>{answerText(answers[item.id],item,lang,t)}</p>
-              {reflections[item.id]?.text&&<p><em>{t.clarifyAnswer}:</em> {reflections[item.id].text}</p>}
-            </div>)}
+        <header className={styles.sessionHeader}>
+          <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
+          <div className={styles.sessionHeaderInfo}>
+            <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
+            {!finished&&<div className={styles.progress}>
+              <span>{t.stage} {index+1} {t.of} {session.questions.length}</span>
+              <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length}
+                aria-valuenow={index+1} aria-label={t.stage}>
+                <span style={{width:((index+1)/session.questions.length*100)+'%'}}/>
+              </div>
+            </div>}
           </div>
-          <CoachingActionPlan key={session.schemeKey||session.modelKey} locale={lang}
-            initial={draftCoachingActionPlan(session.questions,answers,question,lang)}
-            onSave={value=>{setApprovedPlan(value);return true}}/>
-          <button type="button" className={styles.primary} onClick={copySummary}><ClipboardCopy size={17}/>{copied?t.copied:t.copy}</button>
-          {copyError&&<><p className={styles.alert} role="alert">{t.copyFallback}</p><textarea className={styles.copyFallback} readOnly value={summaryText()} rows={7}/></>}
-          <button type="button" className={styles.secondary} onClick={backToModels}>{t.restart}</button>
-        </div>:pendingFollowup?<div data-public-coaching-followup>
-          <div className={styles.progress}><span>{t.stage} {index+1} {t.of} {session.questions.length}</span>
-            <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length}
-              aria-valuenow={index+1} aria-label={t.stage}><span style={{width:((index+1)/session.questions.length*100)+'%'}}/></div>
-          </div>
-          <p className={styles.stage}>{t.clarify}</p>
-          <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
-          <p className={styles.hint}>{t.clarifyWhy}</p>
-          <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
-          <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
-            maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
-          {error&&<p className={styles.alert} role="alert">{error}</p>}
+        </header>
+        <div className={styles.sessionScroll} ref={sessionScrollRef} tabIndex={-1}>
+          {finished?<div className={styles.finish} data-public-coaching-complete>
+            <span className={styles.completed}><Check size={16}/>{t.completed}</span>
+            <h1>{t.summary}</h1>
+            <div className={styles.summary}>
+              {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
+              {session.questions.map(item=><div key={item.id}><strong>{tr(item.prompt,lang)}</strong><p>{answerText(answers[item.id],item,lang,t)}</p>
+                {reflections[item.id]?.text&&<p><em>{t.clarifyAnswer}:</em> {reflections[item.id].text}</p>}
+              </div>)}
+            </div>
+            <CoachingActionPlan key={session.schemeKey||session.modelKey} locale={lang}
+              initial={draftCoachingActionPlan(session.questions,answers,question,lang)}
+              onSave={value=>{setApprovedPlan(value);return true}}/>
+            <button type="button" className={styles.primary} onClick={copySummary}><ClipboardCopy size={17}/>{copied?t.copied:t.copy}</button>
+            {copyError&&<><p className={styles.alert} role="alert">{t.copyFallback}</p>
+              <textarea className={styles.copyFallback} readOnly value={summaryText()} rows={7}/></>}
+            <button type="button" className={styles.secondary} onClick={backToModels}>{t.restart}</button>
+            <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
+          </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
+            <p className={styles.stage}>{t.clarify}</p>
+            <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            <p className={styles.hint}>{t.clarifyWhy}</p>
+            <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
+            <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
+              maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+            {error&&<p className={styles.alert} role="alert">{error}</p>}
+          </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
+            <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
+            <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+            {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
+            {tr(current.reflection,lang)&&<p className={styles.hint}>{tr(current.reflection,lang)}</p>}
+            {options.length>0&&!needsCustomPlan&&<>
+              <p className={styles.questionLabel}>{t.choices}</p>
+              <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
+                {options.map(option=><button type="button" key={option.id}
+                  aria-pressed={draft==='choice:'+option.id} onClick={()=>{setDraft('choice:'+option.id);setError('')}}>{tr(option.label,lang)}</button>)}
+              </div>
+            </>}
+            {options.length>0&&!needsCustomPlan
+              ?<details key={current.id} className={styles.customAnswer} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
+                <summary>{t.ownAnswer}</summary>
+                <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer}
+                  rows={2} maxLength={800} placeholder={t.answerPlaceholder}
+                  value={draft.startsWith('choice:')?'':draft} onChange={e=>{setDraft(e.target.value);setError('')}}/>
+              </details>
+              :<><label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.ownAnswer}</label>
+                <textarea id="public-coaching-answer" className={styles.questionInput} rows={3} maxLength={800}
+                  placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
+                  onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
+            {error&&<p className={styles.alert} role="alert">{error}</p>}
+          </div>}
+        </div>
+        {!finished&&<footer className={styles.sessionFooter}>
           <div className={styles.sessionActions}>
             <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
-            <button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>
-              {t.clarifySave}<ArrowRight size={17}/></button>
+            {pendingFollowup
+              ?<button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>{t.clarifySave}<ArrowRight size={17}/></button>
+              :<button type="button" className={styles.primary} onClick={advance}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
           </div>
-          <button type="button" className={styles.secondary} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>
-        </div>:<>
-          <div className={styles.progress}><span>{t.stage} {index+1} {t.of} {session.questions.length}</span><div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length} aria-valuenow={index+1} aria-label={t.stage}><span style={{width:((index+1)/session.questions.length*100)+'%'}}/></div></div>
-          <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
-          <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
-          {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-          {tr(current.reflection,lang)&&<p className={styles.hint}>{tr(current.reflection,lang)}</p>}
-          {options.length>0&&!(session.requiredCustomPlan&&index===session.questions.length-1)&&<>
-            <p className={styles.questionLabel}>{t.choices}</p>
-            <div className={styles.choices}>{options.map(option=><button type="button" key={option.id}
-              aria-pressed={draft==='choice:'+option.id} onClick={()=>{setDraft('choice:'+option.id);setError('')}}>{tr(option.label,lang)}</button>)}</div>
-          </>}
-          <label className={styles.questionLabel} htmlFor="public-coaching-answer">{session.requiredCustomPlan&&index===session.questions.length-1?t.plan:t.ownAnswer}</label>
-          <textarea id="public-coaching-answer" className={styles.questionInput} rows={3} maxLength={800}
-            placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
-            onChange={e=>{setDraft(e.target.value);setError('')}}/>
-          {error&&<p className={styles.alert} role="alert">{error}</p>}
-          <div className={styles.sessionActions}>
-            <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
-            <button type="button" className={styles.primary} onClick={advance}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>
-          </div>
-        </>}
-        <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
+          {pendingFollowup&&<button type="button" className={styles.followupSkip} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
+          <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
+        </footer>}
       </section>}
     </div>
   </main>
 }
-
