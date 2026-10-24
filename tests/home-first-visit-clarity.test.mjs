@@ -15,7 +15,7 @@ test("EN RU ES show free-first offers and paid requests with distinct CTA and de
   assert.match(css, /min-height: 44px/);
 });
 
-test("five bottom topic filters replace duplicated offer, test and My Space sections", () => {
+test("five early topic filters replace duplicated offer, test and My Space sections", () => {
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
   const more = read("components/home-more-disclosure.tsx");
@@ -23,10 +23,20 @@ test("five bottom topic filters replace duplicated offer, test and My Space sect
     assert.match(source, /<HomeFeaturedWorkspace locale=/);
     assert.match(source, /<HomeMoreDisclosure locale=/);
     assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths|<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|service-home-hero/);
+    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeMoreDisclosure"), "Keep the photo hero first");
+    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeFeaturedWorkspace"), "Topic choices belong immediately after the hero");
+    assert.equal((source.match(/<HomeMoreDisclosure/g) || []).length, 1, "One topic picker, no duplicate footer section");
   }
   for (const key of ["energy","love","business","services","courses"])
     assert.ok(more.includes('data-home-topic-filter="' + key + '"'));
   assert.match(more, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
+  const style = read("components/home-more-disclosure.module.css");
+  assert.match(style, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(style, /@media \(max-width: 640px\)/);
+  assert.match(style, /\.filters \.chip:nth-child\(3\) \{ grid-column: 1 \/ -1; \}/);
+  assert.match(style, /overflow-wrap: anywhere/);
+  assert.match(style, /:focus-visible/);
+  for (const phrase of ["Explore by topic", "Выберите тему", "Explora por tema"]) assert.ok(more.includes(phrase));
 });
 
 test("main menu prioritizes Energy Love Business and retains full legacy catalogues", () => {

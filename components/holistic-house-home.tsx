@@ -69,8 +69,8 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </header>
 
       <HomeSectionCarousel locale={locale} />
-      <HomeFeaturedWorkspace locale={locale} />
       <HomeMoreDisclosure locale={locale} />
+      <HomeFeaturedWorkspace locale={locale} />
 
       {introVideoContent}
 

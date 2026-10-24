@@ -13,8 +13,8 @@ export default function SpanishHomePage() {
   return <main className="house-home house-home--services" lang="es">
     <PublicSiteHeader locale="es" />
     <HomeSectionCarousel locale="es" />
-    <HomeFeaturedWorkspace locale="es" />
     <HomeMoreDisclosure locale="es" />
+    <HomeFeaturedWorkspace locale="es" />
     <PersonalTestimonials locale="es" variant="home" />
     <section className="service-home-about" aria-labelledby="service-home-about-title">
       <div className="service-home-about__copy">
