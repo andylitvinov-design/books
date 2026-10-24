@@ -10,6 +10,7 @@ import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -33,7 +34,8 @@ const copy={
     conflict:'Your session changed in another tab. Reload to get the newest saved answers.',
     retry:'Reload session',close:'Exit session',unsaved:'You have an unsaved answer. Leave without saving it?',
     question:'QUESTION',of:'OF',back:'Back',next:'Save & continue',finish:'Save & finish',skip:'Skip this question',
-    hint:'Or type and edit your answer',placeholder:'My answer…',required:'Write at least a few words before continuing.',
+    hint:'Your answer, in your own words (you can also dictate it)',placeholder:'Take your time. A few sentences are enough…',required:'Write at least a few words before continuing.',
+    earlierChoice:'Previous quick answer',replaceChoice:'You can replace this with your own words.',scaleHelp:'For a 0–10 rating, write the number and, if helpful, explain it.',
     stopMic:'Stop dictation and review the recognized text before saving.',
     saving:'Saving…',saved:'Saved in your private cabinet',change:'You can change your answer before finishing.',
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
@@ -55,7 +57,8 @@ const copy={
     conflict:'Сессия изменилась в другой вкладке. Обновите сохранённые ответы.',
     retry:'Обновить сессию',close:'Закрыть сессию',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',
     question:'ВОПРОС',of:'ИЗ',back:'Назад',next:'Сохранить и далее',finish:'Сохранить и завершить',skip:'Пропустить вопрос',
-    hint:'Или напишите и отредактируйте ответ',placeholder:'Мой ответ…',required:'Напишите хотя бы несколько слов, прежде чем продолжить.',
+    hint:'Ваш ответ своими словами (можно продиктовать)',placeholder:'Не спешите. Достаточно нескольких предложений…',required:'Напишите хотя бы несколько слов, прежде чем продолжить.',
+    earlierChoice:'Ранее выбранный вариант',replaceChoice:'Вы можете заменить его собственным ответом.',scaleHelp:'Если это шкала 0–10, напишите число и при желании поясните его.',
     stopMic:'Остановите микрофон и проверьте распознанный текст перед сохранением.',
     saving:'Сохраняем…',saved:'Сохранено в личном кабинете',change:'До завершения ответ можно изменить.',
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
@@ -76,7 +79,8 @@ const copy={
     saveError:'No se guardó tu respuesta. Inténtalo de nuevo.',conflict:'Otra pestaña ha modificado la sesión. Actualiza tus datos.',
     retry:'Actualizar sesión',close:'Salir',unsaved:'Tu respuesta no está guardada. ¿Salir?',
     question:'PREGUNTA',of:'DE',back:'Atrás',next:'Guardar y seguir',finish:'Guardar y terminar',skip:'Saltar pregunta',
-    hint:'O escribe y edita tu respuesta',placeholder:'Mi respuesta…',required:'Escribe algunas palabras.',
+    hint:'Tu respuesta, con tus propias palabras (también puedes dictarla)',placeholder:'Sin prisa. Unas frases son suficientes…',required:'Escribe algunas palabras.',
+    earlierChoice:'Respuesta rápida anterior',replaceChoice:'Puedes sustituirla por tus propias palabras.',scaleHelp:'Para una escala de 0 a 10, escribe el número y, si quieres, explícalo.',
     stopMic:'Detén el micrófono y revisa el texto antes de guardar.',
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
@@ -158,6 +162,8 @@ export default function PersonalCoaching({locale='en',accountId}){
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
+  const quickChoices=coachingQuickChoicesAllowed(question,index)
+  const gentleGuide=coachingGentleGuide(question,index,activeQuestions.length,lang)
   const persisted=session?.answers?.[question?.id]
   const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
@@ -508,8 +514,10 @@ export default function PersonalCoaching({locale='en',accountId}){
                 setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
                 setError('');setNotice('')
               }}/>
-            <p>{translated(question.reflection||question.hint,lang)}</p>
-            {question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
+            {gentleGuide&&<div className={styles.gentleGuide} data-coaching-gentle-guide>
+              <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
+            </div>}
+            {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
                 {(question.type==='scale_0_10'
@@ -522,16 +530,21 @@ export default function PersonalCoaching({locale='en',accountId}){
             </>}
             {scheme?.requiredCustomPlan&&index===activeQuestions.length-1&&
               <p className={styles.requiredPlan}>{langCopy.woop}</p>}
-            {!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
+            {quickChoices&&!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
               {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy||dictating}
                 className={draft.trim()===option?styles.chosen:undefined} aria-pressed={draft.trim()===option}
                 onClick={()=>{setDraft(option);setError('');setNotice('')}}>{option}</button>)}
             </div>}
+            {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>
+              <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
+            </p>}
+            {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
             <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-              {question.type?langCopy.orWrite:t.hint}</label>
+              {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
             <textarea id="hh-personal-coach-answer" className={styles.textarea}
+              data-coaching-open-reflection={!quickChoices?'true':undefined}
               value={draft.startsWith('choice:')?'':draft}
-              maxLength={800} rows={question.type?2:4} placeholder={t.placeholder} disabled={busy}
+              maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
               onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
             <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
