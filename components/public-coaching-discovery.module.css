@@ -273,3 +273,97 @@
 /* CSS Modules need independently exported class selectors on the actual links. */
 .moreDetails{min-height:44px}
 .moreSelect{min-height:46px}
+
+
+/* Coaching Lounge · standard photo-left, content-right and bottom Details panel.
+   No carousel, no full-width hero images inside selection cards. This block is
+   intentionally last, overriding the retired three-column/photo-top rules. */
+.root{width:100%;max-width:none;min-width:0;overflow-x:clip}
+.wrap{width:100%;max-width:1100px;min-width:0;margin-inline:auto}
+.cards,.morePathGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.loungeCard{display:block;width:100%;min-width:0;overflow:hidden;border:1px solid #d8cbbd;
+  border-radius:16px;background:#fffdfa;box-shadow:0 3px 14px #513d2a0d}
+.loungeCard:focus-within{border-color:#639587;box-shadow:0 0 0 2px #3d938b24}
+.loungeRow{display:grid;grid-template-columns:minmax(136px,28%) minmax(0,1fr);
+  align-items:stretch;min-width:0;min-height:156px}
+.loungePhoto{display:block;position:relative;min-width:0;min-height:100%;overflow:hidden;
+  background:#e7e8dc;border-right:1px solid #e6dbcd}
+.loungePhoto img{display:block;object-fit:cover;object-position:center;transition:transform .16s}
+.loungePhoto:hover img{transform:scale(1.025)}
+.loungeContent{display:flex;flex-direction:column;align-items:stretch;gap:6px;
+  min-width:0;padding:12px 16px 11px;color:#2b4541}
+.loungeMeta{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  width:100%;min-width:0;color:#67716b;font-size:11px;font-weight:700;line-height:1.25}
+.loungeMeta>span{min-width:0;overflow-wrap:anywhere}
+.loungeMeta>strong{flex:none;white-space:nowrap;padding:4px 8px;border-radius:999px;
+  background:#e4f1e6;color:#216454;font-size:11px;font-weight:850}
+.loungeContent h3{margin:0;color:#294348;font:750 clamp(16px,1.7vw,21px)/1.21 system-ui,sans-serif;
+  letter-spacing:-.025em;overflow-wrap:anywhere;text-wrap:balance}
+.loungeSummary{font-size:12px;color:#566961;line-height:1.4;margin:0;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.loungeSuggested{display:inline-flex;align-items:center;align-self:flex-start;gap:4px;
+  color:#7b3d5c;font-size:10px;font-weight:750}
+.loungeActions{display:flex;align-items:stretch;gap:8px;width:100%;margin-top:auto;padding-top:5px}
+.loungeDetails,.loungePrimary{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:44px;border-radius:10px;padding:7px 11px;font:800 12px/1.24 system-ui,sans-serif;
+  text-align:center;cursor:pointer;text-decoration:none;white-space:normal}
+.loungeDetails{flex:0 0 auto;border:1px solid #b0c8c1;background:#fffdfb;color:#285e5c}
+.loungeDetails:hover{background:#eff7f2}
+.loungeDetails svg,.loungePrimary svg{flex:none}
+.loungePrimary{flex:1;min-width:0;border:1px solid #893751;background:#893751;color:#fff}
+.loungePrimary:hover{background:#743047;border-color:#743047;color:#fff}
+.chevron{transition:transform .15s ease}
+.chevronOpen{transform:rotate(180deg);transition:transform .15s ease}
+.loungePanel{display:grid;gap:8px;padding:14px 17px 16px;
+  border-top:1px solid #e1d4c4;background:#f7f5ef;color:#405b56}
+.loungePanel[hidden]{display:none}
+.loungePanel p,.loungePanel ul{font-size:13px;line-height:1.5;margin:0;overflow-wrap:anywhere}
+.loungePanel ul{margin:3px 0 0;padding-left:20px}
+.loungePanel strong{font-weight:800;color:#315b56}
+.loungeLanding{display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;
+  width:fit-content;min-height:44px;color:#196969;font-size:13px;font-weight:800;
+  text-decoration:underline;text-underline-offset:3px}
+.loungeLanding:hover{color:#7a3453}
+.root :is(.loungePhoto,.loungePrimary,.loungeDetails,.loungeLanding):focus-visible{
+  outline:3px solid #008b8f;outline-offset:-3px}
+@media(max-width:700px){
+ .root{padding:0 0 calc(116px + env(safe-area-inset-bottom))}
+ .wrap{width:100%;max-width:100%;margin:0}
+ .hero{margin:0;border-radius:0;min-height:172px;padding:21px 16px 23px}
+ .hero h1{font-size:clamp(32px,8.3vw,41px)}
+ .hero>p:last-child{max-width:100%}
+ .controls{width:100%;max-width:none;margin:-5px 0 0;padding:13px 11px;
+   border-radius:14px;border-left:0;border-right:0;box-shadow:0 4px 12px #503c2b0c}
+ .catalog{padding:18px 7px 18px}
+ .sectionHeader{padding-inline:5px;margin-bottom:12px}
+ .cards,.morePathGrid{gap:9px}
+ .morePaths{margin:0 7px;padding-top:17px}
+ .morePaths h2{font-size:clamp(25px,6.8vw,32px)}
+ .loungeRow{grid-template-columns:minmax(104px,33%) minmax(0,1fr);min-height:150px}
+ .loungeContent{padding:9px 10px;gap:5px}
+ .loungeMeta{font-size:10px;gap:4px}
+ .loungeMeta>strong{font-size:10px;padding:4px 6px}
+ .loungeContent h3{font-size:clamp(15px,4.3vw,18px);line-height:1.15}
+ .loungeSummary{font-size:11px;line-height:1.33}
+ .loungeActions{gap:6px;padding-top:4px}
+ .loungeDetails,.loungePrimary{min-height:44px;font-size:11px;padding:6px 7px;gap:3px}
+ .loungePanel{padding:12px 13px}
+ .loungePanel p,.loungePanel ul{font-size:12px}
+ .session{max-width:none;margin:0 7px}
+}
+@media(max-width:360px){
+ .root{padding:0 0 calc(116px + env(safe-area-inset-bottom))}
+ .hero{padding:17px 12px 20px}
+ .controls{padding-inline:8px}
+ .catalog{padding-inline:5px}
+ .morePaths{margin-inline:5px}
+ .loungeRow{grid-template-columns:minmax(98px,32%) minmax(0,1fr);min-height:154px}
+ .loungeContent{padding:9px 8px;gap:4px}
+ .loungeContent h3{font-size:15px}
+ .loungeMeta{font-size:9.5px}
+ .loungeSummary{font-size:10.5px;line-height:1.28}
+ .loungeDetails,.loungePrimary{padding:5px 5px;font-size:10.5px;min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+ .loungePhoto img,.chevron,.chevronOpen{transition:none}
+}
