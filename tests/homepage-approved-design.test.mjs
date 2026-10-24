@@ -4,39 +4,22 @@ import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("approved 2026-10-09 home design keeps all three service directions and original routes", () => {
+test("seven-stage main home retains three real services through the shared CTAs and filters", () => {
   const home = read("components/holistic-house-home.tsx");
-  const journey = read("components/personal-work-journey.tsx");
+  const es = read("app/es/page.tsx");
+  const stage = read("components/home-featured-workspace.tsx");
   const more = read("components/home-more-disclosure.tsx");
-  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
-  assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.match(home, /data-home-design="approved-v2"/);
-  const solutions = read("components/services-solutions.tsx");
-  assert.match(solutions, /data-core-service-id=\{offer.id\}/);
-  assert.match(solutions, /isHome \? homepageMedia\[offer.id\] : offer.image/);
-  const offersStyle = read("components/services-solutions.module.css");
-  assert.match(offersStyle, /\.home \.card/);
-  assert.match(offersStyle, /\.home \.photo/);
-  assert.match(journey, /text\.services\.map/);
-  const offers = read("data/core-service-offers.ts");
-  for (const slug of ["free-situation-review","dao-health-profile","alchemy-of-soul","hypnotherapy-course"]) assert.ok(offers.includes(slug));
-  for (const slug of ["psychohomeopathy", "imagery-therapy", "systemic-constellations"]) {
-    assert.ok(journey.includes(slug), "Lost service route: " + slug);
+  for (const page of [home,es]) {
+    assert.match(page, /<HomeMoreDisclosure locale=/);
+    assert.match(page, /<HomeFeaturedWorkspace locale=/);
+    assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomeCoreMethods|<HomeMasterPath/);
   }
-  assert.match(journey, /<article className=\{styles\.service\} key=\{service\.slug\}>/);
-  assert.match(journey, /"\/" \+ locale \+ "\/services\/" \+ \(!compact && service\.freeSlug \? service\.freeSlug : service\.slug\)/);
+  for (const slug of ["free-situation-review","business-consulting","systemic-constellations","alchemy-of-soul"])
+    assert.ok(stage.includes(slug), slug);
+  assert.match(more, /data-home-topic-filter="services"/);
+  assert.match(more, /data-home-topic-filter="business"/);
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
-  const streamedVideo = read("components/home-intro-video-section.tsx");
   assert.match(home, /\{introVideoContent\}/);
-  assert.match(streamedVideo, /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
-  assert.match(home, /className="service-home-hero"/);
-  assert.match(home, /event="self_check_start"/);
-  assert.match(home, /event="service_view"/);
-  const explore = read("components/home-explore-sections.tsx");
-  assert.match(more, /<HomeExploreSections locale=\{locale\} \/>/);
-  assert.match(explore, /academyAction: "Browse courses"/);
-  assert.match(explore, /cabinetAction: "Open my Cabinet"/);
-  assert.match(explore, /libraryAction: "Browse the Library"/);
 });
 
 test("homeopathy card has a complete local illustration instead of the observed broken image", () => {
@@ -106,19 +89,14 @@ test("homepage uses the real blue enquiry chooser instead of the old beige direc
   assert.doesNotMatch(home, /fake-testimonial|stock-avatar/);
 });
 
-test("home restores four approved image-left service cards and their titles", () => {
+test("home converts visitors through one stage and preserves one final consented contact form", () => {
   const home = read("components/holistic-house-home.tsx");
-  const cards = read("components/services-solutions.tsx");
-  const css = read("components/services-solutions.module.css");
-  assert.match(cards, /homeTitle: "How I can help"/);
-  assert.match(cards, /homeTitle: "Чем я могу помочь"/);
-  assert.ok(cards.includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
-  assert.match(cards, /visibleOffers.map/);
-  assert.match(css, /grid-template-columns:minmax\(113px,2fr\) minmax\(0,3fr\)/);
-  assert.doesNotMatch(home, /data-home-extra-paths|<details className="service-home-more"/);
-  assert.ok(home.indexOf("<HomeMoreDisclosure locale={locale}>") < home.indexOf("<HomepageContactCta locale={locale} />"), "Expandable services link must precede bottom capture");
+  const stage = read("components/home-featured-workspace.tsx");
   const more = read("components/home-more-disclosure.tsx");
-  assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.doesNotMatch(home, /<FreeInsightsPaths/);
-  assert.match(home, /<HomepageContactCta locale=\{locale\} \/>/);
+  assert.match(stage, /data-home-offer-primary=\{offer\.id\}/);
+  assert.match(stage, /data-home-offer-details=\{offer\.id\}/);
+  assert.doesNotMatch(home, /data-home-extra-paths|<details className="service-home-more"/);
+  assert.ok(home.indexOf("<HomeMoreDisclosure") < home.indexOf("<HomepageContactCta"));
+  assert.match(more, /data-home-topic-filter="energy"/);
+  assert.doesNotMatch(more, /<ServicesSolutions|<HomeExploreSections/);
 });

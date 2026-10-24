@@ -37,9 +37,9 @@ test("localized slider appears first on EN/RU/ES without removing existing conse
   for (const [page, marker] of [[home, "<HomeSectionCarousel locale={locale} />"], [spanish, '<HomeSectionCarousel locale="es" />']]) {
     const at = page.indexOf(marker);
     assert.ok(at > 0, "Homepage must mount carousel");
-    assert.ok(at < page.indexOf('className="service-home-hero"'), "Carousel must precede original CTA intro");
+    assert.ok(at < page.indexOf("<HomeFeaturedWorkspace"), "Carousel precedes seven-stage journey");
     for (const kind of ["paid-sessions", "free-written-review", "free-tests"]) assert.ok(page.includes(kind), "Missing existing CTA: " + kind);
-    assert.ok(page.includes("data-home-featured-intro"));
+    assert.ok(page.includes("<HomeFeaturedWorkspace"));
   }
   assert.match(read("app/holistic-house-home.css"), /\[data-home-featured-intro\]/);
 });
