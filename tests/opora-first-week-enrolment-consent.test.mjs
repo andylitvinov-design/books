@@ -8,7 +8,7 @@ test('OPORA pre-enrolment shows exactly the first seven authored lessons in EN/R
   const slide = file('components/app/opora-first-week-invite.jsx')
   const curriculum = file('lib/inner-growth/anti-stress-blueprint.js')
   const scheme = file('lib/inner-growth/anti-stress-day-scheme.js')
-  assert.match(slide, /antiStressBlueprint\(lang\)\.days\.slice\(0, 7\)/)
+  assert.match(slide, /oporaPracticalSkillCards\(lang\)/)
   assert.match(slide, /firstWeek\.map\(\(lesson\) =>/)
   assert.match(slide, /data-opora-preview-day=\{lesson\.day\}/)
   assert.match(curriculum, /antiStressPublicPlanV7\(lang\)/)
