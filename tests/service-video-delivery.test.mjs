@@ -7,7 +7,7 @@ const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf
 test("all approved service videos reuse exactly reviewed EN/RU sources, never generated or Drive links", () => {
   const registry = read("data/service-video-library.ts");
   for (const id of ["s30Y42IwPcg", "Cz6SxXJNZbw", "ILyRWyHtJoE", "Q9NvYECKWuc",
-    "8c1634ce904434a91931429b6a7eefe1", "7c6b243f048b9c0581ae29619a4a89fc"]) {
+    "8c1634ce904434a91931429b6a7eefe1", "7c6b243f048b9c0581ae29619a4a89fc", "sfVFOQNr2qk"]) {
     assert.ok(registry.includes(id), "missing original approved media " + id);
   }
   assert.match(registry, /siteVideoWatchUrl/);
@@ -78,12 +78,13 @@ test("the dedicated video appears on every service detail, with accurate EN/RU/E
   const css = read("components/service-video-showcase.module.css");
   const core = read("components/core-service-detail.tsx");
   const personal = read("components/personal-service-landing.tsx");
-  const free = read("app/[locale]/services/free-situation-review/page.tsx");
+  const free = read("components/free-entry-landing.tsx");
   assert.match(core, /<ServiceVideoShowcase topic=\{kind === "dao" \? "overview" : kind\} locale=\{locale\} id="service-video"/);
   assert.match(personal, /<ServiceVideoShowcase/);
   assert.match(personal, /service === "psychohomeopathy" \? "homeopathy"/);
   assert.match(personal, /service === "imagery-therapy" \? "hypnotherapy"/);
-  assert.match(free, /<ServiceVideoShowcase topic="overview" locale=\{locale\}/);
+  assert.match(personal, /service === "systemic-constellations" \? "constellation-case"/);
+  assert.match(free, /<ServiceVideoShowcase topic="constellation-case" locale=\{locale\}/);
   assert.match(showcase, /<SiteVideoPlayer video=\{video\.video\} locale=\{locale\}/);
   assert.match(showcase, /textLanguage=\{video\.video\.language\}/);
   assert.match(showcase, /data-video-kind=\{video\.general \? "general" : "method"\}/);

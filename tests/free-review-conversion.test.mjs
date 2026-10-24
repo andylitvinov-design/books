@@ -45,7 +45,7 @@ test("free landings explain benefits before closing with one short capture", () 
   assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /kind === "situation" \? <div className=\{styles\.videoWrap\}/,
-    "Generic overview video is retained for the written-review service");
+    "Owner-selected constellation video is present on the written-review landing");
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
@@ -74,7 +74,7 @@ test("all three locales explain real service advantages without health claims or
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
-    "Revisión escrita gratuita", "Five Elements", "Пяти элементам", "Cinco Elementos"]) {
+    "Revisión escrita gratuita", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);

@@ -460,7 +460,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </details>
         ) : null}
 
-        {kind === "situation" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="overview" locale={locale} id="service-video" /></div> : null}
+        {kind === "situation" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="constellation-case" locale={locale} id="service-video" /></div> : null}
         {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
 
         <CompactLeadCapture

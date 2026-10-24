@@ -5,6 +5,7 @@ import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { BusinessWebsiteEnquiry } from "@/components/business-website-enquiry";
+import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { businessConsultingCopy, type BusinessLocale } from "@/data/business-consulting-copy";
 import styles from "./business-consulting-landing.module.css";
@@ -97,6 +98,8 @@ export function BusinessConsultingLanding({ locale }: { locale: BusinessLocale }
           </div>
           <small>{t.replyNote}</small>
         </nav>
+
+        <ServiceVideoShowcase topic="constellation-case" locale={locale} id="business-constellation-video" />
 
         <section id="business-offers" className={styles.offers} aria-labelledby="business-offers-title">
           <p className={styles.sectionEyebrow}>{t.offersEyebrow}</p>
