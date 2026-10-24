@@ -10,12 +10,12 @@ export const dynamic='force-dynamic'
 export const revalidate=0
 
 const metadata={
- en:{title:'Free coaching session & coaching models | Holistic House',
-   description:'Explore eight coaching approaches, filter by question and time, start a free self-guided session or request personal coaching.'},
- ru:{title:'Бесплатные коуч-сессии и выбор модели | Holistic House',
-   description:'Выберите модель коучинга по теме и времени, пройдите бесплатную сессию или запросите личную консультацию.'},
- es:{title:'Coaching gratis y elección de modelos | Holistic House',
-   description:'Elige un modelo de coaching, realiza una sesión autoguiada gratis o solicita coaching personal.'},
+ en:{title:'Coaching Lounge · Find your session | Holistic House',
+   description:'Find free coaching sessions, ancient goal planning and personal coaching by topic, time, format or your own question.'},
+ ru:{title:'Гостиная коучинга · Выберите свою сессию | Holistic House',
+   description:'Разные коучинг-сессии в одной гостиной: бесплатные модели, авторские курсы, личный коучинг. Фильтры и подбор по вашему запросу.'},
+ es:{title:'Salón de coaching · Elige tu sesión | Holistic House',
+   description:'Descubre modelos de coaching gratis, cursos simbólicos y sesiones con Andrey filtrados por tema, tiempo o tu propia pregunta.'},
 }
 const locales=['en','ru','es']
 export function generateStaticParams(){return locales.map(locale=>({locale}))}

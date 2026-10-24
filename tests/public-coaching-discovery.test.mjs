@@ -184,3 +184,18 @@ test('the public Coaching Lounge, Ideas and entry page all parse as JSX before a
    assert.equal(errors.length,0,path+': '+errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')).join('; '))
  }
 })
+
+test('Academy guest coaching entry and localized metadata agree on the public lounge route',()=>{
+ const academy=read('components/academy-hub.tsx')
+ const page=read('app/[locale]/coaching/page.jsx')
+ const start=academy.indexOf('id: "academy-free-personal-coaching"')
+ const end=academy.indexOf('id: "academy-free-egyptian-goal-planning"',start)
+ assert.ok(start>=0&&end>start)
+ const card=academy.slice(start,end)
+ assert.match(card,/href: "\/" \+ locale \+ "\/coaching"/)
+ assert.match(card,/courseHref: "\/" \+ locale \+ "\/coaching"/)
+ assert.doesNotMatch(card,/\/app\/coaching/)
+ for(const title of ['Coaching Lounge · Find your session','Гостиная коучинга · Выберите свою сессию','Salón de coaching · Elige tu sesión'])assert.ok(page.includes(title),title)
+ assert.match(page,/readPersonalCoachingCatalog\(getAppConfig\(\),null,\{server:true\}\)/)
+ assert.doesNotMatch(page,/localStorage|sessionStorage|\bclientQuestion\b/)
+})
