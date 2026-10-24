@@ -6,6 +6,7 @@ import { AcademyBackLink } from "@/components/academy-hub";
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
 import { AcademyVideoCourseJourney } from "@/components/academy-video-course-journey";
+import { academyVideoCourseIntro } from "@/data/academy/video-course-introductions";
 import { EnglishGuidedMeditations } from "@/components/english-guided-meditations";
 import { YggdrasilProgramLanding } from "@/components/yggdrasil-program-landing";
 import { YggdrasilLeadForms } from "@/components/reiki-landing-forms";
@@ -226,7 +227,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
             locale={locale}
             courseTitle={academyDisplayTitle(record, locale)}
             courseId={record.logicalId}
-            description={locale === "ru" ? "Оригинальные русскоязычные видеоуроки. Смотрите последовательно, оставляя вопросы после каждого видео." : locale === "es" ? "Lecciones originales en ruso. Mira cada vídeo y escribe tus preguntas después." : "Original Russian-language lessons. Watch each video and leave your questions after it."}
+            description={academyVideoCourseIntro(record.logicalId, locale)}
             lessons={videos.map((video, index) => ({
               id: video.id,
               title: video.lessonTitle ?? academyDisplayTitle(record, locale) + " · " + (index + 1),
