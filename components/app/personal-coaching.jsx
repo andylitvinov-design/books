@@ -12,6 +12,11 @@ import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
+import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
+import { coachingEntryCopy } from '@/components/coaching-session-onboarding'
+import { coachingRequestTopicLabel } from '@/lib/coaching/session-onboarding'
+import { coachingArt } from '@/lib/coaching/public-session-art'
+import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
 import styles from './personal-coaching.module.css'
 
@@ -118,6 +123,8 @@ const intelligenceCopy={
     copyError:'No se pudo copiar automáticamente. Selecciona el texto abajo.',
     manual:'Selecciona y copia mi reflexión privada'},
 }
+const entryCopyContinue=locale=>({en:'Continue coaching session',ru:'Продолжить коучинг-сессию',es:'Continuar sesión de coaching'})[locale]||'Continue coaching session'
+const entryCopyBegin=locale=>({en:'Continue to questions',ru:'Перейти к вопросам',es:'Continuar con preguntas'})[locale]||'Continue to questions'
 const translated=(value,lang)=>value?.[lang]||value?.en||''
 const questionsFor=(course,catalog)=>{
   const key=course?.current?.schemeKey
@@ -140,6 +147,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const lang=['en','ru','es'].includes(locale)?locale:'en',t=copy[lang],root='/'+lang+'/app'
   const [state,setState]=useState(null),[catalog,setCatalog]=useState(null)
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[newSelection,setNewSelection]=useState(false)
+  const [entry,setEntry]=useState(null)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
@@ -159,6 +167,8 @@ export default function PersonalCoaching({locale='en',accountId}){
   const visiblePrompt=adaptive&&!useStandardPrompt?adaptive.prompt:standardPrompt
   const recapRows=finished?buildCoachingRecap(session,activeQuestions,lang):[]
   const iCopy=intelligenceCopy[lang]
+  const entryCopy=coachingEntryCopy(lang)
+  const entryModel=entry?.choice?.model||catalog?.models?.find(item=>item.modelKey===entry?.choice?.modelKey)
   const lastApprovedPlan=[session,...(course?.history||[])]
     .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
   function visit(indexToOpen,values,items=activeQuestions){
@@ -207,9 +217,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     return()=>{live=false}
   },[accountId,t.loadError])
   useEffect(()=>{
-    if(loading||!session||finished)return
+    if(loading||(!entry&&!session)||finished&&!entry)return
     titleRef.current?.focus({preventScroll:true})
-  },[index,loading,session?.id,finished,pendingFollowup])
+  },[index,loading,session?.id,finished,pendingFollowup,entry?.step])
   useEffect(()=>{
     // Main answer AND optional dictated follow-up must survive accidental reloads.
     if(!dirty&&!((pendingFollowup&&reflectionDraft.trim().length>0)))return
@@ -230,12 +240,23 @@ export default function PersonalCoaching({locale='en',accountId}){
       return null
     }finally{busyRef.current=false;setBusy(false)}
   }
-  async function begin(choice,clientQuestion,adultConfirmed){
-    const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion,
-      ...((choice.modelKey==='tantric_intimacy_v1'||choice.scheme?.tags?.includes('sexuality'))?{adultConfirmed:adultConfirmed===true}:{})})
+  function prepare(choice,clientQuestion,adultConfirmed){
+    // The picker only prepares a choice. No private record is created until
+    // the visitor has seen the session briefing and selected a request topic.
+    setEntry({choice,clientQuestion,adultConfirmed:adultConfirmed===true,
+      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',step:'intro'})
+    setError('')
+  }
+  async function begin(){
+    if(!entry?.clientTopic||(entry.clientTopic==='sexuality'&&!entry.topicAdultConfirmed))return
+    const {choice,clientQuestion,clientTopic}=entry
+    const adultConfirmed=entry.adultConfirmed||entry.topicAdultConfirmed
+    const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion,clientTopic,
+      ...((choice.modelKey==='tantric_intimacy_v1'||choice.scheme?.tags?.includes('sexuality')||clientTopic==='sexuality')?{adultConfirmed}:{})})
     if(result){
       const list=questionsFor(result.course,catalog)
       visit(firstUnanswered(list,result.course?.current?.answers),result.course?.current?.answers,list)
+      setEntry(null)
       setNewSelection(false)
     }
   }
@@ -337,13 +358,37 @@ export default function PersonalCoaching({locale='en',accountId}){
           <p>{t.loadError}</p>
           <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
         </div>
+        : entry ? <div className={styles.session} data-private-coaching-onboarding>
+          <div className={styles.questionArea}>
+            {entry.step==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={titleRef}
+              name={coachingSessionTitle(entry.choice.schemeKey,lang,translated(entry.choice.scheme?.name,lang)||translated(entryModel?.name,lang))}
+              modelName={translated(entryModel?.name,lang)} minutes={entry.choice.scheme?.minutes||20}
+              questionCount={entry.choice.scheme?.questions?.length} style={entry.choice.scheme?.style}
+              approach={translated(entryModel?.focus,lang)} outcome={translated(entry.choice.scheme?.result,lang)}
+              imageSrc={cardArtworkUrl(coachingArt[entry.choice.modelKey]||coachingArt.grow_v1)}/>
+            :<CoachingSessionTopic locale={lang} value={entry.clientTopic} headingRef={titleRef}
+              onChange={clientTopic=>setEntry(previous=>({...previous,clientTopic,topicAdultConfirmed:previous.adultConfirmed}))}
+              ageConfirmed={entry.topicAdultConfirmed}
+              onAgeConfirm={value=>setEntry(previous=>({...previous,topicAdultConfirmed:value}))}/>}
+            {error&&<p className={styles.error} role="alert">{error}</p>}
+          </div>
+          <footer className={styles.footer}><div className={styles.footerActions}>
+            <button type="button" className={styles.back} disabled={busy}
+              onClick={()=>{if(entry.step==='intro')setEntry(null);else setEntry(previous=>({...previous,step:'intro'}))}}>
+              <ChevronLeft size={18}/>{t.back}</button>
+            <button type="button" className={styles.primary} disabled={busy||(entry.step==='topic'&&(!entry.clientTopic||(entry.clientTopic==='sexuality'&&!entry.topicAdultConfirmed)))}
+              onClick={()=>entry.step==='intro'?setEntry(previous=>({...previous,step:'topic'})):begin()}>
+              {entry.step==='intro'?entryCopyContinue(lang):entryCopyBegin(lang)}<ArrowRight size={18}/></button>
+          </div></footer>
+        </div>
         : (!course||newSelection) ? <PersonalCoachingPicker locale={lang} catalog={catalog}
-          previousPlan={lastApprovedPlan} onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
+          previousPlan={lastApprovedPlan} onChoose={prepare} busy={busy} error={error} isNew={Boolean(course)} />
         : finished ? <div className={styles.summary} data-coaching-summary>
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
           <p>{t.finished}</p>
           {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
+          {session.clientTopic&&<p className={styles.contextQuestion}><strong>{entryCopy.topicTitle}:</strong> {coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
           <div className={styles.answers}>
             {activeQuestions.map(item=><div className={styles.answer} key={item.id}>
@@ -390,7 +435,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <p className={styles.subtle}>{t.restart}</p>
           {error&&<p className={styles.error} role="alert">{error}</p>}
           <button type="button" className={styles.primary} disabled={busy}
-            onClick={()=>{setNewSelection(true);setError('')}}>{t.new}<ArrowRight size={18}/></button>
+            onClick={()=>{setEntry(null);setNewSelection(true);setError('')}}>{t.new}<ArrowRight size={18}/></button>
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           <small className={styles.disclaimer}>{t.completeNote}</small>
