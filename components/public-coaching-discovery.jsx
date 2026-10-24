@@ -10,7 +10,7 @@ import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coa
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
-import { takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
+import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
 
 
@@ -151,7 +151,7 @@ const answerText=(value,item,locale,t)=>{
 // programmes, the preparation questionnaire and paid session requests.
 function CoachingLoungeCard({
   locale,id,title,meta,price,image,description,detail,outcome,caution,examples,
-  primaryLabel,primaryHref,onPrimary,landingHref,suggested=false,
+  primaryLabel,primaryHref,onPrimary,landingHref,onLanding,suggested=false,
   schemeKey,traditionKey,
 }){
   const t=copy[locale],panelId=useId()
@@ -160,7 +160,7 @@ function CoachingLoungeCard({
     data-coaching-scheme={schemeKey} data-coaching-tradition={traditionKey}
     data-coaching-compact-card>
     <div className={styles.loungeRow}>
-      <Link className={styles.loungePhoto} href={landingHref} prefetch={false}
+      <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
         aria-label={t.fullDetails+': '+title}>
         <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized
           sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
@@ -197,7 +197,7 @@ function CoachingLoungeCard({
         <strong>{t.examples}:</strong>
         <ul>{examples.slice(0,3).map((text,i)=><li key={i}>{text}</li>)}</ul>
       </div>}
-      <Link href={landingHref} className={styles.loungeLanding} prefetch={false}>
+      <Link href={landingHref} className={styles.loungeLanding} prefetch={false} onClick={onLanding}>
         {t.fullDetails}<ArrowRight size={15} aria-hidden="true"/>
       </Link>
     </div>
@@ -409,6 +409,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                   suggested={suggestionKeys.has(s.schemeKey)}
                   schemeKey={s.schemeKey} primaryLabel={t.start}
                   onPrimary={()=>start(s)}
+                  onLanding={()=>stageIdeasCoachingQuestion(question)}
                   landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
               })}
             </div>}
