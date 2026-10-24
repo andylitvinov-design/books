@@ -634,3 +634,51 @@
   .questionScreen .questionInput[data-public-coaching-open-reflection="true"]{min-height:86px;max-height:24dvh}}
 @media(max-height:620px){.questionScreen .gentleGuide{padding:6px 9px;margin:4px 0 7px}
   .questionScreen .questionInput[data-public-coaching-open-reflection="true"]{min-height:70px}}
+
+/* Coaching Lounge · outcome-first selection: primary decisions are visible;
+   duration and model depth are optional inline details, never a modal. */
+.outcomes{padding:0;margin:4px 0 14px;border:0;min-width:0}
+.outcomes legend{width:100%;padding:0 0 8px;color:#395950}
+.outcomes legend strong{display:block;font-size:16px;font-weight:850;line-height:1.3}
+.outcomes legend span{display:block;color:#66736c;font-size:12px;line-height:1.4;margin-top:3px}
+.outcomeGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.outcomeGrid button{display:flex;align-items:center;justify-content:flex-start;gap:7px;min-height:52px;
+  border:1px solid #d8c8ba;border-radius:11px;padding:9px 10px;background:#fffefa;color:#3b5c54;
+  font:inherit;font-size:12px;line-height:1.25;font-weight:750;text-align:left;cursor:pointer;
+  overflow-wrap:anywhere;min-width:0;transition:background .12s,border-color .12s}
+.outcomeGrid button span{flex:none;color:#856349;font-size:16px}
+.outcomeGrid button[aria-pressed="true"],.outcomeGrid .outcomeSelected{
+  background:#e6f0ea;border-color:#2b6666;color:#244f4b;box-shadow:inset 0 0 0 1px #2b6666}
+.outcomeGrid button:hover{border-color:#669389;background:#edf3ed}
+.advanced{margin:10px 0 5px;border:1px solid #d9d2c6;border-radius:11px;background:#faf7f1;padding:0 11px}
+.advanced>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:750;
+  color:#365d59;font-size:13px;line-height:1.35;padding:10px 2px}
+.advanced[open]>summary{border-bottom:1px solid #e3d9ce}
+.advancedHint{font-size:12px;color:#69756e;line-height:1.45;margin:9px 0 0}
+.advanced .filters{margin:9px 0 11px}
+.outcomeHelp{color:#536d61;font-size:12px;margin:6px 0 0;line-height:1.4}
+.coachFit{border:1px solid #ded5c6;background:#fcf8f0;border-radius:12px;
+  margin:12px 0 16px;padding:13px 15px;color:#46605a}
+.coachFit>strong{display:block;font-size:14px;color:#3d584e;margin-bottom:5px}
+.coachFit p{font-size:13px;line-height:1.45;margin:5px 0}
+.coachFit ul{padding-left:20px;margin:9px 0}
+.coachFit li{font-size:13px;line-height:1.48;margin:5px 0}
+.coachFit .coachOnly{color:#785849;font-size:12px}
+@media(max-width:800px){.outcomeGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){
+ .outcomes{margin:9px 0 10px}
+ .outcomes legend{padding-bottom:5px}
+ .outcomes legend strong{font-size:13px}
+ .outcomes legend span{font-size:11px;line-height:1.3}
+ .outcomeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .outcomeGrid button{min-height:46px;padding:6px 7px;gap:4px;font-size:10.5px;border-radius:9px}
+ .outcomeGrid button span{font-size:12px}
+ .advanced{margin:7px 0;padding:0 8px}
+ .advanced>summary{font-size:12px;min-height:44px}
+ .coachFit{padding:10px 11px}
+}
+@media(max-width:360px){
+ .outcomeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .outcomeGrid button{font-size:11px;min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){.outcomeGrid button{transition:none}}
