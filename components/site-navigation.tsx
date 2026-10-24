@@ -107,15 +107,16 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     return available ? publicCounterpart(pathname, next) : localePath(pathname, next as Locale);
   }
 
-  // One canonical six-item navigation, shared by the hamburger and bottom bar.
+  // One canonical seven-item navigation, shared by the hamburger and bottom bar.
   // Additional editorial pages are grouped separately, never mixed into the bar.
   const mainMenuItems = getCompactNavigation(activeLocale);
   const extraMenuItems = getSiteNavigation(activeLocale).filter(
-    item => ['energy', 'love', 'business', 'library', 'courses', 'events'].includes(item.id),
+    item => ['energy', 'love', 'business', 'library', 'events'].includes(item.id),
   );
 
-  // The full Academy catalog is reached through Courses; keep the legacy Services catalog.
+  // Courses is now a primary tab. Keep dedicated Temple Insights and Services discoverable.
   extraMenuItems.push(
+    { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
     { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },
   );
 
