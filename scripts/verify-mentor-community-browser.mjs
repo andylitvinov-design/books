@@ -108,7 +108,7 @@ try {
             label + ": only approved articles may activate initial feed");
           await articlePanel.waitFor({ state: "visible" });
           const cards = articlePanel.locator("article");
-          assert.equal(await cards.count(), 2, label + ": exactly two approved locale articles");
+          assert.equal(await cards.count(), 6, label + ": exactly six moderated news posts across three locales");
           for (const title of titles[locale]) {
             assert.equal(await cards.getByRole("link", { name: title }).count() >= 1, true,
               label + ": expected published title " + title);
@@ -122,12 +122,12 @@ try {
           await articlePanel.getByRole("button", {
             name: locale === "ru" ? "Все темы" : locale === "es" ? "Todos" : "All topics", exact: true,
           }).tap();
-          assert.equal(await cards.count(), 2, label + ": reset topics");
+          assert.equal(await cards.count(), 6, label + ": reset topics");
           const search = articlePanel.locator('input[type="search"]');
           await search.fill(queryForSecond[locale]);
           assert.equal(await cards.count(), 1, label + ": search after hydration");
           await search.fill("");
-          assert.equal(await cards.count(), 2);
+          assert.equal(await cards.count(), 6);
           await articleTab.focus();
           await page.keyboard.press("Home");
           assert.equal(await mentorTab.getAttribute("aria-selected"), "true",
@@ -139,7 +139,8 @@ try {
           assert.equal(await mentorTab.getAttribute("aria-selected"), "true",
             label + ": keyboard arrows toggle tabs");
           await articleTab.tap();
-          await assertTouchSize(cards.first().getByRole("link", { name: /Read article|Читать статью|Leer artículo/ }),
+          const localCard = cards.filter({ has: page.locator('a[href^="/' + locale + '/articles/"]') }).first();
+          await assertTouchSize(localCard.getByRole("link", { name: /Read article|Читать статью|Leer artículo/ }),
             label + " read action");
           await noHorizontalOverflow(page, label + " filtered");
 
@@ -148,7 +149,7 @@ try {
               path: output + "/feed-" + engineName + "-" + locale + "-390.png",
               animations: "disabled",
             });
-            const readLink = cards.first().getByRole("link", {
+            const readLink = localCard.getByRole("link", {
               name: /Read article|Читать статью|Leer artículo/,
             });
             await readLink.tap();

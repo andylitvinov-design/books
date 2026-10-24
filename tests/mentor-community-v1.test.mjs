@@ -10,14 +10,14 @@ test("community reuses approved public practitioner and article sources", async 
     read("lib/practitioners/article-repository.js"),
   ]);
   assert.match(page, /listPublicPractitioners\(locale\)/);
-  assert.match(page, /publicList\(locale\)/);
+  assert.match(page, /publicFeed\(\)/);
   assert.match(page, /<MarketplaceMasterFinder practitioners=/);
-  assert.match(page, /<ArticleDirectory locale=\{locale\} preview articles=/);
+  assert.match(page, /<ArticleDirectory locale=\{locale\} preview social=/);
   assert.match(page, /<MentorCommunitySwitch/);
   assert.match(page, /articles\.length > 0/);
   assert.match(articlesRepo, /a\.published<>'\{\}'::jsonb/);
   assert.match(articlesRepo, /p\.status in\('approved','submitted','changes_requested'\)/);
-  assert.match(articlesRepo, /a\.published->>'locale'=\$1/);
+  assert.match(articlesRepo, /a\.published->>'locale' in \('en','ru','es'\)/);
   assert.doesNotMatch(page, /assessment_results|private_client|crm_contacts/);
 });
 
@@ -32,7 +32,7 @@ test("community switch exposes an accessible, keyboard-driven two-panel view", a
   assert.match(switcher, /hidden=\{view !== "mentors"\}/);
   assert.match(switcher, /hidden=\{view !== "articles"\}/);
   for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) assert.ok(switcher.includes(key));
-  for (const value of ["Find a mentor", "Сообщество наставников", "Comunidad de mentores"]) {
+  for (const value of ["Find a mentor", "Мастера и новости сообщества", "Mentores y noticias"]) {
     assert.ok(switcher.includes(value));
   }
   assert.match(css, /min-height: 44px/);
@@ -53,7 +53,7 @@ test("article feed uses only persisted authors, published tags and in-site desti
   assert.match(feed, /\/articles\//);
   assert.match(feed, /article\.coverPath/);
   assert.match(feed, /preview \? filtered\.slice\(0, 6\)/);
-  assert.match(articleIndex, /publicList\(locale\)/);
+  assert.match(articleIndex, /publicFeed\(\)/);
   assert.match(articleIndex, /practitionerSlug: a\.practitionerSlug/);
   assert.match(masters, /practitionerSlug: a\.practitionerSlug/);
   assert.doesNotMatch(feed, /dangerouslySetInnerHTML|\.draft\.|fakeLikes|fakeRatings/);

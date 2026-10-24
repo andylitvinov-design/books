@@ -147,3 +147,7 @@
  .libraryTools .findBar{grid-template-columns:1fr}
  .libraryTools .statusSelect{min-height:40px}
 }
+
+/* Quick notes and long articles share one approved author workspace. */
+.top{flex-wrap:wrap;gap:8px}
+@media(max-width:430px){.top .primary,.top .secondary{min-height:44px;flex:1;min-width:min(100%,125px)}}
