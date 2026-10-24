@@ -422,7 +422,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <h2 id="free-outcomes-title">{t.outcomeTitle}</h2>
             <p className={styles.sectionLead}>{t.outcomeLead}</p>
             <div className={[styles.outcomeList, kind === "dao" ? styles.daoOutcomeList : ""].filter(Boolean).join(" ")}>
-              {t.outcomes.map((item, i) => <article key={item.title}>
+              {t.outcomes.map((item, i) => <article key={item.title} data-free-visual-screen={i+1}>
                 <span>{String(i + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div>
                 <div className={styles.miniScenePhoto}><Image src={scenePhotos[i % scenePhotos.length]} alt="" fill
                   sizes="(max-width: 600px) 100vw, 43vw" /></div>
