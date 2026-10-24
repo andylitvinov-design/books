@@ -291,6 +291,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               </article>)}
           </div>
           <p className={styles.disclaimer}>{t.notBooking}</p>
+          <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
         </section>}
         {format!=='human'&&!recommendation.blocked&&<section className={styles.morePaths} aria-labelledby="coaching-more-paths">
           <h2 id="coaching-more-paths">{t.otherWays}</h2>
