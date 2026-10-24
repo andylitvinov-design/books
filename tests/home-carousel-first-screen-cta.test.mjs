@@ -12,7 +12,7 @@ test("EN/RU/ES begin with carousel then seven free-first steps, no duplicate bot
     const slider = page.indexOf("<HomeSectionCarousel");
     const journey = page.indexOf("<HomeFeaturedWorkspace");
     const filters = page.indexOf("<HomeMoreDisclosure");
-    assert.ok(slider >= 0 && slider < filters && filters < journey);
+    assert.ok(slider >= 0 && slider < journey && journey < filters);
     assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard/);
   }
   assert.doesNotMatch(carousel, /data-home-quick-booking|data-home-quick-cta/);

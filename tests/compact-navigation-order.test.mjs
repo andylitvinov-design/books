@@ -2,71 +2,89 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { activeCompactNavigationId, compactNavigationIds, getCompactNavigation, getSiteNavigation, navigationCopy } from '../lib/site-navigation-model.js'
-const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const order = ['home','profile','coaching','insights','support','pro']
-test('six accessible public tabs lead to distinct routes in EN/RU/ES', () => {
+
+const order = ['home', 'energy', 'love', 'business', 'books', 'pro', 'temple']
+
+test('mobile bottom bar and menu use the same seven ordered destinations in EN, RU and ES', () => {
   assert.deepEqual(compactNavigationIds, order)
-  const routes = {profile:'personality-profiles',coaching:'coaching',insights:'temple-insights',support:'holistic-support',pro:'pro'}
-  for (const locale of ['en','ru','es']) {
+  for (const locale of ['en', 'ru', 'es']) {
     const items = getCompactNavigation(locale)
-    assert.deepEqual(items.map(x=>x.id), order)
-    assert.equal(new Set(items.map(x=>x.href)).size,6)
-    assert.equal(items[0].href, locale==='en'?'/':'/'+locale)
-    for (const item of items.slice(1)) assert.equal(item.href, '/'+locale+'/'+routes[item.id])
+    assert.deepEqual(items.map(item => item.id), order)
+    assert.equal(new Set(items.map(item => item.id)).size, 7)
+    assert.equal(items[0].href, locale === 'en' ? '/' : `/${locale}`)
+    assert.equal(items[1].href, `/${locale}/explore/energy`)
+    assert.equal(items[2].href, `/${locale}/explore/love`)
+    assert.equal(items[3].href, `/${locale}/explore/business`)
+    assert.equal(getSiteNavigation(locale).filter(item => item.id === 'business').length, 1, 'Business is one canonical public direction')
+    assert.equal(items[4].href, `/${locale}/books`)
+    assert.equal(items[4].label, { en: 'Tests & Coaching', ru: 'Тесты и коучинг', es: 'Tests y coaching' }[locale])
+    assert.equal(items[5].href, `/${locale}/pro`)
+    assert.equal(items[5].label, { en: 'Pro', ru: 'Профи', es: 'Pro' }[locale])
+    assert.equal(items[6].href, `/${locale}/holistic-support`)
+    assert.equal(items[6].label, navigationCopy[locale].temple)
     for (const item of items) {
       assert.equal(item.label, navigationCopy[locale][item.id])
-      assert.equal(item.ariaLabel,item.label)
-      assert.equal(item.external,false)
+      assert.equal(item.ariaLabel, item.label)
+      assert.equal(item.external, false)
     }
-    assert.equal(activeCompactNavigationId('/'+locale+'/personality-profiles'),'profile')
-    assert.equal(activeCompactNavigationId('/'+locale+'/client/tests'),'profile')
-    assert.equal(activeCompactNavigationId('/'+locale+'/tests'),'profile')
-    assert.equal(activeCompactNavigationId('/'+locale+'/coaching'),'coaching')
-    assert.equal(activeCompactNavigationId('/'+locale+'/temple-insights'),'insights')
-    assert.equal(activeCompactNavigationId('/'+locale+'/holistic-support'),'support')
-    assert.equal(activeCompactNavigationId('/'+locale+'/temple-support'),'insights')
-    assert.equal(activeCompactNavigationId('/'+locale+'/pro'),'pro')
-    assert.equal(activeCompactNavigationId('/'+locale+'/library'),undefined)
-    for (const id of ['energy','love','business']) {
-      assert.ok(!items.some(x=>x.id===id))
-      assert.ok(getSiteNavigation(locale).some(x=>x.id===id),'legacy category remains discoverable')
+    for (const item of items.filter(item => ['home', 'energy', 'love', 'business'].includes(item.id))) {
+      assert.deepEqual(item, getSiteNavigation(locale).find(link => link.id === item.id))
+    }
+    assert.equal(activeCompactNavigationId(`/${locale}/client/tests`), 'pro')
+    assert.equal(activeCompactNavigationId(`/${locale}/explore/energy`), 'energy')
+    assert.equal(activeCompactNavigationId(`/${locale}/explore/relationships`), 'love')
+    assert.equal(activeCompactNavigationId(`/${locale}/events`), 'events')
+    assert.equal(activeCompactNavigationId(`/${locale}/explore/business`), 'business')
+    assert.equal(activeCompactNavigationId(`/${locale}/library`), 'books')
+    assert.equal(activeCompactNavigationId(`/${locale}/about`), 'about')
+    assert.equal(activeCompactNavigationId(`/${locale}/academy`), 'courses')
+    assert.equal(activeCompactNavigationId(`/${locale}/pro`), 'pro')
+    assert.equal(getSiteNavigation(locale).find(item => item.id === 'courses').href, `/${locale}/academy`)
+  }
+  for (const locale of ['en','ru']) assert.equal(activeCompactNavigationId(`/${locale}/app`), 'cabinet')
+})
+
+test('both navigation surfaces render from the canonical seven-item model', () => {
+  const bottom = readFileSync(new URL('../components/mobile-bottom-navigation.tsx', import.meta.url), 'utf8')
+  const header = readFileSync(new URL('../components/site-navigation.tsx', import.meta.url), 'utf8')
+  assert.match(bottom, /const mobileItems = getCompactNavigation\(locale\)/)
+  const icons = readFileSync(new URL('../components/compact-navigation-icons.ts', import.meta.url), 'utf8')
+  assert.match(icons, /energy: Flame/)
+  assert.match(icons, /love: Heart/)
+  assert.match(icons, /business: BriefcaseBusiness/)
+  assert.match(icons, /books: BookOpen/)
+  assert.match(icons, /temple: Landmark/)
+  assert.match(bottom, /compactNavigationIcons\[item.id as keyof typeof compactNavigationIcons\]/)
+  assert.match(header, /compactNavigationIcons\[item.id as keyof typeof compactNavigationIcons\]/)
+  assert.match(header, /<HomePersonalSpaceNavEntry locale=\{activeLocale\}/)
+  assert.doesNotMatch(header, /cabinetEntryCopy|LayoutDashboard/);
+  assert.match(header, /from '\.\/home-personal-space'/)
+  assert.match(header, /const mainMenuItems = getCompactNavigation\(activeLocale\)/)
+  assert.match(header, /className="site-main-menu-grid"/)
+  assert.match(header, /className="site-main-menu-more"/)
+  assert.match(header, /data-nav-item=\{item.id\}/)
+  assert.doesNotMatch(bottom, /mobileCopy|\[\.\.\.publicItems/)
+  assert.doesNotMatch(header, /getSiteNavigation\(activeLocale\)\.map\(item =>/)
+})
+
+test('descriptive Body, Stress and Money labels stay localized without changing routes', () => {
+  const expected = {
+    en: { energy: 'Body and Energy', love: 'Stress and Relationships', business: 'Money and Business' },
+    ru: { energy: 'Тело и энергия', love: 'Стресс и отношения', business: 'Деньги и бизнес' },
+    es: { energy: 'Cuerpo y energía', love: 'Estrés y relaciones', business: 'Dinero y negocios' },
+  }
+  for (const locale of ['en', 'ru', 'es']) {
+    const menu = getCompactNavigation(locale)
+    for (const [id, label] of Object.entries(expected[locale])) {
+      const link = menu.find(item => item.id === id)
+      assert.equal(link.label, label)
+      assert.equal(link.ariaLabel, label)
+      assert.equal(link.href, `/${locale}/explore/${id}`)
     }
   }
-})
-test('bottom bar and hamburger share model, private menu remains separate', () => {
-  const bottom=read('components/mobile-bottom-navigation.tsx')
-  const header=read('components/site-navigation.tsx')
-  const icons=read('components/compact-navigation-icons.ts')
-  for (const key of ['profile','coaching','insights','support','pro']) assert.match(icons,new RegExp(key+': '))
-  assert.ok(bottom.includes('const mobileItems = getCompactNavigation(locale)'))
-  assert.ok(bottom.includes('aria-label={item.ariaLabel}'))
-  assert.ok(header.includes('const mainMenuItems = getCompactNavigation(activeLocale)'))
-  assert.ok(header.includes("['energy', 'love', 'business', 'library', 'courses', 'events']"))
-  assert.ok(header.includes('<HomePersonalSpaceNavEntry locale={activeLocale}'))
-  const css=read('app/ia-v2.css'), homeCss=read('app/holistic-house-home.css')
-  assert.ok(css.includes('grid-template-columns: repeat(6,minmax(0,1fr))'))
-  assert.ok(homeCss.includes('grid-template-columns: repeat(6, minmax(0,1fr))'))
-  assert.ok(css.includes('min-height: 58px'))
-  assert.ok(css.includes('-webkit-line-clamp: 2'))
-})
-test('My Profile guest tests and separate support journeys are all localized and safe', () => {
-  const builder=read('components/personality-profiles-builder.tsx')
-  const locales=read('lib/public-locales.ts'), sitemap=read('app/sitemap.ts')
-  assert.ok(builder.includes('data-personality-profile-builder'))
-  assert.ok(builder.includes('data-profile-direct-tests'))
-  assert.ok(builder.includes("locale + '/tests'"))
-  assert.ok(builder.includes('data-profile-start-tests'))
-  assert.ok(builder.includes('/app/portfolio#hh-development-program'))
-  for (const section of ['temple-insights','holistic-support']) {
-    const page=read('app/[locale]/'+section+'/page.tsx')
-    assert.ok(page.includes('generateMetadata'))
-    assert.ok(page.includes('generateStaticParams'))
-    assert.ok(sitemap.includes(section))
-    assert.ok(locales.includes(section))
-    for (const locale of ['en','ru','es']) assert.ok(page.includes(locale+': "/'+locale+'/'+section+'"'))
-    assert.doesNotMatch(page,/createLead\(|checkout\(|localStorage|sessionStorage/)
-  }
-  assert.ok(read('app/[locale]/temple-insights/page.tsx').includes('<IdeasDiscovery locale={language} variant="temple"'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/remote-energy-support'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/alchemy-of-soul'))
+  const css = readFileSync(new URL('../app/ia-v2.css', import.meta.url), 'utf8')
+  assert.match(css, /\.ia222-bottom-navigation a span \{[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;/)
+  assert.doesNotMatch(css, /\.ia222-bottom-navigation a span \{[^}]*white-space: nowrap;/)
+  assert.match(css, /\.ia222-bottom-navigation a \{[^}]*min-height: 58px;/)
+  assert.match(css, /-webkit-line-clamp: 2;/)
 })

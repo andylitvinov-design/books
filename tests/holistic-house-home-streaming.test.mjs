@@ -28,7 +28,7 @@ test("EN/RU/ES first screen presents seven visible steps and genuine free/paid r
   const seo = read("lib/home-seo.ts");
   for (const page of [en,es]) {
     assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(page.indexOf("<HomeMoreDisclosure") < page.indexOf("<HomeFeaturedWorkspace"));
+    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomeMoreDisclosure"));
     assert.doesNotMatch(page, /<HomeFreeDiagnosisBanner|service-home-hero/);
   }
   for (const name of ["Free courses","Бесплатные курсы","Cursos gratuitos",

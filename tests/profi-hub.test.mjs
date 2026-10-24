@@ -121,7 +121,7 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
 })
 
 test('bottom bar and hamburger replace Tests with Pro while keeping six usable links',()=>{
-  const expected=['home','profile','coaching','insights','support','pro']
+  const expected=['home','energy','love','business','books','pro']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)

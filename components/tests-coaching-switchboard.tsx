@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
-import { ArrowRight, BookOpen, Check, CheckCircle2, ChevronRight, ClipboardList, Compass, HeartHandshake, Leaf, Sparkles, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowRight, BookOpen, Check, CheckCircle2, ClipboardList, Compass, HeartHandshake, Leaf, Sparkles, X } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./tests-coaching-switchboard.module.css";
 
@@ -15,15 +15,15 @@ const messages = {
   en: {
     eyebrow: "YOUR PERSONAL STARTING POINT",
     title: "Tests & Coaching",
-    lead: "Know yourself, find a fresh perspective, or get gentle practical support.",
-    hint: "Choose what would be most helpful today.",
+    lead: "A question, a fresh perspective, a small step forward. Begin where you are.",
+    hint: "What would feel most helpful today?",
     paths: {
       profile: { name: "Know Yourself", detail: "Tests, personal profile & growth plan", cta: "Build my profile" },
       temple: { name: "Temple Insights", detail: "Taoist symbols & temple archetypes", cta: "Explore insights" },
       coaching: { name: "Coaching Sessions", detail: "Guided conversations and traditions", cta: "Find a session" },
       support: { name: "Practice & Support", detail: "Small exercises, courses & personal care", cta: "Find support" },
     },
-    close: "Back to four choices",
+    close: "All four paths",
     profileLead: "Build a personal, business, wellbeing or comprehensive profile in the dedicated free Profile Builder.",
     profileDetail: "Choose your life areas, select or customize the scales and free tests, then review your results and development options.",
     profileKinds: { personal: "Personal", relationships: "Relationships", business: "Work & business", whole: "Whole-person" },
@@ -56,9 +56,9 @@ const messages = {
     traditions: "Temple traditions", traditionsDetail: "Greek and Egyptian guided courses.",
     human: "Personal session", humanDetail: "Talk with Andrey · €50 / 30 min or €100 / 60 min. Request, not an instant booking.",
     learn: "Choose a session", book: "Explore personal sessions",
-    supportLead: "Pick one small, voluntary step. You can pause or stop at any point.",
-    immediate: "A small practice now", immediateDetail: "Gentle orientation · around 2 minutes",
-    try: "I'm ready to try", skip: "Not now",
+    supportLead: "A little steadiness can begin in two minutes. Choose your pace; stop whenever you like.",
+    immediate: "Find your ground", immediateDetail: "A gentle, guided way to notice support around you.",
+    try: "Try a 2-minute practice", skip: "Not now",
     exerciseTitle: "Notice the support around you",
     exercise: "If it feels comfortable, notice your feet touching the floor. Look around and name three neutral things you can see. Let your breath find its own pace. There is nothing to achieve.",
     gentle: "Lighter option: simply notice one colour in the room, without changing your breathing.",
@@ -72,15 +72,15 @@ const messages = {
   ru: {
     eyebrow: "ВАШ ПЕРВЫЙ ШАГ",
     title: "Тесты и коучинг",
-    lead: "Узнайте себя, найдите новый взгляд или получите бережную поддержку.",
-    hint: "Выберите, что сейчас будет полезнее.",
+    lead: "Один вопрос, новый взгляд, небольшой шаг. Начните с того, что важно сейчас.",
+    hint: "Что сейчас было бы для вас полезнее?",
     paths: {
       profile: { name: "Познать себя", detail: "Тесты, профиль и программа развития", cta: "Создать профиль" },
       temple: { name: "Храмовые подсказки", detail: "Даосские символы и архетипы", cta: "Получить подсказку" },
       coaching: { name: "Коучинг-сессии", detail: "Беседа и разные традиции", cta: "Выбрать сессию" },
       support: { name: "Практика и поддержка", detail: "Упражнения, курсы и личная помощь", cta: "Найти поддержку" },
     },
-    close: "К четырём направлениям",
+    close: "Все направления",
     profileLead: "Для личностного, бизнес-, ресурсного или комплексного профиля используйте единый бесплатный конструктор.",
     profileDetail: "Выберите сферы и шкалы, отредактируйте набор бесплатных тестов и посмотрите результаты и направления развития.",
     profileKinds: { personal: "Личность", relationships: "Отношения", business: "Работа и бизнес", whole: "Комплексный" },
@@ -112,9 +112,9 @@ const messages = {
     traditions: "Храмовые традиции", traditionsDetail: "Греческие и египетские программы.",
     human: "Личная сессия", humanDetail: "С Андреем · €50 / 30 мин или €100 / 60 мин. Запрос, не мгновенная бронь.",
     learn: "Выбрать сессию", book: "Изучить личные сессии",
-    supportLead: "Выберите один посильный шаг. В любой момент можно остановиться.",
-    immediate: "Небольшая практика сейчас", immediateDetail: "Мягкое ориентирование · около 2 минут",
-    try: "Готов попробовать", skip: "Не сейчас",
+    supportLead: "Иногда двух минут достаточно, чтобы почувствовать опору. Выберите свой темп; остановиться можно в любой момент.",
+    immediate: "Найти опору прямо сейчас", immediateDetail: "Бережная практика внимания к тому, что поддерживает.",
+    try: "Попробовать · 2 минуты", skip: "Не сейчас",
     exerciseTitle: "Заметьте опору вокруг",
     exercise: "Если вам комфортно, почувствуйте соприкосновение стоп с полом. Осмотритесь и назовите три нейтральных предмета. Позвольте дыханию идти в естественном темпе. Ничего не нужно достигать.",
     gentle: "Облегчённый вариант: просто найдите один цвет вокруг, не меняя дыхание.",
@@ -128,15 +128,15 @@ const messages = {
   es: {
     eyebrow: "TU PRIMER PASO",
     title: "Tests y coaching",
-    lead: "Conócete, encuentra otra perspectiva o recibe apoyo amable.",
-    hint: "Elige qué te ayudaría hoy.",
+    lead: "Una pregunta, una nueva perspectiva, un pequeño paso. Empieza donde estás.",
+    hint: "¿Qué te ayudaría más hoy?",
     paths: {
       profile: { name: "Conócete", detail: "Tests, perfil y plan de desarrollo", cta: "Crear mi perfil" },
       temple: { name: "Reflexiones del templo", detail: "Símbolos taoístas y arquetipos", cta: "Explorar símbolos" },
       coaching: { name: "Sesiones de coaching", detail: "Conversaciones y tradiciones", cta: "Elegir sesión" },
       support: { name: "Práctica y apoyo", detail: "Ejercicios, cursos y apoyo personal", cta: "Buscar apoyo" },
     },
-    close: "Volver a las cuatro opciones",
+    close: "Las cuatro opciones",
     profileLead: "Crea tu perfil personal, empresarial, de bienestar o integral con nuestro único editor gratuito.",
     profileDetail: "Elige áreas, escalas y pruebas gratuitas; después explora resultados y opciones de desarrollo.",
     profileKinds: { personal: "Personal", relationships: "Relaciones", business: "Trabajo y negocios", whole: "Integral" },
@@ -168,9 +168,9 @@ const messages = {
     traditions: "Tradiciones del templo", traditionsDetail: "Cursos guiados griegos y egipcios.",
     human: "Sesión personal", humanDetail: "Con Andrey · €50 / 30 min o €100 / 60 min. Solicitud, no reserva instantánea.",
     learn: "Elegir una sesión", book: "Explorar sesiones personales",
-    supportLead: "Elige un pequeño paso voluntario. Puedes parar en cualquier momento.",
-    immediate: "Una práctica ahora", immediateDetail: "Orientación suave · unos 2 minutos",
-    try: "Quiero probar", skip: "Ahora no",
+    supportLead: "Un poco de calma puede empezar en dos minutos. Elige tu ritmo; puedes parar cuando quieras.",
+    immediate: "Encuentra tu punto de apoyo", immediateDetail: "Una práctica suave para notar lo que te sostiene.",
+    try: "Probar · 2 minutos", skip: "Ahora no",
     exerciseTitle: "Nota el apoyo alrededor",
     exercise: "Si te resulta cómodo, nota tus pies en el suelo. Mira alrededor y nombra tres objetos neutros. Deja que tu respiración vaya a su ritmo. No necesitas lograr nada.",
     gentle: "Versión más suave: simplemente observa un color en la habitación sin cambiar la respiración.",
@@ -184,11 +184,26 @@ const messages = {
 } as const;
 
 const pathIcons = { profile: ClipboardList, temple: Sparkles, coaching: Compass, support: HeartHandshake };
+const quickCtas: Record<PublicLocale, Record<Path, string>> = {
+  en: { profile: "Start free", temple: "Get inspired", coaching: "Find a session", support: "Try 2 minutes" },
+  ru: { profile: "Начать", temple: "Подсказки", coaching: "К сессиям", support: "2 минуты" },
+  es: { profile: "Empezar", temple: "Inspirarme", coaching: "Ver sesiones", support: "Probar 2 min" },
+};
+const supportTime: Record<PublicLocale, string> = {
+  en: "01 · A 2-MINUTE PAUSE", ru: "01 · ПРАКТИКА НА 2 МИНУТЫ", es: "01 · PAUSA DE 2 MINUTOS",
+};
 
 export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: PublicLocale; templeContent: ReactNode }) {
   const t = messages[locale];
   const [path, setPath] = useState<Path | null>(null);
   const [stage, setStage] = useState<Stage>("invite");
+  const detailRef = useRef<HTMLElement>(null);
+  const firstCardRef = useRef<HTMLButtonElement>(null);
+  const hasOpened = useRef(false);
+  useEffect(() => {
+    if (path) { hasOpened.current = true; detailRef.current?.focus(); }
+    else if (hasOpened.current) firstCardRef.current?.focus();
+  }, [path]);
 
   function open(next: Path) {
     setPath(current => current === next ? null : next);
@@ -200,28 +215,35 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
       <p className={styles.lead}>{t.lead}</p>
       <small className={styles.hint}>{t.hint}</small>
     </header>
-    <nav className={styles.grid} aria-label={t.hint}>
-      {pathOrder.map(key => {
+    <nav className={styles.grid} aria-label={t.hint} hidden={Boolean(path)}>
+      {pathOrder.map((key, index) => {
         const Icon = pathIcons[key];
         const item = t.paths[key];
         return <button type="button" key={key} className={styles.card}
+          ref={index === 0 ? firstCardRef : undefined}
           data-tests-coaching-path={key}
           data-active={path === key ? "true" : "false"}
           aria-expanded={path === key}
           aria-controls="tests-coaching-detail"
           onClick={() => open(key)}>
-          <span className={styles.cardTop}><Icon size={25} aria-hidden="true" /><ChevronRight size={20} aria-hidden="true" /></span>
+          <span className={styles.cardTop}>
+            <span className={styles.cardIcon}><Icon size={22} aria-hidden="true" /></span>
+            <span className={styles.cardNumber} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+          </span>
           <strong>{item.name}</strong>
           <span className={styles.description}>{item.detail}</span>
-          <span className={styles.cardCta}>{item.cta} <ArrowRight size={14} aria-hidden="true" /></span>
+          <span className={styles.cardBottom}>
+            <span className={styles.cardCta}>{quickCtas[locale][key]}</span>
+            <span className={styles.cardArrow}><ArrowRight size={15} aria-hidden="true" /></span>
+          </span>
         </button>;
       })}
     </nav>
-    <section id="tests-coaching-detail" className={styles.detail} hidden={!path} aria-live="polite" aria-label={path ? t.paths[path].name : undefined}>
+    <section id="tests-coaching-detail" ref={detailRef} tabIndex={-1} className={styles.detail} hidden={!path} aria-live="polite" aria-label={path ? t.paths[path].name : undefined}>
       {path ? <>
         <div className={styles.detailHeader}>
           <h2>{t.paths[path].name}</h2>
-          <button type="button" className={styles.close} onClick={() => setPath(null)} aria-label={t.close}><X size={17} aria-hidden="true" /> {t.close}</button>
+          <button type="button" className={styles.close} data-tests-coaching-back onClick={() => setPath(null)} aria-label={t.close}><X size={17} aria-hidden="true" /> {t.close}</button>
         </div>
         {path === "profile" ? <div className={styles.profile} data-personality-profiles-entry>
           <p className={styles.detailLead}>{t.profileLead}</p>
@@ -269,31 +291,42 @@ export function TestsCoachingSwitchboard({ locale, templeContent }: { locale: Pu
           </div>
           <Link className={styles.wideLink} href={`/${locale}/coaching`} prefetch={false}>{t.lounge} <ArrowRight size={18} aria-hidden="true" /></Link>
         </div> : null}
-        {path === "support" ? <div data-tests-coaching-support>
+        {path === "support" ? <div className={styles.supportJourney} data-tests-coaching-support>
           <p className={styles.detailLead}>{t.supportLead}</p>
-          <div className={styles.subchoices}>
-            <div className={styles.practice}>
-              <strong><Leaf size={18} aria-hidden="true" /> {t.immediate}</strong>
-              <p>{t.immediateDetail}</p>
-              {stage === "invite" ? <button type="button" className={styles.primaryLink} onClick={() => setStage("practice")}>{t.try} <ArrowRight size={16} aria-hidden="true" /></button> : null}
-              {stage === "practice" ? <div className={styles.exercise} role="region" aria-label={t.exerciseTitle}>
-                <h3>{t.exerciseTitle}</h3><p>{t.exercise}</p><p>{t.gentle}</p>
-                <div className={styles.links}>
-                  <button type="button" onClick={() => setStage("done")}><Check size={15} aria-hidden="true" /> {t.done}</button>
-                  <button type="button" onClick={() => setStage("invite")}>{t.skip}</button>
-                </div>
-              </div> : null}
-              {stage === "done" ? <div className={styles.exercise} role="status">
-                <p><CheckCircle2 size={17} aria-hidden="true" /> {t.completion}</p>
-                <button type="button" onClick={() => setStage("practice")}>{t.again} <ArrowRight size={15} aria-hidden="true" /></button>
-              </div> : null}
-            </div>
-            <div><strong><ClipboardList size={18} aria-hidden="true" /> {t.programme}</strong>
-              <p>{t.programmeDetail}</p>
-              <Link className={styles.primaryLink} href={`/${locale}/courses/antistress`} prefetch={false}>{t.programme} <ArrowRight size={16} aria-hidden="true" /></Link></div>
-            <div><strong><HeartHandshake size={18} aria-hidden="true" /> {t.personalSupport}</strong>
-              <p>{t.personalSupportDetail}</p>
-              <Link className={styles.primaryLink} href={`/${locale}/services#consultation`} prefetch={false}>{t.personalSupport} <ArrowRight size={16} aria-hidden="true" /></Link></div>
+          <div className={styles.supportFeatured}>
+            <span className={styles.supportStep}><Leaf size={16} aria-hidden="true" /> {supportTime[locale]}</span>
+            <h3>{t.immediate}</h3>
+            <p className={styles.supportFeaturedDescription}>{t.immediateDetail}</p>
+            {stage === "invite" ? <button type="button" className={styles.primaryLink} onClick={() => setStage("practice")}>
+              {t.try} <ArrowRight size={17} aria-hidden="true" />
+            </button> : null}
+            {stage === "practice" ? <div className={styles.exercise} role="region" aria-label={t.exerciseTitle}>
+              <h3>{t.exerciseTitle}</h3><p>{t.exercise}</p><p>{t.gentle}</p>
+              <div className={styles.links}>
+                <button type="button" onClick={() => setStage("done")}><Check size={15} aria-hidden="true" /> {t.done}</button>
+                <button type="button" onClick={() => setStage("invite")}>{t.skip}</button>
+              </div>
+            </div> : null}
+            {stage === "done" ? <div className={styles.exercise} role="status">
+              <p><CheckCircle2 size={17} aria-hidden="true" /> {t.completion}</p>
+              <button type="button" onClick={() => setStage("practice")}>{t.again} <ArrowRight size={15} aria-hidden="true" /></button>
+            </div> : null}
+          </div>
+          <div className={styles.supportNext}>
+            <Link href={`/${locale}/courses/antistress`} prefetch={false} className={styles.supportSmall} aria-label={t.programme}>
+              <span className={styles.supportSmallIcon} aria-hidden="true"><ClipboardList size={21} /></span>
+              <span className={styles.supportSmallText}>
+                <strong>{t.programme}</strong><span className={styles.supportSmallDescription}>{t.programmeDetail}</span>
+              </span>
+              <span className={styles.supportArrow} aria-hidden="true"><ArrowRight size={18} /></span>
+            </Link>
+            <Link href={`/${locale}/services#consultation`} prefetch={false} className={styles.supportSmall} aria-label={t.personalSupport}>
+              <span className={styles.supportSmallIcon} aria-hidden="true"><HeartHandshake size={21} /></span>
+              <span className={styles.supportSmallText}>
+                <strong>{t.personalSupport}</strong><span className={styles.supportSmallDescription}>{t.personalSupportDetail}</span>
+              </span>
+              <span className={styles.supportArrow} aria-hidden="true"><ArrowRight size={18} /></span>
+            </Link>
           </div>
         </div> : null}
         <p className={styles.disclaimer}>{t.disclaimer}</p>

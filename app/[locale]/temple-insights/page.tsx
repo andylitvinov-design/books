@@ -6,7 +6,7 @@ import { IdeasDiscovery } from "@/components/ideas-discovery";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
-import styles from "../temple-support/temple-support.module.css";
+import styles from "./temple-insights.module.css";
 
 type Language = "en" | "ru" | "es";
 type Props = { params: Promise<{ locale: string }> };

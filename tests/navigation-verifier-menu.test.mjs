@@ -203,7 +203,7 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/about'];
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['library','courses','events'].includes(item.id)).map(item => item.href), '/' + locale + '/services', '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');

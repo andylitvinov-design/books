@@ -113,7 +113,7 @@ test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
   assert.match(stage, /Request a session · from €50/);
   assert.match(stage, /Заказать бесплатный письменный разбор/);
   assert.match(stage, /This is a request for a written response, not a call/);
-  assert.match(css, /\.offerPrimary \{[\s\S]*?background: #742c42/);
+  assert.match(css, /\.offerPrimary \{ background: #742c42/);
   assert.doesNotMatch(home, /force-static|s-maxage/);
   assert.match(es, /<PublicConsultationCta locale="es" \/>/);
 });

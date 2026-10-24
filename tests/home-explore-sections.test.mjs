@@ -37,7 +37,7 @@ test("every key section has an actual route and approved local photo", () => {
     ["academy", "/academy", "reiki-approved-sunrise-v3.webp"],
     ["business", "/explore/business", "andy-about.png"],
     ["ideas", "/books", "books-library.webp"],
-    ["temple", "/temple-support", "ideas-zen-landscape.svg"],
+    ["temple", "/holistic-support", "ideas-zen-landscape.svg"],
   ]) {
     assert.ok(component.includes('id: "' + id + '"'), id + " section missing");
     assert.ok(component.includes('path: "' + path + '"'), id + " route missing");
