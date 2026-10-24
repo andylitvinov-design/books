@@ -4,9 +4,9 @@ import { test } from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("each public personal service has photo or approved click-to-play video on every narrative screen", () => {
+test("each shared personal service has photo or approved click-to-play video on every narrative screen", () => {
   const ui = read("components/personal-service-landing.tsx");
-  const routes = ["psychohomeopathy", "imagery-therapy", "systemic-constellations", "business-consulting"];
+  const routes = ["psychohomeopathy", "imagery-therapy", "systemic-constellations"];
   for (const route of routes) {
     const page = read("app/[locale]/services/" + route + "/page.tsx");
     assert.match(page, /PersonalServiceLanding/, route);
