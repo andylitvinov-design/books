@@ -94,7 +94,7 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Install exact dependency lock
-        run: npm ci
+        run: npm ci --include=dev
       - name: Lint Meta Ads and safe attribution changes
         run: npx --no-install eslint components/growth-studio-meta-ads.jsx components/growth-studio-connections.jsx lib/paid-ad-referrals.js tests/paid-ad-referrals.test.mjs
       - name: Typecheck
