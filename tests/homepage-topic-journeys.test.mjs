@@ -55,10 +55,13 @@ test('marketing → topic → prefiltered simple test explorer → course or fre
   const oldRoute = await readFile('app/[locale]/relationships/page.tsx','utf8')
   const auth = await readFile('app/api/app/[...path]/route.js','utf8')
   const account = await readFile('components/app/app-workspace.jsx','utf8')
-  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
+  assert.match(home, /<HomeMoreDisclosure locale=\{locale\} \/>/);
   const more = await readFile('components/home-more-disclosure.tsx', 'utf8')
   assert.doesNotMatch(more, /<HomepageTopicJourneys locale=\{locale\}/)
-  assert.match(home, /<HomepageTopicJourneys locale=\{locale\}/)
+  assert.doesNotMatch(home, /<HomepageTopicJourneys locale=\{locale\}/);
+  assert.match(more, /data-home-topic-filter="energy"/);
+  assert.match(more, /data-home-topic-filter="love"/);
+  assert.match(more, /data-home-topic-filter="business"/)
   assert.match(tiles,/direction\.id === 'relationships' \? 'love' : direction\.id/)
   for (const direction of ['energy','relationships','business']) assert.ok(tiles.includes("id: '" + direction + "'"))
   assert.match(chooser,/data-topic-action="tests"/)

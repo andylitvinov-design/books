@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, ClipboardList, FileText, GraduationCap, Heart, LockKeyhole, Sparkles, Target, UserRound, X } from "lucide-react";
+import { ArrowRight, BookOpen, BriefcaseBusiness, ChevronDown, ClipboardList, FileText, GraduationCap, Heart, LockKeyhole, MessageCircle, Sparkles, Target, UserRound, Users, X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
 import { isNativeHolisticHouse } from "@/lib/native/client";
@@ -33,6 +33,10 @@ const copy = {
     courses: "My courses", growth: "Development path", practice: "My practice", createCourse: "Create course",
     private: "Private information stays in your Cabinet.", eyebrow: "YOUR NEXT STEP",
     forMe: "For me", forMaster: "For masters", ownHint: "Discover & grow", masterHint: "Share your practice",
+    profile: "Create my profile", plan: "My development plan",
+    findMaster: "Find a master", trainMaster: "Learn to become a master", offerMaster: "I’m a master · Offer services",
+    explore: "Explore Holistic House", energy: "Body & energy", love: "Love & relationships",
+    business: "Money & business", coaching: "Coaching sessions", temple: "Temple & Dao insights",
     becomeMaster: "Become a master", publishService: "Publish a service", myPractice: "My practice",
     exploreCourses: "Explore courses", google: "Continue with Google", googleBusy: "Opening Google…",
     googleError: "Google sign-in could not start. Please try again.",
@@ -55,6 +59,10 @@ const copy = {
     courses: "Мои курсы", growth: "Путь развития", practice: "Моя практика", createCourse: "Создать курс",
     private: "Личная информация остаётся в защищённом кабинете.", eyebrow: "ВАШ СЛЕДУЮЩИЙ ШАГ",
     forMe: "Для себя", forMaster: "Для мастера", ownHint: "Познать себя и развиваться", masterHint: "Делиться своей практикой",
+    profile: "Создать мой профиль", plan: "Моя программа развития",
+    findMaster: "Найти мастера", trainMaster: "Обучиться мастерству", offerMaster: "Я мастер · Предложить услуги",
+    explore: "Направления Holistic House", energy: "Тело и энергия", love: "Любовь и отношения",
+    business: "Деньги и бизнес", coaching: "Коучинг-сессии", temple: "Храмовые и даосские подсказки",
     becomeMaster: "Стать мастером", publishService: "Разместить услугу", myPractice: "Моя практика",
     exploreCourses: "Посмотреть курсы", google: "Войти через Google", googleBusy: "Открываем Google…",
     googleError: "Не удалось начать вход через Google. Попробуйте ещё раз.",
@@ -77,6 +85,10 @@ const copy = {
     courses: "Mis cursos", growth: "Desarrollo", practice: "Mi práctica", createCourse: "Crear curso",
     private: "La información privada permanece en tu gabinete.", eyebrow: "TU SIGUIENTE PASO",
     forMe: "Para mí", forMaster: "Para maestros", ownHint: "Conócete y crece", masterHint: "Comparte tu práctica",
+    profile: "Crear mi perfil", plan: "Mi plan de desarrollo",
+    findMaster: "Buscar un maestro", trainMaster: "Formarme como maestro", offerMaster: "Ya soy maestro · Ofrecer servicios",
+    explore: "Explorar Holistic House", energy: "Cuerpo y energía", love: "Amor y relaciones",
+    business: "Dinero y negocios", coaching: "Sesiones de coaching", temple: "Guía del templo y del Dao",
     becomeMaster: "Ser maestro", publishService: "Publicar un servicio", myPractice: "Mi práctica",
     exploreCourses: "Explorar cursos", google: "Continuar con Google", googleBusy: "Abriendo Google…",
     googleError: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
@@ -232,15 +244,28 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
   const t = copy[activeLocale];
   const root = cabinetBase(activeLocale);
   const personalActions = [
-    { href: root + "/tests", label: t.tests, Icon: ClipboardList },
-    { href: root + "/portrait#personal-reports", label: t.reports, Icon: FileText },
-    { href: root + "/course?view=courses", label: t.courses, Icon: BookOpen },
-    { href: root + "/portfolio#hh-development-program", label: t.growth, Icon: Target },
+    { id: "profile", href: root + "/portrait", label: t.profile, Icon: UserRound },
+    { id: "plan", href: root + "/portfolio#hh-development-program", label: t.plan, Icon: Target },
+    { id: "tests", href: root + "/tests", label: t.tests, Icon: ClipboardList },
+    { id: "reports", href: root + "/portrait#personal-reports", label: t.reports, Icon: FileText },
+    { id: "courses", href: root + "/course?view=courses", label: t.courses, Icon: BookOpen },
   ];
   const masterActions = [
+    { href: "/" + activeLocale + "/masters", label: t.findMaster, Icon: Users },
+    { href: "/" + activeLocale + "/pro#profi-learning", label: t.trainMaster, Icon: GraduationCap },
     { href: root + "/practice", label: t.myPractice, Icon: UserRound },
     { href: root + "/practice?panel=services", label: t.publishService, Icon: BriefcaseBusiness },
     { href: root + "/practice?panel=materials&materialTab=courses", label: t.createCourse, Icon: GraduationCap },
+  ];
+  // Public routes are available before sign-in. Account routes remain server-protected.
+  const publicTopics = [
+    { id: "energy", href: "/" + activeLocale + "/explore/energy", label: t.energy, Icon: Sparkles },
+    { id: "love", href: "/" + activeLocale + "/explore/love", label: t.love, Icon: Heart },
+    { id: "business", href: "/" + activeLocale + "/explore/business", label: t.business, Icon: BriefcaseBusiness },
+  ];
+  const publicGuidance = [
+    { id: "coaching", href: "/" + activeLocale + "/coaching", label: t.coaching, Icon: MessageCircle },
+    { id: "temple", href: "/" + activeLocale + "/temple-support", label: t.temple, Icon: BookOpen },
   ];
 
   return <SpaceContext.Provider value={value}>
@@ -281,6 +306,12 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                   </header>
                   <p className={styles.pathHint}>{t.ownHint}</p>
                   <nav className={styles.pathLinks} aria-label={t.forMe}>
+                    <Link href={root + "/portrait"} data-space-link="profile" prefetch={false} onClick={closePanel}>
+                      <UserRound size={16} aria-hidden="true" /><span>{t.profile}</span><ArrowRight size={14} aria-hidden="true" />
+                    </Link>
+                    <Link href={root + "/portfolio#hh-development-program"} data-space-link="plan" prefetch={false} onClick={closePanel}>
+                      <Target size={16} aria-hidden="true" /><span>{t.plan}</span><ArrowRight size={14} aria-hidden="true" />
+                    </Link>
                     <Link href={"/" + activeLocale + "/client/tests"} prefetch={false} onClick={closePanel}>
                       <span>{t.freeTest}</span><ArrowRight size={14} aria-hidden="true" />
                     </Link>
@@ -298,15 +329,18 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                     <h3 id="hh-space-master">{t.forMaster}</h3>
                   </header>
                   <p className={styles.pathHint}>{t.masterHint}</p>
-                  <ul className={styles.masterPreview}>
-                    <li>{t.becomeMaster}</li>
-                    <li>{t.publishService}</li>
-                    <li>{t.createCourse}</li>
-                  </ul>
+                  <nav className={styles.pathLinks} aria-label={t.forMaster}>
+                    <Link href={"/" + activeLocale + "/masters"} prefetch={false} onClick={closePanel}>
+                      <Users size={16} aria-hidden="true" /><span>{t.findMaster}</span><ArrowRight size={14} aria-hidden="true" />
+                    </Link>
+                    <Link href={"/" + activeLocale + "/pro#profi-learning"} prefetch={false} onClick={closePanel}>
+                      <GraduationCap size={16} aria-hidden="true" /><span>{t.trainMaster}</span><ArrowRight size={14} aria-hidden="true" />
+                    </Link>
+                  </nav>
                   <p className={styles.masterNote}>{t.masterSteps}</p>
                   <button type="button" className={styles.masterAction} disabled={signingIn}
                     onClick={() => void startGoogleSignIn("my-practice")}>
-                    {t.becomeMaster}<ArrowRight size={15} aria-hidden="true" />
+                    {t.offerMaster}<ArrowRight size={15} aria-hidden="true" />
                   </button>
                 </section>
               </div>
@@ -331,8 +365,8 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                   </header>
                   <p className={styles.pathHint}>{t.ownHint}</p>
                   <nav className={styles.pathLinks} aria-label={t.forMe}>
-                    {personalActions.map(({ href, label, Icon }) =>
-                      <Link href={href} key={href} prefetch={false} onClick={closePanel}>
+                    {personalActions.map(({ id, href, label, Icon }) =>
+                      <Link href={href} key={id} data-space-link={id} prefetch={false} onClick={closePanel}>
                         <Icon size={16} aria-hidden="true" /><span>{label}</span>
                         <ArrowRight size={14} aria-hidden="true" />
                       </Link>)}
@@ -351,9 +385,17 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                         <ArrowRight size={14} aria-hidden="true" />
                       </Link>)}
                   </nav> : <>
+                    <nav className={styles.pathLinks} aria-label={t.forMaster}>
+                      <Link href={"/" + activeLocale + "/masters"} prefetch={false} onClick={closePanel}>
+                        <Users size={16} aria-hidden="true" /><span>{t.findMaster}</span><ArrowRight size={14} aria-hidden="true" />
+                      </Link>
+                      <Link href={"/" + activeLocale + "/pro#profi-learning"} prefetch={false} onClick={closePanel}>
+                        <GraduationCap size={16} aria-hidden="true" /><span>{t.trainMaster}</span><ArrowRight size={14} aria-hidden="true" />
+                      </Link>
+                    </nav>
                     <p className={styles.masterNote}>{t.masterSteps}</p>
                     <Link className={styles.masterAction} href={root + "/practice"} prefetch={false} onClick={closePanel}>
-                      {t.becomeMaster}<ArrowRight size={15} aria-hidden="true" />
+                      {t.offerMaster}<ArrowRight size={15} aria-hidden="true" />
                     </Link>
                   </>}
                 </section>
@@ -362,6 +404,22 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                 {t.full}<ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>}
+        {(status === "guest" || (status === "ready" && summary)) && <section className={styles.explorePanel}
+          aria-labelledby="hh-space-explore-title">
+          <h3 id="hh-space-explore-title" className={styles.exploreHeading}>{t.explore}</h3>
+          <nav className={styles.exploreTopics} aria-label={t.explore}>
+            {publicTopics.map(({ id, href, label, Icon }) => <Link key={id} href={href}
+              data-space-topic={id} prefetch={false} onClick={closePanel}>
+              <Icon size={16} aria-hidden="true" /><span>{label}</span>
+            </Link>)}
+          </nav>
+          <nav className={styles.exploreGuides} aria-label={t.coaching + " · " + t.temple}>
+            {publicGuidance.map(({ id, href, label, Icon }) => <Link key={id} href={href}
+              data-space-guide={id} prefetch={false} onClick={closePanel}>
+              <Icon size={16} aria-hidden="true" /><span>{label}</span><ArrowRight size={13} aria-hidden="true" />
+            </Link>)}
+          </nav>
+        </section>}
         <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.private}</p>
       </div>
     </dialog>

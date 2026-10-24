@@ -23,9 +23,14 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
   const destinations = getCompactNavigation(locale)
   const links = bar.locator(':scope > a')
   await expect(links).toHaveCount(6)
-  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim() }))), destinations.map(({ id, href, label }) => ({ id, href, label })))
+  const visibleLabels = {
+    en: {home:'Home',profile:'My Profile',coaching:'Coaching',insights:'Temple',support:'Support',pro:'Pro Study'},
+    ru: {home:'Домой',profile:'Профиль',coaching:'Коучинг',insights:'Храм',support:'Поддержка',pro:'Pro Study'},
+    es: {home:'Inicio',profile:'Mi perfil',coaching:'Coaching',insights:'Templo',support:'Apoyo',pro:'Pro Study'},
+  }
+  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim() }))), destinations.map(({ id, href }) => ({ id, href, label: visibleLabels[locale][id] })))
   await expect(bar.locator('a[aria-current="page"]')).toHaveCount(1)
-  await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'tests')
+  await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'profile')
 }
 
 export async function assertPublicCollectionChips(root, expect, locale, collections, width) {

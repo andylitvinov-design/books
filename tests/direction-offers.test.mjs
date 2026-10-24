@@ -4,18 +4,18 @@ import { readFile } from 'node:fs/promises'
 import { getTopicJourney } from '../lib/assessments/topic-journeys.js'
 import { activeCompactNavigationId, getCompactNavigation, getSiteNavigation } from '../lib/site-navigation-model.js'
 
-test('Energy / Love / Business is the one public navigation taxonomy in EN/RU/ES', () => {
+test('Legacy Energy / Love / Business categories remain available in More but not fixed bottom tabs', () => {
   assert.equal(getTopicJourney('love').id, 'relationships', 'No second questionnaire or course catalog')
   for (const locale of ['en', 'ru', 'es']) {
     const primary = getSiteNavigation(locale)
     const bottom = getCompactNavigation(locale)
-    assert.deepEqual(bottom.map(item => item.id), ['home','energy','love','business','books','pro'])
+    assert.deepEqual(bottom.map(item => item.id), ['home','profile','coaching','insights','support','pro'])
     for (const [id, slug] of [['energy','energy'],['love','love'],['business','business']]) {
       assert.equal(primary.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)
-      assert.equal(bottom.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)
-      assert.equal(activeCompactNavigationId('/' + locale + '/explore/' + slug), id)
+      assert.ok(!bottom.some(item => item.id === id), 'Topic remains outside fixed bottom bar')
+      assert.equal(activeCompactNavigationId('/' + locale + '/explore/' + slug), undefined)
     }
-    assert.equal(activeCompactNavigationId('/' + locale + '/explore/relationships'), 'love')
+    assert.equal(activeCompactNavigationId('/' + locale + '/explore/relationships'), undefined)
   }
 })
 
@@ -40,16 +40,22 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(route.includes('<DirectionExtras'))
   assert.ok(route.includes('<TopicJourneySelector'))
   assert.ok(home.includes("direction.id === 'relationships' ? 'love'"))
-  assert.ok(spanish.includes('<HomepageTopicJourneys locale="es" />'))
+  assert.ok(spanish.includes('<HomeMoreDisclosure locale="es" />'))
   assert.ok(!more.includes('<HomepageTopicJourneys locale='))
+  assert.ok(more.includes('data-home-topic-filter="energy"'))
+  assert.ok(more.includes('data-home-topic-filter="business"'))
   assert.ok(site.includes("id: 'services'"))
-  assert.ok(site.includes("id: 'academy'"))
+  // The old hard-coded Academy nav item was replaced by the canonical
+  // Courses item; it still resolves to the Academy catalog.
+  const model = await readFile('lib/site-navigation-model.js', 'utf8')
+  assert.ok(site.includes("'library', 'courses', 'events'"))
+  assert.ok(model.includes("courses: 'academy'"))
 })
 
 
 test('all course CTAs open a real existing learning route, not the tests picker again', async () => {
   const cards = await readFile('components/direction-offers.tsx','utf8')
-  assert.match(cards, /direction === 'business'\s*\?\s*'\/' \+ appLocale \+ '\/app\/business'/)
+  assert.match(cards, /direction === 'business'\s*\?\s*'\/' \+ locale \+ '\/coaching'/)
   assert.match(cards, /: '\/' \+ locale \+ '\/courses\/antistress'/)
   assert.doesNotMatch(cards, /testHref \+ '&mode=course'/)
   assert.match(cards, /OPORA · Inner support/)

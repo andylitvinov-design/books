@@ -28,7 +28,7 @@ const constellationsEn: ServiceVideoMedia = {
   poster: path + "constellations-en-v1.webp",
   general: false,
 };
-/** One owner-supplied YouTube recording, reused on exactly three related landings. */
+/** Owner-selected public recording: one ID for three related service landings. */
 const constellationCase: ServiceVideoMedia = {
   video: { youtubeId: "sfVFOQNr2qk", language: "en", title: "Business Constellations" },
   poster: "/images/holistic-house/andy-about.png",
@@ -68,8 +68,7 @@ const homeopathyRu: ServiceVideoMedia = {
 };
 
 /**
- * Only previously approved public source videos and the owner-supplied
- * YouTube constellation example (2026-10-23). The latter is not a new render.
+ * Only already-approved public source videos.
  * The 4 YouTube IDs are the checked, previously published @shamanic_academy
  * mirrors of the exact HeyGen masters in defaults.js; do not reupload.
  * The EN method videos retain their approved HeyGen provider embeds and original stills.

@@ -186,7 +186,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const items: AcademyCourseItem[] = [
     {
       id: "academy-free-personal-coaching",
-      detailsHint: locale === "ru" ? "Самостоятельная короткая сессия. Ответы доступны только в вашем кабинете, живой специалист не участвует." : locale === "es" ? "Sesión privada autoguiada, no un coach humano ni una cita. Disponible en inglés." : "A short self-guided, private reflection. No live practitioner, booked meeting or AI messages.",
+      detailsHint: locale === "ru" ? "Самостоятельная короткая сессия. Ответы доступны только в вашем кабинете, живой специалист не участвует." : locale === "es" ? "Sesión privada autoguiada, no un coach humano ni una cita. Disponible en inglés." : "Compare self-guided models and personal coaching in the public lounge before deciding.",
       title: locale === "ru" ? "Личная коуч-сессия" : locale === "es" ? "Sesión personal de coaching" : "Personal Coaching Session",
       subtitle: locale === "ru" ? "ВОПРОС → 3 МОДЕЛИ · 10–30 МИН" : locale === "es" ? "PREGUNTA → 3 MODELOS" : "QUESTION → 3 MODELS · 10–30 MIN",
       description: locale === "ru"
@@ -194,12 +194,12 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
         : locale === "es"
           ? "Escribe tu pregunta, elige entre tres modelos y avanza paso a paso. La sesión privada está disponible en inglés."
           : "Enter your question, compare three suitable coaching models, then answer one simple question per screen.",
-      href: "/" + locale + "/explore/business",
-      courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/coaching",
+      href: "/" + locale + "/coaching",
+      courseHref: "/" + locale + "/coaching",
       image: "/images/holistic-house/books-library.webp",
-      duration: locale === "ru" ? "Сценарий на выбор · в своём темпе" : locale === "es" ? "3 modelos · en inglés" : "3 suggested models · at your pace",
+      duration: locale === "ru" ? "Сценарий на выбор · в своём темпе" : locale === "es" ? "Elige entre modelos gratis" : "3 suggested models · at your pace",
       free: true,
-      actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Start in English" : "Start session",
+      actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Elegir sesión" : "Start session",
     },
     {
       id: "academy-free-egyptian-goal-planning",
@@ -208,7 +208,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
       subtitle: locale === "ru" ? "11 ВОПРОСОВ · ОДИН НА ЭКРАН" : locale === "es" ? "11 PREGUNTAS · UNA POR PANTALLA" : "11 QUESTIONS · ONE PER SCREEN",
       description: locale === "ru" ? "Путь от желания через Ка, Ба, Иб, Сах, Хайбит, Ху, Рен и Секхем к ближайшему шагу." : locale === "es" ? "Explora una meta a través de ocho niveles simbólicos de la tradición egipcia, a tu ritmo." : "Reflect on a goal through eight symbolic Egyptian levels, from desire and values to a next step.",
       href: "/" + locale + "/academy/coaching/egyptian",
-      courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/coaching/egyptian" + (locale === "es" ? "?lang=es" : ""),
+      courseHref: "/" + locale + "/coaching#coaching-tradition-egyptian",
       image: "/academy/reiki-yggdrasil/source/temple-studies.png",
       duration: locale === "ru" ? "11 экранов · в своём темпе" : locale === "es" ? "11 pantallas · a tu ritmo" : "11 screens · at your pace",
       free: true,
@@ -221,7 +221,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
       subtitle: locale === "ru" ? "10 ВОПРОСОВ · ОДИН НА ЭКРАН" : locale === "es" ? "10 PREGUNTAS · UNA POR PANTALLA" : "10 QUESTIONS · ONE PER SCREEN",
       description: locale === "ru" ? "Эпитемия, Тюмос, Логос, Ноос, Эйдос, Идея, Даймон, Телос: от желания к действиям." : locale === "es" ? "Del deseo y el coraje a la razón, la visión ideal y un próximo paso concreto." : "Move from desire and courage through order, meaning, ideal form and a concrete next step.",
       href: "/" + locale + "/academy/coaching/greek",
-      courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/coaching/greek" + (locale === "es" ? "?lang=es" : ""),
+      courseHref: "/" + locale + "/coaching#coaching-tradition-greek",
       image: "/academy/reiki-yggdrasil/source/temple-studies.png",
       duration: locale === "ru" ? "10 экранов · в своём темпе" : locale === "es" ? "10 pantallas · a tu ritmo" : "10 screens · at your pace",
       free: true,

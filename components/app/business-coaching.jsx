@@ -408,7 +408,7 @@ export default function BusinessCoaching({locale='en',accountId}){
   if(!course && BUSINESS_COURSE_INTAKE_PAUSED)return <section className={'hh-panel '+styles.root} data-business-coaching data-business-admissions-paused data-wood-mode={woodMode}>
     <h1>{lang==='ru'?'90-дневная программа на паузе':'The 90-day programme is paused'}</h1>
     <p>{lang==='ru'?'Мы временно закрыли новые записи. Уже сохранённые программы и результаты не удалены.':'New starts are temporarily closed. Existing private programmes and saved results are preserved.'}</p>
-    <Link className={styles.primary} href={'/'+lang+'/app/coaching'}>{lang==='ru'?'Начать личную коуч-сессию':'Start a Personal Coaching Session'}<ArrowRight size={17}/></Link>
+    <Link className={styles.primary} href={'/'+lang+'/coaching'}>{lang==='ru'?'Начать личную коуч-сессию':'Start a Personal Coaching Session'}<ArrowRight size={17}/></Link>
     <Link href={'/'+lang+'/app/course?view=courses'}>{lang==='ru'?'Мои курсы':'My Courses'}</Link>
   </section>
   if(!course)return <section className={'hh-panel '+styles.root} data-business-coaching

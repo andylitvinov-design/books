@@ -20,14 +20,15 @@ const allow=new Set([
   'identity_mismatch','not_paired','sender_disabled',
   'uncertain_previously_attempted','delivery_unconfirmed','already_started',
   'setup_unavailable',
-  'council_sent','council_duplicate','council_missing_keys',
+  'council_sent','council_partial','council_duplicate','council_missing_keys',
   'council_no_archive','council_not_paired','council_unavailable',
   'gemini_free_saved','mistral_free_saved','gemini_disabled','mistral_disabled',
   'free_setup_confirmation_required','free_setup_invalid_key',
   'free_setup_unavailable'
 ])
 const destination=status=>'/admin/telegram-setup?result='+
-  encodeURIComponent(allow.has(status)?status:'setup_unavailable')
+  encodeURIComponent(allow.has(status)?status:'setup_unavailable')+
+  (status.startsWith('council_')?'#daily-council-report':'')
 
 // Next.js Server Actions automatically require the same origin (Origin vs Host).
 // The admin signed HttpOnly session is checked *again* at the mutation boundary.

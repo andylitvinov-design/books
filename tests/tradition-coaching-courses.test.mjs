@@ -97,11 +97,11 @@ test('both Academy and My Courses contain independent entry and resume links',()
  const courses=source('components/app/my-courses-dashboard.jsx')
  for(const slug of ['egyptian','greek']){
    assert.match(academy,new RegExp('academy-free-'+slug+'-goal-planning'))
-   assert.match(academy,new RegExp('/app/coaching/'+slug))
+   assert.match(academy,new RegExp('coaching#coaching-tradition-'+slug))
    assert.match(courses,new RegExp("id:'"+slug+"'"))
    assert.match(courses,new RegExp('data-tradition-course-card'))
  }
- assert.match(academy,/\?lang=es/)
+ assert.doesNotMatch(academy,/\?lang=es/)
  assert.match(courses,/data-personal-coaching-course-link/)
  assert.match(courses,/data-ancient-coaching-courses/)
 })

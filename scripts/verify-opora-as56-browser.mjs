@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { oporaExperienceGuide, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaExperienceGuide, oporaExperienceDepth, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -67,14 +67,18 @@ try {
           const r = node.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
         }),
         stage: (() => { const node = document.querySelector('[data-opora-experience-first] main');
-          return { client: node.clientWidth, scroll: node.scrollWidth } })(),
+          return { client: node.clientWidth, scroll: node.scrollWidth,
+            clientHeight: node.clientHeight, scrollHeight: node.scrollHeight } })(),
         panel: (() => { const node = document.querySelector('[data-opora-current-screen]');
           return node ? { client: node.clientHeight, scroll: node.scrollHeight } : null })(),
       }))
       assert.ok(bounds.document <= width + 1, `${locale}/${width}/${state}: document overflows`)
       assert.ok(bounds.stage.scroll <= bounds.stage.client + 1, `${locale}/${width}/${state}: stage overflows horizontally`)
-      if (['why','story','options','settle'].includes(state) && bounds.panel)
+      if (['support','why','story','options','settle','recapPractice'].includes(state) && bounds.panel) {
         assert.ok(bounds.panel.scroll <= bounds.panel.client + 2, `${locale}/${width}/${state}: teaching step requires vertical scrolling`)
+        assert.ok(bounds.stage.scrollHeight <= bounds.stage.clientHeight + 2,
+          `${locale}/${width}/${state}: stage requires vertical scrolling`)
+      }
       for (const r of bounds.fixed) assert.ok(r.left >= -1 && r.right <= width + 1 && r.top >= -1 && r.bottom <= bounds.height + 1,
         `${locale}/${width}/${state}: header/footer clipped`)
       await expect(button(t.pause)).toBeVisible()
@@ -108,6 +112,12 @@ try {
         await expect(page.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
         await assertBounds(moment)
       }
+      await click(t.next)
+      await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
+      await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
+      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaExperienceDepth(5,locale).why)
+      await assertBounds('recapPractice')
+      if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
@@ -166,7 +176,7 @@ try {
             await recapPage.getByRole('button', { name: t.next, exact: true }).click()
           }
           assert.ok(found, locale + '/' + width + ': recap must be reachable')
-          for (const moment of ['recap', 'recapPractice', 'recapNext', 'recapFeedback']) {
+          for (const moment of ['recap', 'recapNext', 'recapFeedback']) {
             await expect(recapPage.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
             const size = await recapPage.evaluate(() => {
               const panel = document.querySelector('[data-opora-current-screen]')

@@ -24,6 +24,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
+      - name: Verify all 14 × EN/RU/ES second-screen skill explanations and unchanged save flow
+        run: node --test tests/opora-support-second-screen.test.mjs
       - name: Verify pinned rating polarity, legacy 0–10 charts and clear question labels
         run: node --test tests/my-course-moment-trends.test.mjs tests/opora-baseline-presence-background.test.mjs tests/opora-as57-calm-morning.test.mjs
       - name: Verify all 70 lessons × 15 screens, practical interactions and baseline routing
@@ -34,6 +36,8 @@ jobs:
         run: node --test tests/opora-all-days-state-journey.test.mjs tests/opora-day-one-inner-state.test.mjs tests/opora-day-one-interactive.test.mjs tests/opora-practice-first-session.test.mjs tests/opora-antistress-jsx-parse.test.mjs
       - name: Verify Anti-Stress AS5 curriculum, seven compact screens and public blueprints
         run: node --test tests/opora-seven-skills-v5.test.mjs tests/opora-course-blueprint-methods.test.mjs tests/opora-antistress-course-landing.test.mjs tests/opora-antistress-complete-course.test.mjs tests/opora-15-stage1.test.mjs
+      - name: Verify first-week course preview and explicit enrolment before OAuth or server start
+        run: node --test tests/opora-first-week-enrolment-consent.test.mjs
       - name: Verify online learning methodology and no-Skip answers
         run: node --test tests/opora-as5-2-methodology-contract.test.mjs tests/opora-as53-210-guided-feedback-contract.test.mjs tests/opora-as54-online-learning-no-skip-contract.test.mjs
       - name: Verify versioned V6 fifteen-screen lessons, safe mobile player, strict evidence and V3/V5 compatibility

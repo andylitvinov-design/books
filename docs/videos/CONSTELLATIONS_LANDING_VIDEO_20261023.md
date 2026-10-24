@@ -11,7 +11,7 @@ situation review / diagnosis**. Do not generate or upload another copy.
 2. `/{locale}/services/business-consulting` — includes the existing paid Business Mapping & Goal Activation / constellation service (no duplicate offer or route).
 3. `/{locale}/services/free-situation-review` — existing free written express situation-review landing (not clinical diagnosis).
 
-All placements reuse `ServiceVideoShowcase` → `SiteVideoPlayer` with the
+Personal and business landings reuse `ServiceVideoShowcase` → `SiteVideoPlayer`; the free-review page places the same `SiteVideoPlayer` directly in the **first hero scene**. All three read the
 `constellation-case` topic and **one** YouTube ID stored in
 `data/service-video-library.ts`. The owner's public portrait serves as the
 local placeholder. Iframe created only on user Play; YouTube watch link remains
@@ -38,3 +38,8 @@ are not overridden. No billing, lead, CRM, or personal-record handling changes.
   report content or attach tracking parameters to the video URL.
 
 Tracking: [books #990](https://github.com/andylitvinov-design/books/issues/990).
+
+## 24 Oct compact mobile redesign
+- The free-review hero starts with the same YouTube video, 16:9 poster, and direct source link before any long explanation; no duplicate video further down.
+- Mobile 320–430px: brief localized message, single 44px-class CTA, detailed content in following compact scenes, and shorter-phone CSS adaptation.
+- Existing consented CRM capture remains unchanged; no new renderer or upload; iPhone Play and external provider playback still need real live QA.

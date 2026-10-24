@@ -22,7 +22,10 @@ test("one owner-supplied YouTube video serves exactly the intended three service
 
   assert.match(personal, /service === "systemic-constellations" \? "constellation-case"/);
   assert.match(business, /<ServiceVideoShowcase topic="constellation-case" locale=\{locale\} id="business-constellation-video" \/>/);
-  assert.match(free, /kind === "situation" \? <div className=\{styles.videoWrap\}><ServiceVideoShowcase topic="constellation-case" locale=\{locale\}/);
+  assert.match(free, /getServiceVideoMedia\("constellation-case", locale\)/);
+  assert.match(free, /data-featured-constellations-video/);
+  assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
+  assert.doesNotMatch(free, /<ServiceVideoShowcase topic="overview"/);
   assert.equal((showcase.match(/"constellation-case": \{/g) ?? []).length, 3,
     "the three locale descriptions must explain the video without inventing a transcript");
   assert.match(library, /language: "en", title: "Business Constellations"/);
@@ -36,4 +39,20 @@ test("all three placements reuse the existing click-to-load video player and kee
   assert.match(player, /onClick=\{\(\) => \{ setShowRecovery\(false\); setPlaying\(true\); \}\}/);
   assert.match(player, /youtube-nocookie.com\/embed\/\$\{playbackYouTubeId\}/);
   assert.match(player, /const externalLink = internalOnly \? null/);
+});
+
+test("mobile free-review starts with the recording, with a compact single-screen CTA", () => {
+ const free = read("components/free-entry-landing.tsx");
+ const css = read("components/free-entry-landing.module.css");
+ const video = free.indexOf("data-featured-constellations-video");
+ assert.ok(video > free.indexOf('aria-labelledby="free-entry-title"') && video < free.indexOf('id="what-you-get"'));
+ assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
+ assert.match(free, /siteVideoWatchUrl\(situationVideo\.video\)/);
+ assert.match(free, /Один вопрос и простой рисунок/);
+ assert.match(free, /Una pregunta y un dibujo sencillo/);
+ assert.match(css, /\.situationHero \.situationVideo\{order:0/);
+ assert.match(css, /\.situationHero \.heroCopy\{order:1/);
+ assert.match(css, /\.situationHero \.primary\{width:100%/);
+ assert.match(css, /@media\(max-width:600px\) and \(max-height:730px\)/);
+ assert.match(css, /\.situationScene\{min-height:0/);
 });

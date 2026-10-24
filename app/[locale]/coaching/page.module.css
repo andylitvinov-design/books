@@ -1,0 +1,11 @@
+/* Full-bleed only for the public coaching lounge. Keep standard site header
+   spacing while the hero and session catalogue use the entire phone width. */
+.fullWidth{width:100%;max-width:none;min-width:0;margin:0;min-height:100vh;
+  padding:0;background:#f7f1e8;overflow-x:clip}
+.header{width:100%;max-width:1280px;margin-inline:auto;
+  padding-inline:clamp(14px,3vw,32px)}
+.header :global(.house-header){max-width:none}
+@media(max-width:600px){
+ .fullWidth{width:100%;max-width:100%;margin:0;padding:0;overflow-x:clip}
+ .header{padding-inline:10px}
+}

@@ -7,6 +7,13 @@ import type { PublicLocale } from '@/lib/public-locales';
 import { activeCompactNavigationId, getCompactNavigation, isPublicTestDiscoveryPath, navigationCopy } from '@/lib/site-navigation-model';
 import { useNavigationLocale } from './use-navigation-locale';
 
+// Compact two-line visual labels. Full translated names remain on aria-label.
+const mobileBarLabels = {
+  en: { home: 'Home', profile: 'My Profile', coaching: 'Coaching', insights: 'Temple', support: 'Support', pro: 'Pro Study' },
+  ru: { home: 'Домой', profile: 'Профиль', coaching: 'Коучинг', insights: 'Храм', support: 'Поддержка', pro: 'Pro Study' },
+  es: { home: 'Inicio', profile: 'Mi perfil', coaching: 'Coaching', insights: 'Templo', support: 'Apoyo', pro: 'Pro Study' },
+} as const;
+
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname();
   const locale = useNavigationLocale(initialLocale);
@@ -84,14 +91,14 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {/* Keep six high-priority destinations on the bottom bar, including Pro. Free tests are on the Pro page;
-        Cabinet remains in the top header, with the full Library in the expanded menu. */}
+    {/* Six visitor journeys; topic directions stay in the expanded menu. My Profile also links to free tests. */}
     {mobileItems.map(item => {
       const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];
-      const content = <><Icon aria-hidden="true" /><span>{item.label}</span></>;
+      const shortLabel = mobileBarLabels[locale][item.id as keyof typeof mobileBarLabels.en];
+      const content = <><Icon aria-hidden="true" /><span>{shortLabel}</span></>;
       return item.external
         ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{content}</a>
-        : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined} data-home-active={item.id === 'home' && current === 'home' ? 'true' : undefined}>{content}</Link>;
+        : <Link key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} prefetch={false} aria-current={current === item.id ? 'page' : undefined} data-home-active={item.id === 'home' && current === 'home' ? 'true' : undefined}>{content}</Link>;
     })}
   </nav>;
 }

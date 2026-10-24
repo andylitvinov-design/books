@@ -1,0 +1,86 @@
+name: HH Ideas & Coaching public release
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - '.github/workflows/hh-ideas-coaching-public.yml'
+      - 'components/ideas-discovery.tsx'
+      - 'components/tests-coaching-switchboard.tsx'
+      - 'components/tests-coaching-switchboard.module.css'
+      - 'components/ideas-discovery.module.css'
+      - 'components/public-coaching-discovery.jsx'
+      - 'components/public-coaching-discovery.module.css'
+      - 'app/[locale]/coaching/page.jsx'
+      - 'app/[locale]/coaching/page.module.css'
+      - 'app/[locale]/coaching/session/**'
+      - 'lib/coaching/public-coaching-catalog.js'
+      - 'lib/coaching/public-session-art.js'
+      - 'lib/app/personal-coaching-catalog.js'
+      - 'lib/site-navigation-model.js'
+      - 'lib/public-locales.ts'
+      - 'app/[locale]/books/page.tsx'
+      - 'app/es/books/page.tsx'
+      - 'tests/ideas-guidance.test.mjs'
+      - 'tests/tests-coaching-switchboard.test.mjs'
+      - 'scripts/verify-ideas-mobile-browser.mjs'
+      - 'tests/ideas-mobile-ui.test.mjs'
+      - 'tests/public-coaching-discovery.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-ideas-coaching-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  public-coaching-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused Ideas and Coaching regression tests
+        run: |
+          node --check lib/personal-coaching/model-matcher.js
+          node --check lib/app/personal-coaching-catalog.js
+          node --check lib/coaching/public-coaching-catalog.js
+          node --check lib/coaching/public-session-art.js
+          node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs
+      - name: Lint modified application components
+        run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts
+      - name: TypeScript noEmit
+        run: npx --no-install tsc --noEmit
+      - name: Next.js production build
+        run: npm run build
+      - name: Install isolated mobile browsers
+        run: |
+          mkdir -p /tmp/hh-ideas-playwright
+          npm install --prefix /tmp/hh-ideas-playwright --no-audit --no-fund --ignore-scripts playwright@1.63.0
+          /tmp/hh-ideas-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Real choice-first mobile journey in Chromium and WebKit (EN/RU/ES)
+        env:
+          HH_PLAYWRIGHT_PACKAGE: /tmp/hh-ideas-playwright/node_modules/playwright
+          HH_PUBLIC_QA_ORIGIN: http://127.0.0.1:3100
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/hh-ideas-next.log 2>&1 & SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3100/en/books >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-ideas-next.log; exit 1; fi
+          node scripts/verify-ideas-mobile-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ideas-mobile-choice-first
+          path: artifacts/ideas-mobile/
+          retention-days: 7
+          if-no-files-found: warn

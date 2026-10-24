@@ -39,13 +39,15 @@ test("free landings explain benefits before closing with one short capture", () 
   const hero = landing.indexOf('aria-labelledby="free-entry-title"');
   const outcome = landing.indexOf('id="what-you-get"');
   const process = landing.indexOf('id="how-it-works"');
-  const video = landing.indexOf('<ServiceVideoShowcase');
+  const video = landing.indexOf('data-featured-constellations-video');
   const final = landing.lastIndexOf("<CompactLeadCapture");
-  assert.ok(hero > 0 && hero < outcome && outcome < process && process < video && video < final);
+  assert.ok(hero > 0 && hero < video && video < outcome && outcome < process && process < final,
+    "The selected recording belongs in the first scene");
   assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
     "Only Wu Xing hides the redundant process section");
-  assert.match(landing, /kind === "situation" \? <div className=\{styles\.videoWrap\}/,
-    "Owner-selected constellation video is present on the written-review landing");
+  assert.match(landing, /data-featured-constellations-video/);
+  assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
+  assert.doesNotMatch(landing, /<ServiceVideoShowcase topic="overview"/);
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
@@ -74,7 +76,7 @@ test("all three locales explain real service advantages without health claims or
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
   for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
-    "Revisión escrita gratuita", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
+    "Revisión escrita gratuita", "Five Elements", "Пяти элементам", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
@@ -122,6 +124,10 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /@media\(max-width:360px\)/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /\.situationHero/);
+  assert.match(css, /\.situationScene/);
+  assert.match(css, /max-height:730px/);
+  assert.match(css, /aspect-ratio:16\/9/);
   assert.match(css, /:focus-visible/);
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);

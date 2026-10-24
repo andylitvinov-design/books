@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
-  GEMINI_MODEL,MISTRAL_DIRECT_MODEL,MISTRAL_STUDIO_ALIAS,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
+  GEMINI_MODEL,GEMINI_FREE_FALLBACK_MODEL,MISTRAL_DIRECT_MODEL,MISTRAL_STUDIO_ALIAS,modelSettings,freeMistral,chooseFreeMistral,publicReviewPrompt,
   reviewGemini,reviewMistral,inspectMistralStudioKey,reviewDailyCouncil,composeDailyCouncilTelegram
 } from '../lib/practitioners/council-free-models.mjs'
 import {pickPublicCouncilReports,readCouncilEvidence} from '../lib/practitioners/council-telegram-archive.mjs'
@@ -69,6 +69,49 @@ test('Gemini rejects quota and incomplete provider replies',async()=>{
     candidates:[{finishReason:'MAX_TOKENS',content:{parts:[{text:long}]}}]
   }))
   assert.equal(clipped.status,'error')
+})
+test('Gemini Free Tier retries an explicit 503 once on stable free 3.6 only',async()=>{
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  const paths=[]
+  const result=await reviewGemini(report,env,async url=>{
+    paths.push(String(url))
+    if(paths.length===1)return json({},503)
+    return json({candidates:[{
+      finishReason:'STOP',content:{parts:[{text:long}]}
+    }]})
+  },{retryDelayMs:0})
+  assert.equal(GEMINI_FREE_FALLBACK_MODEL,'gemini-3.6-flash')
+  assert.deepEqual(paths,[
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
+  ])
+  assert.equal(result.status,'ok')
+  assert.equal(result.model,GEMINI_FREE_FALLBACK_MODEL)
+})
+test('Gemini never retries 400, 403, 429, incomplete, or ambiguous timeout',async()=>{
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  for(const http of [400,403,429]){
+    let attempts=0
+    const r=await reviewGemini(report,env,async()=>{
+      attempts++
+      return json({},http)
+    },{retryDelayMs:0})
+    assert.equal(attempts,1)
+    assert.equal(r.status,'error')
+    assert.equal(r.reason,'HTTP '+http)
+  }
+  let calls=0
+  const timeout=await reviewGemini(report,env,async()=>{
+    calls++
+    const error=new Error('Timeout')
+    error.name='TimeoutError'
+    throw error
+  },{retryDelayMs:0})
+  assert.equal(calls,1)
+  assert.equal(timeout.status,'error')
+  assert.equal(timeout.reason,'timeout')
 })
 test('all OpenRouter catalog Mistral pricing fields must literally be zero',()=>{
   const free={id:'mistralai/mistral-small-3.2-24b-instruct:free',
@@ -335,4 +378,24 @@ test('Studio inference timeout or truncated output must not trigger a second pro
     'https://api.mistral.ai/v1/models',
     'https://api.mistral.ai/v1/chat/completions'
   ])
+})
+
+test('Gemini daily audit uses bounded free-first output and no retry on timeout',async()=>{
+  const source=readFileSync(new URL('../lib/practitioners/council-free-models.mjs',import.meta.url),'utf8')
+  assert.match(source,/const MAX_INPUT=11500/)
+  assert.match(source,/maxOutputTokens:options\.chat===true\?1600:2700/)
+  assert.match(source,/AbortSignal\.timeout\(26000\)/)
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic-key',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  let count=0
+  const reply=await reviewGemini(report,env,async(url,init)=>{
+    count++
+    assert.ok(String(url).endsWith('/models/gemini-3.8-flash:generateContent'))
+    const body=JSON.parse(init.body)
+    assert.equal(body.generationConfig.maxOutputTokens,2700)
+    assert.ok(body.contents[0].parts[0].text.length<=13300)
+    return json({candidates:[{finishReason:'STOP',content:{parts:[{text:long}]}}]})
+  })
+  assert.equal(reply.status,'ok')
+  assert.equal(count,1)
 })

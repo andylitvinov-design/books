@@ -22,9 +22,11 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - run: npm ci --no-audit --no-fund
+      # NODE_ENV=production is needed for the browser build, but our
+      # source-level render tests need devDependency 'typescript'.
+      - run: npm ci --include=dev --no-audit --no-fund
       - name: Energy Love Business inline focus regression
-        run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs
+        run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
       - name: Install Chromium and WebKit for isolated public acceptance
         run: |
           mkdir -p /tmp/hh-public-services-tools

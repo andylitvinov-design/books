@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, ShieldCheck, Sparkles } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
-import { ServiceVideoShowcase } from "@/components/service-video-showcase";
+import { SiteVideoPlayer } from "@/components/site-video-player";
+import { getServiceVideoMedia } from "@/data/service-video-library";
+import { siteVideoWatchUrl } from "@/lib/site-videos/model";
 import { PersonalTestimonials } from "@/components/personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-entry-landing.module.css";
@@ -360,6 +362,12 @@ const finalCopy = {
   },
 } as const;
 
+const situationFirstScreen = {
+  en: { lead: "One question and a simple drawing → a free personal written reflection. No call.", source: "Open on YouTube" },
+  ru: { lead: "Один вопрос и простой рисунок → бесплатный личный письменный разбор. Без звонка.", source: "Открыть на YouTube" },
+  es: { lead: "Una pregunta y un dibujo sencillo → reflexión personal gratuita por escrito. Sin llamada.", source: "Abrir en YouTube" },
+} as const;
+
 const serviceTitles = {
   tests: "Free test starting-point guidance",
   situation: "Free written Situation Review",
@@ -373,6 +381,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
   const final = finalCopy[locale][kind];
+  const situationVideo = kind === "situation" ? getServiceVideoMedia("constellation-case", locale) : null;
 
   return (
     <main className={styles.page} lang={locale} data-free-entry-landing={kind}>
@@ -383,12 +392,13 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           <span aria-hidden="true">/</span><span>{common.free}</span>
         </nav>
 
-        <section className={[styles.hero, kind === "dao" ? styles.daoHero : ""].filter(Boolean).join(" ")} aria-labelledby="free-entry-title">
+        <section className={[styles.hero, kind === "dao" ? styles.daoHero : "", kind === "situation" ? styles.situationHero : ""].filter(Boolean).join(" ")} aria-labelledby="free-entry-title">
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
             <span className={styles.badge}>{common.free}</span>
             <h1 id="free-entry-title">{t.title}</h1>
             <p className={styles.lead}>{t.lead}</p>
+            {kind === "situation" ? <p className={styles.shortLead}>{situationFirstScreen[locale].lead}</p> : null}
             {kind === "dao" ?
               <ul className={styles.daoBenefits} aria-label={locale === "ru" ? "Что вы получите" : locale === "es" ? "Qué recibirás" : "What you get"}>
                 {t.bullets.map((benefit) => <li key={benefit}><CheckCircle2 size={17} aria-hidden="true" /><span>{benefit}</span></li>)}
@@ -406,13 +416,23 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
           </div>
-          <figure className={styles.heroVisual}>
-            <Image src={images.hero} alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />
-            {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
-          </figure>
+          {situationVideo ? (
+            <div className={[styles.heroVisual, styles.situationVideo].join(" ")} data-featured-constellations-video>
+              <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal posterPriority fallbackPoster={situationVideo.poster} internalOnly />
+              <a className={styles.videoSource} href={siteVideoWatchUrl(situationVideo.video)} target="_blank" rel="noopener noreferrer"
+                aria-label={situationFirstScreen[locale].source + " (opens a new tab)"}>
+                {situationFirstScreen[locale].source}<ExternalLink size={13} aria-hidden="true" />
+              </a>
+            </div>
+          ) : (
+            <figure className={styles.heroVisual}>
+              <Image src={images.hero} alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />
+              {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
+            </figure>
+          )}
         </section>
 
-        <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
+        <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : "", kind === "situation" ? styles.situationScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
           <div className={styles.sceneImage}>
             <Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
@@ -428,7 +448,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </div>
         </section>
 
-        {kind !== "dao" ? <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
+        {kind !== "dao" ? <section className={[styles.scene, styles.processScene, kind === "situation" ? styles.situationScene : ""].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
           <div className={styles.sceneText}>
             <p className={styles.sectionLabel}>02 / {common.process}</p>
             <h2 id="free-process-title">{t.processTitle}</h2>
@@ -447,7 +467,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
 
         {kind === "situation" ? (
           <div className={styles.coachingLink}>
-            <Link href={"/" + locale + "/coaching"} prefetch={false} data-source="coaching-questionnaire">
+            <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
               {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
@@ -460,7 +480,6 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </details>
         ) : null}
 
-        {kind === "situation" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="constellation-case" locale={locale} id="service-video" /></div> : null}
         {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
 
         <CompactLeadCapture

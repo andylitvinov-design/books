@@ -3,91 +3,194 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
-const feature = read("components/home-featured-workspace.tsx");
+const component = read("components/home-featured-workspace.tsx");
 const css = read("components/home-featured-workspace.module.css");
+function catalog(name) {
+  const start = component.indexOf("const " + name + " = ") + ("const " + name + " = ").length;
+  const end = component.indexOf(" as const;", start);
+  assert.ok(start > 0 && end > start, name + " must exist");
+  return JSON.parse(component.slice(start, end));
+}
+const copy = catalog("copy");
+const photos = catalog("photos");
+const facts = catalog("offerDetails");
+const ids = JSON.parse(component.match(/const moduleIds: ModuleKey\[\] = (\[[^;]+\]);/)[1]);
+const expected = ["courses","personality","situation","coaching","alchemy","energy","master"];
 
-test("EN RU ES home keep one consistent place for five complete category screens", () => {
-  const enRu = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  for (const home of [enRu, es]) {
-    assert.match(home, /<HomeFeaturedWorkspace locale=/);
-    assert.match(home, /<HomeMasterPath locale=/);
-    const ordered = ["HomeSectionCarousel", "HomeFreeDiagnosisBanner",
-      "HomeConversationGuide", "HomePersonalSpaceCard", "HomeFeaturedWorkspace",
-      "HomepageTopicJourneys", "HomeMoreDisclosure", "HomeMasterPath"];
-    let previous = -1;
-    for (const name of ordered) {
-      const position = home.indexOf("<" + name);
-      assert.ok(position > previous, "Home preserves section order: " + name);
-      previous = position;
+test("seven ordered stages with unique media and one visible journey in EN/RU/ES", () => {
+  assert.deepEqual(ids, expected);
+  assert.match(component, /data-home-journey-count=\{moduleIds\.length\}/);
+  assert.match(component, /<h1 id="hh-home-features-title">/);
+  assert.match(component, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
+  for (const page of ["components/holistic-house-home.tsx","app/es/page.tsx"]) {
+    const home = read(page);
+    const tags = ["HomeSectionCarousel","HomeMoreDisclosure","HomeFeaturedWorkspace"];
+    let last = -1;
+    for (const tag of tags) {
+      const at = home.indexOf("<" + tag);
+      assert.ok(at > last, page + " ordering of " + tag);
+      last = at;
     }
+    assert.equal((home.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1);
+    for (const removed of ["HomeFreeDiagnosisBanner","HomePersonalSpaceCard","HomepageTopicJourneys","HomeMasterPath","HomeCoreMethods"])
+      assert.ok(!home.includes("<" + removed), page + " repeats " + removed);
   }
-  assert.match(feature, /type ModuleKey = "tests" \| "courses" \| "services" \| "learning" \| "master"/);
-  assert.match(feature, /moduleIds: ModuleKey\[\] = \["tests", "courses", "services", "learning", "master"\]/);
-  assert.match(feature, /moduleIds\.map\(\(id, index\) =>/);
-  assert.match(feature, /<section className=\{styles\.section\} data-home-module=\{id\}/);
-  for (const label of ["Tests", "Courses", "Services", "Learning", "Become a Master",
-    "Тесты", "Курсы", "Услуги", "Обучение", "Стать мастером",
-    "Pruebas", "Cursos", "Servicios", "Aprender", "Ser profesional"]) {
-    assert.ok(feature.includes(label), "Missing localized section: " + label);
-  }
+  for (const locale of ["en","ru","es"]) assert.deepEqual(Object.keys(copy[locale].modules), expected);
 });
 
-test("each category has two or three photographed offers, not tiny selector tiles", () => {
-  const sections = ["tests", "courses", "services", "learning", "master"];
+test("each of 14 offer cards has a clear primary CTA and independent accessible Details button", () => {
+  const size = [3,1,3,2,1,1,3];
+  for (const locale of ["en","ru","es"]) {
+    const list = [];
+    expected.forEach((stage, i) => {
+      const offers = copy[locale].modules[stage].offers;
+      assert.equal(offers.length, size[i], locale + " " + stage);
+      for (const o of offers) {
+        list.push(o.id);
+        assert.ok(o.title && o.body && o.cta, "No empty card text");
+        assert.ok(photos[o.id], "No photo " + o.id);
+        assert.ok(facts[locale][o.id]?.length > 210, locale + " missing a useful multi-sentence explanation: " + o.id);
+      }
+    });
+    assert.equal(new Set(list).size, 14);
+  }
+  for (const path of Object.values(photos)) assert.ok(existsSync(new URL("../public" + path, import.meta.url)), path);
+  assert.match(component, /data-home-module-action=\{offer\.id\}/);
+  assert.match(component, /data-home-offer-primary=\{offer\.id\}/);
+  assert.match(component, /data-home-offer-details=\{offer\.id\}/);
+  assert.match(component, /aria-controls=\{"home-offer-info-" \+ offer\.id\}/);
+  assert.match(component, /aria-expanded=\{expanded\}/);
+  assert.match(component, /onClick=\{\(\) => setExpandedOffer\(expanded \? null : offer\.id\)\}/);
+  assert.match(component, /hidden=\{!expanded\}/);
+  assert.match(component, /<Link href=\{hrefs\[offer\.id\]\} prefetch=\{false\} className=\{styles\.offerPrimary\}/);
+  assert.match(component, /<Image src=\{photos\[offer\.id\]\} alt="" fill unoptimized loading="lazy"/);
+  assert.match(component, /const \[expandedOffer, setExpandedOffer\] = useState<OfferId \| null>\(null\)/);
+  assert.match(component, /data-expanded=\{expanded \? "true" : "false"\}/);
+  assert.match(component, /className=\{styles\.offerContent\}/);
+  assert.match(component, /<h4 className=\{styles\.offerMoreTitle\}>\{detailLabels\[locale\]\.heading\}<\/h4>/);
+  assert.match(component, /className=\{styles\.offerMoreLink\}/);
+  assert.match(component, /aria-label=\{actionLabel\}/);
+  assert.match(component, /compactActions\[locale\]\[offer\.id\]/);
+  const controls = component.slice(component.indexOf('<div className={styles.offerControls}>'),
+    component.indexOf('</div>', component.indexOf('<div className={styles.offerControls}>')));
+  assert.ok(controls.indexOf('<button type="button"') < controls.indexOf('<Link href={hrefs[offer.id]}'),
+    'Details must come before the Request/Start action on the right of the photograph');
+});
+
+test("free labels stay free and paid requests never claim confirmed payments or appointments", () => {
+  for (const locale of ["en","ru","es"]) {
+    const byId = Object.fromEntries(expected.flatMap(id => copy[locale].modules[id].offers).map(x => [x.id,x.cta]));
+    for (const id of ["reiki","opora","profile","review","aiCoaching"])
+      assert.match(byId[id], /free|бесплатн|gratis/i, locale + " " + id + " should identify free entry");
+    assert.match(byId.therapist, /€50|50 €/);
+    assert.doesNotMatch(byId.alchemy + byId.energy + byId.businessConstellations, /бесплатн|gratis|\bfree\b/i);
+    assert.match(copy[locale].situationNote, /(?:not confirm booking|не является подтверждённой|no confirma)/);
+    assert.ok(copy[locale].masterNote.length > 70);
+  }
+  assert.doesNotMatch(component, /fetch\(|sendBeacon|autoEnroll|autoPublish|payment_success|localStorage|sessionStorage/);
+});
+
+test("free offer corner markers cover all seven sections without mislabeling paid or mixed-price cards", () => {
+  const definition = component.match(/const freeOfferIds: ReadonlySet<OfferId> = new Set\(\[([\s\S]*?)\]\);/);
+  assert.ok(definition, "Shared free-offer allowlist must be explicit");
+  const freeIds = [...definition[1].matchAll(/"([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(freeIds, ["reiki", "opora", "profile", "review", "aiCoaching"]);
+  const labelsMatch = component.match(/const freeBadgeLabels = (\{[^\n]+\}) as const;/);
+  assert.ok(labelsMatch, "All locales must be labeled");
+  const labels = Object.fromEntries([...labelsMatch[1].matchAll(/(en|ru|es): "([^"]+)"/g)].map(x => [x[1], x[2]]));
+  assert.deepEqual(labels, { en: "FREE", ru: "БЕСПЛАТНО", es: "GRATIS" });
   for (const locale of ["en", "ru", "es"]) {
-    const block = feature.slice(feature.indexOf("  " + locale + ": {"), locale === "es" ? feature.indexOf("} as const;", feature.indexOf("  es: {")) : feature.indexOf("  " + (locale === "en" ? "ru" : "es") + ": {"));
-    for (const id of sections) {
-      const entry = block.slice(block.indexOf("      " + id + ": {"));
-      const end = entry.indexOf("      },");
-      const count = (entry.slice(0, end).match(/\{ id: "/g) || []).length;
-      assert.ok(count >= 2 && count <= 3, locale + "/" + id + " has " + count + " offers");
+    const offers = expected.flatMap(stage => copy[locale].modules[stage].offers);
+    assert.equal(offers.length, 14);
+    for (const offer of offers) {
+      const actualFree = freeIds.includes(offer.id);
+      if (actualFree) assert.match(offer.cta, /free|бесплатн|gratis/i, locale + " " + offer.id);
+      if (["academy", "therapist", "businessConstellations", "constellations", "alchemy", "energy", "pro"].includes(offer.id))
+        assert.equal(actualFree, false, locale + " " + offer.id + " is paid or mixed-price");
     }
   }
-  assert.match(feature, /<Image src=\{photos\[offer\.id\]\} alt="" fill unoptimized loading="lazy"/);
-  assert.match(feature, /className=\{styles\.photo\}/);
-  assert.match(feature, /className=\{styles\.offerBody\}/);
-  assert.match(feature, /data-home-module-action=\{offer\.id\}/);
-  assert.doesNotMatch(feature, /aria-pressed=|setSelected|data-home-module-grid|data-home-module-detail/);
-  assert.doesNotMatch(css, /grid-template-columns: repeat\(5|grid-template-columns: repeat\(2/);
-  assert.match(css, /\.section \{/);
-  assert.match(css, /100svh/);
-  assert.match(css, /@media \(max-width: 640px\)/);
-  assert.match(css, /max-width: 350px/);
-  assert.match(css, /:focus-visible/);
-  assert.match(css, /prefers-reduced-motion/);
+  assert.match(component, /const isFree = freeOfferIds\.has\(offer\.id\)/);
+  assert.match(component, /data-home-offer-free=\{isFree \? "true" : undefined\}/);
+  assert.match(component, /\{isFree && <span className=\{styles\.offerFreeBadge\}>\{freeBadgeLabels\[locale\]\}<\/span>\}/);
+  assert.match(css, /\.offerFreeBadge\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?right: 0;/);
+  assert.match(css, /\.offer\[data-home-offer-free="true"\] \.offerBody/);
+  assert.match(css, /@media \(max-width: 640px\)[\s\S]*?\.offerFreeBadge/);
+  assert.match(css, /background: #be2940/);
+  assert.match(css, /color: #fff/);
 });
 
-test("all offers use live existing routes, no fake checkout or automatic leads", () => {
-  for (const path of [
-    "/client/tests?focus=stress", "/client/tests?focus=resources", "/client/tests",
-    "/courses/antistress", 'accountRoot + "/business"',
-    "/services/free-situation-review", "/services#consultation",
-    "/services/systemic-constellations", "/academy/principles-of-energywork/learn",
-    "/academy/egyptian-priesthood", "/academy", "/pro",
-    "/practice?panel=services", "/practice?panel=materials&materialTab=courses",
-  ]) assert.ok(feature.includes(path), "Missing existing route: " + path);
-  for (const key of ["review", "consultation", "reiki", "egypt", "pro", "service", "course"]) {
-    assert.ok(feature.includes(key + ": \"/images/holistic-house/"));
-  }
-  for (const path of [...feature.matchAll(/: "(\/images\/holistic-house\/[^"]+)"/g)].map(hit => hit[1])) {
-    assert.ok(existsSync(new URL("../public" + path, import.meta.url)), "Missing local photo " + path);
-  }
-  assert.doesNotMatch(feature, /fetch\(|axios|sendBeacon|autoEnroll|payment_success|localStorage|sessionStorage/);
+test("private routes are guarded and Spanish public content uses English account fallback", () => {
+  for (const dest of ["/academy/principles-of-energywork/learn","/courses/antistress",
+    "/client/tests","/personality-profiles","/portrait","/portfolio#hh-development-program","/services/free-situation-review",
+    "/services/business-consulting","/services/systemic-constellations","/coaching",
+    "/services#consultation","/services/alchemy-of-soul","/services/remote-energy-support",
+    "/pro","/practice?panel=services","/practice?panel=materials&materialTab=courses"])
+    assert.ok(component.includes(dest), dest);
+  assert.match(component, /const signedIn = space\?\.status === "ready" && Boolean\(space\.summary\)/);
+  assert.match(component, /locale === "es" \? "en" : locale/);
+  assert.match(component, /profile: "\/" \+ locale \+ "\/personality-profiles"/);
+  assert.match(component, /const actionLabel = offer\.cta/);
+  assert.match(component, /\{signedIn && \(/);
+  assert.match(component, /data-home-reports-cta/);
+  assert.match(component, /data-home-development-cta/);
+  assert.doesNotMatch(component, /medicalResults|privateAnswers|testAnswers|symptomScores/);
 });
 
-test("private account links still require a signed-in summary, ES public links stay translated", () => {
-  assert.match(feature, /const signedIn = space\?\.status === "ready" && Boolean\(space\.summary\)/);
-  assert.match(feature, /locale === "es" \? "en" : locale/);
-  assert.match(feature, /id === "tests" && signedIn/);
-  assert.match(feature, /myCourses: myCoursesHref/);
-  assert.match(feature, /offer.id === "myCourses" && !signedIn/);
-  assert.match(feature, /\{signedIn && \(/);
-  assert.match(feature, /data-home-reports-cta/);
-  assert.match(feature, /data-home-development-cta/);
-  assert.match(feature, /\/portrait#personal-reports/);
-  assert.match(feature, /\/portfolio#hh-development-program/);
-  assert.match(feature, /t\.serviceNote/);
-  assert.match(feature, /t\.masterNote/);
-  assert.doesNotMatch(feature, /score|symptoms|medicalResults|privateAnswers|testAnswers|diagnosis/);
+test("mobile actions are inline, compact, and accessible for EN/RU/ES at 320–430px", () => {
+  const start = css.indexOf("@media (max-width: 640px)");
+  const narrowAt = css.indexOf("@media (max-width: 350px)");
+  assert.ok(start >= 0 && narrowAt > start);
+  const mobile = css.slice(start, narrowAt);
+  const narrow = css.slice(narrowAt);
+  assert.ok(mobile.includes(".offerControls { display: grid; grid-template-columns: max-content minmax(0, 1fr);"),
+    "Details and Start must occupy two columns in one mobile row");
+  assert.doesNotMatch(mobile, /\.offerControls \{[^}]*flex-direction: column/);
+  assert.ok(mobile.includes(".offerSecondary { align-self: stretch; min-width: 0; min-height: 44px;"));
+  assert.ok(mobile.includes(".offerPrimary { align-self: stretch; width: 100%; min-width: 0; min-height: 44px;"));
+  assert.ok(mobile.includes("min-height: 158px;"));
+  assert.ok(mobile.includes(".photo { align-self: stretch; height: auto; min-height: 144px;"));
+  assert.ok(narrow.includes("min-height: 142px;"));
+  assert.ok(narrow.includes(".photo { min-height: 130px; }"));
+  assert.ok(narrow.includes(".offerControls { gap: 4px; }"));
+  assert.ok(component.includes("aria-label={expanded ? detailLabels[locale].close : detailLabels[locale].open}"));
+  assert.ok(component.includes("detailLabels[locale].mobileClose"));
+  for (const text of ['mobileClose: "Close"', 'mobileClose: "Скрыть"', 'mobileClose: "Cerrar"']) {
+    assert.ok(component.includes(text), text);
+  }
+  const compact = catalog("compactActions");
+  for (const locale of ["en", "ru", "es"]) {
+    assert.equal(Object.keys(compact[locale]).length, 18);
+    for (const [id, label] of Object.entries(compact[locale])) {
+      assert.ok(label.length <= 12, locale + "/" + id + " exceeds narrow mobile label limit");
+    }
+  }
+  assert.equal(compact.en.reiki, "Start free");
+  assert.equal(compact.en.opora, "Start free");
+  assert.equal(compact.en.aiCoaching, "Start free");
+  assert.equal(compact.ru.reiki, "Начать");
+  assert.equal(compact.es.reiki, "Empezar");
 });
+
+test("full-height photo stays left and Details → Request stays right at 320–430px", () => {
+  for (const needle of [
+    ".offerContent", ".offerControls", ".offerPrimary", ".offerSecondary",
+    ".offerMore[hidden]", ".offerMoreLink", "min-height: 44px", "max-height: none",
+    'grid-template-areas: "photo content"',
+    'grid-template-areas: "photo content" "more more"',
+    "@media (max-width: 640px)", "@media (max-width: 350px)",
+    "prefers-reduced-motion", ":focus-visible", "overflow-wrap: anywhere",
+    ".photo { align-self: stretch; height: auto;",
+    ".offerControls { display: grid; grid-template-columns: max-content minmax(0, 1fr);",
+    ".actionFull { display: none; }", ".actionCompact { display: inline; }"
+  ]) assert.ok(css.includes(needle), "Missing mobile geometry or accessibility: " + needle);
+  const mobile = css.slice(css.indexOf("@media (max-width: 640px)"),
+    css.indexOf("@media (max-width: 350px)"));
+  assert.doesNotMatch(mobile, /"buttons buttons"/,
+    "Mobile buttons must not detach below the photo");
+  assert.match(mobile, /\.offer\[data-expanded="true"\] \{ grid-template-areas: "photo content" "more more"/,
+    "The expanded detail panel is allowed below the two-column card");
+  assert.match(css, /\.offerSecondary\s*\{\s*order: 0;/);
+  assert.match(css, /\.offerPrimary\s*\{\s*order: 1;/);
+  assert.match(css, /\.offer\[data-expanded="true"\]/);
+  assert.doesNotMatch(css, /\.offerAction/);
+})

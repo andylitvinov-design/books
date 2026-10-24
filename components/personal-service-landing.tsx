@@ -86,6 +86,7 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
         <ServiceVideoShowcase
           locale={locale}
           topic={service === "psychohomeopathy" ? "homeopathy" : service === "imagery-therapy" ? "hypnotherapy" : service === "systemic-constellations" ? "constellation-case" : "constellations"}
+          variant={service === "imagery-therapy" && locale === "en" ? "psychotherapy-en" : "default"}
           id="service-video"
         />
 

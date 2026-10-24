@@ -4,6 +4,7 @@ import {redirect} from 'next/navigation'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {uiLocaleCookie} from '@/lib/ui-locale'
+import {getTorontoCompletedPeriod} from '@/lib/practitioners/daily-digest.mjs'
 import {getAppConfig} from '@/lib/app/config'
 import {ownerTelegramSetupStatus} from '@/lib/practitioners/telegram-owner-setup'
 import {modelSettings} from '@/lib/practitioners/council-free-models.mjs'
@@ -14,6 +15,7 @@ import {
   checkTelegramConnectionAction,connectAndTestTelegramAction
 } from './actions'
 import styles from './telegram-setup.module.css'
+import {SendDailyCouncilButton} from './send-daily-council-button'
 
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -97,10 +99,16 @@ export default async function TelegramSetupPage({searchParams}){
     ?resultNotes.setup_unavailable[lang]
     :returned?.[lang]
   const canCheck=state.token_saved&&!unavailable
-  // The main ChatGPT daily report is always deliverable when archived:
-  // no Gemini/Mistral Free Tier attestation is required for Telegram transport.
+  const todayToronto=getTorontoCompletedPeriod().today
+  const councilToday=state.council?.date===todayToronto
+  const acceptedToday=councilToday&&state.council?.status==='accepted'
+  const activeSendingToday=councilToday&&state.council?.active_claim===true
+  const dailyResult=result.startsWith('council_')?displayResult:null
+  // Gemini/Mistral errors do not block an honest ChatGPT/public HTML report.
+  // A report accepted by Telegram today is never re-sent by the owner button.
+  // Stale >15 minute DB claims are retryable by the existing atomic receipt.
   const canCouncil=canCheck&&state.pairing==='paired'&&state.telegram_enabled&&
-    state.council?.status!=='sending'
+    !acceptedToday&&!activeSendingToday
   const canSend=canCheck&&state.telegram_enabled&&!state.test_accepted&&
     !['sending','uncertain'].includes(state.test)
 
@@ -127,7 +135,7 @@ export default async function TelegramSetupPage({searchParams}){
             <dd>{state.telegram_enabled?(ru?'Разрешена только после проверки получателя':'Only with verified recipient'):
               ru?'Выключена':'Disabled'}</dd></div>
         </dl>
-        {displayResult&&<p className={styles.result} role="status">{displayResult}</p>}
+        {displayResult&&!dailyResult&&<p className={styles.result} role="status">{displayResult}</p>}
         {state.test==='uncertain'&&<p className={styles.warning} role="status">
           {ru?'Предыдущий тест мог быть доставлен. Повтор заблокирован до проверки журнала.':
             'The previous attempt might have delivered. No repeat until reviewed.'}
@@ -319,11 +327,40 @@ export default async function TelegramSetupPage({searchParams}){
             {ru?'Можно отправить отчёт ChatGPT без подключения Mistral и Gemini. Ответы независимых моделей добавляются только после подтверждения бесплатных тарифов и реальной проверки API. Повтор того же отчёта не отправляется.':
               'You can send a ChatGPT report without Gemini or Mistral credentials. Independent model answers are included only after verified free-tier setup and real API responses. The same daily report cannot be resent.'}
           </p>
-          <form action={sendDailyCouncilReportAction} className={styles.sendForm}>
-            <button type="submit" className={styles.primary} disabled={!canCouncil}>
-              {ru?'Отправить доступный отчёт сегодня':'Send available daily report now'}
-            </button>
-          </form>
+          <div id="daily-council-report" className={styles.sendPanel}>
+            {dailyResult&&<p className={styles.result} role="status">{dailyResult}</p>}
+            {acceptedToday
+              ?<div className={styles.sentNotice} role="status">
+                <strong>{ru?'Сегодняшний отчёт принят Telegram':'Today’s report was accepted by Telegram'}</strong>
+                <p>{'ChatGPT: '+state.council.chatgpt+' · Gemini: '+state.council.gemini+
+                  ' · Mistral: '+state.council.mistral}</p>
+                {(state.council.gemini!=='ok'||state.council.mistral!=='ok')&&
+                  <p>{ru?'Заключения моделей без подтверждённого ответа не включены. Отправка принятого отчёта не повторяется.':
+                    'Unconfirmed model responses were not included. An accepted daily report is never resent.'}</p>}
+                <a href="https://t.me/Andydotbot" target="_blank" rel="noopener noreferrer"
+                  className={styles.botLink}>
+                  {ru?'Открыть отчёт в @Andydotbot ↗':'Open report in @Andydotbot ↗'}
+                </a>
+              </div>
+              :<>
+                <form action={sendDailyCouncilReportAction} className={styles.sendForm}>
+                  <SendDailyCouncilButton ru={ru} disabled={!canCouncil}/>
+                </form>
+                {!canCouncil&&<p className={styles.warning} role="status">
+                  {!canCheck
+                    ?ru?'Не удалось проверить состояние Telegram. Обнови страницу.':
+                      'Telegram status could not be checked. Refresh the page.'
+                    :!state.telegram_enabled
+                      ?ru?'Отправка Telegram отключена на сервере.':
+                        'Telegram sending is disabled on the server.'
+                      :state.pairing!=='paired'
+                        ?ru?'Сначала подтверди личный чат Telegram в верхнем блоке.':
+                          'Verify your private Telegram chat in the section above first.'
+                        :ru?'Отчёт уже отправляется. Обнови страницу для проверки результата.':
+                          'A report is already being sent. Refresh to check the result.'}
+                </p>}
+              </>}
+          </div>
           <div className={styles.setupLinks}>
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">
               Gemini · Google AI Studio ↗</a>

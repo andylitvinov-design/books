@@ -23,8 +23,8 @@ const copy = {
       context: "A short explanation of exploring roles, relationships and decisions through symbolic constellations.",
     },
     "constellation-case": {
-      heading: "Constellations in practice",
-      context: "Business Constellations is the owner-selected video for personal constellations, business mapping and the free express situation review. Symbolic reflections are not a clinical diagnosis.",
+      heading: "Business Constellations — see the approach",
+      context: "Andrey’s recording introduces symbolic systemic mapping. It is a method overview, not the free written review itself or a clinical diagnosis.",
     },
     homeopathy: {
       heading: "My approach to homeopathy",
@@ -50,8 +50,8 @@ const copy = {
       context: "Это общий русскоязычный ролик. Подробное видео о системных расстановках пока доступно на английском.",
     },
     "constellation-case": {
-      heading: "Расстановки на практике",
-      context: "Видео, выбранное Андреем для знакомства с расстановками, бизнес-расстановками и экспресс-разбором ситуации. Это символический метод исследования запроса, а не медицинская диагностика.",
+      heading: "Системные расстановки — видео Андрея",
+      context: "Запись об исследовании ситуаций и ролей через символическую карту. Не подменяет сам бесплатный письменный разбор или медицинскую диагностику.",
     },
     homeopathy: {
       heading: "Мой подход к гомеопатии",
@@ -77,8 +77,8 @@ const copy = {
       context: "Breve explicación del método, con audio en inglés.",
     },
     "constellation-case": {
-      heading: "Constelaciones en la práctica",
-      context: "Vídeo Business Constellations, elegido por Andrey para constelaciones personales, empresariales y revisión exprés. No constituye un diagnóstico clínico.",
+      heading: "Constelaciones sistémicas — vídeo de Andrey",
+      context: "Introducción al mapeo simbólico de situaciones y roles. No es la revisión escrita gratuita ni un diagnóstico médico.",
     },
     homeopathy: {
       heading: "Mi enfoque de la homeopatía",

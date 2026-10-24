@@ -66,7 +66,7 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
-import { REMOTE_SUPPORT_DRAFT_KEY, readRemoteSupportDraft, formatRemoteSupportDraft } from '@/lib/practitioners/remote-energy-support'
+import { REMOTE_SUPPORT_DRAFT_KEY, readRemoteSupportDraft, formatRemoteSupportDraft, takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -137,7 +137,6 @@ export default function AppWorkspace({ locale, path = [] }) {
   const pendingSaveInstallAccountId=useRef(null)
   const savedExitDestination=useRef(null)
   useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
-  const quickAuthAttempted = useRef(false)
   const signinAttempted = useRef(false)
   const page = path[0] || 'portrait',
     recordId = path[1],
@@ -281,19 +280,8 @@ export default function AppWorkspace({ locale, path = [] }) {
       setBusy(false)
     }
   }
-  // The user already opted to enter OPORA by clicking the sitewide
-  // Start free CTA. Open existing OAuth once without requiring another
-  // intermediate guest marketing screen. Authentication itself remains real.
-  useEffect(() => {
-    if (state === 'signed-out' && stressSignup &&
-        searchParams.get('entry') === 'quick' && !quickAuthAttempted.current) {
-      quickAuthAttempted.current = true
-      void signin()
-    }
-  // The auth request is intentionally single-shot. On an error the visible
-  // guest screen retains its ordinary retry button, not a redirect loop.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, stressSignup, searchParams])
+  // OPORA quick links must show the first-week programme before Google OAuth.
+  // Consent on that slide is a real user click, not an effect of opening a URL.
 
   async function logout(allDevices = false) {
     setBusy(true)
@@ -3856,7 +3844,12 @@ function RequestForm({ service, locale, data, close, onDone }) {
     if (typeof window === 'undefined') return
     const draft = readRemoteSupportDraft(window.sessionStorage, service.id)
     if (!draft) return
-    setNote((current) => current || formatRemoteSupportDraft(draft))
+    // User-entered free text travels only in client memory during same-tab
+    // navigation; no sensitive intention is written to sessionStorage or URLs.
+    const privateIntention = takeRemoteSupportPrivateIntention(service.id)
+    const prefilling = formatRemoteSupportDraft(draft) +
+      (privateIntention ? '\n\n' + (locale === 'ru' ? 'Мой запрос: ' : locale === 'es' ? 'Mi intención: ' : 'My intention: ') + privateIntention : '')
+    setNote((current) => current || prefilling)
     setEnergyPrefill(true)
     if (draft.version === 2) setRemoteDraft(draft)
   }, [service.id])

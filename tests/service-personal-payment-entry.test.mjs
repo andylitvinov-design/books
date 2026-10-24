@@ -28,6 +28,16 @@ test("optional Square CTA requires fully verified configured amount", () => {
   assert.match(page, /configuredSquarePaymentLinks\(\)/);
   assert.match(page, /buildSquarePaymentForServices\(\[product\.id\], squareLinks\)/);
   assert.match(page, /squarePayment \? <a/);
+  assert.match(page, /squareApiEnabled \? <Link/);
+  assert.match(page, /data-square-api-cart-link=\{product\.id\}/);
+  assert.match(page, /data-square-api-combined-link/);
+  assert.match(page, /getSquareGatewayConfig\(\)\.enabled/);
+  assert.match(page, /data-square-cad-disclosure/);
+  assert.match(page, /data-square-manual-confirmation/);
+  assert.match(page, /combinedSquarePayment \? <a/);
+  assert.match(page, /data-square-combined-link/);
+  assert.match(page, /Square transaction ID: \[insert ID\]/);
+  assert.match(page, /Square Canada charges a separately approved CAD total/);
   assert.match(page, /data-square-personal-link=\{product\.id\}/);
   assert.equal(buildSquarePaymentForServices([ids[0]], {}), null);
   assert.doesNotMatch(page, /data-stripe-checkout|markAsPaid|grantEntitlement/);

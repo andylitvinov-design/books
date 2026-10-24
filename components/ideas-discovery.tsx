@@ -3,32 +3,35 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, Send, X, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, X, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
 import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, getIdeasTestSuggestions, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import { rotateIdeasPreviewAphorisms } from "@/lib/ideas-preview-rotation.mjs";
+import { stageIdeasCoachingQuestion } from "@/lib/ideas-coaching-handoff";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
+import { TestsCoachingSwitchboard } from "@/components/tests-coaching-switchboard";
 
 type Mode = "dao" | "aphorisms" | "personal";
 type Offer = "reading" | "gift";
 type Result = { mode: Mode; topic: IdeasTopic; matched: boolean; hexagram?: number };
-type DaoReading = { number: number; text: string; kind: "original" | "editorial" };
+type DaoReading = { number: number; text: string; kind: "original" | "editorial"; locale: "ru" | "en" };
 
 const copy = {
   ru: {
-    eyebrow: "ИДЕИ · ПОДСКАЗКИ ДЛЯ ВАС",
-    title: "Идеи",
-    lead: "Задайте вопрос, найдите вдохновение и практическую подсказку.",
+    eyebrow: "ИДЕИ И КОУЧИНГ",
+    title: "Идеи и коучинг",
+    lead: "Бесплатная коуч-сессия или даосская подсказка — выберите свой путь.",
     question: "О чём хотите спросить?",
     placeholder: "Ваш вопрос или тема…",
     choose: "Выберите способ получить подсказку",
-    ask: "Получить даосскую подсказку",
-    testOverline: "Исследуйте себя", test: "Пройти бесплатный тест", testAria: "Выбрать бесплатный тест",
+    ask: "Получить бесплатную даосскую подсказку",
+    testOverline: "Самостоятельно · €0", test: "Пройти бесплатную коуч-сессию", testAria: "Выбрать модель бесплатной коуч-сессии", testLink: "Или подобрать бесплатный тест",
+    exploreMore: "Другие возможности", exploreCoaching: "Выбрать коучинг", exploreCoachingHint: "Модели и сессии", exploreTemple: "Исследовать храмовые подсказки", exploreTempleHint: "Символы и смыслы", taoOverline: "Символическая практика · €0", templeHeading: "Храмовые подсказки",
     testsTitle: "Бесплатные тесты по теме", testsFallback: "С чего можно начать",
     testsClose: "Скрыть подборку", testsMore: "Все тесты по теме",
     testsNote: "Это подбор по теме, не медицинская оценка. Ваш вопрос остаётся в браузере.",
@@ -105,14 +108,15 @@ const copy = {
     },
   },
   en: {
-    eyebrow: "IDEAS & GUIDANCE",
-    title: "Ideas",
-    lead: "Ask a question, get inspiration and practical guidance.",
+    eyebrow: "IDEAS & COACHING",
+    title: "Ideas & Coaching",
+    lead: "One question, two ways to explore it: free coaching or Taoist insight.",
     question: "What would you like guidance on?",
     placeholder: "What’s on your mind?",
     choose: "Choose how to explore your question",
-    ask: "Get Taoist Insight",
-    testOverline: "Explore yourself", test: "Take a free test", testAria: "Explore free self-check tests",
+    ask: "Get free Taoist insight",
+    testOverline: "Self-guided · €0", test: "Get free coaching session", testAria: "Choose a free coaching session model", testLink: "Or explore a free test",
+    exploreMore: "More ways to explore", exploreCoaching: "Explore Coaching Options", exploreCoachingHint: "Methods and sessions", exploreTemple: "Explore Temple Insights", exploreTempleHint: "Symbols and reflections", taoOverline: "Symbolic reflection · €0", templeHeading: "Temple Insights",
     testsTitle: "Free tests for your topic", testsFallback: "A few ways to start",
     testsClose: "Close suggested tests", testsMore: "Explore all matching tests",
     testsNote: "Matched by topic only, not a diagnosis. Your question stays in this browser.",
@@ -157,7 +161,7 @@ const copy = {
     topic: { relationships: "Relationships and connection", stress: "Stress and inner calm", resources: "Energy and resources", work: "Work and decisions", direction: "Choices and direction" },
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
     expandDao: "Expand all", collapseDao: "Show less",
-    originalReading: "Full author interpretation · in Russian", editorialReading: "Full editorial interpretation · in Russian",
+    originalReading: "Author interpretation · English editorial adaptation", editorialReading: "Full editorial reading · English adaptation",
     loadingReading: "Loading full interpretation…", unavailableReading: "The full reading could not be loaded. Open the hexagram page instead.",
     aphorismNote: "Topic-matched original reflections and historical folk proverbs, with cited collections. New proverb translations convey the original meaning; inspired reflections are not verbatim historical quotations.",
     more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", proverbSource: "Provenance", originalLabel: "Original", editorial: "Holistic House editorial · original aphorism",
@@ -189,14 +193,15 @@ const copy = {
     },
   },
   es: {
-    eyebrow: "IDEAS Y ORIENTACIÓN",
-    title: "Ideas",
-    lead: "Haz una pregunta, encuentra inspiración y orientación práctica.",
+    eyebrow: "IDEAS Y COACHING",
+    title: "Ideas y coaching",
+    lead: "Una pregunta, dos caminos: coaching gratuito o consejo taoísta.",
     question: "¿Sobre qué quieres una orientación?",
     placeholder: "Tu pregunta…",
     choose: "Elige cómo explorar tu pregunta",
-    ask: "Recibir consejo taoísta",
-    testOverline: "Explórate", test: "Hacer un test gratis", testAria: "Explorar tests gratuitos",
+    ask: "Recibir consejo taoísta gratuito",
+    testOverline: "Autoguiado · €0", test: "Sesión gratuita de coaching", testAria: "Elegir un modelo de coaching gratuito", testLink: "O explorar un test gratuito",
+    exploreMore: "Más opciones para explorar", exploreCoaching: "Explorar opciones de coaching", exploreCoachingHint: "Métodos y sesiones", exploreTemple: "Explorar reflexiones del templo", exploreTempleHint: "Símbolos y reflexión", taoOverline: "Reflexión simbólica · €0", templeHeading: "Reflexiones del templo",
     testsTitle: "Tests gratuitos para tu tema", testsFallback: "Opciones para empezar",
     testsClose: "Cerrar tests sugeridos", testsMore: "Ver todos los tests relacionados",
     testsNote: "Selección por tema, no un diagnóstico. La pregunta permanece en tu navegador. Algunos tests están en inglés.",
@@ -272,6 +277,13 @@ const copy = {
       dao: { title: "Perfil de recursos Wu Xing", description: "Explora tus recursos con el modelo simbólico de los cinco elementos.", action: "Ver perfil" },
     },
   },
+} as const;
+
+// Reuse the real local-only symbolic engine inside Temple Support without duplicating its privacy model.
+const templeIntro = {
+  en: { eyebrow: "TEMPLE SUPPORT · SYMBOLIC REFLECTION", title: "Temple Insights", lead: "Share one question and reflect on an I Ching symbol and related aphorisms. Free, private and not a prediction.", ask: "Receive a free symbolic insight", diagnostic: "Request Free Personal Diagnostic" },
+  ru: { eyebrow: "TEMPLE SUPPORT · СИМВОЛИЧЕСКИЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте один вопрос и получите символ И-Цзин с афоризмами для размышления. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку", diagnostic: "Запросить бесплатную личную диагностику" },
+  es: { eyebrow: "TEMPLE SUPPORT · REFLEXIÓN SIMBÓLICA", title: "Reflexiones del templo", lead: "Haz una pregunta y explora un símbolo del I Ching con aforismos. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis", diagnostic: "Solicitar diagnóstico personal gratuito" },
 } as const;
 
 // Start a real, rights-cleared guest questionnaire, not a generic catalog.
@@ -427,8 +439,11 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
   );
 }
 
-export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
+export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLocale; variant?: "ideas" | "temple" }) {
   const t = copy[locale];
+  const isTemple = variant === "temple";
+  const intro = isTemple ? templeIntro[locale] : t;
+  const HeadingTag = isTemple ? "h2" : "h1";
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [testPickerOpen, setTestPickerOpen] = useState(false);
@@ -442,7 +457,6 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const previewLocaleRef = useRef<PublicLocale | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [openOffer, setOpenOffer] = useState<Offer | null>(null);
-  const [activeMode, setActiveMode] = useState<Mode>("dao");
   const [expandedDao, setExpandedDao] = useState(false);
   const [fullDaoReading, setFullDaoReading] = useState<DaoReading | null>(null);
   const [daoReadingError, setDaoReadingError] = useState(false);
@@ -459,7 +473,6 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
 
   function choose(mode: Mode) {
     setTestPickerOpen(false);
-    setActiveMode(mode);
     if (!question.trim()) {
       setError(false);
       textareaRef.current?.focus();
@@ -483,32 +496,37 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       return;
     }
     // Asking the question always opens the short Daoist answer first.
-    // The other two modes remain available through their own buttons.
+    // The Dao result already includes selected aphorisms and personal follow-up options.
     choose("dao");
   }
 
   useEffect(() => {
     const number = result?.mode === "dao" ? result.hexagram : undefined;
-    if (!expandedDao || !number || fullDaoReading?.number === number) return;
+    const readingLocale = detectIdeasQuestionLocale(question, locale) === "en" ? "en" : "ru";
+    if (!expandedDao || !number || (fullDaoReading?.number === number && fullDaoReading.locale === readingLocale)) return;
     const selectedNumber: number = number;
     let cancelled = false;
     async function loadReading() {
       try {
-        if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
+        let text: string | null | undefined;
+        if (readingLocale === "en") {
+          // Use a localized 64-card catalog even when the original was authored in Russian.
+          const { getDaoEnglishHexagramText } = await import("@/data/dao-hexagrams-en.mjs");
+          text = getDaoEnglishHexagramText(selectedNumber);
+        } else if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
           const { default: records } = await import("@/data/dao-hexagram-author.json");
-          const text = records.find(record => record.number === selectedNumber)?.text;
-          if (!cancelled) {
-            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "original" });
-            else setDaoReadingError(true);
-          }
+          text = records.find(record => record.number === selectedNumber)?.text;
         } else {
-          // The 52 full editorial readings are intentionally code-split.
+          // Keep the 52 full Russian editorial readings code-split.
           const { getDaoEditorialHexagramText } = await import("@/data/dao-hexagrams-editorial.mjs");
-          const text = getDaoEditorialHexagramText(selectedNumber);
-          if (!cancelled) {
-            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "editorial" });
-            else setDaoReadingError(true);
-          }
+          text = getDaoEditorialHexagramText(selectedNumber);
+        }
+        if (!cancelled) {
+          if (text) setFullDaoReading({
+            number: selectedNumber, text, locale: readingLocale,
+            kind: daoAuthorHexagramNumbers.includes(selectedNumber) ? "original" : "editorial",
+          });
+          else setDaoReadingError(true);
         }
       } catch {
         if (!cancelled) setDaoReadingError(true);
@@ -516,7 +534,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     }
     void loadReading();
     return () => { cancelled = true; };
-  }, [expandedDao, result?.mode, result?.hexagram, fullDaoReading]);
+  }, [expandedDao, result?.mode, result?.hexagram, fullDaoReading, question, locale]);
 
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
@@ -526,6 +544,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const suggestedTests = getIdeasTestSuggestions(question);
   const showSuggestedTests = testPickerOpen && Boolean(question.trim());
   const guestLocale = locale === "es" ? "en" : locale;
+  const coachingHref = "/" + locale + "/coaching";
   const suggestedTestBrowserHref = "/" + locale + "/client/tests?focus=" + suggestedTests.focus.join(",");
 
   function openFreeTests() {
@@ -537,19 +556,32 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     setTestPickerOpen(open => !open);
   }
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
-  return (
-    <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
+  useEffect(() => {
+    if (!result) return;
+    // The interpretation appears below the photo/selector. Make the actual
+    // answer visible on iPhone rather than appearing to do nothing after a tap.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelector('[data-ideas-result]')?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth", block: "start",
+    });
+  }, [result]);
+  useEffect(() => {
+    if (!showSuggestedTests) return;
+    document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
+  }, [showSuggestedTests]);
+  const templeContent = (<>
+
       <div className={styles.hero} data-ideas-hero>
         <div className={styles.heading}>
           <div>
-            <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
-          <h1 id="ideas-title">{t.title}</h1>
-          <p className={styles.lead}>{t.lead}</p>
+            <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{intro.eyebrow}</p>
+          <HeadingTag id="ideas-title">{intro.title}</HeadingTag>
+          <p className={styles.lead}>{intro.lead}</p>
         </div>
           <span className={styles.decor} aria-hidden="true">✦</span>
         </div>
 
-        <form className={styles.question} onSubmit={submitQuestion}>
+        <form id="ideas-question-form" className={styles.question} onSubmit={submitQuestion}>
         <label htmlFor="ideas-question">{t.question}</label>
         <div className={styles.questionFields}>
           <Sparkles className={styles.inputSparkle} size={21} aria-hidden="true" />
@@ -581,59 +613,97 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             <Paperclip size={20} aria-hidden="true" />
           </button>
         </div>
-        <div className={styles.heroActions} data-ideas-hero-actions>
-          <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
-          <button type="button" className={styles.testButton} data-ideas-free-test
-            aria-label={t.testAria} aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-            onClick={openFreeTests}>
-            <ClipboardCheck size={19} aria-hidden="true" />
-            <span className={styles.testButtonText}><span className={styles.testButtonKicker}>{t.testOverline}</span><strong>{t.test}</strong></span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </button>
-        </div>
+       </form>
+      </div>
+      <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={t.choose}>
+        {!isTemple ? <Link href={coachingHref} prefetch={false} className={styles.submit}
+          onClick={() => stageIdeasCoachingQuestion(question)}
+          data-ideas-free-coaching aria-label={t.testAria}>
+          <ClipboardCheck size={20} aria-hidden="true" />
+          <span className={styles.testButtonText}>
+            <span className={styles.testButtonKicker}>{t.testOverline}</span>
+            <strong>{t.test}</strong>
+          </span>
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link> : null}
+        <button type="submit" form="ideas-question-form" className={styles.testButton} data-ideas-tao>
+          <span className={styles.modeYin} aria-hidden="true">☯︎</span>
+          <span className={styles.testButtonText}>
+            <span className={styles.testButtonKicker}>{t.taoOverline}</span>
+            <strong>{intro.ask}</strong>
+          </span>
+        </button>
+        {isTemple ? <Link
+          href={freeOfferHref(locale, "review")}
+          className={styles.diagnosticAction}
+          data-ideas-personal-diagnostic
+          prefetch={false}
+        >
+          <ClipboardCheck size={19} aria-hidden="true" />
+          <span>{templeIntro[locale].diagnostic}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link> : null}
+      </div>
+      {!isTemple ? <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
+        <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
+          onClick={() => stageIdeasCoachingQuestion(question)} data-ideas-explore-coaching>
+          <span className={styles.exploreIcon} aria-hidden="true"><Compass size={18} /></span>
+          <span className={styles.exploreCopy}>
+            <strong>{t.exploreCoaching}</strong>
+            <small>{t.exploreCoachingHint}</small>
+          </span>
+          <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
+        </Link>
+        <a href="#temple-insights" className={`${styles.exploreLink} ${styles.exploreTemple}`}
+          data-ideas-explore-temple>
+          <span className={styles.exploreIcon} aria-hidden="true"><BookOpen size={18} /></span>
+          <span className={styles.exploreCopy}>
+            <strong>{t.exploreTemple}</strong>
+            <small>{t.exploreTempleHint}</small>
+          </span>
+          <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
+        </a>
+      </nav> : null}
+      <div className={styles.heroUtility} data-ideas-hero-utility>
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
-        <details className={styles.privacyDisclosure}>
-          <summary id="ideas-question-privacy">{t.privacyShort}</summary>
-          <p className={styles.privacy}>{t.privacy}</p>
-        </details>
-        </form>
-        <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
-          hidden={!showSuggestedTests} aria-label={t.testsTitle}>
-          <div className={styles.testPickerHeading}>
-            <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
-              {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
-            </div>
-            <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
-              aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
+        <div className={styles.utilityLinks}>
+          <details className={styles.privacyDisclosure}>
+            <summary id="ideas-question-privacy">{t.privacyShort}</summary>
+            <p className={styles.privacy}>{t.privacy}</p>
+          </details>
+          {!isTemple ? <button type="button" className={styles.freeTestLink} data-ideas-free-test
+            aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+            onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button> : null}
+        </div>
+      </div>
+      <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
+        hidden={!showSuggestedTests} aria-label={t.testsTitle}>
+        <div className={styles.testPickerHeading}>
+          <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
+            {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
           </div>
-          <ul className={styles.testPickerList}>
-            {suggestedTests.keys.map(key => (
-              <li key={key}>
-                <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
-                  className={styles.testPickerItem} data-ideas-test-start={key}>
-                  <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <Link href={suggestedTestBrowserHref} prefetch={false}
-            className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
-          <p className={styles.testPickerNote}>{t.testsNote}</p>
-        </section>
-      </div>
+          <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
+            aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
+        </div>
+        <ul className={styles.testPickerList}>
+          {suggestedTests.keys.map(key => (
+            <li key={key}>
+              <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
+                className={styles.testPickerItem} data-ideas-test-start={key}>
+                <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href={suggestedTestBrowserHref} prefetch={false}
+          className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
+        <p className={styles.testPickerNote}>{t.testsNote}</p>
+      </section>
 
-      <p className={styles.actionLabel}>{t.choose}</p>
-      <div className={styles.actions}>
-        <button type="button" onClick={() => choose("dao")} aria-pressed={activeMode === "dao"} className={styles.action}>
-          <span className={styles.modeYin} aria-hidden="true">☯</span><span>{t.dao}</span>
-        </button>
-        <button type="button" onClick={() => choose("aphorisms")} aria-pressed={activeMode === "aphorisms"} className={styles.action}>
-          <Quote aria-hidden="true" size={22} /><span>{t.aphorisms}</span>
-        </button>
-        <button type="button" onClick={() => choose("personal")} aria-pressed={activeMode === "personal"} className={styles.action}>
-          <Sprout aria-hidden="true" size={22} /><span>{t.personal}</span>
-        </button>
-      </div>
+
+      <h2 id="temple-insights" className={styles.templeHeading}>
+        <Sparkles size={15} aria-hidden="true" />{t.templeHeading}
+      </h2>
 
       {result ? (
         <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode} data-question-language={answerLocale} lang={answerLocale}>
@@ -698,10 +768,10 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                       </div>
                     </div>
                     <div className={styles.daoReading} data-ideas-dao-reading>
-                      {fullDaoReading?.number === hexagram.number ? (
+                      {fullDaoReading?.number === hexagram.number && fullDaoReading.locale === (answerLocale === "en" ? "en" : "ru") ? (
                         <>
                           <p className={styles.tag}>{fullDaoReading.kind === "original" ? answerCopy.originalReading : answerCopy.editorialReading}</p>
-                          <div className={styles.daoProse} lang="ru">
+                          <div className={styles.daoProse} lang={fullDaoReading.locale}>
                             {fullDaoReading.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
                           </div>
                         </>
@@ -787,6 +857,10 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
         </div>
       ) : null}
+      </>);
+  return (
+    <section className={styles.root} aria-labelledby={isTemple ? "ideas-title" : "tests-coaching-title"} data-ideas-discovery data-temple-mode={isTemple ? "true" : undefined} lang={locale}>
+      {isTemple ? templeContent : <TestsCoachingSwitchboard locale={locale} templeContent={templeContent} />}
     </section>
   );
 }

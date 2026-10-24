@@ -40,21 +40,62 @@ async function verify(browserType, locale, width) {
     assert.equal(response?.status(), 200, label + ": route");
     const hub = page.locator("[data-ideas-discovery]");
     await hub.waitFor({ state: "visible", timeout: 30000 });
+    const switchboard = hub.locator("[data-tests-coaching-hub]");
+    await switchboard.waitFor({ state: "visible" });
+    const cards = switchboard.locator("[data-tests-coaching-path]");
+    assert.equal(await cards.count(), 4, label + ": exactly four clear opening journeys");
+    const heading = switchboard.locator("#tests-coaching-title");
+    assert.ok((await heading.innerText()).length > 8, label + ": localized hub heading");
+    const photo = await switchboard.locator("header").first()
+      .evaluate(node => getComputedStyle(node, "::before").backgroundImage);
+    assert.ok(photo.includes("ideas-pine-sharp.avif"), label + ": first-party scenic hero");
+    const cardRects = await Promise.all([0, 1, 2, 3].map(i => cards.nth(i).boundingBox()));
+    assert.ok(cardRects.every(box => box && box.height >= 130 && box.width > 110),
+      label + ": four thumb-sized readable cards");
+    assert.ok(closeEnough(cardRects[0].y, cardRects[1].y) && closeEnough(cardRects[2].y, cardRects[3].y) &&
+      cardRects[2].y > cardRects[0].y, label + ": two-by-two mobile cards");
+    assert.equal(await switchboard.locator("#tests-coaching-detail").isVisible(), false,
+      label + ": selected panel starts closed");
+    const supportDiscovery = await switchboard.locator('[data-tests-coaching-path="support"]').boundingBox();
+    assert.ok(supportDiscovery && supportDiscovery.y < 844,
+      label + ": all four choices remain available above the first fold");
+    const profilePath = switchboard.locator('[data-tests-coaching-path="profile"]');
+    await profilePath.tap();
+    assert.equal(await profilePath.getAttribute("aria-expanded"), "true");
+    assert.equal(await switchboard.locator('[data-personality-profiles-entry] a[href="/' + locale + '/personality-profiles"]').count(), 1,
+      label + ": canonical profile builder, no duplicate tests or storage");
+    const backPath = switchboard.locator("[data-tests-coaching-back]");
+    assert.equal(await switchboard.locator("nav[hidden] [data-tests-coaching-path]:visible").count(), 0,
+      label + ": hide the four paths after choosing one");
+    await backPath.tap();
+    assert.equal(await cards.filter({ visible: true }).count(), 4,
+      label + ": four routes return after using Back");
+    const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
+    await coachingPath.tap();
+    assert.equal(await switchboard.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').count() > 0, true,
+      label + ": public guest coaching catalog");
+    await backPath.tap();
+    const supportPath = switchboard.locator('[data-tests-coaching-path="support"]');
+    await supportPath.tap();
+    const support = switchboard.locator("[data-tests-coaching-support]");
+    await support.waitFor({ state: "visible" });
+    assert.equal(await support.getByRole("region").count(), 0, label + ": no unsolicited exercise");
+    await support.getByRole("button").first().tap();
+    await support.getByRole("region").waitFor({ state: "visible" });
+    await support.getByRole("region").getByRole("button").first().tap();
+    assert.equal(await support.getByRole("status").count(), 1,
+      label + ": consent, practice and completion work");
+    await backPath.tap();
+    const templePath = switchboard.locator('[data-tests-coaching-path="temple"]');
+    await templePath.tap();
+    assert.equal(await templePath.getAttribute("aria-expanded"), "true");
     const hero = hub.locator("[data-ideas-hero]");
-    const heroBounds = await hero.boundingBox();
-    const headingBounds = await hero.locator("[class*=heading]").first().boundingBox();
     const inputBounds = await hero.locator("#ideas-question").boundingBox();
-    const photo = await hero.evaluate(node => getComputedStyle(node, "::before").backgroundImage);
-    assert.ok(photo.includes("ideas-pine-reference.webp"), label + ": vivid image spans first card");
-    assert.ok(heroBounds && headingBounds && inputBounds &&
-      inputBounds.y > headingBounds.y && inputBounds.y + inputBounds.height <= heroBounds.y + heroBounds.height,
-      label + ": question overlays same full-height scenic card");
-    const primary = await hero.locator('button[type="submit"]').boundingBox();
-    const testAction = hero.locator("[data-ideas-free-test]");
-    const secondary = await testAction.boundingBox();
-    assert.ok(primary && secondary && primary.height >= 44 && secondary.height >= 44 &&
-      secondary.y >= primary.y + primary.height - 1,
-      label + ": two vertically stacked full-width actions");
+    assert.ok(inputBounds && inputBounds.width > width * .4,
+      label + ": optional question only inside Temple Insights");
+    const primary = await hub.locator('[data-ideas-tao]').boundingBox();
+    assert.ok(primary && primary.height >= 44, label + ": Dao CTA is finger sized");
+    const testAction = hub.locator("[data-ideas-free-test]");
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
@@ -82,6 +123,7 @@ async function verify(browserType, locale, width) {
       const before = await previewAphorisms.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-ideas-aphorism-id")));
       assert.equal(new Set(before).size, 3, label + ": unique on first open");
       await page.reload({ waitUntil: "domcontentloaded" });
+      await hub.locator('[data-tests-coaching-path="temple"]').tap();
       await hub.locator("[data-ideas-preview-ready]").waitFor({ state: "visible" });
       const after = await previewAphorisms.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-ideas-aphorism-id")));
       assert.equal(new Set(after).size, 3, label + ": unique after reload");
@@ -102,14 +144,10 @@ async function verify(browserType, locale, width) {
     assert.equal(await hub.locator("[data-ideas-result]").count(), 0, label + ": example not a false result");
     const initialPreviewLabel = await hub.locator("[data-ideas-preview] [class*=daoEyebrow]").first().innerText();
     assert.ok(initialPreviewLabel.length > 4, label + ": clearly labelled editorial preview");
-    const modeButtons = hub.locator("button[aria-pressed]");
-    assert.equal(await modeButtons.count(), 3, label + ": exactly three choices");
-    const rects = await Promise.all([0, 1, 2].map(async index => modeButtons.nth(index).boundingBox()));
-    assert.ok(rects.every(rect => rect && rect.height >= 44 && rect.width >= 70), label + ": finger-sized choices");
-    assert.ok(closeEnough(rects[0].y, rects[1].y) && closeEnough(rects[1].y, rects[2].y),
-      label + ": all choices in one horizontal row");
-    assert.ok(await modeButtons.first().evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 12),
-      label + ": option text is readable");
+    assert.equal(await switchboard.locator('[data-tests-coaching-path="temple"]').getAttribute("aria-expanded"), "true",
+      label + ": visitor explicitly chose symbolic reflection");
+    assert.equal(await switchboard.locator('[data-personality-profiles-entry]').count(), 0,
+      label + ": no duplicated profile form under Temple");
     const bounds = await page.evaluate(() => ({
       viewport: window.innerWidth,
       content: document.documentElement.scrollWidth,
@@ -118,8 +156,8 @@ async function verify(browserType, locale, width) {
 
     if (browserType === webkit && locale === "en" && width === 390) {
       await page.screenshot({ path: output + "/ideas-first-screen-webkit-390.png", fullPage: false });
-      const preview = await hub.locator("[data-ideas-preview]").boundingBox();
-      assert.ok(preview && preview.y < 844 - 80, label + ": answer begins above bottom navigation");
+      assert.equal(await switchboard.locator("nav[hidden]").count(), 1,
+        label + ": selected Temple panel replaces the cards instead of repeating choices");
     }
 
     const textarea = hub.locator("#ideas-question");
@@ -131,10 +169,12 @@ async function verify(browserType, locale, width) {
     }
     assert.ok(await textarea.evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 16),
       label + ": iPhone input does not zoom");
-    // The submit action is always Dao-first, even if a visitor previously tapped another mode.
-    await modeButtons.nth(1).tap();
+    // Temple choice is an explicit in-place panel, never a jump to a duplicate page.
+    assert.equal(await templePath.getAttribute("aria-expanded"), "true",
+      label + ": Temple Insights in-place panel remains open");
+    // Free Taoist guidance still produces a fresh symbolic response to the typed question.
     await textarea.fill(phrases[locale]);
-    await hub.locator('button[type="submit"]').tap();
+    await hub.locator('[data-ideas-tao]').tap();
     const daoResult = hub.locator('[data-ideas-result="dao"]');
     await daoResult.waitFor({ state: "visible" });
     assert.equal(await daoResult.locator('[data-ideas-dao-summary]').count(), 1,
@@ -188,39 +228,25 @@ async function verify(browserType, locale, width) {
     assert.equal(await daoResult.locator('[data-ideas-dao-expanded="true"] button').count(), 1,
       label + ": only reset remains; no Draw another button");
     if (browserType === webkit && locale === "en" && width === 390) {
-      await daoResult.locator('[data-ideas-dao-reading] [lang="ru"] p').first()
+      await daoResult.locator('[data-ideas-dao-reading] [lang="en"] p').first()
         .waitFor({ state: "visible", timeout: 30000 });
     }
     await expand.tap();
     assert.equal(await expand.getAttribute("aria-expanded"), "false", label + ": can collapse again");
     assert.equal(await daoResult.locator('[role="img"]').count(), 0, label + ": collapsed content removed");
 
-    await modeButtons.nth(1).tap();
-    await hub.locator('[data-ideas-result="aphorisms"]').waitFor({ state: "visible" });
-    assert.equal(await hub.locator('[data-ideas-result="aphorisms"] ol li').count(), 3,
-      label + ": exactly 3 aphorisms");
-    assert.equal(await modeButtons.nth(1).getAttribute("aria-pressed"), "true");
-
-    await modeButtons.nth(2).tap();
-    await hub.locator('[data-ideas-result="personal"]').waitFor({ state: "visible" });
-    const services = hub.locator('[data-ideas-guidance-list] li a');
-    assert.equal(await services.count(), 3, label + ": three real free service suggestions");
-    const links = await services.evaluateAll(nodes => nodes.map(node => node.getAttribute("href")));
-    assert.ok(links.some(href => href?.includes("/services/free-situation-review#request-free-review")), label);
-    assert.ok(links.some(href => href?.includes("/client/tests")), label);
-    assert.ok(links.some(href => href?.includes("/services/dao-health-profile#request-free-wu-xing")), label);
-    if (browserType === webkit && locale === "en" && width === 390) {
-      await page.screenshot({ path: output + "/ideas-free-guidance-webkit-390.png", fullPage: false });
-    }
-    // This clicks a real public service link. Never submit a lead on behalf of a visitor.
     if (width === 390) {
-      const first = await services.first().getAttribute("href");
-      assert.ok(first?.startsWith("/"), label + ": same-site link");
-      await services.first().tap();
-      await page.waitForURL(url => url.pathname === first.split("#")[0], { timeout: 30000 });
+      await backPath.tap();
+      await hub.locator('[data-tests-coaching-path="coaching"]').tap();
+      const exploreCoaching = hub.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').first();
+      const destination = await exploreCoaching.getAttribute("href");
+      await exploreCoaching.tap();
+      await page.waitForURL(url => url.pathname === destination, { timeout: 30000 });
+      assert.ok((await page.locator("h1").first().textContent())?.length,
+        label + ": public Coaching Options page renders");
     }
     assert.deepEqual(errors, [], label + ": unhandled client errors");
-    evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToExistingFreeService: width === 390 });
+    evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390 });
   } finally {
     await page.close();
     await browser.close();

@@ -10,7 +10,7 @@ import styles from "./dao-divination.module.css";
 
 type Locale = "en" | "ru" | "es";
 type Selection = { number: number; method: "question" | "number" };
-type EditorialReading = { number: number; text: string | null };
+type EditorialReading = { number: number; text: string | null; locale: Locale };
 const authorByNumber = new Map(authorRecords.map((record) => [record.number, record]));
 
 const copy = {
@@ -34,8 +34,8 @@ const copy = {
     invalidQuestion: "Enter a question before drawing.", invalidNumber: "Enter a whole number from 1 to 64.",
     resultFromQuestion: "Hexagram drawn for your question", resultFromNumber: "Selected hexagram", upper: "Above", lower: "Below",
     original: "Original interpretation", reference: "New interpretation", authorFull: "Full author interpretation", referenceShort: "Short reference meaning", readPage: "View individual card", allCards: "Browse all 64 cards", clear: "Clear selection", source: "Original Telegram publication",
-    noAuthor: "Full new editorial interpretation in the author’s style.", originalLanguage: "Original author's text is in Russian.",
-    newFull: "Full new interpretation", newNote: "New editorial continuation commissioned for this collection, not an original previously published by Andrey. Text in Russian.", loading: "Loading the new interpretation…",
+    noAuthor: "The English adaptation could not load; the linked Russian source is still available.", originalLanguage: "English editorial adaptation of the original Russian author text.",
+    newFull: "Full English interpretation", newNote: "English editorial adaptation of a new Russian reading, not an original previously published by Andrey.", loading: "Loading the English interpretation…",
     photoOriginal: "Photo from original author post", photoThematic: "Thematic photo from the author's archive",
     caveat: "The draw is random and independent of your question. Use it for reflection, not for guaranteed prediction or medical advice.",
     questionNotSaved: "Your question is not saved. Avoid entering confidential personal information.",
@@ -63,21 +63,22 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [editorial, setEditorial] = useState<EditorialReading | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  // The 52 long new readings are code-split. Do not put 130KB+ of Russian prose
-  // into the initial client bundle of the public Library.
+  // Load only after a draw: English for all 64, Russian originals unchanged.
+  // Private questions are never sent to a server.
   useEffect(() => {
     const number = selection?.number;
-    if (!number || authorByNumber.has(number)) return;
+    if (!number || (locale !== "en" && authorByNumber.has(number))) return;
     let cancelled = false;
-    void import("@/data/dao-hexagrams-editorial.mjs")
-      .then(({ getDaoEditorialHexagramText }) => {
-        if (!cancelled) setEditorial({ number, text: getDaoEditorialHexagramText(number) });
-      })
-      .catch(() => {
-        if (!cancelled) setEditorial({ number, text: null });
-      });
+    const reading = locale === "en"
+      ? import("@/data/dao-hexagrams-en.mjs").then(({ getDaoEnglishHexagramText }) => getDaoEnglishHexagramText(number))
+      : import("@/data/dao-hexagrams-editorial.mjs").then(({ getDaoEditorialHexagramText }) => getDaoEditorialHexagramText(number));
+    void reading.then((text) => {
+      if (!cancelled) setEditorial({ number, text, locale });
+    }).catch(() => {
+      if (!cancelled) setEditorial({ number, text: null, locale });
+    });
     return () => { cancelled = true; };
-  }, [selection?.number]);
+  }, [selection?.number, locale]);
   useEffect(() => { if (selection) resultRef.current?.focus(); }, [selection]);
   function handleQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,6 +97,7 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
   const item = selection ? getHexagram(selection.number) : null;
   const author = item ? authorByNumber.get(item.number) : undefined;
   const title = item ? hexagramTitle(item, locale) : "";
+  const localizedEditorial = item && editorial?.number === item.number && editorial.locale === locale ? editorial : null;
   return (
     <section className={styles.panel} aria-labelledby="dao-divination-heading">
       <div className={styles.intro}>
@@ -161,9 +163,11 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
               {author ? (
                 <details className={styles.fullReading} open key={item.number}>
                   <summary>{t.authorFull} <span aria-hidden="true">⌄</span></summary>
-                  <div lang="ru" className={styles.authorText}>
-                    {author.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
-                  </div>
+                  {(locale === "en" ? localizedEditorial?.text : author.text) ? (
+                    <div lang={locale === "en" ? "en" : "ru"} className={styles.authorText}>
+                      {(locale === "en" ? localizedEditorial?.text ?? "" : author.text).split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+                    </div>
+                  ) : <p className={styles.languageNote}>{localizedEditorial?.text === null ? t.noAuthor : t.loading}</p>}
                   <p className={styles.languageNote}>{t.originalLanguage}</p>
                   {author.source ? <a href={author.source} rel="noopener noreferrer" target="_blank">{t.source} ↗</a> : null}
                 </details>
@@ -171,12 +175,12 @@ export function DaoDivinationPanel({ locale }: { locale: Locale }) {
                 <details className={styles.fullReading} open key={item.number}>
                   <summary>{t.newFull} <span aria-hidden="true">⌄</span></summary>
                   <p className={styles.languageNote}>{t.newNote}</p>
-                  {editorial?.number === item.number && editorial.text ? (
-                    <div lang="ru" className={styles.authorText}>
-                      {editorial.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
+                  {localizedEditorial?.text ? (
+                    <div lang={locale === "en" ? "en" : "ru"} className={styles.authorText}>
+                      {localizedEditorial.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
                     </div>
                   ) : (
-                    <p className={styles.languageNote}>{editorial?.number === item.number && editorial.text === null ? t.noAuthor : t.loading}</p>
+                    <p className={styles.languageNote}>{localizedEditorial?.text === null ? t.noAuthor : t.loading}</p>
                   )}
                 </details>
               )}

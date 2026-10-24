@@ -9,7 +9,7 @@ const style = read('components/coaching-intake-form.module.css')
 const repo = read('lib/app/coaching-intake.js')
 const migration = read('supabase/migrations/20261023182500_hh_author_coaching_intake_private.sql')
 const api = read('app/api/app/[...path]/route.js')
-const page = read('app/[locale]/coaching/page.tsx')
+const page = read('app/[locale]/coaching/intake/page.tsx')
 const pageCss = read('app/[locale]/coaching/coaching-page.module.css')
 
 test('author coaching model: pinned identity, valid multilingual groups, no fabricated score', () => {
@@ -125,7 +125,7 @@ test('API auth, origin, bounded body and OAuth safe redirect to localized coachi
   assert.match(api, /readBody\(request, 40000\)/)
   assert.match(api, /op: 'coaching-intake-save'/)
   assert.match(api, /continueTo === 'coaching-intake'/)
-  assert.match(api, /\$\{origin\}\/\$\{locale\}\/coaching/)
+  assert.match(api, /\$\{origin\}\/\$\{locale\}\/coaching\/intake/)
   assert.match(api, /\['enquiry','coaching-intake'\]/)
   assert.match(api, /'enquiry','coaching-intake'/)
   assert.doesNotMatch(repo, /hh_app_inbox|app\.crm_contacts/)
@@ -135,7 +135,7 @@ test('localized public entry, service discovery, 320–430 mobile styles and acc
   for (const locale of ['en', 'ru', 'es']) {
     assert.match(page, new RegExp('^  ' + locale + ': \\{', 'm'))
     assert.match(page, new RegExp('\\{ locale: "' + locale + '" \\}'))
-    assert.match(page, new RegExp(locale + ': "/' + locale + '/coaching"'))
+    assert.match(page, new RegExp(locale + ': "/' + locale + '/coaching/intake"'))
   }
   assert.match(page, /PublicSiteHeader/)
   assert.match(page, /CoachingIntakeForm/)
@@ -143,7 +143,7 @@ test('localized public entry, service discovery, 320–430 mobile styles and acc
   assert.match(page, /course-start-heron\.webp/)
   const service = read('components/services-studio-offers.tsx')
   assert.match(service, /data-coaching-intake-link/)
-  assert.match(service, /\/coaching/)
+  assert.match(service, /\/coaching\/intake/)
   assert.match(service, /freeFooter/)
   assert.match(style, /@media \(max-width: 520px\)/)
   assert.match(style, /@media \(max-width: 350px\)/)
