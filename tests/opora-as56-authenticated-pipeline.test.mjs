@@ -5,7 +5,6 @@ import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs58Day} from '../lib/inner-growth/opora-as58-one-action.js'
 import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
