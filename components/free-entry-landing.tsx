@@ -424,7 +424,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <div className={[styles.outcomeList, kind === "dao" ? styles.daoOutcomeList : ""].filter(Boolean).join(" ")}>
               {t.outcomes.map((item, i) => <article key={item.title} data-free-visual-screen={i+1}>
                 <span>{String(i + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div>
-                <div className={styles.miniScenePhoto}><Image src={scenePhotos[i % scenePhotos.length]} alt="" fill
+                <div className={styles.miniScenePhoto}><Image src={scenePhotos[i % scenePhotos.length]} alt="" fill unoptimized
                   sizes="(max-width: 600px) 100vw, 43vw" /></div>
               </article>)}
             </div>
@@ -438,7 +438,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <p className={styles.sectionLead}>{t.processLead}</p>
             <ol className={styles.steps}>
               {t.steps.map((item, i) => <li key={item.title} data-free-visual-screen={i+1}>
-                <div className={styles.miniScenePhoto}><Image src={scenePhotos[(i+1) % scenePhotos.length]} alt="" fill
+                <div className={styles.miniScenePhoto}><Image src={scenePhotos[(i+1) % scenePhotos.length]} alt="" fill unoptimized
                   sizes="(max-width: 600px) 100vw, 43vw" /></div>
                 <div className={styles.miniSceneWords}>
                   <span>{String(i + 1).padStart(2, "0")}</span>
