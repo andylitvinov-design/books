@@ -110,6 +110,18 @@ const copy={
     openProgramme:'Explorar programa',openWorksheet:'Abrir cuestionario',
   },
 }
+// Editorial topical hints for existing authored course routes. They are not
+// published catalog schemes or a claim of historical/clinical validation.
+const traditionFit={
+  egyptian:{tags:['goal','decision','growth','transition','business','confidence'],minutes:25},
+  greek:{tags:['goal','decision','growth','transition','career','confidence'],minutes:20},
+}
+function traditionExplicitMatch(question,id){
+  const text=String(question||'').toLowerCase()
+  return id==='egyptian'?/egypt|egip|егип|секхем|sekhem/.test(text)
+    :/greek|grieg|гречес|грец|логос|logos/.test(text)
+}
+
 const tr=(value,locale)=>value?.[locale]||value?.en||''
 const answerText=(value,item,locale,t)=>{
   if(typeof value!=='string'||!value)return t.noAnswer
@@ -147,6 +159,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const suggestionKeys=useMemo(()=>new Set(question.trim().length>=8&&recommendation.recognized?recommendation.suggestions.filter(s=>s.matchedTags.length>0).map(s=>s.schemeKey):[]),[question,recommendation])
   const shown=useMemo(()=>schemes.filter(s=>(topic==='all'||s.tags?.includes(topic))&&(duration===0||s.minutes<=duration)&&(style==='all'||s.style===style))
     .sort((a,b)=>Number(suggestionKeys.has(b.schemeKey))-Number(suggestionKeys.has(a.schemeKey))||a.minutes-b.minutes||a.schemeKey.localeCompare(b.schemeKey)),[schemes,topic,duration,style,suggestionKeys])
+  const shownTraditions=useMemo(()=>Object.entries(traditionFit).filter(([,fit])=>
+    (topic==='all'||fit.tags.includes(topic))&&(duration===0||fit.minutes<=duration)
+    &&(style==='all'||style==='reflective')).map(([id])=>id),[topic,duration,style])
+  const suggestedTraditions=useMemo(()=>new Set(question.trim().length>=8
+    ?Object.entries(traditionFit).filter(([id,fit])=>
+      traditionExplicitMatch(question,id)||fit.tags.some(tag=>(recommendation.tags||[]).includes(tag)))
+      .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
   const options=current?.type==='scale_0_10'
     ?Array.from({length:11},(_,n)=>({id:String(n),label:{en:String(n),ru:String(n),es:String(n)}}))
@@ -273,18 +292,20 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>
           <p className={styles.disclaimer}>{t.notBooking}</p>
         </section>}
-        <section className={styles.morePaths} aria-labelledby="coaching-more-paths">
+        {format!=='human'&&!recommendation.blocked&&<section className={styles.morePaths} aria-labelledby="coaching-more-paths">
           <h2 id="coaching-more-paths">{t.otherWays}</h2>
           <p>{t.otherWaysNote}</p>
           <div className={styles.morePathGrid}>
-            <article className={styles.morePath}>
+            {shownTraditions.includes('egyptian')&&<article className={styles.morePath} data-coaching-tradition="egyptian" data-suggested={suggestedTraditions.has('egyptian')}>
               <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
-              <Link href={'/'+(lang==='es'?'en':lang)+'/app/coaching/egyptian'+(lang==='es'?'?lang=es':'')}
+              {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
+              <Link href={'/'+lang+'/academy/coaching/egyptian'}
                 prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>
-            <article className={styles.morePath}>
+            </article>}
+            {shownTraditions.includes('greek')&&<article className={styles.morePath} data-coaching-tradition="greek" data-suggested={suggestedTraditions.has('greek')}>
               <h3>{t.greek}</h3><p>{t.greekNote}</p>
-              <Link href={'/'+(lang==='es'?'en':lang)+'/app/coaching/greek'+(lang==='es'?'?lang=es':'')}
+              {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
+              <Link href={'/'+lang+'/academy/coaching/greek'}
                 prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
             </article>
             <article className={styles.morePath}>
@@ -294,7 +315,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               </Link>
             </article>
           </div>
-        </section>
+        </section>}
       </>:<section className={styles.session} data-public-coaching-session>
         <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
         <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
