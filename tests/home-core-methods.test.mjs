@@ -8,14 +8,18 @@ const css = read("components/home-core-methods.module.css");
 const enRu = read("components/holistic-house-home.tsx");
 const es = read("app/es/page.tsx");
 
-test("the three owner methods are visible near the top of all home locales", () => {
-  assert.match(enRu, /<HomeSectionCarousel locale=\{locale\} \/>[\s\S]*?<HomeCoreMethods locale=\{locale\} \/>[\s\S]*?<HomeFreeDiagnosisBanner/);
-  assert.match(es, /<HomeSectionCarousel locale="es" \/>[\s\S]*?<HomeCoreMethods locale="es" \/>[\s\S]*?<HomeFreeDiagnosisBanner/);
-  assert.match(ui, /data-home-core-methods/);
-  for (const id of ["alchemy", "energy", "coaching"]) {
-    assert.match(ui, new RegExp('id: "' + id + '"'));
+test("the three signature approaches appear in separate stages without a duplicate top showcase", () => {
+  const feature = read("components/home-featured-workspace.tsx");
+  for (const home of [enRu, es]) {
+    assert.match(home, /<HomeFeaturedWorkspace locale=/);
+    assert.doesNotMatch(home, /<HomeCoreMethods locale=/);
   }
-  assert.match(ui, /methods\.map\(/);
+  for (const stage of ["coaching", "alchemy", "energy"]) {
+    assert.ok(feature.includes('"'+stage+'": {'), "Missing stage: " + stage);
+  }
+  for (const action of ["aiCoaching", "therapist", "alchemy", "energy"]) {
+    assert.ok(feature.includes('"'+action+'": "/images/holistic-house/'), "Missing method card: " + action);
+  }
 });
 
 test("localized card copy explains methods and avoids overstating active AI or booking", () => {
