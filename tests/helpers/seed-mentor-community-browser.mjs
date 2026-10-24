@@ -70,8 +70,8 @@ try {
       },
       areaKey: "personal_development", offeringType: "session",
       deliveryFormat: "online", locationLabel: "",
-      languages: ["en", "ru", "es"], pricingMode: "free",
-      confirmedPrice: null, currency: "", durationMinutes: 30,
+      languages: ["en", "ru", "es"], pricingMode: "fixed",
+      confirmedPrice: 0, currency: "CAD", durationMinutes: 30,
       imagePath: "", displayLocales: ["en", "ru", "es"],
     },
   });
