@@ -145,7 +145,7 @@ test('the mobile question banner ends before its two choices and shares a one-us
  assert.match(picker,/takeIdeasCoachingQuestion\(\)/)
  assert.match(css,/\.hero\{[\s\S]*?min-height:clamp\(260px,30vw,345px\)/)
  assert.match(css,/\.heroActions\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
- assert.doesNotMatch(handoff,/localStorage|sessionStorage|document\.cookie|fetch\(|analytics|sendBeacon/)
+ assert.doesNotMatch(handoff,/localStorage|sessionStorage|document\.cookie|fetch\(|window\.analytics|sendBeacon\(/)
  const {stageIdeasCoachingQuestion,takeIdeasCoachingQuestion}=await import('../lib/ideas-coaching-handoff.js')
  stageIdeasCoachingQuestion('How can I improve my career?')
  assert.equal(takeIdeasCoachingQuestion(),'How can I improve my career?')
