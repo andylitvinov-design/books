@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
@@ -115,7 +116,19 @@ test('every lesson screen exposes Back, including the first and the saved receip
   assert.match(oporaV6, /onClick=\{afterSave\?\(\)=>setStep\(slides\.length-1\):step===0\?onClose:back\}/)
   assert.match(oporaV6, /if\(reviewOnly\)\{setStep\(slides\.length\);return\}/)
   assert.match(oporaV7, /onClick=\{step===0\?onClose:back\}/)
-  assert.match(oporaV7, /:inPreview\?backFromPreview:\(\)=>setStep\(displayScenes\.length-1\)/)
+  const receiptBack = oporaV7.match(/onClick=\{(moment==='habit'[\s\S]*?)\}>/)?.[1]
+  assert.ok(receiptBack, 'execute the actual saved-receipt Back callback')
+  for (const variant of ['habit', 'preview', 'receipt']) {
+    const calls = []
+    const callback = runInNewContext('(' + receiptBack + ')', {
+      moment:variant === 'habit' ? 'habit' : 'receipt', habitSetup:variant === 'habit',
+      inPreview:variant === 'preview', flowScenes:{length:17}, displayScenes:{length:12},
+      setHabitSetup:value=>calls.push(['habit',value]), backFromPreview:()=>calls.push(['preview']),
+      setStep:value=>calls.push(['step',value]),
+    })
+    callback()
+    assert.deepEqual(calls, variant === 'habit' ? [['habit',false]] : variant === 'preview' ? [['preview']] : [['step',16]])
+  }
   assert.match(quest, /if\(step===0\)onClose\(\)/)
   assert.match(quest, /step === 5 && <>/)
 })
@@ -141,7 +154,12 @@ test('previous completed days reopen a no-write lesson, not an XP-earning sessio
   assert.match(daily, /context\(actor,reviewedSession\.id,'course\.session_note'\)/)
   assert.match(route, /new URL\(request\.url\)\.searchParams\.get\('reviewDay'\)/)
   assert.match(oporaV6, /reviewOnly\?0:hasSaved\?OPORA54_PRE_SAVE_KEYS\.length:0/)
-  assert.match(oporaV7, /reviewOnly\?0:hasSaved\?displayScenes\.length:0/)
+  const initialStep = oporaV7.match(/const \[step,setStep\]=useState\(([^\n]+)\)/)?.[1]
+  assert.ok(initialStep, 'execute the actual OPORA player initializer')
+  for (const reviewOnly of [false,true]) for (const hasSaved of [false,true]) {
+    assert.equal(runInNewContext(initialStep,{reviewOnly,hasSaved,flowScenes:{length:17},displayScenes:{length:12}}),
+      reviewOnly ? 0 : hasSaved ? 17 : 0)
+  }
   assert.match(standard, /reviewOnly \? 0 : alreadyDone \? slides\.length : 0/)
   assert.match(standard, /if \(reviewOnly \|\| !Number\.isInteger\(severity\)/)
   const css = read('components/app/course-quest.module.css')

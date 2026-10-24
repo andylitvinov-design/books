@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {runInNewContext} from 'node:vm'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 
@@ -72,7 +73,18 @@ test('first mission slide welcomes the learner, with thematic feeling choices an
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
   assert.match(player,/onFinish\|\|onClose/)
-  assert.match(today,/onFinish=\{\(\)=>\{setQuestOpen\(false\);setView\('path'\)\}\}/)
+  assert.equal((today.match(/onFinish=\{finishLessonPlayer\}/g)||[]).length,3)
+  const closeExpression=today.match(/const closeLessonPlayer=(\(\)=>\{[^\n]+\})/)?.[1]
+  const finishExpression=today.match(/const finishLessonPlayer=(\(\)=>\{[^\n]+\})/)?.[1]
+  assert.ok(closeExpression);assert.ok(finishExpression)
+  const calls=[]
+  const context={setQuestOpen:value=>calls.push(['open',value]),setReviewLesson:value=>calls.push(['review',value]),setView:value=>calls.push(['view',value])}
+  context.closeLessonPlayer=runInNewContext('('+closeExpression+')',context)
+  runInNewContext('('+finishExpression+')',context)()
+  assert.deepEqual(calls.filter(([kind])=>kind!=='view'),[['open',false],['review',null]])
+  const views=calls.filter(([kind])=>kind==='view').map(([,value])=>value)
+  assert.ok(views.length>0)
+  assert.ok(views.every(value=>value==='path'),'finishing returns to the learning path')
 })
 
 test('EN/RU mobile course stays keyboard accessible with a visible bottom action',()=>{

@@ -1,3 +1,4 @@
+import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs'
 import { verifyDaoLeadJourney } from './helpers/dao-lead-journey-verifier.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
@@ -459,7 +460,7 @@ async function verifyPublicServiceConversionJourneys(){
       'Default payment details are collapsed before geometry measurement')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
-     assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
+     assertAlchemyPanelOrder(measurements)
      assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
       'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)

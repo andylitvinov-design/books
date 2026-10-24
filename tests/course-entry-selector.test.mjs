@@ -153,15 +153,47 @@ test('entry progress binds owner/course, rejects mismatches and cannot hydrate a
 })
 
 test('programme links offer one clear fast-start button without creating a course on arrival', async () => {
+  const starting = deferred()
+  let state = { course: null, courses: [], assessments: {}, access: { ...access, activeCourseCount: 0 } }
   const h = mount('my-course', { props: { data: account('owner-a') }, search: '?program=stress',
-    fetcher: () => ({ course: null, courses: [], assessments: {}, access: { ...access, activeCourseCount: 0 } }) })
+    fetcher: (_path, _options, body) => {
+      if (!body) return state
+      if (body.action === 'start') return starting.promise
+      assert.equal(body.action, 'intake')
+      assert.equal(body.courseId, state.course.id)
+      state = { ...state, course: { ...state.course, stage: 2, revision: 2 }, courses: [{ ...state.course, stage: 2, revision: 2 }] }
+      return state
+    } })
   await h.settle()
   assert.equal(findPart(h.tree, 'CourseEntrySelector'), undefined)
-  const consent = nodes(h.tree).find(node => node.props['data-opora-fast-consent'] !== undefined)
-  assert.ok(consent)
+  assert.equal(h.calls.filter(call => call.body).length, 0, 'arrival never creates a course')
+  const controls = nodes(h.tree).filter(node => node.props['data-opora-fast-consent'] !== undefined)
+  assert.equal(controls.length, 1, 'one explicit enrolment control')
+  const consent = controls[0]
+  assert.equal(consent.type, 'button')
   assert.equal(consent.props.disabled, false)
-  assert.match(textOf(consent), /Continue to the first check-in/)
+  assert.ok(textOf(consent).trim(), 'the real consent control remains visibly labelled')
   assert.equal(h.calls.filter(call => call.body).length, 0)
+  await h.settle()
+  assert.equal(h.calls.filter(call => call.body).length, 0, 'arrival and idle rerenders never enrol')
+  consent.props.onClick()
+  consent.props.onClick()
+  await h.settle()
+  const starts = h.calls.filter(call => call.body?.action === 'start')
+  assert.equal(starts.length, 1, 'the explicit click starts once despite a duplicate click')
+  assert.equal(starts[0].body.consent, true)
+  assert.equal(starts[0].options.headers['X-HH-Account-ID'], 'owner-a')
+  assert.ok(starts[0].body.courseId)
+  assert.equal(h.calls.filter(call => call.body?.action === 'intake').length, 0, 'intake waits for confirmed creation')
+  const pendingControl = nodes(h.tree).find(node => node.props['data-opora-fast-consent'] !== undefined)
+  assert.equal(pendingControl.props.disabled, true)
+  const created = course(starts[0].body.courseId, 1)
+  state = { ...state, course: created, courses: [created] }
+  starting.resolve(state)
+  await h.settle()
+  assert.equal(h.calls.filter(call => call.body?.action === 'start').length, 1)
+  assert.equal(h.calls.filter(call => call.body?.action === 'intake').length, 1)
+  assert.equal(findPart(h.tree, 'CourseR3Steps').props.state.course.id, created.id)
   h.unmount()
 })
 
