@@ -1,0 +1,14 @@
+stable_key,edition_or_cohort,items,language,primary_source,validation_status,rights_review
+bemas-langecrusius2015-enus10,Original English adult,10,en-US,https://doi.org/10.1177/0146167214564959,Original four studies N1094,Author CC BY 4.0
+bemas-kwiatkowska2020-dede10,German study,10,de-DE,https://doi.org/10.1007/s12144-020-00802-4,Respondent study N558,Check translation rights
+bemas-kwiatkowska2020-ruru10-volkodav,Russian Volkodav study,10,ru-RU,https://doi.org/10.1007/s12144-020-00802-4,Respondent study N708,Check translation rights
+bemas-kwiatkowska2020-plpl10,Polish study,10,pl-PL,https://doi.org/10.1007/s12144-020-00802-4,Respondent study N727,Check translation rights
+bemas-lyusin2022-ruru10,Russian Lyusin adaptation,10,ru-RU,https://doi.org/10.54359/ps.v15i84.1197,Respondent study N254; preliminary,Adaptation published CC BY-NC 4.0
+bemas-navarrocarrillo2017-eses10,Spanish translation,10,es-ES,https://doi.org/10.1080/02134748.2017.1297354,Official translated form; standalone factor validation unconfirmed,Check translation rights
+bemas-cirpan2017-trtr10,Turkish adaptation,10,tr-TR,https://doi.org/10.5455/apd.256664,Respondent validation N422,Check translation rights
+bemas-pylat2022-ukua10,Ukrainian study,10,uk-UA,https://doi.org/10.17721/upj.2022.1(17).7,Respondent validation N484,Check translation rights
+bemas-rogier2023-itit10,Italian study,10,it-IT,https://doi.org/10.1016/j.paid.2023.112097,Independent factorial study; sample size needs confirmation,Check translation rights
+bemas-peixoto2021-ptbr10-adolescent,Brazilian adolescent cohort,10,pt-BR,https://doi.org/10.5935/1980-6906/ePTPPA13088,Respondent validation N248 ages12-17,Minors safeguards and edition rights
+bemas-peixoto2021-ptbr10-adult,Brazilian adult cohort,10,pt-BR,https://doi.org/10.21865/RIDEP58.1.06,Respondent validation N409,Check translation rights
+source_notes,Owner scale index,,,,https://bemas-envy-scale.github.io/,CC BY 4.0 original; translation exceptions
+source_notes,Owner permission statement,,,,https://bemas-envy-scale.github.io/permissions.html,CC BY 4.0 with attribution; exceptions may apply
