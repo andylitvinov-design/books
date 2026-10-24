@@ -55,4 +55,6 @@ test("mobile free-review starts with the recording, with a compact single-screen
  assert.match(css, /\.situationHero \.primary\{width:100%/);
  assert.match(css, /@media\(max-width:600px\) and \(max-height:730px\)/);
  assert.match(css, /\.situationScene\{min-height:0/);
+ assert.match(css, /\.situationVideo :global\(\.site-video-poster-title\)\{left:86px/);
+ assert.match(css, /@media\(max-width:600px\)\{[\s\S]*?\.situationVideo :global\(\.site-video-poster-title\)\{left:72px/);
 });
