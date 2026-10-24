@@ -8,9 +8,10 @@ import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingGentleGuide, coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -164,6 +165,16 @@ export default function PersonalCoaching({locale='en',accountId}){
   const question=activeQuestions[index]||activeQuestions[0]
   const quickChoices=coachingQuickChoicesAllowed(question,index)
   const gentleGuide=coachingGentleGuide(question,index,activeQuestions.length,lang)
+  const previousQuestion=activeQuestions[index-1]
+  const conversationTurn=coachingConversationTurn({
+    question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
+    previousReflection:session?.reflections?.[previousQuestion?.id]?.text,
+    index,total:activeQuestions.length,locale:lang,
+  })
+  const followupTurn=pendingFollowup?coachingConversationTurn({
+    question,previousQuestion:question,previousAnswer:session?.answers?.[question?.id],
+    index,total:activeQuestions.length,locale:lang,followup:true,
+  }):null
   const persisted=session?.answers?.[question?.id]
   const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
@@ -454,10 +465,11 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressTrack}><span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/></div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
+            <CoachingDialogueTurn turn={followupTurn}/>
             <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
             <p>{followupCopy[lang].why}</p>
             <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang}
-              text={translated(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
+              text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               disabled={busy} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={setDictating}
               onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
@@ -497,6 +509,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
+            {gentleGuide&&<div data-coaching-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
             <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
             {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
               <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
@@ -507,16 +520,13 @@ export default function PersonalCoaching({locale='en',accountId}){
               </button>
             </div>}
             <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')}
-              text={visiblePrompt} locale={lang}
+              text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
               mode="answer" disabled={busy} speechConsent={speechConsent}
               onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
               onTranscript={words=>{
                 setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
                 setError('');setNotice('')
               }}/>
-            {gentleGuide&&<div className={styles.gentleGuide} data-coaching-gentle-guide>
-              <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
-            </div>}
             {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>

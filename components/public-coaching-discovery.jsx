@@ -7,8 +7,9 @@ import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingGentleGuide, coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -349,6 +350,16 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const current=session?.questions?.[index]
   const quickChoices=coachingQuickChoicesAllowed(current,index)
   const gentleGuide=coachingGentleGuide(current,index,session?.questions?.length||1,lang)
+  const previousQuestion=session?.questions?.[index-1]
+  const conversationTurn=coachingConversationTurn({
+    question:current,previousQuestion,previousAnswer:answers?.[previousQuestion?.id],
+    previousReflection:reflections?.[previousQuestion?.id]?.text,
+    index,total:session?.questions?.length||1,locale:lang,
+  })
+  const followupTurn=pendingFollowup?coachingConversationTurn({
+    question:current,previousQuestion:current,previousAnswer:answers?.[current?.id],
+    index,total:session?.questions?.length||1,locale:lang,followup:true,
+  }):null
   const needsCustomPlan=Boolean(session?.requiredCustomPlan&&index===session.questions.length-1)
   const requiresAdult=Boolean(session&&(coachingSchemeRequiresAdultConsent(session)||sessionTopic==='sexuality'))
   const progressPosition=entryStep==='intro'?1:entryStep==='topic'?2:index+3
@@ -659,9 +670,10 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
+            <CoachingDialogueTurn turn={followupTurn}/>
             <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
             <CoachingQuestionVoice key={'guest-followup-'+pendingFollowup.key+'-'+pendingFollowup.questionId+'-'+lang}
-              text={tr(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
+              text={[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={setDictating}
               onTranscript={words=>{setReflectionDraft(previous=>appendSpokenAnswer(previous,words,500));setError('')}}/>
@@ -673,9 +685,10 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
+            {gentleGuide&&<div data-public-coaching-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
             <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
             <CoachingQuestionVoice key={'guest-question-'+current.id+'-'+lang}
-              text={tr(current.prompt,lang)} locale={lang} mode="answer"
+              text={[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={active=>{setDictating(active);if(active&&customAnswerRef.current)customAnswerRef.current.open=true}}
               onTranscript={words=>{
@@ -685,9 +698,6 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               }}/>
             {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {gentleGuide&&<div className={styles.gentleGuide} data-public-coaching-gentle-guide>
-              <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
-            </div>}
             {quickChoices&&options.length>0&&!needsCustomPlan&&<>
               <p className={styles.questionLabel}>{t.choices}</p>
               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
