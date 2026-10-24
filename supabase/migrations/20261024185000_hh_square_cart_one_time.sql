@@ -3,7 +3,7 @@
 -- provider secrets. Activation requires explicit production env gates and Square E2E.
 create table app_private.square_service_orders (
  id uuid primary key,
- account_id uuid not null references app.accounts(id) on delete restrict,
+ account_id uuid not null, -- Pseudonymous financial record survives account erasure by approved retention policy.
  operation_id uuid not null,
  items text[] not null check (
    cardinality(items) between 1 and 2 and items <@ array['express-consultation-30','personal-session-60']::text[]
