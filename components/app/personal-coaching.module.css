@@ -249,3 +249,41 @@
   .smartRecapCard{padding:12px}
   .adaptivePanel{padding:9px 11px}
 }
+
+/* Shared one-viewport coaching shell for Personal, Greek and Egyptian players.
+   Reserve space for the actual question/action footer instead of allowing a
+   growing textarea, choices or a keyboard to push Save & continue off-screen. */
+.root{
+  z-index:2147483000;
+  height:100dvh;max-height:100dvh;overflow:hidden;
+}
+.layout{height:100%;min-height:0;overflow:hidden}
+.sheet{
+  flex:1;min-height:0;height:auto;max-height:none;overflow:hidden;
+}
+.intro,.summary,.picker{
+  min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+}
+.session{height:100%;min-height:0;overflow:hidden}
+.session .progressHeader,.session .progressTrack{flex:none}
+.session .questionArea{
+  flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;
+  overscroll-behavior:contain;scrollbar-width:thin;
+}
+.session .footer{
+  position:relative;bottom:auto;flex:none;margin-top:0;
+}
+@media(max-width:600px){
+  .layout{height:100%;min-height:0}
+  .header{flex:none;padding-top:calc(5px + env(safe-area-inset-top))}
+  .sheet{flex:1;min-height:0;max-height:none;margin:0;border-radius:0}
+  .session .questionArea{padding:12px 14px 16px}
+  .session .questionArea h1{font-size:clamp(23px,6vw,31px);line-height:1.18}
+  .session .progressHeader{padding:10px 14px 8px}
+  .session .footer{padding:8px 12px calc(7px + env(safe-area-inset-bottom))}
+}
+@media(max-height:670px){
+  .session .questionArea{padding-top:9px;padding-bottom:10px}
+  .session .questionArea h1{margin:6px 0}
+  .session .footer{padding-top:6px}
+}
