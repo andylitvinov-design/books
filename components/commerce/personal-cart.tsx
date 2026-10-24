@@ -81,7 +81,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   const products = publicServiceCatalog(locale);
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
-  const [method, setMethod] = useState<Method>(paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : Object.keys(squareLinks).length ? "square" : "interac");
+  const [method, setMethod] = useState<Method>(Object.keys(squareLinks).length ? "square" : paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : "interac");
 
   useEffect(() => {
     let stored: string[] = [];

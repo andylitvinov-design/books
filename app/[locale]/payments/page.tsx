@@ -30,7 +30,7 @@ const copy = {
     zenRequest: "Ask for ZEN.COM transfer details",
     otherPayment: "View full cart", extraMethods: "More payment options",
     interacTitle: "In Canada without PayPal?", interacIntro: "You can request an Interac e-Transfer. First we confirm a CAD amount, recipient and appointment time. No transfer happens when you click.",
-    interacRequest: "Request Interac details", squareAction: "Pay by card via Square",
+    interacRequest: "Request Interac details", squareAction: "Pay by card via Square", squareInfo: "Square Canada charges a separately approved CAD total, not the EUR reference. Check the seller and CAD total before paying. We verify receipt manually; payment does not book a session.", squareReceipt: "Paid with Square? Send transaction ID", combinedSquare: "Pay both by Square",
     combinedTitle: "Both consultations", combinedIntro: "30 + 60 minutes. Appointment times confirmed personally; no automatic booking.",
     combinedPay: "Pay both through PayPal", combinedCart: "Review both in cart",
   },
@@ -50,7 +50,7 @@ const copy = {
     zenRequest: "Запросить реквизиты ZEN.COM",
     otherPayment: "Открыть полную корзину", extraMethods: "Другие варианты",
     interacTitle: "В Канаде без PayPal?", interacIntro: "Можно запросить перевод Interac e-Transfer. Сначала согласуем сумму в CAD, получателя и время сеанса. При нажатии деньги не списываются.",
-    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square",
+    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square", squareInfo: "Square Canada списывает отдельно утверждённую сумму CAD, а не указанную цену EUR. Проверьте продавца и сумму CAD. Поступление проверяется вручную; оплата не бронирует сеанс.", squareReceipt: "Оплатили через Square? Отправить ID", combinedSquare: "Оплатить обе услуги через Square",
     combinedTitle: "Обе консультации", combinedIntro: "30 + 60 минут. Время согласуется лично, бронирование не происходит автоматически.",
     combinedPay: "Оплатить обе через PayPal", combinedCart: "Проверить обе услуги в корзине",
   },
@@ -70,7 +70,7 @@ const copy = {
     zenRequest: "Solicitar datos para ZEN.COM",
     otherPayment: "Abrir el carrito", extraMethods: "Más opciones",
     interacTitle: "¿En Canadá sin PayPal?", interacIntro: "Puedes solicitar Interac e-Transfer. Primero confirmamos el importe en CAD, destinatario y cita. Hacer clic no envía dinero.",
-    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square",
+    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square", squareInfo: "Square Canada cobra el importe CAD aprobado por separado, no el precio de referencia en EUR. Comprueba el vendedor y el total CAD. Verificamos el pago manualmente; no reserva una cita.", squareReceipt: "¿Pagaste con Square? Enviar ID", combinedSquare: "Pagar ambas con Square",
     combinedTitle: "Ambas consultas", combinedIntro: "30 + 60 minutos. Confirmaremos personalmente el horario; no hay reserva automática.",
     combinedPay: "Pagar ambas con PayPal", combinedCart: "Ver ambas en el carrito",
   },
@@ -88,6 +88,16 @@ function receiptUrl(locale: ServiceLocale, service: string, euros: number) {
   return "https://wa.me/14376066502?text=" + encodeURIComponent(text);
 }
 
+function squareReceiptUrl(locale: ServiceLocale, service: string, cadMinor: number) {
+  const amount = formatSquareCadAmount(cadMinor, locale);
+  const message = locale === "ru"
+    ? `Здравствуйте! Прошу проверить оплату ${amount} через Square за услугу «${service}». ID Square: [введите ID]. Проверьте поступление и подтвердите время сеанса.`
+    : locale === "es"
+      ? `Hola. Comprueba mi pago de ${amount} por Square para ${service}. ID de Square: [añade el ID]. Confirma la recepción y la hora de la sesión.`
+      : `Hello! Please verify my Square payment of ${amount} for ${service}. Square transaction ID: [insert ID]. Confirm receipt and session time.`;
+  return "https://wa.me/14376066502?text=" + encodeURIComponent(message);
+}
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -101,7 +111,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function PersonalPayPalPaymentsPage({ params }: PageProps) {
+export default async function PersonalPaymentsPage({ params }: PageProps) {
   const { locale } = await params;
   if (!localeAllowed(locale)) notFound();
   const t = copy[locale];
@@ -115,7 +125,8 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
   const combinedPayPalUrl = enabled && products.length === 2 ? buildPersonalPayPalCartUrl(combinedIds) : null;
   const combinedHostedUrl = products.length === 2 ? buildPayPalHostedCartUrl(combinedIds, hostedPayPalLinks) : null;
   const combinedEuros = products.reduce((sum, product) => sum + product.amountMinor, 0) / 100;
-  const combinedAvailable = products.length === 2 && (verifiedPayPalCheckout || Boolean(combinedPayPalUrl) || Boolean(combinedHostedUrl));
+  const combinedSquarePayment = products.length === 2 ? buildSquarePaymentForServices(combinedIds, squareLinks) : null;
+  const combinedAvailable = products.length === 2 && (Boolean(combinedSquarePayment) || verifiedPayPalCheckout || Boolean(combinedPayPalUrl) || Boolean(combinedHostedUrl));
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -126,14 +137,18 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
           <h1 id="personal-payment-title">{t.title}</h1>
           <p>{t.lead}</p>
         </div>
-        <div className={styles.notice}>
+        {Object.keys(squareLinks).length > 0 ? <div className={styles.notice} data-square-cad-disclosure>
+          <ShieldCheck size={22} aria-hidden="true" />
+          <div className={styles.noticeText}><strong>Square · CAD</strong><small>{t.squareInfo}</small></div>
+        </div> : null}
+        {(enabled || verifiedPayPalCheckout || Object.keys(hostedPayPalLinks).length > 0) ? <div className={styles.notice} data-paypal-eur-disclosure>
           <ShieldCheck size={22} aria-hidden="true" />
           <div className={styles.noticeText}>
             <strong>{t.payee}: {PERSONAL_PAYPAL_PAYEE}</strong>
             <span>{t.method}: {t.methodValue}</span>
             <small>{t.verify}</small>
           </div>
-        </div>
+        </div> : null}
         <div className={styles.zenNotice} data-interac-manual-inquiry>
           <strong>{t.interacTitle}</strong><p>{t.interacIntro}</p>
         </div>
@@ -152,24 +167,24 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
               </div>
               <h3>{product.title}</h3>
               <p>{product.description}</p>
-              {verifiedPayPalCheckout ? <Link
-                href={`/${locale}/services/checkout?service=${encodeURIComponent(product.id)}`}
-                className={styles.payButton} data-verified-paypal-checkout={product.id}>
-                {t.autoPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
-              </Link> : !hostedPayPalUrl ? null :
-                <a className={styles.payButton} href={hostedPayPalUrl} target="_blank"
-                  rel="noopener noreferrer" data-paypal-hosted-link={product.id}>
-                  {t.hostedPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
-                </a>}
-              {enabled ? <a href={`/api/payments/paypal/${product.id}`}
-                  className={verifiedPayPalCheckout || hostedPayPalUrl ? styles.zenButton : styles.payButton}
-                  target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
-                {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
-              </a> : verifiedPayPalCheckout || hostedPayPalUrl ? null : <p className={styles.unavailable}>{t.help}</p>}
               {squarePayment ? <a href={squarePayment.url} className={styles.payButton}
                 target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
                 {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
               </a> : null}
+              {verifiedPayPalCheckout ? <Link
+                href={`/${locale}/services/checkout?service=${encodeURIComponent(product.id)}`}
+                className={squarePayment ? styles.zenButton : styles.payButton} data-verified-paypal-checkout={product.id}>
+                {t.autoPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+              </Link> : !hostedPayPalUrl ? null :
+                <a className={squarePayment ? styles.zenButton : styles.payButton} href={hostedPayPalUrl} target="_blank"
+                  rel="noopener noreferrer" data-paypal-hosted-link={product.id}>
+                  {t.hostedPay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+                </a>}
+              {enabled ? <a href={`/api/payments/paypal/${product.id}`}
+                  className={squarePayment || verifiedPayPalCheckout || hostedPayPalUrl ? styles.zenButton : styles.payButton}
+                  target="_blank" rel="noopener noreferrer" data-paypal-personal-link>
+                {t.pay} · €{euros} <ArrowUpRight size={17} aria-hidden="true" />
+              </a> : verifiedPayPalCheckout || hostedPayPalUrl ? null : <p className={styles.unavailable}>{t.help}</p>}
               {interacInquiryUrl ? <a href={interacInquiryUrl} className={styles.zenButton}
                 target="_blank" rel="noopener noreferrer" data-interac-direct-inquiry={product.id}>
                 {t.interacRequest} <MessageCircle size={17} aria-hidden="true" />
@@ -188,10 +203,14 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
                   <p>{t.zenIntro}</p>
                 </div>
               </details>
-              <a href={receiptUrl(locale, product.title, euros)} className={styles.receiptButton}
-                target="_blank" rel="noopener noreferrer" data-paypal-manual-confirmation>
+              {squarePayment ? <a href={squareReceiptUrl(locale, product.title, squarePayment.amountMinor)}
+                className={styles.receiptButton} target="_blank" rel="noopener noreferrer" data-square-manual-confirmation={product.id}>
+                <MessageCircle size={17} aria-hidden="true" /> {t.squareReceipt}
+              </a> : null}
+              {(enabled || verifiedPayPalCheckout || hostedPayPalUrl) ? <a href={receiptUrl(locale, product.title, euros)}
+                className={styles.receiptButton} target="_blank" rel="noopener noreferrer" data-paypal-manual-confirmation>
                 <MessageCircle size={17} aria-hidden="true" /> {t.after}
-              </a>
+              </a> : null}
             </article>;
           })}
         </div>
@@ -201,6 +220,10 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
             <p>{t.combinedIntro}</p>
           </div>
           <div className={styles.combinedActions}>
+            {combinedSquarePayment ? <a href={combinedSquarePayment.url} className={styles.payButton}
+              target="_blank" rel="noopener noreferrer" data-square-combined-link>
+              {t.combinedSquare} · {formatSquareCadAmount(combinedSquarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
+            </a> : null}
             {verifiedPayPalCheckout ? <Link href={`/${locale}/services/checkout?items=${combinedIds.join(",")}`}
               className={styles.payButton} data-verified-paypal-combined>
               {t.autoPay} · €{combinedEuros} <ArrowUpRight size={17} aria-hidden="true" />
@@ -219,7 +242,7 @@ export default async function PersonalPayPalPaymentsPage({ params }: PageProps) 
           </div>
         </div> : null}
         <div className={styles.final}>
-          <div className={styles.step}><BadgeCheck size={21} aria-hidden="true" /><p>{t.process}</p></div>
+          <div className={styles.step}><BadgeCheck size={21} aria-hidden="true" /><p>{Object.keys(squareLinks).length ? t.squareInfo : t.process}</p></div>
           <p className={styles.warning}>{t.instructions}</p>
           <p className={styles.disclaimer}>{t.disclaimer}</p>
           {Object.keys(hostedPayPalLinks).length ? <p className={styles.disclaimer}>{t.hostedInfo}</p> : null}
