@@ -1,4 +1,5 @@
 import { StaticPortrait } from "@/components/static-portrait";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, BriefcaseBusiness, Check,
@@ -330,7 +331,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   });
 
   return (
-    <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-one-screen-v2">
+    <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-media-story-v3">
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label={locale === "ru" ? "Навигация" : locale === "es" ? "Ruta de navegación" : "Breadcrumb"}>
           <Link href={"/" + locale + "/services"}><ArrowLeft size={15} aria-hidden="true" />{t.back}</Link>
@@ -339,7 +340,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
 
 
         <section className={[styles.panel, styles.featuredVideoSection].join(" ")}
-          data-alchemy-panel="featured-video" aria-labelledby="alchemy-featured-video-title">
+          data-alchemy-panel="featured-video" data-alchemy-visual="video" aria-labelledby="alchemy-featured-video-title">
           <div className={styles.featuredVideoText}>
             <span className={styles.eyebrow}><PlayCircle size={15} aria-hidden="true" />{t.featuredKicker}</span>
             <h2 id="alchemy-featured-video-title">{t.featuredTitle}</h2>
@@ -355,7 +356,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <p className={styles.featuredVideoNote}>{t.featuredVideoNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.hero].join(" ")} data-alchemy-panel="hero" aria-labelledby="alchemy-title">
+        <section className={[styles.panel, styles.hero].join(" ")} data-alchemy-panel="hero" data-alchemy-visual="photo" aria-labelledby="alchemy-title">
           <p className={styles.heroEyebrow}><Sparkles size={14} aria-hidden="true" />{t.kicker}</p>
           <div className={styles.heroGrid}>
             <div className={styles.heroMain}>
@@ -367,8 +368,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
               <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 680px) 140px, 340px" />
             </div>
           </div>
-          <p className={styles.heroLead}>{t.intro}</p>
-          <div className={styles.chips}>{t.chips.map((chip) => <span key={chip}><Check size={13} aria-hidden="true" />{chip}</span>)}</div>
+
           <div className={styles.heroPricing}>
             <span>{locale === "ru" ? "Экспресс · 30 мин · €50" : locale === "es" ? "Exprés · 30 min · €50" : "Express · 30 min · €50"}</span>
             <span>{locale === "ru" ? "Личная сессия · 60 мин · €100" : locale === "es" ? "Sesión personal · 60 min · €100" : "Personal session · 60 min · €100"}</span>
@@ -383,43 +383,67 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <a href="#alchemy-options-title">{locale === "ru" ? "Сравнить форматы" : locale === "es" ? "Comparar formatos" : "Compare formats"}<ArrowRight size={14} aria-hidden="true" /></a>
           </div>
           <div className={styles.heroBottom}><span>{t.place}</span><Link href={freeReview}>{t.freeStart}<ArrowUpRight size={14} aria-hidden="true" /></Link></div>
+          <details className={styles.heroMore} data-alchemy-details="introduction">
+            <summary>{locale === "ru" ? "Как проходит работа" : locale === "es" ? "Cómo trabajamos" : "How the approach works"}</summary>
+            <div className={styles.heroMoreContent}>
+              <p className={styles.heroLead}>{t.intro}</p>
+              <div className={styles.chips}>{t.chips.map((chip) => <span key={chip}><Check size={13} aria-hidden="true" />{chip}</span>)}</div>
+            </div>
+          </details>
         </section>
 
-        <section className={[styles.panel, styles.painSection].join(" ")} data-alchemy-panel="situations" aria-labelledby="alchemy-situations-title">
+        <section className={[styles.panel, styles.painSection].join(" ")} data-alchemy-panel="situations" data-alchemy-visual="photo" aria-labelledby="alchemy-situations-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}><Heart size={14} aria-hidden="true" />{t.painKicker}</span>
             <h2 id="alchemy-situations-title">{t.painTitle}</h2>
             <p>{t.painIntro}</p>
           </header>
           <div className={styles.painGrid}>
-            {t.pains.map((item, index) => (
-              <article className={styles.painCard} key={item.title}>
-                <span className={styles.iconCircle} aria-hidden="true">{index === 0 ? <Heart size={20} /> : index === 1 ? <Waves size={20} /> : index === 2 ? <BriefcaseBusiness size={20} /> : <Compass size={20} />}</span>
-                <h3>{item.title}</h3><p>{item.text}</p>
-              </article>
-            ))}
+            <article className={styles.painCard}>
+              <span className={styles.iconCircle} aria-hidden="true"><Heart size={20} /></span>
+              <h3>{t.pains[0].title}</h3><p>{t.pains[0].text}</p>
+            </article>
           </div>
-          <p className={styles.sectionClosing}>{t.painEnd}</p>
+          <Link className={styles.chapterAction} href="#alchemy-options-title">{t.cta}<ArrowRight size={17} aria-hidden="true" /></Link>
+          <details className={styles.chapterMore}>
+            <summary>{locale === "ru" ? "Другие запросы" : locale === "es" ? "Otros motivos" : "Other situations"}</summary>
+            <div className={styles.moreGrid}>
+              {t.pains.slice(1).map((item) => <article className={styles.painCard} key={item.title}><h3>{item.title}</h3><p>{item.text}</p></article>)}
+            </div>
+            <p className={styles.sectionClosing}>{t.painEnd}</p>
+          </details>
         </section>
 
-        <section className={[styles.panel, styles.methodSection].join(" ")} data-alchemy-panel="method" aria-labelledby="alchemy-method-title">
+        <section className={[styles.panel, styles.methodSection].join(" ")} data-alchemy-panel="method" data-alchemy-visual="photo" aria-labelledby="alchemy-method-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/report-lighthouse-coast.webp" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}><Layers3 size={14} aria-hidden="true" />{t.methodKicker}</span>
             <h2 id="alchemy-method-title">{t.methodTitle}</h2>
             <p>{t.methodIntro}</p>
           </header>
           <div className={styles.methodSteps}>
-            {t.steps.map((item, index) => (
-              <article className={styles.methodStep} key={item.title}>
-                <span className={styles.methodNumber}>{"0" + (index + 1)}</span>
-                <div><h3>{item.title}</h3><p>{item.text}</p></div>
-              </article>
-            ))}
+            <article className={styles.methodStep}>
+              <span className={styles.methodNumber}>01</span>
+              <div><h3>{t.steps[0].title}</h3><p>{t.steps[0].text}</p></div>
+            </article>
           </div>
-          <p className={styles.methodNote}><ShieldCheck size={17} aria-hidden="true" />{t.methodNote}</p>
+          <Link className={styles.chapterAction} href="#alchemy-options-title">{t.cta}<ArrowRight size={17} aria-hidden="true"/></Link>
+          <details className={styles.chapterMore}>
+            <summary>{locale === "ru" ? "Остальные этапы" : locale === "es" ? "Otras etapas" : "Explore the next steps"}</summary>
+            <div className={styles.moreGrid}>
+              {t.steps.slice(1).map((item, index) => (
+                <article className={styles.methodStep} key={item.title}>
+                  <span className={styles.methodNumber}>{"0" + (index + 2)}</span>
+                  <div><h3>{item.title}</h3><p>{item.text}</p></div>
+                </article>
+              ))}
+            </div>
+            <p className={styles.methodNote}><ShieldCheck size={17} aria-hidden="true" />{t.methodNote}</p>
+          </details>
         </section>
 
-        <section className={[styles.panel, styles.videoSection].join(" ")} id="service-video" data-alchemy-panel="video" aria-labelledby="alchemy-video-title">
+        <section className={[styles.panel, styles.videoSection].join(" ")} id="service-video" data-alchemy-panel="video" data-alchemy-visual="video" aria-labelledby="alchemy-video-title">
           <div className={styles.videoText}>
             <span className={styles.eyebrow}><PlayCircle size={15} aria-hidden="true" />{t.videoKicker}</span>
             <h2 id="alchemy-video-title">{t.videoTitle}</h2>
@@ -431,14 +455,14 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <p className={styles.videoNote}>{t.videoNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.reviewSection].join(" ")} id="reviews" data-alchemy-panel="reviews" aria-labelledby="alchemy-reviews-title">
+        <section className={[styles.panel, styles.reviewSection].join(" ")} id="reviews" data-alchemy-panel="reviews" data-alchemy-visual="video" aria-labelledby="alchemy-reviews-title">
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.reviewsKicker}</span>
             <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
             <p>{t.reviewsIntro}</p>
           </header>
           <div className={styles.reviewStack} data-alchemy-review-stack>
-            {reviews.map((review) => (
+            {reviews.slice(0, 1).map((review) => (
               <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
                 <div className={styles.reviewVideo}>
                   <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale === "es" ? "en" : locale }}
@@ -452,10 +476,29 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
               </article>
             ))}
           </div>
+          <details className={styles.chapterMore}>
+            <summary>{locale === "ru" ? "Другие отзывы" : locale === "es" ? "Más testimonios" : "More client stories"}</summary>
+            <div className={styles.reviewStack}>
+              {reviews.slice(1).map((review) => (
+                <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
+                  <div className={styles.reviewVideo}>
+                    <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale === "es" ? "en" : locale }}
+                      locale={locale} compact minimal fallbackPoster={review.poster}/>
+                  </div>
+                  <div className={styles.reviewInfo}><h3>{review.title}</h3>
+                    <a href={"https://www.youtube.com/watch?v=" + review.id} target="_blank" rel="noopener noreferrer">
+                      {locale === "ru" ? "Смотреть отзыв" : locale === "es" ? "Ver testimonio (en inglés)" : "Watch testimonial"}
+                      <ArrowUpRight size={15} aria-hidden="true"/></a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </details>
           <p className={styles.reviewNote}>{t.reviewsNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" aria-labelledby="alchemy-options-title">
+        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" data-alchemy-visual="photo" aria-labelledby="alchemy-options-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.optionsKicker}</span>
             <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
@@ -463,7 +506,8 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         </section>
 
-        <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" aria-labelledby="alchemy-faq-title">
+        <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" data-alchemy-visual="photo" aria-labelledby="alchemy-faq-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.faqKicker}</span>
             <h2 id="alchemy-faq-title">{t.faqTitle}</h2>
@@ -473,8 +517,9 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           </div>
         </section>
 
-        <section className={[styles.panel, styles.requestSection].join(" ")} id="alchemy-request" data-alchemy-panel="request" aria-labelledby="alchemy-request-title">
+        <section className={[styles.panel, styles.requestSection].join(" ")} id="alchemy-request" data-alchemy-panel="request" data-alchemy-visual="photo" aria-labelledby="alchemy-request-title">
           <div className={styles.requestText}>
+            <div className={styles.panelPhoto}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
             <span className={styles.eyebrow}><Sparkles size={14} aria-hidden="true" />{t.requestKicker}</span>
             <h2 id="alchemy-request-title">{t.requestTitle}</h2>
             <p>{t.requestIntro}</p>
