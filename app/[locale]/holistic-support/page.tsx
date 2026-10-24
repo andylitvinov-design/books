@@ -12,11 +12,9 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
-import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
-type Tradition = "constellations" | "runes" | "tarot" | "chinese";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -29,9 +27,7 @@ const copy = {
     healingNav: "Holistic Healing & Support",
     insightsEyebrow: "01 · ASK & EXPLORE",
     insightsTitle: "Temple & Psychic Insights",
-    insightsIntro: "Constellations, Runes, Tarot and Chinese Tradition. Ask your question and explore a reflection — not a prediction or diagnosis.",
-    traditions: { constellations: "Constellations", runes: "Runes", tarot: "Tarot", chinese: "Chinese Tradition" },
-    traditionsLabel: "Explore a tradition",
+    insightsIntro: "Ask your question directly and explore a symbolic reflection — no need to choose a tradition, and no prediction or diagnosis.",
     aiTitle: "AI Insight",
     free: "FREE",
     aiBody: "Ask your question and receive a free symbolic I Ching reflection with related aphorisms.",
@@ -41,15 +37,14 @@ const copy = {
     expressBody: "A free individual written situation review: answer a short questionnaire and draw Me – Goal – Problem. No free video call or medical diagnosis.",
     expressAction: "Start free express review",
     masterTitle: "Personal Insights with a Master",
-    masterBody: "Request a focused 20-minute personal session about your question or preferred tradition.",
+    masterBody: "Request a focused 20-minute personal session. Together we can choose an approach that fits your question.",
     masterPrice: "CAD 50 / 20 min",
     masterAction: "Request your 20-minute insight",
     masterFormTitle: "Ask Andrey about a personal insight",
-    masterFormLead: "Choose a tradition, add your email or phone, give consent and select WhatsApp or Telegram. Your request is not a confirmed booking or payment.",
-    masterFormatLabel: "Preferred tradition",
+    masterFormLead: "Add your email or phone, give consent and choose WhatsApp or Telegram for a reply. Your request is not a confirmed booking or payment.",
     masterDisclaimer: "A session is priced at CAD 50 for 20 minutes, subject to personal confirmation of time and format. Sending a request is free; no payment is collected here.",
     freeEngineTitle: "Try your free insight",
-    freeEngineLead: "Start with a question. This symbolic tool uses the Chinese I Ching and authored aphorisms; other traditions are available through the links and personal request above.",
+    freeEngineLead: "Start with your question. The free tool uses the I Ching and authored aphorisms. Personal guidance can explore other approaches together.",
     healingEyebrow: "02 · PRACTICES & SUPPORT",
     healingTitle: "Holistic Healing & Support",
     healingIntro: "Choose a complementary practice or an individual conversation. No guaranteed health outcomes or changes to prescribed care.",
@@ -74,9 +69,7 @@ const copy = {
     healingNav: "Холистическая поддержка",
     insightsEyebrow: "01 · ВОПРОС И ПОДСКАЗКА",
     insightsTitle: "Temple & Psychic Insights",
-    insightsIntro: "Расстановки, Руны, Таро и Китайская традиция. Задайте вопрос, чтобы получить символический взгляд — не предсказание и не диагноз.",
-    traditions: { constellations: "Расстановки", runes: "Руны", tarot: "Таро", chinese: "Китайская традиция" },
-    traditionsLabel: "Выберите традицию",
+    insightsIntro: "Просто задайте свой вопрос и получите символическую подсказку. Выбирать традицию не нужно; это не предсказание и не диагноз.",
     aiTitle: "AI Insight",
     free: "БЕСПЛАТНО",
     aiBody: "Задайте вопрос и получите бесплатную символическую подсказку И-Цзин с подходящими афоризмами.",
@@ -86,15 +79,14 @@ const copy = {
     expressBody: "Бесплатный личный письменный экспресс-разбор: короткая анкета и рисунок «Я — Цель — Проблема». Без видеозвонка и медицинской диагностики.",
     expressAction: "Начать бесплатный разбор",
     masterTitle: "Личная подсказка Мастера",
-    masterBody: "Запросите 20-минутную персональную сессию по своему вопросу или выбранной традиции.",
+    masterBody: "Запросите 20-минутную личную сессию. Подходящий подход к вашему вопросу выберем вместе.",
     masterPrice: "50 CAD / 20 мин",
     masterAction: "Запросить личную подсказку",
     masterFormTitle: "Запросить персональную подсказку у Андрея",
-    masterFormLead: "Выберите традицию, укажите контакт, подтвердите согласие и выберите WhatsApp или Telegram. Заявка не является подтверждённой записью или оплатой.",
-    masterFormatLabel: "Предпочитаемая традиция",
+    masterFormLead: "Укажите email или телефон, дайте согласие и выберите WhatsApp или Telegram для ответа. Заявка не является записью или оплатой.",
     masterDisclaimer: "Стоимость личной сессии — 50 CAD за 20 минут. Время и формат мастер подтверждает отдельно. Отправка заявки бесплатна; оплата здесь не взимается.",
     freeEngineTitle: "Попробуйте бесплатную подсказку",
-    freeEngineLead: "Начните с вопроса. Сейчас доступна символическая система И-Цзин и афоризмы; другие традиции — по ссылкам и в личной работе с мастером.",
+    freeEngineLead: "Начните со своего вопроса. Бесплатная подсказка основана на И-Цзин и авторских афоризмах; другие подходы можно обсудить лично.",
     healingEyebrow: "02 · ПРАКТИКА И ПОМОЩЬ",
     healingTitle: "Holistic Healing & Support",
     healingIntro: "Выберите дополнительную практику или личную консультацию. Мы не обещаем лечебных результатов и не предлагаем отменять медицинскую помощь.",
@@ -119,9 +111,7 @@ const copy = {
     healingNav: "Apoyo holístico",
     insightsEyebrow: "01 · PREGUNTAR Y EXPLORAR",
     insightsTitle: "Temple & Psychic Insights",
-    insightsIntro: "Constelaciones, Runas, Tarot y Tradición China. Haz tu pregunta para explorar una reflexión simbólica, no una predicción ni un diagnóstico.",
-    traditions: { constellations: "Constelaciones", runes: "Runas", tarot: "Tarot", chinese: "Tradición China" },
-    traditionsLabel: "Explorar una tradición",
+    insightsIntro: "Haz tu pregunta directamente y recibe una reflexión simbólica. No necesitas elegir una tradición; no es predicción ni diagnóstico.",
     aiTitle: "AI Insight",
     free: "GRATIS",
     aiBody: "Escribe una pregunta y recibe una reflexión simbólica gratuita del I Ching con aforismos.",
@@ -131,15 +121,14 @@ const copy = {
     expressBody: "Análisis personal gratuito por escrito: un cuestionario breve y el dibujo Yo – Meta – Problema. Sin videollamada ni diagnóstico médico.",
     expressAction: "Empezar revisión gratis",
     masterTitle: "Orientación personal con un Maestro",
-    masterBody: "Solicita una sesión personal de 20 minutos sobre tu pregunta o tradición preferida.",
+    masterBody: "Solicita una sesión personal de 20 minutos. Juntos elegiremos un enfoque adecuado a tu pregunta.",
     masterPrice: "50 CAD / 20 min",
     masterAction: "Solicitar orientación personal",
     masterFormTitle: "Solicitar orientación de Andrey",
-    masterFormLead: "Elige tradición y contacto, acepta una respuesta personal y selecciona WhatsApp o Telegram. No confirma reserva ni pago.",
-    masterFormatLabel: "Tradición preferida",
+    masterFormLead: "Indica tu email o teléfono, da tu consentimiento y elige WhatsApp o Telegram para la respuesta. Esto no confirma una reserva ni un pago.",
     masterDisclaimer: "La sesión personal cuesta 50 CAD por 20 minutos. El horario y formato requieren confirmación. Enviar la solicitud es gratis y no se cobra aquí.",
     freeEngineTitle: "Prueba una reflexión gratuita",
-    freeEngineLead: "Empieza con tu pregunta. El recurso actual usa el I Ching y aforismos; las demás tradiciones se pueden explorar en los enlaces y con un profesional.",
+    freeEngineLead: "Empieza con tu pregunta. La herramienta gratuita utiliza el I Ching y aforismos; otros enfoques pueden explorarse en una sesión personal.",
     healingEyebrow: "02 · PRÁCTICAS Y APOYO",
     healingTitle: "Holistic Healing & Support",
     healingIntro: "Elige una práctica complementaria o una sesión personal, sin promesas de resultados médicos ni cambios en tratamientos prescritos.",
@@ -157,14 +146,6 @@ const copy = {
     privacy: "Las preguntas gratuitas permanecen en el navegador. Tu contacto llega al CRM solo después del consentimiento y envío explícito. Reservas y pagos requieren confirmación aparte.",
   },
 } as const;
-
-const methodPaths: Record<Tradition, (locale: PublicLocale) => string> = {
-  constellations: locale => "/" + locale + "/services/systemic-constellations",
-  runes: locale => "/" + locale + "/academy/temple-studies#temple-5",
-  tarot: locale => "/" + locale + "/academy/temple-studies#temple-5",
-  chinese: () => "#free-ai-insight",
-};
-const methodIds: readonly Tradition[] = ["constellations", "runes", "tarot", "chinese"];
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
@@ -201,7 +182,6 @@ export default async function HolisticSupportPage({ params }: Props) {
       service.areaKey === "energy_spiritual" && service.status === "published"
     )
   );
-  const methodOptions = methodIds.map(id => ({value: id, label: t.traditions[id]}));
 
   return (
     <main className={styles.page} data-holistic-support lang={locale}>
@@ -229,11 +209,6 @@ export default async function HolisticSupportPage({ params }: Props) {
             <h2 id="holistic-insights-title">{t.insightsTitle}</h2>
             <p>{t.insightsIntro}</p>
           </div>
-          <nav className={styles.methods} aria-label={t.traditionsLabel}>
-            {methodIds.map(id => <Link key={id} href={methodPaths[id](locale)} prefetch={false} data-holistic-tradition={id}>
-              {t.traditions[id]}<span aria-hidden="true">↗</span>
-            </Link>)}
-          </nav>
           <div className={styles.options}>
             <article className={styles.option} data-holistic-offer="ai">
               <div className={styles.optionPhoto}>
@@ -288,8 +263,6 @@ export default async function HolisticSupportPage({ params }: Props) {
               serviceTitle={"Personal Temple Insights with Andrey · CAD 50 / 20 min"}
               title={t.masterFormTitle}
               lead={t.masterFormLead}
-              formatOptions={methodOptions}
-              formatLabel={t.masterFormatLabel}
               disclaimer={t.masterDisclaimer}
             />
           </div>
