@@ -24,7 +24,7 @@ test('localized, versioned, answer-aware followups with no speculative AI analys
   assert.notEqual(choice.prompt.en,written.prompt.en)
 })
 
-test('one per stage and three per session, danger and unknown stages return no followup',()=>{
+test('one gentle followup per stage, up to five per session; danger and unknown stages skip it',()=>{
   const reality={id:'a',stepKey:'reality'}
   assert.equal(authoredFollowupFor(reality,''),null)
   assert.equal(authoredFollowupFor(reality,'kill myself'),null)
@@ -38,6 +38,17 @@ test('one per stage and three per session, danger and unknown stages return no f
   const goal=authoredFollowupFor({id:'g',stepKey:'goal'},'My meaningful change',prev)
   assert.equal(goal.key,'goal_text_v1')
   for(const locale of ['en','ru','es'])assert.ok(goal.prompt[locale].length>25)
+  const resources=authoredFollowupFor({id:'k',stepKey:'knowhow'},'I can ask a friend')
+  const action=authoredFollowupFor({id:'w',stepKey:'will'},'One small call')
+  assert.equal(resources.stage,'resources')
+  assert.equal(action.stage,'action')
+  for(const locale of ['en','ru','es']){
+    assert.ok(resources.prompt[locale].length>25)
+    assert.ok(action.prompt[locale].length>25)
+  }
+  assert.equal(authoredFollowupFor({id:'a',stepKey:'will'},'My step',{
+    g:{stage:'goal'},r:{stage:'reality'},k:{stage:'resources'},o:{stage:'options'},w:{stage:'action'},
+  }),null)
   assert.equal(authoredFollowupFor({id:'o',stepKey:'options'},'One option',{
     ...prev,g:{stage:'goal',text:'Reason'},o:{stage:'options',text:'Direction'},
   }),null)
