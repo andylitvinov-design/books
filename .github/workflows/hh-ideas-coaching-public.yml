@@ -1,0 +1,50 @@
+name: HH Ideas & Coaching public release
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - '.github/workflows/hh-ideas-coaching-public.yml'
+      - 'components/ideas-discovery.tsx'
+      - 'components/ideas-discovery.module.css'
+      - 'components/public-coaching-discovery.jsx'
+      - 'components/public-coaching-discovery.module.css'
+      - 'app/[locale]/coaching/page.jsx'
+      - 'lib/app/personal-coaching-catalog.js'
+      - 'lib/site-navigation-model.js'
+      - 'lib/public-locales.ts'
+      - 'app/[locale]/books/page.tsx'
+      - 'app/es/books/page.tsx'
+      - 'tests/ideas-guidance.test.mjs'
+      - 'tests/ideas-mobile-ui.test.mjs'
+      - 'tests/public-coaching-discovery.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-ideas-coaching-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  public-coaching-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused Ideas and Coaching regression tests
+        run: |
+          node --check lib/personal-coaching/model-matcher.js
+          node --check lib/app/personal-coaching-catalog.js
+          node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs
+      - name: Lint modified application components
+        run: npx --no-install eslint components/ideas-discovery.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts
+      - name: TypeScript noEmit
+        run: npx --no-install tsc --noEmit
+      - name: Next.js production build
+        run: npm run build
