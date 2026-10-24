@@ -1,3 +1,4 @@
+import { verifyDaoLeadJourney } from './helpers/dao-lead-journey-verifier.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
@@ -432,12 +433,21 @@ async function verifyPublicServiceConversionJourneys(){
  ]
  for(const locale of ['en','ru']){
   for(const [slug,kind,names] of services){
-   const servicePage=await publicContext.newPage()
+   const serviceContext=kind==='dao'?await browser.newContext({serviceWorkers:'block'}):publicContext
+   const servicePage=await serviceContext.newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    if(kind==='dao'){
+     const heading=servicePage.locator('main[data-free-entry-landing="dao"] h1#free-entry-title')
+     await expect(heading).toBeVisible({timeout:30000})
+     await expect(heading).toHaveText(locale==='ru'?'Узнайте, что даёт вам внутреннюю опору.':'Discover what gives you strength.')
+     await expect(servicePage.locator('a[href="#request-free-wu-xing"]')).toBeVisible()
+     await expect(servicePage.locator('#request-free-wu-xing[data-service-lead-capture]')).toHaveCount(1)
+    }else{
     await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    }
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -490,6 +500,8 @@ async function verifyPublicServiceConversionJourneys(){
      assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
        'Selected 30-minute format must be carried into WhatsApp and Telegram')
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+    }else if(kind==='dao'){
+     await verifyDaoLeadJourney(servicePage,expect,locale)
     }else{
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
      await capture.scrollIntoViewIfNeeded()
@@ -506,6 +518,7 @@ async function verifyPublicServiceConversionJourneys(){
     }
    }
    await servicePage.close()
+   if(kind==='dao')await serviceContext.close()
   }
  }
  for(const locale of ['en','ru']){
@@ -1506,3 +1519,4 @@ try {
  console.log('SYNTHETIC_BROWSER_CLEANUP',JSON.stringify({outcome}))
  if(outcome!=='completed'&&!primaryFailure)throw new Error('Synthetic browser cleanup did not complete')
 }
+
