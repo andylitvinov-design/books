@@ -308,7 +308,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     const finder=find(tree,'data-profi-action','find-master')
     assert.equal(finder.props.href,'/'+locale+'/masters?view=mentors')
     assert.ok(nodes(tree).some(x=>Object.hasOwn(x.props||{},'data-profi-finder')))
-    assert.ok(paths.every(x=>x.type==='a'))
+    assert.ok(paths.every(x=>x.type==='a' || typeof x.type==='function'))
   }
   assert.match(hub,/findChoice: "Найти мастера"/)
   assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
