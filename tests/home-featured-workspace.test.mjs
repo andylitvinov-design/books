@@ -150,8 +150,10 @@ test("full-height photo stays left and Details → Request stays right at 320–
   ]) assert.ok(css.includes(needle), "Missing mobile geometry or accessibility: " + needle);
   const mobile = css.slice(css.indexOf("@media (max-width: 640px)"),
     css.indexOf("@media (max-width: 350px)"));
-  assert.doesNotMatch(mobile, /"buttons buttons"|"more more"\s*;/,
+  assert.doesNotMatch(mobile, /"buttons buttons"/,
     "Mobile buttons must not detach below the photo");
+  assert.match(mobile, /\.offer\[data-expanded="true"\] \{ grid-template-areas: "photo content" "more more"/,
+    "The expanded detail panel is allowed below the two-column card");
   assert.match(css, /\.offerSecondary\s*\{\s*order: 0;/);
   assert.match(css, /\.offerPrimary\s*\{\s*order: 1;/);
   assert.match(css, /\.offer\[data-expanded="true"\]/);
