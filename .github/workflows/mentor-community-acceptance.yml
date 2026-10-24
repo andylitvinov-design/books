@@ -9,6 +9,17 @@ on:
       - 'app/[locale]/masters/page.tsx'
       - 'app/[locale]/articles/page.tsx'
       - 'lib/practitioners/article-repository.js'
+      - 'lib/practitioners/article-social-*'
+      - 'lib/practitioners/article-contracts.js'
+      - 'components/practitioner-article-social.*'
+      - 'components/app/practitioner-articles.*'
+      - 'components/practitioner-articles-moderation.jsx'
+      - 'app/[locale]/articles/[slug]/page.tsx'
+      - 'app/api/app/[...path]/route.js'
+      - 'app/admin/practitioners/articles/data/route.js'
+      - 'supabase/migrations/20261024193000_hh_master_news_feed_social.sql'
+      - 'tests/practitioner-news-feed.test.mjs'
+      - 'tests/helpers/app-db-setup.mjs'
       - 'tests/mentor-community-v1.test.mjs'
       - 'tests/helpers/seed-mentor-community-browser.mjs'
       - 'scripts/verify-mentor-community-browser.mjs'
@@ -59,10 +70,10 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Existing moderation and community source tests
-        run: node --test tests/mentor-community-v1.test.mjs tests/practitioner-articles-v4.test.mjs tests/master-network-v3.test.mjs
+        run: node --test tests/mentor-community-v1.test.mjs tests/practitioner-articles-v4.test.mjs tests/master-network-v3.test.mjs tests/practitioner-news-feed.test.mjs
       - name: Focused linter and TypeScript check
         run: |
-          npx --no-install eslint components/mentor-community-switch.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
+          npx --no-install eslint components/mentor-community-switch.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx components/practitioner-article-social.tsx app/'[locale]'/articles/'[slug]'/page.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
           npx --no-install tsc --noEmit
       - name: Chromium and WebKit for actual hydrated page verification
         run: |
