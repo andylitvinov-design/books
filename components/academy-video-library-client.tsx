@@ -110,7 +110,7 @@ function poster(videoId: string) {
 }
 
 function courseVideoCount(course: AcademyVideoCourse) {
-  return course.chapters.reduce((total, chapter) => total + chapter.videos.length, 0);
+  return course.chapters.reduce((total, chapter) => total + chapter.videos.filter((video) => !video.unavailable).length, 0);
 }
 
 function programVideoCount(program: AcademyVideoProgram) {
