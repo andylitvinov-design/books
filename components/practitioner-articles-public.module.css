@@ -73,3 +73,13 @@
   .feed .articleFilters { padding: 0 9px 9px; }
   .feed > .meta { padding: 0 9px; }
 }
+
+/* Keep the standalone journal as compact as the community hub. */
+.hero{padding:17px max(13px,3vw);margin:6px auto 9px}
+.hero h1{margin:6px 0;font-size:clamp(27px,3vw,37px)}
+.hero p{margin:5px 0;color:#695d52;font-size:13px;line-height:1.5}
+.authorLinks{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+.authorLinks a{display:inline-flex;align-items:center;min-height:44px;padding:9px 13px;border:1px solid #d7c5b5;border-radius:99px;background:#f7eee5;color:#674c39;text-decoration:none;font:700 12px/1.2 system-ui,sans-serif}
+.authorLinks a:last-child{background:#193b49;border-color:#193b49;color:#fff}
+.authorLinks a:focus-visible{outline:3px solid #0b7a78;outline-offset:3px}
+.readError{margin:12px auto;max-width:1160px;padding:12px 15px;border:1px solid #c8afa1;border-radius:12px;background:#fff8ec;color:#714633;font-size:13px}
