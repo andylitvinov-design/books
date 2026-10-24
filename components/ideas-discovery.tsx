@@ -18,7 +18,7 @@ import styles from "./ideas-discovery.module.css";
 type Mode = "dao" | "aphorisms" | "personal";
 type Offer = "reading" | "gift";
 type Result = { mode: Mode; topic: IdeasTopic; matched: boolean; hexagram?: number };
-type DaoReading = { number: number; text: string; kind: "original" | "editorial" };
+type DaoReading = { number: number; text: string; kind: "original" | "editorial"; locale: "ru" | "en" };
 
 const copy = {
   ru: {
@@ -158,7 +158,7 @@ const copy = {
     topic: { relationships: "Relationships and connection", stress: "Stress and inner calm", resources: "Energy and resources", work: "Work and decisions", direction: "Choices and direction" },
     daoNote: "One of 64 hexagrams is drawn at random, independently of your question. It offers a symbol for reflection, not a prediction.",
     expandDao: "Expand all", collapseDao: "Show less",
-    originalReading: "Full author interpretation · in Russian", editorialReading: "Full editorial interpretation · in Russian",
+    originalReading: "Author interpretation · English editorial adaptation", editorialReading: "Full editorial reading · English adaptation",
     loadingReading: "Loading full interpretation…", unavailableReading: "The full reading could not be loaded. Open the hexagram page instead.",
     aphorismNote: "Topic-matched original reflections and historical folk proverbs, with cited collections. New proverb translations convey the original meaning; inspired reflections are not verbatim historical quotations.",
     more: "Show 3 more aphorisms", inspiredBy: "Source · inspired by", sourceLabel: "Source", proverbSource: "Provenance", originalLabel: "Original", editorial: "Holistic House editorial · original aphorism",
@@ -490,26 +490,31 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
 
   useEffect(() => {
     const number = result?.mode === "dao" ? result.hexagram : undefined;
-    if (!expandedDao || !number || fullDaoReading?.number === number) return;
+    const readingLocale = detectIdeasQuestionLocale(question, locale) === "en" ? "en" : "ru";
+    if (!expandedDao || !number || (fullDaoReading?.number === number && fullDaoReading.locale === readingLocale)) return;
     const selectedNumber: number = number;
     let cancelled = false;
     async function loadReading() {
       try {
-        if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
+        let text: string | null | undefined;
+        if (readingLocale === "en") {
+          // Use a localized 64-card catalog even when the original was authored in Russian.
+          const { getDaoEnglishHexagramText } = await import("@/data/dao-hexagrams-en.mjs");
+          text = getDaoEnglishHexagramText(selectedNumber);
+        } else if (daoAuthorHexagramNumbers.includes(selectedNumber)) {
           const { default: records } = await import("@/data/dao-hexagram-author.json");
-          const text = records.find(record => record.number === selectedNumber)?.text;
-          if (!cancelled) {
-            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "original" });
-            else setDaoReadingError(true);
-          }
+          text = records.find(record => record.number === selectedNumber)?.text;
         } else {
-          // The 52 full editorial readings are intentionally code-split.
+          // Keep the 52 full Russian editorial readings code-split.
           const { getDaoEditorialHexagramText } = await import("@/data/dao-hexagrams-editorial.mjs");
-          const text = getDaoEditorialHexagramText(selectedNumber);
-          if (!cancelled) {
-            if (text) setFullDaoReading({ number: selectedNumber, text, kind: "editorial" });
-            else setDaoReadingError(true);
-          }
+          text = getDaoEditorialHexagramText(selectedNumber);
+        }
+        if (!cancelled) {
+          if (text) setFullDaoReading({
+            number: selectedNumber, text, locale: readingLocale,
+            kind: daoAuthorHexagramNumbers.includes(selectedNumber) ? "original" : "editorial",
+          });
+          else setDaoReadingError(true);
         }
       } catch {
         if (!cancelled) setDaoReadingError(true);
@@ -517,7 +522,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     }
     void loadReading();
     return () => { cancelled = true; };
-  }, [expandedDao, result?.mode, result?.hexagram, fullDaoReading]);
+  }, [expandedDao, result?.mode, result?.hexagram, fullDaoReading, question, locale]);
 
   const exampleHexagram = getHexagram(42);
   const hexagram = result?.mode === "dao" && result.hexagram ? getHexagram(result.hexagram) : null;
@@ -726,10 +731,10 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
                       </div>
                     </div>
                     <div className={styles.daoReading} data-ideas-dao-reading>
-                      {fullDaoReading?.number === hexagram.number ? (
+                      {fullDaoReading?.number === hexagram.number && fullDaoReading.locale === (answerLocale === "en" ? "en" : "ru") ? (
                         <>
                           <p className={styles.tag}>{fullDaoReading.kind === "original" ? answerCopy.originalReading : answerCopy.editorialReading}</p>
-                          <div className={styles.daoProse} lang="ru">
+                          <div className={styles.daoProse} lang={fullDaoReading.locale}>
                             {fullDaoReading.text.split(/\n\n+/).filter(Boolean).map((part, index) => <p key={index}>{part}</p>)}
                           </div>
                         </>
