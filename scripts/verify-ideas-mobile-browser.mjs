@@ -236,6 +236,7 @@ async function verify(browserType, locale, width) {
     assert.equal(await daoResult.locator('[role="img"]').count(), 0, label + ": collapsed content removed");
 
     if (width === 390) {
+      await backPath.tap();
       await hub.locator('[data-tests-coaching-path="coaching"]').tap();
       const exploreCoaching = hub.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').first();
       const destination = await exploreCoaching.getAttribute("href");
