@@ -29,7 +29,7 @@ const WORDS = {
   en: {
     eyebrow: "PERSONAL PRACTICE · ONLINE",
     title: "Energy support for your goal",
-    intro: "Tell us what you need first. Then explore practitioners, prices and request a session."
+    intro: "Tell us what you need first. Then explore practitioners, prices and request a session.",
     practitioner: "Practitioner",
     focus: "Your focus",
     method: "Practice",
@@ -86,7 +86,7 @@ const WORDS = {
   ru: {
     eyebrow: "ЛИЧНАЯ ПРАКТИКА · ОНЛАЙН",
     title: "Энергетическая поддержка цели",
-    intro: "Сначала опишите вашу цель. Затем посмотрите специалистов, цены и запросите удобное время."
+    intro: "Сначала опишите вашу цель. Затем посмотрите специалистов, цены и запросите удобное время.",
     practitioner: "Мастер",
     focus: "Запрос",
     method: "Метод",
@@ -143,7 +143,7 @@ const WORDS = {
   es: {
     eyebrow: "PRÁCTICA PERSONAL · EN LÍNEA",
     title: "Apoyo energético para tu objetivo",
-    intro: "Primero describe lo que necesitas. Después elige profesional, precio y horario."
+    intro: "Primero describe lo que necesitas. Después elige profesional, precio y horario.",
     practitioner: "Profesional",
     focus: "Tu objetivo",
     method: "Práctica",
