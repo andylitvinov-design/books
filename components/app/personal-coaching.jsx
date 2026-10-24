@@ -1,6 +1,8 @@
 'use client'
 
 
+
+
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check, ChevronLeft, Copy, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
@@ -9,10 +11,12 @@ import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
-import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { contextualCoachingFollowup, coachingSlidePurpose, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
 import styles from './personal-coaching.module.css'
+
+
 
 
 const copy={
@@ -240,7 +244,9 @@ export default function PersonalCoaching({locale='en',accountId}){
   }
   function offerFollowup(current,answer){
     if(index>=activeQuestions.length-1)return false
-    const item=authoredFollowupFor(question,answer,current?.reflections)
+    const item=contextualCoachingFollowup(question,answer,current?.reflections,{
+      questions:activeQuestions,answers:current?.answers,clientQuestion:current?.clientQuestion,
+    })
     if(!item)return false
     setPendingFollowup(item);setReflectionDraft('')
     return true
@@ -403,12 +409,21 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
             <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
-            <p>{followupCopy[lang].why}</p>
+            <p data-coaching-followup-reason>{translated(pendingFollowup.why,lang)||followupCopy[lang].why}</p>
             <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang}
               text={translated(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
               disabled={busy} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={setDictating}
               onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
+            {pendingFollowup.choices?.length>0&&<div className={styles.suggestions+' '+styles.followupChoices} role="group"
+              aria-label={langCopy.choice} data-coaching-followup-choices>
+              {pendingFollowup.choices.map(option=><button type="button" key={option.id}
+                disabled={busy||dictating} aria-pressed={reflectionDraft===translated(option.label,lang)}
+                className={reflectionDraft===translated(option.label,lang)?styles.chosen:undefined}
+                onClick={()=>{setReflectionDraft(translated(option.label,lang));setError('')}}>
+                {translated(option.label,lang)}
+              </button>)}
+            </div>}
             <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
             <textarea id="hh-coaching-followup" className={styles.textarea}
               value={reflectionDraft} maxLength={500} rows={3} disabled={busy}
@@ -462,7 +477,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
                 setError('');setNotice('')
               }}/>
-            <p>{translated(question.reflection||question.hint,lang)}</p>
+            <p data-coaching-step-purpose>{translated(question.hint,lang)||coachingSlidePurpose(question,lang)}</p>
             {question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
@@ -491,6 +506,8 @@ export default function PersonalCoaching({locale='en',accountId}){
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
+
+
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
@@ -509,4 +526,3 @@ export default function PersonalCoaching({locale='en',accountId}){
     </div>
   </main>
 }
-
