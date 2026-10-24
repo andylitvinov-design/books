@@ -59,13 +59,15 @@ test('homepage uses shared client-only provider and keeps existing hero/banner/d
   const nav = readFileSync(new URL('../components/site-navigation.tsx', import.meta.url),'utf8');
   const layout = readFileSync(new URL('../app/layout.tsx', import.meta.url),'utf8');
   const panel = readFileSync(new URL('../components/home-personal-space.tsx', import.meta.url),'utf8');
+  const more = readFileSync(new URL('../components/home-more-disclosure.tsx', import.meta.url),'utf8');
   for (const source of [home, es]) {
     assert.doesNotMatch(source, /HomePersonalSpaceProvider/);
-    assert.match(source, /HomePersonalSpaceCard/);
-    assert.ok(source.indexOf('<HomeSectionCarousel') < source.indexOf('<HomeFreeDiagnosisBanner'));
-    assert.ok(source.indexOf('<HomeFreeDiagnosisBanner') < source.indexOf('<HomeConversationGuide'));
-    assert.ok(source.indexOf('<HomeConversationGuide') < source.indexOf('<HomePersonalSpaceCard'));
+    assert.doesNotMatch(source, /<HomePersonalSpaceCard/);
+    assert.ok(source.indexOf('<HomeSectionCarousel') < source.indexOf('<HomeFeaturedWorkspace'));
+    assert.ok(source.indexOf('<HomeFeaturedWorkspace') < source.indexOf('<HomeMoreDisclosure'));
   }
+  assert.match(more, /<HomePersonalSpaceCard locale=\{locale\} \/>/);
+  assert.match(more, /\{expanded && \(/);
   assert.match(layout, /<HomePersonalSpaceProvider locale=\{lang\}>\{children\}<\/HomePersonalSpaceProvider>/);
   assert.match(nav, /<HomePersonalSpaceNavEntry/);
   assert.doesNotMatch(nav, /pathname === '\/' \|\| pathname === '\/ru' \|\| pathname === '\/es'/);

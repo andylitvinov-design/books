@@ -22,13 +22,17 @@ test("the home has seven ordered, translated steps with no repeated Master or me
   assert.match(feature, /moduleIds\.map\(\(id, index\) =>/);
   assert.match(feature, /data-home-module=\{id\}/);
   assert.match(feature, /href=\{"#home-immersion-" \+ id\}/);
+  assert.match(feature, /<h1 id="hh-home-features-title">/);
+  assert.match(feature, /<h2 id=\{"hh-home-" \+ id \+ "-title"\}>/);
   for (const page of ["components/holistic-house-home.tsx", "app/es/page.tsx"]) {
     const home = read(page);
     assert.equal((home.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1, page);
     assert.doesNotMatch(home, /<HomeCoreMethods\b|<HomeMasterPath\b/, "no duplicate method/master funnels");
-    const order = ["HomeSectionCarousel", "HomeFeaturedWorkspace",
-      "HomeFreeDiagnosisBanner", "HomeConversationGuide", "HomePersonalSpaceCard",
-      "HomepageTopicJourneys", "HomeMoreDisclosure"];
+    const order = ["HomeSectionCarousel", "HomeFeaturedWorkspace", "HomeMoreDisclosure"];
+    for (const duplicate of ["HomeFreeDiagnosisBanner", "HomeConversationGuide",
+      "HomePersonalSpaceCard", "HomepageTopicJourneys"]) {
+      assert.ok(!home.includes("<" + duplicate), duplicate + " is deferred, not repeated on the main page");
+    }
     let previous = -1;
     for (const tag of order) {
       const offset = home.indexOf("<" + tag);
@@ -73,6 +77,8 @@ test("each requested action uses an actual route, never an implied booking or pu
     "/pro", "/practice?panel=services", "/practice?panel=materials&materialTab=courses",
   ]) assert.ok(feature.includes(path), "Missing destination " + path);
   assert.match(feature, /locale === "es" \? "en" : locale/);
+  assert.match(feature, /aiCoaching: "\/" \+ locale \+ "\/coaching"/);
+  assert.doesNotMatch(feature, /aiCoaching: accountRoot \+ "\/coaching"/);
   for (const locale of ["en", "ru", "es"]) {
     assert.match(copy[locale].coachingNote, /(?:not live AI therapy|не живой ИИ-терапевт|no es terapia)/);
     assert.ok(copy[locale].alchemyNote.length > 70, "No misleading homeopathy claim");

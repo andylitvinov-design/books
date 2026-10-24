@@ -5,10 +5,6 @@ import type { ReactNode } from "react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { HomepageContactCta } from "@/components/homepage-contact-cta";
 import { HomeSectionCarousel } from "@/components/home-section-carousel";
-import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
-import { HomeConversationGuide } from "@/components/home-conversation-guide";
-import { HomepageTopicJourneys } from "@/components/homepage-topic-journeys";
-import { HomePersonalSpaceCard } from "@/components/home-personal-space";
 import { HomeMoreDisclosure } from "@/components/home-more-disclosure";
 import { HomeFeaturedWorkspace } from "@/components/home-featured-workspace";
 
@@ -74,10 +70,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
 
       <HomeSectionCarousel locale={locale} />
       <HomeFeaturedWorkspace locale={locale} />
-      <HomeFreeDiagnosisBanner locale={locale} />
-      <HomeConversationGuide locale={locale} />
-      <HomePersonalSpaceCard locale={locale} />
-      <HomepageTopicJourneys locale={locale} />
       <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
@@ -90,7 +82,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         </div>
         <div className="service-home-hero-copy">
           <p className="service-home-kicker">{entry.hero.eyebrow}</p>
-          <h1 id="house-title"><span>{text.heroTitle}</span></h1>
+          <h2 id="house-title"><span>{text.heroTitle}</span></h2>
           <p className="service-home-intro">{text.heroIntro}</p>
           <div className="service-home-actions">
             <AcquisitionEventLink

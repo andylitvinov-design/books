@@ -2,10 +2,6 @@ import Image from 'next/image';
 import { StaticPortrait } from '@/components/static-portrait';
 import { HomeSectionCarousel } from '@/components/home-section-carousel';
 import { HomeFeaturedWorkspace } from '@/components/home-featured-workspace';
-import { HomeFreeDiagnosisBanner } from '@/components/home-free-diagnosis-banner';
-import { HomeConversationGuide } from '@/components/home-conversation-guide';
-import { HomepageTopicJourneys } from '@/components/homepage-topic-journeys';
-import { HomePersonalSpaceCard } from '@/components/home-personal-space';
 import Link from 'next/link';
 import { BriefcaseBusiness, Flower2, Sparkles } from 'lucide-react';
 import { PersonalTestimonials } from '@/components/personal-testimonials';
@@ -25,16 +21,12 @@ export default function SpanishHomePage() {
     <PublicSiteHeader locale="es" />
     <HomeSectionCarousel locale="es" />
     <HomeFeaturedWorkspace locale="es" />
-    <HomeFreeDiagnosisBanner locale="es" />
-    <HomeConversationGuide locale="es" />
-    <HomePersonalSpaceCard locale="es" />
-    <HomepageTopicJourneys locale="es" />
     <HomeMoreDisclosure locale="es">
     <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
       <div className="service-home-hero-photo" aria-hidden="true"><StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width: 767px) 100vw, (max-width: 1127px) 55vw, 620px" /></div>
       <div className="service-home-hero-copy">
         <p className="service-home-kicker">Acompañamiento personal · Toronto y en línea</p>
-        <h1 id="house-title"><span>¿Dudas en tus relaciones, tu trabajo o una decisión importante?</span></h1>
+        <h2 id="house-title"><span>¿Dudas en tus relaciones, tu trabajo o una decisión importante?</span></h2>
         <p className="service-home-intro">Explora una pregunta personal con Andrey Litvinov mediante constelaciones sistémicas y trabajo con imágenes. Sesiones en Toronto y en línea; también puedes comenzar con una revisión escrita gratuita.</p>
         <div className="service-home-actions" id="free-start">
           <AcquisitionEventLink className="service-home-button service-home-button--primary"

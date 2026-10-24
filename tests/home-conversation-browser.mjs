@@ -33,6 +33,43 @@ async function waitForServer() {
   }
   throw new Error("Next server was not ready: " + logs.slice(-2000));
 }
+// The homepage now leads with one seven-stage journey. The previously visible
+// written-review and conversational modules remain available on deliberate
+// expansion, without their heavy JS and forms on the initial public load.
+async function expandOptionalTools(page) {
+  const journey = page.locator("[data-home-featured-workspace]");
+  await expect(journey).toHaveAttribute("data-home-journey-count", "7");
+  await expect(journey.locator("[data-home-module]")).toHaveCount(7);
+  await expect(page.locator('main.house-home h1')).toHaveCount(1);
+  const geometry = await journey.evaluate(node => {
+    const root = node.getBoundingClientRect();
+    const cards = [...node.querySelectorAll('[data-home-module-action]')];
+    const cardFits = cards.every(card => {
+      const bounds = card.getBoundingClientRect();
+      const action = card.querySelector('svg')?.parentElement?.getBoundingClientRect();
+      return bounds.left >= -1 && bounds.right <= window.innerWidth + 1 &&
+        bounds.height >= 44 && (!action || action.right <= bounds.right + 2);
+    });
+    return {
+      left: root.left, right: root.right, viewport: window.innerWidth,
+      cards: cards.length, cardFits,
+    };
+  });
+  assert.ok(geometry.left >= -1 && geometry.right <= geometry.viewport + 1 &&
+    geometry.cards === 16 && geometry.cardFits,
+    "Seven photographed stages and their CTAs must fit the mobile width: " + JSON.stringify(geometry));
+  const extras = page.locator("#more-directions");
+  await expect(extras).not.toHaveAttribute("open", "");
+  await expect(page.locator("[data-home-conversation-guide]")).toHaveCount(0);
+  await expect(page.locator("[data-home-free-diagnosis-banner]")).toHaveCount(0);
+  // Ensure React has hydrated before dispatching the native toggle event.
+  await page.waitForLoadState("load");
+  await extras.locator("summary").click();
+  await expect(extras).toHaveAttribute("open", "");
+  await expect(page.locator("[data-home-conversation-guide]")).toHaveCount(1, { timeout: 15000 });
+  await expect(page.locator("[data-home-free-diagnosis-banner]")).toHaveCount(1, { timeout: 15000 });
+}
+
 const scenarios = [
   { locale: "en", path: "/", text: "I'm anxious about work and need support", send: "Get guidance", goal: "Explore free tests", reset: "Start over", href: "/en/client/tests" },
   { locale: "ru", path: "/ru", text: "Я тревожусь и испытываю стресс", send: "Получить подсказку", goal: "Бесплатные тесты", reset: "Новый разговор", href: "/ru/client/tests" },
@@ -61,6 +98,7 @@ try {
       });
       try {
         await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await expandOptionalTools(page);
         const guide = page.locator("[data-home-conversation-guide]");
         await expect(guide).toHaveCount(1);
         await expect(guide).toBeVisible();
@@ -72,13 +110,20 @@ try {
         const diagnosis = page.locator("[data-home-free-diagnosis-banner]");
         await expect(diagnosis).toHaveCount(1);
         const positions = await page.evaluate(() => {
-          const slider = document.querySelector("[data-home-section-carousel]");
-          const banner = document.querySelector("[data-home-free-diagnosis-banner]");
-          const dialogue = document.querySelector("[data-home-conversation-guide]");
-          return [slider, banner, dialogue].map(node => node?.getBoundingClientRect().top ?? -1);
+          const selectors = [
+            "[data-home-section-carousel]",
+            "[data-home-featured-workspace]",
+            "#more-directions",
+            "[data-home-free-diagnosis-banner]",
+            "[data-home-conversation-guide]",
+          ];
+          return selectors.map(selector => {
+            const node = document.querySelector(selector);
+            return node ? node.getBoundingClientRect().top + window.scrollY : -1;
+          });
         });
-        assert.ok(positions[0] >= 0 && positions[0] < positions[1] && positions[1] < positions[2],
-          "Homepage must show slider, free service, then question: " + JSON.stringify(positions));
+        assert.ok(positions.every((top, index) => top >= 0 && (index === 0 || positions[index - 1] < top)),
+          "Homepage must show carousel → seven steps → optional written review → guide: " + JSON.stringify(positions));
         const requestButton = diagnosis.locator("[data-home-diagnosis-order]");
         await requestButton.click();
         await expect(requestButton).toHaveAttribute("aria-expanded", "true");
@@ -474,6 +519,7 @@ try {
     });
     try {
       await page.goto(host + scenario.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+      await expandOptionalTools(page);
       const guide = page.locator("[data-home-conversation-guide]");
       const microphone = guide.locator("[data-home-guide-launcher-mic]");
       const microphoneLabel = { en: "Dictate a question with microphone", ru: "Продиктовать вопрос", es: "Dictar una pregunta" }[scenario.locale];
@@ -543,6 +589,7 @@ try {
     try {
       if (sample.kind === "start-hang" || sample.kind === "stop-hang") await page.clock.install();
       await page.goto(host + sample.path, { waitUntil: "domcontentloaded", timeout: 30000 });
+      await expandOptionalTools(page);
       const guide = page.locator("[data-home-conversation-guide]");
       await guide.locator("[data-home-guide-launcher-mic]").click();
       await expect(guide.locator("[data-home-guide-dialog]")).toBeVisible();

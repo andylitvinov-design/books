@@ -20,20 +20,45 @@ const HomeExploreSections = dynamic(
   () => import("./home-explore-sections").then(mod => mod.HomeExploreSections),
   { ssr: false },
 );
+// Supporting formats remain reachable without loading or repeating them on the main journey.
+const HomeFreeDiagnosisBanner = dynamic(
+  () => import("./home-free-diagnosis-banner").then(mod => mod.HomeFreeDiagnosisBanner),
+  { ssr: false },
+);
+const HomeConversationGuide = dynamic(
+  () => import("./home-conversation-guide").then(mod => mod.HomeConversationGuide),
+  { ssr: false },
+);
+const HomePersonalSpaceCard = dynamic(
+  () => import("./home-personal-space").then(mod => mod.HomePersonalSpaceCard),
+  { ssr: false },
+);
+const HomepageTopicJourneys = dynamic(
+  () => import("./homepage-topic-journeys").then(mod => mod.HomepageTopicJourneys),
+  { ssr: false },
+);
 
 export function HomeMoreDisclosure({
   locale, children,
 }: { locale: PublicLocale; children: ReactNode }) {
   const [expanded, setExpanded] = useState(false);
-  const label = locale === "ru" ? "Все направления и услуги"
-    : locale === "es" ? "Todos los programas y servicios"
-      : "All programmes and services";
+  const label = locale === "ru" ? "Дополнительные инструменты и услуги"
+    : locale === "es" ? "Más herramientas y servicios"
+      : "More tools and services";
 
   return (
     <details className="service-home-more" id="more-directions"
       data-home-more-deferred="true"
       onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary>{label} <span aria-hidden="true">↓</span></summary>
+      {expanded && (
+        <>
+          <HomeFreeDiagnosisBanner locale={locale} />
+          <HomeConversationGuide locale={locale} />
+          <HomePersonalSpaceCard locale={locale} />
+          <HomepageTopicJourneys locale={locale} />
+        </>
+      )}
       {children}
       {expanded ? (locale === "es"
         ? <HomeExploreSections locale="es" />
