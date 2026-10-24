@@ -1,59 +1,32 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("all homepage locales preserve personal-session priority and distinct free choices", () => {
-  const enRu = read("components/holistic-house-home.tsx");
-  const es = read("app/es/page.tsx");
-  for (const source of [enRu, es]) {
-    assert.match(source, /service-home-button--primary/);
-    assert.match(source, /service-home-button--secondary/);
-    assert.match(source, /free-written-review/);
-    assert.match(source, /free-tests/);
-    assert.match(source, /paid-sessions/);
-    assert.ok(source.indexOf("service-home-button--primary") < source.indexOf("service-home-button--secondary"));
-    assert.doesNotMatch(source, /HomeFreePaths/);
-  }
-  assert.match(enRu, /Stuck in relationships, work or an important decision\?/);
-  assert.match(enRu, /Сложности в отношениях, работе или важном решении\?/);
-  assert.match(es, /¿Dudas en tus relaciones, tu trabajo o una decisión importante\?/);
+test("EN RU ES show free-first offers and paid requests with distinct CTA and detail actions", () => {
+  const offers = read("components/home-featured-workspace.tsx");
+  const css = read("components/home-featured-workspace.module.css");
+  assert.match(offers, /data-home-offer-primary=\{offer\.id\}/);
+  assert.match(offers, /data-home-offer-details=\{offer\.id\}/);
+  for (const token of ["Пройти курс Рейки бесплатно","Заказать бесплатный письменный разбор",
+    "Пройти коуч-сессию бесплатно","Request a session · from €50","Solicitar revisión escrita gratis"])
+    assert.ok(offers.includes(token), token);
+  assert.match(css, /\.offerPrimary \{ background: #742c42/);
+  assert.match(css, /min-height: 44px/);
 });
 
-test("photo-led service cards replace the duplicated free text cards on all homepage locales", () => {
+test("five bottom topic filters replace duplicated offer, test and My Space sections", () => {
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
-  const cards = read("components/services-solutions.tsx");
-  const offers = read("data/core-service-offers.ts");
-  const navigation = read("components/site-navigation.tsx");
-  for (const source of [home, es]) {
-    assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths/);
-    assert.match(source, /service-home-hero/);
-  }
   const more = read("components/home-more-disclosure.tsx");
-  assert.match(home, /<HomeMoreDisclosure locale=\{locale\}>/);
-  assert.match(more, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.match(cards, /id=\{isHome \? "free-start" : undefined\}/);
-  assert.match(cards, /homepageMedia\[offer\.id\]/);
-  assert.match(cards, /data-core-service-id=\{offer\.id\}/);
-  for (const slug of ["free-situation-review", "dao-health-profile", "alchemy-of-soul", "hypnotherapy-course"]) {
-    assert.ok(offers.includes(slug), slug);
+  for (const source of [home, es]) {
+    assert.match(source, /<HomeFeaturedWorkspace locale=/);
+    assert.match(source, /<HomeMoreDisclosure locale=/);
+    assert.doesNotMatch(source, /HomeFreePaths|FreeInsightsPaths|<HomeFreeDiagnosisBanner|<HomepageTopicJourneys|<HomePersonalSpaceCard|service-home-hero/);
   }
-  const serviceCardsAt = more.indexOf('<ServicesSolutions locale={locale} variant="home" />');
-  assert.ok(serviceCardsAt >= 0, "Expanded photo services remain in the deferred catalog");
-  assert.ok(home.indexOf('<HomepageTopicJourneys locale={locale} />') < home.indexOf('<HomeMoreDisclosure locale={locale}>'),
-    "Three needs-first photo directions appear outside the deferred catalogue");
-  assert.ok(es.indexOf('<HomepageTopicJourneys locale="es" />') < es.indexOf('<HomeMoreDisclosure locale="es">'),
-    "Spanish homepage mirrors the same three direction cards");
-  assert.doesNotMatch(more, /<HomepageTopicJourneys locale=/);
-  assert.doesNotMatch(home, /HomeFreeTestsBanner/);
-  assert.match(es, /className="service-home-actions" id="free-start"/);
-  assert.ok(es.indexOf('className="service-home-services"') < es.indexOf('</HomeMoreDisclosure>'));
-  assert.match(more, /<HomeExploreSections locale="es" \/>/);
-  assert.match(navigation, /services\/free-situation-review/);
-  assert.match(home, /not a live call/);
-  assert.match(es, /no una llamada/);
+  for (const key of ["energy","love","business","services","courses"])
+    assert.ok(more.includes('data-home-topic-filter="' + key + '"'));
+  assert.match(more, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
 });
 
 test("main menu prioritizes Energy Love Business and retains full legacy catalogues", () => {
@@ -68,8 +41,10 @@ test("main menu prioritizes Energy Love Business and retains full legacy catalog
   assert.match(nav, /mainMenuItems\.map/);
 });
 
-test("primary home CTA has stronger contrast and mobile introduction stays readable", () => {
-  const css = read("app/holistic-house-home.css");
-  assert.match(css, /\.service-home-button--primary \{ background: #742c42/);
-  assert.match(css, /\.service-home-intro \{ max-width: 76%; font-size: 16px/);
+test("final consented capture remains after seven stages", () => {
+  const home = read("components/holistic-house-home.tsx");
+  const spanish = read("app/es/page.tsx");
+  assert.ok(home.indexOf("<HomeMoreDisclosure") < home.indexOf("<HomepageContactCta"));
+  assert.ok(spanish.indexOf("<HomeMoreDisclosure") < spanish.indexOf("<PublicConsultationCta"));
+  assert.match(read("components/homepage-contact-cta.tsx"), /data-home-contact-capture/);
 });

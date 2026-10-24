@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Target } from "lucide-react";
@@ -44,19 +45,19 @@ const copy = {
             "id": "reiki",
             "title": "Reiki Practitioner · free",
             "body": "Five introductory lessons, guided practice and reflection.",
-            "cta": "Start free Reiki course"
+            "cta": "Start Reiki course free"
           },
           {
             "id": "opora",
             "title": "OPORA · 14 days",
             "body": "Practical daily exercises to support balance and resilience.",
-            "cta": "Explore the free course"
+            "cta": "Open free OPORA course"
           },
           {
             "id": "academy",
             "title": "Explore the Academy",
             "body": "Find other courses and learning pathways.",
-            "cta": "Browse courses"
+            "cta": "Explore Academy courses"
           }
         ]
       },
@@ -74,13 +75,13 @@ const copy = {
             "id": "profile",
             "title": "Build my personal profile",
             "body": "Collect your results and private reports in My Space.",
-            "cta": "Open my profile"
+            "cta": "Create my profile"
           },
           {
             "id": "growth",
             "title": "My development plan",
             "body": "Turn your reflections into a private path with next steps.",
-            "cta": "View my development path"
+            "cta": "Open my development plan"
           }
         ]
       },
@@ -92,19 +93,19 @@ const copy = {
             "id": "review",
             "title": "Free express situation review",
             "body": "Describe your question and receive a personal written analysis.",
-            "cta": "Request a free review"
+            "cta": "Request free written review"
           },
           {
             "id": "businessConstellations",
             "title": "Business constellation",
             "body": "Explore roles, team dynamics and business decisions.",
-            "cta": "Explore business constellations"
+            "cta": "Request business session"
           },
           {
             "id": "constellations",
             "title": "Systemic & family constellation",
             "body": "Explore family patterns, relationships and recurring situations.",
-            "cta": "Explore constellations"
+            "cta": "Request family constellation"
           }
         ]
       },
@@ -122,7 +123,7 @@ const copy = {
             "id": "therapist",
             "title": "Session with a therapist / coach",
             "body": "Individual session online or in Toronto · from €50 for 30 minutes.",
-            "cta": "Request a personal session"
+            "cta": "Request a session · from €50"
           }
         ]
       },
@@ -134,7 +135,7 @@ const copy = {
             "id": "alchemy",
             "title": "Alchemy of the Soul",
             "body": "Guided imagery · systemic work · optional homeopathic reflection.",
-            "cta": "Explore Alchemy of the Soul"
+            "cta": "Request an Alchemy session"
           }
         ]
       },
@@ -158,19 +159,19 @@ const copy = {
             "id": "pro",
             "title": "Professional training",
             "body": "Explore the Pro journey from introductory courses to professional study.",
-            "cta": "Explore professional training"
+            "cta": "Explore professional study"
           },
           {
             "id": "service",
             "title": "Offer your services",
             "body": "Create a practitioner service listing for moderation.",
-            "cta": "List my services"
+            "cta": "List my service"
           },
           {
             "id": "course",
             "title": "Publish your own courses",
             "body": "Prepare your course in My Practice for review before publication.",
-            "cta": "Open course editor"
+            "cta": "Create my course"
           }
         ]
       }
@@ -204,19 +205,19 @@ const copy = {
             "id": "reiki",
             "title": "Практик Рейки · бесплатно",
             "body": "Пять вводных уроков, практики и рефлексия.",
-            "cta": "Начать бесплатный курс"
+            "cta": "Пройти курс Рейки бесплатно"
           },
           {
             "id": "opora",
             "title": "ОПОРА · 14 дней",
             "body": "Короткие ежедневные упражнения для устойчивости и равновесия.",
-            "cta": "Открыть бесплатный курс"
+            "cta": "Пройти курс ОПОРА бесплатно"
           },
           {
             "id": "academy",
             "title": "Все курсы Академии",
             "body": "Другие программы и направления обучения.",
-            "cta": "Посмотреть курсы"
+            "cta": "Выбрать курс Академии"
           }
         ]
       },
@@ -228,19 +229,19 @@ const copy = {
             "id": "allTests",
             "title": "Бесплатные тесты личности",
             "body": "Выберите тему, пройдите тест и изучите результаты.",
-            "cta": "Пройти бесплатный тест"
+            "cta": "Пройти тест бесплатно"
           },
           {
             "id": "profile",
             "title": "Создать профиль личности",
             "body": "Соберите результаты тестов и отчёты в приватном кабинете.",
-            "cta": "Мой профиль личности"
+            "cta": "Создать профиль личности"
           },
           {
             "id": "growth",
             "title": "Создать план развития",
             "body": "Переведите результаты в индивидуальные шаги развития.",
-            "cta": "Мой план развития"
+            "cta": "Открыть план развития"
           }
         ]
       },
@@ -252,19 +253,19 @@ const copy = {
             "id": "review",
             "title": "Бесплатная экспресс-диагностика",
             "body": "Опишите вопрос и получите персональный письменный разбор.",
-            "cta": "Получить экспресс-разбор"
+            "cta": "Заказать бесплатный письменный разбор"
           },
           {
             "id": "businessConstellations",
             "title": "Бизнес-расстановка",
             "body": "Исследуйте роли в команде, бизнес-решения и препятствия.",
-            "cta": "Открыть бизнес-расстановки"
+            "cta": "Запросить бизнес-расстановку"
           },
           {
             "id": "constellations",
             "title": "Системный анализ и семейная расстановка",
             "body": "Исследуйте повторяющиеся семейные и жизненные сценарии.",
-            "cta": "Открыть расстановки"
+            "cta": "Запросить семейную расстановку"
           }
         ]
       },
@@ -276,13 +277,13 @@ const copy = {
             "id": "aiCoaching",
             "title": "Бесплатная ИИ-коуч-сессия",
             "body": "Самостоятельные вопросы с автоматическим выбором модели; это не живой ИИ-чат.",
-            "cta": "Начать бесплатно"
+            "cta": "Пройти коуч-сессию бесплатно"
           },
           {
             "id": "therapist",
             "title": "Сессия с терапевтом / коучем",
             "body": "Индивидуальная работа онлайн или в Торонто · от €50 за 30 минут.",
-            "cta": "Запросить личную сессию"
+            "cta": "Запросить сессию · от €50"
           }
         ]
       },
@@ -294,7 +295,7 @@ const copy = {
             "id": "alchemy",
             "title": "Алхимия души",
             "body": "Гипнотерапия · расстановки · необязательная гомеопатическая рефлексия.",
-            "cta": "Исследовать Алхимию души"
+            "cta": "Запросить Алхимию души"
           }
         ]
       },
@@ -306,7 +307,7 @@ const copy = {
             "id": "energy",
             "title": "Персональная энергетическая поддержка",
             "body": "Дистанционная сессия; символический талисман обсуждается отдельно.",
-            "cta": "Получить поддержку"
+            "cta": "Заказать энергетическую поддержку"
           }
         ]
       },
@@ -318,7 +319,7 @@ const copy = {
             "id": "pro",
             "title": "Профессиональное обучение",
             "body": "Путь Pro: от знакомства с методом до практической подготовки.",
-            "cta": "Открыть обучение"
+            "cta": "Выбрать обучение"
           },
           {
             "id": "service",
@@ -330,7 +331,7 @@ const copy = {
             "id": "course",
             "title": "Разместить свои курсы",
             "body": "Подготовьте авторский курс в кабинете мастера.",
-            "cta": "Редактор курсов"
+            "cta": "Создать свой курс"
           }
         ]
       }
@@ -364,19 +365,19 @@ const copy = {
             "id": "reiki",
             "title": "Reiki Practitioner · gratis",
             "body": "Cinco lecciones introductorias, práctica y reflexión.",
-            "cta": "Empezar gratis"
+            "cta": "Empezar Reiki gratis"
           },
           {
             "id": "opora",
             "title": "OPORA · 14 días",
             "body": "Ejercicios cotidianos de apoyo y equilibrio.",
-            "cta": "Explorar curso gratuito"
+            "cta": "Abrir OPORA gratis"
           },
           {
             "id": "academy",
             "title": "Explora la Academia",
             "body": "Descubre otros cursos y caminos de aprendizaje.",
-            "cta": "Ver cursos"
+            "cta": "Explorar la Academia"
           }
         ]
       },
@@ -388,19 +389,19 @@ const copy = {
             "id": "allTests",
             "title": "Pruebas gratuitas de personalidad",
             "body": "Elige un tema, realiza una prueba y explora tus resultados.",
-            "cta": "Hacer una prueba"
+            "cta": "Hacer prueba gratis"
           },
           {
             "id": "profile",
             "title": "Crear mi perfil personal",
             "body": "Reúne resultados e informes en tu espacio privado.",
-            "cta": "Abrir mi perfil"
+            "cta": "Crear mi perfil"
           },
           {
             "id": "growth",
             "title": "Mi plan de desarrollo",
             "body": "Convierte tus resultados en próximos pasos personales.",
-            "cta": "Ver mi plan"
+            "cta": "Abrir mi plan"
           }
         ]
       },
@@ -412,19 +413,19 @@ const copy = {
             "id": "review",
             "title": "Diagnóstico exprés gratuito",
             "body": "Describe una pregunta para obtener una respuesta personal escrita.",
-            "cta": "Solicitar revisión"
+            "cta": "Solicitar revisión escrita gratis"
           },
           {
             "id": "businessConstellations",
             "title": "Constelación de negocios",
             "body": "Explora roles de equipo y decisiones empresariales.",
-            "cta": "Explorar constelaciones"
+            "cta": "Solicitar sesión empresarial"
           },
           {
             "id": "constellations",
             "title": "Análisis sistémico y constelación familiar",
             "body": "Explora relaciones, patrones familiares y situaciones recurrentes.",
-            "cta": "Ver constelaciones"
+            "cta": "Solicitar constelación familiar"
           }
         ]
       },
@@ -436,13 +437,13 @@ const copy = {
             "id": "aiCoaching",
             "title": "Sesión gratuita de coaching asistido",
             "body": "Preguntas autoguiadas con selección automática de modelo; no es chat de IA en vivo.",
-            "cta": "Empezar coaching"
+            "cta": "Empezar coaching gratis"
           },
           {
             "id": "therapist",
             "title": "Sesión con terapeuta / coach",
             "body": "Consulta individual en línea o Toronto · desde 50 € por 30 minutos.",
-            "cta": "Solicitar sesión"
+            "cta": "Solicitar sesión · desde 50 €"
           }
         ]
       },
@@ -454,7 +455,7 @@ const copy = {
             "id": "alchemy",
             "title": "Alquimia del Alma",
             "body": "Hipnoterapia · trabajo sistémico · reflexión homeopática opcional.",
-            "cta": "Conocer Alquimia del Alma"
+            "cta": "Solicitar sesión de Alquimia"
           }
         ]
       },
@@ -466,7 +467,7 @@ const copy = {
             "id": "energy",
             "title": "Apoyo energético personal",
             "body": "Sesión a distancia y talismán simbólico opcional por acuerdo.",
-            "cta": "Solicitar apoyo"
+            "cta": "Solicitar apoyo energético"
           }
         ]
       },
@@ -478,19 +479,19 @@ const copy = {
             "id": "pro",
             "title": "Formación profesional",
             "body": "Descubre el recorrido Pro desde la introducción hasta la práctica.",
-            "cta": "Explorar formación"
+            "cta": "Explorar formación Pro"
           },
           {
             "id": "service",
             "title": "Publicar mis servicios",
             "body": "Crea un anuncio profesional sujeto a revisión.",
-            "cta": "Publicar servicio"
+            "cta": "Publicar mis servicios"
           },
           {
             "id": "course",
             "title": "Compartir mis cursos",
             "body": "Prepara tu curso dentro de tu espacio profesional.",
-            "cta": "Abrir editor de cursos"
+            "cta": "Crear mi curso"
           }
         ]
       }
@@ -511,7 +512,70 @@ const copy = {
   }
 } as const;
 
+const offerDetails = {
+  "en": {
+    "reiki": "Five introductory lessons with exercises and reflection. Initiation is arranged separately; completion does not confer professional qualification.",
+    "opora": "Fourteen days of guided self-support. Open the course page to select a suitable route and start; progress is not a medical result.",
+    "academy": "Explore existing programmes and their access terms. Some courses may require payment.",
+    "allTests": "Choose a topic and complete a self-check. The result supports reflection, not medical diagnosis.",
+    "profile": "Save reports together inside your protected account. Sign-in is required; results are not made public.",
+    "growth": "Your private development path links available insights with next steps; an account is required to retain progress.",
+    "review": "Share one question, a short form and a drawing. This is a request for a written response, not a call or confirmed booking.",
+    "businessConstellations": "Review business constellations and request a session. Availability and any fees must be confirmed with the practitioner.",
+    "constellations": "Explore family-system patterns with a practitioner. Your request is not an automatic reservation.",
+    "aiCoaching": "One question per screen, with automatic coaching-model selection. This is self-guided, not live AI therapy.",
+    "therapist": "Personal sessions are €50/30 minutes or €100/60 minutes. A request is not a confirmed appointment.",
+    "alchemy": "Guided imagery and systemic work, with optional complementary practices. Homeopathy does not replace medical care.",
+    "energy": "Choose a distance-support format and send a request. A practitioner must confirm it; clicking does not charge you.",
+    "pro": "Review the training paths and requirements. Introductory learning does not itself grant a professional credential.",
+    "service": "Sign in to My Practice to prepare your service listing. Publication requires moderation and appropriate access.",
+    "course": "Create course lessons in My Practice. Publication requires review; no payment is processed by this button."
+  },
+  "ru": {
+    "reiki": "Пять вводных уроков с практикой и рефлексией. Посвящение согласуется отдельно; курс не присваивает профессиональную квалификацию.",
+    "opora": "Четырнадцать дней самостоятельной поддержки. На странице курса можно выбрать маршрут; прогресс не является медицинским результатом.",
+    "academy": "Посмотрите программы и условия доступа. Некоторые курсы Академии могут быть платными.",
+    "allTests": "Выберите тему и пройдите самопроверку. Результат служит самопознанию, а не медицинскому диагнозу.",
+    "profile": "Результаты и отчёты сохраняются в защищённом кабинете после входа и не публикуются.",
+    "growth": "Путь развития собирает доступные рекомендации и следующие шаги. Для сохранения нужен аккаунт.",
+    "review": "Один вопрос, краткая анкета и рисунок от руки. Это заявка на письменный ответ, не видеозвонок или подтверждённая бронь.",
+    "businessConstellations": "Изучите метод и запросите сессию. Время и стоимость подтверждаются со специалистом.",
+    "constellations": "Изучите семейные сценарии и запросите работу с практиком. Запрос ещё не является записью.",
+    "aiCoaching": "По одному вопросу на экран с автоматическим подбором модели. Пока это самостоятельный формат, не живой ИИ-терапевт.",
+    "therapist": "Стоимость личной сессии: €50 за 30 минут или €100 за 60 минут. Запись подтверждается отдельно.",
+    "alchemy": "Работа с образами и расстановками, дополнительные практики по желанию. Гомеопатия не заменяет лечение.",
+    "energy": "Выберите формат дистанционной поддержки и оставьте запрос. Мастер подтверждает его до записи и оплаты.",
+    "pro": "Изучите программы и условия подготовки. Вводный курс не присваивает профессиональную квалификацию.",
+    "service": "Войдите в My Practice и подготовьте карточку услуги. Публикация проходит модерацию.",
+    "course": "Соберите уроки в My Practice. Курс публикуется после проверки, а не автоматически по нажатию."
+  },
+  "es": {
+    "reiki": "Cinco lecciones introductorias y reflexión. La iniciación se acuerda aparte y no otorga cualificación profesional.",
+    "opora": "Catorce días de apoyo autoguiado. Abre el programa para elegir un recorrido; el avance no es un resultado médico.",
+    "academy": "Explora los programas y sus condiciones; algunos cursos pueden ser de pago.",
+    "allTests": "Elige un tema y haz una prueba de autorreflexión. No es un diagnóstico médico.",
+    "profile": "Guarda informes y resultados en tu cuenta privada. Necesitas iniciar sesión.",
+    "growth": "Tu plan privado reúne ideas y próximos pasos. Necesitas una cuenta para guardar avances.",
+    "review": "Una pregunta, un formulario breve y un dibujo. Es una solicitud de revisión escrita, no una cita confirmada.",
+    "businessConstellations": "Conoce el método y solicita una sesión empresarial. Precio y disponibilidad se confirman aparte.",
+    "constellations": "Explora patrones familiares con un profesional. Enviar la solicitud no reserva la sesión.",
+    "aiCoaching": "Una pregunta por pantalla con selección automática de modelo. Es autoguiado, no terapia de IA en vivo.",
+    "therapist": "Sesiones personales de 30 minutos por 50 € o 60 minutos por 100 €. La cita requiere confirmación.",
+    "alchemy": "Imágenes guiadas y constelaciones, con métodos complementarios opcionales; la homeopatía no sustituye la medicina.",
+    "energy": "Elige un formato y solicita apoyo remoto. El profesional confirma antes de reservar o cobrar.",
+    "pro": "Explora requisitos y programas. Los cursos introductorios no otorgan cualificación profesional.",
+    "service": "Inicia sesión en My Practice para preparar tu anuncio; requiere revisión antes de publicarse.",
+    "course": "Organiza tus lecciones en My Practice. Publicar requiere revisión, sin pago automático."
+  }
+} as const;
+const detailLabels = {
+  en: { open: "Details", close: "Hide details" },
+  ru: { open: "Подробнее", close: "Скрыть детали" },
+  es: { open: "Detalles", close: "Ocultar detalles" },
+} as const;
+
 export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
+  const [expandedOffer, setExpandedOffer] = useState<OfferId | null>(null);
   const t = copy[locale];
   const space = useHomePersonalSpace();
   const signedIn = space?.status === "ready" && Boolean(space.summary);
@@ -533,7 +597,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
     review: "/" + locale + "/services/free-situation-review",
     businessConstellations: "/" + locale + "/services/business-consulting",
     constellations: "/" + locale + "/services/systemic-constellations",
-    aiCoaching: accountRoot + "/coaching",
+    aiCoaching: "/" + locale + "/coaching",
     therapist: "/" + locale + "/services#consultation",
     alchemy: "/" + locale + "/services/alchemy-of-soul",
     energy: "/" + locale + "/services/remote-energy-support",
@@ -548,7 +612,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
       aria-labelledby="hh-home-features-title">
       <header className={styles.intro}>
         <p className={styles.eyebrow}>{t.eyebrow} · 01–07</p>
-        <h2 id="hh-home-features-title">{t.heading}</h2>
+        <h1 id="hh-home-features-title">{t.heading}</h1>
         <p>{t.summary}</p>
       </header>
       <nav className={styles.steps} aria-label={t.journeyLabel}>
@@ -578,28 +642,42 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
               data-home-module={id} aria-labelledby={"hh-home-" + id + "-title"} key={id}>
               <header className={styles.sectionHeading}>
                 <p className={styles.eyebrow}>{t.sectionCounter} {index + 1}/{moduleIds.length}</p>
-                <h3 id={"hh-home-" + id + "-title"}>{section.title}</h3>
+                <h2 id={"hh-home-" + id + "-title"}>{section.title}</h2>
                 <p className={styles.lead}>{section.lead}</p>
               </header>
               <div className={styles.offers} data-home-module-offers={id}>
-                {section.offers.map(offer => (
-                  <Link key={offer.id} href={hrefs[offer.id]} prefetch={false}
-                    className={styles.offer} data-home-module-action={offer.id}>
-                    <span className={styles.photo} aria-hidden="true">
-                      <Image src={photos[offer.id]} alt="" fill unoptimized loading="lazy"
-                        sizes="(max-width: 640px) 120px, (max-width: 920px) 160px, 190px" />
-                    </span>
-                    <span className={styles.offerBody}>
-                      <strong className={styles.offerTitle}>{offer.title}</strong>
-                      <span className={styles.offerDetail}>{offer.body}</span>
-                      <span className={styles.offerAction}>
-                        {offer.id === "profile" && !signedIn ? t.guestProfile
-                          : offer.id === "growth" && !signedIn ? t.guestGrowth : offer.cta}
-                        <ArrowRight size={16} aria-hidden="true" />
+                {section.offers.map(offer => {
+                  const expanded = expandedOffer === offer.id;
+                  const actionLabel = offer.id === "profile" && !signedIn ? t.guestProfile
+                    : offer.id === "growth" && !signedIn ? t.guestGrowth : offer.cta;
+                  return (
+                    <article key={offer.id} className={styles.offer} data-home-offer-card={offer.id}>
+                      <span className={styles.photo} aria-hidden="true">
+                        <Image src={photos[offer.id]} alt="" fill unoptimized loading="lazy"
+                          sizes="(max-width: 350px) 92px, (max-width: 640px) 124px, (max-width: 920px) 160px, 190px" />
                       </span>
-                    </span>
-                  </Link>
-                ))}
+                      <div className={styles.offerBody}>
+                        <h3 className={styles.offerTitle}>{offer.title}</h3>
+                        <p className={styles.offerDetail}>{offer.body}</p>
+                      </div>
+                      <div className={styles.offerControls}>
+                        <Link href={hrefs[offer.id]} prefetch={false} className={styles.offerPrimary}
+                          data-home-module-action={offer.id} data-home-offer-primary={offer.id}>
+                          {actionLabel}<ArrowRight size={16} aria-hidden="true" />
+                        </Link>
+                        <button type="button" className={styles.offerSecondary}
+                          onClick={() => setExpandedOffer(expanded ? null : offer.id)}
+                          aria-controls={"home-offer-info-" + offer.id} aria-expanded={expanded}
+                          data-home-offer-details={offer.id}>
+                          {expanded ? detailLabels[locale].close : detailLabels[locale].open}
+                        </button>
+                      </div>
+                      <p id={"home-offer-info-" + offer.id} hidden={!expanded} className={styles.offerMore}>
+                        {offerDetails[locale][offer.id]}
+                      </p>
+                    </article>
+                  );
+                })}
               </div>
               {(footerLink || note) && (
                 <footer className={styles.sectionFooter}>

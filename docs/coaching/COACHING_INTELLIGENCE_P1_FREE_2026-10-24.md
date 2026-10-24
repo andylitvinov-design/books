@@ -27,3 +27,17 @@
 
 ## Future P2 requires separate approval
 Server-side orchestrated generative follow-ups, long-term opt-in memory, real-time voice, personalized roleplay, external CRM messaging, LLM costs and any remote processing of private answers are **not** part of this zero-cost phase.
+
+
+## P1.5 integration hardening · 2026-10-24
+The separately merged #1787 adds **optional authored interstitial questions** with encrypted signed-in `reflection` persistence, an editable/confirmable `actionPlan` in the same owner-scoped ciphertext, and a guest-only in-memory implementation. All are zero-provider-cost, and **must not be confused with generative AI**.
+
+The later hardening PR integrates rather than duplicates that work:
+- `draftCoachingActionPlan` delegates semantic classification to the same `buildCoachingRecap` used by the session result. A TGROW timing response, OSKAR resource, Appreciative design direction, or explicit pause cannot silently seed "one action I choose". Missing proposed actions remain blank and require human wording before confirmation; a mere request is not assumed to be a goal.
+- The private **new session** picker can optionally revisit only a **previously confirmed** saved action. It is fetched from the same account's existing history, inserted as an editable new question only on direct tap, and not transmitted or used automatically. No additional memory store or new data sharing.
+- Private manual clipboard export optionally includes a saved plan **only if** it has `approvedAt`; unconfirmed drafts are never described as approved. If Safari Clipboard API fails, a selectable read-only text fallback appears.
+- The unsaved-content reload warning also covers typed/dictated optional followup answers.
+- Existing owner RLS schema and optimistic revision semantics remain unchanged. Verifier must check server-side authorization and no cross-user access; DB metadata checks do not replace a real second-account E2E.
+- Release gates: existing unit/coaching/public lounge suites in Vercel prebuild, Next.js type/lint/build, specific READY deployment + production SHA match, mobile 320–430px, EN/RU signed-in session journey and EN/RU/ES guest path. Signed-in ES cabin currently needs dedicated route support before claiming ES authenticated E2E.
+
+**Avoid duplicate helpers:** `guided-session.js` is canonical for answer text and stage-to-recap roles; `offline-intelligence.js` retains only its versioned authored follow-up decision and delegates plan classification to the canonical helper. No external generative provider, memory embedding, notification, payment or video provider is activated.
