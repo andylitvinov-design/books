@@ -24,6 +24,7 @@ import {dispatchNativeClientMessagePush} from '@/lib/app/native-push-dispatch'
 import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 import { createPresentationUploadIntent, completePresentationUpload } from '@/lib/practitioners/presentation-storage'
 import { createArticleRepository } from '@/lib/practitioners/article-repository'
+import { createArticleSocialRepository } from '@/lib/practitioners/article-social-repository'
 import { createPractitionerEventsRepository } from '@/lib/practitioners/events-repository'
 import { createGuestRepository } from '@/lib/app/guest-repository'
 import { readAccountTestRating, saveAccountTestRating, readGuestTestRating, saveGuestTestRating } from '@/lib/app/test-catalog-social-proof'
@@ -868,6 +869,19 @@ async function handle(request, { params }) {
     }
     if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
     const body = await readBody(request)
+    if (joined === 'community/likes') {
+      onlyKeys(body,['articleId']);requireUUID(body.articleId)
+      await consumeRate(config,{op:'article-like',actor:actor.id},40,3600)
+      return json(await createArticleSocialRepository(config).toggleLike(actor,body.articleId))
+    }
+    if (joined === 'community/comments') {
+      await consumeRate(config,{op:'article-comment',actor:actor.id},6,3600)
+      return json(await createArticleSocialRepository(config).addComment(actor,body),201)
+    }
+    if (path[0] === 'community' && path[1] === 'comments' && path.length === 3 && body.action === 'delete') {
+      onlyKeys(body,['action']);requireUUID(path[2])
+      return json(await createArticleSocialRepository(config).deleteComment(actor,path[2]))
+    }
     if (path[0] === 'reports' && path.length === 3 && path[2] === 'remove')
       return json(await removeSavedReport(config, actor, path[1]))
     if (path[0] === 'documents' && path.length === 3 && path[2] === 'remove')
