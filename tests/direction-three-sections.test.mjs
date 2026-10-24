@@ -39,6 +39,7 @@ function fixture(direction,locale,suggestions={}){
     'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:({children})=>children},
     'next/image':{__esModule:true,default:props=>jsx('img',props)},
     'next/link':{__esModule:true,default:props=>jsx('a',props)},
+    '@/components/home-free-diagnosis-banner':{HomeFreeDiagnosisBanner:props=>jsx('aside',props)},
     'lucide-react':new Proxy({}, {get:()=>()=>null}),
     react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial
       return [state[i],next=>{state[i]=typeof next==='function'?next(state[i]):next}] }},
