@@ -2,19 +2,20 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
-import CrmManager from './crm-manager'
-import PractitionerClientProfiles from './practitioner-client-profiles'
-import PracticeMaterials from './practice-materials'
-import PracticeEvents from './practice-events'
+const CrmManager = dynamic(() => import('./crm-manager'))
+const PractitionerClientProfiles = dynamic(() => import('./practitioner-client-profiles'))
+const PracticeMaterials = dynamic(() => import('./practice-materials'))
+const PracticeEvents = dynamic(() => import('./practice-events'))
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
-import PublicEnquiryContact from './public-enquiry-contact'
-import MyServicesDashboard from './my-services-dashboard'
-import SimpleServiceEditor from './simple-service-editor'
-import RemoteGoalPhoto from './remote-goal-photo'
-import PracticePhotoUpload from './practice-photo-upload'
-import PracticeVideoField from './practice-video-field'
+const PublicEnquiryContact = dynamic(() => import('./public-enquiry-contact'))
+const MyServicesDashboard = dynamic(() => import('./my-services-dashboard'))
+const SimpleServiceEditor = dynamic(() => import('./simple-service-editor'))
+const RemoteGoalPhoto = dynamic(() => import('./remote-goal-photo'))
+const PracticePhotoUpload = dynamic(() => import('./practice-photo-upload'))
+const PracticeVideoField = dynamic(() => import('./practice-video-field'))
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import './practice-dashboard.css'
