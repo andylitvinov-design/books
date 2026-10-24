@@ -200,7 +200,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   function moveBack(){
     if(index===0){backToModels();return}
     // A guest can move between steps without discarding an unsubmitted draft.
-    // This remains in React memory only; no network or localStorage write.
+    // This remains in React memory only; no server call or persistent storage.
     const updated={...answers,[current.id]:draft}
     const prev=index-1
     setAnswers(updated)
