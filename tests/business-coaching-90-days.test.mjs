@@ -134,11 +134,13 @@ test('formative survey changes are raw same-version mean deltas, never fake norm
   assert.deepEqual(businessSurveyChanges(first,{...last,referenceDays:30}),[])
   assert.deepEqual(businessSurveyChanges(first,{...last,recordedAt:'2026-08-31T00:00:00Z'}),[])
 })
-test('approved public business page and auth page point to a real allowed and private account route',()=>{
+test('business public entry offers current personal coaching while paused 90-day legacy stays private',()=>{
   const page=readFileSync(new URL('../app/[locale]/explore/[theme]/page.tsx',import.meta.url),'utf8')
+  const direction=readFileSync(new URL('../components/direction-offers.tsx',import.meta.url),'utf8')
   const cabinet=readFileSync(new URL('../app/[locale]/app/[[...path]]/page.jsx',import.meta.url),'utf8')
   assert.match(cabinet,/['"]business['"].*\.includes\(path\[0\]\)/)
-  assert.match(page,/app\/business/)
+  assert.match(page,/<DirectionOffers locale=\{locale as PublicLocale\}/)
+  assert.match(direction,/const courseHref = direction === 'business'[\s\S]*?'\/app\/coaching'/)
   assert.match(cabinet,/robots: \{ index: false, follow: false \}/)
 })
 
