@@ -101,3 +101,6 @@
   .courseSheet{height:auto;max-height:none}
   .courseScroll{padding-top:7px;padding-bottom:9px}
 }
+
+/* Shared model preview has fixed navigation and independent internal scrolling. */
+.courseIntro{flex:1;display:flex;min-height:0;overflow:hidden;width:100%}

@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, Lock
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingModelIntro from '@/components/coaching-model-intro'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
 import { COACHING_TOPIC_GROUPS, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent } from '@/lib/coaching/coaching-topic-groups'
@@ -238,6 +239,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [duration,setDuration]=useState(0)
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
+  const [introAccepted,setIntroAccepted]=useState(false)
   const [adultAcknowledged,setAdultAcknowledged]=useState(false)
   const [index,setIndex]=useState(0)
   const [answers,setAnswers]=useState({})
@@ -282,11 +284,11 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   // Focus the freshly rendered heading after each guest step; never autofocus
   // an input or open the keyboard without the visitor's action.
   useEffect(()=>{
-    if(session&&!finished){
+    if(session&&introAccepted&&!finished){
       if(sessionScrollRef.current)sessionScrollRef.current.scrollTop=0
       titleRef.current?.focus({preventScroll:true})
     }
-  },[session,index,finished,pendingFollowup])
+  },[session,index,finished,pendingFollowup,introAccepted])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
   // A dedicated public scheme landing may link back to an explicit Start action.
@@ -301,7 +303,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     const selected=schemes.find(item=>item.schemeKey===schemeKey)
     if(selected){
       setAdultAcknowledged(false)
-      setSession(selected);setIndex(0);setAnswers({});setDraft('')
+      setSession(selected);setIntroAccepted(false);setIndex(0);setAnswers({});setDraft('')
       setFinished(false);setError('');setCopied(false)
     }
   },[schemes])
@@ -331,12 +333,12 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   function start(scheme){
     if(recommendation.blocked)return
     setAdultAcknowledged(false)
-    setSession(scheme);setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
+    setSession(scheme);setIntroAccepted(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
-    setSession(null);setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
+    setSession(null);setIntroAccepted(false);setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
@@ -537,6 +539,17 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         </section>}
         
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={coachingSchemeRequiresAdultConsent(session)?'true':undefined}>
+        {!introAccepted?<div className={styles.introHost}><CoachingModelIntro
+          locale={lang} methodKey={session.schemeKey}
+          title={tr(models.get(session.modelKey)?.name||session.name,lang)}
+          description={tr(models.get(session.modelKey)?.selectionComment,lang)||tr(models.get(session.modelKey)?.focus,lang)}
+          fit={tr(models.get(session.modelKey)?.focus,lang)}
+          topics={(session.tags||[]).map(tag=>tr(catalog?.signals?.find(signal=>signal.tag===tag)?.label,lang)).filter(Boolean).slice(0,3)}
+          examples={models.get(session.modelKey)?.exampleQuestions?.[lang]||models.get(session.modelKey)?.exampleQuestions?.en||[]}
+          outcome={tr(session.result,lang)} caution={tr(models.get(session.modelKey)?.caution,lang)}
+          image={coachingArt[session.modelKey]||coachingArt.grow_v1}
+          minutes={session.minutes} questionCount={session.questions.length} privacy="guest"
+          onStart={()=>setIntroAccepted(true)} onOther={backToModels}/></div>:<>
         <header className={styles.sessionHeader}>
           <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
@@ -622,6 +635,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
            {coachingSchemeRequiresAdultConsent(session)&&!pendingFollowup&&<button type="button" className={styles.sensitiveSkip} onClick={()=>advance(true)}>{t.skipSensitive}</button>}
           <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
         </footer>}
+        </>}
       </section>}
     </div>
   </main>
