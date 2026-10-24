@@ -42,10 +42,10 @@ test("photo-led service cards replace the duplicated free text cards on all home
   }
   const serviceCardsAt = more.indexOf('<ServicesSolutions locale={locale} variant="home" />');
   assert.ok(serviceCardsAt >= 0, "Expanded photo services remain in the deferred catalog");
-  assert.ok(home.indexOf('<HomepageTopicJourneys locale={locale} />') < home.indexOf('<HomeMoreDisclosure locale={locale}>'),
-    "Three needs-first photo directions appear outside the deferred catalogue");
-  assert.ok(es.indexOf('<HomepageTopicJourneys locale="es" />') < es.indexOf('<HomeMoreDisclosure locale="es">'),
-    "Spanish homepage mirrors the same three direction cards");
+  assert.ok(home.indexOf('<HomeMoreDisclosure locale={locale}>') < home.indexOf('<HomepageTopicJourneys locale={locale} />'),
+    "Supporting needs-first photo directions live inside the expanded catalogue");
+  assert.ok(es.indexOf('<HomeMoreDisclosure locale="es">') < es.indexOf('<HomepageTopicJourneys locale="es" />'),
+    "Spanish expanded catalogue mirrors the same three direction cards");
   assert.doesNotMatch(more, /<HomepageTopicJourneys locale=/);
   assert.doesNotMatch(home, /HomeFreeTestsBanner/);
   assert.match(es, /className="service-home-actions" id="free-start"/);

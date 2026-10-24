@@ -75,13 +75,13 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </header>
 
       <HomeSectionCarousel locale={locale} />
+      <HomeFeaturedWorkspace locale={locale} />
+      <HomeMoreDisclosure locale={locale}>
       <HomeCoreMethods locale={locale} />
       <HomeFreeDiagnosisBanner locale={locale} />
       <HomeConversationGuide locale={locale} />
       <HomePersonalSpaceCard locale={locale} />
-      <HomeFeaturedWorkspace locale={locale} />
       <HomepageTopicJourneys locale={locale} />
-      <HomeMoreDisclosure locale={locale}>
       <section className="service-home-hero" data-home-featured-intro aria-labelledby="house-title">
         <div className="service-home-hero-photo" aria-hidden="true">
           <StaticPortrait
@@ -129,6 +129,7 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
         </div>
       </section>
 
+      <HomeMasterPath locale={locale} />
       </HomeMoreDisclosure>
 
       {introVideoContent}
@@ -161,7 +162,6 @@ export function HolisticHouseHome({ locale = "en", introVideoContent }: Holistic
       </section>
 
       <HomepageContactCta locale={locale} />
-      <HomeMasterPath locale={locale} />
 
       <footer className="service-home-footer">
         <Link className="house-wordmark" href={locale === "ru" ? "/ru" : "/"} prefetch={false}>Holistic House</Link>

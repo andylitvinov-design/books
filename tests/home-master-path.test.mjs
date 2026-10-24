@@ -8,14 +8,14 @@ const spanish = read("app/es/page.tsx");
 const widget = read("components/home-master-path.tsx");
 const styles = read("components/home-master-path.module.css");
 
-test("all homepage locales remove the top path switch and put a single Master invitation just before footer", () => {
+test("all homepage locales place Master at journey step seven and keep legacy invitation inside expanded details", () => {
   for (const [source, cta] of [[home, "<HomepageContactCta"], [spanish, "<PublicConsultationCta"]]) {
     assert.equal((source.match(/<HomeMasterPath\b/g) || []).length, 1, "Exactly one Master invitation");
     assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeFreeDiagnosisBanner"));
-    assert.ok(source.indexOf("<HomeFreeDiagnosisBanner") < source.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomeMasterPath"));
-    assert.ok(source.indexOf(cta) < source.indexOf("<HomeMasterPath"), "Invitation follows other home CTAs");
-    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf("<footer"), "Invitation precedes footer");
+    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomeMoreDisclosure"));
+    assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeMasterPath"));
+    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf("</HomeMoreDisclosure>"));
+    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf(cta), "Legacy invitation is collapsed ahead of the closing contact CTA");
   }
   assert.match(home, /<HomeMasterPath locale=\{locale\} \/>/);
   assert.match(spanish, /<HomeMasterPath locale="es" \/>/);
