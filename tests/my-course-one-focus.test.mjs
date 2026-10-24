@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 
@@ -63,5 +64,19 @@ test('navigation is controlled, accessible and mobile-first, with no new storage
   assert.match(css,/@media\(max-width:620px\)/)
   assert.match(css,/@media\(max-width:360px\)/)
   assert.doesNotMatch(today,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
-  assert.match(today,/onSession=\{body=>submit\('session',body,undefined,'inline'\)\}/)
+  const sessionExpressions = [...today.matchAll(/onSession=\{(body=>[^}\n]+)\}/g)].map(match=>match[1])
+  assert.equal(sessionExpressions.length, 3, 'all three real course players retain a guarded callback')
+  for (const expression of sessionExpressions) for (const reviewLesson of [null, {day:2}]) {
+    const calls=[]
+    const callback=runInNewContext('('+expression+')', {
+      reviewLesson, submit:(...args)=>{calls.push(args);return 'confirmed'},
+    })
+    const payload={day:2,lessonId:'fictional-lesson',operationId:'fictional-operation'}
+    assert.equal(callback(payload),reviewLesson?null:'confirmed')
+    assert.equal(calls.length,reviewLesson?0:1,'replay must not call submit')
+    if(!reviewLesson){
+      assert.deepEqual(calls[0],['session',payload,undefined,'inline'])
+      assert.equal(calls[0][1],payload,'the actual payload identity is preserved')
+    }
+  }
 })

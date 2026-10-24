@@ -24,6 +24,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
+      - name: Verify explicit OPORA invite consent and exact helper evaluation
+        run: node --test tests/opora-invite-harness-regression.test.mjs
       - name: Verify all 14 × EN/RU/ES second-screen skill explanations and unchanged save flow
         run: node --test tests/opora-support-second-screen.test.mjs
       - name: Verify pinned rating polarity, legacy 0–10 charts and clear question labels
@@ -89,3 +91,4 @@ jobs:
           name: opora-as56-mobile-${{ matrix.browser }}-${{ github.run_id }}
           path: artifacts/opora-as56-mobile/${{ matrix.browser }}/
           retention-days: 7
+
