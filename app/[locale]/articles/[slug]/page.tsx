@@ -6,6 +6,8 @@ import {isPublicLocale} from '@/data/academy/catalog'
 import {metadataBaseFor} from '@/data/site-metadata'
 import {getAppConfig} from '@/lib/app/config'
 import {createArticleRepository} from '@/lib/practitioners/article-repository'
+import {createArticleSocialRepository} from '@/lib/practitioners/article-social-repository'
+import {ArticleDiscussion} from '@/components/practitioner-article-social'
 import {articleBlocks,inlineArticleSegments} from '@/lib/practitioners/article-format'
 import styles from '@/components/practitioner-articles-public.module.css'
 export const dynamic='force-dynamic';export const revalidate=0;
@@ -29,6 +31,13 @@ export default async function ArticleDetail({params}:Props){
  const {locale,slug}=await params;if(!isPublicLocale(locale))notFound()
  const article=await load(locale,slug);if(!article)notFound()
  const ru=locale==='ru',es=locale==='es',published=article.published
+ const social=createArticleSocialRepository(getAppConfig())
+ const [statsResult,commentsResult]=await Promise.allSettled([
+   social.publicStats([article.id]),social.publicComments(article.id),
+ ])
+ const discussionAvailable=statsResult.status==='fulfilled'&&commentsResult.status==='fulfilled'
+ const stats=statsResult.status==='fulfilled'?statsResult.value[article.id]||{likes:0,comments:0}:{likes:0,comments:0}
+ const comments=commentsResult.status==='fulfilled'?commentsResult.value:[]
  // The safe formatter returns either text blocks or list blocks.
  // Discriminating them makes the renderer type-safe without accepting HTML.
  type ArticleBlock=
@@ -38,7 +47,7 @@ export default async function ArticleDetail({params}:Props){
  return <main className="services-shell services-shell--studio" lang={locale}><PublicSiteHeader locale={locale}/>
   <article className={styles.article}>
    <Link href={'/'+locale+'/articles'}>← {ru?'Все статьи':es?'Artículos':'All articles'}</Link>
-   <p className="homeopathy-kicker">{ru?'Публикация практика':es?'Artículo de profesional':'Practitioner article'}</p>
+   <p className="homeopathy-kicker">{published.kind==='note'?(ru?'Заметка мастера':es?'Nota de profesional':'Practitioner note'):(ru?'Публикация практика':es?'Artículo de profesional':'Practitioner article')}</p>
    <h1>{published.title}</h1>
    <p className={styles.lead}>{published.excerpt}</p>
    <p className={styles.meta}><Link href={'/'+locale+'/masters/'+article.practitionerSlug}>{article.practitionerName}</Link> · {article.publishedAt?new Date(article.publishedAt).toLocaleDateString(locale):''}</p>
@@ -58,6 +67,9 @@ export default async function ArticleDetail({params}:Props){
      <Link href={'/'+locale+'/services/'+article.practitionerSlug+'/'+service.slug} className={styles.primary}>{ru?'Подробнее':es?'Ver servicio':'View service'} →</Link>
     </section>)}
    </div></aside>}
+   {discussionAvailable?<ArticleDiscussion locale={locale} articleId={article.id}
+     initialComments={comments} initialStats={stats}/>:
+    <p role="status" className={styles.notice}>{ru?'Обсуждение временно недоступно.':es?'La conversación no está disponible en este momento.':'Discussion is temporarily unavailable.'}</p>}
    <p className={styles.notice}>{ru?'Это образовательный материал, а не медицинская консультация или гарантия результата.':es?'Contenido educativo: no constituye asesoramiento médico ni garantía de resultados.':'Educational information, not medical advice or a guarantee of results.'}</p>
   </article>
  </main>
