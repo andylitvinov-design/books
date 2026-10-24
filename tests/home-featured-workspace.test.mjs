@@ -90,6 +90,35 @@ test("free labels stay free and paid requests never claim confirmed payments or 
   assert.doesNotMatch(component, /fetch\(|sendBeacon|autoEnroll|autoPublish|payment_success|localStorage|sessionStorage/);
 });
 
+test("free offer corner markers cover all seven sections without mislabeling paid or mixed-price cards", () => {
+  const definition = component.match(/const freeOfferIds: ReadonlySet<OfferId> = new Set\(\[([\s\S]*?)\]\);/);
+  assert.ok(definition, "Shared free-offer allowlist must be explicit");
+  const freeIds = [...definition[1].matchAll(/"([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(freeIds, ["reiki", "opora", "allTests", "review", "aiCoaching"]);
+  const labelsMatch = component.match(/const freeBadgeLabels = (\{[^\n]+\}) as const;/);
+  assert.ok(labelsMatch, "All locales must be labeled");
+  const labels = Object.fromEntries([...labelsMatch[1].matchAll(/(en|ru|es): "([^"]+)"/g)].map(x => [x[1], x[2]]));
+  assert.deepEqual(labels, { en: "FREE", ru: "БЕСПЛАТНО", es: "GRATIS" });
+  for (const locale of ["en", "ru", "es"]) {
+    const offers = expected.flatMap(stage => copy[locale].modules[stage].offers);
+    assert.equal(offers.length, 16);
+    for (const offer of offers) {
+      const actualFree = freeIds.includes(offer.id);
+      if (actualFree) assert.match(offer.cta, /free|бесплатн|gratis/i, locale + " " + offer.id);
+      if (["academy", "therapist", "businessConstellations", "constellations", "alchemy", "energy", "pro"].includes(offer.id))
+        assert.equal(actualFree, false, locale + " " + offer.id + " is paid or mixed-price");
+    }
+  }
+  assert.match(component, /const isFree = freeOfferIds\.has\(offer\.id\)/);
+  assert.match(component, /data-home-offer-free=\{isFree \? "true" : undefined\}/);
+  assert.match(component, /\{isFree && <span className=\{styles\.offerFreeBadge\}>\{freeBadgeLabels\[locale\]\}<\/span>\}/);
+  assert.match(css, /\.offerFreeBadge\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?right: 0;/);
+  assert.match(css, /\.offer\[data-home-offer-free="true"\] \.offerBody/);
+  assert.match(css, /@media \(max-width: 640px\)[\s\S]*?\.offerFreeBadge/);
+  assert.match(css, /background: #be2940/);
+  assert.match(css, /color: #fff/);
+});
+
 test("private routes are guarded and Spanish public content uses English account fallback", () => {
   for (const dest of ["/academy/principles-of-energywork/learn","/courses/antistress",
     "/client/tests","/portrait","/portfolio#hh-development-program","/services/free-situation-review",
