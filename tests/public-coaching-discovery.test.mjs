@@ -397,8 +397,8 @@ test('public self-coaching voices every authored prompt and turns dictated words
   const css=read('components/public-coaching-discovery.module.css')
   assert.equal((ui.match(/<CoachingQuestionVoice\b/g)||[]).length,2,
     'main and optional authored follow-up each have their own speaker and mic')
-  assert.match(ui,/text=\{tr\(current\.prompt,lang\)\} locale=\{lang\} mode="answer"/)
-  assert.match(ui,/text=\{tr\(pendingFollowup\.prompt,lang\)\} locale=\{lang\} mode="answer"/)
+  assert.match(ui,/text=\{\[conversationTurn\?\.speech,tr\(current\.prompt,lang\)\]\.filter\(Boolean\)\.join\(' '\)\} locale=\{lang\} mode="answer"/)
+  assert.match(ui,/text=\{\[followupTurn\?\.speech,tr\(pendingFollowup\.prompt,lang\)\]\.filter\(Boolean\)\.join\(' '\)\} locale=\{lang\} mode="answer"/)
   assert.match(ui,/key=\{'guest-question-'\+current\.id\+'-'\+lang\}/)
   assert.match(ui,/key=\{'guest-followup-'\+pendingFollowup\.key\+'-'\+pendingFollowup\.questionId\+'-'\+lang\}/)
   assert.match(ui,/setDraft\(previous=>appendSpokenAnswer\(previous\.startsWith\('choice:'\)\?'':previous,words\)\)/)
