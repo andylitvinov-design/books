@@ -5,7 +5,7 @@ import {BookOpen,FolderPlus,Folder,Search,PenLine,Trash2,Eye,ChevronDown} from '
 import styles from './practitioner-articles.module.css'
 import {articleBlocks,inlineArticleSegments} from '@/lib/practitioners/article-format'
 
-const initial=(locale='en')=>({locale:['ru','en','es'].includes(locale)?locale:'en',title:'',excerpt:'',body:'',coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:[]})
+const initial=(locale='en',kind='article')=>({locale:['ru','en','es'].includes(locale)?locale:'en',kind,title:'',excerpt:'',body:'',coverPath:'',sourceUrls:[],linkedServiceIds:[],tags:[]})
 const clean=value=>String(value||'').normalize('NFKC').toLocaleLowerCase().trim()
 function shortStatus(status,ru){
  const map={draft:ru?'Черновик':'Draft',submitted:ru?'На проверке':'In review',published:ru?'Опубликовано':'Published',
@@ -31,7 +31,7 @@ export default function PractitionerArticles({locale,services=[]}){
  const ru=locale==='ru'
  const base=ru?{
   heading:'Мои статьи',intro:'Личная библиотека: черновики остаются закрытыми до одобрения публикации.',
-  newArticle:'Новая статья',newFolder:'Новая папка',folder:'Папки',all:'Все статьи',
+  newArticle:'Новая статья',newNote:'Новая заметка',contentType:'Формат публикации',noteKind:'Заметка',articleKind:'Статья',newFolder:'Новая папка',folder:'Папки',all:'Все статьи',
   noFolder:'Без папки',rename:'Переименовать',delete:'Удалить папку',
   folderName:'Название папки',add:'Создать',cancel:'Отмена',
   search:'Поиск по названию и тексту статей…',found:'Найдено',none:'В этой папке пока нет статей.',
@@ -58,7 +58,7 @@ export default function PractitionerArticles({locale,services=[]}){
   slowDown:'Слишком много запросов. Подождите минуту и повторите.',
  }:{
   heading:'My articles',intro:'Your personal article library. Drafts stay private until publication is approved.',
-  newArticle:'New article',newFolder:'New folder',folder:'Folders',all:'All articles',
+  newArticle:'New article',newNote:'New note',contentType:'Publication format',noteKind:'Note',articleKind:'Article',newFolder:'New folder',folder:'Folders',all:'All articles',
   noFolder:'Unfiled',rename:'Rename',delete:'Delete folder',
   folderName:'Folder name',add:'Create',cancel:'Cancel',
   search:'Search titles and article text…',found:'Found',none:'No articles in this folder yet.',
@@ -85,7 +85,7 @@ export default function PractitionerArticles({locale,services=[]}){
   slowDown:'Too many requests. Wait one minute and retry.',
  }
  const t=locale==='es'?{...base,
-  heading:'Mis artículos',newArticle:'Nuevo artículo',newFolder:'Nueva carpeta',folder:'Carpetas',all:'Todos los artículos',
+  heading:'Mis publicaciones',newArticle:'Nuevo artículo',newNote:'Nueva nota',contentType:'Formato',noteKind:'Nota',articleKind:'Artículo',newFolder:'Nueva carpeta',folder:'Carpetas',all:'Todos los artículos',
   noFolder:'Sin carpeta',search:'Buscar artículos…',found:'Encontrados',none:'Todavía no hay artículos.',
   edit:'Editar',more:'Ver más',cancel:'Cancelar',add:'Crear',filterStatus:'Estado',allStatuses:'Cualquier estado',
   folderName:'Nombre de carpeta',delete:'Eliminar carpeta',rename:'Renombrar',
@@ -139,10 +139,10 @@ export default function PractitionerArticles({locale,services=[]}){
   window.addEventListener('beforeunload',guard)
   return ()=>window.removeEventListener('beforeunload',guard)
  },[hasUnsaved])
- function choose(item){
+ function choose(item,kind='article'){
   if(busy||operationRef.current||(hasUnsaved&&!window.confirm(t.discard)))return
   setEditing(item||null)
-  setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
+  setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale,kind))
   setTagInput((item?.draft?.tags||[]).join('\n'))
   setFolderId(item?.folderId||(folders.some(f=>f.id===selectedFolder)?selectedFolder:''))
   setEditorOpen(true);setPreview(false);setError('');setNotice('')
@@ -244,10 +244,11 @@ export default function PractitionerArticles({locale,services=[]}){
   })
  },[items,query,selectedFolder,statusFilter])
  const selected=folders.find(x=>x.id===selectedFolder)
- const complete=draft.title.trim()&&draft.excerpt.trim().length>=30&&draft.body.trim().length>=200
+ const complete=draft.title.trim()&&(draft.excerpt.trim().length>=30||draft.kind==='note'&&draft.body.trim().length>=50)&&draft.body.trim().length>=(draft.kind==='note'?50:200)
  return <div className={styles.shell}>
   <div className={styles.top} data-material-primary-action="articles">
-   <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null)}><PenLine size={18} aria-hidden="true"/> {t.newArticle}</button>
+   <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null,'note')} data-article-new-note><PenLine size={18} aria-hidden="true"/> {t.newNote}</button>
+   <button type="button" className={styles.secondary} disabled={busy} onClick={()=>choose(null,'article')} data-article-new-article><BookOpen size={17} aria-hidden="true"/> {t.newArticle}</button>
    <span className={styles.compactSummary}>{t.heading} · {items.filter(x=>x.status!=='archived').length}</span>
   </div>
   {!editorOpen&&loadState==='error'&&<div className={styles.loadError} role="alert"><p>{error||t.serverUnavailable}</p><button type="button" className={styles.secondary} onClick={refreshList}>{t.retry}</button></div>}
@@ -301,10 +302,11 @@ export default function PractitionerArticles({locale,services=[]}){
    {editing?.status&&<p className={styles.caption}>{shortStatus(editing.status,ru)}</p>}
    <div className={styles.row}>
     <label>{t.language}<select value={draft.locale} onChange={e=>setDraft({...draft,locale:e.target.value})}><option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option></select></label>
+    <label>{t.contentType}<select value={draft.kind||'article'} onChange={e=>setDraft({...draft,kind:e.target.value,excerpt:e.target.value==='note'?'':draft.excerpt})}><option value="note">{t.noteKind}</option><option value="article">{t.articleKind}</option></select></label>
     <label>{t.place}<select value={folderId} onChange={e=>setFolderId(e.target.value)}><option value="">{t.noFolder}</option>{folders.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
    </div>
    <label>{t.title}<input required maxLength={160} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
-   <label>{t.excerpt}<textarea value={draft.excerpt} maxLength={500} rows={2} onChange={e=>setDraft({...draft,excerpt:e.target.value})}/></label>
+   {draft.kind!=='note'&&<label>{t.excerpt}<textarea value={draft.excerpt} maxLength={500} rows={2} onChange={e=>setDraft({...draft,excerpt:e.target.value})}/></label>}
    <label>{t.tags}<textarea rows={2} value={tagInput} maxLength={950} onChange={e=>setTagInput(e.target.value)} placeholder={ru?'Arsenicum\nмышьяк\nтревога':'Arsenicum\narsenic\nanxiety'}/></label>
    <div className={styles.bodyField}><span>{t.body}</span><div className={styles.tools}>
      <button type="button" className={styles.tool} onClick={()=>insertFormat('\n\n## ')}>H2</button>
@@ -312,7 +314,7 @@ export default function PractitionerArticles({locale,services=[]}){
      <button type="button" className={styles.tool} onClick={()=>insertFormat('**','**')}><b>B</b></button>
      <button type="button" className={styles.tool} aria-pressed={preview} onClick={()=>setPreview(x=>!x)}><Eye size={14} aria-hidden="true"/> {preview?t.hidePreview:t.preview}</button>
     </div>
-    <textarea ref={bodyRef} maxLength={16000} rows={12} aria-label={t.body} value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})}/></div>
+    <textarea ref={bodyRef} maxLength={draft.kind==='note'?1800:16000} rows={draft.kind==='note'?6:12} aria-label={t.body} value={draft.body} onChange={e=>setDraft({...draft,body:e.target.value})}/></div>
    {preview&&<ArticlePreview body={draft.body}/>}
    <details className={styles.source}><summary>{t.sources}</summary>
     <label>{t.sourceLinks}<textarea rows={3} value={(draft.sourceUrls||[]).join('\n')} onChange={e=>setDraft({...draft,sourceUrls:e.target.value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,8)})}/></label>
