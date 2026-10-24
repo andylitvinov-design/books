@@ -1,14 +1,15 @@
 'use client'
 
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ArrowRight, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
+import { coachingArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
 import { takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
 
@@ -26,10 +27,11 @@ const copy={
     noExact:'No specific match found. You can choose any model below.',
     empty:'No models match these filters. Try a different topic or duration.',
     unavailable:'Coaching models are temporarily unavailable. You can still request a personal session.',
-    free:'Free',minutes:'min',start:'Start this free session',result:'What you will work toward',
+    free:'Free',minutes:'min',start:'Start free',result:'What you will work toward',
     recommendedLabel:'Suggested',different:'Other options',about:'About this approach',
+    details:'Details',lessDetails:'Less details',fullDetails:'More about this session',expect:'Expected outcome',limits:'Good to know',examples:'Example questions',freeMeta:'Self-guided',
     humanTitle:'Personal coaching with Andrey',humanText:'Live, individual coaching or therapeutic conversation, online. Choose the duration and send a request.',
-    half:'30-minute session',hour:'60-minute session',request:'Request this session',
+    half:'30-minute session',hour:'60-minute session',request:'Request session',
     notBooking:'A request is not a confirmed booking or payment. The coach must accept and arrange the session.',
     safe:'Self-coaching is educational reflection, not psychotherapy, medical care or an AI conversation.',
     alert:'If you face an immediate safety concern, seek qualified human or emergency support instead of self-coaching.',
@@ -61,10 +63,11 @@ const copy={
     noExact:'Точного совпадения нет. Выберите подходящую модель самостоятельно.',
     empty:'Нет моделей с такими фильтрами. Измените тему или длительность.',
     unavailable:'Каталог моделей временно недоступен. Можно запросить личную сессию.',
-    free:'Бесплатно',minutes:'мин',start:'Начать бесплатную сессию',result:'Результат практики',
+    free:'Бесплатно',minutes:'мин',start:'Начать бесплатно',result:'Результат практики',
     recommendedLabel:'Подходит по запросу',different:'Другие модели',about:'Об этом подходе',
+    details:'Детали',lessDetails:'Свернуть',fullDetails:'Ещё больше подробностей',expect:'Результат',limits:'Важно учитывать',examples:'Примеры вопросов',freeMeta:'Самостоятельно',
     humanTitle:'Личный коучинг с Андреем',humanText:'Индивидуальная коучинговая или терапевтическая беседа онлайн. Выберите длительность и отправьте запрос.',
-    half:'Сессия 30 минут',hour:'Сессия 60 минут',request:'Запросить сессию',
+    half:'Сессия 30 минут',hour:'Сессия 60 минут',request:'Заказать',
     notBooking:'Запрос не является подтверждённой записью или оплатой. Специалист согласует условия и время.',
     safe:'Самостоятельный коучинг — практика размышления, не психотерапия, медпомощь или чат с ИИ.',
     alert:'При непосредственной угрозе безопасности обратитесь за квалифицированной или экстренной помощью.',
@@ -96,8 +99,9 @@ const copy={
     noExact:'No hay una coincidencia específica. Puedes elegir cualquier modelo.',
     empty:'No hay modelos con esos filtros. Cambia el tema o la duración.',
     unavailable:'El catálogo no está disponible temporalmente. Puedes solicitar una sesión personal.',
-    free:'Gratis',minutes:'min',start:'Empezar sesión gratis',result:'Resultado de la práctica',
+    free:'Gratis',minutes:'min',start:'Empezar gratis',result:'Resultado de la práctica',
     recommendedLabel:'Sugerido',different:'Otras opciones',about:'Sobre este enfoque',
+    details:'Detalles',lessDetails:'Ocultar',fullDetails:'Más detalles de esta sesión',expect:'Resultado',limits:'A tener en cuenta',examples:'Preguntas de ejemplo',freeMeta:'Autoguiado',
     humanTitle:'Coaching personal con Andrey',humanText:'Conversación individual de coaching o terapia en línea. Elige una duración y envía una solicitud.',
     half:'Sesión de 30 minutos',hour:'Sesión de 60 minutos',request:'Solicitar sesión',
     notBooking:'Una solicitud no confirma una reserva ni un pago. El profesional debe confirmar.',
@@ -133,17 +137,6 @@ function traditionExplicitMatch(question,id){
 }
 
 
-// Decorative first-party photography. Existing site assets only.
-const coachingArt={
-  grow_v1:'/images/holistic-house/report-lighthouse-coast.avif',
-  tgrow_v1:'/images/holistic-house/ideas-pine-sharp.avif',
-  oskar_v1:'/images/holistic-house/hero-olive-incense.webp',
-  clear_v1:'/images/holistic-house/video-posters/constellations-en-v1.webp',
-  fuel_v1:'/images/holistic-house/books-library.webp',
-  solution_focus_v1:'/images/holistic-house/report-lighthouse-coast.avif',
-  woop_v1:'/images/holistic-house/ideas-pine-sharp.avif',
-  appreciative_5d_v1:'/images/holistic-house/hero-olive-incense.webp',
-}
 const tr=(value,locale)=>value?.[locale]||value?.en||''
 const answerText=(value,item,locale,t)=>{
   if(typeof value!=='string'||!value)return t.noAnswer
@@ -153,6 +146,63 @@ const answerText=(value,item,locale,t)=>{
   return tr((item.choices||[]).find(c=>c.id===id)?.label,locale)||t.noAnswer
 }
 
+
+// The same compact card contract is used for free models, private author
+// programmes, the preparation questionnaire and paid session requests.
+function CoachingLoungeCard({
+  locale,id,title,meta,price,image,description,detail,outcome,caution,examples,
+  primaryLabel,primaryHref,onPrimary,landingHref,suggested=false,
+  schemeKey,traditionKey,
+}){
+  const t=copy[locale],panelId=useId()
+  const [expanded,setExpanded]=useState(false)
+  return <article className={styles.loungeCard} data-coaching-item={id}
+    data-coaching-scheme={schemeKey} data-coaching-tradition={traditionKey}
+    data-coaching-compact-card>
+    <div className={styles.loungeRow}>
+      <Link className={styles.loungePhoto} href={landingHref} prefetch={false}
+        aria-label={t.fullDetails+': '+title}>
+        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized
+          sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
+      </Link>
+      <div className={styles.loungeContent}>
+        <div className={styles.loungeMeta}>
+          <span>{meta}</span><strong>{price}</strong>
+        </div>
+        <h3>{title}</h3>
+        {description&&<p className={styles.loungeSummary}>{description}</p>}
+        {suggested&&<span className={styles.loungeSuggested}><Sparkles size={12}/>{t.recommendedLabel}</span>}
+        <div className={styles.loungeActions}>
+          <button type="button" className={styles.loungeDetails} aria-controls={panelId}
+            aria-expanded={expanded} onClick={()=>setExpanded(prev=>!prev)}>
+            {expanded?t.lessDetails:t.details}
+            <ChevronDown size={15} aria-hidden="true" className={expanded?styles.chevronOpen:styles.chevron}/>
+          </button>
+          {onPrimary
+            ? <button type="button" className={styles.loungePrimary} onClick={onPrimary}>
+                {primaryLabel}<ArrowRight size={15} aria-hidden="true"/>
+              </button>
+            : <Link className={styles.loungePrimary} href={primaryHref} prefetch={false}>
+                {primaryLabel}<ArrowRight size={15} aria-hidden="true"/>
+              </Link>}
+        </div>
+      </div>
+    </div>
+    <div className={styles.loungePanel} id={panelId} hidden={!expanded}
+      aria-label={t.details+': '+title} data-coaching-details-panel>
+      {detail&&<p>{detail}</p>}
+      {outcome&&<p><strong>{t.expect}:</strong> {outcome}</p>}
+      {caution&&<p><strong>{t.limits}:</strong> {caution}</p>}
+      {Array.isArray(examples)&&examples.length>0&&<div>
+        <strong>{t.examples}:</strong>
+        <ul>{examples.slice(0,3).map((text,i)=><li key={i}>{text}</li>)}</ul>
+      </div>}
+      <Link href={landingHref} className={styles.loungeLanding} prefetch={false}>
+        {t.fullDetails}<ArrowRight size={15} aria-hidden="true"/>
+      </Link>
+    </div>
+  </article>
+}
 
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
