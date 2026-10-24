@@ -52,8 +52,8 @@ test("Holistic Support provides exactly two main areas and five concrete choices
   assert.match(page, /<nav className=\{styles.primaryNav\}/);
   for (const id of ["ai", "express", "master", "energy", "alchemy"])
     assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
-  for (const method of ["constellations", "runes", "tarot", "chinese"])
-    assert.ok(page.includes('"' + method + '"'), "missing tradition " + method);
+  assert.doesNotMatch(page, /data-holistic-tradition|styles\.methods|methodOptions|methodPaths/);
+  assert.doesNotMatch(styles, /\.methods\{/);
   assert.match(page, /\/services\/free-situation-review/);
   assert.match(page, /\/services\/remote-energy-support/);
   assert.match(page, /\/services\/alchemy-of-soul/);
@@ -80,7 +80,8 @@ test("AI Insight is honest about its non-LLM source; master enquiry is CAD 50 fo
   assert.match(page, /50 CAD \/ 20 мин/);
   assert.match(page, /CAD 50 \/ 20 min/);
   assert.match(page, /sourcePath=\{"\/" \+ locale \+ "\/holistic-support"\}/);
-  assert.match(page, /formatOptions=\{methodOptions\}/);
+  assert.doesNotMatch(page, /formatOptions=|formatLabel=/);
+  assert.match(page, /serviceTitle=\{"Personal Temple Insights with Andrey · CAD 50 \/ 20 min"\}/);
   assert.match(page, /<CompactLeadCapture/);
   assert.match(page, /data-holistic-master/);
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
