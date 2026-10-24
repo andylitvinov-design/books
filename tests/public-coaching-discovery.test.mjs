@@ -177,6 +177,10 @@ test('the public Coaching Lounge, Ideas and entry page all parse as JSX before a
    ['components/public-coaching-discovery.jsx',ts.ScriptKind.JSX],
    ['components/ideas-discovery.tsx',ts.ScriptKind.TSX],
    ['app/[locale]/coaching/page.jsx',ts.ScriptKind.JSX],
+   ['components/home-core-methods.tsx',ts.ScriptKind.TSX],
+   ['components/home-featured-workspace.tsx',ts.ScriptKind.TSX],
+   ['components/direction-offers.tsx',ts.ScriptKind.TSX],
+   ['components/academy-hub.tsx',ts.ScriptKind.TSX],
  ]){
    const source=read(path)
    const parsed=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,kind)
@@ -233,4 +237,18 @@ test('coaching lounge is photo-led, gives 10 model choices and both author cours
  assert.deepEqual(referenced.filter(name=>!available.has(name)),[])
  const parsed=ts.createSourceFile('components/public-coaching-discovery.jsx',ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
  assert.equal(parsed.parseDiagnostics.length,0,'no broken JSX in public coaching room')
+})
+
+
+test('all public coaching entrances use the guest chooser rather than My Space',()=>{
+ const home=read('components/home-core-methods.tsx')
+ const feature=read('components/home-featured-workspace.tsx')
+ const academy=read('components/academy-hub.tsx')
+ const directions=read('components/direction-offers.tsx')
+ assert.match(feature,/aiCoaching: "\/" \+ locale \+ "\/coaching"/)
+ assert.match(home,/primaryPath: "\/coaching"/)
+ assert.match(home,/href=\{"\/" \+ locale \+ method\.primaryPath\}/)
+ assert.match(academy,/courseHref: "\/" \+ locale \+ "\/coaching"/)
+ assert.match(directions,/\? '\/' \+ locale \+ '\/coaching'/)
+ assert.doesNotMatch(home,/\/app\/coaching/)
 })
