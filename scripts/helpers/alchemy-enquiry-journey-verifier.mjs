@@ -42,6 +42,11 @@ export function permittedAlchemyRead(request, origin, locale) {
     if (url.search === '') return true
     return /^\?_rsc=[a-zA-Z0-9_-]{1,128}$/.test(url.search) && type === 'fetch'
   }
+  // Next15 webpack config emits static/webpack/[fullhash].[runtime].hot-update.json
+  // with xxhash64, hashDigestLength16. Both hosted engines requested this exact
+  // webpack runtime form; aborting it causes module.hot.check to force a reload.
+  // Only this static manifest GET/fetch is allowed, never arbitrary JSON or APIs.
+  if (type === 'fetch' && !url.search && /^\/_next\/static\/webpack\/[a-f0-9]{16}\.webpack\.hot-update\.json$/.test(url.pathname)) return true
   if (url.pathname === portrait) return type === 'image' && !url.search
   // Next15 development getLayerAssets/renderCssResource append the request
   // timestamp via getAssetQueryString(ctx,true). This is not an arbitrary query

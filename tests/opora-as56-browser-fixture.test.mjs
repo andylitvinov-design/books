@@ -6,6 +6,14 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildOporaBrowserFixture, oporaFixturePath, oporaFixtureDocument,
   oporaFixtureBundlePath, requireHostedOporaBrowser, assertFixtureCompilation } from '../scripts/opora-as56-browser-fixture.mjs'
+import { OPORA_BROWSER_FRESH_EDITION, OPORA_BROWSER_DAY5_COPY } from '../scripts/fixtures/opora-as59-day5-copy.mjs'
+import { oporaAs59Day, OPORA_SEVEN_SKILLS_EDITION } from '../lib/inner-growth/opora-as59-seven-skills.js'
+import { oporaAs58Day } from '../lib/inner-growth/opora-as58-one-action.js'
+import { oporaExperienceGuide, oporaExperienceSupport } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { lessonFor } from '../lib/inner-growth/lesson-library.js'
+import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
+import { mount, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
+import { advanceOporaTo } from './helpers/opora-gentle-navigation.mjs'
 
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
 test('OPORA browser fixture accepts only supported synthetic locales and no saved data', () => {
@@ -67,4 +75,82 @@ test('OPORA fixture compilation still fails on every build error or warning', ()
       toString:()=>warnings?'Asset size warning':'Compilation error'}), /warning|error/)
   }
   assert.doesNotThrow(() => assertFixtureCompilation({hasErrors:()=>false,hasWarnings:()=>false}))
+})
+
+test('fresh AS5.9 browser copy pins exact Day5 fields, not the archived exercise', async () => {
+  assert.equal(OPORA_BROWSER_FRESH_EDITION, 'as-5.9-seven-skills-v1')
+  assert.equal(OPORA_BROWSER_FRESH_EDITION, OPORA_SEVEN_SKILLS_EDITION)
+  assert.deepEqual(Object.keys(OPORA_BROWSER_DAY5_COPY), ['ru', 'en', 'es'])
+  for (const locale of ['ru', 'en', 'es']) {
+    const copy = OPORA_BROWSER_DAY5_COPY[locale], day = oporaAs59Day(5, locale)
+    assert.deepEqual(copy, { supportTitle: day.purposeTitle, purpose: day.purpose, practice: day.practice })
+    assert.notEqual(copy.practice, oporaAs58Day(5, locale).practice)
+    assert.notEqual(copy.practice, oporaExperienceGuide(5, locale))
+    assert.notEqual(copy.purpose, oporaExperienceSupport(5, locale).body)
+    assert.ok(copy.practice.length <= 140 && copy.practice.split(/\s+/u).length <= 20)
+  }
+  const browser = await read('scripts/verify-opora-as56-browser.mjs')
+  for (const binding of [
+    "copy = OPORA_BROWSER_DAY5_COPY[locale], brief = copy.practice",
+    "assert.equal(data.currentSession, null",
+    "toHaveAttribute('data-opora-practical-skills-version', OPORA_BROWSER_FRESH_EDITION)",
+    "[data-opora-daily-support=\"5\"]')).toHaveText(copy.purpose)",
+    "name: copy.supportTitle, exact: true",
+    "[data-opora-overview-purpose] p')).toHaveText(copy.purpose)",
+    "[data-opora-one-daily-practice=\"5\"]')).toBeVisible()",
+    "[data-opora-one-daily-practice=\"5\"]')).toHaveText(brief)",
+    String.raw`assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)`,
+    String.raw`assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)`,
+  ]) assert.ok(browser.includes(binding), binding)
+})
+
+test('fresh AS5.9 Day5 renders the pinned support, overview and practice without writes', async () => {
+  for (const locale of ['ru', 'en', 'es']) {
+    const copy = OPORA_BROWSER_DAY5_COPY[locale]
+    const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
+      programme: { id: 'stress' }, currentSession: null,
+      lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
+    const original = structuredClone(data)
+    let saves = 0
+    const h = mount('opora-experience-player', { locale, data, onClose() {}, onFinish() {},
+      onSession: async () => { saves++; return false } })
+    const next = { ru: 'Продолжить', en: 'Continue', es: 'Continuar' }[locale]
+    try {
+      assert.ok(nodes(h.tree).some(n => n.props?.['data-opora-practical-skills-version'] === OPORA_BROWSER_FRESH_EDITION))
+      await advanceOporaTo(h, 'support', next)
+      assert.equal(textOf(nodes(h.tree).find(n => n.props?.['data-opora-daily-support'] === 5)), copy.purpose)
+      assert.ok(nodes(h.tree).some(n => /^h[1-6]$/.test(n.type) && textOf(n) === copy.supportTitle))
+      await advanceOporaTo(h, 'recapPractice', next)
+      const purpose = nodes(h.tree).find(n => n.props?.['data-opora-overview-purpose'])
+      assert.equal(textOf(nodes(purpose).find(n => n.type === 'p')), copy.purpose)
+      await advanceOporaTo(h, 'practice', next)
+      const practice = nodes(h.tree).find(n => n.props?.['data-opora-one-daily-practice'] === 5)
+      assert.equal(textOf(practice.props.children[0]), copy.practice)
+      assert.ok(!textOf(h.tree).includes(oporaAs58Day(5, locale).practice))
+      assert.equal(saves, 0)
+      assert.deepEqual(data, original)
+    } finally { h.unmount() }
+  }
+})
+
+test('saved AS5.8 Day5 retains its original practice and never adopts fresh browser copy', async () => {
+  for (const locale of ['ru', 'en', 'es']) {
+    const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
+      programme: { id: 'stress' },
+      currentSession: { signals: { opora54: { answers: { experienceEdition: 'as-5.8-one-action-v1' } } } },
+      lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
+    const original = structuredClone(data)
+    let saves = 0
+    const h = mount('opora-experience-player', { locale, data, reviewOnly: true, onClose() {}, onFinish() {},
+      onSession: async () => { saves++; return false } })
+    try {
+      await advanceOporaTo(h, 'practice', { ru: 'Продолжить', en: 'Continue', es: 'Continuar' }[locale])
+      const practice = nodes(h.tree).find(n => n.props?.['data-opora-one-daily-practice'] === 5)
+      assert.equal(textOf(practice.props.children[0]), oporaAs58Day(5, locale).practice)
+      assert.ok(!nodes(h.tree).some(n => n.props?.['data-opora-practical-skills-version']))
+      assert.ok(!textOf(h.tree).includes(OPORA_BROWSER_DAY5_COPY[locale].practice))
+      assert.equal(saves, 0)
+      assert.deepEqual(data, original)
+    } finally { h.unmount() }
+  }
 })

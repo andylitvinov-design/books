@@ -178,3 +178,39 @@ test('boundary evidence is emitted in finally even when receipt assertion fails'
  assert.match(source,/toContainText\(ALCHEMY_REFERENCE\)/)
  assert.doesNotMatch(source,/timeout:\s*\d+/)
 })
+
+
+for (const hash of ['2ba7c186341a9797','1f7cd850e9eda570']) test('observed Next15 webpack HMR manifest '+hash,()=>{
+ assert.equal(permittedAlchemyRead(request(origin+'/_next/static/webpack/'+hash+'.webpack.hot-update.json'),origin,'en'),true)
+})
+for (const path of [
+ '/_next/static/webpack/2ba7c186341a9797.webpack.hot-update.json?v=1792874902222',
+ '/_next/static/webpack/2ba7c186341a9797.webpack.hot-update.json?x=1',
+ '/_next/static/webpack/2ba7c186341a9797.webpack.hot-update.json#x',
+ '/_next/static/webpack/2BA7C186341A9797.webpack.hot-update.json',
+ '/_next/static/webpack/2ba7c186341a979.webpack.hot-update.json',
+ '/_next/static/webpack/2ba7c186341a97977.webpack.hot-update.json',
+ '/_next/static/webpack/2ba7c186341a979z.webpack.hot-update.json',
+ '/_next/static/webpack/2ba7c186341a9797.other.hot-update.json',
+ '/_next/static/webpack/app/2ba7c186341a9797.webpack.hot-update.json',
+ '/_next/static/chunks/2ba7c186341a9797.webpack.hot-update.json',
+ '/_next/static/webpack/arbitrary.json',
+ '/api/2ba7c186341a9797.webpack.hot-update.json',
+ '/en/services/alchemy-of-soul',
+]) test('reject broadened HMR read '+path,()=>assert.equal(permittedAlchemyRead(request(origin+path),origin,'en'),false))
+for (const [prefix,method,type] of [
+ ['https://external.invalid','GET','fetch'],['http://localhost:3101','GET','fetch'],['http://user@127.0.0.1:3100','GET','fetch'],
+ [origin,'POST','fetch'],[origin,'HEAD','fetch'],[origin,'GET','document'],[origin,'GET','xhr'],[origin,'GET','script'],[origin,'GET','other']
+]) test('HMR cannot relax origin, method or type '+prefix+' '+method+' '+type,()=>assert.equal(permittedAlchemyRead(request(prefix+'/_next/static/webpack/2ba7c186341a9797.webpack.hot-update.json',method,type),origin,'en'),false))
+test('HMR manifest uses the existing zero-redirect real read path',async()=>{
+ const failures=[],blocked=[],r=route(request(origin+'/_next/static/webpack/2ba7c186341a9797.webpack.hot-update.json'))
+ await alchemyRequestGate(origin,'en',()=>assert.fail('Must not call synthetic POST handler'),failures,blocked)(r)
+ assert.deepEqual(r.log[0],{maxRedirects:0});assert.equal(r.log[2],'dispose')
+ assert.deepEqual(failures,[]);assert.deepEqual(blocked,[])
+})
+test('HMR redirect is still rejected rather than fetched externally',async()=>{
+ const failures=[],r=route(request(origin+'/_next/static/webpack/2ba7c186341a9797.webpack.hot-update.json'))
+ r.fetch=async options=>{assert.deepEqual(options,{maxRedirects:0});return{url:()=>r.request().url(),status:()=>302,dispose:async()=>r.log.push('dispose')}}
+ await alchemyRequestGate(origin,'en',()=>assert.fail(),failures,[])(r)
+ assert.equal(failures.length,1);assert.deepEqual(r.log,['dispose','abort'])
+})

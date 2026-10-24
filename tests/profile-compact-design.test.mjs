@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { sourceFixture, blocked, icons, link, element, textContent, accountNavigation } from './helpers/current-navigation-fixture.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -19,7 +20,11 @@ test('Profile leads with authorized personal reports; category details are secon
   const earlyActions = profile.indexOf('{!external && footerActions}')
   const legacyActions = profile.indexOf('{external && footerActions}')
   assert.ok(tabs > overview && panel > tabs && support > panel)
-  assert.ok(discover > -1 && earlyActions > archive && earlyActions < browse && legacyActions > support)
+  assert.ok(discover > -1 && earlyActions === -1 && legacyActions > support)
+  // Merged #1251 keeps the account archive primary; old topic/footer content is legacy-only.
+  assert.match(profile, /\{external && <header className="hh-domain-hero">/)
+  assert.match(profile, /\{external && <details className="hh-domain-more"/)
+  assert.match(profile, /data-report-archive-always-open/)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
   assert.match(profile, /open=\{expanded\}/)
@@ -85,7 +90,7 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     ['portrait', 'Profile', '/portrait'],
     ['tests', 'Tests', '/tests'],
     ['portfolio', 'Reports', '/portfolio'],
-    ['course', 'Courses', '/course'],
+    ['course', 'Courses', '/course?view=courses'],
     ['practice', 'Practice', '/practice'],
   ]) {
     assert.match(navModel, new RegExp("id: '" + id + "'"))
@@ -110,9 +115,18 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
     {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
     {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
-    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course?view=courses'},
     {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
   ])
+  // #1082: every shared menu opens the course index, never auto-resumes a lesson.
+  for (const locale of ['en', 'ru']) {
+    const actual = accountNavigation(workspace, { locale, root: '/' + locale + '/app',
+      ...icons('UserRound ClipboardList BarChart3 BookOpen Users') })
+    assert.deepEqual(actual.map(({ id, label, href }) => ({ id, label, href })), entries.map(entry => ({
+      id: entry.id, label: entry[locale], href: '/' + locale + '/app' + entry.path,
+    })))
+  }
+  assert.equal((workspace.match(/nav\.map\(\(\{ id, label, href/g) || []).length, 3, 'Desktop, account dropdown and mobile share nav')
   assert.doesNotMatch(mobile, />Analysis</)
   assert.equal(mobile.split('className="hh-mobile-app-nav-home"').length - 1, 1)
   assert.ok(mobile.includes("aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}"))
@@ -122,3 +136,47 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
 })
 
 
+
+test('Real Profile binding preserves account archive actions and legacy-only details without private reads', () => {
+  const fixture = sourceFixture({ window: { location: { hash: '' } } })
+  const reportSummary = fixture.load(read('lib/profile/report-summary.js'), 'report-summary.js', {}, { exports: ['availableSavedReports', 'latestReceivedReport'] })
+  const { ProfileDomains } = fixture.load(read('components/app/profile-domains.jsx'), 'profile.jsx', {
+    'next/link': link,
+    'next/dynamic': { default: (_loader, options) => { assert.equal(options.ssr, false); assert.match(String(_loader), /require\(['"]\.\/development-program['"]\)/); return 'development-program-boundary' } },
+    'lucide-react': icons('ArrowRight Brain CalendarDays ChevronDown FileText Flower2 HeartHandshake Leaf LockKeyhole MessageCircle Sparkles'),
+    '@/lib/documents/recommendation': { recommendationItemType: blocked },
+    '@/lib/profile/profile-service-offers': { PROFILE_AREAS: ['psychology', 'homeopathy', 'wu_xing', 'hypnotherapy'], profileServiceOffer: blocked },
+    '@/lib/profile/report-summary': reportSummary, './profile-domains.css': {}, './profile-refresh.css': {},
+  }, { exports: ['ProfileDomains'] })
+  for (const locale of ['en', 'ru']) {
+    const reportsContent = element('fixture-report-content', { children: 'Fictional authorized report contents' })
+    const savedReports = [
+      { id: 'fixture-readable', title: 'Fictional readable report', available: true, savedAt: '2026-10-10T12:00:00Z' },
+      { id: 'fixture-revoked', title: 'Fictional revoked report', available: false, savedAt: '2026-10-11T12:00:00Z' },
+    ]
+    const account = fixture.mount(ProfileDomains, { locale, accountId: 'fixture-account', reportsContent, savedReports })
+    const archive = account.one(node => Object.hasOwn(node.props, 'data-report-archive-always-open'))
+    assert.equal(archive.type, 'div', 'Archive is not a collapsed disclosure')
+    assert.equal(account.nodes().filter(node => node.type === 'fixture-report-content').length, 1)
+    assert.equal(account.nodes().filter(node => ['hh-domain-hero', 'hh-domain-more', 'hh-domain-footer-actions'].includes(node.props.className)).length, 0)
+    assert.equal(account.one(node => node.props.className === 'hh-account-report-open').props.href, '/' + locale + '/app/reports/fixture-readable')
+    assert.ok(!account.nodes().some(node => node.props.href?.includes('fixture-revoked')))
+    assert.equal(account.one(node => Object.hasOwn(node.props, 'data-consultation-kind')).props.href, '/' + locale + '/services/free-consultation')
+    assert.equal(account.one(node => Object.hasOwn(node.props, 'data-health-labs-link')).props.href, '/' + locale + '/app/labs')
+    const development = account.one(node => node.type === 'development-program-boundary')
+    assert.equal(development.props.accountId, 'fixture-account'); assert.equal(development.props.locale, locale)
+    const legacy = fixture.mount(ProfileDomains, { locale, mode: 'legacy', selector: 'fixture-private-selector', reportsContent })
+    legacy.one(node => node.props.className === 'hh-domain-hero')
+    assert.equal(legacy.one(node => node.props.className === 'hh-domain-more').props.open, true)
+    assert.equal(legacy.nodes().filter(node => node.type === 'fixture-report-content').length, 1)
+    assert.equal(legacy.nodes().filter(node => node.type === 'development-program-boundary' || Object.hasOwn(node.props, 'data-health-labs-link')).length, 0)
+    const footer = legacy.one(node => node.props.className === 'hh-domain-footer-actions')
+    assert.match(textContent(footer), locale === 'ru' ? /Посмотреть услуги/ : /Explore services/)
+    for (const area of ['psychology', 'homeopathy', 'wu_xing', 'hypnotherapy']) {
+      legacy.click(node => node.props.role === 'tab' && node.props.id === 'hh-domain-tab-' + area)
+      assert.equal(legacy.one(node => node.props.role === 'tab' && node.props['aria-selected']).props.id, 'hh-domain-tab-' + area)
+      legacy.one(node => node.props['data-domain'] === area)
+    }
+  }
+  fixture.assertNoExternalOperations()
+})
