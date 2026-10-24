@@ -156,7 +156,7 @@ function CoachingLoungeCard({
 }){
   const t=copy[locale],panelId=useId()
   const [expanded,setExpanded]=useState(false)
-  return <article className={styles.loungeCard} data-coaching-item={id}
+  return <article id={traditionKey ? 'coaching-tradition-'+traditionKey : undefined} className={styles.loungeCard} data-coaching-item={id}
     data-coaching-scheme={schemeKey} data-coaching-tradition={traditionKey}
     data-coaching-compact-card>
     <div className={styles.loungeRow}>
