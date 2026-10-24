@@ -1194,3 +1194,31 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .exploreCopy strong{font-size:11.6px}
 }
 @media(prefers-reduced-motion:reduce){.exploreLink{transition:none}}
+
+
+/* Four-path hub is now the first screen. Legacy Dao author readings, offers,
+   verified aphorisms and question privacy mount only after Temple is chosen. */
+.root .hero {
+  display:block; min-height:0; margin-top:10px; padding:0;
+  border:0; border-radius:0; background:none; box-shadow:none; overflow:visible;
+}
+.root .hero::before,.root .hero::after { display:none; }
+.root .hero .heading { display:none; }
+.root .hero .question {
+  display:block; margin:0 0 9px; padding:8px;
+  border:1px solid #d9cabe; background:#fffdfa; border-radius:14px;
+}
+.root .heroActions { display:block; margin:0 0 8px; }
+.root .heroActions .submit { display:none; }
+.root .heroActions .testButton {
+  display:flex; flex-direction:row; align-items:center; justify-content:center;
+  gap:12px; width:100%; min-height:48px; padding:10px 14px; text-align:left;
+}
+.root .heroActions .testButton .testButtonText { text-align:left; }
+.root .exploreLinks { display:none; }
+.root .heroUtility { margin:4px 0; }
+.root .templeHeading { margin-top:16px; }
+@media (max-width:760px) {
+  .root .hero { margin-top:9px; padding:0; min-height:0; }
+  .root .heroActions .testButton { min-height:48px; padding:9px; }
+}

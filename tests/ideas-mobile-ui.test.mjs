@@ -4,9 +4,13 @@ import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Ideas first screen has two free actions and two compact discovery links, not three mode cards", () => {
+test("Tests & Coaching first screen offers four paths, with original private Dao panel preserved on demand", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
+  const hub = read("components/tests-coaching-switchboard.tsx");
+  assert.match(ui, /<TestsCoachingSwitchboard locale=\{locale\} templeContent=/);
+  for (const path of ["profile", "temple", "coaching", "support"]) assert.ok(hub.includes("data-tests-coaching-path={key}"), path);
+  assert.match(hub, /const pathOrder: Path\[\] = \["profile", "temple", "coaching", "support"\]/);
   assert.match(ui, /<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
   assert.match(ui, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
   assert.match(ui, /<nav className=\{styles\.exploreLinks\} aria-label=\{t\.exploreMore\} data-ideas-explore>/);
