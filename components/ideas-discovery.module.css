@@ -121,32 +121,6 @@
 .privacyDisclosure summary { width: fit-content; cursor: pointer; }
 .privacyDisclosure summary:focus-visible { outline: 3px solid #178289; outline-offset: 3px; }
 .privacyDisclosure .privacy { margin-top: 6px; }
-.actionLabel { margin: 15px 0 9px; color: #695d51; font-size: 12px; font-weight: 750; }
-.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-width: 0;
-  min-height: 66px;
-  padding: 12px 13px;
-  border: 1px solid #dbcbb9;
-  border-radius: 16px;
-  background: #fffdfa;
-  color: #493f36;
-  cursor: pointer;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 750;
-  line-height: 1.28;
-  transition: background .16s, border-color .16s, transform .16s;
-}
-.action span { min-width: 0; overflow-wrap: break-word; }
-.action svg { flex: 0 0 auto; }
-.action svg:last-child { margin-left: auto; }
-.action:hover { transform: translateY(-1px); border-color: #8bbbbb; }
-.action[aria-pressed="true"] { border-color: #6ab5b1; background: #e2f1ed; color: #0d494b; box-shadow: inset 0 0 0 1px #d1e9e2; }
 .root :is(button, a, textarea):focus-visible { outline: 3px solid #178289; outline-offset: 3px; }
 .results {
   position: relative;
@@ -346,13 +320,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .submit { width: 100%; min-height: 46px; padding: 10px; border-radius: 11px; font-size: 14px; }
   .privacyDisclosure { margin-top: 6px; font-size: 11.5px; }
   .privacy { margin-top: 6px; font-size: 11.5px; line-height: 1.36; }
-  .actionLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .actions { margin-top: 9px; }
-  .action { flex-direction: column; justify-content: center; gap: 4px; min-height: 72px; padding: 8px 3px; border-radius: 13px; font-size: 12.5px; }
-  .action svg:first-child { width: 21px; height: 21px; }
-  .action svg:last-child { display: none; }
-  .action span { text-wrap: balance; }
   .results { margin-top: 9px; padding: 13px 12px; border-radius: 16px; }
   .daoSummary { font-size: 16px; line-height: 1.5; }
   .expandDao { width: 100%; min-height: 44px; font-size: 13px; }
@@ -397,7 +364,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .heading { min-height: 123px; padding: 13px; }
   .heading h1 { font-size: 40px; }
   .lead { font-size: 13.5px; max-width: 84%; }
-  .action { min-height: 77px; font-size: 12px; padding: 7px 2px; }
   .hexagramCard { grid-template-columns: 80px minmax(0, 1fr); gap: 9px; }
   .hexagramMark { min-height: 96px; }
   .hexagramText h3 { font-size: 19px; }
@@ -411,7 +377,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 @media (prefers-reduced-motion: reduce) {
   .expandDao svg { transition: none; }
   .action, .question textarea { transition: none; }
-  .action:hover { transform: none; }
 }
 
 /* Reference fidelity v3: the artwork is a small first-party crop of the
@@ -600,28 +565,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 .allMatchingTests { display:inline-flex; align-items:center; gap:6px; min-height:44px; color:#0c6062; font-size:13px; font-weight:750; text-decoration:underline; text-underline-offset:3px; }
 .testPickerNote { margin:4px 0 0; color:#695f56; font-size:11px; line-height:1.45; }
 .privacyDisclosure { color: #5c5148; font-size: 12px; text-shadow: 0 1px rgba(255,253,248,.8); }
-.actions { gap: 8px; margin-top: 10px; }
-.action {
-  flex-direction: column;
-  justify-content:center;
-  gap: 7px;
-  min-height: 82px;
-  padding: 11px 7px;
-  border-radius: 17px;
-  border-color:#e3cbb3;
-  background:linear-gradient(143deg,#fffdf9,#fff4e7);
-  font-size: 14px;
-  color: #3a302a;
-}
-.action span:not(.modeYin) { flex:0 1 auto; }
-.action svg:last-child { margin:0; }
 .modeYin { color:#0d5b5c; font: 30px/1 Georgia,"Times New Roman",serif; }
-.action[aria-pressed="true"] {
-  background:linear-gradient(145deg,#dcf1ed,#dcebe6);
-  border-color:#55aba7;
-  color:#074e50;
-  box-shadow:inset 0 0 0 1px rgba(34,129,132,.12);
-}
 .results {
   margin-top: 11px;
   padding: clamp(11px,2vw,18px);
@@ -761,11 +705,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .testButton { min-height:48px; padding:9px 6px; font-size:13px; }
   .heroActions svg { width:16px; height:16px; }
   .privacyDisclosure { font-size:11.5px; margin-top:7px; }
-  .actions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:8px; }
-  .action { min-height:74px; padding:9px 3px; border-radius:13px; font-size:clamp(12px,3.15vw,14px); line-height:1.19; }
-  .action svg:first-child { width:23px; height:23px; }
-  .action span:not(.modeYin) { min-width:0; overflow-wrap:normal; text-wrap:balance; }
-  .action .modeYin { font-size:26px; }
   .results { margin-top:9px; padding:7px; border-radius:17px; }
   .daoInsight { padding:11px; border-radius:15px; }
   .daoLandscape { height:115px; width:58%; opacity:.36; }
@@ -795,7 +734,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .root { padding:5px; }
   .heading { padding:11px; min-height:145px; }
   .heading .lead { max-width:83%; font-size:12.8px; }
-  .action { min-height:73px; font-size:12px; }
   .daoInsight { padding:9px; }
   .daoInterpretation { grid-template-columns:90px minmax(0,1fr); gap:7px; }
   .daoPoint { grid-template-columns:19px minmax(0,1fr); gap:4px; }
@@ -1150,3 +1088,39 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 @media(prefers-reduced-motion:reduce){
   .heroActions .submit,.heroActions .testButton{transition:none}
 }
+
+/* Two compact discovery links replace the old three oversized mode cards. */
+.exploreLinks{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;margin:12px 0 0;
+}
+.exploreLink{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;
+  min-height:52px;padding:11px 14px;
+  border:1px solid #d5c0a8;border-radius:13px;
+  background:#fffaf4;color:#63452f;
+  font:750 13px/1.25 Arial,Helvetica,sans-serif;text-decoration:none;
+  text-align:left;transition:background .16s,border-color .16s;
+}
+.exploreLink span{min-width:0;text-wrap:balance;overflow-wrap:break-word}
+.exploreLink svg{flex:0 0 17px}
+.exploreLink:hover{background:#f7eadb;border-color:#b38e6b}
+.exploreTemple{background:#edf5f1;color:#245c57;border-color:#bad2c8}
+.exploreTemple:hover{background:#e0eee8;border-color:#86aea0}
+.templeHeading{
+  display:flex;align-items:center;gap:7px;
+  margin:18px 0 4px;scroll-margin-top:95px;
+  color:#66513e;text-transform:uppercase;letter-spacing:.1em;
+  font:800 12px/1.4 Arial,Helvetica,sans-serif;
+}
+.templeHeading svg{color:#2e7e78;flex-shrink:0}
+@media(max-width:760px){
+  .exploreLinks{gap:7px;margin-top:9px}
+  .exploreLink{min-height:52px;padding:9px 10px;font-size:12.5px;gap:5px}
+  .templeHeading{margin-top:14px;font-size:11px}
+}
+@media(max-width:360px){
+  .exploreLink{padding:8px;font-size:11.5px;line-height:1.3}
+  .exploreLink svg{width:14px;flex-basis:14px}
+}
+@media(prefers-reduced-motion:reduce){.exploreLink{transition:none}}

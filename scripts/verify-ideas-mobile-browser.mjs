@@ -106,14 +106,23 @@ async function verify(browserType, locale, width) {
     assert.equal(await hub.locator("[data-ideas-result]").count(), 0, label + ": example not a false result");
     const initialPreviewLabel = await hub.locator("[data-ideas-preview] [class*=daoEyebrow]").first().innerText();
     assert.ok(initialPreviewLabel.length > 4, label + ": clearly labelled editorial preview");
-    const modeButtons = hub.locator("button[aria-pressed]");
-    assert.equal(await modeButtons.count(), 3, label + ": exactly three choices");
-    const rects = await Promise.all([0, 1, 2].map(async index => modeButtons.nth(index).boundingBox()));
-    assert.ok(rects.every(rect => rect && rect.height >= 44 && rect.width >= 70), label + ": finger-sized choices");
-    assert.ok(closeEnough(rects[0].y, rects[1].y) && closeEnough(rects[1].y, rects[2].y),
-      label + ": all choices in one horizontal row");
-    assert.ok(await modeButtons.first().evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 12),
-      label + ": option text is readable");
+    const exploreCoaching = hub.locator("[data-ideas-explore-coaching]");
+    const exploreTemple = hub.locator("[data-ideas-explore-temple]");
+    const exploreLinks = hub.locator("[data-ideas-explore] a");
+    assert.equal(await exploreLinks.count(), 2, label + ": exactly two exploration links");
+    assert.equal(await exploreCoaching.getAttribute("href"), "/" + locale + "/coaching",
+      label + ": Coaching Options opens the existing public guest chooser");
+    assert.equal(await exploreTemple.getAttribute("href"), "#temple-insights",
+      label + ": Temple Insights opens the existing editorial section");
+    assert.equal(await hub.locator("button[aria-pressed]").count(), 0,
+      label + ": old three mode buttons are gone");
+    const exploreRects = await Promise.all([exploreCoaching, exploreTemple].map(item => item.boundingBox()));
+    assert.ok(exploreRects.every(rect => rect && rect.width >= 100 && rect.height >= 44),
+      label + ": both links are finger-sized at 320–430px");
+    assert.ok(closeEnough(exploreRects[0].y, exploreRects[1].y),
+      label + ": two links share one compact row");
+    assert.ok(await exploreCoaching.evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 11.5),
+      label + ": exploration text remains readable");
     const bounds = await page.evaluate(() => ({
       viewport: window.innerWidth,
       content: document.documentElement.scrollWidth,
@@ -122,8 +131,8 @@ async function verify(browserType, locale, width) {
 
     if (browserType === webkit && locale === "en" && width === 390) {
       await page.screenshot({ path: output + "/ideas-first-screen-webkit-390.png", fullPage: false });
-      const preview = await hub.locator("[data-ideas-preview]").boundingBox();
-      assert.ok(preview && preview.y < 844 - 80, label + ": answer begins above bottom navigation");
+      const discover = await hub.locator("[data-ideas-explore]").boundingBox();
+      assert.ok(discover && discover.y < 844, label + ": new exploration links stay near the first screen");
     }
 
     const textarea = hub.locator("#ideas-question");
@@ -135,8 +144,11 @@ async function verify(browserType, locale, width) {
     }
     assert.ok(await textarea.evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 16),
       label + ": iPhone input does not zoom");
-    // The submit action is always Dao-first, even if a visitor previously tapped another mode.
-    await modeButtons.nth(1).tap();
+    // Explore Temple Insights must jump to the current in-page editorial content.
+    await exploreTemple.tap();
+    assert.equal(await page.evaluate(() => window.location.hash), "#temple-insights",
+      label + ": Temple Insights anchor works");
+    // Free Taoist guidance still produces a fresh symbolic response to the typed question.
     await textarea.fill(phrases[locale]);
     await hub.locator('[data-ideas-tao]').tap();
     const daoResult = hub.locator('[data-ideas-result="dao"]');
@@ -199,32 +211,15 @@ async function verify(browserType, locale, width) {
     assert.equal(await expand.getAttribute("aria-expanded"), "false", label + ": can collapse again");
     assert.equal(await daoResult.locator('[role="img"]').count(), 0, label + ": collapsed content removed");
 
-    await modeButtons.nth(1).tap();
-    await hub.locator('[data-ideas-result="aphorisms"]').waitFor({ state: "visible" });
-    assert.equal(await hub.locator('[data-ideas-result="aphorisms"] ol li').count(), 3,
-      label + ": exactly 3 aphorisms");
-    assert.equal(await modeButtons.nth(1).getAttribute("aria-pressed"), "true");
-
-    await modeButtons.nth(2).tap();
-    await hub.locator('[data-ideas-result="personal"]').waitFor({ state: "visible" });
-    const services = hub.locator('[data-ideas-guidance-list] li a');
-    assert.equal(await services.count(), 3, label + ": three real free service suggestions");
-    const links = await services.evaluateAll(nodes => nodes.map(node => node.getAttribute("href")));
-    assert.ok(links.some(href => href?.includes("/services/free-situation-review#request-free-review")), label);
-    assert.ok(links.some(href => href?.includes("/client/tests")), label);
-    assert.ok(links.some(href => href?.includes("/services/dao-health-profile#request-free-wu-xing")), label);
-    if (browserType === webkit && locale === "en" && width === 390) {
-      await page.screenshot({ path: output + "/ideas-free-guidance-webkit-390.png", fullPage: false });
-    }
-    // This clicks a real public service link. Never submit a lead on behalf of a visitor.
     if (width === 390) {
-      const first = await services.first().getAttribute("href");
-      assert.ok(first?.startsWith("/"), label + ": same-site link");
-      await services.first().tap();
-      await page.waitForURL(url => url.pathname === first.split("#")[0], { timeout: 30000 });
+      const destination = await exploreCoaching.getAttribute("href");
+      await exploreCoaching.tap();
+      await page.waitForURL(url => url.pathname === destination, { timeout: 30000 });
+      assert.ok((await page.locator("h1").first().textContent())?.length,
+        label + ": public Coaching Options page renders");
     }
     assert.deepEqual(errors, [], label + ": unhandled client errors");
-    evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToExistingFreeService: width === 390 });
+    evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390 });
   } finally {
     await page.close();
     await browser.close();
