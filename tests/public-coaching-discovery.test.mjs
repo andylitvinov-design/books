@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
+import ts from 'typescript'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Ideas offers the public model chooser first and keeps local Tao insight',()=>{
@@ -169,4 +170,17 @@ test('public model cards include only known first-party photographs with mobile-
  assert.match(css,/\.cardMain\{display:grid/)
  assert.match(css,/\.cardArt\{/)
  assert.match(css,/@media\(max-width:360px\)/)
+})
+
+test('the public Coaching Lounge, Ideas and entry page all parse as JSX before a Vercel build',()=>{
+ for(const [path,kind] of [
+   ['components/public-coaching-discovery.jsx',ts.ScriptKind.JSX],
+   ['components/ideas-discovery.tsx',ts.ScriptKind.TSX],
+   ['app/[locale]/coaching/page.jsx',ts.ScriptKind.JSX],
+ ]){
+   const source=read(path)
+   const parsed=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,kind)
+   const errors=parsed.parseDiagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error)
+   assert.equal(errors.length,0,path+': '+errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')).join('; '))
+ }
 })
