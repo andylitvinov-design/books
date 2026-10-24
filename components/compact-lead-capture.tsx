@@ -144,8 +144,8 @@ export function CompactLeadCapture({
         body: JSON.stringify({
           operationId: requestId,
           serviceTitle,
-          ...(formatOptions?.length && selectedFormat
-            ? { description: "Preferred session format: " + selectedFormat } : {}),
+          description: "Preferred reply channel: " + (channel === "whatsapp" ? "WhatsApp" : "Telegram") +
+            (formatOptions?.length && selectedFormat ? "; Preferred session format: " + selectedFormat : ""),
           sourcePath: sourcePath || pathname || "/" + locale + "/services",
           locale,
           contact: { displayName: "", ...contact },
