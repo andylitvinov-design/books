@@ -1,0 +1,15 @@
+key,items,locale,study_url,review_status
+wais-khlomov2025-ruru11-client,11,ru-RU,https://doi.org/10.17759/cpp.2025330209,research_only_permission_pending
+wais-khlomov2025-ruru10-therapist,10,ru-RU,https://doi.org/10.17759/cpp.2025330209,research_only_permission_pending
+wais-andrade2016-eses12-patient,12,es-ES,https://doi.org/10.1007/s12144-015-9365-3,research_only_permission_pending
+wais-andrade2016-eses12-therapist,12,es-ES,https://doi.org/10.1007/s12144-015-9365-3,research_only_permission_pending
+waio-santirso2018-eses12-ipv,12,es-ES,https://doi.org/10.1016/j.ijchp.2018.02.003,research_only_permission_pending
+wais-vanbenthem2024-nlnl12-youth-patient,12,nl-NL,https://doi.org/10.1186/s40359-024-01754-1,research_only_permission_pending
+wais-vanbenthem2024-nlnl12-youth-therapist,12,nl-NL,https://doi.org/10.1186/s40359-024-01754-1,research_only_permission_pending
+wai-red-paap2019-nlnl12-rehab,12,nl-NL,https://doi.org/10.1080/09593985.2018.1471112,research_only_permission_pending
+wai-prusinski2021-plpl36-patient,36,pl-PL,https://doi.org/10.1007/s10879-021-09500-z,research_only_permission_pending
+wai-prusinski2021-plpl36-therapist,36,pl-PL,https://doi.org/10.1007/s10879-021-09500-z,research_only_permission_pending
+waisr-falkenstrom2015-svse12-patient,12,sv-SE,https://doi.org/10.1177/1073191114552472,locale_form_confirm_pending
+waisr-buono2023-itit12-patient-delphi,12,it-IT,https://doi.org/10.3389/fmed.2023.1236273,translation_only_no_validation
+waisr-buono2023-itit12-therapist-delphi,12,it-IT,https://doi.org/10.3389/fmed.2023.1236273,translation_only_no_validation
+dwai-goldberg2022-enus6,6,en-US,https://doi.org/10.1177/10731911211015310,research_only_permission_pending
