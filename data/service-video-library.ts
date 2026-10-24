@@ -2,7 +2,7 @@ import type { PublishedSiteVideo } from "@/lib/site-videos/model";
 import { siteVideoWatchUrl } from "@/lib/site-videos/model";
 
 export type ServiceVideoLocale = "en" | "ru" | "es";
-export type ServiceVideoTopic = "overview" | "alchemy" | "hypnotherapy" | "constellations" | "homeopathy";
+export type ServiceVideoTopic = "overview" | "alchemy" | "hypnotherapy" | "constellations" | "constellation-case" | "homeopathy";
 
 export type ServiceVideoMedia = {
   video: PublishedSiteVideo;
@@ -26,6 +26,12 @@ const overviewRu: ServiceVideoMedia = {
 const constellationsEn: ServiceVideoMedia = {
   video: { youtubeId: "", heygenId: "7c6b243f048b9c0581ae29619a4a89fc", language: "en", title: "How I Work with Systemic Constellations", durationSeconds: 48 },
   poster: path + "constellations-en-v1.webp",
+  general: false,
+};
+/** Owner-selected public recording: one ID for three related service landings. */
+const constellationCase: ServiceVideoMedia = {
+  video: { youtubeId: "sfVFOQNr2qk", language: "en", title: "Business Constellations" },
+  poster: "/images/holistic-house/andy-about.png",
   general: false,
 };
 const hypnotherapyEn: ServiceVideoMedia = {
@@ -76,6 +82,7 @@ const media: Record<"en" | "ru", Record<ServiceVideoTopic, ServiceVideoMedia>> =
     alchemy: constellationsEn,
     hypnotherapy: hypnotherapyEn,
     constellations: constellationsEn,
+    "constellation-case": constellationCase,
     homeopathy: homeopathyEn,
   },
   ru: {
@@ -83,6 +90,7 @@ const media: Record<"en" | "ru", Record<ServiceVideoTopic, ServiceVideoMedia>> =
     alchemy: overviewRu,
     hypnotherapy: hypnotherapyRu,
     constellations: overviewRu,
+    "constellation-case": constellationCase,
     homeopathy: homeopathyRu,
   },
 };
