@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('Ideas offers the public model chooser first and keeps local Tao insight',()=>{
@@ -48,4 +48,50 @@ test('public models and private questions never leave memory or go to marketing 
  assert.match(css,/@media\(max-width:360px\)/)
  assert.match(css,/:focus-visible/)
  assert.match(css,/ideas-pine-sharp\.avif/)
+})
+
+test('public coaching lounge is the sole /coaching route; old authored questionnaire keeps a direct URL',()=>{
+ const publicPage=read('app/[locale]/coaching/page.jsx')
+ const privateIntake=read('app/[locale]/coaching/intake/page.tsx')
+ const api=read('app/api/app/[...path]/route.js')
+ const freeEntry=read('components/free-entry-landing.tsx')
+ const services=read('components/services-studio-offers.tsx')
+ assert.equal(existsSync(new URL('../app/[locale]/coaching/page.tsx',import.meta.url)),false,
+   'Next.js must not find both page.tsx and page.jsx for one route')
+ assert.match(publicPage,/PublicCoachingDiscovery/)
+ assert.match(publicPage,/canonical:'\/'\+locale\+'\/coaching'/)
+ assert.match(privateIntake,/CoachingIntakeForm/)
+ assert.match(privateIntake,/coaching\/intake/)
+ assert.match(privateIntake,/from "\.\.\/coaching-page\.module\.css"/)
+ assert.match(api,/continueTo === 'coaching-intake'[\s\S]*?\$\{origin\}\/\$\{locale\}\/coaching\/intake/)
+ assert.match(freeEntry,/data-source="coaching-questionnaire"/)
+ assert.match(freeEntry,/\/coaching\/intake/)
+ assert.match(services,/data-coaching-intake-link/)
+ assert.match(services,/\/coaching\/intake/)
+})
+test('guest lounge shows different forms and author tracks with real actions and no fake booking',()=>{
+ const ui=read('components/public-coaching-discovery.jsx')
+ const css=read('components/public-coaching-discovery.module.css')
+ const srv=read('app/[locale]/services/page.tsx')
+ const used=[...new Set([...ui.matchAll(/styles\.([A-Za-z0-9_]+)/g)].map(m=>m[1]))]
+ const available=new Set([...css.matchAll(/(?<![\w-])\.([A-Za-z_][A-Za-z_0-9-]*)/g)].map(m=>m[1]))
+ assert.deepEqual(used.filter(name=>!available.has(name)),[])
+ assert.match(ui,/title:'Гостиная коучинга'/)
+ assert.match(ui,/title:'Coaching Lounge'/)
+ assert.match(ui,/data-public-coaching-models/)
+ assert.match(ui,/data-public-coaching-session/)
+ assert.match(ui,/\/app\/coaching\/egyptian/)
+ assert.match(ui,/\/app\/coaching\/greek/)
+ assert.match(ui,/coaching\/intake/)
+ assert.match(ui,/\/services#consultation/)
+ assert.match(srv,/id="consultation"/)
+ assert.match(ui,/€50/)
+ assert.match(ui,/€100/)
+ assert.match(ui,/t\.notBooking/)
+ assert.match(ui,/setAnswers\(updated\)/)
+ assert.match(ui,/titleRef\.current\?\.focus/)
+ assert.match(css,/@media\(max-width:360px\)/)
+ assert.match(css,/\.morePathGrid\{display:grid/)
+ assert.match(css,/:focus-visible/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon\(|gtag\(|fbq\(|\bfetch\(|appFetch/)
 })
