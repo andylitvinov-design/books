@@ -15,6 +15,7 @@ export type AcademyVideoCourse = {
   id: string;
   title: string;
   category: string;
+  description?: string;
   poster: string;
   href: string;
   chapters: AcademyVideoChapter[];
@@ -239,7 +240,7 @@ export function AcademyVideoLibraryClient({
                                       locale={locale}
                                       courseId={"archive:" + course.id}
                                       title={course.title}
-                                      description={course.category}
+                                      description={course.description || course.category}
                                       poster={course.poster}
                                       lessons={available.map((video, index) => ({ ...video, order: index + 1 }))}
                                     />;
