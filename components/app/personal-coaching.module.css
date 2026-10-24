@@ -267,6 +267,6 @@
 .recapFallback{display:grid;gap:7px;width:100%;font-size:12px;font-weight:800;color:#315d5c}
 .recapFallback textarea{width:100%;min-height:130px;max-height:260px;resize:vertical;
   border:1.5px solid #9dbbb5;border-radius:11px;background:#fff;color:#28484d;
-  font:400 14px/1.5 inherit;padding:10px 12px;white-space:pre-wrap}
+  font:inherit;font-size:14px;font-weight:400;line-height:1.5;padding:10px 12px;white-space:pre-wrap}
 .recapFallback textarea:focus-visible{outline:3px solid #00aab3;outline-offset:2px}
 @media(max-width:370px){.recapFallback textarea{font-size:13px;min-height:115px}}
