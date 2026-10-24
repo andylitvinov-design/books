@@ -17,7 +17,8 @@ test('guest profile header counts completed tests only from server plan, plus cu
 test('single guest test and bad counters have bounded progress', () => {
   assert.equal(guestTestJourneyMetrics(null, { answeredCount: 3, questionCount: 4 }).percent, 75)
   assert.equal(guestTestJourneyMetrics(null, { phase: 'result' }).percent, 100)
-  assert.equal(guestTestJourneyMetrics(null, { answeredCount: 120, questionCount: 5 }).percent, 100)
+  assert.equal(guestTestJourneyMetrics(null, { answeredCount: 120, questionCount: 5 }).percent, 99)
+  assert.equal(guestTestJourneyMetrics(null, { answeredCount: 5, questionCount: 5, phase: 'context' }).percent, 99)
   assert.equal(guestTestJourneyMetrics({ definitionIds: Array.from({ length: 20 }, (_, i) => i), completedRunIds: [] }).total, 12)
   assert.equal(guestTestJourneyMetrics(null, { answeredCount: -10, questionCount: 7 }).percent, 0)
 })
