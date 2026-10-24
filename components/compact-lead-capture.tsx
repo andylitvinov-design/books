@@ -10,7 +10,6 @@ import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsa
 import styles from "./compact-lead-capture.module.css";
 
 type Channel = "whatsapp" | "telegram";
-type SavedEnquiry = { referenceCode: string; saved: true };
 
 const copy = {
   en: {
@@ -134,7 +133,7 @@ export function CompactLeadCapture({
     operationId.current = requestId;
     setBusy(channel);
     setError("");
-    let committed: SavedEnquiry | null = null;
+    let committedReference = "";
 
     try {
       const response = await fetch("/api/service-enquiries", {
@@ -160,11 +159,11 @@ export function CompactLeadCapture({
         if (response.status === 409) operationId.current = null;
         throw new Error("ENQUIRY_NOT_SAVED");
       }
-      committed = { saved: true, referenceCode: result.referenceCode };
-      setReference(committed.referenceCode);
+      committedReference = result.referenceCode;
+      setReference(committedReference);
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
-          JSON.stringify({ referenceCode: committed.referenceCode, createdAt: Date.now() }));
+          JSON.stringify({ referenceCode: committedReference, createdAt: Date.now() }));
       } catch { /* Receipt storage is optional; the DB commit is already authoritative. */ }
     } catch {
       try { handoffWindow?.close(); } catch { /* Never navigate after a failed DB save. */ }
@@ -177,7 +176,7 @@ export function CompactLeadCapture({
     // A browser handoff can fail after the DB commit. Keep both fallback links
     // visible under the saved reference; never resubmit or claim the CRM save failed.
     try {
-      const destination = channelUrl(committed.referenceCode, channel);
+      const destination = channelUrl(committedReference, channel);
       if (handoffWindow && !handoffWindow.closed) {
         handoffWindow.location.replace(destination);
       } else {
