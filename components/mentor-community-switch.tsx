@@ -108,7 +108,7 @@ export function MentorCommunitySwitch({
       <header className={styles.head}>
         <div>
           <p className={styles.eyebrow}>HOLISTIC HOUSE · COMMUNITY</p>
-          <h2 id="mentor-community-title">{t.title}</h2>
+          <h1 id="mentor-community-title">{t.title}</h1>
           <p>{t.intro}</p>
         </div>
         <nav className={styles.contribute} aria-label={locale === "ru" ? "Опубликовать в сообществе" : locale === "es" ? "Publicar en la comunidad" : "Contribute to the community"}>
