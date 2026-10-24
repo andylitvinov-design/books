@@ -4,19 +4,26 @@ import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("approved Ideas design keeps question, submit button and three touch-sized choices on one mobile row", () => {
+test("Ideas first screen has two free actions and two compact discovery links, not three mode cards", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
   assert.match(ui, /<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
   assert.match(ui, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
-  assert.match(ui, /type="button" onClick=\{\(\) => choose\("dao"\)\}/);
-  assert.match(ui, /type="button" onClick=\{\(\) => choose\("aphorisms"\)\}/);
-  assert.match(ui, /type="button" onClick=\{\(\) => choose\("personal"\)\}/);
-  assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.actions \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(css, /\.action \{ flex-direction: column;[\s\S]*?min-height: 72px/);
-  assert.match(css, /\.submit \{ width: 100%; min-height: 46px/);
+  assert.match(ui, /<nav className=\{styles\.exploreLinks\} aria-label=\{t\.exploreMore\} data-ideas-explore>/);
+  assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.exploreLink\}/);
+  assert.match(ui, /data-ideas-explore-coaching/);
+  assert.match(ui, /<a href="#temple-insights"/);
+  assert.match(ui, /data-ideas-explore-temple/);
+  assert.match(ui, /<h2 id="temple-insights" className=\{styles\.templeHeading\}>/);
+  for (const label of ["Explore Coaching Options", "Explore Temple Insights", "Выбрать коучинг", "Исследовать храмовые подсказки", "Explorar opciones de coaching", "Explorar reflexiones del templo"]) {
+    assert.ok(ui.includes(label), "Localized CTA missing: " + label);
+  }
+  assert.doesNotMatch(ui, /styles\.actionLabel|styles\.actions|aria-pressed=\{activeMode\}/);
+  assert.match(css, /\.exploreLinks\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.exploreLink\{[\s\S]*?min-height:52px/);
+  assert.match(css, /\.templeHeading\{[\s\S]*?scroll-margin-top:95px/);
+  assert.match(css, /@media\(max-width:360px\)/);
   assert.match(css, /\.question textarea \{ min-height: 47px;[\s\S]*?font-size: 16px/);
-  assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(css, /:focus-visible/);
   assert.match(css, /prefers-reduced-motion/);
 });
