@@ -9,7 +9,7 @@ test('Legacy Energy / Love / Business categories remain available in More but no
   for (const locale of ['en', 'ru', 'es']) {
     const primary = getSiteNavigation(locale)
     const bottom = getCompactNavigation(locale)
-    assert.deepEqual(bottom.map(item => item.id), ['home','profile','coaching','insights','support','pro'])
+    assert.deepEqual(bottom.map(item => item.id), ['home','analysis','courses','profile','coaching','pro','temple'])
     for (const [id, slug] of [['energy','energy'],['love','love'],['business','business']]) {
       assert.equal(primary.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)
       assert.ok(!bottom.some(item => item.id === id), 'Topic remains outside fixed bottom bar')
@@ -48,7 +48,8 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   // The old hard-coded Academy nav item was replaced by the canonical
   // Courses item; it still resolves to the Academy catalog.
   const model = await readFile('lib/site-navigation-model.js', 'utf8')
-  assert.ok(site.includes("'library', 'courses', 'events'"))
+  assert.ok(site.includes("'library', 'events'"))
+  assert.ok(site.includes("getCompactNavigation(activeLocale)"))
   assert.ok(model.includes("courses: 'academy'"))
 })
 
