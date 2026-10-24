@@ -101,3 +101,15 @@
   .courseSheet{height:auto;max-height:none}
   .courseScroll{padding-top:7px;padding-bottom:9px}
 }
+
+/* Two calm, scrollable onboarding slides reuse the same session shell. */
+.courseIntro[data-tradition-coaching-onboarding]{align-items:stretch;gap:10px;padding:clamp(13px,2.5vw,25px)}
+.courseIntro[data-tradition-coaching-onboarding] [data-coaching-intro-slide],
+.courseIntro[data-tradition-coaching-onboarding] [data-coaching-topic-slide]{padding:0;max-width:none}
+.introActions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;width:100%}
+.introActions button{max-width:none;min-height:48px}
+.introActions button:last-child{flex:1}
+@media(max-width:600px){
+ .courseIntro[data-tradition-coaching-onboarding]{padding:15px 13px calc(14px + env(safe-area-inset-bottom))}
+ .introActions button{font-size:13px}
+}
