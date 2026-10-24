@@ -234,8 +234,11 @@ export function AcademyVideoLibraryClient({
                                           order: 0,
                                           youtubeId: video.id,
                                         })));
+                                    const unavailable = course.chapters.flatMap((chapter) =>
+                                      chapter.videos.filter((video) => video.unavailable));
                                     if (!available.length) return <p className={styles.sourceNote}>{t.unavailable}</p>;
-                                    return <AcademyVideoCourseJourney
+                                    return <>
+                                      <AcademyVideoCourseJourney
                                       key={course.id}
                                       locale={locale}
                                       courseId={"archive:" + course.id}
@@ -243,7 +246,11 @@ export function AcademyVideoLibraryClient({
                                       description={course.description || course.category}
                                       poster={course.poster}
                                       lessons={available.map((video, index) => ({ ...video, order: index + 1 }))}
-                                    />;
+                                      />
+                                      {unavailable.length ? <p className={styles.sourceNote} role="note">
+                                        {unavailable.length} · {t.unavailable}
+                                      </p> : null}
+                                    </>;
                                   })() : (
                                   <>
                                   {course.chapters.map((chapter) => (
