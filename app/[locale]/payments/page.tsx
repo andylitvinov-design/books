@@ -8,6 +8,7 @@ import { publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog
 import { PERSONAL_PAYPAL_PAYEE, personalPayPalEnabled, buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildInteracTransferInquiry } from "@/lib/commerce/interac-transfer-inquiry";
 import { configuredSquarePaymentLinks, buildSquarePaymentForServices, formatSquareCadAmount } from "@/lib/commerce/square-payment-links";
+import { getSquareGatewayConfig } from "@/lib/commerce/square-gateway";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { configuredPayPalHostedLinks, buildPayPalHostedCartUrl } from "@/lib/commerce/paypal-hosted-links";
 import styles from "./payments.module.css";
@@ -120,13 +121,14 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
   const enabled = personalPayPalEnabled();
   const products = publicServiceCatalog(locale);
   const squareLinks = configuredSquarePaymentLinks();
+  const squareApiEnabled = getSquareGatewayConfig().enabled;
   const hostedPayPalLinks = configuredPayPalHostedLinks();
   const combinedIds = products.map(product => product.id);
   const combinedPayPalUrl = enabled && products.length === 2 ? buildPersonalPayPalCartUrl(combinedIds) : null;
   const combinedHostedUrl = products.length === 2 ? buildPayPalHostedCartUrl(combinedIds, hostedPayPalLinks) : null;
   const combinedEuros = products.reduce((sum, product) => sum + product.amountMinor, 0) / 100;
   const combinedSquarePayment = products.length === 2 ? buildSquarePaymentForServices(combinedIds, squareLinks) : null;
-  const combinedAvailable = products.length === 2 && (Boolean(combinedSquarePayment) || verifiedPayPalCheckout || Boolean(combinedPayPalUrl) || Boolean(combinedHostedUrl));
+  const combinedAvailable = products.length === 2 && (squareApiEnabled || Boolean(combinedSquarePayment) || verifiedPayPalCheckout || Boolean(combinedPayPalUrl) || Boolean(combinedHostedUrl));
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -167,7 +169,11 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
               </div>
               <h3>{product.title}</h3>
               <p>{product.description}</p>
-              {squarePayment ? <a href={squarePayment.url} className={styles.payButton}
+              {squareApiEnabled ? <Link href={"/" + locale + "/cart?items=" + encodeURIComponent(product.id)}
+                className={styles.payButton} data-square-api-cart-link={product.id}>
+                {t.squareAction} <ArrowUpRight size={17} aria-hidden="true" />
+              </Link> : null}
+              {!squareApiEnabled && squarePayment ? <a href={squarePayment.url} className={styles.payButton}
                 target="_blank" rel="noopener noreferrer" data-square-personal-link={product.id}>
                 {t.squareAction} · {formatSquareCadAmount(squarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
               </a> : null}
@@ -220,7 +226,11 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
             <p>{t.combinedIntro}</p>
           </div>
           <div className={styles.combinedActions}>
-            {combinedSquarePayment ? <a href={combinedSquarePayment.url} className={styles.payButton}
+            {squareApiEnabled ? <Link href={"/" + locale + "/cart?items=" + combinedIds.join(",")}
+              className={styles.payButton} data-square-api-combined-link>
+              {t.combinedSquare} <ArrowUpRight size={17} aria-hidden="true" />
+            </Link> : null}
+            {!squareApiEnabled && combinedSquarePayment ? <a href={combinedSquarePayment.url} className={styles.payButton}
               target="_blank" rel="noopener noreferrer" data-square-combined-link>
               {t.combinedSquare} · {formatSquareCadAmount(combinedSquarePayment.amountMinor, locale)} <ArrowUpRight size={17} aria-hidden="true" />
             </a> : null}
