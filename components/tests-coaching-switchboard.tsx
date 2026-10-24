@@ -25,7 +25,7 @@ const messages = {
     },
     close: "Back to four choices",
     profileLead: "Build a personal, business, wellbeing or comprehensive profile in the dedicated free Profile Builder.",
-    profileDetail: "Choose your life areas, select or customize the scales and free tests, then review your results and development options."
+    profileDetail: "Choose your life areas, select or customize the scales and free tests, then review your results and development options.",
     profileKinds: { personal: "Personal", relationships: "Relationships", business: "Work & business", whole: "Whole-person" },
     scalesTitle: "What would you like to explore?",
     scales: {
@@ -82,7 +82,7 @@ const messages = {
     },
     close: "К четырём направлениям",
     profileLead: "Для личностного, бизнес-, ресурсного или комплексного профиля используйте единый бесплатный конструктор.",
-    profileDetail: "Выберите сферы и шкалы, отредактируйте набор бесплатных тестов и посмотрите результаты и направления развития."
+    profileDetail: "Выберите сферы и шкалы, отредактируйте набор бесплатных тестов и посмотрите результаты и направления развития.",
     profileKinds: { personal: "Личность", relationships: "Отношения", business: "Работа и бизнес", whole: "Комплексный" },
     scalesTitle: "Что вы хотите исследовать?",
     scales: {
@@ -138,7 +138,7 @@ const messages = {
     },
     close: "Volver a las cuatro opciones",
     profileLead: "Crea tu perfil personal, empresarial, de bienestar o integral con nuestro único editor gratuito.",
-    profileDetail: "Elige áreas, escalas y pruebas gratuitas; después explora resultados y opciones de desarrollo."
+    profileDetail: "Elige áreas, escalas y pruebas gratuitas; después explora resultados y opciones de desarrollo.",
     profileKinds: { personal: "Personal", relationships: "Relaciones", business: "Trabajo y negocios", whole: "Integral" },
     scalesTitle: "¿Qué quieres explorar?",
     scales: {
