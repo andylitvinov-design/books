@@ -76,3 +76,28 @@
 
 /* Visible, uncommitted draft words from the device recognition engine. */
 .voiceInterim{font-style:italic;background:#e9f6f3;color:#205d62;padding:6px 9px;border-radius:9px;overflow-wrap:anywhere}
+
+/* The shared shell now sizes to the visual viewport; avoid subtracting a
+   hard-coded header height that misses safe-area and landscape adjustments. */
+.courseSheet{
+  flex:1;height:auto;max-height:none;min-height:0;
+}
+.courseSession{height:100%;min-height:0;overflow:hidden}
+.courseScroll{
+  flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;
+  scrollbar-gutter:auto;
+}
+@media(max-width:600px){
+  .courseSheet{height:auto;max-height:none;min-height:0}
+  .courseScroll{padding:10px 12px 14px}
+}
+@media(max-width:380px){
+  /* Four long choices must not become four full-width rows at 320px. */
+  .choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .choice,.chosen{min-width:0;min-height:44px;padding:8px 7px;font-size:12px;line-height:1.25}
+  .choiceDot{width:13px;height:13px}
+}
+@media(max-height:550px){
+  .courseSheet{height:auto;max-height:none}
+  .courseScroll{padding-top:7px;padding-bottom:9px}
+}
