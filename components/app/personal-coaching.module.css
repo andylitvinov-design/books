@@ -249,3 +249,16 @@
   .smartRecapCard{padding:12px}
   .adaptivePanel{padding:9px 11px}
 }
+
+/* Existing owner-encrypted plan, reused only after an explicit tap in a new session. */
+.previousPlanPanel{display:grid;gap:7px;background:#eaf3ed;border:1px solid #bad6c8;
+  border-radius:13px;padding:12px 14px;min-width:0}
+.previousPlanPanel strong{font-size:12px;color:#295e58;line-height:1.35}
+.previousPlanPanel p{font-size:14px;line-height:1.4;color:#28494b;overflow-wrap:anywhere;
+  margin:0;max-height:4.2em;overflow:hidden}
+.previousPlanPanel button{min-height:44px;display:inline-flex;align-items:center;gap:8px;
+  justify-content:flex-start;text-align:left;justify-self:start;color:#165b62;background:transparent;
+  border:0;padding:8px 0;text-decoration:underline;text-underline-offset:3px;
+  font-size:13px;font-weight:800;cursor:pointer}
+.previousPlanPanel small{font-size:11px;color:#526b64;line-height:1.4}
+@media(max-width:370px){.previousPlanPanel{padding:11px}.previousPlanPanel button{font-size:12px}}
