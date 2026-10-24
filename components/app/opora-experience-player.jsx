@@ -14,7 +14,7 @@ import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner
 import styles from './opora-experience-player.module.css'
 
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
-// Five persisted moments plus one editorial support screen at step two.
+// Five persisted moments plus a clear, non-interactive skill rationale at step two.
 // Existing server visit keys, practice signals and open sessions are preserved.
 const WORDS={
   ru:{
@@ -36,7 +36,7 @@ const WORDS={
     arrivalWarmText:'Найдите взглядом одну приятную или нейтральную деталь вокруг.',
     arriveHint:'Почувствуйте опору сиденья или просто посмотрите на устойчивый предмет. Дыхание менять не нужно.',
     practiceText:'Попробуйте один небольшой шаг, только если вам комфортно.',
-    supportKicker:'МОМЕНТ ПОДДЕРЖКИ',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
+    supportKicker:'ЗАЧЕМ ЭТО НУЖНО',stepLabel:'Сегодня можно попробовать',coreKicker:'КЛЮЧЕВОЕ УПРАЖНЕНИЕ · ДЕНЬ 1',
     coreWhy:'ЗАЧЕМ ЭТО НУЖНО',tryPrompt:'Получилось попробовать?',
     start:'Я попробую этот шаг',alternative:'Другой мягкий вариант',tryAfter:'Как прошло?',
     tried:'Я попробовал(а)',partly:'Удалось немного',read:'Сегодня только знакомлюсь',
@@ -117,7 +117,7 @@ const WORDS={
     arrivalWarmText:'Find one calm or pleasant detail around you.',
     arriveHint:'Feel the support of your seat, or simply look at a steady object. No need to change your breathing.',
     practiceText:'Try one small step, only if it feels comfortable.',
-    supportKicker:'A MOMENT OF SUPPORT',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
+    supportKicker:'WHY WE PRACTISE',stepLabel:'A gentle step for today',coreKicker:'KEY PRACTICE · DAY 1',
     coreWhy:'WHY IT HELPS',tryPrompt:'Did you try it?',
     start:'I will try this step',alternative:'Another gentle option',tryAfter:'How did that go?',
     tried:'I tried it',partly:'I tried a little',read:'Just reading today',
@@ -199,7 +199,7 @@ WORDS.es = {
     arrivalWarmText:'Encuentra con la mirada un detalle agradable o neutro.',
     arriveHint:'Mira un objeto estable a tu alrededor; no necesitas cambiar tu respiración.',
     practiceText:'Prueba un gesto pequeño si te resulta cómodo.',
-  supportKicker:'UN MOMENTO DE APOYO',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
+  supportKicker:'PARA QUÉ PRACTICAMOS',stepLabel:'UN PASO AMABLE',coreKicker:'PRÁCTICA CLAVE · DÍA 1',
   coreWhy:'POR QUÉ AYUDA',tryPrompt:'¿Lo intentaste?',tryAfter:'¿Cómo te fue?',
   tried:'Lo intenté',partly:'Un poquito',read:'Hoy solo leo',
   gentle:'Si te incomoda, mira un objeto neutro.',

@@ -31,7 +31,7 @@
 .checkin{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
 .recall{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
 .arrive{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
-/* Support is an experience of acceptance, not a task or a scored interaction. */
+/* The second screen explains today's skill and purpose, never scores a task. */
 .support{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
 .support::after{background:linear-gradient(180deg,rgba(250,246,236,.50),rgba(237,245,233,.75))}
 .support .stage{align-items:center}
@@ -48,6 +48,12 @@
 @media(max-width:359px){
   .support .panel{padding:19px 17px}
   .supportBody{font-size:17px;line-height:1.47}
+}
+/* A clear 3-sentence rationale must fit one short iPhone viewport. */
+@media(max-height:700px){
+  .support .panel{padding:clamp(14px,3.5vw,20px);gap:8px}
+  .support .title{font-size:clamp(23px,6vw,30px);line-height:1.16}
+  .supportBody{font-size:clamp(16px,4.2vw,18px);line-height:1.42}
 }
 
 .practice{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
