@@ -597,7 +597,7 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
     review: "/" + locale + "/services/free-situation-review",
     businessConstellations: "/" + locale + "/services/business-consulting",
     constellations: "/" + locale + "/services/systemic-constellations",
-    aiCoaching: accountRoot + "/coaching",
+    aiCoaching: "/" + locale + "/coaching",
     therapist: "/" + locale + "/services#consultation",
     alchemy: "/" + locale + "/services/alchemy-of-soul",
     energy: "/" + locale + "/services/remote-energy-support",
