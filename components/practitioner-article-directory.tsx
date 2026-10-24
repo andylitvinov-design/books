@@ -114,7 +114,7 @@ export function ArticleDirectory({
         </div>
       )}
       <p className={styles.meta} role="status" aria-live="polite">
-        {filtered.length} {ru ? "статей" : es ? "artículos" : filtered.length === 1 ? "article" : "articles"}
+        {filtered.length} {ru ? "публикаций" : es ? "publicaciones" : filtered.length === 1 ? "post" : "posts"}
       </p>
       <div className={styles.grid}>
         {visible.map((article) => {
@@ -149,7 +149,9 @@ export function ArticleDirectory({
                   commentCount={social[article.id]?.comments || 0}/>}
                 <div className={styles.articleActions}>
                   <Link href={"/" + articleLocale + "/articles/" + article.slug} className={styles.primary}>
-                    {ru ? "Читать статью" : es ? "Leer artículo" : "Read article"} →
+                    {article.kind === "note"
+                      ? (ru ? "Читать заметку" : es ? "Leer nota" : "Read note")
+                      : (ru ? "Читать статью" : es ? "Leer artículo" : "Read article")} →
                   </Link>
                   {authorHref ? <Link href={authorHref} className={styles.authorLink}>
                     {ru ? "Профиль мастера" : es ? "Ver mentor" : "Meet the mentor"} →
@@ -173,7 +175,7 @@ export function ArticleDirectory({
       </div>}
       {preview && <div className={styles.seeAll}>
         <Link href={"/" + locale + "/articles"}>
-          {ru ? "Все статьи сообщества" : es ? "Todos los artículos" : "Explore all articles"} →
+          {ru ? "Все новости сообщества" : es ? "Todas las noticias" : "Explore all posts"} →
         </Link>
       </div>}
     </section>
