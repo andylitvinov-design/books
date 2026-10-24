@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
+import { takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
 
 const copy={
@@ -122,6 +124,17 @@ function traditionExplicitMatch(question,id){
     :/greek|grieg|гречес|грец|логос|logos/.test(text)
 }
 
+// Decorative first-party photography. Existing site assets only.
+const coachingArt={
+  grow_v1:'/images/holistic-house/report-lighthouse-coast.webp',
+  tgrow_v1:'/images/holistic-house/ideas-pine-sharp.avif',
+  oskar_v1:'/images/holistic-house/hero-olive-incense.webp',
+  clear_v1:'/images/holistic-house/video-posters/constellations-en-v1.webp',
+  fuel_v1:'/images/holistic-house/books-library.webp',
+  solution_focus_v1:'/images/holistic-house/report-lighthouse-coast.webp',
+  woop_v1:'/images/holistic-house/ideas-pine-sharp.avif',
+  appreciative_5d_v1:'/images/holistic-house/hero-olive-incense.webp',
+}
 const tr=(value,locale)=>value?.[locale]||value?.en||''
 const answerText=(value,item,locale,t)=>{
   if(typeof value!=='string'||!value)return t.noAnswer
@@ -135,6 +148,10 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const [format,setFormat]=useState('all')
   const [question,setQuestion]=useState('')
+  useEffect(()=>{
+    const handedOff=takeIdeasCoachingQuestion()
+    if(handedOff)setQuestion(handedOff)
+  },[])
   const [topic,setTopic]=useState('all')
   const [duration,setDuration]=useState(0)
   const [style,setStyle]=useState('all')
@@ -268,8 +285,14 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 const model=models.get(s.modelKey)
                 return <article key={s.schemeKey} className={styles.card} data-coaching-scheme={s.schemeKey}>
                   <div className={styles.cardTop}><span>{s.style==='quick'?t.quick:t.reflective} · {s.minutes} {t.minutes}</span><strong>{t.free} · €0</strong></div>
-                  <h3>{tr(model.name,lang)}</h3>
-                  <p className={styles.schemeName}>{tr(s.name,lang)}</p>
+                  <div className={styles.cardMain}>
+                    <div className={styles.cardHeading}>
+                      <h3>{tr(model.name,lang)}</h3>
+                      <p className={styles.schemeName}>{tr(s.name,lang)}</p>
+                    </div>
+                    <Image className={styles.cardArt} src={coachingArt[s.modelKey]||coachingArt.grow_v1}
+                      alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
+                  </div>
                   <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
                   <p className={styles.outcome}><Check size={15}/>{t.result}: {tr(s.result,lang)}</p>
                   {suggestionKeys.has(s.schemeKey)&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
@@ -286,7 +309,12 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}].filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style)).map(option=>
               <article className={styles.card} key={option.minutes}>
                 <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
-                <h3>{option.name}</h3><p>{t.humanText}</p>
+                <div className={styles.cardMain}>
+                   <div className={styles.cardHeading}><h3>{option.name}</h3></div>
+                   <Image className={styles.cardArt} src="/images/holistic-house/hero-olive-incense.webp"
+                     alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
+                 </div>
+                 <p>{t.humanText}</p>
                 <Link className={styles.cardButton} href={'/'+lang+'/services#consultation'}>{t.request}<ArrowRight size={17}/></Link>
               </article>)}
           </div>
