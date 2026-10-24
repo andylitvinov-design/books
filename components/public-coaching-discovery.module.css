@@ -274,6 +274,79 @@
 .moreDetails{min-height:44px}
 .moreSelect{min-height:46px}
 
+/* Coaching Lounge horizontal photo cards v2 */
+/* Photo left / text+CTA right; Details spans the entire bottom. */
+.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card[data-coaching-scheme],.card[data-coaching-human]{
+  display:grid;grid-template-columns:minmax(0,35%) minmax(0,65%);
+  grid-template-rows:minmax(0,auto) auto;min-width:0;padding:0;gap:0;align-content:start
+}
+.card[data-coaching-scheme] .cardVisual,.card[data-coaching-human] .cardVisual{
+  grid-column:1;grid-row:1;margin:0;width:100%;height:100%;min-height:224px;border-radius:0;
+  overflow:hidden;background:#dbe7df
+}
+.card[data-coaching-scheme] .cardVisual .cardArt,.card[data-coaching-human] .cardVisual .cardArt{
+  display:block;width:100%;height:100%;min-height:224px;object-fit:cover;object-position:center;
+  border:0;border-radius:0
+}
+.cardContent{grid-column:2;grid-row:1;min-width:0;padding:15px;display:flex;flex-direction:column;gap:8px}
+.cardContent .cardTop{display:flex;flex-wrap:wrap;gap:5px 9px;margin:0}
+.cardContent .cardTop strong{white-space:normal}
+.cardContent .cardMain{display:block;min-width:0}
+.cardContent .cardHeading h3{font-size:clamp(17px,2vw,23px);margin:0 0 5px}
+.cardContent .schemeName{font-size:12px}
+.cardContent>p{font-size:12px;line-height:1.4;margin:0}
+.cardContent .outcome{font-size:12px;padding:6px 8px;margin-top:1px}
+.cardContent .cardButton{margin-top:auto;min-height:44px;padding:9px 10px;font-size:12px}
+.cardDetails{grid-column:1/-1;grid-row:2;min-width:0;border-top:1px solid #e3d6c7;
+  padding:0 15px 8px;background:#fffcf7}
+.cardDetails summary{display:flex;align-items:center;min-height:44px;font-size:13px;
+  font-weight:800;color:#376963;cursor:pointer}
+.cardDetails p{margin:0 0 8px;font-size:12px;line-height:1.5;color:#615d54}
+.cardDetails[open] summary{color:#244f4d}
+.morePathGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.morePath{display:grid;grid-template-columns:minmax(0,35%) minmax(0,65%);
+  grid-template-rows:minmax(0,auto) auto;gap:0;padding:0;align-content:start;overflow:hidden}
+.morePhoto{grid-column:1;grid-row:1;width:100%;height:100%;min-height:215px;
+  margin:0;border-radius:0;object-fit:cover;object-position:center}
+.moreContent{grid-column:2;grid-row:1;min-width:0;padding:15px;display:flex;flex-direction:column;gap:8px}
+.moreContent h3{font-size:clamp(17px,2vw,23px);margin:0}
+.moreContent p{margin:0;font-size:12px;line-height:1.43;flex:0 1 auto}
+.moreContent a{margin-top:auto;min-height:44px;font-size:12px;padding:9px}
+.moreInfo{grid-column:1/-1;grid-row:2;min-width:0;border-top:1px solid #e0d3bf;
+  padding:0 14px 9px;background:#fffaf3}
+.moreInfo summary{display:flex;align-items:center;cursor:pointer;min-height:44px;
+  color:#376963;font-weight:800;font-size:13px}
+.moreInfo>p{font-size:12px;line-height:1.5;margin:0 0 8px}
+.moreInfo a.moreDetails{width:100%;min-height:44px}
+@media(max-width:850px){
+ .cards,.morePathGrid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:600px){
+ .card[data-coaching-scheme],.card[data-coaching-human],.morePath{
+   grid-template-columns:minmax(0,35%) minmax(0,65%)
+ }
+ .cardContent,.moreContent{padding:11px 10px;gap:7px}
+ .cardContent .cardHeading h3,.moreContent h3{font-size:18px}
+ .cardContent>p,.moreContent p{font-size:11.5px}
+ .cardContent .outcome{font-size:11px}
+ .cardContent .cardTop{font-size:10.5px}
+ .cardContent .cardTop strong{font-size:10.5px}
+ .cardContent .cardVisual,.morePhoto{min-height:200px}
+ .card[data-coaching-scheme] .cardVisual,.card[data-coaching-human] .cardVisual,
+ .card[data-coaching-scheme] .cardVisual .cardArt,.card[data-coaching-human] .cardVisual .cardArt{min-height:200px}
+ .cardDetails,.moreInfo{padding:0 12px 8px}
+ .morePhoto{width:100%;height:100%;margin:0;min-height:200px}
+}
+@media(max-width:360px){
+ .cardContent,.moreContent{padding:9px 8px;gap:6px}
+ .cardContent .cardHeading h3,.moreContent h3{font-size:16px}
+ .cardContent>p,.moreContent p{font-size:11px}
+ .cardContent .cardButton,.moreContent a{font-size:11px;padding:8px 7px}
+ .cardContent .outcome{font-size:10.5px;padding:5px}
+ .morePhoto{min-height:195px}
+}
+
 /* Immersive guest coaching: one question per visual viewport.
    The lounge keeps its normal cards, while only an active session covers the
    public header, banners and persistent six-item mobile navigation. */

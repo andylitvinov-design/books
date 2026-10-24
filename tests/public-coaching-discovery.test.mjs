@@ -210,7 +210,7 @@ test('coaching lounge is photo-led, gives 10 model choices and both author cours
  assert.match(ui,/data-coaching-scheme=\{s\.schemeKey\}/)
  assert.match(ui,/onClick=\{\(\)=>start\(s\)\}/)
  assert.match(ui,/className=\{styles\.cardVisual\}/)
- assert.match(ui,/width=\{640\} height=\{270\}/)
+ assert.match(ui,/width=\{640\} height=\{470\}/)
  assert.match(css,/\.cardVisual\{/)
  assert.match(css,/\.card\[data-coaching-scheme\] \.cardMain\{display:block\}/)
  assert.match(css,/@media\(max-width:360px\)/)
@@ -233,6 +233,48 @@ test('coaching lounge is photo-led, gives 10 model choices and both author cours
  assert.deepEqual(referenced.filter(name=>!available.has(name)),[])
  const parsed=ts.createSourceFile('components/public-coaching-discovery.jsx',ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
  assert.equal(parsed.parseDiagnostics.length,0,'no broken JSX in public coaching room')
+})
+
+
+test('every coaching choice uses photo-left cards, with one bottom Details panel and working actions',()=>{
+ const ui=read('components/public-coaching-discovery.jsx')
+ const css=read('components/public-coaching-discovery.module.css')
+ const selectors=[...new Set([...ui.matchAll(/styles\.([A-Za-z0-9_]+)/g)].map(m=>m[1]))]
+ const defined=new Set([...css.matchAll(/(?<![\w-])\.([A-Za-z_][A-Za-z_0-9-]*)/g)].map(m=>m[1]))
+ assert.deepEqual(selectors.filter(name=>!defined.has(name)),[])
+ // Existing published database keys, client-side model matching and guest question runner.
+ assert.match(ui,/data-coaching-scheme=\{s\.schemeKey\}/)
+ assert.match(ui,/className=\{styles\.cardContent\}/)
+ assert.match(ui,/className=\{styles\.cardDetails\}/)
+ assert.match(ui,/onClick=\{\(\)=>start\(s\)\}/)
+ assert.match(ui,/data-public-coaching-session/)
+ // Distinct authored and live paths, not an invented booking or checkout action.
+ assert.match(ui,/data-coaching-tradition="egyptian"/)
+ assert.match(ui,/data-coaching-tradition="greek"/)
+ assert.match(ui,/traditionHref\('egyptian'\)/)
+ assert.match(ui,/traditionHref\('greek'\)/)
+ assert.match(ui,/className=\{styles\.moreContent\}/)
+ assert.match(ui,/className=\{styles\.moreInfo\}/)
+ assert.match(ui,/className=\{styles\.moreDetails\}/)
+ assert.match(ui,/data-coaching-human=\{option\.minutes\}/)
+ assert.match(ui,/href=\{'\/'\+lang\+'\/services#consultation'\}/)
+ assert.match(ui,/className=\{styles\.cardVisual\}/)
+ assert.match(ui,/className=\{styles\.morePhoto\}/)
+ assert.match(ui,/\/coaching\/intake/)
+ // Actual two-column horizontal grid, no hardcoded viewport width or overflow.
+ assert.match(css,/\.card\[data-coaching-scheme\],\.card\[data-coaching-human\]\{[\s\S]*?display:grid;grid-template-columns:/)
+ assert.match(css,/\.cardContent\{grid-column:2;grid-row:1/)
+ assert.match(css,/\.cardDetails\{grid-column:1\/-1;grid-row:2/)
+ assert.match(css,/\.moreContent\{grid-column:2;grid-row:1/)
+ assert.match(css,/\.moreInfo\{grid-column:1\/-1;grid-row:2/)
+ assert.match(css,/@media\(max-width:600px\)/)
+ assert.match(css,/@media\(max-width:360px\)/)
+ assert.match(css,/min-height:44px/)
+ // Expanding details and review do not forward questions or answers.
+ assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon\(|gtag\(|fbq\(|\bfetch\(|appFetch\(/)
+ for(const label of ["about:'Details'","about:'Детали'","about:'Detalles'"])assert.ok(ui.includes(label),label)
+ const parsed=ts.createSourceFile('components/public-coaching-discovery.jsx',ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+ assert.deepEqual(parsed.parseDiagnostics.map(p=>ts.flattenDiagnosticMessageText(p.messageText,' ')),[])
 })
 
 test('guest coaching uses the whole mobile viewport with independent scrolling and safe-area footer',()=>{

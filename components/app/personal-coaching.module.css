@@ -250,6 +250,27 @@
   .adaptivePanel{padding:9px 11px}
 }
 
+/* Existing owner-encrypted plan, reused only after an explicit tap in a new session. */
+.previousPlanPanel{display:grid;gap:7px;background:#eaf3ed;border:1px solid #bad6c8;
+  border-radius:13px;padding:12px 14px;min-width:0}
+.previousPlanPanel strong{font-size:12px;color:#295e58;line-height:1.35}
+.previousPlanPanel p{font-size:14px;line-height:1.4;color:#28494b;overflow-wrap:anywhere;
+  margin:0;max-height:4.2em;overflow:hidden}
+.previousPlanPanel button{min-height:44px;display:inline-flex;align-items:center;gap:8px;
+  justify-content:flex-start;text-align:left;justify-self:start;color:#165b62;background:transparent;
+  border:0;padding:8px 0;text-decoration:underline;text-underline-offset:3px;
+  font-size:13px;font-weight:800;cursor:pointer}
+.previousPlanPanel small{font-size:11px;color:#526b64;line-height:1.4}
+@media(max-width:370px){.previousPlanPanel{padding:11px}.previousPlanPanel button{font-size:12px}}
+
+/* iOS Safari/manual clipboard fallback — never transmits private session text. */
+.recapFallback{display:grid;gap:7px;width:100%;font-size:12px;font-weight:800;color:#315d5c}
+.recapFallback textarea{width:100%;min-height:130px;max-height:260px;resize:vertical;
+  border:1.5px solid #9dbbb5;border-radius:11px;background:#fff;color:#28484d;
+  font:inherit;font-size:14px;font-weight:400;line-height:1.5;padding:10px 12px;white-space:pre-wrap}
+.recapFallback textarea:focus-visible{outline:3px solid #00aab3;outline-offset:2px}
+@media(max-width:370px){.recapFallback textarea{font-size:13px;min-height:115px}}
+
 /* Shared one-viewport coaching shell for Personal, Greek and Egyptian players.
    Reserve space for the actual question/action footer instead of allowing a
    growing textarea, choices or a keyboard to push Save & continue off-screen. */

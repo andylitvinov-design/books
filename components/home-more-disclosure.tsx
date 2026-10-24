@@ -1,57 +1,75 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
+import styles from "./home-more-disclosure.module.css";
 
-// The owner-approved hidden section is useful on demand, but its service cards,
-// filters and image trees must not inflate the initial HTML/React Flight stream.
-// Import the existing modules only when a visitor opens the native disclosure.
-const ServicesSolutions = dynamic(
-  () => import("./services-solutions").then(mod => mod.ServicesSolutions),
+// Optional conversation guidance loads only on explicit intent; old repeated
+// promotional cards are still available on their dedicated existing pages.
+const HomeConversationGuide = dynamic(
+  () => import("./home-conversation-guide").then(mod => mod.HomeConversationGuide),
   { ssr: false },
 );
-const TestSelectionCourseBanner = dynamic(
-  () => import("./sitewide-antistress-banner").then(mod => mod.TestSelectionCourseBanner),
-  { ssr: false },
-);
-const HomeExploreSections = dynamic(
-  () => import("./home-explore-sections").then(mod => mod.HomeExploreSections),
-  { ssr: false },
-);
+const copy = {
+  "en": {
+    "eyebrow": "EXPLORE BY TOPIC",
+    "title": "Find your focus",
+    "intro": "Choose a subject instead of seeing the same services again.",
+    "energy": "Energy",
+    "love": "Love & relationships",
+    "business": "Business & career",
+    "services": "All services",
+    "courses": "All courses",
+    "help": "Need help choosing? Ask a question"
+  },
+  "ru": {
+    "eyebrow": "ФИЛЬТРЫ ПО ТЕМЕ",
+    "title": "Подобрать по направлению",
+    "intro": "Выберите интересующую тему без повторения предложений.",
+    "energy": "Энергия",
+    "love": "Любовь и отношения",
+    "business": "Бизнес и карьера",
+    "services": "Все услуги",
+    "courses": "Все курсы",
+    "help": "Нужна помощь с выбором? Задать вопрос"
+  },
+  "es": {
+    "eyebrow": "FILTRAR POR TEMA",
+    "title": "Encontrar mi tema",
+    "intro": "Elige un tema sin repetir las mismas ofertas.",
+    "energy": "Energía",
+    "love": "Amor y relaciones",
+    "business": "Negocios y carrera",
+    "services": "Todos los servicios",
+    "courses": "Todos los cursos",
+    "help": "¿Necesitas ayuda para elegir? Haz una pregunta"
+  }
+} as const;
 
-export function HomeMoreDisclosure({
-  locale, children,
-}: { locale: PublicLocale; children: ReactNode }) {
+export function HomeMoreDisclosure({ locale }: { locale: PublicLocale }) {
   const [expanded, setExpanded] = useState(false);
-  const label = locale === "ru" ? "Все направления и услуги"
-    : locale === "es" ? "Todos los programas y servicios"
-      : "All programmes and services";
-
+  const t = copy[locale];
   return (
-    <details className="service-home-more" id="more-directions"
-      data-home-more-deferred="true"
-      onToggle={event => setExpanded(event.currentTarget.open)}>
-      <summary>{label} <span aria-hidden="true">↓</span></summary>
-      {children}
-      {expanded ? (locale === "es"
-        ? <HomeExploreSections locale="es" />
-        : <>
-            <ServicesSolutions locale={locale} variant="home" />
-            <TestSelectionCourseBanner locale={locale} />
-            <HomeExploreSections locale={locale} />
-          </>
-      ) : null}
-      <noscript>
-        <nav aria-label={label}>
-          <Link href={"/" + locale + "/services"}>{locale === "ru" ? "Все услуги" : locale === "es" ? "Todos los servicios" : "All services"}</Link>
-          {" · "}
-          <Link href={"/" + locale + "/client/tests"}>{locale === "ru" ? "Бесплатные тесты" : locale === "es" ? "Pruebas gratis" : "Free tests"}</Link>
-          {" · "}
-          <Link href={"/" + locale + "/academy"}>{locale === "ru" ? "Курсы" : locale === "es" ? "Cursos" : "Courses"}</Link>
-        </nav>
-      </noscript>
-    </details>
+    <section className={styles.root} data-home-topic-filters aria-labelledby="hh-home-topic-filters-title">
+      <header className={styles.heading}>
+        <p className={styles.eyebrow}>{t.eyebrow}</p>
+        <h2 id="hh-home-topic-filters-title">{t.title}</h2>
+        <p>{t.intro}</p>
+      </header>
+      <nav className={styles.filters} aria-label={t.title}>
+        <Link href={"/" + locale + "/explore/energy"} prefetch={false} className={styles.chip} data-home-topic-filter="energy">{t.energy}</Link>
+        <Link href={"/" + locale + "/explore/love"} prefetch={false} className={styles.chip} data-home-topic-filter="love">{t.love}</Link>
+        <Link href={"/" + locale + "/explore/business"} prefetch={false} className={styles.chip} data-home-topic-filter="business">{t.business}</Link>
+        <Link href={"/" + locale + "/services"} prefetch={false} className={styles.chip} data-home-topic-filter="services">{t.services}</Link>
+        <Link href={"/" + locale + "/academy"} prefetch={false} className={styles.chip} data-home-topic-filter="courses">{t.courses}</Link>
+      </nav>
+      <details className={styles.ask} data-home-more-deferred="true"
+        onToggle={event => setExpanded(event.currentTarget.open)}>
+        <summary>{t.help}<span aria-hidden="true">↓</span></summary>
+        {expanded ? <HomeConversationGuide locale={locale} /> : null}
+      </details>
+    </section>
   );
 }

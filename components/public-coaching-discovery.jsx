@@ -27,7 +27,7 @@ const copy={
     empty:'No models match these filters. Try a different topic or duration.',
     unavailable:'Coaching models are temporarily unavailable. You can still request a personal session.',
     free:'Free',minutes:'min',start:'Start this free session',result:'What you will work toward',
-    recommendedLabel:'Suggested',different:'Other options',about:'About this approach',
+    recommendedLabel:'Suggested',different:'Other options',about:'Details',
     humanTitle:'Personal coaching with Andrey',humanText:'Live, individual coaching or therapeutic conversation, online. Choose the duration and send a request.',
     half:'30-minute session',hour:'60-minute session',request:'Request this session',
     notBooking:'A request is not a confirmed booking or payment. The coach must accept and arrange the session.',
@@ -62,7 +62,7 @@ const copy={
     empty:'Нет моделей с такими фильтрами. Измените тему или длительность.',
     unavailable:'Каталог моделей временно недоступен. Можно запросить личную сессию.',
     free:'Бесплатно',minutes:'мин',start:'Начать бесплатную сессию',result:'Результат практики',
-    recommendedLabel:'Подходит по запросу',different:'Другие модели',about:'Об этом подходе',
+    recommendedLabel:'Подходит по запросу',different:'Другие модели',about:'Детали',
     humanTitle:'Личный коучинг с Андреем',humanText:'Индивидуальная коучинговая или терапевтическая беседа онлайн. Выберите длительность и отправьте запрос.',
     half:'Сессия 30 минут',hour:'Сессия 60 минут',request:'Запросить сессию',
     notBooking:'Запрос не является подтверждённой записью или оплатой. Специалист согласует условия и время.',
@@ -97,7 +97,7 @@ const copy={
     empty:'No hay modelos con esos filtros. Cambia el tema o la duración.',
     unavailable:'El catálogo no está disponible temporalmente. Puedes solicitar una sesión personal.',
     free:'Gratis',minutes:'min',start:'Empezar sesión gratis',result:'Resultado de la práctica',
-    recommendedLabel:'Sugerido',different:'Otras opciones',about:'Sobre este enfoque',
+    recommendedLabel:'Sugerido',different:'Otras opciones',about:'Detalles',
     humanTitle:'Coaching personal con Andrey',humanText:'Conversación individual de coaching o terapia en línea. Elige una duración y envía una solicitud.',
     half:'Sesión de 30 minutos',hour:'Sesión de 60 minutos',request:'Solicitar sesión',
     notBooking:'Una solicitud no confirma una reserva ni un pago. El profesional debe confirmar.',
@@ -365,20 +365,19 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 return <article key={s.schemeKey} className={styles.card} data-coaching-scheme={s.schemeKey}>
                   <div className={styles.cardVisual}>
                     <Image className={styles.cardArt} src={cardArtworkUrl(coachingArt[s.modelKey]||coachingArt.grow_v1)} unoptimized
-                      alt="" aria-hidden="true" width={640} height={270} sizes="(max-width:600px) 100vw, (max-width:800px) 50vw, 350px"/>
+                      alt="" aria-hidden="true" width={640} height={470} sizes="(max-width:600px) 36vw, (max-width:800px) 34vw, 240px"/>
                   </div>
-                  <div className={styles.cardTop}><span>{s.style==='quick'?t.quick:t.reflective} · {s.minutes} {t.minutes}</span><strong>{t.free} · €0</strong></div>
-                  <div className={styles.cardMain}>
-                    <div className={styles.cardHeading}>
-                      <h3>{tr(model.name,lang)}</h3>
-                      <p className={styles.schemeName}>{tr(s.name,lang)}</p>
+                  <div className={styles.cardContent}>
+                    <div className={styles.cardTop}><span>{s.style==='quick'?t.quick:t.reflective} · {s.minutes} {t.minutes}</span><strong>{t.free} · €0</strong></div>
+                    <div className={styles.cardMain}>
+                      <div className={styles.cardHeading}><h3>{tr(model.name,lang)}</h3><p className={styles.schemeName}>{tr(s.name,lang)}</p></div>
                     </div>
+                    <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
+                    <p className={styles.outcome}><Check size={15}/>{t.result}: {tr(s.result,lang)}</p>
+                    {suggestionKeys.has(s.schemeKey)&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
+                    <button type="button" className={styles.cardButton} onClick={()=>start(s)}>{t.start}<ArrowRight size={17}/></button>
                   </div>
-                  <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
-                  <p className={styles.outcome}><Check size={15}/>{t.result}: {tr(s.result,lang)}</p>
-                  {suggestionKeys.has(s.schemeKey)&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-                  <details><summary>{t.about}</summary><p>{tr(model.caution,lang)}</p></details>
-                  <button type="button" className={styles.cardButton} onClick={()=>start(s)}>{t.start}<ArrowRight size={17}/></button>
+                  <details className={styles.cardDetails}><summary>{t.about}</summary><p>{tr(model.caution,lang)}</p></details>
                 </article>
               })}
             </div>}
@@ -390,29 +389,39 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <div className={styles.morePathGrid}>
             {shownTraditions.includes('egyptian')&&<article className={styles.morePath} data-coaching-tradition="egyptian" data-suggested={suggestedTraditions.has('egyptian')}>
               <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
-              {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link className={styles.moreSelect} href={traditionHref('egyptian')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/egyptian'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
+                alt="" width={640} height={470} unoptimized loading="lazy" sizes="(max-width:700px) 36vw, 240px"/>
+              <div className={styles.moreContent}>
+                <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
+                {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
+                <Link className={styles.moreSelect} href={traditionHref('egyptian')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
+              </div>
+              <details className={styles.moreInfo}><summary>{t.about}</summary><p>{t.safe}</p>
+                <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/egyptian'} prefetch={false}>
+                  {t.openProgramme}<ArrowRight size={16}/></Link>
+              </details>
             </article>}
             {shownTraditions.includes('greek')&&<article className={styles.morePath} data-coaching-tradition="greek" data-suggested={suggestedTraditions.has('greek')}>
               <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.greek}</h3><p>{t.greekNote}</p>
-              {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link className={styles.moreSelect} href={traditionHref('greek')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/greek'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
+                alt="" width={640} height={470} unoptimized loading="lazy" sizes="(max-width:700px) 36vw, 240px"/>
+              <div className={styles.moreContent}>
+                <h3>{t.greek}</h3><p>{t.greekNote}</p>
+                {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
+                <Link className={styles.moreSelect} href={traditionHref('greek')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
+              </div>
+              <details className={styles.moreInfo}><summary>{t.about}</summary><p>{t.safe}</p>
+                <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/greek'} prefetch={false}>
+                  {t.openProgramme}<ArrowRight size={16}/></Link>
+              </details>
             </article>}
-            <article className={styles.morePath}>
+            <article className={styles.morePath} data-coaching-questionnaire>
               <Image className={styles.morePhoto} src="/images/holistic-house/course-start-heron.webp"
-                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
-              <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
-              <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
-                {t.openWorksheet}<ArrowRight size={16}/>
-              </Link>
+                alt="" width={640} height={470} unoptimized loading="lazy" sizes="(max-width:700px) 36vw, 240px"/>
+              <div className={styles.moreContent}>
+                <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
+                <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
+                  {t.openWorksheet}<ArrowRight size={16}/></Link>
+              </div>
+              <details className={styles.moreInfo}><summary>{t.about}</summary><p>{t.privateQuestion}</p></details>
             </article>
           </div>
         </section>}
@@ -420,15 +429,18 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <h2 id="human-coaching-title">{t.humanTitle}</h2><p>{t.humanText}</p>
           <div className={styles.cards}>
             {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}].filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style)).map(option=>
-              <article className={styles.card} key={option.minutes}>
-                <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
-                <div className={styles.cardMain}>
-                   <div className={styles.cardHeading}><h3>{option.name}</h3></div>
-                   <Image className={styles.cardArt} src={cardArtworkUrl('/images/holistic-house/hero-olive-incense.webp')} unoptimized
-                     alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
-                 </div>
-                 <p>{t.humanText}</p>
-                <Link className={styles.cardButton} href={'/'+lang+'/services#consultation'}>{t.request}<ArrowRight size={17}/></Link>
+              <article className={styles.card} key={option.minutes} data-coaching-human={option.minutes}>
+                <div className={styles.cardVisual}>
+                  <Image className={styles.cardArt} src={cardArtworkUrl('/images/holistic-house/hero-olive-incense.webp')} unoptimized
+                    alt="" aria-hidden="true" width={640} height={470} sizes="(max-width:600px) 36vw, 240px"/>
+                </div>
+                <div className={styles.cardContent}>
+                  <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
+                  <div className={styles.cardMain}><div className={styles.cardHeading}><h3>{option.name}</h3></div></div>
+                  <p>{t.humanText}</p>
+                  <Link className={styles.cardButton} href={'/'+lang+'/services#consultation'}>{t.request}<ArrowRight size={17}/></Link>
+                </div>
+                <details className={styles.cardDetails}><summary>{t.about}</summary><p>{t.notBooking}</p></details>
               </article>)}
           </div>
           <p className={styles.disclaimer}>{t.notBooking}</p>
