@@ -146,3 +146,102 @@
 .morePath[data-suggested="true"]{border-color:#8b5d46;box-shadow:0 0 0 2px #d3b18f33}
 .filterNote{font-size:12px;color:#546e65;margin:8px 0 0;line-height:1.45}
 .morePaths[hidden]{display:none}
+
+
+/* 2026-10-24 review: calm editorial photography and compact mobile model chooser */
+.hero{min-height:195px;border-radius:20px;padding:clamp(23px,3.3vw,38px)}
+.hero::before{background-position:68% 41%}
+.hero::after{
+  background:linear-gradient(90deg,rgba(251,248,241,.99),rgba(251,248,241,.88) 40%,rgba(251,248,241,.16) 92%);
+}
+.hero h1{font-size:clamp(36px,4.5vw,54px);line-height:1.06}
+.hero>p:last-child{max-width:590px;line-height:1.42}
+.controls{margin-top:-11px;border-color:#e0d0bf;box-shadow:0 8px 21px #513f3112}
+.format button{transition:background .15s,color .15s,border-color .15s}
+.format button.active{background:#2b6666;color:#fff;box-shadow:0 4px 10px #28595822}
+.questionInput{border-color:#c5b29e;background:#fffefc}
+.filters select{overflow:hidden;text-overflow:ellipsis}
+.catalog{padding:25px 0 28px}
+.cards{gap:12px}
+.card{
+  position:relative;overflow:hidden;border-color:#ddcfc1;
+  background:#fffdfa;box-shadow:0 3px 15px #503c2b0e;
+  transition:border-color .16s,box-shadow .16s,transform .16s;
+}
+.card::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#c7a78d,#8baaa0)}
+.card:focus-within{border-color:#77a299;box-shadow:0 0 0 2px #7bb3ac25,0 5px 22px #503c2b1a}
+@media(hover:hover){.card:hover{transform:translateY(-2px);border-color:#bbab95;box-shadow:0 8px 22px #503c2b17}}
+.cardTop{align-items:center;min-height:24px}
+.cardTop strong{font-size:12px;color:#226452;background:#dff2e7}
+.cardMain{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:11px;align-items:start;min-width:0}
+.cardHeading{min-width:0}
+.cardHeading h3{margin:1px 0 8px;overflow-wrap:break-word}
+.cardHeading .schemeName{margin:0}
+.cardArt{
+  display:block;width:96px;height:82px;border-radius:12px;object-fit:cover;
+  border:1px solid #e2d8c9;background:#efe7db;
+}
+.card .outcome{background:#f0f6f0;border-radius:10px;padding:8px;color:#35645b}
+.cardButton{margin-top:auto;box-shadow:none}
+.cardButton:focus-visible{outline-offset:2px}
+.card details summary{min-height:34px;display:flex;align-items:center}
+.session{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(145deg,#fffefa,#f7f2e9);min-height:65vh}
+.session::before{
+ content:"";position:absolute;inset:0 0 auto;height:130px;z-index:-1;
+ background:linear-gradient(90deg,rgba(255,253,247,.90),rgba(255,253,247,.55)),
+   url("/images/holistic-house/ideas-pine-sharp.avif") 78% 40% / cover no-repeat;
+ opacity:.52;pointer-events:none;
+}
+.session .progress{margin-top:8px}
+.session h1{line-height:1.14;max-width:640px}
+.session .questionInput{background:#fff}
+.sessionActions .primary{margin:0}
+@media(max-width:800px){
+ .cardMain{grid-template-columns:minmax(0,1fr) 100px}
+ .cardArt{width:100px;height:84px}
+}
+@media(max-width:600px){
+ .root{padding:8px 9px 90px}
+ .hero{min-height:176px;padding:18px;border-radius:17px}
+ .hero::after{background:linear-gradient(90deg,rgba(251,248,241,.98),rgba(251,248,241,.72) 76%,rgba(251,248,241,.2))}
+ .hero h1{font-size:clamp(32px,8.9vw,40px)}
+ .hero>p:last-child{font-size:13px;max-width:95%}
+ .controls{padding:13px 12px;margin-top:-7px}
+ .format{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:11px}
+ .format button{min-height:52px;padding:8px 5px;font-size:11.5px;line-height:1.16}
+ .format button svg{width:15px;height:15px}
+ .questionLabel{font-size:13px}
+ .questionInput{min-height:54px;font-size:16px;line-height:1.42}
+ .filters{gap:8px;margin-top:9px}
+ .filters select{font-size:13px;min-height:44px}
+ .catalog{padding:18px 0 21px}
+ .catalog h2{font-size:clamp(25px,6.6vw,32px)}
+ .sectionHeader{margin-bottom:12px}
+ .cards{grid-template-columns:minmax(0,1fr);gap:10px}
+ .card{gap:9px;padding:15px;border-radius:15px}
+ .cardMain{grid-template-columns:minmax(0,1fr) 96px;gap:10px}
+ .cardArt{width:96px;height:76px;border-radius:10px}
+ .cardHeading h3{font-size:24px}
+ .card .schemeName{font-size:12px}
+ .cardTop strong{font-size:11px}
+ .session{padding:18px 14px}
+ .session h1{font-size:clamp(28px,7.1vw,38px)}
+ .session .choices{gap:8px}
+ .session .choices button{min-height:48px}
+ .morePaths{padding-top:18px}
+}
+@media(max-width:360px){
+ .hero{padding:16px;min-height:176px}
+ .hero h1{font-size:32px}
+ .format button{font-size:10.5px;min-height:58px;flex-direction:column}
+ .cardMain{grid-template-columns:minmax(0,1fr) 84px;gap:8px}
+ .cardArt{width:84px;height:74px}
+ .cardHeading h3{font-size:22px}
+ .cardTop{font-size:11px}
+ .filters{gap:6px}
+ .filters select{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .format button,.card{transition:none}
+ .card:hover{transform:none}
+}
