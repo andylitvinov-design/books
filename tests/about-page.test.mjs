@@ -37,7 +37,7 @@ test('publishes paired localized About routes with complete, Ontario-safe editor
   assert.ok(existsSync(new URL('../public/images/holistic-house/andy-about.png', import.meta.url)))
 })
 
-test('shares all public destinations with seven mobile shortcuts and no administration', async () => {
+test('shares all public destinations with six mobile shortcuts and no administration', async () => {
   const { getCompactNavigation, getSiteNavigation, primaryNavigationIds } = await import('../lib/site-navigation-model.js')
   assert.deepEqual(primaryNavigationIds, ['home', 'energy', 'love', 'business', 'library', 'events', 'courses', 'pro', 'temple', 'cabinet'])
   for (const locale of ['en', 'ru', 'es']) {
@@ -48,9 +48,9 @@ test('shares all public destinations with seven mobile shortcuts and no administ
     assert.equal(items.find((item) => item.id === 'events').href, `/${locale}/events`)
     assert.equal(items.find((item) => item.id === 'business').href, `/${locale}/explore/business`)
     assert.equal(items.find((item) => item.id === 'temple').href, `/${locale}/holistic-support`)
-    assert.equal(getCompactNavigation(locale).length, 7)
+    assert.equal(getCompactNavigation(locale).length, 6)
     assert.equal(items.find((item) => item.id === 'cabinet').href, `/${locale}/client`)
-    assert.equal(getCompactNavigation(locale).find((item) => item.id === 'business').href, `/${locale}/explore/business`)
+    assert.ok(!getCompactNavigation(locale).some((item) => item.id === 'business'))
   }
   assert.match(mobileNavigation, /getCompactNavigation/)
   assert.match(mobileNavigation, /data-nav-item/)
