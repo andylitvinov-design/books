@@ -6,28 +6,32 @@ import { safePublicWhatsAppPath } from "../lib/whatsapp-enquiry.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Holistic Support is destination seven in EN/RU/ES bottom menu and main menu", () => {
+test("Holistic Support stays live as the fifth of six bottom destinations with separate Temple Insights", () => {
   const bar = read("components/mobile-bottom-navigation.tsx");
   const icons = read("components/compact-navigation-icons.ts");
   const css = read("app/ia-v2.css");
   const homeCss = read("app/holistic-house-home.css");
   for (const locale of ["en", "ru", "es"]) {
     const links = getCompactNavigation(locale);
-    assert.equal(links.length, 7);
-    assert.equal(links[6].id, "temple");
-    assert.equal(links[6].href, "/" + locale + "/holistic-support");
-    assert.equal(links[6].label, "Holistic Support");
-    assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "temple");
+    assert.equal(links.length, 6);
+    assert.equal(links[3].id, "insights");
+    assert.equal(links[3].href, "/" + locale + "/temple-insights");
+    assert.equal(links[4].id, "support");
+    assert.equal(links[4].href, "/" + locale + "/holistic-support");
+    assert.equal(links[4].label, {en:"Holistic Support",ru:"Холистическая поддержка",es:"Apoyo holístico"}[locale]);
+    assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "support");
+    assert.equal(activeCompactNavigationId("/" + locale + "/temple-insights"), "insights");
     assert.ok(getSiteNavigation(locale).some(x => x.id === "temple" && x.label === "Holistic Support"));
     assert.equal(safePublicWhatsAppPath("/" + locale + "/holistic-support"), "/" + locale + "/holistic-support");
   }
   assert.equal(safePublicWhatsAppPath("/en/client/report/private"), "");
-  assert.match(icons, /temple: Landmark/);
-  assert.match(bar, /temple: 'Holistic Support'/);
+  assert.match(icons, /insights: Sparkles/);
+  assert.match(icons, /support: HeartHandshake/);
+  assert.match(bar, /support: 'Support'/);
   assert.match(bar, /aria-label=\{item\.ariaLabel\}/);
-  assert.match(css, /repeat\(7,minmax\(0,1fr\)\)/);
+  assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width: 600px\)/);
-  assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
+  assert.match(homeCss, /repeat\(6, minmax\(0,1fr\)\)/);
 });
 
 test("Holistic Support provides exactly two main areas and five concrete choices", () => {
