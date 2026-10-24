@@ -32,12 +32,8 @@ if (!good) {
           ('${b}','active','active');
         grant select on app.accounts to hh_app_backend;
         create function auth.uid() returns uuid language sql stable
-          as $$ select nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub' $$
-        ;
-      `.replace(
-        "as $$ select nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub' $$",
-        "as $$ select (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$"
-      ))
+          as $$ select (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
+      `)
       await client.query(`
         create function app_private.account_active() returns boolean language sql stable
         as $$ select exists (select 1 from app.accounts where id=auth.uid() and status='active') $$;
