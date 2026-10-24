@@ -30,6 +30,7 @@ const copy = {
     choose: "Выберите способ получить подсказку",
     ask: "Получить бесплатную даосскую подсказку",
     testOverline: "Самостоятельно · €0", test: "Пройти бесплатную коуч-сессию", testAria: "Выбрать модель бесплатной коуч-сессии", testLink: "Или подобрать бесплатный тест",
+    exploreMore: "Другие возможности", exploreCoaching: "Выбрать коучинг", exploreTemple: "Исследовать храмовые подсказки", templeHeading: "Храмовые подсказки",
     testsTitle: "Бесплатные тесты по теме", testsFallback: "С чего можно начать",
     testsClose: "Скрыть подборку", testsMore: "Все тесты по теме",
     testsNote: "Это подбор по теме, не медицинская оценка. Ваш вопрос остаётся в браузере.",
@@ -114,6 +115,7 @@ const copy = {
     choose: "Choose how to explore your question",
     ask: "Get free Taoist insight",
     testOverline: "Self-guided · €0", test: "Get free coaching session", testAria: "Choose a free coaching session model", testLink: "Or explore a free test",
+    exploreMore: "More ways to explore", exploreCoaching: "Explore Coaching Options", exploreTemple: "Explore Temple Insights", templeHeading: "Temple Insights",
     testsTitle: "Free tests for your topic", testsFallback: "A few ways to start",
     testsClose: "Close suggested tests", testsMore: "Explore all matching tests",
     testsNote: "Matched by topic only, not a diagnosis. Your question stays in this browser.",
@@ -198,6 +200,7 @@ const copy = {
     choose: "Elige cómo explorar tu pregunta",
     ask: "Recibir consejo taoísta gratuito",
     testOverline: "Autoguiado · €0", test: "Sesión gratuita de coaching", testAria: "Elegir un modelo de coaching gratuito", testLink: "O explorar un test gratuito",
+    exploreMore: "Más opciones para explorar", exploreCoaching: "Explorar opciones de coaching", exploreTemple: "Explorar reflexiones del templo", templeHeading: "Reflexiones del templo",
     testsTitle: "Tests gratuitos para tu tema", testsFallback: "Opciones para empezar",
     testsClose: "Cerrar tests sugeridos", testsMore: "Ver todos los tests relacionados",
     testsNote: "Selección por tema, no un diagnóstico. La pregunta permanece en tu navegador. Algunos tests están en inglés.",
@@ -443,7 +446,6 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const previewLocaleRef = useRef<PublicLocale | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [openOffer, setOpenOffer] = useState<Offer | null>(null);
-  const [activeMode, setActiveMode] = useState<Mode>("dao");
   const [expandedDao, setExpandedDao] = useState(false);
   const [fullDaoReading, setFullDaoReading] = useState<DaoReading | null>(null);
   const [daoReadingError, setDaoReadingError] = useState(false);
@@ -460,7 +462,6 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
 
   function choose(mode: Mode) {
     setTestPickerOpen(false);
-    setActiveMode(mode);
     if (!question.trim()) {
       setError(false);
       textareaRef.current?.focus();
@@ -484,7 +485,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
       return;
     }
     // Asking the question always opens the short Daoist answer first.
-    // The other two modes remain available through their own buttons.
+    // The Dao result already includes selected aphorisms and personal follow-up options.
     choose("dao");
   }
 
@@ -650,18 +651,19 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
         <p className={styles.testPickerNote}>{t.testsNote}</p>
       </section>
 
-            <p className={styles.actionLabel}>{t.choose}</p>
-      <div className={styles.actions}>
-        <button type="button" onClick={() => choose("dao")} aria-pressed={activeMode === "dao"} className={styles.action}>
-          <span className={styles.modeYin} aria-hidden="true">☯</span><span>{t.dao}</span>
-        </button>
-        <button type="button" onClick={() => choose("aphorisms")} aria-pressed={activeMode === "aphorisms"} className={styles.action}>
-          <Quote aria-hidden="true" size={22} /><span>{t.aphorisms}</span>
-        </button>
-        <button type="button" onClick={() => choose("personal")} aria-pressed={activeMode === "personal"} className={styles.action}>
-          <Sprout aria-hidden="true" size={22} /><span>{t.personal}</span>
-        </button>
-      </div>
+      <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
+        <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
+          onClick={() => stageIdeasCoachingQuestion(question)} data-ideas-explore-coaching>
+          <span>{t.exploreCoaching}</span><ArrowRight size={17} aria-hidden="true" />
+        </Link>
+        <a href="#temple-insights" className={`${styles.exploreLink} ${styles.exploreTemple}`}
+          data-ideas-explore-temple>
+          <span>{t.exploreTemple}</span><ArrowRight size={17} aria-hidden="true" />
+        </a>
+      </nav>
+      <h2 id="temple-insights" className={styles.templeHeading}>
+        <Sparkles size={15} aria-hidden="true" />{t.templeHeading}
+      </h2>
 
       {result ? (
         <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode} data-question-language={answerLocale} lang={answerLocale}>
