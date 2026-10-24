@@ -554,7 +554,7 @@ export function MyCourse({ data, locale = 'en' }) {
     !state.course?.presetId &&
     courseProgramFromTopics(state.course?.focusTags || [])?.id === ACTIVE_COURSE_PROGRAM_ID
 
-  return <div className={styles.root + (compactBaselineNav ? ' ' + styles.compactBaselineRoot : '')} data-my-course>
+  return <div className={styles.root + (compactBaselineNav ? ' ' + styles.compactBaselineRoot : '') + (stressWelcome ? ' ' + styles.stressWelcomeRoot : '')} data-my-course>
     {showDashboard && <MyCoursesDashboard key={accountId + ':' + viewGeneration}
       courses={courses} accountId={accountId} membership={state.membership || { tier: access?.tier, maxActiveCourses: access?.activeCourseLimit, occupiedCount: access?.activeCourseCount }}
       locale={locale} busy={busy} canAddCourse={canAddCourse} canManageCourses={Boolean(access)} multiCourseEnabled={access?.multiCourseEnabled === true} overLimit={access?.overLimit}
