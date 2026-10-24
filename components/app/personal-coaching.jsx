@@ -11,6 +11,7 @@ import CoachingQuestionVoice from './coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingEntryCopy } from '@/components/coaching-session-onboarding'
 import { coachingRequestTopicLabel } from '@/lib/coaching/session-onboarding'
@@ -360,7 +361,7 @@ export default function PersonalCoaching({locale='en',accountId}){
         : entry ? <div className={styles.session} data-private-coaching-onboarding>
           <div className={styles.questionArea}>
             {entry.step==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={titleRef}
-              name={translated(entry.choice.scheme?.name,lang)||translated(entryModel?.name,lang)}
+              name={coachingSessionTitle(entry.choice.schemeKey,lang,translated(entry.choice.scheme?.name,lang)||translated(entryModel?.name,lang))}
               modelName={translated(entryModel?.name,lang)} minutes={entry.choice.scheme?.minutes||20}
               questionCount={entry.choice.scheme?.questions?.length} style={entry.choice.scheme?.style}
               approach={translated(entryModel?.focus,lang)} outcome={translated(entry.choice.scheme?.result,lang)}
@@ -386,7 +387,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
           <p>{t.finished}</p>
-          {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</p>}
+          {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
           {session.clientTopic&&<p className={styles.contextQuestion}><strong>{entryCopy.topicTitle}:</strong> {coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
           <div className={styles.answers}>
@@ -489,7 +490,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
-            {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</span>}
+            {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
             <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
             {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
               <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
