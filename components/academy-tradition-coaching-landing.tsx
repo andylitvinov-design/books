@@ -53,7 +53,7 @@ const copy = {
   }
 } as const;
 const courseHref=(locale:PublicLocale,slug:TraditionSlug)=>
-  "/"+(locale==="es"?"en":locale)+"/app/coaching/"+slug+(locale==="es"?"?lang=es":"");
+  "/"+locale+"/coaching#coaching-tradition-"+slug;
 
 export function AcademyTraditionCoachingLanding({locale,slug}:{locale:PublicLocale;slug:TraditionSlug}){
   const course=traditionBySlug(slug);
