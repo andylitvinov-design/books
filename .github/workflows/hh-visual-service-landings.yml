@@ -15,6 +15,10 @@ on:
       - 'components/academy-tradition-coaching-landing.tsx'
       - 'components/academy-tradition-coaching-landing.module.css'
       - 'components/remote-energy-support-booking.tsx'
+      - 'components/reiki-referral-landing.tsx'
+      - 'components/reiki-referral-landing.module.css'
+      - 'components/public-antistress-landing.tsx'
+      - 'components/public-antistress-landing.module.css'
       - 'components/remote-energy-support-booking.module.css'
       - 'tests/visual-landing-sitewide-audit.test.mjs'
       - 'components/personal-service-landing.module.css'
@@ -50,6 +54,8 @@ jobs:
           tests/visual-service-story.test.mjs
           tests/visual-landing-sitewide-audit.test.mjs
           tests/personal-support-funnel.test.mjs
+          tests/reiki-referral-landing.test.mjs
+          tests/opora-antistress-course-landing.test.mjs
           tests/personal-service-details.test.mjs
           tests/services-landing-conversion-20261018.test.mjs
           tests/sitewide-lead-capture.test.mjs
@@ -64,6 +70,8 @@ jobs:
           components/free-entry-landing.tsx
           components/academy-tradition-coaching-landing.tsx
           components/remote-energy-support-booking.tsx
+          components/reiki-referral-landing.tsx
+          components/public-antistress-landing.tsx
       - name: Typecheck changed pages in full project context
         run: npx --no-install tsc --noEmit
       - name: Production build (no external payment or lead traffic)
