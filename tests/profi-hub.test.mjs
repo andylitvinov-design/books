@@ -293,10 +293,10 @@ test('Pro includes the same consented express-written-review CTA as other direct
 test('Pro starts with three localized, accessible paths, including real mentor discovery',()=>{
   const masters = read('app/[locale]/masters/page.tsx')
   const switcher = read('components/mentor-community-switch.tsx')
-  assert.match(masters,/initialView=\\{requestedView === "mentors" \\? "mentors" : undefined\\}/)
-  assert.match(switcher,/initialView \\?\\? \\(hasArticles \\? "articles" : "mentors"\\)/)
-  assert.match(css,/grid-template-columns:repeat\\(3,minmax\\(0,1fr\\)\\)/)
-  assert.match(css,/\\.finderPhoto\\{/)
+  assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
+  assert.match(switcher,/initialView \?\? \(hasArticles \? "articles" : "mentors"\)/)
+  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.finderPhoto\{/
   for(const locale of ['en','ru','es']){
     const tree=mount(locale).render()
     const paths=nodes(tree).filter(x=>x.props?.['data-profi-path']!==undefined)
