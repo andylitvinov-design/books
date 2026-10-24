@@ -73,6 +73,8 @@ test("each requested action uses an actual route, never an implied booking or pu
     "/pro", "/practice?panel=services", "/practice?panel=materials&materialTab=courses",
   ]) assert.ok(feature.includes(path), "Missing destination " + path);
   assert.match(feature, /locale === "es" \? "en" : locale/);
+  assert.match(feature, /aiCoaching: "\/" \+ locale \+ "\/coaching"/);
+  assert.doesNotMatch(feature, /aiCoaching: accountRoot \+ "\/coaching"/);
   for (const locale of ["en", "ru", "es"]) {
     assert.match(copy[locale].coachingNote, /(?:not live AI therapy|не живой ИИ-терапевт|no es terapia)/);
     assert.ok(copy[locale].alchemyNote.length > 70, "No misleading homeopathy claim");
