@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Copy, MessageCircleQuestion, PlayCircle, RotateCcw } from "lucide-react";
 
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
@@ -98,6 +98,10 @@ export function AcademyVideoCourseJourney({
   const [playingExternal, setPlayingExternal] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
   const key = "hh:academy-video-course:v1:" + courseId;
+  // Course cards reconstruct the lessons array on every parent render. Depend on
+  // the stable source IDs, not the array's changing identity, or notes reset.
+  const lessonIds = JSON.stringify(lessons.map((item) => item.id));
+  const allowedIds = useMemo(() => new Set<string>(JSON.parse(lessonIds)), [lessonIds]);
   const total = 2 + lessons.length * 2;
   const complete = position === total - 1;
   const intro = position === 0;
@@ -120,9 +124,8 @@ export function AcademyVideoCourseJourney({
         const saved = JSON.parse(value) as { position?: number; notes?: Record<string, string> };
         if (Number.isInteger(saved.position)) setPosition(Math.max(0, Math.min(total - 1, saved.position!)));
         if (saved.notes && typeof saved.notes === "object" && !Array.isArray(saved.notes)) {
-          const allowed = new Set(lessons.map((item) => item.id));
           setNotes(Object.fromEntries(Object.entries(saved.notes)
-            .filter(([id, text]) => allowed.has(id) && typeof text === "string")
+            .filter(([id, text]) => allowedIds.has(id) && typeof text === "string")
             .map(([id, text]) => [id, text.slice(0, 2000)])));
         }
       }
@@ -130,7 +133,7 @@ export function AcademyVideoCourseJourney({
       // Private-browsing or disabled session storage must not block lessons.
     }
     setRestored(true);
-  }, [key, total, lessons]);
+  }, [key, total, allowedIds]);
 
   useEffect(() => {
     if (!restored) return;
