@@ -75,8 +75,7 @@ test("EN/RU/ES books now start with Ideas while retaining book catalogs and cano
   assert.match(spanish, /<SpanishBookShowcase books=\{books\}/);
   assert.match(localized, /canonical: "\/" \+ locale \+ "\/books"/);
   for (const locale of ["en", "ru", "es"]) {
-    const books = getCompactNavigation(locale).find(item => item.id === "books");
-    assert.equal(books.href, "/" + locale + "/books");
+    assert.ok(!getCompactNavigation(locale).some(item => item.id === "books"), "Books is available in the expanded menu, not fixed bottom");
     assert.equal(navigationCopy[locale].books, { en: "Tests & Coaching", ru: "Тесты и коучинг", es: "Tests y coaching" }[locale]);
     assert.equal(getSiteNavigation(locale).find(item => item.id === "library").href, "/" + locale + "/library");
   }

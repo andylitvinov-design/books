@@ -42,6 +42,8 @@
 .begin strong { font-size: 19px; font-weight: 800; line-height: 1.2; }
 .begin small { font-size: 12px; font-weight: 500; line-height: 1.35; color: #fff1f1; }
 .begin > svg { flex: none; }
+.browseTests { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-top: 7px; padding: 5px 1px; color: #742b45; font-size: 13px; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; }
+.browseTests:hover { color: #562237; }
 .roadmap {
   margin-top: 15px; padding: 21px 24px 18px;
   background: #fffefa; border: 1px solid #d8e1d6; border-radius: 19px;

@@ -56,6 +56,7 @@ const copy = {
     benefits: ["Choose what to explore", "Free tests with clear scales", "SWOT + personal development"],
     entryButton: "Create my profile",
     entryHint: "Take free tests & explore development recommendations",
+    browseTests: "Or browse free tests without creating a profile",
     journeyTitle: "How it works",
     journey: [
       ["Choose your focus", "Personal life, work, wellbeing or the bigger picture. You decide which topics matter."],
@@ -108,6 +109,7 @@ const copy = {
     benefits: ["Выберите темы", "Бесплатные тесты и шкалы", "SWOT + программа развития"],
     entryButton: "Создать свой профиль",
     entryHint: "Пройти тесты и получить рекомендации по развитию",
+    browseTests: "Или пройти бесплатные тесты без создания профиля",
     journeyTitle: "Как это работает",
     journey: [
       ["Выберите свою задачу", "Личность, бизнес, самочувствие или несколько сфер сразу. Вы решаете, что важно."],
@@ -160,6 +162,7 @@ const copy = {
     benefits: ["Elige tus temas", "Pruebas y escalas gratis", "DAFO + desarrollo"],
     entryButton: "Crear mi perfil",
     entryHint: "Haz pruebas gratis y descubre recomendaciones",
+    browseTests: "O hacer pruebas gratuitas sin crear un perfil",
     journeyTitle: "Cómo funciona",
     journey: [
       ["Elige tu objetivo", "Vida personal, trabajo, bienestar o una visión más amplia. Tú decides qué explorar."],
@@ -282,6 +285,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             <span><strong>{t.entryButton}</strong><small>{t.entryHint}</small></span>
             <ArrowRight size={24} aria-hidden="true" />
           </button>
+          <Link className={styles.browseTests} href={'/' + locale + '/tests'} prefetch={false} data-profile-direct-tests>
+            {t.browseTests}<ArrowRight size={15} aria-hidden="true" />
+          </Link>
         </div>
       </header>
       <section className={styles.roadmap} aria-labelledby="profile-builder-journey-title">
