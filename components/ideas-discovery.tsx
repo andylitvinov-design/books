@@ -279,6 +279,13 @@ const copy = {
   },
 } as const;
 
+// Reuse the real local-only symbolic engine inside Temple Support without duplicating its privacy model.
+const templeIntro = {
+  en: { eyebrow: "TEMPLE SUPPORT · SYMBOLIC REFLECTION", title: "Temple Insights", lead: "Share one question and reflect on an I Ching symbol and related aphorisms. Free, private and not a prediction.", ask: "Receive a free symbolic insight" },
+  ru: { eyebrow: "TEMPLE SUPPORT · СИМВОЛИЧЕСКИЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте один вопрос и получите символ И-Цзин с афоризмами для размышления. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку" },
+  es: { eyebrow: "TEMPLE SUPPORT · REFLEXIÓN SIMBÓLICA", title: "Reflexiones del templo", lead: "Haz una pregunta y explora un símbolo del I Ching con aforismos. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis" },
+} as const;
+
 // Start a real, rights-cleared guest questionnaire, not a generic catalog.
 // /es/client does not host the guest runner yet; match the existing English fallback.
 function ideasQuickTestHref(locale: PublicLocale) {
@@ -432,8 +439,11 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
   );
 }
 
-export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
+export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLocale; variant?: "ideas" | "temple" }) {
   const t = copy[locale];
+  const isTemple = variant === "temple";
+  const intro = isTemple ? templeIntro[locale] : t;
+  const HeadingTag = isTemple ? "h2" : "h1";
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [testPickerOpen, setTestPickerOpen] = useState(false);
@@ -559,15 +569,14 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     if (!showSuggestedTests) return;
     document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
   }, [showSuggestedTests]);
-  return (
-    <section className={styles.root} aria-labelledby="tests-coaching-title" data-ideas-discovery lang={locale}>
-      <TestsCoachingSwitchboard locale={locale} templeContent={<>
+  const templeContent = (<>
+
       <div className={styles.hero} data-ideas-hero>
         <div className={styles.heading}>
           <div>
-            <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{t.eyebrow}</p>
-          <h1 id="ideas-title">{t.title}</h1>
-          <p className={styles.lead}>{t.lead}</p>
+            <p className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" />{intro.eyebrow}</p>
+          <HeadingTag id="ideas-title">{intro.title}</HeadingTag>
+          <p className={styles.lead}>{intro.lead}</p>
         </div>
           <span className={styles.decor} aria-hidden="true">✦</span>
         </div>
@@ -607,7 +616,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
        </form>
       </div>
       <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={t.choose}>
-        <Link href={coachingHref} prefetch={false} className={styles.submit}
+        {!isTemple ? <Link href={coachingHref} prefetch={false} className={styles.submit}
           onClick={() => stageIdeasCoachingQuestion(question)}
           data-ideas-free-coaching aria-label={t.testAria}>
           <ClipboardCheck size={20} aria-hidden="true" />
@@ -616,16 +625,16 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             <strong>{t.test}</strong>
           </span>
           <ArrowRight size={17} aria-hidden="true" />
-        </Link>
+        </Link> : null}
         <button type="submit" form="ideas-question-form" className={styles.testButton} data-ideas-tao>
           <span className={styles.modeYin} aria-hidden="true">☯︎</span>
           <span className={styles.testButtonText}>
             <span className={styles.testButtonKicker}>{t.taoOverline}</span>
-            <strong>{t.ask}</strong>
+            <strong>{intro.ask}</strong>
           </span>
         </button>
       </div>
-      <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
+      {!isTemple ? <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
         <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
           onClick={() => stageIdeasCoachingQuestion(question)} data-ideas-explore-coaching>
           <span className={styles.exploreIcon} aria-hidden="true"><Compass size={18} /></span>
@@ -644,7 +653,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           </span>
           <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
         </a>
-      </nav>
+      </nav> : null}
       <div className={styles.heroUtility} data-ideas-hero-utility>
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <div className={styles.utilityLinks}>
@@ -652,9 +661,9 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             <summary id="ideas-question-privacy">{t.privacyShort}</summary>
             <p className={styles.privacy}>{t.privacy}</p>
           </details>
-          <button type="button" className={styles.freeTestLink} data-ideas-free-test
+          {!isTemple ? <button type="button" className={styles.freeTestLink} data-ideas-free-test
             aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-            onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+            onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button> : null}
         </div>
       </div>
       <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
@@ -838,7 +847,10 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
         </div>
       ) : null}
-      </>} />
+      </>);
+  return (
+    <section className={styles.root} aria-labelledby={isTemple ? "ideas-title" : "tests-coaching-title"} data-ideas-discovery data-temple-mode={isTemple ? "true" : undefined} lang={locale}>
+      {isTemple ? templeContent : <TestsCoachingSwitchboard locale={locale} templeContent={templeContent} />}
     </section>
   );
 }

@@ -20,6 +20,7 @@ const copy = {
     "energy": "Energy",
     "love": "Love & relationships",
     "business": "Business & career",
+    "temple": "Temple Support",
     "services": "All services",
     "courses": "All courses",
     "help": "Not sure? Ask a question"
@@ -31,6 +32,7 @@ const copy = {
     "energy": "Энергия",
     "love": "Любовь и отношения",
     "business": "Бизнес и карьера",
+    "temple": "Temple Support",
     "services": "Все услуги",
     "courses": "Все курсы",
     "help": "Не знаете, что выбрать? Спросите"
@@ -42,6 +44,7 @@ const copy = {
     "energy": "Energía",
     "love": "Amor y relaciones",
     "business": "Negocios y carrera",
+    "temple": "Temple Support",
     "services": "Todos los servicios",
     "courses": "Todos los cursos",
     "help": "¿Dudas? Haz una pregunta"
@@ -62,6 +65,7 @@ export function HomeMoreDisclosure({ locale }: { locale: PublicLocale }) {
         <Link href={"/" + locale + "/explore/energy"} prefetch={false} className={styles.chip} data-home-topic-filter="energy">{t.energy}</Link>
         <Link href={"/" + locale + "/explore/love"} prefetch={false} className={styles.chip} data-home-topic-filter="love">{t.love}</Link>
         <Link href={"/" + locale + "/explore/business"} prefetch={false} className={styles.chip} data-home-topic-filter="business">{t.business}</Link>
+        <Link href={"/" + locale + "/temple-support"} prefetch={false} className={styles.chip} data-home-topic-filter="temple">{t.temple}</Link>
       </nav>
       <div className={styles.footer}>
         <nav className={styles.catalog} aria-label={locale === "ru" ? "Каталоги" : locale === "es" ? "Catálogos" : "Browse catalogues"}>

@@ -265,7 +265,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
   ];
   const publicGuidance = [
     { id: "coaching", href: "/" + activeLocale + "/coaching", label: t.coaching, Icon: MessageCircle },
-    { id: "temple", href: "/" + activeLocale + "/books", label: t.temple, Icon: BookOpen },
+    { id: "temple", href: "/" + activeLocale + "/temple-support", label: t.temple, Icon: BookOpen },
   ];
 
   return <SpaceContext.Provider value={value}>

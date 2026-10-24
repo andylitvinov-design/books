@@ -16,6 +16,7 @@ const topics = [
   { id: "academy", image: "/images/holistic-house/reiki-approved-sunrise-v3.webp", path: "/academy" },
   { id: "business", image: "/images/holistic-house/andy-about.png", path: "/explore/business" },
   { id: "ideas", image: "/images/holistic-house/books-library.webp", path: "/books" },
+  { id: "temple", image: "/images/holistic-house/ideas-zen-landscape.svg", path: "/temple-support" },
 ] as const;
 
 type TopicId = (typeof topics)[number]["id"];
@@ -43,6 +44,7 @@ const copy: Record<PublicLocale, ExploreCopy> = {
       academy: { eyebrow: "04 · LEARNING", title: "Academy & courses", benefit: "Follow guided lessons, Reiki practices and meditations at your own pace.", action: "Browse courses" },
       business: { eyebrow: "05 · WORK & GROWTH", title: "Business & career", benefit: "Explore decisions, career transitions and practical steps for your work or business.", action: "Explore business support" },
       ideas: { eyebrow: "06 · INSPIRATION", title: "Ideas, books & videos", benefit: "Ask a question and discover aphorisms, Dao prompts, books and the latest publications.", action: "Open Ideas" },
+      temple: { eyebrow: "07 · TEMPLE SUPPORT", title: "Temple Support", benefit: "Receive a symbolic insight, explore energy support and choose a practitioner.", action: "Explore Temple Support" },
     },
     returnLabel: "Already exploring? Your saved materials are in your private space.",
     cabinetAction: "Open my Cabinet",
@@ -60,6 +62,7 @@ const copy: Record<PublicLocale, ExploreCopy> = {
       academy: { eyebrow: "04 · ОБУЧЕНИЕ", title: "Академия и курсы", benefit: "Пошаговые уроки, медитации и практики Рейки в удобном для вас темпе.", action: "Выбрать курс" },
       business: { eyebrow: "05 · РАБОТА И РОСТ", title: "Бизнес и карьера", benefit: "Поддержка в решениях, карьерных переменах и развитии своих проектов.", action: "Перейти к бизнес-разделу" },
       ideas: { eyebrow: "06 · ВДОХНОВЕНИЕ", title: "Идеи, книги и видео", benefit: "Задайте вопрос и найдите афоризмы, даосские подсказки, книги и новые публикации.", action: "Открыть Идеи" },
+      temple: { eyebrow: "07 · ХРАМОВАЯ ПОДДЕРЖКА", title: "Temple Support", benefit: "Получите символическую подсказку, выберите энергопрактику или найдите подходящего мастера.", action: "Открыть Temple Support" },
     },
     returnLabel: "Уже начали? Сохранённые материалы находятся в вашем кабинете.",
     cabinetAction: "Открыть мой кабинет",
@@ -77,6 +80,7 @@ const copy: Record<PublicLocale, ExploreCopy> = {
       academy: { eyebrow: "04 · APRENDIZAJE", title: "Academia y cursos", benefit: "Lecciones, meditaciones y prácticas Reiki para avanzar a tu ritmo.", action: "Explorar cursos" },
       business: { eyebrow: "05 · TRABAJO Y CRECIMIENTO", title: "Negocios y carrera", benefit: "Apoyo para explorar decisiones, cambios profesionales y proyectos.", action: "Explorar negocios" },
       ideas: { eyebrow: "06 · INSPIRACIÓN", title: "Ideas, libros y vídeos", benefit: "Haz una pregunta y descubre aforismos, pistas taoístas, libros y novedades.", action: "Abrir Ideas" },
+      temple: { eyebrow: "07 · APOYO DEL TEMPLO", title: "Temple Support", benefit: "Recibe una reflexión simbólica, explora prácticas energéticas y encuentra un profesional.", action: "Explorar Temple Support" },
     },
     returnLabel: "¿Ya has empezado? Tus materiales guardados están en tu espacio privado.",
     cabinetAction: "Abrir mi espacio (EN)",
