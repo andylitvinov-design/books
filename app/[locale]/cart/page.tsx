@@ -31,7 +31,7 @@ export default async function CartPage({ params }: Props) {
   return <main className="services-shell services-shell--studio" lang={locale} data-service-cart-page>
     <PublicSiteHeader locale={locale} />
     <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
-      squareLinks={configuredSquarePaymentLinks()} squareApiEnabled={squareGateway.enabled}
+      squareLinks={configuredSquarePaymentLinks()} squareApiEnabled={squareGateway.enabled} squareApiEnvironment={squareGateway.environment}
       squareApiPrices={squareGateway.enabled ? squareGateway.prices : {}} verifiedPayPalEnabled={verifiedPayPalCheckout}
       hostedPayPalLinks={configuredPayPalHostedLinks()} />
   </main>;
