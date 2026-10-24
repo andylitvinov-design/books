@@ -243,3 +243,153 @@
   .problemGrid{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.offerDetails summary svg{transition:none}}
+
+
+/* One clear idea and real photography on every editorial business screen.
+   The existing request component moves to the final screen unchanged. */
+.page[data-public-visual-landing="business"] .problems .problemGrid,
+.page[data-public-visual-landing="business"] .workflowGrid{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:12px;
+}
+.page[data-public-visual-landing="business"] .problemGrid .problemCard,
+.page[data-public-visual-landing="business"] .workflowGrid>li,
+.page[data-public-visual-landing="business"] .twoApproaches,
+.page[data-public-visual-landing="business"] .results,
+.page[data-public-visual-landing="business"] .mentor,
+.page[data-public-visual-landing="business"] .request,
+.page[data-public-visual-landing="business"] .faq,
+.page[data-public-visual-landing="business"] .bottom,
+.page[data-public-visual-landing="business"] .businessFinalScreen{
+  display:grid;grid-template-columns:minmax(0,.83fr) minmax(0,1.17fr);
+  align-items:stretch;gap:0;overflow:hidden;
+  min-height:min(620px,calc(100svh - 158px));
+  margin:13px 0;padding:0;border:1px solid #e1d9c9;
+  border-radius:20px;background:#fffdf8;box-shadow:0 8px 27px rgba(57,44,29,.045);
+}
+.page[data-public-visual-landing="business"] .scenePhoto{
+  position:relative;min-height:100%;min-width:0;
+  overflow:hidden;background:#e6ddcd;isolation:isolate;
+}
+.page[data-public-visual-landing="business"] .scenePhoto img{
+  object-fit:cover;object-position:center;
+}
+.page[data-public-visual-landing="business"] .sceneWords,
+.page[data-public-visual-landing="business"] .resultCopy,
+.page[data-public-visual-landing="business"] .mentorCopy,
+.page[data-public-visual-landing="business"] .requestCopy,
+.page[data-public-visual-landing="business"] .faqCopy,
+.page[data-public-visual-landing="business"] .bottomCopy{
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  min-width:0;padding:clamp(20px,4vw,46px);
+}
+.page[data-public-visual-landing="business"] .problemCard h3,
+.page[data-public-visual-landing="business"] .workflowGrid li h3{
+  margin:8px 0;color:#3b3127;
+  font:400 clamp(27px,3vw,40px)/1.13 Georgia,serif;
+  letter-spacing:-.025em;text-wrap:balance;
+}
+.page[data-public-visual-landing="business"] .problemCard p,
+.page[data-public-visual-landing="business"] .workflowGrid li p{
+  margin:0;color:#695c4f;font:clamp(14px,1.4vw,17px)/1.55 Arial,Helvetica,sans-serif;
+}
+.page[data-public-visual-landing="business"] .cardNum,
+.page[data-public-visual-landing="business"] .workflowNum{
+  font:800 12px/1.4 Arial,Helvetica,sans-serif;
+  color:#987047;letter-spacing:.14em;
+}
+.page[data-public-visual-landing="business"] .twoApproaches{
+  min-height:min(610px,calc(100svh - 158px));
+  border-color:#d5e1d1;background:#f1f7ee;
+}
+.page[data-public-visual-landing="business"] .twoApproaches .approachGrid{
+  display:grid;grid-template-columns:1fr;gap:9px;
+}
+.page[data-public-visual-landing="business"] .twoApproaches h3{font-size:clamp(25px,3vw,37px)}
+.page[data-public-visual-landing="business"] .twoApproaches .approachGrid>div{
+  padding:10px 0;border-bottom:1px solid #d9e5da;
+}
+.page[data-public-visual-landing="business"] .results{background:#264b3c;color:#fff}
+.page[data-public-visual-landing="business"] .results .resultCopy{padding:clamp(20px,4vw,48px)}
+.page[data-public-visual-landing="business"] .results .resultCopy h2{color:#fff}
+.page[data-public-visual-landing="business"] .results ul{
+  display:grid;gap:12px;padding:0;margin:0;list-style:none;
+}
+.page[data-public-visual-landing="business"] .results li{font-size:clamp(13px,1.3vw,16px);line-height:1.5}
+.page[data-public-visual-landing="business"] .mentor{background:#f6f0e5}
+.page[data-public-visual-landing="business"] .request{
+  background:#fffaf1;
+}
+.page[data-public-visual-landing="business"] .request .requestCopy{align-items:stretch}
+.page[data-public-visual-landing="business"] .requestChoices{
+  display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;width:100%;
+}
+.page[data-public-visual-landing="business"] .request :global([data-contact-order]){
+  max-width:100%;min-height:44px;
+}
+.page[data-public-visual-landing="business"] .faq{background:#fffcf7}
+.page[data-public-visual-landing="business"] .faq .faqCopy details{width:100%;border-color:#e8dfd4}
+.page[data-public-visual-landing="business"] .faqCopy summary{
+  min-height:44px;padding:11px 0;font-size:14px;line-height:1.44;
+}
+.page[data-public-visual-landing="business"] .faq .disclaimer{
+  margin-top:13px;padding:13px;border-radius:12px;
+}
+.page[data-public-visual-landing="business"] .bottom{background:#e9f0e4}
+.page[data-public-visual-landing="business"] .businessFinalScreen{
+  grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);
+  min-height:0;scroll-margin-top:10px;
+}
+.page[data-public-visual-landing="business"] .businessFinalScreen :global([data-business-website-enquiry]){
+  width:100%;margin:0;padding:clamp(18px,3vw,35px);
+  border:0;background:#fffdf7;box-shadow:none;border-radius:0;
+}
+.page[data-public-visual-landing="business"] :is(a,button,summary,input,select,textarea):focus-visible{
+  outline:3px solid #be8352;outline-offset:3px;
+}
+@media(max-width:767px){
+  .page[data-public-visual-landing="business"] .problemGrid .problemCard,
+  .page[data-public-visual-landing="business"] .workflowGrid>li,
+  .page[data-public-visual-landing="business"] .twoApproaches,
+  .page[data-public-visual-landing="business"] .results,
+  .page[data-public-visual-landing="business"] .mentor,
+  .page[data-public-visual-landing="business"] .request,
+  .page[data-public-visual-landing="business"] .faq,
+  .page[data-public-visual-landing="business"] .bottom,
+  .page[data-public-visual-landing="business"] .businessFinalScreen{
+    display:flex;flex-direction:column;
+    min-height:min(610px,calc(100svh - 152px));
+    border-radius:18px;margin:10px 0;
+  }
+  .page[data-public-visual-landing="business"] .scenePhoto{
+    flex:none;width:100%;min-height:0;height:clamp(148px,25svh,223px);
+  }
+  .page[data-public-visual-landing="business"] .sceneWords,
+  .page[data-public-visual-landing="business"] .resultCopy,
+  .page[data-public-visual-landing="business"] .mentorCopy,
+  .page[data-public-visual-landing="business"] .requestCopy,
+  .page[data-public-visual-landing="business"] .faqCopy,
+  .page[data-public-visual-landing="business"] .bottomCopy{
+    flex:1;padding:clamp(16px,4.5vw,22px);
+  }
+  .page[data-public-visual-landing="business"] .problemCard h3,
+  .page[data-public-visual-landing="business"] .workflowGrid li h3{
+    font-size:clamp(25px,7vw,35px);
+  }
+  .page[data-public-visual-landing="business"] .problemCard p,
+  .page[data-public-visual-landing="business"] .workflowGrid li p{
+    font-size:13px;line-height:1.45;
+  }
+  .page[data-public-visual-landing="business"] .businessFinalScreen{min-height:0}
+  .page[data-public-visual-landing="business"] .businessFinalScreen .scenePhoto{height:clamp(100px,17svh,164px)}
+  .page[data-public-visual-landing="business"] .businessFinalScreen :global([data-business-website-enquiry]){
+    padding:13px;
+  }
+  .page[data-public-visual-landing="business"] .faqCopy summary{font-size:13px}
+  .page[data-public-visual-landing="business"] .twoApproaches .approachGrid{gap:7px}
+}
+@media(max-width:350px){
+  .page[data-public-visual-landing="business"] .scenePhoto{height:138px}
+  .page[data-public-visual-landing="business"] .problemCard h3,
+  .page[data-public-visual-landing="business"] .workflowGrid li h3{font-size:24px}
+  .page[data-public-visual-landing="business"] .businessFinalScreen .scenePhoto{height:98px}
+}

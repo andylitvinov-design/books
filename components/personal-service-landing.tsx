@@ -1,7 +1,8 @@
 import Image from "next/image";
+import { StaticPortrait } from "@/components/static-portrait";
 import Link from "next/link";
-import { ArrowRight, CalendarCheck2, Check, Clock3, MessageCircle, ShieldCheck } from "lucide-react";
-import { PersonalConsultationForm } from "@/components/personal-consultation-form";
+import { ArrowRight, Check, Clock3, ShieldCheck } from "lucide-react";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { ServiceVideoShowcase } from "@/components/service-video-showcase";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import {
@@ -53,97 +54,138 @@ export function PersonalServiceLanding({ locale, service }: { locale: ServicePag
       body: "Solicita una sesión personal o empieza con una revisión escrita gratuita. No hay reservas ni cobros automáticos.",
     },
   }[locale];
+
+  const microcopy = {
+    en: { stage: "A personal journey", topics: "Does this sound familiar?", steps: "How the work unfolds", takeaways: "What you can take away", faqs: "Before we begin", details: "Read the full description", private: "One step at a time, at your pace.", contact: "Andrey replies personally after receiving your request.", explore: "Watch the approach", step: "Step" },
+    ru: { stage: "Личная работа", topics: "Знакомо ли вам это?", steps: "Как проходит работа", takeaways: "Что можно получить от встречи", faqs: "Перед началом", details: "Подробное описание", private: "Один шаг за раз, в вашем темпе.", contact: "После заявки Андрей лично ответит вам.", explore: "Видео о методе", step: "Шаг" },
+    es: { stage: "Trabajo individual", topics: "¿Te resulta familiar?", steps: "Cómo trabajamos", takeaways: "Qué puedes llevarte", faqs: "Antes de empezar", details: "Descripción completa", private: "Un paso a la vez, a tu ritmo.", contact: "Andrey responderá personalmente tras recibir la solicitud.", explore: "Ver el enfoque", step: "Paso" },
+  }[locale];
+  const illustrations = [
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/course-start-heron.webp",
+    "/images/holistic-house/report-lighthouse-coast.avif",
+  ];
+  const preview = t.lead.split(/(?<=[.!?])\s+/)[0];
   return (
-    <main className={styles.page} lang={locale} data-personal-service={service}>
+    <main className={styles.page} lang={locale} data-personal-service={service} data-visual-service-landing="one-screen">
       <PublicSiteHeader locale={locale} />
       <div className={styles.container}>
         <nav className={styles.breadcrumb} aria-label={ui.back}>
           <Link href={`/${locale}/services`}>← {ui.back}</Link>
         </nav>
-        <section className={styles.hero} aria-labelledby="personal-service-title">
-          <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>{t.eyebrow} · {ui.remote}</p>
-            <h1 id="personal-service-title">{t.headline}</h1>
-            <p className={styles.lead}>{t.lead}</p>
-            <div className={styles.heroFacts} aria-label={facts.formats}>
-              <span><Clock3 size={17} aria-hidden="true" />{facts.short}<span className={styles.factSeparator} aria-hidden="true">·</span>{facts.full}</span>
-              <span><CalendarCheck2 size={17} aria-hidden="true" />{facts.confirmation}</span>
-            </div>
-            <p className={styles.practitioner}><ShieldCheck size={19} aria-hidden="true" />{ui.practitioner}</p>
-            <div className={styles.heroActions}>
-              <a className={styles.primary} href="#request-session">{t.orderLabel}<ArrowRight size={19} aria-hidden="true"/></a>
-              <Link className={styles.secondary} href={`/${locale}/services/free-situation-review`}>{ui.free}</Link>
-            </div>
-          </div>
-          <div className={styles.heroMedia}>
+
+        <section className={[styles.screen, styles.hero].join(" ")} aria-labelledby="personal-service-title" data-service-visual-screen="introduction">
+          <div className={[styles.sceneMedia, styles.heroMedia].join(" ")}>
             <Image src={personalServiceImages[service]} alt="" fill priority
               unoptimized={personalServiceImages[service].endsWith(".webp")}
-              sizes="(max-width: 800px) 100vw, 40vw" className={styles.heroImage} />
+              sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
             <span className={styles.mediaCaption}>{t.title}</span>
           </div>
+          <div className={[styles.sceneCopy, styles.heroContent].join(" ")}>
+            <p className={styles.eyebrow}>{t.eyebrow} · {ui.remote}</p>
+            <h1 id="personal-service-title">{t.headline}</h1>
+            <p className={styles.lead}>{preview}</p>
+            <div className={styles.heroFacts} aria-label={facts.formats}>
+              <span><Clock3 size={17} aria-hidden="true" />{facts.short}<span className={styles.factSeparator} aria-hidden="true">·</span>{facts.full}</span>
+            </div>
+            <a className={styles.primary} href="#request-session">{t.orderLabel}<ArrowRight size={18} aria-hidden="true" /></a>
+            <Link className={styles.secondary} href={`/${locale}/services/free-situation-review`}>{ui.free}</Link>
+          </div>
         </section>
 
-        <ServiceVideoShowcase
-          locale={locale}
-          topic={service === "psychohomeopathy" ? "homeopathy" : service === "imagery-therapy" ? "hypnotherapy" : "constellations"}
-          variant={service === "imagery-therapy" && locale === "en" ? "psychotherapy-en" : "default"}
-          id="service-video"
-        />
-
-        <div className={styles.mainColumns}>
-          <div className={styles.reading}>
-            <section className={styles.section} aria-labelledby="questions-title">
-              <h2 id="questions-title">{ui.forWhom}</h2>
-              <ul className={styles.questions}>
-                {t.questions.map(question => <li key={question}><Check size={20} aria-hidden="true"/><span>{question}</span></li>)}
-              </ul>
-            </section>
-            <section className={styles.section} aria-labelledby="process-title">
-              <p className={styles.smallEyebrow}>{ui.learn}</p>
-              <h2 id="process-title">{ui.how}</h2>
-              <ol className={styles.steps}>
-                {t.process.map((step, index) => (
-                  <li key={step.title}>
-                    <span className={styles.number}>0{index + 1}</span>
-                    <div><h3>{step.title}</h3><p>{step.text}</p></div>
-                  </li>
-                ))}
-              </ol>
-            </section>
-            <section className={styles.section} aria-labelledby="takeaways-title">
-              <h2 id="takeaways-title">{ui.outcomes}</h2>
-              <ul className={styles.takeaways}>
-                {t.takeaways.map(item => <li key={item}>{item}</li>)}
-              </ul>
-            </section>
-            <section className={styles.safety} aria-label={ui.disclaimerHeading}>
-              <h3><ShieldCheck size={19} aria-hidden="true" />{ui.disclaimerHeading}</h3>
-              <p>{t.disclaimer}</p>
-            </section>
-          </div>
-          <aside className={styles.order} id="request-session" aria-label={ui.request}>
-            <div className={styles.orderCard}>
-              <div className={styles.bookingIdentity}>
-                <Image src="/images/holistic-house/andy-about.png" alt="" width={54} height={54} sizes="54px" />
-                <div><strong>{facts.meet}</strong><span>{facts.next}</span></div>
-              </div>
-              <PersonalConsultationForm locale={locale} service={t.orderLabel} />
-              <p className={styles.orderNote}>{ui.price} {ui.requestNote}</p>
-            </div>
-          </aside>
+        <div className={styles.videoScreen} data-service-visual-screen="video">
+          <ServiceVideoShowcase
+            locale={locale}
+            topic={service === "psychohomeopathy" ? "homeopathy" : service === "imagery-therapy" ? "hypnotherapy" : "constellations"}
+            variant={service === "imagery-therapy" && locale === "en" ? "psychotherapy-en" : "default"}
+            id="service-video"
+          />
         </div>
 
-        <section className={styles.faq} aria-labelledby="service-faq-title">
-          <h2 id="service-faq-title">{ui.faq}</h2>
-          {t.faqs.map(item => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+        <section className={[styles.screen, styles.story].join(" ")} data-service-visual-screen="questions" aria-labelledby="questions-title">
+          <div className={styles.sceneMedia}>
+            <Image src={illustrations[0]} alt="" fill unoptimized sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
+          </div>
+          <div className={styles.sceneCopy}>
+            <p className={styles.smallEyebrow}>{microcopy.stage}</p>
+            <h2 id="questions-title">{ui.forWhom}</h2>
+            <ul className={styles.questions}>
+              {t.questions.map(question => <li key={question}><Check size={17} aria-hidden="true" /><span>{question}</span></li>)}
+            </ul>
+            <details className={styles.more}><summary>{microcopy.details}</summary><p>{t.lead}</p></details>
+          </div>
         </section>
-        <section className={styles.closing}>
-          <MessageCircle size={27} aria-hidden="true"/>
-          <h2>{closing.heading}</h2>
-          <p>{closing.body}</p>
-          <div className={styles.closingActions}>
-            <a className={styles.closingPrimary} href="#request-session">{t.orderLabel}<ArrowRight size={19} aria-hidden="true"/></a>
-            <Link className={styles.closingSecondary} href={`/${locale}/services/free-situation-review`}>{ui.free}<ArrowRight size={19} aria-hidden="true"/></Link>
+
+        {t.process.map((step, index) => (
+          <section key={step.title} className={[styles.screen, styles.story, styles.processScene].join(" ")}
+            data-service-visual-screen={`process-${index + 1}`} aria-labelledby={`process-title-${index}`}>
+            <div className={styles.sceneMedia}>
+              <Image src={illustrations[(index + 1) % illustrations.length]} alt="" fill unoptimized
+                sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
+            </div>
+            <div className={styles.sceneCopy}>
+              <p className={styles.smallEyebrow}>{microcopy.steps} · {microcopy.step} 0{index + 1}</p>
+              <h2 id={`process-title-${index}`}>{step.title}</h2>
+              <p className={styles.sceneLead}>{step.text}</p>
+              <p className={styles.quiet}><ShieldCheck size={17} aria-hidden="true" />{microcopy.private}</p>
+            </div>
+          </section>
+        ))}
+
+        <section className={[styles.screen, styles.story].join(" ")} data-service-visual-screen="takeaways" aria-labelledby="takeaways-title">
+          <div className={styles.sceneMedia}>
+            <Image src="/images/holistic-house/report-lighthouse-coast.avif" alt="" fill unoptimized
+              sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
+          </div>
+          <div className={styles.sceneCopy}>
+            <p className={styles.smallEyebrow}>{microcopy.stage}</p>
+            <h2 id="takeaways-title">{ui.outcomes}</h2>
+            <ul className={styles.takeaways}>{t.takeaways.map(item => <li key={item}><Check size={17} aria-hidden="true"/>{item}</li>)}</ul>
+          </div>
+        </section>
+
+        <section className={[styles.screen, styles.story, styles.faqScreen].join(" ")} data-service-visual-screen="questions-before-booking" aria-labelledby="service-faq-title">
+          <div className={styles.sceneMedia}>
+            <Image src="/images/holistic-house/course-focus-mountain-boy.webp" alt="" fill
+              sizes="(max-width: 767px) 100vw, 45vw" className={styles.sceneImage} />
+          </div>
+          <div className={styles.sceneCopy}>
+            <h2 id="service-faq-title">{ui.faq}</h2>
+            <div className={styles.faq}>
+              {t.faqs.map(item => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+            </div>
+            <aside className={styles.safety} aria-label={ui.disclaimerHeading}>
+              <ShieldCheck size={17} aria-hidden="true" /><p>{t.disclaimer}</p>
+            </aside>
+          </div>
+        </section>
+
+        <section className={[styles.screen, styles.captureScreen].join(" ")} id="request-session"
+          data-service-visual-screen="final-capture" aria-labelledby="capture-heading">
+          <div className={styles.capturePortrait}>
+            <StaticPortrait src="/images/holistic-house/andy-about.png" alt="" fill
+              sizes="(max-width: 767px) 100vw, 43vw" className={styles.sceneImage} />
+          </div>
+          <div className={styles.captureContent}>
+            <p className={styles.smallEyebrow}>{facts.meet}</p>
+            <h2 id="capture-heading">{closing.heading}</h2>
+            <p className={styles.captureIntro}>{closing.body}</p>
+            <CompactLeadCapture
+              locale={locale}
+              serviceTitle={t.orderLabel}
+              sourcePath={`/${locale}/services/${service}`}
+              title={facts.formats}
+              lead={microcopy.contact}
+              variant="inline"
+              formatOptions={[
+                { value: "30-min", label: facts.short },
+                { value: "60-min", label: facts.full },
+              ]}
+              disclaimer={ui.requestNote}
+            />
+            <Link className={styles.closingSecondary} href={`/${locale}/services/free-situation-review`}>
+              {ui.free}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
         </section>
       </div>

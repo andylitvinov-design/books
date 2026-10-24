@@ -6,12 +6,13 @@ import { ArrowRight, Check, HeartHandshake, Leaf, PlayCircle, Sparkles } from "l
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { TantraLearnerReviewCards } from "@/components/tantra-learner-review-cards";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./reiki-referral-landing.module.css";
 
 /**
  * Short, shareable, free-first entry to the existing five-lesson Reiki course.
- * This page does not create an enrolment record, collect personal data or
+ * This page does not create an enrolment record or require a lead request to start. It does not
  * imply that course completion automatically grants a teacher-led initiation.
  */
 const copy = {
@@ -132,8 +133,9 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const courseHref = REIKI_FREE_COURSE_PATH;
   const tantraHref = "/" + locale + "/academy/reiki/tantra-reiki";
+  const art = ["/images/holistic-house/reiki-practitioner-sunrise.webp","/images/holistic-house/report-lighthouse-coast.avif","/images/holistic-house/hero-olive-incense.webp"] as const;
   return (
-    <main className={styles.page} data-reiki-referral-landing data-locale={locale}>
+    <main className={styles.page} data-reiki-referral-landing data-public-visual-landing="reiki-referral" data-locale={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.wrap}>
         <section className={styles.hero} aria-labelledby="reiki-referral-title">
@@ -169,9 +171,13 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
           <div className={styles.benefitGrid}>
             {t.benefits.map((item, index) => {
               const Icon = [PlayCircle, Leaf, HeartHandshake][index];
-              return <article className={styles.benefit} key={item.title}>
-                <span className={styles.benefitIcon}><Icon size={23} aria-hidden="true" /></span>
-                <h3>{item.title}</h3><p>{item.body}</p>
+              return <article className={styles.benefit} key={item.title} data-reiki-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><Image src={art[index%art.length]} alt="" fill unoptimized
+                  sizes="(max-width: 700px) 100vw, 44vw" /></div>
+                <div className={styles.sceneWords}>
+                  <span className={styles.benefitIcon}><Icon size={23} aria-hidden="true" /></span>
+                  <h3>{item.title}</h3><p>{item.body}</p>
+                </div>
               </article>;
             })}
           </div>
@@ -180,35 +186,55 @@ export function ReikiReferralLanding({ locale }: { locale: PublicLocale }) {
         <section className={styles.how} aria-labelledby="reiki-referral-how">
           <div><p className={styles.sectionEyebrow}>{t.howEyebrow}</p><h2 id="reiki-referral-how">{t.howTitle}</h2></div>
           <ol className={styles.steps}>
-            {t.steps.map((step, index) => <li key={step.title}>
-              <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
-              <div><h3>{step.title}</h3><p>{step.body}</p></div>
+            {t.steps.map((step, index) => <li key={step.title} data-reiki-visual-screen={index+1}>
+              <div className={styles.scenePhoto}><Image src={art[(index+1)%art.length]} alt="" fill unoptimized
+                sizes="(max-width: 700px) 100vw, 44vw" /></div>
+              <div className={styles.sceneWords}>
+                <span className={styles.stepNumber}>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{step.title}</h3><p>{step.body}</p>
+              </div>
             </li>)}
           </ol>
         </section>
 
-        <section className={styles.faq} aria-labelledby="reiki-referral-faq">
-          <h2 id="reiki-referral-faq">{t.faqTitle}</h2>
-          <div className={styles.faqItems}>{t.faq.map((item) => <details key={item.question}>
-            <summary>{item.question}<span aria-hidden="true">+</span></summary>
-            <p>{item.answer}</p>
-          </details>)}</div>
+        <section className={styles.faq} aria-labelledby="reiki-referral-faq" data-reiki-visual-screen="faq">
+          <div className={styles.scenePhoto}><Image src={art[1]} alt="" fill unoptimized sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <div className={styles.sceneWords}>
+            <h2 id="reiki-referral-faq">{t.faqTitle}</h2>
+            <div className={styles.faqItems}>{t.faq.map((item) => <details key={item.question}>
+              <summary>{item.question}<span aria-hidden="true">+</span></summary>
+              <p>{item.answer}</p>
+            </details>)}</div>
+          </div>
         </section>
 
         <section className={styles.reviews} id="reiki-practitioner-testimonials" aria-labelledby="reiki-practitioner-testimonials-heading">
           <TantraLearnerReviewCards locale={locale} headingId="reiki-practitioner-testimonials-heading" context="practitioner" />
         </section>
 
-        <section className={styles.bottomCta} aria-labelledby="reiki-referral-end">
-          <div><h2 id="reiki-referral-end">{t.bottomTitle}</h2><p>{t.bottomLead}</p></div>
+        <section className={styles.bottomCta} aria-labelledby="reiki-referral-end" data-reiki-visual-screen="start">
+          <div className={styles.scenePhoto}><Image src={art[0]} alt="" fill unoptimized sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <div className={styles.sceneWords}>
+            <h2 id="reiki-referral-end">{t.bottomTitle}</h2><p>{t.bottomLead}</p>
           <AcquisitionEventLink href={courseHref} event="academy_course_enquiry_click" attributes={{ "data-reiki-cta": "footer" }} className={styles.mainCta} prefetch={false}>
             {t.cta}<ArrowRight size={20} aria-hidden="true" />
           </AcquisitionEventLink>
+          </div>
         </section>
         <div className={styles.foot}>
           <Link href={tantraHref}>{t.secondary}</Link>
           <p>{t.footer}</p>
         </div>
+        <section className={styles.finalCapture} data-reiki-visual-screen="final-capture">
+          <div className={styles.scenePhoto}><Image src="/images/holistic-house/andy-about.png"
+            alt="" fill sizes="(max-width: 700px) 100vw, 44vw" /></div>
+          <CompactLeadCapture locale={locale} variant="inline"
+            sourcePath={"/"+locale+"/academy/reiki/free-practitioner-course"}
+            serviceTitle="Free Reiki Practitioner course"
+            title={locale==="ru"?"Есть вопрос о бесплатном курсе?":locale==="es"?"¿Tienes preguntas sobre el curso gratuito?":"Have a question about the free course?"}
+            lead={locale==="ru"?"Оставьте контакт, если нужен ответ Андрея. Начать курс можно без этой заявки.":locale==="es"?"Deja un contacto para recibir respuesta. Puedes empezar el curso sin esta solicitud.":"Leave a contact for Andrey to reply. You can start the course without this request."}
+          />
+        </section>
       </div>
     </main>
   );

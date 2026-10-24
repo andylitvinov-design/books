@@ -439,3 +439,144 @@
 
 .previewLabel{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 9px;margin:0 0 13px;padding:10px 14px;border:1px solid #bed7dd;border-radius:12px;background:#f1f9fa;color:#35586b;font-size:12px;line-height:1.5}
 .previewLabel strong{color:#863f5a;font-weight:800}
+
+
+/* OPORA public offer: source-backed illustrations on each editorial topic.
+   Interactive learner remains separate; no mandatory lead, tracking or clinical claims. */
+.root[data-public-visual-landing="antistress"] .challengeGrid,
+.root[data-public-visual-landing="antistress"] .outcomeGrid,
+.root[data-public-visual-landing="antistress"] .processGrid{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:12px;
+}
+.root[data-public-visual-landing="antistress"] .challenge,
+.root[data-public-visual-landing="antistress"] .outcome,
+.root[data-public-visual-landing="antistress"] .processCard,
+.root[data-public-visual-landing="antistress"] .practiceDemo,
+.root[data-public-visual-landing="antistress"] .safety,
+.root[data-public-visual-landing="antistress"] .faqScene,
+.root[data-public-visual-landing="antistress"] .final,
+.root[data-public-visual-landing="antistress"] .finalCapture{
+  display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+  align-items:stretch;gap:0;overflow:hidden;
+  min-height:min(630px,calc(100svh - 156px));
+  margin:12px 0;padding:0;border:1px solid #d5e6e4;
+  border-radius:20px;background:#fffefa;
+}
+.root[data-public-visual-landing="antistress"] .scenePhoto{
+  position:relative;min-width:0;min-height:100%;
+  overflow:hidden;background:#c9e4de;isolation:isolate;
+}
+.root[data-public-visual-landing="antistress"] .scenePhoto img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;
+}
+.root[data-public-visual-landing="antistress"] .sceneWords,
+.root[data-public-visual-landing="antistress"] .safetyBody,
+.root[data-public-visual-landing="antistress"] .faqBody,
+.root[data-public-visual-landing="antistress"] .finalContent{
+  min-width:0;padding:clamp(20px,4vw,48px);
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+}
+.root[data-public-visual-landing="antistress"] .sceneWords h3{
+  font:500 clamp(27px,3vw,42px)/1.14 Georgia,serif;
+  letter-spacing:-.025em;color:#17465a;text-wrap:balance;margin:0 0 10px;
+}
+.root[data-public-visual-landing="antistress"] .sceneWords p{
+  font:clamp(14px,1.3vw,17px)/1.55 Arial,Helvetica,sans-serif;
+  color:#4d6e77;margin:0;
+}
+.root[data-public-visual-landing="antistress"] .sceneWords :is(.challengeIcon,.outcomeIcon,.processNumber){
+  margin:0 0 15px;align-self:flex-start;
+}
+.root[data-public-visual-landing="antistress"] .skills .skillArtwork{
+  position:relative;overflow:hidden;
+}
+.root[data-public-visual-landing="antistress"] .skillArtwork img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:.45;
+}
+.root[data-public-visual-landing="antistress"] .skillArtwork .skillNumber{
+  position:relative;z-index:1;
+}
+.root[data-public-visual-landing="antistress"] .practiceDemo{
+  grid-template-rows:auto auto;align-items:stretch;
+}
+.root[data-public-visual-landing="antistress"] .practiceDemo>.scenePhoto{
+  grid-column:1;grid-row:1/3;
+}
+.root[data-public-visual-landing="antistress"] .demoCopy{
+  grid-column:2;grid-row:1;padding:clamp(19px,3vw,32px) clamp(19px,3vw,32px) 0;
+}
+.root[data-public-visual-landing="antistress"] .demoInteraction{
+  grid-column:2;grid-row:2;min-width:0;padding:0 clamp(19px,3vw,32px) clamp(19px,3vw,32px);
+}
+.root[data-public-visual-landing="antistress"] .safetyBody,
+.root[data-public-visual-landing="antistress"] .faqBody{align-items:stretch}
+.root[data-public-visual-landing="antistress"] .safetyHeader{width:100%}
+.root[data-public-visual-landing="antistress"] .safetyList{width:100%}
+.root[data-public-visual-landing="antistress"] .faqScene{padding:0}
+.root[data-public-visual-landing="antistress"] .faqScene .sectionIntro{max-width:100%;margin-bottom:11px}
+.root[data-public-visual-landing="antistress"] .faqScene .faqList{width:100%}
+.root[data-public-visual-landing="antistress"] .final{
+  background:linear-gradient(140deg,#eaf8f4,#f7fdfa);color:#173f4b;
+}
+.root[data-public-visual-landing="antistress"] .finalContent h2{color:#173f4b}
+.root[data-public-visual-landing="antistress"] .finalContent>p{color:#51717a}
+.root[data-public-visual-landing="antistress"] .finalCapture{
+  grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);min-height:0;
+}
+.root[data-public-visual-landing="antistress"] .finalCapture :global([data-inline-offer-form]){
+  width:100%;max-width:100%;align-self:center;margin:0;padding:clamp(18px,3vw,35px);
+  border:0;border-radius:0;background:#fffefa;
+}
+.root[data-public-visual-landing="antistress"] :is(a,button,summary,input,select):focus-visible{
+  outline:3px solid #cf9365;outline-offset:3px;
+}
+@media(max-width:767px){
+ .root[data-public-visual-landing="antistress"] .challenge,
+ .root[data-public-visual-landing="antistress"] .outcome,
+ .root[data-public-visual-landing="antistress"] .processCard,
+ .root[data-public-visual-landing="antistress"] .practiceDemo,
+ .root[data-public-visual-landing="antistress"] .safety,
+ .root[data-public-visual-landing="antistress"] .faqScene,
+ .root[data-public-visual-landing="antistress"] .final,
+ .root[data-public-visual-landing="antistress"] .finalCapture{
+   display:flex;flex-direction:column;gap:0;
+   min-height:min(615px,calc(100svh - 154px));margin:9px 0;border-radius:17px;
+ }
+ .root[data-public-visual-landing="antistress"] .scenePhoto{
+   flex:none;width:100%;height:clamp(147px,24svh,218px);min-height:0;
+ }
+ .root[data-public-visual-landing="antistress"] .sceneWords,
+ .root[data-public-visual-landing="antistress"] .safetyBody,
+ .root[data-public-visual-landing="antistress"] .faqBody,
+ .root[data-public-visual-landing="antistress"] .finalContent{
+   flex:1;padding:17px;
+ }
+ .root[data-public-visual-landing="antistress"] .sceneWords h3{
+   font-size:clamp(25px,7vw,34px);
+ }
+ .root[data-public-visual-landing="antistress"] .sceneWords p{
+   font-size:13px;line-height:1.45;
+ }
+ .root[data-public-visual-landing="antistress"] .demoCopy,
+ .root[data-public-visual-landing="antistress"] .demoInteraction{
+   grid-row:auto;grid-column:auto;padding:15px 17px 10px;
+ }
+ .root[data-public-visual-landing="antistress"] .practiceDemo>.scenePhoto{
+   grid-row:auto;grid-column:auto;
+ }
+ .root[data-public-visual-landing="antistress"] .safety,
+ .root[data-public-visual-landing="antistress"] .faqScene,
+ .root[data-public-visual-landing="antistress"] .finalCapture{min-height:0}
+ .root[data-public-visual-landing="antistress"] .faqScene .scenePhoto,
+ .root[data-public-visual-landing="antistress"] .finalCapture .scenePhoto{
+   height:clamp(105px,18svh,154px);
+ }
+ .root[data-public-visual-landing="antistress"] .finalCapture :global([data-inline-offer-form]){
+   align-self:stretch;padding:12px;
+ }
+}
+@media(max-width:350px){
+ .root[data-public-visual-landing="antistress"] .scenePhoto{height:140px}
+ .root[data-public-visual-landing="antistress"] .finalCapture .scenePhoto{height:96px}
+}

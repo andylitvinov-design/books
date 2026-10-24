@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarCheck2, Check, LockKeyhole, MessageCircle, ShieldCheck } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -141,8 +142,14 @@ const copy = {
 
 export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const photos = [
+    "/images/holistic-house/hero-olive-incense.webp",
+    "/images/holistic-house/report-lighthouse-coast.avif",
+    "/images/holistic-house/course-start-heron.webp",
+    "/images/holistic-house/books-library.webp",
+  ] as const;
   return (
-    <main lang={locale} className={styles.page} data-personal-support-landing>
+    <main lang={locale} className={styles.page} data-personal-support-landing data-public-visual-landing="personal-support">
       <PublicSiteHeader locale={locale} />
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label={t.other}>
@@ -156,12 +163,7 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
             <div className={styles.price} aria-label={"€200 " + t.period}>
               <strong>€200</strong><span>{t.period}</span>
             </div>
-            <ul className={styles.benefits}>
-              <li><CalendarCheck2 size={18} aria-hidden="true" />{t.sessions}</li>
-              <li><MessageCircle size={18} aria-hidden="true" />{t.messages}</li>
-              <li><Check size={18} aria-hidden="true" />{t.modes}</li>
-              <li><LockKeyhole size={18} aria-hidden="true" />{t.report}</li>
-            </ul>
+
             <div className={styles.actions}>
               <a className={styles.primary} href="#support-request">{t.action}<ArrowRight size={17} aria-hidden="true" /></a>
               <Link className={styles.secondary} href={"/" + locale + "/services/free-situation-review"}>{t.free}</Link>
@@ -172,14 +174,31 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
             <StaticPortrait src="/images/holistic-house/andy-about.png" alt="Andrey Litvinov" fill priority sizes="(max-width: 640px) 118px, 38vw" />
           </div>
         </section>
+        <section className={styles.benefitScene} data-support-visual-screen="benefits">
+          <div className={styles.scenePhoto}><Image src={photos[0]} alt="" fill unoptimized
+            sizes="(max-width: 640px) 100vw, 40vw" /></div>
+          <div className={styles.sceneWords}>
+            <h2>{t.sessions}</h2>
+            <ul className={styles.benefits}>
+              <li><CalendarCheck2 size={18} aria-hidden="true" />{t.sessions}</li>
+              <li><MessageCircle size={18} aria-hidden="true" />{t.messages}</li>
+              <li><Check size={18} aria-hidden="true" />{t.modes}</li>
+              <li><LockKeyhole size={18} aria-hidden="true" />{t.report}</li>
+            </ul>
+          </div>
+        </section>
         <section className={styles.section} aria-labelledby="support-modes">
           <h2 id="support-modes">{t.modesTitle}</h2>
           <p className={styles.sectionIntro}>{t.modesIntro}</p>
           <div className={styles.formatGrid}>
             {t.formats.map((format, index) => (
-              <article className={styles.formatCard} key={format.value}>
-                <span className={styles.number}>0{index + 1}</span>
-                <h3>{format.label}</h3><p>{format.description}</p>
+              <article className={styles.formatCard} key={format.value} data-support-visual-screen={format.value}>
+                <div className={styles.scenePhoto}><Image src={photos[index % photos.length]} alt="" fill unoptimized
+                  sizes="(max-width: 640px) 100vw, 40vw" /></div>
+                <div className={styles.sceneWords}>
+                  <span className={styles.number}>0{index + 1}</span>
+                  <h3>{format.label}</h3><p>{format.description}</p>
+                </div>
               </article>
             ))}
           </div>
@@ -187,7 +206,13 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
         <section className={styles.section} aria-labelledby="support-process">
           <h2 id="support-process">{t.howTitle}</h2>
           <ol className={styles.steps}>
-            {t.steps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}
+            {t.steps.map((step, index) => <li key={step} data-support-visual-screen={index+1}>
+                <div className={styles.scenePhoto}><Image src={photos[(index+1)%photos.length]}
+                  alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 40vw" /></div>
+                <div className={styles.sceneWords}>
+                  <span>{index + 1}</span><p>{step}</p>
+                </div>
+              </li>)}
           </ol>
         </section>
         <section className={styles.media} aria-label={t.videoTitle}>
@@ -195,13 +220,21 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
           <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="services" />
           <Link className={styles.about} href={"/" + locale + "/about"}>{t.about}<ArrowRight size={16} aria-hidden="true" /></Link>
         </section>
-        <section className={styles.section} aria-labelledby="support-faq">
-          <h2 id="support-faq">{t.faqTitle}</h2>
-          <div className={styles.faq}>
-            {t.faqs.map((item) => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+        <section className={[styles.section,styles.faqScene].join(" ")} aria-labelledby="support-faq" data-support-visual-screen="faq">
+          <div className={styles.scenePhoto}><Image src={photos[2]} alt="" fill unoptimized
+            sizes="(max-width: 640px) 100vw, 40vw" /></div>
+          <div className={styles.sceneWords}>
+            <h2 id="support-faq">{t.faqTitle}</h2>
+            <div className={styles.faq}>
+              {t.faqs.map((item) => <details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}
+            </div>
           </div>
         </section>
-        <div id="support-request" className={styles.capture}>
+        <Link className={styles.myProgramme} href={"/" + (locale === "es" ? "en" : locale) + "/app/personal-support"}>{t.myProgramme}<ArrowRight size={16} aria-hidden="true" /></Link>
+        <p className={styles.safety}><ShieldCheck size={17} aria-hidden="true" />{t.safety}</p>
+        <div id="support-request" className={styles.capture} data-support-visual-screen="final-capture">
+          <div className={styles.scenePhoto}><StaticPortrait src="/images/holistic-house/andy-about.png"
+            alt="" fill sizes="(max-width: 640px) 100vw, 40vw" /></div>
           <CompactLeadCapture
             locale={locale}
             serviceTitle={PRODUCT_KEY}
@@ -213,8 +246,6 @@ export function PersonalSupportLanding({ locale }: { locale: PublicLocale }) {
             disclaimer={t.safety}
           />
         </div>
-        <Link className={styles.myProgramme} href={"/" + (locale === "es" ? "en" : locale) + "/app/personal-support"}>{t.myProgramme}<ArrowRight size={16} aria-hidden="true" /></Link>
-        <p className={styles.safety}><ShieldCheck size={17} aria-hidden="true" />{t.safety}</p>
       </div>
     </main>
   );

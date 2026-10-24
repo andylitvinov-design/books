@@ -79,3 +79,47 @@
 .review strong{font-size:16px;color:#184e57}
 .submit:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:420px){.masterCard{gap:9px}.masterCard img{width:68px;height:88px;flex-basis:68px}.durationGroup label{flex:1 1 42%}}
+
+
+/* Public master-led booking is transactional, not a fake confirmed lead.
+   Editorial hero already has an approved photographic background; form must be
+   the last actionable section and retain its existing secure cabinet handoff. */
+.page[data-public-visual-landing="remote-energy"] .reviewsBeforeForm{
+  margin:13px 0;padding:13px 15px;border:1px solid #d8e8e1;
+  background:#fff;border-radius:16px;
+}
+.page[data-public-visual-landing="remote-energy"] .reviewsBeforeForm summary{
+  min-height:43px;display:flex;align-items:center;cursor:pointer;
+  color:#1c6670;font-size:13px;font-weight:800;
+}
+.page[data-public-visual-landing="remote-energy"] .finalRequest{
+  display:grid;grid-template-columns:minmax(0,.62fr) minmax(0,1.38fr);
+  align-items:stretch;gap:0;margin-top:14px;
+  border:1px solid #d3e9e3;border-radius:22px;
+  background:#fff;overflow:hidden;
+}
+.page[data-public-visual-landing="remote-energy"] .requestPhoto{
+  position:relative;min-height:440px;min-width:0;overflow:hidden;background:#d4e3db;
+}
+.page[data-public-visual-landing="remote-energy"] .requestPhoto img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center;
+}
+.page[data-public-visual-landing="remote-energy"] .finalRequest .form{
+  align-self:center;min-width:0;margin:0;padding:clamp(14px,2.7vw,30px);
+  border:0;border-radius:0;box-shadow:none;
+}
+@media(max-width:720px){
+ .page[data-public-visual-landing="remote-energy"] .finalRequest{
+   display:flex;flex-direction:column;margin-top:11px;border-radius:18px;
+ }
+ .page[data-public-visual-landing="remote-energy"] .requestPhoto{
+   flex:none;min-height:0;height:clamp(105px,18svh,165px);
+ }
+ .page[data-public-visual-landing="remote-energy"] .finalRequest .form{
+   width:100%;align-self:stretch;padding:15px;
+ }
+}
+@media(max-width:350px){
+ .page[data-public-visual-landing="remote-energy"] .requestPhoto{height:99px}
+}

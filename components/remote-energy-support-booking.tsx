@@ -209,7 +209,7 @@ export function RemoteEnergySupportBooking({
   };
 
   return (
-    <section className={styles.page} aria-labelledby="remote-support-title">
+    <section className={styles.page} aria-labelledby="remote-support-title" data-public-visual-landing="remote-energy">
       <div className={styles.intro}>
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
         <h1 id="remote-support-title">{t.title}</h1>
@@ -219,6 +219,11 @@ export function RemoteEnergySupportBooking({
         </div>
         <p className={styles.steps}>{t.steps}</p>
       </div>
+      {selected && <details className={styles.reviewsBeforeForm}>
+        <summary>{t.reviews} · {selected.name} ({selected.reviewCount})</summary>
+        <ServiceReviews key={selected.serviceId} serviceId={selected.serviceId} locale={locale} readOnly verifiedOnly/>
+      </details>}
+      <p className={styles.disclaimer}>{t.safety}</p>
       {masters.length === 0 ? (
         <div className={styles.empty} role="status">
           <p>{t.noMasters}</p>
@@ -226,7 +231,11 @@ export function RemoteEnergySupportBooking({
           <Link href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{t.freeReiki} →</Link>
         </div>
       ) : (
-        <form className={styles.form} onSubmit={submit}>
+        <div className={styles.finalRequest} data-remote-visual-screen="final-capture">
+          <div className={styles.requestPhoto}>
+            <img src="/images/holistic-house/hero-olive-incense.webp" alt="" loading="lazy" decoding="async" />
+          </div>
+          <form className={styles.form} onSubmit={submit}>
           <div className={styles.field}>
             <label htmlFor="remote-master">{t.practitioner}</label>
             <select id="remote-master" value={slug} onChange={(event) => setSlug(event.target.value)} required>
@@ -302,12 +311,8 @@ export function RemoteEnergySupportBooking({
           <button className={styles.submit} type="submit" disabled={!currentPrice}>{t.send} <span aria-hidden="true">→</span></button>
           {error && <p role="alert" className={styles.error}>{t.needsStorage}</p>}
         </form>
+        </div>
       )}
-      {selected && <details style={{marginTop:16,background:'#fff',borderRadius:16,padding:14}}>
-        <summary>{t.reviews} · {selected.name} ({selected.reviewCount})</summary>
-        <ServiceReviews key={selected.serviceId} serviceId={selected.serviceId} locale={locale} readOnly verifiedOnly/>
-      </details>}
-      <p className={styles.disclaimer}>{t.safety}</p>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, LockKeyhole, BookOpenText, ChevronRight } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { traditionBySlug } from "@/lib/personal-coaching/traditions";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-tradition-coaching-landing.module.css";
@@ -59,9 +60,10 @@ export function AcademyTraditionCoachingLanding({locale,slug}:{locale:PublicLoca
   const course=traditionBySlug(slug);
   const t=copy[locale];
   if(!course)return null;
+  const stageImages = [course.art,"/images/holistic-house/books-library.webp","/images/holistic-house/hero-olive-incense.webp","/images/holistic-house/report-lighthouse-coast.avif"] as const;
   return <>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false}/>
-    <main className={styles.root} data-coaching-course-landing={slug} lang={locale}>
+    <main className={styles.root} data-coaching-course-landing={slug} data-public-visual-landing="tradition-coaching" lang={locale}>
       <nav className={styles.breadcrumb} aria-label={t.back}>
         <Link href={"/"+locale+"/academy"}><ArrowLeft size={16}/>{t.back}</Link>
       </nav>
@@ -85,27 +87,49 @@ export function AcademyTraditionCoachingLanding({locale,slug}:{locale:PublicLoca
       <section className={styles.stages} aria-labelledby="coaching-stages">
         <div className={styles.sectionIntro}><span className={styles.overline}>HOLISTIC HOUSE · COACHING</span><h2 id="coaching-stages">{t.stages}</h2></div>
         <div className={styles.stageGrid}>
-          {steps[slug][locale].map((text,index)=><div key={index} className={styles.stage}>
-            <span className={styles.number}>{String(index+1).padStart(2,"0")}</span>
-            <span>{text}</span>
+          {steps[slug][locale].map((text,index)=><div key={index} className={styles.stage} data-tradition-visual-screen={index+1}>
+            <div className={styles.scenePhoto}>
+              <img src={stageImages[index % stageImages.length]} alt="" loading="lazy" decoding="async" />
+            </div>
+            <div className={styles.sceneWords}>
+              <span className={styles.number}>{String(index+1).padStart(2,"0")}</span>
+              <strong>{text}</strong>
+            </div>
           </div>)}
         </div>
       </section>
       <section className={styles.how} aria-labelledby="coaching-how">
         <div className={styles.sectionIntro}><h2 id="coaching-how">{t.steps}</h2></div>
         <div className={styles.howGrid}>
-          {[t.intro,t.reflect,t.finish].map((title,index)=><div key={title} className={styles.howCard}>
-            <span className={styles.number}>{index+1}</span><strong>{title}</strong>{index===1&&<small>{t.own}</small>}
+          {[t.intro,t.reflect,t.finish].map((title,index)=><div key={title} className={styles.howCard} data-tradition-visual-screen={index+1}>
+            <div className={styles.scenePhoto}>
+              <img src={stageImages[(index+1) % stageImages.length]} alt="" loading="lazy" decoding="async" />
+            </div>
+            <div className={styles.sceneWords}>
+              <span className={styles.number}>{index+1}</span><strong>{title}</strong>{index===1&&<small>{t.own}</small>}
+            </div>
           </div>)}
         </div>
         <p className={styles.privacy}><LockKeyhole size={17}/>{t.privacy}</p>
         <p className={styles.disclaimer}>{t.note}</p>
       </section>
-      <section className={styles.end}>
-        <div><h2>{t.next}</h2><p>{t.nextHelp}</p></div>
-        <Link href={courseHref(locale,slug)} prefetch={false} className={styles.primary}>{t.take}<ArrowRight size={19}/></Link>
+      <section className={styles.end} data-tradition-visual-screen="start">
+        <div className={styles.scenePhoto}><img src={stageImages[0]} alt="" loading="lazy" decoding="async" /></div>
+        <div className={styles.sceneWords}>
+          <h2>{t.next}</h2><p>{t.nextHelp}</p>
+          <Link href={courseHref(locale,slug)} prefetch={false} className={styles.primary}>{t.take}<ArrowRight size={19}/></Link>
+          <Link href={"/"+locale+"/academy"} className={styles.back}><ChevronRight size={15}/>{t.backTo}</Link>
+        </div>
       </section>
-      <Link href={"/"+locale+"/academy"} className={styles.back}><ChevronRight size={15}/>{t.backTo}</Link>
+      <section className={styles.finalCapture} data-tradition-visual-screen="final-capture">
+        <div className={styles.scenePhoto}><img src={stageImages[2]} alt="" loading="lazy" decoding="async" /></div>
+        <CompactLeadCapture locale={locale} variant="inline"
+          sourcePath={"/"+locale+"/academy/coaching/"+slug}
+          serviceTitle={course.name[locale]}
+          title={locale==="ru"?"Есть вопрос о курсе?":locale==="es"?"¿Tienes preguntas sobre el curso?":"Have a question about the course?"}
+          lead={locale==="ru"?"Оставьте контакт для ответа. Начать бесплатный курс можно без заявки.":locale==="es"?"Deja un contacto para recibir una respuesta. Puedes empezar el curso gratis sin esta solicitud.":"Leave a contact for a reply. You can start the free course without submitting a request."}
+        />
+      </section>
     </main>
   </>;
 }
