@@ -14,10 +14,10 @@ const copy = {
   en: {
     eyebrow: "HOLISTIC HOUSE · REFLECTION & GUIDANCE", title: "Temple Insights",
     lead: "Ask what matters to you. Begin with a free symbolic insight or request a personal reflection with a practitioner.",
-    free: "AI-free symbolic insight", personal: "Free personal express review", master: "Insights with a Master",
+    free: "Free symbolic insight", personal: "Free personal express review", master: "Insights with a Master",
     freeTitle: "Start with your question", freeLead: "Explore the I Ching and thoughtful aphorisms without sharing your question with a server.",
     reviewTitle: "Personal express diagnostic · free", reviewBody: "Describe one situation and share a drawing in the existing private enquiry process. A practitioner responds after reviewing your request.",
-    reviewAction: "Request a free review", masterTitle: "Ask a Master", masterBody: "Prefer to explore your question personally? Request a consultation; timing and price are confirmed before any appointment.",
+    reviewAction: "Request a free review", masterTitle: "Ask a Master", masterBody: "Request a personal symbolic insight with a Master · CAD 50 / 20 min. Your request is not yet a confirmed booking or payment.",
     masterAction: "Request a personal insight", note: "Symbolic interpretations support reflection, not diagnosis or prediction. Your question stays in the browser; contact details are sent only with your consent."
   },
   ru: {
@@ -26,7 +26,7 @@ const copy = {
     free: "Бесплатная подсказка", personal: "Личная экспресс-диагностика · бесплатно", master: "Подсказка от мастера",
     freeTitle: "С чего начать?", freeLead: "Исследуйте И-Цзин и афоризмы. Текст вопроса остаётся только в браузере.",
     reviewTitle: "Личный экспресс-разбор · бесплатно", reviewBody: "Опишите одну ситуацию и приложите рисунок через существующую форму заявки. Специалист даст ответ после рассмотрения.",
-    reviewAction: "Запросить бесплатный разбор", masterTitle: "Спросить мастера", masterBody: "Хотите индивидуальный разбор вопроса? Отправьте запрос на консультацию: время и стоимость подтверждаются отдельно.",
+    reviewAction: "Запросить бесплатный разбор", masterTitle: "Спросить мастера", masterBody: "Запросите личную символическую подсказку от Мастера · 50 CAD / 20 мин. Заявка ещё не запись и не оплата.",
     masterAction: "Запросить личную подсказку", note: "Символические подсказки — для размышления, не для диагностики или предсказания. Текст остаётся в браузере; контакты отправляются только с согласия."
   },
   es: {
@@ -35,7 +35,7 @@ const copy = {
     free: "Reflexión gratuita", personal: "Revisión exprés personal · gratis", master: "Orientación con un maestro",
     freeTitle: "Comienza con tu pregunta", freeLead: "Explora el I Ching y aforismos sin enviar tu pregunta al servidor.",
     reviewTitle: "Revisión personal exprés · gratis", reviewBody: "Describe tu situación y comparte un dibujo mediante el formulario existente. El profesional responderá después de revisar la solicitud.",
-    reviewAction: "Solicitar revisión gratuita", masterTitle: "Consulta a un maestro", masterBody: "Solicita una consulta personal. Horario y precio se confirman antes de reservar.",
+    reviewAction: "Solicitar revisión gratuita", masterTitle: "Consulta a un maestro", masterBody: "Solicita orientación simbólica personal · 50 CAD / 20 min. La solicitud no confirma ni reserva ni pago.",
     masterAction: "Solicitar orientación", note: "La interpretación simbólica es para reflexionar, no para diagnosticar ni predecir. Tu pregunta permanece en este navegador; los contactos se envían solo con consentimiento."
   }
 } as const;
@@ -79,7 +79,7 @@ export default async function TempleInsightsPage({ params }: Props) {
       </section>
       <section id="master" className={styles.section}>
         <h2>{t.masterTitle}</h2><p className={styles.sectionIntro}>{t.masterBody}</p>
-        <Link className={styles.primaryAction} href={"/" + language + "/services#consultation"} prefetch={false}>{t.masterAction} <span aria-hidden="true">→</span></Link>
+        <Link className={styles.primaryAction} href={"/" + language + "/holistic-support#personal-insights-master"} prefetch={false}>{t.masterAction} <span aria-hidden="true">→</span></Link>
       </section>
       <footer className={styles.privacy}><p>{t.note}</p></footer>
     </div>
