@@ -51,8 +51,11 @@ test('localized editorial prompts exist in English, Russian, and Spanish',()=>{
   assert.ok(es.why.length>35)
 })
 test('WOOP mandatory if-then plan and numeric scale are not silently rewritten',()=>{
-  assert.equal(adapt(3,{barrier:'choice:time'},'en',{requiredCustomPlan:true}),null,
-    'final authored plan is always authoritative')
+  const woopQuestions=questions.slice(0,4)
+  assert.equal(coachingAdaptivePrompt({
+    question:woopQuestions.at(-1),questions:woopQuestions,index:woopQuestions.length-1,
+    answers:{barrier:'choice:time'},locale:'en',requiredCustomPlan:true,
+  }),null,'final authored if–then plan is always authoritative')
   const scaleQuestions=[
     {id:'outcome',stepKey:'outcome'},
     {id:'rating',stepKey:'scaling',type:'scale_0_10'},
