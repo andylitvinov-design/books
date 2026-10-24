@@ -292,7 +292,9 @@ test('Details expands a bottom panel, and every free or paid offer has a distinc
 test('guest coaching uses the whole mobile viewport with independent scrolling and safe-area footer',()=>{
   const jsx=read('components/public-coaching-discovery.jsx')
   const css=read('components/public-coaching-discovery.module.css')
-  const session=jsx.slice(jsx.indexOf('</>:<section className={styles.session} data-public-coaching-session>'))
+  const sessionStart=jsx.indexOf('data-public-coaching-session')
+  assert.ok(sessionStart>0,'public session still contains its root data attribute')
+  const session=jsx.slice(sessionStart)
   assert.match(jsx,/data-public-coaching-active=\{session\?'true':undefined\}/)
   assert.match(jsx,/window\.visualViewport/)
   assert.match(jsx,/document\.body\.style\.overflow='hidden'/)
