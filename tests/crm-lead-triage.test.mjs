@@ -116,9 +116,9 @@ test('API uses same-origin verified owner, restricted CRM role, no URL PII',()=>
  for(const exp of [/crmEnabled\(\)/,/requestOrigin\(request,config\)/,/requireSameOrigin\(request,config\)/,
   /await auth\.verified\(\)/,/practitionerEmailAllowed\(actor\)/,
   /request\.headers\.get\('x-hh-account-id'\)!==actor\.id/,
-  /readBody\(request,768\)/,/onlyKeys\(input,\['cursor'\]\)/,
+  /readBody\(request,768\)/,/onlyKeys\(input,\['cursor','autoPlan'\]\)/,
   /withOwner\(actor,/,
-  /store=>store\.listUnplannedLeadsPage\(input\.cursor\?\?null\)/,/PRIVATE_HEADERS/])
+  /store\.listUnplannedLeadsPage\(input\.cursor\?\?null\)/,/PRIVATE_HEADERS/])
   assert.match(route,exp)
  assert.match(repo,/SET LOCAL ROLE hh_crm_backend/)
  assert.match(repo,/app_private\.account_active\(\)/)

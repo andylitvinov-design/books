@@ -45,7 +45,7 @@ const copy = {
     again: "New enquiry",
     quickSubmit: "Send free request", quickReady: "Google email is ready",
     quickPhone: "Use phone / WhatsApp instead", quickEmail: "Use email instead",
-    quickConsent: "By tapping Send, you agree to one personal reply about this request. No marketing, charge or confirmed booking.",
+    quickConsent: "Check the box to request one personal reply. No marketing, charge or confirmed booking.",
   },
   ru: {
     order: "Оставить заявку",
@@ -74,7 +74,7 @@ const copy = {
     again: "Новый запрос",
     quickSubmit: "Отправить бесплатный запрос", quickReady: "Email Google готов",
     quickPhone: "Вместо email — телефон / WhatsApp", quickEmail: "Использовать email",
-    quickConsent: "Нажимая «Отправить», вы соглашаетесь на один личный ответ по запросу. Без рекламы, оплаты и автоматической записи.",
+    quickConsent: "Отметьте согласие выше, чтобы получить личный ответ. Без рекламы, оплаты и автоматической записи.",
   },
   es: {
     order: "Solicitar plaza",
@@ -103,7 +103,7 @@ const copy = {
     again: "Nueva solicitud",
     quickSubmit: "Enviar solicitud gratis", quickReady: "Correo de Google listo",
     quickPhone: "Usar teléfono / WhatsApp", quickEmail: "Usar correo electrónico",
-    quickConsent: "Al pulsar Enviar, aceptas una respuesta personal a esta solicitud. Sin publicidad, cobro ni reserva confirmada.",
+    quickConsent: "Marca la casilla para solicitar una respuesta personal. Sin publicidad, cobro ni reserva confirmada.",
   },
 } as const;
 
@@ -137,7 +137,7 @@ export function ContactChannelChooser({
   const [googleBusy, setGoogleBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [consent, setConsent] = useState(quick);
+  const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [saved, setSaved] = useState<SavedEnquiry | null>(null);
   const [busy, setBusy] = useState(false);
@@ -177,7 +177,7 @@ export function ContactChannelChooser({
     setGoogleReady(false);
     setEmail("");
     setPhone("");
-    setConsent(quick);
+    setConsent(false);
     setWebsite("");
     setSaved(null);
     setError("");
@@ -406,11 +406,12 @@ export function ContactChannelChooser({
                 }} />
               <small className={styles.privateNote}>{c.privateNote}</small>
             </details>
+            </>}
             <label className={styles.consent}>
               <input type="checkbox" required checked={consent} disabled={busy}
                 onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
               <span>{c.consent}</span>
-            </label></>}
+            </label>
             {quick && <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
               onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
               {method === "email" ? c.quickPhone : c.quickEmail}
@@ -451,7 +452,7 @@ export function ContactChannelChooser({
             <button type="button" className={styles.again} onClick={() => {
               setSaved(null); setDescription(""); setDisplayName(""); setEmail("");
               setMethod("email"); setGoogleReady(false);
-              setPhone(""); setConsent(quick); setWebsite(""); setError(""); operationId.current = null;
+              setPhone(""); setConsent(false); setWebsite(""); setError(""); operationId.current = null;
             }}>{c.again}</button>
           </>
         )}
