@@ -55,9 +55,9 @@ async function go(page, path) {
 function expectedMobileNavigation(locale) { return getCompactNavigation(locale) }
 function visibleMobileLabel(locale, id) {
   const names = {
-    en: { home: 'Home', energy: 'Energy', love: 'Love', business: 'Business', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
-    ru: { home: 'Домой', energy: 'Энергия', love: 'Любовь', business: 'Бизнес', books: 'Идеи', pro: 'Профи', temple: 'Temple Support' },
-    es: { home: 'Inicio', energy: 'Energía', love: 'Amor', business: 'Negocios', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
+    en: { home: 'Home', energy: 'Energy', love: 'Love', business: 'Business', books: 'Ideas', pro: 'Pro', temple: 'Holistic Support' },
+    ru: { home: 'Домой', energy: 'Энергия', love: 'Любовь', business: 'Бизнес', books: 'Идеи', pro: 'Профи', temple: 'Holistic Support' },
+    es: { home: 'Inicio', energy: 'Energía', love: 'Amor', business: 'Negocios', books: 'Ideas', pro: 'Pro', temple: 'Holistic Support' },
   }
   return names[locale][id]
 }

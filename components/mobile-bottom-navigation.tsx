@@ -9,9 +9,9 @@ import { useNavigationLocale } from './use-navigation-locale';
 
 // Short visual labels fit seven buttons even at 320px. Screen readers use full translated aria labels.
 const mobileBarLabels = {
-  en: { home: 'Home', energy: 'Energy', love: 'Love', business: 'Business', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
-  ru: { home: 'Домой', energy: 'Энергия', love: 'Любовь', business: 'Бизнес', books: 'Идеи', pro: 'Профи', temple: 'Temple Support' },
-  es: { home: 'Inicio', energy: 'Energía', love: 'Amor', business: 'Negocios', books: 'Ideas', pro: 'Pro', temple: 'Temple Support' },
+  en: { home: 'Home', energy: 'Energy', love: 'Love', business: 'Business', books: 'Ideas', pro: 'Pro', temple: 'Holistic Support' },
+  ru: { home: 'Домой', energy: 'Энергия', love: 'Любовь', business: 'Бизнес', books: 'Идеи', pro: 'Профи', temple: 'Holistic Support' },
+  es: { home: 'Inicio', energy: 'Energía', love: 'Amor', business: 'Negocios', books: 'Ideas', pro: 'Pro', temple: 'Holistic Support' },
 } as const;
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {
@@ -91,7 +91,7 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
   const current = activeCompactNavigationId(pathname);
   const mobileItems = getCompactNavigation(locale);
   return <nav ref={nav} aria-label={navigationCopy[locale].mobile} className="mobile-bottom-navigation ia222-bottom-navigation">
-    {/* Seven visible destinations, with Temple Support after Pro. Free tests are on the Pro page;
+    {/* Seven visible destinations, with Holistic Support after Pro. Free tests are on the Pro page;
         Cabinet remains in the top header, with the full Library in the expanded menu. */}
     {mobileItems.map(item => {
       const Icon = compactNavigationIcons[item.id as keyof typeof compactNavigationIcons];

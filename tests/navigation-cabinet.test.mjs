@@ -20,7 +20,7 @@ test('public navigation exposes three real directions without administration', a
   for (const locale of ['en', 'ru', 'es']) {
     const items = getSiteNavigation(locale)
     assert.equal(items.length, 10)
-    assert.equal(items.find(item => item.id === 'temple').href, `/${locale}/temple-support`)
+    assert.equal(items.find(item => item.id === 'temple').href, `/${locale}/holistic-support`)
     assert.equal(items.find(item=>item.id==='love').href, '/'+locale+'/explore/love')
     assert.equal(items.find(item=>item.id==='energy').href, '/'+locale+'/explore/energy')
     assert.equal(items.find(item => item.id === 'library').href, `/${locale}/library`)

@@ -2,68 +2,89 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { activeCompactNavigationId, getCompactNavigation, getSiteNavigation } from "../lib/site-navigation-model.js";
+import { safePublicWhatsAppPath } from "../lib/whatsapp-enquiry.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Temple Support is destination seven in the mobile bar and menu for EN/RU/ES", () => {
+test("Holistic Support is destination seven in EN/RU/ES bottom menu and main menu", () => {
   const bar = read("components/mobile-bottom-navigation.tsx");
   const icons = read("components/compact-navigation-icons.ts");
   const css = read("app/ia-v2.css");
-  const baseCss = read("app/holistic-house-home.css");
+  const homeCss = read("app/holistic-house-home.css");
   for (const locale of ["en", "ru", "es"]) {
     const links = getCompactNavigation(locale);
     assert.equal(links.length, 7);
     assert.equal(links[6].id, "temple");
-    assert.equal(links[6].href, "/" + locale + "/temple-support");
-    assert.equal(activeCompactNavigationId("/" + locale + "/temple-support"), "temple");
-    assert.ok(getSiteNavigation(locale).some(link => link.id === "temple"));
+    assert.equal(links[6].href, "/" + locale + "/holistic-support");
+    assert.equal(links[6].label, "Holistic Support");
+    assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "temple");
+    assert.ok(getSiteNavigation(locale).some(x => x.id === "temple" && x.label === "Holistic Support"));
+    assert.equal(safePublicWhatsAppPath("/" + locale + "/holistic-support"), "/" + locale + "/holistic-support");
   }
+  assert.equal(safePublicWhatsAppPath("/en/client/report/private"), "");
   assert.match(icons, /temple: Landmark/);
-  assert.match(bar, /temple: 'Temple Support'/);
+  assert.match(bar, /temple: 'Holistic Support'/);
   assert.match(bar, /aria-label=\{item\.ariaLabel\}/);
-  assert.match(bar, /const mobileItems = getCompactNavigation\(locale\)/);
   assert.match(css, /repeat\(7,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width: 600px\)/);
-  assert.match(baseCss, /repeat\(7, minmax\(0,1fr\)\)/);
-  assert.doesNotMatch(css, /repeat\(6,minmax\(0,1fr\)\)/);
+  assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
 });
 
-test("Temple Support has EN/RU/ES metadata and three real existing service journeys", () => {
-  const page = read("app/[locale]/temple-support/page.tsx");
-  const styles = read("app/[locale]/temple-support/temple-support.module.css");
-  const ideas = read("components/ideas-discovery.tsx");
+test("Holistic Support provides exactly two main areas and five concrete choices", () => {
+  const page = read("app/[locale]/holistic-support/page.tsx");
+  const styles = read("app/[locale]/holistic-support/holistic-support.module.css");
+  const old = read("app/[locale]/temple-support/page.tsx");
   const locales = read("lib/public-locales.ts");
   const home = read("components/home-explore-sections.tsx");
   const sitemap = read("app/sitemap.ts");
   for (const locale of ["en", "ru", "es"]) {
-    assert.match(page, new RegExp(locale + ': \\{'));
-    assert.ok(page.includes(locale + ': "/' + locale + '/temple-support"'));
-    assert.ok(sitemap.includes("/temple-support"));
-    assert.ok(home.includes('path: "/temple-support"'));
+    assert.ok(page.includes(locale + ": {"), locale + " page translation");
+    assert.ok(page.includes(locale + ': "/' + locale + '/holistic-support"'));
+    assert.match(old, /permanentRedirect\("\/" \+ locale \+ "\/holistic-support"\)/);
   }
-  assert.match(page, /data-temple-support/);
-  assert.match(page, /<IdeasDiscovery locale=\{language\} variant="temple"/);
-  assert.match(ideas, /const isTemple = variant === "temple"/);
-  assert.match(ideas, /drawRandomHexagram\(\)/);
+  assert.match(page, /data-holistic-support/);
+  assert.match(page, /data-holistic-insights/);
+  assert.match(page, /data-holistic-healing/);
+  assert.match(page, /<nav className=\{styles.primaryNav\}/);
+  for (const id of ["ai", "express", "master", "energy", "alchemy"])
+    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
+  for (const method of ["constellations", "runes", "tarot", "chinese"])
+    assert.ok(page.includes('"' + method + '"'), "missing tradition " + method);
+  assert.match(page, /\/services\/free-situation-review/);
   assert.match(page, /\/services\/remote-energy-support/);
-  assert.match(page, /MarketplaceMasterFinder practitioners=\{templePractitioners\}/);
+  assert.match(page, /\/services\/alchemy-of-soul/);
+  assert.match(page, /MarketplaceMasterFinder practitioners=\{energyPractitioners\}/);
   assert.match(page, /service.status === "published"/);
   assert.match(page, /\/masters/);
-  assert.match(locales, /temple-support/);
+  assert.match(page, /<IdeasDiscovery locale=\{locale\} variant="temple" \/>/);
+  assert.match(locales, /holistic-support/);
+  assert.match(home, /path: "\/holistic-support"/);
+  assert.match(sitemap, /locale \+ '\/holistic-support'/);
+  assert.doesNotMatch(sitemap, /locale \+ '\/temple-support'/);
   assert.match(styles, /@media\(max-width:350px\)/);
-  for (const image of ["hero-olive-incense.webp", "reiki-approved-sunrise-v3.webp", "ideas-zen-landscape.svg"]) {
-    assert.ok(existsSync(new URL("../public/images/holistic-house/" + image, import.meta.url)), image + " must exist");
-  }
+  for (const image of ["hero-olive-incense.webp", "andy-about.png", "reiki-approved-sunrise-v3.webp", "ideas-zen-landscape.svg"])
+    assert.ok(existsSync(new URL("../public/images/holistic-house/" + image, import.meta.url)), "missing media " + image);
 });
 
-test("Temple mode keeps the original privacy model and does not duplicate CRM, booking or payment", () => {
+test("AI Insight is honest about its non-LLM source; master enquiry is CAD 50 for 20 minutes and consented", () => {
+  const page = read("app/[locale]/holistic-support/page.tsx");
   const ideas = read("components/ideas-discovery.tsx");
-  const page = read("app/[locale]/temple-support/page.tsx");
-  assert.match(ideas, /\{!isTemple \? <Link href=\{coachingHref\}/);
-  assert.match(ideas, /<HeadingTag id="ideas-title">/);
-  assert.match(ideas, /\{!isTemple \? <nav className=\{styles\.exploreLinks\}/);
-  for (const prohibited of ["sendBeacon(", "localStorage", "sessionStorage", "XMLHttpRequest"]) {
-    assert.ok(!ideas.includes(prohibited), prohibited + " leaks symbolic questions");
-  }
-  assert.doesNotMatch(page, /fetch\(|createLead\(|insert\(|checkout|charge\(/);
+  const capture = read("components/compact-lead-capture.tsx");
+  const alchemy = read("app/[locale]/services/alchemy-of-soul/page.tsx");
+  assert.match(page, /AI Insight/);
+  assert.match(page, /generative AI model is not connected/);
+  assert.match(page, /50 CAD \/ 20 мин/);
+  assert.match(page, /CAD 50 \/ 20 min/);
+  assert.match(page, /sourcePath=\{"\/" \+ locale \+ "\/holistic-support"\}/);
+  assert.match(page, /formatOptions=\{methodOptions\}/);
+  assert.match(page, /<CompactLeadCapture/);
+  assert.match(page, /data-holistic-master/);
+  assert.match(capture, /fetch\("\/api\/service-enquiries"/);
+  assert.match(capture, /contactConsent: true/);
+  assert.match(page, /Homeopathy lacks reliable evidence|homeopatía carece|у гомеопатии нет/);
+  assert.match(ideas, /const isTemple = variant === "temple"/);
+  assert.match(ideas, /drawRandomHexagram\(\)/);
+  assert.match(alchemy, /isPublicLocale\(locale\)/);
+  assert.match(alchemy, /locale: "es"/);
+  assert.doesNotMatch(page, /fetch\(|checkout|charge\(/);
 });

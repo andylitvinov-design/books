@@ -20,7 +20,7 @@ test('mobile bottom bar and menu use the same seven ordered destinations in EN, 
     assert.equal(items[4].label, { en: 'Tests & Coaching', ru: 'Тесты и коучинг', es: 'Tests y coaching' }[locale])
     assert.equal(items[5].href, `/${locale}/pro`)
     assert.equal(items[5].label, { en: 'Pro', ru: 'Профи', es: 'Pro' }[locale])
-    assert.equal(items[6].href, `/${locale}/temple-support`)
+    assert.equal(items[6].href, `/${locale}/holistic-support`)
     assert.equal(items[6].label, navigationCopy[locale].temple)
     for (const item of items) {
       assert.equal(item.label, navigationCopy[locale][item.id])
