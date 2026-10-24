@@ -58,6 +58,7 @@ test('explicit sexuality/consent signals recommend original tantra framework in 
 test('sexual coercion and danger are not quietly matched into coaching',()=>{
  for(const request of [
   'I am experiencing sexual assault',
+  'I was sexually assaulted',
   'My partner is forcing sex and sexual coercion',
   'Меня пугает сексуальное насилие',
   'Sufro abuso sexual',
