@@ -42,7 +42,7 @@ const copy={
     egyptian:'Egyptian Goal Planning',egyptianNote:'Explore desire, values and personal resources · 11 guided screens · private account',
     greek:'Greek Goal Planning',greekNote:'From intention and courage to a meaningful next step · 10 screens · private account',
     worksheet:'Coaching preparation questionnaire',worksheetNote:'Write your question and prepare for a meeting on one editable page. Optional private Google-account save.',
-    openProgramme:'Explore programme',openWorksheet:'Open questionnaire',
+    openProgramme:'Explore programme',chooseTradition:'Choose this session',openWorksheet:'Open questionnaire',
   },
   ru:{
     eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга',
@@ -76,7 +76,7 @@ const copy={
     egyptian:'Египетский коучинг',egyptianNote:'От желания к ценностям, действиям и ресурсам · 11 экранов · личный кабинет',
     greek:'Греческий коучинг',greekNote:'От намерения и смелости к осмысленному шагу · 10 экранов · личный кабинет',
     worksheet:'Анкета для подготовки к коучингу',worksheetNote:'Подробная анкета на одной странице, чтобы сформулировать вопрос и подготовиться к разговору. Можно сохранить приватно после входа.',
-    openProgramme:'Смотреть программу',openWorksheet:'Открыть анкету',
+    openProgramme:'Подробнее о программе',chooseTradition:'Выбрать сессию',openWorksheet:'Открыть анкету',
   },
   es:{
     eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching',
@@ -110,7 +110,7 @@ const copy={
     egyptian:'Planificación egipcia',egyptianNote:'Deseos, valores, recursos y acción · 11 pantallas · cuenta privada',
     greek:'Planificación griega',greekNote:'Voluntad, sentido y un siguiente paso · 10 pantallas · cuenta privada',
     worksheet:'Cuestionario de preparación para coaching',worksheetNote:'Prepara tu consulta en una página. Guardado privado opcional después de iniciar sesión.',
-    openProgramme:'Explorar programa',openWorksheet:'Abrir cuestionario',
+    openProgramme:'Conocer programa',chooseTradition:'Elegir sesión',openWorksheet:'Abrir cuestionario',
   },
 }
 // Editorial topical hints for existing authored course routes. They are not
@@ -147,6 +147,8 @@ const answerText=(value,item,locale,t)=>{
 
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
+  const privateCoachingLocale=lang==='es'?'en':lang
+  const traditionHref=id=>'/'+privateCoachingLocale+'/app/coaching/'+id+(lang==='es'?'?lang=es':'')
   const [format,setFormat]=useState('all')
   const [question,setQuestion]=useState('')
   useEffect(()=>{
@@ -285,14 +287,16 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               {shown.map(s=>{
                 const model=models.get(s.modelKey)
                 return <article key={s.schemeKey} className={styles.card} data-coaching-scheme={s.schemeKey}>
+                  <div className={styles.cardVisual}>
+                    <Image className={styles.cardArt} src={cardArtworkUrl(coachingArt[s.modelKey]||coachingArt.grow_v1)} unoptimized
+                      alt="" aria-hidden="true" width={640} height={270} sizes="(max-width:600px) 100vw, (max-width:800px) 50vw, 350px"/>
+                  </div>
                   <div className={styles.cardTop}><span>{s.style==='quick'?t.quick:t.reflective} · {s.minutes} {t.minutes}</span><strong>{t.free} · €0</strong></div>
                   <div className={styles.cardMain}>
                     <div className={styles.cardHeading}>
                       <h3>{tr(model.name,lang)}</h3>
                       <p className={styles.schemeName}>{tr(s.name,lang)}</p>
                     </div>
-                    <Image className={styles.cardArt} src={cardArtworkUrl(coachingArt[s.modelKey]||coachingArt.grow_v1)} unoptimized
-                      alt="" aria-hidden="true" width={112} height={88} sizes="112px"/>
                   </div>
                   <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
                   <p className={styles.outcome}><Check size={15}/>{t.result}: {tr(s.result,lang)}</p>
@@ -303,6 +307,38 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               })}
             </div>}
           <p className={styles.disclaimer}>{t.safe}</p>
+        </section>}
+        {format!=='human'&&!recommendation.blocked&&<section className={styles.morePaths} aria-labelledby="coaching-more-paths">
+          <h2 id="coaching-more-paths">{t.otherWays}</h2>
+          <p>{t.otherWaysNote}</p>
+          <div className={styles.morePathGrid}>
+            {shownTraditions.includes('egyptian')&&<article className={styles.morePath} data-coaching-tradition="egyptian" data-suggested={suggestedTraditions.has('egyptian')}>
+              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
+                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
+              <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
+              {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
+              <Link className={styles.moreSelect} href={traditionHref('egyptian')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
+              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/egyptian'}
+                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
+            </article>}
+            {shownTraditions.includes('greek')&&<article className={styles.morePath} data-coaching-tradition="greek" data-suggested={suggestedTraditions.has('greek')}>
+              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
+                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
+              <h3>{t.greek}</h3><p>{t.greekNote}</p>
+              {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
+              <Link className={styles.moreSelect} href={traditionHref('greek')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
+              <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/greek'}
+                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
+            </article>}
+            <article className={styles.morePath}>
+              <Image className={styles.morePhoto} src="/images/holistic-house/course-start-heron.webp"
+                alt="" width={640} height={275} unoptimized loading="lazy" sizes="(max-width:700px) 100vw, 360px"/>
+              <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
+              <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
+                {t.openWorksheet}<ArrowRight size={16}/>
+              </Link>
+            </article>
+          </div>
         </section>}
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title">
           <h2 id="human-coaching-title">{t.humanTitle}</h2><p>{t.humanText}</p>
@@ -322,30 +358,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <p className={styles.disclaimer}>{t.notBooking}</p>
           <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
         </section>}
-        {format!=='human'&&!recommendation.blocked&&<section className={styles.morePaths} aria-labelledby="coaching-more-paths">
-          <h2 id="coaching-more-paths">{t.otherWays}</h2>
-          <p>{t.otherWaysNote}</p>
-          <div className={styles.morePathGrid}>
-            {shownTraditions.includes('egyptian')&&<article className={styles.morePath} data-coaching-tradition="egyptian" data-suggested={suggestedTraditions.has('egyptian')}>
-              <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
-              {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link href={'/'+lang+'/academy/coaching/egyptian'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>}
-            {shownTraditions.includes('greek')&&<article className={styles.morePath} data-coaching-tradition="greek" data-suggested={suggestedTraditions.has('greek')}>
-              <h3>{t.greek}</h3><p>{t.greekNote}</p>
-              {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-              <Link href={'/'+lang+'/academy/coaching/greek'}
-                prefetch={false}>{t.openProgramme}<ArrowRight size={16}/></Link>
-            </article>}
-            <article className={styles.morePath}>
-              <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
-              <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
-                {t.openWorksheet}<ArrowRight size={16}/>
-              </Link>
-            </article>
-          </div>
-        </section>}
+        
       </>:<section className={styles.session} data-public-coaching-session>
         <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
         <p className={styles.eyebrow}>{tr(session.name,lang)} · {t.free}</p>
