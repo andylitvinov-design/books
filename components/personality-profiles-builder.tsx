@@ -267,6 +267,17 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [showAccountGate, setShowAccountGate] = useState(false);
   const [accountBusy, setAccountBusy] = useState(false);
   const [accountError, setAccountError] = useState("");
+  const accountGateRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!started || !showAccountGate) return;
+    const gate = accountGateRef.current;
+    gate?.focus({ preventScroll: true });
+    gate?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [started, showAccountGate]);
   const accountLocale = locale === "es" ? "en" : locale;
 
   const availableAxes = allAxesFor(areas);
@@ -495,7 +506,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </details>
       </section>}
 
-      {step === 3 && showAccountGate && <section className={styles.accountGate} data-profile-account-gate aria-labelledby="profile-builder-account-title">
+      {step === 3 && showAccountGate && <section ref={accountGateRef} tabIndex={-1} role="region" className={styles.accountGate} data-profile-account-gate aria-labelledby="profile-builder-account-title">
         <div className={styles.gateIcon}><LockKeyhole size={22} aria-hidden="true" /></div>
         <p className={styles.templateLabel}>{chosenTests.length} {t.testCount}{minutes > 0 ? " · " + minutes + " " + t.minutes : ""}</p>
         <h2 id="profile-builder-account-title">{t.gateTitle}</h2>
