@@ -525,3 +525,33 @@
  .session[data-intimacy-session="true"] .choices button{min-height:44px;padding:7px 8px;font-size:12px}
  .adultGate>img{height:clamp(110px,18vh,155px)}
 }
+
+
+/* Coaching topic chooser is intentionally the FIRST control, before question, style or format. */
+.topicGroups{padding:0;margin:0 0 14px;border:0;min-width:0}
+.topicGroups legend{display:block;width:100%;padding:0 0 8px;color:#38524e}
+.topicGroups legend strong{display:block;font-size:16px;line-height:1.25;font-weight:850}
+.topicGroups legend span{display:block;margin-top:3px;font-size:12px;line-height:1.35;color:#63716b}
+.topicGroupGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;width:100%}
+.topicGroupGrid button{display:flex;align-items:center;gap:7px;min-width:0;min-height:53px;
+ background:#fffefa;border:1px solid #d8c8ba;border-radius:11px;padding:8px 9px;color:#3b5c54;
+ font:inherit;font-size:12px;line-height:1.22;font-weight:750;text-align:left;cursor:pointer}
+.topicGroupGrid button:hover{background:#f7f0e6;border-color:#a88b74}
+.topicGroupGrid button[aria-pressed="true"],.topicGroupGrid .topicGroupSelected{
+ border-color:#843952;background:#f9edf0;color:#71344a;box-shadow:inset 0 0 0 1px #843952}
+.topicGroupIcon{width:20px;flex:none;font-size:18px;text-align:center;font-weight:800}
+.topicGroupName{min-width:0;flex:1;overflow-wrap:anywhere}
+.topicGroupCount{flex:none;min-width:20px;padding:2px 4px;border-radius:6px;background:#f1ede7;
+ text-align:center;font-size:11px;font-weight:800;color:#59645e}
+.topicGroupGrid button[aria-pressed="true"] .topicGroupCount{background:#eee1e4;color:#71344a}
+.groupResults{font-size:12px;line-height:1.4;color:#6b6d63;margin:5px 0 0}
+@media(max-width:800px){.topicGroupGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:390px){
+ .topicGroups legend strong{font-size:15px}
+ .topicGroups legend span{font-size:11px}
+ .topicGroupGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .topicGroupGrid button{min-height:44px;padding:6px 7px;font-size:11px}
+ .topicGroupIcon{width:16px;font-size:15px}
+ .topicGroupCount{font-size:10px;min-width:18px}
+}
+@media(prefers-reduced-motion:reduce){.topicGroupGrid button{transition:none}}
