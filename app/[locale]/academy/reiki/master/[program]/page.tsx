@@ -68,8 +68,10 @@ export default async function MasterReikiLanding({ params }: Props) {
           <ArrowLeft size={16} aria-hidden="true" /> {t.back}
         </Link>
         <header className={styles.hero}>
-          <Image src={offer.image} alt="" fill unoptimized priority
-            sizes="(max-width: 800px) 100vw, 40vw" className={styles.heroImage} />
+          <div className={styles.heroArt}>
+            <Image src={offer.image} alt="" fill unoptimized priority
+              sizes="(max-width: 800px) 100vw, 40vw" className={styles.heroImage} />
+          </div>
           <div className={styles.heroText}>
             <p className={styles.eyebrow}><GraduationCap size={16} aria-hidden="true" /> {t.kicker}</p>
             <h1>{offer.title[locale]}</h1>
