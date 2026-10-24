@@ -2,8 +2,8 @@ import { StaticPortrait } from "@/components/static-portrait";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowLeft, ArrowRight, ArrowUpRight, BriefcaseBusiness, Check,
-  Compass, Heart, Layers3, PlayCircle, ShieldCheck, Sparkles, Waves,
+  ArrowLeft, ArrowRight, ArrowUpRight, Check,
+  Heart, Layers3, PlayCircle, ShieldCheck, Sparkles,
 } from "lucide-react";
 import type { Locale } from "@/data/remedies";
 type AlchemyLocale = Locale | "es";
