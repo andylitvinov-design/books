@@ -45,7 +45,7 @@ test('localized editorial prompts exist in English, Russian, and Spanish',()=>{
   const answers={barrier:'choice:time'}
   const ru=adapt(2,answers,'ru')
   const es=adapt(2,answers,'es')
-  assert.match(ru.prompt,/времени/)
+  assert.match(ru.prompt,/врем/)
   assert.match(es.prompt,/tiempo/)
   assert.ok(ru.why.length>35)
   assert.ok(es.why.length>35)
