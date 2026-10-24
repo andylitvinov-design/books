@@ -8,11 +8,11 @@ import styles from './public-coaching-discovery.module.css'
 
 const copy={
   en:{
-    eyebrow:'HOLISTIC HOUSE · IDEAS & COACHING',title:'Coaching Lounge · Find your session',
-    lead:'Choose a self-guided method for free, or request a personal session with Andrey.',
+    eyebrow:'HOLISTIC HOUSE · COACHING LOUNGE',title:'Coaching Lounge · Find your session',
+    lead:'Describe what you need or filter by topic, time and format. Explore free guided methods, ancient planning courses and personal coaching together.',
     question:'What would you like to explore?',placeholder:'A goal, decision, relationship or challenge (optional)',
     privateQuestion:'Your question is matched only in this browser. It is not sent to AI, analytics or a coach.',
-    format:'Session format',self:'Self-guided · free',human:'With a coach',filters:'Find a model',
+    format:'Session format',allFormats:'All sessions',self:'Free self-guided',human:'With Andrey',filters:'Find a session',
     topic:'Topic',allTopics:'All topics',duration:'Time available',anyTime:'Any duration',
     style:'Approach',allStyles:'Any approach',quick:'Focused',reflective:'In-depth',
     models:'Choose a model',all:'All published coaching models',recommended:'Suggested for your question',
@@ -42,11 +42,11 @@ const copy={
     openProgramme:'Explore programme',openWorksheet:'Open questionnaire',
   },
   ru:{
-    eyebrow:'HOLISTIC HOUSE · ИДЕИ И КОУЧИНГ',title:'Гостиная коучинга · Выберите сессию',
-    lead:'Пройдите самостоятельную модель бесплатно или запросите личную сессию с Андреем.',
+    eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга · Выберите сессию',
+    lead:'Опишите, с чем хотите поработать, или выберите тему, время и формат. Здесь собраны бесплатные модели, авторские курсы и личные сессии.',
     question:'Какой вопрос хотите разобрать?',placeholder:'Цель, решение, отношения или сложность (необязательно)',
     privateQuestion:'Подбор по вопросу выполняется в браузере. Текст не отправляется в ИИ, аналитику или коучу.',
-    format:'Формат сессии',self:'Самостоятельно · бесплатно',human:'С коучем',filters:'Подобрать модель',
+    format:'Формат сессии',allFormats:'Все сессии',self:'Бесплатные',human:'С Андреем',filters:'Подобрать сессию',
     topic:'Тема',allTopics:'Все темы',duration:'Время',anyTime:'Любая длительность',
     style:'Стиль',allStyles:'Любой подход',quick:'Короткая',reflective:'Глубокая',
     models:'Выберите модель',all:'Все опубликованные модели',recommended:'Рекомендуем по вашему вопросу',
@@ -76,11 +76,11 @@ const copy={
     openProgramme:'Смотреть программу',openWorksheet:'Открыть анкету',
   },
   es:{
-    eyebrow:'HOLISTIC HOUSE · IDEAS Y COACHING',title:'Sala de coaching · Elige tu sesión',
-    lead:'Prueba un método autoguiado gratis o solicita una sesión personal con Andrey.',
+    eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching · Elige tu sesión',
+    lead:'Describe tu pregunta o filtra por tema, duración y formato. Compara sesiones gratuitas, cursos simbólicos y coaching personal en un mismo lugar.',
     question:'¿Qué te gustaría explorar?',placeholder:'Una meta, decisión, relación o reto (opcional)',
     privateQuestion:'Tu pregunta se analiza solo en este navegador. No se envía a IA, analíticas ni al coach.',
-    format:'Formato',self:'Autoguiado · gratis',human:'Con coach',filters:'Encontrar un modelo',
+    format:'Formato',allFormats:'Todas las sesiones',self:'Gratis',human:'Con Andrey',filters:'Encontrar sesión',
     topic:'Tema',allTopics:'Todos los temas',duration:'Tiempo disponible',anyTime:'Cualquier duración',
     style:'Estilo',allStyles:'Cualquier enfoque',quick:'Breve',reflective:'Profundo',
     models:'Elige un modelo',all:'Todos los modelos publicados',recommended:'Sugeridos para tu pregunta',
@@ -121,7 +121,7 @@ const answerText=(value,item,locale,t)=>{
 
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
-  const [format,setFormat]=useState('self')
+  const [format,setFormat]=useState('all')
   const [question,setQuestion]=useState('')
   const [topic,setTopic]=useState('all')
   const [duration,setDuration]=useState(0)
