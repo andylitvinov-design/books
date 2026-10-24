@@ -231,4 +231,12 @@
   .templateCard, .begin { transition: none; }
   .templateCard:hover, .begin:hover { transform: none; }
 }
-\n@media (max-width: 640px) {\n  .gateGoogle, .gateGuest { min-height: 48px; font-size: 13px; padding-inline: 12px; }\n  .accountGate h2 { font-size: clamp(21px, 5.5vw, 26px); }\n  .gateBenefits li { font-size: 12px; }\n}\n@media (max-width: 350px) {\n  .gateGoogle, .gateGuest { gap: 7px; font-size: 12px; padding-inline: 8px; }\n}\n
+
+@media (max-width: 640px) {
+  .gateGoogle, .gateGuest { min-height: 48px; font-size: 13px; padding-inline: 12px; }
+  .accountGate h2 { font-size: clamp(21px, 5.5vw, 26px); }
+  .gateBenefits li { font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .gateGoogle, .gateGuest { gap: 7px; font-size: 12px; padding-inline: 8px; }
+}
