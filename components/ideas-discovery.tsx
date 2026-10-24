@@ -14,6 +14,7 @@ import { stageIdeasCoachingQuestion } from "@/lib/ideas-coaching-handoff";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
+import { TestsCoachingSwitchboard } from "@/components/tests-coaching-switchboard";
 
 type Mode = "dao" | "aphorisms" | "personal";
 type Offer = "reading" | "gift";
@@ -559,7 +560,8 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
   }, [showSuggestedTests]);
   return (
-    <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
+    <section className={styles.root} aria-labelledby="tests-coaching-title" data-ideas-discovery lang={locale}>
+      <TestsCoachingSwitchboard locale={locale} templeContent={<>
       <div className={styles.hero} data-ideas-hero>
         <div className={styles.heading}>
           <div>
@@ -836,6 +838,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
         </div>
       ) : null}
+      </>} />
     </section>
   );
 }
