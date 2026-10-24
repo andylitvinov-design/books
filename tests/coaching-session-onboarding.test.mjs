@@ -32,7 +32,7 @@ test('coaching request topics have stable, unique, accessible EN/RU/ES choices',
 
 test('introduction explains duration, framework, specialist, style, outcome, self-coaching boundary',()=>{
   assert.match(client,/data-coaching-intro-slide/)
-  assert.match(client,/name=\{?/) // static contract; localized title rendered as h1
+  assert.match(client,/<h1 ref=\{headingRef\}[^>]*>\{name\}<\/h1>/)
   assert.match(client,/t\.duration/)
   assert.match(client,/t\.model/)
   assert.match(client,/t\.specialistValue/)
@@ -85,7 +85,7 @@ test('private start happens only after both slides, then stores consented topic 
   assert.match(privateClient,/clientQuestion,clientTopic/)
   assert.match(backend,/function validatedCoachingTopic\(value\)/)
   assert.match(backend,/PERSONAL_COACH_INVALID_TOPIC/)
-  assert.match(backend,/clientTopic:selection\.clientTopic/)
+  assert.match(backend,/selection\?\.clientTopic\|\|topic/)
   assert.match(backend,/clientTopic==='sexuality'/)
   assert.match(backend,/clientTopic\?\{clientTopic\}/)
   assert.match(backend,/seal\(course,sealContext\(actor\),config\)/)
