@@ -228,7 +228,7 @@ async function verify(browserType, locale, width) {
     assert.equal(await daoResult.locator('[data-ideas-dao-expanded="true"] button').count(), 1,
       label + ": only reset remains; no Draw another button");
     if (browserType === webkit && locale === "en" && width === 390) {
-      await daoResult.locator('[data-ideas-dao-reading] [lang="ru"] p').first()
+      await daoResult.locator('[data-ideas-dao-reading] [lang="en"] p').first()
         .waitFor({ state: "visible", timeout: 30000 });
     }
     await expand.tap();
