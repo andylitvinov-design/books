@@ -1,18 +1,22 @@
 'use client'
 
 
+
+
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
-import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { contextualCoachingFollowup, coachingSlidePurpose, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
 import { COACHING_TOPIC_GROUPS, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent } from '@/lib/coaching/coaching-topic-groups'
 import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
+
+
 
 
 const copy={
@@ -156,6 +160,8 @@ function traditionExplicitMatch(question,id){
 }
 
 
+
+
 const tr=(value,locale)=>value?.[locale]||value?.en||''
 const answerText=(value,item,locale,t)=>{
   if(typeof value!=='string'||!value)return t.noAnswer
@@ -164,6 +170,8 @@ const answerText=(value,item,locale,t)=>{
   if(item.type==='scale_0_10')return id+'/10'
   return tr((item.choices||[]).find(c=>c.id===id)?.label,locale)||t.noAnswer
 }
+
+
 
 
 // The same compact card contract is used for free models, private author
@@ -222,6 +230,7 @@ function CoachingLoungeCard({
     </div>
   </article>
 }
+
 
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
@@ -324,6 +333,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     :(current?.choices||[])
 
 
+
+
   function selectTopicGroup(groupId){
     setTopicGroup(coachingTopicGroup(groupId).id)
     setTopic('all')
@@ -361,14 +372,17 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     }
     const nextAnswers={...answers,[current.id]:value}
     const nextReflections={...reflections}
-    // Changing an answer must never retain a clarification about the old one.
-    if(answers[current.id]!==value&&nextReflections[current.id]){
-      delete nextReflections[current.id]
+    // Later choices and reactions can depend on earlier answers.
+    // Never retain any downstream reflection after changing an earlier answer.
+    if(answers[current.id]!==value){
+      for(const item of session.questions.slice(index))delete nextReflections[item.id]
       setReflections(nextReflections)
     }
     setAnswers(nextAnswers);setError('')
     if(index===session.questions.length-1){setFinished(true);return}
-    const followup=authoredFollowupFor(current,value,nextReflections)
+    const followup=contextualCoachingFollowup(current,value,nextReflections,{
+      questions:session.questions,answers:nextAnswers,clientQuestion:question,
+    })
     if(followup){setPendingFollowup(followup);setReflectionDraft('');return}
     const next=index+1;setIndex(next);setDraft(nextAnswers[session.questions[next].id]||'')
   }
@@ -580,7 +594,15 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
             <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
-            <p className={styles.hint}>{t.clarifyWhy}</p>
+            <p className={styles.hint} data-public-followup-reason>{tr(pendingFollowup.why,lang)||t.clarifyWhy}</p>
+            {pendingFollowup.choices?.length>0&&<div className={styles.choices} role="group"
+              aria-label={t.choices} data-public-followup-choices>
+              {pendingFollowup.choices.map(option=><button key={option.id} type="button"
+                aria-pressed={reflectionDraft===tr(option.label,lang)}
+                onClick={()=>{setReflectionDraft(tr(option.label,lang));setError('')}}>
+                {tr(option.label,lang)}
+              </button>)}
+            </div>}
             <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
             <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
               maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
@@ -589,7 +611,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {tr(current.reflection,lang)&&<p className={styles.hint}>{tr(current.reflection,lang)}</p>}
+            {coachingSlidePurpose(current,lang)&&<p className={styles.hint} data-public-coaching-step-purpose>{coachingSlidePurpose(current,lang)}</p>}
             {options.length>0&&!needsCustomPlan&&<>
               <p className={styles.questionLabel}>{t.choices}</p>
               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>

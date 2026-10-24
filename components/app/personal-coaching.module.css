@@ -107,6 +107,8 @@
 @media(prefers-reduced-motion:reduce){.progressTrack span{transition:none}}
 
 
+
+
 /* Client question → three model explanations → explicit voluntary model choice */
 .picker{padding:clamp(18px,4vw,40px);display:flex;flex-direction:column;gap:12px;min-width:0}
 .picker h1{font-size:clamp(28px,4.5vw,42px);line-height:1.14;color:#213d4c;margin:2px 0}
@@ -170,6 +172,7 @@
  .optionChip{font-size:12px;padding:8px 10px}
 }
 
+
 /* Coaching voice is an opt-in reading aid. Answer choices precede the editable transcript. */
 .choiceLabel{font-size:13px;font-weight:800;color:#38545b;margin:3px 0 6px}
 .suggestions{margin:0 0 17px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -194,6 +197,7 @@
   .textarea{min-height:60px}
 }
 
+
 /* Fixed-height slide shell: only the question content scrolls, never the footer off-screen. */
 .sheet{height:calc(100dvh - 105px);max-height:calc(100dvh - 105px);min-height:0;overflow:hidden}
 .session{min-height:0;overflow:hidden}
@@ -208,12 +212,16 @@
   .questionArea{padding-top:9px;padding-bottom:9px}
 }
 
-.picker{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 
 .picker{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+
+
+.picker{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+
 
 /* Explicit CSS-module export for the selected quick-answer state and source contracts. */
 .chosen{box-shadow:inset 0 0 0 1px #08736c}
+
 
 /* P1 zero-cost adaptive editorial prompts: one question remains visible at a time. */
 .adaptivePanel{
@@ -250,6 +258,7 @@
   .adaptivePanel{padding:9px 11px}
 }
 
+
 /* Existing owner-encrypted plan, reused only after an explicit tap in a new session. */
 .previousPlanPanel{display:grid;gap:7px;background:#eaf3ed;border:1px solid #bad6c8;
   border-radius:13px;padding:12px 14px;min-width:0}
@@ -263,6 +272,7 @@
 .previousPlanPanel small{font-size:11px;color:#526b64;line-height:1.4}
 @media(max-width:370px){.previousPlanPanel{padding:11px}.previousPlanPanel button{font-size:12px}}
 
+
 /* iOS Safari/manual clipboard fallback — never transmits private session text. */
 .recapFallback{display:grid;gap:7px;width:100%;font-size:12px;font-weight:800;color:#315d5c}
 .recapFallback textarea{width:100%;min-height:130px;max-height:260px;resize:vertical;
@@ -270,6 +280,7 @@
   font:inherit;font-size:14px;font-weight:400;line-height:1.5;padding:10px 12px;white-space:pre-wrap}
 .recapFallback textarea:focus-visible{outline:3px solid #00aab3;outline-offset:2px}
 @media(max-width:370px){.recapFallback textarea{font-size:13px;min-height:115px}}
+
 
 /* Shared one-viewport coaching shell for Personal, Greek and Egyptian players.
    Reserve space for the actual question/action footer instead of allowing a
@@ -307,6 +318,21 @@
   .session .questionArea{padding-top:9px;padding-bottom:10px}
   .session .questionArea h1{margin:6px 0}
   .session .footer{padding-top:6px}
+}
+
+
+/* Four authored choices remain a compact 2x2 grid even on 320px iPhones.
+   The textarea stays editable and the session footer stays visible. */
+.session .questionArea .followupChoices{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0 10px;
+}
+.session .questionArea .followupChoices button{
+  min-height:44px;padding:7px 9px;font-size:12px;line-height:1.23;
+  white-space:normal;overflow-wrap:anywhere;
+}
+@media(max-width:370px){
+  .session .questionArea .followupChoices{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .session .questionArea .followupChoices button{font-size:11.5px;padding:6px 7px}
 }
 
 .adultConfirm{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border:1px solid #dccfba;border-radius:10px;background:#fbf6ee;font-size:12px;line-height:1.4;color:#594637;cursor:pointer}
