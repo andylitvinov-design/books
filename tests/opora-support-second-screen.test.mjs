@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {
-  oporaExperienceSupport, oporaExperienceSupportValid, oporaExperienceGuide,
+  oporaExperienceSupport, oporaExperienceSupportValid,
 } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
