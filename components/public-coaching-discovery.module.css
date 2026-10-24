@@ -269,3 +269,7 @@
  .cardVisual .cardArt{height:116px}
  .morePhoto{height:110px}
 }
+
+/* CSS Modules need independently exported class selectors on the actual links. */
+.moreDetails{min-height:44px}
+.moreSelect{min-height:46px}
