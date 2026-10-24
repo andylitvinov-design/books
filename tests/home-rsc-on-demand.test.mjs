@@ -15,7 +15,7 @@ test("closed EN/RU/ES homepage details omit heavyweight catalogue markup from in
     assert.match(page, /<HomeFeaturedWorkspace locale=/);
     assert.match(page, /<HomepageTopicJourneys locale=/);
     assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<HomepageTopicJourneys"));
-    assert.ok(page.indexOf('<HomepageTopicJourneys') < page.indexOf('<HomeMoreDisclosure'));
+    assert.ok(page.indexOf('<HomeMoreDisclosure') < page.indexOf('<HomepageTopicJourneys'));
     assert.match(page, /<HomeConversationGuide/);
     assert.ok(page.indexOf("<HomeSectionCarousel") < page.indexOf("<HomeFreeDiagnosisBanner"));
     assert.ok(page.indexOf("<HomeFreeDiagnosisBanner") < page.indexOf("<HomeConversationGuide"));

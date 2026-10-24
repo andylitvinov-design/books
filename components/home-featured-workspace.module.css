@@ -1,4 +1,4 @@
-/* Five full-width, one-topic-at-a-time discovery screens. Each offer has its own left photo. */
+/* Seven progressive, image-led stages: one theme per screen, no duplicate journeys. */
 .root {
   box-sizing: border-box;
   width: min(1120px, calc(100% - 28px));
@@ -21,10 +21,25 @@
   background: linear-gradient(125deg, var(--wash), #fffdf9 62%);
   scroll-margin-top: 12px;
 }
-.section[data-home-module="courses"] { --accent: #285f78; --border: #d4e2e6; --wash: #eff7f9; }
-.section[data-home-module="services"] { --accent: #7d465a; --border: #ead6dd; --wash: #fbf2f4; }
-.section[data-home-module="learning"] { --accent: #896440; --border: #e9dcc7; --wash: #fcf7ee; }
+.section[data-home-module="freeCourses"] { --accent: #285f78; --border: #d4e2e6; --wash: #eff7f9; }
+.section[data-home-module="personality"] { --accent: #1a6867; --border: #c6dad3; --wash: #f1f8f4; }
+.section[data-home-module="situation"] { --accent: #6e566c; --border: #e1d3df; --wash: #fbf5fa; }
+.section[data-home-module="personal"] { --accent: #7d465a; --border: #ead6dd; --wash: #fbf2f4; }
+.section[data-home-module="alchemy"] { --accent: #71463e; --border: #e4d1c9; --wash: #faf1ed; }
+.section[data-home-module="energy"] { --accent: #45694f; --border: #d4e3d1; --wash: #f3f9ef; }
 .section[data-home-module="master"] { --accent: #835237; --border: #e7d8c8; --wash: #fbf4ec; }
+.stepNav { display: flex; gap: 8px; padding: 4px 2px 12px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.stepLink {
+  display: inline-flex; flex: 0 0 auto; align-items: center; gap: 8px; scroll-snap-align: start;
+  min-height: 44px; padding: 8px 13px; border: 1px solid #d8e4dc; border-radius: 100px;
+  background: #fffdf8; color: #285954; font-size: 12px; font-weight: 700; line-height: 1.2; text-decoration: none;
+}
+.stepLink:hover { border-color: #28766b; background: #f0f9f3; }
+.stepNumber { color: #986646; font-variant-numeric: tabular-nums; font-weight: 800; }
+.section[data-home-module="alchemy"] .offer { min-height: 245px; max-height: 430px; }
+.section[data-home-module="alchemy"] .photo { min-height: 225px; }
+.section[data-home-module="alchemy"] .offerBody { max-width: 560px; }
+
 .sectionHeading { flex-shrink: 0; }
 .eyebrow {
   margin: 0 0 5px; color: var(--accent); text-transform: uppercase;
@@ -91,6 +106,10 @@
 @media (max-width: 640px) {
   .root { width: calc(100% - 24px); margin: 16px auto 22px; }
   .sections { gap: 15px; }
+  .stepNav { padding-bottom: 11px; }
+  .stepLink { font-size: 11px; padding-inline: 11px; }
+  .section[data-home-module="alchemy"] .offer { min-height: 260px; }
+  .section[data-home-module="alchemy"] .photo { min-height: 240px; }
   .section {
     min-height: calc(100svh - 96px);
     padding: 17px 14px; border-radius: 20px; gap: 12px;
