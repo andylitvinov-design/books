@@ -23,7 +23,7 @@ const copy={
     adultSafety:"For violence, fear, pressure, abuse or persistent pain, seek qualified human support instead.",
     adultConfirm:"I confirm that I am 18+ and choose to begin",
     skipSensitive:"Skip this question",
-    groupHeading:"Choose your topic first",groupNote:"Select what you want to explore. Matching coaching methods appear below.",groupRefine:"Specific question",groupCount:"Methods available",groupDesc:"Different methods, one question at a time.",healthNote:"Wellbeing coaching is about everyday habits, not diagnosis or treatment.",groupAll:"All topics",
+    groupHeading:"Choose your topic first",groupNote:"Select what you want to explore. Matching coaching methods appear below.",groupRefine:"Specific question",groupCount:"Sessions available",groupDesc:"Different methods, one question at a time.",healthNote:"Wellbeing coaching is about everyday habits, not diagnosis or treatment.",groupAll:"All topics",
     eyebrow:'HOLISTIC HOUSE · COACHING LOUNGE',title:'Coaching Lounge',
     lead:'Describe what you need or filter by topic, time and format. Explore free guided methods, ancient planning courses and personal coaching together.',
     question:'What would you like to explore?',placeholder:'A goal, decision, relationship or challenge (optional)',
@@ -53,7 +53,7 @@ const copy={
     discard:'Leave this session? Your unsaved answers will be lost.',noAnswer:'Skipped',
     otherWays:'More ways to work with your question',
     otherWaysNote:'Author-created programmes and a longer questionnaire. These are separate experiences; guest answers do not transfer automatically.',
-    egyptian:'Discover your values and resources',egyptianNote:'Explore desire, values and personal resources · 11 guided screens · private account',
+    egyptianMethod:'Egyptian planning',greekMethod:'Greek planning',egyptian:'Discover your values and resources',egyptianNote:'Explore desire, values and personal resources · 11 guided screens · private account',
     greek:'Turn an intention into action',greekNote:'From intention and courage to a meaningful next step · 10 screens · private account',
     worksheet:'Coaching preparation questionnaire',worksheetNote:'Write your question and prepare for a meeting on one editable page. Optional private Google-account save.',
     openProgramme:'Explore programme',chooseTradition:'Choose this session',openWorksheet:'Open questionnaire',
@@ -65,7 +65,7 @@ const copy={
     adultSafety:"При насилии, давлении, страхе или стойкой боли обратитесь к квалифицированному специалисту.",
     adultConfirm:"Подтверждаю, что мне 18+ и я добровольно начинаю",
     skipSensitive:"Пропустить этот вопрос",
-    groupHeading:"Сначала выберите тему",groupNote:"Ниже появятся подходящие модели и методики коучинга.",groupRefine:"Уточните запрос",groupCount:"Доступно моделей",groupDesc:"Разные методики — один вопрос на экране.",healthNote:"Коучинг здоровья касается привычек и ресурсов, а не диагностики и лечения.",groupAll:"Все темы",
+    groupHeading:"Сначала выберите тему",groupNote:"Ниже появятся подходящие модели и методики коучинга.",groupRefine:"Уточните запрос",groupCount:"Доступно сессий",groupDesc:"Разные методики — один вопрос на экране.",healthNote:"Коучинг здоровья касается привычек и ресурсов, а не диагностики и лечения.",groupAll:"Все темы",
     eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга',
     lead:'Опишите, с чем хотите поработать, или выберите тему, время и формат. Здесь собраны бесплатные модели, авторские курсы и личные сессии.',
     question:'Какой вопрос хотите разобрать?',placeholder:'Цель, решение, отношения или сложность (необязательно)',
@@ -95,7 +95,7 @@ const copy={
     discard:'Выйти из сессии? Несохранённые ответы будут потеряны.',noAnswer:'Пропущено',
     otherWays:'Другие способы разобраться в своём вопросе',
     otherWaysNote:'Авторские программы и отдельная подробная анкета. Гостевые ответы не переносятся в кабинет автоматически.',
-    egyptian:'Открыть свои ценности и ресурсы',egyptianNote:'От желания к ценностям, действиям и ресурсам · 11 экранов · личный кабинет',
+    egyptianMethod:'Египетское планирование',greekMethod:'Греческое планирование',egyptian:'Открыть свои ценности и ресурсы',egyptianNote:'От желания к ценностям, действиям и ресурсам · 11 экранов · личный кабинет',
     greek:'От намерения к действию',greekNote:'От намерения и смелости к осмысленному шагу · 10 экранов · личный кабинет',
     worksheet:'Анкета для подготовки к коучингу',worksheetNote:'Подробная анкета на одной странице, чтобы сформулировать вопрос и подготовиться к разговору. Можно сохранить приватно после входа.',
     openProgramme:'Подробнее о программе',chooseTradition:'Выбрать сессию',openWorksheet:'Открыть анкету',
@@ -107,7 +107,7 @@ const copy={
     adultSafety:"En casos de violencia, presión, miedo, abuso o dolor persistente, busca ayuda profesional.",
     adultConfirm:"Confirmo que tengo 18 años o más y elijo comenzar",
     skipSensitive:"Omitir esta pregunta",
-    groupHeading:"Primero elige un tema",groupNote:"Verás los enfoques y modelos de coaching adecuados.",groupRefine:"Pregunta específica",groupCount:"Modelos disponibles",groupDesc:"Varios métodos, una pregunta por pantalla.",healthNote:"El bienestar trata hábitos y recursos, no diagnóstico ni tratamiento.",groupAll:"Todos",
+    groupHeading:"Primero elige un tema",groupNote:"Verás los enfoques y modelos de coaching adecuados.",groupRefine:"Pregunta específica",groupCount:"Sesiones disponibles",groupDesc:"Varios métodos, una pregunta por pantalla.",healthNote:"El bienestar trata hábitos y recursos, no diagnóstico ni tratamiento.",groupAll:"Todos",
     eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching',
     lead:'Describe tu pregunta o filtra por tema, duración y formato. Compara sesiones gratuitas, cursos simbólicos y coaching personal en un mismo lugar.',
     question:'¿Qué te gustaría explorar?',placeholder:'Una meta, decisión, relación o reto (opcional)',
@@ -137,7 +137,7 @@ const copy={
     discard:'¿Salir? Se perderán tus respuestas.',noAnswer:'Omitido',
     otherWays:'Otras formas de explorar tu pregunta',
     otherWaysNote:'Programas de autor y cuestionario detallado. Las respuestas de invitado no se transfieren a tu cuenta automáticamente.',
-    egyptian:'Descubrir valores y recursos',egyptianNote:'Deseos, valores, recursos y acción · 11 pantallas · cuenta privada',
+    egyptianMethod:'Planificación egipcia',greekMethod:'Planificación griega',egyptian:'Descubrir valores y recursos',egyptianNote:'Deseos, valores, recursos y acción · 11 pantallas · cuenta privada',
     greek:'Pasar de intención a acción',greekNote:'Voluntad, sentido y un siguiente paso · 10 pantallas · cuenta privada',
     worksheet:'Cuestionario de preparación para coaching',worksheetNote:'Prepara tu consulta en una página. Guardado privado opcional después de iniciar sesión.',
     openProgramme:'Conocer programa',chooseTradition:'Elegir sesión',openWorksheet:'Abrir cuestionario',
@@ -500,7 +500,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <div className={styles.morePathGrid}>
             {shownTraditions.includes('egyptian')&&<CoachingLoungeCard
               key="egyptian" locale={lang} id="egyptian" traditionKey="egyptian"
-              title={t.egyptian} meta="Egyptian planning" price="€0"
+              title={t.egyptian} meta={t.egyptianMethod} price="€0"
               image={traditionCoachingArt} description={t.egyptianNote}
               detail={t.egyptianNote} caution={t.safe}
               suggested={suggestedTraditions.has('egyptian')}
@@ -508,7 +508,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               landingHref={'/'+lang+'/academy/coaching/egyptian'}/>}
             {shownTraditions.includes('greek')&&<CoachingLoungeCard
               key="greek" locale={lang} id="greek" traditionKey="greek"
-              title={t.greek} meta="Greek planning" price="€0"
+              title={t.greek} meta={t.greekMethod} price="€0"
               image={traditionCoachingArt} description={t.greekNote}
               detail={t.greekNote} caution={t.safe}
               suggested={suggestedTraditions.has('greek')}
