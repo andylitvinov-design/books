@@ -4,6 +4,19 @@ on:
     branches: [codex/public-book-library]
     paths:
       - 'components/personal-service-landing.tsx'
+      - 'components/alchemy-soul-landing.tsx'
+      - 'components/alchemy-soul-landing.module.css'
+      - 'components/business-consulting-landing.tsx'
+      - 'components/business-consulting-landing.module.css'
+      - 'components/personal-support-landing.tsx'
+      - 'components/personal-support-landing.module.css'
+      - 'components/free-entry-landing.tsx'
+      - 'components/free-entry-landing.module.css'
+      - 'components/academy-tradition-coaching-landing.tsx'
+      - 'components/academy-tradition-coaching-landing.module.css'
+      - 'components/remote-energy-support-booking.tsx'
+      - 'components/remote-energy-support-booking.module.css'
+      - 'tests/visual-landing-sitewide-audit.test.mjs'
       - 'components/personal-service-landing.module.css'
       - 'components/core-service-detail.tsx'
       - 'components/core-service-detail.module.css'
@@ -35,6 +48,8 @@ jobs:
         run: >-
           node --test
           tests/visual-service-story.test.mjs
+          tests/visual-landing-sitewide-audit.test.mjs
+          tests/personal-support-funnel.test.mjs
           tests/personal-service-details.test.mjs
           tests/services-landing-conversion-20261018.test.mjs
           tests/sitewide-lead-capture.test.mjs
@@ -43,6 +58,12 @@ jobs:
           npx --no-install eslint
           components/personal-service-landing.tsx
           components/core-service-detail.tsx
+          components/alchemy-soul-landing.tsx
+          components/business-consulting-landing.tsx
+          components/personal-support-landing.tsx
+          components/free-entry-landing.tsx
+          components/academy-tradition-coaching-landing.tsx
+          components/remote-energy-support-booking.tsx
       - name: Typecheck changed pages in full project context
         run: npx --no-install tsc --noEmit
       - name: Production build (no external payment or lead traffic)
