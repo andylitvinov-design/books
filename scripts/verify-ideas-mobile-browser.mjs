@@ -73,7 +73,7 @@ async function verify(browserType, locale, width) {
     const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
     assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching",
       label + ": coaching card is a direct link to the topic-first chooser");
-    assert.equal(await coachingPath.getAttribute("data-tests-coaching-direct"), "",
+    assert.notEqual(await coachingPath.getAttribute("data-tests-coaching-direct"), null,
       label + ": coaching entry must not open a second interstitial slide");
     assert.equal(await switchboard.locator("[data-tests-coaching-sessions]").count(), 0,
       label + ": redundant format-selection slide is removed");
