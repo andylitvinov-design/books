@@ -11,6 +11,8 @@ test("compact capture asks for an explicit opt-in and routes both messenger choi
 
   assert.match(source, /<form className=\{styles.form\} data-compact-lead-form/);
   assert.match(source, /contactConsent: true/);
+  assert.match(source, /description: "Preferred reply channel: "/);
+  assert.match(source, /\(channel === "whatsapp" \? "WhatsApp" : "Telegram"\)/);
   assert.match(source, /checked=\{consent\}/);
   assert.match(source, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
   assert.match(source, /if \(busy \|\| reference\) return;/);
