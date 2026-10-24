@@ -575,70 +575,70 @@ const offerDetails = {
   }
 } as const;
 const detailLabels = {
-  en: { open: "Details", close: "Hide details", heading: "What to expect", full: "View full information" },
-  ru: { open: "Детали", close: "Скрыть детали", heading: "Как это работает", full: "Открыть полное описание" },
-  es: { open: "Detalles", close: "Ocultar detalles", heading: "Cómo funciona", full: "Ver información completa" },
+  en: { open: "Details", close: "Hide details", mobileClose: "Close", heading: "What to expect", full: "View full information" },
+  ru: { open: "Детали", close: "Скрыть детали", mobileClose: "Скрыть", heading: "Как это работает", full: "Открыть полное описание" },
+  es: { open: "Detalles", close: "Ocultar detalles", mobileClose: "Cerrar", heading: "Cómo funciona", full: "Ver información completa" },
 } as const;
 const compactActions = {
   "en": {
     "reiki": "Start free",
     "opora": "Start free",
-    "academy": "Explore courses",
-    "allTests": "Test for free",
-    "profile": "Open profile",
-    "growth": "Open my plan",
-    "review": "Request free review",
-    "businessConstellations": "Request session",
-    "constellations": "Request session",
+    "academy": "Courses",
+    "allTests": "Free test",
+    "profile": "Profile",
+    "growth": "My plan",
+    "review": "Free review",
+    "businessConstellations": "Request",
+    "constellations": "Request",
     "aiCoaching": "Start free",
-    "therapist": "Request · €50+",
-    "alchemy": "Request session",
-    "energy": "Request support",
-    "pro": "Explore training",
-    "service": "List service",
-    "course": "Create course",
-    "guestProfile": "Sign in · profile",
-    "guestGrowth": "Sign in · plan"
+    "therapist": "Request",
+    "alchemy": "Request",
+    "energy": "Support",
+    "pro": "Training",
+    "service": "List",
+    "course": "Create",
+    "guestProfile": "Sign in",
+    "guestGrowth": "Sign in"
   },
   "ru": {
-    "reiki": "Начать бесплатно",
-    "opora": "Начать бесплатно",
-    "academy": "Все курсы",
-    "allTests": "Пройти бесплатно",
-    "profile": "Мой профиль",
+    "reiki": "Начать",
+    "opora": "Начать",
+    "academy": "Курсы",
+    "allTests": "Тест",
+    "profile": "Профиль",
     "growth": "Мой план",
-    "review": "Заказать бесплатно",
-    "businessConstellations": "Запросить сессию",
-    "constellations": "Запросить сессию",
-    "aiCoaching": "Начать бесплатно",
-    "therapist": "Запросить · €50+",
-    "alchemy": "Запросить сессию",
-    "energy": "Запросить поддержку",
-    "pro": "Выбрать обучение",
-    "service": "Разместить услугу",
-    "course": "Создать курс",
-    "guestProfile": "Войти · профиль",
-    "guestGrowth": "Войти · план"
+    "review": "Разбор",
+    "businessConstellations": "Запросить",
+    "constellations": "Запросить",
+    "aiCoaching": "Начать",
+    "therapist": "Запросить",
+    "alchemy": "Запросить",
+    "energy": "Поддержка",
+    "pro": "Обучение",
+    "service": "Услуга",
+    "course": "Курс",
+    "guestProfile": "Войти",
+    "guestGrowth": "Войти"
   },
   "es": {
-    "reiki": "Empezar gratis",
-    "opora": "Empezar gratis",
-    "academy": "Ver cursos",
-    "allTests": "Prueba gratis",
-    "profile": "Mi perfil",
+    "reiki": "Empezar",
+    "opora": "Empezar",
+    "academy": "Cursos",
+    "allTests": "Test gratis",
+    "profile": "Perfil",
     "growth": "Mi plan",
-    "review": "Solicitar gratis",
-    "businessConstellations": "Solicitar sesión",
-    "constellations": "Solicitar sesión",
-    "aiCoaching": "Empezar gratis",
-    "therapist": "Solicitar · 50 €+",
-    "alchemy": "Solicitar sesión",
-    "energy": "Solicitar apoyo",
-    "pro": "Explorar formación",
-    "service": "Publicar servicio",
-    "course": "Crear curso",
-    "guestProfile": "Entrar · perfil",
-    "guestGrowth": "Entrar · plan"
+    "review": "Revisión",
+    "businessConstellations": "Solicitar",
+    "constellations": "Solicitar",
+    "aiCoaching": "Empezar",
+    "therapist": "Solicitar",
+    "alchemy": "Solicitar",
+    "energy": "Apoyo",
+    "pro": "Formación",
+    "service": "Publicar",
+    "course": "Crear",
+    "guestProfile": "Entrar",
+    "guestGrowth": "Entrar"
   }
 } as const;
 
@@ -740,8 +740,10 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
                           <button type="button" className={styles.offerSecondary}
                             onClick={() => setExpandedOffer(expanded ? null : offer.id)}
                             aria-controls={"home-offer-info-" + offer.id} aria-expanded={expanded}
-                            data-home-offer-details={offer.id}>
-                            {expanded ? detailLabels[locale].close : detailLabels[locale].open}
+                            data-home-offer-details={offer.id}
+                            aria-label={expanded ? detailLabels[locale].close : detailLabels[locale].open}>
+                            <span className={styles.actionFull} aria-hidden="true">{expanded ? detailLabels[locale].close : detailLabels[locale].open}</span>
+                            <span className={styles.actionCompact} aria-hidden="true">{expanded ? detailLabels[locale].mobileClose : detailLabels[locale].open}</span>
                             <ChevronDown className={styles.detailChevron} size={16} aria-hidden="true" />
                           </button>
                           <Link href={hrefs[offer.id]} prefetch={false} className={styles.offerPrimary}
