@@ -250,3 +250,6 @@
   .supportSmallIcon { width: 31px; height: 31px; }
 }
 @media (prefers-reduced-motion: reduce) { .card { transition: none; transform: none !important; } }
+
+/* Keep the newly focused section visible for keyboard users. */
+.detail:focus-visible { outline: 3px solid #187c7b; outline-offset: 3px; }
