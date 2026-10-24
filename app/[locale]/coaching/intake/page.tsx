@@ -14,7 +14,7 @@ const copy = {
   en: {
     title: "My coaching questionnaire — Holistic House",
     description: "A private, one-page coaching questionnaire to clarify your request, desired outcome and questions for a coach.",
-    back: "Personal services", intro: "PERSONAL COACHING · ONE PAGE", hero: "Begin with a question that matters to you.",
+    back: "All coaching sessions", intro: "PERSONAL COACHING · ONE PAGE", hero: "Begin with a question that matters to you.",
     caption: "Your words, your pace. Signing in is optional until you choose to save privately.",
     artAlt: "Quiet heron standing among reeds in warm morning light",
     privacy: "A draft is not a booking or a message to a coach.",
@@ -22,7 +22,7 @@ const copy = {
   ru: {
     title: "Моя коучинг-анкета — Holistic House",
     description: "Приватная коучинг-анкета на одной странице: ваш запрос, цель, ресурсы и вопросы коучу.",
-    back: "Личные услуги", intro: "ЛИЧНЫЙ КОУЧИНГ · ОДНА СТРАНИЦА", hero: "Начните с вопроса, который действительно важен.",
+    back: "Все коуч-сессии", intro: "ЛИЧНЫЙ КОУЧИНГ · ОДНА СТРАНИЦА", hero: "Начните с вопроса, который действительно важен.",
     caption: "Ваши слова, ваш темп. Вход нужен только для приватного сохранения.",
     artAlt: "Цапля в камышах в тёплом утреннем свете",
     privacy: "Черновик не является записью на сессию или сообщением коучу.",
@@ -30,7 +30,7 @@ const copy = {
   es: {
     title: "Mi formulario de coaching — Holistic House",
     description: "Un formulario privado de coaching en una página para explorar tu consulta, tus metas y tus preguntas.",
-    back: "Servicios personales", intro: "COACHING PERSONAL · UNA PÁGINA", hero: "Empieza con una pregunta importante para ti.",
+    back: "Todas las sesiones", intro: "COACHING PERSONAL · UNA PÁGINA", hero: "Empieza con una pregunta importante para ti.",
     caption: "Tus palabras, tu ritmo. Solo necesitas iniciar sesión si quieres guardar en privado.",
     artAlt: "Garza tranquila entre los juncos a la luz cálida de la mañana",
     privacy: "Un borrador no es una reserva ni un mensaje al coach.",
