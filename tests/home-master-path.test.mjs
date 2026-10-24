@@ -8,19 +8,17 @@ const spanish = read("app/es/page.tsx");
 const widget = read("components/home-master-path.tsx");
 const styles = read("components/home-master-path.module.css");
 
-test("all homepage locales remove the top path switch and put a single Master invitation just before footer", () => {
-  for (const [source, cta] of [[home, "<HomepageContactCta"], [spanish, "<PublicConsultationCta"]]) {
-    assert.equal((source.match(/<HomeMasterPath\b/g) || []).length, 1, "Exactly one Master invitation");
-    assert.ok(source.indexOf("<HomeSectionCarousel") < source.indexOf("<HomeFreeDiagnosisBanner"));
-    assert.ok(source.indexOf("<HomeFreeDiagnosisBanner") < source.indexOf("<HomeFeaturedWorkspace"));
-    assert.ok(source.indexOf("<HomeFeaturedWorkspace") < source.indexOf("<HomeMasterPath"));
-    assert.ok(source.indexOf(cta) < source.indexOf("<HomeMasterPath"), "Invitation follows other home CTAs");
-    assert.ok(source.indexOf("<HomeMasterPath") < source.indexOf("<footer"), "Invitation precedes footer");
+test("Master is the final immersion stage, not a repeated footer promotion", () => {
+  const feature = read("components/home-featured-workspace.tsx");
+  for (const page of [home, spanish]) {
+    assert.equal((page.match(/<HomeFeaturedWorkspace\\b/g) || []).length, 1);
+    assert.doesNotMatch(page, /<HomeMasterPath\\b/);
+    assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<footer"));
   }
-  assert.match(home, /<HomeMasterPath locale=\{locale\} \/>/);
-  assert.match(spanish, /<HomeMasterPath locale="es" \/>/);
+  assert.match(feature, /"courses",\\s*"personality",\\s*"situation",\\s*"coaching",\\s*"alchemy",\\s*"energy",\\s*"master"/);
+  assert.match(feature, /data-home-module=\\{id\\}/);
+  for (const action of ['"pro"', '"service"', '"course"']) assert.ok(feature.includes(action));
   assert.match(widget, /data-home-master-invitation/);
-  assert.doesNotMatch(widget, /useState|data-home-path-switch|data-home-path-panel|personalTargets/);
 });
 
 test("the compact invitation has localized actionable Pro and My Practice links without fake publication", () => {
