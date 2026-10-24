@@ -98,6 +98,7 @@ test("empty community and server failures provide distinct, usable alternatives 
   assert.match(workflow, /HH_APP_TEST_RUNTIME: isolated/);
   assert.match(workflow, /HH_APP_PRODUCTION_APPROVED: 'false'/);
   assert.match(fixture, /assertIsolated\(\)/);
+  assert.match(fixture, /actor\(B, SB\)/);
   assert.match(fixture, /config\.test, true/);
   assert.match(fixture, /PRIVATE_PENDING_REVISION/);
   assert.match(browser, /chromium/);
@@ -105,4 +106,26 @@ test("empty community and server failures provide distinct, usable alternatives 
   assert.match(browser, /noHorizontalOverflow/);
   assert.match(browser, /320, 375, 390, 430/);
   assert.doesNotMatch(browser, /request\.post\(|page\.route\(|submit\(.*enquiry/);
+});
+
+test("approved services fill the community alongside moderated articles without exposing author drafts", async () => {
+  const [page, highlights, repository, journal, switcher] = await Promise.all([
+    read("app/[locale]/masters/page.tsx"),
+    read("components/community-service-highlights.tsx"),
+    read("lib/practitioners/repository.js"),
+    read("app/[locale]/articles/page.tsx"),
+    read("components/mentor-community-switch.tsx"),
+  ]);
+  assert.match(page, /practitioners\.flatMap/);
+  assert.match(page, /hasServices=\{services\.length > 0\}/);
+  assert.match(page, /<CommunityServiceHighlights/);
+  assert.match(highlights, /getPublicServiceDetailHref/);
+  assert.match(highlights, /data-community-service/);
+  assert.doesNotMatch(highlights, /draft_copy|consultation_requests|private_client|assessment_results/);
+  assert.match(repository, /async listPublicServices/);
+  assert.match(journal, /listPublicServices\(locale\)/);
+  assert.match(journal, /articleResult\.status === "rejected"/);
+  assert.match(switcher, /Articles & services/);
+  assert.match(switcher, /materialTab=services/);
+  assert.match(switcher, /hasArticles \|\| hasServices/);
 });
