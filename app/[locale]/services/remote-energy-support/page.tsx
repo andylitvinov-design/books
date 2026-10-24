@@ -50,7 +50,9 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
   }
   const masters: EnergySupportMaster[] = records.flatMap((record) =>
     record.services
-      .filter((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual" && service.status === "published")
+      .filter((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual" && service.status === "published" &&
+        service.active && ["online", "hybrid"].includes(service.deliveryFormat) &&
+        ["fixed", "from"].includes(service.pricingMode))
       .map((service) => ({
         slug: record.slug,
         name: record.profile.displayName || record.profile.name || service.practitionerName,
