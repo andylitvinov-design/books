@@ -27,7 +27,7 @@ const templates = [
     id:"alchemy", route:"/en/services/alchemy-of-soul",
     path:"components/alchemy-soul-landing.tsx",
     prefix:"data-alchemy-visual-screen", capture:"<CompactLeadCapture",
-    image:"<StaticPortrait src={visualPhotos", final:"final-capture",
+    image:"<Image src={visualPhotos", final:"final-capture",
   },
   {
     id:"business", route:"/en/services/business-consulting",
@@ -39,7 +39,7 @@ const templates = [
     id:"monthly-support", route:"/en/services/personal-support",
     path:"components/personal-support-landing.tsx",
     prefix:"data-support-visual-screen", capture:"<CompactLeadCapture",
-    image:"<StaticPortrait src={photos", final:"final-capture",
+    image:"<Image src={photos", final:"final-capture",
   },
   {
     id:"free-reiki", route:"/en/academy/reiki/free-practitioner-course",
