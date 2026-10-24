@@ -8,7 +8,7 @@ import styles from './public-coaching-discovery.module.css'
 
 const copy={
   en:{
-    eyebrow:'HOLISTIC HOUSE · COACHING LOUNGE',title:'Coaching Lounge · Find your session',
+    eyebrow:'HOLISTIC HOUSE · COACHING LOUNGE',title:'Coaching Lounge',
     lead:'Describe what you need or filter by topic, time and format. Explore free guided methods, ancient planning courses and personal coaching together.',
     question:'What would you like to explore?',placeholder:'A goal, decision, relationship or challenge (optional)',
     privateQuestion:'Your question is matched only in this browser. It is not sent to AI, analytics or a coach.',
@@ -42,7 +42,7 @@ const copy={
     openProgramme:'Explore programme',openWorksheet:'Open questionnaire',
   },
   ru:{
-    eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга · Выберите сессию',
+    eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга',
     lead:'Опишите, с чем хотите поработать, или выберите тему, время и формат. Здесь собраны бесплатные модели, авторские курсы и личные сессии.',
     question:'Какой вопрос хотите разобрать?',placeholder:'Цель, решение, отношения или сложность (необязательно)',
     privateQuestion:'Подбор по вопросу выполняется в браузере. Текст не отправляется в ИИ, аналитику или коучу.',
@@ -76,7 +76,7 @@ const copy={
     openProgramme:'Смотреть программу',openWorksheet:'Открыть анкету',
   },
   es:{
-    eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching · Elige tu sesión',
+    eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching',
     lead:'Describe tu pregunta o filtra por tema, duración y formato. Compara sesiones gratuitas, cursos simbólicos y coaching personal en un mismo lugar.',
     question:'¿Qué te gustaría explorar?',placeholder:'Una meta, decisión, relación o reto (opcional)',
     privateQuestion:'Tu pregunta se analiza solo en este navegador. No se envía a IA, analíticas ni al coach.',
@@ -158,13 +158,17 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     window.scrollTo({top:0,behavior:'smooth'})
   }
   function backToModels(){
-    if(!finished&&Object.keys(answers).length>0&&!window.confirm(t.discard))return
+    if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
     setSession(null);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
   }
   function moveBack(){
     if(index===0){backToModels();return}
+    // A guest can move between steps without discarding an unsubmitted draft.
+    // This remains in React memory only; no network or localStorage write.
+    const updated={...answers,[current.id]:draft}
     const prev=index-1
-    setIndex(prev);setDraft(answers[session.questions[prev].id]||'');setError('')
+    setAnswers(updated)
+    setIndex(prev);setDraft(updated[session.questions[prev].id]||'');setError('')
   }
   function advance(){
     const value=draft.trim()
