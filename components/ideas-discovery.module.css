@@ -1056,3 +1056,34 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .hero { min-height:410px; }
   .submit, .testButton { font-size:13px; }
 }
+
+
+/* 2026-10-24 · First-screen Ideas & Coaching two-way choice.
+   Keep the original scenic hero and lower Dao/aphorism modes intact. */
+.heroActions{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.heroActions .submit,.heroActions .testButton{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  min-width:0;min-height:76px;padding:9px 11px;gap:4px;
+  border-radius:13px;font-size:14px;line-height:1.2;text-align:center;
+}
+.heroActions .submit{color:#fffaf4;text-decoration:none;background:linear-gradient(116deg,#936341,#765038)}
+.heroActions .submit:hover{background:linear-gradient(116deg,#815438,#65422f);color:#fff}
+.heroActions .submit .testButtonText{flex:0 1 auto;text-align:center}
+.heroActions .submit .testButtonKicker{color:#f9e4d1;font-size:11px;font-weight:650}
+.heroActions .submit .testButtonText strong{color:#fff;font-size:14px;line-height:1.2}
+.heroActions .submit svg:first-child{margin:0}
+.heroActions .submit svg:last-child{display:none}
+.heroActions .testButton{background:rgba(255,253,249,.93);border:1.5px solid #977055;color:#67452f;cursor:pointer}
+.heroActions .testButton:hover{background:#fff;border-color:#765038;color:#513a2d}
+.heroActions .testButton .modeYin{font-size:20px;line-height:1}
+@media(max-width:760px){
+ .heroActions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .heroActions .submit,.heroActions .testButton{min-height:76px;padding:10px 6px;font-size:12px}
+ .heroActions .submit .testButtonText strong{font-size:12px}
+ .heroActions .submit .testButtonKicker{font-size:10px}
+ .heroActions .testButton .modeYin{font-size:19px}
+}
+@media(max-width:360px){
+ .heroActions{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .heroActions .submit,.heroActions .testButton{min-height:78px;padding:7px 4px}
+}
