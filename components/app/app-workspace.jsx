@@ -24,20 +24,20 @@ import { ClientReportActions } from '@/components/app/client-report-actions'
 import { PersonalResultReport } from '@/components/app/personal-result-report'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { ScoreGauge, ScoreTrend } from '@/components/app/assessment-gauge'
-import { TestDynamics } from '@/components/app/test-dynamics'
+
 import { periodComparison } from '@/lib/assessments/dashboard-gauges'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
 import { TestRatingCard } from '@/components/app/test-rating-card'
 import { buildAssessmentResultReport } from '@/lib/assessments/result-report'
-import { ProfileAssessmentOverview } from '@/components/app/profile-assessment-overview'
-import { TestExplorerVisual } from '@/components/app/test-explorer-visual'
+
+
 import { PortraitTestQuickActions } from '@/components/app/portrait-test-quick-actions'
 import { buildExplorerEntries, coverageForFocus } from '@/lib/assessments/test-explorer'
 import { HOME_TEST_TOPICS, INSIGHTS_TEST_CATEGORIES, buildInsightsCategorySections } from '@/lib/assessments/insights-categories'
 import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
-import { PortraitRecommendations } from '@/components/app/portrait-recommendations'
-import { PortraitAnalyses } from '@/components/app/portrait-analyses'
+
+
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
@@ -74,6 +74,11 @@ export { appFetch }
 // feature trees. Load only the active tab rather than hydrating every feature
 // (courses, tests, practice, and personal reports) on the first visit.
 const PsiMonitoring = dynamic(() => import('@/components/app/psi-monitoring'))
+const TestExplorerVisual = dynamic(() => import('@/components/app/test-explorer-visual').then(module => module.TestExplorerVisual))
+const PortraitAnalyses = dynamic(() => import('@/components/app/portrait-analyses').then(module => module.PortraitAnalyses))
+const PortraitRecommendations = dynamic(() => import('@/components/app/portrait-recommendations').then(module => module.PortraitRecommendations))
+const ProfileAssessmentOverview = dynamic(() => import('@/components/app/profile-assessment-overview').then(module => module.ProfileAssessmentOverview))
+const TestDynamics = dynamic(() => import('@/components/app/test-dynamics').then(module => module.TestDynamics))
 const AccountTestBattery = dynamic(() => import('@/components/app/account-test-battery').then(module => module.AccountTestBattery))
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
