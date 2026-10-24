@@ -1,13 +1,17 @@
 'use client'
 
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
+import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import CoachingActionPlan from '@/components/coaching-action-plan'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
+
 
 const copy={
   en:{
@@ -43,6 +47,7 @@ const copy={
     greek:'Greek Goal Planning',greekNote:'From intention and courage to a meaningful next step · 10 screens · private account',
     worksheet:'Coaching preparation questionnaire',worksheetNote:'Write your question and prepare for a meeting on one editable page. Optional private Google-account save.',
     openProgramme:'Explore programme',chooseTradition:'Choose this session',openWorksheet:'Open questionnaire',
+    clarify:'A helpful follow-up',clarifyWhy:'Optional authored reflection, not an AI response.',clarifyAnswer:'Your reflection',clarifySave:'Save reflection & continue',clarifySkip:'Skip this reflection',clarifyShort:'Write at least 3 characters.',
   },
   ru:{
     eyebrow:'HOLISTIC HOUSE · ГОСТИНАЯ КОУЧИНГА',title:'Гостиная коучинга',
@@ -77,6 +82,7 @@ const copy={
     greek:'Греческий коучинг',greekNote:'От намерения и смелости к осмысленному шагу · 10 экранов · личный кабинет',
     worksheet:'Анкета для подготовки к коучингу',worksheetNote:'Подробная анкета на одной странице, чтобы сформулировать вопрос и подготовиться к разговору. Можно сохранить приватно после входа.',
     openProgramme:'Подробнее о программе',chooseTradition:'Выбрать сессию',openWorksheet:'Открыть анкету',
+    clarify:'Уточняющий вопрос',clarifyWhy:'Необязательный авторский вопрос, не генерация ИИ.',clarifyAnswer:'Ваше уточнение',clarifySave:'Сохранить и продолжить',clarifySkip:'Пропустить уточнение',clarifyShort:'Напишите не меньше 3 символов.',
   },
   es:{
     eyebrow:'HOLISTIC HOUSE · SALÓN DE COACHING',title:'Sala de coaching',
@@ -111,6 +117,7 @@ const copy={
     greek:'Planificación griega',greekNote:'Voluntad, sentido y un siguiente paso · 10 pantallas · cuenta privada',
     worksheet:'Cuestionario de preparación para coaching',worksheetNote:'Prepara tu consulta en una página. Guardado privado opcional después de iniciar sesión.',
     openProgramme:'Conocer programa',chooseTradition:'Elegir sesión',openWorksheet:'Abrir cuestionario',
+    clarify:'Una pregunta de aclaración',clarifyWhy:'Reflexión original opcional, no una respuesta de IA.',clarifyAnswer:'Tu reflexión',clarifySave:'Guardar y continuar',clarifySkip:'Omitir esta reflexión',clarifyShort:'Escribe al menos 3 caracteres.',
   },
 }
 // Editorial topical hints for existing authored course routes. They are not
@@ -124,6 +131,7 @@ function traditionExplicitMatch(question,id){
   return id==='egyptian'?/egypt|egip|егип|секхем|sekhem/.test(text)
     :/greek|grieg|гречес|грец|логос|logos/.test(text)
 }
+
 
 // Decorative first-party photography. Existing site assets only.
 const coachingArt={
@@ -145,6 +153,7 @@ const answerText=(value,item,locale,t)=>{
   return tr((item.choices||[]).find(c=>c.id===id)?.label,locale)||t.noAnswer
 }
 
+
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const privateCoachingLocale=lang==='es'?'en':lang
@@ -163,6 +172,10 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [answers,setAnswers]=useState({})
   const [draft,setDraft]=useState('')
   const [finished,setFinished]=useState(false)
+  const [pendingFollowup,setPendingFollowup]=useState(null)
+  const [reflectionDraft,setReflectionDraft]=useState('')
+  const [reflections,setReflections]=useState({})
+  const [approvedPlan,setApprovedPlan]=useState(null)
   const [error,setError]=useState('')
   const [copyError,setCopyError]=useState(false)
   const [copied,setCopied]=useState(false)
@@ -172,7 +185,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   // an input or open the keyboard without the visitor's action.
   useEffect(()=>{
     if(session&&!finished)titleRef.current?.focus({preventScroll:false})
-  },[session,index,finished])
+  },[session,index,finished,pendingFollowup])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
@@ -191,16 +204,24 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     ?Array.from({length:11},(_,n)=>({id:String(n),label:{en:String(n),ru:String(n),es:String(n)}}))
     :(current?.choices||[])
 
+
   function start(scheme){
     if(recommendation.blocked)return
     setSession(scheme);setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
+    setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
     window.scrollTo({top:0,behavior:'smooth'})
   }
   function backToModels(){
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
     setSession(null);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
+    setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
+    if(pendingFollowup){
+      if(reflectionDraft.trim()&&!window.confirm(t.discard))return
+      setPendingFollowup(null);setReflectionDraft('');setError('')
+      return
+    }
     if(index===0){backToModels();return}
     // A guest can move between steps without discarding an unsubmitted draft.
     // This remains in React memory only; no server call or persistent storage.
@@ -216,14 +237,39 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       setError(t.plan);return
     }
     const nextAnswers={...answers,[current.id]:value}
+    const nextReflections={...reflections}
+    // Changing an answer must never retain a clarification about the old one.
+    if(answers[current.id]!==value&&nextReflections[current.id]){
+      delete nextReflections[current.id]
+      setReflections(nextReflections)
+    }
     setAnswers(nextAnswers);setError('')
     if(index===session.questions.length-1){setFinished(true);return}
+    const followup=authoredFollowupFor(current,value,nextReflections)
+    if(followup){setPendingFollowup(followup);setReflectionDraft('');return}
     const next=index+1;setIndex(next);setDraft(nextAnswers[session.questions[next].id]||'')
+  }
+  function finishFollowup(skip=false){
+    if(!pendingFollowup)return
+    const text=reflectionDraft.trim()
+    if(!skip&&text.length<3){setError(t.clarifyShort);return}
+    if(!skip)setReflections(previous=>({...previous,[pendingFollowup.questionId]:{
+      key:pendingFollowup.key,stage:pendingFollowup.stage,text,
+    }}))
+    setPendingFollowup(null);setReflectionDraft('');setError('')
+    const next=index+1;setIndex(next);setDraft(answers[session.questions[next].id]||'')
   }
   function summaryText(){
     if(!session)return ''
     return [t.summary+' · '+tr(session.name,lang),question.trim()?t.yourQuestion+': '+question.trim():'',
-      ...session.questions.map(item=>tr(item.prompt,lang)+': '+answerText(answers[item.id],item,lang,t))].filter(Boolean).join('\n\n')
+      ...session.questions.flatMap(item=>[
+        tr(item.prompt,lang)+': '+answerText(answers[item.id],item,lang,t),
+        reflections[item.id]?.text?t.clarifyAnswer+': '+reflections[item.id].text:'',
+      ]),
+      ...(approvedPlan?[t.completed+' · '+approvedPlan.actionText,
+        approvedPlan.goal,approvedPlan.obstacle,approvedPlan.when,
+        approvedPlan.confidence===null?'':'Confidence /10: '+approvedPlan.confidence]:[])
+      ].filter(Boolean).join('\n\n')
   }
   async function copySummary(){
     try{await navigator.clipboard.writeText(summaryText());setCopied(true);setCopyError(false)}
@@ -367,11 +413,34 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <h1>{t.summary}</h1>
           <div className={styles.summary}>
             {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {session.questions.map(item=><div key={item.id}><strong>{tr(item.prompt,lang)}</strong><p>{answerText(answers[item.id],item,lang,t)}</p></div>)}
+            {session.questions.map(item=><div key={item.id}><strong>{tr(item.prompt,lang)}</strong><p>{answerText(answers[item.id],item,lang,t)}</p>
+              {reflections[item.id]?.text&&<p><em>{t.clarifyAnswer}:</em> {reflections[item.id].text}</p>}
+            </div>)}
           </div>
+          <CoachingActionPlan key={session.schemeKey||session.modelKey} locale={lang}
+            initial={draftCoachingActionPlan(session.questions,answers,question,lang)}
+            onSave={value=>{setApprovedPlan(value);return true}}/>
           <button type="button" className={styles.primary} onClick={copySummary}><ClipboardCopy size={17}/>{copied?t.copied:t.copy}</button>
           {copyError&&<><p className={styles.alert} role="alert">{t.copyFallback}</p><textarea className={styles.copyFallback} readOnly value={summaryText()} rows={7}/></>}
           <button type="button" className={styles.secondary} onClick={backToModels}>{t.restart}</button>
+        </div>:pendingFollowup?<div data-public-coaching-followup>
+          <div className={styles.progress}><span>{t.stage} {index+1} {t.of} {session.questions.length}</span>
+            <div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length}
+              aria-valuenow={index+1} aria-label={t.stage}><span style={{width:((index+1)/session.questions.length*100)+'%'}}/></div>
+          </div>
+          <p className={styles.stage}>{t.clarify}</p>
+          <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+          <p className={styles.hint}>{t.clarifyWhy}</p>
+          <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
+          <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
+            maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+          {error&&<p className={styles.alert} role="alert">{error}</p>}
+          <div className={styles.sessionActions}>
+            <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
+            <button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>
+              {t.clarifySave}<ArrowRight size={17}/></button>
+          </div>
+          <button type="button" className={styles.secondary} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>
         </div>:<>
           <div className={styles.progress}><span>{t.stage} {index+1} {t.of} {session.questions.length}</span><div role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length} aria-valuenow={index+1} aria-label={t.stage}><span style={{width:((index+1)/session.questions.length*100)+'%'}}/></div></div>
           <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
@@ -398,3 +467,4 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     </div>
   </main>
 }
+
