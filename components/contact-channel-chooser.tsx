@@ -490,6 +490,11 @@ export function ContactChannelChooser({
             </>}
             <label className={styles.consent}>
               <input type="checkbox" required checked={consent} disabled={locked || busy}
+                onPointerDown={event => {
+                  if (event.defaultPrevented || !event.isPrimary || event.button !== 0 || event.currentTarget.disabled) return;
+                  // Keep the visible pointer target stable; native activation still owns consent.
+                  event.currentTarget.focus({ preventScroll: true });
+                }}
                 onChange={event => { setConsent(event.target.checked); }} />
               <span>{c.consent}</span>
             </label>
