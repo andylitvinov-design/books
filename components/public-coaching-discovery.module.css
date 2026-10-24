@@ -555,3 +555,6 @@
  .topicGroupCount{font-size:10px;min-width:18px}
 }
 @media(prefers-reduced-motion:reduce){.topicGroupGrid button{transition:none}}
+
+/* Intro spans the original guest viewport, with its own internal scroll and fixed choices. */
+.introHost{grid-row:1 / -1;grid-column:1 / -1;display:flex;width:100%;height:100%;min-height:0;overflow:hidden}

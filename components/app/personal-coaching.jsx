@@ -11,6 +11,8 @@ import CoachingQuestionVoice from './coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingModelIntro from '@/components/coaching-model-intro'
+import {coachingArt} from '@/lib/coaching/public-session-art'
 import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
 import styles from './personal-coaching.module.css'
 
@@ -140,6 +142,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [state,setState]=useState(null),[catalog,setCatalog]=useState(null)
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[newSelection,setNewSelection]=useState(false)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
+  const [pendingIntro,setPendingIntro]=useState(null)
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
@@ -236,6 +239,7 @@ export default function PersonalCoaching({locale='en',accountId}){
       const list=questionsFor(result.course,catalog)
       visit(firstUnanswered(list,result.course?.current?.answers),result.course?.current?.answers,list)
       setNewSelection(false)
+      setPendingIntro(null)
     }
   }
   function offerFollowup(current,answer){
@@ -320,7 +324,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   async function erase(){
     if(!window.confirm(t.deleteConfirm))return
     const result=await command('delete',{confirmed:true})
-    if(result){setNotice('');setNewSelection(false);visit(0,{},PERSONAL_COACH_QUESTIONS)}
+    if(result){setNotice('');setNewSelection(false);setPendingIntro(null);visit(0,{},PERSONAL_COACH_QUESTIONS)}
   }
   return <main className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
     <div className={styles.scenery} aria-hidden="true"/>
@@ -336,8 +340,24 @@ export default function PersonalCoaching({locale='en',accountId}){
           <p>{t.loadError}</p>
           <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
         </div>
-        : (!course||newSelection) ? <PersonalCoachingPicker locale={lang} catalog={catalog}
-          previousPlan={lastApprovedPlan} onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
+        : (!course||newSelection) ? (pendingIntro ? <CoachingModelIntro locale={lang}
+          methodKey={pendingIntro.choice.schemeKey}
+          title={translated(pendingIntro.choice.model?.name,lang)||translated(pendingIntro.choice.scheme?.name,lang)}
+          description={translated(pendingIntro.choice.model?.selectionComment,lang)||translated(pendingIntro.choice.model?.focus,lang)}
+          fit={translated(pendingIntro.choice.model?.focus,lang)}
+          topics={(pendingIntro.choice.scheme?.tags||[]).map(tag=>translated(catalog?.signals?.find(signal=>signal.tag===tag)?.label,lang)).filter(Boolean).slice(0,3)}
+          examples={pendingIntro.choice.model?.exampleQuestions?.[lang]||pendingIntro.choice.model?.exampleQuestions?.en||[]}
+          outcome={translated(pendingIntro.choice.scheme?.result,lang)}
+          caution={translated(pendingIntro.choice.model?.caution,lang)}
+          image={coachingArt[pendingIntro.choice.modelKey]||coachingArt.grow_v1}
+          minutes={pendingIntro.choice.scheme?.minutes} questionCount={pendingIntro.choice.scheme?.questions?.length}
+          privacy="private" busy={busy} error={error}
+          onStart={()=>begin(pendingIntro.choice,pendingIntro.clientQuestion,pendingIntro.adultConfirmed)}
+          onOther={()=>{setPendingIntro(null);setError('')}}/>
+          :<PersonalCoachingPicker locale={lang} catalog={catalog}
+          previousPlan={lastApprovedPlan}
+          onChoose={(choice,clientQuestion,adultConfirmed)=>{setPendingIntro({choice,clientQuestion,adultConfirmed});setError('')}}
+          busy={busy} error={error} isNew={Boolean(course)} />)
         : finished ? <div className={styles.summary} data-coaching-summary>
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
@@ -389,7 +409,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <p className={styles.subtle}>{t.restart}</p>
           {error&&<p className={styles.error} role="alert">{error}</p>}
           <button type="button" className={styles.primary} disabled={busy}
-            onClick={()=>{setNewSelection(true);setError('')}}>{t.new}<ArrowRight size={18}/></button>
+            onClick={()=>{setNewSelection(true);setPendingIntro(null);setError('')}}>{t.new}<ArrowRight size={18}/></button>
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           <small className={styles.disclaimer}>{t.completeNote}</small>

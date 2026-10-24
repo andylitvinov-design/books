@@ -2,10 +2,11 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,Check,ChevronLeft,LockKeyhole,ScrollText,Trash2,X} from 'lucide-react'
+import {ArrowRight,Check,ChevronLeft,LockKeyhole,Trash2,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingModelIntro from '@/components/coaching-model-intro'
 import base from './personal-coaching.module.css'
 import extra from './tradition-coaching.module.css'
 
@@ -33,6 +34,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const endpoint='tradition-coaching?template='+encodeURIComponent(template||'')
  const [data,setData]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
  const [error,setError]=useState(''),[notice,setNotice]=useState('')
+ const [restartPreview,setRestartPreview]=useState(false)
  const [index,setIndex]=useState(0),[choice,setChoice]=useState(''),[note,setNote]=useState('')
  const busyRef=useRef(false),heading=useRef(null)
  const course=data?.course,session=course?.current
@@ -85,6 +87,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   try{
    const result=await send('start')
    setData(result)
+   setRestartPreview(false)
    visit(nextIndex(result.questions,result.course?.current?.answers),result.course?.current?.answers,result.questions)
   }catch(e){setError(e?.code==='PERSONAL_COACH_REVISION_CONFLICT'?t.conflict:t.error)}
   finally{busyRef.current=false;setBusy(false)}
@@ -151,18 +154,13 @@ export default function TraditionCoaching({locale='en',accountId,template}){
    </header>
    <section className={base.sheet+' '+extra.courseSheet}>
     {loading?<div className={base.center} role="status">{t.load}</div>
-    : !course?<div className={base.intro+' '+extra.courseIntro} data-tradition-start>
-      <span className={base.eyebrow}>HOLISTIC HOUSE · COACHING</span>
-      <img src={def.art} width={850} height={250} alt="" className={extra.heroArt} loading="lazy"/>
-      <h1>{def.name[lang]}</h1>
-      <p className={base.lead}>{def.description[lang]}</p>
-      <p className={base.subtle}><ScrollText size={16} aria-hidden="true"/> {def.totalScreens} {t.question.toLowerCase()} · {t.pace}</p>
-      <p className={base.subtle}>{def.note[lang]}</p>
-      {error&&<p role="alert" className={base.error}>{error}</p>}
-      <button type="button" className={base.primary} disabled={busy} onClick={error&&!data?reload:start}>
-        {busy?t.save:error&&!data?t.retry:t.start}<ArrowRight size={18}/>
-      </button>
-      <Link href={home} className={base.secondary}>{t.home}</Link>
+    : (!course||restartPreview)?<div className={extra.courseIntro} data-tradition-start>
+      <CoachingModelIntro locale={lang} methodKey={def.schemeKey}
+        title={def.name[lang]} description={def.description[lang]}
+        fit={def.useCases[lang]} outcome={def.expectedOutcome[lang]} caution={def.note[lang]}
+        image={def.art} minutes={def.slug==='egyptian'?25:20} questionCount={def.totalScreens}
+        privacy="private" busy={busy} error={error}
+        onStart={error&&!data?reload:start} otherHref={'/'+lang+'/coaching'}/>
     </div>
     :completed?<div className={base.summary+' '+extra.courseSummary} data-tradition-summary>
       <span className={base.completed}><Check size={16}/>{t.complete}</span>
@@ -185,7 +183,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       </details>}
       <p className={base.privacyNote}>{t.privacy}</p>
       {error&&<p role="alert" className={base.error}>{error}</p>}
-      <button type="button" className={base.primary} disabled={busy} onClick={start}>{t.again}<ArrowRight size={18}/></button>
+      <button type="button" className={base.primary} disabled={busy} onClick={()=>setRestartPreview(true)}>{t.again}<ArrowRight size={18}/></button>
       <Link className={base.secondary} href={home}>{t.home}</Link>
       <button type="button" className={base.delete} disabled={busy} onClick={erase}><Trash2 size={16}/>{t.delete}</button>
       <small className={base.disclaimer}>{t.introNote}</small>
