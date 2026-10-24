@@ -186,20 +186,20 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const items: AcademyCourseItem[] = [
     {
       id: "academy-free-personal-coaching",
-      detailsHint: locale === "ru" ? "Самостоятельная короткая сессия. Ответы доступны только в вашем кабинете, живой специалист не участвует." : locale === "es" ? "Sesión privada autoguiada, no un coach humano ni una cita. Disponible en inglés." : "A short self-guided, private reflection. No live practitioner, booked meeting or AI messages.",
+      detailsHint: locale === "ru" ? "Бесплатный подбор модели без регистрации. Ответы остаются в открытой вкладке; по завершении их можно скопировать." : locale === "es" ? "Sesión gratuita autoguiada sin cuenta. Respuestas solo en esta pestaña; puedes copiar el resumen." : "A free self-guided session without sign-in. Notes stay in this tab unless you copy the summary.",
       title: locale === "ru" ? "Личная коуч-сессия" : locale === "es" ? "Sesión personal de coaching" : "Personal Coaching Session",
       subtitle: locale === "ru" ? "ВОПРОС → 3 МОДЕЛИ · 10–30 МИН" : locale === "es" ? "PREGUNTA → 3 MODELOS" : "QUESTION → 3 MODELS · 10–30 MIN",
       description: locale === "ru"
         ? "Напишите ваш вопрос, сравните три модели коучинга и выберите одну. На каждом следующем экране — один простой вопрос."
         : locale === "es"
-          ? "Escribe tu pregunta, elige entre tres modelos y avanza paso a paso. La sesión privada está disponible en inglés."
+          ? "Escribe tu pregunta, elige un modelo y avanza paso a paso sin iniciar sesión."
           : "Enter your question, compare three suitable coaching models, then answer one simple question per screen.",
-      href: "/" + locale + "/explore/business",
-      courseHref: "/" + (locale === "es" ? "en" : locale) + "/app/coaching",
+      href: "/" + locale + "/coaching",
+      courseHref: "/" + locale + "/coaching",
       image: "/images/holistic-house/books-library.webp",
-      duration: locale === "ru" ? "Сценарий на выбор · в своём темпе" : locale === "es" ? "3 modelos · en inglés" : "3 suggested models · at your pace",
+      duration: locale === "ru" ? "Сценарий на выбор · в своём темпе" : locale === "es" ? "Modelos gratis · a tu ritmo" : "3 suggested models · at your pace",
       free: true,
-      actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Start in English" : "Start session",
+      actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Empezar gratis" : "Start session",
     },
     {
       id: "academy-free-egyptian-goal-planning",
