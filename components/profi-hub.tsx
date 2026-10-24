@@ -322,7 +322,6 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const practiceRoot = "/" + appLocale + "/app/practice";
   const publicRoot = "/" + locale;
   const trainingHref = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
-  const academyHref = publicRoot + "/academy/reiki";
   const profileHref = practiceRoot + "?panel=profile";
   const requestsHref = practiceRoot + "?panel=requests";
   const offerHref = offer === "course"
@@ -374,7 +373,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
               <details className={styles.freeCourseDisclosure} data-profi-free-course>
                 <summary>{masterT.freePreview}<ChevronRight size={18} aria-hidden="true" /></summary>
                 <div className={styles.lessonLayout}>
-                <div className={styles.lessonSelector}>
+                  <div className={styles.lessonSelector}>
                   <h3>{t.lessonGuide}</h3>
                   <p className={styles.micro}>{t.lessonHint}</p>
                   <ol className={styles.lessons}>
@@ -408,7 +407,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                   </Link>
                   {t.studyNote && <p className={styles.micro}>{t.studyNote}</p>}
                 </div>
-                </div>
+              </div>
               </details>
 
               <section id="profi-masters" className={styles.masterSection} aria-labelledby="profi-masters-title" data-profi-masters>
@@ -465,7 +464,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 </div>
                 <p className={styles.disclaimer}><ShieldCheck size={17} aria-hidden="true" />{t.learningDisclaimer}</p>
                 <div className={styles.nextActions}>
-                  <Link href={academyHref} prefetch={false} className={styles.secondary} data-profi-action="advanced-reiki">
+                  <Link href="#profi-masters" prefetch={false} className={styles.secondary} data-profi-action="advanced-reiki">
                     {t.advanced}<ArrowRight size={16} aria-hidden="true" />
                   </Link>
                   <a href="#profi-practice" className={styles.textAction}>
