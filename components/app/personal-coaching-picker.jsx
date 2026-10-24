@@ -2,16 +2,17 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, CheckCircle2, ChevronDown, CircleHelp, LockKeyhole, Sparkles } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
+import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import styles from './personal-coaching.module.css'
 
 const copy={
- en:{eyebrow:'YOUR QUESTION · YOUR COACHING MODEL',title:'What would you like to explore?',
+ en:{eyebrow:'YOUR QUESTION · YOUR COACHING SESSION',title:'What would you like to explore?',
  placeholder:'For example: How do I stop putting off an important goal?',
  hint:'Write one question in your own words. It stays on this device until you select a model.',
  duration:'Time I have',recommend:'Find three coaching approaches',
  heading:'Choose the approach that suits you',notSure:'Your topic is not clear enough for a specific match. These are three general starting points; you can still choose a different model.',
  matches:'Relevant to your question',alternative:'Alternative to consider',suits:'Good for',caution:'Keep in mind',
- select:'Start this model',all:'See all available approaches',hide:'Hide other approaches',
+ select:'Start this session',all:'See all available approaches',hide:'Hide other approaches',
  privacy:'Matching runs in your browser; no question is sent to AI or analytics. Your original question is saved privately only after you start the session.',
  crisis:'An urgent safety concern deserves direct human support, not self-coaching. If you are in immediate danger, contact local emergency services or a trusted qualified professional.',
  min:'Please enter at least eight characters.',time:'min',new:'A new private coaching session',
@@ -95,11 +96,11 @@ export default function PersonalCoachingPicker({locale='en',catalog,onChoose,bus
      <div className={styles.modelCardHeading}>
        <span className={styles.modelNumber}>{extra?<CircleHelp size={17}/>:i+1}</span>
        <div>
-         <h3>{translated(model.name,lang)}</h3>
-         <span>{translated(scheme.name,lang)} · {scheme.minutes} {t.time}</span>
+         <h3>{coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</h3>
+         <span>{translated(model.name,lang)} · {scheme.minutes} {t.time}</span>
        </div>
      </div>
-     <p className={styles.modelDescription}>{translated(model.selectionComment,lang)||translated(model.focus,lang)}</p>
+     <p className={styles.modelDescription}>{coachingSessionSummary(scheme.schemeKey,lang,translated(model.selectionComment,lang)||translated(model.focus,lang))}</p>
      {matches.length>0 && <p className={styles.modelMatch}><CheckCircle2 size={15}/>
        {t.matches}: {matches.join(' · ')}</p>}
      {(!matches.length||suggestion.fallback)&&
