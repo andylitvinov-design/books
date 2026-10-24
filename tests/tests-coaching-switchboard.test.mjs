@@ -62,3 +62,29 @@ test("TSX parses cleanly and all CSS classes are declared", () => {
   const available = new Set([...css.matchAll(/\.([a-zA-Z][a-zA-Z0-9]*)/g)].map(m => m[1]));
   assert.deepEqual(used.filter(value => !available.has(value)), []);
 });
+
+
+test("four choices become an accessible, focused path instead of a wall of expanding cards", () => {
+  assert.match(ui, /hidden=\{Boolean\(path\)\}/);
+  assert.match(ui, /ref=\{detailRef\} tabIndex=\{-1\}/);
+  assert.match(ui, /detailRef\.current\?\.focus\(\)/);
+  assert.match(ui, /firstCardRef\.current\?\.focus\(\)/);
+  assert.match(ui, /quickCtas\[locale\]\[key\]/);
+  for (const headline of ["What would feel most helpful today?", "Что сейчас было бы для вас полезнее?", "¿Qué te ayudaría más hoy?"])
+    assert.ok(ui.includes(headline), "Missing localized welcome: " + headline);
+  assert.match(css, /\.grid\[hidden\]\s*\{\s*display:\s*none;/);
+  assert.match(css, /\.cardArrow/);
+  assert.match(css, /\.cardIcon/);
+});
+
+test("2-minute support is the single primary offer, followed by smaller course and human support links", () => {
+  assert.match(ui, /className=\{styles\.supportFeatured\}/);
+  assert.match(ui, /className=\{styles\.supportNext\}/);
+  assert.match(ui, /aria-label=\{t\.programme\}/);
+  assert.match(ui, /aria-label=\{t\.personalSupport\}/);
+  for (const headline of ["01 · A 2-MINUTE PAUSE", "01 · ПРАКТИКА НА 2 МИНУТЫ", "01 · PAUSA DE 2 MINUTOS"])
+    assert.ok(ui.includes(headline), headline);
+  assert.match(css, /\.supportArrow\s*\{[^}]*width:\s*44px;/);
+  assert.match(css, /@media \(max-width:\s*360px\)/);
+  assert.match(css, /prefers-reduced-motion/);
+});
