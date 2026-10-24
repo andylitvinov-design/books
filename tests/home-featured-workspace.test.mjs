@@ -49,7 +49,7 @@ test("each of 16 offer cards has a clear primary CTA and independent accessible 
         list.push(o.id);
         assert.ok(o.title && o.body && o.cta, "No empty card text");
         assert.ok(photos[o.id], "No photo " + o.id);
-        assert.ok(facts[locale][o.id]?.length > 50, locale + " missing details: " + o.id);
+        assert.ok(facts[locale][o.id]?.length > 210, locale + " missing a useful multi-sentence explanation: " + o.id);
       }
     });
     assert.equal(new Set(list).size, 16);
@@ -65,6 +65,16 @@ test("each of 16 offer cards has a clear primary CTA and independent accessible 
   assert.match(component, /<Link href=\{hrefs\[offer\.id\]\} prefetch=\{false\} className=\{styles\.offerPrimary\}/);
   assert.match(component, /<Image src=\{photos\[offer\.id\]\} alt="" fill unoptimized loading="lazy"/);
   assert.match(component, /const \[expandedOffer, setExpandedOffer\] = useState<OfferId \| null>\(null\)/);
+  assert.match(component, /data-expanded=\{expanded \? "true" : "false"\}/);
+  assert.match(component, /className=\{styles\.offerContent\}/);
+  assert.match(component, /<h4 className=\{styles\.offerMoreTitle\}>\{detailLabels\[locale\]\.heading\}<\/h4>/);
+  assert.match(component, /className=\{styles\.offerMoreLink\}/);
+  assert.match(component, /aria-label=\{actionLabel\}/);
+  assert.match(component, /compactActions\[locale\]\[offer\.id\]/);
+  const controls = component.slice(component.indexOf('<div className={styles.offerControls}>'),
+    component.indexOf('</div>', component.indexOf('<div className={styles.offerControls}>')));
+  assert.ok(controls.indexOf('<button type="button"') < controls.indexOf('<Link href={hrefs[offer.id]}'),
+    'Details must come before the Request/Start action on the right of the photograph');
 });
 
 test("free labels stay free and paid requests never claim confirmed payments or appointments", () => {
@@ -97,11 +107,24 @@ test("private routes are guarded and Spanish public content uses English account
   assert.doesNotMatch(component, /medicalResults|privateAnswers|testAnswers|symptomScores/);
 });
 
-test("cards and CTAs remain legible at 320–430px, 44px touch targets and reduced motion", () => {
-  for (const needle of [".offerControls",".offerPrimary",".offerSecondary",
-    ".offerMore[hidden]","min-height: 44px","max-height: none",
-    'grid-template-areas: "photo body" "buttons buttons" "more more"',
-    "@media (max-width: 640px)","@media (max-width: 350px)","prefers-reduced-motion",
-    ":focus-visible","overflow-wrap: anywhere"]) assert.ok(css.includes(needle), needle);
+test("full-height photo stays left and Details → Request stays right at 320–430px", () => {
+  for (const needle of [
+    ".offerContent", ".offerControls", ".offerPrimary", ".offerSecondary",
+    ".offerMore[hidden]", ".offerMoreLink", "min-height: 44px", "max-height: none",
+    'grid-template-areas: "photo content"',
+    'grid-template-areas: "photo content" "more more"',
+    "@media (max-width: 640px)", "@media (max-width: 350px)",
+    "prefers-reduced-motion", ":focus-visible", "overflow-wrap: anywhere",
+    ".photo { align-self: stretch; height: auto;",
+    ".offerControls { flex-direction: column;",
+    ".actionFull { display: none; }", ".actionCompact { display: inline; }"
+  ]) assert.ok(css.includes(needle), "Missing mobile geometry or accessibility: " + needle);
+  const mobile = css.slice(css.indexOf("@media (max-width: 640px)"),
+    css.indexOf("@media (max-width: 350px)"));
+  assert.doesNotMatch(mobile, /"buttons buttons"|"more more"\s*;/,
+    "Mobile buttons must not detach below the photo");
+  assert.match(css, /\.offerSecondary\s*\{\s*order: 0;/);
+  assert.match(css, /\.offerPrimary\s*\{\s*order: 1;/);
+  assert.match(css, /\.offer\[data-expanded="true"\]/);
   assert.doesNotMatch(css, /\.offerAction/);
-});
+})
