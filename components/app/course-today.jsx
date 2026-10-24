@@ -428,7 +428,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
      day:data.roadmap?.find(item=>item.day===reviewLesson.day)?.programmeDay||data.programme.day}:null,
    currentSession:reviewLesson.session,currentCheckin:null,
  }:data
- const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null);setView('path')}
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
  const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return
@@ -671,19 +671,19 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     (playerData?.lesson?.version===COURSE_ANTISTRESS_SKILLS_V7
       ?<OporaExperiencePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
         data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
-        onFinish={finishLessonPlayer}
+        onFinish={finishLessonPlayer} onBackToPath={finishLessonPlayer}
         habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>
       :<OporaV6SlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
         data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)} onClose={closeLessonPlayer}
-        onFinish={finishLessonPlayer}
+        onFinish={finishLessonPlayer} onBackToPath={finishLessonPlayer}
         habitSetupContent={<CourseHomeScreenHabit locale={locale} embedded />}
         onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}/>)
     :<CourseSlidePlayer key={cycle.id+':'+playerData.cycle.day} locale={locale}
     data={playerData} busy={busy} reviewOnly={Boolean(reviewLesson)}
     promotion={reviewLesson?{...promotion,show:false}:promotion} onClose={closeLessonPlayer}
-     onFinish={finishLessonPlayer}
-    onOpenRetest={reviewLesson?closeLessonPlayer:showFinalRetest}
+     onFinish={finishLessonPlayer} onBackToPath={finishLessonPlayer}
+    onOpenRetest={reviewLesson?finishLessonPlayer:showFinalRetest}
     onCheckin={body=>reviewLesson?null:submit('checkin',body)}
     onSession={body=>reviewLesson?null:submit('session',body,undefined,'inline')}
     onPreferences={patch=>reviewLesson?null:submit('preferences',{

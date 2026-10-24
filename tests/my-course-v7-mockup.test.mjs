@@ -190,7 +190,7 @@ test('failed lesson saves do not earn an offer or completion and retries reuse t
 })
 
 test('V7 completion returns to the path and releases the exact presenter token; X preserves the current screen',async()=>{
- for(const exit of ['finish','close']){
+ for(const exit of ['finish','close','back']){
   const dismissals=[],notify=[]
   const dismiss=()=>dismissals.push('cycle-a:1:lesson-a')
   const h=mount('course-today',{props:{locale:'en',accountId:'owner-a',courseId:'course-a'},fetcher:()=>fixture(),extraModules:{
@@ -199,10 +199,10 @@ test('V7 completion returns to the path and releases the exact presenter token; 
   }})
   await h.settle();findButton(h.tree,'Start today’s practice').props.onClick();await h.settle()
   const player=findPart(h.tree,'CourseSlidePlayer');assert.ok(player)
-  if(exit==='finish')player.props.onFinish();else player.props.onClose()
+  if(exit==='finish')player.props.onFinish();else if(exit==='back')player.props.onBackToPath();else player.props.onClose()
   await h.settle()
   assert.equal(findPart(h.tree,'CourseSlidePlayer'),undefined)
-  assert.equal(h.tree.props['data-course-view'],exit==='finish'?'path':'today')
+  assert.equal(h.tree.props['data-course-view'],exit==='close'?'today':'path')
   assert.deepEqual(dismissals,['cycle-a:1:lesson-a'])
   assert.equal(notify.length,0,'completion navigation alone does not earn an offer')
   h.unmount()
