@@ -123,6 +123,23 @@
 .primary { background: var(--wine); border: 1px solid var(--wine); color: #fff; text-align: center; }
 .primary:hover { background: #602138; }
 .primary:disabled { opacity: .45; cursor: not-allowed; }
+.accountGate { max-width: 560px; margin: 2px auto 0; }
+.gateIcon { display: grid; place-items: center; width: 45px; height: 45px; margin-bottom: 12px; border-radius: 15px; color: #315f52; background: #e8f3e9; border: 1px solid #c6dccd; }
+.accountGate .help { margin-bottom: 15px; }
+.gateBenefits { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 10px; }
+.gateBenefits li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #3f6756; line-height: 1.4; }
+.gateBenefits svg { flex: none; color: #39785b; margin-top: 1px; }
+.gateGoogle, .gateGuest { width: 100%; min-height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 11px 15px; text-decoration: none; text-align: center; font-size: 14px; font-weight: 750; cursor: pointer; }
+.gateGoogle { background: #742b45; border: 1px solid #742b45; color: #fff; }
+.gateGoogle:hover { background: #602138; }
+.gateGoogle:disabled { opacity: .6; cursor: wait; }
+.gateGoogle svg, .gateGuest svg { flex: none; }
+.googleMark { display: grid; place-items: center; flex: none; width: 23px; height: 23px; border-radius: 50%; font-weight: 850; font-size: 15px; background: #fff; color: #4285f4; }
+.gateGuest { border: 1px solid #b6d2c2; background: #fff; color: #315f52; }
+.gateGuest:hover { background: #f1f7f2; }
+.gateExisting, .gateGuestNote { margin: 11px 2px; font-size: 12px; line-height: 1.48; text-align: center; color: #607568; }
+.gateGuestNote { font-size: 11px; color: #64776a; }
+.gateError { padding: 9px 12px; border-radius: 9px; background: #fff4ed; color: #7f392d; font-size: 12px; line-height: 1.5; }
 .privateInfo { display: flex; gap: 11px; align-items: flex-start; margin: 17px 2px 4px; padding: 15px; border: 1px solid #c8ddd0; border-radius: 15px; background: #f1f8f2; color: #3e6757; }
 .privateInfo > svg { flex: none; }
 .privateInfo p { margin: 0 0 9px; font-size: 12px; line-height: 1.5; }
@@ -161,6 +178,9 @@
   .testText > span { font-size: 10px; }
   .actions { gap: 8px; }
   .actions button, .actions a { min-height: 45px; padding: 8px 12px; font-size: 12px; }
+  .gateGoogle, .gateGuest { min-height: 48px; font-size: 13px; padding-inline: 12px; }
+  .accountGate h2 { font-size: clamp(21px, 5.5vw, 26px); }
+  .gateBenefits li { font-size: 12px; }
 }
 @media (max-width: 350px) {
   .shell { padding-inline: 7px; }
@@ -170,6 +190,7 @@
   .areaCard { min-height: 94px; gap: 5px; }
   .areaCard strong { font-size: 12px; }
   .swotGrid { grid-template-columns: 1fr; }
+  .gateGoogle, .gateGuest { gap: 7px; font-size: 12px; padding-inline: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .templateCard { transition: none; }
