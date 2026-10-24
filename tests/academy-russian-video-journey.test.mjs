@@ -111,4 +111,5 @@ test("Yggdrasil legacy videos retain all 7 source modules; unavailable clips are
     total + module.steps.reduce((count, step) => count + (step.video?.videos?.length || 0), 0), 0), 79);
   assert.match(library, /!video\.unavailable && \/\^\[A-Za-z0-9_-\]\{11\}\$\/\.test\(video\.id\)/);
   assert.match(library, /if \(!available\.length\) return <p/);
+  assert.match(library, /unavailable\.length \? <p className=\{styles\.sourceNote\} role="note">/);
 });
