@@ -31,7 +31,7 @@ const copy = {
     zenRequest: "Ask for ZEN.COM transfer details",
     otherPayment: "View full cart", extraMethods: "More payment options",
     interacTitle: "In Canada without PayPal?", interacIntro: "You can request an Interac e-Transfer. First we confirm a CAD amount, recipient and appointment time. No transfer happens when you click.",
-    interacRequest: "Request Interac details", squareAction: "Pay by card via Square", squareInfo: "Square Canada charges a separately approved CAD total, not the EUR reference. Check the seller and CAD total before paying. We verify receipt manually; payment does not book a session.", squareReceipt: "Paid with Square? Send transaction ID", combinedSquare: "Pay both by Square",
+    interacRequest: "Request Interac details", squareAction: "Pay by card via Square", squareInfo: "Square Canada charges a separately approved CAD total, not the EUR reference. Check the seller and CAD total before paying. We verify receipt manually; payment does not book a session.", squareApiInfo: "Secure Square checkout charges the displayed CAD total. We verify the received payment directly with Square; your appointment time is arranged separately.", squareReceipt: "Paid with Square? Send transaction ID", combinedSquare: "Pay both by Square",
     combinedTitle: "Both consultations", combinedIntro: "30 + 60 minutes. Appointment times confirmed personally; no automatic booking.",
     combinedPay: "Pay both through PayPal", combinedCart: "Review both in cart",
   },
@@ -51,7 +51,7 @@ const copy = {
     zenRequest: "Запросить реквизиты ZEN.COM",
     otherPayment: "Открыть полную корзину", extraMethods: "Другие варианты",
     interacTitle: "В Канаде без PayPal?", interacIntro: "Можно запросить перевод Interac e-Transfer. Сначала согласуем сумму в CAD, получателя и время сеанса. При нажатии деньги не списываются.",
-    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square", squareInfo: "Square Canada списывает отдельно утверждённую сумму CAD, а не указанную цену EUR. Проверьте продавца и сумму CAD. Поступление проверяется вручную; оплата не бронирует сеанс.", squareReceipt: "Оплатили через Square? Отправить ID", combinedSquare: "Оплатить обе услуги через Square",
+    interacRequest: "Запросить Interac", squareAction: "Оплатить картой через Square", squareInfo: "Square Canada списывает отдельно утверждённую сумму CAD, а не указанную цену EUR. Проверьте продавца и сумму CAD. Поступление проверяется вручную; оплата не бронирует сеанс.", squareApiInfo: "Безопасная оплата в Square списывает указанную сумму CAD. Поступление проверяется напрямую через Square; время консультации согласуем отдельно.", squareReceipt: "Оплатили через Square? Отправить ID", combinedSquare: "Оплатить обе услуги через Square",
     combinedTitle: "Обе консультации", combinedIntro: "30 + 60 минут. Время согласуется лично, бронирование не происходит автоматически.",
     combinedPay: "Оплатить обе через PayPal", combinedCart: "Проверить обе услуги в корзине",
   },
@@ -71,7 +71,7 @@ const copy = {
     zenRequest: "Solicitar datos para ZEN.COM",
     otherPayment: "Abrir el carrito", extraMethods: "Más opciones",
     interacTitle: "¿En Canadá sin PayPal?", interacIntro: "Puedes solicitar Interac e-Transfer. Primero confirmamos el importe en CAD, destinatario y cita. Hacer clic no envía dinero.",
-    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square", squareInfo: "Square Canada cobra el importe CAD aprobado por separado, no el precio de referencia en EUR. Comprueba el vendedor y el total CAD. Verificamos el pago manualmente; no reserva una cita.", squareReceipt: "¿Pagaste con Square? Enviar ID", combinedSquare: "Pagar ambas con Square",
+    interacRequest: "Solicitar Interac", squareAction: "Pagar con tarjeta vía Square", squareInfo: "Square Canada cobra el importe CAD aprobado por separado, no el precio de referencia en EUR. Comprueba el vendedor y el total CAD. Verificamos el pago manualmente; no reserva una cita.", squareApiInfo: "El pago seguro de Square cobra el importe CAD mostrado. Verificamos el pago directamente con Square; la hora de la sesión se acuerda aparte.", squareReceipt: "¿Pagaste con Square? Enviar ID", combinedSquare: "Pagar ambas con Square",
     combinedTitle: "Ambas consultas", combinedIntro: "30 + 60 minutos. Confirmaremos personalmente el horario; no hay reserva automática.",
     combinedPay: "Pagar ambas con PayPal", combinedCart: "Ver ambas en el carrito",
   },
@@ -139,9 +139,9 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
           <h1 id="personal-payment-title">{t.title}</h1>
           <p>{t.lead}</p>
         </div>
-        {Object.keys(squareLinks).length > 0 ? <div className={styles.notice} data-square-cad-disclosure>
+        {(squareApiEnabled || Object.keys(squareLinks).length > 0) ? <div className={styles.notice} data-square-cad-disclosure>
           <ShieldCheck size={22} aria-hidden="true" />
-          <div className={styles.noticeText}><strong>Square · CAD</strong><small>{t.squareInfo}</small></div>
+          <div className={styles.noticeText}><strong>Square · CAD</strong><small>{squareApiEnabled ? t.squareApiInfo : t.squareInfo}</small></div>
         </div> : null}
         {(enabled || verifiedPayPalCheckout || Object.keys(hostedPayPalLinks).length > 0) ? <div className={styles.notice} data-paypal-eur-disclosure>
           <ShieldCheck size={22} aria-hidden="true" />
@@ -252,7 +252,7 @@ export default async function PersonalPaymentsPage({ params }: PageProps) {
           </div>
         </div> : null}
         <div className={styles.final}>
-          <div className={styles.step}><BadgeCheck size={21} aria-hidden="true" /><p>{Object.keys(squareLinks).length ? t.squareInfo : t.process}</p></div>
+          <div className={styles.step}><BadgeCheck size={21} aria-hidden="true" /><p>{squareApiEnabled ? t.squareApiInfo : Object.keys(squareLinks).length ? t.squareInfo : t.process}</p></div>
           <p className={styles.warning}>{t.instructions}</p>
           <p className={styles.disclaimer}>{t.disclaimer}</p>
           {Object.keys(hostedPayPalLinks).length ? <p className={styles.disclaimer}>{t.hostedInfo}</p> : null}
