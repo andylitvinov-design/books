@@ -40,6 +40,24 @@ async function expandOptionalTools(page) {
   const journey = page.locator("[data-home-featured-workspace]");
   await expect(journey).toHaveAttribute("data-home-journey-count", "7");
   await expect(journey.locator("[data-home-module]")).toHaveCount(7);
+  await expect(page.locator('main.house-home h1')).toHaveCount(1);
+  const geometry = await journey.evaluate(node => {
+    const root = node.getBoundingClientRect();
+    const cards = [...node.querySelectorAll('[data-home-module-action]')];
+    const cardFits = cards.every(card => {
+      const bounds = card.getBoundingClientRect();
+      const action = card.querySelector('svg')?.parentElement?.getBoundingClientRect();
+      return bounds.left >= -1 && bounds.right <= window.innerWidth + 1 &&
+        bounds.height >= 44 && (!action || action.right <= bounds.right + 2);
+    });
+    return {
+      left: root.left, right: root.right, viewport: window.innerWidth,
+      cards: cards.length, cardFits,
+    };
+  });
+  assert.ok(geometry.left >= -1 && geometry.right <= geometry.viewport + 1 &&
+    geometry.cards === 16 && geometry.cardFits,
+    "Seven photographed stages and their CTAs must fit the mobile width: " + JSON.stringify(geometry));
   const extras = page.locator("#more-directions");
   await expect(extras).not.toHaveAttribute("open", "");
   await expect(page.locator("[data-home-conversation-guide]")).toHaveCount(0);
