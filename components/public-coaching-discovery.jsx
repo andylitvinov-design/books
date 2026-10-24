@@ -1,15 +1,16 @@
 'use client'
 
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ArrowRight, Check, ClipboardCopy, Clock3, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
-import { takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
+import { coachingArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
+import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
 
 
@@ -26,10 +27,11 @@ const copy={
     noExact:'No specific match found. You can choose any model below.',
     empty:'No models match these filters. Try a different topic or duration.',
     unavailable:'Coaching models are temporarily unavailable. You can still request a personal session.',
-    free:'Free',minutes:'min',start:'Start this free session',result:'What you will work toward',
-    recommendedLabel:'Suggested',different:'Other options',about:'Details',
+    free:'Free',minutes:'min',start:'Start free',result:'What you will work toward',
+    recommendedLabel:'Suggested',different:'Other options',about:'About this approach',
+    details:'Details',lessDetails:'Less details',fullDetails:'More about this session',expect:'Expected outcome',limits:'Good to know',examples:'Example questions',freeMeta:'Self-guided',
     humanTitle:'Personal coaching with Andrey',humanText:'Live, individual coaching or therapeutic conversation, online. Choose the duration and send a request.',
-    half:'30-minute session',hour:'60-minute session',request:'Request this session',
+    half:'30-minute session',hour:'60-minute session',request:'Request session',
     notBooking:'A request is not a confirmed booking or payment. The coach must accept and arrange the session.',
     safe:'Self-coaching is educational reflection, not psychotherapy, medical care or an AI conversation.',
     alert:'If you face an immediate safety concern, seek qualified human or emergency support instead of self-coaching.',
@@ -61,10 +63,11 @@ const copy={
     noExact:'Точного совпадения нет. Выберите подходящую модель самостоятельно.',
     empty:'Нет моделей с такими фильтрами. Измените тему или длительность.',
     unavailable:'Каталог моделей временно недоступен. Можно запросить личную сессию.',
-    free:'Бесплатно',minutes:'мин',start:'Начать бесплатную сессию',result:'Результат практики',
-    recommendedLabel:'Подходит по запросу',different:'Другие модели',about:'Детали',
+    free:'Бесплатно',minutes:'мин',start:'Начать бесплатно',result:'Результат практики',
+    recommendedLabel:'Подходит по запросу',different:'Другие модели',about:'Об этом подходе',
+    details:'Детали',lessDetails:'Свернуть',fullDetails:'Ещё больше подробностей',expect:'Результат',limits:'Важно учитывать',examples:'Примеры вопросов',freeMeta:'Самостоятельно',
     humanTitle:'Личный коучинг с Андреем',humanText:'Индивидуальная коучинговая или терапевтическая беседа онлайн. Выберите длительность и отправьте запрос.',
-    half:'Сессия 30 минут',hour:'Сессия 60 минут',request:'Запросить сессию',
+    half:'Сессия 30 минут',hour:'Сессия 60 минут',request:'Заказать',
     notBooking:'Запрос не является подтверждённой записью или оплатой. Специалист согласует условия и время.',
     safe:'Самостоятельный коучинг — практика размышления, не психотерапия, медпомощь или чат с ИИ.',
     alert:'При непосредственной угрозе безопасности обратитесь за квалифицированной или экстренной помощью.',
@@ -96,8 +99,9 @@ const copy={
     noExact:'No hay una coincidencia específica. Puedes elegir cualquier modelo.',
     empty:'No hay modelos con esos filtros. Cambia el tema o la duración.',
     unavailable:'El catálogo no está disponible temporalmente. Puedes solicitar una sesión personal.',
-    free:'Gratis',minutes:'min',start:'Empezar sesión gratis',result:'Resultado de la práctica',
-    recommendedLabel:'Sugerido',different:'Otras opciones',about:'Detalles',
+    free:'Gratis',minutes:'min',start:'Empezar gratis',result:'Resultado de la práctica',
+    recommendedLabel:'Sugerido',different:'Otras opciones',about:'Sobre este enfoque',
+    details:'Detalles',lessDetails:'Ocultar',fullDetails:'Más detalles de esta sesión',expect:'Resultado',limits:'A tener en cuenta',examples:'Preguntas de ejemplo',freeMeta:'Autoguiado',
     humanTitle:'Coaching personal con Andrey',humanText:'Conversación individual de coaching o terapia en línea. Elige una duración y envía una solicitud.',
     half:'Sesión de 30 minutos',hour:'Sesión de 60 minutos',request:'Solicitar sesión',
     notBooking:'Una solicitud no confirma una reserva ni un pago. El profesional debe confirmar.',
@@ -133,17 +137,6 @@ function traditionExplicitMatch(question,id){
 }
 
 
-// Decorative first-party photography. Existing site assets only.
-const coachingArt={
-  grow_v1:'/images/holistic-house/report-lighthouse-coast.avif',
-  tgrow_v1:'/images/holistic-house/ideas-pine-sharp.avif',
-  oskar_v1:'/images/holistic-house/hero-olive-incense.webp',
-  clear_v1:'/images/holistic-house/video-posters/constellations-en-v1.webp',
-  fuel_v1:'/images/holistic-house/books-library.webp',
-  solution_focus_v1:'/images/holistic-house/report-lighthouse-coast.avif',
-  woop_v1:'/images/holistic-house/ideas-pine-sharp.avif',
-  appreciative_5d_v1:'/images/holistic-house/hero-olive-incense.webp',
-}
 const tr=(value,locale)=>value?.[locale]||value?.en||''
 const answerText=(value,item,locale,t)=>{
   if(typeof value!=='string'||!value)return t.noAnswer
@@ -153,6 +146,63 @@ const answerText=(value,item,locale,t)=>{
   return tr((item.choices||[]).find(c=>c.id===id)?.label,locale)||t.noAnswer
 }
 
+
+// The same compact card contract is used for free models, private author
+// programmes, the preparation questionnaire and paid session requests.
+function CoachingLoungeCard({
+  locale,id,title,meta,price,image,description,detail,outcome,caution,examples,
+  primaryLabel,primaryHref,onPrimary,landingHref,onLanding,suggested=false,
+  schemeKey,traditionKey,
+}){
+  const t=copy[locale],panelId=useId()
+  const [expanded,setExpanded]=useState(false)
+  return <article className={styles.loungeCard} data-coaching-item={id}
+    data-coaching-scheme={schemeKey} data-coaching-tradition={traditionKey}
+    data-coaching-compact-card>
+    <div className={styles.loungeRow}>
+      <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
+        aria-label={t.fullDetails+': '+title}>
+        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized
+          sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
+      </Link>
+      <div className={styles.loungeContent}>
+        <div className={styles.loungeMeta}>
+          <span>{meta}</span><strong>{price}</strong>
+        </div>
+        <h3>{title}</h3>
+        {description&&<p className={styles.loungeSummary}>{description}</p>}
+        {suggested&&<span className={styles.loungeSuggested}><Sparkles size={12}/>{t.recommendedLabel}</span>}
+        <div className={styles.loungeActions}>
+          <button type="button" className={styles.loungeDetails} aria-controls={panelId}
+            aria-expanded={expanded} onClick={()=>setExpanded(prev=>!prev)}>
+            {expanded?t.lessDetails:t.details}
+            <ChevronDown size={15} aria-hidden="true" className={expanded?styles.chevronOpen:styles.chevron}/>
+          </button>
+          {onPrimary
+            ? <button type="button" className={styles.loungePrimary} onClick={onPrimary}>
+                {primaryLabel}<ArrowRight size={15} aria-hidden="true"/>
+              </button>
+            : <Link className={styles.loungePrimary} href={primaryHref} prefetch={false}>
+                {primaryLabel}<ArrowRight size={15} aria-hidden="true"/>
+              </Link>}
+        </div>
+      </div>
+    </div>
+    <div className={styles.loungePanel} id={panelId} hidden={!expanded}
+      aria-label={t.details+': '+title} data-coaching-details-panel>
+      {detail&&<p>{detail}</p>}
+      {outcome&&<p><strong>{t.expect}:</strong> {outcome}</p>}
+      {caution&&<p><strong>{t.limits}:</strong> {caution}</p>}
+      {Array.isArray(examples)&&examples.length>0&&<div>
+        <strong>{t.examples}:</strong>
+        <ul>{examples.slice(0,3).map((text,i)=><li key={i}>{text}</li>)}</ul>
+      </div>}
+      <Link href={landingHref} className={styles.loungeLanding} prefetch={false} onClick={onLanding}>
+        {t.fullDetails}<ArrowRight size={15} aria-hidden="true"/>
+      </Link>
+    </div>
+  </article>
+}
 
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
@@ -218,6 +268,21 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   },[session,index,finished,pendingFollowup])
   const models=useMemo(()=>new Map((catalog?.models||[]).map(m=>[m.modelKey,m])),[catalog])
   const schemes=useMemo(()=>(catalog?.schemes||[]).filter(s=>models.has(s.modelKey)&&Array.isArray(s.questions)&&s.questions.length>0),[catalog,models])
+  // A dedicated public scheme landing may link back to an explicit Start action.
+  // Only a whitelisted, published scheme key is read from the URL; never a
+  // visitor's raw question or response. No session is stored by this handoff.
+  const openedLinkedScheme=useRef(false)
+  useEffect(()=>{
+    if(openedLinkedScheme.current||!schemes.length)return
+    const schemeKey=new URLSearchParams(window.location.search).get('start')
+    if(!schemeKey)return
+    openedLinkedScheme.current=true
+    const selected=schemes.find(item=>item.schemeKey===schemeKey)
+    if(selected){
+      setSession(selected);setIndex(0);setAnswers({});setDraft('')
+      setFinished(false);setError('');setCopied(false)
+    }
+  },[schemes])
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
   const suggestionKeys=useMemo(()=>new Set(question.trim().length>=8&&recommendation.recognized?recommendation.suggestions.filter(s=>s.matchedTags.length>0).map(s=>s.schemeKey):[]),[question,recommendation])
   const shown=useMemo(()=>schemes.filter(s=>(topic==='all'||s.tags?.includes(topic))&&(duration===0||s.minutes<=duration)&&(style==='all'||s.style===style))
@@ -362,23 +427,20 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <div className={styles.cards} data-public-coaching-models>
               {shown.map(s=>{
                 const model=models.get(s.modelKey)
-                return <article key={s.schemeKey} className={styles.card} data-coaching-scheme={s.schemeKey}>
-                  <div className={styles.cardVisual}>
-                    <Image className={styles.cardArt} src={cardArtworkUrl(coachingArt[s.modelKey]||coachingArt.grow_v1)} unoptimized
-                      alt="" aria-hidden="true" width={640} height={470} sizes="(max-width:600px) 36vw, (max-width:800px) 34vw, 240px"/>
-                  </div>
-                  <div className={styles.cardContent}>
-                    <div className={styles.cardTop}><span>{s.style==='quick'?t.quick:t.reflective} · {s.minutes} {t.minutes}</span><strong>{t.free} · €0</strong></div>
-                    <div className={styles.cardMain}>
-                      <div className={styles.cardHeading}><h3>{tr(model.name,lang)}</h3><p className={styles.schemeName}>{tr(s.name,lang)}</p></div>
-                    </div>
-                    <p>{tr(model.selectionComment,lang)||tr(model.focus,lang)}</p>
-                    <p className={styles.outcome}><Check size={15}/>{t.result}: {tr(s.result,lang)}</p>
-                    {suggestionKeys.has(s.schemeKey)&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-                    <button type="button" className={styles.cardButton} onClick={()=>start(s)}>{t.start}<ArrowRight size={17}/></button>
-                  </div>
-                  <details className={styles.cardDetails}><summary>{t.about}</summary><p>{tr(model.caution,lang)}</p></details>
-                </article>
+                return <CoachingLoungeCard key={s.schemeKey} locale={lang} id={s.schemeKey}
+                  title={tr(model.name,lang)}
+                  meta={(s.style==='quick'?t.quick:t.reflective)+' · '+s.minutes+' '+t.minutes}
+                  price="€0" image={coachingArt[s.modelKey]||coachingArt.grow_v1}
+                  description={tr(model.selectionComment,lang)||tr(model.focus,lang)}
+                  detail={tr(model.focus,lang)}
+                  outcome={tr(s.result,lang)}
+                  caution={tr(model.caution,lang)}
+                  examples={model.exampleQuestions?.[lang]||model.exampleQuestions?.en||[]}
+                  suggested={suggestionKeys.has(s.schemeKey)}
+                  schemeKey={s.schemeKey} primaryLabel={t.start}
+                  onPrimary={()=>start(s)}
+                  onLanding={()=>stageIdeasCoachingQuestion(question)}
+                  landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
               })}
             </div>}
           <p className={styles.disclaimer}>{t.safe}</p>
@@ -387,61 +449,42 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <h2 id="coaching-more-paths">{t.otherWays}</h2>
           <p>{t.otherWaysNote}</p>
           <div className={styles.morePathGrid}>
-            {shownTraditions.includes('egyptian')&&<article className={styles.morePath} data-coaching-tradition="egyptian" data-suggested={suggestedTraditions.has('egyptian')}>
-              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={470} unoptimized loading="lazy" sizes="(max-width:700px) 36vw, 240px"/>
-              <div className={styles.moreContent}>
-                <h3>{t.egyptian}</h3><p>{t.egyptianNote}</p>
-                {suggestedTraditions.has('egyptian')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-                <Link className={styles.moreSelect} href={traditionHref('egyptian')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              </div>
-              <details className={styles.moreInfo}><summary>{t.about}</summary><p>{t.safe}</p>
-                <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/egyptian'} prefetch={false}>
-                  {t.openProgramme}<ArrowRight size={16}/></Link>
-              </details>
-            </article>}
-            {shownTraditions.includes('greek')&&<article className={styles.morePath} data-coaching-tradition="greek" data-suggested={suggestedTraditions.has('greek')}>
-              <Image className={styles.morePhoto} src="/academy/reiki-yggdrasil/source/temple-studies.png"
-                alt="" width={640} height={470} unoptimized loading="lazy" sizes="(max-width:700px) 36vw, 240px"/>
-              <div className={styles.moreContent}>
-                <h3>{t.greek}</h3><p>{t.greekNote}</p>
-                {suggestedTraditions.has('greek')&&<span className={styles.recommended}><Sparkles size={14}/>{t.recommendedLabel}</span>}
-                <Link className={styles.moreSelect} href={traditionHref('greek')} prefetch={false}>{t.chooseTradition}<ArrowRight size={16}/></Link>
-              </div>
-              <details className={styles.moreInfo}><summary>{t.about}</summary><p>{t.safe}</p>
-                <Link className={styles.moreDetails} href={'/'+lang+'/academy/coaching/greek'} prefetch={false}>
-                  {t.openProgramme}<ArrowRight size={16}/></Link>
-              </details>
-            </article>}
-            <article className={styles.morePath} data-coaching-questionnaire>
-              <Image className={styles.morePhoto} src="/images/holistic-house/course-start-heron.webp"
-                alt="" width={640} height={470} unoptimized loading="lazy" sizes="(max-width:700px) 36vw, 240px"/>
-              <div className={styles.moreContent}>
-                <h3>{t.worksheet}</h3><p>{t.worksheetNote}</p>
-                <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
-                  {t.openWorksheet}<ArrowRight size={16}/></Link>
-              </div>
-              <details className={styles.moreInfo}><summary>{t.about}</summary><p>{t.privateQuestion}</p></details>
-            </article>
+            {shownTraditions.includes('egyptian')&&<CoachingLoungeCard
+              key="egyptian" locale={lang} id="egyptian" traditionKey="egyptian"
+              title={t.egyptian} meta={t.freeMeta} price="€0"
+              image={traditionCoachingArt} description={t.egyptianNote}
+              detail={t.egyptianNote} caution={t.safe}
+              suggested={suggestedTraditions.has('egyptian')}
+              primaryHref={traditionHref('egyptian')} primaryLabel={t.chooseTradition}
+              landingHref={'/'+lang+'/academy/coaching/egyptian'}/>}
+            {shownTraditions.includes('greek')&&<CoachingLoungeCard
+              key="greek" locale={lang} id="greek" traditionKey="greek"
+              title={t.greek} meta={t.freeMeta} price="€0"
+              image={traditionCoachingArt} description={t.greekNote}
+              detail={t.greekNote} caution={t.safe}
+              suggested={suggestedTraditions.has('greek')}
+              primaryHref={traditionHref('greek')} primaryLabel={t.chooseTradition}
+              landingHref={'/'+lang+'/academy/coaching/greek'}/>}
+            <CoachingLoungeCard key="worksheet" locale={lang} id="worksheet"
+              title={t.worksheet} meta={t.freeMeta} price="€0"
+              image={coachingWorksheetArt} description={t.worksheetNote}
+              detail={t.worksheetNote}
+              primaryHref={'/'+lang+'/coaching/intake'} primaryLabel={t.openWorksheet}
+              landingHref={'/'+lang+'/coaching/intake'}/>
           </div>
         </section>}
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title">
           <h2 id="human-coaching-title">{t.humanTitle}</h2><p>{t.humanText}</p>
-          <div className={styles.cards}>
-            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}].filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style)).map(option=>
-              <article className={styles.card} key={option.minutes} data-coaching-human={option.minutes}>
-                <div className={styles.cardVisual}>
-                  <Image className={styles.cardArt} src={cardArtworkUrl('/images/holistic-house/hero-olive-incense.webp')} unoptimized
-                    alt="" aria-hidden="true" width={640} height={470} sizes="(max-width:600px) 36vw, 240px"/>
-                </div>
-                <div className={styles.cardContent}>
-                  <div className={styles.cardTop}><span><Clock3 size={14}/> {option.minutes} {t.minutes}</span><strong>{option.price}</strong></div>
-                  <div className={styles.cardMain}><div className={styles.cardHeading}><h3>{option.name}</h3></div></div>
-                  <p>{t.humanText}</p>
-                  <Link className={styles.cardButton} href={'/'+lang+'/services#consultation'}>{t.request}<ArrowRight size={17}/></Link>
-                </div>
-                <details className={styles.cardDetails}><summary>{t.about}</summary><p>{t.notBooking}</p></details>
-              </article>)}
+          <div className={styles.cards} data-coaching-paid-sessions>
+            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}]
+              .filter(item=>(duration===0||item.minutes<=duration)&&(style==='all'||item.style===style))
+              .map(option=><CoachingLoungeCard key={option.minutes} locale={lang}
+                id={'personal-'+option.minutes} title={option.name}
+                meta={option.minutes+' '+t.minutes} price={option.price}
+                image={humanCoachingArt} description={t.humanText}
+                detail={t.humanText} caution={t.notBooking}
+                primaryHref={'/'+lang+'/services#consultation'} primaryLabel={t.request}
+                landingHref={'/'+lang+'/coaching/session/personal-'+option.minutes}/>)}
           </div>
           <p className={styles.disclaimer}>{t.notBooking}</p>
           <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
