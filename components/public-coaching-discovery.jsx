@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
@@ -49,7 +50,7 @@ const copy={
     safe:'Self-coaching is educational reflection, not psychotherapy, medical care or an AI conversation.',
     alert:'If you face an immediate safety concern, seek qualified human or emergency support instead of self-coaching.',
     back:'All sessions',stage:'QUESTION',of:'OF',yourQuestion:'Your question',choices:'Choose an answer',
-    ownAnswer:'Or write your answer (optional)',answerPlaceholder:'Your own words…',
+    ownAnswer:'Or write your answer (optional)',openAnswer:'Your answer, in your own words',answerPlaceholder:'Take your time. A few sentences are enough…',
     next:'Next question',finish:'Finish session',previous:'Previous',required:'Choose or write an answer.',
     plan:'For WOOP, write your own specific if–then plan (at least 10 characters).',
     completed:'Session complete',summary:'Your reflection',nextStep:'Your last step',copy:'Copy my summary',
@@ -92,7 +93,7 @@ const copy={
     safe:'Самостоятельный коучинг — практика размышления, не психотерапия, медпомощь или чат с ИИ.',
     alert:'При непосредственной угрозе безопасности обратитесь за квалифицированной или экстренной помощью.',
     back:'Все сессии',stage:'ВОПРОС',of:'ИЗ',yourQuestion:'Ваш вопрос',choices:'Выберите ответ',
-    ownAnswer:'Или напишите свой ответ (необязательно)',answerPlaceholder:'Вашими словами…',
+    ownAnswer:'Или напишите свой ответ (необязательно)',openAnswer:'Ваш ответ своими словами',answerPlaceholder:'Не торопитесь. Достаточно нескольких предложений…',
     next:'Следующий вопрос',finish:'Завершить',previous:'Назад',required:'Выберите или напишите ответ.',
     plan:'Для WOOP напишите конкретный план «если — то» не короче 10 символов.',
     completed:'Сессия завершена',summary:'Ваши ответы',nextStep:'Ваш последний шаг',copy:'Скопировать результат',
@@ -135,7 +136,7 @@ const copy={
     safe:'El autocoaching es reflexión educativa, no psicoterapia, atención médica ni chat con IA.',
     alert:'Ante un peligro inmediato, solicita ayuda profesional o de emergencia.',
     back:'Todas las sesiones',stage:'PREGUNTA',of:'DE',yourQuestion:'Tu pregunta',choices:'Elige una respuesta',
-    ownAnswer:'O escribe tu respuesta (opcional)',answerPlaceholder:'En tus palabras…',
+    ownAnswer:'O escribe tu respuesta (opcional)',openAnswer:'Tu respuesta, con tus propias palabras',answerPlaceholder:'Sin prisa. Unas frases son suficientes…',
     next:'Siguiente pregunta',finish:'Terminar',previous:'Atrás',required:'Elige o escribe una respuesta.',
     plan:'Para WOOP escribe un plan específico «si–entonces» de al menos 10 caracteres.',
     completed:'Sesión terminada',summary:'Tu reflexión',nextStep:'Tu último paso',copy:'Copiar resumen',
@@ -332,6 +333,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       traditionExplicitMatch(question,id)||fit.tags.some(tag=>(recommendation.tags||[]).includes(tag)))
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
+  const quickChoices=coachingQuickChoicesAllowed(current,index)
+  const gentleGuide=coachingGentleGuide(current,index,session?.questions?.length||1,lang)
   const needsCustomPlan=Boolean(session?.requiredCustomPlan&&index===session.questions.length-1)
   const requiresAdult=Boolean(session&&(coachingSchemeRequiresAdultConsent(session)||sessionTopic==='sexuality'))
   const progressPosition=entryStep==='intro'?1:entryStep==='topic'?2:index+3
@@ -647,23 +650,27 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               }}/>
             {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {tr(current.reflection,lang)&&<p className={styles.hint}>{tr(current.reflection,lang)}</p>}
-            {options.length>0&&!needsCustomPlan&&<>
+            {gentleGuide&&<div className={styles.gentleGuide} data-public-coaching-gentle-guide>
+              <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
+            </div>}
+            {quickChoices&&options.length>0&&!needsCustomPlan&&<>
               <p className={styles.questionLabel}>{t.choices}</p>
               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
                 {options.map(option=><button type="button" key={option.id}
                   aria-pressed={draft==='choice:'+option.id} disabled={dictating} onClick={()=>{setDraft('choice:'+option.id);if(customAnswerRef.current)customAnswerRef.current.open=false;setError('')}}>{tr(option.label,lang)}</button>)}
               </div>
             </>}
-            {options.length>0&&!needsCustomPlan
+            {quickChoices&&options.length>0&&!needsCustomPlan
               ?<details key={current.id} className={styles.customAnswer} ref={customAnswerRef} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
                 <summary>{t.ownAnswer}</summary>
                 <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer}
                   rows={2} maxLength={800} placeholder={t.answerPlaceholder}
                   value={draft.startsWith('choice:')?'':draft} onChange={e=>{setDraft(e.target.value);setError('')}}/>
               </details>
-              :<><label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.ownAnswer}</label>
-                <textarea id="public-coaching-answer" className={styles.questionInput} rows={3} maxLength={800}
+              :<>{!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>{answerText(draft,current,lang,t)}</p>}
+                <label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.openAnswer}</label>
+                <textarea id="public-coaching-answer" className={styles.questionInput} rows={4} maxLength={800}
+                  data-public-coaching-open-reflection={!quickChoices?'true':undefined}
                   placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
                   onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
             {error&&<p className={styles.alert} role="alert">{error}</p>}
