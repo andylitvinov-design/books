@@ -86,7 +86,7 @@ test('approved plan seeds never invent actions from TGROW timing, OSKAR resource
   assert.equal(draftCoachingActionPlan(oskar.questions,oskar.answers,'','ru').actionText,'')
 })
 
-test('continuity and unsubmitted followup safeguards reuse the same private account',()=>{
+test('continuity and unsubmitted followup safeguards reuse the same private account',async()=>{
   const ui=source('components/app/personal-coaching.jsx')
   const picker=source('components/app/personal-coaching-picker.jsx')
   const css=source('components/app/personal-coaching.module.css')
