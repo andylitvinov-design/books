@@ -1,0 +1,247 @@
+.root{
+  --ink:#233b41;--muted:#566961;--teal:#246466;--wine:#893751;--line:#dfd0c0;
+  color:var(--ink);background:linear-gradient(180deg,#f7f1e8,#fffaf3 80%);min-height:80vh;
+  padding:clamp(12px,2.5vw,30px) clamp(12px,3vw,34px) 70px;
+}
+.root *{box-sizing:border-box}
+.wrap{max-width:1080px;margin:0 auto}
+.hero{position:relative;overflow:hidden;isolation:isolate;min-height:220px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  border:1px solid #d9c9b8;border-radius:24px;padding:clamp(22px,4vw,50px);background:#f3eee4;box-shadow:0 12px 32px #513c2820}
+.hero::before{content:"";position:absolute;inset:0;z-index:-2;background:url("/images/holistic-house/ideas-pine-sharp.avif") center 44% / cover no-repeat}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(95deg,rgba(251,247,239,.99) 0%,rgba(251,247,239,.94) 38%,rgba(251,247,239,.28) 85%)}
+.eyebrow{display:flex;align-items:center;gap:7px;color:#476d65;font-size:12px;line-height:1.25;letter-spacing:.12em;font-weight:850;text-transform:uppercase;margin:0 0 13px}
+.hero h1,.session h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing:-.045em;line-height:1.07;font-size:clamp(36px,5vw,60px);max-width:740px;color:#2e362e;margin:0}
+.hero>p:last-child{margin:15px 0 0;max-width:600px;font-size:clamp(15px,2vw,19px);line-height:1.45}
+.controls{position:relative;margin:-13px auto 0;max-width:980px;padding:clamp(14px,2vw,24px);border:1px solid #e7dace;
+  border-radius:19px;background:#fffcf8;box-shadow:0 10px 28px #6e57431a}
+.format{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:0;margin:0 0 15px;border:0;min-width:0}
+.format legend{font-size:12px;font-weight:800;color:#6c5c4b;margin-bottom:8px}
+.format button{display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid #c9d0c7;background:#fffdfb;
+  border-radius:13px;min-height:52px;padding:11px 13px;color:#49625e;font-size:15px;font-weight:800;cursor:pointer;text-align:center}
+.format button.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.format button:not(.active):hover{background:#eef3ee}
+.questionLabel{display:block;font-weight:800;font-size:14px;color:#374f4f;margin:10px 0 7px}
+.questionInput{display:block;width:100%;background:#fff;border:1px solid #cdbbab;border-radius:13px;min-height:61px;padding:12px 14px;
+  color:#25393b;font:inherit;font-size:16px;line-height:1.55;resize:vertical;outline:none}
+.questionInput::placeholder{color:#71817d}
+.privacy,.disclaimer{display:flex;align-items:flex-start;gap:8px;color:var(--muted);font-size:12px;line-height:1.5;margin:11px 0}
+.privacy svg,.disclaimer svg{flex:none;margin-top:2px}
+.filters{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin-top:13px}
+.filters label{font-size:12px;font-weight:800;color:#5e5b51;min-width:0}
+.filters select{display:block;width:100%;background:white;border:1px solid #cfbfae;border-radius:10px;padding:10px 34px 10px 11px;margin-top:6px;
+  color:#394b49;font:inherit;font-size:14px;font-weight:700;min-height:44px;cursor:pointer}
+.catalog{padding:26px 0 35px}
+.sectionHeader{margin-bottom:20px}
+.catalog h2{font-family:Georgia,"Times New Roman",serif;font-size:clamp(26px,3.5vw,38px);font-weight:400;letter-spacing:-.03em;line-height:1.15;margin:0 0 7px}
+.sectionHeader p:last-child,.catalog>p{color:var(--muted);line-height:1.5;margin-top:9px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.card{min-width:0;display:flex;flex-direction:column;gap:10px;border:1px solid #decfc0;background:#fffefd;border-radius:18px;padding:20px;
+  box-shadow:0 6px 18px #493b2c10}
+.cardTop{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:12px;color:#586963;line-height:1.3}
+.cardTop span{display:flex;align-items:center;gap:4px}
+.cardTop strong{white-space:nowrap;color:#2b695a;background:#e9f4ee;border-radius:20px;padding:5px 8px}
+.card h3{font-family:Georgia,"Times New Roman",serif;font-size:clamp(23px,2.5vw,28px);font-weight:400;letter-spacing:-.025em;line-height:1.1;margin:6px 0 0}
+.card p{font-size:13px;line-height:1.48;color:#50615d;margin:0;overflow-wrap:anywhere}
+.card .schemeName{font-weight:800;color:#79523f}
+.card .outcome{display:flex;gap:6px;align-items:flex-start;margin-top:auto;color:#2d675b}
+.outcome svg{flex:none;margin-top:2px}
+.recommended{display:flex;align-items:center;gap:5px;color:#6c3a59;font-size:12px;font-weight:800}
+.card details{font-size:12px;border-top:1px solid #eadfd2;padding-top:9px}
+.card details summary{cursor:pointer;color:#476360;font-weight:750}
+.card details p{margin-top:7px}
+.cardButton,.primary{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:11px 13px;border:0;border-radius:12px;
+  background:var(--wine);color:#fff;text-decoration:none;text-align:center;font-size:14px;font-weight:850;line-height:1.3;cursor:pointer;margin-top:4px}
+.cardButton:hover,.primary:hover{background:#713047;color:#fff}
+.alert{border-left:3px solid #a34b40;background:#fff5ed;border-radius:7px;padding:13px;color:#7a473b;font-size:14px;line-height:1.5}
+.session{max-width:790px;min-height:65vh;margin:0 auto;padding:clamp(17px,4vw,44px);border:1px solid #e4d7c9;border-radius:20px;
+  background:#fffdf8;box-shadow:0 8px 28px #3d302217}
+.back,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:10px 15px;
+  border:1px solid #b6c8c0;border-radius:11px;background:#f8fcf9;color:#2a6667;font-size:14px;font-weight:800;cursor:pointer}
+.back{margin-bottom:22px}
+.session .eyebrow{margin-bottom:15px}
+.session h1{font-size:clamp(30px,4vw,45px);max-width:100%;margin:12px 0 18px}
+.progress{display:flex;align-items:center;gap:18px;color:#526966;font-size:12px;font-weight:800;letter-spacing:.04em}
+.progress>div{height:7px;flex:1;background:#e8e6dc;border-radius:20px;overflow:hidden}
+.progress>div>span{display:block;height:100%;background:#287b7a;transition:width .18s}
+.stage{margin:20px 0 6px;font-size:12px;font-weight:850;color:#4d706b;letter-spacing:.11em;text-transform:uppercase}
+.context,.hint{padding:11px 13px;background:#eaf3ed;border-radius:10px;color:#3a5d5b;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.hint{background:none;padding:0;color:#65726a}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:17px}
+.choices button{min-height:48px;border:1px solid #b8cbc0;border-radius:12px;background:#fff;color:#355d5b;padding:10px 12px;
+  font-size:14px;font-weight:700;line-height:1.35;text-align:left;cursor:pointer}
+.choices button[aria-pressed="true"]{border-color:#267779;background:#e2efeb;box-shadow:inset 0 0 0 1px #267779}
+.sessionActions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px}
+.sessionActions .primary{margin:0;flex:1;max-width:320px}
+.completed{display:inline-flex;align-items:center;gap:6px;color:#216651;font-weight:800}
+.finish h1{margin-bottom:19px}
+.summary{display:grid;gap:12px;margin:20px 0}
+.summary>div,.summary>p{padding:14px;background:#f2f4ee;border:1px solid #e2e4db;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.summary strong{font-size:14px;color:#2c504a}
+.summary p{font-size:14px;line-height:1.5;margin:6px 0 0}
+.finish>.primary,.finish>.secondary{width:100%;margin-top:10px}
+.copyFallback{width:100%;border:1px solid #ceb9a5;border-radius:10px;resize:vertical;font-size:13px}
+.root :is(button,a,select,textarea,summary):focus-visible{outline:3px solid #178289;outline-offset:3px}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .root{padding:8px 9px 90px}
+ .hero{min-height:175px;padding:20px;border-radius:17px}
+ .hero::after{background:linear-gradient(90deg,rgba(251,247,239,.97),rgba(251,247,239,.63) 84%)}
+ .hero h1{font-size:37px}
+ .hero>p:last-child{font-size:14px;max-width:92%;margin-top:10px}
+ .eyebrow{font-size:10px;letter-spacing:.1em}
+ .controls{padding:12px;border-radius:13px;margin-top:-8px}
+ .format{gap:6px}
+ .format button{font-size:12px;min-height:55px;gap:6px;padding:7px 6px;line-height:1.2}
+ .format button svg{width:16px;flex:none}
+ .filters{grid-template-columns:1fr 1fr;gap:9px}
+ .filters label:first-child{grid-column:1/-1}
+ .catalog{padding:24px 0}
+ .cards{grid-template-columns:1fr;gap:10px}
+ .card{padding:16px;gap:8px}
+ .card h3{font-size:26px}
+ .session{padding:18px 14px;border-radius:15px}
+ .progress{flex-direction:column;align-items:stretch;gap:8px}
+ .sessionActions{gap:8px}
+ .sessionActions .primary{flex:1}
+}
+@media(max-width:360px){
+ .root{padding:6px 6px 90px}
+ .hero{padding:16px}
+ .hero h1{font-size:33px}
+ .format button{font-size:11px;min-height:58px;flex-direction:column;gap:3px}
+ .choices{grid-template-columns:1fr}
+ .cardTop{font-size:11px}
+ .sessionActions button{font-size:12px;padding:8px}
+}
+@media(prefers-reduced-motion:reduce){.progress>div>span{transition:none}}
+
+
+/* Coaching lounge · distinct author programmes remain accessible without
+   misrepresenting their private sessions as public guest flow. */
+.morePaths{padding:25px 0 15px;border-top:1px solid #e0d2bf}
+.morePaths h2{font:400 clamp(26px,3.5vw,37px)/1.18 Georgia,"Times New Roman",serif;color:#344139;margin:0 0 7px}
+.morePaths>p{color:#58685f;line-height:1.45;margin:0 0 17px;max-width:720px;font-size:14px}
+.morePathGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.morePath{display:flex;flex-direction:column;min-width:0;gap:8px;padding:19px;
+  border:1px solid #d9c7b2;border-radius:18px;background:linear-gradient(145deg,#fcf9f3,#f1e7d8)}
+.morePath:nth-child(2){background:linear-gradient(145deg,#f5f5ee,#e8ece7);border-color:#cbd5cc}
+.morePath:nth-child(3){background:linear-gradient(145deg,#fffef9,#f5eeee);border-color:#e0d0d2}
+.morePath h3{font:400 clamp(21px,2.5vw,25px)/1.2 Georgia,"Times New Roman",serif;margin:0;color:#3d4440}
+.morePath p{font-size:13px;line-height:1.5;color:#52645d;margin:0 0 10px;flex:1}
+.morePath a{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;
+  border-radius:11px;text-decoration:none;background:#296964;color:white;
+  font-size:13px;font-weight:800;padding:10px 12px;text-align:center}
+.morePath a:hover{color:#fff;background:#1e5556}
+.session h1{scroll-margin-top:16px}
+@media(max-width:700px){
+ .morePathGrid{grid-template-columns:1fr}
+ .morePath{padding:16px}
+ .morePath h3{font-size:23px}
+ .morePaths{padding-top:21px}
+}
+
+/* Visitors can select all session formats or narrow the same room without navigation. */
+.format button{min-width:0;overflow-wrap:anywhere}
+.catalog+.catalog{padding-top:12px;border-top:1px solid #e7d9c8}
+.morePath[data-suggested="true"]{border-color:#8b5d46;box-shadow:0 0 0 2px #d3b18f33}
+.filterNote{font-size:12px;color:#546e65;margin:8px 0 0;line-height:1.45}
+.morePaths[hidden]{display:none}
+
+
+/* 2026-10-24 review: calm editorial photography and compact mobile model chooser */
+.hero{min-height:195px;border-radius:20px;padding:clamp(23px,3.3vw,38px)}
+.hero::before{background-position:68% 41%}
+.hero::after{
+  background:linear-gradient(90deg,rgba(251,248,241,.99),rgba(251,248,241,.88) 40%,rgba(251,248,241,.16) 92%);
+}
+.hero h1{font-size:clamp(36px,4.5vw,54px);line-height:1.06}
+.hero>p:last-child{max-width:590px;line-height:1.42}
+.controls{margin-top:-11px;border-color:#e0d0bf;box-shadow:0 8px 21px #513f3112}
+.format button{transition:background .15s,color .15s,border-color .15s}
+.format button.active{background:#2b6666;color:#fff;box-shadow:0 4px 10px #28595822}
+.questionInput{border-color:#c5b29e;background:#fffefc}
+.filters select{overflow:hidden;text-overflow:ellipsis}
+.catalog{padding:25px 0 28px}
+.cards{gap:12px}
+.card{
+  position:relative;overflow:hidden;border-color:#ddcfc1;
+  background:#fffdfa;box-shadow:0 3px 15px #503c2b0e;
+  transition:border-color .16s,box-shadow .16s,transform .16s;
+}
+.card::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#c7a78d,#8baaa0)}
+.card:focus-within{border-color:#77a299;box-shadow:0 0 0 2px #7bb3ac25,0 5px 22px #503c2b1a}
+@media(hover:hover){.card:hover{transform:translateY(-2px);border-color:#bbab95;box-shadow:0 8px 22px #503c2b17}}
+.cardTop{align-items:center;min-height:24px}
+.cardTop strong{font-size:12px;color:#226452;background:#dff2e7}
+.cardMain{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:11px;align-items:start;min-width:0}
+.cardHeading{min-width:0}
+.cardHeading h3{margin:1px 0 8px;overflow-wrap:break-word}
+.cardHeading .schemeName{margin:0}
+.cardArt{
+  display:block;width:96px;height:82px;border-radius:12px;object-fit:cover;
+  border:1px solid #e2d8c9;background:#efe7db;
+}
+.card .outcome{background:#f0f6f0;border-radius:10px;padding:8px;color:#35645b}
+.cardButton{margin-top:auto;box-shadow:none}
+.cardButton:focus-visible{outline-offset:2px}
+.card details summary{min-height:34px;display:flex;align-items:center}
+.session{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(145deg,#fffefa,#f7f2e9);min-height:65vh}
+.session::before{
+ content:"";position:absolute;inset:0 0 auto;height:130px;z-index:-1;
+ background:linear-gradient(90deg,rgba(255,253,247,.90),rgba(255,253,247,.55)),
+   url("/images/holistic-house/ideas-pine-sharp.avif") 78% 40% / cover no-repeat;
+ opacity:.52;pointer-events:none;
+}
+.session .progress{margin-top:8px}
+.session h1{line-height:1.14;max-width:640px}
+.session .questionInput{background:#fff}
+.sessionActions .primary{margin:0}
+@media(max-width:800px){
+ .cardMain{grid-template-columns:minmax(0,1fr) 100px}
+ .cardArt{width:100px;height:84px}
+}
+@media(max-width:600px){
+ .root{padding:8px 9px 90px}
+ .hero{min-height:176px;padding:18px;border-radius:17px}
+ .hero::after{background:linear-gradient(90deg,rgba(251,248,241,.98),rgba(251,248,241,.72) 76%,rgba(251,248,241,.2))}
+ .hero h1{font-size:clamp(32px,8.9vw,40px)}
+ .hero>p:last-child{font-size:13px;max-width:95%}
+ .controls{padding:13px 12px;margin-top:-7px}
+ .format{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:11px}
+ .format button{min-height:52px;padding:8px 5px;font-size:11.5px;line-height:1.16}
+ .format button svg{width:15px;height:15px}
+ .questionLabel{font-size:13px}
+ .questionInput{min-height:54px;font-size:16px;line-height:1.42}
+ .filters{gap:8px;margin-top:9px}
+ .filters select{font-size:13px;min-height:44px}
+ .catalog{padding:18px 0 21px}
+ .catalog h2{font-size:clamp(25px,6.6vw,32px)}
+ .sectionHeader{margin-bottom:12px}
+ .cards{grid-template-columns:minmax(0,1fr);gap:10px}
+ .card{gap:9px;padding:15px;border-radius:15px}
+ .cardMain{grid-template-columns:minmax(0,1fr) 96px;gap:10px}
+ .cardArt{width:96px;height:76px;border-radius:10px}
+ .cardHeading h3{font-size:24px}
+ .card .schemeName{font-size:12px}
+ .cardTop strong{font-size:11px}
+ .session{padding:18px 14px}
+ .session h1{font-size:clamp(28px,7.1vw,38px)}
+ .session .choices{gap:8px}
+ .session .choices button{min-height:48px}
+ .morePaths{padding-top:18px}
+}
+@media(max-width:360px){
+ .hero{padding:16px;min-height:176px}
+ .hero h1{font-size:32px}
+ .format button{font-size:10.5px;min-height:58px;flex-direction:column}
+ .cardMain{grid-template-columns:minmax(0,1fr) 84px;gap:8px}
+ .cardArt{width:84px;height:74px}
+ .cardHeading h3{font-size:22px}
+ .cardTop{font-size:11px}
+ .filters{gap:6px}
+ .filters select{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .format button,.card{transition:none}
+ .card:hover{transform:none}
+}

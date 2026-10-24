@@ -447,7 +447,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
 
         {kind === "situation" ? (
           <div className={styles.coachingLink}>
-            <Link href={"/" + locale + "/coaching"} prefetch={false} data-source="coaching-questionnaire">
+            <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
               {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>

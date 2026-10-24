@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, Send, X, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, X, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
 import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, getIdeasTestSuggestions, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import { rotateIdeasPreviewAphorisms } from "@/lib/ideas-preview-rotation.mjs";
+import { stageIdeasCoachingQuestion } from "@/lib/ideas-coaching-handoff";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -21,14 +22,14 @@ type DaoReading = { number: number; text: string; kind: "original" | "editorial"
 
 const copy = {
   ru: {
-    eyebrow: "ИДЕИ · ПОДСКАЗКИ ДЛЯ ВАС",
-    title: "Идеи",
-    lead: "Задайте вопрос, найдите вдохновение и практическую подсказку.",
+    eyebrow: "ИДЕИ И КОУЧИНГ",
+    title: "Идеи и коучинг",
+    lead: "Бесплатная коуч-сессия или даосская подсказка — выберите свой путь.",
     question: "О чём хотите спросить?",
     placeholder: "Ваш вопрос или тема…",
     choose: "Выберите способ получить подсказку",
-    ask: "Получить даосскую подсказку",
-    testOverline: "Исследуйте себя", test: "Пройти бесплатную личную коуч-сессию", testAria: "Начать бесплатную личную коуч-сессию", testLink: "Или подобрать бесплатный тест",
+    ask: "Получить бесплатную даосскую подсказку",
+    testOverline: "Самостоятельно · €0", test: "Пройти бесплатную коуч-сессию", testAria: "Выбрать модель бесплатной коуч-сессии", testLink: "Или подобрать бесплатный тест",
     testsTitle: "Бесплатные тесты по теме", testsFallback: "С чего можно начать",
     testsClose: "Скрыть подборку", testsMore: "Все тесты по теме",
     testsNote: "Это подбор по теме, не медицинская оценка. Ваш вопрос остаётся в браузере.",
@@ -105,14 +106,14 @@ const copy = {
     },
   },
   en: {
-    eyebrow: "IDEAS & GUIDANCE",
-    title: "Ideas",
-    lead: "Ask a question, get inspiration and practical guidance.",
+    eyebrow: "IDEAS & COACHING",
+    title: "Ideas & Coaching",
+    lead: "One question, two ways to explore it: free coaching or Taoist insight.",
     question: "What would you like guidance on?",
     placeholder: "What’s on your mind?",
     choose: "Choose how to explore your question",
-    ask: "Get Taoist Insight",
-    testOverline: "Explore yourself", test: "Take a coaching free personal session", testAria: "Start a free personal coaching session", testLink: "Or explore a free test",
+    ask: "Get free Taoist insight",
+    testOverline: "Self-guided · €0", test: "Get free coaching session", testAria: "Choose a free coaching session model", testLink: "Or explore a free test",
     testsTitle: "Free tests for your topic", testsFallback: "A few ways to start",
     testsClose: "Close suggested tests", testsMore: "Explore all matching tests",
     testsNote: "Matched by topic only, not a diagnosis. Your question stays in this browser.",
@@ -189,14 +190,14 @@ const copy = {
     },
   },
   es: {
-    eyebrow: "IDEAS Y ORIENTACIÓN",
-    title: "Ideas",
-    lead: "Haz una pregunta, encuentra inspiración y orientación práctica.",
+    eyebrow: "IDEAS Y COACHING",
+    title: "Ideas y coaching",
+    lead: "Una pregunta, dos caminos: coaching gratuito o consejo taoísta.",
     question: "¿Sobre qué quieres una orientación?",
     placeholder: "Tu pregunta…",
     choose: "Elige cómo explorar tu pregunta",
-    ask: "Recibir consejo taoísta",
-    testOverline: "Explórate", test: "Iniciar una sesión personal gratuita de coaching", testAria: "Comenzar una sesión personal gratuita de coaching", testLink: "O explorar un test gratuito",
+    ask: "Recibir consejo taoísta gratuito",
+    testOverline: "Autoguiado · €0", test: "Sesión gratuita de coaching", testAria: "Elegir un modelo de coaching gratuito", testLink: "O explorar un test gratuito",
     testsTitle: "Tests gratuitos para tu tema", testsFallback: "Opciones para empezar",
     testsClose: "Cerrar tests sugeridos", testsMore: "Ver todos los tests relacionados",
     testsNote: "Selección por tema, no un diagnóstico. La pregunta permanece en tu navegador. Algunos tests están en inglés.",
@@ -526,7 +527,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
   const suggestedTests = getIdeasTestSuggestions(question);
   const showSuggestedTests = testPickerOpen && Boolean(question.trim());
   const guestLocale = locale === "es" ? "en" : locale;
-  const coachingHref = "/" + guestLocale + "/app/coaching";
+  const coachingHref = "/" + locale + "/coaching";
   const suggestedTestBrowserHref = "/" + locale + "/client/tests?focus=" + suggestedTests.focus.join(",");
 
   function openFreeTests() {
@@ -538,6 +539,19 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
     setTestPickerOpen(open => !open);
   }
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
+  useEffect(() => {
+    if (!result) return;
+    // The interpretation appears below the photo/selector. Make the actual
+    // answer visible on iPhone rather than appearing to do nothing after a tap.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelector('[data-ideas-result]')?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth", block: "start",
+    });
+  }, [result]);
+  useEffect(() => {
+    if (!showSuggestedTests) return;
+    document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
+  }, [showSuggestedTests]);
   return (
     <section className={styles.root} aria-labelledby="ideas-title" data-ideas-discovery lang={locale}>
       <div className={styles.hero} data-ideas-hero>
@@ -550,7 +564,7 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
           <span className={styles.decor} aria-hidden="true">✦</span>
         </div>
 
-        <form className={styles.question} onSubmit={submitQuestion}>
+        <form id="ideas-question-form" className={styles.question} onSubmit={submitQuestion}>
         <label htmlFor="ideas-question">{t.question}</label>
         <div className={styles.questionFields}>
           <Sparkles className={styles.inputSparkle} size={21} aria-hidden="true" />
@@ -582,50 +596,61 @@ export function IdeasDiscovery({ locale }: { locale: PublicLocale }) {
             <Paperclip size={20} aria-hidden="true" />
           </button>
         </div>
-        <div className={styles.heroActions} data-ideas-hero-actions>
-          <button type="submit" className={styles.submit}><Send size={18} aria-hidden="true" />{t.ask}</button>
-          <Link href={coachingHref} prefetch={false} className={styles.testButton}
-            data-ideas-free-coaching aria-label={t.testAria}>
-            <ClipboardCheck size={19} aria-hidden="true" />
-            <span className={styles.testButtonText}><span className={styles.testButtonKicker}>{t.testOverline}</span><strong>{t.test}</strong></span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-        </div>
-        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
-        <details className={styles.privacyDisclosure}>
-          <summary id="ideas-question-privacy">{t.privacyShort}</summary>
-          <p className={styles.privacy}>{t.privacy}</p>
-        </details>
-        <button type="button" className={styles.freeTestLink} data-ideas-free-test
-          aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-          onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
-        </form>
-        <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
-          hidden={!showSuggestedTests} aria-label={t.testsTitle}>
-          <div className={styles.testPickerHeading}>
-            <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
-              {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
-            </div>
-            <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
-              aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
-          </div>
-          <ul className={styles.testPickerList}>
-            {suggestedTests.keys.map(key => (
-              <li key={key}>
-                <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
-                  className={styles.testPickerItem} data-ideas-test-start={key}>
-                  <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <Link href={suggestedTestBrowserHref} prefetch={false}
-            className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
-          <p className={styles.testPickerNote}>{t.testsNote}</p>
-        </section>
+       </form>
       </div>
+      <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={t.choose}>
+        <Link href={coachingHref} prefetch={false} className={styles.submit}
+          onClick={() => stageIdeasCoachingQuestion(question)}
+          data-ideas-free-coaching aria-label={t.testAria}>
+          <ClipboardCheck size={20} aria-hidden="true" />
+          <span className={styles.testButtonText}>
+            <span className={styles.testButtonKicker}>{t.testOverline}</span>
+            <strong>{t.test}</strong>
+          </span>
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link>
+        <button type="submit" form="ideas-question-form" className={styles.testButton} data-ideas-tao>
+          <span className={styles.modeYin} aria-hidden="true">☯</span>
+          <span>{t.ask}</span>
+        </button>
+      </div>
+      <div className={styles.heroUtility} data-ideas-hero-utility>
+        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
+        <div className={styles.utilityLinks}>
+          <details className={styles.privacyDisclosure}>
+            <summary id="ideas-question-privacy">{t.privacyShort}</summary>
+            <p className={styles.privacy}>{t.privacy}</p>
+          </details>
+          <button type="button" className={styles.freeTestLink} data-ideas-free-test
+            aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+            onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+        </div>
+      </div>
+      <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
+        hidden={!showSuggestedTests} aria-label={t.testsTitle}>
+        <div className={styles.testPickerHeading}>
+          <div><strong>{suggestedTests.matched ? t.testsTitle : t.testsFallback}</strong>
+            {suggestedTests.matched ? <span>{t.topic[suggestedTests.topic]}</span> : null}
+          </div>
+          <button type="button" className={styles.testPickerClose} onClick={() => setTestPickerOpen(false)}
+            aria-label={t.testsClose}><X size={19} aria-hidden="true" /></button>
+        </div>
+        <ul className={styles.testPickerList}>
+          {suggestedTests.keys.map(key => (
+            <li key={key}>
+              <Link href={"/" + guestLocale + "/client?startTests=" + key} prefetch={false}
+                className={styles.testPickerItem} data-ideas-test-start={key}>
+                <span>{t.testTitles[key]}</span><ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href={suggestedTestBrowserHref} prefetch={false}
+          className={styles.allMatchingTests} data-ideas-more-tests>{t.testsMore}<ArrowRight size={15} aria-hidden="true" /></Link>
+        <p className={styles.testPickerNote}>{t.testsNote}</p>
+      </section>
 
-      <p className={styles.actionLabel}>{t.choose}</p>
+            <p className={styles.actionLabel}>{t.choose}</p>
       <div className={styles.actions}>
         <button type="button" onClick={() => choose("dao")} aria-pressed={activeMode === "dao"} className={styles.action}>
           <span className={styles.modeYin} aria-hidden="true">☯</span><span>{t.dao}</span>

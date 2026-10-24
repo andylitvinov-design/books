@@ -20,12 +20,12 @@ type PageProps = {
 
 const meta = {
   ru: {
-    title: "Идеи — подсказки, афоризмы и книги | Holistic House",
-    description: "Задайте вопрос: гексаграмма И-Цзин, три афоризма по теме или бесплатная личная подсказка. Ниже — книги и методички Holistic House.",
+    title: "Идеи и коучинг — бесплатная сессия, Дао и книги | Holistic House",
+    description: "Выберите бесплатную самостоятельную коуч-сессию или даосскую подсказку. Ниже — афоризмы, книги и методички Holistic House.",
   },
   en: {
-    title: "Ideas — insights, aphorisms & books | Holistic House",
-    description: "Explore your question with an I Ching symbol, three topic-matched reflections or free personal guidance. Browse the Holistic House book catalog below.",
+    title: "Ideas & Coaching — free sessions, insights & books | Holistic House",
+    description: "Choose a free self-guided coaching session or Taoist insight, then explore aphorisms and the Holistic House book library.",
   },
 } as const;
 
