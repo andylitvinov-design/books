@@ -11,12 +11,12 @@ const styles = read("components/home-master-path.module.css");
 test("Master is the final immersion stage, not a repeated footer promotion", () => {
   const feature = read("components/home-featured-workspace.tsx");
   for (const page of [home, spanish]) {
-    assert.equal((page.match(/<HomeFeaturedWorkspace\\b/g) || []).length, 1);
-    assert.doesNotMatch(page, /<HomeMasterPath\\b/);
+    assert.equal((page.match(/<HomeFeaturedWorkspace\b/g) || []).length, 1);
+    assert.doesNotMatch(page, /<HomeMasterPath\b/);
     assert.ok(page.indexOf("<HomeFeaturedWorkspace") < page.indexOf("<footer"));
   }
-  assert.match(feature, /"courses",\\s*"personality",\\s*"situation",\\s*"coaching",\\s*"alchemy",\\s*"energy",\\s*"master"/);
-  assert.match(feature, /data-home-module=\\{id\\}/);
+  assert.match(feature, /"courses",\s*"personality",\s*"situation",\s*"coaching",\s*"alchemy",\s*"energy",\s*"master"/);
+  assert.match(feature, /data-home-module=\{id\}/);
   for (const action of ['"pro"', '"service"', '"course"']) assert.ok(feature.includes(action));
   assert.match(widget, /data-home-master-invitation/);
 });
