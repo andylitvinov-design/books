@@ -148,7 +148,7 @@ test('cart, endpoints and SQL contain strict order ownership, no fake paid on re
   assert.match(page,/squareApiEnabled=\{squareGateway.enabled\}/)
   assert.match(cart,/data-cart-square-api-checkout/)
   assert.match(cart,/squareStatus === "paid"/)
-  assert.match(cart,/normalizeSquarePaymentLink\(redirect\) !== redirect/)
+  assert.match(cart, /normalizeSquareCheckoutRedirect/)
   assert.match(checkoutRoute,/await auth.verified\(\)/)
   assert.match(checkoutRoute,/requireSameOrigin\(request, app\)/)
   assert.match(checkoutRoute,/consumeRate/)
