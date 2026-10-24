@@ -39,6 +39,7 @@ function fixture(direction,locale,suggestions={}){
     'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:({children})=>children},
     'next/image':{__esModule:true,default:props=>jsx('img',props)},
     'next/link':{__esModule:true,default:props=>jsx('a',props)},
+    '@/components/home-free-diagnosis-banner':{HomeFreeDiagnosisBanner:props=>jsx('aside',props)},
     'lucide-react':new Proxy({}, {get:()=>()=>null}),
     react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial
       return [state[i],next=>{state[i]=typeof next==='function'?next(state[i]):next}] }},
@@ -80,7 +81,7 @@ test('the single page shows hero then filter then three separate topic-specific 
         assert.equal(by(tree,'data-direction-all',kind).length,0)
       }
       assert.match(by(tree,'data-offer-action','test')[0].props.href,/\/client\/tests\?focus=/)
-      const actualCourse=direction==='business'?'/'+(locale==='es'?'en':locale)+'/app/business':'/'+locale+'/courses/antistress'
+      const actualCourse=direction==='business'?'/'+locale+'/coaching':'/'+locale+'/courses/antistress'
       assert.equal(by(tree,'data-offer-action','course')[0].props.href,actualCourse)
       const service={energy:'alchemy-of-soul',relationships:'systemic-constellations',business:'business-consulting'}[direction]
       assert.equal(by(tree,'data-offer-action','session')[0].props.href,'/'+locale+'/services/'+service)

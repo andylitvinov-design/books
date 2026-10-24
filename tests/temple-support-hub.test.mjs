@@ -34,7 +34,7 @@ test("Holistic Support stays live as the fifth of six bottom destinations with s
   assert.match(homeCss, /repeat\(6, minmax\(0,1fr\)\)/);
 });
 
-test("Holistic Support provides exactly two main areas and five concrete choices", () => {
+test("Holistic Support provides two main areas and six concrete choices", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const styles = read("app/[locale]/holistic-support/holistic-support.module.css");
   const old = read("app/[locale]/temple-support/page.tsx");
@@ -50,13 +50,20 @@ test("Holistic Support provides exactly two main areas and five concrete choices
   assert.match(page, /data-holistic-insights/);
   assert.match(page, /data-holistic-healing/);
   assert.match(page, /<nav className=\{styles.primaryNav\}/);
-  for (const id of ["ai", "express", "master", "energy", "alchemy"])
+  for (const id of ["ai", "express", "master", "energy", "alchemy", "practitioner"])
     assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
   assert.doesNotMatch(page, /data-holistic-tradition|styles\.methods|methodOptions|methodPaths/);
   assert.doesNotMatch(styles, /\.methods\{/);
   assert.match(page, /\/services\/free-situation-review/);
   assert.match(page, /\/services\/remote-energy-support/);
   assert.match(page, /\/services\/alchemy-of-soul/);
+  assert.match(page, /data-holistic-practitioner-cta/);
+  assert.match(page, /\/pro#profi-practice/);
+  assert.match(read("components/profi-hub.tsx"), /id="profi-practice"/);
+  for (const label of ["I'm a Master — Offer My Services", "Я мастер — предложить свои услуги", "Soy profesional — ofrecer mis servicios"])
+    assert.ok(page.includes(label), "missing practitioner offer: " + label);
+  assert.match(styles, /\.option\[data-holistic-offer="practitioner"\]\{grid-column:1\/-1/);
+  assert.match(page, /Listings appear only after approval/);
   assert.match(page, /MarketplaceMasterFinder practitioners=\{energyPractitioners\}/);
   assert.match(page, /service.status === "published"/);
   assert.match(page, /\/masters/);

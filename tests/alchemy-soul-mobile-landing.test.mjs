@@ -11,7 +11,7 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   const sitewide = read("components/sitewide-lead-capture.tsx");
   const oldRoute = read("app/[locale]/services/psychohomeopathy/page.tsx");
   assert.match(page, /<AlchemySoulLanding locale=/);
-  assert.match(page, /<DistanceHomeopathyGuide locale=\{locale as Locale\} embedded \/>/);
+  assert.match(page, /<DistanceHomeopathyGuide locale=\{locale as PublicLocale\} embedded \/>/);
   assert.match(page, /data-alchemy-extended-guide/);
   for (const term of ["Расстановка — карта ситуации", "Гипнотерапия — глубинный уровень", "Психогомеопатия — подбор ресурса", "Интеграция — реальный шаг", "Constellation — map the situation", "Hypnotherapy — explore deeper", "Psycho-homeopathy — optional support", "Integration — practical action"]) assert.ok(landing.includes(term), term);
   for (const section of ["hero", "situations", "method", "video", "reviews", "formats", "faq", "request"]) assert.match(landing, new RegExp('data-alchemy-panel="' + section + '"'));
