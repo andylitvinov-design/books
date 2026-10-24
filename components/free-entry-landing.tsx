@@ -370,12 +370,13 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
   const t = copy[locale][kind];
   const common = copy[locale].common;
   const images = art[kind];
+  const scenePhotos = [images.hero,images.outcome,images.process] as const;
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
   const final = finalCopy[locale][kind];
 
   return (
-    <main className={styles.page} lang={locale} data-free-entry-landing={kind}>
+    <main className={styles.page} lang={locale} data-free-entry-landing={kind} data-public-visual-landing="free">
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label={common.back}>
@@ -423,6 +424,8 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <div className={[styles.outcomeList, kind === "dao" ? styles.daoOutcomeList : ""].filter(Boolean).join(" ")}>
               {t.outcomes.map((item, i) => <article key={item.title}>
                 <span>{String(i + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3><p>{item.text}</p></div>
+                <div className={styles.miniScenePhoto}><Image src={scenePhotos[i % scenePhotos.length]} alt="" fill
+                  sizes="(max-width: 600px) 100vw, 43vw" /></div>
               </article>)}
             </div>
           </div>
@@ -434,9 +437,13 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <h2 id="free-process-title">{t.processTitle}</h2>
             <p className={styles.sectionLead}>{t.processLead}</p>
             <ol className={styles.steps}>
-              {t.steps.map((item, i) => <li key={item.title}>
-                <span>{String(i + 1).padStart(2, "0")}</span>
-                <div><h3>{item.title}</h3><p>{item.text}</p></div>
+              {t.steps.map((item, i) => <li key={item.title} data-free-visual-screen={i+1}>
+                <div className={styles.miniScenePhoto}><Image src={scenePhotos[(i+1) % scenePhotos.length]} alt="" fill
+                  sizes="(max-width: 600px) 100vw, 43vw" /></div>
+                <div className={styles.miniSceneWords}>
+                  <span>{String(i + 1).padStart(2, "0")}</span>
+                  <h3>{item.title}</h3><p>{item.text}</p>
+                </div>
               </li>)}
             </ol>
           </div>
@@ -463,6 +470,9 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         {kind === "situation" ? <div className={styles.videoWrap}><ServiceVideoShowcase topic="overview" locale={locale} id="service-video" /></div> : null}
         {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
 
+        <div className={styles.finalCaptureScene} data-free-visual-screen="final-capture">
+          <div className={styles.miniScenePhoto}><Image src={images.hero} alt="" fill
+            sizes="(max-width: 600px) 100vw, 36vw" /></div>
         <CompactLeadCapture
           locale={locale}
           id={captureId}
@@ -471,6 +481,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           lead={final.lead}
           disclaimer={common.limitations}
         />
+        </div>
       </div>
     </main>
   );
