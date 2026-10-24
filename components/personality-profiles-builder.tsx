@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardList, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, ChevronDown, ClipboardList, Compass, LockKeyhole, Sparkles, Sun, UserRound } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
 import { recommendProfileBattery } from "@/lib/profile/profile-battery";
 
@@ -51,12 +51,23 @@ const axesCopy: Record<string, Record<Locale, string>> = {
 
 const copy = {
   en: {
-    kicker: "FREE PROFILE BUILDER", title: "Personality Profiles",
-    lead: "Create a personal or business portrait with real self-tests, a reflective SWOT and a development path tailored to your priorities.",
+    kicker: "FREE SELF-DISCOVERY", title: "Build your personal profile",
+    lead: "Understand your strengths, resources and areas for growth. Start with free self-tests that match your goals, then explore your results and plan practical next steps.",
     benefits: ["Choose what to explore", "Free tests with clear scales", "SWOT + personal development"],
-    stages: ["Profile", "Topics", "Scales", "Tests"],
-    profileTitle: "What kind of profile would you like to create?",
-    profileHelp: "You can build another profile for a different purpose later. Nothing is saved or sent by choosing an option.",
+    entryButton: "Create my profile",
+    entryHint: "Take free tests & explore development recommendations",
+    browseTests: "Or browse free tests without creating a profile",
+    journeyTitle: "How it works",
+    journey: [
+      ["Choose your focus", "Personal life, work, wellbeing or the bigger picture. You decide which topics matter."],
+      ["Take free tests", "Review the suggested questionnaires and choose which ones to complete."],
+      ["Explore results & next steps", "Read your test feedback, reflect on your strengths and save development goals in My Space."],
+    ],
+    entryNote: "You can explore without an account. Sign in only when you want to save results privately.",
+    returnIntro: "How it works", wizardKicker: "Your free profile", selectTemplate: "Choose this",
+    stages: ["Profile", "Topics", "Scales", "Tests", "Ready"],
+    profileTitle: "What would you like to explore first?",
+    profileHelp: "Choose the starting point closest to your goal. You can adjust the topics, scales and tests before you begin.",
     templates: {
       personal: ["Personal profile", "Personality, relationships, resources and growth."],
       business: ["Business profile", "Focus, work capacity and money-related choices."],
@@ -86,19 +97,34 @@ const copy = {
       ["Challenges", "Which practical obstacles deserve attention?"],
     ],
     swotNote: "SWOT is a guided reflection using your own interpretation, not an automatically inferred personality verdict.",
-    next: "Continue", back: "Back", start: "Start selected free tests",
+    next: "Continue", back: "Back", start: "Yes, take these tests",
+    review: "Review my test path", readyKicker: "YOUR PERSONAL TEST PATH",
+    readyTitle: "Ready to build your profile?",
+    readyHelp: "To create your profile, take the following free tests in order. You can review this list before starting.",
+    readyFoot: "One test at a time. You will see your progress at the top, and you can choose to save results privately in your Cabinet.",
     noTests: "No eligible free test measures this selection. Go back and choose other scales.",
     private: "Results can be saved in your protected account. Build your profile and set voluntary development goals there, after the tests.",
     myProfile: "My saved profile", myPath: "My development path",
     esNote: "", disclaimer: "Educational self-reflection only; not a medical diagnosis, financial assessment, or guaranteed outcome.",
   },
   ru: {
-    kicker: "БЕСПЛАТНЫЙ КОНСТРУКТОР", title: "Профили личности",
-    lead: "Соберите личностный или бизнес-профиль: реальные тесты, рефлексивный SWOT-анализ и индивидуальные направления развития.",
+    kicker: "БЕСПЛАТНОЕ САМОПОЗНАНИЕ", title: "Создайте свой профиль",
+    lead: "Узнайте свои сильные стороны, ресурсы и направления роста. Подберите бесплатные тесты по важным для вас темам, изучите результаты и наметьте следующие шаги.",
     benefits: ["Выберите темы", "Бесплатные тесты и шкалы", "SWOT + программа развития"],
-    stages: ["Профиль", "Темы", "Шкалы", "Тесты"],
-    profileTitle: "Какой профиль вы хотите создать?",
-    profileHelp: "Позже можно собрать другой профиль для новой задачи. Сам выбор пока никуда не отправляется.",
+    entryButton: "Создать свой профиль",
+    entryHint: "Пройти тесты и получить рекомендации по развитию",
+    browseTests: "Или пройти бесплатные тесты без создания профиля",
+    journeyTitle: "Как это работает",
+    journey: [
+      ["Выберите свою задачу", "Личность, бизнес, самочувствие или несколько сфер сразу. Вы решаете, что важно."],
+      ["Пройдите бесплатные тесты", "Мы предложим подходящие опросники, а вы сможете изменить их набор."],
+      ["Получите результаты и рекомендации", "Изучите отчёты, определите сильные стороны и сохраните цели развития в личном кабинете."],
+    ],
+    entryNote: "Выбирать темы можно без регистрации. Для приватного сохранения результатов понадобится вход в кабинет.",
+    returnIntro: "Как это работает", wizardKicker: "Ваш бесплатный профиль", selectTemplate: "Выбрать",
+    stages: ["Профиль", "Темы", "Шкалы", "Тесты", "Начало"],
+    profileTitle: "Что вы хотите изучить в первую очередь?",
+    profileHelp: "Начните с самой важной задачи. На следующих шагах можно изменить темы, шкалы и набор тестов.",
     templates: {
       personal: ["Личностный профиль", "Личность, отношения, ресурсы, развитие."],
       business: ["Бизнес-профиль", "Концентрация, работа и решения о деньгах."],
@@ -128,19 +154,34 @@ const copy = {
       ["Препятствия", "Какие обстоятельства важно учитывать?"],
     ],
     swotNote: "SWOT — упражнение для собственной рефлексии, а не автоматически поставленный психологический вердикт.",
-    next: "Далее", back: "Назад", start: "Пройти выбранные тесты бесплатно",
+    next: "Далее", back: "Назад", start: "Да, пройти эти тесты",
+    review: "Проверить план тестов", readyKicker: "ВАШ ПУТЬ К ЛИЧНОМУ ПРОФИЛЮ",
+    readyTitle: "Всё готово для создания профиля",
+    readyHelp: "Для создания профиля предлагаем пройти следующие бесплатные тесты по порядку. Подтвердите список перед началом.",
+    readyFoot: "Тесты идут один за другим. Сверху будет виден общий прогресс, а результаты можно сохранить в защищённом кабинете по вашему желанию.",
     noTests: "Для выбранных шкал пока нет подходящего бесплатного теста. Вернитесь к выбору шкал.",
     private: "Результаты можно сохранить в защищённом кабинете. Там доступен личный профиль и цели программы развития.",
     myProfile: "Мой профиль", myPath: "Моя программа развития",
     esNote: "", disclaimer: "Для самопознания; не является медицинской диагностикой, финансовой оценкой или гарантией результата.",
   },
   es: {
-    kicker: "CREADOR DE PERFILES GRATIS", title: "Perfiles personales",
-    lead: "Crea un perfil personal o empresarial con pruebas reales, una reflexión DAFO y tu propio camino de desarrollo.",
+    kicker: "AUTOCONOCIMIENTO GRATUITO", title: "Crea tu perfil personal",
+    lead: "Descubre tus fortalezas, recursos y áreas de crecimiento. Elige pruebas gratuitas según tus objetivos, revisa los resultados y decide tus próximos pasos.",
     benefits: ["Elige tus temas", "Pruebas y escalas gratis", "DAFO + desarrollo"],
-    stages: ["Perfil", "Temas", "Escalas", "Pruebas"],
-    profileTitle: "¿Qué tipo de perfil quieres crear?",
-    profileHelp: "Después podrás crear otro perfil para una meta diferente. Tu elección aún no se envía.",
+    entryButton: "Crear mi perfil",
+    entryHint: "Haz pruebas gratis y descubre recomendaciones",
+    browseTests: "O hacer pruebas gratuitas sin crear un perfil",
+    journeyTitle: "Cómo funciona",
+    journey: [
+      ["Elige tu objetivo", "Vida personal, trabajo, bienestar o una visión más amplia. Tú decides qué explorar."],
+      ["Realiza pruebas gratuitas", "Revisa los cuestionarios sugeridos y elige cuáles quieres completar."],
+      ["Explora resultados y próximos pasos", "Lee los informes, identifica fortalezas y guarda tus metas de desarrollo en Mi espacio."],
+    ],
+    entryNote: "Puedes explorar sin cuenta. Inicia sesión solo si quieres guardar los resultados de forma privada.",
+    returnIntro: "Cómo funciona", wizardKicker: "Tu perfil gratuito", selectTemplate: "Elegir",
+    stages: ["Perfil", "Temas", "Escalas", "Pruebas", "Inicio"],
+    profileTitle: "¿Qué te gustaría explorar primero?",
+    profileHelp: "Empieza por tu objetivo más importante. Podrás ajustar áreas, escalas y pruebas antes de comenzar.",
     templates: {
       personal: ["Perfil personal", "Personalidad, relaciones, recursos y desarrollo."],
       business: ["Perfil empresarial", "Concentración, trabajo y decisiones económicas."],
@@ -170,7 +211,11 @@ const copy = {
       ["Desafíos", "¿Qué obstáculos prácticos debes considerar?"],
     ],
     swotNote: "El DAFO es una reflexión guiada, no un veredicto automático sobre tu personalidad.",
-    next: "Continuar", back: "Atrás", start: "Comenzar pruebas gratuitas",
+    next: "Continuar", back: "Atrás", start: "Sí, empezar estas pruebas",
+    review: "Revisar mi plan de pruebas", readyKicker: "TU RUTA DE PRUEBAS PERSONALES",
+    readyTitle: "Tu perfil empieza aquí",
+    readyHelp: "Para crear tu perfil, realiza estas pruebas gratuitas en orden. Confirma la lista antes de empezar.",
+    readyFoot: "Avanza prueba por prueba. Verás el progreso total arriba y podrás guardar los resultados de forma privada si lo deseas.",
     noTests: "No hay una prueba gratuita adecuada para estas escalas. Regresa y cambia tu elección.",
     private: "Guarda tus resultados en tu cuenta protegida y define tus propias metas de desarrollo.",
     myProfile: "Mi perfil guardado", myPath: "Mi plan de desarrollo",
@@ -181,7 +226,16 @@ const copy = {
 
 export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const t = copy[locale];
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
+  const wizardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (started) wizardRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [started, step]);
   const [template, setTemplate] = useState<Template>("personal");
   const [areas, setAreas] = useState<Area[]>(defaultAreas.personal);
   const [selectedAxes, setSelectedAxes] = useState<string[]>(allAxesFor(defaultAreas.personal));
@@ -197,7 +251,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key))
     .slice(0, 24), [tests, selectedAxes]);
   const displayTests = showMore ? matches : matches.slice(0, 6);
-  const chosenTests = matches.filter(test => selectedKeys.includes(test.key));
+  const chosenTests = selectedKeys.flatMap(key => matches.filter(test => test.key === key));
   const coverage = new Set(chosenTests.flatMap(test => test.matches));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
 
@@ -225,22 +279,47 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       setShowMore(false);
       setStep(3);
     }
+    if (step === 3 && selectedKeys.length > 0) setStep(4);
   }
 
   const base = "/" + accountLocale;
   const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","));
 
   return <div className={styles.shell} data-personality-profile-builder>
-    <header className={styles.hero}>
-      <div className={styles.heroPhoto} aria-hidden="true" />
-      <div className={styles.heroCopy}>
-        <p className={styles.kicker}><Sparkles size={15} aria-hidden="true" />{t.kicker}</p>
-        <h1>{t.title}</h1>
-        <p>{t.lead}</p>
-        <div className={styles.benefits}>{t.benefits.map(value => <span key={value}><Check size={13} aria-hidden="true" />{value}</span>)}</div>
-      </div>
-    </header>
-
+    {!started ? <>
+      <header className={styles.hero}>
+        <div className={styles.heroPhoto} aria-hidden="true" />
+        <div className={styles.heroCopy}>
+          <p className={styles.kicker}><Sparkles size={16} aria-hidden="true" />{t.kicker}</p>
+          <h1>{t.title}</h1>
+          <p>{t.lead}</p>
+          <button type="button" className={styles.begin} data-profile-begin
+            onClick={() => setStarted(true)}>
+            <span><strong>{t.entryButton}</strong><small>{t.entryHint}</small></span>
+            <ArrowRight size={24} aria-hidden="true" />
+          </button>
+          <Link className={styles.browseTests} href={'/' + locale + '/tests'} prefetch={false} data-profile-direct-tests>
+            {t.browseTests}<ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
+      </header>
+      <section className={styles.roadmap} aria-labelledby="profile-builder-journey-title">
+        <h2 id="profile-builder-journey-title">{t.journeyTitle}</h2>
+        <ol className={styles.roadmapSteps}>
+          {t.journey.map((item, index) => <li key={item[0]}>
+            <span className={styles.roadmapNumber} aria-hidden="true">{index + 1}</span>
+            <div><strong>{item[0]}</strong><p>{item[1]}</p></div>
+          </li>)}
+        </ol>
+        <p className={styles.entryNote}><LockKeyhole size={15} aria-hidden="true" />{t.entryNote}</p>
+      </section>
+    </> : <>
+    <div className={styles.wizardTop} ref={wizardRef}>
+      <button type="button" className={styles.returnIntro} onClick={() => { setStarted(false); setStep(0); }}>
+        <ArrowLeft size={16} aria-hidden="true" />{t.returnIntro}
+      </button>
+      <span className={styles.wizardKicker}><Sparkles size={15} aria-hidden="true" />{t.wizardKicker}</span>
+    </div>
     <nav className={styles.progress} aria-label={locale === "ru" ? "Шаги конструктора" : locale === "es" ? "Pasos" : "Builder steps"}>
       {t.stages.map((label, index) =>
         <button key={label} type="button" aria-current={step === index ? "step" : undefined}
@@ -254,13 +333,18 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <h2 id="profile-builder-step-title">{t.profileTitle}</h2>
         <p className={styles.help}>{t.profileHelp}</p>
         <div className={styles.templateGrid}>
-          {(Object.keys(t.templates) as Template[]).map((key, index) =>
+          {(Object.keys(t.templates) as Template[]).map(key =>
             <button type="button" key={key} className={styles.templateCard} onClick={() => chooseTemplate(key)}
               data-profile-kind={key}>
-              <span className={styles.templateIcon} aria-hidden="true">{["✦", "◈", "◌", "✳"][index]}</span>
-              <strong>{t.templates[key][0]}</strong>
-              <span>{t.templates[key][1]}</span>
-              <ArrowRight size={17} aria-hidden="true" className={styles.templateArrow} />
+              <span className={styles.templateIcon} aria-hidden="true">
+                {key === "personal" ? <UserRound size={21} /> : key === "business" ? <BriefcaseBusiness size={21} />
+                  : key === "wellbeing" ? <Sun size={21} /> : <Compass size={21} />}
+              </span>
+              <span className={styles.templateBody}>
+                <strong>{t.templates[key][0]}</strong>
+                <span>{t.templates[key][1]}</span>
+                <small className={styles.templateSelect}>{t.selectTemplate}<ArrowRight size={15} aria-hidden="true" /></small>
+              </span>
             </button>)}
         </div>
       </section>}
@@ -338,15 +422,46 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </details>
       </section>}
 
+      {step === 4 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
+        <div className={styles.reviewIntro}>
+          <div className={styles.reviewIcon} aria-hidden="true"><ClipboardList size={24} /></div>
+          <p className={styles.templateLabel}>{t.readyKicker}</p>
+          <h2 id="profile-builder-step-title">{t.readyTitle}</h2>
+          <p className={styles.help}>{t.readyHelp}</p>
+          <p className={styles.reviewTotal}>
+            <ClipboardList size={17} aria-hidden="true" />
+            <strong>{chosenTests.length} {t.testCount}</strong>
+            {minutes > 0 && <span>· ~{minutes} {t.minutes}</span>}
+          </p>
+        </div>
+        <ol className={styles.reviewTests}>
+          {chosenTests.map((test, index) =>
+            <li key={test.key} className={styles.reviewTest} data-profile-review-test={test.key}>
+              <span className={styles.reviewNumber} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              <span className={styles.reviewTestText}>
+                <strong>{test.title}</strong>
+                <small>{test.questions ? test.questions + " " + t.questions : ""}
+                  {test.questions && test.minutes ? " · " : ""}
+                  {test.minutes ? "~" + test.minutes + " " + t.minutes : ""}</small>
+              </span>
+              <Check size={18} className={styles.reviewCheck} aria-hidden="true" />
+            </li>)}
+        </ol>
+        <p className={styles.reviewFoot}><LockKeyhole size={16} aria-hidden="true" />{t.readyFoot}</p>
+      </section>}
+
       {step > 0 && <div className={styles.actions}>
         <button type="button" className={styles.back} onClick={() => setStep(step - 1)}><ArrowLeft size={17} />{t.back}</button>
         {step < 3
           ? <button type="button" className={styles.primary} disabled={step === 1 ? areas.length === 0 : selectedAxes.length === 0}
               onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
-          : selectedKeys.length > 0
-            ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
-                {t.start}<ArrowRight size={17} /></Link>
-            : <button type="button" disabled className={styles.primary}>{t.start}</button>}
+          : step === 3
+            ? <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
+                onClick={goForward} data-profile-review-tests>{t.review}<ArrowRight size={17} /></button>
+            : selectedKeys.length > 0
+              ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
+                  {t.start}<ArrowRight size={17} /></Link>
+              : <button type="button" disabled className={styles.primary}>{t.start}</button>}
       </div>}
     </div>
 
@@ -359,6 +474,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </div>
       </div>
     </aside>
+    </>}
     {t.esNote && <p className={styles.languageNotice}>{t.esNote}</p>}
     <p className={styles.disclaimer}>{t.disclaimer}</p>
   </div>;

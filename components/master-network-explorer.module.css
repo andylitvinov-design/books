@@ -182,3 +182,11 @@
   .profileServiceCard > .description { font-size: 11px; }
   .profileServiceCard .primary { padding: 8px 10px; font-size: 11px; }
 }
+
+/* On 320-430px show complete quick filters rather than clipped horizontal chips. */
+@media(max-width:640px){
+.masterQuickBar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible;padding:2px 0}
+.masterQuickBar button{width:100%;min-width:0;min-height:44px;padding:7px 5px;white-space:normal;font-size:10px;line-height:1.25}
+.filters{gap:9px;margin-bottom:12px}.search{min-height:46px}
+}
+@media(max-width:355px){.masterQuickBar{grid-template-columns:repeat(2,minmax(0,1fr))}}

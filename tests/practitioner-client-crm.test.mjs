@@ -108,7 +108,7 @@ test('requester and master UI expose private replies without opening other cabin
   assert.match(master,/<PractitionerClientProfiles items=\{requests\}/)
   assert.match(master,/activePanel==='crm'&&isOwner&&accountId/)
   assert.match(master,/onClick=\{\(\)=>choosePanel\('clients'\)\}/)
-  assert.match(master,/onStatus=\{\(item,status\)=>act/)
+  assert.match(master,/onStatus=\{\(item,status,extra=\{\}\)=>act/)
   assert.match(cabinet,/<PracticeRequestConversation key=\{request\.id\}/)
   assert.match(profile,/groupVerifiedPractitionerClients/)
   assert.match(chat,/aria-expanded=\{open\}/)

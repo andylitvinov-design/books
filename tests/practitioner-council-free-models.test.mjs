@@ -379,3 +379,23 @@ test('Studio inference timeout or truncated output must not trigger a second pro
     'https://api.mistral.ai/v1/chat/completions'
   ])
 })
+
+test('Gemini daily audit uses bounded free-first output and no retry on timeout',async()=>{
+  const source=readFileSync(new URL('../lib/practitioners/council-free-models.mjs',import.meta.url),'utf8')
+  assert.match(source,/const MAX_INPUT=11500/)
+  assert.match(source,/maxOutputTokens:options\.chat===true\?1600:2700/)
+  assert.match(source,/AbortSignal\.timeout\(26000\)/)
+  const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic-key',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
+  let count=0
+  const reply=await reviewGemini(report,env,async(url,init)=>{
+    count++
+    assert.ok(String(url).endsWith('/models/gemini-3.8-flash:generateContent'))
+    const body=JSON.parse(init.body)
+    assert.equal(body.generationConfig.maxOutputTokens,2700)
+    assert.ok(body.contents[0].parts[0].text.length<=13300)
+    return json({candidates:[{finishReason:'STOP',content:{parts:[{text:long}]}}]})
+  })
+  assert.equal(reply.status,'ok')
+  assert.equal(count,1)
+})

@@ -1,4 +1,4 @@
-/* Compact early-home topic navigation: three focus areas, then two catalog links. */
+/* Compact early-home topic navigation: four paths including Temple Support, then two catalogs. */
 .root {
   box-sizing: border-box;
   width: min(1120px, calc(100% - 28px));
@@ -15,7 +15,7 @@
 .eyebrow { flex: 0 0 100%; margin: 0; color: #8a634b; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
 .heading h2 { margin: 0; font: 400 clamp(24px, 2.8vw, 29px)/1.15 Georgia, "Times New Roman", serif; letter-spacing: -.02em; }
 .heading > p:last-child { margin: 0; color: #60776e; font-size: 13px; line-height: 1.4; }
-.filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
 .chip {
   display: flex; min-width: 0; min-height: 45px; align-items: center; justify-content: center;
   padding: 10px 12px; border: 1px solid #b6cdc1; border-radius: 12px;
@@ -52,7 +52,7 @@
   .heading > p:last-child { font-size: 12px; line-height: 1.35; }
   .filters { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: 7px; }
   .chip { min-height: 44px; padding: 8px 8px; border-radius: 11px; font-size: 12px; }
-  .filters .chip:nth-child(3) { grid-column: 1 / -1; }
+  .filters .chip:nth-child(3) { grid-column: auto; }
   .footer { margin-top: 8px; padding-top: 4px; gap: 0 12px; }
   .catalog { gap: 0 12px; }
   .catalogLink, .ask > summary { min-height: 36px; font-size: 12px; }

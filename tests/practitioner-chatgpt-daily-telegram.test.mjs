@@ -150,3 +150,32 @@ test('historical skipped is reported as skipped, never fake model response',()=>
   assert.match(result.markdown,/HISTORICAL_BACKFILL_NO_INFERENCE/)
   assert.ok(!result.markdown.includes('DO NOT INCLUDE A FAKE MODEL REVIEW'))
 })
+
+test('owner Telegram shows live provider errors before an unmodified ChatGPT-only source note',()=>{
+  const original='Gemini/Mistral НЕ ЗАПРАШИВАЛИСЬ'
+  const content=audit+'\n\n'+original
+  const verified=pickPublicChatgptReports([comment({
+    body:'<!-- HH-CHATGPT-DAILY:'+day+' -->\n'+content+
+      '\n<!-- HH-CHATGPT-END -->'
+  })],period)[0]
+  assert.ok(verified)
+  const report=composeChatgptTelegramReport(verified,{councilReview:{
+    sources:['GitHub public HTML facts'],outcomes:{gemini:'error',mistral:'error'},
+    reviewStatus:{
+      gemini:{status:'error',model:'gemini-3.8-flash',reason:'timeout'},
+      mistral:{status:'error',model:'mistral-small-2603',reason:'HTTP 429'}
+    },markdown:'UNVERIFIED MODEL RESPONSE MUST NOT BE SHOWN'
+  }})
+  assert.equal(report.outcomes.gemini,'error')
+  assert.equal(report.outcomes.mistral,'error')
+  assert.ok(report.markdown.indexOf('## Итог отдельных этапов')>=0)
+  assert.ok(report.markdown.indexOf('Gemini: error · gemini-3.8-flash (timeout)')<
+    report.markdown.indexOf(original))
+  assert.ok(report.markdown.indexOf('Mistral: error · mistral-small-2603 (HTTP 429)')<
+    report.markdown.indexOf(original))
+  assert.match(report.markdown,/ТОЛЬКО к самостоятельному этапу ChatGPT/)
+  assert.match(report.markdown,/## Отчёт ChatGPT \(исходный самостоятельный этап\)/)
+  assert.equal(report.markdown.split(original).length-1,1)
+  assert.ok(report.markdown.includes(content))
+  assert.ok(!report.markdown.includes('UNVERIFIED MODEL RESPONSE MUST NOT BE SHOWN'))
+})

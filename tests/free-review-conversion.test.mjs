@@ -39,13 +39,15 @@ test("free landings explain benefits before closing with one short capture", () 
   const hero = landing.indexOf('aria-labelledby="free-entry-title"');
   const outcome = landing.indexOf('id="what-you-get"');
   const process = landing.indexOf('id="how-it-works"');
-  const video = landing.indexOf('<ServiceVideoShowcase');
+  const video = landing.indexOf('data-featured-constellations-video');
   const final = landing.lastIndexOf("<CompactLeadCapture");
-  assert.ok(hero > 0 && hero < outcome && outcome < process && process < video && video < final);
-  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene\]/,
+  assert.ok(hero > 0 && hero < video && video < outcome && outcome < process && process < final,
+    "The selected recording belongs in the first scene");
+  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
-  assert.match(landing, /kind === "situation" \? <div className=\{styles\.videoWrap\}/,
-    "Generic overview video is retained for the written-review service");
+  assert.match(landing, /data-featured-constellations-video/);
+  assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
+  assert.doesNotMatch(landing, /<ServiceVideoShowcase topic="overview"/);
   assert.match(landing, /t\.bullets\.map/);
   assert.match(landing, /t\.outcomes\.map/);
   assert.match(landing, /t\.steps\.map/);
@@ -107,9 +109,11 @@ test("new DAO and situation footer submits a consented contact to the existing p
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
   assert.match(capture, /contactConsent: true/);
   assert.match(capture, /result\?\.saved !== true/);
-  assert.match(capture, /setReference\(result.referenceCode\)/);
-  assert.match(capture, /Please do not enter health details/);
-  assert.doesNotMatch(capture, /whatsappEnquiryUrl|encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
+  assert.match(capture, /setReference\(committedReference\)/);
+  assert.match(capture, /committedReference = result.referenceCode/);
+  assert.match(capture, /Please don\x27t enter health details/);
+  assert.match(capture, /request: t\.message \+ " " \+ t\.reference \+ ": " \+ referenceCode/);
+  assert.doesNotMatch(capture, /encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
   assert.match(captureCss, /:focus-visible/);
   assert.match(captureCss, /@media\(max-width:600px\)/);
 });
@@ -122,6 +126,10 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /@media\(max-width:360px\)/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /\.situationHero/);
+  assert.match(css, /\.situationScene/);
+  assert.match(css, /max-height:730px/);
+  assert.match(css, /aspect-ratio:16\/9/);
   assert.match(css, /:focus-visible/);
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);

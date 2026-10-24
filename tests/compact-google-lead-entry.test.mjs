@@ -27,14 +27,14 @@ test('one contact field and no name creates an unverified reply-only registratio
 test('OAuth enquiry continuation cannot redirect to a private page or foreign website',()=>{
   for(const [locale,path] of [
     ['en','/en/services'],['ru','/ru/academy/reiki/tantra-reiki'],
-    ['es','/es/services'],['en','/en/toronto'],
+    ['es','/es/services'],['en','/en/toronto'],['en','/en/explore/business'],
   ])assert.equal(safeEnquiryReturnPath(path,locale),path)
   for(const path of [
     'https://evil.example/','//evil.example/en/services','/en/app/practice',
     '/en/client/report','/en/tests','/en/services?next=https://evil.example/',
     '/en/services#secret','/en/services/../api','/en/services/%2e%2e/api',
     '/en/services\\\\api','/en/services//api','/ru/services',
-    '/en/explore/business','/en',
+    '/en',
   ])assert.equal(safeEnquiryReturnPath(path,'en'),'','blocked: '+path)
 })
 test('Google entry uses existing PKCE and prefill, never silently submits a CRM lead',()=>{

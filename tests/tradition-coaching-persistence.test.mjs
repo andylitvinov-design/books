@@ -146,3 +146,27 @@ test('selected request topic is owner scoped, and sexual subject requires adult 
  })
  assert.equal(resumedAgain.course.current.clientTopic,'love','resume never silently overwrites the selected topic')
 })
+
+test('symbolic post-orientation answers and next step can be text-only, encrypted per owner',async()=>{
+  const {actions}=fixture(),template='hh-egyptian-goal-planning-v1',config={}
+  let r=await actions.saveTraditionCoaching(config,actorA,template,{action:'start',revision:0})
+  await assert.rejects(()=>actions.saveTraditionCoaching(config,actorA,template,{
+    action:'answer',revision:r.revision,questionId:'goal',answer:{choiceId:'',note:'My own goal'}
+  }),e=>e.code==='COACHING_CHOICE_INVALID')
+  r=await actions.saveTraditionCoaching(config,actorA,template,{action:'answer',revision:r.revision,
+    questionId:'goal',answer:{choiceId:'personal',note:'I want clarity'}})
+  await assert.rejects(()=>actions.saveTraditionCoaching(config,actorA,template,{
+    action:'answer',revision:r.revision,questionId:'item_1',answer:{choiceId:'',note:'No'}
+  }),e=>e.code==='COACHING_CHOICE_INVALID')
+  r=await actions.saveTraditionCoaching(config,actorA,template,{action:'answer',revision:r.revision,
+    questionId:'item_1',answer:{choiceId:'',note:'I notice this change when I slow down.'}})
+  r=await actions.saveTraditionCoaching(config,actorA,template,{action:'answer',revision:r.revision,
+    questionId:'action_24h',answer:{choiceId:'',note:'Write down my first small action.'}})
+  const saved=await actions.readTraditionCoaching(config,actorA,template)
+  assert.equal(saved.course.current.answers.item_1.choiceId,'')
+  assert.match(saved.course.current.answers.item_1.note,/when I slow down/)
+  assert.equal((await actions.readTraditionCoaching(config,actorB,template)).course,null)
+  r=await actions.saveTraditionCoaching(config,actorA,template,{action:'complete',revision:r.revision})
+  assert.equal(r.course.current.status,'completed')
+  assert.match(r.course.current.answers.action_24h.note,/Write down/)
+})

@@ -7,7 +7,10 @@ import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
+import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
@@ -47,7 +50,7 @@ const copy={
     safe:'Self-coaching is educational reflection, not psychotherapy, medical care or an AI conversation.',
     alert:'If you face an immediate safety concern, seek qualified human or emergency support instead of self-coaching.',
     back:'All sessions',stage:'QUESTION',of:'OF',yourQuestion:'Your question',choices:'Choose an answer',
-    ownAnswer:'Or write your answer (optional)',answerPlaceholder:'Your own words…',
+    ownAnswer:'Or write your answer (optional)',openAnswer:'Your answer, in your own words',answerPlaceholder:'Take your time. A few sentences are enough…',
     next:'Next question',finish:'Finish session',previous:'Previous',required:'Choose or write an answer.',
     plan:'For WOOP, write your own specific if–then plan (at least 10 characters).',
     completed:'Session complete',summary:'Your reflection',nextStep:'Your last step',copy:'Copy my summary',
@@ -60,7 +63,7 @@ const copy={
     greek:'Turn an intention into action',greekNote:'From intention and courage to a meaningful next step · 10 screens · private account',
     worksheet:'Coaching preparation questionnaire',worksheetNote:'Write your question and prepare for a meeting on one editable page. Optional private Google-account save.',
     openProgramme:'Explore programme',chooseTradition:'Choose this session',openWorksheet:'Open questionnaire',
-    clarify:'A helpful follow-up',clarifyWhy:'Optional authored reflection, not an AI response.',clarifyAnswer:'Your reflection',clarifySave:'Save reflection & continue',clarifySkip:'Skip this reflection',clarifyShort:'Write at least 3 characters.',
+    clarify:'A helpful follow-up',clarifyWhy:'Optional authored reflection, not an AI response.',clarifyAnswer:'Your reflection',clarifySave:'Save reflection & continue',clarifySkip:'Skip this reflection',clarifyShort:'Write at least 3 characters.',stopMic:'Stop dictation and review the recognized text before moving on.',
   },
   ru:{
     adultTitle:"Только для взрослых (18+) · ваш выбор",
@@ -90,7 +93,7 @@ const copy={
     safe:'Самостоятельный коучинг — практика размышления, не психотерапия, медпомощь или чат с ИИ.',
     alert:'При непосредственной угрозе безопасности обратитесь за квалифицированной или экстренной помощью.',
     back:'Все сессии',stage:'ВОПРОС',of:'ИЗ',yourQuestion:'Ваш вопрос',choices:'Выберите ответ',
-    ownAnswer:'Или напишите свой ответ (необязательно)',answerPlaceholder:'Вашими словами…',
+    ownAnswer:'Или напишите свой ответ (необязательно)',openAnswer:'Ваш ответ своими словами',answerPlaceholder:'Не торопитесь. Достаточно нескольких предложений…',
     next:'Следующий вопрос',finish:'Завершить',previous:'Назад',required:'Выберите или напишите ответ.',
     plan:'Для WOOP напишите конкретный план «если — то» не короче 10 символов.',
     completed:'Сессия завершена',summary:'Ваши ответы',nextStep:'Ваш последний шаг',copy:'Скопировать результат',
@@ -103,7 +106,7 @@ const copy={
     greek:'От намерения к действию',greekNote:'От намерения и смелости к осмысленному шагу · 10 экранов · личный кабинет',
     worksheet:'Анкета для подготовки к коучингу',worksheetNote:'Подробная анкета на одной странице, чтобы сформулировать вопрос и подготовиться к разговору. Можно сохранить приватно после входа.',
     openProgramme:'Подробнее о программе',chooseTradition:'Выбрать сессию',openWorksheet:'Открыть анкету',
-    clarify:'Уточняющий вопрос',clarifyWhy:'Необязательный авторский вопрос, не генерация ИИ.',clarifyAnswer:'Ваше уточнение',clarifySave:'Сохранить и продолжить',clarifySkip:'Пропустить уточнение',clarifyShort:'Напишите не меньше 3 символов.',
+    clarify:'Уточняющий вопрос',clarifyWhy:'Необязательный авторский вопрос, не генерация ИИ.',clarifyAnswer:'Ваше уточнение',clarifySave:'Сохранить и продолжить',clarifySkip:'Пропустить уточнение',clarifyShort:'Напишите не меньше 3 символов.',stopMic:'Остановите диктовку и проверьте текст перед переходом.',
   },
   es:{
     adultTitle:"Solo adultos (18+) · una decisión consciente",
@@ -133,7 +136,7 @@ const copy={
     safe:'El autocoaching es reflexión educativa, no psicoterapia, atención médica ni chat con IA.',
     alert:'Ante un peligro inmediato, solicita ayuda profesional o de emergencia.',
     back:'Todas las sesiones',stage:'PREGUNTA',of:'DE',yourQuestion:'Tu pregunta',choices:'Elige una respuesta',
-    ownAnswer:'O escribe tu respuesta (opcional)',answerPlaceholder:'En tus palabras…',
+    ownAnswer:'O escribe tu respuesta (opcional)',openAnswer:'Tu respuesta, con tus propias palabras',answerPlaceholder:'Sin prisa. Unas frases son suficientes…',
     next:'Siguiente pregunta',finish:'Terminar',previous:'Atrás',required:'Elige o escribe una respuesta.',
     plan:'Para WOOP escribe un plan específico «si–entonces» de al menos 10 caracteres.',
     completed:'Sesión terminada',summary:'Tu reflexión',nextStep:'Tu último paso',copy:'Copiar resumen',
@@ -146,7 +149,7 @@ const copy={
     greek:'Pasar de intención a acción',greekNote:'Voluntad, sentido y un siguiente paso · 10 pantallas · cuenta privada',
     worksheet:'Cuestionario de preparación para coaching',worksheetNote:'Prepara tu consulta en una página. Guardado privado opcional después de iniciar sesión.',
     openProgramme:'Conocer programa',chooseTradition:'Elegir sesión',openWorksheet:'Abrir cuestionario',
-    clarify:'Una pregunta de aclaración',clarifyWhy:'Reflexión original opcional, no una respuesta de IA.',clarifyAnswer:'Tu reflexión',clarifySave:'Guardar y continuar',clarifySkip:'Omitir esta reflexión',clarifyShort:'Escribe al menos 3 caracteres.',
+    clarify:'Una pregunta de aclaración',clarifyWhy:'Reflexión original opcional, no una respuesta de IA.',clarifyAnswer:'Tu reflexión',clarifySave:'Guardar y continuar',clarifySkip:'Omitir esta reflexión',clarifyShort:'Escribe al menos 3 caracteres.',stopMic:'Detén el dictado y revisa el texto antes de continuar.',
   },
 }
 // Editorial topical hints for existing authored course routes. They are not
@@ -251,6 +254,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [index,setIndex]=useState(0)
   const [answers,setAnswers]=useState({})
   const [draft,setDraft]=useState('')
+  const [dictating,setDictating]=useState(false)
+  const [speechConsent,setSpeechConsent]=useState(false)
   const [finished,setFinished]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null)
   const [reflectionDraft,setReflectionDraft]=useState('')
@@ -262,6 +267,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const titleRef=useRef(null)
   const sessionScrollRef=useRef(null)
   const rootRef=useRef(null)
+  const customAnswerRef=useRef(null)
   useEffect(()=>{
     if(!session)return
     // The public session is an immersive viewport, not a card inside the site.
@@ -327,6 +333,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       traditionExplicitMatch(question,id)||fit.tags.some(tag=>(recommendation.tags||[]).includes(tag)))
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
+  const quickChoices=coachingQuickChoicesAllowed(current,index)
+  const gentleGuide=coachingGentleGuide(current,index,session?.questions?.length||1,lang)
   const needsCustomPlan=Boolean(session?.requiredCustomPlan&&index===session.questions.length-1)
   const requiresAdult=Boolean(session&&(coachingSchemeRequiresAdultConsent(session)||sessionTopic==='sexuality'))
   const progressPosition=entryStep==='intro'?1:entryStep==='topic'?2:index+3
@@ -341,16 +349,19 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   }
   function start(scheme){
     if(recommendation.blocked)return
+    setDictating(false)
     setAdultAcknowledged(false)
     setSession(scheme);setEntryStep('intro');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
+    if(dictating){setError(t.stopMic);return}
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
     setSession(null);setEntryStep('intro');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
+    if(dictating){setError(t.stopMic);return}
     if(entryStep==='intro'){backToModels();return}
     if(entryStep==='topic'){setEntryStep('intro');setError('');return}
     if(pendingFollowup){
@@ -367,6 +378,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     setIndex(prev);setDraft(updated[session.questions[prev].id]||'');setError('')
   }
   function advance(skip=false){
+    if(dictating){setError(t.stopMic);return}
     const value=skip?'':draft.trim()
     if(current.required&&!skip&&!value){setError(t.required);return}
     if(!skip&&session.requiredCustomPlan&&index===session.questions.length-1&&(value.startsWith('choice:')||value.length<10)){
@@ -386,6 +398,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     const next=index+1;setIndex(next);setDraft(nextAnswers[session.questions[next].id]||'')
   }
   function finishFollowup(skip=false){
+    if(dictating){setError(t.stopMic);return}
     if(!pendingFollowup)return
     const text=reflectionDraft.trim()
     if(!skip&&text.length<3){setError(t.clarifyShort);return}
@@ -562,7 +575,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>
         <header className={styles.sessionHeader}>
-          <button type="button" className={styles.back} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
+          <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
             <p className={styles.eyebrow}>{coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} · {t.free}</p>
             {!finished&&<div className={styles.progress}>
@@ -612,6 +625,12 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
             <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            <CoachingQuestionVoice key={'guest-followup-'+pendingFollowup.key+'-'+pendingFollowup.questionId+'-'+lang}
+              text={tr(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
+              speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+              onListeningChange={setDictating}
+              onTranscript={words=>{setReflectionDraft(previous=>appendSpokenAnswer(previous,words,500));setError('')}}/>
+            {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             <p className={styles.hint}>{t.clarifyWhy}</p>
             <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
             <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
@@ -620,24 +639,38 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+            <CoachingQuestionVoice key={'guest-question-'+current.id+'-'+lang}
+              text={tr(current.prompt,lang)} locale={lang} mode="answer"
+              speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+              onListeningChange={active=>{setDictating(active);if(active&&customAnswerRef.current)customAnswerRef.current.open=true}}
+              onTranscript={words=>{
+                if(customAnswerRef.current)customAnswerRef.current.open=true
+                setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
+                setError('')
+              }}/>
+            {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {tr(current.reflection,lang)&&<p className={styles.hint}>{tr(current.reflection,lang)}</p>}
-            {options.length>0&&!needsCustomPlan&&<>
+            {gentleGuide&&<div className={styles.gentleGuide} data-public-coaching-gentle-guide>
+              <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
+            </div>}
+            {quickChoices&&options.length>0&&!needsCustomPlan&&<>
               <p className={styles.questionLabel}>{t.choices}</p>
               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
                 {options.map(option=><button type="button" key={option.id}
-                  aria-pressed={draft==='choice:'+option.id} onClick={()=>{setDraft('choice:'+option.id);setError('')}}>{tr(option.label,lang)}</button>)}
+                  aria-pressed={draft==='choice:'+option.id} disabled={dictating} onClick={()=>{setDraft('choice:'+option.id);if(customAnswerRef.current)customAnswerRef.current.open=false;setError('')}}>{tr(option.label,lang)}</button>)}
               </div>
             </>}
-            {options.length>0&&!needsCustomPlan
-              ?<details key={current.id} className={styles.customAnswer} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
+            {quickChoices&&options.length>0&&!needsCustomPlan
+              ?<details key={current.id} className={styles.customAnswer} ref={customAnswerRef} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
                 <summary>{t.ownAnswer}</summary>
                 <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer}
                   rows={2} maxLength={800} placeholder={t.answerPlaceholder}
                   value={draft.startsWith('choice:')?'':draft} onChange={e=>{setDraft(e.target.value);setError('')}}/>
               </details>
-              :<><label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.ownAnswer}</label>
-                <textarea id="public-coaching-answer" className={styles.questionInput} rows={3} maxLength={800}
+              :<>{!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>{answerText(draft,current,lang,t)}</p>}
+                <label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.openAnswer}</label>
+                <textarea id="public-coaching-answer" className={styles.questionInput} rows={4} maxLength={800}
+                  data-public-coaching-open-reflection={!quickChoices?'true':undefined}
                   placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
                   onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
             {error&&<p className={styles.alert} role="alert">{error}</p>}
@@ -645,17 +678,17 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         </div>
         {!finished&&(entryStep!=='questions'||!requiresAdult||adultAcknowledged)&&<footer className={styles.sessionFooter}>
           <div className={styles.sessionActions}>
-            <button type="button" className={styles.secondary} onClick={moveBack}>{t.previous}</button>
+            <button type="button" className={styles.secondary} disabled={dictating} onClick={moveBack}>{t.previous}</button>
             {entryStep==='intro'
               ?<button type="button" className={styles.primary} onClick={()=>setEntryStep('topic')}>{t.continueSession}<ArrowRight size={17}/></button>
               :entryStep==='topic'
               ?<button type="button" className={styles.primary} disabled={!sessionTopic} onClick={()=>setEntryStep('questions')}>{t.beginQuestions}<ArrowRight size={17}/></button>
               :pendingFollowup
-              ?<button type="button" className={styles.primary} onClick={()=>finishFollowup(false)}>{t.clarifySave}<ArrowRight size={17}/></button>
-              :<button type="button" className={styles.primary} onClick={()=>advance(false)}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
+              ?<button type="button" className={styles.primary} disabled={dictating} onClick={()=>finishFollowup(false)}>{t.clarifySave}<ArrowRight size={17}/></button>
+              :<button type="button" className={styles.primary} disabled={dictating} onClick={()=>advance(false)}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
           </div>
-          {entryStep==='questions'&&pendingFollowup&&<button type="button" className={styles.followupSkip} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
-           {entryStep==='questions'&&requiresAdult&&!pendingFollowup&&<button type="button" className={styles.sensitiveSkip} onClick={()=>advance(true)}>{t.skipSensitive}</button>}
+          {entryStep==='questions'&&pendingFollowup&&<button type="button" className={styles.followupSkip} disabled={dictating} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
+           {entryStep==='questions'&&requiresAdult&&!pendingFollowup&&<button type="button" className={styles.sensitiveSkip} disabled={dictating} onClick={()=>advance(true)}>{t.skipSensitive}</button>}
           <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
         </footer>}
       </section>}

@@ -673,7 +673,12 @@ export function HomeFeaturedWorkspace({ locale }: { locale: PublicLocale }) {
             <section id={"home-immersion-" + id} className={styles.section}
               data-home-module={id} aria-labelledby={"hh-home-" + id + "-title"} key={id}>
               <header className={styles.sectionHeading}>
-                <p className={styles.eyebrow}>{t.sectionCounter} {index + 1}/{moduleIds.length}</p>
+                <div className={styles.sectionKicker}>
+                  <p className={styles.eyebrow}>{t.sectionCounter} {index + 1}/{moduleIds.length}</p>
+                  <span className={styles.progressTrack} aria-hidden="true">
+                    <span style={{ width: `${Math.round(((index + 1) / moduleIds.length) * 100)}%` }} />
+                  </span>
+                </div>
                 <h2 id={"hh-home-" + id + "-title"}>{section.title}</h2>
                 <p className={styles.lead}>{section.lead}</p>
               </header>

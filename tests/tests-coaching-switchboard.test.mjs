@@ -9,8 +9,8 @@ const css = read("components/tests-coaching-switchboard.module.css");
 const legacy = read("components/ideas-discovery.tsx");
 
 test("Four-path hub is the canonical public first screen in EN/RU/ES", () => {
-  assert.match(legacy, /<TestsCoachingSwitchboard locale=\{locale\} templeContent=\{<>/);
-  assert.match(legacy, /aria-labelledby="tests-coaching-title"/);
+  assert.match(legacy, /<TestsCoachingSwitchboard locale=\{locale\} templeContent=\{templeContent\}/);
+  assert.match(legacy, /aria-labelledby=\{isTemple \? "ideas-title" : "tests-coaching-title"\}/);
   assert.match(ui, /const pathOrder: Path\[\] = \["profile", "temple", "coaching", "support"\]/);
   assert.match(ui, /data-tests-coaching-path=\{key\}/);
   assert.match(ui, /aria-expanded=\{path === key\}/);
@@ -61,4 +61,46 @@ test("TSX parses cleanly and all CSS classes are declared", () => {
   const used = [...new Set([...ui.matchAll(/styles\.([a-zA-Z][a-zA-Z0-9]*)/g)].map(m => m[1]))];
   const available = new Set([...css.matchAll(/\.([a-zA-Z][a-zA-Z0-9]*)/g)].map(m => m[1]));
   assert.deepEqual(used.filter(value => !available.has(value)), []);
+});
+
+
+test("four choices become an accessible, focused path instead of a wall of expanding cards", () => {
+  assert.match(ui, /hidden=\{Boolean\(path\)\}/);
+  assert.match(ui, /data-tests-coaching-back/);
+  assert.match(ui, /ref=\{detailRef\} tabIndex=\{-1\}/);
+  assert.match(ui, /detailRef\.current\?\.focus\(\)/);
+  assert.match(ui, /firstCardRef\.current\?\.focus\(\)/);
+  assert.match(ui, /quickCtas\[locale\]\[key\]/);
+  for (const headline of ["What would feel most helpful today?", "Что сейчас было бы для вас полезнее?", "¿Qué te ayudaría más hoy?"])
+    assert.ok(ui.includes(headline), "Missing localized welcome: " + headline);
+  assert.match(css, /\.grid\[hidden\]\s*\{\s*display:\s*none;/);
+  assert.match(css, /\.cardArrow/);
+  assert.match(css, /\.cardIcon/);
+});
+
+test("Coaching entry goes straight to the topic-based session chooser, without the extra session-type slide", () => {
+  assert.match(ui, /key === "coaching"/);
+  assert.match(ui, /data-tests-coaching-direct/);
+  assert.match(ui, /href=\{\`\/\$\{locale\}\/coaching\`\}/);
+  assert.doesNotMatch(ui, /data-tests-coaching-sessions/);
+  assert.match(ui, /aria-controls="tests-coaching-detail"/);
+  const lounge = read("components/public-coaching-discovery.jsx");
+  assert.match(lounge, /data-coaching-topic-first/);
+  assert.match(lounge, /data-public-coaching-models/);
+  assert.match(lounge, /coachingSessionTitle\(s\.schemeKey,lang,/);
+  for (const text of ["Choose your topic", "Выберите тему", "Elige un tema"]) {
+    assert.ok(ui.includes(text), "Missing a clear localized next step: " + text);
+  }
+});
+
+test("2-minute support is the single primary offer, followed by smaller course and human support links", () => {
+  assert.match(ui, /className=\{styles\.supportFeatured\}/);
+  assert.match(ui, /className=\{styles\.supportNext\}/);
+  assert.match(ui, /aria-label=\{t\.programme\}/);
+  assert.match(ui, /aria-label=\{t\.personalSupport\}/);
+  for (const headline of ["01 · A 2-MINUTE PAUSE", "01 · ПРАКТИКА НА 2 МИНУТЫ", "01 · PAUSA DE 2 MINUTOS"])
+    assert.ok(ui.includes(headline), headline);
+  assert.match(css, /\.supportArrow\s*\{[^}]*width:\s*44px;/);
+  assert.match(css, /@media \(max-width:\s*360px\)/);
+  assert.match(css, /prefers-reduced-motion/);
 });

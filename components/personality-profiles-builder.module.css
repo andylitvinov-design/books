@@ -12,31 +12,56 @@
 .hero {
   position: relative;
   isolation: isolate;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  min-height: 204px;
   overflow: hidden;
-  border: 1px solid #c9dfd1;
-  border-radius: 23px;
-  background: #edf5ed;
-  box-shadow: 0 8px 28px #254d3820;
+  border: 1px solid #cbded0;
+  border-radius: 22px;
+  background: #f2f6f0;
+  box-shadow: 0 9px 27px #304c3e12;
 }
 .heroPhoto {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(90deg, #f1f7f0 5%, #eef6eedc 58%, #e6f4e7bb 100%),
-    url("/images/holistic-house/report-lighthouse-coast.webp") center 44% / cover no-repeat;
+  background: linear-gradient(90deg, #f2f7f1 0%, #f2f7f1f4 65%, #ecf3ebdc 100%),
+    url("/images/holistic-house/report-lighthouse-coast.webp") center 43% / cover no-repeat;
 }
-.heroCopy { padding: clamp(18px, 3.5vw, 34px); max-width: 760px; }
-.kicker { display: flex; align-items: center; gap: 8px; margin: 0 0 7px; color: #356c5c; font-size: 11px; font-weight: 800; letter-spacing: .16em; }
-.hero h1 { margin: 0; color: #315e51; font-size: clamp(30px, 5vw, 49px); line-height: 1.06; font-family: Georgia, serif; font-weight: 600; }
-.heroCopy > p:not(.kicker) { margin: 10px 0 0; max-width: 65ch; color: #47655a; font-size: clamp(13px, 1.75vw, 16px); line-height: 1.5; }
-.benefits { display: flex; flex-wrap: wrap; gap: 7px 13px; margin-top: 15px; }
-.benefits span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #315c50; font-weight: 700; }
+.heroCopy { padding: clamp(25px, 4vw, 44px); max-width: 740px; }
+.kicker { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; color: #326c5a; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.hero h1 { margin: 0; color: #315e51; font-size: clamp(32px, 5vw, 47px); line-height: 1.1; font-family: Georgia, serif; font-weight: 600; }
+.heroCopy > p:not(.kicker) { margin: 13px 0 0; max-width: 56ch; color: #3f5b50; font-size: clamp(14px, 1.7vw, 16px); line-height: 1.55; }
+.begin {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  width: min(100%, 545px); min-height: 77px; margin-top: 23px; padding: 13px 19px;
+  border: 1px solid #742b45; border-radius: 17px;
+  background: #742b45; color: #fff; text-align: left;
+  box-shadow: 0 8px 21px #742b452c; cursor: pointer;
+  transition: background-color .15s, transform .15s;
+}
+.begin:hover { background: #62223a; transform: translateY(-1px); }
+.begin > span { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.begin strong { font-size: 19px; font-weight: 800; line-height: 1.2; }
+.begin small { font-size: 12px; font-weight: 500; line-height: 1.35; color: #fff1f1; }
+.begin > svg { flex: none; }
+.browseTests { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-top: 7px; padding: 5px 1px; color: #742b45; font-size: 13px; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; }
+.browseTests:hover { color: #562237; }
+.roadmap {
+  margin-top: 15px; padding: 21px 24px 18px;
+  background: #fffefa; border: 1px solid #d8e1d6; border-radius: 19px;
+}
+.roadmap h2 { margin: 0 0 14px; color: var(--forest); font-family: Georgia, serif; font-size: 23px; line-height: 1.2; }
+.roadmapSteps { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin: 0; padding: 0; }
+.roadmapSteps li { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.roadmapNumber { width: 31px; height: 31px; display: grid; place-items: center; flex: none; border-radius: 50%; background: #e8f0e8; color: var(--forest); font-weight: 800; font-size: 13px; }
+.roadmapSteps strong { display: block; margin-bottom: 4px; color: #2e5c4c; font-size: 14px; line-height: 1.3; }
+.roadmapSteps p { margin: 0; font-size: 12px; line-height: 1.5; color: #526e60; }
+.entryNote { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0 0; padding-top: 12px; border-top: 1px solid #e7ede5; font-size: 12px; color: #526e60; line-height: 1.45; }
+.entryNote svg { flex: none; margin-top: 1px; }
+.wizardTop { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; scroll-margin-top: 24px; }
+.returnIntro { display: inline-flex; align-items: center; gap: 6px; padding: 9px 2px; background: transparent; border: 0; color: var(--wine); font-size: 13px; font-weight: 750; cursor: pointer; }
+.wizardKicker { display: inline-flex; align-items: center; gap: 6px; color: #446e5d; font-size: 12px; font-weight: 700; }
 .progress {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 7px;
   margin: 16px 0 12px;
 }
@@ -63,17 +88,19 @@
 .help { margin: 8px 0 18px; max-width: 72ch; font-size: 13px; line-height: 1.5; color: #607367; }
 .templateGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
 .templateCard {
-  position: relative; display: flex; flex-direction: column; align-items: flex-start;
-  gap: 7px; min-width: 0; min-height: 138px; padding: 16px 43px 15px 16px;
-  border: 1px solid #cce0d0; border-radius: 17px; background: #f6faf5;
+  display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: start; gap: 12px;
+  min-width: 0; min-height: 125px; padding: 17px;
+  border: 1px solid #d0dfd2; border-radius: 16px; background: #f8faf6;
   color: var(--ink); text-align: left; cursor: pointer;
   transition: border-color .15s, transform .15s, box-shadow .15s;
 }
 .templateCard:hover { transform: translateY(-1px); border-color: #709e85; box-shadow: 0 8px 18px #204b3220; }
-.templateCard strong { font-size: 17px; line-height: 1.25; color: var(--forest); }
-.templateCard > span:not(.templateIcon) { color: #5f7468; font-size: 12px; line-height: 1.45; }
-.templateIcon { width: 30px; height: 30px; display: grid; place-items: center; color: #754253; background: #f1e7df; border-radius: 10px; font-size: 20px; }
-.templateArrow { position: absolute; right: 14px; bottom: 15px; color: var(--wine); }
+.templateCard:active { background: #edf5ee; }
+.templateIcon { width: 42px; height: 42px; display: grid; place-items: center; color: #7c4054; background: #f2e9e4; border-radius: 13px; }
+.templateBody { display: flex; flex-direction: column; min-width: 0; }
+.templateBody strong { font-size: 17px; line-height: 1.26; color: var(--forest); }
+.templateBody > span { margin-top: 5px; color: #526b5c; font-size: 12px; line-height: 1.45; }
+.templateSelect { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 11px; font-size: 12px; color: var(--wine); font-weight: 800; }
 .areaGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .areaCard {
   min-width: 0; min-height: 93px; display: flex; align-items: flex-start; gap: 9px;
@@ -130,26 +157,57 @@
 .privateLinks a { display: inline-flex; align-items: center; gap: 5px; color: #74334a; text-decoration: underline; text-underline-offset: 3px; font-size: 12px; font-weight: 750; }
 .languageNotice, .disclaimer { margin: 10px 3px 0; color: #67786b; font-size: 11px; line-height: 1.5; }
 .shell button:focus-visible, .shell a:focus-visible, .swot summary:focus-visible, .shell input:focus-visible { outline: 3px solid #a97748; outline-offset: 3px; }
+
+/* Course-style confirmation comes AFTER the visitor edits the test set. */
+.reviewIntro { text-align: center; max-width: 680px; margin: 0 auto; }
+.reviewIcon { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 auto 13px; border: 1px solid #c7ddcc; border-radius: 18px; background: #eaf4eb; color: #315f52; }
+.reviewIntro .templateLabel { margin-bottom: 8px; color: #8a5c4c; letter-spacing: .12em; }
+.reviewIntro .help { margin: 10px auto 0; max-width: 58ch; }
+.reviewTotal { display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 10px 0 16px; padding: 7px 15px; border-radius: 99px; background: #edf5ed; color: #476d5d; font-size: 12px; }
+.reviewTotal strong { color: #315f52; }
+.reviewTests { display: grid; gap: 9px; list-style: none; margin: 2px auto 0; padding: 0; max-width: 720px; }
+.reviewTest { display: grid; grid-template-columns: 42px minmax(0, 1fr) 27px; align-items: center; gap: 12px; min-width: 0; padding: 13px 16px; border: 1px solid #d2e2d5; border-radius: 15px; background: linear-gradient(110deg, #f5faf4, #fffdfa 75%); box-shadow: 0 2px 8px #244d3b08; }
+.reviewNumber { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e3eee4; color: #376e59; font-size: 13px; font-weight: 850; font-variant-numeric: tabular-nums; }
+.reviewTestText { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.reviewTestText strong { color: #315e50; font-size: 15px; font-weight: 750; line-height: 1.28; overflow-wrap: anywhere; }
+.reviewTestText small { font-size: 12px; color: #637b6c; line-height: 1.35; }
+.reviewCheck { justify-self: end; color: #4b8469; }
+.reviewFoot { display: flex; align-items: flex-start; gap: 10px; margin: 18px auto 3px; padding: 12px 14px; max-width: 720px; border-radius: 12px; background: #f6f1e8; color: #69604f; font-size: 12px; line-height: 1.5; }
+.reviewFoot svg { flex: none; margin-top: 1px; }
+
 @media (max-width: 640px) {
   .shell { padding: 9px 11px 46px; }
-  .hero { min-height: 0; border-radius: 16px; }
-  .heroCopy { padding: 15px 14px 14px; }
-  .hero h1 { font-size: clamp(28px, 7.5vw, 37px); }
-  .heroCopy > p:not(.kicker) { font-size: 12px; line-height: 1.42; margin-top: 7px; }
-  .benefits { gap: 6px 9px; margin-top: 10px; }
-  .benefits span { font-size: 10px; }
+  .hero { border-radius: 17px; }
+  .heroCopy { padding: 21px 18px 20px; }
+  .hero h1 { font-size: clamp(30px, 8vw, 37px); }
+  .heroCopy > p:not(.kicker) { font-size: 14px; line-height: 1.5; margin-top: 11px; }
+  .begin { width: 100%; min-height: 73px; margin-top: 18px; padding: 13px 15px; border-radius: 15px; }
+  .begin strong { font-size: 17px; }
+  .begin small { font-size: 12px; }
+  .roadmap { margin-top: 11px; padding: 15px 16px 12px; border-radius: 16px; }
+  .roadmap h2 { font-size: 20px; margin-bottom: 5px; }
+  .roadmapSteps { grid-template-columns: 1fr; gap: 0; }
+  .roadmapSteps li { padding: 10px 0; border-bottom: 1px solid #e7ede5; }
+  .roadmapSteps li:last-child { border-bottom: 0; }
+  .roadmapNumber { width: 27px; height: 27px; }
+  .roadmapSteps strong { margin-bottom: 3px; font-size: 13px; }
+  .roadmapSteps p { font-size: 12px; line-height: 1.42; }
+  .entryNote { margin-top: 6px; padding-top: 10px; font-size: 11px; }
+  .wizardTop { gap: 7px; }
+  .wizardKicker { font-size: 11px; }
   .progress { margin: 10px 0; gap: 5px; }
-  .progress button { font-size: 10px; gap: 4px; padding: 4px 1px; border-radius: 10px; }
+  .progress button { flex-direction: column; font-size: 10px; gap: 3px; padding: 6px 1px; border-radius: 10px; line-height: 1.15; }
   .progress button span { width: 18px; height: 18px; font-size: 10px; }
   .panel { min-height: 0; padding: 15px 12px; border-radius: 16px; }
   .panel h2 { font-size: clamp(21px, 5.5vw, 26px); }
   .help { font-size: 12px; margin: 7px 0 13px; }
-  .templateGrid { gap: 8px; }
-  .templateCard { min-height: 134px; padding: 12px 9px; gap: 5px; }
-  .templateCard strong { font-size: 14px; }
-  .templateCard > span:not(.templateIcon) { font-size: 11px; padding-right: 6px; }
-  .templateArrow { right: 8px; bottom: 8px; width: 14px; }
-  .templateIcon { width: 25px; height: 25px; font-size: 17px; }
+  .templateGrid { grid-template-columns: 1fr; gap: 8px; }
+  .templateCard { min-height: 92px; padding: 12px; gap: 11px; grid-template-columns: 36px minmax(0, 1fr); }
+  .templateBody strong { font-size: 15px; }
+  .templateBody > span { font-size: 12px; }
+  .templateSelect { margin-top: 7px; font-size: 11px; }
+  .templateIcon { width: 36px; height: 36px; border-radius: 10px; }
+  .templateIcon svg { width: 19px; height: 19px; }
   .areaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .areaCard { min-height: 84px; padding: 10px 8px; gap: 7px; }
   .areaCard strong { font-size: 13px; }
@@ -159,19 +217,27 @@
   .testRow { padding: 8px 10px; gap: 8px; }
   .testText strong { font-size: 12px; }
   .testText > span { font-size: 10px; }
+  .reviewIcon { width: 48px; height: 48px; border-radius: 14px; }
+  .reviewTest { grid-template-columns: 33px minmax(0, 1fr) 18px; gap: 9px; padding: 10px 11px; border-radius: 12px; }
+  .reviewNumber { width: 33px; height: 33px; border-radius: 10px; font-size: 12px; }
+  .reviewTestText strong { font-size: 13px; }
+  .reviewTestText small { font-size: 11px; }
+  .reviewFoot { font-size: 11px; padding: 11px; }
+  .reviewIntro .help { font-size: 12px; }
   .actions { gap: 8px; }
   .actions button, .actions a { min-height: 45px; padding: 8px 12px; font-size: 12px; }
 }
 @media (max-width: 350px) {
   .shell { padding-inline: 7px; }
-  .progress button { font-size: 9px; }
-  .templateCard { min-height: 144px; padding: 10px 8px; }
-  .templateCard strong { font-size: 13px; }
+  .progress button { font-size: 9px; letter-spacing: -.02em; }
+  .templateCard { min-height: 91px; padding: 10px 9px; }
+  .templateBody strong { font-size: 14px; }
+  .roadmap { padding-inline: 12px; }
   .areaCard { min-height: 94px; gap: 5px; }
   .areaCard strong { font-size: 12px; }
   .swotGrid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .templateCard { transition: none; }
-  .templateCard:hover { transform: none; }
+  .templateCard, .begin { transition: none; }
+  .templateCard:hover, .begin:hover { transform: none; }
 }

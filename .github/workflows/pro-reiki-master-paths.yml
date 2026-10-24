@@ -1,0 +1,45 @@
+name: Pro Reiki master learning paths
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/profi-hub.tsx'
+      - 'components/profi-hub.module.css'
+      - 'lib/reiki-master-programs.ts'
+      - 'app/[locale]/pro/page.tsx'
+      - 'app/[locale]/academy/reiki/master/**'
+      - 'tests/profi-hub.test.mjs'
+      - '.github/workflows/pro-reiki-master-paths.yml'
+permissions:
+  contents: read
+concurrency:
+  group: pro-reiki-master-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate-pro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Test all three Pro journeys and master programmes (EN/RU/ES)
+        run: node --test tests/profi-hub.test.mjs
+      - name: ESLint changed implementation
+        run: >-
+          npx --no-install eslint
+          components/profi-hub.tsx
+          lib/reiki-master-programs.ts
+          'app/[locale]/pro/page.tsx'
+          'app/[locale]/academy/reiki/master/[program]/page.tsx'
+      - name: Type-check the application
+        run: npx --no-install tsc --noEmit
+      - name: Validate the Next.js production build
+        run: npm run build

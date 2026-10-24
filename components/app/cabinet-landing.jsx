@@ -8,6 +8,7 @@ import { ChevronRight } from 'lucide-react'
 import { ClientCabinetEntry } from '@/components/client-cabinet-entry'
 import { PublicTestExplorer } from '@/components/app/public-test-explorer'
 import { GuestScaleInterpretation } from '@/components/app/guest-scale-interpretation'
+import { GuestTestJourneyProgress } from '@/components/app/guest-test-journey-progress'
 import guestActions from './guest-result-actions.module.css'
 import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import { TestFinishActions } from '@/components/app/test-finish-actions'
@@ -1002,6 +1003,8 @@ export function CabinetLanding({ locale = 'en', appAvailable = false, legacySele
 
 
       {phase !== 'catalog' && <section className="cabinet-guest-tests" id="cabinet-tests" aria-labelledby="guest-tests-title">
+        <GuestTestJourneyProgress locale={locale} plan={activePlan}
+          definition={definition} answeredCount={answeredCount} phase={phase} />
         {phase === 'questions' && definition ? (
           <header className="cabinet-tests-heading cabinet-tests-heading--compact">
             <h2 id="guest-tests-title">{definitionTitle(definition, locale)}</h2>

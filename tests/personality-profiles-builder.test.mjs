@@ -62,6 +62,32 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(css.includes('prefers-reduced-motion'))
 })
 
+test('first visit shows a single clear CTA and explanation before the profile wizard', () => {
+  const component = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+
+  assert.match(component, /\[started, setStarted\] = useState\(false\)/)
+  assert.match(component, /\{!started \? <>/)
+  assert.match(component, /data-profile-begin/)
+  assert.match(component, /onClick=\{\(\) => setStarted\(true\)\}/)
+  assert.match(component, /styles\.roadmapSteps/)
+  assert.match(component, /t\.journey\.map/)
+  assert.match(component, /setStarted\(false\); setStep\(0\)/)
+  assert.match(component, /aria-labelledby="profile-builder-journey-title"/)
+  assert.match(component, /styles\.templateBody/)
+  assert.match(component, /t\.selectTemplate/)
+  assert.match(component, /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)/)
+  for (const entry of ['entryButton: "Create my profile"',
+    'entryButton: "Создать свой профиль"', 'entryButton: "Crear mi perfil"',
+    'entryHint: "Пройти тесты и получить рекомендации по развитию"'])
+    assert.ok(component.includes(entry), entry)
+  assert.ok(css.includes('.begin {'))
+  assert.ok(css.includes('.roadmapSteps {'))
+  assert.ok(css.includes('.templateGrid { grid-template-columns: 1fr; gap: 8px; }'))
+  assert.ok(css.includes('.shell button:focus-visible'))
+  assert.ok(!component.includes('["✦", "◈", "◌", "✳"]'))
+})
+
 test('home Stage 2 is one free service while account reports remain separate and private', () => {
   const source = read('components/home-featured-workspace.tsx')
   const start = source.indexOf('const copy = ') + 'const copy = '.length

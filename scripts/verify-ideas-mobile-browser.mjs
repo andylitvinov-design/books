@@ -54,18 +54,29 @@ async function verify(browserType, locale, width) {
       label + ": four thumb-sized readable cards");
     assert.ok(closeEnough(cardRects[0].y, cardRects[1].y) && closeEnough(cardRects[2].y, cardRects[3].y) &&
       cardRects[2].y > cardRects[0].y, label + ": two-by-two mobile cards");
-    assert.equal(await switchboard.locator("[data-tests-coaching-detail]").count(), 0);
+    assert.equal(await switchboard.locator("#tests-coaching-detail").isVisible(), false,
+      label + ": selected panel starts closed");
+    const supportDiscovery = await switchboard.locator('[data-tests-coaching-path="support"]').boundingBox();
+    assert.ok(supportDiscovery && supportDiscovery.y < 844,
+      label + ": all four choices remain available above the first fold");
     const profilePath = switchboard.locator('[data-tests-coaching-path="profile"]');
     await profilePath.tap();
     assert.equal(await profilePath.getAttribute("aria-expanded"), "true");
     assert.equal(await switchboard.locator('[data-personality-profiles-entry] a[href="/' + locale + '/personality-profiles"]').count(), 1,
       label + ": canonical profile builder, no duplicate tests or storage");
-    await profilePath.tap();
+    const backPath = switchboard.locator("[data-tests-coaching-back]");
+    assert.equal(await switchboard.locator("nav[hidden] [data-tests-coaching-path]:visible").count(), 0,
+      label + ": hide the four paths after choosing one");
+    await backPath.tap();
+    assert.equal(await cards.filter({ visible: true }).count(), 4,
+      label + ": four routes return after using Back");
     const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
-    await coachingPath.tap();
-    assert.equal(await switchboard.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').count() > 0, true,
-      label + ": public guest coaching catalog");
-    await coachingPath.tap();
+    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching",
+      label + ": coaching card is a direct link to the topic-first chooser");
+    assert.notEqual(await coachingPath.getAttribute("data-tests-coaching-direct"), null,
+      label + ": coaching entry must not open a second interstitial slide");
+    assert.equal(await switchboard.locator("[data-tests-coaching-sessions]").count(), 0,
+      label + ": redundant format-selection slide is removed");
     const supportPath = switchboard.locator('[data-tests-coaching-path="support"]');
     await supportPath.tap();
     const support = switchboard.locator("[data-tests-coaching-support]");
@@ -76,7 +87,7 @@ async function verify(browserType, locale, width) {
     await support.getByRole("region").getByRole("button").first().tap();
     assert.equal(await support.getByRole("status").count(), 1,
       label + ": consent, practice and completion work");
-    await supportPath.tap();
+    await backPath.tap();
     const templePath = switchboard.locator('[data-tests-coaching-path="temple"]');
     await templePath.tap();
     assert.equal(await templePath.getAttribute("aria-expanded"), "true");
@@ -90,9 +101,20 @@ async function verify(browserType, locale, width) {
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
+    // WebKit may dispatch a tap before React finishes the preceding text event.
+    // Keep the real tap and assert the on-page panel rather than masking navigation.
+    await page.waitForTimeout(120);
     await testAction.tap();
     const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
-    await filtered.waitFor({ state: "visible" });
+    try {
+      await filtered.waitFor({ state: "visible", timeout: 12000 });
+    } catch (cause) {
+      const current = page.url();
+      const input = await hub.locator("#ideas-question").inputValue().catch(() => "(unavailable)");
+      const expanded = await testAction.getAttribute("aria-expanded").catch(() => "(unavailable)");
+      throw new Error(label + ": free test chooser did not open; url=" + current +
+        "; inputLength=" + input.length + "; ariaExpanded=" + expanded, { cause });
+    }
     assert.equal(await testAction.getAttribute("aria-expanded"), "true");
     assert.equal(await filtered.locator("[data-ideas-test-start]").count(), 3, label + ": real filtered tests");
     assert.equal(await filtered.locator("[data-ideas-test-start]").first().getAttribute("href"),
@@ -147,8 +169,8 @@ async function verify(browserType, locale, width) {
 
     if (browserType === webkit && locale === "en" && width === 390) {
       await page.screenshot({ path: output + "/ideas-first-screen-webkit-390.png", fullPage: false });
-      const discover = await hub.locator('[data-tests-coaching-path="support"]').boundingBox();
-      assert.ok(discover && discover.y < 844, label + ": four choices fit near the first screen");
+      assert.equal(await switchboard.locator("nav[hidden]").count(), 1,
+        label + ": selected Temple panel replaces the cards instead of repeating choices");
     }
 
     const textarea = hub.locator("#ideas-question");
@@ -219,7 +241,7 @@ async function verify(browserType, locale, width) {
     assert.equal(await daoResult.locator('[data-ideas-dao-expanded="true"] button').count(), 1,
       label + ": only reset remains; no Draw another button");
     if (browserType === webkit && locale === "en" && width === 390) {
-      await daoResult.locator('[data-ideas-dao-reading] [lang="ru"] p').first()
+      await daoResult.locator('[data-ideas-dao-reading] [lang="en"] p').first()
         .waitFor({ state: "visible", timeout: 30000 });
     }
     await expand.tap();
@@ -227,13 +249,17 @@ async function verify(browserType, locale, width) {
     assert.equal(await daoResult.locator('[role="img"]').count(), 0, label + ": collapsed content removed");
 
     if (width === 390) {
-      await hub.locator('[data-tests-coaching-path="coaching"]').tap();
-      const exploreCoaching = hub.locator('[data-tests-coaching-sessions] a[href="/' + locale + '/coaching"]').first();
-      const destination = await exploreCoaching.getAttribute("href");
-      await exploreCoaching.tap();
+      await backPath.tap();
+      const directCoaching = hub.locator('[data-tests-coaching-direct]');
+      const destination = await directCoaching.getAttribute("href");
+      await directCoaching.tap();
       await page.waitForURL(url => url.pathname === destination, { timeout: 30000 });
-      assert.ok((await page.locator("h1").first().textContent())?.length,
-        label + ": public Coaching Options page renders");
+      const topicChooser = page.locator("[data-coaching-topic-first]");
+      await topicChooser.waitFor({ state: "visible", timeout: 30000 });
+      const businessTopic = topicChooser.locator('[data-coaching-topic-group="business"]');
+      await businessTopic.tap();
+      assert.equal(await businessTopic.getAttribute("aria-pressed"), "true",
+        label + ": guest can choose coaching topic without an extra format slide");
     }
     assert.deepEqual(errors, [], label + ": unhandled client errors");
     evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390 });
