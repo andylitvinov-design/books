@@ -12,6 +12,7 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { HomeFreeDiagnosisBanner } from "@/components/home-free-diagnosis-banner";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./profi-hub.module.css";
+import { masterProgramIds, masterReikiPrograms, masterReikiUi } from "@/lib/reiki-master-programs";
 
 const OFFER_KEYS = ["session", "intro", "workshop", "course"] as const;
 type OfferKey = typeof OFFER_KEYS[number];
@@ -332,6 +333,7 @@ const copy = {
 
 export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const masterT = masterReikiUi[locale];
   const [lessonIndex, setLessonIndex] = useState(0);
   const [offer, setOffer] = useState<OfferKey>("session");
   const appLocale = locale === "es" ? "en" : locale;
@@ -339,7 +341,6 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const publicRoot = "/" + locale;
   const mastersHref = publicRoot + "/masters?view=mentors";
   const trainingHref = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
-  const academyHref = publicRoot + "/academy/reiki";
   const profileHref = practiceRoot + "?panel=profile";
   const requestsHref = practiceRoot + "?panel=requests";
   const offerHref = offer === "course"
@@ -396,11 +397,17 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 <Photo src={PHOTOS.lessons[0]} className={styles.introPhoto} sizes="(max-width: 600px) 90px, 190px" />
                 <p className={styles.sectionKicker}><BookOpen size={16} aria-hidden="true" />{t.learnEyebrow}</p>
                 <h2 id="profi-learning-title">{t.learnChoice}</h2>
-                 <h3 className={styles.sectionSubtitle}>{t.learnTitle}</h3>
-                <p>{t.learnLead}</p>
+                <p className={styles.freeKicker}>{masterT.freeLabel}</p>
+                <h3 className={styles.sectionSubtitle}>{masterT.freeHeading}</h3>
+                <p className={styles.freeBlurb}>{masterT.freeText}</p>
+                <Link href={trainingHref} prefetch={false} className={styles.freeLaunch} data-profi-action="start-free-course">
+                  {t.studyCta}<ArrowRight size={16} aria-hidden="true" />
+                </Link>
               </div>
-              <div className={styles.lessonLayout}>
-                <div className={styles.lessonSelector}>
+              <details className={styles.freeCourseDisclosure} data-profi-free-course>
+                <summary>{masterT.freePreview}<ChevronRight size={18} aria-hidden="true" /></summary>
+                <div className={styles.lessonLayout}>
+                  <div className={styles.lessonSelector}>
                   <h3>{t.lessonGuide}</h3>
                   <p className={styles.micro}>{t.lessonHint}</p>
                   <ol className={styles.lessons}>
@@ -435,6 +442,45 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                   {t.studyNote && <p className={styles.micro}>{t.studyNote}</p>}
                 </div>
               </div>
+              </details>
+
+              <section id="profi-masters" className={styles.masterSection} aria-labelledby="profi-masters-title" data-profi-masters>
+                <p className={styles.sectionKicker}><GraduationCap size={16} aria-hidden="true" />{masterT.kicker}</p>
+                <h3 id="profi-masters-title">{masterT.heading}</h3>
+                <p className={styles.masterIntro}>{masterT.intro}</p>
+                <div className={styles.masterCards}>
+                  {masterProgramIds.map((id, index) => {
+                    const master = masterReikiPrograms[id];
+                    const masterHref = "/" + locale + "/academy/reiki/master/" + id;
+                    return (
+                      <details key={id} name="profi-master-programs" className={styles.masterCard} data-profi-paid-program={id}>
+                        <summary>
+                          <Photo src={master.image} className={styles.masterThumb} sizes="(max-width: 600px) 84px, 116px" />
+                          <span className={styles.masterSummary}>
+                            <small className={styles.masterNumber}>{String(index + 2).padStart(2, "0")} · {masterT.paid}</small>
+                            <strong>{master.title[locale]}</strong>
+                            <span>{master.teaser[locale]}</span>
+                          </span>
+                          <ChevronRight size={19} aria-hidden="true" className={styles.masterChevron} />
+                        </summary>
+                        <div className={styles.masterExpanded}>
+                          <p>{master.description[locale]}</p>
+                          <strong>{masterT.preview}</strong>
+                          <ul>{master.topics[locale].map((topic) => <li key={topic}>{topic}</li>)}</ul>
+                          <div className={styles.masterActions}>
+                            <Link href={masterHref} prefetch={false} className={styles.secondary} data-profi-master-link={id}>
+                              {masterT.learnMore}<ArrowRight size={16} aria-hidden="true" />
+                            </Link>
+                            <Link href={masterHref + "#request"} prefetch={false} className={styles.primary} data-profi-master-request={id}>
+                              {masterT.interested}<ArrowRight size={16} aria-hidden="true" />
+                            </Link>
+                          </div>
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </section>
 
               <section className={styles.nextStage} aria-labelledby="profi-after-learning">
                 <h3 id="profi-after-learning">{t.afterTitle}</h3>
@@ -452,7 +498,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 </div>
                 <p className={styles.disclaimer}><ShieldCheck size={17} aria-hidden="true" />{t.learningDisclaimer}</p>
                 <div className={styles.nextActions}>
-                  <Link href={academyHref} prefetch={false} className={styles.secondary} data-profi-action="advanced-reiki">
+                  <Link href="#profi-masters" prefetch={false} className={styles.secondary} data-profi-action="advanced-reiki">
                     {t.advanced}<ArrowRight size={16} aria-hidden="true" />
                   </Link>
                   <a href="#profi-practice" className={styles.textAction}>

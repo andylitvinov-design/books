@@ -9,6 +9,11 @@ import { classifyHolisticHouseNativeAuth } from '../lib/native/deep-link-policy.
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
 const page = read('app/[locale]/pro/page.tsx')
 const hub = read('components/profi-hub.tsx')
+const masterModule = {}
+runInNewContext(ts.transpileModule(read('lib/reiki-master-programs.ts'), {
+  fileName: 'reiki-master-programs.ts',
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: masterModule })
 
 test('Pro shows one contextual free review CTA, tests and profile entries',()=>{
   assert.equal((hub.match(/<HomeFreeDiagnosisBanner /g)||[]).length,1)
@@ -92,6 +97,7 @@ function mount(locale) {
     '@/components/public-site-header': { PublicSiteHeader:props=>jsx('header',props) },
     '@/components/home-free-diagnosis-banner': { HomeFreeDiagnosisBanner:props=>jsx('aside',props) },
     './profi-hub.module.css': { __esModule:true,default:style },
+    '@/lib/reiki-master-programs': masterModule,
   }
   const compiled = ts.transpileModule(hub,{
     fileName:'profi-hub.tsx',
@@ -243,7 +249,7 @@ test('actual protected editors open the requested draft without saving before us
   assert.match(materials,/setCourseComposerOpen\(true\)/)
   const learner=read('components/energywork-ai-learner.tsx')
   assert.match(learner,/data-reiki-profi-continuation/)
-  assert.match(learner,/href=\{"/" \+ locale \+ "\/pro"\}/)
+  assert.match(learner,/href=\{"\/" \+ locale \+ "\/pro"\}/)
   assert.match(learner,/slide.kind === "finish"/)
   assert.match(materials,/startCreate=\{quickCreateCourse\}/)
   assert.match(builder,/setCreating\(Boolean\(startCreate\)\|\|!list\.length\)/)
@@ -296,7 +302,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
   assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
   assert.match(switcher,/initialView \?\? \(hasArticles \? "articles" : "mentors"\)/)
   assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
-  assert.match(css,/\.finderPhoto\{/
+  assert.match(css,/\.finderPhoto\{/)
   for(const locale of ['en','ru','es']){
     const tree=mount(locale).render()
     const paths=nodes(tree).filter(x=>x.props?.['data-profi-path']!==undefined)
@@ -314,4 +320,59 @@ test('Pro starts with three localized, accessible paths, including real mentor d
   assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
   assert.match(hub,/proChoice: "Я уже мастер — предложить услуги"/)
   assert.match(hub,/No earnings, number of clients or payments are guaranteed/)
+})
+
+test('Pro shows a single free introduction followed by three distinct paid master programmes in EN/RU/ES', () => {
+  const expectedIds=['tantra','kundalini','yggdrasil-temple']
+  assert.deepEqual(Array.from(masterModule.masterProgramIds),expectedIds)
+  for(const locale of ['en','ru','es']){
+    const tree=mount(locale).render()
+    assert.equal(nodes(tree).find(n=>Object.hasOwn(n.props||{},'data-profi-free-course'))?.type,'details')
+    assert.ok(find(tree,'data-profi-action','start-free-course'))
+    const masters=nodes(tree).filter(n=>Object.hasOwn(n.props||{},'data-profi-paid-program'))
+    assert.equal(masters.length,3,locale+': paid master count')
+    assert.deepEqual(masters.map(n=>n.props['data-profi-paid-program']),expectedIds)
+    for(const id of expectedIds){
+      const item=find(tree,'data-profi-paid-program',id)
+      assert.equal(item.type,'details','expandable without redirect: '+id)
+      assert.equal(find(tree,'data-profi-master-link',id).props.href,'/'+locale+'/academy/reiki/master/'+id)
+      assert.equal(find(tree,'data-profi-master-request',id).props.href,'/'+locale+'/academy/reiki/master/'+id+'#request')
+      assert.ok(masterModule.masterReikiPrograms[id].topics[locale].length>=3)
+    }
+  }
+  const learningIndex=hub.indexOf('id="profi-learning"')
+  const paidIndex=hub.indexOf('id="profi-masters"')
+  const practiceIndex=hub.indexOf('id="profi-practice"')
+  assert.ok(learningIndex<paidIndex&&paidIndex<practiceIndex)
+  assert.match(css,/\.masterCards\{display:grid/)
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.match(css,/@media\(max-width:359px\)/)
+})
+
+test('master landings have localized independent URLs and use verified lead intake rather than checkout', () => {
+  const route=read('app/[locale]/academy/reiki/master/[program]/page.tsx')
+  const layout=read('app/[locale]/academy/reiki/master/[program]/master-reiki.module.css')
+  const model=read('lib/reiki-master-programs.ts')
+  for(const path of [ 'components/profi-hub.tsx', 'app/[locale]/academy/reiki/master/[program]/page.tsx', 'lib/reiki-master-programs.ts' ]){
+    const text=read(path)
+    const node=ts.createSourceFile(path,text,ts.ScriptTarget.Latest,true,path.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS)
+    assert.equal(node.parseDiagnostics.length,0,path+': parse diagnostics')
+  }
+  assert.match(route,/<ContactChannelChooser/)
+  assert.match(route,/stayAfterSave/)
+  assert.match(route,/whatsappEnquiryUrl\(/)
+  assert.match(route,/pagePath: path/)
+  assert.match(route,/masterProgramIds\.some/)
+  assert.match(route,/id="request"/)
+  assert.match(route,/canonical:/)
+  assert.match(route,/"x-default"/)
+  assert.match(route,/data-reiki-master-landing=\{program\}/)
+  assert.match(model,/price to consult|fee on request/i)
+  assert.doesNotMatch(route,/stripe|checkout|createOrder|paymentIntent/i)
+  assert.match(layout,/@media\(max-width:430px\)/)
+  assert.match(layout,/\.heroArt\{position:relative;/)
+  for(const entry of Object.values(masterModule.masterReikiPrograms)){
+    assert.ok(entry.title.en && entry.title.ru && entry.title.es)
+    assert.ok(entry.academyPath.startsWith('reiki/'))
+  }
 })
