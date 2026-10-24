@@ -71,6 +71,7 @@ test("global fallback is a short consented footer after page content and preserv
   assert.match(suppress, /body:has\(\[data-consultation-cta\]\) \[data-sitewide-capture\]/);
   assert.match(suppress, /body:has\(\[data-reiki-choice-capture\]\) \[data-sitewide-capture\]/);
   assert.match(suppress, /body:has\(\[data-free-entry-landing\]\) \[data-sitewide-capture\]/);
+  assert.match(suppress, /body:has\(\[data-personal-service\]\[data-visual-service-landing\]\) \[data-sitewide-capture\]/);
   assert.match(css, /@media\(max-width:767px\)/);
   assert.match(css, /min-height:48px/);
   assert.match(css, /:focus-visible/);
