@@ -112,6 +112,10 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
         const data = await response.json();
         if (response.ok && data?.order?.status) {
           setSquareStatus(data.order.status);
+          // Recover the server-owned items when Square returns in another tab
+          // or when sessionStorage has been cleared; never trust URL pricing.
+          if (Array.isArray(data.order.items))
+            setSelected(restoreServiceCart(JSON.stringify(data.order.items)));
           if (data.order.status === "paid" || data.order.status === "payment_review") setMethod("square");
         } else setSquareError(data?.error || "SQUARE_ORDER_UNAVAILABLE");
       }).catch(() => setSquareError("SQUARE_ORDER_UNAVAILABLE"));
