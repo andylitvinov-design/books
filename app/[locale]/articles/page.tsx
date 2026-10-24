@@ -5,6 +5,7 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createArticleRepository } from "@/lib/practitioners/article-repository";
+import { createArticleSocialRepository } from "@/lib/practitioners/article-social-repository";
 import { ArticleDirectory } from "@/components/practitioner-article-directory";
 import styles from "@/components/practitioner-articles-public.module.css";
 
@@ -23,6 +24,8 @@ type PublicArticle = {
     excerpt: string;
     coverPath?: string;
     tags?: string[];
+    kind?: "note" | "article";
+    locale?: "en" | "ru" | "es";
   };
 };
 
@@ -31,9 +34,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isPublicLocale(locale)) return { robots: { index: false, follow: false } };
   return {
     metadataBase: metadataBaseFor(),
-    title: locale === "ru" ? "Статьи практиков | Holistic House"
-      : locale === "es" ? "Artículos de profesionales | Holistic House"
-        : "Practitioner articles | Holistic House",
+    title: locale === "ru" ? "Новости и заметки мастеров | Holistic House"
+      : locale === "es" ? "Noticias y notas de profesionales | Holistic House"
+        : "Practitioner news & notes | Holistic House",
     description: locale === "ru"
       ? "Практические статьи и объяснения от авторов Holistic House."
       : "Educational articles and practical insights by Holistic House practitioners.",
@@ -47,21 +50,32 @@ export default async function Articles({ params }: Props) {
   const ru = locale === "ru", es = locale === "es";
   let articles: PublicArticle[] = [];
   try {
-    articles = await createArticleRepository(getAppConfig()).publicList(locale);
+    articles = await createArticleRepository(getAppConfig()).publicFeed();
   } catch {
     // The empty state is honest when the database cannot be read.
+  }
+  let social: Record<string,{likes:number;comments:number}> = {};
+  let socialAvailable = false;
+  if (articles.length) {
+    try {
+      social = await createArticleSocialRepository(getAppConfig()).publicStats(articles.map(a=>a.id));
+      socialAvailable = true;
+    } catch {
+      // Explicitly hide reaction counters if storage isn't ready.
+    }
   }
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
       <section className={styles.hero}>
         <p className="homeopathy-kicker">Holistic House · Journal</p>
-        <h1>{ru ? "Статьи наших практиков" : es ? "Artículos de profesionales" : "Practitioner articles"}</h1>
+        <h1>{ru ? "Новости мастеров" : es ? "Noticias de los mentores" : "Practitioner news feed"}</h1>
         <p>{ru ? "Материалы для самоисследования, обучения и выбора подходящих практик."
           : es ? "Lecturas educativas para explorar enfoques y conocer a sus autores."
             : "Useful educational perspectives and thoughtful introductions to methods."}</p>
       </section>
-      <ArticleDirectory locale={locale} articles={articles.map((a) => ({
+      <ArticleDirectory locale={locale} social={social} socialAvailable={socialAvailable}
+        articles={articles.map((a) => ({
         id: a.id,
         slug: a.slug,
         practitionerName: a.practitionerName,
@@ -71,6 +85,8 @@ export default async function Articles({ params }: Props) {
         excerpt: a.published.excerpt,
         coverPath: a.published.coverPath || "",
         tags: Array.isArray(a.published.tags) ? a.published.tags : [],
+        kind: a.published.kind === "note" ? "note" : "article",
+        language: a.published.locale || locale,
       }))} />
     </main>
   );
