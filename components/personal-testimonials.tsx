@@ -132,7 +132,13 @@ export function PersonalTestimonials({
     showLanguage = false,
   ) => items.map((item) => (
     <div className={styles.videoItem} key={item.id} data-testimonial-video-id={item.id}>
-      {showLanguage ? <p className={styles.videoLanguageTag}>{item.language === "ru" ? "Русский · RU" : "English · EN"}</p> : null}
+      {showLanguage ? (
+        <p className={styles.videoLanguageTag}>
+          {item.language === "ru"
+            ? locale === "ru" ? "Русский · RU" : locale === "es" ? "Ruso · RU" : "Russian · RU"
+            : locale === "ru" ? "Английский · EN" : locale === "es" ? "Inglés · EN" : "English · EN"}
+        </p>
+      ) : null}
       <SiteVideoPlayer
         video={{ youtubeId: item.id, language: item.language, title: item.title }}
         locale={locale}
@@ -180,11 +186,12 @@ export function PersonalTestimonials({
         <h3>{current.videoHeading}</h3>
         <span>{isAbout ? (locale === "ru" ? "10 видео · RU/EN" : locale === "es" ? "10 vídeos · audio RU/EN" : "10 videos · RU/EN audio") : variant === "all" ? (locale === "ru" ? "12 видео · русский и английский" : locale === "es" ? "12 vídeos · audio en inglés y ruso" : "12 videos · English and Russian audio") : current.videoLanguage}</span>
       </div>
-      {isFullArchive && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : locale === "es" ? "Desliza para ver más testimonios →" : "Swipe or scroll to see all video reviews →"}</p>}
+      {isAbout && <p className={styles.swipeHint}>{locale === "ru" ? "Листайте видеоотзывы в сторону →" : locale === "es" ? "Desliza para ver más testimonios →" : "Swipe or scroll to see all video reviews →"}</p>}
       <div className={styles.videoGrid}
+        data-vertical-review-list={variant === "all" ? "" : undefined}
         role={isFullArchive ? "region" : undefined}
-        aria-label={isFullArchive ? (locale === "ru" ? `Галерея из ${visibleVideos.length} видеоотзывов` : `Gallery of ${visibleVideos.length} video testimonials`) : undefined}
-        tabIndex={isFullArchive ? 0 : undefined}>
+        aria-label={isFullArchive ? (locale === "ru" ? `Все ${visibleVideos.length} видеоотзывов` : locale === "es" ? `Los ${visibleVideos.length} testimonios en vídeo` : `All ${visibleVideos.length} video testimonials`) : undefined}
+        tabIndex={isAbout ? 0 : undefined}>
         {renderVideoCards(visibleVideos, isFullArchive)}
       </div>
 
