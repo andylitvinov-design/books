@@ -67,6 +67,9 @@ test("mobile format choices keep all payment methods but collapse them until aft
   for (const price of ["€50", "€100"]) assert.ok(form.includes(price), price);
   assert.match(css, /\.paymentDisclosure summary\{[^}]*min-height:44px/);
   assert.match(css, /\.optionsSection\{justify-content:flex-start;padding-top:16px;padding-bottom:16px\}/);
-  assert.match(qa, /Payment methods must be collapsed until explicitly requested/);
+  assert.match(qa, /openRegisteredCompactPhoneChooser\(pricing, expect, page\)/);
+  assert.match(qa, /One featured testimonial per mobile screen/);
+  assert.match(qa, /Ten Alchemy chapters including video and public sample report/);
+    assert.match(qa, /Payment methods must be collapsed until explicitly requested/);
   assert.match(qa, /Unpriced monthly support must never expose one-time transfer amounts/);
 });
