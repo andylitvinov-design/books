@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
+import PracticeExpressReports from './practice-express-reports'
 import PracticeMaterials from './practice-materials'
 import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
@@ -182,6 +183,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       }
     }
     if(params.get('panel')==='marketing')setActivePanel('marketing')
+    if(params.get('panel')==='express-reports')setActivePanel('express-reports')
     // Owner-only CRM remains guarded by isOwner; this is navigation, never authorization.
     if(params.get('panel')==='crm')setActivePanel('crm')
     if(params.get('panel')==='clients'){
@@ -455,9 +457,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     </p>}
     {!needsOnboarding&&!activePanel&&<>
       <nav className="hh-practice-quick" aria-label={ru?'Быстрые действия':'Quick actions'}>
-        {isOwner?<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
-          <FileText aria-hidden="true" />{d.createReport}
-        </button>:<button type="button" aria-pressed={activePanel==='requests'}
+        {isOwner&&<button type="button" disabled={busy} onClick={()=>openOwner('report')}>
+          <FileText aria-hidden="true" />{ru?'Полный отчёт · мой':locale==='es'?'Informe completo · propietario':'Full report · owner only'}
+        </button>}
+        <button type="button" aria-pressed={activePanel==='express-reports'} onClick={()=>choosePanel('express-reports')}>
+          <FileText aria-hidden="true"/>{ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
+        </button>
+        {!isOwner&&<button type="button" aria-pressed={activePanel==='requests'}
           onClick={()=>choosePanel('requests')}><ClipboardList aria-hidden="true" />{t.requests}</button>}
         <button type="button" onClick={shareProfile}>
           <Share2 aria-hidden="true" />{profileLive?(ru?'Пригласить клиента':'Invite client'):(ru?'Мой профиль':'My profile')}
@@ -485,6 +491,9 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             onClick={()=>choosePanel('events')} active={activePanel==='events'} />
           <PracticeTile Icon={Leaf} title={d.services} description={d.servicesHint}
             onClick={()=>choosePanel('services')} active={activePanel==='services'} />
+          <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'}
+            description={ru?'Разбор ситуации без препаратов, в личный кабинет клиента.':locale==='es'?'Análisis sin remedios, en la cuenta del cliente.':'Private situation reviews without remedies.'}
+            onClick={()=>choosePanel('express-reports')} active={activePanel==='express-reports'}/>
           {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint}
             onClick={()=>openOwner('reports')} />}
           {isOwner?<PracticeTile Icon={ReceiptText} title={d.invoices} description={d.invoicesHint}
@@ -510,7 +519,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
       activePanel&&<section id="hh-practice-workspace-detail" className="hh-practice-form-panel" data-practice-detail-panel={activePanel}>
         <div className="hh-practice-form-heading">
-          <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
+          <h2>{activePanel==='more'?(ru?'Ещё инструменты':locale==='es'?'Más herramientas':'More tools'):activePanel==='analytics'?(ru?'Аналитика':locale==='es'?'Analíticas':'Analytics'):activePanel==='marketing'?(ru?'Маркетинг':'Marketing'):activePanel==='materials'?(ru?'Мои материалы':'My materials'):activePanel==='express-reports'?(ru?'Экспресс-отчёты':locale==='es'?'Informes exprés':'Express reports'):activePanel==='events'?(locale==='ru'?'Мои мероприятия':locale==='es'?'Mis eventos':'My events'):activePanel==='services'?d.addService:activePanel==='profile'?d.myData:activePanel==='requests'?d.activity:activePanel==='clients'&&isOwner?(locale==='ru'?'Клиенты · Карточки и заявки':locale==='es'?'Clientes · Fichas y solicitudes':'Clients · Records & enquiries'):activePanel==='clients'?d.clients:d.credentials}</h2>
           <button type="button" className="hh-practice-close" onClick={closePanel}>{d.close} ×</button>
         </div>
         {activePanel==='more'&&<div className="hh-practice-inline-more" data-practice-inline-more>
@@ -521,6 +530,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
               description={ru?'Growth Studio, SEO и кампании':'Growth Studio, SEO & campaigns'} onClick={()=>choosePanel('marketing')} />}
             {isOwner&&<PracticeTile Icon={UsersRound} title={ru?'CRM · Контакты':locale==='es'?'CRM · Contactos':'CRM · Contacts'}
               description={ru?'Контакты и подписчики':'Contacts and subscribers'} onClick={()=>choosePanel('crm')} />}
+            <PracticeTile Icon={FileText} title={ru?'Экспресс-отчёт':locale==='es'?'Informe exprés':'Express report'}
+              description={ru?'Приватный разбор ситуации, без гомеопатии':'Private situation review, without remedies'} onClick={()=>choosePanel('express-reports')} />
             {isOwner&&<PracticeTile Icon={FileText} title={d.createReport}
               description={ru?'Новый отчёт для клиента':'New client report'} onClick={()=>openOwner('report')} />}
             {isOwner&&<PracticeTile Icon={FileText} title={d.reports} description={d.reportsHint} onClick={()=>openOwner('reports')} />}
@@ -566,6 +577,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
       </details>
         </div>}
+        {activePanel==='express-reports'&&<PracticeExpressReports locale={locale} accountId={accountId} requests={requests} owner={isOwner}/>}
         {activePanel==='analytics'&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics">
           <PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} />
         </div>}
