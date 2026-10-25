@@ -650,7 +650,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           </span>
         </button>
         {isTemple ? <Link
-          href={"/" + locale + "/holistic-support#free-diagnostic-start"}
+          href={"/" + locale + "/coaching#free-diagnostic-start"}
           className={styles.diagnosticAction}
           data-ideas-personal-diagnostic
           prefetch={false}
