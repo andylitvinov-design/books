@@ -34,10 +34,16 @@ const EXPERIENCE_SCENE_KEY=Object.freeze({
 })
 const EXPERIMENT_WORDS=Object.freeze({
   ru:{title:'ПРАКТИКА-ЭКСПЕРИМЕНТ',step:'Шаг',next:'Следующий шаг',
+    firstTitle:'Упражнение № 1. Мой знак опоры',
+    firstInvite:'Найдём личный предмет, цвет или слово, свяжем его с нужным вам качеством и попробуем маленький шаг. Можно остановиться или пропустить. Хотите попробовать?',
     prompt:'Выберите то, что подходит',note:'Это личный выбор, а не оценка. Отмечайте попытку честно; можно остановиться или пропустить.'},
   en:{title:'TRY A MICRO-EXPERIMENT',step:'Step',next:'Next step',
+    firstTitle:'Exercise 1. Find your personal anchor',
+    firstInvite:'Find a meaningful everyday object, colour or word and link it with one helpful quality and a small action. You can stop or skip. Would you like to try?',
     prompt:'Choose what fits',note:'This is your choice, not a score. Report only what you actually tried; you may stop or skip.'},
   es:{title:'PRUEBA UN MINIEXPERIMENTO',step:'Paso',next:'Siguiente paso',
+    firstTitle:'Ejercicio 1. Mi señal de apoyo',
+    firstInvite:'Busca un objeto, color o palabra con un significado útil para ti. Prueba un paso pequeño; puedes detenerte o saltarlo. ¿Quieres probar?',
     prompt:'Elige lo que te sirva',note:'No es una nota. Cuenta solo lo que probaste; puedes parar o saltarlo.'},
 })
 const WORDS={
@@ -730,7 +736,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='baseline'?opening.baseline:
     moment==='checkin'?opening.checkin:
     moment==='recall'?opening.recall:
-    moment==='arrive'?(cycle.day===1?(newDayOneIntro?t.firstExerciseTitle:t.arrivalWarmTitle):t.arriveTitle):
+    moment==='arrive'?(cycle.day===1?(newDayOneIntro?(showSkill60?EXPERIMENT_WORDS[lang].firstTitle:t.firstExerciseTitle):t.arrivalWarmTitle):t.arriveTitle):
     moment==='support'?support?.title:
     channelCard?channelCard.title:
     moment==='why'?j.whyTitle:moment==='story'?j.storyTitle:
@@ -864,7 +870,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             {familiarSupport&&familiarSupport!=='other'&&<p className={styles.soft} role="status">{opening.recallReply}</p>}
           </>}
           {moment==='arrive'&&!neutralSupport&&<>
-            <p className={styles.lead}>{cycle.day===1?(newDayOneIntro?t.firstExerciseInvite:t.arrivalWarmText):t.arriveText}</p>
+            <p className={styles.lead}>{cycle.day===1?(newDayOneIntro?(showSkill60?EXPERIMENT_WORDS[lang].firstInvite:t.firstExerciseInvite):t.arrivalWarmText):t.arriveText}</p>
             {cycle.day!==1&&<>
               <div className={styles.moodChoices} role="group" aria-label={t.arriveTitle}
                 data-opora-start-mood="true">
