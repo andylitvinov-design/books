@@ -237,15 +237,13 @@ test('Master offer choices are localized, non-medical, and backed by approved se
     assert.equal(find(view,'data-profi-offer','diagnostic').props['aria-pressed'],true)
     keys.forEach((key,index)=>{
       const option=find(view,'data-profi-offer',key)
-      const label=nodes(option).flatMap(n=>n.props?.children||[]).filter(x=>typeof x==='string')
       assert.ok(JSON.stringify(option).includes(labels[locale][index]),locale+': '+key)
       assert.equal(option.props.type,'button')
-      assert.ok(label!==null)
     })
   }
-  assert.match(editor,/diagnostic: \\{ areaKey:'personal_development', offeringType:'assessment'/)
-  assert.match(editor,/energy: \\{ areaKey:'energy_spiritual', offeringType:'session'/)
-  assert.match(editor,/personal: \\{ areaKey:'personal_development', offeringType:'session'/)
+  assert.match(editor,/diagnostic: \{ areaKey:'personal_development', offeringType:'assessment'/)
+  assert.match(editor,/energy: \{ areaKey:'energy_spiritual', offeringType:'session'/)
+  assert.match(editor,/personal: \{ areaKey:'personal_development', offeringType:'session'/)
   assert.match(hub,/not a medical diagnosis or treatment/)
   assert.match(hub,/Это не медицинский диагноз или лечение/)
   assert.match(hub,/No es un diagnóstico ni un tratamiento médico/)
