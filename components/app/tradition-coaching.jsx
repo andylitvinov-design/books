@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {ArrowRight,Check,ChevronLeft,LockKeyhole,Trash2,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
+import {traditionStages,traditionStageGuide,traditionStageImage,traditionStageSource} from '@/lib/personal-coaching/tradition-visuals'
 import {coachingGentleGuide,coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
@@ -17,6 +18,31 @@ const words={
  en:{private:'Private',load:'Loading your course…',loadError:'Could not open the private course.',retry:'Try again',start:'Start this course',again:'Start a new journey',back:'Back',continue:'Save & continue',finish:'Save & finish',save:'Saving…',skip:'Skip this reflection',question:'QUESTION',of:'OF',note:'My own words (optional)',placeholder:'Add a short detail, or dictate it…',noteHelp:'Choose a topic; you can add a few words.',notChosen:'Choose a topic before continuing.',writeAnswer:'Write a few words in your own voice, or skip this optional step.',ownAnswer:'Your answer, in your own words',openPlaceholder:'You can begin with one recent example…',freeHelp:'There is no right answer. Take the time you need.',earlierChoice:'Earlier saved choice',saved:'Saved to My Courses',error:'Could not save. Your answer is still on this screen.',conflict:'Your course changed in another tab. Reload before editing.',unsaved:'This answer has not been saved. Leave without saving?',complete:'Course completed',result:'My personal goal map',action:'The step I chose',history:'Previous sessions',empty:'Not answered',home:'My Courses',delete:'Delete this course history',confirm:'Delete this course and all its saved answers? The other coaching courses are not affected.',privacy:'Your answers are encrypted in your account. Nothing is sent to a practitioner, CRM or messenger.',pace:'One question on each screen · take your time',introNote:'Symbolic self-reflection, not a clinical test or a promise of results.',own:'Your note',review:'Review my answers'},
  ru:{private:'Личное',load:'Открываем ваш курс…',loadError:'Не удалось открыть личный курс.',retry:'Повторить',start:'Начать курс',again:'Начать курс заново',back:'Назад',continue:'Сохранить и далее',finish:'Сохранить и завершить',save:'Сохраняем…',skip:'Пропустить этот вопрос',question:'ВОПРОС',of:'ИЗ',note:'Своими словами (необязательно)',placeholder:'Добавьте короткое уточнение или продиктуйте…',noteHelp:'Выберите тему; можно добавить пару слов.',notChosen:'Сначала выберите тему.',writeAnswer:'Напишите несколько слов своими словами или пропустите необязательный шаг.',ownAnswer:'Ваш ответ своими словами',openPlaceholder:'Можно начать с одного недавнего примера…',freeHelp:'Здесь нет правильного ответа. Не торопитесь.',earlierChoice:'Сохранённый ранее вариант',saved:'Сохранено в «Моих курсах»',error:'Не удалось сохранить ответ. Он остался на экране.',conflict:'Курс изменился в другой вкладке. Загрузите актуальные ответы.',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',complete:'Курс завершён',result:'Моя карта цели',action:'Мой ближайший шаг',history:'Предыдущие прохождения',empty:'Без ответа',home:'Мои курсы',delete:'Удалить записи этого курса',confirm:'Удалить этот курс и все его ответы? Другие коучинговые курсы сохранятся.',privacy:'Ответы зашифрованы в личном кабинете. Ничего не уходит мастеру, в CRM или мессенджер.',pace:'Один вопрос на экран · в своём темпе',introNote:'Символическая практика самоисследования, не клинический тест и не гарантия результата.',own:'Ваше уточнение',review:'Посмотреть мои ответы'},
  es:{private:'Privado',load:'Abriendo tu curso…',loadError:'No se pudo abrir el curso privado.',retry:'Reintentar',start:'Empezar el curso',again:'Empezar otra vez',back:'Atrás',continue:'Guardar y continuar',finish:'Guardar y terminar',save:'Guardando…',skip:'Omitir esta pregunta',question:'PREGUNTA',of:'DE',note:'En mis palabras (opcional)',placeholder:'Añade una nota o dícala…',noteHelp:'Elige un tema; puedes añadir unas palabras.',notChosen:'Elige un tema para continuar.',writeAnswer:'Escribe unas palabras tuyas o salta este paso opcional.',ownAnswer:'Tu respuesta, con tus propias palabras',openPlaceholder:'Puedes empezar con un ejemplo reciente…',freeHelp:'No hay una respuesta correcta. Tómate tu tiempo.',earlierChoice:'Opción guardada anteriormente',saved:'Guardado en Mis cursos',error:'No se pudo guardar. La respuesta sigue aquí.',conflict:'El curso cambió en otra pestaña. Vuelve a cargar.',unsaved:'Esta respuesta no está guardada. ¿Salir?',complete:'Curso completado',result:'Mi mapa personal de metas',action:'El paso que elegí',history:'Sesiones anteriores',empty:'Sin respuesta',home:'Mis cursos',delete:'Eliminar el historial del curso',confirm:'¿Eliminar este curso y todas sus respuestas? Los otros cursos seguirán intactos.',privacy:'Tus respuestas están cifradas en tu cuenta. No se comparten con coaches, CRM ni mensajería.',pace:'Una pregunta por pantalla · a tu ritmo',introNote:'Práctica simbólica de autorreflexión, no una prueba clínica ni garantía de resultados.',own:'Tu nota',review:'Ver mis respuestas'}
+}
+const visualWords={
+ en:{overview:'The eight levels of your goal',overviewText:'A visual journey. Every stage introduces one symbolic body or principle, then asks a question about the SAME goal. The images show historic art objects as visual metaphors, not literal pictures of the soul.',overviewStep:'The question you will explore',photo:'Artwork & photographer',introStep:'See the eight levels',nextStep:'Choose your goal',reflect:'Consider the level before you answer'},
+ ru:{overview:'Восемь уровней твоей цели',overviewText:'Сначала изучи символические тела или принципы. Затем на каждом экране увидишь историческое изображение, пояснение и вопрос к ОДНОЙ выбранной цели. Изображения — визуальные ассоциации, а не буквальные фотографии души.',overviewStep:'Вопрос для размышления',photo:'Изображение и автор',introStep:'Познакомиться с 8 уровнями',nextStep:'Выбрать цель',reflect:'Сначала почувствуй смысл уровня, затем ответь'},
+ es:{overview:'Los ocho niveles de tu meta',overviewText:'Primero conoce cada cuerpo simbólico o principio. Cada pantalla mostrará una obra histórica, su significado y una pregunta sobre la MISMA meta. Las imágenes son asociaciones, no fotografías literales del alma.',overviewStep:'La pregunta para reflexionar',photo:'Obra y fotógrafo',introStep:'Conocer los ocho niveles',nextStep:'Elegir mi objetivo',reflect:'Comprende este nivel antes de responder'}
+}
+function TraditionStageArt({stage,lang,compact=false}){
+ if(!stage)return null
+ const v=visualWords[lang]
+ return <figure className={compact?extra.roadmapCard:extra.stageCard} data-tradition-stage={stage.id}>
+   <div className={extra.stagePhoto}>
+     {/* Intentional ordinary img: Commons thumbnail, no paid Vercel optimization; no answer or referrer is shared. */}
+     {/* eslint-disable-next-line @next/next/no-img-element */}
+     <img src={traditionStageImage(stage)} loading="lazy" decoding="async" referrerPolicy="no-referrer"
+       alt={stage.title?.[lang]||stage.title?.en} width="120" height="150"/>
+     <span aria-hidden="true" className={extra.stageGlyph}>{stage.symbol}</span>
+   </div>
+   <figcaption className={extra.stageCopy}>
+     <strong>{stage.title?.[lang]||stage.title?.en}</strong>
+     <p>{stage.description?.[lang]||stage.description?.en}</p>
+     {compact&&<small><b>{v.overviewStep}:</b> {stage.focus?.[lang]||stage.focus?.en}</small>}
+     <a className={extra.photoCredit} href={traditionStageSource(stage)} target="_blank" rel="noopener noreferrer"
+       referrerPolicy="no-referrer" title={v.photo}>{stage.photo?.credit} · {stage.photo?.license}</a>
+   </figcaption>
+ </figure>
 }
 function nextIndex(questions,answers){
  const n=questions.findIndex(q=>!Object.prototype.hasOwnProperty.call(answers||{},q.id))
@@ -32,6 +58,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const def=traditionCourse(template)
  const lang=['ru','es'].includes(locale)?locale:'en'
  const t=words[lang]
+ const v=visualWords[lang]
  const root='/' + (lang==='ru'?'ru':'en') + '/app'
  const home=root+'/course?view=courses'
  const endpoint='tradition-coaching?template='+encodeURIComponent(template||'')
@@ -43,6 +70,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const course=data?.course,session=course?.current
  const questions=data?.questions||[]
  const question=questions[index]
+ const stageGuide=traditionStageGuide(def?.slug,question?.stage)
  const quickChoices=coachingQuickChoicesAllowed(question,index)
  const gentleGuide=coachingGentleGuide(question,index,questions.length,lang)
  const previousQuestion=questions[index-1]
@@ -171,17 +199,25 @@ export default function TraditionCoaching({locale='en',accountId,template}){
         name={def.name[lang]} modelName={def.name[lang]} minutes={def.totalScreens*2}
         questionCount={def.totalScreens} style="reflective" imageSrc={def.art}
         approach={def.description[lang]} outcome={def.note[lang]}/>
+      :entryStep==='roadmap'?<div className={extra.roadmap} data-tradition-stage-overview>
+        <span className={base.eyebrow}>{def.name[lang]}</span>
+        <h1 ref={heading} tabIndex={-1}>{v.overview}</h1>
+        <p>{v.overviewText}</p>
+        <div className={extra.roadmapList}>
+         {traditionStages(def.slug).map(stage=><TraditionStageArt key={stage.id} stage={stage} lang={lang} compact/>)}
+        </div>
+      </div>
       :<CoachingSessionTopic locale={lang} headingRef={heading} value={clientTopic}
         onChange={value=>{setClientTopic(value);setTopicAdultConfirmed(false)}}
         ageConfirmed={topicAdultConfirmed} onAgeConfirm={setTopicAdultConfirmed}/>}
       {error&&<p role="alert" className={base.error}>{error}</p>}
       <div className={extra.introActions}>
-        {entryStep==='topic'&&<button type="button" className={base.back} disabled={busy} onClick={()=>setEntryStep('intro')}>
+        {entryStep!=='intro'&&<button type="button" className={base.back} disabled={busy} onClick={()=>setEntryStep(entryStep==='topic'?'roadmap':'intro')}>
           <ChevronLeft size={17}/>{t.back}</button>}
         <button type="button" className={base.primary}
           disabled={busy||(entryStep==='topic'&&(!clientTopic||(clientTopic==='sexuality'&&!topicAdultConfirmed)))}
-          onClick={()=>entryStep==='intro'?setEntryStep('topic'):(error&&!data?reload():start())}>
-          {busy?t.save:entryStep==='intro'?{en:'Continue coaching session',ru:'Продолжить коучинг-сессию',es:'Continuar la sesión de coaching'}[lang]
+          onClick={()=>entryStep==='intro'?setEntryStep('roadmap'):entryStep==='roadmap'?setEntryStep('topic'):(error&&!data?reload():start())}>
+          {busy?t.save:entryStep==='intro'?v.introStep:entryStep==='roadmap'?v.nextStep
             :error&&!data?t.retry:{en:'Continue to questions',ru:'Перейти к вопросам',es:'Ir a las preguntas'}[lang]}
           <ArrowRight size={18}/>
         </button>
@@ -226,6 +262,8 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       </div>
       <div className={base.questionArea+' '+extra.courseScroll}>
         <span className={base.stage}>{question.title?.[lang]||question.title?.en||question.stage}</span>
+        <TraditionStageArt stage={stageGuide} lang={lang}/>
+        <p className={extra.stagePrompt}>{v.reflect}</p>
         {gentleGuide&&<div data-tradition-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
         <div className={extra.questionHeader}>
          <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
