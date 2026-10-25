@@ -35,7 +35,9 @@ const WORDS = {
     method: "Practice",
     format: "Support format",
     async: "At a distance, without a call",
+    asyncCompact: "Distance · no call",
     live: "Live online session",
+    liveCompact: "Live online",
     duration: "Requested duration",
     schedule: "Preferred time",
     date: "Date",
@@ -92,7 +94,9 @@ const WORDS = {
     method: "Метод",
     format: "Формат поддержки",
     async: "Дистанционно, без видеозвонка",
+    asyncCompact: "Дистанционно",
     live: "Живой онлайн-сеанс",
+    liveCompact: "Онлайн-сеанс",
     duration: "Желаемая длительность",
     schedule: "Удобное время",
     date: "Дата",
@@ -149,7 +153,9 @@ const WORDS = {
     method: "Práctica",
     format: "Modalidad",
     async: "A distancia, sin videollamada",
+    asyncCompact: "Sin llamada",
     live: "Sesión en vivo en línea",
+    liveCompact: "En vivo",
     duration: "Duración solicitada",
     schedule: "Horario preferido",
     date: "Fecha",
@@ -376,6 +382,7 @@ export function RemoteEnergySupportBooking({
                 .sort((a, b) => a.duration - b.duration);
               return (
                 <article key={master.serviceId} className={styles.masterOffer}
+                  data-booking-open={isOpen ? "true" : undefined}
                   data-remote-support-specialist={master.serviceId}>
                   <div className={styles.masterCard}>
                     <div className={styles.masterPhoto}>
@@ -436,13 +443,15 @@ export function RemoteEnergySupportBooking({
                         <legend>{t.format}</legend>
                         <label className={format === "asynchronous" ? styles.activeFormat : ""}>
                           <input type="radio" name="remote-format" value="asynchronous"
-                            checked={format === "asynchronous"} onChange={() => setFormat("asynchronous")}/>
-                          {t.async}
+                            checked={format === "asynchronous"} onChange={() => setFormat("asynchronous")} aria-label={t.async}/>
+                          <span className={styles.formatLong}>{t.async}</span>
+                          <span className={styles.formatShort} aria-hidden="true">{t.asyncCompact}</span>
                         </label>
                         <label className={format === "live" ? styles.activeFormat : ""}>
                           <input type="radio" name="remote-format" value="live"
-                            checked={format === "live"} onChange={() => setFormat("live")}/>
-                          {t.live}
+                            checked={format === "live"} onChange={() => setFormat("live")} aria-label={t.live}/>
+                          <span className={styles.formatLong}>{t.live}</span>
+                          <span className={styles.formatShort} aria-hidden="true">{t.liveCompact}</span>
                         </label>
                       </fieldset>
                       <fieldset className={styles.durationGroup}>
@@ -478,13 +487,15 @@ export function RemoteEnergySupportBooking({
                           </div>
                         </div>
                       </div>
-                      <div className={styles.requestSummary}>
-                        <strong>{currentPrice && selected
-                          ? priceLabel(currentPrice.price, selected.currency) + " · " + duration + " " + t.minutes
-                          : t.unavailablePrice}</strong>
-                        <span>{t.bookingStatus}</span>
-                        <p>{t.noSlots} {t.price}</p>
-                      </div>
+                      <details className={styles.requestSummary}>
+                         <summary className={styles.requestSummaryToggle}>
+                           <strong>{currentPrice && selected
+                             ? priceLabel(currentPrice.price, selected.currency) + " · " + duration + " " + t.minutes
+                             : t.unavailablePrice}</strong>
+                           <span>{t.bookingStatus}</span>
+                         </summary>
+                         <p>{t.noSlots} {t.price}</p>
+                       </details>
                       <button className={styles.submit} type="submit" disabled={!currentPrice}>
                         {t.send} <span aria-hidden="true">→</span>
                       </button>
