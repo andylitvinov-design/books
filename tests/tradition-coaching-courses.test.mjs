@@ -172,7 +172,7 @@ test('optional first-slide notes collapse but remain editable and available on d
  assert.match(personal,/hidden=\{quickChoices&&Boolean\(question\.type\)&&!showOwnWords\}/)
  assert.match(personal,/setShowOwnWords\(true\)/)
  assert.match(personal,/maxLength=\{800\}/)
- assert.match(personal,/<details className=\{styles\.adaptivePanel\}/)
+ assert.match(personal,/<details className=\{styles\.adaptivePanel\} data-coaching-adaptive-prompt>/)
  assert.match(tradCss,/\.noteSection\[hidden\]\{display:none\}/)
  assert.match(privateCss,/#hh-personal-coach-own-words\[hidden\]\{display:none\}/)
  // Original free-text steps must not become mandatory answer choices.
