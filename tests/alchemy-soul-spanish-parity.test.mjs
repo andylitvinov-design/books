@@ -23,7 +23,12 @@ test("Spanish Alchemy shares the ten media-led chapters in EN/RU", () => {
   assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
   assert.match(landing, /El audio original está en inglés/);
   assert.match(landing, /homeopatía no tiene pruebas fiables/);
-  assert.match(landing, /language: locale === "es" \? "en" : locale/);
+  // The actual featured recordings declare their own audio language:
+  // Russian for /ru, the approved English recording for /en and /es.
+  assert.match(landing, /language: "en" as const/);
+  assert.match(landing, /language: "ru" as const/);
+  assert.match(landing, /const featuredIntroVideo = locale === "ru" \? featuredIntroVideoRu : featuredIntroVideoEn;/);
+  assert.match(landing, /<SiteVideoPlayer video=\{featuredIntroVideo\} locale=\{locale\}/);
 });
 
 test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU", () => {
