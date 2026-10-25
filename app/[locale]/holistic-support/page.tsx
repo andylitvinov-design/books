@@ -4,13 +4,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { IdeasDiscovery } from "@/components/ideas-discovery";
-import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
-import { getAppConfig } from "@/lib/app/config";
-import { createPractitionerRepository } from "@/lib/practitioners/repository";
-import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import styles from "./holistic-support.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -65,9 +61,6 @@ const copy = {
     practitionerOfferTitle: "I'm a Master — Offer My Services",
     practitionerOfferBody: "Already a practitioner? Create your professional profile, describe your sessions or courses in My Practice, then submit them for review. Listings appear only after approval.",
     practitionerOfferAction: "Start offering my services",
-    practitionersTitle: "Choose a practitioner",
-    practitionersBody: "Only published energy and spiritual practitioners appear below. You can also explore the full directory.",
-    allPractitioners: "Find all practitioners",
     libraryAction: "Explore Temple Studies",
     disclaimer: "Symbolic insights, tarot, runes and constellations are exploratory traditions, not reliable predictions, clinical diagnostics, medical advice or emergency services. Homeopathy lacks reliable evidence for treating health conditions.",
     coachingAsideTitle: "Looking for personal coaching?",
@@ -122,9 +115,6 @@ const copy = {
     practitionerOfferTitle: "Я мастер — предложить свои услуги",
     practitionerOfferBody: "Создайте профиль специалиста, добавьте сессии или курсы в «Моей практике» и отправьте на модерацию. Услуги публикуются только после одобрения.",
     practitionerOfferAction: "Предложить свои услуги",
-    practitionersTitle: "Выберите мастера",
-    practitionersBody: "Ниже — только опубликованные специалисты по энергетическим и духовным практикам. Можно открыть полный каталог.",
-    allPractitioners: "Все специалисты",
     libraryAction: "Храмовые традиции",
     disclaimer: "И-Цзин, Руны, Таро и расстановки — символические практики, а не надёжные предсказания, медицинские диагнозы или экстренная помощь. Для лечения заболеваний у гомеопатии нет убедительной доказательной базы.",
     coachingAsideTitle: "Нужен личный коучинг?",
@@ -179,9 +169,6 @@ const copy = {
     practitionerOfferTitle: "Soy profesional — ofrecer mis servicios",
     practitionerOfferBody: "Crea tu perfil profesional, prepara sesiones o cursos en My Practice y envíalos a revisión. Los servicios se publican solo después de la aprobación.",
     practitionerOfferAction: "Ofrecer mis servicios",
-    practitionersTitle: "Encuentra un profesional",
-    practitionersBody: "Solo aparecen profesionales publicados con prácticas energéticas o espirituales. También puedes abrir el directorio completo.",
-    allPractitioners: "Todos los profesionales",
     libraryAction: "Explorar estudios del templo",
     disclaimer: "El I Ching, tarot, runas y constelaciones son tradiciones de reflexión, no predicciones fiables, diagnósticos clínicos ni ayuda urgente. La homeopatía carece de pruebas fiables para tratar enfermedades.",
     coachingAsideTitle: "¿Buscas coaching personal?",
@@ -215,18 +202,6 @@ export default async function HolisticSupportPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
-  let practitioners: PublicPractitioner[] = [];
-  try {
-    practitioners = await createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale);
-  } catch {
-    // A temporary practitioner DB failure must not break free insights or linked services.
-  }
-  const energyPractitioners = practitioners.filter(practitioner =>
-    (practitioner.services || []).some(service =>
-      service.areaKey === "energy_spiritual" && service.status === "published"
-    )
-  );
-
   return (
     <main className={styles.page} data-holistic-support lang={locale}>
       <PublicSiteHeader locale={locale} />
@@ -279,14 +254,6 @@ export default async function HolisticSupportPage({ params }: Props) {
                 </Link>
               </div>
             </article>
-          </div>
-          <div className={styles.practitioners} data-holistic-practitioners>
-            <h3>{t.practitionersTitle}</h3>
-            <p>{t.practitionersBody}</p>
-            {energyPractitioners.length ? <MarketplaceMasterFinder practitioners={energyPractitioners} locale={locale} /> : null}
-            <Link href={"/" + locale + "/masters"} prefetch={false} className={styles.libraryLink}>
-              {t.allPractitioners}<span aria-hidden="true">→</span>
-            </Link>
           </div>
         </section>
 

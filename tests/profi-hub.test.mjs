@@ -369,7 +369,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     const tree=mount(locale).render()
     const paths=nodes(tree).filter(x=>x.props?.['data-profi-path']!==undefined)
     assert.deepEqual(paths.map(x=>x.props['data-profi-path']),['find','learn','practice'])
-    assert.equal(paths[0].props.href,'/'+locale+'/masters?view=mentors')
+    assert.equal(paths[0].props.href,'#profi-find-master')
     assert.equal(paths[0].props.prefetch,false)
     assert.equal(paths[1].props.href,'#profi-learning')
     assert.equal(paths[2].props.href,'#profi-practice')
@@ -378,6 +378,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     assert.ok(nodes(tree).some(x=>Object.hasOwn(x.props||{},'data-profi-finder')))
     assert.ok(paths.every(x=>x.type==='a' || typeof x.type==='function'))
   }
+  assert.match(hub,/data-profi-master-directory/)
   assert.match(hub,/findChoice: "Найти мастера"/)
   assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
   assert.match(hub,/proChoice: "Я уже мастер — предложить услуги"/)

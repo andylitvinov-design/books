@@ -91,10 +91,10 @@ test("energy support reuses the published practitioner, privacy and request jour
     assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing offer " + id);
   }
   for (const link of ["/services/remote-energy-support", "/services/alchemy-of-soul",
-    "/pro#profi-practice", "/masters"]) assert.ok(page.includes(link), "missing link "+link);
+    "/pro#profi-practice"]) assert.ok(page.includes(link), "missing link "+link);
   assert.ok(page.includes("data-holistic-practitioner-cta"));
-  assert.ok(page.includes("MarketplaceMasterFinder practitioners={energyPractitioners}"));
-  assert.ok(page.includes('service.status === "published"'));
+  assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
+  assert.match(read("app/[locale]/pro/page.tsx"), /MarketplaceMasterFinder practitioners=\{practitioners\}/);
   assert.ok(page.includes("data-holistic-coaching-followup"));
   assert.ok(page.includes('href={"/" + locale + "/coaching"}'));
   assert.ok(page.includes("€50 / 30"));
