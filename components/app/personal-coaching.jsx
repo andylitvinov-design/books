@@ -526,7 +526,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <small className={styles.draftCount}>{reflectionDraft.length}/500</small>
               </div>
               <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
-                <small id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+                <div className={styles.reportPop}><small id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small></div>
               </details>
             </div>
             <div className={styles.footerActions}>
@@ -621,7 +621,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <small className={styles.draftCount}>{draft.startsWith('choice:')?0:draft.length}/800</small>
               </div>
               <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
-                <small id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+                <div className={styles.reportPop}><small id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small></div>
               </details>
             </div>
             <div className={styles.footerActions}>
