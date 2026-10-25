@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
+import {assertCurrentReportPdfActions} from './helpers/current-report-pdf-contract.mjs'
+
 const source = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('client report ends with Cabinet save, recommended tests and PDF actions in that order',()=>{
@@ -71,7 +73,7 @@ test('PDF preview is inline for authorized client routes, while download stays a
   const report=source('components/client-session-page.jsx')
   assert.match(report,/href=\{pdfPath\+'&preview=1&layout=a4'\}/)
   assert.match(report,/target="_blank" rel="noopener noreferrer"/)
-  assert.match(report,/href=\{pdfPath\} className=\{styles\.downloadButton\} download/)
+  assertCurrentReportPdfActions(report)
   assert.match(report,/Просмотреть PDF-отчёт/)
   assert.match(report,/Скачать отчёт/)
   for(const path of [
@@ -90,4 +92,15 @@ test('PDF preview is inline for authorized client routes, while download stays a
   assert.match(source('app/api/client/[selector]/documents/[id]/pdf/route.js'),/authorizeCabinetRequest/)
   assert.match(source('app/api/app/saved-sessions/[id]/pdf/route.js'),/await readSavedSession/)
   assert.match(source('app/admin/api/documents/[id]/pdf/route.js'),/requireAdminRequest/)
+})
+
+for(const [name,before,after,reason] of [
+  ['missing download intent','className={styles.downloadButton} download>','className={styles.downloadButton} download={false}>',/native attachment intent/],
+  ['preview URL on download','href={pdfPath} data-hh-engagement-action="pdf_download"',"href={pdfPath+'&preview=1'} data-hh-engagement-action=\"pdf_download\"",/Download never requests inline preview/],
+  ['unsafe preview target','className={styles.reportPdfPreviewButton}\n            target="_blank" rel="noopener noreferrer"','className={styles.reportPdfPreviewButton}\n            target="_blank" rel="opener"',/noopener noreferrer/],
+  ['missing preview query',"href={pdfPath+'&preview=1&layout=a4'}",'href={pdfPath}',/inline A4 query/],
+]) test('private PDF controls reject '+name,()=>{
+  const original=source('components/client-session-page.jsx')
+  assert.ok(original.includes(before),'Mutation target must exist')
+  assert.throws(()=>assertCurrentReportPdfActions(original.replace(before,after)),reason)
 })

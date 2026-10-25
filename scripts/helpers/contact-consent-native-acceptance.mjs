@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import {ALCHEMY_CONTACT, alchemyOrigin, alchemyRequestGate, syntheticAlchemyReceipt} from './alchemy-enquiry-journey-verifier.mjs'
 
 
-// Diagnostic output is a closed vocabulary, never an error, URL, locale, DOM
-// value or contact. Keep the first failing phase even if teardown also fails.
+// Diagnostic output contains fixed vocabulary and bounded numbers/booleans only,
+// never errors, URLs, locale, DOM text or contacts. Retain the first failed phase.
 const diagnosticModes=['startup','keyboard','label','canceled-pointer']
 const diagnosticPhases=[
   'none','origin','context','bootstrap-route','bootstrap-socket','bootstrap-binding',
@@ -19,9 +19,31 @@ const diagnosticPhases=[
 const diagnosticBoundaries=['none','popup','async-route','socket-close','popup-close']
 function checkpoint(diagnostic,phase) { if(diagnostic) diagnostic.phase=phase }
 function failed(diagnostic) { if(diagnostic) diagnostic.failedPhase ??= diagnostic.phase }
+function keyboardDiagnostic(diagnostic) {
+  const sample=diagnostic.keyboard
+  const safe={visibilityPassed:diagnostic.visibilityPassed===true,sampled:sample?.sampled===true}
+  if(!safe.sampled) return JSON.stringify(safe)
+  let numericComplete=true
+  const number=value=>{
+    if(typeof value!=='number'||!Number.isFinite(value)) {numericComplete=false;return 0}
+    if(Math.abs(value)>1000000) numericComplete=false
+    return Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100
+  }
+  const vector=(value,length)=>Array.from({length},(_,i)=>number(Array.isArray(value)?value[i]:undefined))
+  for(const key of ['inside','outlined','focused','focusVisible','outlineStylePresent','rootSmooth']) safe[key]=sample[key]===true
+  safe.rect=vector(sample.rect,4)
+  safe.viewport=vector(sample.viewport,2)
+  safe.scroll=vector(sample.scroll,2)
+  safe.outlineWidth=number(sample.outlineWidth)
+  safe.outlineOffset=number(sample.outlineOffset)
+  safe.numericComplete=numericComplete
+  return JSON.stringify(safe)
+}
 function diagnosticFields(diagnostic) {
   const fixed=(value,values)=>values.includes(value)?value:'unknown'
-  return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(diagnostic.failedPhase ?? diagnostic.phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}`
+  const phase=diagnostic.failedPhase ?? diagnostic.phase
+  const keyboard=diagnostic.mode==='keyboard'&&phase==='keyboard-visible'?` keyboard=${keyboardDiagnostic(diagnostic)}`:''
+  return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}${keyboard}`
 }
 
 // Only the exact initial public document supplements the existing typed static
@@ -131,7 +153,7 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
 async function verifyNative(sourcePage, expect, locale, diagnostic) {
   const origin = alchemyOrigin(sourcePage.url(), locale)
   for (const mode of ['keyboard', 'label', 'canceled-pointer']) {
-    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none'})
+    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null})
     const context = await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
     const errors=[], failures=[], blocked=[]
     const initialGate=consentInitialGate(origin,locale,failures,blocked)
@@ -169,11 +191,25 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
           await expect(consent).toBeFocused()
           checkpoint(diagnostic,'keyboard-visible')
           await expect(consent).toBeVisible()
-          const visible=await consent.evaluate(node=>{
+          diagnostic.visibilityPassed=true
+          const {visible,keyboard}=await consent.evaluate(node=>{
             const r=node.getBoundingClientRect(),style=getComputedStyle(node)
-            return {inside:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,
+            const sampledVisibility={inside:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,
               outlined:style.outlineStyle!=='none'&&parseFloat(style.outlineWidth)>0}
+            // Capture the original assertion's sample, not a later geometry read.
+            // Extra diagnostic reads cannot change its verdict or expose DOM text.
+            let keyboardSnapshot={sampled:false}
+            try {
+              keyboardSnapshot={sampled:true,inside:sampledVisibility.inside,outlined:sampledVisibility.outlined,
+                focused:node===document.activeElement,focusVisible:node.matches(':focus-visible'),
+                rect:[r.left,r.top,r.right,r.bottom],viewport:[innerWidth,innerHeight],
+                scroll:[scrollX,scrollY],outlineWidth:parseFloat(style.outlineWidth),
+                outlineOffset:parseFloat(style.outlineOffset),outlineStylePresent:style.outlineStyle!=='none',
+                rootSmooth:getComputedStyle(document.documentElement).scrollBehavior==='smooth'}
+            } catch {}
+            return {visible:sampledVisibility,keyboard:keyboardSnapshot}
           })
+          diagnostic.keyboard=keyboard
           assert.deepEqual(visible,{inside:true,outlined:true})
           checkpoint(diagnostic,'keyboard-space-on')
           await page.keyboard.press('Space')

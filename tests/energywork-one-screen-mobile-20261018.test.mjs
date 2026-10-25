@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { assertCurrentFlightSection, assertCurrentEnergyworkPaths } from "./helpers/reiki-current-contracts.mjs";
 
 const source = () => readFile("components/principles-of-energywork.tsx", "utf8");
 const css = () => readFile("components/principles-of-energywork.module.css", "utf8");
@@ -19,14 +20,7 @@ test("Energywork landing has one compact mobile concept per visible screen", asy
 });
 
 test("Flight to the Sun has one description, retains video, poster fallback and source link", async () => {
-  const page = await source();
-  const flight = page.slice(page.indexOf('id="energywork-flight-to-sun"'), page.indexOf('data-energywork-screen="foundations"'));
-  assert.match(flight, /<h2 id="flight-to-sun-title">\{v\.flightTitle\}<\/h2>/);
-  assert.match(flight, /<AcademyVideoPlayer youtubeId=\{flight\.youtubeId\}/);
-  assert.match(flight, /data-video-source-pending="flight-to-sun"/);
-  assert.match(flight, /https:\/\/www\.youtube\.com\/watch\?v=/);
-  assert.doesNotMatch(flight, /<h3>\{v\.flightTitle\}<\/h3>/);
-  assert.doesNotMatch(flight, /<p>\{v\.flightLead\}<\/p>[\s\S]*<p>\{v\.flightLead\}<\/p>/);
+  assertCurrentFlightSection();
 });
 
 test("Each Reiki path keeps its initiation links, original videos and optional resources", async () => {
@@ -41,5 +35,5 @@ test("Each Reiki path keeps its initiation links, original videos and optional r
   assert.match(page, /youtubeId="DYo-fG-SyKw"/);
   assert.match(styles, /\.captureDisclosure > summary:focus-visible/);
   assert.match(page, /locale === "ru"[\s\S]*?locale === "es"/);
-  assert.match(page, /\(locale === "es" \? "en" : locale\)/);
+  assertCurrentEnergyworkPaths();
 });

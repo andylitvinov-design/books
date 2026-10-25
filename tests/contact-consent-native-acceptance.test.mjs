@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import vm from 'node:vm'
 import {consentInitialGate,withConsentBootstrap,installConsentPopupGuard,verifyContactConsentNativeAcceptance} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
 const origin='http://127.0.0.1:3000', initial=origin+'/en/services/alchemy-of-soul'
 function route(url=initial,method='GET',type='document',responseOptions={}) {
@@ -55,7 +56,7 @@ test('bootstrap drains active reads before closing and retains asynchronous fail
  await assert.rejects(withConsentBootstrap(context,gate,async()=>{void tracked({})}),/CONSENT_CLEANUP_FAILED/)
  assert.equal(closed,true)
 })
-function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,latePage=false,latePageError=false,latePost=false,lateRouteError=false,lateSocketError=false,latePageCloseError=false,createError=false,stuckTab=false,visible={inside:true,outlined:true}}={}) {
+function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,latePage=false,latePageError=false,latePost=false,lateRouteError=false,lateSocketError=false,latePageCloseError=false,createError=false,stuckTab=false,visible={inside:true,outlined:true},keyboard={sampled:false},readVisibility}={}) {
  const events=[],contexts=[]
  const browser={newContext:async options=>{
   if(createError)throw new Error(marker)
@@ -72,7 +73,7 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
    fill:async value=>{record('fill',name,value);state.focus='email'},
    evaluate:async fn=>{
     record('evaluate',name,String(fn).includes('getBoundingClientRect')?'visibility':'focus')
-    if(String(fn).includes('getBoundingClientRect'))return visible
+    if(String(fn).includes('getBoundingClientRect'))return readVisibility?readVisibility(fn):{visible,keyboard}
     return state.focus===name
    },
    scrollIntoViewIfNeeded:async()=>record('scroll',name),boundingBox:async()=>{record('bounds',name);return {x:40,y:400,width:19,height:19}}
@@ -204,7 +205,8 @@ const assertion=(id,locator,kind,occurrence=1)=>value=>value.id===id&&value.name
 async function expectDiagnosticFailure(t,options,{mode='keyboard',phase,cleanup='none',boundary='none'}={}) {
  const messages=captureDiagnostics(t),h=harness(options)
  await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
-  assert.equal(error.message,`CONSENT_NATIVE_ACCEPTANCE_FAILED mode=${mode} phase=${phase} cleanup=${cleanup} boundary=${boundary}`)
+  const keyboard=phase==='keyboard-visible'?` keyboard=${JSON.stringify({visibilityPassed:!options.failAt,sampled:false})}`:''
+  assert.equal(error.message,`CONSENT_NATIVE_ACCEPTANCE_FAILED mode=${mode} phase=${phase} cleanup=${cleanup} boundary=${boundary}${keyboard}`)
   assertPrivateDataExcluded(error,messages)
   return true
  })
@@ -310,4 +312,115 @@ for(const [name,failAt,phase,cleanup] of [
  assert.equal(h.contexts.length,2)
  assert.deepEqual(messages,[[completed('keyboard')]])
  assert.ok(h.contexts.every((_,id)=>h.events.some(event=>event[0]===id&&event[1]==='close')))
+})
+
+// Execute the actual browser callback without launching a browser. This proves
+// diagnostic reads/redaction, not Chromium scrolling or accessibility acceptance.
+function keyboardFixture({rect={left:41,top:655,right:60,bottom:674},outlineStyle='solid',outlineWidth='3px',outlineOffset='2px',focused=true,focusVisible=true,rootSmooth=true,diagnosticError=false,geometryError=false}={}) {
+ const reads=[]
+ const checkbox={getBoundingClientRect:()=>{reads.push('rect');if(geometryError)throw new Error(marker);return rect},matches:selector=>{reads.push('matches');assert.equal(selector,':focus-visible');if(diagnosticError)throw new Error(marker);return focusVisible}}
+ for(const key of ['value','textContent','innerHTML','outerHTML','id','name','href'])Object.defineProperty(checkbox,key,{get(){assert.fail('private DOM read')}})
+ for(const key of ['focus','click','check','scrollIntoView','dispatchEvent','setAttribute','addEventListener'])Object.defineProperty(checkbox,key,{get(){assert.fail('active DOM operation')}})
+ const document={activeElement:focused?checkbox:{},documentElement:{}}
+ const sandbox={node:checkbox,document,innerWidth:390,innerHeight:844,scrollX:0,scrollY:4534,
+  getComputedStyle:node=>{reads.push(node===checkbox?'style':'root-style');assert.ok(node===checkbox||node===document.documentElement);return node===checkbox?{outlineStyle,outlineWidth,outlineOffset}:{scrollBehavior:rootSmooth?'smooth':'auto'}}}
+ const evaluate=fn=>{
+  const result=vm.runInNewContext(`(${fn.toString()})(node)`,sandbox)
+  return {visible:{inside:result.visible.inside,outlined:result.visible.outlined},keyboard:result.keyboard}
+ }
+ return {evaluate,reads}
+}
+async function keyboardFailure(t,options) {
+ const messages=captureDiagnostics(t),h=harness(options)
+ let diagnostic
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
+  assert.match(error.message,/^CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-visible cleanup=none boundary=none keyboard=/)
+  assertPrivateDataExcluded(error,messages)
+  diagnostic=JSON.parse(error.message.split(' keyboard=')[1])
+  assert.ok(error.message.length<700)
+  return true
+ })
+ assert.deepEqual(messages,[])
+ assert.equal(h.events.filter(e=>e[1]==='evaluate'&&e[3]==='visibility').length,options.failAt?0:1)
+ assert.deepEqual(h.events.filter(e=>e[1]==='key').map(e=>e[2]),['Tab'])
+ assert.ok(h.contexts.every(c=>c.closed))
+ const check=data=>{for(const value of Object.values(data)){if(Array.isArray(value))check(value);else assert.ok(typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value)&&Math.abs(value)<=1000000)}}
+ check(diagnostic)
+ return diagnostic
+}
+const fullKeyboardSample={visibilityPassed:true,sampled:true,inside:true,outlined:true,focused:true,focusVisible:true,outlineStylePresent:true,rootSmooth:true,rect:[41,655,60,674],viewport:[390,844],scroll:[0,4534],outlineWidth:3,outlineOffset:2,numericComplete:true}
+for(const [name,rect] of [
+ ['above',{left:41,top:-1,right:60,bottom:18}],['below',{left:41,top:835,right:60,bottom:854}],
+ ['left',{left:-1,top:655,right:18,bottom:674}],['right',{left:380,top:655,right:399,bottom:674}],
+])test('actual keyboard diagnostic distinguishes viewport failure '+name,async t=>{
+ const fixture=keyboardFixture({rect}),diagnostic=await keyboardFailure(t,{readVisibility:fixture.evaluate})
+ assert.deepEqual(diagnostic,{...fullKeyboardSample,inside:false,rect:[rect.left,rect.top,rect.right,rect.bottom]})
+ assert.deepEqual(fixture.reads,['rect','style','matches','root-style'])
+})
+for(const [name,options,expected] of [
+ ['missing outline',{outlineStyle:'none'},{outlined:false,outlineStylePresent:false}],
+ ['zero outline width',{outlineWidth:'0px'},{outlined:false,outlineWidth:0}],
+ ['lost focus',{outlineStyle:'none',focused:false,focusVisible:false},{outlined:false,focused:false,focusVisible:false,outlineStylePresent:false}],
+ ['focus-visible mismatch',{outlineStyle:'none',focusVisible:false},{outlined:false,focusVisible:false,outlineStylePresent:false}],
+ ['non-smooth root',{outlineWidth:'0px',rootSmooth:false},{outlined:false,outlineWidth:0,rootSmooth:false}],
+])test('actual keyboard diagnostic distinguishes '+name,async t=>{
+ const fixture=keyboardFixture(options),diagnostic=await keyboardFailure(t,{readVisibility:fixture.evaluate})
+ assert.deepEqual(diagnostic,{...fullKeyboardSample,...expected})
+})
+test('visibility assertion failure records no later DOM sample or retry',async t=>{
+ const diagnostic=await keyboardFailure(t,{failAt:assertion(0,'consent','visible')})
+ assert.deepEqual(diagnostic,{visibilityPassed:false,sampled:false})
+})
+test('core geometry read failure remains fatal and redacted',async t=>{
+ const fixture=keyboardFixture({geometryError:true}),diagnostic=await keyboardFailure(t,{readVisibility:fixture.evaluate})
+ assert.deepEqual(diagnostic,{visibilityPassed:true,sampled:false})
+ assert.deepEqual(fixture.reads,['rect'])
+})
+test('optional diagnostic failure preserves an existing containment failure',async t=>{
+ const fixture=keyboardFixture({rect:{left:41,top:835,right:60,bottom:854},diagnosticError:true})
+ assert.deepEqual(await keyboardFailure(t,{readVisibility:fixture.evaluate}),{visibilityPassed:true,sampled:false})
+})
+test('optional diagnostic failure cannot fail otherwise valid native modes',async t=>{
+ const messages=captureDiagnostics(t),fixture=keyboardFixture({diagnosticError:true}),h=harness({readVisibility:fixture.evaluate})
+ await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ assert.deepEqual(messages,modes.map(mode=>[completed(mode)]))
+ assert.equal(h.contexts.length,3);assert.ok(h.contexts.every(c=>c.closed))
+ assert.deepEqual(fixture.reads,['rect','style','matches'])
+})
+test('one actual valid callback adds no output, extra evaluation, or native actions',async t=>{
+ const messages=captureDiagnostics(t),fixture=keyboardFixture(),h=harness({readVisibility:fixture.evaluate})
+ await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ assert.deepEqual(messages,modes.map(mode=>[completed(mode)]))
+ assert.equal(h.events.filter(e=>e[1]==='evaluate'&&e[3]==='visibility').length,1)
+ assert.deepEqual(h.events.filter(e=>e[1]==='key').map(e=>e[2]),['Tab','Space','Space','Shift+Tab'])
+ assert.deepEqual(fixture.reads,['rect','style','matches','root-style'])
+})
+test('serializer copies only fixed typed fields and bounds malformed numbers',async t=>{
+ const keyboard={sampled:true,inside:marker,outlined:marker,focused:marker,focusVisible:marker,outlineStylePresent:marker,rootSmooth:marker,
+  rect:[Infinity,-Infinity,NaN,marker,123],viewport:[1e20,-1e20,456],scroll:[1.23456,-1.23456],outlineWidth:marker,outlineOffset:3.14159,
+  textContent:marker,url:marker,cause:new Error(marker),toJSON:()=>{throw new Error(marker)}}
+ const diagnostic=await keyboardFailure(t,{visible:{inside:false,outlined:true},keyboard})
+ assert.deepEqual(diagnostic,{visibilityPassed:true,sampled:true,inside:false,outlined:false,focused:false,focusVisible:false,outlineStylePresent:false,rootSmooth:false,
+  rect:[0,0,0,0],viewport:[1000000,-1000000],scroll:[1.23,-1.23],outlineWidth:0,outlineOffset:3.14,numericComplete:false})
+})
+test('an unavailable sample does not fabricate geometry or read extra fields',async t=>{
+ const keyboard={sampled:false}
+ Object.defineProperty(keyboard,'rect',{get(){throw new Error(marker)}})
+ assert.deepEqual(await keyboardFailure(t,{visible:{inside:false,outlined:true},keyboard}),{visibilityPassed:true,sampled:false})
+})
+test('diagnostic quantization never weakens the original exact containment assertion',async t=>{
+ const fixture=keyboardFixture({rect:{left:41,top:-0.0001,right:60,bottom:18.9999}})
+ const diagnostic=await keyboardFailure(t,{readVisibility:fixture.evaluate})
+ assert.equal(diagnostic.inside,false)
+ assert.deepEqual(diagnostic.rect,[41,0,60,19])
+})
+test('source retains exact native geometry verdict without waits, retries or forcing',()=>{
+ const source=readFileSync(new URL('../scripts/helpers/contact-consent-native-acceptance.mjs',import.meta.url),'utf8')
+ const sample=source.slice(source.indexOf("checkpoint(diagnostic,'keyboard-visible')"),source.indexOf("checkpoint(diagnostic,'keyboard-space-on')"))
+ assert.match(sample,/await expect\(consent\)\.toBeVisible\(\)/)
+ assert.match(sample,/assert\.deepEqual\(visible,\{inside:true,outlined:true\}\)/)
+ assert.match(sample,/inside:r\.top>=0&&r\.bottom<=innerHeight&&r\.left>=0&&r\.right<=innerWidth/)
+ assert.match(sample,/outlined:style\.outlineStyle!=='none'&&parseFloat\(style\.outlineWidth\)>0/)
+ assert.equal((sample.match(/await /g)||[]).length,2)
+ assert.doesNotMatch(sample,/setTimeout|requestAnimationFrame|waitFor|\.poll\(|scrollIntoView|scrollTo\(|focus\(|force:|dispatchEvent|addEventListener|new Promise|console\./)
 })

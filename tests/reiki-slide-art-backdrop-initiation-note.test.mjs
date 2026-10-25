@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
+import { assertCurrentInitiationNotes } from './helpers/reiki-initiation-contract.mjs';
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const learner = read('components/energywork-ai-learner.tsx');
@@ -18,13 +19,8 @@ test('Reiki editorial artwork becomes an accessible, non-cropping backdrop', () 
   assert.match(learner, /<AcademyVideoPlayer key=\{slide\.id\}/, 'Keep the actual player as normal media');
 });
 
-test('Both chapter milestones explain that recorded meditation is not a personal initiation', () => {
-  assert.match(learner, /\(slide\.id === "tan-done" \|\| slide\.id === "kun-done"\)/);
-  assert.match(learner, /data-reiki-personal-initiation-note/);
-  assert.match(learner, /initiationVideoNoteTitle: "A video meditation is not an initiation"/);
-  assert.match(learner, /initiationVideoNoteText: "Listening to a recorded meditation does not initiate you\. Initiation is always personal\./);
-  assert.match(learner, /initiationVideoNoteTitle: "Видеомедитация — это ещё не инициация"/);
-  assert.match(learner, /Инициация всегда персональна\. Чтобы получить персональную медитацию от Андрея, завершите все пять уроков курса и напишите ему\./);
+test('Both chapter milestones distinguish recordings from requested chat guidance and separate personal initiation', () => {
+  assertCurrentInitiationNotes();
   assert.match(css, /\.personalInitiationNote \{/);
   assert.match(css, /@media screen and \(max-width: 760px\)/);
 });

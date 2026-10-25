@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import {assertCurrentFreeEntry} from "./helpers/current-free-entry-contract.mjs";
+import {assertCurrentHomeDiscovery,currentHomeSource} from "./helpers/current-home-discovery-contract.mjs";
+
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
 test("Services landing has free-first cards and preserves original personal paths", () => {
@@ -37,36 +40,68 @@ test("Services landing has free-first cards and preserves original personal path
   assertBusinessPriceScope(offers);
 });
 
-test("homepage restores photo-left four services while keeping tests and Academy", () => {
-  const home = read("components/holistic-house-home.tsx");
-  const css = read("app/holistic-house-home.css");
-  assert.doesNotMatch(home, /<FreeInsightsPaths locale=\{locale\} \/>/);
-  assert.ok(read("components/services-solutions.tsx").includes('const visibleOffers = isHome ? allOffers.filter((offer) => offer.id !== "business") : allOffers;'));
-  assert.match(home, /<ServicesSolutions locale=\{locale\} variant="home" \/>/);
-  assert.doesNotMatch(home, /<PersonalWorkJourney locale=/);
-  assert.match(home, /event="self_check_start"/);
-  const explore = read("components/home-explore-sections.tsx");
-  assert.match(home, /<HomeExploreSections locale=\{locale\} \/>/);
-  assert.match(explore, /"\/academy"/);
-  assert.match(explore, /"\/library"/);
-  assert.doesNotMatch(home, /heroIntro: "[^"]*ME \/ GOAL/);
-  assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+test("homepage mounts current topic and offer discovery while preserving original services, tests and Academy", async (t) => {
+  for (const locale of ["en", "ru", "es"]) await assertCurrentHomeDiscovery({locale});
+  // PR1786 removes duplicate home grids; PR1816 puts topics before the actual
+  // featured workspace. Keep discoverability/offer truth, not retired markup.
+  for (const [name,path,before,after,reason,locale = "en"] of [
+    ["retired duplicate grid","components/holistic-house-home.tsx",'<HomeFeaturedWorkspace locale={locale} />','<HomeFeaturedWorkspace locale={locale} /><article data-core-service-id="situation" />',/retired duplicate service-card grid/],
+    ["missing featured mount","components/holistic-house-home.tsx",'<HomeFeaturedWorkspace locale={locale} />','<div />',/one visible featured workspace/],
+    ["missing Spanish topic mount","app/es/page.tsx",'<HomeMoreDisclosure locale="es" />','<div />',/one visible topic navigation/,"es"],
+    ["wrong topic ordering","components/holistic-house-home.tsx",'<HomeMoreDisclosure locale={locale} />\n      <HomeFeaturedWorkspace locale={locale} />','<HomeFeaturedWorkspace locale={locale} />\n      <HomeMoreDisclosure locale={locale} />',/Topic navigation follows carousel/],
+    ["hidden topic navigation","components/home-more-disclosure.tsx",'<section className={styles.root} data-home-topic-filters','<section hidden className={styles.root} data-home-topic-filters',/one visible topic navigation/],
+    ["aria-hidden topic ancestor","components/holistic-house-home.tsx",'<HomeMoreDisclosure locale={locale} />','<div aria-hidden="true"><HomeMoreDisclosure locale={locale} /></div>',/one visible topic navigation/],
+    ["display-none topic nav","components/home-more-disclosure.tsx",'<nav className={styles.filters}','<nav style={{display:"none"}} className={styles.filters}',/One visible energy topic/],
+    ["visibility-hidden catalogue link","components/home-more-disclosure.tsx",'data-home-topic-filter="services"','style={{visibility:"hidden"}} data-home-topic-filter="services"',/One visible services topic/],
+    ["hidden offer ancestor","components/holistic-house-home.tsx",'<HomeFeaturedWorkspace locale={locale} />','<div hidden><HomeFeaturedWorkspace locale={locale} /></div>',/one visible featured workspace/],
+    ["aria-hidden offer ancestor","components/holistic-house-home.tsx",'<HomeFeaturedWorkspace locale={locale} />','<div aria-hidden="true"><HomeFeaturedWorkspace locale={locale} /></div>',/one visible featured workspace/],
+    ["display-none featured action","components/home-featured-workspace.tsx",'data-home-module-action={offer.id} data-home-offer-primary={offer.id}','style={{display:"none"}} data-home-module-action={offer.id} data-home-offer-primary={offer.id}',/Visible primary action for reiki/],
+    ["visibility-hidden original offer link","components/services-studio-offers.tsx",'<h3><Link href={offer.href} prefetch={false}>','<h3><Link style={{visibility:"hidden"}} href={offer.href} prefetch={false}>',/Offer title links to its original landing/],
+    ["wrong topic label","components/home-more-disclosure.tsx",'"energy": "Energy"','"energy": "Placeholder"',/Topic\/catalogue label identifies energy/],
+    ["wrong catalogue label","components/home-more-disclosure.tsx",'"services": "Todos los servicios"','"services": "Placeholder"',/Topic\/catalogue label identifies services/,"es"],
+    ["wrong original offer label","data/core-service-offers.ts",'title: "Бесплатный профиль ресурсов У-Син"','title: "Placeholder"',/Original dao offer keeps its identifiable localized title/,"ru"],
+    ["wrong services route","components/home-more-disclosure.tsx",'locale + "/services"','locale + "/retired-services"',/Exact localized services destination/],
+    ["wrong Academy route","components/home-more-disclosure.tsx",'locale + "/academy"','locale + "/retired-academy"',/Exact localized courses destination/],
+    ["wrong topic route","components/home-more-disclosure.tsx",'locale + "/explore/energy"','locale + "/explore/wrong"',/Exact localized energy destination/],
+    ["hidden carousel label","components/home-section-carousel.tsx",'{t.nav[key]}','<span hidden>{t.nav[key]}</span>',/Carousel displays the exact localized services navigation label/],
+    ["wrong localized carousel label","components/home-section-carousel.tsx",'tests: "Pruebas"','tests: "Placeholder"',/Carousel displays the exact localized tests navigation label/,"es"],
+    ["hidden actual featured image","components/home-featured-workspace.tsx",'<Image src={photos[offer.id]}','<Image hidden src={photos[offer.id]}',/render-exposed decorative photograph/],
+    ["hidden featured photo ancestor","components/home-featured-workspace.tsx",'<span className={styles.photo} aria-hidden="true">','<span hidden className={styles.photo} aria-hidden="true">',/render-exposed decorative photograph/],
+    ["display-none featured photo ancestor","components/home-featured-workspace.tsx",'<span className={styles.photo} aria-hidden="true">','<span style={{display:"none"}} className={styles.photo} aria-hidden="true">',/render-exposed decorative photograph/],
+    ["wrong tests navigation","components/home-section-carousel.tsx",'href: "/client/tests"','href: "/client/wrong"',/Carousel keeps exact tests destination/],
+    ["inert tests selector","components/home-section-carousel.tsx",'setIndex(position);','setIndex(0);',/Selecting the real tests dot shows its CTA/],
+    ["free badge on paid service","components/home-featured-workspace.tsx",'"reiki", "opora", "profile", "review", "aiCoaching",','"reiki", "opora", "profile", "review", "aiCoaching", "therapist",',/Only the explicitly no-cost offers/],
+    ["missing free profile badge","components/home-featured-workspace.tsx",'"reiki", "opora", "profile", "review", "aiCoaching",','"reiki", "opora", "review", "aiCoaching",',/Only the explicitly no-cost offers/],
+    ["wrong featured service destination","components/home-featured-workspace.tsx",'alchemy: "/" + locale + "/services/alchemy-of-soul"','alchemy: "/" + locale + "/services/wrong"',/Featured offer preserves exact alchemy destination/],
+    ["concealed limitations","components/home-featured-workspace.tsx",'{note && <p>{note}</p>}','{note && <details><summary>Details</summary><p>{note}</p></details>}',/preserves written-review and non-medical/],
+    ["wrong featured free label","components/home-featured-workspace.tsx",'en: "FREE", ru: "БЕСПЛАТНО"','en: "PAID", ru: "БЕСПЛАТНО"',/Featured no-cost badge keeps exact localized label/],
+    ["wrong original free label","components/services-studio-offers.tsx",'<span className={styles.freeBadge}>FREE</span>','<span className={styles.freeBadge}>PAID</span>',/Original no-cost badge states FREE/],
+    ["missing written-review limitation","components/home-featured-workspace.tsx",'The free express option is a written review, not a live appointment. A request does not confirm booking.','Free live appointment.',/preserves written-review and non-medical/],
+    ["missing non-medical limitation","components/home-featured-workspace.tsx",'Self-tests support reflection; they are not medical diagnoses. Private results require sign-in.','Tests diagnose health conditions.',/preserves written-review and non-medical/],
+    ["missing original offers composition","app/[locale]/services/page.tsx",'<ServicesStudioOffers locale={locale as Locale} />','<div />',/services route exposes original situation/],
+    ["hidden original offer","components/services-studio-offers.tsx",'hidden={!visible(offer.id)}','hidden={true}',/services route exposes original situation/],
+    ["wrong original DAO destination","data/core-service-offers.ts",'route: "dao-health-profile"','route: "wrong-dao"',/Original dao destination is preserved/],
+    ["missing paid original prices","components/services-studio-offers.tsx",'price: "€50 / 30 min · €100 / 60 min"','price: "Ask us"',/Original paid offer retains prices/],
+    ["missing catalogue invitation","app/[locale]/services/page.tsx",'<ServicesDirectoryInvitation locale={locale as Locale} />','<div />',/mounts the catalogue invitation/],
+    ["wrong dedicated catalogue","components/services-studio-extras.tsx",'href={"/" + locale + "/services/catalog"}','href={"/" + locale + "/services"}',/reaches the dedicated public catalogue/],
+  ]) await t.test("rejects " + name, async () => {
+    const original = currentHomeSource(path);
+    assert.ok(original.includes(before), "Exact mutation target exists: " + name);
+    await assert.rejects(assertCurrentHomeDiscovery({locale,overrides:{[path]:original.replace(before,after)}}),
+      error => error?.code === "ERR_ASSERTION" && reason.test(error.message), "Mutation fails its intended semantic assertion: " + name);
+  });
 });
 
 test("new DAO free page is independent of two existing personal service landings and has a genuine multilingual enquiry", () => {
   const dao = read("app/[locale]/services/dao-health-profile/page.tsx");
   const shared = read("components/free-entry-landing.tsx");
-  const form = read("components/free-resource-enquiry.tsx");
   assert.match(dao, /generateMetadata/);
   assert.match(dao, /generateStaticParams/);
   assert.match(dao, /kind="dao"/);
   assert.match(dao, /isPublicLocale/);
   for (const lang of ["en", "ru", "es"]) assert.ok(dao.includes("/" + lang + "/services/dao-health-profile"));
   assert.match(shared, /"request-free-wu-xing"/);
-  assert.match(shared, /<FreeResourceEnquiry locale=\{locale\} kind=\{kind\}/);
-  assert.match(form, /<ContactChannelChooser/);
-  assert.match(form, /whatsappEnquiryUrl\(\{/);
-  assert.match(form, /navigator\.clipboard\.writeText\(privateContext\)/);
+  for (const locale of ["en", "ru", "es"]) assertCurrentFreeEntry({locale});
   for (const [slug, kind] of [["alchemy-of-soul", "alchemy"], ["hypnotherapy-course", "hypnotherapy"]]) {
     const route = read("app/[locale]/services/" + slug + "/page.tsx");
     assert.match(route, /generateMetadata/);
@@ -127,4 +162,16 @@ test("Business card price scope rejects missing prices, wrong destination and pr
     assert.notEqual(mutation, source);
     assert.throws(() => assertBusinessPriceScope(mutation));
   }
+});
+
+for(const [name,before,after,reason] of [
+  ['wrong locale','          locale={locale}\n          id={captureId}','          locale="en"\n          id={captureId}',/selected locale/],
+  ['wrong service','serviceTitle={serviceTitles[kind]}','serviceTitle="Another service"',/truthful service identity/],
+  ['missing limitations','disclaimer={common.limitations}','disclaimer={undefined}',/actual limitations/],
+  ['wrong capture target','id={captureId}','id="other-target"',/service-specific target/],
+  ['compulsory long form','<details className={styles.fullQuestionnaire} data-optional-written-review>','<details open className={styles.fullQuestionnaire} data-optional-written-review>',/initially closed/],
+]) test('free service composition rejects '+name,()=>{
+  const original=read('components/free-entry-landing.tsx');
+  assert.ok(original.includes(before),'Mutation target must exist');
+  assert.throws(()=>assertCurrentFreeEntry({locale:'ru',source:original.replace(before,after)}),reason);
 });

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { assertMentorDisclosure } from './helpers/current-mentor-contract.mjs'
 import { getSiteNavigation, getCompactNavigation } from '../lib/site-navigation-model.js'
 import {
   REMOTE_SUPPORT_DRAFT_KEY,
@@ -11,6 +12,19 @@ import {
 } from '../lib/practitioners/remote-energy-support.js'
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+for (const [name, before, after] of [
+  ['inert click', 'onClick={() => setMastersMoreOpen((previous) => !previous)}', 'onClick={() => undefined}'],
+  ['wrong expanded state', 'aria-expanded={mastersMoreOpen}', 'aria-expanded={false}'],
+  ['unhidden closed body', 'hidden={!mastersMoreOpen}', 'hidden={false}'],
+  ['uncancelled touch plus compatibility click', 'event.preventDefault();', '/* compatibility click not cancelled */'],
+  ['double touch update', 'event.preventDefault();', 'event.preventDefault(); setMastersMoreOpen((previous) => !previous);'],
+  ['double click update', 'onClick={() => setMastersMoreOpen((previous) => !previous)}', 'onClick={() => {setMastersMoreOpen((previous) => !previous); setMastersMoreOpen((previous) => !previous)}}'],
+]) test('current mentor disclosure rejects ' + name, () => {
+  const source = read('components/master-network-explorer.tsx')
+  assert.ok(source.includes(before), 'Mutation target is actual source')
+  assert.throws(() => assertMentorDisclosure(source.replace(before, after)), { code: 'ERR_ASSERTION' })
+})
 const example = {
   version: 1,
   serviceId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
@@ -60,7 +74,7 @@ test('Practitioners remains compact, and the separate energy-support request flo
   assert.match(pageCss, /@media \(max-width: 700px\)/)
   assert.match(finder, /MASTER_TOPICS/)
   assert.match(finder, /More filters/)
-  assert.match(finder, /<details className=\{styles.masterExtra\}>/)
+  assertMentorDisclosure(finder)
   assert.match(finderCss, /\.compactMaster/)
   assert.match(supportRoute, /areaKey === "energy_spiritual"/)
   assert.match(supportRoute, /locales?/i)
@@ -84,6 +98,7 @@ async function renderSupport(locale,{unavailable=false,source=read('app/[locale]
  const imports={
   'react/jsx-runtime':{jsx:element,jsxs:element,Fragment:'fragment'},
   'next/image':{default:'img'},'next/link':{default:'a'},
+  'lucide-react':{ArrowRight:'icon-arrow-right',HeartHandshake:'icon-heart-handshake',Sparkles:'icon-sparkles'},
   'next/navigation':{notFound:()=>{throw Error('NOT_FOUND')}},
   '@/components/compact-lead-capture':{CompactLeadCapture:'capture'},
   '@/components/ideas-discovery':{IdeasDiscovery:'ideas'},

@@ -285,7 +285,11 @@ test('integration keeps the original fill-delay-single-native-tap and 12 second 
   assert.equal(section.split('waitForTimeout').length-1,1)
   assert.doesNotMatch(section,/force\s*:|\.focus\(|\.blur\(|\.click\(|dispatchEvent|scrollIntoView|retry|catch \([^)]*\)|inputValue|page\.url\(|cause/)
   assert.match(section,/throw new Error\(label \+ ": free test chooser did not open; " \+ JSON\.stringify\(failure\)\)/)
-  assert.equal(source.split('await page.screenshot(').length-1,2,'Existing screenshot count preserved')
+  assert.doesNotMatch(section,/\.screenshot\(/,'The bounded tap diagnostic does not capture raw page pixels')
+  assert.deepEqual([...source.matchAll(/await page\.screenshot\(\{ path: output \+ "(\/[^"]+)"/g)].map(match=>match[1]),[
+    '/aphorism-preview-order-','/aphorism-narrow-','/ideas-first-screen-webkit-390.png',
+    '/aphorism-real-order-','/aphorism-real-narrow-','/ideas-dao-compact-webkit-390.png',
+  ],'Preserve the two existing screenshots and all four canonical aphorism-layout failure screenshots')
   assert.match(source,/for \(const width of widths\) await verify\(webkit, locale, width\)/)
 })
 

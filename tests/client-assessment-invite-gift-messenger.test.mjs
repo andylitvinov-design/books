@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+import {assertSavedMessengerContract} from "./helpers/saved-messenger-contract.mjs";
+
 const invite = readFileSync(new URL("../components/client-assessment-invite.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../components/client-assessment-invite.module.css", import.meta.url), "utf8");
 const channelChooser = readFileSync(new URL("../components/contact-channel-chooser.tsx", import.meta.url), "utf8");
@@ -17,7 +19,7 @@ test("gift CTA expands the existing order chooser instead of navigating away", (
   assert.match(channelChooser, /data-contact-order/);
   assert.match(channelChooser, /WhatsApp/);
   assert.match(channelChooser, /Telegram/);
-  assert.match(channelChooser, /Your selected request is prepared in the chat/);
+  assertSavedMessengerContract(channelChooser);
 });
 
 test("prepared messenger request carries the selected topic and no private test data", () => {
@@ -41,4 +43,18 @@ test("details link leads to the localized service landing, separate from the gif
   assert.match(css, /\.invite \.order :global\(\[data-contact-order\]\)/);
   assert.match(css, /@media\(max-width:720px\)/);
   assert.match(css, /\.order\{width:100%\}/);
+});
+
+for (const [name, before, after, reason] of [
+  ['missing receipt gate', '{!saved ? (', '{true ? (', /saved-receipt gate/],
+  ['unconditional messenger', 'href={preparedWhatsApp}', 'href={whatsappUrl}', /preparedWhatsApp/],
+  ['wrong Telegram handoff', 'href={telegramEnquiryUrlFromWhatsApp(preparedWhatsApp)}', 'href={preparedWhatsApp}', /telegramEnquiryUrlFromWhatsApp/],
+  ['missing reference', '{saved.referenceCode}', '{"unverified"}', /verified reference/],
+  ['missing consent gate', ') || !consent}', ')}', /consent gate/],
+  ['dead consent term', ') || !consent}', ') || (!consent && false)}', /effective consent gate/],
+  ['negated consent term', ') || !consent}', ') || !!consent}', /effective consent gate/],
+  ['missing optional disclosure', 'WhatsApp or Telegram is optional.', 'Use a messenger to finish.', /optional/],
+]) test('gift messenger contract rejects ' + name, () => {
+  assert.ok(channelChooser.includes(before), 'Mutation target must exist: ' + name);
+  assert.throws(() => assertSavedMessengerContract(channelChooser.replace(before, after)), reason);
 });

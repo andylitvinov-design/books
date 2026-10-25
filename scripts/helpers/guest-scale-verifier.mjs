@@ -7,6 +7,14 @@ const normalized = value => String(value ?? '').replace(/\s+/g, ' ').trim()
 const numeral = (value, locale) => new Intl.NumberFormat(locale === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }).format(value)
 export const guestFinishLabel = locale => locale === 'ru' ? 'Посмотреть шкалы и баллы' : 'See my scores and scales'
 export const guestAnalysisLabel = locale => locale === 'ru' ? 'Создать кабинет и получить пояснения' : 'Create my Cabinet and get explanations'
+// The authenticated range map preserves the source label and explicitly prefixes
+// its original answer code. Derive this exact presentation from the source model,
+// not DOM text, a guessed index, or a permissive prefix-stripping expression.
+export function expectedAccountRangeRow(band, locale) {
+  const prefix = band.originalAnswerCode !== null && band.originalAnswerCode !== undefined
+    ? (locale === 'ru' ? '≈ вариант ' : '≈ option ') + band.originalAnswerCode + ' · ' : ''
+  return { range: band.displayRange, label: prefix + band.label, current: band.current }
+}
 export function assertGuestSaveIntent(body, result) {
   assert.deepEqual(Object.keys(body).sort(), ['operationId', 'sourceId', 'sourceKind'])
   assert.equal(body.sourceKind, 'guest_result')
@@ -175,9 +183,8 @@ export function assertAccountReportSnapshot(snapshot, result, locale) {
     const dimension = result.dimensions.find(item => item.key === section.key)
     const model = interpretationBandModel(result, dimension, locale)
     const reading = gaugeModel(dimension, result, locale)?.rangeReading
-    assert.deepEqual(actual.publishedBands, reading ? reading.rows.map(band => ({
-      range: band.displayRange, label: band.label, current: band.current,
-    })) : model.bands.map(band => ({range: `${band.from}–${band.to}`,label: band.label,current: band.code === model.currentBand?.code})), 'Exact source-aware range rows and current selection')
+    assert.deepEqual(actual.publishedBands, reading ? reading.rows.map(band => expectedAccountRangeRow(band, locale))
+      : model.bands.map(band => ({range: `${band.from}–${band.to}`,label: band.label,current: band.code === model.currentBand?.code})), 'Exact source-aware range rows, original answer-code presentation and current selection')
     if (reading) {
       assert.equal(normalized(actual.rangeHeading), normalized(reading.heading))
       assert.equal(normalized(actual.rangeNarrative), normalized(reading.narrative))
