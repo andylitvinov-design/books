@@ -93,13 +93,18 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
             await reviewFeed.locator('[data-testimonial-video-id]').first().scrollIntoViewIfNeeded();
             await page.screenshot({path:output+'/'+name+'-testimonials.png',animations:'disabled',timeout:20000});
           }
-          const capture=page.locator('#request-free-review [data-service-lead-capture]');
           const cards=page.locator('[data-diagnosis-offer]');
-          assert.equal(await cards.count(),3,'three photo-led offers with one shared form');
+          const modal=page.locator('[data-diagnosis-order-form]');
+          const messenger=modal.locator('[data-reiki-phone-enquiry]');
+          assert.equal(await cards.count(),3,'three photo-led offers with one shared messenger sheet');
           for(const id of ['situation-written-free','wu-xing-free','personal-session-30-eur50']){
             assert.equal(await cards.filter({has:page.locator('[data-diagnosis-order="'+id+'"]')}).count(),1,'one order CTA per '+id);
           }
-          assert.equal(await page.locator('#request-free-review [data-free-diagnostic-start]').count(),1,'free review reuses existing questionnaire entry without creating an early duplicate lead');
+          assert.equal(await page.locator('[data-diagnosis-placement] [data-free-diagnostic-start]').count(),0,
+            'old phone-only Step 1 is not shown before messenger choice');
+          assert.equal(await page.locator('#free-diagnosis-top').count(),1,'top request CTA');
+          assert.equal(await page.locator('#free-diagnosis-bottom').count(),1,'bottom request CTA');
+          assert.equal(await modal.getAttribute('data-open'),'false','no premature request panel');
           await play.click({timeout:15000});
           const iframe=video.locator('iframe[data-video-playback="youtube"]');
           await iframe.waitFor({state:'attached',timeout:20000});
@@ -108,32 +113,45 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
           record.embedSrc=src;
           if(width===390)await page.screenshot({path:output+'/'+name+'-after-play.png',animations:'disabled',timeout:25000});
           await cta.click({timeout:15000});
-          assert.equal(new URL(page.url()).hash,'#free-diagnosis-options','hero CTA opens three options');
-          await page.locator('#request-free-review [data-free-diagnostic-start]').waitFor({state:'visible',timeout:18000});
-          assert.equal(await capture.count(),0,'no duplicate CRM form before authored questionnaire');
-          const wuDetail=cards.nth(1).locator('details');
-          await wuDetail.locator('summary').click();
-          assert.equal(await wuDetail.evaluate(el=>el.open),true,'Wu Xing details expand in place');
-          await cards.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          assert.equal(new URL(page.url()).hash,'#request-free-review','order CTA reaches shared form');
-          await capture.waitFor({state:'visible',timeout:18000});
-          assert.equal(await capture.locator('input[name="contact"]').count(),1);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false);
-          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'click is not a real lead');
-          assert.equal(await capture.locator('select').inputValue(),'personal-session-30-eur50','paid option preselected');
-          await capture.locator('select').selectOption('wu-xing-free');
-          assert.equal(await cards.nth(1).getAttribute('data-diagnosis-selected'),'true','form selection updates selected card');
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false,'no implicit consent on selection');
-          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'selection is not a submitted lead');
-          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'expanded details fit viewport');
+          assert.equal(new URL(page.url()).hash,'#free-diagnosis-options','hero CTA leads to three service formats');
+          const ids=['situation-written-free','wu-xing-free','personal-session-30-eur50'];
+          for(const [index,id] of ids.entries()){
+            await cards.nth(index).locator('[data-diagnosis-order="'+id+'"]').click({timeout:18000});
+            await messenger.waitFor({state:'visible',timeout:18000});
+            assert.equal(await modal.getAttribute('data-open'),'true','bottom sheet opens on Request');
+            assert.equal(await modal.getAttribute('aria-modal'),'true','sheet declares modal dialog');
+            assert.equal((await modal.locator('#diagnosis-request-heading').innerText()).trim(),
+              (await cards.nth(index).locator('h3').innerText()).trim(),'selected offer preserved');
+            assert.equal(await messenger.locator('[data-phone-country-input] select').count(),1,'international dial code');
+            assert.equal(await messenger.locator('input[type="tel"]').count(),1,'one phone number field');
+            assert.equal(await messenger.locator('input[type="checkbox"]').isChecked(),false,
+              'explicit consent not granted by opening Request');
+            assert.equal(await messenger.locator('[data-contact-channel-submit="whatsapp"]').count(),1,'WhatsApp action');
+            assert.equal(await messenger.locator('[data-contact-channel-submit="telegram"]').count(),1,'Telegram action');
+            assert.equal(await messenger.locator('[role="status"]').count(),0,'opening is not a saved lead');
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'open sheet fits '+width+'px');
+            if(width===390 && index===0)
+              await page.screenshot({path:output+'/'+name+'-request-sheet.png',animations:'disabled',timeout:20000});
+            await page.keyboard.press('Escape');
+            await messenger.waitFor({state:'detached',timeout:10000});
+            assert.equal(await modal.getAttribute('data-open'),'false','Escape closes form without submitting');
+          }
+          // Top and bottom invites select the same first free offer, not a second independent form.
+          await page.locator('#free-diagnosis-top').click();
+          await messenger.waitFor({state:'visible'});
+          assert.equal((await modal.locator('#diagnosis-request-heading').innerText()).trim(),
+            (await cards.first().locator('h3').innerText()).trim(),'top CTA starts free review');
+          await modal.locator('button[aria-label]').first().click();
+          await messenger.waitFor({state:'detached'});
           if(width===390){
             const hubResponse=await page.goto(origin+'/'+locale+'/services/free-consultation',{waitUntil:'domcontentloaded',timeout:65000});
             assert.equal(hubResponse?.status(),200,'free-consultation route reachable');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-diagnosis-offer]').count(),3,'hub has identical three options');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-free-diagnostic-start]').count(),1,'hub uses existing free coaching questionnaire funnel');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),0,'hub does not create two leads for free situation');
-            await page.locator('[data-free-consultation-hub] [data-diagnosis-order="personal-session-30-eur50"]').click();
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),1,'hub has one CRM capture for paid session');
+            assert.equal(await page.locator('[data-free-consultation-hub] [data-diagnosis-offer]').count(),3,'hub has identical offers');
+            assert.equal(await page.locator('[data-free-consultation-hub] [data-free-diagnostic-start]').count(),0,'hub has no legacy step-one form');
+            await page.locator('[data-free-consultation-hub] [data-diagnosis-order="wu-xing-free"]').click();
+            const hubMessenger=page.locator('[data-free-consultation-hub] [data-reiki-phone-enquiry]');
+            await hubMessenger.waitFor({state:'visible'});
+            assert.equal(await hubMessenger.locator('[data-contact-channel-submit]').count(),2,'both channels available in hub');
             assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'hub fits viewport');
             await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
           }

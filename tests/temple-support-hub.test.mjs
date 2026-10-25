@@ -37,8 +37,9 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
   assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
 });
 
-test("Holistic Support puts an interactive scenic goal-or-situation card first in EN/RU/ES", () => {
+test("Holistic Support puts three accessible, photo-backed support choices first in EN/RU/ES", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
+  const chooser = read("components/holistic-support-choices.tsx");
   const ideas = read("components/ideas-discovery.tsx");
   const scenic = read("components/ideas-discovery.module.css");
   const styles = read("app/[locale]/holistic-support/holistic-support.module.css");
@@ -53,10 +54,13 @@ test("Holistic Support puts an interactive scenic goal-or-situation card first i
   }
   assert.ok(old.includes('permanentRedirect("/" + locale + "/holistic-support")'));
   assert.ok(page.includes("data-holistic-support"));
-  assert.ok(page.includes("data-holistic-first-screen"));
-  assert.ok(page.includes('<IdeasDiscovery locale={locale} variant="holistic" />'));
-  assert.equal((page.match(/<IdeasDiscovery /g) || []).length, 1, "only one symbolic-engine form");
-  assert.ok(page.indexOf("data-holistic-first-screen") < page.indexOf("data-holistic-healing"));
+  assert.ok(chooser.includes("data-holistic-first-screen"));
+  assert.ok(page.includes('<HolisticSupportChoices locale={locale} />'));
+  assert.ok(chooser.includes('<IdeasDiscovery locale={locale} variant="holistic-dao" />'));
+  assert.equal((chooser.match(/<IdeasDiscovery /g) || []).length, 1, "reuse existing Dao engine once, only after selection");
+  assert.ok(page.indexOf("<HolisticSupportChoices") < page.indexOf("<HolisticSupportTopicFilter"));
+  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf("data-holistic-healing"));
+  for (const option of ["meditations", "energy", "dao"]) assert.ok(chooser.includes('data-holistic-choose="' + option + '"'));
   assert.ok(!page.includes("<FreeDiagnosticStart") && !page.includes("<CompactLeadCapture"),
     "the personal coaching form moves to Coaching");
   assert.ok(!page.includes("styles.hero"), "the big coaching hero was removed");
@@ -115,7 +119,7 @@ test("independent Temple Insights keeps its own diagnostic CTA and natural sceni
   assert.ok(ideas.includes('href={"/" + locale + "/coaching#free-diagnostic-start"}'));
   assert.ok(ideas.includes("data-ideas-personal-diagnostic"));
   assert.ok(ideas.includes("data-ideas-free-test"));
-  assert.ok(ideas.includes('const HeadingTag = variant === "temple" ? "h2" : "h1"'));
+  assert.ok(ideas.includes('const HeadingTag = variant === "temple" || daoFocused ? "h2" : "h1"'));
   assert.ok(scenic.includes('data-temple-mode="true"'));
   assert.ok(scenic.includes('.templeScenic::before'));
 });

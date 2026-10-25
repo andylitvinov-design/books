@@ -14,13 +14,13 @@ import styles from "./personal-testimonials.module.css";
 // A poster is used only for the matching YouTube ID; never swap in unrelated illustrations.
 // Two legacy PsiMaster RU clips have no verified archived still and use the normal
 // YouTube thumbnail path until a genuine image is available.
-const locallyArchivedVideoPosterIds = new Set([
+export const locallyArchivedVideoPosterIds = new Set([
   "Dk0LBmOivQo", "aUJde6A-9p0", "fE6sD1zr1Js", "itjo2_z2NGk",
   "4NrryHcEF1A", "hYwRNMxIMjc", "MIVLm1GUTtM", "ttQxUHopaUM",
   "VABgpmn4ZYA", "muOnIHllI7E",
 ]);
 
-const testimonialVideos = {
+export const testimonialVideos = {
   ru: [
     { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },
     { id: "MIVLm1GUTtM", title: "Юрий Гончаренко — отзыв клиента", language: "ru" },
