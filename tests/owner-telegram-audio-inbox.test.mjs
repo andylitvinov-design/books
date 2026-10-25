@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
   OWNER_AUDIO_MAX_BYTES,ownerAudioFolder,ownerAudioType,
-  parseOwnerAudioMessage,parseOwnerAudioCallback,audioMatchesMagic,
+  parseOwnerAudioMessage,parseOwnerAudioCommand,parseOwnerAudioCallback,
+  ownerAudioHelpMessage,ownerAudioMaterialsMessage,audioMatchesMagic,
 } from '../lib/practitioners/owner-telegram-audio-model.mjs'
 
 const NOW=1792936800000
@@ -65,6 +66,65 @@ test('Telegram callback accepts only owner private BotFather button and known fo
   callback.callback_query.from.id=1111
   assert.equal(parseOwnerAudioCallback(callback),null)
 })
+
+test('private owner /audio, /materials and Telegram deep link show safe instructions',()=>{
+  const audio=voice()
+  delete audio.message.voice
+  audio.message.text='/audio'
+  assert.equal(parseOwnerAudioCommand(audio,NOW).action,'help')
+  audio.message.text='/materials'
+  assert.equal(parseOwnerAudioCommand(audio,NOW).action,'materials')
+  audio.message.text='/start audio'
+  assert.equal(parseOwnerAudioCommand(audio,NOW).action,'help')
+  audio.message.text='/start '+ 'a'.repeat(32)
+  assert.equal(parseOwnerAudioCommand(audio,NOW),null)
+  audio.message.text='/ai'
+  assert.equal(parseOwnerAudioCommand(audio,NOW),null)
+  audio.message.text='/audio'
+  audio.message.chat.type='supergroup'
+  assert.equal(parseOwnerAudioCommand(audio,NOW),null)
+  audio.message.chat.type='private'
+  audio.message.from.id=90000
+  assert.equal(parseOwnerAudioCommand(audio,NOW),null)
+  const prompt=ownerAudioHelpMessage()
+  assert.match(prompt.text,/Переслать.*Dot.*Отправить/)
+  assert.match(prompt.text,/✅/)
+  assert.match(prompt.text,/20 МБ/)
+  assert.doesNotMatch(prompt.text,/файл уже сохранён/)
+  assert.match(ownerAudioMaterialsMessage().text,/admin\/materials\/telegram/)
+  assert.equal(prompt.reply_markup.inline_keyboard[0][0].url,
+    'https://holistichouse.vercel.app/admin/materials/telegram')
+})
+test('in-chat audio entry button is owner-only and cannot alter folders by itself',()=>{
+  const query={update_id:730,callback_query:{
+    id:'audio-help-callback',data:'hh-audio:help',
+    from:{id:123456,is_bot:false},
+    message:{chat:{type:'private',id:123456},from:{is_bot:true,username:'Andydotbot'}}}}
+  assert.equal(parseOwnerAudioCallback(query).action,'help')
+  query.callback_query.data='hh-audio:materials'
+  assert.equal(parseOwnerAudioCallback(query).action,'materials')
+  query.callback_query.message.from.username='EvilBot'
+  assert.equal(parseOwnerAudioCallback(query),null)
+  query.callback_query.message.from.username='Andydotbot'
+  query.callback_query.from.id=111111
+  assert.equal(parseOwnerAudioCallback(query),null)
+})
+test('audio importer includes command UX, self-healing menu and owner-only website guide',()=>{
+  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
+  const ui=readFileSync(new URL('../components/admin-telegram-audio.jsx',import.meta.url),'utf8')
+  const ai=readFileSync(new URL('../lib/practitioners/owner-ai-telegram.mjs',import.meta.url),'utf8')
+  const transport=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
+  assert.match(service,/parseOwnerAudioCommand\(update,now\)/)
+  assert.match(service,/ownerAudioHelpMessage\(\)/)
+  assert.match(service,/registerClientTelegramWebhook\(env,\{config\}\)/)
+  assert.match(service,/event.chatId!==credentials.chat\|\|event.userId!==credentials.chat/)
+  assert.match(ui,/https:\/\/t\.me\/Andydotbot\?start=audio/)
+  assert.match(ui,/data-owner-telegram-forward-guide/)
+  assert.match(ai,/callback_data:'hh-audio:help'/)
+  assert.match(transport,/scope:\{type:'chat',chat_id:chatNumber\}/)
+  assert.match(service,/OWNER_AUDIO_BUCKET/)
+})
+
 test('magic-byte checks reject non-audio content with a claimed audio MIME',()=>{
   const ogg=new Uint8Array(128)
   ogg.set([79,103,103,83],0)
