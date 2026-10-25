@@ -62,7 +62,7 @@ test("Level 1 gift links on the three Reiki system landings open Reiki Practitio
   assert.ok(kundalini.includes('<Link href={REIKI_FREE_COURSE_PATH} className={styles.heroSecondary} data-reiki-course-cta>'));
   assert.equal(ygg.split('href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{text.free}').length - 1, 2);
   assert.doesNotMatch(kundalini, /freeLevelHref/);
-  assert.match(tantra, /Get Tantra Reiki Level 1 as a gift/);
+  assert.match(tantra, /Start FREE Online Program Tantra Reiki Practitioner and get Tantra Reiki Level 1 as a GIFT/);
   assert.match(kundalini, /Request free Level 1/);
   assert.match(ygg, /Get Level 1 for free/);
 
