@@ -16,7 +16,7 @@ import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, coachingSchemeArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
-import CoachingLiveSessionCapture from '@/components/coaching-live-session-capture'
+import { CoachingLoungeEntry } from '@/components/coaching-lounge-entry'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, COACHING_CATALOG_GROUPS, coachingCatalogGroupId, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
@@ -538,11 +538,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?<>
-        <header className={styles.hero}>
-          <p className={styles.eyebrow}><Sparkles size={16}/>{t.eyebrow}</p>
-          <h1>{t.title}</h1>
-          <p><span className={styles.leadFull}>{t.lead}</span><span className={styles.leadShort}>{t.leadCompact}</span></p>
-        </header>
+        <CoachingLoungeEntry locale={lang} />
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.topicGroups} data-coaching-topic-first>
             <legend><strong>{t.groupHeading}</strong><span>{t.groupNote}</span></legend>
@@ -694,7 +690,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <ul>{t.coachFitChecks.map((text,i)=><li key={i}>{text}</li>)}</ul>
             <p className={styles.coachOnly}>{t.coachOnly}</p>
           </div>
-          <CoachingLiveSessionCapture locale={lang} />
+          <a href="#coaching-intake" className={styles.primary}>{t.request}<ArrowRight size={16} aria-hidden="true"/></a>
         </section>}
         
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}
