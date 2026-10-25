@@ -66,7 +66,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "Free diagnosis: 3 ways", "Бесплатная диагностика: 3 варианта", "Diagnóstico gratis: 3 opciones",
+    "Free situation review — personally with Andrey.", "Бесплатный разбор вашей ситуации с Андреем.", "Revisión gratuita de tu situación con Andrey.",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -75,7 +75,7 @@ test("all three locales explain real service advantages without health claims or
     "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
-  for (const phrase of ["Free Diagnosis", "Бесплатная диагностика",
+  for (const phrase of ["Free situation review", "Бесплатная диагностика",
     "Diagnóstico gratis", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
@@ -130,5 +130,8 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
-  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\}>/);
+  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} compact intro=\{/);
+  assert.match(landing, /data-review-stories/);
+  assert.match(css, /\.reviewBenefitsList/);
+  assert.match(css, /\.reviewProcess/);
 });
