@@ -693,3 +693,9 @@
  .outcomeGrid button{font-size:11px;min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){.outcomeGrid button{transition:none}}
+
+/* Goal-first chooser must preserve 44px touch targets on the smallest phones. */
+@media(max-width:600px){
+ .format button{min-height:44px}
+ .pillOptions button{min-height:44px}
+}
