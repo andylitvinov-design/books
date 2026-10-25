@@ -121,7 +121,9 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
   const css=source('components/coaching-dialogue-turn.module.css')
   for(const [name,ui] of [['guest',guest],['personal',signed],['tradition',symbolic]]){
     assert.match(ui,/coachingConversationTurn\(\{/,'context derived in '+name)
-    assert.match(ui,/<CoachingDialogueTurn turn=\{conversationTurn\}\/>/,'visible reply in '+name)
+    assert.match(ui,/<CoachingChatThread turn=\{conversationTurn\}/,'chat-shaped reply in '+name)
+    assert.match(ui,/previousReply=/,'user reply preserved in context: '+name)
+    assert.match(ui,/data-coaching-composer/,'editable messenger composer: '+name)
     assert.match(ui,/conversationTurn\?\.speech/,'same reply read aloud in '+name)
     assert.match(ui,/previousAnswer:/,'previous answer from session in '+name)
     assert.doesNotMatch(ui,/dangerouslySetInnerHTML/,'no raw HTML echo in '+name)
@@ -131,7 +133,7 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
     assert.equal(parsed.parseDiagnostics.length,0,name+' JSX syntax')
   }
   for(const ui of [guest,signed]){
-    assert.match(ui,/<CoachingDialogueTurn turn=\{followupTurn\}\/>/)
+    assert.match(ui,/<CoachingChatThread turn=\{followupTurn\}/)
     assert.match(ui,/followupTurn\?\.speech/)
   }
   assert.match(component,/data-coaching-conversational-turn/)
@@ -141,4 +143,26 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
   assert.match(css,/overflow-wrap:anywhere/)
   const parsed=ts.createSourceFile('components/coaching-dialogue-turn.jsx',component,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
   assert.equal(parsed.parseDiagnostics.length,0)
+})
+
+
+test('all three coaching runners share a localized portrait chat without pretending to be live',()=>{
+  const ui=source('components/coaching-chat-thread.jsx')
+  const css=source('components/coaching-chat-thread.module.css')
+  for(const text of ['data-coaching-chat-thread','data-coaching-chat-user-turn',
+    'data-coaching-chat-coach-turn','portrait-static/andy-96-b9d7800d1448.webp']){
+    assert.ok(ui.includes(text),text)
+  }
+  for(const message of ['Self-guided session · not a live chat',
+    'Самостоятельная сессия · не живой чат',
+    'Sesión autoguiada · no es un chat en vivo']){
+    assert.ok(ui.includes(message),message)
+  }
+  assert.match(ui,/Array\.from\(previous\)\.slice\(0,260\)/)
+  assert.doesNotMatch(ui,/fetch\(|localStorage|sessionStorage|dangerouslySetInnerHTML|typingIndicator/)
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.match(css,/@media\(max-width:350px\)/)
+  const parsed=ts.createSourceFile('components/coaching-chat-thread.jsx',ui,
+    ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0,'shared JSX parses')
 })
