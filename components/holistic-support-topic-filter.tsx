@@ -30,7 +30,7 @@ const copy = {
     lead: "Choose a theme to explore existing meditation recordings, symbolic talisman studies and personal energy support.",
     select: "Choose a theme",
     actions: { meditation: "Watch & listen", talisman: "Explore talismans", expert: "Request a session" },
-    archiveNote: "Talismans currently link to historical Academy learning material, not a store or a published custom-made talisman listing.",
+    archiveNote: "Your uploaded talismans stay private; historical Academy learning materials remain available separately.",
     topics: {
       business: {
         label: "Business", hint: "Work, direction and decisions",
@@ -64,7 +64,7 @@ const copy = {
     lead: "Выберите направление: подходящие медитативные практики из существующего архива, символика талисманов и личная энергетическая поддержка.",
     select: "Выберите тему",
     actions: { meditation: "Смотреть и слушать", talisman: "Изучить талисманы", expert: "Запросить сессию" },
-    archiveNote: "Раздел талисманов пока ведёт к историческим учебным материалам Академии, а не к действующему магазину или опубликованным персональным заказам.",
+    archiveNote: "Ваши загруженные талисманы остаются приватными; исторические материалы Академии доступны отдельно.",
     topics: {
       business: {
         label: "Бизнес", hint: "Работа, цели и решения",
@@ -98,7 +98,7 @@ const copy = {
     lead: "Elige un tema y descubre meditaciones existentes, estudios simbólicos sobre talismanes y apoyo energético personal.",
     select: "Elige un tema",
     actions: { meditation: "Ver y escuchar", talisman: "Explorar talismanes", expert: "Solicitar sesión" },
-    archiveNote: "Los talismanes enlazan por ahora a material histórico de la Academia, no a una tienda ni a encargos personales publicados.",
+    archiveNote: "Los talismanes que subas son privados; el material histórico de la Academia permanece disponible por separado.",
     topics: {
       business: {
         label: "Negocios", hint: "Trabajo, objetivos y decisiones",
@@ -130,7 +130,7 @@ const copy = {
 
 function offerHref(locale: PublicLocale, offer: Offer) {
   if (offer === "meditation") return "#meditation-practices";
-  if (offer === "talisman") return "/" + locale + "/academy/symbolic/artifacts-talismans";
+  if (offer === "talisman") return "#talismans";
   return "/" + locale + "/services/remote-energy-support";
 }
 
