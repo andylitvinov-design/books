@@ -143,7 +143,7 @@ export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
   assert.equal(payload.contactConsent, true);
   assert.equal(payload.contact.email, '');
   assert.equal(payload.contact.displayName, '');
-  assert.match(payload.contact.phone || '', /^\\+[1-9][0-9]{7,14}$/);
+  assert.match(payload.contact.phone || '', /^\+[1-9][0-9]{7,14}$/);
   assert.equal(payload.website, '');
   assert.ok(payload.serviceTitle?.includes('Alchemy') || payload.serviceTitle?.includes('Алхимия')
     || payload.serviceTitle?.includes('Alquimia'), 'The chosen service remains in the request');
@@ -151,7 +151,7 @@ export async function openRegisteredCompactPhoneChooser(scope, expect, page) {
   assert.ok(typeof payload.description === 'string', 'Only a non-sensitive service-format label may accompany this request');
   const prepared = await assertPreparedContactChannels(chooser, expect);
   assert.doesNotMatch(prepared.whatsappUrl.searchParams.get('text') || '',
-    /4165550123|Public QA Visitor|enquiry-qa@example\\.test/i,
+    /4165550123|Public QA Visitor|enquiry-qa@example\.test/i,
     'Contact details never appear in external messenger draft');
   assert.match(prepared.whatsappUrl.searchParams.get('text') || '', /HH-ABCD1234EF56/);
   return chooser;
