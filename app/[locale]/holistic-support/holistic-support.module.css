@@ -112,3 +112,8 @@
 .section[data-holistic-meditations] .libraryLink{margin-top:4px}
 @media(max-width:650px){.meditationAudioRow{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}.meditationAudioRow audio{max-width:100%}.meditationSourceNote{font-size:11.5px}}
 @media(max-width:350px){.meditationAudioRow{padding:9px}.meditationAudioRow h3{font-size:19px}}
+
+/* Personal talismans share the warm, compact Support cards. */
+.option[data-holistic-offer="talismans"]{border-color:#d8c7ad;background:#faf4e9}
+.option[data-holistic-offer="talismans"] .optionPhoto{background:#e5d9c9}
+.section[data-holistic-talismans]{scroll-margin-top:90px}

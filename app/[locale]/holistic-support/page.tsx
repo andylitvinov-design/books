@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { IdeasDiscovery } from "@/components/ideas-discovery";
+import { SupportTalismanGallery } from "@/components/support-talisman-gallery";
 import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -58,6 +59,12 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Request distant energy support when you need it. Choose the practitioner, format and preferred time; the master confirms availability and fees.",
     energyAction: "Request distant energy support",
+    talismanTitle: "Talismans",
+    talismanBody: "Explore symbolic talismans by intention and upload a photo of your own to your private collection.",
+    talismanAction: "Browse & upload talismans",
+    talismanEyebrow: "04 · SYMBOLS & TALISMANS",
+    talismanSectionTitle: "Talismans · Your symbolic collection",
+    talismanSectionLead: "Organize personal images by protection, energy, harmony, prosperity, wisdom and more. New uploads stay private.",
     meditationTitle: "Meditation · Audio & Video",
     meditationBody: "Listen to a calming soundscape or Andrey’s original English Sun meditation. The PsiMaster archive is preserved in Russian.",
     meditationAction: "Open free practices",
@@ -128,6 +135,12 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Запросите дистанционную энергетическую поддержку, когда она нужна. Выберите мастера, формат и удобное время; доступность и цена подтверждаются отдельно.",
     energyAction: "Запросить дистанционную поддержку",
+    talismanTitle: "Талисманы",
+    talismanBody: "Выбирайте символические талисманы по рубрикам и загружайте свои изображения в личную коллекцию.",
+    talismanAction: "Открыть талисманы",
+    talismanEyebrow: "04 · СИМВОЛЫ И ТАЛИСМАНЫ",
+    talismanSectionTitle: "Талисманы · Личная коллекция",
+    talismanSectionLead: "Защита, энергия, гармония, благополучие, мудрость и другие рубрики. Новые загрузки доступны только вам.",
     meditationTitle: "Медитации · аудио и видео",
     meditationBody: "Откройте восстановленные русскоязычные медитации Солнца и энергетические практики PsiMaster. Ниже доступно спокойное инструментальное аудио.",
     meditationAction: "Открыть бесплатные практики",
@@ -198,6 +211,12 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Solicita apoyo energético a distancia cuando lo necesites. Elige profesional, formato y horario preferido; disponibilidad y precio se confirman por separado.",
     energyAction: "Solicitar apoyo a distancia",
+    talismanTitle: "Talismanes",
+    talismanBody: "Explora símbolos por categoría y sube una foto de tu talismán a tu colección privada.",
+    talismanAction: "Explorar y subir talismanes",
+    talismanEyebrow: "04 · SÍMBOLOS Y TALISMANES",
+    talismanSectionTitle: "Talismanes · Tu colección",
+    talismanSectionLead: "Protección, energía, armonía, prosperidad, sabiduría y más. Tus fotos nuevas son privadas.",
     meditationTitle: "Meditación · Audio y vídeo",
     meditationBody: "Escucha música suave o una meditación original del Sol en inglés. El archivo histórico de PsiMaster se mantiene en ruso.",
     meditationAction: "Abrir prácticas gratuitas",
@@ -307,6 +326,18 @@ export default async function HolisticSupportPage({ params }: Props) {
                 </Link>
               </div>
             </article>
+            <article className={styles.option} data-holistic-offer="talismans">
+              <div className={styles.optionPhoto}>
+                <Image src="/images/holistic-house/tantra-reiki-yin-yang-cover.svg" alt="" fill sizes="(max-width:700px) 100px, 155px" />
+              </div>
+              <div className={styles.optionContent}>
+                <h3>{t.talismanTitle}</h3>
+                <p>{t.talismanBody}</p>
+                <Link href="#talismans" className={styles.secondaryAction} prefetch={false} data-holistic-talismans-cta>
+                  {t.talismanAction}<span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
             <article className={styles.option} data-holistic-offer="practitioner">
               <div className={styles.optionPhoto}>
                 <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
@@ -356,6 +387,15 @@ export default async function HolisticSupportPage({ params }: Props) {
           <Link href={"/" + locale + "/academy"} className={styles.libraryLink} prefetch={false}>
             {t.meditationMore}<span aria-hidden="true">→</span>
           </Link>
+        </section>
+
+        <section id="talismans" className={styles.section} data-holistic-talismans aria-labelledby="holistic-talismans-title">
+          <div className={styles.sectionHeading}>
+            <p className={styles.kicker}>{t.talismanEyebrow}</p>
+            <h2 id="holistic-talismans-title">{t.talismanSectionTitle}</h2>
+            <p>{t.talismanSectionLead}</p>
+          </div>
+          <SupportTalismanGallery locale={locale} />
         </section>
 
         <aside className={styles.coachingAside} data-holistic-coaching-followup aria-labelledby="holistic-coaching-followup-title">
