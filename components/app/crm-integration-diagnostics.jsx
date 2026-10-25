@@ -3,9 +3,24 @@ import styles from './crm-manager.module.css'
 import {crmIntegrationStage} from '../../lib/crm/integration-readiness.js'
 
 const COPY={
-  en:{title:'Connections',intro:'Read-only setup status. No provider request or message is sent from this page.',configured:'Server configured · delivery not tested',pilot:'Owner test only · not public',setup:'Setup required',off:'Live sending disabled',missing:'Missing or invalid:',webhook:'Webhook:',check:'Last safe check: no check recorded.',error:'Last provider error: none recorded.',test:'Test mode:',yes:'available',no:'not available',unverified:'Credentials and a button do not prove that any message reached a person.',console:'Open official console',email:'Resend email',sms:'Twilio SMS',telegram:'Telegram bot',whatsapp:'WhatsApp Cloud API',instagram:'Instagram Direct',messenger:'Facebook Messenger'},
-  ru:{title:'Подключения',intro:'Только статус настройки. Эта страница не отправляет запросы провайдерам и не рассылает сообщения.',configured:'Сервер настроен · доставка не проверена',pilot:'Только личный пилот · не для клиентов',setup:'Требуется настройка',off:'Рассылка клиентам выключена',missing:'Отсутствует или неверно:',webhook:'Webhook:',check:'Последняя безопасная проверка: ещё не записана.',error:'Последняя ошибка провайдера: не записана.',test:'Тестовый режим:',yes:'доступен',no:'недоступен',unverified:'Наличие ключей и кнопки не подтверждает, что сообщение дошло до человека.',console:'Открыть официальный кабинет',email:'Resend email',sms:'Twilio SMS',telegram:'Telegram-бот',whatsapp:'WhatsApp Cloud API',instagram:'Instagram Direct',messenger:'Facebook Messenger'},
-  es:{title:'Conexiones',intro:'Estado de configuración de solo lectura. Esta página no envía solicitudes al proveedor ni mensajes.',configured:'Servidor configurado; entrega sin verificar',pilot:'Solo prueba propia · no pública',setup:'Configuración requerida',off:'Envío en vivo desactivado',missing:'Falta o no es válido:',webhook:'Webhook:',check:'Última comprobación segura: aún no registrada.',error:'Último error del proveedor: no registrado.',test:'Modo de prueba:',yes:'disponible',no:'no disponible',unverified:'Las credenciales no demuestran la entrega a una persona.',console:'Abrir consola oficial',email:'Correo Resend',sms:'SMS Twilio',telegram:'Bot de Telegram',whatsapp:'WhatsApp Cloud API',instagram:'Instagram Direct',messenger:'Facebook Messenger'},
+  en:{title:'Connections',intro:'Read-only setup status. No provider request or message is sent from this page.',configured:'Server configured · delivery not tested',pilot:'Owner test only · not public',setup:'Setup required',off:'Live sending disabled',missing:'Missing or invalid:',webhook:'Webhook:',check:'Last safe check: no check recorded.',error:'Last provider error: none recorded.',test:'Test mode:',yes:'available',no:'not available',unverified:'Credentials and a button do not prove that any message reached a person.',console:'Open official console',email:'Resend email',sms:'Twilio SMS',telegram:'Telegram CRM Inbox (separate)',whatsapp:'WhatsApp Cloud API',instagram:'Instagram Direct',messenger:'Facebook Messenger'},
+  ru:{title:'Подключения',intro:'Только статус настройки. Эта страница не отправляет запросы провайдерам и не рассылает сообщения.',configured:'Сервер настроен · доставка не проверена',pilot:'Только личный пилот · не для клиентов',setup:'Требуется настройка',off:'Рассылка клиентам выключена',missing:'Отсутствует или неверно:',webhook:'Webhook:',check:'Последняя безопасная проверка: ещё не записана.',error:'Последняя ошибка провайдера: не записана.',test:'Тестовый режим:',yes:'доступен',no:'недоступен',unverified:'Наличие ключей и кнопки не подтверждает, что сообщение дошло до человека.',console:'Открыть официальный кабинет',email:'Resend email',sms:'Twilio SMS',telegram:'CRM Telegram (отдельный канал)',whatsapp:'WhatsApp Cloud API',instagram:'Instagram Direct',messenger:'Facebook Messenger'},
+  es:{title:'Conexiones',intro:'Estado de configuración de solo lectura. Esta página no envía solicitudes al proveedor ni mensajes.',configured:'Servidor configurado; entrega sin verificar',pilot:'Solo prueba propia · no pública',setup:'Configuración requerida',off:'Envío en vivo desactivado',missing:'Falta o no es válido:',webhook:'Webhook:',check:'Última comprobación segura: aún no registrada.',error:'Último error del proveedor: no registrado.',test:'Modo de prueba:',yes:'disponible',no:'no disponible',unverified:'Las credenciales no demuestran la entrega a una persona.',console:'Abrir consola oficial',email:'Correo Resend',sms:'SMS Twilio',telegram:'Bandeja Telegram CRM (separada)',whatsapp:'WhatsApp Cloud API',instagram:'Instagram Direct',messenger:'Facebook Messenger'},
+}
+
+const TELEGRAM_CONTEXT={
+  en:{
+    explanation:'Personal Telegram alerts and two-way Telegram CRM Inbox are separate. The optional CRM Inbox setup below does not prevent your own Telegram from being connected for notifications. Never reuse the same bot token with a different webhook.',
+    cabinet:'Open Telegram connection in my Cabinet',
+  },
+  ru:{
+    explanation:'Telegram-уведомления кабинета и переписка Telegram CRM Inbox — разные подключения. Статус «Требуется настройка» для дополнительного CRM Inbox не означает, что ваш Telegram для уведомлений отключён. Нельзя указывать токен того же бота для другого webhook.',
+    cabinet:'Открыть мой Telegram в кабинете',
+  },
+  es:{
+    explanation:'Los avisos personales de Telegram y la bandeja de conversación CRM son conexiones separadas. Que falte configurar CRM Inbox no significa que Telegram esté desconectado para avisos. No reutilices el mismo bot con otro webhook.',
+    cabinet:'Abrir la conexión Telegram en mi cuenta',
+  },
 }
 
 const CONSOLES={
@@ -31,6 +46,7 @@ function IntegrationCard({kind,item,t}){
 
 export default function CrmIntegrationDiagnostics({locale='en',setup}){
   const t=COPY[locale]||COPY.en
+  const telegramContext=TELEGRAM_CONTEXT[locale]||TELEGRAM_CONTEXT.en
   const items=[['email',setup?.email],['sms',setup?.sms],...(setup?.messengers||[]).map(item=>[item.channel,item])]
   const distinction=locale==='ru'
     ?'Telegram для уведомлений клиентов и Telegram в CRM Inbox — разные каналы. Настройка клиентского бота находится ниже.'
@@ -39,7 +55,9 @@ export default function CrmIntegrationDiagnostics({locale='en',setup}){
       :'Client Telegram alerts and the CRM Telegram Inbox are separate integrations. Client bot setup is below.'
   return <section className={styles.formCard} aria-labelledby="crm-integrations-title">
     <h3 id="crm-integrations-title">{t.title}</h3><p className={styles.fine}>{t.intro}</p>
-    <p className={styles.fine}>{distinction}</p>
+    <p className={styles.fine}>{telegramContext.explanation}{' '}
+      <a href={`/${locale}/app/settings#hh-telegram-connect`}>{telegramContext.cabinet}</a>
+    </p>
     <div className={styles.integrationGrid}>{items.map(([kind,item])=><IntegrationCard key={kind} kind={kind} item={item} t={t}/>)}</div>
   </section>
 }

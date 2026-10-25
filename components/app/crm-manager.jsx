@@ -389,8 +389,8 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <CrmMessengerPanel key={accountId+'-messenger'} accountId={accountId} locale={language} onCrmChange={retry} />
     </>}
     {activeSection==='integrations'&&data&&<>
-       <CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />
        <CustomerTelegramBotSetup locale={language} accountId={accountId} />
+       <CrmIntegrationDiagnostics locale={language} setup={data.integrationSetup} />
      </>}
     {activeSection==='sms'&&data&&<div className={styles.formCard}>
       <h3>SMS · {language==='ru'?'сообщения клиентам':language==='es'?'mensajes a clientes':'client messages'}</h3>
