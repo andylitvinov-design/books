@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {canReplyToConsultation} from '../lib/practitioners/conversation-policy.js'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 test('goal photos use a private bucket and account-scoped proxy, not public Storage URLs',()=>{
   const api=read('app/api/app/remote-support/[id]/photo/route.js')
@@ -44,7 +45,14 @@ test('booking lifecycle preserves private conversations and only neutral opted-i
   const scope=read('lib/practitioners/client-messages.js')
   const policy=read('supabase/migrations/20261023134530_hh_remote_support_private_messages.sql')
   const route=read('app/api/app/[...path]/route.js')
-  assert.match(scope,/const writableStatuses=.*reschedule_proposed.*confirmed.*completed.*declined/)
+  assert.match(scope,/canReply:canReplyToConsultation\(row\.status,row\.remote_booking\)/)
+  for(const remote of [null,{}]){
+    for(const status of ['requested','contacted'])assert.equal(canReplyToConsultation(status,remote),true)
+    for(const status of ['reschedule_proposed','confirmed','in_progress'])
+      assert.equal(canReplyToConsultation(status,remote),remote!==null)
+    for(const status of ['completed','declined','cancelled','unknown'])
+      assert.equal(canReplyToConsultation(status,remote),false)
+  }
   assert.match(policy,/r\.remote_booking is not null/)
   assert.match(policy,/reschedule_proposed/)
   assert.match(route,/notifyBookingParticipants/)
