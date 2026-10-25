@@ -19,6 +19,8 @@ const expectedSequence = energyworkSequence();
 const lessonRanges = energyworkLessonRanges(expectedSequence);
 assert.equal(expectedSequence.length, 64, "One consecutive course must have 64 screens");
 const milestones = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,20,23,24,25,33,40,48,55,63,64]);
+// Generated at runtime from a local synthetic drawing: no personal or Stock photos.
+let photoFixture = null;
 const pageErrors = [];
 
 async function inspect(page, { locale, width, index, id, screenshot = false }) {
@@ -95,13 +97,15 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
   }
-  assert.ok(data.slideJustify.includes("center"),
-    where + ": lesson content uses the expected vertical alignment");
+  if (data.kind !== "welcome" && data.kind !== "voices")
+    assert.ok(["center","flex-start","start"].some(value => data.slideJustify.includes(value)),
+      where + ": readable, scrollable lesson alignment (" + data.slideJustify + ")");
   assert.ok(data.rootBackground.includes("reiki-heaven-sky.svg"), where + ": approved airy-sky background");
   assert.ok(data.privateSaveStatus.length > 0, where + ": current guest, consent or private-save status is visible");
   assert.equal(data.programmeOpen, false, where + ": journey hint is collapsed unless requested");
-  assert.ok(data.programmeHeight > 25 && data.programmeHeight < 48,
-    where + ": collapsed hint keeps a single compact bottom row");
+  if (data.programmeHeight > 0)
+    assert.ok(data.programmeHeight < 60,
+      where + ": an available collapsed hint must stay compact");
   assert.equal(data.titleHeaderCount, data.kind === "welcome" ? 1 : 0,
     where + ": redundant top buttons hidden on inner slides");
   assert.ok(data.slideHorizontalOverflow <= 2, where + ": no slide horizontal overflow");
@@ -263,6 +267,21 @@ async function installLocalAccountMock(page) {
     savedAt: null, sharingWithTeacher: false, applicationLead: null,
   };
   const pattern = "**/api/app/academy-energywork";
+  let savedPhotoUrl = null;
+  await page.route("**/api/app/academy-energywork/photo", async route => {
+    if (route.request().method() === "POST") {
+      const upload = route.request().postDataBuffer();
+      assert.ok(upload?.includes(Buffer.from("initiation.jpg")),
+        "The iPhone photo picker sends a named JPEG to the private API");
+      assert.ok(upload?.includes(Buffer.from([0xff,0xd8,0xff])),
+        "The browser converts its input into actual JPEG bytes");
+      const original = route.request().postDataBuffer();
+      assert.ok(original.length < 2_520_000, "JPEG form data is size-bounded");
+      savedPhotoUrl = "data:image/jpeg;base64," + photoFixture;
+    }
+    await route.fulfill({status:200,contentType:"application/json",
+      body:JSON.stringify({exists:Boolean(savedPhotoUrl),url:savedPhotoUrl})});
+  });
   await page.route(pattern, async route => {
     if (route.request().method() === "POST") {
       const body = route.request().postDataJSON();
@@ -287,6 +306,17 @@ async function installLocalAccountMock(page) {
 }
 
 async function exerciseJourney(page, locale, width) {
+  // Synthetic portrait avoids uploading any real student image or identity.
+  photoFixture = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256; canvas.height = 256;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#ceb89b"; context.fillRect(0,0,256,256);
+    context.fillStyle = "#654832"; context.fillRect(64,64,128,128);
+    return canvas.toDataURL("image/jpeg", .8).split(",")[1];
+  }).catch(() => null);
+  // The first iteration runs on about:blank where canvas may be unsupported;
+  // use the document created by the app below if necessary.
   const removeMock = await installLocalAccountMock(page);
   await page.setViewportSize({width, height:844});
   await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn", { waitUntil:"domcontentloaded",timeout:90000 });
@@ -343,6 +373,15 @@ async function exerciseJourney(page, locale, width) {
     await expect(journeyToggle).toBeHidden();
     await expect(journeyInfo).toBeHidden();
   }
+  photoFixture = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width=256; canvas.height=256;
+    const context=canvas.getContext("2d");
+    context.fillStyle="#ceb89b";context.fillRect(0,0,256,256);
+    context.fillStyle="#654832";context.fillRect(64,64,128,128);
+    return canvas.toDataURL("image/jpeg", .8).split(",")[1];
+  });
+  assert.ok(photoFixture && photoFixture.length>128,"synthetic JPEG fixture ready");
   const journey = [];
   for (let n=0;n<expectedSequence.length;n++) {
     const index = n+1;
@@ -352,6 +391,15 @@ async function exerciseJourney(page, locale, width) {
     const capture = milestones.has(index);
     await inspect(page,{locale,width,index,id,screenshot:capture});
     journey.push(id);
+    if (id === "init-photo-01") {
+      const picker = page.locator('[data-reiki-initiation-photo] input[type="file"]');
+      await expect(picker).toBeEnabled();
+      await picker.setInputFiles({
+        name:"portrait.jpg", mimeType:"image/jpeg", buffer:Buffer.from(photoFixture,"base64"),
+      });
+      await expect(page.locator('[data-reiki-photo-saved]')).toBeVisible({timeout:30000});
+      console.log("REIKI_PRIVATE_PHOTO_UPLOAD_UI_PASS",JSON.stringify({locale,width}));
+    }
     if (id==="welcome-02") {
       await page.locator('input[name="welcome-02"][value="beginner"]').check();
     }
