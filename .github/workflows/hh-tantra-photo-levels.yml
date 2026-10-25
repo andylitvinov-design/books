@@ -1,0 +1,63 @@
+name: Tantra Reiki photographic level cards
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'components/tantra-reiki-journey.tsx'
+      - 'app/academy.css'
+      - 'tests/tantra-reiki-compact-fullwidth.test.mjs'
+      - 'tests/tantra-reiki-photo-levels.browser.mjs'
+      - '.github/workflows/hh-tantra-photo-levels.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-tantra-photo-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  photo-cards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Source contracts for responsive Tantra Reiki chapter cards
+        run: >-
+          node --test
+          tests/tantra-reiki-compact-fullwidth.test.mjs
+          tests/tantra-reiki-photographic-landing.test.mjs
+          tests/tantra-reiki-level-one-focus.test.mjs
+          tests/tantra-reiki-mobile-chapters.test.mjs
+      - name: ESLint the affected authoring component
+        run: npx --no-install eslint components/tantra-reiki-journey.tsx
+      - name: Compile Next.js production pages without unrelated repository-wide prebuild fixture checks
+        run: npx --no-install next build
+      - name: Install pinned browser engine test runner
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx --no-install playwright install --with-deps chromium webkit
+      - name: Verify public EN/RU/ES mobile cards in Chromium and WebKit
+        run: |
+          set -euo pipefail
+          npx --no-install next start -p 3089 --hostname 127.0.0.1 >/tmp/hh-tantra-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:3089/en/academy/reiki/tantra-reiki; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/hh-tantra-next.log; exit 1; fi
+          node tests/tantra-reiki-photo-levels.browser.mjs
+      - name: TypeScript static validation
+        run: npx --no-install tsc --noEmit

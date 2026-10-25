@@ -185,3 +185,41 @@
 .quickConsent { display:block; color:#496a6b; font:500 11px/1.45 Arial,Helvetica,sans-serif; }
 @media(max-width:430px){ .quickPanel .googleButton,.quickPanel .submit { min-height:46px; }
   .quickPanel .contactFields input { min-height:46px; } }
+
+/* Reiki Level 1: a single phone field and two messenger actions. No duplicate
+   Google/email registration panel; CRM commit happens before chat handoff. */
+.compactPhone { width:100%; min-width:0; box-sizing:border-box; margin-top:9px; }
+.compactPhoneForm, .compactReceipt { display:grid; gap:9px; }
+.compactPhoneField { display:grid; gap:5px; min-width:0; }
+.compactPhoneField > label { color:#28566a; font:750 12px/1.25 Arial,Helvetica,sans-serif; }
+.compactPhoneField :is(input, select) { min-height:44px; font-size:16px; }
+.compactConsent {
+  display:flex; align-items:center; gap:8px; min-height:33px;
+  color:#4e7080; font:500 11px/1.35 Arial,Helvetica,sans-serif; cursor:pointer;
+}
+.compactConsent input { flex:none; width:18px; height:18px; margin:0; accent-color:#16768b; }
+.compactChannels {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;
+  width:100%; min-width:0; scroll-margin-block:95px 125px;
+}
+.compactChannels :is(button,a) {
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  min-width:0; min-height:46px; padding:9px 11px; border:0;
+  border-radius:11px; color:white; cursor:pointer;
+  font:800 14px/1.25 Arial,Helvetica,sans-serif; text-decoration:none;
+  transition:filter .15s ease; box-sizing:border-box;
+}
+.compactChannels :is(button,a):hover:not(:disabled) { filter:brightness(.92); }
+.compactChannels button:disabled { opacity:.65; cursor:wait; }
+.compactChannels .whatsapp { background:#217e5b; }
+.compactChannels .telegram { background:#287fa4; }
+.compactPhone :is(input,select,button,a):focus-visible {
+  outline:3px solid #b87c44; outline-offset:2px;
+}
+.compactReceipt .saved { margin:0; }
+.compactReceipt .next { margin:0; }
+@media (max-width:350px) {
+  .compactChannels { gap:6px; }
+  .compactChannels :is(button,a) { font-size:13px; padding:8px 5px; }
+}
+@media(prefers-reduced-motion:reduce) { .compactChannels :is(button,a) { transition:none; } }

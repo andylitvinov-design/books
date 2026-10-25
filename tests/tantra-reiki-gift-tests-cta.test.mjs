@@ -29,7 +29,7 @@ test('Tantra Reiki has two clearly labeled, localized CTAs to real destinations'
   ]) assert.ok(journey.includes(label), 'Missing lower CTA: ' + label)
 
   for (const source of [page, journey]) {
-    assert.match(source, /"\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"/)
+    assert.match(source, /href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/)
     assert.match(source, /"\/" \+ locale \+ "\/client\/tests\?focus=tantra"/)
   }
   const hero = page.indexOf('className="tantra-course-hero__actions"')

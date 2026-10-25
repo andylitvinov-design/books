@@ -199,7 +199,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
            </details>
           <div className="yggdrasil-program-actions">
             <Link className="yggdrasil-primary-action" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс Рейки" : locale === "es" ? "Empezar curso de Reiki gratis" : "Start free Reiki course"} <span aria-hidden="true">→</span></Link>
-            <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free} <span aria-hidden="true">→</span></Link>
+            <Link className="yggdrasil-secondary-action" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{text.free} <span aria-hidden="true">→</span></Link>
           </div>
           <details className="reiki-disclosure reiki-disclosure--hero-links">
             <summary>{locale === "ru" ? "Программа, модули и полное описание" : locale === "es" ? "Programa, módulos y descripción completa" : "Explore modules, full programme & guide"}<span aria-hidden="true">＋</span></summary>
@@ -207,6 +207,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
               <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
               <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
               <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
+              <Link className="yggdrasil-program-detail-link" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{locale === "ru" ? "Условия вводной инициации" : locale === "es" ? "Detalles de la iniciación introductoria" : "Introductory initiation details"} <span aria-hidden="true">↗</span></Link>
             </nav>
           </details>
         </div>
@@ -251,7 +252,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
           <div className="yggdrasil-basic-course-actions">
             <Link className="yggdrasil-source-link yggdrasil-basic-course-start" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}<span aria-hidden="true">→</span></Link>
             <Link className="yggdrasil-source-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description}<span aria-hidden="true">↗</span></Link>
-            <Link className="yggdrasil-source-link" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{text.free}<span aria-hidden="true">→</span></Link>
+            <Link className="yggdrasil-source-link" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{text.free}<span aria-hidden="true">→</span></Link>
           </div>
         </div>
         <div className="yggdrasil-basic-levels">

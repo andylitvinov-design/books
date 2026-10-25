@@ -21,8 +21,6 @@ import {
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./kundalini-reiki-course.module.css";
 
-const freeLevelHref = (locale: PublicLocale) => "/" + locale + "/academy/reiki/kundalini-reiki/free-initiation";
-
 // Short interface copy only. The original historical teaching, level descriptions,
 // 24-page PDF, and source attribution remain below, untouched and collapsible.
 const landingCopy = {
@@ -179,7 +177,7 @@ export function KundaliniReikiCourse({ locale }: { locale: PublicLocale }) {
               <Link href={REIKI_FREE_COURSE_PATH} className={styles.primaryAction} data-reiki-course-cta>
                 <BookOpen size={18} aria-hidden="true" />{c.guidedLabel}<ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <Link href={freeLevelHref(locale)} className={styles.heroSecondary}>
+              <Link href={REIKI_FREE_COURSE_PATH} className={styles.heroSecondary} data-reiki-course-cta>
                 {c.free}<ArrowRight size={16} aria-hidden="true" />
               </Link>
             </div>
