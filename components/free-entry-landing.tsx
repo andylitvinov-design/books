@@ -93,7 +93,7 @@ const copy = {
       steps: [
         { title: "Tell me your situation", text: "Complete a short questionnaire about your question and goal." },
         { title: "Draw three elements", text: "Sketch ME, GOAL and PROBLEM on paper and photograph it." },
-        { title: "Send both to Andrey", text: "Use WhatsApp or Telegram to share your answers and drawing for a written review." },
+        { title: "Save your questionnaire privately", text: "Do not send private answers, drawings or test results through messengers. Save the questionnaire in your account; keep the drawing on your device until a secure handoff is agreed." },
       ],
       startTitle: "Tell me what you would like to explore",
       startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
@@ -102,7 +102,7 @@ const copy = {
       faq: [
         ["What is included for free?", "A personal written review of your coaching questionnaire and handwritten drawing. It does not include a video call or live consultation."],
         ["Do I need artistic skills?", "No. Three simple shapes or symbols on paper are enough; the drawing is a prompt for reflection, not an art test."],
-        ["Will you save my answers here?", "Only the contact you submit to request instructions is saved. The separate questionnaire stays on your device until you choose to share it."],
+        ["Will you save my answers here?", "The contact request saves contact details only. Sign in and consent to save an encrypted questionnaire draft in your account. Saving does not send it to a practitioner. Drawings remain on your device."],
       ],
     },
     dao: {
@@ -196,7 +196,7 @@ const copy = {
       steps: [
         { title: "Опишите ситуацию", text: "Ответьте на несколько вопросов о проблеме и цели." },
         { title: "Нарисуйте три элемента", text: "Изобразите на бумаге «Я», «ЦЕЛЬ» и «ПРОБЛЕМА»." },
-        { title: "Отправьте Андрею", text: "Пришлите анкету и фото рисунка в WhatsApp или Telegram." },
+        { title: "Сохраните анкету приватно", text: "Не отправляйте личные ответы, рисунки и результаты тестов в мессенджеры. Сохраните анкету в кабинете; рисунок оставьте на устройстве до согласования защищённой передачи." },
       ],
       startTitle: "С чего хотите начать?",
       startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
@@ -205,7 +205,7 @@ const copy = {
       faq: [
         ["Что именно бесплатно?", "Личный письменный разбор по коучинг-анкете и рисунку. Он не включает видеозвонок или живую консультацию."],
         ["Нужно красиво рисовать?", "Нет. Достаточно трёх простых символов или фигур на бумаге — это материал для рефлексии, а не проверка художественных навыков."],
-        ["Где хранятся мои ответы?", "Контакт сохраняется после отправки заявки. Отдельная анкета остаётся на вашем устройстве до выбранной вами передачи."],
+        ["Где хранятся мои ответы?", "В заявке сохраняется только контакт. Войдите и дайте согласие на сохранение зашифрованной анкеты в кабинете. Сохранение не отправляет её мастеру. Рисунок остаётся на вашем устройстве."],
       ],
     },
     dao: {
@@ -299,7 +299,7 @@ const copy = {
       steps: [
         { title: "Describe tu situación", text: "Responde sobre el problema y tu objetivo." },
         { title: "Dibuja tres elementos", text: "Representa YO, META y PROBLEMA en papel." },
-        { title: "Envía ambos materiales", text: "Comparte las respuestas y la foto por WhatsApp o Telegram." },
+        { title: "Guarda el formulario en privado", text: "No envíes respuestas privadas, dibujos ni resultados por mensajería. Guarda el formulario en tu cuenta; conserva el dibujo en tu dispositivo hasta acordar una entrega segura." },
       ],
       startTitle: "¿Qué te gustaría explorar?",
       startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
@@ -308,7 +308,7 @@ const copy = {
       faq: [
         ["¿Qué incluye la oferta gratuita?", "Una revisión personal por escrito del cuestionario y un dibujo a mano. No incluye videollamada ni consulta en directo."],
         ["¿Debo saber dibujar?", "No. Unos símbolos o figuras sencillos en papel son suficientes."],
-        ["¿Se guardan mis respuestas?", "Solo se guarda el contacto al enviar la solicitud. El cuestionario completo permanece en tu dispositivo hasta que decidas compartirlo."],
+        ["¿Se guardan mis respuestas?", "La solicitud guarda solo el contacto. Inicia sesión y autoriza guardar un borrador cifrado en tu cuenta. Guardar no lo envía al profesional. El dibujo permanece en tu dispositivo."],
       ],
     },
     dao: {

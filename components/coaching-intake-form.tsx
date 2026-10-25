@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, ClipboardCopy, LockKeyhole, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { appFetch } from "@/lib/app/client-fetch";
-import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOPICS } from "@/lib/coaching/intake-model";
+import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOPICS, coachingIntakeEntryTopic } from "@/lib/coaching/intake-model";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./coaching-intake-form.module.css";
 
@@ -44,16 +44,16 @@ const copy = {
     completed: "Your questionnaire is saved as complete — it has not been sent to a coach.",
     saveError: "Could not save your answers. Please retry or copy them.",
     conflict: "This questionnaire changed in another tab. Reload your saved version before editing.",
-    copy: "Copy my answers", copied: "Copied. Nothing has been sent — choose where to share them.",
+    copy: "Copy for personal use", copied: "Copied for personal use. Keep private materials in your Cabinet.",
     copyFailed: "Automatic copying was blocked. Select the text below and copy it manually.",
-    preview: "Text to share, only if you choose", questions: "Questions for the coach",
+    preview: "Your personal copy", questions: "Questions for the coach",
     downloaded: "Export answers", downloadName: "my-coaching-questions.txt",
     delete: "Delete saved questionnaire", deleteConfirm: "Delete your saved coaching answers permanently from your account?",
     deleted: "Saved questionnaire deleted.", deleteError: "Could not delete. Please try again.",
     unsaved: "Not saved yet", upToDate: "All changes saved", dirty: "You have changes not yet saved.",
     saveRequired: "Sign in before using private save. Copying remains available without an account.",
     returnToServices: "Explore sessions", contact: "Contact Holistic House",
-    contactNote: "Copying does not submit a request or book a session. Use Contact to ask for a reply; share your answers only with your permission.",
+    contactNote: "Copying does not submit a request or book a session. Do not send answers, drawings or test results through messengers or email. Use Contact only to agree a secure handoff, without private materials.",
     chooseSaved: "Load my saved version", chooseLocal: "Keep answers from before sign-in",
     accountConflict: "You already have a saved questionnaire. Choose which version to work with; nothing is overwritten automatically.",
     privacy: "Your draft is visible only to you until you deliberately copy or share it. Do not include medical emergencies here; seek qualified urgent help instead.",
@@ -81,16 +81,16 @@ const copy = {
     completed: "Анкета завершена и сохранена. Коучу она ещё не отправлена.",
     saveError: "Не удалось сохранить ответы. Повторите попытку или скопируйте их.",
     conflict: "Анкета изменилась в другой вкладке. Загрузите сохранённую версию перед изменениями.",
-    copy: "Скопировать ответы", copied: "Скопировано. Ничего не отправлено — вы сами выбираете, кому передать.",
+    copy: "Личная копия ответов", copied: "Создана личная копия. Храните частные материалы в кабинете.",
     copyFailed: "Браузер запретил автоматическое копирование. Скопируйте текст ниже вручную.",
-    preview: "Текст для передачи по вашему выбору", questions: "Вопросы коучу",
+    preview: "Ваша личная копия", questions: "Вопросы коучу",
     downloaded: "Экспортировать ответы", downloadName: "moya-coaching-anketa.txt",
     delete: "Удалить сохранённую анкету", deleteConfirm: "Безвозвратно удалить ваши сохранённые ответы из кабинета?",
     deleted: "Сохранённая анкета удалена.", deleteError: "Не удалось удалить. Повторите попытку.",
     unsaved: "Пока не сохранено", upToDate: "Все изменения сохранены", dirty: "Есть несохранённые изменения.",
     saveRequired: "Для приватного сохранения войдите в аккаунт. Без входа можно скопировать ответы.",
     returnToServices: "Посмотреть сессии", contact: "Написать в Holistic House",
-    contactNote: "Копирование не отправляет заявку и не бронирует сессию. Для ответа коуча используйте раздел «Контакты»; делитесь ответами только по своему желанию.",
+    contactNote: "Копирование не отправляет заявку и не бронирует сессию. Не отправляйте ответы, рисунки и результаты тестов через мессенджеры или email. Через «Контакты» согласуйте защищённую передачу без частных материалов.",
     chooseSaved: "Загрузить из кабинета", chooseLocal: "Оставить ответы до входа",
     accountConflict: "В кабинете уже есть анкета. Выберите версию, с которой продолжите; автоматически ничего не перезапишется.",
     privacy: "Черновик видите только вы, пока сами не решите им поделиться. При неотложных состояниях обращайтесь за квалифицированной помощью.",
@@ -118,16 +118,16 @@ const copy = {
     completed: "Formulario completado y guardado. No se ha enviado al coach.",
     saveError: "No se pudo guardar. Inténtalo de nuevo o copia tus respuestas.",
     conflict: "El formulario cambió en otra pestaña. Carga la versión guardada antes de editar.",
-    copy: "Copiar mis respuestas", copied: "Copiado. No se ha enviado nada; tú eliges qué compartir.",
+    copy: "Copiar para uso personal", copied: "Copia personal creada. Conserva los materiales privados en tu área privada.",
     copyFailed: "El navegador impidió copiar automáticamente. Selecciona y copia el texto de abajo.",
-    preview: "Texto para compartir solo si lo decides", questions: "Preguntas para el coach",
+    preview: "Tu copia personal", questions: "Preguntas para el coach",
     downloaded: "Exportar respuestas", downloadName: "mis-preguntas-coaching.txt",
     delete: "Eliminar formulario guardado", deleteConfirm: "¿Eliminar definitivamente tus respuestas guardadas?",
     deleted: "Formulario guardado eliminado.", deleteError: "No se pudo eliminar. Inténtalo de nuevo.",
     unsaved: "No guardado", upToDate: "Todos los cambios guardados", dirty: "Hay cambios sin guardar.",
     saveRequired: "Inicia sesión para guardar en privado. Puedes copiar sin una cuenta.",
     returnToServices: "Explorar sesiones", contact: "Contactar Holistic House",
-    contactNote: "Copiar no envía una solicitud ni reserva una cita. Usa Contacto para pedir respuesta; comparte tus respuestas solo si quieres.",
+    contactNote: "Copiar no envía una solicitud ni reserva una cita. No envíes respuestas, dibujos ni resultados por mensajería o correo. Usa Contacto solo para acordar una entrega segura, sin materiales privados.",
     chooseSaved: "Cargar mi versión guardada", chooseLocal: "Conservar respuestas previas",
     accountConflict: "Ya tienes un formulario guardado. Elige con cuál seguir; no se sobrescribe automáticamente.",
     privacy: "Tu borrador es solo tuyo hasta que decidas compartirlo. Ante una urgencia médica, busca ayuda profesional.",
@@ -183,6 +183,8 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   useEffect(() => {
     let active = true;
     let restored: Draft | null = null;
+    // Apply public preselection only to an empty draft. OAuth/saved drafts below win.
+    setDraft(previous => hasSomeAnswers(previous) ? previous : { ...previous, topic: coachingIntakeEntryTopic(window.location.search) });
     try {
       const value = sessionStorage.getItem(key);
       sessionStorage.removeItem(key);

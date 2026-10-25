@@ -77,7 +77,6 @@ test("primary capture components render channel chooser after service selection 
     "components/tantra-initiation-choice.tsx",
     "components/principles-of-energywork.tsx",
     "components/temple-initiation-chooser.tsx",
-    "components/free-drawing-intake.tsx",
   ]) {
     const src = read(path);
     assert.match(src, /<ContactChannelChooser/, path);
@@ -85,6 +84,9 @@ test("primary capture components render channel chooser after service selection 
   }
   assert.match(read("components/tantra-initiation-form.tsx"), /<TantraInitiationChoice/);
   assert.match(read("components/tantra-initiation-form.tsx"), /whatsappUrl: tantraInitiationWhatsAppUrl\(locale, intent\)/);
+  const privateEntry = read("components/free-drawing-intake.tsx");
+  assert.doesNotMatch(privateEntry, /ContactChannelChooser|navigator\.clipboard/);
+  assert.match(privateEntry, /\/coaching\/intake/);
   assert.match(read("components/yggdrasil-initiation-form.tsx"), /href=\{pdfUrl\} download/);
   assert.match(read("components/reiki-choice-capture.tsx"), /href=\{guideUrl\}/);
   assert.match(read("components/consultation-choice-capture.tsx"), /isPaidRequest \? \(/);
