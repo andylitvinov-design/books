@@ -37,6 +37,7 @@ const copy = {
     sendError: "Complete the three essential questions, provide an email or phone, and agree to send your answers.",
     sendFailure: "Your request could not be confirmed. Please retry; your answers are still here.",
     sendSuccess: "Your questionnaire and contact were received. Reference:",
+    sendUpgrade: "Would you prefer a live consultation? Request 30 minutes (€50) or 60 minutes (€100).",
     sendNext: "Your request awaits personal review. This does not book an appointment, collect payment or guarantee availability.",
     saveOptional: "OPTIONAL · KEEP A PRIVATE COPY",
     eyebrow: "AUTHOR'S COACHING QUESTIONNAIRE · HOLISTIC HOUSE",
@@ -90,6 +91,7 @@ const copy = {
     sendError: "Ответьте на три основных вопроса, укажите email или телефон и подтвердите согласие на отправку.",
     sendFailure: "Не удалось подтвердить получение заявки. Попробуйте повторить: ответы сохранились на экране.",
     sendSuccess: "Ваша анкета и контакт получены. Номер заявки:",
+    sendUpgrade: "Хотите обсудить вопрос лично? Запросите 30 минут (€50) или 60 минут (€100).",
     sendNext: "Андрей рассмотрит заявку. Это пока не подтверждённая запись, не оплата и не гарантия свободного времени.",
     saveOptional: "ДОПОЛНИТЕЛЬНО · ПРИВАТНАЯ КОПИЯ",
     eyebrow: "АВТОРСКАЯ КОУЧИНГ-АНКЕТА · HOLISTIC HOUSE",
@@ -143,6 +145,7 @@ const copy = {
     sendError: "Completa las tres preguntas esenciales, indica email o teléfono y acepta enviar tus respuestas.",
     sendFailure: "No se pudo confirmar el envío. Vuelve a intentarlo; tus respuestas siguen aquí.",
     sendSuccess: "Hemos recibido tu cuestionario y contacto. Referencia:",
+    sendUpgrade: "¿Prefieres una sesión en vivo? Solicita 30 minutos (€50) o 60 minutos (€100).",
     sendNext: "Andrey revisará la solicitud. No confirma una cita, disponibilidad ni pago.",
     saveOptional: "OPCIONAL · GUARDAR COPIA PRIVADA",
     eyebrow: "FORMULARIO DE COACHING DEL AUTOR · HOLISTIC HOUSE",
@@ -495,6 +498,9 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
         <p className={styles.requestLead}>{t.sendLead}</p>
         {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
           <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
+          {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
+            {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
+          </Link> : null}
         </div> : <>
           <fieldset className={styles.choiceFieldset} disabled={leadBusy || busy || collision}>
             <legend>{t.sendOption}</legend>
