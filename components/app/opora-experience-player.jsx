@@ -1079,6 +1079,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <strong>{answers.transfer==='planned'&&plan
                   ?plan:(dailyPlan?.transfer||depth?.everyday||j.noPlan)}</strong>
                 <small>{j.homeworkNote}</small>
+                {cycle.day===4&&namedEmotion&&
+                  <small data-opora-emotional-experience-recap="true">
+                    {t.emotionSummary}: {namedEmotion}
+                  </small>}
               </div>
             </div>
           </div>}
