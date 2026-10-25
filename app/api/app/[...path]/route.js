@@ -9,6 +9,7 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
+import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
@@ -650,6 +651,13 @@ async function handle(request, { params }) {
       if (method === 'GET') return json(await readTraditionCoaching(config, actor, template))
       if (method === 'POST') return json(await saveTraditionCoaching(config, actor, template, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'tradition-coaching-audio') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method !== 'GET') throw new AppError('NOT_FOUND', 404)
+      const params = new URL(request.url).searchParams
+      return json(await learnerCoachingAudio(config,
+        params.get('template'), params.get('question'), params.get('locale')))
     }
     if (joined === 'business-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
