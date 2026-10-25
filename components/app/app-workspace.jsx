@@ -2312,9 +2312,7 @@ function PortfolioPage({ data, locale }) {
     <section className="hh-insights-page"
       aria-labelledby={activeTab === 'values' ? 'hh-insights-title' : 'hh-test-dynamics-title'}
       data-testid="completed-test-insights">
-      {/* One source-grounded private profile, matching My Profile without duplicating records. */}
-      <UnifiedProfileLayers data={data} locale={locale} />
-      {/* Put the same saved-result portrait at the start of Insights, open by default. */}
+      {/* Reports opens with the large saved-score portrait, before other profile tools. */}
       <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
         <summary className="hh-insights-portrait-toggle">
           <Brain size={20} aria-hidden="true" />
@@ -2342,8 +2340,9 @@ function PortfolioPage({ data, locale }) {
             </div>
           </>} />
       </details>
-      {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
+      {/* Programme follows the portrait; deeper four-layer records stay available below. */}
       <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
+      <UnifiedProfileLayers data={data} locale={locale} />
       <nav className="hh-insights-view-tabs" role="tablist"
         aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
         {[
