@@ -1,5 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
+import {onPwaInstallPrompt,requestPwaInstallation} from '@/lib/pwa/install-prompt'
 
 // A real install prompt is available only in browsers that fired
 // beforeinstallprompt; on iOS the user must use the native Share sheet.
@@ -11,29 +12,37 @@ export default function InstallHolisticHouse({locale='en',showGuideLink=true}){
   const c=COPY[locale]||COPY.en
   const [standalone,setStandalone]=useState(null)
   const [ios,setIos]=useState(false)
-  const [offer,setOffer]=useState(null)
+  const [offer,setOffer]=useState(false)
+  const [installing,setInstalling]=useState(false)
   useEffect(()=>{
-    const installed=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true
+    const installed=()=>window.matchMedia('(display-mode: standalone)').matches||
+      navigator.standalone===true||window.Capacitor?.isNativePlatform?.()===true
     setStandalone(installed())
-    setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent))
-    const available=event=>{event.preventDefault();setOffer(event)}
-    const completed=()=>{setStandalone(true);setOffer(null)}
-    window.addEventListener('beforeinstallprompt',available)
+    setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent)||
+      (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))
+    // The browser can fire beforeinstallprompt on the public page BEFORE login.
+    // Subscribe to the global deferred event instead of waiting for a new event
+    // when Settings or Consultations mounts after Google OAuth.
+    const unsubscribe=onPwaInstallPrompt(event=>setOffer(Boolean(event)))
+    const completed=()=>{setStandalone(true);setOffer(false)}
     window.addEventListener('appinstalled',completed)
     return ()=>{
-      window.removeEventListener('beforeinstallprompt',available)
+      unsubscribe()
       window.removeEventListener('appinstalled',completed)
     }
   },[])
   async function install(){
-    if(!offer)return
-    try{await offer.prompt();await offer.userChoice}catch{/* Native menu instructions remain visible. */}
-    setOffer(null)
+    if(!offer||installing)return
+    setInstalling(true)
+    try{
+      // Never claim installation until the browser emits appinstalled.
+      await requestPwaInstallation()
+    }finally{setInstalling(false)}
   }
   if(standalone!==false)return null
   return <section className="hh-panel hh-section" aria-label={c.title} data-hh-install>
     <h2>{c.title}</h2><p>{c.subtitle}</p>
-    {offer&&<button type="button" className="hh-primary" onClick={install}>{c.install}</button>}
+    {offer&&<button type="button" className="hh-primary" disabled={installing} onClick={install}>{c.install}</button>}
     <p className="hh-fine">{ios?c.ios:c.android}</p>
     {showGuideLink&&<a href={'/'+locale+'/install'}>{c.guide} →</a>}
   </section>

@@ -154,3 +154,52 @@
  .timeFields{gap:5px}
 }
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Expanded request only: no hidden charges, and verified service card stays visible. */
+.formatShort{display:none}
+.requestSummary{display:block}
+.requestSummaryToggle{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:3px 8px;list-style:none;cursor:pointer}
+.requestSummaryToggle::-webkit-details-marker{display:none}
+.requestSummaryToggle::after{content:"⌄";font-size:14px;color:#845945}
+.requestSummary[open] .requestSummaryToggle::after{transform:rotate(180deg)}
+.requestSummaryToggle:focus-visible{outline:3px solid #ecad74;outline-offset:2px}
+.requestSummary>p{margin:6px 0 0}
+@media(max-width:650px){
+ .masterOffer[data-booking-open="true"] .masterCard{grid-template-columns:78px minmax(0,1fr);gap:8px;padding:8px}
+ .masterOffer[data-booking-open="true"] .masterPhoto{min-height:100px;max-height:116px}
+ .masterOffer[data-booking-open="true"] .serviceType,.masterOffer[data-booking-open="true"] .serviceDescription{display:none}
+ .masterOffer[data-booking-open="true"] .masterCopy{gap:4px}
+ .masterOffer[data-booking-open="true"] .masterCopy h3{font-size:20px}
+ .masterOffer[data-booking-open="true"] .offerPrices span{min-height:20px;padding:2px 5px;font-size:10px}
+ .bookingForm{grid-template-columns:minmax(0,1fr);gap:7px;padding:10px 11px}
+ .bookingForm h4{font-size:19px;line-height:1.14}
+ .bookingIntro{margin:-3px 0 0;font-size:11px;line-height:1.3}
+ .bookingForm .field{gap:3px}
+ .bookingForm .field label,.bookingForm .formatGroup legend,.bookingForm .durationGroup legend{margin-bottom:3px;font-size:11px;line-height:1.2}
+ .bookingForm .field input,.bookingForm .field select{min-height:44px;padding:5px 8px;font-size:16px}
+ .bookingForm .formatGroup,.bookingForm .durationGroup{gap:5px}
+ .bookingForm .formatGroup label,.bookingForm .durationGroup label{min-height:44px;padding:5px 7px;font-size:11px}
+ .bookingForm .formatGroup input{width:14px;height:14px;flex-basis:14px}
+ .formatLong{display:none}
+ .formatShort{display:inline}
+ .bookingForm .durationGroup label{flex:1 1 calc(50% - 5px);flex-direction:row;gap:7px}
+ .bookingForm .durationGroup label:has(input:disabled){display:none}
+ .bookingForm .durationGroup label span,.bookingForm .durationGroup label strong{white-space:nowrap}
+ .bookingForm .durationGroup label strong{font-size:11px}
+ .bookingForm .timeTitle{margin-bottom:5px;font-size:11px;line-height:1.25}
+ .bookingForm .timeTitle small{font-size:10px}
+ .bookingForm .timeFields{gap:7px}
+ .bookingForm .requestSummary{padding:8px 9px}
+ .bookingForm .requestSummaryToggle strong{font-size:15px}
+ .bookingForm .requestSummaryToggle span{font-size:10px}
+ .bookingForm .submit{min-height:44px;font-size:13px}
+ .bookingForm .formatGroup label:has(input:focus-visible),.bookingForm .durationGroup label:has(input:focus-visible){outline:3px solid #ecad74;outline-offset:2px}
+}
+@media(max-width:365px){
+ .masterOffer[data-booking-open="true"] .masterCard{grid-template-columns:67px minmax(0,1fr);gap:7px;padding:7px}
+ .masterOffer[data-booking-open="true"] .masterPhoto{min-height:97px;max-height:108px}
+ .masterOffer[data-booking-open="true"] .offerPrices span{font-size:9px;padding:2px 3px}
+ .bookingForm{padding:9px;gap:6px}
+ .bookingForm .formatGroup label,.bookingForm .durationGroup label{padding:5px 3px}
+ .bookingForm .timeFields{gap:5px}
+}

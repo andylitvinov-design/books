@@ -336,3 +336,30 @@
 }
 @media(prefers-reduced-motion:reduce){.reviewStories>summary svg{transition:none}}
 
+
+/* A personal explanation screen inside ONE express-review landing. */
+.reviewApproach{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:clamp(20px,4vw,46px);align-items:center;min-height:min(740px,calc(100svh - 142px));margin:0 auto 18px;padding:clamp(20px,4vw,46px);border:1px solid #decdbc;border-radius:24px;background:linear-gradient(125deg,#f5eee5,#fffaf4)}
+.reviewApproachCopy{min-width:0}
+.reviewApproach h2{margin:0 0 12px;color:#50382f;font:400 clamp(31px,3.5vw,48px)/1.1 Georgia,'Times New Roman',serif;letter-spacing:-.03em}
+.reviewApproach .sectionLabel{color:#936d55}
+.reviewApproach .sectionLead{color:#715d50}
+.approachList{display:grid;gap:8px}
+.approachList article{display:grid;grid-template-columns:25px minmax(0,1fr);gap:11px;padding:13px 0;border-top:1px solid #dfcdbb}
+.approachList article:last-child{border-bottom:1px solid #dfcdbb}
+.approachList article>span{color:#9f5269;font-size:12px;font-weight:800}
+.approachList h3{margin:0 0 5px;color:#584036;font:400 clamp(19px,2.2vw,25px)/1.2 Georgia,'Times New Roman',serif}
+.approachList p{margin:0;color:#725c52;font-size:13px;line-height:1.55}
+.reviewApproachPhoto{position:relative;min-height:400px;height:100%;overflow:hidden;border-radius:20px;background:#debd9f}
+.reviewApproachPhoto img{object-fit:cover;object-position:50% 26%}
+@media(max-width:720px){
+ .reviewApproach{display:flex;flex-direction:column;align-items:stretch;gap:11px;min-height:calc(100svh - 150px);margin-bottom:10px;padding:16px 13px;border-radius:19px}
+ .reviewApproachPhoto{order:-1;flex:none;min-height:0;height:clamp(110px,17svh,175px);border-radius:12px}
+ .reviewApproach h2{font-size:clamp(26px,7vw,34px);margin-bottom:7px}
+ .reviewApproach .sectionLead{font-size:12px;line-height:1.43;margin-bottom:9px}
+ .approachList{gap:0}
+ .approachList article{grid-template-columns:20px minmax(0,1fr);gap:8px;padding:9px 0}
+ .approachList h3{font-size:17px;margin-bottom:3px}
+ .approachList p{font-size:11px;line-height:1.42}
+ .reviewApproach .reviewPrivacy{font-size:10px;margin-top:8px}
+}
+@media(max-width:360px) and (max-height:630px){.reviewApproachPhoto{height:76px}.reviewApproach{gap:7px;padding:12px 10px}.reviewApproach h2{font-size:25px}.approachList article{padding:7px 0}}

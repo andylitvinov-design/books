@@ -12,20 +12,58 @@ const diagnostic = source("components/free-diagnostic-start.tsx");
 const phoneCss = source("components/free-diagnostic-start.module.css");
 const chooser = source("components/contact-channel-chooser.tsx");
 
-test("free review uses compact offers, consultation hub preserves full-screen offers", () => {
-  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} compact intro=\{/);
+test("express landing has one service; consultation hub keeps its existing three offers", () => {
+  assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
+  assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-featured-constellations-video/);
   assert.match(offers, /\{intro\}/);
+  const oneService = source("components/personal-express-enquiry.tsx");
+  assert.match(oneService, /data-personal-express-enquiry/);
+  assert.match(oneService, /express-review-focus/);
+  assert.match(oneService, /"situation" \| "energy"/);
+  assert.match(oneService, /"По ситуации"/);
+  assert.match(oneService, /"По энергии и здоровью"/);
+  assert.match(oneService, /compactPhone stayAfterSave resetKey=\{focus\}/);
+  assert.match(oneService, /publicTopic=\{"Express review focus: " \+ t\.areas\[focus\]\.tag\}/);
+  assert.doesNotMatch(oneService, /option:|topic:|context:|fetch\(|payment_received/);
   assert.match(offers, /data-free-diagnosis-layout=\{compact \? "compact" : "full"\}/);
-  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scenes/);
-  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scene\{display:grid/);
+  assert.match(source("components/personal-express-enquiry.module.css"), /@media\(max-width:360px\)/);
+  assert.match(source("components/personal-express-enquiry.module.css"), /:focus-visible/);
   assert.match(css, /\.expandedInfo/);
 });
 
-test("each of the three options is a full-screen photo scene with the explanation already visible", () => {
+test("personal express diagnosis unfolds inside the same landing, without a modal", () => {
+  const enquiry = source("components/personal-express-enquiry.tsx");
+  const enquiryCss = source("components/personal-express-enquiry.module.css");
+  assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
+  assert.match(enquiry, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(enquiry, /aria-controls="express-request-form"/);
+  assert.match(enquiry, /data-express-inline-disclosure hidden=\{!expanded\}/);
+  assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);
+  assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
+  assert.match(enquiry, /document\.addEventListener\("click", openFromAnchor\)/);
+  assert.match(enquiry, /onClick=\{\(\) => setExpanded\(open => !open\)\}/);
+  assert.match(enquiry, /useEffect\(\(\) => \{/);
+  assert.match(enquiry, /setExpanded\(false\)/);
+  assert.match(enquiry, /revealRef\.current\?\.focus\(\)/);
+  assert.match(enquiry, /<ContactChannelChooser key=\{focus\}/);
+  assert.match(enquiry, /compactPhone stayAfterSave resetKey=\{focus\}/);
+  assert.match(enquiry, /"situation" \| "energy"/);
+  for (const localized of ["Request my free review", "Заказать бесплатную диагностику", "Solicitar mi revisión gratuita"]) {
+    assert.ok(enquiry.includes(localized), localized);
+  }
+  assert.match(enquiryCss, /\.disclosure\[hidden\]\{display:none!important\}/);
+  assert.match(enquiryCss, /animation:expressUnfold/);
+  assert.match(enquiryCss, /@media\(max-width:720px\)/);
+  assert.match(enquiryCss, /@media\(prefers-reduced-motion:reduce\)/);
+  assert.doesNotMatch(enquiry, /role="dialog"|aria-modal|style\.overflow|fetch\(|booking_confirmed|payment_received/);
+  assert.doesNotMatch(enquiryCss, /position:fixed|\.scrim/);
+});
+
+test("the old consultation hub retains three separate offer scenes without changing them", () => {
   for (const id of ["situation-written-free", "wu-xing-free", "personal-session-30-eur50"]) {
     assert.equal((offers.match(new RegExp('id: "' + id + '"', "g")) || []).length, 3, id + " in all locales");
   }
@@ -56,7 +94,7 @@ test("each of the three options is a full-screen photo scene with the explanatio
   assert.match(css, /:focus-visible/);
 });
 
-test("Request opens one localized phone and messenger sheet; no legacy step-one form is shown", () => {
+test("the legacy consultation hub still opens its existing localized messenger sheet", () => {
   assert.match(offers, /onClick=\{\(\) => requestOffer\(offer\.id\)\}/);
   assert.match(offers, /setSelected\(id\)/);
   assert.match(offers, /setRequestOpen\(true\)/);
