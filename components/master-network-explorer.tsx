@@ -606,28 +606,91 @@ export function MarketplaceServiceFinder({ services, locale: pageLocale }: { ser
   );
 }
 
-export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: { practitioners: PublicPractitioner[]; locale: string }) {
+export function MarketplaceMasterFinder({
+  practitioners, courses = [], coursesUnavailable = false, locale: pageLocale,
+}: {
+  practitioners: PublicPractitioner[];
+  courses?: PublicMentorCourse[];
+  coursesUnavailable?: boolean;
+  locale: string;
+}) {
   const locale = localized(pageLocale);
   const [state, setState] = useState<FilterState>(INITIAL);
-  const languages = useMemo(() => [...new Set(practitioners.flatMap((p) => [
-    ...(p.profile?.languages || []),
-    ...(p.services || []).flatMap((s) => s.languages || []),
+  const publishedCourses = useMemo(() => {
+    const approvedSlugs = new Set(practitioners.map((master) => master.slug));
+    return courses.filter((course) => approvedSlugs.has(course.practitionerSlug));
+  }, [courses, practitioners]);
+  const languages = useMemo(() => [...new Set(practitioners.flatMap((master) => [
+    ...(master.profile?.languages || []),
+    ...(master.services || []).flatMap((service) => service.languages || []),
+  ]).concat(publishedCourses.map((course) => course.locale)).map(clean).filter(Boolean))].sort(),
+    [practitioners, publishedCourses]);
+  const methods = useMemo(() => [...new Set(practitioners.flatMap((master) => [
+    ...(master.profile?.methods || []),
+    ...(master.services || []).flatMap((service) => service.methods || []),
   ]).map(clean).filter(Boolean))].sort(), [practitioners]);
+  const locations = useMemo(() => [...new Set(practitioners.flatMap((master) => [
+    master.profile?.city, master.profile?.country,
+    ...(master.services || []).filter((service) => service.deliveryFormat !== "online")
+      .map((service) => service.locationLabel),
+  ]).map((item) => String(item || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, pageLocale)),
+    [practitioners, pageLocale]);
+  const offeringTypes = useMemo(() => {
+    const offered = new Set(practitioners.flatMap((master) =>
+      (master.services || []).map((service) => service.offeringType)));
+    if (publishedCourses.length) offered.add("course");
+    return OFFERING_TYPES.filter((type) => offered.has(type));
+  }, [practitioners, publishedCourses]);
+  const courseChoices = useMemo(() => {
+    const results: CourseChoice[] = [];
+    for (const master of practitioners) {
+      for (const service of master.services || []) {
+        if (service.offeringType === "course") {
+          results.push({ value: "service:" + service.id, label: service.copy.title });
+        }
+      }
+    }
+    for (const course of publishedCourses) {
+      results.push({ value: "course:" + course.slug,
+        label: course.title + " · " + course.locale.toUpperCase() });
+    }
+    return results.sort((a, b) => a.label.localeCompare(b.label, pageLocale));
+  }, [practitioners, publishedCourses, pageLocale]);
+  const topics = useMemo(() => MASTER_TOPICS.filter((topic) =>
+    practitioners.some((master) => masterMatches(master,
+      { ...INITIAL, area: topic.id }, publishedCourses))), [practitioners, publishedCourses]);
   const visible = useMemo(() => {
-    const list = practitioners.filter((master) => masterMatches(master, state));
-    if (state.sort === "az") return list.sort((a, b) => (a.profile?.displayName || "").localeCompare(b.profile?.displayName || "", pageLocale));
+    const list = practitioners.filter((master) => masterMatches(master, state, publishedCourses));
+    if (state.sort === "az") return list.sort((a, b) =>
+      (a.profile?.displayName || "").localeCompare(b.profile?.displayName || "", pageLocale));
     return list;
-  }, [practitioners, state, pageLocale]);
+  }, [practitioners, publishedCourses, state, pageLocale]);
   const t = COPY[locale];
   return (
     <div className={practitioners.length === 1 ? `${styles.explorer} ${styles.singleMaster}` : styles.explorer}>
-      <Filters locale={locale} mode="masters" state={state} setState={setState} count={visible.length} languages={languages} methods={[]} />
-      {visible.length ? <div className={styles.cardGrid}>
+      <Filters locale={locale} mode="masters" state={state} setState={setState}
+        count={visible.length} languages={languages} methods={methods} locations={locations}
+        offeringTypes={offeringTypes} courseChoices={courseChoices} topics={topics}
+        coursesUnavailable={coursesUnavailable} />
+      {visible.length ? <div className={styles.cardGrid} data-mentor-cards>
         {visible.map((master) => {
           const profile = master.profile || {};
           const name = profile.displayName || profile.name || t.practitioner;
-          const certified = master.credentials?.some((c) => c.public && c.verificationStatus === "verified" && (!c.expiresOn || c.expiresOn >= new Date().toISOString().slice(0, 10)));
-          const canRequestEnergy = (master.services || []).some((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual");
+          const certified = master.credentials?.some((credential) => credential.public &&
+            credential.verificationStatus === "verified" &&
+            (!credential.expiresOn || credential.expiresOn >= new Date().toISOString().slice(0, 10)));
+          const masterServices = master.services || [];
+          const filteredServices = state.offeringType ?
+            masterServices.filter((service) => service.offeringType === state.offeringType) : masterServices;
+          const firstService = state.courseKey.startsWith("service:") ?
+            filteredServices.find((service) => service.id === state.courseKey.slice("service:".length)) :
+            filteredServices[0];
+          const masterCourses = publishedCourses.filter((course) => course.practitionerSlug === master.slug);
+          const featuredCourse = masterCourses.find((course) =>
+            "course:" + course.slug === state.courseKey) || masterCourses[0];
+          const canRequestEnergy = !state.offeringType && !state.courseKey &&
+            masterServices.some((service) =>
+              service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual");
           return (
             <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id}>
               <div className={styles.masterHeading}>
@@ -638,15 +701,26 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
               </div>
               <p className={styles.description}>{profile.shortBio || ""}</p>
               <div className={styles.meta}>
-                {(profile.languages || []).length ? <span>{profile.languages?.map((v) => v.toUpperCase()).join(" · ")}</span> : null}
+                {(profile.languages || []).length ? <span>{profile.languages?.map((lang) => lang.toUpperCase()).join(" · ")}</span> : null}
                 {certified ? <span>{t.credentials}</span> : null}
                 {master.isPartner ? <span>{t.partner}</span> : null}
               </div>
-              {(master.services || []).length ? <p className={styles.offerPreview}>{master.services.length} {t.services} · {master.services[0]?.copy?.title}</p> : null}
+              {firstService ? <p className={styles.offerPreview}>{filteredServices.length} {t.services} · {firstService.copy.title}</p> : null}
+              {featuredCourse ? <p className={styles.coursePreview}>
+                <Link href={`/${featuredCourse.locale}/courses/masters/${featuredCourse.slug}`}>
+                  {t.publishedCourse}: {featuredCourse.title} <span aria-hidden="true">↗</span>
+                </Link>
+              </p> : null}
               <div className={styles.actions}>
-                {!canRequestEnergy && (master.services || []).length ? <Link className={styles.secondary} href={getPublicServiceDetailHref(locale, master.slug, master.services[0].slug)}>{t.viewService}</Link> : null}
-                <Link className={canRequestEnergy ? styles.secondary : styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
-                {canRequestEnergy ? <Link className={styles.energyButton} href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>{locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ? "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span></Link> : null}
+                {!canRequestEnergy && firstService ? <Link className={styles.secondary}
+                  href={getPublicServiceDetailHref(locale, master.slug, firstService.slug)}>{t.viewService}</Link> : null}
+                <Link className={canRequestEnergy ? styles.secondary : styles.primary}
+                  href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
+                {canRequestEnergy ? <Link className={styles.energyButton}
+                  href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>
+                  {locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ?
+                    "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span>
+                </Link> : null}
               </div>
             </article>
           );
