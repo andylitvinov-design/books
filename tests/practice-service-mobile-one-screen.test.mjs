@@ -52,7 +52,7 @@ test('fixed mobile action dock remains above app nav; disables during uploads an
   assert.match(editor, /const locked=busy\|\|videoBusy\|\|photoBusy/)
   assert.match(css, /\.footerControls\{[\s\S]*?position:fixed;z-index:45/)
   assert.match(css, /bottom:calc\(74px \+ env\(safe-area-inset-bottom,0px\)\)/)
-  assert.match(css, /\.footerControls\.stepNavigation/) // CSS nested selectors keep controls in the dock.
+  assert.match(css, /\.footerControls \.stepNavigation>span/) // CSS nested selectors keep controls in the dock.
   assert.match(css, /\.footerControls:has\(\.stepNavigation>button:first-child:disabled\)/)
   assert.match(css, /\.quickForm:has\(:is\(input,textarea,select\):focus\) \.footerControls\{[\s\S]*?position:static/)
   assert.match(css, /\.footerControls \.actions>\.submit\{[\s\S]*?background:#812c49!important/)
