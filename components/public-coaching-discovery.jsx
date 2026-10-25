@@ -293,7 +293,6 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const titleRef=useRef(null)
   const sessionScrollRef=useRef(null)
   const rootRef=useRef(null)
-  const customAnswerRef=useRef(null)
   useEffect(()=>{
     if(!session)return
     // The public session is an immersive viewport, not a card inside the site.
@@ -741,6 +740,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               </CoachingChatThread>
             </div>
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
+             {needsCustomPlan&&<p className={styles.hint}>{t.plan}</p>}
              {quickChoices&&options.length>0&&!needsCustomPlan&&<div className={styles.quickReplies} data-coaching-quick-replies>
                <span className={styles.quickReplyCaption}>{t.choices}</span>
                <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
@@ -760,7 +760,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               <span>{lang==='ru'?'Ваше сообщение':lang==='es'?'Tu mensaje':'Your message'}</span>
             </div>
             <textarea id="public-coaching-message" className={styles.messageInput}
-              aria-describedby="guest-coaching-report-note" rows={2} maxLength={pendingFollowup?500:800}
+              aria-describedby={pendingFollowup?'public-coaching-followup-report-note':'public-coaching-report-note'}
+              data-public-coaching-open-reflection={!pendingFollowup&&!quickChoices?'true':undefined} rows={2} maxLength={pendingFollowup?500:800}
               placeholder={t.answerPlaceholder}
               value={pendingFollowup?reflectionDraft:(draft.startsWith('choice:')?'':draft)}
               disabled={dictating}
@@ -781,7 +782,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 }}/>
               <details className={styles.reportDetails}>
                 <summary>{lang==='ru'?'О сохранении и PDF':lang==='es'?'Privacidad y PDF':'Privacy & PDF'}</summary>
-                <p id="guest-coaching-report-note">{t.reportNotice}</p>
+                {pendingFollowup
+                  ?<p id="public-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>
+                  :<p id="public-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>}
               </details>
             </div>
             {dictating&&<p className={styles.dictationStatus} role="status">{t.stopMic}</p>}
