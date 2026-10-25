@@ -142,7 +142,7 @@ test('author source level guides cover all eight Egyptian bodies and eight Greek
    assert.equal(traditionStageGuide(slug,'unrecognized'),null)
    for(const stage of stages){
      assert.equal(traditionStageGuide(slug,stage.id),stage)
-     assert.match(traditionStageImage(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//)
+     assert.match(traditionStageImage(stage),/^\/images\/holistic-house\/coaching-ancient\/[a-z-]+\.(?:jpg|png)$/)
      assert.match(traditionStageSource(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/)
      assert.ok(stage.photo.file.endsWith('.jpg')||stage.photo.file.endsWith('.JPG')||stage.photo.file.endsWith('.png'))
      assert.ok(stage.photo.credit.length>=4)
@@ -186,12 +186,44 @@ test('Egyptian and Greek coaching use fitting photos and preserve lesson image f
  const art=source('components/app/tradition-coaching.jsx')
  assert.match(courses,/"ru": "Египетское планирование"/)
  assert.match(courses,/"ru": "Греческое планирование"/)
- assert.match(courses,/Egypt_bookofthedead.jpg/)
- assert.match(courses,/Marble_statue_of_Athena/)
+ assert.match(courses,/coaching-ancient\/egyptian-cover\.jpg/)
+ assert.match(courses,/coaching-ancient\/greek-cover\.jpg/)
  assert.doesNotMatch(academy,/academy-free-egyptian-goal-planning|academy-free-greek-goal-planning/)
  assert.doesNotMatch(dashboard,/data-ancient-coaching-courses|data-tradition-course-card/)
  assert.match(lounge,/image=\{traditionCoachingArt.egyptian\}/)
  assert.match(lounge,/image=\{traditionCoachingArt.greek\}/)
  assert.match(art,/event.currentTarget.hidden=true/)
  assert.match(art,/referrerPolicy="no-referrer"/)
+})
+
+
+test('all 18 approved Egyptian and Greek photographs are mapped to unique first-party assets',async()=>{
+ const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
+ const {TRADITION_COURSES}=await import('../lib/personal-coaching/traditions.js')
+ const root='/images/holistic-house/coaching-ancient/'
+ assert.equal(traditionCoachingArt.egyptian,root+'egyptian-cover.jpg')
+ assert.equal(traditionCoachingArt.greek,root+'greek-cover.jpg')
+ for(const course of TRADITION_COURSES){
+  assert.equal(course.art,traditionCoachingArt[course.slug])
+  assert.equal(traditionStages(course.slug).length,8)
+ }
+ const stages=['egyptian','greek'].flatMap(slug=>traditionStages(slug))
+ const urls=stages.map(traditionStageImage)
+ assert.equal(urls.length,16)
+ assert.equal(new Set(urls).size,16)
+ for(const url of urls)assert.ok(url.startsWith(root))
+ const builder=source('scripts/cache-ancient-coaching-photos.mjs')
+ const scripts=JSON.parse(source('package.json')).scripts
+ assert.match(builder,/traditionStages\(slug\)/)
+ assert.match(builder,/traditionStageImage\(stage\)/)
+ assert.match(builder,/response\.arrayBuffer\(\)/)
+ assert.match(builder,/validPhoto\(/)
+ assert.match(scripts.prebuild,/cache-ancient-coaching-photos\.mjs/)
+ assert.match(scripts.predev,/cache-ancient-coaching-photos\.mjs/)
+ assert.match(source('.gitignore'),/coaching-ancient/)
+ // Visible artist/license/source attribution must remain attached to lessons.
+ for(const stage of stages){
+  assert.match(traditionStageSource(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/)
+  assert.ok(stage.photo.credit&&stage.photo.license)
+ }
 })

@@ -85,3 +85,16 @@
 @media (max-width: 350px) {
   .section[data-holistic-insights] { padding: 7px 5px 12px; }
 }
+
+/* The old photographic diagnosis hero lives in the Coaching Lounge now.
+   Keep Holistic Support compact and focused on symbolic/energy paths. */
+.compactIntro{margin:0 0 14px;padding:clamp(20px,3vw,32px);border-radius:19px;
+  background:linear-gradient(120deg,#2f5043,#294039);color:#fffaf2}
+.compactIntro .eyebrow{color:#efddbd}
+.compactIntro h1{margin:7px 0 9px;font:400 clamp(31px,4.3vw,49px)/1.08 Georgia,serif;letter-spacing:-.035em}
+.compactIntro>p:not(.eyebrow){max-width:780px;margin:0 0 15px;font:14px/1.5 Arial,sans-serif;color:#eee7da}
+.compactIntro a{display:inline-flex;align-items:center;gap:9px;max-width:100%;min-height:46px;
+  padding:10px 14px;border-radius:11px;background:#f4e7d3;color:#6c4830;
+  font:800 12px/1.35 Arial,sans-serif;text-decoration:none}
+@media(max-width:650px){.compactIntro{padding:17px 15px}.compactIntro h1{font-size:32px}
+  .compactIntro>p:not(.eyebrow){font-size:12px}}
