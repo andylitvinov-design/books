@@ -1315,3 +1315,12 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
     scroll-margin-block-end:calc(116px + env(safe-area-inset-bottom,0px));
   }
 }
+
+/* 320px EN/RU/ES: flatten nested Temple/preview card padding rather than
+   squeezing the three full-width aphorism rows into narrow text columns. */
+@media(max-width:360px){
+  .root .results{padding:2px;border-radius:12px}
+  .root .relatedAphorisms{padding:4px;border-radius:12px}
+  .root .aphorisms{min-width:0;width:100%}
+  .root .aphorisms li{width:100%;padding:10px 9px}
+}
