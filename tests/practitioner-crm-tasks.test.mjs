@@ -128,7 +128,9 @@ test('fixed-content master alert opens own scoped client request, not another ma
   assert.match(master,/params\.get\('panel'\)==='clients'/)
   assert.match(master,/setFocusRequestId\(requested\)/)
   assert.match(profile,/const actual=groups\.find\(group=>group\.items\.some\(item=>item\.id===focusRequestId\)\)/)
-  assert.match(profile,/autoOpen=\{request\.id===focusRequestId\}/)
+  // A scoped request can open from a deep link OR its own unread counter.
+  // Neither condition grants new access; the server enforces request ownership.
+  assert.match(profile,/autoOpen=\{request\.id===focusRequestId \|\| request\.newMessageCount>0\}/)
 })
 
 test('concurrent create and reopen task operations serialize under the exact assigned request lock',()=>{

@@ -1,0 +1,18 @@
+.panel{box-sizing:border-box;min-width:0;background:#fffdf8;border:1px solid #e6d8c8;border-radius:15px;
+  padding:13px;margin:12px 0;color:#49372f;font:500 12px/1.5 system-ui,-apple-system,sans-serif}
+.panel *{box-sizing:border-box}
+.panel :is(button,select):focus-visible{outline:3px solid #27848b;outline-offset:3px}
+.head{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:11px}
+.head h4{margin:0 0 4px;font:800 15px/1.35 system-ui,sans-serif}
+.head p,.note{margin:3px 0 10px;font:500 12px/1.5 system-ui,sans-serif;color:#6a5d52}
+.panel label{display:flex;flex-direction:column;gap:5px;font:750 12px/1.3 system-ui,sans-serif}
+.panel select{min-height:44px;max-width:100%;width:100%;padding:10px;
+  border:1px solid #d4c5b5;border-radius:10px;background:white;color:#4b3b35;font:600 12px system-ui,sans-serif}
+.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.actions button,.secondary{display:inline-flex;justify-content:center;align-items:center;min-height:44px;padding:8px 12px;
+  border-radius:11px;border:1px solid #7b4246;background:#7b4246;color:white;
+  font:750 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.actions button.secondary,.secondary{background:#fffaf1;color:#674c41;border-color:#d1b9a4}
+.actions button:disabled,.secondary:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:420px){.panel{padding:10px}.actions button{flex:1 1 135px;white-space:normal;min-width:0}}
+@media(prefers-reduced-motion:reduce){.panel *{scroll-behavior:auto!important}}
