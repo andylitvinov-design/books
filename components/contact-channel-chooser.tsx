@@ -6,7 +6,7 @@ import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PhoneCountryInput } from "@/components/phone-country-input";
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
-import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
+import { emitPublicAnalyticsEvent, type PublicAnalyticsEvent } from "@/lib/public-analytics";
 import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organic-event-referrals";
@@ -46,6 +46,9 @@ const copy = {
     quickSubmit: "Send free request", quickReady: "Google email is ready",
     quickPhone: "Use phone / WhatsApp instead", quickEmail: "Use email instead",
     quickConsent: "Check the box to request one personal reply. No marketing, charge or confirmed booking.",
+    compactConsent: "I agree to a personal reply about this request only. No marketing.",
+    compactSaved: "Request saved. Review the message and tap Send in your chat.",
+    compactHandoff: "Chat did not open automatically. Use a button below.",
   },
   ru: {
     order: "Оставить заявку",
@@ -75,6 +78,9 @@ const copy = {
     quickSubmit: "Отправить бесплатный запрос", quickReady: "Email Google готов",
     quickPhone: "Вместо email — телефон / WhatsApp", quickEmail: "Использовать email",
     quickConsent: "Отметьте согласие выше, чтобы получить личный ответ. Без рекламы, оплаты и автоматической записи.",
+    compactConsent: "Согласен(на) на личный ответ по заявке. Без рекламы.",
+    compactSaved: "Заявка сохранена. Проверьте сообщение и нажмите «Отправить» в чате.",
+    compactHandoff: "Чат не открылся автоматически. Нажмите кнопку ниже.",
   },
   es: {
     order: "Solicitar plaza",
@@ -104,6 +110,9 @@ const copy = {
     quickSubmit: "Enviar solicitud gratis", quickReady: "Correo de Google listo",
     quickPhone: "Usar teléfono / WhatsApp", quickEmail: "Usar correo electrónico",
     quickConsent: "Marca la casilla para solicitar una respuesta personal. Sin publicidad, cobro ni reserva confirmada.",
+    compactConsent: "Acepto recibir una respuesta personal sobre esta solicitud. Sin publicidad.",
+    compactSaved: "Solicitud guardada. Revisa el mensaje y pulsa Enviar en el chat.",
+    compactHandoff: "El chat no se abrió. Usa un botón de abajo.",
   },
 } as const;
 
@@ -118,6 +127,8 @@ type Props = {
   attributes?: Record<string, string>;
   id?: string;
   quick?: boolean;
+  /** One-step phone + WhatsApp / Telegram handoff; never show the sign-up/Google panel. */
+  compactPhone?: boolean;
   /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
   stayAfterSave?: boolean;
   resetKey?: string;
@@ -127,7 +138,7 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, stayAfterSave = false, resetKey, publicTopic,
+  onChannelClick, attributes, id, quick = false, compactPhone = false, stayAfterSave = false, resetKey, publicTopic,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -143,6 +154,7 @@ export function ContactChannelChooser({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const operationId = useRef<string | null>(null);
+  const submitting = useRef(false);
   const pathname = usePathname();
   const router = useRouter();
   const [publicEventSearch, setPublicEventSearch] = useState("");
@@ -170,6 +182,15 @@ export function ContactChannelChooser({
   }, [pathname]);
 
   useEffect(() => {
+    if (compactPhone) {
+      // A changed option must create a fresh enquiry, but keep an entered phone
+      // so switching between free/personal choices never requires retyping it.
+      setMethod("phone");
+      setSaved(null);
+      setError("");
+      operationId.current = null;
+      return;
+    }
     setOpen(false);
     setDescription("");
     setDisplayName("");
@@ -182,10 +203,10 @@ export function ContactChannelChooser({
     setSaved(null);
     setError("");
     operationId.current = null;
-  }, [enquiryResetKey, quick]);
+  }, [enquiryResetKey, quick, compactPhone]);
 
   useEffect(() => {
-    if (!open && !(quick && saved)) return;
+    if (compactPhone || (!open && !(quick && saved))) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // On iPhone, the form shrinks after save and the messenger actions can fall
     // under the fixed bottom navigation. Reposition the saved actions, not just
@@ -194,7 +215,7 @@ export function ContactChannelChooser({
       ? panelRef.current?.querySelector('[data-contact-channel="whatsapp"]')
       : panelRef.current;
     target?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
-  }, [open, saved, quick]);
+  }, [open, saved, quick, compactPhone]);
 
   const referredWhatsappUrl = withPaidAdReferral(
     withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
@@ -209,7 +230,7 @@ export function ContactChannelChooser({
   // sessionStorage; never save entered contacts, private notes or tokens there.
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (url.searchParams.get("hh_enquiry") !== "google") return;
+    if (compactPhone || url.searchParams.get("hh_enquiry") !== "google") return;
     let pending: { path?: string; service?: string; panel?: string } | null = null;
     try {
       pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
@@ -237,7 +258,7 @@ export function ContactChannelChooser({
         setError("");
       }).catch(() => { if (active) setError(c.googleError); });
     return () => { active = false; };
-  }, [pathname, serviceTitle, panelId, c.googleError]);
+  }, [pathname, serviceTitle, panelId, c.googleError, compactPhone]);
 
   // Prefill from a verified account without silently creating a lead.
   // Consent is the explicit Submit tap after the reply-only disclosure.
@@ -281,15 +302,30 @@ export function ContactChannelChooser({
     }
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || saved) return;
+    void saveEnquiry();
+  }
+
+  async function saveEnquiry(channel?: "whatsapp" | "telegram") {
+    if (busy || saved || submitting.current) return;
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
-    if ((method === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
-      (method === "phone" && ! /^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
+    const usePhone = compactPhone || method === "phone";
+    if ((!usePhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
+      (usePhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
       setError(c.contactError);
       return;
     }
+    // Open synchronously during the messenger tap: iPhone Safari blocks a new
+    // tab if we try window.open only after the asynchronous CRM save.
+    let handoffWindow: Window | null = null;
+    if (channel) {
+      try {
+        handoffWindow = window.open("about:blank", "_blank");
+        if (handoffWindow) handoffWindow.opener = null;
+      } catch { /* The saved receipt still shows manually tappable links. */ }
+    }
+    submitting.current = true;
     const nextId = operationId.current || crypto.randomUUID();
     operationId.current = nextId;
     setBusy(true);
@@ -300,14 +336,15 @@ export function ContactChannelChooser({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           operationId: nextId, serviceTitle,
-          description: description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+          description: description.trim() || ((quick || compactPhone) ? publicTopic?.trim() || "" : ""),
           sourcePath: pathname, locale,
-          contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
+          contact: { displayName: displayName.trim(), email: usePhone ? "" : email.trim(), phone: usePhone ? cleanedPhone : "" },
           contactConsent: consent, website,
         }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.saved !== true || !/^HH-[A-F0-9]{12}$/.test(data.referenceCode || "")) {
+        if (response.status === 409) operationId.current = null;
         throw new Error(data.error || "NOT_SAVED");
       }
       setSaved({ saved: true, referenceCode: data.referenceCode });
@@ -317,14 +354,32 @@ export function ContactChannelChooser({
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
           referenceCode: data.referenceCode, createdAt: Date.now(),
         }));
-        if (!stayAfterSave) router.push("/" + locale + "/thank-you");
+        if (!stayAfterSave && !compactPhone) router.push("/" + locale + "/thank-you");
       } catch {
         // Private browsing may block sessionStorage. The existing in-place
         // confirmation and optional messenger handoff remain available.
       }
+      if (channel) {
+        const draftUrl = new URL(referredWhatsappUrl);
+        draftUrl.searchParams.set("text", originalMessage + "\n\n" + c.reference + ": " + data.referenceCode);
+        const destination = channel === "whatsapp"
+          ? draftUrl.toString()
+          : telegramEnquiryUrlFromWhatsApp(draftUrl.toString());
+        try {
+          if (!handoffWindow || handoffWindow.closed) throw new Error("HANDOFF_BLOCKED");
+          handoffWindow.location.replace(destination);
+          onChannelClick?.(channel);
+          if (analyticsEvent) emitPublicAnalyticsEvent(analyticsEvent);
+        } catch {
+          try { handoffWindow?.close(); } catch { /* No effect on the saved request. */ }
+          setError(c.compactHandoff);
+        }
+      }
     } catch {
+      try { handoffWindow?.close(); } catch { /* Never hand off an unsaved request. */ }
       setError(c.error);
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -336,6 +391,67 @@ export function ContactChannelChooser({
       originalMessage + "\n\n" + c.reference + ": " + saved.referenceCode,
     );
     preparedWhatsApp = draftUrl.toString();
+  }
+
+  if (compactPhone) {
+    return (
+      <div className={styles.compactPhone} data-contact-channel-chooser data-reiki-phone-enquiry>
+        {!saved ? (
+          <form className={styles.compactPhoneForm} onSubmit={event => event.preventDefault()}>
+            <div className={styles.compactPhoneField}>
+              <label htmlFor={panelId + "-phone"}>{c.phone}</label>
+              <PhoneCountryInput id={panelId + "-phone"} locale={locale} value={phone}
+                disabled={busy} required onChange={value => {
+                  setPhone(value); setError(""); operationId.current = null;
+                }} />
+            </div>
+            <label className={styles.compactConsent}>
+              <input type="checkbox" checked={consent} required disabled={busy}
+                onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
+              <span>{c.compactConsent}</span>
+            </label>
+            <label className={styles.honeypot} aria-hidden="true">
+              Website <input type="text" tabIndex={-1} autoComplete="off"
+                value={website} onChange={event => setWebsite(event.target.value)} />
+            </label>
+            <div className={styles.compactChannels} role="group" aria-label={c.messengers}>
+              <button type="button" className={styles.whatsapp} disabled={busy}
+                data-contact-channel-submit="whatsapp" onClick={() => { void saveEnquiry("whatsapp"); }}>
+                <MessageCircle size={19} aria-hidden="true" />{busy ? c.sending : "WhatsApp"}
+              </button>
+              <button type="button" className={styles.telegram} disabled={busy}
+                data-contact-channel-submit="telegram" onClick={() => { void saveEnquiry("telegram"); }}>
+                <Send size={19} aria-hidden="true" />{busy ? c.sending : "Telegram"}
+              </button>
+            </div>
+            {error ? <p className={styles.error} role="alert">{error}</p> : null}
+          </form>
+        ) : (
+          <div className={styles.compactReceipt}>
+            <p className={styles.saved} role="status">{c.saved} · {saved.referenceCode}</p>
+            <p className={styles.next}>{c.compactSaved}</p>
+            <div className={styles.compactChannels} role="group" aria-label={c.messengers}>
+              <AcquisitionEventLink prefetch={false} className={styles.whatsapp}
+                href={preparedWhatsApp} event={event} analyticsEvent={analyticsEvent}
+                onClick={() => onChannelClick?.("whatsapp")}
+                target="_blank" rel="noopener noreferrer"
+                attributes={{ ...attributes, "data-contact-channel": "whatsapp" }}>
+                <MessageCircle size={19} aria-hidden="true" />WhatsApp
+              </AcquisitionEventLink>
+              <AcquisitionEventLink prefetch={false} className={styles.telegram}
+                href={telegramEnquiryUrlFromWhatsApp(preparedWhatsApp)}
+                event={event} analyticsEvent={analyticsEvent}
+                onClick={() => onChannelClick?.("telegram")}
+                target="_blank" rel="noopener noreferrer"
+                attributes={{ ...attributes, "data-contact-channel": "telegram" }}>
+                <Send size={19} aria-hidden="true" />Telegram
+              </AcquisitionEventLink>
+            </div>
+            {error ? <p className={styles.error} role="alert">{error}</p> : null}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
