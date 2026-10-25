@@ -38,10 +38,10 @@ test('Talismans are private, account-owned, and cannot become published by uploa
 test('Supabase private image upload includes linux native libvips and never loads it for anonymous gallery reads',()=>{
   const config=read('next.config.ts')
   const route=read('app/api/holistic-support/talismans/route.js')
-  assert.match(config,/"/api\/holistic-support\/talismans": \[/)
+  assert.match(config, /"\/api\/holistic-support\/talismans": \[/)
   assert.match(config,/node_modules\/@img\/sharp-libvips-linux-x64\/\*\*\/\*/)
   assert.match(config,/node_modules\/@img\/sharp-linux-x64\/\*\*\/\*/)
   assert.doesNotMatch(route,/^import sharp from /m)
-  assert.match(route,/const \{default:sharp\}=await import\('sharp'\)/)
+  assert.match(route,/\(\{default:sharp\}=await import\('sharp'\)\)/)
   assert.ok(route.indexOf("auth.verified()")<route.indexOf("await import('sharp')"))
 })
