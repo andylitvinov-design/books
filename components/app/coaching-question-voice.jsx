@@ -253,7 +253,7 @@ export default function CoachingQuestionVoice({
       </button>}
     </div>
     {support.tts&&<>
-      <button type="button" className={styles.voiceSettingsToggle} aria-expanded={voicePanel}
+      <button type="button" className={styles.voiceSettingsToggle} aria-label={t.voiceSettings} title={t.voiceSettings} aria-expanded={voicePanel}
         aria-controls={soundPanelId} onClick={()=>{setVoices(window.speechSynthesis?.getVoices?.()||[]);setVoicePanel(open=>!open)}}>
         {t.voiceSettings}
       </button>
