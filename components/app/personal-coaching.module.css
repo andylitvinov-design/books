@@ -394,3 +394,6 @@
   .session .questionArea .adaptivePanel{margin:3px 0 6px;padding-inline:9px}
   .session .questionArea .adaptivePanel>summary{min-height:36px;font-size:11px;padding:5px 0}
 }
+
+/* The controlled field stays mounted so dictation does not lose a pending draft. */
+#hh-personal-coach-own-words[hidden]{display:none}
