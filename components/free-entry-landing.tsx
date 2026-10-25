@@ -77,28 +77,28 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "TWO FREE REVIEWS + PERSONAL SESSION",
-      title: "Free diagnosis: 3 ways to begin.",
-      lead: "Explore a free written situation review or a symbolic Wu Xing Five Elements profile. Prefer to talk with Andrey? Request a 30-minute personal consultation for €50.",
-      value: "A thoughtful outside perspective on your question, obstacles and possible next steps.",
+      eyebrow: "FREE PERSONAL REVIEW · WITH ANDREY",
+      title: "See your situation from a new perspective. Free.",
+      lead: "Tell me what feels stuck. I will help you look at your question, possible obstacles and the next practical step — in a free personal written review.",
+      value: "Personal written reflections · no call · no payment.",
       bullets: ["Clarify what you want to change or understand.", "Explore the roles, tensions and resources in your situation.", "Receive personal written observations to reflect on."],
-      outcomeTitle: "Space to understand your question",
-      outcomeLead: "The report is personal, not an automated score or a diagnosis.",
+      outcomeTitle: "Clarity you can act on",
+      outcomeLead: "See your goal, your obstacles and the resources you can draw on."
       outcomes: [
-        { title: "A clearer question", text: "Bring your goal and concern into focus." },
-        { title: "A symbolic situation map", text: "Use your drawing as a starting point to notice relationships and perceived obstacles." },
-        { title: "A written perspective", text: "Receive reflections and practical questions for your next step." },
+        { title: "Clarity", text: "Put the real question into words." },
+        { title: "Fresh perspective", text: "Explore patterns, obstacles and resources." },
+        { title: "One next step", text: "Receive personal written observations." },
       ],
       processTitle: "Three simple steps",
       processLead: "No payment, long registration or video appointment is required for the free written format.",
       steps: [
         { title: "Tell me your situation", text: "Complete a short questionnaire about your question and goal." },
         { title: "Draw three elements", text: "Sketch ME, GOAL and PROBLEM on paper and photograph it." },
-        { title: "Save your questionnaire privately", text: "Do not send private answers, drawings or test results through messengers. Save the questionnaire in your account; keep the drawing on your device until a secure handoff is agreed." },
+        { title: "Private handoff", text: "Keep the drawing on your device until you agree a secure way to share it." },
       ],
       startTitle: "Tell me what you would like to explore",
       startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
-      cta: "Choose my format", secondary: "See how it works",
+      cta: "Start my free review", secondary: "How it works",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Lighthouse on the coast", processAlt: "Calm, sunlit room",
       faq: [
         ["What is included for free?", "A personal written review of your coaching questionnaire and handwritten drawing. It does not include a video call or live consultation."],
@@ -180,28 +180,28 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "ДВА БЕСПЛАТНЫХ РАЗБОРА + ЛИЧНАЯ СЕССИЯ",
-      title: "Бесплатная диагностика: 3 варианта.",
-      lead: "Разбор жизненной ситуации и символическая диагностика ресурсов У-Син бесплатны. Для личного разговора с Андреем можно запросить консультацию на 30 минут за €50.",
-      value: "Свежий взгляд на вопрос, препятствия и возможные следующие шаги.",
+      eyebrow: "БЕСПЛАТНЫЙ ЛИЧНЫЙ РАЗБОР · С АНДРЕЕМ",
+      title: "Взгляните на свою ситуацию по-новому. Бесплатно.",
+      lead: "Расскажите, что вас беспокоит. Я помогу увидеть главный вопрос, возможные препятствия и следующий практический шаг — в бесплатном письменном разборе.",
+      value: "Личный письменный ответ · без звонка · без оплаты.",
       bullets: ["Проясните, что хотите понять или изменить.", "Исследуйте роли, напряжения и ресурсы ситуации.", "Получите письменные наблюдения для размышления."],
-      outcomeTitle: "Пространство, чтобы понять свой вопрос",
-      outcomeLead: "Это личный письменный ответ, а не автоматический балл или диагноз.",
+      outcomeTitle: "Ясность и новые возможности",
+      outcomeLead: "Разберите цель, препятствия и ресурсы, на которые можно опереться."
       outcomes: [
-        { title: "Яснее сформулированный запрос", text: "Вы отделите желаемую цель от текущих затруднений." },
-        { title: "Символическая карта", text: "Рисунок поможет исследовать связи и субъективно ощущаемые препятствия." },
-        { title: "Письменные ориентиры", text: "Получите вопросы и наблюдения для дальнейшего шага." },
+        { title: "Ясность", text: "Определите главный вопрос." },
+        { title: "Новый взгляд", text: "Исследуйте связи, препятствия и ресурсы." },
+        { title: "Следующий шаг", text: "Получите личные письменные наблюдения." },
       ],
       processTitle: "Всего три шага",
       processLead: "Бесплатный письменный формат не требует оплаты, долгой регистрации и видеовстречи.",
       steps: [
         { title: "Опишите ситуацию", text: "Ответьте на несколько вопросов о проблеме и цели." },
         { title: "Нарисуйте три элемента", text: "Изобразите на бумаге «Я», «ЦЕЛЬ» и «ПРОБЛЕМА»." },
-        { title: "Сохраните анкету приватно", text: "Не отправляйте личные ответы, рисунки и результаты тестов в мессенджеры. Сохраните анкету в кабинете; рисунок оставьте на устройстве до согласования защищённой передачи." },
+        { title: "Приватная передача", text: "Сохраните рисунок у себя до согласования защищённого способа отправки." },
       ],
       startTitle: "С чего хотите начать?",
       startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
-      cta: "Выбрать формат", secondary: "Как проходит разбор",
+      cta: "Начать бесплатный разбор", secondary: "Как это работает",
       photoAlt: "Андрей Литвинов", outcomeAlt: "Маяк на побережье", processAlt: "Спокойная комната с утренним светом",
       faq: [
         ["Что именно бесплатно?", "Личный письменный разбор по коучинг-анкете и рисунку. Он не включает видеозвонок или живую консультацию."],
@@ -283,28 +283,28 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "DOS REVISIONES GRATUITAS + CONSULTA PERSONAL",
-      title: "Diagnóstico gratis: 3 opciones.",
-      lead: "Elige una revisión escrita de tu situación o un perfil simbólico Wu Xing, ambos gratuitos. También puedes solicitar una consulta personal de 30 minutos por €50.",
-      value: "Una perspectiva externa sobre tu pregunta, tus obstáculos y posibles pasos.",
+      eyebrow: "REVISIÓN PERSONAL GRATUITA · CON ANDREY",
+      title: "Mira tu situación desde otra perspectiva. Gratis.",
+      lead: "Cuéntame qué te preocupa. Te ayudaré a mirar tu pregunta, posibles obstáculos y el siguiente paso en una revisión personal escrita gratuita.",
+      value: "Respuesta personal escrita · sin llamada · sin pago.",
       bullets: ["Aclara lo que quieres comprender o cambiar.", "Explora roles, tensiones y recursos de la situación.", "Recibe observaciones personales por escrito."],
-      outcomeTitle: "Espacio para comprender tu pregunta",
-      outcomeLead: "No es una puntuación automática ni un diagnóstico médico.",
+      outcomeTitle: "Claridad para avanzar",
+      outcomeLead: "Explora tu objetivo, los obstáculos y los recursos disponibles."
       outcomes: [
-        { title: "Una pregunta clara", text: "Distingue tu objetivo de las dificultades actuales." },
-        { title: "Un mapa simbólico", text: "Usa el dibujo para reflexionar sobre relaciones y obstáculos." },
-        { title: "Una perspectiva escrita", text: "Recibe preguntas y reflexiones útiles para el siguiente paso." },
+        { title: "Claridad", text: "Pon en palabras tu pregunta principal." },
+        { title: "Nueva perspectiva", text: "Explora patrones, obstáculos y recursos." },
+        { title: "Próximo paso", text: "Recibe observaciones personales por escrito." },
       ],
       processTitle: "Tres pasos sencillos",
       processLead: "El formato escrito gratuito no necesita pago ni videollamada.",
       steps: [
         { title: "Describe tu situación", text: "Responde sobre el problema y tu objetivo." },
         { title: "Dibuja tres elementos", text: "Representa YO, META y PROBLEMA en papel." },
-        { title: "Guarda el formulario en privado", text: "No envíes respuestas privadas, dibujos ni resultados por mensajería. Guarda el formulario en tu cuenta; conserva el dibujo en tu dispositivo hasta acordar una entrega segura." },
+        { title: "Entrega privada", text: "Guarda el dibujo contigo hasta acordar cómo compartirlo de forma segura." },
       ],
       startTitle: "¿Qué te gustaría explorar?",
       startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
-      cta: "Elegir formato", secondary: "Cómo funciona",
+      cta: "Empezar mi revisión gratuita", secondary: "Cómo funciona",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Faro en la costa", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
         ["¿Qué incluye la oferta gratuita?", "Una revisión personal por escrito del cuestionario y un dibujo a mano. No incluye videollamada ni consulta en directo."],
@@ -364,9 +364,9 @@ const finalCopy = {
 } as const;
 
 const situationFirstScreen = {
-  en: { lead: "Two free written options · or 30 minutes personally with Andrey for €50.", source: "Open on YouTube" },
-  ru: { lead: "Два бесплатных письменных разбора или личная сессия 30 минут за €50.", source: "Открыть на YouTube" },
-  es: { lead: "Dos revisiones escritas gratis o una sesión personal de 30 minutos por €50.", source: "Abrir en YouTube" },
+  en: { lead: "Your question · a fresh perspective · a next step.", source: "Watch on YouTube", videoBadge: "Andrey · EN audio", reviews: "See real client stories · 12 videos" },
+  ru: { lead: "Ваш вопрос · новый взгляд · следующий шаг.", source: "Смотреть на YouTube", videoBadge: "Андрей · EN аудио", reviews: "Настоящие отзывы клиентов · 12 видео" },
+  es: { lead: "Tu pregunta · otra perspectiva · un paso más.", source: "Ver en YouTube", videoBadge: "Andrey · audio EN", reviews: "Testimonios reales · 12 vídeos" },
 } as const;
 
 const serviceTitles = {
@@ -396,7 +396,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         <section className={[styles.hero, kind === "dao" ? styles.daoHero : "", kind === "situation" ? styles.situationHero : ""].filter(Boolean).join(" ")} aria-labelledby="free-entry-title">
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
-            <span className={styles.badge}>{kind === "situation" ? (locale === "ru" ? "2 бесплатно · 1 платная сессия" : locale === "es" ? "2 gratis · 1 sesión de pago" : "2 free · 1 paid session") : common.free}</span>
+            <span className={styles.badge}>{kind === "situation" ? (locale === "ru" ? "ЛИЧНО · БЕСПЛАТНО" : locale === "es" ? "PERSONAL · GRATIS" : "PERSONAL · FREE") : common.free}</span>
             <h1 id="free-entry-title">{t.title}</h1>
             <p className={styles.lead}>{t.lead}</p>
             {kind === "situation" ? <p className={styles.shortLead}>{situationFirstScreen[locale].lead}</p> : null}
@@ -412,14 +412,15 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </>}
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
-                <a className={styles.primary} href={kind === "situation" ? "#free-diagnosis-options" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
-              <a className={styles.secondary} href={kind === "situation" ? "#free-diagnosis-options" : "#what-you-get"}>{kind === "dao" ? t.secondary : common.details}</a>
+                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
+              <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
           </div>
           {situationVideo ? (
             <div className={[styles.heroVisual, styles.situationVideo].join(" ")} id="service-video" data-featured-constellations-video>
               <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal posterPriority fallbackPoster={situationVideo.poster} internalOnly />
+               <span className={styles.videoBadge}>{situationFirstScreen[locale].videoBadge}</span>
               <a className={styles.videoSource} href={siteVideoWatchUrl(situationVideo.video)} target="_blank" rel="noopener noreferrer"
                 aria-label={situationFirstScreen[locale].source}>
                 {situationFirstScreen[locale].source}<ExternalLink size={13} aria-hidden="true" />
@@ -434,7 +435,44 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         </section>
 
         {kind === "situation" ? (
-          <FreeDiagnosisOffers locale={locale}>
+          <FreeDiagnosisOffers locale={locale} intro={
+            <>
+              <section className={styles.reviewOutcome} id="what-you-get" aria-labelledby="free-outcomes-title">
+                <div className={styles.reviewOutcomePhoto}><Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
+                <div className={styles.reviewOutcomeCopy}>
+                  <p className={styles.sectionLabel}>01 / {common.benefits}</p>
+                  <h2 id="free-outcomes-title">{t.outcomeTitle}</h2>
+                  <p className={styles.sectionLead}>{t.outcomeLead}</p>
+                  <div className={styles.reviewBenefitsList}>
+                    {t.outcomes.map((item, index) => <article key={item.title}>
+                      <span aria-hidden="true">0{index + 1}</span>
+                      <div><h3>{item.title}</h3><p>{item.text}</p></div>
+                    </article>)}
+                  </div>
+                  <a className={styles.reviewCta} href="#request-free-review">{t.cta}<ArrowRight size={17} aria-hidden="true" /></a>
+                </div>
+              </section>
+              <section className={styles.reviewProcess} id="how-it-works" aria-labelledby="free-process-title">
+                <div className={styles.reviewProcessCopy}>
+                  <p className={styles.sectionLabel}>02 / {common.process}</p>
+                  <h2 id="free-process-title">{t.processTitle}</h2>
+                  <p className={styles.sectionLead}>{t.processLead}</p>
+                  <ol className={styles.reviewSteps}>
+                    {t.steps.map((step, index) => <li key={step.title}>
+                      <span aria-hidden="true">{index + 1}</span>
+                      <div><strong>{step.title}</strong><p>{step.text}</p></div>
+                    </li>)}
+                  </ol>
+                  <p className={styles.reviewPrivacy}><ShieldCheck size={16} aria-hidden="true" />{common.limitations}</p>
+                </div>
+                <div className={styles.reviewProcessPhoto}><Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
+              </section>
+              <details className={styles.reviewStories} data-review-stories>
+                <summary>{situationFirstScreen[locale].reviews}<ArrowRight size={18} aria-hidden="true" /></summary>
+                <PersonalTestimonials locale={locale} variant="all" />
+              </details>
+            </>
+          }>
             <div className={styles.coachingLink}>
               <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
                 {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />
@@ -444,7 +482,6 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               <summary>{common.fullForm}</summary>
               <FreeSituationReviewForm locale={locale} />
             </details>
-            <PersonalTestimonials locale={locale} variant="all" />
           </FreeDiagnosisOffers>
         ) : null}
 
