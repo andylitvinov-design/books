@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { Camera, Check, LockKeyhole, UploadCloud } from "lucide-react";
 import styles from "./reiki-initiation-photo.module.css";
 
@@ -62,7 +63,7 @@ export function ReikiInitiationPhoto({ locale, accountId, enabled, photo, onSave
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const ru = locale === "ru";
-  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function upload(event: ChangeEvent<HTMLInputElement>) {
     const original = event.target.files?.[0];
     event.target.value = "";
     if (!original || !enabled || !accountId || busy) return;
