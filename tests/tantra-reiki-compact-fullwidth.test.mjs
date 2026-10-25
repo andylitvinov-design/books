@@ -6,6 +6,7 @@ const read = (path) => readFileSync(path, "utf8");
 const page = read("components/academy-record-page.tsx");
 const journey = read("components/tantra-reiki-journey.tsx");
 const css = read("app/academy.css");
+const screensCss = read("app/reiki-landing-screens.css");
 
 test("Tantra Reiki has one real hero heading and three distinct first-screen pathways", () => {
   assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? \(/);
@@ -44,11 +45,21 @@ test("First Tantra level is a single scenic reading screen with original text be
   assert.match(journey, /id="tantra-next-levels"/);
 });
 
-test("PDF course map remains available behind an accessible compact disclosure", () => {
-  assert.match(page, /className="tantra-mobile-guide tantra-mobile-guide--combined(?:\s[^"]*)?"/);
-  assert.match(page, /<details className="tantra-mobile-guide__toc">/);
-  assert.match(page, /<TantraReikiOverviewLinks locale=\{locale\} \/>/);
-  assert.match(page, /className="tantra-mobile-guide__download"/);
+test("Tantra PDF remains downloadable, with a visible Reiki Practitioner offer instead of a duplicate map", () => {
+  const block = page.slice(page.indexOf('<section className="tantra-mobile-guide'), page.indexOf('<TantraReikiFestivalMoments'));
+  assert.match(block, /tantra-mobile-guide--promo reiki-screen/);
+  assert.doesNotMatch(block, /tantra-mobile-guide__toc|TantraReikiOverviewLinks|Explore the 9-level study map/);
+  assert.match(block, /tantra-mobile-guide__course-promo/);
+  assert.match(block, /className="tantra-mobile-guide__course-link" href=\\{REIKI_FREE_COURSE_PATH\\} data-reiki-course-cta/);
+  assert.match(block, /Reiki Practitioner: Study & Initiation/);
+  assert.match(block, /Практик Рейки: обучение и инициация/);
+  assert.match(block, /Reiki Practitioner: estudio e iniciación/);
+  assert.match(block, /className="tantra-mobile-guide__download"/);
+  assert.match(block, /\\/api\\/academy\\/reiki-guide\\?course=tantra&locale=/);
+  assert.match(screensCss, /\\.tantra-mobile-guide--promo \\.tantra-mobile-guide__course-promo/);
+  assert.match(screensCss, /@media \\(max-width: 820px\\)/);
+  assert.match(screensCss, /@media \\(max-width: 620px\\)/);
+  assert.match(screensCss, /@media \\(max-width: 360px\\)/);
 });
 
 test("Mobile layout widens scenes and fits brief story cards without forced scroll snapping", () => {
