@@ -51,8 +51,8 @@ test("Holistic Support keeps temple insights and complementary energy, not coach
     assert.ok(page.includes('data-holistic-offer="' + id + '"'), id);
   assert.match(page, /data-holistic-healing/);
   assert.match(page, /data-holistic-practitioner-cta/);
-  assert.match(page, /MarketplaceMasterFinder practitioners=\{energyPractitioners\}/);
-  assert.match(page, /service.status === "published"/);
+  assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
+  assert.match(page, /\/pro#profi-practice/);
   assert.match(page, /<IdeasDiscovery locale=\{locale\} variant="temple" \/>/);
   assert.match(page, /data-holistic-to-coaching/);
   assert.doesNotMatch(page, /<FreeDiagnosticStart|<CompactLeadCapture|data-holistic-offer="express"|data-holistic-offer="master"/);

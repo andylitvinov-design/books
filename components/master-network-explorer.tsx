@@ -334,7 +334,7 @@ type CourseChoice = { value: string; label: string };
 function Filters({
   locale, mode, state, setState, count, languages, methods,
   offeringTypes = [], courseChoices = [], locations = [],
-  topics = MASTER_TOPICS, coursesUnavailable = false,
+  topics = MASTER_TOPICS, coursesUnavailable = false, embedded = false,
 }: {
   locale: Locale;
   mode: "masters" | "services";
@@ -348,6 +348,7 @@ function Filters({
   locations?: string[];
   topics?: readonly (typeof MASTER_TOPICS)[number][];
   coursesUnavailable?: boolean;
+  embedded?: boolean;
 }) {
   const t = COPY[locale];
   // Explicitly control the extra filters disclosure. The hydrated mobile
@@ -437,14 +438,14 @@ function Filters({
                 {offeringTypes.map((type) => <option key={type} value={type}>{OFFERING_NAMES[type]?.[locale] || type}</option>)}
               </select>
             </label>
-            <label>{t.courseTitle}
+            {(!embedded || courseChoices.length > 0) ? <label>{t.courseTitle}
               <select id="mentor-filter-course" value={state.courseKey}
                 disabled={!courseChoices.length}
                 onChange={(event) => set("courseKey", event.target.value)}>
                 <option value="">{courseChoices.length ? t.anyCourse : coursesUnavailable ? t.courseUnavailable : t.noCourse}</option>
                 {courseChoices.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
-            </label>
+            </label> : null}
             {formatSelect}
             {languageSelect}
           </div>
@@ -647,12 +648,13 @@ export function MarketplaceServiceFinder({ services, locale: pageLocale }: { ser
 }
 
 export function MarketplaceMasterFinder({
-  practitioners, courses = [], coursesUnavailable = false, locale: pageLocale,
+  practitioners, courses = [], coursesUnavailable = false, locale: pageLocale, embedded = false,
 }: {
   practitioners: PublicPractitioner[];
   courses?: PublicMentorCourse[];
   coursesUnavailable?: boolean;
   locale: string;
+  embedded?: boolean;
 }) {
   const locale = localized(pageLocale);
   const [state, setState] = useState<FilterState>(INITIAL);
@@ -705,8 +707,8 @@ export function MarketplaceMasterFinder({
   }, [practitioners, publishedCourses, state, pageLocale]);
   const t = COPY[locale];
   return (
-    <div className={practitioners.length === 1 ? `${styles.explorer} ${styles.singleMaster}` : styles.explorer}>
-      <Filters locale={locale} mode="masters" state={state} setState={setState}
+    <div className={[styles.explorer, practitioners.length === 1 ? styles.singleMaster : "", embedded ? styles.embeddedExplorer : ""].filter(Boolean).join(" ")} data-mentor-embedded={embedded ? "" : undefined}>
+      <Filters locale={locale} mode="masters" state={state} setState={setState} embedded={embedded}
         count={visible.length} languages={languages} methods={methods} locations={locations}
         offeringTypes={offeringTypes} courseChoices={courseChoices} topics={topics}
         coursesUnavailable={coursesUnavailable} />

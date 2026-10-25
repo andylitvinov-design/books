@@ -5,6 +5,11 @@ on:
     paths:
       - 'components/profi-hub.tsx'
       - 'components/profi-hub.module.css'
+      - 'components/master-network-explorer.tsx'
+      - 'components/master-network-explorer.module.css'
+      - 'app/[locale]/holistic-support/page.tsx'
+      - 'tests/pro-master-search-placement.test.mjs'
+      - 'tests/temple-support-hub.test.mjs'
       - 'lib/reiki-master-programs.ts'
       - 'app/[locale]/pro/page.tsx'
       - 'app/[locale]/academy/reiki/master/**'
@@ -31,11 +36,13 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Test all three Pro journeys and master programmes (EN/RU/ES)
-        run: node --test tests/profi-hub.test.mjs
+        run: node --test tests/profi-hub.test.mjs tests/pro-master-search-placement.test.mjs tests/temple-support-hub.test.mjs
       - name: ESLint changed implementation
         run: >-
           npx --no-install eslint
           components/profi-hub.tsx
+          components/master-network-explorer.tsx
+          'app/[locale]/holistic-support/page.tsx'
           lib/reiki-master-programs.ts
           'app/[locale]/pro/page.tsx'
           'app/[locale]/academy/reiki/master/[program]/page.tsx'
