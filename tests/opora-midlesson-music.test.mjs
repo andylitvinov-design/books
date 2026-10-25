@@ -39,7 +39,7 @@ test('new 14-day curriculum offers optional, localized imagery music on EVERY da
   assert.match(outro,/await audio\.play\(\)/)
   assert.match(outro,/onClick=\{running\?pause:play\}/)
   for(const [locale,next,back] of [
-    ['en','Continue','Back'],['ru','Продолжить','Назад'],['es','Continuar','Atrás']]){
+    ['en','Continue','Go back'],['ru','Продолжить','Вернуться'],['es','Continuar','Volver']]){
     for(const day of [1,7,14]){
       const f=fixture(locale,day),h=f.h
       try{
