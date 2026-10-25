@@ -1,6 +1,6 @@
 # Holistic House — Reverse Engineering & Benchmark-to-Product: полная программа и техническое задание
 
-**Версия:** 1.0 · **Дата:** 25.10.2026 (America/Toronto) · **Статус:** SPEC / ROADMAP, **не** готовая интеграция и **не** подтверждённый релиз.  
+**Версия:** 1.0 · **Дата:** 25.10.2026 (America/Toronto) · **Статус:** IMPLEMENTATION STARTED — G0/G1 только в виде офлайн-матрицы/валидации из PR #2061; реальная установка Remaster/REA, онлайн-исследование конкурентов и provider E2E не подтверждены.  
 **Репозиторий:** https://github.com/andylitvinov-design/books · **Production branch:** `codex/public-book-library` (не default `codex/bootstrap-books`).  
 **Продукт:** https://holistichouse.vercel.app · **Vercel:** `super10/codex-public-book-library` (действующий deployment READY, exact SHA и alias перепроверяются перед любым релизом).  
 **Управляющий issue:** https://github.com/andylitvinov-design/books/issues/2058  
@@ -456,8 +456,12 @@
 
 **Наш продукт:** https://github.com/andylitvinov-design/books/tree/codex/public-book-library, https://github.com/andylitvinov-design/books/issues/2058, https://github.com/andylitvinov-design/books/issues/990, https://github.com/andylitvinov-design/books/issues/985, https://github.com/andylitvinov-design/books/issues/988, https://github.com/andylitvinov-design/books/issues/1716, https://github.com/andylitvinov-design/books/issues/1519, https://github.com/andylitvinov-design/books/issues/1223.
 
-**Фиксация статуса:** на дату составления выполнено исследование публичной документации инструментов, чтение стратегического Google Doc и инвентаризация основных production исходников. Код внедрения, расширенная UX-съёмка конкурентов, установка Remaster/REA, реальные тестовые оплаты и live mobile E2E **не выполнялись в рамках подготовки этого документа**. Каждый следующий PR обязан записывать новые доказательства отдельно.
+**Фиксация статуса:** 25.10.2026 добавлена начальная программная реализация G0/G1: `data/benchmarking/reference-patterns.json` (10 hypothesis rows), `lib/benchmarking/reference-matrix.mjs` (валидация источника, приватности и планового ранжирования), `scripts/benchmarking/plan.mjs` (CLI без сети), `tests/benchmark-reference-matrix.test.mjs` и профильный GitHub workflow `.github/workflows/hh-benchmark-program.yml` — PR #2061. Это **не** web crawl, не запись в CRM, не запуск платных сервисов и не установка Remaster/REA. Профильный benchmark workflow в первом прогоне PASS; общие workflow могут FAIL из-за других модулей и требуют независимой оценки перед merge. Продуктовая UX правка — отдельно #2063, без предположения о live. Расширенная UX-съёмка конкурентов, реальная CRM-подача, провайдерские платежи и live mobile E2E **не выполнялись в рамках подготовки этого документа**. Каждый следующий PR обязан записывать новые доказательства отдельно.
 
 ---
 
 **Версионирование:** v1.0 — исходная программа; v1.1 — корректировки после G0 и исследовательского пилота; v2.0 — изменения архитектурного scope только после проверки эффекта. Приоритет действующей стратегии и существующих продуктовых контрактов выше любой инструментальной рекомендации.
+
+### Приложение A. Реализация G0/G1 без установки сторонних инструментов (25.10.2026)
+
+Read-only offline pilot не требует секретов, доступа к браузерному профилю, Supabase, Vercel, HeyGen или сторонним платным API. Запускать после клонирования текущей production-ветки и безопасного checkout на отдельной ветке: `node --test tests/benchmark-reference-matrix.test.mjs`, `node scripts/benchmarking/plan.mjs`, `node scripts/benchmarking/plan.mjs --json`. Не путать сортировку приоритетов с измерением конверсии. Исходные документы конкурентов сохранять ссылками без копирования чужих материалов. CI: `.github/workflows/hh-benchmark-program.yml` и профильные tests. Реальную Remaster/REA установку, privacy/ToS разрешение и egress check продолжать только после выхода отдельной Mac-песочницы в online и фиксированного supply-chain review. На дату редактирования Mac `air-andrii-3.lan` показывает OFFLINE через Desktop Commander: tool installation на Mac объективно BLOCKED. Этот блокер не мешает выпуску безопасного offline harness.
