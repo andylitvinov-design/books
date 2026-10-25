@@ -194,7 +194,6 @@
   flex:none;position:sticky;bottom:0;z-index:4;margin-top:auto;
   padding:8px 2px;background:#fffaf3;box-shadow:0 -7px 18px #fffaf3dd
 }
-[data-tradition-coaching="egyptian"]{background:#372b4a}
 [data-tradition-coaching="egyptian"] .courseSheet{background:#f8ebd0}
 [data-tradition-coaching="egyptian"] .courseScroll{
   background-image:repeating-linear-gradient(90deg,#bc99570a 0,#bc99570a 1px,transparent 1px,transparent 16px)}
@@ -204,7 +203,6 @@
 [data-tradition-coaching="egyptian"] .choice,[data-tradition-coaching="egyptian"] .chosen{
   border-color:#c8ac78;background:#fff8e9;color:#4b3524}
 [data-tradition-coaching="egyptian"] .chosen{background:#e5d1a3;border-color:#89632f}
-[data-tradition-coaching="greek"]{background:#243d58}
 [data-tradition-coaching="greek"] .courseSheet{background:#f5f4ed}
 [data-tradition-coaching="greek"] .stageCard,[data-tradition-coaching="greek"] .roadmapCard{
   background:linear-gradient(120deg,#fffdfa,#e8eeed);border-color:#aab6bd}
