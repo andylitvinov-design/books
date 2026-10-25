@@ -84,7 +84,7 @@ export function PersonalExpressEnquiry({
   // They also open this in-flow section, including repeated clicks on the same hash.
   useEffect(() => {
     const openFromHash = () => {
-      if (window.location.hash === "#request-free-review") setExpanded(true);
+      if (window.location.hash === "#request-free-review" || (enableWizard && new URLSearchParams(window.location.search).get("hh_enquiry") === "google")) setExpanded(true);
     };
     const openFromAnchor = (event: MouseEvent) => {
       if (event.target instanceof Element
@@ -97,7 +97,7 @@ export function PersonalExpressEnquiry({
       window.removeEventListener("hashchange", openFromHash);
       document.removeEventListener("click", openFromAnchor);
     };
-  }, []);
+  }, [enableWizard]);
 
   useEffect(() => {
     if (!expanded) return;
