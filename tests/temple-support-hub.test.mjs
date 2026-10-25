@@ -37,118 +37,86 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
   assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
 });
 
-test("Holistic Support provides two main areas and six concrete choices", () => {
+
+test("Holistic Support puts an interactive scenic goal-or-situation card first in EN/RU/ES", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
+  const ideas = read("components/ideas-discovery.tsx");
+  const scenic = read("components/ideas-discovery.module.css");
   const styles = read("app/[locale]/holistic-support/holistic-support.module.css");
   const old = read("app/[locale]/temple-support/page.tsx");
   const locales = read("lib/public-locales.ts");
   const home = read("components/home-explore-sections.tsx");
   const sitemap = read("app/sitemap.ts");
+
   for (const locale of ["en", "ru", "es"]) {
-    assert.ok(page.includes(locale + ": {"), locale + " page translation");
+    assert.ok(page.includes(locale + ": {"), locale + " locale");
     assert.ok(page.includes(locale + ': "/' + locale + '/holistic-support"'));
-    assert.match(old, /permanentRedirect\("\/" \+ locale \+ "\/holistic-support"\)/);
   }
-  assert.match(page, /data-holistic-support/);
-  assert.match(page, /data-holistic-insights/);
-  assert.match(page, /data-holistic-healing/);
-  assert.match(page, /<section className=\{styles.hero\} data-holistic-first-screen aria-labelledby="holistic-support-title">/);
-  assert.match(page, /<nav className=\{styles.pathControls\} aria-label=\{t.choose\}>/);
-  assert.match(page, /href="#free-diagnostic-start" data-holistic-path="insights"/);
-  assert.match(page, /href="#personal-insights-master" data-holistic-path="healing"/);
-  assert.equal((page.match(/data-holistic-path=/g) || []).length, 2, "exactly two hero journeys");
-  assert.doesNotMatch(page, /styles\.primaryNav/);
-  assert.match(styles, /\.hero\{[^}]*min-height:clamp\(440px/);
-  assert.match(styles, /\.pathControls a\{[^}]*min-height:62px/);
-  assert.match(styles, /@media\(max-width:650px\)\{[\s\S]*?\.pathControls\{grid-template-columns:1fr/);
-  for (const id of ["ai", "express", "master", "energy", "alchemy", "practitioner"])
-    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
-  assert.doesNotMatch(page, /data-holistic-tradition|styles\.methods|methodOptions|methodPaths/);
-  assert.doesNotMatch(styles, /\.methods\{/);
-  assert.match(page, /<FreeDiagnosticStart locale=\{locale\} \/>/);
-  assert.match(page, /\/services\/remote-energy-support/);
-  assert.match(page, /\/services\/alchemy-of-soul/);
-  assert.match(page, /data-holistic-practitioner-cta/);
-  assert.match(page, /\/pro#profi-practice/);
-  assert.match(read("components/profi-hub.tsx"), /id="profi-practice"/);
-  for (const label of ["I'm a Master — Offer My Services", "Я мастер — предложить свои услуги", "Soy profesional — ofrecer mis servicios"])
-    assert.ok(page.includes(label), "missing practitioner offer: " + label);
-  assert.match(styles, /\.option\[data-holistic-offer="practitioner"\]\{grid-column:1\/-1/);
-  assert.match(page, /Listings appear only after approval/);
-  assert.match(page, /MarketplaceMasterFinder practitioners=\{energyPractitioners\}/);
-  assert.match(page, /service.status === "published"/);
-  assert.match(page, /\/masters/);
-  assert.match(page, /<IdeasDiscovery locale=\{locale\} variant="temple" \/>/);
-  assert.match(locales, /holistic-support/);
-  assert.match(home, /path: "\/holistic-support"/);
-  assert.match(sitemap, /locale \+ '\/holistic-support'/);
-  assert.doesNotMatch(sitemap, /locale \+ '\/temple-support'/);
-  assert.match(styles, /@media\(max-width:350px\)/);
-  for (const image of ["hero-olive-incense.webp", "andy-about.png", "reiki-approved-sunrise-v3.webp", "ideas-zen-landscape.svg"])
-    assert.ok(existsSync(new URL("../public/images/holistic-house/" + image, import.meta.url)), "missing media " + image);
+  assert.ok(old.includes('permanentRedirect("/" + locale + "/holistic-support")'));
+  assert.ok(page.includes("data-holistic-support"));
+  assert.ok(page.includes("data-holistic-first-screen"));
+  assert.ok(page.includes('<IdeasDiscovery locale={locale} variant="holistic" />'));
+  assert.equal((page.match(/<IdeasDiscovery /g) || []).length, 1, "only one symbolic-engine form");
+  assert.ok(page.indexOf("data-holistic-first-screen") < page.indexOf("data-holistic-healing"));
+  assert.ok(!page.includes("<FreeDiagnosticStart") && !page.includes("<CompactLeadCapture"),
+    "the personal coaching form moves to Coaching");
+  assert.ok(!page.includes("styles.hero"), "the big coaching hero was removed");
+  assert.ok(ideas.includes('variant?: "ideas" | "temple" | "holistic"'));
+  assert.ok(ideas.includes("data-holistic-entry"));
+  for(const label of [
+    "Holistic Support", "Холистическая поддержка", "Apoyo holístico",
+    "Get a free symbolic insight", "Получить бесплатную подсказку", "Recibir una reflexión gratuita",
+    "Request energy support", "Получить энергетическую поддержку", "Solicitar apoyo energético",
+  ]) assert.ok(ideas.includes(label), "missing localized first-screen text: " + label);
+  assert.ok(ideas.includes('href={"/" + locale + "/services/remote-energy-support"}'));
+  assert.ok(ideas.includes("onClick={() => stageRemoteSupportLandingIntention(question)}"));
+  assert.ok(ideas.includes("drawRandomHexagram()"));
+  assert.ok(scenic.includes('ideas-pine-sharp.avif'));
+  assert.ok(scenic.includes('@media (max-width: 360px)'));
+  assert.ok(styles.includes(".primaryEntry"));
+  assert.ok(styles.includes(".coachingAside"));
+  assert.ok(styles.includes("@media(max-width:350px)"));
+  assert.ok(locales.includes("holistic-support"));
+  assert.ok(home.includes('path: "/holistic-support"'));
+  assert.ok(sitemap.includes("locale + '/holistic-support'"));
+  assert.ok(!sitemap.includes("locale + '/temple-support'"));
+  assert.ok(existsSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)));
 });
 
-test("symbolic insight remains honest; coaching uses €50/30 and €100/60 with consent", () => {
+test("energy support reuses the published practitioner, privacy and request journeys", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
-  const ideas = read("components/ideas-discovery.tsx");
-  const capture = read("components/compact-lead-capture.tsx");
-  const alchemy = read("app/[locale]/services/alchemy-of-soul/page.tsx");
-  assert.match(page, /AI Insight/);
-  assert.match(page, /generative AI model is not connected/);
-  assert.match(page, /€50 \/ 30 мин/);
-  assert.match(page, /€100 \/ 60 min/);
-  assert.match(page, /sourcePath=\{"\/" \+ locale \+ "\/holistic-support"\}/);
-  assert.match(page, /formatOptions=\{t.paidFormats\}/);
-  assert.match(page, /formatLabel=\{t.paidFormatLabel\}/);
-  assert.match(page, /serviceTitle=\{"Personal Coaching Session with Andrey"\}/);
-  assert.match(page, /<CompactLeadCapture/);
-  assert.match(page, /data-holistic-master/);
-  assert.match(capture, /fetch\("\/api\/service-enquiries"/);
-  assert.match(capture, /contactConsent: true/);
+  const remote = read("components/remote-energy-support-booking.tsx");
+  const bridge = read("lib/practitioners/remote-energy-support.js");
+  assert.ok(page.includes("data-holistic-healing"));
+  for (const id of ["energy", "alchemy", "practitioner"]) {
+    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing offer " + id);
+  }
+  for (const link of ["/services/remote-energy-support", "/services/alchemy-of-soul",
+    "/pro#profi-practice", "/masters"]) assert.ok(page.includes(link), "missing link "+link);
+  assert.ok(page.includes("data-holistic-practitioner-cta"));
+  assert.ok(page.includes("MarketplaceMasterFinder practitioners={energyPractitioners}"));
+  assert.ok(page.includes('service.status === "published"'));
+  assert.ok(page.includes("data-holistic-coaching-followup"));
+  assert.ok(page.includes('href={"/" + locale + "/coaching"}'));
+  assert.ok(page.includes("€50 / 30"));
   assert.match(page, /Homeopathy lacks reliable evidence|homeopatía carece|у гомеопатии нет/);
-  assert.match(ideas, /const isTemple = variant === "temple"/);
-  assert.match(ideas, /drawRandomHexagram\(\)/);
-  assert.match(alchemy, /isPublicLocale\(locale\)/);
-  assert.match(alchemy, /locale: "es"/);
-  assert.doesNotMatch(page, /fetch\(|checkout|charge\(/);
+  assert.ok(remote.includes("takeRemoteSupportLandingIntention()"));
+  assert.ok(remote.includes("if (stagedIntention) setIntention(stagedIntention)"));
+  assert.ok(bridge.includes("stageRemoteSupportLandingIntention"));
+  assert.ok(bridge.includes("takeRemoteSupportLandingIntention"));
+  assert.doesNotMatch(bridge.slice(bridge.indexOf("// One-use, same-tab handoff")),
+    /sessionStorage\.setItem|localStorage\.setItem|fetch\(/);
+  assert.doesNotMatch(page, /checkout|charge\(/);
 });
 
-
-test("Temple preserves its scenic Ideas card as optional; personal conversion is first", () => {
-  const page = read("app/[locale]/holistic-support/page.tsx");
+test("independent Temple Insights keeps its own diagnostic CTA and natural scenic layout", () => {
   const ideas = read("components/ideas-discovery.tsx");
   const scenic = read("components/ideas-discovery.module.css");
-  const layout = read("app/[locale]/holistic-support/holistic-support.module.css");
-
-  assert.match(page, /data-holistic-insights aria-labelledby="holistic-insights-title"/);
-  assert.ok(page.indexOf('data-holistic-offer="express"') < page.indexOf("data-holistic-free-insight"),
-    "free diagnostic should precede the optional symbolic tool");
-  assert.ok(page.indexOf('data-holistic-offer="master"') < page.indexOf("data-holistic-free-insight"),
-    "personal session should precede the optional symbolic tool");
-  assert.equal((page.match(/<IdeasDiscovery locale=\{locale\} variant="temple" \/>/g) || []).length, 1,
-    "reuse the single private local Ideas engine");
-  assert.match(layout, /\.section\[data-holistic-insights\] \.freePanel\s*\{/);
-
-  assert.match(ideas, /className=\{isTemple \? styles\.templeScenic : styles\.heroLayout\}/);
-  assert.match(scenic, /\.heroLayout\s*\{\s*display:\s*contents/);
-  assert.match(scenic, /\.templeScenic::before[\s\S]*?ideas-pine-sharp\.avif/);
-  assert.match(scenic, /\.root\[data-temple-mode="true"\] \.hero \.heading\s*\{\s*display:\s*block/);
-  assert.match(scenic, /@media \(max-width: 600px\)/);
-  assert.match(scenic, /@media \(max-width: 360px\)/);
-  assert.ok(existsSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)),
-    "use the original first-party Ideas artwork, not a remote/stock photograph");
-
-  assert.match(ideas, /data-ideas-tao/);
-  assert.match(ideas, /data-ideas-personal-diagnostic/);
-  assert.match(ideas, /data-ideas-free-test/);
-  assert.match(ideas, /isTemple \? \(\s*<Link href=\{freeOfferHref\(locale, "tests"\)\}/,
-    "Temple free test link must open the actual tests catalog");
-  assert.match(ideas, /data-temple-test-catalog/);
-  assert.match(ideas, /if \(id === "tests"\) return/);
-  assert.match(ideas, /"\/client\/tests"/);
-  assert.doesNotMatch(ideas, /!isTemple \? <button[^>]*data-ideas-free-test/);
-  assert.ok(ideas.includes('href={"/" + locale + "/holistic-support#free-diagnostic-start"}'));
-  assert.match(ideas, /id="ideas-question-privacy"/);
-  assert.match(ideas, /getIdeasAphorismMatches\(/);
-  assert.match(ideas, /drawRandomHexagram\(\)/);
+  assert.ok(ideas.includes('variant === "temple" ? <Link'));
+  assert.ok(ideas.includes('href={freeOfferHref(locale, "review")}'));
+  assert.ok(ideas.includes("data-ideas-personal-diagnostic"));
+  assert.ok(ideas.includes("data-ideas-free-test"));
+  assert.ok(ideas.includes('const HeadingTag = variant === "temple" ? "h2" : "h1"'));
+  assert.ok(scenic.includes('data-temple-mode="true"'));
+  assert.ok(scenic.includes('.templeScenic::before'));
 });
