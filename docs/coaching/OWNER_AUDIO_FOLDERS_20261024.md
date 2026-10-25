@@ -34,3 +34,13 @@ Owner can save several originals per slot, select previously saved recordings, l
 
 ### Reuse, rollout and rollback
 Old Reiki recording folders, buckets, learner IDs and master-course media are unchanged. Rollback: remove coaching manifest entries (unassign), then revert feature commits; do not delete any course audio originals or touch client data.
+
+## Owner-cabinet entry repair · 2026-10-24
+
+The first published PR #1908 created functional `/admin/materials/coaching` folders, but omitted a route from the **canonical My Practice → My Materials** workspace. That left the feature hidden behind the legacy admin menu.
+
+Fix: My Materials → **Courses** and **Audio** now expose two canonical owner-only folder cards from `TRADITION_COURSES` and a Coaching root. Cards call the existing `/api/app/practitioner/open` owner-verification flow with the new fixed `coachingAudio` destination, which mints the existing scoped PIN admin session; only `egyptian` or `greek` can extend the returned path. EN/RU/ES language context is retained. No public URL redirect parameters, broad admin permissions, duplicated folder storage or new provider.
+
+QA must include normal signed-in owner → My Practice → My Materials → Audio → Egyptian → Record / choose M4A → save private → preview → assign → authenticated lesson playback. A signed-in non-owner must not see the owner-only cards and must receive 404 on the owner handoff. A real iPhone mic/storage interaction remains a physical-device acceptance gate.
+
+Verification addition: `tests/coaching-author-audio-synthetic.test.mjs` runs the **real audio store methods** against an isolated fake Supabase Storage implementation, covering upload intent, private persistence, owner preview, explicit approval, 15-minute signed learner playback, language/course isolation and unassignment with original retention. This is NOT provider delivery or physical Safari E2E.
