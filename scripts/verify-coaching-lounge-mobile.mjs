@@ -34,6 +34,32 @@ async function verify(browserType, locale, width) {
     assert.equal(response?.status(), 200, label + ": public route");
     const root = page.locator("[data-public-coaching]");
     await root.waitFor({ state: "visible", timeout: 30000 });
+    // A 200 from /images is NOT an iPhone image-rendering test. Verify actual
+    // browser-decoded pixels plus a visible CSS fallback on both ancient cards.
+    const culturalCards = root.locator('[data-coaching-tradition="egyptian"],[data-coaching-tradition="greek"]');
+    assert.equal(await culturalCards.count(),2,label+": both authored photos offered");
+    for (const slug of ["egyptian","greek"]) {
+      const card = root.locator('[data-coaching-tradition="'+slug+'"]');
+      await card.scrollIntoViewIfNeeded();
+      const visual=card.locator("a[class*='loungePhoto']");
+      const picture=visual.locator("img");
+      await picture.waitFor({state:"visible"});
+      await picture.evaluate(image=>image.decode());
+      const photo=await visual.evaluate(node=>{
+        const image=node.querySelector("img"),style=getComputedStyle(node),rect=node.getBoundingClientRect();
+        return {loaded:image.complete&&image.naturalWidth>0,
+          eager:image.loading==='eager',width:rect.width,height:rect.height,
+          url:image.currentSrc,background:style.backgroundImage}
+      });
+      assert.ok(photo.loaded, label+": "+slug+" image.complete&&image.naturalWidth>0");
+      assert.ok(photo.eager,label+": "+slug+" must not defer offscreen load");
+      assert.ok(photo.width>=85&&photo.height>=110,label+": "+slug+" has a painted rectangle "+JSON.stringify(photo));
+      assert.ok(photo.url.endsWith("/coaching-ancient/"+slug+"-cover.jpg"),label+": "+slug+" original");
+      assert.ok(photo.background.includes("/coaching-ancient/"+slug+"-cover.jpg"),label+": "+slug+" CSS fallback");
+      if (width===390)await card.screenshot({
+        path:output+"/ancient-"+slug+"-"+browserType.name()+"-"+locale+".png",
+      });
+    }
     const topics = root.locator("[data-coaching-topic-first]");
     const outcomes = root.locator("[data-coaching-outcome-first]");
     const formats = root.locator("fieldset").filter({

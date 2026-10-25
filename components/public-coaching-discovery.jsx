@@ -212,8 +212,17 @@ function CoachingLoungeCard({
     <div className={styles.loungeRow}>
       <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
         aria-label={t.fullDetails+': '+title}>
-        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized referrerPolicy="no-referrer"
-          sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
+        {traditionKey
+          ? <>
+              {/* Native eager image avoids Safari/WebKit skipping a lazy,
+                  absolutely positioned Next Image in a long scrolled grid. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.loungeTraditionPhoto} src={cardArtworkUrl(image)}
+                alt="" aria-hidden="true" loading="eager" decoding="async" width="640" height="720"
+                referrerPolicy="no-referrer"/>
+            </>
+          : <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized referrerPolicy="no-referrer"
+              sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>}
       </Link>
       <div className={styles.loungeContent}>
         <div className={styles.loungeMeta}>
