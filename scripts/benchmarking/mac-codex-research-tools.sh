@@ -106,11 +106,30 @@ install_remaster() {
       console.log("Registry integrity: "+p.dist.integrity);
     });'
 
-  printf 'Installing ONLY the Codex project skill. No app dependencies or global MCP changes.\n'
+  printf 'Staging Codex skill in an empty temporary working directory with a scrubbed environment.\n'
+  sandbox="$(mktemp -d "${TMPDIR:-/tmp}/hh-remaster.XXXXXXXX")"
+  # Cleanup on both success and failure; sandbox is an owned mktemp directory only.
+  trap '[[ -z "${sandbox:-}" ]] || rm -rf -- "$sandbox"' EXIT
+  mkdir -p "$sandbox/home" "$sandbox/work" "$sandbox/npm-cache"
   (
-    cd "$REPO_DIR"
-    npm_config_ignore_scripts=true npm exec --yes --package="$REMASTER_PKG" -- remaster install --agent codex --project
+    cd "$sandbox/work"
+    env -i HOME="$sandbox/home" PATH="$PATH" TMPDIR="$sandbox" npm_config_cache="$sandbox/npm-cache" npm_config_ignore_scripts=true \
+      npm exec --yes --package="$REMASTER_PKG" -- remaster install --agent codex --project
   )
+  src="$sandbox/work/.agents/skills/clone"
+  [[ -f "$src/SKILL.md" ]] && grep -q '^# Remaster' "$src/SKILL.md" || {
+    printf 'FAIL: staged vendor skill not found/mismatched\n' >&2; exit 2;
+  }
+  mkdir -p "$REPO_DIR/.agents/skills"
+  cp -R "$src" "$SKILL_DIR"
+  # Remaster substitutes the absolute skill path in SKILL.md at install time.
+  # Rewrite that one path to our project directory after copying.
+  REMASTER_SRC="$src" REMASTER_DEST="$SKILL_DIR" node -e '
+    const fs=require("node:fs");
+    const p=process.env.REMASTER_DEST+"/SKILL.md";
+    const value=fs.readFileSync(p,"utf8");
+    fs.writeFileSync(p,value.replaceAll(process.env.REMASTER_SRC,process.env.REMASTER_DEST));
+  '
   [[ -f "$SKILL_DIR/SKILL.md" ]] && grep -q '^# Remaster' "$SKILL_DIR/SKILL.md" || {
     printf 'FAIL: skill not installed or mismatched\n' >&2; exit 2;
   }
