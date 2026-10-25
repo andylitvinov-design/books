@@ -344,8 +344,10 @@ export default function TraditionCoaching({locale='en',accountId,template}){
            </div>
            <details className={base.reportDetails}>
              <summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
-             <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
+             <div className={base.reportPop}>
+<small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
              <small className={extra.noteTip} id="tradition-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+             </div>
            </details>
          </div>
         <div className={base.footerActions}>
