@@ -10,6 +10,9 @@ test('Legacy Energy / Love / Business categories remain available in More but no
     const primary = getSiteNavigation(locale)
     const bottom = getCompactNavigation(locale)
     assert.deepEqual(bottom.map(item => item.id), ['home','analysis','courses','profile','alchemy','pro','temple'])
+    assert.equal(bottom.find(item => item.id === 'alchemy')?.href, '/' + locale + '/services/alchemy-of-soul')
+    assert.equal(activeCompactNavigationId('/' + locale + '/services/alchemy-of-soul'), 'alchemy')
+    assert.ok(!bottom.some(item => item.id === 'coaching'), 'The old Coaching bottom tab must not return')
     for (const [id, slug] of [['energy','energy'],['love','love'],['business','business']]) {
       assert.equal(primary.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)
       assert.ok(!bottom.some(item => item.id === id), 'Topic remains outside fixed bottom bar')
