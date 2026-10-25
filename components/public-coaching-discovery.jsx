@@ -287,6 +287,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const privateCoachingLocale=lang==='es'?'en':lang
   const traditionHref=id=>'/'+privateCoachingLocale+'/app/coaching/'+id+(lang==='es'?'?lang=es':'')
   const [format,setFormat]=useState('all')
+  const [coachingChoice,setCoachingChoice]=useState('free')
   const [outcome,setOutcome]=useState('')
   const [sessionMode,setSessionMode]=useState('all')
   const [question,setQuestion]=useState('')
@@ -538,7 +539,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?<>
-        <CoachingLoungeEntry locale={lang} />
+        <CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.topicGroups} data-coaching-topic-first>
             <legend><strong>{t.groupHeading}</strong><span>{t.groupNote}</span></legend>
@@ -690,7 +691,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <ul>{t.coachFitChecks.map((text,i)=><li key={i}>{text}</li>)}</ul>
             <p className={styles.coachOnly}>{t.coachOnly}</p>
           </div>
-          <a href="#coaching-intake" className={styles.primary}>{t.request}<ArrowRight size={16} aria-hidden="true"/></a>
+          <a href="#coaching-intake" className={styles.primary} data-coaching-human-to-intake
+              onClick={()=>setCoachingChoice("session")}>{t.request}<ArrowRight size={16} aria-hidden="true"/></a>
         </section>}
         
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>

@@ -25,9 +25,9 @@ jobs:
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund
-      - name: Holistic Support practitioner path EN/RU/ES
+      - name: Holistic Support first screen, private handoff and Coaching Lounge contracts
         run: |
-          node --test tests/temple-support-hub.test.mjs
+          node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs
           npx eslint 'app/[locale]/holistic-support/page.tsx'
           npx tsc --noEmit
       - name: Energy Love Business inline focus regression
@@ -76,6 +76,7 @@ jobs:
             artifacts/public-services-production/
             artifacts/business-quiz-mobile/
             artifacts/ideas-mobile/
+            artifacts/holistic-support-mobile/
             artifacts/home-first-screen/
             artifacts/contact-channel-browser/
             artifacts/service-cart/

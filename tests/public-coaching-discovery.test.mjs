@@ -248,9 +248,9 @@ test('public lounge uses horizontal photo-left cards, filtered offers and origin
  assert.match(ui,/traditionKey="egyptian"/)
  assert.match(ui,/traditionKey="greek"/)
  for(const marker of ["chooseTradition:'Choose this session'","chooseTradition:'Выбрать сессию'","chooseTradition:'Elegir sesión'"])assert.ok(ui.includes(marker))
- assert.match(ui, /<CoachingLoungeEntry locale=\{lang\} \/>/,
+ assert.match(ui, /<CoachingLoungeEntry locale=\{lang\} selected=\{coachingChoice\} onSelect=\{setCoachingChoice\} \/>/,
    'three visible personal options now live in the Coaching Lounge first screen')
- assert.ok(ui.indexOf('<CoachingLoungeEntry locale={lang} />')<ui.indexOf('className={styles.morePaths}'),
+ assert.ok(ui.indexOf('<CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />')<ui.indexOf('className={styles.morePaths}'),
    'the three personal options precede the model discovery catalogue')
  assert.ok(ui.indexOf('className={styles.morePaths}')<ui.indexOf('data-coaching-session-capture'),
    'author traditions are still shown before the practitioner checklist and repeat CTA')
