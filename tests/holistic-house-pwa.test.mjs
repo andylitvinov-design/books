@@ -64,3 +64,17 @@ test('iOS Home Screen icon never invokes dynamic font download for unsupported s
  assert.doesNotMatch(icon,/'✦'\)/)
  assert.doesNotMatch(icon,/fontSize:size\*\.11/)
 })
+
+test('public Holistic House pages default to the correct Home Screen app without relabelling PsiAlchemy',()=>{
+  const root=readFileSync('app/layout.tsx','utf8')
+  const psiLayout=readFileSync('app/[locale]/homeopathy/layout.tsx','utf8')
+  const psiSpanish=readFileSync('app/es/homeopathy/layout.tsx','utf8')
+  const psi=JSON.parse(readFileSync('public/manifest.webmanifest','utf8'))
+  assert.match(root,/manifest: "\/holistic-house-app.webmanifest"/)
+  assert.match(root,/applicationName: "Holistic House"/)
+  assert.match(root,/appleWebApp: \{ capable: true, title: "Holistic House"/)
+  assert.match(psiLayout,/manifest: "\/manifest.webmanifest"/)
+  assert.match(psiSpanish,/manifest: "\/manifest.webmanifest"/)
+  assert.equal(psi.name,'PsiAlchemy')
+  assert.equal(psi.start_url,'/ru/homeopathy')
+})
