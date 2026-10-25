@@ -25,6 +25,11 @@ import "./public-wide-layout.css";
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
   title: "Holistic House",
+  // The main site installs as Holistic House, not the separate PsiAlchemy library.
+  manifest: "/holistic-house-app.webmanifest",
+  applicationName: "Holistic House",
+  appleWebApp: { capable: true, title: "Holistic House", statusBarStyle: "black-translucent" },
+  icons: { icon: "/icons/holistic-house-teal.svg", apple: "/holistic-house-icon/180" },
   description: "Holistic House offers free self-checks, educational resources and optional personal sessions with Andrey Litvinov in Toronto and online.",
   verification: { other: { "google-site-verification": "RsXfHdZ-u_AgKVoRSNIv_PKPcGjoDoqBBK3HZLaOzjc" } },
   openGraph: { type: "website", siteName: "Holistic House", images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },

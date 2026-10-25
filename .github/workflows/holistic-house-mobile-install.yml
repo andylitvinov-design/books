@@ -4,6 +4,14 @@ on:
   pull_request:
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'app/layout.tsx'
+      - 'app/manifest.ts'
+      - 'public/manifest.webmanifest'
+      - 'app/\[locale\]/layout.tsx'
+      - 'app/\[locale\]/homeopathy/**'
+      - 'app/es/homeopathy/**'
+      - 'scripts/verify-hh-mobile-head.mjs'
+      - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
       - 'app/\[locale\]/install/**'
       - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
@@ -23,6 +31,14 @@ on:
       - codex/public-book-library
     paths:
       - 'public/holistic-house*.webmanifest'
+      - 'app/layout.tsx'
+      - 'app/manifest.ts'
+      - 'public/manifest.webmanifest'
+      - 'app/\[locale\]/layout.tsx'
+      - 'app/\[locale\]/homeopathy/**'
+      - 'app/es/homeopathy/**'
+      - 'scripts/verify-hh-mobile-head.mjs'
+      - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
       - 'app/\[locale\]/install/**'
       - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
@@ -52,9 +68,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify install manifests and private-message safety
-        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
-        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js
+        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx
       - name: Build public phone installation pages without credentials
         run: npm run build
       - name: Check EN/RU install pages and real PNG icons
@@ -75,3 +91,4 @@ jobs:
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
           node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/portrait'||!f.shortcuts.some(x=>x.url==='/ru/app/consultations'))process.exit(1)"
+          node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098
