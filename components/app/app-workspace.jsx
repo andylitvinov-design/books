@@ -3773,6 +3773,11 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
                    completed:locale==='ru'?'Выполнено':'Completed',
                    cancelled:locale==='ru'?'Отменено':'Cancelled'})[request.status] || request.status)
               : (c[request.status] || request.status)}</span>
+            {Number(request.newMessageCount)>0&&
+              <span className="hh-badge" role="status">
+                {locale==='ru'?'Новых сообщений: ':locale==='es'?'Mensajes nuevos: ':'New messages: '}
+                {request.newMessageCount}
+              </span>}
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
@@ -3810,10 +3815,10 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             {request.remoteBooking && request.status==='completed' &&
               <ServiceReviews serviceId={request.serviceId} locale={locale} verifiedOnly />}
             <PracticeRequestConversation key={request.id} requestId={request.id}
-              autoOpen={requestedMessageId === request.id}
+              autoOpen={requestedMessageId === request.id || Number(request.newMessageCount)>0}
               accountId={data.account.id} locale={locale}
               initialMessage={typeof request.message==='string'?request.message:''}
-              createdAt={request.createdAt}/>
+              createdAt={request.createdAt} onViewed={reload} onSaved={reload}/>
             {request.sharedExcerpt && (
               <>
                 <p>{c.sharingNote}</p>
