@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
+import type { PublicMentorCourse, PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
 import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
@@ -32,6 +32,17 @@ const COPY = {
   en: {
     search: "Search services, topics or practitioners",
     mastersSearch: "Name, methods, services or city",
+    offering: "Service type",
+    anyOffering: "Any type",
+    courseTitle: "Course / training",
+    anyCourse: "Any published course",
+    noCourse: "No published courses yet",
+    courseUnavailable: "Course list unavailable",
+    method: "Method",
+    anyMethod: "Any method",
+    location: "Location",
+    anyLocation: "Anywhere",
+    publishedCourse: "Published course",
     filterTitle: "Find what fits you",
     all: "All areas",
     format: "Format",
@@ -70,6 +81,17 @@ const COPY = {
   ru: {
     search: "Название услуги, тема или имя мастера",
     mastersSearch: "Имя, метод, услуга или город",
+    offering: "Тип услуги",
+    anyOffering: "Все типы",
+    courseTitle: "Курсы / обучение",
+    anyCourse: "Все опубликованные курсы",
+    noCourse: "Пока нет опубликованных курсов",
+    courseUnavailable: "Список курсов недоступен",
+    method: "Метод",
+    anyMethod: "Любой метод",
+    location: "Местоположение",
+    anyLocation: "Любой город",
+    publishedCourse: "Опубликованный курс",
     filterTitle: "Подберите подходящую услугу",
     all: "Все направления",
     format: "Формат",
@@ -108,6 +130,17 @@ const COPY = {
   es: {
     search: "Servicio, tema o profesional",
     mastersSearch: "Nombre, método, servicio o ciudad",
+    offering: "Tipo de servicio",
+    anyOffering: "Todos los tipos",
+    courseTitle: "Curso / formación",
+    anyCourse: "Todos los cursos publicados",
+    noCourse: "No hay cursos publicados",
+    courseUnavailable: "Lista de cursos no disponible",
+    method: "Método",
+    anyMethod: "Cualquier método",
+    location: "Ubicación",
+    anyLocation: "Cualquier lugar",
+    publishedCourse: "Curso publicado",
     filterTitle: "Encuentra tu servicio",
     all: "Todas las áreas",
     format: "Modalidad",
@@ -146,10 +179,24 @@ const COPY = {
 };
 
 type Locale = keyof typeof COPY;
+const OFFERING_TYPES = ["session", "assessment", "package", "group", "workshop", "course", "event", "intro"] as const;
+const OFFERING_NAMES: Record<string, Record<Locale, string>> = {
+  session: { en: "1:1 sessions", ru: "Личные сессии", es: "Sesiones individuales" },
+  assessment: { en: "Assessments", ru: "Диагностика", es: "Evaluaciones" },
+  package: { en: "Programmes", ru: "Программы", es: "Programas" },
+  group: { en: "Group sessions", ru: "Групповые сессии", es: "Sesiones grupales" },
+  workshop: { en: "Workshops", ru: "Мастер-классы", es: "Talleres" },
+  course: { en: "Courses", ru: "Курсы", es: "Cursos" },
+  event: { en: "Events", ru: "Мероприятия", es: "Eventos" },
+  intro: { en: "Introductions", ru: "Знакомство", es: "Introducciones" },
+};
 type PriceChoice = "all" | "free" | "paid" | "contact";
 type FilterState = {
   query: string;
   area: string;
+  offeringType: string;
+  courseKey: string;
+  location: string;
   format: string;
   language: string;
   pricing: PriceChoice;
@@ -160,7 +207,7 @@ type FilterState = {
   sort: string;
 };
 
-const INITIAL: FilterState = { query: "", area: "", format: "", language: "", pricing: "all", goal: "", method: "", maxPrice: "", currency: "EUR", sort: "default" };
+const INITIAL: FilterState = { query: "", area: "", offeringType: "", courseKey: "", location: "", format: "", language: "", pricing: "all", goal: "", method: "", maxPrice: "", currency: "EUR", sort: "default" };
 
 const localized = (locale: string): Locale => (locale === "ru" || locale === "es" ? locale : "en");
 const isFree = (service: PublicService) =>
@@ -202,37 +249,68 @@ function serviceMatches(service: PublicService, f: FilterState) {
     areaName(service.areaKey, "en"), areaName(service.areaKey, "ru"), areaName(service.areaKey, "es"),
   ].join(" ")).includes(clean(f.query));
 }
-function masterMatches(master: PublicPractitioner, f: FilterState) {
+function masterMatches(master: PublicPractitioner, f: FilterState, courses: PublicMentorCourse[] = []) {
   const profile = master.profile || {};
   const allServices = master.services || [];
+  const publishedCourses = courses.filter((course) => course.practitionerSlug === master.slug);
+  const typeServices = allServices.filter((service) => !f.offeringType || service.offeringType === f.offeringType);
+  const selectedServiceId = f.courseKey.startsWith("service:") ? f.courseKey.slice("service:".length) : "";
+  const selectedCourseSlug = f.courseKey.startsWith("course:") ? f.courseKey.slice("course:".length) : "";
+  const scopedServices = selectedServiceId ? typeServices.filter((service) =>
+    service.id === selectedServiceId && service.offeringType === "course") :
+    selectedCourseSlug ? [] : typeServices;
+
   if (f.query && !clean([
     profile.displayName, profile.name, profile.professionalTitle, profile.shortBio,
     profile.fullBio, profile.city, profile.country, ...(profile.methods || []),
     ...allServices.flatMap((service) => [service.copy.title, service.copy.shortDescription]),
+    ...publishedCourses.flatMap((course) => [course.title, course.description]),
   ].join(" ")).includes(clean(f.query))) return false;
+
+  // Each option comes from real approved public service or published course snapshots.
+  if (f.offeringType && !typeServices.length &&
+      !(f.offeringType === "course" && publishedCourses.length)) return false;
+  if (selectedServiceId && !scopedServices.length) return false;
+  if (selectedCourseSlug && !publishedCourses.some((course) => course.slug === selectedCourseSlug)) return false;
+  if (f.courseKey && !selectedServiceId && !selectedCourseSlug) return false;
 
   if (f.area) {
     const quickTopic = MASTER_TOPICS.find((topic) => topic.id === f.area);
     const areas: readonly string[] = quickTopic ? quickTopic.areas : [f.area];
     const hasMatchingArea = (profile.areas || []).some((area) => areas.includes(area)) ||
-      allServices.some((service) => areas.includes(service.areaKey));
+      typeServices.some((service) => areas.includes(service.areaKey));
     const practitionerText = [
       ...(profile.methods || []), profile.professionalTitle, profile.shortBio,
-      ...allServices.map((service) => service.copy.title),
+      ...typeServices.map((service) => service.copy.title),
     ].join(" ");
     if (!hasMatchingArea && !(quickTopic && quickTopic.keywords.test(practitionerText))) return false;
   }
   if (f.format && !(profile.formats || []).includes(f.format) &&
-      !(f.format === "online" && (profile.formats || []).includes("online")) &&
-      !allServices.some((s) => s.deliveryFormat === f.format || s.deliveryFormat === "hybrid")) return false;
+      !typeServices.some((service) => service.deliveryFormat === f.format ||
+        service.deliveryFormat === "hybrid")) return false;
+  if (f.language && selectedCourseSlug &&
+      !publishedCourses.some((course) => course.slug === selectedCourseSlug && course.locale === f.language)) return false;
   if (f.language && !(profile.languages || []).some((lang) => clean(lang) === f.language) &&
-      !allServices.some((s) => s.languages?.some((lang) => clean(lang) === f.language))) return false;
-  if (f.pricing !== "all" && !allServices.some((s) => serviceMatches(s, { ...INITIAL, pricing: f.pricing }))) return false;
+      !typeServices.some((service) => service.languages?.some((lang) => clean(lang) === f.language)) &&
+      !(f.offeringType === "course" && publishedCourses.some((course) => course.locale === f.language))) return false;
+  if (f.location && ![profile.city, profile.region, profile.country,
+      ...typeServices.map((service) => service.locationLabel)].some((location) =>
+        clean(location) === clean(f.location))) return false;
+  if (f.method && ![...(profile.methods || []),
+      ...typeServices.flatMap((service) => service.methods || [])].some((method) =>
+        clean(method) === f.method)) return false;
+  // A price belongs to a specific public offering, not an unrelated service or an unpriced course.
+  if (f.pricing !== "all" && !scopedServices.some((service) =>
+    serviceMatches(service, { ...INITIAL, pricing: f.pricing }))) return false;
   return true;
 }
 
+type CourseChoice = { value: string; label: string };
+
 function Filters({
   locale, mode, state, setState, count, languages, methods,
+  offeringTypes = [], courseChoices = [], locations = [],
+  topics = MASTER_TOPICS, coursesUnavailable = false,
 }: {
   locale: Locale;
   mode: "masters" | "services";
@@ -241,55 +319,74 @@ function Filters({
   count: number;
   languages: string[];
   methods: string[];
+  offeringTypes?: string[];
+  courseChoices?: CourseChoice[];
+  locations?: string[];
+  topics?: readonly (typeof MASTER_TOPICS)[number][];
+  coursesUnavailable?: boolean;
 }) {
   const t = COPY[locale];
-  const set = (field: keyof FilterState, value: string) => setState({ ...state, [field]: value });
-  const active = state.query || state.area || state.format || state.language || state.pricing !== "all" || state.goal || state.method || state.maxPrice || state.sort !== "default";
-  const detailedFilters = (
-    <>
-      <fieldset className={styles.categories}>
-        <legend className={styles.legend}>{t.all}</legend>
-        <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
-        {AREAS.map(([id]) => (
-          <button type="button" key={id} className={state.area === id ? styles.selected : ""} aria-pressed={state.area === id} onClick={() => set("area", id)}>
-            {areaName(id, locale)}
-          </button>
-        ))}
-      </fieldset>
-      <div className={styles.selectGrid}>
-        <label>{t.format}
-          <select value={state.format} onChange={(event) => set("format", event.target.value)}>
-            <option value="">{t.anyFormat}</option>
-            <option value="online">{t.online}</option>
-            <option value="in_person">{t.inPerson}</option>
-          </select>
-        </label>
-        <label>{t.language}
-          <select value={state.language} onChange={(event) => set("language", event.target.value)}>
-            <option value="">{t.anyLanguage}</option>
-            {languages.map((code) => <option key={code} value={code}>{code.toUpperCase()}</option>)}
-          </select>
-        </label>
-        <label>{t.price}
-          <select value={state.pricing} onChange={(event) => set("pricing", event.target.value)}>
-            <option value="all">{t.anyPrice}</option>
-            <option value="free">{t.free}</option>
-            <option value="paid">{t.paid}</option>
-            <option value="contact">{t.contact}</option>
-          </select>
-        </label>
-        <label>{t.sort}
-          <select value={state.sort} onChange={(event) => set("sort", event.target.value)}>
-            <option value="default">{t.defaultSort}</option>
-            <option value="az">{t.az}</option>
-            {mode === "services" ? <option value="shorter">{t.shorter}</option> : null}
-          </select>
-        </label>
-      </div>
-    </>
+  // Explicitly control the extra filters disclosure. The hydrated mobile
+  // tab can re-render between touchstart and the browser's native toggle.
+  const [mastersMoreOpen, setMastersMoreOpen] = useState(false);
+  const set = (field: keyof FilterState, value: string) => {
+    const next = { ...state, [field]: value };
+    if (field === "offeringType" && value !== "course") next.courseKey = "";
+    if (field === "courseKey" && value) next.offeringType = "course";
+    setState(next);
+  };
+  const active = state.query || state.area || state.offeringType || state.courseKey ||
+    state.location || state.format || state.language || state.pricing !== "all" ||
+    state.goal || state.method || state.maxPrice || state.sort !== "default";
+  const areaFilters = (
+    <fieldset className={styles.categories}>
+      <legend className={styles.legend}>{t.all}</legend>
+      <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
+      {AREAS.map(([id]) => (
+        <button type="button" key={id} className={state.area === id ? styles.selected : ""} aria-pressed={state.area === id} onClick={() => set("area", id)}>
+          {areaName(id, locale)}
+        </button>
+      ))}
+    </fieldset>
+  );
+  const pricingSelect = (
+    <label>{t.price}
+      <select value={state.pricing} onChange={(event) => set("pricing", event.target.value)}>
+        <option value="all">{t.anyPrice}</option>
+        <option value="free">{t.free}</option>
+        <option value="paid">{t.paid}</option>
+        <option value="contact">{t.contact}</option>
+      </select>
+    </label>
+  );
+  const sortSelect = (
+    <label>{t.sort}
+      <select value={state.sort} onChange={(event) => set("sort", event.target.value)}>
+        <option value="default">{t.defaultSort}</option>
+        <option value="az">{t.az}</option>
+        {mode === "services" ? <option value="shorter">{t.shorter}</option> : null}
+      </select>
+    </label>
+  );
+  const languageSelect = (
+    <label>{t.language}
+      <select value={state.language} onChange={(event) => set("language", event.target.value)}>
+        <option value="">{t.anyLanguage}</option>
+        {languages.map((code) => <option key={code} value={code}>{code.toUpperCase()}</option>)}
+      </select>
+    </label>
+  );
+  const formatSelect = (
+    <label>{t.format}
+      <select value={state.format} onChange={(event) => set("format", event.target.value)}>
+        <option value="">{t.anyFormat}</option>
+        <option value="online">{t.online}</option>
+        <option value="in_person">{t.inPerson}</option>
+      </select>
+    </label>
   );
   return (
-    <section className={styles.filters} aria-label={t.filterTitle}>
+    <section className={styles.filters} aria-label={t.filterTitle} data-mentor-filters={mode === "masters" ? "" : undefined}>
       <div className={styles.heading}>
         <h2>{mode === "masters" ? (locale === "ru" ? "Выберите практика" : locale === "es" ? "Elige un profesional" : "Choose a practitioner") : t.filterTitle}</h2>
         <span className={styles.count} role="status" aria-live="polite">{count} {mode === "masters" && count === 1 ? (locale === "ru" ? "мастер" : locale === "es" ? "profesional" : "practitioner") : mode === "masters" ? t.masters : t.services}</span>
@@ -306,43 +403,109 @@ function Filters({
           onChange={(event) => set("query", event.target.value)}
         />
       </div>
-      {mode === "masters" && (
-        <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
-          <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
-          {MASTER_TOPICS.map((topic) => (
-            <button key={topic.id} type="button" className={state.area === topic.id ? styles.selected : ""} aria-pressed={state.area === topic.id} onClick={() => set("area", topic.id)}>
-              {topic[locale]}
-            </button>
-          ))}
-        </div>
-      )}
       {mode === "masters" ? (
-        <details className={styles.masterExtra}>
-          <summary>{locale === "ru" ? "Больше фильтров" : locale === "es" ? "Más filtros" : "More filters"} <span aria-hidden="true">⌄</span></summary>
-          {detailedFilters}
-        </details>
-      ) : detailedFilters}
-      {mode==="services"&&<details className={styles.advanced}><summary>{locale==="ru"?"Цель, метод и бюджет":locale==="es"?"Objetivo, método y presupuesto":"Goal, method & budget"}</summary>
-        <div className={styles.selectGrid}>
-          <label>{locale==="ru"?"Желаемая цель":"Desired goal"}
-            <select value={state.goal} onChange={event=>set("goal",event.target.value)}>
-              <option value="">{locale==="ru"?"Любая цель":"Any goal"}</option>
-              {([["confidence","Уверенность","Confidence"],["relationships","Отношения","Relationships"],["relaxation","Расслабление","Relaxation"],["learning","Обучение","Learning"],["clarity","Ясность","Clarity"],["purpose","Предназначение","Purpose"],["energy","Энергия","Energy"],["self_awareness","Самопознание","Self-awareness"]] as const).map(([id,ru,en])=><option value={id} key={id}>{locale==="ru"?ru:en}</option>)}
-            </select>
-          </label>
-          <label>{locale==="ru"?"Метод":"Method"}
-            <select value={state.method} onChange={event=>set("method",event.target.value)}>
-              <option value="">{locale==="ru"?"Любой":"Any"}</option>{methods.map(method=><option value={method} key={method}>{method}</option>)}
-            </select>
-          </label>
-          <label>{locale==="ru"?"Бюджет до":"Budget up to"}
-            <select value={state.maxPrice} onChange={event=>set("maxPrice",event.target.value)}>
-              <option value="">{locale==="ru"?"Без лимита":"No limit"}</option>{[30,50,75,100,150,200,300].map(value=><option value={value} key={value}>{value}</option>)}
-            </select>
-          </label>
-          <label>{locale==="ru"?"Валюта":"Currency"}<select value={state.currency} onChange={event=>set("currency",event.target.value)}>{["EUR","CAD","USD"].map(value=><option key={value} value={value}>{value}</option>)}</select></label>
-        </div><small>{locale==="ru"?"Цены сравниваются только в одной валюте.":"Prices are compared in the selected currency only."}</small>
-      </details>}
+        <>
+          <div className={styles.mentorFilterGrid} data-mentor-primary-filters>
+            <label>{t.offering}
+              <select id="mentor-filter-offering" value={state.offeringType}
+                onChange={(event) => set("offeringType", event.target.value)}>
+                <option value="">{t.anyOffering}</option>
+                {offeringTypes.map((type) => <option key={type} value={type}>{OFFERING_NAMES[type]?.[locale] || type}</option>)}
+              </select>
+            </label>
+            <label>{t.courseTitle}
+              <select id="mentor-filter-course" value={state.courseKey}
+                disabled={!courseChoices.length}
+                onChange={(event) => set("courseKey", event.target.value)}>
+                <option value="">{courseChoices.length ? t.anyCourse : coursesUnavailable ? t.courseUnavailable : t.noCourse}</option>
+                {courseChoices.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </label>
+            {formatSelect}
+            {languageSelect}
+          </div>
+          <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
+            <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
+            {topics.map((topic) => (
+              <button key={topic.id} type="button" className={state.area === topic.id ? styles.selected : ""} aria-pressed={state.area === topic.id} onClick={() => set("area", topic.id)}>
+                {topic[locale]}
+              </button>
+            ))}
+          </div>
+          <div className={styles.masterExtra}>
+            <button type="button" className={styles.masterExtraToggle}
+              aria-expanded={mastersMoreOpen} aria-controls="mentor-extra-filters"
+              onTouchEnd={(event) => {
+                // Touch-driven nested tabs sometimes suppress the emulated click.
+                // Prevent it and perform exactly one state update on touchend.
+                event.preventDefault();
+                setMastersMoreOpen((previous) => !previous);
+              }}
+              onClick={() => setMastersMoreOpen((previous) => !previous)}>
+              {locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"}
+              <span aria-hidden="true">⌄</span>
+            </button>
+            <div id="mentor-extra-filters" className={styles.masterExtraBody} hidden={!mastersMoreOpen}>
+            <div className={styles.selectGrid}>
+              <label>{t.method}
+                <select value={state.method} onChange={(event) => set("method", event.target.value)}>
+                  <option value="">{t.anyMethod}</option>
+                  {methods.map((method) => <option value={method} key={method}>{method}</option>)}
+                </select>
+              </label>
+              <label>{t.location}
+                <select value={state.location} onChange={(event) => set("location", event.target.value)}>
+                  <option value="">{t.anyLocation}</option>
+                  {locations.map((location) => <option value={location} key={location}>{location}</option>)}
+                </select>
+              </label>
+              {pricingSelect}
+              {sortSelect}
+            </div>
+            {areaFilters}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {areaFilters}
+          <div className={styles.selectGrid}>
+            {formatSelect}
+            {languageSelect}
+            {pricingSelect}
+            {sortSelect}
+          </div>
+          <details className={styles.advanced}>
+            <summary>{locale === "ru" ? "Цель, метод и бюджет" : locale === "es" ? "Objetivo, método y presupuesto" : "Goal, method & budget"}</summary>
+            <div className={styles.selectGrid}>
+              <label>{locale === "ru" ? "Желаемая цель" : locale === "es" ? "Objetivo deseado" : "Desired goal"}
+                <select value={state.goal} onChange={(event) => set("goal", event.target.value)}>
+                  <option value="">{locale === "ru" ? "Любая цель" : locale === "es" ? "Cualquier objetivo" : "Any goal"}</option>
+                  {([["confidence", "Уверенность", "Confidence"], ["relationships", "Отношения", "Relationships"], ["relaxation", "Расслабление", "Relaxation"], ["learning", "Обучение", "Learning"], ["clarity", "Ясность", "Clarity"], ["purpose", "Предназначение", "Purpose"], ["energy", "Энергия", "Energy"], ["self_awareness", "Самопознание", "Self-awareness"]] as const).map(([id, ru, en]) => <option value={id} key={id}>{locale === "ru" ? ru : en}</option>)}
+                </select>
+              </label>
+              <label>{t.method}
+                <select value={state.method} onChange={(event) => set("method", event.target.value)}>
+                  <option value="">{t.anyMethod}</option>
+                  {methods.map((method) => <option value={method} key={method}>{method}</option>)}
+                </select>
+              </label>
+              <label>{locale === "ru" ? "Бюджет до" : locale === "es" ? "Presupuesto hasta" : "Budget up to"}
+                <select value={state.maxPrice} onChange={(event) => set("maxPrice", event.target.value)}>
+                  <option value="">{locale === "ru" ? "Без лимита" : locale === "es" ? "Sin límite" : "No limit"}</option>
+                  {[30, 50, 75, 100, 150, 200, 300].map((value) => <option value={value} key={value}>{value}</option>)}
+                </select>
+              </label>
+              <label>{locale === "ru" ? "Валюта" : locale === "es" ? "Moneda" : "Currency"}
+                <select value={state.currency} onChange={(event) => set("currency", event.target.value)}>
+                  {["EUR", "CAD", "USD"].map((value) => <option key={value} value={value}>{value}</option>)}
+                </select>
+              </label>
+            </div>
+            <small>{locale === "ru" ? "Цены сравниваются только в одной валюте." : locale === "es" ? "Los precios solo se comparan en la moneda elegida." : "Prices are compared in the selected currency only."}</small>
+          </details>
+        </>
+      )}
       {active ? <button type="button" className={styles.reset} onClick={() => setState(INITIAL)}>{t.clear} ×</button> : null}
     </section>
   );
@@ -459,28 +622,91 @@ export function MarketplaceServiceFinder({ services, locale: pageLocale }: { ser
   );
 }
 
-export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: { practitioners: PublicPractitioner[]; locale: string }) {
+export function MarketplaceMasterFinder({
+  practitioners, courses = [], coursesUnavailable = false, locale: pageLocale,
+}: {
+  practitioners: PublicPractitioner[];
+  courses?: PublicMentorCourse[];
+  coursesUnavailable?: boolean;
+  locale: string;
+}) {
   const locale = localized(pageLocale);
   const [state, setState] = useState<FilterState>(INITIAL);
-  const languages = useMemo(() => [...new Set(practitioners.flatMap((p) => [
-    ...(p.profile?.languages || []),
-    ...(p.services || []).flatMap((s) => s.languages || []),
+  const publishedCourses = useMemo(() => {
+    const approvedSlugs = new Set(practitioners.map((master) => master.slug));
+    return courses.filter((course) => approvedSlugs.has(course.practitionerSlug));
+  }, [courses, practitioners]);
+  const languages = useMemo(() => [...new Set(practitioners.flatMap((master) => [
+    ...(master.profile?.languages || []),
+    ...(master.services || []).flatMap((service) => service.languages || []),
+  ]).concat(publishedCourses.map((course) => course.locale)).map(clean).filter(Boolean))].sort(),
+    [practitioners, publishedCourses]);
+  const methods = useMemo(() => [...new Set(practitioners.flatMap((master) => [
+    ...(master.profile?.methods || []),
+    ...(master.services || []).flatMap((service) => service.methods || []),
   ]).map(clean).filter(Boolean))].sort(), [practitioners]);
+  const locations = useMemo(() => [...new Set(practitioners.flatMap((master) => [
+    master.profile?.city, master.profile?.country,
+    ...(master.services || []).filter((service) => service.deliveryFormat !== "online")
+      .map((service) => service.locationLabel),
+  ]).map((item) => String(item || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, pageLocale)),
+    [practitioners, pageLocale]);
+  const offeringTypes = useMemo(() => {
+    const offered = new Set(practitioners.flatMap((master) =>
+      (master.services || []).map((service) => service.offeringType)));
+    if (publishedCourses.length) offered.add("course");
+    return OFFERING_TYPES.filter((type) => offered.has(type));
+  }, [practitioners, publishedCourses]);
+  const courseChoices = useMemo(() => {
+    const results: CourseChoice[] = [];
+    for (const master of practitioners) {
+      for (const service of master.services || []) {
+        if (service.offeringType === "course") {
+          results.push({ value: "service:" + service.id, label: service.copy.title });
+        }
+      }
+    }
+    for (const course of publishedCourses) {
+      results.push({ value: "course:" + course.slug,
+        label: course.title + " · " + course.locale.toUpperCase() });
+    }
+    return results.sort((a, b) => a.label.localeCompare(b.label, pageLocale));
+  }, [practitioners, publishedCourses, pageLocale]);
+  const topics = useMemo(() => MASTER_TOPICS.filter((topic) =>
+    practitioners.some((master) => masterMatches(master,
+      { ...INITIAL, area: topic.id }, publishedCourses))), [practitioners, publishedCourses]);
   const visible = useMemo(() => {
-    const list = practitioners.filter((master) => masterMatches(master, state));
-    if (state.sort === "az") return list.sort((a, b) => (a.profile?.displayName || "").localeCompare(b.profile?.displayName || "", pageLocale));
+    const list = practitioners.filter((master) => masterMatches(master, state, publishedCourses));
+    if (state.sort === "az") return list.sort((a, b) =>
+      (a.profile?.displayName || "").localeCompare(b.profile?.displayName || "", pageLocale));
     return list;
-  }, [practitioners, state, pageLocale]);
+  }, [practitioners, publishedCourses, state, pageLocale]);
   const t = COPY[locale];
   return (
     <div className={practitioners.length === 1 ? `${styles.explorer} ${styles.singleMaster}` : styles.explorer}>
-      <Filters locale={locale} mode="masters" state={state} setState={setState} count={visible.length} languages={languages} methods={[]} />
-      {visible.length ? <div className={styles.cardGrid}>
+      <Filters locale={locale} mode="masters" state={state} setState={setState}
+        count={visible.length} languages={languages} methods={methods} locations={locations}
+        offeringTypes={offeringTypes} courseChoices={courseChoices} topics={topics}
+        coursesUnavailable={coursesUnavailable} />
+      {visible.length ? <div className={styles.cardGrid} data-mentor-cards>
         {visible.map((master) => {
           const profile = master.profile || {};
           const name = profile.displayName || profile.name || t.practitioner;
-          const certified = master.credentials?.some((c) => c.public && c.verificationStatus === "verified" && (!c.expiresOn || c.expiresOn >= new Date().toISOString().slice(0, 10)));
-          const canRequestEnergy = (master.services || []).some((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual");
+          const certified = master.credentials?.some((credential) => credential.public &&
+            credential.verificationStatus === "verified" &&
+            (!credential.expiresOn || credential.expiresOn >= new Date().toISOString().slice(0, 10)));
+          const masterServices = master.services || [];
+          const filteredServices = state.offeringType ?
+            masterServices.filter((service) => service.offeringType === state.offeringType) : masterServices;
+          const firstService = state.courseKey.startsWith("service:") ?
+            filteredServices.find((service) => service.id === state.courseKey.slice("service:".length)) :
+            filteredServices[0];
+          const masterCourses = publishedCourses.filter((course) => course.practitionerSlug === master.slug);
+          const featuredCourse = masterCourses.find((course) =>
+            "course:" + course.slug === state.courseKey) || masterCourses[0];
+          const canRequestEnergy = !state.offeringType && !state.courseKey &&
+            masterServices.some((service) =>
+              service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual");
           return (
             <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id}>
               <div className={styles.masterHeading}>
@@ -491,15 +717,26 @@ export function MarketplaceMasterFinder({ practitioners, locale: pageLocale }: {
               </div>
               <p className={styles.description}>{profile.shortBio || ""}</p>
               <div className={styles.meta}>
-                {(profile.languages || []).length ? <span>{profile.languages?.map((v) => v.toUpperCase()).join(" · ")}</span> : null}
+                {(profile.languages || []).length ? <span>{profile.languages?.map((lang) => lang.toUpperCase()).join(" · ")}</span> : null}
                 {certified ? <span>{t.credentials}</span> : null}
                 {master.isPartner ? <span>{t.partner}</span> : null}
               </div>
-              {(master.services || []).length ? <p className={styles.offerPreview}>{master.services.length} {t.services} · {master.services[0]?.copy?.title}</p> : null}
+              {firstService ? <p className={styles.offerPreview}>{filteredServices.length} {t.services} · {firstService.copy.title}</p> : null}
+              {featuredCourse ? <p className={styles.coursePreview}>
+                <Link href={`/${featuredCourse.locale}/courses/masters/${featuredCourse.slug}`}>
+                  {t.publishedCourse}: {featuredCourse.title} <span aria-hidden="true">↗</span>
+                </Link>
+              </p> : null}
               <div className={styles.actions}>
-                {!canRequestEnergy && (master.services || []).length ? <Link className={styles.secondary} href={getPublicServiceDetailHref(locale, master.slug, master.services[0].slug)}>{t.viewService}</Link> : null}
-                <Link className={canRequestEnergy ? styles.secondary : styles.primary} href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
-                {canRequestEnergy ? <Link className={styles.energyButton} href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>{locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ? "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span></Link> : null}
+                {!canRequestEnergy && firstService ? <Link className={styles.secondary}
+                  href={getPublicServiceDetailHref(locale, master.slug, firstService.slug)}>{t.viewService}</Link> : null}
+                <Link className={canRequestEnergy ? styles.secondary : styles.primary}
+                  href={"/" + locale + "/masters/" + master.slug}>{t.viewProfile}<span aria-hidden="true">→</span></Link>
+                {canRequestEnergy ? <Link className={styles.energyButton}
+                  href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(master.slug)}`}>
+                  {locale === "ru" ? "Заказать энергоподдержку" : locale === "es" ?
+                    "Solicitar apoyo energético" : "Request energy support"} <span aria-hidden="true">→</span>
+                </Link> : null}
               </div>
             </article>
           );

@@ -177,7 +177,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       setActivePanel('services')
       if(params.get('create')==='1'){
         const starter=params.get('starter')
-        setProStarter(['session','intro','workshop'].includes(starter)?starter:'')
+        setProStarter(['session','intro','workshop','diagnostic','energy','personal'].includes(starter)?starter:'')
         setNewServiceRequest(current=>current+1)
       }
     }
