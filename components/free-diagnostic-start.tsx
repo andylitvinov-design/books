@@ -41,7 +41,13 @@ const copy = {
   },
 } as const;
 
-export function FreeDiagnosticStart({ locale }: { locale: PublicLocale }) {
+const concise = {
+  en: { intro: "Only your phone is needed to begin. Next you will briefly describe your question, then answer the coaching questionnaire.", phone: "Phone number", action: "Start free diagnosis", error: "Enter a phone number with 8–15 digits." },
+  ru: { intro: "Для начала нужен только телефон. Затем вы кратко опишете запрос и ответите на вопросы коучинговой анкеты.", phone: "Номер телефона", action: "Начать бесплатную диагностику", error: "Укажите номер телефона: 8–15 цифр." },
+  es: { intro: "Solo necesitas dejar tu teléfono. Después describirás tu pregunta y completarás el cuestionario.", phone: "Teléfono", action: "Comenzar diagnóstico gratis", error: "Introduce un teléfono de 8 a 15 dígitos." },
+} as const;
+
+export function FreeDiagnosticStart({ locale, compact = false }: { locale: PublicLocale; compact?: boolean }) {
   const t = copy[locale];
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -54,7 +60,7 @@ export function FreeDiagnosticStart({ locale }: { locale: PublicLocale }) {
     const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254 ? value : "";
     const phone = !email && /^\+?[0-9 ().-]{8,28}$/.test(value) &&
       value.replace(/\D/g, "").length >= 8 && value.replace(/\D/g, "").length <= 15 ? value : "";
-    if (!email && !phone) { setError(t.error); return; }
+    if ((compact && !phone) || (!email && !phone)) { setError(compact ? concise[locale].error : t.error); return; }
     try {
       sessionStorage.setItem(DIAGNOSTIC_START_KEY, JSON.stringify({
         createdAt: Date.now(), locale, name: name.trim(), email, phone, topic, question: question.trim(),
@@ -64,6 +70,25 @@ export function FreeDiagnosticStart({ locale }: { locale: PublicLocale }) {
     }
     window.location.assign("/" + locale + "/coaching/intake");
   }
+  if (compact) {
+    const short = concise[locale];
+    return <section id="free-diagnostic-start" className={[styles.card, styles.compact].join(" ")}
+      data-free-diagnostic-start data-free-diagnostic-phone-only lang={locale}>
+      <p className={styles.kicker}>{t.kicker}</p>
+      <p className={styles.compactIntro}>{short.intro}</p>
+      <form className={styles.compactForm} onSubmit={continueIntake}>
+        <label>{short.phone}
+          <input type="tel" inputMode="tel" autoComplete="tel" required maxLength={28}
+            value={contact} placeholder="+1 416…"
+            onChange={event => { setContact(event.target.value); setError(""); }} />
+        </label>
+        {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+        <button type="submit" className={styles.action}>{short.action}<ArrowRight size={18} aria-hidden="true" /></button>
+      </form>
+      <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true" />{t.privacy}</p>
+    </section>;
+  }
+
   return <section id="free-diagnostic-start" className={styles.card} data-free-diagnostic-start lang={locale}>
     <div className={styles.heading}>
       <span className={styles.icon}><Sparkles size={21} aria-hidden="true" /></span>
