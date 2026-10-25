@@ -25,6 +25,8 @@ jobs:
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund
+      - name: Remote Energy Support compact booking, approved prices and secure handoff
+        run: node --test tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs
       - name: Holistic Support first screen, private handoff and Coaching Lounge contracts
         run: |
           node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs
