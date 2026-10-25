@@ -22,7 +22,8 @@ async function handle(request) {
       const url = new URL(request.url)
       const photoId = url.searchParams.get('photo')
       if (photoId !== null) {
-        if ([...url.searchParams.keys()].some(key => key !== 'photo'))
+        if (url.searchParams.getAll('photo').length !== 1 ||
+            [...url.searchParams.keys()].some(key => key !== 'photo'))
           throw new AppError('INVALID_PHOTO_REQUEST', 400)
         await consumeRate(config, { op: 'reiki-owner-photo', id: photoId }, 12, 60)
         return NextResponse.json(await inbox.photo({ id: photoId }), { headers: PRIVATE_HEADERS })

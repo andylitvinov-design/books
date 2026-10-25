@@ -306,17 +306,6 @@ async function installLocalAccountMock(page) {
 }
 
 async function exerciseJourney(page, locale, width) {
-  // Synthetic portrait avoids uploading any real student image or identity.
-  photoFixture = await page.evaluate(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 256; canvas.height = 256;
-    const context = canvas.getContext("2d");
-    context.fillStyle = "#ceb89b"; context.fillRect(0,0,256,256);
-    context.fillStyle = "#654832"; context.fillRect(64,64,128,128);
-    return canvas.toDataURL("image/jpeg", .8).split(",")[1];
-  }).catch(() => null);
-  // The first iteration runs on about:blank where canvas may be unsupported;
-  // use the document created by the app below if necessary.
   const removeMock = await installLocalAccountMock(page);
   await page.setViewportSize({width, height:844});
   await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn", { waitUntil:"domcontentloaded",timeout:90000 });

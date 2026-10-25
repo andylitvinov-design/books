@@ -113,9 +113,11 @@ export function ReikiInitiationPhoto({ locale, accountId, enabled, photo, onSave
         <input type="file" accept="image/*" disabled={!enabled || busy}
           onChange={event => { void upload(event); }} aria-label={ru ? "Загрузить фото для инициации" : "Upload initiation photo"} />
       </label>
-      {!enabled ? <p className={styles.note}>{ru
-        ? "Для сохранения войдите в аккаунт и завершите предыдущие шаги курса."
-        : "Sign in and complete the preceding course steps to save your photo."}</p> : null}
+      {!enabled ? <p className={styles.note}>{photo?.exists
+        ? (ru ? "Заявка уже отправлена. Фото сохранено, замена недоступна."
+          : "Your application was submitted. The saved photo cannot be replaced.")
+        : (ru ? "Для сохранения войдите в аккаунт и завершите предыдущие шаги курса."
+          : "Sign in and complete the preceding course steps to save your photo.")}</p> : null}
       <p className={styles.note}><LockKeyhole size={14} aria-hidden="true" />{ru
         ? "Приватное хранение · без публикации и пересылки в мессенджеры"
         : "Private storage · never posted publicly or sent through messengers"}</p>
