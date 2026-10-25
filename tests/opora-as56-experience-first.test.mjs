@@ -7,6 +7,7 @@ import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skill
 import {COURSE_ANTISTRESS_SKILLS_V6,validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {oporaExperienceDay,oporaExperienceGuidesValid,oporaExperienceSupportValid,oporaExperienceTransferChoices} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {oporaGentleCopy} from '../lib/inner-growth/opora-gentle-journey.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {oporaAs58Valid,OPORA_PRIMARY_EMOTIONS} from '../lib/inner-growth/opora-as58-one-action.js'
 import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS,buildCourseSlides,verifyCourseSlideVisitOrder} from '../lib/inner-growth/course-slide-sequence.js'
@@ -183,7 +184,7 @@ test('day one restores five opening screens and all days add untracked support a
       // Skipping the optional mood choice is represented as null, never a fabricated feeling.
       assert.equal(f.payload.welcomeFeeling,null)
     }
-    assert.match(textOf(h.tree),new RegExp(d.saved))
+    assert.ok(textOf(h.tree).includes(oporaEndingCopy(lang).congratsLead),'Saved receipt uses current supportive wording')
     assert.ok(textOf(h.tree).includes(daily.transfer),'Confirmed receipt shows the one selected step')
     assert.match(textOf(h.tree),lang==='ru'?/Поздравляем/:/Congratulations/)
     assert.ok(!findButton(h.tree,lang==='ru'?'Послушать волны':'Relax with waves'),
