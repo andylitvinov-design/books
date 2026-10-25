@@ -35,15 +35,15 @@ const EXPERIENCE_SCENE_KEY=Object.freeze({
 const EXPERIMENT_WORDS=Object.freeze({
   ru:{title:'ПРАКТИКА-ЭКСПЕРИМЕНТ',step:'Шаг',next:'Следующий шаг',
     firstTitle:'Упражнение № 1. Мой знак опоры',
-    firstInvite:'Найдём личный предмет, цвет или слово, свяжем его с нужным вам качеством и попробуем маленький шаг. Можно остановиться или пропустить. Хотите попробовать?',
+    firstInvite:'Сегодня исследуем телесный опыт, чувство, мысль и личный образ, затем сделаем маленький ритуал. Мягкая музыка по желанию. Начнём?',
     prompt:'Выберите то, что подходит',note:'Это личный выбор, а не оценка. Отмечайте попытку честно; можно остановиться или пропустить.'},
   en:{title:'TRY A MICRO-EXPERIMENT',step:'Step',next:'Next step',
     firstTitle:'Exercise 1. Find your personal anchor',
-    firstInvite:'Find a meaningful everyday object, colour or word and link it with one helpful quality and a small action. You can stop or skip. Would you like to try?',
+    firstInvite:'Today we explore body, feeling, thoughts and a personal image, then try a small ritual. Gentle music is optional. Shall we begin?',
     prompt:'Choose what fits',note:'This is your choice, not a score. Report only what you actually tried; you may stop or skip.'},
   es:{title:'PRUEBA UN MINIEXPERIMENTO',step:'Paso',next:'Siguiente paso',
     firstTitle:'Ejercicio 1. Mi señal de apoyo',
-    firstInvite:'Busca un objeto, color o palabra con un significado útil para ti. Prueba un paso pequeño; puedes detenerte o saltarlo. ¿Quieres probar?',
+    firstInvite:'Hoy exploramos cuerpo, emoción, pensamiento y una imagen personal, seguidos de un pequeño ritual. La música es opcional. ¿Empezamos?',
     prompt:'Elige lo que te sirva',note:'No es una nota. Cuenta solo lo que probaste; puedes parar o saltarlo.'},
 })
 const WORDS={
@@ -1065,7 +1065,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             </div>
             <div className={styles.overviewPurpose} data-opora-overview-purpose="true">
               <strong>{j.overviewPurposeLabel}</strong>
-              <p>{cycle.day===1?j.dayOnePurpose:depth?.why}</p>
+              <p>{cycle.day===1&&!showSkill60?j.dayOnePurpose:depth?.why}</p>
             </div>
           </>}
           {moment==='recapNext'&&<div className={styles.recapSummary}
