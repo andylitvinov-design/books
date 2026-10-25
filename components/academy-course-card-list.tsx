@@ -14,6 +14,7 @@ export type AcademyCourseItem = CatalogShowcaseItem & {
   free?: boolean;
   duration?: string;
   detailsHint?: string;
+  archiveKind?: "course" | "video";
 };
 
 const copy = {
@@ -43,7 +44,9 @@ function AcademyCourseCard({ item, locale }: { item: AcademyCourseItem; locale: 
   const hintId = `academy-course-hint-${item.id}`;
 
   return (
-    <article className={styles.card} role="listitem" data-academy-course-card={item.id}>
+    <article className={styles.card} role="listitem" data-academy-course-card={item.id}
+      data-psimaster-course={item.archiveKind === "course" ? item.id : undefined}
+      data-psimaster-video={item.archiveKind === "video" ? item.id : undefined}>
       <div className={styles.upper}>
         <Link className={styles.photo} href={item.href} aria-label={item.title}>
           {item.image ? (
