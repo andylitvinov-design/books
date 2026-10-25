@@ -22,6 +22,21 @@ test("Holistic Support has an accessible audio and video meditation destination 
   assert.match(page, /<audio controls preload="none"/);
   assert.match(page, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
   assert.match(page, /<AcademyCourseVideoPlaylist/);
+  assert.match(page, /compact\s*\/>/);
+  assert.match(page, /data-holistic-meditation-screen="video"/);
+  assert.match(page, /data-holistic-meditation-screen="audio"/);
+  assert.match(page, /id="meditation-audio"/);
+  assert.match(page, /href="#meditation-audio"/);
+  assert.match(css, /height:calc\(100svh - 112px\)/);
+  assert.match(css, /height:calc\(100svh - 142px\)/);
+  assert.match(css, /overflow-y:auto/);
+  const playlistCss = read("components/academy-course-video-playlist.module.css");
+  const playlistUi = read("components/academy-course-video-playlist.tsx");
+  assert.match(playlistCss, /\.compact \.sequence\{display:none\}/);
+  assert.match(playlistCss, /\.compact \.controls button\{[^}]*min-height:44px/);
+  assert.match(playlistUi, /key=\{active\.id\}/);
+  assert.match(playlistUi, /aria-label=\{compact \? lesson\.title : undefined\}/);
+
   assert.match(page, /introText=\{t\.meditationVideoIntro\}/);
   assert.match(page, /data-holistic-russian-archive/);
   assert.match(page, /\/ru\/holistic-support#meditation-practices/);

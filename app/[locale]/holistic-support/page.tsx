@@ -81,6 +81,9 @@ const copy = {
     meditationMore: "Explore more Academy meditations",
     meditationRussianArchive: "Open the original PsiMaster series in Russian",
     meditationAudioFallback: "Your browser does not support audio playback.",
+    meditationToAudio: "Next · Calming audio",
+    meditationBackToVideo: "Back to video",
+
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Situation analysis, constellation-informed reflection and optional homeopathic discussion as a symbolic or complementary approach — not medical treatment.",
     alchemyAction: "Explore Psychic Alchemy",
@@ -157,6 +160,9 @@ const copy = {
     meditationMore: "Другие медитации в Академии",
     meditationRussianArchive: "Оригинальный архив PsiMaster (RU)",
     meditationAudioFallback: "Ваш браузер не поддерживает воспроизведение аудио.",
+    meditationToAudio: "Далее · Спокойное аудио",
+    meditationBackToVideo: "Назад к видео",
+
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Разбор ситуации, символическая расстановочная работа и при желании обсуждение гомеопатии как дополнительного подхода — не лечение.",
     alchemyAction: "Подробнее об Алхимии души",
@@ -233,6 +239,9 @@ const copy = {
     meditationMore: "Más meditaciones en la Academia",
     meditationRussianArchive: "Abrir la serie original de PsiMaster en ruso",
     meditationAudioFallback: "Tu navegador no permite reproducir audio.",
+    meditationToAudio: "Siguiente · Audio tranquilo",
+    meditationBackToVideo: "Volver a los vídeos",
+
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Análisis simbólico de situaciones, constelaciones y reflexión homeopática opcional como práctica complementaria; no es tratamiento médico.",
     alchemyAction: "Explorar Alquimia del Alma",
@@ -354,39 +363,68 @@ export default async function HolisticSupportPage({ params }: Props) {
         </section>
 
         <section id="meditation-practices" className={styles.section} data-holistic-meditations aria-labelledby="holistic-meditation-title">
-          <div className={styles.sectionHeading}>
-            <p className={styles.kicker}>{t.meditationEyebrow}</p>
-            <h2 id="holistic-meditation-title">{t.meditationSectionTitle}</h2>
-            <p>{t.meditationSectionLead}</p>
-          </div>
-          {freeMeditationVideos(locale).length > 0 ? (
-            <AcademyCourseVideoPlaylist
-              locale={locale}
-              courseTitle={t.meditationVideoTitle}
-              lessons={freeMeditationVideos(locale)}
-              introText={t.meditationVideoIntro}
-            />
-          ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
-          {locale !== "ru" ? (
-            <Link href="/ru/holistic-support#meditation-practices" className={styles.libraryLink} prefetch={false} data-holistic-russian-archive>
-              {t.meditationRussianArchive}<span aria-hidden="true">→</span>
-            </Link>
-          ) : null}
-          <div className={styles.meditationAudioRow} data-holistic-audio-player>
-            <div>
-              <span className={styles.freeTag}>{t.free}</span>
-              <h3>{t.meditationAudioTitle}</h3>
-              <p>{t.meditationAudioBody}</p>
+          <article className={styles.meditationFrame} data-holistic-meditation-screen="video" aria-label={t.meditationVideoTitle}>
+            <div className={styles.meditationScenic}>
+              <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill sizes="(max-width:650px) 100vw, 42vw" />
+              <div className={styles.meditationScenicCopy}>
+                <p className={styles.meditationEyebrow}>{t.meditationEyebrow} · 01 / 02</p>
+                <h2 id="holistic-meditation-title">{t.meditationSectionTitle}</h2>
+                <p className={styles.meditationScenicLead}>{t.meditationSectionLead}</p>
+              </div>
             </div>
-            <audio controls preload="none" aria-label={t.meditationAudioLabel}>
-              <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
-              {t.meditationAudioFallback}
-            </audio>
-          </div>
-          <p className={styles.meditationSourceNote} role="note">{t.meditationAudioMissing}</p>
-          <Link href={"/" + locale + "/academy"} className={styles.libraryLink} prefetch={false}>
-            {t.meditationMore}<span aria-hidden="true">→</span>
-          </Link>
+            <div className={styles.meditationMain}>
+              <p className={styles.meditationKind}>{t.meditationVideoTitle}</p>
+              {freeMeditationVideos(locale).length > 0 ? (
+                <AcademyCourseVideoPlaylist
+                  locale={locale}
+                  courseTitle={t.meditationVideoTitle}
+                  lessons={freeMeditationVideos(locale)}
+                  introText={t.meditationVideoIntro}
+                  compact
+                />
+              ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
+              <nav className={styles.meditationFooterLinks} aria-label={t.meditationSectionTitle}>
+                {locale !== "ru" ? (
+                  <Link href="/ru/holistic-support#meditation-practices" className={styles.meditationArchiveLink} prefetch={false} data-holistic-russian-archive>
+                    {t.meditationRussianArchive}<span aria-hidden="true">↗</span>
+                  </Link>
+                ) : null}
+                <Link href="#meditation-audio" className={styles.meditationNext} prefetch={false}>
+                  {t.meditationToAudio}<span aria-hidden="true">↓</span>
+                </Link>
+              </nav>
+            </div>
+          </article>
+
+          <article id="meditation-audio" className={styles.meditationFrame} data-holistic-meditation-screen="audio" aria-label={t.meditationAudioTitle}>
+            <div className={styles.meditationScenic}>
+              <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:650px) 100vw, 42vw" />
+              <div className={styles.meditationScenicCopy}>
+                <p className={styles.meditationEyebrow}>{t.meditationEyebrow} · 02 / 02</p>
+                <h2>{t.meditationAudioTitle}</h2>
+                <p className={styles.meditationScenicLead}>{t.meditationAudioBody}</p>
+              </div>
+            </div>
+            <div className={styles.meditationMain}>
+              <div className={styles.meditationAudioRow} data-holistic-audio-player>
+                <span className={styles.freeTag}>{t.free}</span>
+                <h3>{t.meditationAudioTitle}</h3>
+                <audio controls preload="none" aria-label={t.meditationAudioLabel}>
+                  <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
+                  {t.meditationAudioFallback}
+                </audio>
+              </div>
+              <p className={styles.meditationSourceNote} role="note">{t.meditationAudioMissing}</p>
+              <nav className={styles.meditationFooterLinks} aria-label={t.meditationAudioTitle}>
+                <Link href="#meditation-practices" className={styles.meditationArchiveLink} prefetch={false}>
+                  {t.meditationBackToVideo}<span aria-hidden="true">↑</span>
+                </Link>
+                <Link href={"/" + locale + "/academy"} className={styles.meditationNext} prefetch={false}>
+                  {t.meditationMore}<span aria-hidden="true">→</span>
+                </Link>
+              </nav>
+            </div>
+          </article>
         </section>
 
         <section id="talismans" className={styles.section} data-holistic-talismans aria-labelledby="holistic-talismans-title">
