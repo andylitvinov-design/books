@@ -662,8 +662,8 @@ export function preferredAcademyRecords(locale: PublicLocale, filter?: (record: 
   return [...byId.values()].map((list) => [...list].sort((a, b) => compareAcademyRecords(a, b, locale))[0]).sort((a, b) => a.routeKey.localeCompare(b.routeKey));
 }
 export function recordsForDirection(direction: AcademyDirectionId, locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === direction); }
-export function videoRecords(locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === "videos"); }
-export function findAcademyRecord(routeKey: string, locale: PublicLocale) { const matches = sourceRecords.filter((record) => record.routeKey === routeKey); if (!matches.length) return undefined; return [...matches].sort((a, b) => compareAcademyRecords(a, b, locale))[0]; }
+export function videoRecords(locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === "videos").filter(academyHasSourceBackedVideo); }
+export function findAcademyRecord(routeKey: string, locale: PublicLocale) { const matches = sourceRecords.filter((record) => record.routeKey === routeKey); if (!matches.length) return undefined; const record = [...matches].sort((a, b) => compareAcademyRecords(a, b, locale))[0]; return record.direction === "videos" && !academyHasSourceBackedVideo(record) ? undefined : record; }
 // Retain the archived source reference, but temporarily hide publicly broken
 // previews. The nightly crawl observed this video's YouTube poster HTTP 404 on
 // 2026-10-18. Re-enable after the video and poster are externally reverified.
@@ -676,6 +676,10 @@ export function mediaForRecord(record: AcademySourceRecord) {
   return visible.filter(item => item.logicalId === record.logicalId);
 }
 export function youtubeIdFromUrl(url: string) { const match = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/); return match?.[1]; }
+/** Source-backed presence check only. An 11-character ID does not prove YouTube playback. */
+export function academyHasSourceBackedVideo(record: AcademySourceRecord) {
+  return mediaForRecord(record).some((item) => /^[A-Za-z0-9_-]{11}$/.test(youtubeIdFromUrl(item.mediaUrl) ?? ""));
+}
 export function sourceLanguageNotice(record: AcademySourceRecord, locale: PublicLocale) {
   if ((locale === "en" || locale === "ru") && academyLocalizedTranslation(record, locale)?.length) {
     if (locale === "ru") return record.sourceProvider === "psimaster"

@@ -210,7 +210,7 @@ export function egyptPriesthoodScreens(): EgyptScreen[] {
       { id: root + "-intro", day, kind: "intro", title: topic.title,
         body: egyptText("A short original film, a symbolic idea and your own safe observations. You can revisit each step.",
           "Сегодня: авторское видео, один символический образ и собственные наблюдения. К любому пройденному шагу можно вернуться.",
-          "Hoy: un vídeo original, una idea simbólica y tus propias observaciones."), image },
+          "Hoy: un vídeo original, una idea simbólica y tus propias observaciones."), videoId: video.id, videoTitle: video.title, image },
       { id: root + "-idea", day, kind: "idea", title: egyptText("One idea to explore", "Одна мысль для исследования", "Una idea para explorar"),
         body: topic.idea, image },
       { id: root + "-video", day, kind: "video", title: egyptText("Original lesson · day " + day, "Авторское видео · день " + day, "Vídeo original · día " + day),
