@@ -305,8 +305,12 @@ function masterMatches(master: PublicPractitioner, f: FilterState, courses: Publ
   return true;
 }
 
+type CourseChoice = { value: string; label: string };
+
 function Filters({
   locale, mode, state, setState, count, languages, methods,
+  offeringTypes = [], courseChoices = [], locations = [],
+  topics = MASTER_TOPICS, coursesUnavailable = false,
 }: {
   locale: Locale;
   mode: "masters" | "services";
@@ -315,55 +319,71 @@ function Filters({
   count: number;
   languages: string[];
   methods: string[];
+  offeringTypes?: string[];
+  courseChoices?: CourseChoice[];
+  locations?: string[];
+  topics?: readonly (typeof MASTER_TOPICS)[number][];
+  coursesUnavailable?: boolean;
 }) {
   const t = COPY[locale];
-  const set = (field: keyof FilterState, value: string) => setState({ ...state, [field]: value });
-  const active = state.query || state.area || state.format || state.language || state.pricing !== "all" || state.goal || state.method || state.maxPrice || state.sort !== "default";
-  const detailedFilters = (
-    <>
-      <fieldset className={styles.categories}>
-        <legend className={styles.legend}>{t.all}</legend>
-        <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
-        {AREAS.map(([id]) => (
-          <button type="button" key={id} className={state.area === id ? styles.selected : ""} aria-pressed={state.area === id} onClick={() => set("area", id)}>
-            {areaName(id, locale)}
-          </button>
-        ))}
-      </fieldset>
-      <div className={styles.selectGrid}>
-        <label>{t.format}
-          <select value={state.format} onChange={(event) => set("format", event.target.value)}>
-            <option value="">{t.anyFormat}</option>
-            <option value="online">{t.online}</option>
-            <option value="in_person">{t.inPerson}</option>
-          </select>
-        </label>
-        <label>{t.language}
-          <select value={state.language} onChange={(event) => set("language", event.target.value)}>
-            <option value="">{t.anyLanguage}</option>
-            {languages.map((code) => <option key={code} value={code}>{code.toUpperCase()}</option>)}
-          </select>
-        </label>
-        <label>{t.price}
-          <select value={state.pricing} onChange={(event) => set("pricing", event.target.value)}>
-            <option value="all">{t.anyPrice}</option>
-            <option value="free">{t.free}</option>
-            <option value="paid">{t.paid}</option>
-            <option value="contact">{t.contact}</option>
-          </select>
-        </label>
-        <label>{t.sort}
-          <select value={state.sort} onChange={(event) => set("sort", event.target.value)}>
-            <option value="default">{t.defaultSort}</option>
-            <option value="az">{t.az}</option>
-            {mode === "services" ? <option value="shorter">{t.shorter}</option> : null}
-          </select>
-        </label>
-      </div>
-    </>
+  const set = (field: keyof FilterState, value: string) => {
+    const next = { ...state, [field]: value };
+    if (field === "offeringType" && value !== "course") next.courseKey = "";
+    if (field === "courseKey" && value) next.offeringType = "course";
+    setState(next);
+  };
+  const active = state.query || state.area || state.offeringType || state.courseKey ||
+    state.location || state.format || state.language || state.pricing !== "all" ||
+    state.goal || state.method || state.maxPrice || state.sort !== "default";
+  const areaFilters = (
+    <fieldset className={styles.categories}>
+      <legend className={styles.legend}>{t.all}</legend>
+      <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
+      {AREAS.map(([id]) => (
+        <button type="button" key={id} className={state.area === id ? styles.selected : ""} aria-pressed={state.area === id} onClick={() => set("area", id)}>
+          {areaName(id, locale)}
+        </button>
+      ))}
+    </fieldset>
+  );
+  const pricingSelect = (
+    <label>{t.price}
+      <select value={state.pricing} onChange={(event) => set("pricing", event.target.value)}>
+        <option value="all">{t.anyPrice}</option>
+        <option value="free">{t.free}</option>
+        <option value="paid">{t.paid}</option>
+        <option value="contact">{t.contact}</option>
+      </select>
+    </label>
+  );
+  const sortSelect = (
+    <label>{t.sort}
+      <select value={state.sort} onChange={(event) => set("sort", event.target.value)}>
+        <option value="default">{t.defaultSort}</option>
+        <option value="az">{t.az}</option>
+        {mode === "services" ? <option value="shorter">{t.shorter}</option> : null}
+      </select>
+    </label>
+  );
+  const languageSelect = (
+    <label>{t.language}
+      <select value={state.language} onChange={(event) => set("language", event.target.value)}>
+        <option value="">{t.anyLanguage}</option>
+        {languages.map((code) => <option key={code} value={code}>{code.toUpperCase()}</option>)}
+      </select>
+    </label>
+  );
+  const formatSelect = (
+    <label>{t.format}
+      <select value={state.format} onChange={(event) => set("format", event.target.value)}>
+        <option value="">{t.anyFormat}</option>
+        <option value="online">{t.online}</option>
+        <option value="in_person">{t.inPerson}</option>
+      </select>
+    </label>
   );
   return (
-    <section className={styles.filters} aria-label={t.filterTitle}>
+    <section className={styles.filters} aria-label={t.filterTitle} data-mentor-filters={mode === "masters" ? "" : undefined}>
       <div className={styles.heading}>
         <h2>{mode === "masters" ? (locale === "ru" ? "Выберите практика" : locale === "es" ? "Elige un profesional" : "Choose a practitioner") : t.filterTitle}</h2>
         <span className={styles.count} role="status" aria-live="polite">{count} {mode === "masters" && count === 1 ? (locale === "ru" ? "мастер" : locale === "es" ? "profesional" : "practitioner") : mode === "masters" ? t.masters : t.services}</span>
@@ -380,43 +400,96 @@ function Filters({
           onChange={(event) => set("query", event.target.value)}
         />
       </div>
-      {mode === "masters" && (
-        <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
-          <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
-          {MASTER_TOPICS.map((topic) => (
-            <button key={topic.id} type="button" className={state.area === topic.id ? styles.selected : ""} aria-pressed={state.area === topic.id} onClick={() => set("area", topic.id)}>
-              {topic[locale]}
-            </button>
-          ))}
-        </div>
-      )}
       {mode === "masters" ? (
-        <details className={styles.masterExtra}>
-          <summary>{locale === "ru" ? "Больше фильтров" : locale === "es" ? "Más filtros" : "More filters"} <span aria-hidden="true">⌄</span></summary>
-          {detailedFilters}
-        </details>
-      ) : detailedFilters}
-      {mode==="services"&&<details className={styles.advanced}><summary>{locale==="ru"?"Цель, метод и бюджет":locale==="es"?"Objetivo, método y presupuesto":"Goal, method & budget"}</summary>
-        <div className={styles.selectGrid}>
-          <label>{locale==="ru"?"Желаемая цель":"Desired goal"}
-            <select value={state.goal} onChange={event=>set("goal",event.target.value)}>
-              <option value="">{locale==="ru"?"Любая цель":"Any goal"}</option>
-              {([["confidence","Уверенность","Confidence"],["relationships","Отношения","Relationships"],["relaxation","Расслабление","Relaxation"],["learning","Обучение","Learning"],["clarity","Ясность","Clarity"],["purpose","Предназначение","Purpose"],["energy","Энергия","Energy"],["self_awareness","Самопознание","Self-awareness"]] as const).map(([id,ru,en])=><option value={id} key={id}>{locale==="ru"?ru:en}</option>)}
-            </select>
-          </label>
-          <label>{locale==="ru"?"Метод":"Method"}
-            <select value={state.method} onChange={event=>set("method",event.target.value)}>
-              <option value="">{locale==="ru"?"Любой":"Any"}</option>{methods.map(method=><option value={method} key={method}>{method}</option>)}
-            </select>
-          </label>
-          <label>{locale==="ru"?"Бюджет до":"Budget up to"}
-            <select value={state.maxPrice} onChange={event=>set("maxPrice",event.target.value)}>
-              <option value="">{locale==="ru"?"Без лимита":"No limit"}</option>{[30,50,75,100,150,200,300].map(value=><option value={value} key={value}>{value}</option>)}
-            </select>
-          </label>
-          <label>{locale==="ru"?"Валюта":"Currency"}<select value={state.currency} onChange={event=>set("currency",event.target.value)}>{["EUR","CAD","USD"].map(value=><option key={value} value={value}>{value}</option>)}</select></label>
-        </div><small>{locale==="ru"?"Цены сравниваются только в одной валюте.":"Prices are compared in the selected currency only."}</small>
-      </details>}
+        <>
+          <div className={styles.mentorFilterGrid} data-mentor-primary-filters>
+            <label>{t.offering}
+              <select id="mentor-filter-offering" value={state.offeringType}
+                onChange={(event) => set("offeringType", event.target.value)}>
+                <option value="">{t.anyOffering}</option>
+                {offeringTypes.map((type) => <option key={type} value={type}>{OFFERING_NAMES[type]?.[locale] || type}</option>)}
+              </select>
+            </label>
+            <label>{t.courseTitle}
+              <select id="mentor-filter-course" value={state.courseKey}
+                disabled={!courseChoices.length}
+                onChange={(event) => set("courseKey", event.target.value)}>
+                <option value="">{courseChoices.length ? t.anyCourse : coursesUnavailable ? t.courseUnavailable : t.noCourse}</option>
+                {courseChoices.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </label>
+            {formatSelect}
+            {languageSelect}
+          </div>
+          <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
+            <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
+            {topics.map((topic) => (
+              <button key={topic.id} type="button" className={state.area === topic.id ? styles.selected : ""} aria-pressed={state.area === topic.id} onClick={() => set("area", topic.id)}>
+                {topic[locale]}
+              </button>
+            ))}
+          </div>
+          <details className={styles.masterExtra}>
+            <summary>{locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"} <span aria-hidden="true">⌄</span></summary>
+            <div className={styles.selectGrid}>
+              <label>{t.method}
+                <select value={state.method} onChange={(event) => set("method", event.target.value)}>
+                  <option value="">{t.anyMethod}</option>
+                  {methods.map((method) => <option value={method} key={method}>{method}</option>)}
+                </select>
+              </label>
+              <label>{t.location}
+                <select value={state.location} onChange={(event) => set("location", event.target.value)}>
+                  <option value="">{t.anyLocation}</option>
+                  {locations.map((location) => <option value={location} key={location}>{location}</option>)}
+                </select>
+              </label>
+              {pricingSelect}
+              {sortSelect}
+            </div>
+            {areaFilters}
+          </details>
+        </>
+      ) : (
+        <>
+          {areaFilters}
+          <div className={styles.selectGrid}>
+            {formatSelect}
+            {languageSelect}
+            {pricingSelect}
+            {sortSelect}
+          </div>
+          <details className={styles.advanced}>
+            <summary>{locale === "ru" ? "Цель, метод и бюджет" : locale === "es" ? "Objetivo, método y presupuesto" : "Goal, method & budget"}</summary>
+            <div className={styles.selectGrid}>
+              <label>{locale === "ru" ? "Желаемая цель" : locale === "es" ? "Objetivo deseado" : "Desired goal"}
+                <select value={state.goal} onChange={(event) => set("goal", event.target.value)}>
+                  <option value="">{locale === "ru" ? "Любая цель" : locale === "es" ? "Cualquier objetivo" : "Any goal"}</option>
+                  {([["confidence", "Уверенность", "Confidence"], ["relationships", "Отношения", "Relationships"], ["relaxation", "Расслабление", "Relaxation"], ["learning", "Обучение", "Learning"], ["clarity", "Ясность", "Clarity"], ["purpose", "Предназначение", "Purpose"], ["energy", "Энергия", "Energy"], ["self_awareness", "Самопознание", "Self-awareness"]] as const).map(([id, ru, en]) => <option value={id} key={id}>{locale === "ru" ? ru : en}</option>)}
+                </select>
+              </label>
+              <label>{t.method}
+                <select value={state.method} onChange={(event) => set("method", event.target.value)}>
+                  <option value="">{t.anyMethod}</option>
+                  {methods.map((method) => <option value={method} key={method}>{method}</option>)}
+                </select>
+              </label>
+              <label>{locale === "ru" ? "Бюджет до" : locale === "es" ? "Presupuesto hasta" : "Budget up to"}
+                <select value={state.maxPrice} onChange={(event) => set("maxPrice", event.target.value)}>
+                  <option value="">{locale === "ru" ? "Без лимита" : locale === "es" ? "Sin límite" : "No limit"}</option>
+                  {[30, 50, 75, 100, 150, 200, 300].map((value) => <option value={value} key={value}>{value}</option>)}
+                </select>
+              </label>
+              <label>{locale === "ru" ? "Валюта" : locale === "es" ? "Moneda" : "Currency"}
+                <select value={state.currency} onChange={(event) => set("currency", event.target.value)}>
+                  {["EUR", "CAD", "USD"].map((value) => <option key={value} value={value}>{value}</option>)}
+                </select>
+              </label>
+            </div>
+            <small>{locale === "ru" ? "Цены сравниваются только в одной валюте." : locale === "es" ? "Los precios solo se comparan en la moneda elegida." : "Prices are compared in the selected currency only."}</small>
+          </details>
+        </>
+      )}
       {active ? <button type="button" className={styles.reset} onClick={() => setState(INITIAL)}>{t.clear} ×</button> : null}
     </section>
   );
