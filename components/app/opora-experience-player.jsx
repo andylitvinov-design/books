@@ -1049,7 +1049,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.lead}>{t.habitLead}</p>
             {!habitSetup&&<button type="button" className={styles.linkHint}
               data-opora-habit-skip="true" disabled={locked}
-              onClick={()=>{setPreviewIndex(-1);setInviteOpen(true)}}>{t.habitLater}</button>
+              onClick={()=>{setPreviewIndex(-1);setInviteOpen(true)}}>{t.habitLater}</button>}
             {!habitSetup
               ?<p className={styles.habitBenefit} data-opora-first-lesson-habit-invitation>{t.habitBenefit}</p>
               :<div className={styles.habitSetup} data-opora-first-lesson-habit-setup>
