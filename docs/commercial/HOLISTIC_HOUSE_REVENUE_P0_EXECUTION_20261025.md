@@ -6,7 +6,7 @@
 
 ## Objective, measurable outcome, non-goals
 
-Within the first 14-day commercial pilot, establish **at least one legitimately consented, provider-confirmed** path from public offer to real paid session; target **3–5 actual paid orders** as an experiment, not a forecast or assertion. Measure by source + actual provider receipts; never count CTA clicks, chat deep links, drafts or unconfirmed appointments as money. Existing agreed offers: **€50 / 30 min**, **€100 / 60 min**, **€200 / calendar month with 2 × 60 min** (the third offer is a separately agreed service, not a cart SKU or auto-renewing subscription). No invented prices, conversion statistics or clinical benefit claims.
+Within the first 14-day commercial pilot, establish **at least one legitimately consented, provider-confirmed** path from public offer to real paid session; target **3–5 actual paid orders** as an experiment, not a forecast or assertion. Measure by source + actual provider receipts; never count CTA clicks, chat deep links, drafts or unconfirmed appointments as money. Existing agreed offers: **€50 / 30 min**, **€100 / 60 min**, **€200 / agreed monthly support period with 2 × 60 min** (the third offer is a separately agreed service, not a cart SKU or auto-renewing subscription). No invented prices, conversion statistics or clinical benefit claims.
 
 **Not in P0:** onboarding more masters, recreating Academy, launching the paused 90-day Business & Career track (#1298), enabling paid AI/SMS/HeyGen, mass outbound contact, advertisement pixels/GA4 privacy hold, price/money changes or recurring subscription setup.
 
