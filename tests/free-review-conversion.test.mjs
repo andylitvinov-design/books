@@ -129,6 +129,6 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale === "es" \? "en" : locale\} variant="all" \/>/);
+  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
   assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} \/>/);
 });
