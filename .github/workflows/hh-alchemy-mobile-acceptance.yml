@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/hh-alchemy-mobile-acceptance.yml'
       - 'components/alchemy-soul-landing.tsx'
+      - 'components/personal-testimonials.tsx'
       - 'components/alchemy-soul-landing.module.css'
       - 'components/alchemy-soul-lead-form.tsx'
       - 'components/alchemy-example-report.tsx'
@@ -50,6 +51,7 @@ jobs:
           node --test \
             tests/practitioner-homeopathy-canonical-route.test.mjs \
             tests/alchemy-soul-mobile-landing.test.mjs \
+            tests/personal-testimonials-prefetch.test.mjs \
             tests/alchemy-soul-spanish-parity.test.mjs \
             tests/alchemy-panel-overflow-diagnostics.test.mjs \
             tests/service-alchemy-one-screen-story.test.mjs \

@@ -21,7 +21,7 @@ test("Alchemy one-screen chapters preserve one visual each",()=>{
 });
 test("Details, approved media, prices and contact flow remain reachable",()=>{
  const s=read("components/alchemy-soul-landing.tsx");
- for(const part of ['data-alchemy-details="introduction"','t.pains.slice(1)','t.steps.map','reviews.slice(0, 1)','reviews.slice(1)','youtubeId: "-zacUn_zN6g"','youtubeId: "IF0HAhSDwks"','<AlchemySoulFormatSelector','<ContactChannelChooser','t.safety'])assert.ok(s.includes(part),"Missing "+part);
+ for(const part of ['data-alchemy-details="introduction"','t.pains.slice(1)','t.steps.map','reviews.map((review)','data-vertical-review-list','youtubeId: "-zacUn_zN6g"','youtubeId: "IF0HAhSDwks"','<AlchemySoulFormatSelector','<ContactChannelChooser','t.safety'])assert.ok(s.includes(part),"Missing "+part);
  assert.equal((s.match(/<AlchemySoulLeadForm locale=\{locale\}/g)||[]).length,1);
  for(const locale of ["ru: {","en: {","es: {"])assert.ok(s.includes(locale));
 });
