@@ -93,13 +93,13 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
             await reviewFeed.locator('[data-testimonial-video-id]').first().scrollIntoViewIfNeeded();
             await page.screenshot({path:output+'/'+name+'-testimonials.png',animations:'disabled',timeout:20000});
           }
-          const capture=page.locator('#request-free-review[data-service-lead-capture]');
+          const capture=page.locator('#request-free-review [data-service-lead-capture]');
           const cards=page.locator('[data-diagnosis-offer]');
           assert.equal(await cards.count(),3,'three photo-led offers with one shared form');
           for(const id of ['situation-written-free','wu-xing-free','personal-session-30-eur50']){
             assert.equal(await cards.filter({has:page.locator('[data-diagnosis-order="'+id+'"]')}).count(),1,'one order CTA per '+id);
           }
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false,'consent defaults unchecked');
+          assert.equal(await page.locator('#request-free-review [data-free-diagnostic-start]').count(),1,'free review reuses existing questionnaire entry without creating an early duplicate lead');
           await play.click({timeout:15000});
           const iframe=video.locator('iframe[data-video-playback="youtube"]');
           await iframe.waitFor({state:'attached',timeout:20000});
@@ -109,15 +109,17 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
           if(width===390)await page.screenshot({path:output+'/'+name+'-after-play.png',animations:'disabled',timeout:25000});
           await cta.click({timeout:15000});
           assert.equal(new URL(page.url()).hash,'#free-diagnosis-options','hero CTA opens three options');
-          await capture.waitFor({state:'visible',timeout:18000});
-          assert.equal(await capture.locator('input[name="contact"]').count(),1);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false);
-          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'click is not a real lead');
+          await page.locator('#request-free-review [data-free-diagnostic-start]').waitFor({state:'visible',timeout:18000});
+          assert.equal(await capture.count(),0,'no duplicate CRM form before authored questionnaire');
           const wuDetail=cards.nth(1).locator('details');
           await wuDetail.locator('summary').click();
           assert.equal(await wuDetail.evaluate(el=>el.open),true,'Wu Xing details expand in place');
           await cards.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
           assert.equal(new URL(page.url()).hash,'#request-free-review','order CTA reaches shared form');
+          await capture.waitFor({state:'visible',timeout:18000});
+          assert.equal(await capture.locator('input[name="contact"]').count(),1);
+          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false);
+          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'click is not a real lead');
           assert.equal(await capture.locator('select').inputValue(),'personal-session-30-eur50','paid option preselected');
           await capture.locator('select').selectOption('wu-xing-free');
           assert.equal(await cards.nth(1).getAttribute('data-diagnosis-selected'),'true','form selection updates selected card');
@@ -128,7 +130,10 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
             const hubResponse=await page.goto(origin+'/'+locale+'/services/free-consultation',{waitUntil:'domcontentloaded',timeout:65000});
             assert.equal(hubResponse?.status(),200,'free-consultation route reachable');
             assert.equal(await page.locator('[data-free-consultation-hub] [data-diagnosis-offer]').count(),3,'hub has identical three options');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),1,'hub has one CRM form');
+            assert.equal(await page.locator('[data-free-consultation-hub] [data-free-diagnostic-start]').count(),1,'hub uses existing free coaching questionnaire funnel');
+            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),0,'hub does not create two leads for free situation');
+            await page.locator('[data-free-consultation-hub] [data-diagnosis-order="personal-session-30-eur50"]').click();
+            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),1,'hub has one CRM capture for paid session');
             assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'hub fits viewport');
             await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
           }
