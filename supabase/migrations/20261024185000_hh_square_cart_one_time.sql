@@ -125,7 +125,7 @@ begin
    raise exception 'SQUARE_INVALID_CHECKOUT_TRANSITION';
  end if;
  return new;
-end $$;
+end; $;
 revoke all on function app_private.square_service_order_guard() from public,anon,authenticated,hh_app_inbox;
 grant execute on function app_private.square_service_order_guard() to hh_app_backend;
 create trigger square_service_order_guard before update on app_private.square_service_orders
@@ -144,7 +144,7 @@ begin
    raise exception 'SQUARE_INSERT_UNVERIFIED';
  end if;
  return new;
-end $$;
+end; $;
 revoke all on function app_private.square_service_order_insert_guard() from public,anon,authenticated,hh_app_inbox;
 grant execute on function app_private.square_service_order_insert_guard() to hh_app_backend;
 create trigger square_service_order_insert_guard
