@@ -687,10 +687,17 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
             <summary id="ideas-question-privacy">{t.privacyShort}</summary>
             <p className={styles.privacy}>{t.privacy}</p>
           </details>
-          <button type="button" className={styles.freeTestLink} data-ideas-free-test
-            aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-            onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
-            onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+          {isTemple ? (
+            <Link href={freeOfferHref(locale, "tests")} prefetch={false}
+              className={styles.freeTestLink} data-ideas-free-test data-temple-test-catalog>
+              {t.testLink}<ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          ) : (
+            <button type="button" className={styles.freeTestLink} data-ideas-free-test
+              aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+              onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
+              onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+          )}
         </div>
       </div>
       </div>

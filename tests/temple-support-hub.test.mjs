@@ -141,6 +141,11 @@ test("Temple preserves its scenic Ideas card as optional; personal conversion is
   assert.match(ideas, /data-ideas-tao/);
   assert.match(ideas, /data-ideas-personal-diagnostic/);
   assert.match(ideas, /data-ideas-free-test/);
+  assert.match(ideas, /isTemple \? \(\s*<Link href=\{freeOfferHref\(locale, "tests"\)\}/,
+    "Temple free test link must open the actual tests catalog");
+  assert.match(ideas, /data-temple-test-catalog/);
+  assert.match(ideas, /if \(id === "tests"\) return/);
+  assert.match(ideas, /"\/client\/tests"/);
   assert.doesNotMatch(ideas, /!isTemple \? <button[^>]*data-ideas-free-test/);
   assert.ok(ideas.includes('href={"/" + locale + "/holistic-support#free-diagnostic-start"}'));
   assert.match(ideas, /id="ideas-question-privacy"/);
