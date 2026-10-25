@@ -24,6 +24,7 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
         try{
           const resp=await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
           assert.equal(resp?.status(),200,'public URL HTTP 200');
+          assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0,'do not repeat a self-referral promo above the free review');
           const hero=page.locator('[data-free-entry-landing="situation"] section[aria-labelledby="free-entry-title"]');
           const video=hero.locator('[data-featured-constellations-video]');
           const cta=hero.locator('a[href="#request-free-review"]');
