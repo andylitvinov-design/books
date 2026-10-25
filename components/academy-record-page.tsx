@@ -206,7 +206,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                   <span>{locale === "ru" ? "1 из 9 ступеней" : locale === "es" ? "Nivel 1 de 9" : "Level 1 of 9"}</span>
                   <span>{locale === "ru" ? "Бесплатное обучение" : locale === "es" ? "Estudio gratuito" : "Free to study"}</span>
                 </div>
-                <div className="tantra-course-hero__actions" aria-label={locale === "ru" ? "Варианты обучения и личной работы" : locale === "es" ? "Opciones de aprendizaje y sesiones personales" : "Learning and personal session options"}>
+                <div className="tantra-course-hero__actions" role="group" aria-label={locale === "ru" ? "Варианты обучения и личной работы" : locale === "es" ? "Opciones de aprendizaje y sesiones personales" : "Learning and personal session options"}>
                   <Link className="tantra-course-hero__cta" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Начать БЕСПЛАТНУЮ онлайн-программу «Практик Тантра Рейки» и получить 1-ю ступень Тантра Рейки В ПОДАРОК ↗" : locale === "es" ? "Empezar el programa online GRATIS «Tantra Reiki Practitioner» y recibir el Nivel 1 de Tantra Reiki de REGALO ↗" : "Start FREE Online Program Tantra Reiki Practitioner and get Tantra Reiki Level 1 as a GIFT ↗"}</Link>
                   <details className="tantra-course-hero__healing-request" data-tantra-healing-request="true">
                     <summary className="tantra-course-hero__healing-cta">{locale === "ru" ? "Запросить сеанс Tantra Reiki Healing →" : locale === "es" ? "Solicitar una sesión de Tantra Reiki Healing →" : "Request Tantra Reiki Healing →"}</summary>
