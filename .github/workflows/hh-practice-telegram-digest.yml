@@ -4,6 +4,18 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'lib/practitioners/daily-digest.mjs'
+      - 'lib/analytics/public-page-traffic.mjs'
+      - 'lib/analytics/public-page-traffic-report.mjs'
+      - 'lib/analytics/public-page-traffic.d.mts'
+      - 'lib/analytics/public-stats-owner.js'
+      - 'lib/analytics/public-traffic-retention.js'
+      - 'app/api/analytics/public-page/route.js'
+      - 'components/public-page-traffic.tsx'
+      - 'components/analytics-consent.tsx'
+      - 'components/service-funnel-tracking.tsx'
+      - 'app/api/marketplace/service-event/route.js'
+      - 'supabase/migrations/*public_page_source_daily*.sql'
+      - 'tests/public-page-traffic.test.mjs'
       - 'lib/practitioners/analytics-subscription-policy.mjs'
       - 'lib/practitioners/master-analytics-service.js'
       - 'lib/app/client-telegram-transport.js'
@@ -42,13 +54,19 @@ jobs:
           node --check lib/practitioners/master-analytics-service.js
           node --check lib/app/client-telegram-transport.js
           node --check app/api/app/practice-analytics-notifications/route.js
+          node --check lib/analytics/public-page-traffic.mjs
+          node --check lib/analytics/public-page-traffic-report.mjs
+          node --check lib/analytics/public-stats-owner.js
+          node --check lib/analytics/public-traffic-retention.js
+          node --check app/api/analytics/public-page/route.js
+          node --check app/api/marketplace/service-event/route.js
           node --check lib/practitioners/daily-digest.mjs
           node --check lib/practitioners/daily-telegram-digest.js
           node --check lib/practitioners/daily-telegram-transport.mjs
           node --check app/api/internal/practice-telegram-digest/route.js
           node -e "JSON.parse(require('node:fs').readFileSync('vercel.json','utf8'))"
       - name: Private digest unit and existing cron regressions
-        run: node --test tests/practitioner-analytics-subscriptions.test.mjs tests/practitioner-daily-telegram.test.mjs tests/app-housekeeping-cron.test.mjs
+        run: node --test tests/practitioner-analytics-subscriptions.test.mjs tests/practitioner-daily-telegram.test.mjs tests/public-page-traffic.test.mjs tests/app-housekeeping-cron.test.mjs
 
   production-build:
     runs-on: ubuntu-24.04
@@ -64,6 +82,6 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Targeted ESLint
-        run: npx eslint lib/practitioners/analytics-subscription-policy.mjs lib/practitioners/master-analytics-service.js lib/app/client-telegram-transport.js app/api/app/practice-analytics-notifications/route.js components/app/practice-analytics-subscriptions.jsx components/app/practice-service-statistics.jsx components/app/practice-workspace.jsx app/api/internal/practice-telegram-digest/route.js
+        run: npx eslint lib/practitioners/analytics-subscription-policy.mjs lib/practitioners/master-analytics-service.js lib/app/client-telegram-transport.js app/api/app/practice-analytics-notifications/route.js components/app/practice-analytics-subscriptions.jsx components/app/practice-service-statistics.jsx components/app/practice-workspace.jsx app/api/internal/practice-telegram-digest/route.js lib/analytics/public-page-traffic.mjs lib/analytics/public-page-traffic-report.mjs lib/analytics/public-stats-owner.js lib/analytics/public-traffic-retention.js app/api/analytics/public-page/route.js app/api/marketplace/service-event/route.js components/public-page-traffic.tsx components/analytics-consent.tsx components/service-funnel-tracking.tsx
       - name: Next.js production build and TypeScript
         run: npm run build
