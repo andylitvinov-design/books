@@ -143,3 +143,15 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(css, /\.reviewApproach/);
   assert.match(landing, /id="how-i-review"/);
 });
+
+
+test("express review WebKit reveal stays immediately below its button throughout the animation", () => {
+  const expressCss = read("components/personal-express-enquiry.module.css");
+  const express = read("components/personal-express-enquiry.tsx");
+  assert.match(express, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(express, /data-express-inline-disclosure hidden=\{!expanded\}/);
+  assert.match(expressCss, /\.disclosure\[hidden\]\{display:none!important\}/);
+  assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
+  assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
+    "Visual translateY moves an expanded in-flow region above its reveal button in WebKit before animation settles");
+});

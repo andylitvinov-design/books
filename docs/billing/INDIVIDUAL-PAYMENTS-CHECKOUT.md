@@ -173,7 +173,7 @@ and explicit HTTPS sandbox webhook URL, never production keys.
 
 Do not configure until Square account/Canadian payout setup, business activity,
 CAD prices, tax and refund terms are approved by Square/owner. Additive private
-SQL file `supabase/migrations/20261024185000_hh_square_cart_one_time.sql`
+SQL file `supabase/migrations/20261025190309_hh_square_cart_one_time_20261024.sql`
 requires isolated PostgreSQL 17 RLS tests and a reviewed Supabase migration
 application before setting `HH_SQUARE_API_SCHEMA_APPROVED`.
 Keep static checkout links optional and PayPal/Interac/Wise manual alternatives.

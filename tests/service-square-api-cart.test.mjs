@@ -154,7 +154,7 @@ test('cart, endpoints and SQL contain strict order ownership, no fake paid on re
   const statusRoute=read('app/api/payments/square/status/route.js')
   const webhook=read('app/api/payments/square/webhook/route.js')
   const service=read('lib/commerce/square-cart-service.js')
-  const sql=read('supabase/migrations/20261024185000_hh_square_cart_one_time.sql')
+  const sql=read('supabase/migrations/20261025190309_hh_square_cart_one_time_20261024.sql')
   assert.match(page,/squareApiEnabled=\{squareGateway.enabled\}/)
   assert.match(cart,/data-cart-square-api-checkout/)
   assert.match(cart,/data-cart-square-buy-again/);

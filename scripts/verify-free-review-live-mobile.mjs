@@ -203,10 +203,28 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           record.actionableControls.revealExpanded = await inspectActionableControl(reveal, 'Inline reveal expanded');
           assert.equal(await disclosure.evaluate(element => getComputedStyle(element).position), "static",
             "unfolded form stays in normal document flow");
-          const buttonBounds = await reveal.boundingBox();
-          const formBounds = await disclosure.boundingBox();
-          assert.ok(buttonBounds && formBounds && formBounds.y >= buttonBounds.y + buttonBounds.height - 2,
-            "form pushes the landing down directly beneath its reveal button");
+          // Read both rectangles in one browser task: while navigating to #request-free-review,
+          // WebKit can still be smooth-scrolling. Two awaited locator.boundingBox()
+          // calls may sample different scroll offsets and falsely report an overlap.
+          const inFlowBounds = await enquiry.evaluate(root => {
+            const trigger = root.querySelector("[data-express-reveal]");
+            const region = root.querySelector("[data-express-inline-disclosure]");
+            if (!(trigger instanceof HTMLElement) || !(region instanceof HTMLElement)) return null;
+            const button = trigger.getBoundingClientRect();
+            const panel = region.getBoundingClientRect();
+            const style = getComputedStyle(region);
+            return {
+              revealBottom: button.bottom,
+              panelTop: panel.top,
+              gap: panel.top - button.bottom,
+              position: style.position,
+              transform: style.transform,
+            };
+          });
+          assert.ok(inFlowBounds && inFlowBounds.position === "static"
+            && inFlowBounds.transform === "none" && inFlowBounds.gap >= -2,
+            "form pushes the landing down directly beneath its reveal button: "
+              + JSON.stringify(inFlowBounds));
           assert.notEqual(await page.evaluate(() => document.body.style.overflow), "hidden",
             "capture must not block page scrolling");
           assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,

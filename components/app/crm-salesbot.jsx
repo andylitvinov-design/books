@@ -5,6 +5,7 @@ import {
   SALESBOT_TEMPLATES, SALESBOT_TOPICS,
 } from '../../lib/crm/salesbot-flow.mjs'
 import styles from './crm-salesbot.module.css'
+import CrmSalesbotDraftControls from './crm-salesbot-drafts'
 
 const clone = value => JSON.parse(JSON.stringify(value))
 const LABELS = {
@@ -109,6 +110,10 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
     setResult(null)
     setAnswers({})
     setNotice('')
+    // Never carry unsaved owner-written wording across an account switch.
+    setFlow(clone(SALESBOT_TEMPLATES[0]))
+    setTemplateId(SALESBOT_TEMPLATES[0].id)
+    setSelectedNodeId('welcome')
     return () => {
       controllerRef.current?.abort()
       if (sessionRef.current === session) sessionRef.current = null
@@ -130,6 +135,13 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
     setFlow(clone(template))
     setTemplateId(id)
     setSelectedNodeId(template.nodes.find(node => node.text)?.id || 'start')
+  }
+  function restoreSavedDraft(savedFlow) {
+    cancelPreview()
+    const draft = clone(savedFlow)
+    setFlow(draft)
+    setTemplateId(draft.id)
+    setSelectedNodeId(draft.nodes.find(node => node.text)?.id || draft.start)
   }
   function changeText(nodeId, text, optionId = null) {
     cancelPreview()
@@ -201,6 +213,8 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
       <span className={styles.badge}>DRY RUN · OFFLINE DISPATCH</span>
     </header>
     <p className={styles.warning} role="status">{t.safety}</p>
+    <CrmSalesbotDraftControls key={accountId} accountId={accountId} locale={lang}
+      flow={flow} onRestore={restoreSavedDraft} />
     <div className={styles.controls}>
       <label>{t.template}
         <select value={templateId} onChange={e => chooseTemplate(e.target.value)}>
