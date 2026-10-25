@@ -155,6 +155,10 @@
   .screenCopy h1{font-size:clamp(27px,7.6vw,34px);max-width:100%;}
   .screenBody{font-size:14px;line-height:1.42;}
   .visual{position:absolute;inset:0;z-index:0;opacity:.13;pointer-events:none;}
+  /* Put the original video poster first; do not fill the mobile introductory slide with a ghost image. */
+  .screen[data-egypt-slide-kind="intro"]{background:linear-gradient(155deg,#fffaf0,#e4f5f0);}
+  .screen[data-egypt-slide-kind="intro"] .visual{display:none;}
+  .screen[data-egypt-slide-kind="intro"] .film{margin-top:4px;}
   .visual::after{background:linear-gradient(130deg,#fff8,#ecfaffce);}
   .visual[data-egypt-visual="video"]{display:none;}
   .film{max-width:100%;}

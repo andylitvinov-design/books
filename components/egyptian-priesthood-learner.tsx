@@ -228,7 +228,7 @@ export function EgyptianPriesthoodLearner({
                 <p><LockKeyhole size={15} aria-hidden="true" />{t.saveLocal}</p>
               </div>
             ) : null}
-            {slide.kind === "video" && slide.videoId && slide.videoTitle ? (
+            {(slide.kind === "video" || slide.kind === "intro") && slide.videoId && slide.videoTitle ? (
               <div className={styles.film}>
                 <AcademyVideoPlayer key={slide.videoId} youtubeId={slide.videoId}
                   title={slide.videoTitle[locale]} locale={locale} posterLoading="eager" />

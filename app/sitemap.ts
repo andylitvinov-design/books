@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { academyPublicBlocks, mediaForRecord, preferredAcademyRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
+import { academyHasSourceBackedVideo, academyPublicBlocks, mediaForRecord, preferredAcademyRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
 import { getPrioritySitemapEntries } from '@/data/seo-priority-paths';
 import { PUBLIC_EVENTS } from '@/data/public-events';
@@ -42,9 +42,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const templeDirections = new Set(["mysteries", "symbolic", "applied", "school"]);
   const academyPaths = (["en", "ru", "es"] as PublicLocale[]).flatMap((locale) => {
     const academyRecordPaths = preferredAcademyRecords(locale)
-      .filter((record) => !templeDirections.has(record.direction)
-        || academyPublicBlocks(record, locale).filter((block) => block.type === "p" || block.type === "li").length >= 2
-        || mediaForRecord(record).some((item) => Boolean(youtubeIdFromUrl(item.mediaUrl))))
+      .filter((record) => (record.direction !== "videos" || academyHasSourceBackedVideo(record))
+        && (!templeDirections.has(record.direction)
+          || academyPublicBlocks(record, locale).filter((block) => block.type === "p" || block.type === "li").length >= 2
+          || mediaForRecord(record).some((item) => Boolean(youtubeIdFromUrl(item.mediaUrl)))))
       .map((record) => "/" + record.routeKey);
     return [...new Set([...academyDirectoryPaths, ...academyRecordPaths])]
       .filter(suffix => suffix !== "/reiki/master-shamanic-healing") // permanently redirected to Yggdrasil Basic
