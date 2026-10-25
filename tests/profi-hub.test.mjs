@@ -126,19 +126,21 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
   assert.match(hub,/locale === "es" \? "en" : locale/)
 })
 
-test('bottom bar and hamburger replace Tests with Pro while keeping six usable links',()=>{
-  const expected=['home','profile','coaching','insights','support','pro']
+test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
+  const expected=['home','analysis','courses','profile','coaching','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
-    assert.equal(nav.at(-1).href,'/'+locale+'/pro')
+    assert.equal(nav.at(-2).href,'/'+locale+'/pro')
+    assert.equal(nav.at(-1).href,'/'+locale+'/holistic-support')
     assert.equal(getSiteNavigation(locale).find(x=>x.id==='pro')?.href,'/'+locale+'/pro')
     assert.equal(activeCompactNavigationId('/'+locale+'/pro'),'pro')
   }
   assert.match(read('components/compact-navigation-icons.ts'),/pro: GraduationCap/)
+  assert.match(read('components/compact-navigation-icons.ts'),/temple: Landmark/)
   assert.match(read('components/mobile-bottom-navigation.tsx'),/getCompactNavigation\(locale\)/)
-  assert.match(read('app/ia-v2.css'),/repeat\(6,minmax\(0,1fr\)\)/)
-  assert.match(read('app/holistic-house-home.css'),/repeat\(6, minmax\(0,1fr\)\)/)
+  assert.match(read('app/ia-v2.css'),/repeat\(7,minmax\(0,1fr\)\)/)
+  assert.match(read('app/holistic-house-home.css'),/repeat\(7, minmax\(0,1fr\)\)/)
 })
 
 
