@@ -30,3 +30,12 @@ Migration `20261023185000_hh_coaching_tradition_models_seed.sql` inserts 2 model
 - Egyptian (11 screens) and Greek (10 screens) Goal Planning remain distinct coaching methods **only in Coaching**. Remove duplicated Academy and My Courses cards while retaining stable template IDs, protected encrypted answers, API, RLS and detail bookmarks. No database deletion.
 - Replace unrelated Reiki covers with matching licensed photographs: Egyptian papyrus ([public domain](https://commons.wikimedia.org/wiki/File:Egypt_bookofthedead.jpg)) and Greek Athena in Louvre ([CC0](https://commons.wikimedia.org/wiki/File:Marble_statue_of_Athena,_Louvre.jpg)). They illustrate cultural motifs, not historical validation of these modern coaching approaches.
 - Reuse PR #1896. No paid API, CRM, messaging or migrations. A real authenticated iPhone Save → reload → resume → PDF remains separate E2E work.
+
+## 2026-10-25 · Repair: empty historical photos on iPhone
+
+The Coaching Lounge previously hotlinked the Egyptian papyrus and Greek Athena from Wikimedia Commons. This proved unreliable on iPhone Safari (owner screenshot, blank left-hand panels). The same external dependency affected the private course introduction and 16 individual stage photographs.
+
+- Maintain the previously selected, approved Egyptian Book of the Dead (public domain) and Greek Athena (CC0) covers, plus 8 individually credited museum/object photos for each method. Original Commons links, credit and license text remain visible within the lesson.
+- Mirror **18** images at build time using `scripts/cache-ancient-coaching-photos.mjs`. Validate the actual file bytes, format and size; abort the build if any of the 18 originals is missing or invalid. Serve images locally from `/images/holistic-house/coaching-ancient/`, not from a third-party host in the visitor's browser.
+- The public Coaching cards, the private introductory step, the eight-stage roadmap and the question-by-question visual guide share these images. This keeps the original 11 Egyptian / 10 Greek screens, all three locales, saved encrypted answers and the source attribution. No new courses, database migration, paid rendering, CRM or notification.
+- Release gate: exact production READY SHA and canonical alias; verify local image requests return HTTP 200 with correct MIME. Signed-in account Save → reload → PDF and physical Safari remain separate E2E gates. Do not close issue #1708 based on build/visual code alone.

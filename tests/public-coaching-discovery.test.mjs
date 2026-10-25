@@ -479,3 +479,15 @@ test('unfiltered coaching catalogue groups sessions, initially showing at most t
  assert.match(css,/\.modelGroups\{display:grid/)
  assert.match(css,/\.modelGroupMore:focus-visible/)
 })
+
+
+test('the Egyptian and Greek coaching cards reference self-hosted covers, not Wikimedia hotlinks',async()=>{
+ const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
+ const ui=read('components/public-coaching-discovery.jsx')
+ for(const slug of ['egyptian','greek']){
+  assert.equal(traditionCoachingArt[slug],'/images/holistic-house/coaching-ancient/'+slug+'-cover.jpg')
+  assert.match(ui,new RegExp('image=\\{traditionCoachingArt\\.'+slug+'\\}'))
+ }
+ assert.match(ui,/className=\{styles\.loungePhoto\}/)
+ assert.match(ui,/unoptimized referrerPolicy="no-referrer"/)
+})
