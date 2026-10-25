@@ -15,7 +15,7 @@ const content = {
     eyebrow: 'LIVE WITH ANDREY',
     title: 'Coaching & Hypnotherapy',
     lead: 'Personal support online. Choose how you would like to start.',
-    choose: 'Choose your session',
+    choose: 'Request a session',
     service: 'Coaching & Hypnotherapy',
     options: {
       free: { title: 'Free express assessment', detail: 'A written review of your situation', price: 'FREE' },
@@ -38,7 +38,7 @@ const content = {
     eyebrow: 'ЖИВАЯ СЕССИЯ С АНДРЕЕМ',
     title: 'Коучинг и гипнотерапия',
     lead: 'Индивидуальная работа онлайн. Выберите удобный формат.',
-    choose: 'Какую сессию вы хотите?',
+    choose: 'Заказать сессию',
     service: 'Коучинг и гипнотерапия',
     options: {
       free: { title: 'Бесплатная экспресс-диагностика', detail: 'Письменный разбор вашей ситуации', price: 'БЕСПЛАТНО' },
@@ -61,7 +61,7 @@ const content = {
     eyebrow: 'SESIÓN EN VIVO CON ANDREY',
     title: 'Coaching e hipnoterapia',
     lead: 'Apoyo individual en línea. Elige cómo quieres empezar.',
-    choose: 'Elige tu sesión',
+    choose: 'Solicitar una sesión',
     service: 'Coaching e hipnoterapia',
     options: {
       free: { title: 'Evaluación exprés gratuita', detail: 'Análisis escrito de tu situación', price: 'GRATIS' },
