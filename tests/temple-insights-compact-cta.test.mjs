@@ -8,7 +8,10 @@ const styles = read("components/ideas-discovery.module.css");
 
 test("Temple Insights offers two stacked real actions without transferring question data", () => {
   assert.match(source, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
-  assert.match(source, /\{isTemple \? <Link[\s\S]*?href=\{"/" \+ locale \+ "/holistic-support#free-diagnostic-start"\}[\s\S]*?data-ideas-personal-diagnostic[\s\S]*?prefetch=\{false\}/);
+  const templeLink = source.slice(source.indexOf("{isTemple ? <Link"), source.indexOf("</Link> : null}", source.indexOf("{isTemple ? <Link")));
+  assert.ok(templeLink.includes('href={"/" + locale + "/holistic-support#free-diagnostic-start"}'));
+  assert.match(templeLink, /data-ideas-personal-diagnostic/);
+  assert.match(templeLink, /prefetch=\{false\}/);
   const first = source.indexOf("data-ideas-tao>");
   const second = source.indexOf("data-ideas-personal-diagnostic");
   assert.ok(first >= 0 && second > first, "diagnostic link must follow the symbolic-insight button");
