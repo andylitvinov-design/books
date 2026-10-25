@@ -141,16 +141,19 @@ try {
             animations: "disabled",
           });
         }
-        const moreMentorFilters = menu.locator("details summary").first();
+        const moreMentorFilters = menu.locator('[aria-controls="mentor-extra-filters"]');
         await assertTouchSize(moreMentorFilters, label + " advanced filters");
+        assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "false",
+          label + ": advanced menu starts collapsed");
         await moreMentorFilters.tap();
-        // Native <details> toggles on the browser's default-action step; a
-        // same-microtask count() can observe the previous closed state.
-        const expandedMentorFilters = menu.locator("details[open]");
-        await expandedMentorFilters.waitFor({ state: "visible", timeout: 10000 });
+        await menu.locator("#mentor-extra-filters").waitFor({ state: "visible", timeout: 10000 });
+        assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "true",
+          label + ": advanced menu opens from a touch");
         await noHorizontalOverflow(page, label + " expanded filters");
         await moreMentorFilters.tap();
-        await expandedMentorFilters.waitFor({ state: "hidden", timeout: 10000 });
+        await menu.locator("#mentor-extra-filters").waitFor({ state: "hidden", timeout: 10000 });
+        assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "false",
+          label + ": advanced menu closes from a touch");
         if (articlesWereSelected) await articleTab.tap();
 
         if (phase === "empty") {
