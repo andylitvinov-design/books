@@ -50,6 +50,9 @@ jobs:
             sleep 2
           done
           status=0
+          # Isolate real Online/In-person clicks before unrelated legacy
+          # acceptance flows, so failures elsewhere never erase this result.
+          node scripts/verify-services-mode-toggle-browser.mjs || status=$?
           node scripts/verify-business-quiz-mobile.mjs || status=$?
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-holistic-master-browser.mjs || status=$?
