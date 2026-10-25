@@ -47,10 +47,17 @@ test("three photo-backed horizontal cards expose the correct free and €50 offe
 
 test("all three offer CTAs select a controlled option in the one consented CRM enquiry form", () => {
   assert.equal((offers.match(/<CompactLeadCapture/g) || []).length, 1);
+  assert.match(offers, /selected === "situation-written-free" \? \(/);
+  assert.match(offers, /<FreeDiagnosticStart locale=\{locale\} \/>/);
+  assert.match(offers, /data-diagnosis-order-form/);
+  const diagnostic = source("components/free-diagnostic-start.tsx");
+  assert.match(diagnostic, /sessionStorage\.setItem\(DIAGNOSTIC_START_KEY/);
+  assert.match(diagnostic, /window\.location\.assign\("\/" \+ locale \+ "\/coaching\/intake"\)/);
+  assert.match(diagnostic, /until you explicitly send your completed questionnaire/);
   assert.match(offers, /selectedFormatValue=\{selected\}/);
   assert.match(offers, /serviceTitle=\{t\.offers\.find\(offer => offer\.id === selected\)\?\.title/);
   assert.match(offers, /onFormatChange=\{\(value\) => setSelected\(value as OfferId\)\}/);
-  assert.match(offers, /formatOptions=\{t\.offers\.map\(offer => \(\{ value: offer\.id, label:/);
+  assert.match(offers, /formatOptions=\{t\.offers\.filter\(offer => offer\.id !== "situation-written-free"\)/);
   assert.match(capture, /const selectedFormat = selectedFormatValue \?\? internalFormat/);
   assert.match(capture, /const receiptServiceTitle = submittedServiceTitle \?\? serviceTitle/);
   assert.match(capture, /onFormatChange\?\.\(event\.target\.value\)/);
