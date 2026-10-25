@@ -82,7 +82,18 @@ async function verify(browserType, locale, width) {
     assert.match(await full.innerText(), /€100/, label + ": 60-minute session costs €100");
     await short.tap();
     assert.equal(await short.getAttribute("aria-checked"), "true", label + ": 30-minute price selection");
+    await capture.locator('[data-coaching-booking-choice="short"]').tap();
+    const mini = capture.locator("[data-coaching-paid-phone]");
+    await mini.waitFor({ state: "visible" });
+    assert.equal(await mini.locator('input[type="tel"]').count(), 1, label + ": paid phone only");
+    assert.equal(await mini.locator('[data-compact-channel]').count(), 2,
+      label + ": two opt-in messenger choices and no giant sign-in form");
+    assert.equal(await mini.locator('input[type="checkbox"]').isChecked(), false,
+      label + ": CRM contact opt-in starts unchecked");
     await full.tap();
+    assert.equal(await capture.locator('[data-coaching-request-sheet]').getAttribute("data-open"), "false",
+      label + ": changing price collapses old request");
+
     assert.equal(await full.getAttribute("aria-checked"), "true", label + ": 60-minute price selection");
     assert.equal(await root.locator("[data-coaching-practitioner-checklist]").isVisible(), true,
       label + ": visible trust/training and availability checks");
@@ -118,6 +129,41 @@ async function verify(browserType, locale, width) {
     assert.deepEqual(errors, [], label + ": zero uncaught React errors");
     if (width === 390)
       await page.screenshot({ path: output + "/coaching-" + browserType.name() + "-" + locale + "-390.png", fullPage: false });
+    // Exercise free mobile handoff without performing a real CRM submission.
+    if (!(await advanced.evaluate(node => node.open))) await advanced.locator("summary").tap();
+    await humanChoice.tap();
+    const freeCapture = root.locator("[data-coaching-live-capture]");
+    await freeCapture.locator('[data-coaching-booking-option="free"]').tap();
+    await freeCapture.locator('[data-coaching-booking-choice="free"]').tap();
+    const freePhone = freeCapture.locator("[data-coaching-phone-start]");
+    await freePhone.waitFor({ state: "visible" });
+    assert.equal(await freePhone.locator('input[type="tel"]').count(), 1,
+      label + ": free flow asks for phone only");
+    assert.equal(await freePhone.locator('[data-compact-channel]').count(), 0,
+      label + ": free flow never opens messengers");
+    await freePhone.locator('input[type="tel"]').fill("+14165550123");
+    await freePhone.locator('[data-free-coaching-start]').tap();
+    await page.waitForURL(origin + "/" + locale + "/coaching/intake?guided=1");
+    const guided = page.locator("[data-coaching-guided]");
+    await guided.waitFor({ state: "visible" });
+    assert.equal(await guided.locator('[data-guided-coaching-question="request"]').count(), 1,
+      label + ": first slide asks for a short question");
+    assert.equal(await guided.locator('[data-guided-coaching-send]').count(), 0,
+      label + ": no premature CRM submit");
+    await guided.locator('[data-guided-coaching-question="request"]').fill("Synthetic QA: choosing my next step.");
+    await guided.locator('[data-guided-next]').tap();
+    assert.equal(await guided.locator('[data-guided-coaching-question]').count(), 0,
+      label + ": second slide is the authored questionnaire invitation");
+    await guided.locator('[data-guided-next]').tap();
+    assert.equal(await guided.locator('[data-guided-coaching-question="occupation"]').count(), 1,
+      label + ": subsequent slides ask one authored question at a time");
+    const guidedDimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    assert.ok(guidedDimensions.scrollWidth <= guidedDimensions.viewport + 2,
+      label + ": guided viewport does not scroll horizontally");
+    assert.deepEqual(errors, [], label + ": zero runtime errors after guided handoff");
     evidence.push({ browser: browserType.name(), locale, width, result: "pass",
       catalogPresent: initialCatalogCount > 0, activatedFreeRunner: availableCards > 0 });
     console.log("OK " + label + " catalog=" + initialCatalogCount);
