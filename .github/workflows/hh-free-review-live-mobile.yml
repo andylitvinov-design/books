@@ -8,6 +8,8 @@ on:
       - 'components/free-entry-landing.tsx'
       - 'components/free-entry-landing.module.css'
       - 'components/free-diagnosis-offers.tsx'
+      - 'components/personal-express-enquiry.tsx'
+      - 'components/personal-express-enquiry.module.css'
       - 'components/free-diagnosis-offers.module.css'
       - 'components/compact-lead-capture.tsx'
       - 'app/[locale]/services/free-consultation/page.tsx'
@@ -30,6 +32,8 @@ on:
       - 'components/free-entry-landing.tsx'
       - 'components/free-entry-landing.module.css'
       - 'components/free-diagnosis-offers.tsx'
+      - 'components/personal-express-enquiry.tsx'
+      - 'components/personal-express-enquiry.module.css'
       - 'components/free-diagnosis-offers.module.css'
       - 'components/compact-lead-capture.tsx'
       - 'app/[locale]/services/free-consultation/page.tsx'
@@ -71,7 +75,7 @@ jobs:
         run: |
           npm ci --include=dev --no-audit --no-fund
           node --test tests/retired-situation-promo-sitewide.test.mjs tests/constellation-landing-video.test.mjs tests/free-review-conversion.test.mjs tests/private-material-handoff.test.mjs tests/coaching-intake-form.test.mjs tests/contact-channel-chooser.test.mjs tests/ga4-analytics.test.mjs tests/consultation-capture-choice.test.mjs tests/free-diagnosis-three-offers.test.mjs tests/personal-testimonials-prefetch.test.mjs
-          npx eslint components/free-diagnosis-offers.tsx components/compact-lead-capture.tsx app/'[locale]'/services/free-consultation/page.tsx components/sitewide-antistress-banner.tsx components/free-entry-landing.tsx components/personal-testimonials.tsx components/free-drawing-intake.tsx components/coaching-intake-form.tsx components/consultation-choice-capture.tsx lib/coaching/intake-model.js tests/private-material-handoff.test.mjs
+          npx eslint components/free-diagnosis-offers.tsx components/personal-express-enquiry.tsx components/compact-lead-capture.tsx app/'[locale]'/services/free-consultation/page.tsx components/sitewide-antistress-banner.tsx components/free-entry-landing.tsx components/personal-testimonials.tsx components/free-drawing-intake.tsx components/coaching-intake-form.tsx components/consultation-choice-capture.tsx lib/coaching/intake-model.js tests/private-material-handoff.test.mjs
           npx tsc --noEmit
           npm run build > /tmp/hh-review-next-build.log 2>&1 || { tail -n 140 /tmp/hh-review-next-build.log; exit 1; }
         env:
