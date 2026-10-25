@@ -42,6 +42,8 @@ const copy = {
     videoTitle: "Get to know my approach",
     faqTitle: "Before you begin",
     faqs: [
+      { q: "Is between-session support unlimited?", a: "Messaging is not unlimited. We agree on the reply window, follow-up volume and report/video scope in writing before payment. This is not around-the-clock support." },
+      { q: "Which currency and terms apply?", a: "The monthly service price is €200 EUR. Before paying, confirm the full amount including any taxes or fees, scheduling, cancellation and refund terms in writing. Renewal is never automatic." },
       { q: "What is included in €200?", a: "Two full 60-minute personal sessions within one month, plus the possibility of writing questions between sessions within agreed limits." },
       { q: "Is there an automatic subscription?", a: "No. A second month is arranged only if you choose to continue. There is no automatic charge." },
       { q: "Can we work without a call?", a: "Yes, by agreement. For the remote no-call format, you receive a private written report and a video after the work." },
@@ -84,6 +86,8 @@ const copy = {
     videoTitle: "Посмотрите, как я работаю",
     faqTitle: "Важно знать",
     faqs: [
+      { q: "Поддержка между встречами без ограничений?", a: "Переписка не безлимитная. До оплаты письменно согласуем срок ответа, объём дополнительных вопросов и состав отчёта или видео. Это не круглосуточная поддержка." },
+      { q: "В какой валюте цена и какие условия?", a: "Стоимость месяца — €200 EUR. До оплаты письменно подтвердите полную сумму с возможными налогами и комиссиями, время, условия отмены и возврата. Автоматического продления нет." },
       { q: "Что входит в €200?", a: "Две полноценные сессии по 60 минут в течение месяца и возможность задавать вопросы между ними в согласованных пределах." },
       { q: "Это автоматически продлеваемая подписка?", a: "Нет. Продление только по вашему желанию. Автоматических списаний нет." },
       { q: "Можно работать без созвона?", a: "Да, по договорённости. После дистанционной работы без звонка вы получите личный отчёт и приватное видео." },
@@ -126,6 +130,8 @@ const copy = {
     videoTitle: "Conoce mi enfoque",
     faqTitle: "Antes de empezar",
     faqs: [
+      { q: "¿La atención entre sesiones es ilimitada?", a: "La mensajería no es ilimitada. Acordamos por escrito el plazo de respuesta, la cantidad de consultas y el alcance del informe o vídeo antes de pagar. No es atención las 24 horas." },
+      { q: "¿Qué moneda y condiciones se aplican?", a: "El servicio mensual cuesta €200 EUR. Antes de pagar, confirma por escrito el total con los posibles impuestos o comisiones, horarios, cancelación y reembolso. No hay renovación automática." },
       { q: "¿Qué incluye el precio?", a: "Dos sesiones de 60 minutos durante un mes y la posibilidad de hacer preguntas por escrito dentro de límites acordados." },
       { q: "¿Se renueva automáticamente?", a: "No. Solo se renueva con una nueva decisión tuya y sin cobros automáticos." },
       { q: "¿Puede ser sin llamada?", a: "Sí, por acuerdo. Recibirás un informe personal y un vídeo privado después de una sesión a distancia sin llamada." },
