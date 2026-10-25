@@ -38,7 +38,10 @@ test("localized slider appears first on EN/RU/ES without removing existing conse
     const at = page.indexOf(marker);
     assert.ok(at > 0, "Homepage must mount carousel");
     assert.ok(at < page.indexOf("<HomeFeaturedWorkspace"), "Carousel precedes seven-stage journey");
-    for (const kind of ["paid-sessions", "free-written-review", "free-tests"]) assert.ok(page.includes(kind), "Missing existing CTA: " + kind);
+    const workspace = read("components/home-featured-workspace.tsx");
+    for (const route of ["/services#consultation", "/services/free-situation-review", "/client/tests"]) {
+      assert.ok(workspace.includes(route), "The existing journey retains destination: " + route);
+    }
     assert.ok(page.includes("<HomeFeaturedWorkspace"));
   }
   assert.match(read("app/holistic-house-home.css"), /\[data-home-featured-intro\]/);
@@ -46,8 +49,6 @@ test("localized slider appears first on EN/RU/ES without removing existing conse
 
 test("touch, focus, arrows, accessible dots and reduced motion are preserved on small phones", () => {
   assert.match(carousel, /aria-roledescription="carousel"/);
-  assert.match(carousel, /onFocusCapture/);
-  assert.match(carousel, /onBlurCapture/);
   assert.match(carousel, /onTouchStart/);
   assert.match(carousel, /onTouchEnd=\{endSwipe\}/);
   assert.match(carousel, /Math.abs\(dx\) >= 55/);
@@ -55,25 +56,17 @@ test("touch, focus, arrows, accessible dots and reduced motion are preserved on 
   assert.match(carousel, /onClick=\{\(\) => navigate\(1\)\}/);
   assert.match(carousel, /aria-current=\{position === index/);
   assert.match(carousel, /prefers-reduced-motion: reduce/);
-  assert.match(carousel, /document.visibilityState === "visible"/);
   assert.match(style, /\.slideCopy :is\(h1,h2\)/);
   assert.match(style, /@media\(max-width:760px\)/);
   assert.match(style, /@media\(max-width:365px\)/);
   assert.match(style, /:focus-visible/);
 });
 
-test("iPhone touch, arrow and dot interactions cannot permanently stop automatic rotation", () => {
-  assert.match(carousel, /setInterval\(\(\) => \{/);
-  assert.match(carousel, /\}, 7000\)/);
-  assert.match(carousel, /\[paused, interactionVersion\]/);
-  assert.match(carousel, /setInteractionVersion\(version => version \+ 1\)/);
-  assert.doesNotMatch(carousel, /setManual\(|paused \|\| manual/);
-  const touchStart = carousel.match(/onTouchStart=\{event => \{([^]*?)\}\}/)?.[1] || "";
-  assert.ok(touchStart.includes("touchStart.current"));
-  assert.doesNotMatch(touchStart, /setPaused\(|setInteractionVersion\(/);
-  assert.match(carousel, /\(hover: hover\) and \(pointer: fine\)/);
-  assert.match(carousel, /event\.target\.matches\(":focus-visible"\)/);
-  assert.match(carousel, /document\.visibilityState === "visible"/);
+test("first offer has no automatic timer while touch, arrows and dots remain deliberate", () => {
+  assert.doesNotMatch(carousel, /setInterval|setTimeout|setPaused|interactionVersion/);
+  assert.match(carousel, /onTouchEnd=\{endSwipe\}/);
+  assert.match(carousel, /onClick=\{\(\) => setIndex\(position\)\}/);
+  assert.match(carousel, /onClick=\{\(\) => navigate\(1\)\}/);
   assert.match(carousel, /prefers-reduced-motion: reduce/);
 });
 

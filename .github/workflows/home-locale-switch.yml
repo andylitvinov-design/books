@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'components/holistic-house-home.tsx'
+      - 'components/home-section-carousel.tsx'
+      - 'app/\[locale\]/services/page.tsx'
+      - 'tests/stable-session-entry.test.mjs'
+      - 'tests/home-section-carousel.test.mjs'
+      - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'components/home-featured-workspace.tsx'
       - 'components/home-featured-workspace.module.css'
       - 'tests/home-featured-workspace.test.mjs'
@@ -10,7 +15,7 @@ on:
       - 'components/personality-profiles-builder.tsx'
       - 'components/personality-profiles-builder.module.css'
       - 'lib/profile/profile-battery.js'
-      - 'app/[locale]/personality-profiles/page.tsx'
+      - 'app/\[locale\]/personality-profiles/page.tsx'
       - 'tests/home-master-path.test.mjs'
       - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-core-methods.tsx'
@@ -25,6 +30,11 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/holistic-house-home.tsx'
+      - 'components/home-section-carousel.tsx'
+      - 'app/\[locale\]/services/page.tsx'
+      - 'tests/stable-session-entry.test.mjs'
+      - 'tests/home-section-carousel.test.mjs'
+      - 'tests/home-carousel-first-screen-cta.test.mjs'
       - 'components/home-featured-workspace.tsx'
       - 'components/home-featured-workspace.module.css'
       - 'tests/home-featured-workspace.test.mjs'
@@ -32,7 +42,7 @@ on:
       - 'components/personality-profiles-builder.tsx'
       - 'components/personality-profiles-builder.module.css'
       - 'lib/profile/profile-battery.js'
-      - 'app/[locale]/personality-profiles/page.tsx'
+      - 'app/\[locale\]/personality-profiles/page.tsx'
       - 'tests/home-master-path.test.mjs'
       - 'tests/home-rsc-on-demand.test.mjs'
       - 'components/home-core-methods.tsx'
@@ -58,6 +68,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Stable offer, manual carousel and early existing session selector
+        run: |
+          node --test tests/stable-session-entry.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs
+          npx --no-install eslint components/home-section-carousel.tsx app/'[locale]'/services/page.tsx tests/stable-session-entry.test.mjs
       - name: Seven-step immersion, existing methods, privacy, typecheck and lint
         run: |
           node --test tests/home-featured-workspace.test.mjs tests/personality-profiles-builder.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs
