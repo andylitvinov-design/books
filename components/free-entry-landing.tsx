@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, ShieldCheck, Sparkle
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
+import { FreeDiagnosisOffers } from "@/components/free-diagnosis-offers";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
@@ -76,9 +77,9 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "PERSONAL WRITTEN REVIEW · NO LIVE CALL",
-      title: "See your situation from a fresh perspective.",
-      lead: "Bring one question — about a relationship, a decision, work or your inner state. Through a short questionnaire and a hand-drawn ‘ME — GOAL — PROBLEM’ map, Andrey offers a personal written reflection.",
+      eyebrow: "TWO FREE REVIEWS + PERSONAL SESSION",
+      title: "Free diagnosis or a personal session — choose your format.",
+      lead: "Explore a free written situation review or a symbolic Wu Xing Five Elements profile. Prefer to talk with Andrey? Request a 30-minute personal consultation for €50.",
       value: "A thoughtful outside perspective on your question, obstacles and possible next steps.",
       bullets: ["Clarify what you want to change or understand.", "Explore the roles, tensions and resources in your situation.", "Receive personal written observations to reflect on."],
       outcomeTitle: "Space to understand your question",
@@ -179,9 +180,9 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "ЛИЧНЫЙ ПИСЬМЕННЫЙ РАЗБОР · НЕ ЗВОНОК",
-      title: "Взгляните на свою ситуацию под другим углом.",
-      lead: "Выберите один вопрос — об отношениях, решении, работе или внутреннем состоянии. По короткой анкете и рисунку «Я — ЦЕЛЬ — ПРОБЛЕМА» Андрей подготовит личный письменный разбор.",
+      eyebrow: "ДВА БЕСПЛАТНЫХ РАЗБОРА + ЛИЧНАЯ СЕССИЯ",
+      title: "Бесплатная диагностика или личная консультация — выберите формат.",
+      lead: "Разбор жизненной ситуации и символическая диагностика ресурсов У-Син бесплатны. Для личного разговора с Андреем можно запросить консультацию на 30 минут за €50.",
       value: "Свежий взгляд на вопрос, препятствия и возможные следующие шаги.",
       bullets: ["Проясните, что хотите понять или изменить.", "Исследуйте роли, напряжения и ресурсы ситуации.", "Получите письменные наблюдения для размышления."],
       outcomeTitle: "Пространство, чтобы понять свой вопрос",
@@ -282,9 +283,9 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "REVISIÓN PERSONAL POR ESCRITO · SIN LLAMADA",
-      title: "Mira tu situación desde otra perspectiva.",
-      lead: "Comparte una pregunta sobre relaciones, decisiones, trabajo o tu estado interior. Con un cuestionario breve y un dibujo de «YO — META — PROBLEMA», Andrey prepara una reflexión personal por escrito.",
+      eyebrow: "DOS REVISIONES GRATUITAS + CONSULTA PERSONAL",
+      title: "Diagnóstico gratuito o consulta personal: elige tu formato.",
+      lead: "Elige una revisión escrita de tu situación o un perfil simbólico Wu Xing, ambos gratuitos. También puedes solicitar una consulta personal de 30 minutos por €50.",
       value: "Una perspectiva externa sobre tu pregunta, tus obstáculos y posibles pasos.",
       bullets: ["Aclara lo que quieres comprender o cambiar.", "Explora roles, tensiones y recursos de la situación.", "Recibe observaciones personales por escrito."],
       outcomeTitle: "Espacio para comprender tu pregunta",
@@ -363,9 +364,9 @@ const finalCopy = {
 } as const;
 
 const situationFirstScreen = {
-  en: { lead: "One question and a simple drawing → a free personal written reflection. No call.", source: "Open on YouTube" },
-  ru: { lead: "Один вопрос и простой рисунок → бесплатный личный письменный разбор. Без звонка.", source: "Открыть на YouTube" },
-  es: { lead: "Una pregunta y un dibujo sencillo → reflexión personal gratuita por escrito. Sin llamada.", source: "Abrir en YouTube" },
+  en: { lead: "Two free written options · or 30 minutes personally with Andrey for €50.", source: "Open on YouTube" },
+  ru: { lead: "Два бесплатных письменных разбора или личная сессия 30 минут за €50.", source: "Открыть на YouTube" },
+  es: { lead: "Dos revisiones escritas gratis o una sesión personal de 30 minutos por €50.", source: "Abrir en YouTube" },
 } as const;
 
 const serviceTitles = {
@@ -389,17 +390,17 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label={common.back}>
           <Link href={"/" + locale + "/services"} prefetch={false}><ArrowLeft size={17} aria-hidden="true" />{common.back}</Link>
-          <span aria-hidden="true">/</span><span>{common.free}</span>
+          <span aria-hidden="true">/</span><span>{kind === "situation" ? (locale === "ru" ? "Диагностика" : locale === "es" ? "Diagnóstico" : "Diagnosis") : common.free}</span>
         </nav>
 
         <section className={[styles.hero, kind === "dao" ? styles.daoHero : "", kind === "situation" ? styles.situationHero : ""].filter(Boolean).join(" ")} aria-labelledby="free-entry-title">
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}><Sparkles size={16} aria-hidden="true" />{t.eyebrow}</p>
-            <span className={styles.badge}>{common.free}</span>
+            <span className={styles.badge}>{kind === "situation" ? (locale === "ru" ? "2 бесплатно · 1 платная сессия" : locale === "es" ? "2 gratis · 1 sesión de pago" : "2 free · 1 paid session") : common.free}</span>
             <h1 id="free-entry-title">{t.title}</h1>
             <p className={styles.lead}>{t.lead}</p>
             {kind === "situation" ? <p className={styles.shortLead}>{situationFirstScreen[locale].lead}</p> : null}
-            {kind === "dao" ?
+            {kind === "situation" ? null : kind === "dao" ?
               <ul className={styles.daoBenefits} aria-label={locale === "ru" ? "Что вы получите" : locale === "es" ? "Qué recibirás" : "What you get"}>
                 {t.bullets.map((benefit) => <li key={benefit}><CheckCircle2 size={17} aria-hidden="true" /><span>{benefit}</span></li>)}
               </ul> :
@@ -432,7 +433,9 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           )}
         </section>
 
-        <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : "", kind === "situation" ? styles.situationScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
+        {kind === "situation" ? <FreeDiagnosisOffers locale={locale} /> : null}
+
+        {kind !== "situation" ? <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : "", kind === "situation" ? styles.situationScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
           <div className={styles.sceneImage}>
             <Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
@@ -446,9 +449,9 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </article>)}
             </div>
           </div>
-        </section>
+        </section> : null}
 
-        {kind !== "dao" ? <section className={[styles.scene, styles.processScene, kind === "situation" ? styles.situationScene : ""].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
+        {kind === "tests" ? <section className={[styles.scene, styles.processScene, kind === "situation" ? styles.situationScene : ""].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
           <div className={styles.sceneText}>
             <p className={styles.sectionLabel}>02 / {common.process}</p>
             <h2 id="free-process-title">{t.processTitle}</h2>
@@ -482,14 +485,14 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
 
         {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
 
-        <CompactLeadCapture
+        {kind !== "situation" ? <CompactLeadCapture
           locale={locale}
           id={captureId}
           serviceTitle={serviceTitles[kind]}
           title={final.title}
           lead={final.lead}
           disclaimer={common.limitations}
-        />
+        /> : null}
       </div>
     </main>
   );
