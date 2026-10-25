@@ -68,3 +68,18 @@ test('composer controls stay visible and existing encrypted-save behavior is unc
   assert.match(voiceCss, /\.voiceCompact \.voiceSettingsPanel\{[\s\S]*?position:absolute/)
   assert.match(voiceCss, /\.courseSession\[data-coaching-one-viewport\] \.courseScroll \[data-author-coaching-audio\]/)
 })
+
+test('guest coaching questions and followups also keep their full-screen composer', () => {
+  const guest=source('components/public-coaching-discovery.jsx')
+  const css=source('components/public-coaching-discovery.module.css')
+  assert.match(guest,/data-coaching-one-viewport=\{entryStep==='questions'/)
+  assert.match(guest,/<CoachingChatThread turn=\{followupTurn\} locale=\{lang\} compact\/>/)
+  assert.match(guest,/<CoachingChatThread turn=\{conversationTurn\} locale=\{lang\} compact\/>/)
+  assert.match(css,/\.session\[data-coaching-one-viewport="true"\] \.sessionScroll\{[\s\S]*?overflow:hidden!important/)
+  assert.match(css,/\.session\[data-coaching-one-viewport="true"\] \.sessionFooter\{/)
+  assert.match(css,/\.session\[data-coaching-one-viewport="true"\] \.reportDetails\[open\] p\{/)
+  assert.match(css,/\.session\[data-coaching-one-viewport="true"\] \.quickReplyCaption\{/)
+  assert.match(css,/@media\(max-height:520px\)/)
+  assert.match(guest,/onClick=\{\(\)=>advance\(false\)\}/)
+  assert.doesNotMatch(guest,/localStorage\.setItem|sessionStorage\.setItem/)
+})
