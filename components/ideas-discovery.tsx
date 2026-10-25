@@ -281,9 +281,9 @@ const copy = {
 
 // Reuse the real local-only symbolic engine inside Temple Support without duplicating its privacy model.
 const templeIntro = {
-  en: { eyebrow: "TEMPLE SUPPORT · SYMBOLIC REFLECTION", title: "Temple Insights", lead: "Share one question and reflect on an I Ching symbol and related aphorisms. Free, private and not a prediction.", ask: "Receive a free symbolic insight", diagnostic: "Request Free Personal Diagnostic" },
-  ru: { eyebrow: "TEMPLE SUPPORT · СИМВОЛИЧЕСКИЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте один вопрос и получите символ И-Цзин с афоризмами для размышления. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку", diagnostic: "Запросить бесплатную личную диагностику" },
-  es: { eyebrow: "TEMPLE SUPPORT · REFLEXIÓN SIMBÓLICA", title: "Reflexiones del templo", lead: "Haz una pregunta y explora un símbolo del I Ching con aforismos. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis", diagnostic: "Solicitar diagnóstico personal gratuito" },
+  en: { eyebrow: "TEMPLE & PSYCHIC INSIGHTS", title: "Temple Insights", lead: "Ask a question, find inspiration and receive a symbolic I Ching reflection. Free, private and not a prediction.", ask: "Receive a free symbolic insight", diagnostic: "Request Free Personal Diagnostic" },
+  ru: { eyebrow: "ХРАМОВЫЕ И ИНТУИТИВНЫЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте вопрос, найдите вдохновение и получите символическую подсказку И-Цзин. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку", diagnostic: "Запросить бесплатную личную диагностику" },
+  es: { eyebrow: "REFLEXIONES DEL TEMPLO", title: "Reflexiones del templo", lead: "Haz una pregunta, encuentra inspiración y explora un símbolo del I Ching. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis", diagnostic: "Solicitar diagnóstico personal gratuito" },
 } as const;
 
 // Start a real, rights-cleared guest questionnaire, not a generic catalog.
@@ -584,7 +584,9 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
     document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
   }, [showSuggestedTests]);
   const templeContent = (<>
-
+      {/* The shared Ideas controls remain unchanged. Only Temple groups its header,
+          question, actions and privacy within the approved scenic surface. */}
+      <div className={isTemple ? styles.templeScenic : styles.heroLayout}>
       <div className={styles.hero} data-ideas-hero>
         <div className={styles.heading}>
           <div>
@@ -685,11 +687,12 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
             <summary id="ideas-question-privacy">{t.privacyShort}</summary>
             <p className={styles.privacy}>{t.privacy}</p>
           </details>
-          {!isTemple ? <button type="button" className={styles.freeTestLink} data-ideas-free-test
+          <button type="button" className={styles.freeTestLink} data-ideas-free-test
             aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
             onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
-            onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button> : null}
+            onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
         </div>
+      </div>
       </div>
       <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
         hidden={!showSuggestedTests} aria-label={t.testsTitle}>

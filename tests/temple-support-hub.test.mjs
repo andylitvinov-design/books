@@ -111,3 +111,36 @@ test("AI Insight is honest about its non-LLM source; master enquiry is CAD 50 fo
   assert.match(alchemy, /locale: "es"/);
   assert.doesNotMatch(page, /fetch\(|checkout|charge\(/);
 });
+
+
+test("Temple Insights recovers the old scenic Ideas card without affecting Ideas or the privacy contract", () => {
+  const page = read("app/[locale]/holistic-support/page.tsx");
+  const ideas = read("components/ideas-discovery.tsx");
+  const scenic = read("components/ideas-discovery.module.css");
+  const layout = read("app/[locale]/holistic-support/holistic-support.module.css");
+
+  assert.match(page, /data-holistic-insights aria-labelledby="ideas-title"/);
+  assert.ok(page.indexOf("data-holistic-free-insight") < page.indexOf('data-holistic-offer="ai"'),
+    "the question card should be the first offer shown");
+  assert.equal((page.match(/<IdeasDiscovery locale=\{locale\} variant="temple" \/>/g) || []).length, 1,
+    "reuse the single private local Ideas engine");
+  assert.match(layout, /\.section\[data-holistic-insights\] \.freePanel\s*\{/);
+
+  assert.match(ideas, /className=\{isTemple \? styles\.templeScenic : styles\.heroLayout\}/);
+  assert.match(scenic, /\.heroLayout\s*\{\s*display:\s*contents/);
+  assert.match(scenic, /\.templeScenic::before[\s\S]*?ideas-pine-sharp\.avif/);
+  assert.match(scenic, /\.root\[data-temple-mode="true"\] \.hero \.heading\s*\{\s*display:\s*block/);
+  assert.match(scenic, /@media \(max-width: 600px\)/);
+  assert.match(scenic, /@media \(max-width: 360px\)/);
+  assert.ok(existsSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)),
+    "use the original first-party Ideas artwork, not a remote/stock photograph");
+
+  assert.match(ideas, /data-ideas-tao/);
+  assert.match(ideas, /data-ideas-personal-diagnostic/);
+  assert.match(ideas, /data-ideas-free-test/);
+  assert.doesNotMatch(ideas, /!isTemple \? <button[^>]*data-ideas-free-test/);
+  assert.match(ideas, /href=\{freeOfferHref\(locale, "review"\)\}/);
+  assert.match(ideas, /id="ideas-question-privacy"/);
+  assert.match(ideas, /getIdeasAphorismMatches\(/);
+  assert.match(ideas, /drawRandomHexagram\(\)/);
+});
