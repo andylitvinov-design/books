@@ -67,7 +67,7 @@ test('Application gates require photo and opt-in; CRM gets full encrypted course
   assert.match(repo, /const photo = await requireReikiInitiationPhoto\(config, actor\)/)
   assert.match(repo, /submitReikiApplication\(db,actor,config,progress,answers,photo\)/)
   assert.match(repo, /body\.confirmed !== true/)
-  assert.match(leads, /stage='application'/)
+  assert.match(leads, /findLead\(db, actor\.id, 'application'/)
   assert.match(leads, /initiationRequest,\s*answers,\s*photo,/)
   assert.match(leads, /seal\(payload/)
   assert.match(leads, /photoUrl: row\.stage === 'application'/)
