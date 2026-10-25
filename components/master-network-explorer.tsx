@@ -585,6 +585,14 @@ function ServiceCard({
         )}
         <span className={isFree(service) ? styles.freePrice : styles.price}>{servicePrice(service, locale)}</span>
       </div>
+      {(service.serviceIntroductions?.length||service.videoPresentation)&&<Link className={styles.mediaIntroLink}
+        href={detailsHref + "#service-introduction"}>
+        {(service.serviceIntroductions?.[0]?.type||'video')==='audio'?'♫':'▶'}{' '}
+        {locale==='ru'?'Обращение мастера':locale==='es'?'Presentación del profesional':'Meet the practitioner'}
+        {' · '}{service.serviceIntroductions?.length
+          ? service.serviceIntroductions.map(item=>item.language.toUpperCase()).join(' / ')
+          : 'VIDEO'}
+      </Link>}
       <p className={styles.area}>{areaName(service.areaKey, locale)}</p>
       <h3>{service.copy.title}</h3>
       <p className={styles.description}>{service.copy.shortDescription}</p>

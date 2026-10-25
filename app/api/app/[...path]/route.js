@@ -958,7 +958,7 @@ async function handle(request, { params }) {
     }
     // Keep onboarding and own profile/service drafts available during signup.
     // All other master tools require a submitted profile and first offering.
-    if (path[0] === 'practice' && !['onboarding','profile','services'].includes(path[1]))
+    if (path[0] === 'practice' && !['onboarding','profile','services','video-upload'].includes(path[1]))
       await practiceRepo.requireActivated(actor)
     if (path[0] === 'practice' && path[1] === 'express-reports') {
       await consumeRate(config,{op:'express-report-write',actor:actor.id},18,3600)

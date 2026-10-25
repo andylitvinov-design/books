@@ -1,4 +1,5 @@
 export type VideoPresentation = {kind:'external';url:string}|{kind:'upload';assetId:string;path:string}
+export type ServiceIntroduction = {language:'en'|'ru'|'es';type:'audio'|'video';media:VideoPresentation}
 
 export type PractitionerCredentialPublic = {
   id: string
@@ -54,6 +55,7 @@ export type PublicService = {
   priceOptions?: {duration: 10 | 20 | 30 | 60; price: number}[]
   imagePath: string
   videoPresentation?: VideoPresentation | null
+  serviceIntroductions?: ServiceIntroduction[]
   photos?: string[]
   practitionerPhoto?: string
   goals?: string[]
