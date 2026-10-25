@@ -62,11 +62,29 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
           assert.equal(await page.locator(".tantra-course-hero__more").count(), 0, whereHero + ": extras menu removed");
           assert.equal(await page.locator("#tantra-master-course").count(), 1, whereHero + ": single lower anchor");
           await initiation.click();
-          await page.waitForFunction(() => {
-            const selected = document.querySelector('#tantra-next-steps button[data-selected="true"]');
-            return window.location.hash === "#tantra-master-course" &&
-              /Personal|Личная|personal/i.test(selected?.textContent || "");
-          }, null, { timeout: 6000 });
+          // Wait for layout/scroll to settle, not merely the synchronous URL hash
+          // and the next React update. A same-page link is only useful once the
+          // customer can actually see the lower enquiry section.
+          try {
+            await page.waitForFunction(() => {
+              const selected = document.querySelector('#tantra-next-steps button[data-selected="true"]');
+              const rect = document.querySelector('#tantra-next-steps')?.getBoundingClientRect();
+              return window.location.hash === "#tantra-master-course" &&
+                /Personal|Личная|personal/i.test(selected?.textContent || "") &&
+                rect && rect.top < innerHeight && rect.bottom > 0;
+            }, null, { timeout: 12000 });
+          } catch (error) {
+            console.error(whereHero + " scroll diagnostics", await page.evaluate(() => ({
+              hash: window.location.hash,
+              scrollY: window.scrollY,
+              scrollHeight: document.documentElement.scrollHeight,
+              viewportHeight: innerHeight,
+              anchor: document.querySelector('#tantra-master-course')?.getBoundingClientRect().toJSON(),
+              form: document.querySelector('#tantra-next-steps')?.getBoundingClientRect().toJSON(),
+              selected: document.querySelector('#tantra-next-steps button[data-selected="true"]')?.textContent,
+            })));
+            throw error;
+          }
           assert.equal(new URL(page.url()).pathname, "/" + locale + "/academy/reiki/tantra-reiki", whereHero + ": stays on this page");
           const bottomCapture = page.locator('#tantra-next-steps[data-reiki-choice-capture="tantra"]');
           assert.equal(await bottomCapture.count(), 1, whereHero + ": existing form reused");
