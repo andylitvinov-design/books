@@ -207,7 +207,7 @@ test("all home cards use the approved compact Tests photo-card visual on EN/RU/E
   assert.match(component, /className=\{styles\.offerMeta\}/);
   assert.match(css, /\.offer \{[\s\S]*?grid-template-areas: "photo content";[\s\S]*?padding: 0;/);
   assert.match(css, /\.photo \{[\s\S]*?border-radius: 17px 0 0 17px;/);
-  const secondary = css.split(".offerSecondary {")[1].split("}")[0];
+  const secondary = css.split("\n.offerSecondary {")[1].split("}")[0];
   const primary = css.split(".offerPrimary {")[1].split("}")[0];
   assert.match(secondary, /border: 0;/);
   assert.match(secondary, /background: transparent;/);
