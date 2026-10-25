@@ -98,8 +98,8 @@ jobs:
           done
           if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-ideas-next.log; exit 1; fi
           node scripts/verify-coaching-lounge-mobile.mjs
-          node scripts/verify-ideas-mobile-browser.mjs
           node scripts/verify-holistic-support-browser.mjs
+          node scripts/verify-ideas-mobile-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
