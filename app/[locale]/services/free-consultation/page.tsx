@@ -101,7 +101,7 @@ export default async function FreeConsultationPage({ params }: Props) {
           </div>
         </header>
         <FreeDiagnosisOffers locale={lang} />
-        <PersonalTestimonials locale={lang === "es" ? "en" : lang} variant="all" />
+        <PersonalTestimonials locale={lang} variant="all" />
         <p className={styles.safety}><ShieldCheck size={19} aria-hidden="true" />{t.safety}</p>
         <Link className={styles.back} href={"/" + lang + "/services"} prefetch={false}>
           {t.back}<ArrowRight size={16} aria-hidden="true" />
