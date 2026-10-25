@@ -107,7 +107,7 @@ test('mobile accessible cart previews, explicit confirmation and per-client veri
   assert.match(client,/data-reiki-donation-preview/)
   assert.match(client,/data-reiki-donation-awaiting-verification/)
   assert.match(client,/data-reiki-donation-confirmed/)
-  assert.match(client,/order\.status === "paid"/)
+  assert.match(client,/order\?\.status === "paid"/)
   assert.match(client,/order\.receivedEur/)
   assert.match(owner,/data-reiki-donation-crm/)
   assert.match(owner,/data-reiki-crm-received/)
