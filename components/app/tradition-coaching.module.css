@@ -120,3 +120,52 @@
 .gentleGuide p{font-size:12px;line-height:1.45;margin:0}
 .legacyChoice{font-size:12px;line-height:1.4;color:#496b70;margin:4px 0 10px}
 @media(max-width:380px){.gentleGuide{padding:8px 10px;margin-bottom:8px}}
+
+
+/* Coaching on one phone screen: keep the goal choices in two short rows-plus-one,
+   and reveal the optional long note only when somebody wants to write or dictate. */
+.noteToggle{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;min-height:44px;margin:3px 0 0;padding:7px 11px;
+  border:1px solid #bad2cb;border-radius:11px;background:#eff6f1;
+  color:#285e5b;font:inherit;font-size:13px;font-weight:750;text-align:left;cursor:pointer;
+}
+.noteToggle span{font-size:20px;line-height:1;flex:none}
+.noteToggle:focus-visible{outline:3px solid #00afb1;outline-offset:2px}
+.noteSection{display:flex;flex-direction:column;min-width:0;padding-top:7px}
+.noteSection .note{resize:vertical}
+@media(max-width:600px){
+ .courseSession .courseScroll{padding:8px 12px 10px}
+ .courseSession .questionHeader h1{
+   font-size:clamp(22px,5.7vw,27px);line-height:1.18;
+   margin:4px 0 7px!important;
+ }
+ .courseSession .hint{font-size:12px;line-height:1.3;margin:2px 0 7px}
+ .courseSession .choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0 0 8px}
+ .courseSession .choice,.courseSession .chosen{
+   min-width:0;min-height:44px;padding:7px 9px;font-size:12.5px;line-height:1.2;
+   border-radius:10px;gap:6px;
+ }
+ .courseSession .choiceDot{width:15px;height:15px}
+ .courseSession .noteSection .note{min-height:82px;max-height:25dvh}
+ .voice{gap:3px;margin:3px 0 6px}
+ .voiceActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .voiceActions button{min-width:0;width:100%;min-height:44px;padding:7px 6px;font-size:clamp(11px,2.9vw,12px);gap:5px}
+ .voiceSettingsToggle{min-height:30px;align-self:flex-end;font-size:11px;padding:3px 1px}
+ .voice[data-coaching-listening="false"]>small[role="status"]{display:none}
+ .courseIntro[data-tradition-coaching-onboarding] .introActions{
+   position:sticky;bottom:0;z-index:1;padding:8px 0;
+   background:#fffaf2;box-shadow:0 -8px 10px #fffaf2e8;
+ }
+}
+@media(max-width:380px){
+ .courseSession .choice,.courseSession .chosen{font-size:12px;padding:6px 7px}
+ .courseSession .courseScroll{padding-inline:10px}
+}
+@media(max-height:620px) and (max-width:600px){
+ .courseSession .courseScroll{padding-top:5px;padding-bottom:7px}
+ .courseSession .questionHeader h1{font-size:21px;margin:3px 0 5px!important}
+ .courseSession .hint{margin-bottom:4px}
+ .courseSession .choices{gap:5px}
+ .voice{margin-bottom:4px}
+}
