@@ -756,8 +756,8 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <div className={styles.utilityLinks}>
           <details className={styles.privacyDisclosure}>
-            <summary id="ideas-question-privacy">{isHolistic ? holisticIntro[locale].privacyShort : t.privacyShort}</summary>
-            <p className={styles.privacy}>{isHolistic ? holisticIntro[locale].privacy : t.privacy}</p>
+            <summary id="ideas-question-privacy">{daoFocused ? t.privacyShort : isHolistic ? holisticIntro[locale].privacyShort : t.privacyShort}</summary>
+            <p className={styles.privacy}>{daoFocused ? t.privacy : isHolistic ? holisticIntro[locale].privacy : t.privacy}</p>
           </details>
           {!daoFocused && (isTemple ? (
             <Link href={freeOfferHref(locale, "tests")} prefetch={false}
