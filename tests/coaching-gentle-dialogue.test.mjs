@@ -206,3 +206,45 @@ test('all runners use one accessible, localized coach portrait chat and only rev
     ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
   assert.equal(parsed.parseDiagnostics.length,0)
 })
+
+test('real messenger layout docks message editing below the timeline across all coaching modes',()=>{
+  const guest=source('components/public-coaching-discovery.jsx')
+  const personal=source('components/app/personal-coaching.jsx')
+  const tradition=source('components/app/tradition-coaching.jsx')
+  const thread=source('components/coaching-chat-thread.jsx')
+  const voice=source('components/app/coaching-question-voice.jsx')
+  const guestCss=source('components/public-coaching-discovery.module.css')
+  const personalCss=source('components/app/personal-coaching.module.css')
+  const symbolicCss=source('components/app/tradition-coaching.module.css')
+
+  for(const [kind,ui] of [['guest',guest],['personal',personal],['symbolic',tradition]]){
+    assert.match(ui,/data-coaching-messenger-footer/,kind+' has anchored reply footer')
+    assert.match(ui,/data-coaching-composer/,kind+' has editable reply composer')
+    assert.match(ui,/<CoachingQuestionVoice[^>]*compact/,kind+' has compact voice controls')
+    const chatIndex=ui.indexOf('<CoachingChatThread turn={conversationTurn}')
+    const composerIndex=ui.lastIndexOf('data-coaching-composer')
+    assert.ok(chatIndex>=0&&composerIndex>chatIndex,kind+' question is in timeline above composer')
+    const parse=ts.createSourceFile(kind+'.jsx',ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+    assert.equal(parse.parseDiagnostics.length,0,kind+' valid JSX')
+  }
+  assert.match(guest,/data-coaching-quick-replies/)
+  assert.match(guest,/data-public-coaching-open-reflection/)
+  assert.match(guest,/public-coaching-followup-report-note/)
+  assert.match(guest,/public-coaching-report-note/)
+  assert.match(personal,/data-coaching-authored-followup/)
+  assert.match(personal,/data-coaching-one-question/)
+  assert.match(tradition,/data-tradition-open-reflection/)
+  assert.match(thread,/data-coaching-chat-draft/)
+  assert.match(thread,/data-coaching-chat-user-turn/)
+  assert.match(thread,/data-coaching-chat-coach-turn/)
+  assert.match(thread,/Portrait of Andrey/)
+  assert.match(voice,/data-coaching-voice-compact/)
+  assert.match(voice,/aria-label={t.voiceSettings}/)
+
+  for(const css of [guestCss,personalCss,symbolicCss]){
+    assert.match(css,/data-coaching-messenger-footer/)
+    assert.match(css,/safe-area-inset-bottom|footer/)
+    assert.match(css,/@media\(max-width:430px\)/)
+  }
+  assert.doesNotMatch(guest+personal+tradition+thread,/dangerouslySetInnerHTML|sendBeacon|localStorage|sessionStorage/)
+})
