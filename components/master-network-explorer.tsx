@@ -326,6 +326,9 @@ function Filters({
   coursesUnavailable?: boolean;
 }) {
   const t = COPY[locale];
+  // Explicitly control the extra filters disclosure. The hydrated mobile
+  // tab can re-render between touchstart and the browser's native toggle.
+  const [mastersMoreOpen, setMastersMoreOpen] = useState(false);
   const set = (field: keyof FilterState, value: string) => {
     const next = { ...state, [field]: value };
     if (field === "offeringType" && value !== "course") next.courseKey = "";
@@ -429,8 +432,11 @@ function Filters({
               </button>
             ))}
           </div>
-          <details className={styles.masterExtra}>
-            <summary>{locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"} <span aria-hidden="true">⌄</span></summary>
+          <details className={styles.masterExtra} open={mastersMoreOpen}>
+            <summary onClick={(event) => {
+              event.preventDefault();
+              setMastersMoreOpen((previous) => !previous);
+            }} aria-expanded={mastersMoreOpen}>{locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"} <span aria-hidden="true">⌄</span></summary>
             <div className={styles.selectGrid}>
               <label>{t.method}
                 <select value={state.method} onChange={(event) => set("method", event.target.value)}>
