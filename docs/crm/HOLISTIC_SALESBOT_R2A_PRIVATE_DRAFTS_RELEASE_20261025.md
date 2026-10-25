@@ -11,7 +11,7 @@
 - EN/RU/ES and compact 320–430px controls, account switch resets local editor and aborts pending fetches.
 
 ## Migration
-supabase/migrations/20261025190800_hh_crm_salesbot_owner_drafts_20261025.sql
+supabase/migrations/20261025192412_hh_crm_salesbot_owner_drafts_20261025.sql
 
 Review against current production migrations, then apply by controlled Supabase migration only after code checks. Confirm table and index, relrowsecurity AND relforcerowsecurity, GRANT scope, and all three policies under hh_crm_backend. Verify anon/authenticated and another-owner negative SELECT, UPDATE and INSERT, plus positive authorized owner create/save/pause under rollback transaction. No data API grants.
 
