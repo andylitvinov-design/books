@@ -435,6 +435,12 @@ function Filters({
           <div className={styles.masterExtra}>
             <button type="button" className={styles.masterExtraToggle}
               aria-expanded={mastersMoreOpen} aria-controls="mentor-extra-filters"
+              onTouchEnd={(event) => {
+                // Touch-driven nested tabs sometimes suppress the emulated click.
+                // Prevent it and perform exactly one state update on touchend.
+                event.preventDefault();
+                setMastersMoreOpen((previous) => !previous);
+              }}
               onClick={() => setMastersMoreOpen((previous) => !previous)}>
               {locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"}
               <span aria-hidden="true">⌄</span>
