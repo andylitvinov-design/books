@@ -41,10 +41,12 @@ async function handle(request) {
       })) }
     } else {
       const input = await readBody(request, 512)
-      if (!input || Object.keys(input).some(key => key !== 'consent') || input.consent !== true)
+      if (!input || Object.keys(input).some(key => !['consent','referenceCode'].includes(key)) || input.consent !== true)
         throw new AppError('EXPLICIT_CONSENT_REQUIRED', 400)
       const proof = freeExpressProof(request, config)
       const row = await withFreeExpressRequest(config, proof, ({ row }) => row)
+      if (input.referenceCode !== row.reference_code)
+        throw new AppError('ENQUIRY_CONTINUATION_MISMATCH', 409)
       const linked = await transaction(config, actor, async db => {
         // The row may be claimed by one and only one verified account.
         await db.query(
