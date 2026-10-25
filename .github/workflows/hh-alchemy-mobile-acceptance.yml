@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/hh-alchemy-mobile-acceptance.yml'
       - 'components/alchemy-soul-landing.tsx'
+      - 'components/personal-testimonials.tsx'
       - 'components/alchemy-soul-landing.module.css'
       - 'components/alchemy-soul-lead-form.tsx'
       - 'components/alchemy-example-report.tsx'
@@ -50,6 +51,7 @@ jobs:
           node --test \
             tests/practitioner-homeopathy-canonical-route.test.mjs \
             tests/alchemy-soul-mobile-landing.test.mjs \
+            tests/personal-testimonials-prefetch.test.mjs \
             tests/alchemy-soul-spanish-parity.test.mjs \
             tests/alchemy-panel-overflow-diagnostics.test.mjs \
             tests/service-alchemy-one-screen-story.test.mjs \
@@ -81,8 +83,10 @@ jobs:
             sleep 2
           done
           if [ "$ready" != 1 ]; then tail -n 80 /tmp/hh-alchemy-qa-next.log; exit 1; fi
-          node scripts/verify-alchemy-one-screen.mjs
-          HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs
+          browser_status=0
+          node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
+          HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
+          exit "$browser_status"
       - name: Upload non-private mobile geometry summary
         uses: actions/upload-artifact@v4
         if: always()

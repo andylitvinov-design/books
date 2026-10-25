@@ -29,8 +29,9 @@
 .formWrap{position:relative;width:min(860px,100%);margin:25px auto 0;padding:18px;border:1px solid #dccabc;border-radius:22px;background:#fffdf9;box-shadow:0 10px 28px rgba(80,55,37,.08);scroll-margin-top:92px}
 .formHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 7px}
 .formHeading h3{margin:0;color:#4b352e;font:400 clamp(21px,2.5vw,29px)/1.15 Georgia,'Times New Roman',serif}
-.formWrap :global([data-free-diagnostic-start]){margin:8px 0 0}
-.formWrap :global([data-service-lead-capture]){width:100%;margin:8px 0 0;padding:14px;box-shadow:none}
+.formLead{margin:9px 0 12px;color:#61564f;font-size:13px;line-height:1.48}
+.formWrap :global([data-reiki-phone-enquiry]){margin:0;padding:13px;border:1px solid #d6c6b8;border-radius:17px;background:#fff;box-shadow:0 3px 12px rgba(75,45,30,.06)}
+.modalSafety{margin:13px 2px 1px;color:#766c65;font-size:11px;line-height:1.5}
 .scrim{position:fixed;inset:0;z-index:110;width:100%;border:0;background:rgba(30,24,22,.58);cursor:pointer}
 .formWrap[data-open="true"]{position:fixed;z-index:111;bottom:0;left:50%;transform:translateX(-50%);width:min(720px,100%);max-height:calc(100dvh - 15px);margin:0;padding:18px 19px max(20px,env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;border-radius:23px 23px 0 0;background:#fffaf4;box-shadow:0 -12px 40px rgba(28,21,16,.27)}
 .formWrap[data-open="true"] .formHeading{position:relative}
@@ -63,7 +64,7 @@
  .formWrap{padding:13px;margin-top:16px;border-radius:17px}
  .formWrap[data-open="true"]{padding:15px 12px max(15px,env(safe-area-inset-bottom));max-height:calc(100dvh - 18px)}
  .formHeading h3{font-size:22px}
- .formWrap :global([data-service-lead-capture]){padding:12px 10px}
+ .formWrap :global([data-reiki-phone-enquiry]){padding:12px 10px}
 }
 @media(max-width:390px){
  .content{padding:12px 13px 13px;gap:6px}
@@ -90,13 +91,26 @@
 }
 @media(prefers-reduced-motion:reduce){.scene{scroll-behavior:auto}}
 
-/* Two compact, always visible phone captures; the selected offer still opens its bottom sheet. */
-.inlineCapture{width:min(860px,100%);margin:0 auto 20px;scroll-margin-top:88px}
-.inlineCapture[data-diagnosis-placement="bottom"]{margin:22px auto 0}
-.inlineCapture :global([data-free-diagnostic-phone-only]){margin:0;background:#f8efe4;border-color:#d7c0ac}
+/* A single progressive, consented messenger form opens only after tapping Request.
+   Keep the top/bottom invitations short; don't expose an extra questionnaire. */
+.inlineCapture{display:grid;gap:7px;width:min(860px,100%);margin:0 auto 19px;padding:12px;border:1px solid #decbbb;border-radius:17px;background:#faf1e8;scroll-margin-top:88px}
+.inlineCapture[data-diagnosis-placement="bottom"]{margin:21px auto 0}
+.inlineRequest{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:50px;padding:10px 15px;border:0;border-radius:13px;background:#843e53;color:#fff;font-size:15px;font-weight:800;cursor:pointer}
+.inlineRequest:hover{background:#994b62}
+.inlineRequest svg{flex:none}
+.inlineHint{margin:0;color:#745d4e;font-size:11px;line-height:1.35;text-align:center}
 .formWrap[data-open="false"]{display:none}
-@media(max-width:720px){.inlineCapture{width:100%;margin-bottom:14px}.inlineCapture[data-diagnosis-placement="bottom"]{margin-top:18px}}
-
+@media(max-width:720px){
+ .inlineCapture{width:100%;margin-bottom:12px;padding:10px}
+ .inlineCapture[data-diagnosis-placement="bottom"]{margin-top:16px}
+ .inlineRequest{min-height:46px;font-size:14px}
+ .formLead{font-size:12px;line-height:1.4}
+}
+@media(max-width:350px){
+ .formWrap[data-open="true"]{padding:12px 9px max(14px,env(safe-area-inset-bottom))}
+ .inlineRequest{gap:7px;font-size:13px}
+ .formWrap :global([data-reiki-phone-enquiry]){padding:10px 8px}
+}
 
 /* Benefits-first review landing 2026-10-25: only this route opts into compact choice cards. */
 .wrap[data-diagnosis-layout="compact"]{width:min(1120px,100%);margin:25px auto 22px}
@@ -144,4 +158,3 @@
  .wrap[data-diagnosis-layout="compact"] .summary{font-size:12px}
  .wrap[data-diagnosis-layout="compact"] .photo{min-height:178px}
 }
-

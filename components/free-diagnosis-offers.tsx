@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, MessageCircle, ShieldCheck, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-import { CompactLeadCapture } from "@/components/compact-lead-capture";
-import { FreeDiagnosticStart } from "@/components/free-diagnostic-start";
+import { usePathname } from "next/navigation";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-diagnosis-offers.module.css";
 
@@ -31,6 +32,7 @@ const photos: Record<OfferId, string> = {
 const copy: Record<PublicLocale, {
   eyebrow: string; heading: string; lead: string; process: string; order: string; close: string;
   formTitle: string; formLead: string; formLabel: string; safety: string;
+  inlineCta: string; inlineHint: string; messengerRequest: string;
   offers: readonly Offer[];
 }> = {
   en: {
@@ -39,7 +41,9 @@ const copy: Record<PublicLocale, {
     lead: "Two free written reviews. Or talk with Andrey for €50 / 30 min.",
     process: "How it works", order: "Request", close: "Close form",
     formTitle: "Request your diagnosis or session",
-    formLead: "Leave a phone number or email and choose WhatsApp or Telegram. Andrey receives your request; this is not a confirmed appointment or payment.",
+    formLead: "Enter your phone, agree to one personal reply, then choose WhatsApp or Telegram. Review and send the prepared message in your chat. No appointment or payment is confirmed.",
+    inlineCta: "Request free diagnosis", inlineHint: "One short form · WhatsApp or Telegram · No charge",
+    messengerRequest: "I would like to request this service. Please tell me the next step.",
     formLabel: "Which option would you like?",
     safety: "Wu Xing is a traditional symbolic Five Elements framework for reflection, not a medical diagnosis or treatment. A request is not a booking; the €50 personal session is arranged and paid for separately.",
     offers: [
@@ -72,7 +76,9 @@ const copy: Record<PublicLocale, {
     lead: "Два бесплатных письменных разбора. Или беседа с Андреем — €50 / 30 мин.",
     process: "Как проходит", order: "Заказать", close: "Закрыть форму",
     formTitle: "Заказать диагностику или консультацию",
-    formLead: "Оставьте телефон или email и выберите WhatsApp либо Telegram. Заявка попадёт Андрею; время и оплата согласовываются отдельно.",
+    formLead: "Укажите телефон, согласитесь на один личный ответ и выберите WhatsApp или Telegram. Проверьте текст и нажмите «Отправить» в чате. Запись и оплата ещё не подтверждены.",
+    inlineCta: "Заказать бесплатную диагностику", inlineHint: "Одна короткая форма · WhatsApp или Telegram · Бесплатно",
+    messengerRequest: "Хочу заказать эту услугу. Подскажите, пожалуйста, следующий шаг.",
     formLabel: "Какой вариант вам нужен?",
     safety: "У-Син (Пять стихий) — традиционная символическая модель для самоисследования, а не медицинская диагностика или лечение. Запрос не подтверждает запись; консультация за €50 согласовывается и оплачивается отдельно.",
     offers: [
@@ -105,7 +111,9 @@ const copy: Record<PublicLocale, {
     lead: "Dos revisiones escritas gratis. O una conversación con Andrey por €50 / 30 min.",
     process: "Cómo funciona", order: "Solicitar", close: "Cerrar formulario",
     formTitle: "Solicita tu revisión o consulta",
-    formLead: "Deja tu teléfono o correo y elige WhatsApp o Telegram. Andrey recibirá tu solicitud; la cita y el pago se confirman por separado.",
+    formLead: "Introduce tu teléfono, acepta una respuesta personal y elige WhatsApp o Telegram. Revisa y envía el mensaje en tu chat. Aún no hay cita ni pago confirmado.",
+    inlineCta: "Solicitar diagnóstico gratuito", inlineHint: "Un formulario breve · WhatsApp o Telegram · Gratis",
+    messengerRequest: "Quisiera solicitar este servicio. Indícame, por favor, el siguiente paso.",
     formLabel: "¿Qué formato prefieres?",
     safety: "Wu Xing (Cinco Elementos) es un marco simbólico tradicional de reflexión, no un diagnóstico o tratamiento médico. La sesión de €50 requiere una confirmación y un pago por separado.",
     offers: [
@@ -137,13 +145,16 @@ const copy: Record<PublicLocale, {
 export function FreeDiagnosisOffers({ locale, children, intro, compact = false }: { locale: PublicLocale; children?: ReactNode; intro?: ReactNode; compact?: boolean }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<OfferId>("situation-written-free");
-  const [phone, setPhone] = useState("");
+  const pathname = usePathname();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [requestOpen, setRequestOpen] = useState(false);
   const activeOffer = t.offers.find(offer => offer.id === selected) ?? t.offers[0];
 
   useEffect(() => {
     if (!requestOpen) return;
     const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setRequestOpen(false);
     };
@@ -152,6 +163,7 @@ export function FreeDiagnosisOffers({ locale, children, intro, compact = false }
     return () => {
       document.removeEventListener("keydown", closeOnEscape);
       document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
     };
   }, [requestOpen]);
 
@@ -164,7 +176,11 @@ export function FreeDiagnosisOffers({ locale, children, intro, compact = false }
     <section className={styles.wrap} data-free-diagnosis-layout={compact ? "compact" : "full"} data-free-diagnosis-options lang={locale}
       aria-labelledby="free-diagnosis-options-title">
       <div className={styles.inlineCapture} id="request-free-review" data-diagnosis-placement="top">
-        <FreeDiagnosticStart locale={locale} compact id="free-diagnosis-top" contactValue={phone} onContactChange={setPhone} />
+        <button className={styles.inlineRequest} id="free-diagnosis-top" type="button"
+          onClick={() => requestOffer("situation-written-free")} aria-haspopup="dialog">
+          <MessageCircle size={18} aria-hidden="true" />{t.inlineCta}<ArrowRight size={18} aria-hidden="true" />
+        </button>
+        <p className={styles.inlineHint}>{t.inlineHint}</p>
       </div>
       {intro}
       <header className={styles.heading} id="free-diagnosis-options">
@@ -223,21 +239,28 @@ export function FreeDiagnosisOffers({ locale, children, intro, compact = false }
         <header className={styles.formHeading}>
           <div><p className={styles.eyebrow}>{t.formTitle}</p>
             <h3 id="diagnosis-request-heading">{activeOffer.title}</h3></div>
-          {requestOpen ? <button className={styles.close} type="button" aria-label={t.close}
+          {requestOpen ? <button ref={closeButtonRef} className={styles.close} type="button" aria-label={t.close}
             onClick={() => setRequestOpen(false)}><X size={21} aria-hidden="true" /></button> : null}
         </header>
-        {selected === "situation-written-free" ? (
-          <FreeDiagnosticStart locale={locale} compact contactValue={phone} onContactChange={setPhone} />
-        ) : (
-          <CompactLeadCapture key={selected} locale={locale}
-            serviceTitle={activeOffer.title}
-            title={activeOffer.title} lead={t.formLead}
-            phoneOnly variant="diagnosis" contactValue={phone} onContactChange={setPhone} disclaimer={t.safety} />
-        )}
+        {requestOpen ? <>
+          <p className={styles.formLead}>{t.formLead}</p>
+          <ContactChannelChooser key={selected} locale={locale}
+            whatsappUrl={whatsappEnquiryUrl({
+              locale, service: activeOffer.title, request: t.messengerRequest,
+              option: activeOffer.price, pagePath: pathname,
+            })}
+            compactPhone stayAfterSave resetKey={selected}
+            publicTopic={activeOffer.label + " · " + activeOffer.price} />
+          <p className={styles.modalSafety}>{t.safety}</p>
+        </> : null}
       </div>
       {children}
       <div className={styles.inlineCapture} data-diagnosis-placement="bottom">
-        <FreeDiagnosticStart locale={locale} compact id="free-diagnosis-bottom" contactValue={phone} onContactChange={setPhone} />
+        <button className={styles.inlineRequest} id="free-diagnosis-bottom" type="button"
+          onClick={() => requestOffer("situation-written-free")} aria-haspopup="dialog">
+          <MessageCircle size={18} aria-hidden="true" />{t.inlineCta}<ArrowRight size={18} aria-hidden="true" />
+        </button>
+        <p className={styles.inlineHint}>{t.inlineHint}</p>
       </div>
       <p className={styles.safety}><ShieldCheck size={16} aria-hidden="true" />{t.safety}</p>
     </section>

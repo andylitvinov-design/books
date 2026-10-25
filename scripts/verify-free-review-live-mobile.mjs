@@ -42,11 +42,12 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const outcome = main.locator("#what-you-get");
           const process = main.locator("#how-it-works");
           const options = main.locator("#free-diagnosis-options");
-          const capture = main.locator("#request-free-review [data-free-diagnostic-phone-only]");
-          await capture.waitFor({ state: "attached" });
-          assert.equal(await capture.count(), 1, "one top phone-only entry");
-          assert.equal(await main.locator('[data-diagnosis-placement="bottom"] [data-free-diagnostic-phone-only]').count(), 1,
-            "optional bottom entry preserved");
+          const topInvite = main.locator('#request-free-review #free-diagnosis-top');
+          const bottomInvite = main.locator('#free-diagnosis-bottom');
+          await topInvite.waitFor({ state: "visible" });
+          assert.equal(await topInvite.count(), 1, "top direct messenger CTA");
+          assert.equal(await bottomInvite.count(), 1, "bottom direct messenger CTA");
+          assert.equal(await main.locator("[data-free-diagnostic-start]").count(), 0, "no retired Step 1 form");
           assert.equal(await main.locator('[data-free-diagnosis-layout="compact"]').count(), 1,
             "only this landing selects compact format cards");
           const geometry = await page.evaluate(() => {
@@ -146,20 +147,31 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "approved YouTube source only");
           await mainCta.click({ timeout: 15000 });
           assert.equal(new URL(page.url()).hash, "#request-free-review", "hero goes to start form");
-          await capture.waitFor({ state: "visible" });
-          assert.equal(await main.locator("[data-lead-saved]").count(), 0, "a CTA click is not a CRM lead");
-          const personal = cards.nth(2).locator('button[data-diagnosis-order="personal-session-30-eur50"]');
-          await personal.click({ timeout: 15000 });
+          await topInvite.waitFor({ state: "visible" });
+          assert.equal(await main.locator("[data-reiki-phone-enquiry]").count(), 0, "a CTA click is not a lead");
+          await topInvite.click({ timeout: 15000 });
           const dialog = main.locator('[data-diagnosis-order-form][data-open="true"]');
           await dialog.waitFor({ state: "visible" });
-          assert.equal(await dialog.getAttribute("role"), "dialog", "request opens consented choice");
-          assert.equal(await dialog.locator("[data-service-lead-capture]").count(), 1,
-            "one CRM-first paid option capture");
-          assert.equal(await dialog.locator('input[type="checkbox"]').isChecked(), false, "no preselected consent");
-          assert.equal(await dialog.locator("[data-lead-saved]").count(), 0, "opening request is not delivery");
+          assert.equal(await dialog.getAttribute("role"), "dialog", "free request opens one consented chooser");
+          const messenger = dialog.locator("[data-reiki-phone-enquiry]");
+          await messenger.waitFor({ state: "visible" });
+          assert.equal((await dialog.locator("#diagnosis-request-heading").innerText()).trim(),
+            (await cards.first().locator("h3").innerText()).trim(), "top CTA selects free review");
+          assert.equal(await messenger.locator('input[type="tel"]').count(), 1, "one phone input");
+          assert.equal(await messenger.locator('input[type="checkbox"]').isChecked(), false, "no implied consent");
+          assert.equal(await messenger.locator('[data-contact-channel-submit="whatsapp"]').count(), 1, "WhatsApp action");
+          assert.equal(await messenger.locator('[data-contact-channel-submit="telegram"]').count(), 1, "Telegram action");
+          assert.equal(await messenger.locator('[role="status"]').count(), 0, "not a committed lead");
+          await page.keyboard.press("Escape");
+          await messenger.waitFor({ state: "detached" });
+          await cards.nth(2).locator('button[data-diagnosis-order="personal-session-30-eur50"]').click();
+          await messenger.waitFor({ state: "visible" });
+          assert.equal((await dialog.locator("#diagnosis-request-heading").innerText()).trim(),
+            (await cards.nth(2).locator("h3").innerText()).trim(), "€50 paid option selected");
+          assert.equal(await messenger.locator('input[type="checkbox"]').isChecked(), false, "consent not preselected");
+          assert.equal(await messenger.locator('[role="status"]').count(), 0, "not a booking or payment");
           await dialog.locator("button[aria-label]").first().click();
-          assert.equal(await main.locator('[data-diagnosis-order-form][data-open="true"]').count(), 0,
-            "dialog closes without sending");
+          await messenger.waitFor({ state: "detached" });
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");
           record.status = "PASS";

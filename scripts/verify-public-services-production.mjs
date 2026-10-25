@@ -80,14 +80,14 @@ try {
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
       assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
       if (width <= 390) {
-        if (panelHeights.some(p => p.height > p.max)) {
+        if (panelHeights.some(p => p.name !== "reviews" && p.height > p.max)) {
           try {
             await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
           } catch (error) {
             console.error("Alchemy overflow diagnostics could not be saved:", error);
           }
         }
-        assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+        assert.deepEqual(panelHeights.filter(p => p.name !== "reviews" && p.height > p.max), [],
           "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
       }
       assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Spanish long guide is initially collapsed");
@@ -450,7 +450,7 @@ try {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
           assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
-          if (panelHeights.some(p => p.height > p.max)) {
+          if (panelHeights.some(p => p.name !== "reviews" && p.height > p.max)) {
             try {
               await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
             } catch (error) {
@@ -458,7 +458,7 @@ try {
               console.error("Alchemy overflow diagnostics could not be saved:", error);
             }
           }
-          assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+          assert.deepEqual(panelHeights.filter(p => p.name !== "reviews" && p.height > p.max), [],
             "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
           assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Long guide is initially collapsed");
           assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate global enquiry panel");
@@ -479,21 +479,30 @@ try {
             await expect(countryCode).toHaveAttribute("aria-label", locale === "ru" ? "Код страны" : "Country calling code");
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
-              nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));
-            assert.equal(positions.length, 1, "One featured testimonial per mobile screen");
-            const moreReviews = main.locator('[data-alchemy-panel="reviews"] details');
-            await expect(moreReviews).toHaveCount(1);
-            assert.equal(await moreReviews.locator('[data-testimonial-video-id]').count(), 2,
-              "The remaining two approved testimonial videos are available on expansion");
-            assert.equal(await moreReviews.evaluate(node => node.open), false,
-              "Extra testimonials start collapsed to preserve one-screen mobile layout");
-            await moreReviews.locator('summary').click();
-            await expect(moreReviews.locator('[data-testimonial-video-id]')).toHaveCount(2);
-            await moreReviews.locator('summary').click();
+              nodes.map(node => {
+                const card = node.getBoundingClientRect();
+                const frame = node.querySelector('.site-video-frame')?.getBoundingClientRect();
+                return {
+                  id: node.getAttribute('data-testimonial-video-id'),
+                  audio: node.getAttribute('data-testimonial-original-audio'),
+                  top: card.top, bottom: card.bottom, width: card.width, videoWidth: frame?.width ?? 0,
+                };
+              }));
+            assert.equal(positions.length, 12, "All twelve original-language testimonials are visible in a vertical feed");
+            assert.equal(new Set(positions.map(item => item.id)).size, 12, "No duplicate testimonials");
             assert.ok(positions.every((pos, index) => index === 0 || pos.top >= positions[index-1].bottom),
               "All testimonial videos must stack vertically");
+            assert.ok(positions.every(pos => ["en", "ru"].includes(pos.audio)),
+              "The audio-language disclosure must follow the actual recording");
+            assert.ok(positions.every(pos => pos.videoWidth >= pos.width - 12 && pos.videoWidth >= width - 65),
+              "Every testimonial player fills its mobile card width");
             assert.ok(await reviewStack.evaluate(node => node.scrollWidth <= node.clientWidth + 1),
               "No horizontal scrolling or squeezed testimonials");
+            const bottomGap = await main.locator('[data-alchemy-panel="reviews"]').evaluate(node => {
+              const note = node.querySelector('[data-alchemy-review-note]');
+              return note ? node.getBoundingClientRect().bottom - note.getBoundingClientRect().bottom : 999;
+            });
+            assert.ok(bottomGap >= 0 && bottomGap < 55, "No empty testimonial viewport after the last video");
             const pricing = main.locator('[data-alchemy-booking-formats]');
             // Payments are still available after agreement, but the default
             // 320/390px decision screen must not be extended by transfer notes.

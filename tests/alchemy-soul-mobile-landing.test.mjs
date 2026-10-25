@@ -24,8 +24,16 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.doesNotMatch(form, /fetch\(|localStorage|sessionStorage|sendBeacon/);
   assert.match(form, /no automatic charge/);
   assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
-  assert.match(landing, /MIVLm1GUTtM/);
-  assert.match(landing, /Dk0LBmOivQo/);
+  const catalog = read("components/personal-testimonials.tsx");
+  assert.match(catalog, /MIVLm1GUTtM/);
+  assert.match(catalog, /Dk0LBmOivQo/);
+  assert.match(landing, /import \{ testimonialVideos, locallyArchivedVideoPosterIds \}/);
+  assert.match(landing, /reviews\.map\(\(review\)/);
+  assert.match(landing, /data-vertical-review-list/);
+  assert.match(landing, /data-testimonial-original-audio=\{review\.language\}/);
+  assert.doesNotMatch(landing, /reviews\.slice\(/);
+  assert.match(css, /\.reviewSection\{display:block;min-height:0;height:auto/);
+  assert.match(css, /\.reviewSection \.reviewVideo :global\(\.site-video-frame\)\{[^}]*aspect-ratio:16\/9/);
   assert.match(css, /100svh/);
   assert.match(landing, /data-alchemy-method-sequence/);
   assert.match(landing, /data-alchemy-report-example/);
@@ -68,7 +76,7 @@ test("mobile format choices keep all payment methods but collapse them until aft
   assert.match(css, /\.paymentDisclosure summary\{[^}]*min-height:44px/);
   assert.match(css, /\.optionsSection\{justify-content:flex-start;padding-top:16px;padding-bottom:16px\}/);
   assert.match(qa, /openRegisteredCompactPhoneChooser\(pricing, expect, page\)/);
-  assert.match(qa, /One featured testimonial per mobile screen/);
+  assert.match(qa, /All twelve original-language testimonials are visible in a vertical feed/);
   assert.match(qa, /Ten Alchemy chapters including video and public sample report/);
     assert.match(qa, /Payment methods must be collapsed until explicitly requested/);
   assert.match(qa, /Unpriced monthly support must never expose one-time transfer amounts/);

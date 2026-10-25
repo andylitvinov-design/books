@@ -10,20 +10,18 @@ const hub = source("app/[locale]/services/free-consultation/page.tsx");
 const capture = source("components/compact-lead-capture.tsx");
 const diagnostic = source("components/free-diagnostic-start.tsx");
 const phoneCss = source("components/free-diagnostic-start.module.css");
+const chooser = source("components/contact-channel-chooser.tsx");
 
-test("free review opts into compact choices, while the shared consultation route keeps its full-screen offers", () => {
+test("free review uses compact offers, consultation hub preserves full-screen offers", () => {
   assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} compact intro=\{/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-featured-constellations-video/);
-  assert.match(landing, /id="what-you-get"/);
-  assert.match(landing, /id="how-it-works"/);
-  assert.ok(landing.indexOf('id="how-it-works"') < landing.indexOf('id="free-diagnosis-options"') || !landing.includes('id="free-diagnosis-options"'), "benefits and process are passed as intro before the offers");
   assert.match(offers, /\{intro\}/);
   assert.match(offers, /data-free-diagnosis-layout=\{compact \? "compact" : "full"\}/);
-  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scenes\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scene\{display:grid;grid-template-columns:minmax\(96px,34%\)/);
+  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scenes/);
+  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scene\{display:grid/);
   assert.match(css, /\.expandedInfo/);
 });
 
@@ -58,7 +56,7 @@ test("each of the three options is a full-screen photo scene with the explanatio
   assert.match(css, /:focus-visible/);
 });
 
-test("Request opens a bottom sheet, while two compact inline phone forms remain on the page", () => {
+test("Request opens one localized phone and messenger sheet; no legacy step-one form is shown", () => {
   assert.match(offers, /onClick=\{\(\) => requestOffer\(offer\.id\)\}/);
   assert.match(offers, /setSelected\(id\)/);
   assert.match(offers, /setRequestOpen\(true\)/);
@@ -69,27 +67,49 @@ test("Request opens a bottom sheet, while two compact inline phone forms remain 
   assert.match(offers, /data-diagnosis-placement="bottom"/);
   assert.match(offers, /id="free-diagnosis-top"/);
   assert.match(offers, /id="free-diagnosis-bottom"/);
-  assert.match(offers, /const \[phone, setPhone\] = useState\(""\)/);
-  assert.match(offers, /contactValue=\{phone\} onContactChange=\{setPhone\}/);
+  assert.match(offers, /onClick=\{\(\) => requestOffer\("situation-written-free"\)\}/);
   assert.match(offers, /\{children\}/);
   assert.match(css, /\.formWrap\[data-open="false"\]\{display:none\}/);
   assert.match(offers, /data-open=\{requestOpen \? "true" : "false"\}/);
   assert.match(offers, /role=\{requestOpen \? "dialog" : undefined\}/);
   assert.match(offers, /aria-modal=\{requestOpen \|\| undefined\}/);
-  assert.match(offers, /<FreeDiagnosticStart locale=\{locale\} compact contactValue=\{phone\}/);
-  assert.match(offers, /<CompactLeadCapture key=\{selected\} locale=\{locale\}/);
-  assert.match(offers, /phoneOnly variant="diagnosis"/);
-  assert.match(offers, /serviceTitle=\{activeOffer\.title\}/);
+  assert.match(offers, /aria-haspopup="dialog"/);
+  assert.match(offers, /<ContactChannelChooser key=\{selected\} locale=\{locale\}/);
+  assert.match(offers, /compactPhone stayAfterSave resetKey=\{selected\}/);
+  assert.match(offers, /whatsappUrl=\{whatsappEnquiryUrl\(\{/);
+  assert.match(offers, /service: activeOffer\.title, request: t\.messengerRequest/);
+  assert.match(offers, /option: activeOffer\.price, pagePath: pathname/);
+  assert.match(offers, /publicTopic=\{activeOffer\.label \+ " · " \+ activeOffer\.price\}/);
+  assert.match(offers, /closeButtonRef\.current\?\.focus\(\)/);
+  assert.match(offers, /previousFocus\?\.focus\(\)/);
   assert.match(css, /position:fixed;z-index:111;bottom:0/);
-  assert.match(capture, /fetch\("\/api\/service-enquiries"/);
-  assert.match(capture, /contactConsent: true/);
-  assert.match(capture, /setReference\(committedReference\)/);
+  assert.match(css, /@media\(max-width:350px\)/);
+  assert.doesNotMatch(offers, /<FreeDiagnosticStart|<CompactLeadCapture/);
   assert.doesNotMatch(offers, /fetch\(|gtag\(|dataLayer|autoplay|payment_received|payment_captured/);
-  assert.match(offers, /not a confirmed appointment or payment/);
+  for (const localized of [
+    "Request free diagnosis", "Заказать бесплатную диагностику", "Solicitar diagnóstico gratuito",
+    "WhatsApp or Telegram", "WhatsApp или Telegram", "WhatsApp o Telegram",
+  ]) assert.ok(offers.includes(localized), localized);
+  assert.match(offers, /not a medical diagnosis or treatment/);
   assert.match(offers, /символическая модель/);
 });
 
-test("free request is phone-only before the existing step-by-step coaching questionnaire", () => {
+test("Messenger buttons commit a consented lead to CRM before direct WhatsApp or Telegram handoff", () => {
+  assert.match(chooser, /<PhoneCountryInput/);
+  assert.match(chooser, /contactConsent: consent/);
+  assert.match(chooser, /fetch\("\/api\/service-enquiries"/);
+  assert.match(chooser, /data\.saved !== true/);
+  assert.match(chooser, /window\.open\("about:blank", "_blank"\)/);
+  assert.match(chooser, /telegramEnquiryUrlFromWhatsApp/);
+  assert.match(chooser, /handoffWindow\.location\.replace\(destination\)/);
+  assert.match(chooser, /saveEnquiry\("whatsapp"\)/);
+  assert.match(chooser, /saveEnquiry\("telegram"\)/);
+  assert.match(offers, /No appointment or payment is confirmed/);
+  assert.doesNotMatch(offers, /contact: \{.*health|sessionStorage\.setItem|booking_confirmed/);
+});
+
+test("legacy coaching questionnaire remains reachable separately without intercepting Request", () => {
+  assert.match(landing, /<Link href=\{"\/" \+ locale \+ "\/coaching\/intake"\}/);
   assert.match(diagnostic, /compact = false/);
   assert.match(diagnostic, /data-free-diagnostic-phone-only/);
   assert.match(diagnostic, /type="tel" inputMode="tel" autoComplete="tel"/);

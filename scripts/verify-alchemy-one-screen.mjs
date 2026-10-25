@@ -52,7 +52,31 @@ try {
             maxHeight: innerHeight - 80, escapingChildren: overflow
           };
         });
-        return {documentWidth: document.documentElement.scrollWidth,viewportWidth: innerWidth,viewportHeight: innerHeight,panels};
+        const reviewSection = node.querySelector('[data-alchemy-panel="reviews"]');
+        const feed = reviewSection?.querySelector("[data-alchemy-review-stack]");
+        const reviewCards = Array.from(feed?.querySelectorAll("[data-testimonial-video-id]") ?? [], card => {
+          const rect = card.getBoundingClientRect();
+          const frame = card.querySelector(".site-video-frame")?.getBoundingClientRect();
+          return {
+            id: card.getAttribute("data-testimonial-video-id"),
+            audio: card.getAttribute("data-testimonial-original-audio"),
+            top: Math.ceil(rect.top), bottom: Math.ceil(rect.bottom),
+            width: Math.round(rect.width), videoWidth: Math.round(frame?.width ?? 0),
+          };
+        });
+        const sectionRect = reviewSection?.getBoundingClientRect();
+        const headingRect = reviewSection?.querySelector("header")?.getBoundingClientRect();
+        const firstRect = feed?.firstElementChild?.getBoundingClientRect();
+        const noteRect = reviewSection?.querySelector("[data-alchemy-review-note]")?.getBoundingClientRect();
+        return {
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: innerWidth, viewportHeight: innerHeight, panels,
+          reviews: {
+            cards: reviewCards,
+            topGap: headingRect && firstRect ? Math.round(firstRect.top - headingRect.bottom) : 999,
+            bottomGap: sectionRect && noteRect ? Math.round(sectionRect.bottom - noteRect.bottom) : 999,
+          },
+        };
       });
       const issues = [];
       if (data.documentWidth > width + 1) issues.push("horizontal document overflow " + data.documentWidth);
@@ -61,9 +85,20 @@ try {
         const p=data.panels[i];
         if (p.name !== chapters[i]) issues.push("incorrect chapter order "+i+":"+p.name);
         if (!p.hasMedia) issues.push(p.name+" missing "+p.visual);
-        if (p.height > p.maxHeight) issues.push(p.name+" "+p.height+"px exceeds "+p.maxHeight+"px");
+        if (p.name !== "reviews" && p.height > p.maxHeight) issues.push(p.name+" "+p.height+"px exceeds "+p.maxHeight+"px");
         if (p.escapingChildren) issues.push(p.name+" has "+p.escapingChildren+" escaping controls/content");
       }
+      // The one-screen rule applies to the service chapters, but a feed of twelve
+      // real videos must grow vertically without a blank viewport or horizontal cards.
+      const cards = data.reviews.cards;
+      if (cards.length !== 12) issues.push("expected 12 original-language testimonial videos, got " + cards.length);
+      if (new Set(cards.map(c => c.id)).size !== 12) issues.push("duplicate testimonial video IDs");
+      if (cards.some(c => !["en", "ru"].includes(c.audio))) issues.push("missing truthful original-audio tags");
+      if (cards.some((c, i) => i > 0 && c.top < cards[i - 1].bottom - 1)) issues.push("testimonials overlap instead of stacking");
+      if (cards.some(c => c.width - c.videoWidth > 12 || c.videoWidth < width - 65))
+        issues.push("testimonial videos must occupy nearly the full mobile width");
+      if (data.reviews.topGap > 55 || data.reviews.bottomGap > 55)
+        issues.push("testimonial section has empty space (top " + data.reviews.topGap + ", bottom " + data.reviews.bottomGap + ")");
       if (!data.panels.some(p => p.name === "report" && p.hasMedia))
         issues.push("public fictional report sample must include a visible photo");
       if (await root.locator('[data-alchemy-method-sequence] li').count() !== 4)
@@ -93,7 +128,7 @@ try {
         failures.push(key+": "+issues.join("; "));
         console.error("ALCHEMY_GEOMETRY_FAIL "+key+" "+issues.join("; "));
       } else {
-        console.log("PASS Alchemy "+engine+" "+key+" ten photographed/video chapters fit with no overflowing controls");
+        console.log("PASS Alchemy "+engine+" "+key+" ten chapters and twelve full-width vertical reviews pass with no overflowing controls");
       }
       const sampleResponse = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul/example-report", {waitUntil:"domcontentloaded",timeout:45000});
       assert.equal(sampleResponse?.status(),200,key+": sample report");
