@@ -4,6 +4,7 @@ import { consumeRate } from '@/lib/app/database'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { createPublicServiceEnquiry } from '@/lib/practitioners/public-service-enquiry'
 import { dispatchPublicServiceEnquiryTelegram } from '@/lib/app/public-enquiry-telegram'
+import { FREE_EXPRESS_COOKIE, FREE_EXPRESS_TTL_SECONDS, createFreeExpressToken, isFreeExpressRequest } from '@/lib/practitioners/free-express-continuation.mjs'
 
 export const runtime = 'nodejs'
 export const preferredRegion = 'yul1'
@@ -32,7 +33,21 @@ export async function POST(request) {
         }
       })
     }
-    return NextResponse.json(result, { status: 201, headers: PRIVATE_HEADERS })
+    const response = NextResponse.json(result, { status: 201, headers: PRIVATE_HEADERS })
+    // A confirmed, consented free express request gets a scoped 1-hour
+    // continuation cookie. The public HH reference is never an auth token.
+    if (result.saved === true && isFreeExpressRequest(payload)) {
+      const createdAt = Date.parse(result.createdAt || '')
+      if (Number.isFinite(createdAt) && Date.now() - createdAt < FREE_EXPRESS_TTL_SECONDS * 1000) {
+        response.cookies.set(FREE_EXPRESS_COOKIE,
+          createFreeExpressToken({ id: result.id, operationId: payload.operationId, createdAt }, config), {
+            httpOnly: true, secure: !config.test, sameSite: 'strict',
+            path: '/api/free-express', maxAge: Math.max(1, Math.floor(
+              (FREE_EXPRESS_TTL_SECONDS * 1000 - (Date.now() - createdAt)) / 1000)),
+          })
+      }
+    }
+    return response
   } catch (error) {
     const safe = safeError(error)
     return NextResponse.json({ error: safe.code }, { status: safe.status, headers: PRIVATE_HEADERS })
