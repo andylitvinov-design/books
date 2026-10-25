@@ -16,6 +16,10 @@ const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 // A personality trait is descriptive and must never be presented as an ideal-to-reach ray.
 const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
 const PORTRAIT_COLLAPSED_COUNT = 10 // Five rows × two columns; the full list is one tap away.
+// Match the focus order already used by My Profile (#1968), without rotating
+// existing sector positions or changing the saved questionnaire measurements.
+const PORTRAIT_PICKER_SECTORS = ['body','relationships','work','growth'].map(key =>
+  PORTRAIT_SECTORS.find(sector => sector.key === key)).filter(Boolean)
 const PORTRAIT_RADAR_RADIUS = 146
 // No minimum offset: 0 maps to the centre and a half-scale value to half the ring.
 const proportionalRadius = (value, maximum) => PORTRAIT_RADAR_RADIUS * value / maximum
@@ -140,7 +144,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           aria-pressed={allSectors} onClick={() => setSelectedSector('all')}>
           <span>{ru ? 'Все' : es ? 'Todo' : 'All'}</span>
         </button>
-        {PORTRAIT_SECTORS.map((sector) => <button type="button" key={sector.key}
+        {PORTRAIT_PICKER_SECTORS.map((sector) => <button type="button" key={sector.key}
           className={styles.portraitSectorChip} data-portrait-sector={sector.key}
           data-selected={selectedSector === sector.key}
           aria-label={sector.label[locale] || sector.label.en}
