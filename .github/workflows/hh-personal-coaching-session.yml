@@ -36,6 +36,12 @@ on:
       - 'tests/tradition-coaching-courses.test.mjs'
       - 'tests/tradition-coaching-completion.test.mjs'
       - 'tests/tradition-coaching-persistence.test.mjs'
+      - 'tests/coaching-author-audio.test.mjs'
+      - 'lib/academy/coaching-audio-*.js'
+      - 'components/admin-coaching-audio*'
+      - 'app/admin/materials/coaching/**'
+      - 'app/admin/coaching-audio/**'
+      - 'middleware.ts'
       - 'tests/business-coaching-90-days.test.mjs'
       - 'tests/academy-discovery-hero.test.mjs'
       - 'supabase/migrations/*personal_coaching*'
@@ -71,9 +77,11 @@ jobs:
           node --check lib/app/personal-coaching-catalog.js
           node --check lib/app/personal-coaching.js
           node --check lib/personal-coaching/traditions.js
-          node --test tests/personal-coaching-session.test.mjs tests/personal-coaching-voice.test.mjs tests/personal-coaching-model-selection.test.mjs tests/coaching-intelligence-p1.test.mjs tests/coaching-intelligence-offline.test.mjs tests/coaching-intelligence-state.test.mjs tests/tradition-coaching-courses.test.mjs tests/tradition-coaching-completion.test.mjs tests/tradition-coaching-persistence.test.mjs tests/business-coaching-90-days.test.mjs tests/academy-discovery-hero.test.mjs tests/reports-development-program.test.mjs
+          node --check lib/academy/coaching-audio-model.js
+          node --check lib/academy/coaching-audio-store.js
+          node --test tests/personal-coaching-session.test.mjs tests/personal-coaching-voice.test.mjs tests/personal-coaching-model-selection.test.mjs tests/coaching-intelligence-p1.test.mjs tests/coaching-intelligence-offline.test.mjs tests/coaching-intelligence-state.test.mjs tests/coaching-author-audio.test.mjs tests/tradition-coaching-courses.test.mjs tests/tradition-coaching-completion.test.mjs tests/tradition-coaching-persistence.test.mjs tests/business-coaching-90-days.test.mjs tests/academy-discovery-hero.test.mjs tests/reports-development-program.test.mjs
       - name: Scoped eslint
-        run: npx --no-install eslint components/app/personal-coaching.jsx components/app/personal-coaching-picker.jsx components/coaching-action-plan.jsx components/app/tradition-coaching.jsx components/app/coaching-question-voice.jsx components/academy-tradition-coaching-landing.tsx components/app/my-course.jsx components/app/app-workspace.jsx components/app/business-coaching.jsx components/app/my-courses-dashboard.jsx components/app/development-program.jsx components/direction-offers.tsx components/academy-hub.tsx lib/personal-coaching/questions.js lib/personal-coaching/speech-text.js lib/personal-coaching/model-matcher.js lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js lib/personal-coaching/traditions.js lib/app/personal-coaching.js lib/app/personal-coaching-catalog.js lib/app/business-coaching.js app/api/app/\[...path\]/route.js
+        run: npx --no-install eslint components/app/personal-coaching.jsx components/app/personal-coaching-picker.jsx components/coaching-action-plan.jsx components/app/tradition-coaching.jsx components/app/tradition-coaching-audio.jsx components/admin-coaching-audio.jsx components/app/coaching-question-voice.jsx components/academy-tradition-coaching-landing.tsx components/app/my-course.jsx components/app/app-workspace.jsx components/app/business-coaching.jsx components/app/my-courses-dashboard.jsx components/app/development-program.jsx components/direction-offers.tsx components/academy-hub.tsx lib/personal-coaching/questions.js lib/personal-coaching/speech-text.js lib/personal-coaching/model-matcher.js lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js lib/personal-coaching/traditions.js lib/academy/coaching-audio-model.js lib/academy/coaching-audio-store.js app/admin/coaching-audio/data/route.js app/admin/materials/coaching/page.jsx app/admin/materials/coaching/\[tradition\]/page.jsx lib/app/personal-coaching.js lib/app/personal-coaching-catalog.js lib/app/business-coaching.js app/api/app/\[...path\]/route.js
       - name: TypeScript noEmit
         run: npx --no-install tsc --noEmit
       - name: Build production Next.js
