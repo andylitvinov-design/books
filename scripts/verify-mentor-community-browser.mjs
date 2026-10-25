@@ -109,7 +109,19 @@ try {
             label + ": actual session type available");
           await offers.selectOption("session");
           assert.equal(await mentorCards.count(), 1, label + ": session filter finds actual offering");
+          const courseChoice = learning.locator('option[value^="service:"]').first();
+          assert.equal(await courseChoice.count(), 1,
+            label + ": approved training is a real course selection");
+          const courseKey = await courseChoice.getAttribute("value");
+          assert.ok(courseKey, label + ": real public course service identifier");
+          await learning.selectOption(courseKey);
+          assert.equal(await offers.inputValue(), "course",
+            label + ": choosing a course automatically sets the service type");
+          assert.equal(await mentorCards.count(), 1,
+            label + ": course selector finds the actual approved course");
           await offers.selectOption("");
+          assert.equal(await learning.inputValue(), "",
+            label + ": clearing service type also clears dependent course");
           await searchMentors.fill("NO_SYNTHETIC_MENTOR_MATCH_887");
           await mentorPanel.getByText(/No matches yet|По этим параметрам|No hay resultados/).waitFor();
           assert.equal(await mentorCards.count(), 0, label + ": unmatched term hides cards");
