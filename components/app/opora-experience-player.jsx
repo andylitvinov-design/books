@@ -747,6 +747,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   // One optional helper across the experiential steps; ratings and completion never depend on opening it.
   const guidanceForMoment=moment==='practice'
     ?(lang==='es'?t.gentle:lesson.antiStress?.neutralText||t.gentle)
+    :channelCard?channelCard.hint
     :moment==='arrive'&&!newDayOneIntro?t.arriveHint
     :moment==='recall'
       ?(lang==='ru'?'Если ничего не вспоминается, посмотрите на один обычный предмет рядом.'
@@ -1046,6 +1047,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             saved={saved} roadmap={data?.roadmap} words={t} oneAction={showNewPlan} edition59={showSkill59} edition60={showSkill60}/>}
           {moment==='habit'&&<>
             <p className={styles.lead}>{t.habitLead}</p>
+            {!habitSetup&&<button type="button" className={styles.linkHint}
+              data-opora-habit-skip="true" disabled={locked}
+              onClick={()=>{setPreviewIndex(-1);setInviteOpen(true)}}>{t.habitLater}</button>
             {!habitSetup
               ?<p className={styles.habitBenefit} data-opora-first-lesson-habit-invitation>{t.habitBenefit}</p>
               :<div className={styles.habitSetup} data-opora-first-lesson-habit-setup>
