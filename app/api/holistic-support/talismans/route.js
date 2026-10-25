@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import sharp from 'sharp'
 import { getAppConfig,requireSameOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { consumeRate } from '@/lib/app/database'
@@ -60,6 +59,8 @@ export async function POST(request){
     if(file.size<128||file.size>MAX_INPUT)throw new AppError('TALISMAN_TOO_LARGE',413)
     let clean
     try{
+      // Load image codec only for verified upload requests, not the read-only gallery.
+      const {default:sharp}=await import('sharp')
       clean=await sharp(Buffer.from(await file.arrayBuffer()),{limitInputPixels:24_000_000,failOn:'error'})
         .rotate().resize({width:1200,height:1200,fit:'inside',withoutEnlargement:true})
         .flatten({background:'#ffffff'}).jpeg({quality:70,mozjpeg:true}).toBuffer()
