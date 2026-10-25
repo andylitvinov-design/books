@@ -95,6 +95,10 @@ jobs:
           cache: npm
       - name: Install pinned packages
         run: npm ci --no-audit --no-fund
+      - name: SalesBot strict flow simulator and owner API contract
+        run: node --test tests/crm-salesbot-flow.test.mjs
+      - name: Lint new SalesBot owner UI and deterministic runtime
+        run: npx eslint lib/crm/salesbot-flow.mjs components/app/crm-salesbot.jsx app/api/app/crm/salesbot/route.js tests/crm-salesbot-flow.test.mjs
       - name: Compact enquiry and OAuth return policy
         run: node --test tests/compact-google-lead-entry.test.mjs tests/crm-public-registration.test.mjs tests/contact-channel-chooser.test.mjs tests/organic-event-referrals.test.mjs
       - name: Verify consent, ownership, actions and fail-closed client requests
