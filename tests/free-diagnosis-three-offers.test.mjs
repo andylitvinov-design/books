@@ -52,7 +52,7 @@ test("all three offer CTAs select a controlled option in the one consented CRM e
   assert.match(offers, /data-diagnosis-order-form/);
   const diagnostic = source("components/free-diagnostic-start.tsx");
   assert.match(diagnostic, /sessionStorage\.setItem\(DIAGNOSTIC_START_KEY/);
-  assert.match(diagnostic, /window\.location\.assign\("\/" \+ locale \+ "\/coaching\/intake"\)/);
+  assert.match(diagnostic, /window\.location\.assign\("\/" \+ locale \+ "\/coaching\/intake" \+ \(compact \? "\?guided=1" : ""\)\)/);
   assert.match(diagnostic, /until you explicitly send your completed questionnaire/);
   assert.match(offers, /selectedFormatValue=\{selected\}/);
   assert.match(offers, /serviceTitle=\{t\.offers\.find\(offer => offer\.id === selected\)\?\.title/);
