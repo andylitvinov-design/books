@@ -24,7 +24,7 @@ test('only private Reports enlarges the coupled original photo and 360:390 SVG',
 test('same four original sector keys now express four life directions, with compact mobile names', () => {
   assert.deepEqual(PORTRAIT_SECTORS.map(s => s.key), ['body','work','relationships','growth'])
   assert.deepEqual(PORTRAIT_SECTORS.map(s => s.label.en), [
-    'Body / Health / Energy','Work / Business / Money','Relationships','Personality / Values / Growth',
+    'Body, health & energy','Work, business & money','Relationships & connection','Personality & personal growth',
   ])
   for (const sector of PORTRAIT_SECTORS) {
     for (const locale of ['en','ru','es']) {
@@ -34,6 +34,7 @@ test('same four original sector keys now express four life directions, with comp
     }
   }
   assert.match(visual, /aria-label=\{sector\.label\[locale\] \|\| sector\.label\.en\}/)
+  assert.match(visual, /PORTRAIT_PICKER_SECTORS = \['body','relationships','work','growth'\]/)
   assert.match(visual, /className=\{styles\.portraitSectorShort\} aria-hidden="true"/)
   assert.match(mobile, /\.portraitSectorShort\{display:block\}/)
   assert.match(mobile, /\.portraitSectorLong\{display:none\}/)
