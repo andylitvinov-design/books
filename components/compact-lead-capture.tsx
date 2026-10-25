@@ -16,6 +16,8 @@ const copy = {
     kicker: "PERSONAL REPLY · HOLISTIC HOUSE",
     preference: "Preferred session format",
     contact: "Where can Andrey reply?",
+    miniPhone: "Phone number", miniConsent: "Save my number for this request and one personal reply. No marketing.",
+    miniNotice: "This is a request, not a confirmed session or payment.",
     placeholder: "Email or +1…",
     consent: "I agree to save my contact for one personal reply about this request. No marketing.",
     channelsTitle: "Continue with Andrey",
@@ -35,6 +37,8 @@ const copy = {
     kicker: "ЛИЧНЫЙ ОТВЕТ · HOLISTIC HOUSE",
     preference: "Предпочитаемый формат",
     contact: "Как с вами связаться?",
+    miniPhone: "Номер телефона", miniConsent: "Согласен(на) сохранить номер для ответа на эту заявку. Без рекламы.",
+    miniNotice: "Это заявка, а не подтверждённая запись или оплата.",
     placeholder: "Email или +1…",
     consent: "Согласен(-на) сохранить контакт для личного ответа по этой заявке. Без рассылок.",
     channelsTitle: "Напишите Андрею",
@@ -54,6 +58,8 @@ const copy = {
     kicker: "RESPUESTA PERSONAL · HOLISTIC HOUSE",
     preference: "Formato de sesión preferido",
     contact: "¿Dónde puede responderte Andrey?",
+    miniPhone: "Número de teléfono", miniConsent: "Acepto guardar mi número para responder a esta solicitud. Sin publicidad.",
+    miniNotice: "La solicitud no confirma una cita ni un pago.",
     placeholder: "Correo o +1…",
     consent: "Acepto guardar mi contacto para una respuesta personal sobre esta solicitud. Sin publicidad.",
     channelsTitle: "Escribe a Andrey",
@@ -93,7 +99,7 @@ export function CompactLeadCapture({
   disclaimer?: string;
   /** Public source for a form embedded on /, which is not an allowed enquiry source. */
   sourcePath?: string;
-  variant?: "inline";
+  variant?: "inline" | "coaching";
   formatOptions?: readonly { readonly value: string; readonly label: string; readonly description?: string }[];
   formatLabel?: string;
   /** Optional controlled selection shared with offer cards on multi-offer landings. */
@@ -101,6 +107,7 @@ export function CompactLeadCapture({
   onFormatChange?: (value: string) => void;
 }) {
   const t = copy[locale];
+  const coachingMini = variant === "coaching";
   const pathname = usePathname();
   const [address, setAddress] = useState("");
   const [internalFormat, setInternalFormat] = useState(formatOptions?.[0]?.value || "");
@@ -131,7 +138,7 @@ export function CompactLeadCapture({
   async function chooseChannel(channel: Channel) {
     if (busy || reference) return;
     const contact = parseContact(address);
-    if (!contact) { setError(t.invalid); return; }
+    if (!contact || (coachingMini && !contact.phone)) { setError(coachingMini ? (locale === "ru" ? "Введите телефон с кодом страны, например +1 416…" : locale === "es" ? "Incluye el prefijo de país, por ejemplo +1 416…" : "Use a phone number with country code, e.g. +1 416…") : t.invalid); return; }
     if (!consent) { setError(t.consentRequired); return; }
 
     // Reserve the new tab within the user's tap: asynchronous window.open is
@@ -200,10 +207,11 @@ export function CompactLeadCapture({
   }
 
   return (
-    <section id={id} className={[styles.section, variant === "inline" ? styles.inline : ""].filter(Boolean).join(" ")}
+    <section id={id} className={[styles.section, variant === "inline" ? styles.inline : "", coachingMini ? styles.coachingMini : ""].filter(Boolean).join(" ")}
       data-compact-last-slide={variant === "inline" ? undefined : ""}
       data-inline-offer-form={variant === "inline" ? "" : undefined}
-      data-service-lead-capture lang={locale} aria-label={title}>
+      data-service-lead-capture data-coaching-paid-phone={coachingMini ? "" : undefined} lang={locale} aria-label={title}>
+      {coachingMini ? <div className={styles.miniHeading}><h3>{title}</h3><p>{lead}</p></div> : (
       <div className={styles.head}>
         <div className={styles.intro}>
           <p className={styles.kicker}><ShieldCheck size={14} aria-hidden="true" />{t.kicker}</p>
@@ -214,6 +222,7 @@ export function CompactLeadCapture({
           width={160} height={180} className={styles.portrait}
           sizes="(max-width: 600px) 70px, 82px" loading="lazy" />
       </div>
+      )}
       {reference ? (
         <div className={styles.confirmation}>
           <div className={styles.receipt} role="status" data-lead-saved>
@@ -247,21 +256,21 @@ export function CompactLeadCapture({
             </label>
           ) : null}
           <label className={styles.field}>
-            <span>{t.contact}</span>
-            <input type="text" name="contact" inputMode="text" autoComplete="off"
-              value={address} maxLength={254} required disabled={busy !== null}
-              placeholder={t.placeholder} aria-invalid={Boolean(error)}
+            <span>{coachingMini ? t.miniPhone : t.contact}</span>
+            <input type={coachingMini ? "tel" : "text"} name="contact" inputMode={coachingMini ? "tel" : "text"} autoComplete={coachingMini ? "tel" : "off"}
+              value={address} maxLength={coachingMini ? 28 : 254} required disabled={busy !== null}
+              placeholder={coachingMini ? "+1 416 555 0123" : t.placeholder} aria-invalid={Boolean(error)}
               onChange={event => { setAddress(event.target.value); operationId.current = null; setError(""); }} />
           </label>
           <label className={styles.consent}>
             <input type="checkbox" required checked={consent} disabled={busy !== null}
               onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
-            <span>{t.consent}</span>
+            <span>{coachingMini ? t.miniConsent : t.consent}</span>
           </label>
-          <div className={styles.channelHeading}>
+          {!coachingMini ? <div className={styles.channelHeading}>
             <strong>{t.channelsTitle}</strong>
             <span>{t.channelsHint}</span>
-          </div>
+          </div> : null}
           <div className={styles.channels} role="group" aria-label={t.channelsTitle}>
             <button className={[styles.channel, styles.whatsapp].join(" ")} type="button"
               disabled={busy !== null} onClick={() => { void chooseChannel("whatsapp"); }}
@@ -277,7 +286,7 @@ export function CompactLeadCapture({
             </button>
           </div>
           {error ? <p className={styles.error} role="alert">{error}</p> : null}
-          <p className={styles.notice}>{t.notice}</p>
+          <p className={styles.notice}>{coachingMini ? t.miniNotice : t.notice}</p>
         </form>
       )}
       {reference && error ? <p className={styles.error} role="alert">{error}</p> : null}
