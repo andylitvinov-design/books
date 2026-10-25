@@ -636,28 +636,6 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
     if (!showSuggestedTests) return;
     document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
   }, [showSuggestedTests]);
-  const heroUtility = (
-      <div className={styles.heroUtility} data-ideas-hero-utility>
-        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
-        <div className={styles.utilityLinks}>
-          <details className={styles.privacyDisclosure}>
-            <summary id="ideas-question-privacy">{isHolistic ? holisticIntro[locale].privacyShort : t.privacyShort}</summary>
-            <p className={styles.privacy}>{isHolistic ? holisticIntro[locale].privacy : t.privacy}</p>
-          </details>
-          {isTemple ? (
-            <Link href={freeOfferHref(locale, "tests")} prefetch={false}
-              className={styles.freeTestLink} data-ideas-free-test data-temple-test-catalog>
-              {t.testLink}<ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          ) : (
-            <button type="button" className={styles.freeTestLink} data-ideas-free-test
-              aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-              onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
-              onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
-          )}
-        </div>
-      </div>
-  );
   const templeContent = (<>
       {/* The shared Ideas controls remain unchanged. Only Temple groups its header,
           question, actions and privacy within the approved scenic surface. */}
@@ -767,7 +745,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           <ArrowRight className={styles.exploreArrow} size={17} aria-hidden="true" />
         </a>
       </nav> : null}
-      {!isHolistic ? heroUtility : null}
+      {!isHolistic ? renderHeroUtility() : null}
       </div>
       {isHolistic ? (
         <>
@@ -785,7 +763,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
               <span className={styles.holisticCardArrow} aria-hidden="true"><ArrowRight size={19} /></span>
             </Link>
           </nav>
-          {heroUtility}
+          {renderHeroUtility()}
         </>
       ) : null}
       <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
@@ -970,6 +948,30 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
         </div>
       ) : null}
       </>);
+  function renderHeroUtility() {
+    return (
+      <div className={styles.heroUtility} data-ideas-hero-utility>
+        {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
+        <div className={styles.utilityLinks}>
+          <details className={styles.privacyDisclosure}>
+            <summary id="ideas-question-privacy">{isHolistic ? holisticIntro[locale].privacyShort : t.privacyShort}</summary>
+            <p className={styles.privacy}>{isHolistic ? holisticIntro[locale].privacy : t.privacy}</p>
+          </details>
+          {isTemple ? (
+            <Link href={freeOfferHref(locale, "tests")} prefetch={false}
+              className={styles.freeTestLink} data-ideas-free-test data-temple-test-catalog>
+              {t.testLink}<ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          ) : (
+            <button type="button" className={styles.freeTestLink} data-ideas-free-test
+              aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+              onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
+              onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+          )}
+        </div>
+      </div>
+    );
+  }
   return (
     <section className={styles.root} aria-labelledby={isTemple ? "ideas-title" : "tests-coaching-title"} data-ideas-discovery data-temple-mode={isTemple ? "true" : undefined} data-holistic-entry={isHolistic ? "true" : undefined} lang={locale}>
       {isTemple ? templeContent : <TestsCoachingSwitchboard locale={locale} templeContent={templeContent} />}
