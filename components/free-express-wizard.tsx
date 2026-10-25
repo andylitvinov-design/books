@@ -171,6 +171,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
         }
         setReceipt({ saved: true, referenceCode: data.referenceCode });
         setDetailsSaved(data.contextSaved === true);
+        if (data.focus === 'situation' || data.focus === 'energy') onRestoredFocus?.(data.focus);
         onSaved?.();
         const status = await fetch("/api/free-express/media", { credentials: "same-origin", cache: "no-store" });
         if (status.ok) {
@@ -181,7 +182,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
         setError(t.restored);
       } catch { /* The original server receipt, not browser state, is authoritative. */ }
     })();
-  }, [locale, onSaved, t.restored]);
+  }, [locale, onSaved, onRestoredFocus, t.restored]);
 
   function remember(referenceCode: string) {
     try { window.sessionStorage.setItem(RESUME, JSON.stringify({ locale, referenceCode })); }
