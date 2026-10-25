@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ArrowRight, Camera, ChevronDown, Clock3, Globe2, Image as ImageIcon, Leaf, MapPin, Send, Save } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Camera, ChevronDown, ClipboardCheck, Clock3, Gem, Globe2, Image as ImageIcon, Leaf, MapPin, Send, Save, Sparkles } from 'lucide-react'
 import PracticePhotoUpload from './practice-photo-upload'
 import PracticeVideoField from './practice-video-field'
 import { getServiceEditorIssue, servicePreviewPrice } from '@/lib/practitioners/service-editor-steps.mjs'
@@ -43,7 +43,7 @@ const TEXT = {
     update: 'Save changes & submit', pause: 'Pause service', review: 'Submitted services go live only after moderation.',
     inReview: 'Under review', helper: 'One language is enough to get started. Switch languages above to add translations.',
     offering: [['session','Personal session'],['intro','Intro meeting'],['assessment','Assessment / review'],
-      ['group','Group session'],['workshop','Workshop'],['course','Course'],['package','Session package'],['event','Event']],
+      ['group','Group session'],['workshop','Workshop'],['course','Course'],['package','Session package'],['event','Event'],['talisman','Talisman']],
   },
   ru: {
     newTitle: 'Добавить услугу', editTitle: 'Изменить услугу', intro: 'Только главное. Остальное можно добавить позже.',
@@ -60,7 +60,7 @@ const TEXT = {
     update: 'Сохранить и отправить изменения', pause: 'Приостановить услугу', review: 'Публикация — только после модерации.',
     inReview: 'На проверке', helper: 'Для начала достаточно одного языка. Переключайте язык выше, чтобы добавить перевод.',
     offering: [['session','Личная сессия'],['intro','Вводная встреча'],['assessment','Диагностика / обзор'],
-      ['group','Групповая сессия'],['workshop','Мастер-класс'],['course','Курс'],['package','Пакет сессий'],['event','Мероприятие']],
+      ['group','Групповая сессия'],['workshop','Мастер-класс'],['course','Курс'],['package','Пакет сессий'],['event','Мероприятие'],['talisman','Талисман']],
   },
   es: {
     newTitle: 'Añadir servicio', editTitle: 'Editar servicio', intro: 'Solo lo esencial. Puedes completar los detalles después.',
@@ -77,7 +77,7 @@ const TEXT = {
     update: 'Guardar cambios y enviar', pause: 'Pausar servicio', review: 'Los servicios se publican tras la revisión.',
     inReview: 'En revisión', helper: 'Basta con un idioma para empezar. Cambia el idioma arriba para añadir traducciones.',
     offering: [['session','Sesión personal'],['intro','Reunión inicial'],['assessment','Evaluación'],
-      ['group','Sesión grupal'],['workshop','Taller'],['course','Curso'],['package','Paquete de sesiones'],['event','Evento']],
+      ['group','Sesión grupal'],['workshop','Taller'],['course','Curso'],['package','Paquete de sesiones'],['event','Evento'],['talisman','Talismán']],
   },
 }
 // Presentation-only copy; service ownership, prices and publication rules stay on the server.
@@ -148,6 +148,36 @@ Object.assign(TEXT.es,{
  createFirst:'Puedes editar esta tarjeta ahora. Todavía no está publicada.'
 })
 
+const SERVICE_KIND_COPY = {
+  en: {
+    heading:'What kind of service will you offer?', intro:'Choose a direction first. Then add your description, format and price.',
+    diagnostic:'Diagnostics', diagnosticHint:'A personal situation or resource review — not a medical diagnosis.',
+    diagnosticFree:'Free diagnostic', diagnosticFreeHint:'A personal review with no charge.',
+    diagnosticPaid:'Paid diagnostic', diagnosticPaidHint:'Set your own price on the next screen.',
+    energy:'Energy balancing', energyHint:'An individual energy practice, correction or distance support.',
+    talisman:'Talisman', talismanHint:'A personalized symbolic talisman: explain its creation and delivery.',
+    back:'Change direction', custom:'Personal service', moderation:'Your service is published only after moderation.',
+  },
+  ru: {
+    heading:'Какую услугу вы хотите предложить?', intro:'Сначала выберите направление, затем добавьте описание, формат и стоимость.',
+    diagnostic:'Диагностика', diagnosticHint:'Личный разбор ситуации или ресурсов — не медицинский диагноз.',
+    diagnosticFree:'Бесплатная диагностика', diagnosticFreeHint:'Личный разбор без оплаты.',
+    diagnosticPaid:'Платная диагностика', diagnosticPaidHint:'Укажите свою цену на следующем экране.',
+    energy:'Энергетическая коррекция', energyHint:'Индивидуальная энергопрактика или дистанционная поддержка.',
+    talisman:'Талисман', talismanHint:'Персональный символический талисман: опишите изготовление и получение.',
+    back:'Изменить направление', custom:'Личная услуга', moderation:'Услуга публикуется только после модерации.',
+  },
+  es: {
+    heading:'¿Qué servicio quieres ofrecer?', intro:'Elige una categoría y después añade la descripción, el formato y el precio.',
+    diagnostic:'Diagnóstico / evaluación', diagnosticHint:'Revisión personal de una situación o recursos; no es un diagnóstico médico.',
+    diagnosticFree:'Evaluación gratuita', diagnosticFreeHint:'Una revisión sin coste.',
+    diagnosticPaid:'Evaluación de pago', diagnosticPaidHint:'Indica tu propio precio en la siguiente pantalla.',
+    energy:'Equilibrio energético', energyHint:'Una práctica energética individual o apoyo a distancia.',
+    talisman:'Talismán', talismanHint:'Un talismán simbólico personalizado: explica su creación y entrega.',
+    back:'Cambiar categoría', custom:'Servicio personal', moderation:'Se publica solo después de su aprobación.',
+  },
+}
+
 const BASE = {
   copy: { en: {title:'', shortDescription:'', description:''}, ru: {title:'', shortDescription:'', description:''}, es: {title:'', shortDescription:'', description:''} },
   areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', locationLabel:'',
@@ -169,6 +199,9 @@ const PRO_STARTERS = {
   diagnostic: { areaKey:'personal_development', offeringType:'assessment', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
   energy: { areaKey:'energy_spiritual', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
   personal: { areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
+  'diagnostic-free': { areaKey:'personal_development', offeringType:'assessment', deliveryFormat:'online', pricingMode:'free', confirmedPrice:null, currency:'' },
+  'diagnostic-paid': { areaKey:'personal_development', offeringType:'assessment', deliveryFormat:'online', pricingMode:'fixed', confirmedPrice:'', currency:'CAD' },
+  talisman: { areaKey:'energy_spiritual', offeringType:'talisman', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
 }
 
 function initialDraft(item,locale,starter='') {
@@ -190,10 +223,15 @@ function initialDraft(item,locale,starter='') {
 }
 
 export default function SimpleServiceEditor({item,starter='',locale='en',busy=false,onSave,onSaveAndSubmit,onPause,onDirtyChange,onMediaBusyChange}){
-  const lang=TEXT[locale]?locale:'en', c=TEXT[lang]
+  const lang=TEXT[locale]?locale:'en', c=TEXT[lang], kindC=SERVICE_KIND_COPY[lang]
   const [videoBusy,setVideoBusy]=useState(false),[photoBusy,setPhotoBusy]=useState(false)
   const [draft,setDraft]=useState(()=>initialDraft(item,lang,starter))
   const [stage,setStage]=useState(0)
+  // New generic service creation begins with a category choice. Existing
+  // services and explicit Pro starters keep their original editing entry.
+  const [typePickerOpen,setTypePickerOpen]=useState(()=>!item&&(!starter||starter==='diagnostic'))
+  const [diagnosticExpanded,setDiagnosticExpanded]=useState(()=>starter==='diagnostic')
+  const [selectedKind,setSelectedKind]=useState(()=>!item&&Object.hasOwn(PRO_STARTERS,starter)?starter:null)
   const [photoToolsOpen,setPhotoToolsOpen]=useState(false)
   const [touched,setTouched]=useState(false)
   const [formIssue,setFormIssue]=useState('')
@@ -207,6 +245,18 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   const [faqText,setFaqText]=useState(()=>(initialDraft(item,lang,starter).faq||[]).join('\n'))
   const mark=()=>{setTouched(true);setFormIssue('');onDirtyChange?.(true)}
   const set=(key,value)=>{mark();setDraft(prev=>({...prev,[key]:value}))}
+  const chooseServiceKind=choice=>{
+    const preset=PRO_STARTERS[choice]
+    if(locked||!preset)return
+    mark()
+    // Reuse the existing data model and keep any description or photo
+    // already entered when switching the category.
+    setDraft(prev=>({...prev,...preset,priceOptions:[]}))
+    setSelectedKind(choice)
+    setTypePickerOpen(false)
+    setDiagnosticExpanded(false)
+    setStage(0)
+  }
   const setCopy=(key,value)=>{
     mark()
     setDraft(prev=>({...prev,copy:{...prev.copy,[activeLanguage]:{...prev.copy[activeLanguage],[key]:value}}}))
@@ -250,6 +300,10 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   const photos=Array.isArray(draft.photos)?draft.photos:[]
   const photo=photos[0]||''
   const stageLabels=[c.stageIntro,c.stageOffer,c.stageDetails]
+  const selectedKindLabel={
+    diagnostic:kindC.diagnostic,'diagnostic-free':kindC.diagnosticFree,
+    'diagnostic-paid':kindC.diagnosticPaid,energy:kindC.energy,talisman:kindC.talisman,
+  }[selectedKind]||kindC.custom
   const area=AREAS[draft.areaKey]||AREAS.personal_development
   const areaTitle=area[lang==='ru'?1:lang==='es'?2:0]
   const formatLabel=draft.deliveryFormat==='in_person'?c.inPerson:draft.deliveryFormat==='hybrid'?c.hybrid:c.online
@@ -270,14 +324,60 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       </label>
     </div>
     {item?.reviewNote&&<p role="status" className={styles.reviewNote}>{item.reviewNote}</p>}
-    <div className={styles.stageTabs} role="group" aria-label={c.stages} data-service-stage-nav>
+    {typePickerOpen&&<section className={styles.kindPicker} aria-label={kindC.heading} data-service-kind-picker>
+      <div className={styles.kindHeading}><h4>{kindC.heading}</h4><p>{kindC.intro}</p></div>
+      <div className={styles.kindCards}>
+        <div className={styles.kindCard}>
+          <button type="button" className={styles.kindMain} data-service-kind="diagnostic"
+            aria-expanded={diagnosticExpanded} disabled={locked} onClick={()=>setDiagnosticExpanded(value=>!value)}>
+            <span className={styles.kindIcon}><ClipboardCheck size={23} aria-hidden="true"/></span>
+            <span className={styles.kindText}><strong>{kindC.diagnostic}</strong><small>{kindC.diagnosticHint}</small></span>
+            <ChevronDown size={19} aria-hidden="true"/>
+          </button>
+          {diagnosticExpanded&&<div className={styles.diagnosticChoices} role="group" aria-label={kindC.diagnostic}>
+            <button type="button" data-service-choice="diagnostic-free" disabled={locked}
+              onClick={()=>chooseServiceKind('diagnostic-free')}>
+              <strong>{kindC.diagnosticFree}</strong><small>{kindC.diagnosticFreeHint}</small>
+            </button>
+            <button type="button" data-service-choice="diagnostic-paid" disabled={locked}
+              onClick={()=>chooseServiceKind('diagnostic-paid')}>
+              <strong>{kindC.diagnosticPaid}</strong><small>{kindC.diagnosticPaidHint}</small>
+            </button>
+          </div>}
+        </div>
+        <div className={styles.kindCard}>
+          <button type="button" className={styles.kindMain} data-service-kind="energy" disabled={locked}
+            onClick={()=>chooseServiceKind('energy')}>
+            <span className={styles.kindIcon}><Sparkles size={23} aria-hidden="true"/></span>
+            <span className={styles.kindText}><strong>{kindC.energy}</strong><small>{kindC.energyHint}</small></span>
+            <ArrowRight size={19} aria-hidden="true"/>
+          </button>
+        </div>
+        <div className={styles.kindCard}>
+          <button type="button" className={styles.kindMain} data-service-kind="talisman" disabled={locked}
+            onClick={()=>chooseServiceKind('talisman')}>
+            <span className={styles.kindIcon}><Gem size={23} aria-hidden="true"/></span>
+            <span className={styles.kindText}><strong>{kindC.talisman}</strong><small>{kindC.talismanHint}</small></span>
+            <ArrowRight size={19} aria-hidden="true"/>
+          </button>
+        </div>
+      </div>
+      <p className={styles.note}>{kindC.moderation}</p>
+    </section>}
+    {!typePickerOpen&&!item&&<div className={styles.kindBar}>
+      <span>{selectedKindLabel}</span>
+      <button type="button" disabled={locked} onClick={()=>{setTypePickerOpen(true);setDiagnosticExpanded(Boolean(selectedKind?.startsWith('diagnostic')));setFormIssue('')}}>
+        {kindC.back}
+      </button>
+    </div>}
+    {!typePickerOpen&&<div className={styles.stageTabs} role="group" aria-label={c.stages} data-service-stage-nav>
       {stageLabels.map((label,index)=><button key={label} type="button" aria-current={stage===index?'step':undefined}
         aria-pressed={stage===index} className={stage===index?styles.activeStage:''}
         onClick={()=>{if(!locked){setStage(index);setFormIssue('')}}} disabled={locked}>
         <span>{index+1}</span><strong>{label.slice(label.indexOf('·')+1).trim()}</strong>
       </button>)}
-    </div>
-    {stage===0&&<section className={styles.stagePanel} data-service-slide="presentation" aria-label={c.stageIntro}>
+    </div>}
+    {!typePickerOpen&&stage===0&&<section className={styles.stagePanel} data-service-slide="presentation" aria-label={c.stageIntro}>
       <div className={styles.panelHead}><strong><Leaf size={16}/>{c.present}</strong><span>{c.badge}</span></div>
       <p className={styles.stageTip}>{c.introTip}</p>
       <div className={styles.serviceCanvas} data-service-visual-canvas>
@@ -316,7 +416,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       </div>}
       {!photoToolsOpen&&<p className={styles.note}>{c.photoTip}</p>}
     </section>}
-    {stage===1&&<section className={styles.stagePanel} data-service-slide="booking" aria-label={c.stageOffer}>
+    {!typePickerOpen&&stage===1&&<section className={styles.stagePanel} data-service-slide="booking" aria-label={c.stageOffer}>
       <div className={styles.panelHead}><strong><Clock3 size={17}/>{c.offerHeading}</strong><span>02 / 03</span></div>
       <p className={styles.stageTip}>{c.offerTip}</p>
       <div className={styles.bookingCard}>
@@ -393,7 +493,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
         </div>
       </div>
     </section>}
-    {stage===2&&<section className={styles.stagePanel} data-service-slide="details" aria-label={c.stageDetails}>
+    {!typePickerOpen&&stage===2&&<section className={styles.stagePanel} data-service-slide="details" aria-label={c.stageDetails}>
       <div className={styles.panelHead}><strong><Leaf size={17}/>{c.detailsHeading}</strong><span>03 / 03</span></div>
       <p className={styles.stageTip}>{c.detailsTip}</p>
       <div className={styles.mediaCard}>
@@ -444,14 +544,14 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
         </div>
       </details>
     </section>}
-    {formIssue&&<p role="alert" className={styles.formIssue}>{formIssue}</p>}
-    <div className={styles.stepNavigation} data-service-step-controls>
+    {!typePickerOpen&&formIssue&&<p role="alert" className={styles.formIssue}>{formIssue}</p>}
+    {!typePickerOpen&&<div className={styles.stepNavigation} data-service-step-controls>
       <button type="button" onClick={()=>setStage(n=>Math.max(0,n-1))} disabled={locked||stage===0}><ArrowLeft size={17}/>{c.previous}</button>
       <span>{c.stepCount} {stage+1} {c.of} 3</span>
       {stage<2?<button type="button" onClick={()=>{setStage(n=>Math.min(2,n+1));setFormIssue('')}} disabled={locked}>
         {c.next}<ArrowRight size={17}/></button>:<span className={styles.readyNote}>{c.submitHint}</span>}
-    </div>
-    <div className={styles.actions} data-service-save-actions>
+    </div>}
+    {!typePickerOpen&&<div className={styles.actions} data-service-save-actions>
       <button className={styles.draft} type="button" disabled={locked} onClick={saveDraft}>
         <Save size={16} aria-hidden="true"/>{c.draft}
       </button>
@@ -460,7 +560,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       </button>}
       {item&&['published','submitted','changes_requested'].includes(item.status)&&stage===2&&
         <button className={styles.pause} type="button" disabled={locked} onClick={()=>onPause(item)}>{c.pause}</button>}
-    </div>
-    <p className={styles.fine}>{touched?c.draftUnsaved+' · ':''}{c.review}</p>
+    </div>}
+    {!typePickerOpen&&<p className={styles.fine}>{touched?c.draftUnsaved+' · ':''}{c.review}</p>}
   </form>
 }
