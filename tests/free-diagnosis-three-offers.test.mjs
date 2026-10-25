@@ -13,8 +13,8 @@ test("both free-diagnosis entry routes reuse one localized three-offer selector,
   assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} \/>/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /kind !== "situation" \? <CompactLeadCapture/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale === "es" \? "en" : locale\} variant="all" \/>/);
-  assert.match(hub, /<PersonalTestimonials locale=\{lang === "es" \? "en" : lang\} variant="all" \/>/);
+  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(hub, /data-free-consultation-hub/);
   assert.match(landing, /data-featured-constellations-video/);
 });
