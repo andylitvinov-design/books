@@ -30,3 +30,9 @@
   .heroCopy > p:not(.kicker) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .page * { scroll-behavior: auto; } }
+
+/* Guided entry has a single compact screen, no secondary hero or overscrolling. */
+.shell.guidedShell{max-width:790px;padding-top:9px}
+.guidedShell .breadcrumb{margin-bottom:6px}
+.guidedShell .breadcrumb a{min-height:35px}
+@media(max-width:520px){.shell.guidedShell{padding-inline:8px}}
