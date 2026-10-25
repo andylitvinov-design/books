@@ -433,7 +433,20 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           )}
         </section>
 
-        {kind === "situation" ? <FreeDiagnosisOffers locale={locale} /> : null}
+        {kind === "situation" ? (
+          <FreeDiagnosisOffers locale={locale}>
+            <div className={styles.coachingLink}>
+              <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
+                {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
+            <details className={styles.fullQuestionnaire} data-optional-written-review>
+              <summary>{common.fullForm}</summary>
+              <FreeSituationReviewForm locale={locale} />
+            </details>
+            <PersonalTestimonials locale={locale} variant="all" />
+          </FreeDiagnosisOffers>
+        ) : null}
 
         {kind !== "situation" ? <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
           <div className={styles.sceneImage}>
@@ -467,23 +480,6 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
         </section> : null}
-
-        {kind === "situation" ? (
-          <div className={styles.coachingLink}>
-            <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
-              {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          </div>
-        ) : null}
-
-        {kind === "situation" ? (
-          <details className={styles.fullQuestionnaire} data-optional-written-review>
-            <summary>{common.fullForm}</summary>
-            <FreeSituationReviewForm locale={locale} />
-          </details>
-        ) : null}
-
-        {kind === "situation" ? <PersonalTestimonials locale={locale} variant="all" /> : null}
 
         {kind !== "situation" ? <CompactLeadCapture
           locale={locale}

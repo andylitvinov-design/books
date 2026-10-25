@@ -17,7 +17,8 @@ test('only private Reports enlarges the coupled original photo and 360:390 SVG',
   assert.match(mobile, /aspect-ratio:360 \/ 390/)
   assert.match(mobile, /height:220%!important/)
   assert.match(mobile, /transform:translate\(-80%,-50%\)/)
-  assert.ok(!mobile.includes('31.38svh'))
+  // Reject the removed CSS rule, not historical values mentioned in a comment.
+  assert.ok(!mobile.includes('width:min(100%,clamp(229px,31.38svh,262px))'))
   assert.ok(mobile.includes('@media(max-width:620px) and (max-height:630px)'))
   assert.ok(mobile.includes('width:min(100%,clamp(230px,42svh,275px))'))
   assert.ok(!mobile.includes('data-summary-test-score'))

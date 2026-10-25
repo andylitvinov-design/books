@@ -10,19 +10,31 @@ const LABELS={
     title:'Название',folder:'Папка',save:'Сохранить изменения',saving:'Сохраняем…',
     saved:'Название и папка сохранены',failed:'Не удалось выполнить действие. Проверьте соединение и повторите.',
     playback:'Прослушать оригинал',open:'Открыть аудио',preview:'Временная ссылка для прослушивания. Если устарела, нажмите «Обновить».',
-    private:'Приватный оригинал · не опубликовано',limit:'Показаны последние 60 записей. Более старые файлы остаются в хранилище.'},
+    private:'Приватный оригинал · не опубликовано',limit:'Показаны последние 60 записей. Более старые файлы остаются в хранилище.',
+    guideTitle:'Как перенести голосовое из Telegram',
+    steps:['Открой Dot и выбери /audio в меню бота.','В чате с медитацией зажми аудио → «Переслать» → выбери Dot → «Отправить».','Дождись ✅ «Сохранено»: запись появится во «Входящих». Выбери папку в ответе бота.'],
+    botCta:'Открыть Dot · добавить аудио',
+    autoSave:'Никакой повторной загрузки на сайте: оригинал сохраняется автоматически после пересылки.'},
   en:{inbox:'Telegram audio inbox',intro:'Forward a voice message or audio file to @Andydotbot. It is saved privately here, never published to a course automatically.',
     all:'All folders',refresh:'Refresh',loading:'Loading recordings…',none:'No recordings in this folder yet.',
     title:'Title',folder:'Folder',save:'Save changes',saving:'Saving…',
     saved:'Name and folder saved',failed:'Action failed. Check your connection and try again.',
     playback:'Listen to original',open:'Open audio',preview:'Playback links are temporary. Refresh this page to renew them.',
-    private:'Private original · not published',limit:'Showing 60 newest recordings. Older files are still stored.'},
+    private:'Private original · not published',limit:'Showing 60 newest recordings. Older files are still stored.',
+    guideTitle:'How to transfer a Telegram recording',
+    steps:['Open Dot and select /audio in the bot menu.','In the original chat, hold the audio → Forward → select Dot → Send.','Wait for the ✅ Saved confirmation. It appears in Inbox; choose a folder in the bot reply.'],
+    botCta:'Open Dot · add audio',
+    autoSave:'No second upload on the website. The original is saved privately when forwarded.'},
   es:{inbox:'Bandeja de audio de Telegram',intro:'Reenvía un audio a @Andydotbot. Se guardará de forma privada, sin publicar en el curso.',
     all:'Todas las carpetas',refresh:'Actualizar',loading:'Cargando audios…',none:'Aún no hay audios en esta carpeta.',
     title:'Título',folder:'Carpeta',save:'Guardar cambios',saving:'Guardando…',
     saved:'Nombre y carpeta guardados',failed:'No se pudo guardar. Inténtalo de nuevo.',
     playback:'Escuchar original',open:'Abrir audio',preview:'Los enlaces caducan. Actualiza para renovarlos.',
-    private:'Original privado · no publicado',limit:'Se muestran 60 audios recientes. Los anteriores se conservan.'}
+    private:'Original privado · no publicado',limit:'Se muestran 60 audios recientes. Los anteriores se conservan.',
+    guideTitle:'Cómo transferir un audio de Telegram',
+    steps:['Abre Dot y selecciona /audio.','En el chat de origen mantén pulsado el audio → Reenviar → Dot → Enviar.','Espera la confirmación ✅ Guardado. El audio aparecerá en Entrada; elige la carpeta en el bot.'],
+    botCta:'Abrir Dot · añadir audio',
+    autoSave:'No necesitas subirlo otra vez en la web: se guarda en privado tras reenviarlo.'}
 }
 const duration=value=>{
   const seconds=Math.max(0,Number(value)||0)
@@ -87,6 +99,15 @@ export default function AdminTelegramAudio({locale='en'}){
     <div className={styles.heading}>
       <div><h2>{t.inbox}</h2><p>{t.intro}</p></div>
       <button type="button" className={styles.secondary} onClick={load} disabled={busy||!!saving}>{t.refresh}</button>
+    </div>
+    <div className={styles.instructions} data-owner-telegram-forward-guide>
+      <div>
+        <h3>{t.guideTitle}</h3>
+        <ol>{t.steps.map((step,index)=><li key={index}>{step}</li>)}</ol>
+        <p>{t.autoSave}</p>
+      </div>
+      <a href="https://t.me/Andydotbot?start=audio" target="_blank"
+        rel="noopener noreferrer" className={styles.telegramCta}>{t.botCta}</a>
     </div>
     <div className={styles.tools}>
       <label htmlFor="tg-audio-folder-filter">{t.folder}</label>
