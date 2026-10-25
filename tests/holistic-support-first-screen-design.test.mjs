@@ -11,7 +11,7 @@ test("Holistic Support keeps functional question + symbolic and energy choices i
   assert.match(component, /data-ideas-energy-support/);
   assert.match(component, /stageRemoteSupportLandingIntention\(question\)/);
   assert.match(component, /data-holistic-entry=\{isHolistic \? "true"/);
-  assert.match(component, /\{!isHolistic \? heroUtility : null\}/);
+  assert.match(component, /\{!isHolistic \? renderHeroUtility\(\) : null\}/);
   assert.match(component, /\{isHolistic \? \([\s\S]*data-holistic-quick-cards/);
 });
 test("Meditations and talismans are two separate linked photograph cards, not stacked hero CTA rows", () => {
@@ -31,7 +31,7 @@ test("EN/RU/ES copy and private insight/test controls survive redesign", () => {
   }
   assert.match(component, /<details className=\{styles\.privacyDisclosure\}>/);
   assert.match(component, /data-ideas-free-test data-temple-test-catalog/);
-  assert.match(component, /\{heroUtility\}/);
+  assert.match(component, /\{renderHeroUtility\(\)\}/);
   assert.equal((component.match(/data-ideas-hero-utility/g)||[]).length, 1);
 });
 test("Mobile layout explicitly guards narrow 320–430px widths and tap targets", () => {
