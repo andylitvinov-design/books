@@ -40,6 +40,10 @@ async function verify(browserType, locale, width) {
       has: root.locator("button[aria-pressed]").filter({ hasText: /Andrey|Андреем|Andrey/i }),
     });
     await topics.waitFor({ state: "visible" });
+    // Outcome preferences are intentionally collapsed on the compact mobile UI.
+    // Open their native details control before asserting button visibility.
+    const advanced = root.locator("[data-coaching-advanced-preferences]");
+    await advanced.locator("summary").tap();
     await outcomes.waitFor({ state: "visible" });
     assert.equal(await outcomes.locator("[data-coaching-outcome]").count(), 5, label + ": five client outcomes");
     assert.equal(await topics.locator("[data-coaching-topic-group]").count(), 7, label + ": all topics");
@@ -75,8 +79,7 @@ async function verify(browserType, locale, width) {
     const free = root.locator("button").filter({ hasText: /Try it free|Самостоятельно|Por mi cuenta/ }).first();
     await free.tap();
     assert.equal(await free.getAttribute("aria-pressed"), "true", label + ": free mode tap");
-    const advanced = root.locator("[data-coaching-advanced-preferences]");
-    await advanced.locator("summary").tap();
+    if (!(await advanced.evaluate(node => node.open))) await advanced.locator("summary").tap();
     assert.equal(await advanced.evaluate(node => node.open), true, label + ": visible inline preferences, never a modal");
     assert.equal(await advanced.locator('[data-coaching-filter="duration"] button').count(), 5,
       label + ": five optional time choices");
