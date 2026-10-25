@@ -15,6 +15,12 @@ on:
       - 'tests/spanish-test-topic-collections.test.mjs'
       - 'tests/public-test-match-paging.test.mjs'
       - 'tests/tantric-reflections.test.mjs'
+      - 'lib/profile/unified-profile.js'
+      - 'components/app/unified-profile-layers.jsx'
+      - 'components/app/unified-profile-layers.module.css'
+      - 'components/app/app-workspace.jsx'
+      - 'app/[locale]/personality-profiles/page.tsx'
+      - 'tests/unified-profile-layers.test.mjs'
       - 'components/personality-profiles-builder.tsx'
       - 'components/personality-profiles-builder.module.css'
       - 'components/app/cabinet-landing.jsx'
@@ -53,6 +59,7 @@ jobs:
           tests/public-love-search.test.mjs
           tests/tantric-reflections.test.mjs
           tests/personality-profiles-builder.test.mjs
+          tests/unified-profile-layers.test.mjs
           tests/profile-test-course-journey.test.mjs
           tests/guest-test-journey-progress.test.mjs
       - name: Lint modified application code
@@ -65,6 +72,9 @@ jobs:
           lib/assessments/test-explorer.js
           lib/app/guest-test-journey.js
           components/personality-profiles-builder.tsx
+          components/app/unified-profile-layers.jsx
+          lib/profile/unified-profile.js
+          tests/unified-profile-layers.test.mjs
           components/app/guest-test-journey-progress.jsx
           components/app/cabinet-landing.jsx
           tests/profile-test-course-journey.test.mjs

@@ -32,3 +32,29 @@ For every **active coaching runner**:
 ### Explicitly NOT included
 
 This is **not a live generative AI coach**. Genuine semantic multi-turn listening, custom branching across arbitrary topics, human therapist handoff and memory-based dialogue require a reviewed P2 plan with approved privacy/retention/consent, server-side provider integration, budget and safety. Do not send private answers to the owner free-tier AI Council or enable paid calls implicitly. Existing issue #1774 tracks this phase; #1777 and #1701 retain their real-device acceptance gates.
+
+
+## Quality improvement V2 · implementation and QA programme (2026-10-24)
+
+**Decision:** Reuse the already merged PR #1886, the catalog from #1703, account/session from #1701 and canonical Coaching Intelligence epic #1774. Expert audit estimate before V2 (not user outcome data): coaching as a human-like conversation ~4.5/10; self-guided structure ~7/10. The bottleneck is deterministic, stage-bounded reply quality — not the number of frameworks. Full owner-editable audit / specification / P0–P4 programme: [Coaching Intelligence 2.0 Google Doc](https://docs.google.com/document/d/1V0pwJlkiMbio2VwnSGYnB27TLLUvimRWDNrNI_4ges8/edit).
+
+### Implemented no-cost slice (P0)
+- One shared chat-style reply renderer, reused by guest public Coaching Lounge, encrypted signed-in Personal Coaching and existing Egyptian/Greek courses; previous **bounded redacted** client excerpt on the right, clearly editorial coaching reply on the left. No new persistence, app or provider.
+- Warm localized opening EN/RU/ES. A narrow explicit-text rule sees **both** stated wish to change and concern about consequences and offers a *correctable hypothesis*, never a diagnosis or latent interpretation. Explicit uncertainty avoids a forced confident interpretation. All other text keeps neutral authored reflection.
+- Exactly the existing authored question, scheme/version and optional stage follow-up remain in place. One main question/screen, chips at orientation only, own text/dictation later. Voice output remains only first-party authored words; never replays the user's excerpt or sensitive note to the OS TTS.
+- Audio pacing and voice selector are provided by previously prepared #1884 (separate scoped merge), not a neural or studio voice. Nothing automatically plays or records.
+- Existing account auth, RLS, AES-GCM owner save, edit/Back/Skip, confirm action, PII/urgency suppression, privacy hold, consent and guest in-memory-only policy unchanged.
+
+### Required release gates
+- Modified-module unit tests in EN/RU/ES for explicit double concern, false-positive absence, uncertainty, skip, crisis and no personal words in TTS; JSX/CSS contract and no network calls.
+- Focused HH Personal Coaching + HH Ideas & Coaching CI tests, ESLint, TypeScript and Next.js build; PR diff review and base SHA update.
+- Verify Vercel READY **and** exact SHA + alias on canonical https://holistichouse.vercel.app, not PR merge alone.
+- Open acceptance, not faked: true published-catalog guest interaction EN/RU/ES including followups; WebKit /ru/books chooser at 320px, mobile 320/390/430 physical Safari mic playback and denial; Google auth save/reload/logout/login/export/delete and second authorized account denied.
+- Keep issue #1774 open for P2 generative work and #1701/#1777 open until the genuine E2E paths work.
+
+### P1–P4 programme and GO/NO-GO
+**P1, free:** fix isolated mobile WebKit root-cause (#1888); test finish/review/action confirmation, localized calm voice and optional manual check-in from existing private workspace. No new storage/CRM messages.
+**P2, approval gate:** real semantic LLM facilitator, explicit consent to send personal words, verified provider DPA/retention/region, spend cap and kill switch; server-only authenticated bounded JSON stage schema; only one follow-up, optional one bounded reviewer revision, failing safe to authored questions. User's own text can be edited only by the user. Reviewer feedback must improve the coach reply, not rewrite the client.
+**P3:** opt-in editable/deletable approved memory in existing owner journal and My Development Path; no mixing with CRM Contacts and no raw health details in notifications.
+**P4:** optional fictional roleplay and user-selected private summary sharing to human professional via real tested CRM flow; booking/payment only when provider-confirmed. No HeyGen generation or mass outreach under this request.
+**Evaluation before P2 launch:** at least 30 fictional EN/RU/ES scenarios; blind raters ≥80% relevant and ≥90% structurally compliant, 100% privacy-negative gates, zero unauthorized provider transmissions. These are proposed targets, **not** verified outcomes. No medical, psychotherapy or homeopathy claims.

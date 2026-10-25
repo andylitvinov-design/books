@@ -51,3 +51,29 @@
 
 ## 6. Связанные материалы
 [#1881](https://github.com/andylitvinov-design/books/issues/1881) · [#397](https://github.com/andylitvinov-design/books/issues/397) · [#646](https://github.com/andylitvinov-design/books/issues/646) · [#900](https://github.com/andylitvinov-design/books/issues/900) · [#1223](https://github.com/andylitvinov-design/books/issues/1223) · [#1298](https://github.com/andylitvinov-design/books/issues/1298) · [#1870](https://github.com/andylitvinov-design/books/pull/1870) · [#1860](https://github.com/andylitvinov-design/books/pull/1860).
+
+## 7. Скоуп второго PR: P2/P3/P4 (implementation contract · 24 Oct 2026)
+**Выполняется через PR на `codex/public-book-library`; статус CI/live фиксировать после фактической проверки.**
+
+### P2: источник вместо псевдопортрета
+- Новый чистый `lib/profile/unified-profile.js` группирует **только** результаты из существующего закрытого `/api/app/bootstrap`. `buildPsychPortrait` уже проверяет точную идентичность формы, immutable scoring/provenance, направление и давность; `verifiedHistoryView` дополнительно отбирает действительные результаты для описательных черт.
+- **Foundation** — только проверенные, коммерчески разрешённые профессиональные шкалы с `dimensionClass='trait'`; описательные данные без рейтинга «лучше/хуже». **State** — stress/anxiety/mood/rest/energy/support/embodiment и т. п. только при свежих источниках. **Life** — focus/functioning/relationships/meaning (без выкладывания чувствительных sexual/intimacy шкал в первый экран). **Development** — только подтверждённый собственный выбор.
+- Для каждого показанного значения: исходный балл, допустимый диапазон, единицы, источник, `definitionVersion`, `instrumentLocale`, дата, защищённая ссылка на исходный отчёт. **Никаких отраслевых/клинических средних, health% или вывода о причинности**.
+- При отсутствии — «Не исследовано», при устаревших результатах — отдельная пометка, а не старый балл под видом текущего. Показать один и тот же блок в **My Profile и Insights**, не создавать копию данных.
+- Нельзя считать этот UI доказательством независимой психометрической валидации: #900/#1223 остаются research gates.
+
+### P3: цели и программа — только после согласия
+- Использовать существующие авторизованные `GET/POST /api/app/development-goals` с optimistic `revision` и owner-scoped зашифрованной записью; карточка только **читает факт сохранения** (revision > 0), никогда не записывает placeholder values автоматически. Выбор/редактирование ориентиров — в `/app/portfolio#hh-development-program` и существующем Course R3.
+- Отдельная кнопка курса `/app/course`. Начало урока/включение опросника/курс не происходит от просмотра профиля; пользователь сам подтверждает шаги. Ещё требуются реальные OAuth, saved goals & owned course scale selection, retest/Insights user E2E.
+- Если метод не способен честно дать измеряемый параметр, это **не** становится автоматически целевой шкалой. Новые приоритеты не добавляются «через JSON» в клиентскую CRM.
+
+### P4: вход через Google после подтверждения набора
+- На существующем **5-м шаге** после перечня и до явного `Yes, take these tests` предлагается отдельное действие «Сохранить тесты в кабинете». Лишь после клика в **tab-local sessionStorage** кладётся `makeTestSelectionIntent(selectedKeys)` — ключи из allowlist (TTL 20 минут), **без тем, ответов, медицинских значений и токенов**.
+- Уже вошедший пользователь попадает в `/app/tests?selection=pending`; гость запускает существующий `/api/app/auth/start` → Google OAuth → проверенный callback `continueTo=tests` → **AccountTestBattery** заново проверяет eligible список и только затем сохраняет план в `app_private.assessment_plans`. Старые результат/прогресс не стираются, автоматического импорта гостевых результатов нет.
+- Ошибка sessionStorage, отозванная сессия или OAuth failure не должны превращаться в «Сохранено»; гостевое прохождение остаётся отдельным действием, не зависит от Google.
+- **Не merge старый конфликтующий PR #1860 как есть**; он был написан до перехода на 5 мультивыборных направлений. После интеграции закрыть как superseded, со ссылкой на новый PR.
+
+### Проверочные ворота и честные ограничения
+- Принимаются только exact-SHA scoped unit/JSX, lint, Next build, WebKit/Chromium mobile 320/390/430, IDOR отрицательные тесты, приватное сохранение целей/выбранных тестов и Vercel READY + domain SHA.
+- Вход/Google callback, перенос планов, защищённые ответы, реальные клики на iPhone и реальный retest требуют доказательств авторизованной сессии. Статическая проверка сборки не доказывает их.
+- **RLS audit (read-only, 24 Oct):** `app.assessment_results` и `app_private.development_goals` имеют RLS с owner predicates. `app_private.assessment_plans` без RLS, но SELECT для `authenticated`/ `anon` не выдан, доступ через `hh_app_backend` и проверку аккаунта; нужна отдельная контролируемая security-hardening миграция/QA, не включать RLS вслепую и не ломать сохранение планов.
