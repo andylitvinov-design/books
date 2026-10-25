@@ -73,6 +73,13 @@ test('housekeeping cron fails closed when its secret is not configured', async (
   assert.equal(result.status, 401)
 })
 
+test('private goal photo retention does not eagerly load native Sharp into the cron', () => {
+  const source = readFileSync(`${root}/lib/practitioners/remote-goal-photo.js`, 'utf8')
+  assert.doesNotMatch(source, /^import sharp from 'sharp'/m)
+  assert.match(source, /await import\('sharp'\)/)
+  assert.match(source, /PHOTO_PROCESSING_UNAVAILABLE/)
+})
+
 test('production scheduler invokes only the guarded daily housekeeping route', () => {
   const routePath = `${root}/app/api/internal/housekeeping/route.js`
   assert.equal(existsSync(routePath), true)
