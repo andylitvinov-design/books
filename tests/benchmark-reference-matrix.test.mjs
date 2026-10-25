@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { execFileSync, spawnSync } from "node:child_process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   assertValidReferenceMatrix,
   planningScore,
@@ -12,7 +13,7 @@ import {
 const manifest = JSON.parse(readFileSync(
   new URL("../data/benchmarking/reference-patterns.json", import.meta.url), "utf8",
 ));
-const script = new URL("../scripts/benchmarking/plan.mjs", import.meta.url);
+const script = fileURLToPath(new URL("../scripts/benchmarking/plan.mjs", import.meta.url));
 const copy = () => structuredClone(manifest);
 
 test("reference matrix validates as evidence-labelled, source-only hypotheses", () => {
