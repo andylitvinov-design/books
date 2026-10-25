@@ -18,6 +18,12 @@ on:
       - 'tests/client-session-audio-synthetic-e2e.test.mjs'
       - 'tests/client-session-photos.test.mjs'
       - 'tests/client-session-owner-photo-upload.test.mjs'
+      - 'tests/client-session-owner-audio-upload.test.mjs'
+      - 'tests/client-session-external-video.test.mjs'
+      - 'tests/session-delivery-security.test.mjs'
+      - 'tests/session-media-sdk.test.mjs'
+      - 'tests/fixture-module-body.test.mjs'
+      - 'tests/helpers/fixture-module-body.mjs'
       - 'tests/fixtures/synthetic-440hz-voice.m4a.base64'
       - '.github/workflows/hh-private-audio-e2e.yml'
   push:
@@ -38,6 +44,12 @@ on:
       - 'tests/client-session-audio-synthetic-e2e.test.mjs'
       - 'tests/client-session-photos.test.mjs'
       - 'tests/client-session-owner-photo-upload.test.mjs'
+      - 'tests/client-session-owner-audio-upload.test.mjs'
+      - 'tests/client-session-external-video.test.mjs'
+      - 'tests/session-delivery-security.test.mjs'
+      - 'tests/session-media-sdk.test.mjs'
+      - 'tests/fixture-module-body.test.mjs'
+      - 'tests/helpers/fixture-module-body.mjs'
       - 'tests/fixtures/synthetic-440hz-voice.m4a.base64'
       - '.github/workflows/hh-private-audio-e2e.yml'
 permissions:
@@ -45,7 +57,7 @@ permissions:
 jobs:
   private-audio:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,3 +82,14 @@ jobs:
         run: |
           node --check tests/client-session-audio-synthetic-e2e.test.mjs
           node --check tests/client-session-owner-photo-upload.test.mjs
+
+      - name: ESM fixture boundaries and private media provider regressions
+        run: node --test tests/fixture-module-body.test.mjs tests/session-media-sdk.test.mjs tests/client-session-external-video.test.mjs
+      - name: Fixture lint and TypeScript
+        run: |
+          npx --no-install eslint tests/helpers/fixture-module-body.mjs tests/fixture-module-body.test.mjs tests/session-delivery-security.test.mjs tests/client-session-external-video.test.mjs tests/client-session-owner-photo-upload.test.mjs tests/session-media-sdk.test.mjs tests/client-session-owner-audio-upload.test.mjs
+          npx --no-install tsc --noEmit
+      - name: Build unchanged application against repaired verification fixtures
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
