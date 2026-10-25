@@ -50,7 +50,9 @@ test('top free-review bar exactly matches approved screenshot while beige strip 
   assert.ok(offers.includes('className={styles.cta} href={`/${locale}/services/free-situation-review`}'), 'burgundy CTA must open the free written review')
   assert.match(offers, /\/services\/free-situation-review/)
   // Do not spend a whole mobile row advertising the page the visitor is already reading.
-  assert.match(offers, /services\\/free-situation-review\\/\\?\$\\/\.test\(pathname\)/);
+  const routeGuards = offers.slice(offers.indexOf('const isDistractionSensitivePage'), offers.indexOf('export function SitewideAntistressBanner'))
+  assert.match(routeGuards, /free-situation-review/, 'the top ribbon must not link to itself on the destination page')
+  assert.match(routeGuards, /pathname/, 'route guard must be pathname-aware')
   for (const label of ['Получить разбор', 'Get free review', 'Solicitar gratis']) {
     assert.ok(offers.includes(label), label)
   }
