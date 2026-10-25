@@ -24,6 +24,11 @@ export async function POST(request){
  }catch{return new NextResponse('Invalid update',{status:400,headers:PRIVATE_HEADERS})}
  try{
   const config=getAppConfig()
+  const audio=await receiveOwnerTelegramAudioWebhook(config,update)
+  if(audio.handled){
+    if(audio.retry)return NextResponse.json({ok:false},{status:503,headers:PRIVATE_HEADERS})
+    return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+  }
   const owner=await receiveOwnerAiTelegramWebhook(config,update)
   if(!owner.handled)await receiveClientTelegramWebhook(config,update)
   // No account existence, token status, or chat ID is returned to Telegram.
