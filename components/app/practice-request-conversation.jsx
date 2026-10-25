@@ -93,7 +93,9 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
         headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},
         body:JSON.stringify({action:'mark_seen',requestId:id,messageId:latest.id}),
       })
-      if(!response.ok)throw new Error('VIEW_UNAVAILABLE')
+      const receipt=await response.json().catch(()=>({}))
+      if(!response.ok||receipt.viewed!==true||receipt.requestId!==id)
+        throw new Error('VIEW_UNAVAILABLE')
       if(session.current!==original)return
       await reload()
       if(session.current!==original)return
@@ -120,6 +122,16 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       document.removeEventListener('visibilitychange',refreshOnReturn)
     }
   },[requestId,accountId,lang])
+  // Keep an OPEN conversation current across two devices without polling the
+  // whole client directory. Pause completely when hidden/offline or composing.
+  // The manual Refresh button remains available at any time.
+  useEffect(()=>{
+    const timer=window.setInterval(()=>{
+      if(document.visibilityState==='visible'&&navigator.onLine!==false&&
+        !busy&&!paging&&!markingViewed)void reload()
+    },60000)
+    return ()=>window.clearInterval(timer)
+  },[requestId,accountId,lang,busy,paging,markingViewed])
   async function send(){
     const body=text.trim(),id=requestId,original=session.current
     if(!original||!(visibility==='practitioner_note'?view?.canNote:view?.canReply)||!body||busy)return
@@ -136,6 +148,9 @@ function MessageConversation({requestId,accountId,locale='en',initialMessage='',
       })
       const result=await response.json().catch(()=>({}))
       if(!response.ok)throw new Error(result.error||'REQUEST_FAILED')
+      // A successful HTTP status alone is not proof that this operation was saved.
+      if(result.saved!==true||result.id!==operation.operationId||result.requestId!==id)
+        throw new Error('SAVE_UNCONFIRMED')
       if(session.current!==original)return
       await reload()
       if(session.current!==original)return
