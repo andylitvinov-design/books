@@ -653,6 +653,12 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>
         </section>}
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title" data-coaching-session-capture>
+          <div className={styles.coachFit} data-coaching-practitioner-checklist>
+            <strong>{t.coachFitTitle}</strong>
+            <p>{t.coachFitIntro}</p>
+            <ul>{t.coachFitChecks.map((text,i)=><li key={i}>{text}</li>)}</ul>
+            <p className={styles.coachOnly}>{t.coachOnly}</p>
+          </div>
           <CoachingLiveSessionCapture locale={lang} />
         </section>}
         
