@@ -877,3 +877,22 @@
 @media(prefers-reduced-motion:reduce){
   .sessionScroll .questionScreen .quickReplies .choices button{transition:none!important}
 }
+
+/* Safari recovery for Egyptian/Greek coaching: 200 image bytes did not mean
+   the former lazy absolutely-positioned Next image was ever painted.
+   Source-backed CSS background makes both photo strips visible even before
+   the eager, sized native img finishes decoding. The URL is same-origin. */
+.loungeCard[data-coaching-tradition] .loungePhoto{
+  align-self:stretch;min-height:148px;background-position:center;
+  background-size:cover;background-repeat:no-repeat;
+}
+.loungeCard[data-coaching-tradition="egyptian"] .loungePhoto{
+  background-image:url("/images/holistic-house/coaching-ancient/egyptian-cover.jpg");
+}
+.loungeCard[data-coaching-tradition="greek"] .loungePhoto{
+  background-image:url("/images/holistic-house/coaching-ancient/greek-cover.jpg");
+}
+.loungeTraditionPhoto{
+  display:block;position:absolute;inset:0;width:100%;height:100%;
+  max-width:none;object-fit:cover;object-position:center;
+}
