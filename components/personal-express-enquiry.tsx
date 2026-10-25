@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { FreeExpressWizard } from "@/components/free-express-wizard";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./personal-express-enquiry.module.css";
@@ -67,13 +68,14 @@ const copy = {
 
 /** The two focuses are intake categories, not a choice between separate services. */
 export function PersonalExpressEnquiry({
-  locale, intro, children,
+  locale, intro, children, enableWizard = false,
 }: {
-  locale: PublicLocale; intro?: ReactNode; children?: ReactNode;
+  locale: PublicLocale; intro?: ReactNode; children?: ReactNode; enableWizard?: boolean;
 }) {
   const t = copy[locale];
   const pathname = usePathname();
   const [focus, setFocus] = useState<Focus>("situation");
+  const [focusLocked, setFocusLocked] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -138,7 +140,7 @@ export function PersonalExpressEnquiry({
           <div ref={panelRef} className={styles.disclosure} id="express-request-form"
             data-express-inline-disclosure hidden={!expanded} tabIndex={-1}
             role="region" aria-label={t.title}>
-          <fieldset className={styles.choices} data-express-focus-group>
+          <fieldset className={styles.choices} data-express-focus-group disabled={focusLocked}>
             <legend>{t.legend}</legend>
             {(["situation", "energy"] as const).map((area) => (
               <label className={styles.choice} data-express-focus={area} key={area}
@@ -150,16 +152,21 @@ export function PersonalExpressEnquiry({
               </label>
             ))}
           </fieldset>
-          <p className={styles.step}>{t.step}</p>
-          <ContactChannelChooser key={focus} locale={locale}
+          <p className={styles.step}>{enableWizard
+            ? (locale === "ru" ? "Сначала зарегистрируем заявку, затем по желанию уточним вопрос и добавим рисунок в защищённый кабинет."
+              : locale === "es" ? "Primero guardamos tu solicitud; luego puedes añadir respuestas y dibujos de forma privada."
+              : "First we register your request; you may then add answers and a drawing privately.")
+            : t.step}</p>
+          {enableWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
+            onSaved={() => setFocusLocked(true)} /> : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
-            publicTopic={"Express review focus: " + t.areas[focus].tag} />
+            publicTopic={"Express review focus: " + t.areas[focus].tag} />}
           <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
           <p className={styles.note}>{t.note}</p>
           </div>
         </div>
       </section>
-      {focus === "situation" ? children : null}
+      {!enableWizard && focus === "situation" ? children : null}
     </div>
   );
 }
