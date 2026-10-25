@@ -207,6 +207,7 @@ export function YggdrasilProgramLanding({ locale }: { locale: PublicLocale }) {
               <Link className="yggdrasil-secondary-action" href={`/${locale}/academy/reiki/yggdrasil/basic-course`}>{text.start}</Link>
               <a className="yggdrasil-hero-explore" href="#system-modules">{text.explore} ↓</a>
               <Link className="yggdrasil-program-detail-link" href={"/" + locale + "/academy/reiki/yggdrasil/basic-course/description"}>{text.description} <span aria-hidden="true">↗</span></Link>
+              <Link className="yggdrasil-program-detail-link" href={`/${locale}/academy/reiki/yggdrasil/free-initiation`}>{locale === "ru" ? "Условия вводной инициации" : locale === "es" ? "Detalles de la iniciación introductoria" : "Introductory initiation details"} <span aria-hidden="true">↗</span></Link>
             </nav>
           </details>
         </div>
