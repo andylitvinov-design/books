@@ -54,6 +54,40 @@ create policy free_express_account_links_owner_insert
   on app_private.free_express_account_links for insert to hh_app_backend
   with check (account_id=(select auth.uid()) and (select app_private.account_active()));
 
+-- The verified Google account can re-open the original encrypted answers
+-- without inheriting practitioner/CRM privileges. A public HH receipt alone
+-- cannot satisfy this RLS policy; an explicitly claimed account link is needed.
+create policy hh_free_express_saved_client_read
+on app.public_service_enquiries for select to hh_app_backend
+using (
+  source_path ~ '^/(en|ru|es)/services/free-situation-review),
+  locale text not null check (locale in ('en','ru','es')),
+  consent_version text not null default 'free-express-google-save-v2',
+  saved_at timestamptz not null default now()
+);
+create index free_express_account_links_owner_idx
+  on app_private.free_express_account_links(account_id,saved_at desc);
+alter table app_private.free_express_account_links enable row level security;
+alter table app_private.free_express_account_links force row level security;
+revoke all on app_private.free_express_account_links from public,anon,authenticated,hh_app_inbox;
+grant select,insert on app_private.free_express_account_links to hh_app_backend;
+create policy free_express_account_links_owner_read
+  on app_private.free_express_account_links for select to hh_app_backend
+  using (account_id=(select auth.uid()) and (select app_private.account_active()));
+create policy free_express_account_links_owner_insert
+  on app_private.free_express_account_links for insert to hh_app_backend
+  with check (account_id=(select auth.uid()) and (select app_private.account_active()));
+
+commit;
+
+  and exists (
+    select 1 from app_private.free_express_account_links l
+    where l.enquiry_id = public_service_enquiries.id
+      and l.account_id = (select auth.uid())
+      and (select app_private.account_active())
+  )
+);
+
 commit;
 ),
   locale text not null check (locale in ('en','ru','es')),
