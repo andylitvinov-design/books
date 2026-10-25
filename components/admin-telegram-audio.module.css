@@ -16,6 +16,7 @@
 .tools select{min-width:190px}
 .tools span{margin-left:auto;color:#82766a}
 .list{display:flex;flex-direction:column;gap:14px}
+.focused{outline:2px solid #876446;outline-offset:2px}
 .card{background:#fffdfa;border:1px solid #e5d8c9;border-radius:18px;padding:19px;display:grid;gap:14px;scroll-margin-top:90px}
 .meta{display:flex;gap:9px 15px;align-items:center;flex-wrap:wrap;color:#827568;font-size:.81rem}
 .status{background:#ede7df;border-radius:30px;color:#5b4637;padding:4px 10px}
