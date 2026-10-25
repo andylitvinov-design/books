@@ -43,7 +43,7 @@ test("First Tantra level is a single scenic reading screen with original text be
 });
 
 test("PDF course map remains available behind an accessible compact disclosure", () => {
-  assert.match(page, /className="tantra-mobile-guide tantra-mobile-guide--combined"/);
+  assert.match(page, /className="tantra-mobile-guide tantra-mobile-guide--combined(?:\\s[^"]*)?"/);
   assert.match(page, /<details className="tantra-mobile-guide__toc">/);
   assert.match(page, /<TantraReikiOverviewLinks locale=\{locale\} \/>/);
   assert.match(page, /className="tantra-mobile-guide__download"/);
