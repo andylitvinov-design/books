@@ -747,6 +747,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
+              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
               <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
@@ -754,7 +755,6 @@ export default function AppWorkspace({ locale, path = [] }) {
               {nativeApp
                 ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
                 : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
-              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
                 logout={logout}
