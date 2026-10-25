@@ -11,7 +11,8 @@ const lounge = read('components/public-coaching-discovery.jsx')
 test('Coaching & Hypnotherapy has one live capture with all three localized options', () => {
   assert.match(lounge, /<CoachingLiveSessionCapture locale=\{lang\}/)
   assert.equal((lounge.match(/data-coaching-session-capture/g) || []).length, 1)
-  assert.doesNotMatch(lounge, /data-coaching-practitioner-checklist|data-coaching-paid-sessions/)
+  assert.match(lounge, /data-coaching-practitioner-checklist/)
+  assert.doesNotMatch(lounge, /data-coaching-paid-sessions/)
   assert.match(component, /offers = \['free', 'short', 'full'\]/)
   for (const label of [
     'Coaching & Hypnotherapy', 'Коучинг и гипнотерапия', 'Coaching e hipnoterapia',
@@ -22,19 +23,21 @@ test('Coaching & Hypnotherapy has one live capture with all three localized opti
   ]) assert.ok(component.includes(label), label)
 })
 
-test('free choice opens existing free intake, paid choices open a truthful consent-based request', () => {
+test('each selected offer opens one short inline request and never creates a lead on choice', () => {
   assert.match(component, /useState\('free'\)/)
   assert.match(component, /role="radiogroup"/)
   assert.match(component, /role="radio" aria-checked=\{active\}/)
-  assert.match(component, /onClick=\{\(\) => setSelected\(key\)\}/)
-  assert.match(component, /whatsappEnquiryUrl\(\{/)
-  assert.match(component, /ContactChannelChooser/)
-  assert.match(component, /label=\{t\.actions\[selected\]\}/)
-  assert.match(component, /\/services\/free-situation-review/)
-  assert.match(component, /analyticsEvent="free_situation_assessment_click"/)
+  assert.match(component, /setSelected\(key\); setOpened\(false\)/)
+  assert.match(component, /aria-expanded=\{opened\}/)
+  assert.match(component, /aria-controls="coaching-request-sheet"/)
+  assert.match(component, /data-coaching-request-sheet=\{selected\}/)
+  assert.match(component, /hidden=\{!opened\}/)
+  assert.match(component, /<CompactLeadCapture key=\{selected\} locale=\{lang\} variant="coaching"/)
+  assert.match(component, /<FreeDiagnosticStart locale=\{lang\} variant="coaching" \/>/)
+  assert.match(component, /title=\{t\.actions\[selected\]\}/)
   assert.match(component, /time and format are confirmed personally before any payment/)
   assert.match(component, /not a live call or medical diagnosis/)
-  assert.doesNotMatch(component, /localStorage|sessionStorage|fetch\(|window\.open|checkout/)
+  assert.doesNotMatch(component, /whatsappEnquiryUrl|ContactChannelChooser|analyticsEvent|localStorage|sessionStorage|fetch\(|window\.open|checkout/)
 })
 
 test('capture is mobile legible and parses as JSX', () => {
