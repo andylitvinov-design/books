@@ -120,3 +120,29 @@
 .gentleGuide p{font-size:12px;line-height:1.45;margin:0}
 .legacyChoice{font-size:12px;line-height:1.4;color:#496b70;margin:4px 0 10px}
 @media(max-width:380px){.gentleGuide{padding:8px 10px;margin-bottom:8px}}
+
+/* Optional per-session voice controls remain compact below Listen / Dictate. */
+.voiceSettingsToggle{
+  align-self:flex-start;min-height:44px;border:0;background:transparent;
+  padding:2px 0;font:inherit;font-size:12px;font-weight:700;color:#236c67;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer
+}
+.voiceSettingsToggle:focus-visible,.voiceSettingsPanel select:focus-visible{
+  outline:3px solid #00afb1;outline-offset:3px
+}
+.voiceSettingsPanel{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  background:#eff6f2;border:1px solid #c1dcd4;border-radius:10px;padding:10px;
+  max-width:100%
+}
+.voiceSettingsPanel label{
+  display:flex;flex-direction:column;gap:4px;min-width:0;
+  color:#315e5c;font-weight:700;font-size:12px
+}
+.voiceSettingsPanel select{
+  width:100%;min-height:44px;max-width:100%;border:1px solid #adcbc4;
+  border-radius:9px;background:#fff;color:#274754;padding:7px;
+  font:inherit;font-size:13px
+}
+.voiceSettingsPanel small{grid-column:1/-1}
+@media(max-width:360px){.voiceSettingsPanel{grid-template-columns:minmax(0,1fr)}}

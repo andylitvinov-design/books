@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { speechResultSegments, appendSpokenAnswer, COACHING_ANSWER_LIMIT } from '../lib/personal-coaching/speech-text.js'
+import { coachingLocalVoices, chooseCoachingVoice, coachingSpeechProfile } from '../lib/personal-coaching/voice-quality.js'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -42,6 +43,40 @@ test('question audio requires a tap, recognition requires disclosure, and old ca
   assert.match(voice,/aria-live="polite"/)
   for(const lang of ['en','ru','es'])assert.match(voice,new RegExp(lang+':\\{'))
   assert.doesNotMatch(voice,/MediaRecorder|sendBeacon|localStorage|sessionStorage|audio\.src|fetch\(/)
+})
+
+
+test('coaching narration prefers enhanced local voices and provides calm, optional pacing',()=>{
+  const voices=[
+    {name:'Plain',lang:'en-US',voiceURI:'basic',localService:true,default:true},
+    {name:'Natural Cloud',lang:'en-US',voiceURI:'remote',localService:false},
+    {name:'Soft Enhanced',lang:'en-US',voiceURI:'enhanced',localService:true},
+    {name:'Spanish Enhanced',lang:'es-ES',voiceURI:'es',localService:true},
+  ]
+  assert.deepEqual(coachingLocalVoices(voices,'en-US').map(v=>v.voiceURI),['enhanced','basic'])
+  assert.equal(chooseCoachingVoice(voices,'en-US')?.voiceURI,'enhanced')
+  assert.equal(chooseCoachingVoice(voices,'en-US','basic')?.voiceURI,'basic')
+  assert.equal(chooseCoachingVoice(voices,'en-US','remote')?.voiceURI,'enhanced',
+    'remote voice is never selected even by an old preference')
+  assert.equal(chooseCoachingVoice(voices,'ru-RU'),null)
+  assert.equal(chooseCoachingVoice(voices,'es-ES')?.voiceURI,'es')
+  assert.ok(coachingSpeechProfile('calm').rate < coachingSpeechProfile('clear').rate)
+  assert.ok(coachingSpeechProfile('calm').pitch <= coachingSpeechProfile('clear').pitch)
+  assert.ok(coachingSpeechProfile('calm').volume <= 1)
+})
+
+test('voice settings are opt-in, localized and do not send client questions to speech vendors',()=>{
+  const ui=source('components/app/coaching-question-voice.jsx')
+  const css=source('components/app/tradition-coaching.module.css')
+  assert.match(ui,/coachingSpeechProfile\(voicePace\)/)
+  assert.match(ui,/chooseCoachingVoice\(available.length\?available:voices,spoken,voiceChoice\)/)
+  assert.match(ui,/addEventListener\?\.\('voiceschanged',refresh\)/)
+  assert.match(ui,/aria-expanded=\{voicePanel\}/)
+  assert.match(ui,/voicePreferences\[lang\]/)
+  for(const phrase of ['Voice & pace','Голос и темп','Voz y ritmo'])assert.ok(ui.includes(phrase))
+  assert.match(css,/\.voiceSettingsPanel\{/)
+  assert.match(css,/\.voiceSettingsPanel select:focus-visible/)
+  assert.doesNotMatch(ui,/localStorage|sessionStorage|\bfetch\(|MediaRecorder|audio\.src|sendBeacon/)
 })
 
 test('personal course offers listen, typed, one-tap and dictated editable choices before protected save',()=>{
