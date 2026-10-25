@@ -82,6 +82,33 @@
   border: 1px dashed #cadbe3; border-radius: 15px;
   color: #526a7b; background: #fff; font: 500 14px/1.5 system-ui, sans-serif;
 }
+
+/* Photo-led coaching offer is deliberately outside Academy course categories. */
+.coachingSpotlight{box-sizing:border-box;display:grid;grid-template-columns:146px minmax(0,1fr) auto;gap:16px;align-items:center;min-width:0;
+ margin:0 0 25px;padding:11px;border:1px solid #d4c3b0;border-radius:19px;background:linear-gradient(115deg,#f6eee3 0%,#fffaf2 95%);box-shadow:0 7px 20px rgb(60 44 29 / 8%)}
+.coachingSpotlightPhoto{position:relative;display:block;min-width:0;min-height:160px;height:100%;border-radius:13px;overflow:hidden;background:#e6d8c8}
+.coachingSpotlightPhoto img{object-fit:cover;object-position:center}
+.coachingSpotlightBody{min-width:0;padding:6px 0}
+.coachingSpotlightLabel{display:block;margin-bottom:4px;color:#936044;font:800 10px/1.4 system-ui,sans-serif;letter-spacing:.07em}
+.coachingSpotlightBody h3{margin:0 0 6px;color:#443125;font:760 clamp(19px,2vw,23px)/1.2 system-ui,sans-serif}
+.coachingSpotlightBody p{max-width:650px;margin:0 0 6px;color:#60574e;font:450 12px/1.45 system-ui,sans-serif;overflow-wrap:anywhere}
+.coachingSpotlightBody .coachingSpotlightMethods{color:#78503f;font-weight:700}
+.coachingSpotlightBody small{display:block;color:#776f64;font:500 10px/1.4 system-ui,sans-serif}
+.coachingSpotlightCTA{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;
+ padding:10px 14px;border-radius:11px;background:#136e78;color:#fff;text-decoration:none;white-space:nowrap;font:800 13px/1.25 system-ui,sans-serif}
+.coachingSpotlightCTA:hover{background:#09515c}
+.coachingSpotlight :is(a):focus-visible{outline:3px solid #8a3b56;outline-offset:3px}
+@media(max-width:620px){
+ .coachingSpotlight{grid-template-columns:94px minmax(0,1fr);gap:10px;margin-bottom:20px;padding:10px}
+ .coachingSpotlightPhoto{min-height:148px;border-radius:10px}
+ .coachingSpotlightBody{padding:0}
+ .coachingSpotlightBody h3{font-size:18px}
+ .coachingSpotlightBody p{font-size:11px}
+ .coachingSpotlightLabel{font-size:9px}
+ .coachingSpotlightCTA { grid-column: 1 / -1;box-sizing:border-box;width:100%;min-height:44px}
+}
+@media(max-width:350px){.coachingSpotlight{grid-template-columns:80px minmax(0,1fr)}.coachingSpotlightPhoto{min-height:148px}}
+
 .note { max-width: 800px; margin: 13px 3px 0; color: #687c89; font: 450 11px/1.55 system-ui, sans-serif; }
 .videoArchive, .back a {
   display: inline-flex; align-items: center; gap: 6px;
