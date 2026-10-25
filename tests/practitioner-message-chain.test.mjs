@@ -164,7 +164,7 @@ test('active conversation refreshes in foreground only and verifies exact saved/
 })
 
 test('RLS hotfix closes shared messages on terminal remote sessions without changing SELECT privileges',()=>{
- const sql=read('supabase/migrations/20261025112000_hh_close_terminal_practitioner_chats.sql')
+ const sql=read('supabase/migrations/20261025152907_hh_close_terminal_practitioner_chats_20261025.sql')
  assert.match(sql,/drop policy if exists practitioner_request_messages_participant_insert/i)
  assert.match(sql,/for insert to hh_app_backend/i)
  assert.match(sql,/r\.status in \('reschedule_proposed','confirmed','in_progress'\)/)
