@@ -213,15 +213,15 @@ test('Pro keeps learning, practitioner offers and profiles visible in one scroll
 })
 
 test('Pro does not show the redundant Learn / Develop / Share roadmap in EN, RU or ES',()=>{
-  assert.doesNotMatch(hub,/profi-after-learning|styles\\.nextStage|t\\.afterTitle|t\\.after\\.map|data-profi-action="advanced-reiki"/)
+  assert.doesNotMatch(hub,/profi-after-learning|styles\.nextStage|t\.afterTitle|t\.after\.map|data-profi-action="advanced-reiki"/)
   for(const text of ['How to move from learning to practice','Как перейти от учёбы к практике','De aprender a ejercer']){
     assert.ok(!hub.includes(text),'obsolete roadmap copy: '+text)
   }
   for(const locale of ['en','ru','es']){
     const tree=mount(locale).render()
     assert.equal(nodes(tree).filter(node=>node.props?.id==='profi-after-learning').length,0,locale)
-    assert.ok(find(tree,'data-profi-learning',undefined),locale+': learning path retained')
-    assert.ok(find(tree,'data-profi-practice',undefined),locale+': practitioner offers retained')
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-learning')),locale+': learning path retained')
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-practice')),locale+': practitioner offers retained')
     assert.equal(nodes(tree).filter(node=>node.props?.['data-profi-paid-program']!==undefined).length,3,locale+': advanced training remains available')
   }
 })
