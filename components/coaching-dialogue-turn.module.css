@@ -11,3 +11,16 @@
   .turn{padding:8px 11px;margin:6px 0 10px;border-radius:0 10px 10px 0}
   .body{font-size:13px;line-height:1.4}
 }
+
+
+/* Editorial acknowledgement stays fully readable without consuming a whole
+   third of the mobile slide. Long translations wrap in the scrollable pane. */
+@media(max-width:600px){
+  .turn{margin:3px 0 7px;padding:6px 9px;border-inline-start-width:3px;max-width:100%}
+  .label{font-size:9px;line-height:1.2;letter-spacing:.07em}
+  .body{font-size:12px;line-height:1.33;margin-top:3px}
+}
+@media(max-height:620px) and (max-width:600px){
+  .turn{margin:2px 0 5px;padding:5px 8px}
+  .body{line-height:1.3}
+}
