@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { IdeasDiscovery } from "@/components/ideas-discovery";
+import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
+import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -55,6 +57,21 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Request distant energy support when you need it. Choose the practitioner, format and preferred time; the master confirms availability and fees.",
     energyAction: "Request distant energy support",
+    meditationTitle: "Meditation · Audio & Video",
+    meditationBody: "Listen to a gentle soundscape and explore the free PsiMaster Sun and energy-practice recordings.",
+    meditationAction: "Open free practices",
+    meditationEyebrow: "03 · MEDITATION PRACTICES",
+    meditationSectionTitle: "Meditation · Free Energy Pump-Ups",
+    meditationSectionLead: "Start with three Sun meditations, then choose other original PsiMaster practice recordings. Pick a lesson and press Play when you are ready.",
+    meditationAudioTitle: "Audio · Gentle waves & melody",
+    meditationAudioBody: "A 96-second instrumental soundscape for quiet attention. It is not an original PsiMaster guided recording.",
+    meditationAudioLabel: "Play gentle waves and soft music",
+    meditationAudioMissing: "The original standalone MP3/M4A recordings of Andrey's PsiMaster pump-ups have not been located. The course below currently contains the source-linked videos with their original sound; no audio has been extracted or invented.",
+    meditationVideoIntro: "Free curated selections from the PsiMaster video archive, beginning with the three Sun sessions. The original recordings are in Russian. Source-linked YouTube playback may depend on availability.",
+    meditationVideoTitle: "Free Sun & Energy Practices · PsiMaster",
+    meditationVideoUnavailable: "The original PsiMaster practice recordings are not available in the catalogue.",
+    meditationMore: "Explore more Academy meditations",
+    meditationAudioFallback: "Your browser does not support audio playback.",
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Situation analysis, constellation-informed reflection and optional homeopathic discussion as a symbolic or complementary approach — not medical treatment.",
     alchemyAction: "Explore Psychic Alchemy",
@@ -109,6 +126,21 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Запросите дистанционную энергетическую поддержку, когда она нужна. Выберите мастера, формат и удобное время; доступность и цена подтверждаются отдельно.",
     energyAction: "Запросить дистанционную поддержку",
+    meditationTitle: "Медитации · аудио и видео",
+    meditationBody: "Слушайте мягкое звуковое сопровождение и откройте бесплатные практики Солнца и энергетические записи из архива PsiMaster.",
+    meditationAction: "Открыть бесплатные практики",
+    meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
+    meditationSectionTitle: "Медитации · Бесплатные подкачки",
+    meditationSectionLead: "Начните с трёх практик Солнца, затем выберите другие оригинальные записи PsiMaster. Выберите урок и включите его по своему желанию.",
+    meditationAudioTitle: "Аудио · Мягкие волны и мелодия",
+    meditationAudioBody: "Инструментальное сопровождение для спокойного внимания, 96 секунд. Это не оригинальная голосовая подкачка с PsiMaster.",
+    meditationAudioLabel: "Воспроизвести мягкие волны и мелодию",
+    meditationAudioMissing: "Отдельные оригинальные аудиофайлы MP3/M4A авторских подкачек PsiMaster пока не найдены. Ниже доступны исходные видеозаписи со звуком; мы не извлекали аудио из видео и не подменяли записи.",
+    meditationVideoIntro: "Бесплатная подборка из архива PsiMaster: сначала три практики Солнца, затем другие видеомедитации и материалы марафона. Оригинальные записи на русском. Воспроизведение на YouTube зависит от доступности источников.",
+    meditationVideoTitle: "Бесплатные практики Солнца · PsiMaster",
+    meditationVideoUnavailable: "Оригинальные материалы PsiMaster пока недоступны в каталоге.",
+    meditationMore: "Другие медитации в Академии",
+    meditationAudioFallback: "Ваш браузер не поддерживает воспроизведение аудио.",
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Разбор ситуации, символическая расстановочная работа и при желании обсуждение гомеопатии как дополнительного подхода — не лечение.",
     alchemyAction: "Подробнее об Алхимии души",
@@ -163,6 +195,21 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Solicita apoyo energético a distancia cuando lo necesites. Elige profesional, formato y horario preferido; disponibilidad y precio se confirman por separado.",
     energyAction: "Solicitar apoyo a distancia",
+    meditationTitle: "Meditación · Audio y vídeo",
+    meditationBody: "Escucha un ambiente sonoro suave y descubre las prácticas gratuitas del Sol y el archivo PsiMaster.",
+    meditationAction: "Abrir prácticas gratuitas",
+    meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
+    meditationSectionTitle: "Meditación · Prácticas energéticas gratuitas",
+    meditationSectionLead: "Empieza por tres meditaciones del Sol y continúa con las grabaciones originales de PsiMaster. Elige una lección y pulsa Reproducir.",
+    meditationAudioTitle: "Audio · Olas y melodía suave",
+    meditationAudioBody: "Música instrumental de 96 segundos para una pausa tranquila. No es una grabación guiada original de PsiMaster.",
+    meditationAudioLabel: "Reproducir olas y melodía suave",
+    meditationAudioMissing: "No se han localizado los audios MP3/M4A originales de las prácticas de PsiMaster. Abajo están los vídeos de archivo con su sonido original; no se ha extraído ni inventado ninguna pista de audio.",
+    meditationVideoIntro: "Selección gratuita del archivo de PsiMaster: primero tres prácticas del Sol, después otras meditaciones y material del maratón. Las grabaciones originales están en ruso. La reproducción depende de YouTube.",
+    meditationVideoTitle: "Prácticas gratuitas del Sol · PsiMaster",
+    meditationVideoUnavailable: "Las grabaciones originales de PsiMaster no están disponibles en el catálogo.",
+    meditationMore: "Más meditaciones en la Academia",
+    meditationAudioFallback: "Tu navegador no permite reproducir audio.",
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Análisis simbólico de situaciones, constelaciones y reflexión homeopática opcional como práctica complementaria; no es tratamiento médico.",
     alchemyAction: "Explorar Alquimia del Alma",
@@ -242,6 +289,18 @@ export default async function HolisticSupportPage({ params }: Props) {
                 </Link>
               </div>
             </article>
+            <article className={styles.option} data-holistic-offer="meditations">
+              <div className={styles.optionPhoto}>
+                <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
+              </div>
+              <div className={styles.optionContent}>
+                <h3>{t.meditationTitle}</h3>
+                <p>{t.meditationBody}</p>
+                <Link href="#meditation-practices" className={styles.secondaryAction} prefetch={false} data-holistic-meditation-cta>
+                  {t.meditationAction}<span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
             <article className={styles.option} data-holistic-offer="practitioner">
               <div className={styles.optionPhoto}>
                 <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
@@ -255,6 +314,37 @@ export default async function HolisticSupportPage({ params }: Props) {
               </div>
             </article>
           </div>
+        </section>
+
+        <section id="meditation-practices" className={styles.section} data-holistic-meditations aria-labelledby="holistic-meditation-title">
+          <div className={styles.sectionHeading}>
+            <p className={styles.kicker}>{t.meditationEyebrow}</p>
+            <h2 id="holistic-meditation-title">{t.meditationSectionTitle}</h2>
+            <p>{t.meditationSectionLead}</p>
+          </div>
+          <div className={styles.meditationAudioRow} data-holistic-audio-player>
+            <div>
+              <span className={styles.freeTag}>{t.free}</span>
+              <h3>{t.meditationAudioTitle}</h3>
+              <p>{t.meditationAudioBody}</p>
+            </div>
+            <audio controls preload="none" aria-label={t.meditationAudioLabel}>
+              <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
+              {t.meditationAudioFallback}
+            </audio>
+          </div>
+          <p className={styles.meditationSourceNote} role="note">{t.meditationAudioMissing}</p>
+          {freeMeditationVideos(locale).length > 0 ? (
+            <AcademyCourseVideoPlaylist
+              locale={locale}
+              courseTitle={t.meditationVideoTitle}
+              lessons={freeMeditationVideos(locale)}
+              introText={t.meditationVideoIntro}
+            />
+          ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
+          <Link href={"/" + locale + "/academy"} className={styles.libraryLink} prefetch={false}>
+            {t.meditationMore}<span aria-hidden="true">→</span>
+          </Link>
         </section>
 
         <aside className={styles.coachingAside} data-holistic-coaching-followup aria-labelledby="holistic-coaching-followup-title">
