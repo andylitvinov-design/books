@@ -78,7 +78,7 @@ try {
         "Default Spanish payment details are collapsed before geometry measurement");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-      assert.equal(panelHeights.length, 8, "Eight compact Spanish Alchemy panels");
+      assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
       if (width <= 390) {
         if (panelHeights.some(p => p.height > p.max)) {
           try {

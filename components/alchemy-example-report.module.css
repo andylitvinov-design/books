@@ -1,0 +1,27 @@
+.page{background:linear-gradient(165deg,#f3faf7,#fff9ef);color:#224753;padding:18px 0 55px;font-family:Arial,Helvetica,sans-serif}
+.shell{width:min(900px,calc(100% - 26px));margin:auto}
+.back{display:inline-flex;align-items:center;gap:7px;min-height:44px;color:#155f67;font-weight:800;font-size:13px;text-decoration:none}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.7fr);gap:20px;align-items:center;margin:9px 0 20px;padding:clamp(19px,4vw,40px);background:#0b525d;color:#fff;border-radius:23px}
+.hero .kicker{color:#b7eee1;margin:0 0 10px;font-size:11px;letter-spacing:.12em;font-weight:800}
+.hero h1{margin:0;font:400 clamp(29px,5vw,49px)/1.08 Georgia,serif;letter-spacing:-.035em}
+.hero p:not(.kicker){max-width:550px;margin:12px 0 0;color:#e9fff9;font-size:13px;line-height:1.6}
+.photo{position:relative;min-height:210px;border-radius:14px;overflow:hidden}
+.photo img{object-fit:cover}
+.paper{background:#fff;border:1px solid #eadfcf;box-shadow:0 12px 30px rgba(47,68,58,.07);border-radius:22px;padding:clamp(17px,4vw,37px)}
+.question{border-left:3px solid #9a5b45;padding:8px 16px;margin-bottom:22px;background:#fffaf3}
+.question span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8d624e;font-weight:850}
+.question p{margin:7px 0 0;font:400 clamp(18px,2.5vw,25px)/1.4 Georgia,serif}
+.stages{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.stages section{border:1px solid #dfede7;border-radius:14px;padding:16px;background:#f9fdfb}
+.stages h2,.next h2{font:400 21px/1.24 Georgia,serif;margin:0 0 7px;color:#155461}
+.stages p{margin:0;font-size:13px;line-height:1.6;color:#566c70}
+.next{margin-top:19px;border-top:1px solid #ddd;padding-top:15px}
+.next ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.next li{display:flex;gap:9px;align-items:flex-start;color:#335d60;font-size:13px;line-height:1.5}
+.next svg{flex:none;color:#1f9b88}
+.disclosure{display:flex;gap:8px;margin:19px 5px;color:#697a77;font-size:12px;line-height:1.6}
+.disclosure svg{flex:none;color:#1b897b}
+.cta{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;background:#96536c;color:#fff!important;text-decoration:none;border-radius:24px;padding:12px 19px;font-size:13px;font-weight:800}
+.page a:focus-visible{outline:3px solid #bb986b;outline-offset:3px}
+@media(max-width:700px){.hero{grid-template-columns:1fr;padding:18px;gap:12px}.photo{min-height:150px}.stages{grid-template-columns:1fr}.stages section{padding:13px}.paper{padding:15px}.hero h1{font-size:clamp(26px,8vw,37px)}}
+@media print{.page{background:#fff;padding:0}.shell{width:100%}.back,.cta{display:none}.paper{box-shadow:none}}

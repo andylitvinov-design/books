@@ -229,6 +229,14 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
           <small>{data.monthNote}</small></span>
         <span className={styles.monthlySparkle} aria-hidden="true">✧</span>
       </button>
+      <details className={styles.formatMore} data-alchemy-format-details>
+        <summary>{locale === "ru" ? "Чем отличаются форматы" : locale === "es" ? "Qué incluye cada formato" : "What each format includes"}</summary>
+        <div>
+          <p><strong>{data.short}</strong> — {data.shortText}</p>
+          <p><strong>{data.long}</strong> — {data.longText}</p>
+          <p><strong>{data.monthTitle}</strong> — {data.monthText} {data.monthNote}</p>
+        </div>
+      </details>
       <p className={styles.formatHint}>{data.choiceHint}</p>
       <div className={styles.optionsOrder}>
         {selected === "month" ? (
