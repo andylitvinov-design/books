@@ -31,7 +31,7 @@ test("Each teacher recording has its own slide BEFORE the original guided medita
   assert.deepEqual(mapping, teacherVideos);
   assert.ok(mapping.every(([, , id]) => /^[\w-]{11}$/.test(id)));
   const sequence = energyworkSequence();
-  assert.equal(sequence.length, 63);
+  assert.equal(sequence.length, 64);
   assert.equal(sequence[0], "welcome-01", "The title page opens the course");
   assert.equal(sequence[1], "welcome-02", "The experience question follows the title page");
   assert.equal(sequence[2], "welcome-video", "Andrey speaks after the introductory question");
