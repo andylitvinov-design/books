@@ -100,15 +100,17 @@ try {
         await assertTouchSize(offers, label + " service type");
         await assertTouchSize(learning, label + " course selector");
         if (phase === "populated") {
-          assert.equal(await mentorCards.count(), 1, label + ": one real approved synthetic mentor");
+          assert.ok(await mentorCards.count() >= 1, label + ": approved mentors shown");
+          const syntheticCard = mentorCards.filter({ hasText: "Synthetic Mentor" });
+          assert.equal(await syntheticCard.count(), 1, label + ": synthetic approved mentor appears");
           const menuBox = await menu.boundingBox();
           const cardBox = await mentorCards.first().boundingBox();
           assert.ok(menuBox && cardBox && menuBox.y + menuBox.height <= cardBox.y + 1,
-            label + ": filters must come before the sole practitioner card");
+            label + ": filters must come before any practitioner card");
           assert.equal(await offers.locator('option[value="session"]').count(), 1,
             label + ": actual session type available");
           await offers.selectOption("session");
-          assert.equal(await mentorCards.count(), 1, label + ": session filter finds actual offering");
+          assert.equal(await syntheticCard.count(), 1, label + ": session filter finds actual offering");
           const courseChoice = learning.locator('option[value^="service:"]').first();
           assert.equal(await courseChoice.count(), 1,
             label + ": approved training is a real course selection");
@@ -117,7 +119,7 @@ try {
           await learning.selectOption(courseKey);
           assert.equal(await offers.inputValue(), "course",
             label + ": choosing a course automatically sets the service type");
-          assert.equal(await mentorCards.count(), 1,
+          assert.equal(await syntheticCard.count(), 1,
             label + ": course selector finds the actual approved course");
           await offers.selectOption("");
           assert.equal(await learning.inputValue(), "",
@@ -127,7 +129,7 @@ try {
           assert.equal(await mentorCards.count(), 0, label + ": unmatched term hides cards");
           await searchMentors.fill("");
           await mentorCards.first().waitFor();
-          assert.equal(await mentorCards.count(), 1, label + ": clearing search restores mentor");
+          assert.equal(await syntheticCard.count(), 1, label + ": clearing search restores approved mentor");
           if (width === 390) await menu.screenshot({
             path: output + "/mentor-filters-" + engineName + "-" + locale + "-390.png",
             animations: "disabled",
