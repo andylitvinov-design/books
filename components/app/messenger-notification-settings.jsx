@@ -250,7 +250,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
        <input type="checkbox" checked={draft.permission} disabled={Boolean(busy)}
         onChange={event=>update(channel,{permission:event.target.checked})}/>
        <span>{t.agree}</span>
-      </label>
+      </label>}
       <div className={styles.actions}>
        {isTelegram?
         <>
