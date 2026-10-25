@@ -549,9 +549,9 @@ export function CoachingIntakeForm({ locale, guided = false }: { locale: PublicL
       </>}
     </div>
     {!guidedFinish || !leadReceipt ? <nav className={styles.guidedActions} aria-label={g.step}>
-      <button type="button" className={styles.guidedBack} onClick={guidedBack}
+      <button type="button" className={styles.guidedBack} data-guided-back onClick={guidedBack}
         disabled={guidedStep === 0 || leadBusy || busy}>{g.back}</button>
-      {!guidedFinish && <button type="button" className={styles.guidedNext} onClick={guidedNext}
+      {!guidedFinish && <button type="button" className={styles.guidedNext} data-guided-next onClick={guidedNext}
         disabled={!guidedCanNext || busy || collision}>
         {guidedStep === 1 ? g.introNext : guidedStep === guidedLastStep - 1 ? g.review
           : guidedField && !guidedField.required && !draft.answers[guidedField.id]?.trim() ? g.skip : g.next}
