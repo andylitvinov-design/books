@@ -120,11 +120,34 @@ test('signed-in coaching and traditions show account-save notice and persisted/h
   assert.match(personal,/old\.status==='completed'/)
   assert.match(tradition,/session\.completedAt\|\|session\.startedAt/)
   assert.match(tradition,/old\.status==='completed'/)
-  assert.match(guest,/guest session, answers stay only in this tab/)
-  assert.match(guest,/В гостевой сессии ответы не сохраняются/)
+  assert.match(guest,/Your answers stay in this tab only, not in an account/)
+  assert.match(guest,/Ваш ответ остаётся только в этой вкладке, не в личном кабинете/)
   assert.match(guest,/setFinishedAt\(new Date\(\)\.toISOString\(\)\)/)
   // No raw answers, report images or saved private records go into URLs/API calls.
   const pdf=read('lib/personal-coaching/session-pdf.js')
   assert.doesNotMatch(pdf,/\bfetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage/)
   assert.match(pdf,/createObjectURL\(blob\)/)
+})
+
+test('every editable coaching question, follow-up and plan has localized save/PDF guidance',()=>{
+  const personal=read('components/app/personal-coaching.jsx')
+  const tradition=read('components/app/tradition-coaching.jsx')
+  const guest=read('components/public-coaching-discovery.jsx')
+  const plan=read('components/coaching-action-plan.jsx')
+  for(const [source,ids] of [
+    [personal,['hh-personal-coach-answer-report-note','hh-coaching-followup-report-note']],
+    [tradition,['tradition-coaching-report-note']],
+    [guest,['public-coaching-report-note','public-coaching-followup-report-note']],
+    [plan,['hh-coaching-plan-report-note']]
+  ]){
+    assert.equal((source.match(/data-coaching-save-report-notice/g)||[]).length,ids.length)
+    for(const id of ids){
+      assert.match(source,new RegExp('aria-describedby="'+id+'"'))
+      assert.match(source,new RegExp('id="'+id+'" data-coaching-save-report-notice'))
+    }
+    assert.match(source,/PDF/)
+  }
+  assert.match(guest,/not in an account/)
+  assert.match(guest,/не в личном кабинете/)
+  assert.match(plan,/privateSave\?t\.reportPrivate:t\.reportGuest/)
 })

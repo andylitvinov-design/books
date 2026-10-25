@@ -135,7 +135,7 @@ async function handle(request, { params }) {
         !['cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -180,7 +180,7 @@ async function handle(request, { params }) {
         coachingLang = url.searchParams.get('coachingLang')
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
           (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -226,7 +226,7 @@ async function handle(request, { params }) {
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
-                  ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
+                  ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop','diagnostic','energy','personal'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
                 : continueTo === 'my-tests'
                   ? `${origin}/${locale}/app/tests`
                   : continueTo === 'my-courses'

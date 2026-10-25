@@ -164,6 +164,11 @@ const PRO_STARTERS = {
   session: { areaKey:'energy_spiritual', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
   intro: { areaKey:'energy_spiritual', offeringType:'intro', deliveryFormat:'online', pricingMode:'free', confirmedPrice:null, currency:'' },
   workshop: { areaKey:'energy_spiritual', offeringType:'workshop', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
+  // Approved Pro choices: safe categorical defaults only, never fake titles,
+  // health diagnoses, guarantees, prices, credentials or automatic publication.
+  diagnostic: { areaKey:'personal_development', offeringType:'assessment', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
+  energy: { areaKey:'energy_spiritual', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
+  personal: { areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', pricingMode:'contact', confirmedPrice:null, currency:'' },
 }
 
 function initialDraft(item,locale,starter='') {

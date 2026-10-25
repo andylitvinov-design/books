@@ -462,6 +462,10 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
   const [daoReadingError, setDaoReadingError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // WebKit may retarget the synthetic click to the fixed bottom navigation
+  // after an iPhone touch scrolls a focused textarea. Handle the real touch
+  // release while deduplicating the subsequent click, if WebKit emits one.
+  const lastTouchFreeTestRef = useRef(-Infinity);
 
   useEffect(() => {
     // Only public quote IDs are retained; the visitor's question never leaves React memory.
@@ -554,6 +558,16 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
       return;
     }
     setTestPickerOpen(open => !open);
+  }
+  function openFreeTestsOnTouch() {
+    lastTouchFreeTestRef.current = performance.now();
+    openFreeTests();
+  }
+  function openFreeTestsOnClick(detail: number) {
+    // Pointer-up already handled this physical touch. Preserve mouse click,
+    // keyboard Enter/Space (detail=0), and screen-reader activation.
+    if (detail > 0 && performance.now() - lastTouchFreeTestRef.current < 650) return;
+    openFreeTests();
   }
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
   useEffect(() => {
@@ -673,7 +687,8 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           </details>
           {!isTemple ? <button type="button" className={styles.freeTestLink} data-ideas-free-test
             aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-            onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button> : null}
+            onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
+            onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button> : null}
         </div>
       </div>
       <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests

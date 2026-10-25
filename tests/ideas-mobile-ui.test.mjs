@@ -176,6 +176,9 @@ test("Ideas sequences three full-width aphorisms, Dao, then offers in preview an
     '<DaoOfferCards locale={locale}',
   ]), "educational preview must follow the same order");
   assert.match(css, /\.relatedAphorisms \.aphorisms \{ grid-template-columns:minmax\(0,1fr\); overflow:visible; \}/);
+  assert.match(css, /\.root \.results\{padding:2px;border-radius:12px\}/);
+  assert.match(css, /\.root \.relatedAphorisms\{padding:4px;border-radius:12px\}/);
+  assert.match(css, /\.root \.aphorisms li\{width:100%;padding:10px 9px\}/);
   assert.match(css, /\.relatedAphorisms \+ \.daoQuick/);
   assert.match(ui, /data-ideas-order-button="reading"/);
   assert.match(ui, /data-ideas-order-button="gift"/);
@@ -214,7 +217,11 @@ test("Ideas has one compact photographic question banner and two choices immedia
   assert.ok(ui.includes("data-ideas-free-coaching"));
   assert.ok(ui.includes("data-ideas-free-test"));
   assert.match(ui, /aria-expanded=\{showSuggestedTests\} aria-controls="ideas-filtered-tests"/);
-  assert.match(ui, /onClick=\{openFreeTests\}/);
+  assert.match(ui, /onPointerUp=\{event => \{ if \(event\.pointerType === "touch"\) openFreeTestsOnTouch\(\); \}\}/);
+  assert.match(ui, /onClick=\{event => openFreeTestsOnClick\(event\.detail\)\}/);
+  assert.match(ui, /detail > 0 && performance\.now\(\) - lastTouchFreeTestRef\.current < 650/);
+  assert.match(css, /scroll-margin-block-end:calc\(116px \+ env\(safe-area-inset-bottom,0px\)\)/);
+  assert.match(css, /touch-action:manipulation/);
   assert.match(ui, /data-ideas-test-start=\{key\}/);
   assert.match(ui, /client\?startTests=hh-current-state/);
   assert.match(catalog, /key: 'hh-current-state',[\s\S]*?startable: true,[\s\S]*?rightsStatus: 'cleared',[\s\S]*?guestEligible: true/);

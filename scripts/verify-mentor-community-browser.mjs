@@ -84,6 +84,78 @@ try {
         await assertTouchSize(articleTab, label + " article tab");
         await noHorizontalOverflow(page, label + " initial");
 
+        // Actual hydrated mentor filtering stays above the first card at every
+        // phone width (including the one-mentor layout from the owner's iPhone).
+        const articlesWereSelected = await articleTab.getAttribute("aria-selected") === "true";
+        await mentorTab.tap();
+        await mentorPanel.waitFor({ state: "visible" });
+        const menu = mentorPanel.locator("[data-mentor-filters]");
+        const offers = mentorPanel.locator("#mentor-filter-offering");
+        const learning = mentorPanel.locator("#mentor-filter-course");
+        const mentorCards = mentorPanel.locator("[data-mentor-cards] > article");
+        const searchMentors = mentorPanel.locator("#master-finder-query-masters");
+        await menu.waitFor({ state: "visible" });
+        assert.equal(await mentorPanel.locator("[data-mentor-primary-filters] select").count(), 4,
+          label + ": visible service/course/format/language menu");
+        await assertTouchSize(offers, label + " service type");
+        await assertTouchSize(learning, label + " course selector");
+        if (phase === "populated") {
+          assert.ok(await mentorCards.count() >= 1, label + ": approved mentors shown");
+          const syntheticCard = mentorCards.filter({ hasText: "Synthetic Mentor" });
+          assert.equal(await syntheticCard.count(), 1, label + ": synthetic approved mentor appears");
+          const menuBox = await menu.boundingBox();
+          const cardBox = await mentorCards.first().boundingBox();
+          assert.ok(menuBox && cardBox && menuBox.y + menuBox.height <= cardBox.y + 1,
+            label + ": filters must come before any practitioner card");
+          assert.equal(await offers.locator('option[value="session"]').count(), 1,
+            label + ": actual session type available");
+          await offers.selectOption("session");
+          assert.equal(await syntheticCard.count(), 1, label + ": session filter finds actual offering");
+          const syntheticCourseTitle = {
+            en: "Synthetic reflection course",
+            ru: "Тестовый курс рефлексии",
+            es: "Curso de reflexión sintético",
+          }[locale];
+          const courseChoice = learning.locator('option[value^="service:"]',
+            { hasText: syntheticCourseTitle });
+          assert.equal(await courseChoice.count(), 1,
+            label + ": approved training is a real course selection");
+          const courseKey = await courseChoice.getAttribute("value");
+          assert.ok(courseKey, label + ": real public course service identifier");
+          await learning.selectOption(courseKey);
+          assert.equal(await offers.inputValue(), "course",
+            label + ": choosing a course automatically sets the service type");
+          assert.equal(await syntheticCard.count(), 1,
+            label + ": course selector finds the actual approved course");
+          await offers.selectOption("");
+          assert.equal(await learning.inputValue(), "",
+            label + ": clearing service type also clears dependent course");
+          await searchMentors.fill("NO_SYNTHETIC_MENTOR_MATCH_887");
+          await mentorPanel.getByText(/No matches yet|По этим параметрам|No hay resultados/).waitFor();
+          assert.equal(await mentorCards.count(), 0, label + ": unmatched term hides cards");
+          await searchMentors.fill("");
+          await mentorCards.first().waitFor();
+          assert.equal(await syntheticCard.count(), 1, label + ": clearing search restores approved mentor");
+          if (width === 390) await menu.screenshot({
+            path: output + "/mentor-filters-" + engineName + "-" + locale + "-390.png",
+            animations: "disabled",
+          });
+        }
+        const moreMentorFilters = menu.locator('[aria-controls="mentor-extra-filters"]');
+        await assertTouchSize(moreMentorFilters, label + " advanced filters");
+        assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "false",
+          label + ": advanced menu starts collapsed");
+        await moreMentorFilters.tap();
+        await menu.locator("#mentor-extra-filters").waitFor({ state: "visible", timeout: 10000 });
+        assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "true",
+          label + ": advanced menu opens from a touch");
+        await noHorizontalOverflow(page, label + " expanded filters");
+        await moreMentorFilters.tap();
+        await menu.locator("#mentor-extra-filters").waitFor({ state: "hidden", timeout: 10000 });
+        assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "false",
+          label + ": advanced menu closes from a touch");
+        if (articlesWereSelected) await articleTab.tap();
+
         if (phase === "empty") {
           // The isolated application seed can contain approved public services
           // before any article is published. That is a valid services-only feed.

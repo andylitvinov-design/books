@@ -25,6 +25,7 @@ on:
       - 'scripts/verify-ideas-mobile-browser.mjs'
       - 'scripts/helpers/ideas-tap-diagnostics.mjs'
       - 'tests/ideas-tap-diagnostics.test.mjs'
+      - 'scripts/verify-coaching-lounge-mobile.mjs'
       - 'tests/ideas-mobile-ui.test.mjs'
       - 'tests/public-coaching-discovery.test.mjs'
   workflow_dispatch:
@@ -50,6 +51,8 @@ jobs:
       - name: Focused Ideas and Coaching regression tests
         run: |
           node --check lib/personal-coaching/model-matcher.js
+          node --check scripts/verify-coaching-lounge-mobile.mjs
+          node --check scripts/verify-ideas-mobile-browser.mjs
           node --check lib/app/personal-coaching-catalog.js
           node --check lib/coaching/public-coaching-catalog.js
           node --check lib/coaching/public-session-art.js
@@ -78,11 +81,14 @@ jobs:
             sleep 2
           done
           if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-ideas-next.log; exit 1; fi
+          node scripts/verify-coaching-lounge-mobile.mjs
           node scripts/verify-ideas-mobile-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ideas-mobile-choice-first
-          path: artifacts/ideas-mobile/
+          path: |
+            artifacts/ideas-mobile/
+            artifacts/coaching-mobile/
           retention-days: 7
           if-no-files-found: warn

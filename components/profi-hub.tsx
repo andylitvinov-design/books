@@ -14,7 +14,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./profi-hub.module.css";
 import { masterProgramIds, masterReikiPrograms, masterReikiUi } from "@/lib/reiki-master-programs";
 
-const OFFER_KEYS = ["session", "intro", "workshop", "course"] as const;
+const OFFER_KEYS = ["diagnostic", "energy", "meditation", "personal"] as const;
 type OfferKey = typeof OFFER_KEYS[number];
 
 // All photographs already live in this site's public asset directory.
@@ -30,10 +30,10 @@ const PHOTOS = {
     "/images/holistic-house/reiki-practitioner-sunrise.webp",
   ],
   offers: {
-    session: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
-    intro: "/images/holistic-house/report-lighthouse-coast.avif",
-    workshop: "/images/holistic-house/hero-olive-incense.webp",
-    course: "/images/holistic-house/books-library.webp",
+    diagnostic: "/images/holistic-house/report-lighthouse-coast.avif",
+    energy: "/images/holistic-house/reiki-approved-sunrise-v3.webp",
+    meditation: "/images/holistic-house/hero-olive-incense.webp",
+    personal: "/images/holistic-house/reiki-practitioner-sunrise.webp",
   },
   stages: [
     "/images/holistic-house/course-focus-mountain-boy.webp",
@@ -98,14 +98,14 @@ const copy = {
     ready: "I already practise—show me the Pro route",
     proEyebrow: "YOUR FIRST PUBLIC OFFER",
     proTitle: "Turn your experience into an offer.",
-    proLead: "Describe what you offer, choose your own terms and move from your private draft to a shareable public page.",
+    proLead: "Offer personal diagnostics, energy support, guided meditation courses or your own individual service. Build a private draft before review.",
     pickerTitle: "What would you like to offer?",
     pickerHint: "Choose one. We'll take you to the right existing editor—not create a listing just by tapping.",
     offers: {
-      session: { title: "1:1 Reiki session", subtitle: "For individual support", preview: "Personal Reiki session", format: "Personal meeting · online or in person", pricing: "You choose the duration and price", tip: "Describe who the session is for, what happens and the boundaries of your work." },
-      intro: { title: "Free introduction", subtitle: "Let clients get to know you", preview: "Introductory meeting", format: "Short introductory conversation", pricing: "Free · no client payment", tip: "Explain exactly what the free introduction includes and what it doesn't." },
-      workshop: { title: "Workshop or group", subtitle: "Teach a small group", preview: "Reiki group workshop", format: "Group event · online or in person", pricing: "You set the conditions and price", tip: "Add the format, participant expectations, duration and suitable group size." },
-      course: { title: "My own course", subtitle: "Share a complete method", preview: "Educational Reiki course", format: "Lessons, practices and reflection", pricing: "An approved practitioner profile and explicit publication are required. Site checkout is not active", tip: "Start with a course title, then build lessons and submit the public programme for review." },
+      diagnostic: { title: "Personal diagnostics", subtitle: "Explore a client's situation", preview: "Personal diagnostic consultation", format: "1:1 conversation · online or in person", pricing: "Set your own duration and fee", tip: "Explain your assessment method and what the client receives. This is not a medical diagnosis or treatment." },
+      energy: { title: "Energy support", subtitle: "Individual energy practice", preview: "Personal energy support", format: "Individual session · online or in person", pricing: "You choose the duration and price", tip: "Describe your approach, session format, boundaries and realistic expectations without health guarantees." },
+      meditation: { title: "Create a meditation course", subtitle: "Your own guided online course", preview: "Online meditation course", format: "Lessons · guided audio/video · practices", pricing: "Publication requires review; site checkout is not active", tip: "Build a sequence of lessons with your own guided audio or video, practical exercises and reflection questions." },
+      personal: { title: "Personal service", subtitle: "Your own 1:1 offering", preview: "Individual personal service", format: "Your method · online or in person", pricing: "You set the format and price", tip: "Explain your service, suitable audience, languages, session boundaries and what clients can expect." },
     },
     previewLabel: "EXAMPLE OF YOUR FUTURE CARD · NOT PUBLISHED",
     previewClient: "What a visitor could understand",
@@ -191,14 +191,14 @@ const copy = {
     ready: "Я уже практикую — перейти к пути Профи",
     proEyebrow: "ТВОЁ ПЕРВОЕ ПРЕДЛОЖЕНИЕ",
     proTitle: "Преврати опыт в понятную услугу.",
-    proLead: "Расскажи, что предлагаешь, укажи свои условия и пройди путь от личного черновика до публичной страницы.",
+    proLead: "Предложи персональную диагностику, энергетическую поддержку, онлайн-курс медитации или собственную индивидуальную услугу. Сначала создаётся черновик.",
     pickerTitle: "Что хочешь предложить?",
     pickerHint: "Выбери формат. Он откроется в существующем редакторе — выбор здесь ничего не публикует.",
     offers: {
-      session: { title: "Личная сессия Рейки", subtitle: "Работа один на один", preview: "Индивидуальная сессия Рейки", format: "Лично или онлайн", pricing: "Длительность и цену указываешь ты", tip: "Расскажи, для кого эта сессия, что будет происходить и каковы границы твоей практики." },
-      intro: { title: "Бесплатное знакомство", subtitle: "Первые контакты с клиентами", preview: "Вводная встреча", format: "Короткая ознакомительная встреча", pricing: "Бесплатно · без оплаты клиента", tip: "Чётко опиши, что входит в бесплатную встречу и что не входит." },
-      workshop: { title: "Мастер-класс / группа", subtitle: "Обучение для нескольких человек", preview: "Групповой мастер-класс Рейки", format: "Группа · онлайн или лично", pricing: "Условия и цену задаёшь ты", tip: "Укажи формат, продолжительность, ожидания участников и комфортный размер группы." },
-      course: { title: "Собственный курс", subtitle: "Обучение своей методике", preview: "Авторский учебный курс Рейки", format: "Уроки, практики и рефлексия", pricing: "Нужен одобренный профиль мастера и отдельное подтверждение публикации. Оплата на сайте пока отключена", tip: "Начни с названия, затем собери уроки и отправь курс на проверку." },
+      diagnostic: { title: "Персональная диагностика", subtitle: "Индивидуальный разбор запроса", preview: "Персональная диагностика и разбор", format: "Один на один · онлайн или лично", pricing: "Стоимость и длительность определяешь ты", tip: "Опиши метод разбора и то, что получит клиент. Это не медицинский диагноз или лечение." },
+      energy: { title: "Энергетическая поддержка", subtitle: "Индивидуальная энергетическая практика", preview: "Персональная энергетическая поддержка", format: "Индивидуально · дистанционно или лично", pricing: "Стоимость и условия задаёшь ты", tip: "Расскажи о практике, формате, границах и реалистичных ожиданиях без обещаний исцеления." },
+      meditation: { title: "Создать онлайн-курс медитации", subtitle: "Обучение медитации по твоей методике", preview: "Авторский онлайн-курс медитации", format: "Уроки · аудио/видео · упражнения", pricing: "Публикация после проверки; оплата на сайте пока не работает", tip: "Составь последовательность уроков, добавь собственные аудио/видео, практики и вопросы для размышления." },
+      personal: { title: "Персональная услуга", subtitle: "Твоя индивидуальная работа", preview: "Авторская персональная услуга", format: "Онлайн или лично · по твоей методике", pricing: "Формат и цену выбираешь ты", tip: "Опиши метод, для кого подходит услуга, языки проведения, границы и ожидаемый формат работы." },
     },
     previewLabel: "ПРИМЕР БУДУЩЕЙ КАРТОЧКИ · НЕ ОПУБЛИКОВАНО",
     previewClient: "Что сможет понять клиент",
@@ -284,14 +284,14 @@ const copy = {
     ready: "Ya practico—quiero publicar",
     proEyebrow: "TU PRIMERA OFERTA",
     proTitle: "Convierte tu experiencia en una oferta.",
-    proLead: "Explica tu oferta, elige condiciones y pasa de un borrador privado a una página pública.",
+    proLead: "Ofrece diagnóstico personal, apoyo energético, un curso de meditación o tu propio servicio individual. Primero crearás un borrador privado.",
     pickerTitle: "¿Qué te gustaría ofrecer?",
     pickerHint: "Elige una opción. Se abrirá el editor existente; tocar aquí no publica nada.",
     offers: {
-      session: { title: "Sesión Reiki individual", subtitle: "Atención personalizada", preview: "Sesión individual de Reiki", format: "En línea o presencial", pricing: "Tú eliges duración y precio", tip: "Explica a quién se dirige, en qué consiste y cuáles son tus límites." },
-      intro: { title: "Introducción gratis", subtitle: "Una primera conversación", preview: "Encuentro introductorio", format: "Breve conversación inicial", pricing: "Gratis · sin pago del cliente", tip: "Aclara exactamente qué incluye la introducción gratuita." },
-      workshop: { title: "Taller o grupo", subtitle: "Aprender en grupo", preview: "Taller grupal de Reiki", format: "En grupo · en línea o presencial", pricing: "Tú defines condiciones y precio", tip: "Explica modalidad, duración, expectativas y tamaño del grupo." },
-      course: { title: "Mi propio curso", subtitle: "Enseña tu método", preview: "Curso educativo Reiki", format: "Lecciones, prácticas y reflexión", pricing: "Necesitas un perfil profesional aprobado y confirmación explícita al publicar. El checkout aún no está activo", tip: "Empieza con el nombre del curso y añade tus lecciones antes de enviarlo a revisión." },
+      diagnostic: { title: "Diagnóstico personal", subtitle: "Explora la situación del cliente", preview: "Evaluación y orientación personal", format: "Sesión individual · online o presencial", pricing: "Tú eliges la duración y el precio", tip: "Explica tu método y lo que recibirá el cliente. No es un diagnóstico ni un tratamiento médico." },
+      energy: { title: "Apoyo energético", subtitle: "Práctica energética individual", preview: "Apoyo energético personal", format: "Sesión individual · a distancia o presencial", pricing: "Tú decides duración y precio", tip: "Describe el enfoque, el formato y los límites sin prometer resultados sanitarios." },
+      meditation: { title: "Crear un curso de meditación", subtitle: "Curso online con prácticas guiadas", preview: "Curso online de meditación", format: "Lecciones · audio/vídeo · prácticas", pricing: "Requiere revisión antes de publicar; el pago web no está activo", tip: "Crea lecciones con tus propios audios o vídeos guiados, ejercicios y preguntas de reflexión." },
+      personal: { title: "Servicio personal", subtitle: "Tu propia propuesta individual", preview: "Servicio personal individual", format: "Tu método · online o presencial", pricing: "Tú decides el formato y el precio", tip: "Describe tu servicio, para quién es, los idiomas disponibles y los límites de la práctica." },
     },
     previewLabel: "EJEMPLO · AÚN NO PUBLICADO",
     previewClient: "Lo que verá el visitante",
@@ -335,7 +335,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const masterT = masterReikiUi[locale];
   const [lessonIndex, setLessonIndex] = useState(0);
-  const [offer, setOffer] = useState<OfferKey>("session");
+  const [offer, setOffer] = useState<OfferKey>("diagnostic");
   const appLocale = locale === "es" ? "en" : locale;
   const practiceRoot = "/" + appLocale + "/app/practice";
   const publicRoot = "/" + locale;
@@ -343,7 +343,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const trainingHref = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
   const profileHref = practiceRoot + "?panel=profile";
   const requestsHref = practiceRoot + "?panel=requests";
-  const offerHref = offer === "course"
+  const offerHref = offer === "meditation"
     ? practiceRoot + "?panel=materials&materialTab=courses&create=1"
     : practiceRoot + "?panel=services&create=1&starter=" + offer;
   const chosen = t.offers[offer];
@@ -541,11 +541,11 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                     
                   </div>
                   <p className={styles.micro}>{chosen.tip}</p>
-                  <p className={styles.micro}>{offer === "course" ? t.previewCourseNote : t.previewNote}</p>
+                  <p className={styles.micro}>{offer === "meditation" ? t.previewCourseNote : t.previewNote}</p>
                   <Link href={offerHref} className={styles.primary} prefetch={false}
-                    data-profi-action={offer === "course" ? "create-course" : "create-service"}
+                    data-profi-action={offer === "meditation" ? "create-course" : "create-service"}
                     data-profi-selected-offer={offer}>
-                    {offer === "course" ? t.createCourse : t.createService}<ArrowRight size={18} aria-hidden="true" />
+                    {offer === "meditation" ? t.createCourse : t.createService}<ArrowRight size={18} aria-hidden="true" />
                   </Link>
                   <p className={styles.authNote}><LockKeyhole size={14} aria-hidden="true" />{t.googleNote}</p>
                 </div>
@@ -554,7 +554,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
               <section className={styles.publishJourney} aria-labelledby="profi-publishing-steps">
                 <h3 id="profi-publishing-steps">{t.stepsTitle}</h3>
                 <ol>
-                  {(offer === "course" ? t.courseSteps : t.steps).map((step, index) => (
+                  {(offer === "meditation" ? t.courseSteps : t.steps).map((step, index) => (
                     <li key={step.title}>
                       <span className={styles.publishPhoto}>
                         <Image src={PHOTOS.stages[index]} alt="" fill unoptimized sizes="100px" />
@@ -562,8 +562,8 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                       </span>
                       <div><h4>{step.title}</h4><p>{step.detail}</p></div>
                       <Link href={index === 0 ? profileHref : index === 1 ? offerHref :
-                        index === 2 ? offer === "course" ? publicRoot + "/academy" : publicRoot + "/masters" :
-                        offer === "course" ? offerHref : requestsHref}
+                        index === 2 ? offer === "meditation" ? publicRoot + "/academy" : publicRoot + "/masters" :
+                        offer === "meditation" ? offerHref : requestsHref}
                         prefetch={false} className={styles.stepLink}
                         data-profi-step={index + 1}>
                         {step.action}<ArrowRight size={15} aria-hidden="true" />
@@ -575,8 +575,8 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
               <p className={styles.paymentStatus}><ShieldCheck size={17} aria-hidden="true" />{t.paymentStatus}</p>
               <div className={styles.benefitGrid}>
                 <article><Photo src={PHOTOS.personal} className={styles.benefitPhoto} /><div><h3><CircleDollarSign size={19} aria-hidden="true" />{t.freeTitle}</h3><p>{t.freeBody}</p></div></article>
-                <article><Photo src={PHOTOS.offers.course} className={styles.benefitPhoto} /><div><h3><ShieldCheck size={19} aria-hidden="true" />{t.discoverTitle}</h3><p>{t.discoverBody}</p></div></article>
-                <article><Photo src={PHOTOS.offers.session} className={styles.benefitPhoto} /><div><h3><MessageSquare size={19} aria-hidden="true" />{t.requestTitle}</h3><p>{t.requestBody}</p></div></article>
+                <article><Photo src={PHOTOS.offers.meditation} className={styles.benefitPhoto} /><div><h3><ShieldCheck size={19} aria-hidden="true" />{t.discoverTitle}</h3><p>{t.discoverBody}</p></div></article>
+                <article><Photo src={PHOTOS.offers.energy} className={styles.benefitPhoto} /><div><h3><MessageSquare size={19} aria-hidden="true" />{t.requestTitle}</h3><p>{t.requestBody}</p></div></article>
               </div>
               <details className={styles.moneyDetails} data-profi-money-model>
                 <summary><ClipboardList size={19} aria-hidden="true" />{t.moneyTitle}<ChevronRight size={17} aria-hidden="true" /></summary>
