@@ -83,3 +83,12 @@ export type PublicServiceDetail = {
   service: PublicService
   practitioner: PublicPractitioner
 }
+
+/** Minimal published-course metadata for mentor discovery; never send drafts or slides. */
+export type PublicMentorCourse = {
+  slug: string
+  practitionerSlug: string
+  title: string
+  description: string
+  locale: 'en' | 'ru' | 'es'
+}

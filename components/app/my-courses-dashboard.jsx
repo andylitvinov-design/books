@@ -176,12 +176,12 @@ export default function MyCoursesDashboard({
     </Link>
     <div className={styles.traditionLinks} data-ancient-coaching-courses>
       {[
-        {id:'egyptian',title:locale==='ru'?'Египетский коучинг':'Egyptian Goal Planning',
-          description:locale==='ru'?'11 коротких экранов · Ка, Ба, Иб и другие уровни. Желание, ценности, действия и ресурсы.':'11 short screens · Ka, Ba, Ib and other levels. Desire, values, actions and support.',
+        {id:'egyptian',title:locale==='ru'?'Египетское планирование':locale==='es'?'Planificación egipcia':'Egyptian Goal Planning',
+          description:locale==='ru'?'8 символических тел · 11 экранов. Ка, Ба, Иб, Сах, Хайбит, Ху, Рен, Секхем.':'Eight Egyptian bodies · 11 screens. Ka, Ba, Ib, Sah, Khaibit, Hu, Ren and Sekhem.',
           photo:'/academy/reiki-yggdrasil/source/temple-studies.png'},
-        {id:'greek',title:locale==='ru'?'Греческий коучинг':'Greek Goal Planning',
-          description:locale==='ru'?'10 экранов · Эпитемия, Тюмос, Логос, Эйдос и Телос. От желания к своему шагу.':'10 screens · Epithymia, Thymos, Logos, Eidos and Telos. From desire to one next step.',
-          photo:'/academy/reiki-yggdrasil/source/temple-studies.png'},
+        {id:'greek',title:locale==='ru'?'Греческое планирование':locale==='es'?'Planificación griega':'Greek Goal Planning',
+          description:locale==='ru'?'8 античных уровней · 10 экранов. От желания и воли к идеальной форме, Телосу и действию.':'Eight Greek principles · 10 screens. Desire, reason, ideal form, Telos and action.',
+          photo:'/academy/reiki-yggdrasil/source/western-tradition.png'},
       ].map(item=>{
         const progress=traditionProgress?.find(row=>row.template==='hh-'+item.id+'-goal-planning-v1')
         const started=progress?.status==='active',finished=progress?.status==='completed'

@@ -43,7 +43,7 @@ const copy={
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
     noAnswer:'Skipped',history:'Earlier private sessions',historyItem:'Previous session',
     share:'Nothing is sent to a coach or messenger automatically.',
-    reportNotice:'Your answers are saved privately. When you finish, you can download a dated PDF report with every question and your answers.',
+    reportNotice:'After tapping Save, your answer is kept in your private account. At the end you can download a PDF with your questions, answers and reflections.',
     pdf:'Download PDF report',pdfError:'Could not create the PDF. Your private answers remain saved.',date:'Session date',
     restart:'This starts a new session and saves the completed one to your private history.',
     home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? This cannot be undone.',
@@ -68,7 +68,7 @@ const copy={
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
     noAnswer:'Пропущено',history:'Предыдущие личные сессии',historyItem:'Прошлая сессия',
     share:'Ответы не отправляются коучу или в мессенджеры автоматически.',
-    reportNotice:'Ваши ответы будут сохранены в личном кабинете. В конце вы получите PDF-отчёт с датой, всеми вопросами и ответами.',
+    reportNotice:'После нажатия «Сохранить» ваш ответ останется в личном кабинете. В конце сможете скачать PDF с вашими мыслями, вопросами и ответами.',
     pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы сохранены в кабинете.',date:'Дата сессии',
     restart:'Новая сессия сохранит завершённую в вашей личной истории.',
     home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Это действие нельзя отменить.',
@@ -91,7 +91,7 @@ const copy={
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
     history:'Sesiones anteriores',historyItem:'Sesión anterior',share:'No enviamos tus respuestas a otras personas.',
-    reportNotice:'Tus respuestas se guardan en privado. Al terminar puedes descargar un PDF con fecha, preguntas y respuestas.',
+    reportNotice:'Al pulsar Guardar, tu respuesta queda en tu cuenta privada. Al final podrás descargar un PDF con tus reflexiones, preguntas y respuestas.',
     pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',
     restart:'La sesión completada se guardará en tu historial.',home:'Mis cursos',delete:'Borrar mis notas',
     deleteConfirm:'¿Eliminar todas tus respuestas e historial? No se puede deshacer.',
@@ -505,23 +505,30 @@ export default function PersonalCoaching({locale='en',accountId}){
             <CoachingChatThread turn={followupTurn} locale={lang}>
               <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
-            <p>{followupCopy[lang].why}</p>
-            <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang}
-              text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
-              disabled={busy} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-              onListeningChange={setDictating}
-              onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
+                        <p className={styles.messageTip}>{followupCopy[lang].why}</p>
+             {error&&<p className={styles.error} role="alert">{error}</p>}
+          </div>
+          <footer className={styles.footer} data-coaching-messenger-footer>
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
-            <textarea id="hh-coaching-followup" className={styles.textarea}
-              value={reflectionDraft} maxLength={500} rows={3} disabled={busy}
-              placeholder={followupCopy[lang].placeholder}
-              onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
-            <span className={styles.counter}>{reflectionDraft.length}/500</span>
+              <textarea id="hh-coaching-followup" className={styles.textarea}
+                aria-describedby="hh-coaching-followup-report-note" value={reflectionDraft}
+                maxLength={500} rows={2} disabled={busy}
+                placeholder={followupCopy[lang].placeholder}
+                onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+              <div className={styles.composerTools}>
+                <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang} compact
+                  text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')}
+                  locale={lang} mode="answer" disabled={busy}
+                  speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+                  onListeningChange={setDictating}
+                  onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
+                <small className={styles.draftCount}>{reflectionDraft.length}/500</small>
+              </div>
+              <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+                <small id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+              </details>
             </div>
-            {error&&<p className={styles.error} role="alert">{error}</p>}
-          </div>
-          <footer className={styles.footer}>
             <div className={styles.footerActions}>
               <button className={styles.back} type="button" disabled={busy} onClick={backward}>
                 <ChevronLeft size={18}/>{t.back}
@@ -550,7 +557,8 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
             <div data-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang}>
+              <CoachingChatThread turn={conversationTurn} locale={lang}
+                 draftPreview={quickChoices&&draft.startsWith('choice:')?prettyAnswer(draft,question,lang,t.noAnswer):''}>
                 <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
               </CoachingChatThread>
             </div>
@@ -562,14 +570,6 @@ export default function PersonalCoaching({locale='en',accountId}){
                 {useStandardPrompt?iCopy.tailored:iCopy.standard}
               </button>
             </div>}
-            <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')}
-              text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
-              mode="answer" disabled={busy} speechConsent={speechConsent}
-              onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
-              onTranscript={words=>{
-                setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
-                setError('');setNotice('')
-              }}/>
             {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
@@ -592,29 +592,43 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
             {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
-            <div className={styles.chatComposer} data-coaching-composer>
-            <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-              {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
-            <textarea id="hh-personal-coach-answer" className={styles.textarea}
-              data-coaching-open-reflection={!quickChoices?'true':undefined}
-              value={draft.startsWith('choice:')?'':draft}
-              maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
-              onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
-            <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
-            </div>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
-            <p className={styles.subtle} data-coaching-save-report-notice>{t.reportNotice}</p>
+            
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
-          <footer className={styles.footer}>
+          <footer className={styles.footer} data-coaching-messenger-footer>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
+                {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
+              <textarea id="hh-personal-coach-answer" className={styles.textarea}
+                aria-describedby="hh-personal-coach-answer-report-note"
+                data-coaching-open-reflection={!quickChoices?'true':undefined}
+                value={draft.startsWith('choice:')?'':draft}
+                maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
+                onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
+              <div className={styles.composerTools}>
+                <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')} compact
+                  text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
+                  mode="answer" disabled={busy} speechConsent={speechConsent}
+                  onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
+                  onTranscript={words=>{
+                    setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
+                    setError('');setNotice('')
+                  }}/>
+                <small className={styles.draftCount}>{draft.startsWith('choice:')?0:draft.length}/800</small>
+              </div>
+              <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+                <small id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+              </details>
+            </div>
             <div className={styles.footerActions}>
               <button type="button" className={styles.back} onClick={backward} disabled={busy||index===0}><ChevronLeft size={18}/>{t.back}</button>
               <button type="button" className={styles.primary} disabled={busy} onClick={()=>next(false)}>
-                {busy?t.saving:index===activeQuestions.length-1?t.finish:t.next}<ArrowRight size={18}/>
+                {busy?t.saving:index===activeQuestions.length-1?t.finish:(lang==='ru'?'Отправить и далее':lang==='es'?'Enviar y seguir':'Send & continue')}<ArrowRight size={18}/>
               </button>
             </div>
             {!question.required&&<button type="button" className={styles.skip} disabled={busy} onClick={()=>next(true)}>{t.skip}</button>}

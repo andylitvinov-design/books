@@ -45,6 +45,7 @@
   border:1.5px solid #a8c3c4;border-radius:13px;padding:14px 15px;resize:vertical;width:100%;min-height:124px;max-height:40dvh}
 .textarea::placeholder{color:#698080}
 .counter{font-size:11px;color:#597278;text-align:right;margin-top:5px}
+.answerRetention{display:block;color:#51716e;font-size:11px;line-height:1.4;margin-top:4px;max-width:590px}
 .suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .suggestions button{border:1px solid #bacfcf;border-radius:99px;padding:8px 11px;font-weight:650;font-size:12px;color:#2a525a;background:#eaf6f3;cursor:pointer;min-height:40px}
 .suggestions button:hover{background:#d4ece7}
@@ -335,3 +336,98 @@
   .session>.questionArea{padding:12px 11px 16px}
   .chatComposer .textarea{min-height:62px}}
 @media(max-height:620px){.chatComposer .textarea{min-height:53px;max-height:21dvh}}
+
+/* Guided sessions now use a chat timeline and an always-visible message composer.
+   Only the timeline scrolls. Safe-area aware reply tools stay near the keyboard. */
+.session[data-coaching-one-question] .questionArea,
+.session[data-coaching-authored-followup] .questionArea{
+  background:linear-gradient(180deg,#f7f4ed,#f7f6f0 60%,#f3f5ee);
+}
+.session[data-coaching-one-question] .questionArea>.stage,
+.session[data-coaching-authored-followup] .questionArea>.stage{
+  font-size:10px;letter-spacing:.11em;color:#70837a;margin-bottom:7px
+}
+.session[data-coaching-one-question] .questionArea>.answerLabel{
+  align-self:flex-end;text-align:right;font-size:11px;color:#728980;margin:2px 5px 7px
+}
+.session[data-coaching-one-question] .optionList,
+.session[data-coaching-one-question] .suggestions{
+  align-self:flex-end;justify-content:flex-end;display:flex;flex-wrap:wrap;gap:7px;
+  max-width:600px;margin:0 0 8px 37px
+}
+.session[data-coaching-one-question] .optionChip,
+.session[data-coaching-one-question] .suggestions button{
+  min-height:44px;padding:8px 12px;
+  border:1px solid #bad2c8;border-radius:18px 18px 5px 18px;
+  background:#fffdfb;color:#315e53;box-shadow:0 2px 9px #3a493814;
+  font:inherit;font-size:13px;font-weight:720;line-height:1.3
+}
+.session[data-coaching-one-question] .optionChip[aria-pressed="true"],
+.session[data-coaching-one-question] .suggestions button[aria-pressed="true"]{
+  background:#d8ebe1;border-color:#4a917d;color:#224d41;
+  box-shadow:inset 0 0 0 1px #4a917d
+}
+.session[data-coaching-one-question] .optionScale{
+  align-self:flex-end;width:min(100%,450px);display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:6px;margin:5px 0 10px
+}
+.session[data-coaching-one-question] .optionScale .optionChip{
+  padding:6px 1px;min-height:44px;border-radius:12px;text-align:center;font-size:13px
+}
+.session[data-coaching-one-question] .questionArea>.subtle{display:none}
+.session .footer[data-coaching-messenger-footer]{
+  background:#fffdf9;border-top:1px solid #e0e3d9;
+  padding:7px clamp(13px,3vw,30px) calc(8px + env(safe-area-inset-bottom));
+  box-shadow:0 -6px 17px #3549340c
+}
+.footer[data-coaching-messenger-footer] .chatComposer{
+  display:flex;flex-direction:column;gap:5px;
+  margin:0 0 7px;padding:8px 11px;background:#f0f6f0;border-color:#cbded1;
+  border-radius:17px 17px 5px 17px;box-shadow:none
+}
+.footer[data-coaching-messenger-footer] .chatComposer .answerLabel{
+  margin:0;font-size:11px;font-weight:780;color:#3c645c
+}
+.footer[data-coaching-messenger-footer] .chatComposer .textarea{
+  min-height:45px;max-height:14dvh;padding:8px 11px;background:#fff;
+  border:1px solid #c6dacc;font-size:16px;line-height:1.4;resize:vertical
+}
+.footer[data-coaching-messenger-footer] .composerTools{
+  display:flex;align-items:center;justify-content:space-between;gap:8px
+}
+.footer[data-coaching-messenger-footer] .draftCount{margin-left:auto;color:#75887e;font-size:10px}
+.footer[data-coaching-messenger-footer] .reportDetails{color:#6a8276;font-size:11px;line-height:1.35}
+.footer[data-coaching-messenger-footer] .reportDetails>summary{
+  display:inline-flex;align-items:center;min-height:32px;
+  cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-weight:600
+}
+.footer[data-coaching-messenger-footer] .reportDetails small{
+  display:block;font-size:11px;color:#52756a;line-height:1.4;margin-bottom:3px
+}
+.footer[data-coaching-messenger-footer] .footerActions{gap:7px}
+.footer[data-coaching-messenger-footer] .footerActions .primary{
+  background:#7b334e;border-radius:23px;max-width:none;min-height:46px
+}
+.footer[data-coaching-messenger-footer] .footerActions .back{
+  border-radius:23px;min-height:44px;padding-inline:12px
+}
+.footer[data-coaching-messenger-footer] .skip{
+  min-height:26px;padding:2px 8px;margin-top:0;font-size:11px
+}
+.session .questionArea .messageTip{font-size:12px;color:#678077;margin:1px 0 8px}
+@media(max-width:430px){
+  .session[data-coaching-one-question] .questionArea,
+  .session[data-coaching-authored-followup] .questionArea{padding:10px 12px}
+  .session[data-coaching-one-question] .optionChip,
+  .session[data-coaching-one-question] .suggestions button{padding:7px 10px;font-size:12px}
+  .session .footer[data-coaching-messenger-footer]{
+    padding:5px 10px calc(6px + env(safe-area-inset-bottom))
+  }
+  .footer[data-coaching-messenger-footer] .chatComposer{padding:7px 9px;margin-bottom:5px}
+  .footer[data-coaching-messenger-footer] .chatComposer .textarea{min-height:44px;max-height:12dvh}
+}
+@media(max-height:590px){
+  .footer[data-coaching-messenger-footer] .chatComposer{padding:5px 8px}
+  .footer[data-coaching-messenger-footer] .chatComposer .textarea{min-height:40px;max-height:10dvh}
+  .footer[data-coaching-messenger-footer] .reportDetails>summary{min-height:24px}
+}

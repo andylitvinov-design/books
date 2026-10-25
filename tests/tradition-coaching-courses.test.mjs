@@ -163,7 +163,9 @@ test('stages are illustrated before the question and shown in a pre-course map w
  assert.match(component,/TraditionStageArt stage=\{stageGuide\}/)
  assert.ok(component.indexOf('TraditionStageArt stage={stageGuide}')<component.indexOf('>{question.question?.[lang]}</h1>'))
  assert.match(component,/referrerPolicy="no-referrer"/)
- assert.match(component,/loading="lazy"/)
+ assert.match(component,/loading=\{compact\?'lazy':'eager'\}/)
+ assert.match(component,/onError=\{event=>\{event\.currentTarget\.hidden=true\}\}/)
+ assert.match(css,/\.stagePhoto img\[hidden\]\{display:none\}/)
  assert.match(component,/rel="noopener noreferrer"/)
  assert.match(css,/\.roadmapList\{[^}]*overflow-y:auto/)
  assert.match(css,/\.stageCard/)
@@ -172,4 +174,21 @@ test('stages are illustrated before the question and shown in a pre-course map w
  assert.match(css,/\[data-tradition-coaching="greek"\]/)
  assert.doesNotMatch(component,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
  assert.doesNotMatch(guide,/fetch\(|sessionStorage|localStorage|account_id|payload_ciphertext/)
+})
+
+test('planning courses have distinct coherent photo-left cards, localized names and resilient image fallback',()=>{
+ const courses=source('lib/personal-coaching/traditions.js')
+ const academy=source('components/academy-hub.tsx')
+ const dashboard=source('components/app/my-courses-dashboard.jsx')
+ const art=source('components/app/tradition-coaching.jsx')
+ assert.match(courses,/"ru": "Египетское планирование"/)
+ assert.match(courses,/"ru": "Греческое планирование"/)
+ assert.match(courses,/"art": "\/academy\/reiki-yggdrasil\/source\/western-tradition.png"/)
+ for(const view of [academy,dashboard]){
+   assert.match(view,/Египетское планирование/)
+   assert.match(view,/Греческое планирование/)
+   assert.match(view,/western-tradition\.png/)
+ }
+ assert.match(art,/event\.currentTarget\.hidden=true/)
+ assert.match(art,/referrerPolicy="no-referrer"/)
 })
