@@ -75,3 +75,19 @@
 .unpublishButton{border:0;border-radius:9px;background:#f6e8ec;color:#94384a;padding:9px 12px;cursor:pointer;font-weight:800;font-size:12px}
 .publicReviewActions button:focus-visible{outline:3px solid #39c3c8;outline-offset:2px}
 @media(max-width:640px){.publicReviewSection{padding:12px}.publicReviewGrid{grid-template-columns:1fr}}
+
+
+/* Protected Reiki donation proof stays with the student's existing CRM card. */
+.donation{margin:14px 0 6px;padding:14px;border-radius:14px;border:1px solid #d4c7b0;background:#fffaf1;color:#634e3d;display:grid;gap:8px}
+.donation h3{font-size:15px;margin:0;color:#775235}
+.donation p{font-size:12px;line-height:1.5;margin:0;overflow-wrap:anywhere}
+.donation code{margin-left:6px;font-size:12px;overflow-wrap:anywhere}
+.donationPaid{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px;border:1px solid #aed7b6;border-radius:10px;background:#e8f7ed;color:#2b6b44}
+.donationReview{color:#835329}
+.donationField{display:grid;gap:6px;font-size:12px;font-weight:750}
+.donationField input{max-width:100%;min-height:44px;padding:10px;border:1px solid #c9bba8;border-radius:10px;background:#fff;color:#3c544a;font:inherit;font-size:16px}
+.donationConsent{display:flex;gap:9px;align-items:flex-start;line-height:1.45;font-size:12px}
+.donationConsent input{margin-top:3px;width:18px;height:18px;flex:none}
+.verifyDonation{width:fit-content;max-width:100%;min-height:44px;border:0;border-radius:11px;padding:10px 14px;background:#735336;color:white;font-weight:800;cursor:pointer}
+.verifyDonation:disabled{opacity:.55;cursor:not-allowed}
+.donation :is(input,button):focus-visible{outline:3px solid #0696aa;outline-offset:2px}
