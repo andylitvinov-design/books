@@ -167,7 +167,7 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
         <p className={styles.heroHeadline}>{t.headline}</p>
         <p className={styles.heroLead}>{t.lead}</p>
         <nav className={styles.heroChoices} aria-label={t.choose}>
-          <a href="#coaching-intake" onClick={() => choose("free")} data-coaching-hero-choice="free">
+          <a href="#free-diagnostic-start" onClick={() => choose("free")} data-coaching-hero-choice="free">
             <Sparkles size={20} aria-hidden="true"/><span>{t.freeAction}</span><ArrowRight size={19} aria-hidden="true"/>
           </a>
           <a href="#coaching-intake" onClick={() => choose("session")} data-coaching-hero-choice="session">
@@ -204,7 +204,7 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
                 <Link href={"/" + locale + "/services/imagery-therapy#request-session"} className={styles.cardButton}
                   prefetch={false} data-coaching-select="deep">{t.learn}<ArrowRight size={15} aria-hidden="true"/></Link>
               ) : (
-                <a href="#coaching-intake" className={styles.cardButton}
+                <a href={offer.id === "free" ? "#free-diagnostic-start" : "#coaching-intake"} className={styles.cardButton}
                   onClick={() => choose(offer.id as Choice)} data-coaching-select={offer.id}>
                   {t.request}<ArrowRight size={15} aria-hidden="true"/>
                 </a>
