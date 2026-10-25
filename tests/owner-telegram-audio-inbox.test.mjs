@@ -75,7 +75,7 @@ test('magic-byte checks reject non-audio content with a claimed audio MIME',()=>
 })
 test('webhook retains secret verification, handles audio before AI and never makes drafts public',()=>{
   const route=readFileSync(new URL('../app/api/app/notification-channels/telegram/webhook/route.js',import.meta.url),'utf8')
-  assert.ok(route.indexOf('verifyClientTelegramSecret')<route.indexOf('receiveOwnerTelegramAudioWebhook(config,update)'))
+  assert.ok(route.indexOf('if(!verifyClientTelegramSecret(')<route.indexOf('const audio=await receiveOwnerTelegramAudioWebhook(config,update)'))
   assert.ok(route.indexOf('receiveOwnerTelegramAudioWebhook(config,update)')<
     route.indexOf('receiveOwnerAiTelegramWebhook(config,update)'))
   const service=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
