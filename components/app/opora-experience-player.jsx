@@ -9,6 +9,7 @@ import {welcomeFeelingChoices,welcomeFeelingSupport} from '@/lib/inner-growth/co
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,oporaExperienceTransferChoices,oporaExperienceDepth,OPORA_EXPERIENCE_DESIGN_VERSION} from '@/lib/inner-growth/opora-as56-experience-guides'
 import {oporaAs58Day,OPORA_PRIMARY_EMOTIONS,OPORA_EMOTION_DAYS,OPORA_ONE_ACTION_VERSION} from '@/lib/inner-growth/opora-as58-one-action'
 import {oporaAs59Day,OPORA_SEVEN_SKILLS_EDITION} from '@/lib/inner-growth/opora-as59-seven-skills'
+import {oporaAs60Day,OPORA_EXPERIENTIAL_EDITION} from '@/lib/inner-growth/opora-as60-experiential-practices'
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner-growth/opora-gentle-journey'
@@ -18,6 +19,14 @@ import styles from './opora-experience-player.module.css'
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
 // Five persisted moments plus a clear, non-interactive skill rationale at step two.
 // Existing server visit keys, practice signals and open sessions are preserved.
+const EXPERIMENT_WORDS=Object.freeze({
+  ru:{title:'ПРАКТИКА-ЭКСПЕРИМЕНТ',step:'Шаг',next:'Следующий шаг',
+    prompt:'Выберите то, что подходит',note:'Это личный выбор, а не оценка. Отмечайте попытку честно; можно остановиться или пропустить.'},
+  en:{title:'TRY A MICRO-EXPERIMENT',step:'Step',next:'Next step',
+    prompt:'Choose what fits',note:'This is your choice, not a score. Report only what you actually tried; you may stop or skip.'},
+  es:{title:'PRUEBA UN MINIEXPERIMENTO',step:'Paso',next:'Siguiente paso',
+    prompt:'Elige lo que te sirva',note:'No es una nota. Cuenta solo lo que probaste; puedes parar o saltarlo.'},
+})
 const WORDS={
   ru:{
     day:'День',of:'из',pause:'Пауза',close:'Закончить',back:'Назад',next:'Продолжить',
@@ -346,7 +355,7 @@ function OpeningRating({label,value,onChange,disabled,low,high}){
  * Read-only course roadmap. Previewing a locked card never changes the
  * learner's schedule, progress or server-owned completion state.
  */
-function OporaCoursePath({locale,cycle,saved,roadmap,words,oneAction=false,edition59=false}){
+function OporaCoursePath({locale,cycle,saved,roadmap,words,oneAction=false,edition59=false,edition60=false}){
   const courseDay=Number.isInteger(cycle.day)?cycle.day:1
   const previouslySaved=new Set((Array.isArray(roadmap)?roadmap:[])
     .filter(item=>item.status==='completed').map(item=>item.day))
@@ -354,7 +363,7 @@ function OporaCoursePath({locale,cycle,saved,roadmap,words,oneAction=false,editi
     const day=index+1
     const completed=previouslySaved.has(day)||day<courseDay||(day===courseDay&&saved)
     const status=completed?'completed':day===courseDay?'today':day===courseDay+1?'next':'locked'
-    return {day,status,copy:edition59?oporaAs59Day(day,locale):oneAction?oporaAs58Day(day,locale):oporaExperienceDay(day,locale)}
+    return {day,status,copy:edition60?oporaAs60Day(day,locale):edition59?oporaAs59Day(day,locale):oneAction?oporaAs58Day(day,locale):oporaExperienceDay(day,locale)}
   })
   const count=days.filter(item=>item.status==='completed').length
   const p=words.preview
@@ -459,7 +468,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   // a full refresh. Historic sessions without this key still use old copy.
   const [answers,setAnswers]=useState(()=>{
     const prior=data?.currentSession?.signals?.opora54?.answers||{}
-    return hasSaved?prior:{...prior,experienceEdition:OPORA_SEVEN_SKILLS_EDITION}
+    return hasSaved?prior:{...prior,experienceEdition:OPORA_EXPERIENTIAL_EDITION}
   })
   const [practiceEmotionChoice,setPracticeEmotionChoice]=useState(
     data?.currentSession?.signals?.practiceEmotion?.choice||null)
@@ -472,6 +481,10 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const [openingDifficulty,setOpeningDifficulty]=useState(data?.currentSession?.signals?.oporaOpening?.lastDayDifficulty??null)
   const [familiarSupport,setFamiliarSupport]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupport||null)
   const [familiarSupportText,setFamiliarSupportText]=useState(data?.currentSession?.signals?.oporaOpening?.familiarSupportText||'')
+  // Editorial stepper and choice are ephemeral. They are NOT a saved health
+  // record and do NOT certify that an exercise was attempted.
+  const [microStep,setMicroStep]=useState(0)
+  const [microChoice,setMicroChoice]=useState('')
   const [practiceReport,setPracticeReport]=useState(
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
@@ -503,13 +516,16 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   // Only unsaved activities or records explicitly marked AS-5.9 use this
   // edition. Old saved receipts keep their original exercise/quotation/plan.
-  const showSkill59=!hasSaved||answers.experienceEdition===OPORA_SEVEN_SKILLS_EDITION
-  const dailyPlan=showSkill59?oporaAs59Day(cycle.day,lang):oporaAs58Day(cycle.day,lang)
-  const showNewPlan=showSkill59||answers.experienceEdition==='as-5.8-one-action-v1'
-  const support=showSkill59
+  const showSkill60=!hasSaved||answers.experienceEdition===OPORA_EXPERIENTIAL_EDITION
+  const showSkill59=!showSkill60&&answers.experienceEdition===OPORA_SEVEN_SKILLS_EDITION
+  const showCurrentSkill=showSkill60||showSkill59
+  const dailyPlan=showSkill60?oporaAs60Day(cycle.day,lang):
+    showSkill59?oporaAs59Day(cycle.day,lang):oporaAs58Day(cycle.day,lang)
+  const showNewPlan=showCurrentSkill||answers.experienceEdition==='as-5.8-one-action-v1'
+  const support=showCurrentSkill
     ?{title:dailyPlan?.purposeTitle,body:dailyPlan?.purpose}
     :oporaExperienceSupport(cycle.day,lang)
-  const depth=showSkill59
+  const depth=showCurrentSkill
     ?{why:dailyPlan?.purpose,scenario:dailyPlan?.scenario,
       alternative:dailyPlan?.alternative,everyday:dailyPlan?.transfer}
     :oporaExperienceDepth(cycle.day,lang)
@@ -523,9 +539,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const plan=answers.transferPlanVersion==='one-v1'?dailyPlan?.transfer||'':
     cycle.day===4&&answers.transferFeeling?.trim()?t.day4Task:
     answers.transferChoice==='one'?legacyPlan:selectedTransfer||''
-  const originalQuote=showSkill59?dailyPlan?.quote:
+  const originalQuote=showCurrentSkill?dailyPlan?.quote:
     (lang==='es'?dayCopy?.quote:null)||authored.quote||lesson.aphorism||''
-  const quote=showSkill59?originalQuote:
+  const quote=showCurrentSkill?originalQuote:
     cycle.day===1&&lang!=='es'?dayOneAphorism(lang,cycle.activeGoal||cycle.primaryGoal,originalQuote):originalQuote
   const rating=answers.reflection
   const vote=answers.aphorism
@@ -695,7 +711,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='support'?support?.title:
     moment==='why'?j.whyTitle:moment==='story'?j.storyTitle:
     moment==='options'?j.optionsTitle:moment==='settle'?j.settleTitle:
-    moment==='practice'?(newDayOneIntro?t.firstExerciseAction:(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn):
+    moment==='practice'?(showSkill60?dailyPlan?.title:newDayOneIntro?t.firstExerciseAction:(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn):
     moment==='feel'?t.feelTitle:
     moment==='affirmation'?(cycle.day===1?opening.thought:t.ideaTitle):t.reminderTitle
   // One optional helper across the experiential steps; ratings and completion never depend on opening it.
@@ -717,9 +733,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     :null
   const reportedAttempt=['tried','partly'].includes(practiceReport)
   return <div className={styles.overlay} role="dialog" aria-modal="true"
-    aria-label={t.day+' '+cycle.day+': '+(showSkill59?dailyPlan?.title:lesson.title)}
+    aria-label={t.day+' '+cycle.day+': '+(showCurrentSkill?dailyPlan?.title:lesson.title)}
     data-opora-experience-first="as-5.6" data-opora-one-action-version={OPORA_ONE_ACTION_VERSION}
-    data-opora-practical-skills-version={showSkill59?OPORA_SEVEN_SKILLS_EDITION:undefined}
+    data-opora-practical-skills-version={showSkill60?OPORA_EXPERIENTIAL_EDITION:showSkill59?OPORA_SEVEN_SKILLS_EDITION:undefined}
     data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
     data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}
     data-course-history-review={reviewOnly?'true':undefined}
@@ -859,8 +875,39 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                 <strong>{t.coreWhy}</strong><p>{dayCopy.purpose}</p>
               </div>}
             {!neutralSupport&&<p className={styles.lead} data-opora-one-daily-practice={cycle.day}>
-              {practiceGuide}{newDayOneIntro?<span className={styles.practiceDetail}> {t.firstExerciseDetail}</span>:null}
+              {practiceGuide}{newDayOneIntro&&!showSkill60?<span className={styles.practiceDetail}> {t.firstExerciseDetail}</span>:null}
             </p>}
+            {!neutralSupport&&showSkill60&&dailyPlan?.experiment&&
+              <div className={styles.miniExperiment} data-opora-micro-experiment={cycle.day}>
+                <div className={styles.miniExperimentHead}>
+                  <strong>{EXPERIMENT_WORDS[lang].title}</strong>
+                  <span>{EXPERIMENT_WORDS[lang].step} {microStep+1}/3</span>
+                </div>
+                <p className={styles.miniExperimentStep} data-opora-micro-step={microStep+1}>
+                  {dailyPlan.experiment.steps[microStep]}
+                </p>
+                {microStep===2&&<>
+                  <p className={styles.miniExperimentPrompt}>{dailyPlan.experiment.prompt}</p>
+                  <div className={styles.miniExperimentChoices} role="group"
+                    aria-label={dailyPlan.experiment.prompt}>
+                    {dailyPlan.experiment.choices.map(choice=>
+                      <button type="button" key={choice.id} disabled={locked}
+                        aria-pressed={microChoice===choice.id}
+                        onClick={()=>setMicroChoice(choice.id)}>{choice.label}</button>)}
+                  </div>
+                </>}
+                <div className={styles.miniExperimentNav}>
+                  {microStep>0&&<button type="button" disabled={locked}
+                    onClick={()=>setMicroStep(value=>Math.max(0,value-1))}>
+                    <ArrowLeft size={15}/>{t.back}
+                  </button>}
+                  {microStep<2&&<button type="button" disabled={locked}
+                    onClick={()=>setMicroStep(value=>Math.min(2,value+1))}>
+                    {EXPERIMENT_WORDS[lang].next}<ArrowRight size={15}/>
+                  </button>}
+                </div>
+                <p className={styles.miniExperimentNote}>{EXPERIMENT_WORDS[lang].note}</p>
+              </div>}
             {!neutralSupport&&cycle.day===11&&showNewPlan&&
               <EmotionVocabulary locale={lang} day={cycle.day} choice={practiceEmotionChoice}
                 textValue={practiceEmotionText} onChoice={updateEmotionChoice}
@@ -940,7 +987,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.soft}>{reportedAttempt?t.attempted:t.readOnly}</p>
           </>}
           {moment==='nextStep'&&<OporaCoursePath locale={lang} cycle={cycle}
-            saved={saved} roadmap={data?.roadmap} words={t} oneAction={showNewPlan} edition59={showSkill59}/>}
+            saved={saved} roadmap={data?.roadmap} words={t} oneAction={showNewPlan} edition59={showSkill59} edition60={showSkill60}/>}
           {moment==='habit'&&<>
             <p className={styles.lead}>{t.habitLead}</p>
             {!habitSetup
