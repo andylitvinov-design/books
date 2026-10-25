@@ -14,6 +14,7 @@ import {oporaAs60Journey,OPORA_EXPERIENCE_SCENES} from '@/lib/inner-growth/opora
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner-growth/opora-gentle-journey'
+import {oporaAs60VariedDay,oporaAs60VariedJourney,oporaAs60DailyInsight,OPORA_VARIETY_REVISION,OPORA_VARIETY_COPY} from '@/lib/inner-growth/opora-as60-varied-content'
 import {needsOporaFirstExerciseConsent,canAdvanceOporaFirstExercise} from '@/lib/inner-growth/opora-first-exercise-consent'
 import styles from './opora-experience-player.module.css'
 
@@ -493,7 +494,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   // a full refresh. Historic sessions without this key still use old copy.
   const [answers,setAnswers]=useState(()=>{
     const prior=data?.currentSession?.signals?.opora54?.answers||{}
-    return hasSaved?prior:{...prior,experienceEdition:OPORA_EXPERIENTIAL_EDITION}
+    return hasSaved?prior:{...prior,experienceEdition:OPORA_EXPERIENTIAL_EDITION,contentRevision:OPORA_VARIETY_REVISION}
   })
   const [practiceEmotionChoice,setPracticeEmotionChoice]=useState(
     data?.currentSession?.signals?.practiceEmotion?.choice||null)
@@ -543,9 +544,12 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   // Only unsaved activities or records explicitly marked AS-5.9 use this
   // edition. Old saved receipts keep their original exercise/quotation/plan.
   const showSkill60=showIntegratedJourney
+  const showVariety=showSkill60&&answers.contentRevision===OPORA_VARIETY_REVISION
+  const editorial=OPORA_VARIETY_COPY[lang]
   const showSkill59=!showSkill60&&answers.experienceEdition===OPORA_SEVEN_SKILLS_EDITION
   const showCurrentSkill=showSkill60||showSkill59
-  const dailyPlan=showSkill60?oporaAs60Day(cycle.day,lang):
+  const dailyPlan=showVariety?oporaAs60VariedDay(cycle.day,lang):
+    showSkill60?oporaAs60Day(cycle.day,lang):
     showSkill59?oporaAs59Day(cycle.day,lang):oporaAs58Day(cycle.day,lang)
   const showNewPlan=showCurrentSkill||answers.experienceEdition==='as-5.8-one-action-v1'
   const support=showCurrentSkill
@@ -555,7 +559,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     ?{why:dailyPlan?.purpose,scenario:dailyPlan?.scenario,
       alternative:dailyPlan?.alternative,everyday:dailyPlan?.transfer}
     :oporaExperienceDepth(cycle.day,lang)
-  const journey=showSkill60?oporaAs60Journey(cycle.day,lang):null
+  const journey=showVariety?oporaAs60VariedJourney(cycle.day,lang):
+    showSkill60?oporaAs60Journey(cycle.day,lang):null
   const channel=EXPERIENCE_SCENE_KEY[moment]||null
   const channelCard=channel?journey?.[channel]:null
   const practiceGuide=(showNewPlan?dailyPlan?.practice:null)||
@@ -739,7 +744,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='arrive'?(cycle.day===1?(newDayOneIntro?(showSkill60?EXPERIMENT_WORDS[lang].firstTitle:t.firstExerciseTitle):t.arrivalWarmTitle):t.arriveTitle):
     moment==='support'?support?.title:
     channelCard?channelCard.title:
-    moment==='why'?j.whyTitle:moment==='story'?j.storyTitle:
+    moment==='why'?(showVariety?editorial.whyTitle:j.whyTitle):moment==='story'?j.storyTitle:
     moment==='options'?j.optionsTitle:moment==='settle'?j.settleTitle:
     moment==='practice'?(showSkill60?dailyPlan?.title:newDayOneIntro?t.firstExerciseAction:(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn):
     moment==='feel'?t.feelTitle:
@@ -768,6 +773,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     data-opora-experience-first="as-5.6" data-opora-one-action-version={OPORA_ONE_ACTION_VERSION}
     data-opora-practical-skills-version={showSkill60?OPORA_EXPERIENTIAL_EDITION:showSkill59?OPORA_SEVEN_SKILLS_EDITION:undefined}
     data-opora-restored-opening={cycle.day===1?"five-first-slides":undefined}
+    data-opora-content-revision={showVariety?OPORA_VARIETY_REVISION:undefined}
     data-course-one-screen="v3" data-course-visual-theme={OPORA_EXPERIENCE_DESIGN_VERSION}
     data-course-history-review={reviewOnly?'true':undefined}
     data-opora-course-program-preview={inPreview?moment:undefined}
@@ -813,7 +819,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             moment==='checkin'?opening.checkinKicker:
             moment==='recall'?opening.recallKicker:
             moment==='arrive'?t.minute:moment==='support'?t.supportKicker:
-             moment==='why'?j.whyKicker:moment==='story'?j.storyKicker:
+             moment==='why'?(showVariety?editorial.whyKicker:j.whyKicker):moment==='story'?j.storyKicker:
              moment==='options'?j.optionsKicker:moment==='settle'?j.settleKicker:
              moment==='practice'?(cycle.day===1?t.coreKicker:t.stepLabel):
             moment==='feel'?t.feel:moment==='affirmation'?(cycle.day===1?opening.thoughtKicker:t.quote):t.keep}
@@ -887,7 +893,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
           {moment==='support'&&<div className={styles.supportMessage} data-opora-daily-support={cycle.day}>
              <p className={styles.supportBody}>{support?.body}</p>
            </div>}
-           {moment==='why'&&!neutralSupport&&<p className={styles.lead}>{depth?.why}</p>}
+           {moment==='why'&&!neutralSupport&&<p className={styles.lead} data-opora-daily-insight={cycle.day}>
+            {showVariety?oporaAs60DailyInsight(cycle.day,lang):depth?.why}</p>}
           {moment==='story'&&!neutralSupport&&<>
             <p className={styles.lead}>{depth?.scenario}</p>
             <p className={styles.soft}>{j.storyNote}</p>
@@ -1068,8 +1075,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
                   <small>{practiceGuide}</small></div></div>
             </div>
             <div className={styles.overviewPurpose} data-opora-overview-purpose="true">
-              <strong>{j.overviewPurposeLabel}</strong>
-              <p>{cycle.day===1&&!showSkill60?j.dayOnePurpose:depth?.why}</p>
+              <strong>{showVariety&&cycle.day!==1?editorial.goalLabel:j.overviewPurposeLabel}</strong>
+              <p>{showVariety&&cycle.day!==1?dailyPlan?.result:
+                cycle.day===1&&!showSkill60?j.dayOnePurpose:depth?.why}</p>
             </div>
           </>}
           {moment==='recapNext'&&<div className={styles.recapSummary}

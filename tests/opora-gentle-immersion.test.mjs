@@ -4,6 +4,7 @@ import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {oporaExperienceDepth,oporaExperienceDepthValid,oporaExperienceDay} from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import {oporaAs60VariedDay,oporaAs60DailyInsight} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '../lib/inner-growth/opora-gentle-journey.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -57,10 +58,10 @@ test('14 days × 3 languages reuse distinct reviewed guidance with optional non-
 })
 
 for(const lang of ['en','ru','es'])test('Day 4 '+lang+' puts the goal ahead of practice and keeps three honest recap stages',async()=>{
-  const f=fixture(lang,4),h=f.h,t=labels[lang],content=oporaAs60Day(4,lang)
+  const f=fixture(lang,4),h=f.h,t=labels[lang],content=oporaAs60VariedDay(4,lang)
   try{
     for(const [stage,source] of [
-      ['why',content.purpose],['story',content.scenario],
+      ['why',oporaAs60DailyInsight(4,lang)],['story',content.scenario],
       ['options',content.alternative],['settle',oporaGentleCopy(lang).settleLead]
     ]){
       await advanceOporaTo(h,stage,t.next)
@@ -69,8 +70,9 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' puts the goal ahead of p
     }
     await advanceOporaTo(h,'recapPractice',t.next)
     assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs60Day(4,lang).practice))
-    assert.ok(textOf(screen(h,'recapPractice')).includes(content.purpose),
-      'Clear purpose must be readable before trying the activity')
+    assert.ok(textOf(screen(h,'recapPractice')).includes(content.result),
+      'Overview shows the practical aim rather than repeating the same paragraph')
+    assert.ok(!textOf(screen(h,'recapPractice')).includes(content.purpose))
     assert.ok(nodes(screen(h,'recapPractice')).some(node=>
       node.props?.['data-opora-practice-overview']===4))
     await advanceOporaTo(h,'practice',t.next)
