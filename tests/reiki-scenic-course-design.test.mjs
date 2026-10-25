@@ -51,14 +51,13 @@ test('Every type of teaching screen uses existing glass typography and safe cont
   assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY/)
 })
 
-test('Welcome keeps the free course scenic illustration and three benefits while describing all five lessons', () => {
-  assert.match(learner, /One course · 5 lessons · 3 Reiki systems/)
-  assert.match(learner, /Один курс · 5 уроков · 3 системы Рейки/)
-  assert.match(learner, /Want individual guidance\? Ask about a personal session with Andrey/)
-  assert.match(learner, /styles\.welcomeReward/)
-  assert.match(learner, /styles\.benefits/)
-  for(const name of ['Short lessons','Practical tasks','Private progress'])
-    assert.ok(learner.includes(name),name)
+test('Welcome retains the approved scenic illustration, three compact learning benefits, and teacher option', () => {
+  assert.match(learner, /t\\.fiveLessons/)
+  assert.match(learner, /t\\.welcomeTeacher/)
+  assert.match(learner, /styles\\.welcomeReward/)
+  assert.match(learner, /t\\.shortLessons/)
+  assert.match(learner, /t\\.practicalTasks/)
+  assert.match(learner, /t\\.privateProgress/)
   assert.match(learner, /startFree: "Start free program"/)
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })
