@@ -9,7 +9,7 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "../coaching-page.module.css";
 
-type Props = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<{ guided?: string }> };
 const copy = {
   en: {
     title: "My coaching questionnaire — Holistic House",
@@ -57,17 +57,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     referrer: "no-referrer",
   };
 }
-export default async function CoachingPage({ params }: Props) {
+export default async function CoachingPage({ params, searchParams }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
+  const guided = (await searchParams)?.guided === "1";
   const t = copy[locale];
   return <div className={styles.page} lang={locale}>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-    <main className={styles.shell}>
+    <main className={[styles.shell, guided ? styles.guidedShell : ""].filter(Boolean).join(" ")}>
       <nav className={styles.breadcrumb} aria-label={t.back}>
         <Link href={"/" + locale + "/coaching"} prefetch={false}><ArrowLeft size={16} aria-hidden="true" />{t.back}</Link>
       </nav>
-      <section className={styles.hero} aria-labelledby="coaching-page-title">
+      {!guided ? <section className={styles.hero} aria-labelledby="coaching-page-title">
         <div className={styles.heroCopy}>
           <p className={styles.kicker}>{t.intro}</p>
           <h1 id="coaching-page-title">{t.hero}</h1>
@@ -77,8 +78,8 @@ export default async function CoachingPage({ params }: Props) {
         <div className={styles.heroImage}>
           <Image src="/images/holistic-house/course-start-heron.webp" alt={t.artAlt} fill priority sizes="(max-width: 680px) 100vw, 35vw" />
         </div>
-      </section>
-      <CoachingIntakeForm locale={locale} />
+      </section> : null}
+      <CoachingIntakeForm locale={locale} guided={guided} />
     </main>
   </div>;
 }
