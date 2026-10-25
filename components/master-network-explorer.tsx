@@ -249,32 +249,59 @@ function serviceMatches(service: PublicService, f: FilterState) {
     areaName(service.areaKey, "en"), areaName(service.areaKey, "ru"), areaName(service.areaKey, "es"),
   ].join(" ")).includes(clean(f.query));
 }
-function masterMatches(master: PublicPractitioner, f: FilterState) {
+function masterMatches(master: PublicPractitioner, f: FilterState, courses: PublicMentorCourse[] = []) {
   const profile = master.profile || {};
   const allServices = master.services || [];
+  const publishedCourses = courses.filter((course) => course.practitionerSlug === master.slug);
+  const typeServices = allServices.filter((service) => !f.offeringType || service.offeringType === f.offeringType);
+  const selectedServiceId = f.courseKey.startsWith("service:") ? f.courseKey.slice("service:".length) : "";
+  const selectedCourseSlug = f.courseKey.startsWith("course:") ? f.courseKey.slice("course:".length) : "";
+  const scopedServices = selectedServiceId ? typeServices.filter((service) =>
+    service.id === selectedServiceId && service.offeringType === "course") :
+    selectedCourseSlug ? [] : typeServices;
+
   if (f.query && !clean([
     profile.displayName, profile.name, profile.professionalTitle, profile.shortBio,
     profile.fullBio, profile.city, profile.country, ...(profile.methods || []),
     ...allServices.flatMap((service) => [service.copy.title, service.copy.shortDescription]),
+    ...publishedCourses.flatMap((course) => [course.title, course.description]),
   ].join(" ")).includes(clean(f.query))) return false;
+
+  // Each option comes from real approved public service or published course snapshots.
+  if (f.offeringType && !typeServices.length &&
+      !(f.offeringType === "course" && publishedCourses.length)) return false;
+  if (selectedServiceId && !scopedServices.length) return false;
+  if (selectedCourseSlug && !publishedCourses.some((course) => course.slug === selectedCourseSlug)) return false;
+  if (f.courseKey && !selectedServiceId && !selectedCourseSlug) return false;
 
   if (f.area) {
     const quickTopic = MASTER_TOPICS.find((topic) => topic.id === f.area);
     const areas: readonly string[] = quickTopic ? quickTopic.areas : [f.area];
     const hasMatchingArea = (profile.areas || []).some((area) => areas.includes(area)) ||
-      allServices.some((service) => areas.includes(service.areaKey));
+      typeServices.some((service) => areas.includes(service.areaKey));
     const practitionerText = [
       ...(profile.methods || []), profile.professionalTitle, profile.shortBio,
-      ...allServices.map((service) => service.copy.title),
+      ...typeServices.map((service) => service.copy.title),
     ].join(" ");
     if (!hasMatchingArea && !(quickTopic && quickTopic.keywords.test(practitionerText))) return false;
   }
   if (f.format && !(profile.formats || []).includes(f.format) &&
-      !(f.format === "online" && (profile.formats || []).includes("online")) &&
-      !allServices.some((s) => s.deliveryFormat === f.format || s.deliveryFormat === "hybrid")) return false;
+      !typeServices.some((service) => service.deliveryFormat === f.format ||
+        service.deliveryFormat === "hybrid")) return false;
+  if (f.language && selectedCourseSlug &&
+      !publishedCourses.some((course) => course.slug === selectedCourseSlug && course.locale === f.language)) return false;
   if (f.language && !(profile.languages || []).some((lang) => clean(lang) === f.language) &&
-      !allServices.some((s) => s.languages?.some((lang) => clean(lang) === f.language))) return false;
-  if (f.pricing !== "all" && !allServices.some((s) => serviceMatches(s, { ...INITIAL, pricing: f.pricing }))) return false;
+      !typeServices.some((service) => service.languages?.some((lang) => clean(lang) === f.language)) &&
+      !(f.offeringType === "course" && publishedCourses.some((course) => course.locale === f.language))) return false;
+  if (f.location && ![profile.city, profile.region, profile.country,
+      ...typeServices.map((service) => service.locationLabel)].some((location) =>
+        clean(location) === clean(f.location))) return false;
+  if (f.method && ![...(profile.methods || []),
+      ...typeServices.flatMap((service) => service.methods || [])].some((method) =>
+        clean(method) === f.method)) return false;
+  // A price belongs to a specific public offering, not an unrelated service or an unpriced course.
+  if (f.pricing !== "all" && !scopedServices.some((service) =>
+    serviceMatches(service, { ...INITIAL, pricing: f.pricing }))) return false;
   return true;
 }
 
