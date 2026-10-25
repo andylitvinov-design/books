@@ -11,7 +11,7 @@ import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -164,7 +164,6 @@ export default function PersonalCoaching({locale='en',accountId}){
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
   const quickChoices=coachingQuickChoicesAllowed(question,index)
-  const gentleGuide=coachingGentleGuide(question,index,activeQuestions.length,lang)
   const previousQuestion=activeQuestions[index-1]
   const conversationTurn=coachingConversationTurn({
     question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
