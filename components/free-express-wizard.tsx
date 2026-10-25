@@ -233,7 +233,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
       const res = await fetch("/api/free-express", {
         method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode, answers: activeAnswers, consent: true }),
+        body: JSON.stringify({ mode, answers: activeAnswers, consent: true, referenceCode: receipt?.referenceCode }),
       });
       if (!res.ok || (await res.json()).saved !== true) throw new Error("DETAILS_NOT_SAVED");
       setDetailsSaved(true); setStep(2);
@@ -251,6 +251,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
     try {
       const form = new FormData();
       form.set("kind", kind); form.set("photo", selected); form.set("consent", "yes");
+      form.set("referenceCode", receipt?.referenceCode || "");
       const res = await fetch("/api/free-express/media", {
         method: "POST", credentials: "same-origin", body: form,
       });
@@ -268,7 +269,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
     try {
       const res = await fetch("/api/free-express/media", {
         method: "DELETE", credentials: "same-origin",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind }),
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, referenceCode: receipt?.referenceCode }),
       });
       if (!res.ok) throw new Error("REMOVE_UNCONFIRMED");
       setMedia(old => ({ ...old, [kind]: false }));
@@ -282,7 +283,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
     try {
       const res = await fetch("/api/free-express/claim", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ consent: true }),
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ consent: true, referenceCode: receipt?.referenceCode }),
       });
       if (res.ok) {
         const data = await res.json();
