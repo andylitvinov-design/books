@@ -129,6 +129,13 @@ const nextConfig: NextConfig = {
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
+    // Preserve the source-backed nine-level public course PDF on traced
+    // serverless deployments. The guide reads these immutable JSON archives
+    // at runtime; do not rely on their presence via unrelated page bundles.
+    "/api/academy/reiki-guide": [
+      "./data/academy/tantra-reiki-full.generated.json",
+      "./data/academy/tantra-reiki-ru-en.generated.json",
+    ],
     "/sitemap.xml": [
       "./data/spanish-remedies.json",
       "./content/remedies/en/*.md",
