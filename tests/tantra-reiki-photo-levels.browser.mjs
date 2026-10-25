@@ -22,6 +22,40 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
           const url = base + "/" + locale + "/academy/reiki/tantra-reiki";
           const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
           assert.equal(response?.status(), 200, engineName + " " + locale + ": page must respond 200");
+
+          // Three owner-approved first-screen actions must be distinct, full-width
+          // and keyboard accessible; no lead is submitted in this public QA.
+          const hero = page.locator(".tantra-course-hero__actions");
+          const free = hero.locator(":scope > a.tantra-course-hero__cta");
+          const healing = hero.locator(":scope > details.tantra-course-hero__healing-request");
+          const initiation = hero.locator(":scope > a.tantra-course-hero__initiation-cta");
+          const whereHero = engineName + "/" + locale + "/" + width + " hero";
+          assert.equal(await hero.locator(":scope > *").count(), 3, whereHero + ": exactly three different actions");
+          assert.equal(await free.getAttribute("href"), "/en/academy/principles-of-energywork/learn", whereHero + ": free learner");
+          assert.equal(await initiation.getAttribute("href"), "/" + locale + "/academy/reiki/tantra-reiki/free-initiation#apply-personal", whereHero + ": personal initiation request");
+          assert.equal(await healing.getAttribute("open"), null, whereHero + ": phone capture initially closed");
+          const rowGeometry = await hero.locator(":scope > *").evaluateAll((items) => items.map((item) => {
+            const r = item.getBoundingClientRect();
+            return { left: r.left, right: r.right, width: r.width, top: r.top, bottom: r.bottom };
+          }));
+          for (const [index, row] of rowGeometry.entries()) {
+            assert.ok(row.width > width * .75, whereHero + ": CTA " + index + " spans mobile content");
+            assert.ok(row.left >= -2 && row.right <= width + 2, whereHero + ": CTA " + index + " is not clipped");
+            if (index) assert.ok(row.top >= rowGeometry[index - 1].bottom - 2, whereHero + ": CTAs stack vertically");
+          }
+          assert.ok((await free.textContent() || "").length >= 30, whereHero + ": free programme gift description visible");
+          await healing.locator(":scope > summary").click();
+          assert.equal(await healing.getAttribute("open"), "", whereHero + ": healing summary opens on tap");
+          assert.equal(await healing.locator("[data-contact-channel-chooser]").count(), 1, whereHero + ": one existing consented CRM capture");
+          assert.ok(await healing.locator('input[type="checkbox"]').isVisible(), whereHero + ": explicit reply-only consent");
+          await healing.locator(":scope > summary").click();
+          assert.equal(await healing.getAttribute("open"), null, whereHero + ": healing summary closes");
+          if (width === 390) {
+            await healing.locator(":scope > summary").focus();
+            await page.keyboard.press("Enter");
+            assert.equal(await healing.getAttribute("open"), "", whereHero + ": keyboard opens healing request");
+            await page.keyboard.press("Enter");
+          }
           const cards = page.locator("details.tantra-journey__collapsed");
           assert.equal(await cards.count(), 8, engineName + " " + locale + ": eight later levels");
           const dimensions = await cards.evaluateAll((items) =>
