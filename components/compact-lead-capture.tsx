@@ -83,7 +83,7 @@ function parseContact(raw: string): { email: string; phone: string } | null {
 
 /** Shared public intake: a server-confirmed CRM write always precedes messenger handoff. */
 export function CompactLeadCapture({
-  locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant, formatOptions, formatLabel,
+  locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant, formatOptions, formatLabel, selectedFormatValue, onFormatChange,
 }: {
   locale: PublicLocale;
   serviceTitle: string;
@@ -96,11 +96,15 @@ export function CompactLeadCapture({
   variant?: "inline";
   formatOptions?: readonly { readonly value: string; readonly label: string; readonly description?: string }[];
   formatLabel?: string;
+  /** Optional controlled selection shared with offer cards on multi-offer landings. */
+  selectedFormatValue?: string;
+  onFormatChange?: (value: string) => void;
 }) {
   const t = copy[locale];
   const pathname = usePathname();
   const [address, setAddress] = useState("");
-  const [selectedFormat, setSelectedFormat] = useState(formatOptions?.[0]?.value || "");
+  const [internalFormat, setInternalFormat] = useState(formatOptions?.[0]?.value || "");
+  const selectedFormat = selectedFormatValue ?? internalFormat;
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState<Channel | null>(null);
   const [error, setError] = useState("");
@@ -230,7 +234,7 @@ export function CompactLeadCapture({
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>
               <select value={selectedFormat} required disabled={busy !== null}
-                onChange={event => { setSelectedFormat(event.target.value); operationId.current = null; setError(""); }}>
+                onChange={event => { setInternalFormat(event.target.value); onFormatChange?.(event.target.value); operationId.current = null; setError(""); }}>
                 {formatOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
