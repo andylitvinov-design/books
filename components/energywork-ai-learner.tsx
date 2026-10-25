@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ClipboardCopy, Clock3, C
 import { AcademyVideoPlayer } from "@/components/academy-video-player";
 import { ReikiLessonIntroAudio } from "@/components/reiki-lesson-intro-audio";
 import { ReikiCourseReferralShare } from "@/components/reiki-course-referral-share";
+import { ReikiInitiationPhoto, type ReikiPhoto } from "@/components/reiki-initiation-photo";
 import { appFetch } from "@/lib/app/client-fetch";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
@@ -207,7 +208,7 @@ const copy = {
     teacherShareConsent: "Also share my learning progress, reviews and answers with Andrey in his private practitioner CRM. No public posting or marketing.",
     initiationLetterHeading: "Your Reiki initiation request",
     initiationLetterHint: "Your free chat initiation, optional donations and personal session choice, contact details and motivation reach Andrey’s private CRM only after you confirm.",
-    initiationConfirm: "I agree to send my initiation and session choices, name, city, preferred time, motivation and course answers to Andrey’s private CRM. This is not a booking or payment.",
+    initiationConfirm: "I agree to share my photo, initiation and session choices, name, city, preferred time, motivation and all course answers with Andrey in his private CRM. This is not a booking or payment.",
     initiationSend: "Send my initiation request",
     initiationSent: "Your request is securely recorded in Andrey's private CRM. He will contact you personally to discuss the next step and arrange a suitable time.",
     initiationTooShort: "Complete your initiation request on the previous lesson slide.",
@@ -362,7 +363,7 @@ const copy = {
     teacherShareConsent: "Также разрешаю передавать Андрею мои ответы, отзывы и прогресс в его закрытую CRM. Без публикаций и рекламных рассылок.",
     initiationLetterHeading: "Ваша заявка на Рейки-инициацию",
     initiationLetterHint: "Бесплатная инициация в чате, варианты за донейшн, выбранная личная сессия и анкета попадут к Андрею только после подтверждения отправки.",
-    initiationConfirm: "Согласен(на) отправить Андрею в закрытую CRM выбор инициаций и личной сессии, имя, город, время, мотивацию и ответы курса. Это не оплата и не бронь.",
+    initiationConfirm: "Согласен(на) передать Андрею фото, выбор инициаций и личной сессии, имя, город, удобное время, мотивацию и все ответы курса в закрытую CRM. Это не оплата и не бронь.",
     initiationSend: "Отправить заявку на инициацию",
     initiationSent: "Заявка сохранена в закрытой CRM Андрея. Он лично свяжется с вами, чтобы обсудить следующий шаг и согласовать удобное время.",
     initiationTooShort: "Заполните заявку на инициацию на предыдущем слайде.",
@@ -807,6 +808,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   const [applicationLead, setApplicationLead] = useState<StoredProgress["applicationLead"]>(null);
   const [applicationConsented, setApplicationConsented] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
+  const [initiationPhoto, setInitiationPhoto] = useState<ReikiPhoto | null>(null);
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -858,6 +860,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }, []);
   const hydrate = useCallback((value: StoredProgress) => {
     accountIdRef.current = value.accountId;
+    setInitiationPhoto(null);
     if (!value.enrolled) {
       setSharingWithTeacher(false);
       setApplicationLead(null);
@@ -1082,6 +1085,15 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
   }
   const slides = useMemo(() => energyworkSlides(), []);
   const slide = slides[index] ?? slides[0]!;
+  useEffect(() => {
+    if (sync !== "ready" || !["init-photo-01", "end-02"].includes(slide.id)) return;
+    let cancelled = false;
+    void appFetch("academy-energywork/photo", undefined, "GET",
+      { accountId: accountIdRef.current || undefined })
+      .then(result => { if (!cancelled) setInitiationPhoto(result as ReikiPhoto); })
+      .catch(() => { if (!cancelled) setInitiationPhoto(null); });
+    return () => { cancelled = true; };
+  }, [sync, slide.id]);
   const total = slides.length;
   const lessonRanges = useMemo(() => energyworkLessonRanges(), []);
   const currentLessonRange = lessonRanges.find((range) => index >= range.start && index < range.end);
@@ -1289,6 +1301,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
     answersRef.current = {};
     setIndex(0); setAnswers({}); setReviewReturn(false); setCopyState("idle");
     setSharingWithTeacher(false);setApplicationLead(null);setApplicationConsented(false);
+    setInitiationPhoto(null);
     dirtyRef.current.clear();
   }
   // A brief debounce preserves reflections while users type; queued writes and
@@ -1325,7 +1338,7 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
 
   async function applyForInitiation() {
     if (busy || !applicationConsented || !savedInitiationReady || !sharingWithTeacher ||
-        applicationLead || !reikiInitiationRequestValid(answers["end-01"])) return;
+        !initiationPhoto?.exists || applicationLead || !reikiInitiationRequestValid(answers["end-01"])) return;
     setBusy(true);setApplicationMessage("");
     try {
       await queueRef.current.catch(() => {});
@@ -1501,6 +1514,11 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
               {slide.kind === "voices" ? <MeditationVoices key={slide.id} slide={slide} locale={locale} /> : null}
               {slide.kind === "practice" ? <PracticeTimer key={slide.id} locale={locale} durationSeconds={["flight-03", "tan-03", "kun-03", "ygg-03"].includes(slide.id) ? 60 : 120} /> : null}
 
+              {slide.id === "init-photo-01" ? (
+                <ReikiInitiationPhoto locale={locale} accountId={accountIdRef.current}
+                  enabled={sync === "ready" && !Boolean(applicationLead)}
+                  photo={initiationPhoto} onSaved={setInitiationPhoto} />
+              ) : null}
               {slide.id === "end-01" ? (
                 <ReikiInitiationRequestForm value={answers["end-01"] ?? ""} locale={locale}
                   onChange={(value) => setAnswer(value, "end-01")} />
@@ -1642,6 +1660,16 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                               {t.finalEnableShare}<ArrowRight size={18} aria-hidden="true" />
                             </button>
                           </div>
+                        ) : !initiationPhoto?.exists ? (
+                          <div className={styles.finalPending} data-reiki-photo-required>
+                            <p>{locale === "ru"
+                              ? "Добавьте своё фото для мастера, чтобы завершить заявку на инициацию."
+                              : "Add your photo for the teacher to complete your initiation application."}</p>
+                            <button type="button" className={styles.reviewMissing}
+                              onClick={() => jumpToSlide("init-photo-01")}>
+                              {locale === "ru" ? "Загрузить фото" : "Upload my photo"}<ArrowRight size={15} aria-hidden="true" />
+                            </button>
+                          </div>
                         ) : !reikiInitiationRequestValid(answers["end-01"]) ? (
                           <p className={styles.initiationHint}>{t.initiationTooShort}{" "}
                             <button type="button" className={styles.reviewMissing}
@@ -1669,6 +1697,12 @@ export function EnergyworkAiLearner({ locale, startAtExperience = false }: Props
                     )}
                     {applicationMessage ? <p role="alert">{applicationMessage}</p> : null}
                   </section>
+                  {initiationPhoto?.exists ? <div className={styles.finalPhotoLink}>
+                    <LockKeyhole size={15} aria-hidden="true" />
+                    <button type="button" onClick={() => jumpToSlide("init-photo-01")}>
+                      {locale === "ru" ? "Моё фото для инициации · сохранено в кабинете" : "My initiation photo · saved in My Courses"}
+                    </button>
+                  </div> : null}
                   <details className={styles.finalDisclosure} data-reiki-contact-disclosure>
                     <summary><MessageCircle size={17} aria-hidden="true" />{t.finalContactHeading}</summary>
                     <section className={styles.finalContact} data-reiki-personal-contact

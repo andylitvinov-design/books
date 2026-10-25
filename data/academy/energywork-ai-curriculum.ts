@@ -521,6 +521,12 @@ const initiationSlides: EnergyworkSlide[] = [
     question: { type: "text", prompt: l("I would like to ask…", "Я хочу спросить…") } },
 ];
 
+const initiationPhotoSlide: EnergyworkSlide = {
+  id: "init-photo-01", phase: "complete", kind: "lesson",
+  title: l("Send your photo for Reiki initiation", "Отправьте своё фото мастеру для Рейки-инициации"),
+  body: l("Save a current photo privately in My Courses. It will be attached to your initiation request only with your confirmation.", "Сохраните своё актуальное фото приватно в «Моих курсах». Мастер получит его с заявкой только после вашего подтверждения."),
+};
+
 const endSlides: EnergyworkSlide[] = [
   { id: "end-01", phase: "complete", kind: "reflection",
     title: l("Choose your Reiki initiation format", "Выберите формат Рейки-инициации"),
@@ -578,6 +584,7 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
     ...withClosingPractices(pathSlides.yggdrasil, ["ygg-03"], "ygg-done"),
     // The fifth lesson starts at paths-01, not in the previous Yggdrasil lesson.
     // The short optional closing pause stays before the final congratulations.
-    ...withClosingPractices(finalLesson, ["intention-04"], "end-02"),
+    ...withClosingPractices(finalLesson, ["intention-04"], "end-02")
+      .flatMap((item) => item.id === "end-02" ? [initiationPhotoSlide, item] : [item]),
   ];
 }

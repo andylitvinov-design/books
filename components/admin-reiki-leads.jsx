@@ -15,6 +15,7 @@ const TEXT = {
     started:'Лид 1 · Начало обучения', applied:'Лид 2 · Запрос на инициацию',
     learning:'Обучается', completed:'Завершил(а)', letter:'Письмо о личной инициации',
     answers:'Ответы, отзывы и материалы', none:'Пока нет сохранённых ответов',
+    photo:'Фото участника для инициации', photoUnavailable:'Фото временно недоступно',
     noLead:'Пока нет лидов. Они появятся после согласия ученика на передачу материалов.',
     error:'Не удалось загрузить заявки. Проверьте доступ и состояние базы.',
     status:'Статус', updated:'Обновлено', source:'Курс', noLetter:'Письмо ещё не отправлено',
@@ -33,6 +34,7 @@ const TEXT = {
     started:'Lead 1 · Course started', applied:'Lead 2 · Initiation requested',
     learning:'Learning', completed:'Completed', letter:'Personal initiation letter',
     answers:'Lesson answers and meditation feedback', none:'No saved answers yet',
+    photo:'Learner photo for initiation', photoUnavailable:'Photo temporarily unavailable',
     noLead:'No leads yet. A lead appears only when a learner consents to sharing their materials.',
     error:'Unable to load requests. Check access and database readiness.',
     status:'Status', updated:'Updated', source:'Course', noLetter:'No initiation letter submitted',
@@ -224,6 +226,17 @@ export default function AdminReikiLeads() {
           {group.application?.reason?<section className={styles.letter}>
             <h3>{copy.letter}</h3><blockquote>{group.application.reason}</blockquote>
           </section>:null}
+          {group.application ? <section className={styles.letter} data-reiki-crm-initiation-photo>
+            <h3>{copy.photo}</h3>
+            {group.application.photoUrl ? (
+              <a href={group.application.photoUrl} target="_blank" rel="noopener noreferrer"
+                referrerPolicy="no-referrer" aria-label={copy.photo}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={group.application.photoUrl} alt={copy.photo} loading="lazy"
+                  referrerPolicy="no-referrer" style={{width:116,height:116,objectFit:'cover',borderRadius:12}} />
+              </a>
+            ) : <p>{copy.photoUnavailable}</p>}
+          </section> : null}
           <CourseAnswers answers={snapshot?.answers} locale={locale} copy={copy}/>
         </article>
       }):<p className={styles.muted}>{search?copy.emptySearch:copy.noLead}</p>}

@@ -13,12 +13,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 64 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 63)
+  assert.equal(ids.length, 64)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -46,7 +46,7 @@ test('New peer voices and celebrations appear between the existing lessons', () 
   assert.match(learner,/data-reiki-milestone-choices/)
   assert.match(learner,/data-energywork-next/)
   assert.match(learner,/data-reiki-tomorrow-choice/)
-  assert.match(learner,/t\.voicesComments/)
+  assert.match(learner,/data-meditation-voices/)
   assert.doesNotMatch(learner,/data-meditation-feeling/)
   assert.match(learner,/t\.saveReview/)
   assert.match(css,/flex-direction:row;align-items:stretch;gap:7px/)

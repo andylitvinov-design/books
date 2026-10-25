@@ -18,6 +18,7 @@ import {createNativePushRepository} from '@/lib/app/native-push-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
+import { readReikiInitiationPhoto, saveReikiInitiationPhoto, REIKI_INITIATION_PHOTO_MAX_BYTES } from '@/lib/academy/reiki-initiation-photo'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import {createPractitionerClientMessages} from '@/lib/practitioners/client-messages'
 import {dispatchClientMessagePush,dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
@@ -554,6 +555,22 @@ async function handle(request, { params }) {
         onlyKeys(await readBody(request, 8192), [])
         await consumeRate(config, {op:'push-test',actor:actor.id}, 2, 3600)
         return json(await notifications.sendTest(actor))
+      }
+      throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'academy-energywork/photo') {
+      if (request.headers.get('x-hh-account-id') && request.headers.get('x-hh-account-id') !== actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      if (method === 'GET') return json(await readReikiInitiationPhoto(config, actor))
+      if (method === 'POST') {
+        await consumeRate(config, {op:'reiki-photo-upload',actor:actor.id}, 6, 3600)
+        const claimedBytes = Number(request.headers.get('content-length') || 0)
+        if (claimedBytes > REIKI_INITIATION_PHOTO_MAX_BYTES + 8192)
+          throw new AppError('INVALID_INITIATION_PHOTO', 413)
+        const form = await request.formData()
+        if (form.getAll('photo').length !== 1 || [...form.keys()].some(key => key !== 'photo'))
+          throw new AppError('INVALID_INITIATION_PHOTO', 400)
+        return json(await saveReikiInitiationPhoto(config, actor, form.get('photo')))
       }
       throw new AppError('NOT_FOUND', 404)
     }
