@@ -173,7 +173,7 @@ function ServiceCard({ offer, locale, index, hidden = false }: { offer: Offer; l
       <div className={styles.cardContent}>
         <div className={styles.cardTop}>
           <span className={styles.category}>{offer.category}</span>
-          {offer.isFree ? <span className={styles.freeBadge}>FREE</span> : null}
+          {offer.isFree ? <span className={styles.freeBadge}>{locale === "ru" ? "БЕСПЛАТНО" : locale === "es" ? "GRATIS" : "FREE"}</span> : null}
         </div>
         <h3><Link href={offer.href} prefetch={false}>{offer.title}</Link></h3>
         <p className={styles.description}>{offer.description}</p>
