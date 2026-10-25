@@ -93,6 +93,7 @@ test("EN and ES public catalogues never market the Russian-only PsiMaster course
   assert.match(discovery, /matchedLegacyCourses.length > 0 \|\| matchedLegacyVideos.length > 0/);
   assert.match(discovery, /legacyCourses.length \|\| legacyVideos.length \? <a href="#academy-psimaster-courses"/);
   assert.match(sitemap, /preferredAcademyRecords\(locale\)/);
+  assert.match(sitemap, /locale === "ru" \|\| suffix !== "\/egyptian-priesthood"/);
   // Keep all original route data for RU and old bookmarks; no destructive deletion.
   const all = await readJson("data/academy/psimaster-sources.generated.json");
   assert.equal(all.length, 22);
