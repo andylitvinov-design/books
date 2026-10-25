@@ -38,6 +38,7 @@ import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { PortraitRecommendations } from '@/components/app/portrait-recommendations'
 import { PortraitAnalyses } from '@/components/app/portrait-analyses'
+import { UnifiedProfileLayers } from '@/components/app/unified-profile-layers'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
@@ -2311,6 +2312,8 @@ function PortfolioPage({ data, locale }) {
     <section className="hh-insights-page"
       aria-labelledby={activeTab === 'values' ? 'hh-insights-title' : 'hh-test-dynamics-title'}
       data-testid="completed-test-insights">
+      {/* One source-grounded private profile, matching My Profile without duplicating records. */}
+      <UnifiedProfileLayers data={data} locale={locale} />
       {/* Put the same saved-result portrait at the start of Insights, open by default. */}
       <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
         <summary className="hh-insights-portrait-toggle">
@@ -2831,6 +2834,7 @@ function Portrait({ data, locale }) {
         <p className="hh-fine">{c.private}</p>
       </div>
 
+      <UnifiedProfileLayers data={data} locale={locale} />
       <details className="hh-domain-psych-details" data-profile-deep-dive>
         <summary>{locale === 'ru' ? 'Подробные шкалы, непройденные тесты и инструменты' : 'Detailed scales, pending tests and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
       <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest} showPortrait={false}>

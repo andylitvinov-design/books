@@ -12,6 +12,7 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
+import { ArrowRight, HeartHandshake, Sparkles } from "lucide-react";
 import styles from "./holistic-support.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -23,6 +24,9 @@ const copy = {
     eyebrow: "HOLISTIC HOUSE · INSIGHTS & CARE",
     title: "Holistic Support",
     lead: "Ask a question, explore symbolic traditions or choose an individual support practice. Two clear paths, one gentle place to begin.",
+    heroHeadline: "A gentle place to find your next step.",
+    heroLead: "Start with a personal question or explore a practice for support.",
+    choose: "Choose your direction",
     insightsNav: "Temple & Psychic Insights",
     healingNav: "Holistic Healing & Support",
     insightsEyebrow: "01 · ASK & EXPLORE",
@@ -68,6 +72,9 @@ const copy = {
     eyebrow: "HOLISTIC HOUSE · ПОДСКАЗКИ И ПОДДЕРЖКА",
     title: "Holistic Support",
     lead: "Задайте вопрос, исследуйте символические традиции или выберите личную практику поддержки. Два понятных направления — без лишних шагов.",
+    heroHeadline: "Начните с вопроса или поддержки.",
+    heroLead: "Выберите то, что нужно вам сейчас: символическую подсказку или практику с мастером.",
+    choose: "Выберите направление",
     insightsNav: "Храмовые и интуитивные подсказки",
     healingNav: "Холистическая поддержка",
     insightsEyebrow: "01 · ВОПРОС И ПОДСКАЗКА",
@@ -113,6 +120,9 @@ const copy = {
     eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN Y APOYO",
     title: "Holistic Support",
     lead: "Haz una pregunta, explora tradiciones simbólicas o solicita una práctica de apoyo personal. Dos caminos sencillos para empezar.",
+    heroHeadline: "Un espacio para encontrar tu camino.",
+    heroLead: "Empieza con una pregunta o elige una práctica de apoyo.",
+    choose: "Elige tu camino",
     insightsNav: "Reflexiones del templo",
     healingNav: "Apoyo holístico",
     insightsEyebrow: "01 · PREGUNTAR Y EXPLORAR",
@@ -196,21 +206,29 @@ export default async function HolisticSupportPage({ params }: Props) {
     <main className={styles.page} data-holistic-support lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.shell}>
-        <header className={styles.hero}>
+        <section className={styles.hero} data-holistic-first-screen aria-labelledby="holistic-support-title">
+          <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority className={styles.heroImage}
+            sizes="(max-width: 650px) 100vw, 1190px" />
+          <div className={styles.heroOverlay} aria-hidden="true" />
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>{t.eyebrow}</p>
-            <h1>{t.title}</h1>
-            <p>{t.lead}</p>
+            <h1 id="holistic-support-title">{t.title}</h1>
+            <p className={styles.heroHeadline}>{t.heroHeadline}</p>
+            <p className={styles.heroLead}>{t.heroLead}</p>
+            <nav className={styles.pathControls} aria-label={t.choose}>
+              <a href="#temple-psychic-insights" data-holistic-path="insights">
+                <Sparkles size={21} aria-hidden="true" />
+                <span>{t.insightsNav}</span>
+                <ArrowRight size={18} aria-hidden="true" />
+              </a>
+              <a href="#holistic-healing-support" data-holistic-path="healing">
+                <HeartHandshake size={21} aria-hidden="true" />
+                <span>{t.healingNav}</span>
+                <ArrowRight size={18} aria-hidden="true" />
+              </a>
+            </nav>
           </div>
-          <div className={styles.heroPhoto}>
-            <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority sizes="(max-width:640px) 28vw, 360px" />
-          </div>
-        </header>
-
-        <nav className={styles.primaryNav} aria-label={t.title}>
-          <a href="#temple-psychic-insights"><span aria-hidden="true">✧</span>{t.insightsNav}</a>
-          <a href="#holistic-healing-support"><span aria-hidden="true">✺</span>{t.healingNav}</a>
-        </nav>
+        </section>
 
         <section id="temple-psychic-insights" className={styles.section} data-holistic-insights aria-labelledby="holistic-insights-title">
           <div className={styles.sectionHeading}>

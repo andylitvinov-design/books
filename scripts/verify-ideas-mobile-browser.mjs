@@ -248,6 +248,7 @@ async function verify(browserType, locale, width) {
     assert.equal(await expand.getAttribute("aria-expanded"), "false", label + ": can collapse again");
     assert.equal(await daoResult.locator('[role="img"]').count(), 0, label + ": collapsed content removed");
 
+    let guestDialogue = 'not_requested';
     if (width === 390) {
       await backPath.tap();
       const directCoaching = hub.locator('[data-tests-coaching-direct]');
@@ -260,9 +261,50 @@ async function verify(browserType, locale, width) {
       await businessTopic.tap();
       assert.equal(await businessTopic.getAttribute("aria-pressed"), "true",
         label + ": guest can choose coaching topic without an extra format slide");
+      // Real guest coaching dialogue when the reviewed DB catalog is available.
+      const firstScheme = page.locator('[data-public-coaching-models] [data-coaching-scheme]').first();
+      if (await firstScheme.count()) {
+        await firstScheme.locator('button[type="button"]').last().tap();
+      const guestSession = page.locator('[data-public-coaching-session]');
+      await guestSession.locator('[data-coaching-intro-slide]').waitFor({state:'visible'});
+      await guestSession.locator('footer button[class*="primary"]').tap();
+      await guestSession.locator('[data-coaching-topic-slide]').waitFor({state:'visible'});
+      await guestSession.locator('[data-coaching-topic-choice="business"]').tap();
+      await guestSession.locator('footer button[class*="primary"]').tap();
+      const firstPrompt = guestSession.locator('[data-public-coaching-slide]').first();
+      await firstPrompt.waitFor({state:'visible'});
+      assert.equal(await firstPrompt.locator('[data-coaching-conversational-turn]').count(),1,
+        label + ": coaching starts with a human-language welcome");
+      const spoken = 'I would like a clearer conversation';
+      const ownWords = firstPrompt.locator('details:has(#public-coaching-answer)');
+      if (await ownWords.count()) await ownWords.locator('summary').tap();
+      await guestSession.locator('#public-coaching-answer').fill(spoken);
+      await guestSession.locator('footer button[class*="primary"]').tap();
+      const reply = guestSession.locator('[data-coaching-conversational-turn]').first();
+      await reply.waitFor({state:'visible'});
+      assert.ok((await reply.innerText()).includes(spoken),
+        label + ": next coach reply references the real answer, not a generic form step");
+      assert.equal(await guestSession.locator('[data-coaching-conversational-turn]').count(),1,
+        label + ": one contextual reply on the active slide");
+      const guestBounds = await page.evaluate(() => ({
+        viewport:window.innerWidth,content:document.documentElement.scrollWidth,
+      }));
+      assert.ok(guestBounds.content<=guestBounds.viewport+1,
+        label + ": no horizontal scroll in the speaking coaching session");
+        guestDialogue='answer_reflected_in_real_browser';
+      } else {
+        // The isolated CI job has deliberately no Supabase service secrets. Do
+        // not conflate that known fixture absence with a passing guest E2E.
+        // Any OTHER reason for zero business schemes still fails the test.
+        const unavailable=page.locator('section[aria-labelledby="coaching-models-title"] [role="status"]');
+        assert.equal(await unavailable.count(),1,
+          label + ": missing business schemes without an explicit backend-unavailable notice");
+        guestDialogue='blocked_isolated_ci_missing_reviewed_db_catalog';
+        console.warn(label + ': guest dialogue E2E blocked: isolated CI has no published Supabase coaching catalog');
+      }
     }
     assert.deepEqual(errors, [], label + ": unhandled client errors");
-    evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390 });
+    evidence.push({ browser: browserType.name(), locale, width, result: "pass", linkedToGuestCoachingOptions: width === 390, guestDialogue });
   } finally {
     await page.close();
     await browser.close();

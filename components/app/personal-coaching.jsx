@@ -3,14 +3,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, ChevronLeft, Copy, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, Copy, Download, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
+import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -41,6 +43,8 @@ const copy={
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
     noAnswer:'Skipped',history:'Earlier private sessions',historyItem:'Previous session',
     share:'Nothing is sent to a coach or messenger automatically.',
+    reportNotice:'Your answers are saved privately. When you finish, you can download a dated PDF report with every question and your answers.',
+    pdf:'Download PDF report',pdfError:'Could not create the PDF. Your private answers remain saved.',date:'Session date',
     restart:'This starts a new session and saves the completed one to your private history.',
     home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? This cannot be undone.',
     completeNote:'This is a self-reflection tool, not a diagnosis, guaranteed result, or booked consultation.',
@@ -64,6 +68,8 @@ const copy={
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
     noAnswer:'Пропущено',history:'Предыдущие личные сессии',historyItem:'Прошлая сессия',
     share:'Ответы не отправляются коучу или в мессенджеры автоматически.',
+    reportNotice:'Ваши ответы будут сохранены в личном кабинете. В конце вы получите PDF-отчёт с датой, всеми вопросами и ответами.',
+    pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы сохранены в кабинете.',date:'Дата сессии',
     restart:'Новая сессия сохранит завершённую в вашей личной истории.',
     home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Это действие нельзя отменить.',
     completeNote:'Это практика размышления, а не диагноз, обещание результата или запись на консультацию.',
@@ -85,6 +91,8 @@ const copy={
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
     history:'Sesiones anteriores',historyItem:'Sesión anterior',share:'No enviamos tus respuestas a otras personas.',
+    reportNotice:'Tus respuestas se guardan en privado. Al terminar puedes descargar un PDF con fecha, preguntas y respuestas.',
+    pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',
     restart:'La sesión completada se guardará en tu historial.',home:'Mis cursos',delete:'Borrar mis notas',
     deleteConfirm:'¿Eliminar todas tus respuestas e historial? No se puede deshacer.',
     completeNote:'Esto es autorreflexión, no un diagnóstico ni una consulta reservada.',
@@ -163,7 +171,16 @@ export default function PersonalCoaching({locale='en',accountId}){
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
   const quickChoices=coachingQuickChoicesAllowed(question,index)
-  const gentleGuide=coachingGentleGuide(question,index,activeQuestions.length,lang)
+  const previousQuestion=activeQuestions[index-1]
+  const conversationTurn=coachingConversationTurn({
+    question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
+    previousReflection:session?.reflections?.[previousQuestion?.id]?.text,
+    index,total:activeQuestions.length,locale:lang,
+  })
+  const followupTurn=pendingFollowup?coachingConversationTurn({
+    question,previousQuestion:question,previousAnswer:session?.answers?.[question?.id],
+    index,total:activeQuestions.length,locale:lang,followup:true,
+  }):null
   const persisted=session?.answers?.[question?.id]
   const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
@@ -250,7 +267,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     // The picker only prepares a choice. No private record is created until
     // the visitor has seen the session briefing and selected a request topic.
     setEntry({choice,clientQuestion,adultConfirmed:adultConfirmed===true,
-      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',step:'intro'})
+      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',checkin:'',step:'intro'})
     setError('')
   }
   async function begin(){
@@ -345,6 +362,33 @@ export default function PersonalCoaching({locale='en',accountId}){
       setClipboardState('copied')
     }catch{setClipboardState('error')}
   }
+  function downloadReport(target){
+    if(target?.status!=='completed')return
+    const targetQuestions=questionsFor({current:target},catalog)
+    const targetScheme=target.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===target.schemeKey):null
+    const plan=target.actionPlan
+    const planText=plan?.approvedAt?[
+      plan.goal,plan.obstacle,plan.actionText,plan.when,
+      Number.isInteger(plan.confidence)?String(plan.confidence)+'/10':'',
+    ].filter(Boolean).join('\n'):'' // Only the client's approved plan, no auto-inferred goals.
+    try{
+      downloadCoachingSessionPdf({
+        locale:lang,
+        title:targetScheme?coachingSessionTitle(targetScheme.schemeKey,lang,translated(targetScheme.name,lang)):t.title,
+        slug:target.schemeKey||'personal-coaching',
+        sessionDate:target.completedAt||target.startedAt,
+        topic:target.clientTopic?coachingRequestTopicLabel(target.clientTopic,lang):'',
+        clientQuestion:target.clientQuestion||'',
+        entries:targetQuestions.map(item=>({
+          question:translated(item.prompt||item.question,lang),
+          answer:prettyAnswer(target.answers?.[item.id],item,lang,t.noAnswer),
+          reflection:target.reflections?.[item.id]?.text||'',
+        })),
+        actionPlan:planText,
+      })
+      setError('')
+    }catch{setError(t.pdfError)}
+  }
   async function erase(){
     if(!window.confirm(t.deleteConfirm))return
     const result=await command('delete',{confirmed:true})
@@ -371,8 +415,9 @@ export default function PersonalCoaching({locale='en',accountId}){
               modelName={translated(entryModel?.name,lang)} minutes={entry.choice.scheme?.minutes||20}
               questionCount={entry.choice.scheme?.questions?.length} style={entry.choice.scheme?.style}
               approach={translated(entryModel?.focus,lang)} outcome={translated(entry.choice.scheme?.result,lang)}
-              imageSrc={cardArtworkUrl(coachingArt[entry.choice.modelKey]||coachingArt.grow_v1)}/>
-            :<CoachingSessionTopic locale={lang} value={entry.clientTopic} headingRef={titleRef}
+              imageSrc={cardArtworkUrl(coachingArt[entry.choice.modelKey]||coachingArt.grow_v1)}
+               checkin={entry.checkin} onCheckinChange={checkin=>setEntry(previous=>({...previous,checkin}))}/>
+            :<CoachingSessionTopic locale={lang} checkin={entry.checkin} value={entry.clientTopic} headingRef={titleRef}
               onChange={clientTopic=>setEntry(previous=>({...previous,clientTopic,topicAdultConfirmed:previous.adultConfirmed}))}
               ageConfirmed={entry.topicAdultConfirmed}
               onAgeConfirm={value=>setEntry(previous=>({...previous,topicAdultConfirmed:value}))}/>}
@@ -393,6 +438,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
           <p>{t.finished}</p>
+          <p className={styles.subtle}>{t.date}: {coachingReportDate(session.completedAt||session.startedAt,lang)}</p>
           {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
           {session.clientTopic&&<p className={styles.contextQuestion}><strong>{entryCopy.topicTitle}:</strong> {coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
@@ -428,14 +474,16 @@ export default function PersonalCoaching({locale='en',accountId}){
                 onFocus={event=>event.target.select()} />
             </label>}
           </section>}
+          <button type="button" className={styles.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
             <summary>{t.history} ({course.history.length})</summary>
             {course.history.map(old=><article key={old.id}>
-              <strong>{t.historyItem} · {new Date(old.completedAt||old.startedAt).toLocaleDateString(lang)}</strong>
+              <strong>{t.historyItem} · {coachingReportDate(old.completedAt||old.startedAt,lang)}</strong>
               {questionsFor({current:old},catalog).map(item=><p key={item.id}>
                 <b>{translated(item.prompt||item.question,lang)}</b> {prettyAnswer(old.answers[item.id],item,lang,t.noAnswer)}
               </p>)}
+              {old.status==='completed'&&<button type="button" className={styles.back} onClick={()=>downloadReport(old)}><Download size={16}/>{t.pdf}</button>}
             </article>)}
           </details>}
           <p className={styles.subtle}>{t.restart}</p>
@@ -454,19 +502,23 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressTrack}><span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/></div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
-            <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
+            <CoachingChatThread turn={followupTurn} locale={lang}>
+              <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
+            </CoachingChatThread>
             <p>{followupCopy[lang].why}</p>
             <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang}
-              text={translated(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
+              text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               disabled={busy} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={setDictating}
               onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
-            <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
             <textarea id="hh-coaching-followup" className={styles.textarea}
               value={reflectionDraft} maxLength={500} rows={3} disabled={busy}
               placeholder={followupCopy[lang].placeholder}
               onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
             <span className={styles.counter}>{reflectionDraft.length}/500</span>
+            </div>
             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
           <footer className={styles.footer}>
@@ -497,7 +549,11 @@ export default function PersonalCoaching({locale='en',accountId}){
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
-            <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
+            <div data-coaching-gentle-guide>
+              <CoachingChatThread turn={conversationTurn} locale={lang}>
+                <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
+              </CoachingChatThread>
+            </div>
             {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
               <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
               <p>{adaptive.why}</p>
@@ -507,16 +563,13 @@ export default function PersonalCoaching({locale='en',accountId}){
               </button>
             </div>}
             <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')}
-              text={visiblePrompt} locale={lang}
+              text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
               mode="answer" disabled={busy} speechConsent={speechConsent}
               onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
               onTranscript={words=>{
                 setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
                 setError('');setNotice('')
               }}/>
-            {gentleGuide&&<div className={styles.gentleGuide} data-coaching-gentle-guide>
-              <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
-            </div>}
             {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
@@ -539,6 +592,7 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
             {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
+            <div className={styles.chatComposer} data-coaching-composer>
             <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
               {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
             <textarea id="hh-personal-coach-answer" className={styles.textarea}
@@ -547,9 +601,11 @@ export default function PersonalCoaching({locale='en',accountId}){
               maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
               onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
             <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
+            </div>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
+            <p className={styles.subtle} data-coaching-save-report-notice>{t.reportNotice}</p>
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
