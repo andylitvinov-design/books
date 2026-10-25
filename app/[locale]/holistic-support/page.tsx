@@ -230,11 +230,9 @@ export default async function HolisticSupportPage({ params }: Props) {
           </div>
         </section>
 
-        <section id="temple-psychic-insights" className={styles.section} data-holistic-insights aria-labelledby="holistic-insights-title">
-          <div className={styles.sectionHeading}>
-            <p className={styles.kicker}>{t.insightsEyebrow}</p>
-            <h2 id="holistic-insights-title">{t.insightsTitle}</h2>
-            <p>{t.insightsIntro}</p>
+        <section id="temple-psychic-insights" className={styles.section} data-holistic-insights aria-labelledby="ideas-title">
+          <div className={styles.freePanel} id="free-ai-insight" data-holistic-free-insight>
+            <IdeasDiscovery locale={locale} variant="temple" />
           </div>
           <div className={styles.options}>
             <article className={styles.option} data-holistic-offer="ai">
@@ -275,12 +273,6 @@ export default async function HolisticSupportPage({ params }: Props) {
                 </a>
               </div>
             </article>
-          </div>
-          <div className={styles.freePanel} id="free-ai-insight" data-holistic-free-insight>
-            <div className={styles.innerHeading}>
-              <h3>{t.freeEngineTitle}</h3><p>{t.freeEngineLead}</p>
-            </div>
-            <IdeasDiscovery locale={locale} variant="temple" />
           </div>
           <div className={styles.masterPanel} id="personal-insights-master" data-holistic-master>
             <CompactLeadCapture
