@@ -130,7 +130,7 @@ export function energyworkSequence(_legacyPath = null) {
       'paths-03',
       ...ENERGYWORK_INITIATION,
       'end-01','intention-04','end-02',
-    ], ['intention-04'], 'end-02'),
+    ], ['intention-04'], 'end-02').flatMap(id => id === 'end-02' ? ['init-photo-01', id] : [id]).filter((id,index,all) => all.indexOf(id) === index),
   ]
 }
 // Old bookmarks on the teacher video may predate the introductory question.
