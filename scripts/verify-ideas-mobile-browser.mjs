@@ -165,7 +165,11 @@ async function verify(browserType, locale, width) {
     assert.ok(previewRects.every(Boolean), label + ": all three quote rows visible in DOM");
     assert.ok(previewRects[0].y < previewRects[1].y && previewRects[1].y < previewRects[2].y,
       label + ": aphorisms display as rows, not narrow columns or a swipe rail");
-    assert.ok(previewRects.every(rect => rect.width >= width * .72), label + ": each quote gets full line width");
+    if (!previewRects.every(rect => rect.width >= width * .72)) {
+      await page.screenshot({ path: output + "/aphorism-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
+      throw new Error(label + ": each quote gets full line width; measured=" +
+        JSON.stringify(previewRects.map(rect => ({ width: rect.width, x: rect.x }))) + ", viewport=" + width);
+    }
     const previewDao = await hub.locator("[data-ideas-preview] [data-ideas-dao-card]").boundingBox();
     const previewOffers = await hub.locator("[data-ideas-preview] [data-ideas-dao-promos]").boundingBox();
     assert.ok(previewDao.y > previewRects[2].y && previewOffers.y > previewDao.y,
@@ -224,7 +228,11 @@ async function verify(browserType, locale, width) {
     assert.ok(responseRects.every(Boolean) && responseRects[0].y < responseRects[1].y && responseRects[1].y < responseRects[2].y &&
       daoRect.y > responseRects[2].y && offersRect.y > daoRect.y,
       label + ": real answer order is three full-width rows, Dao and two offer cards");
-    assert.ok(responseRects.every(rect => rect.width >= width * .72), label + ": real quote rows are readable");
+    if (!responseRects.every(rect => rect.width >= width * .72)) {
+      await page.screenshot({ path: output + "/aphorism-real-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
+      throw new Error(label + ": real quote rows are readable; measured=" +
+        JSON.stringify(responseRects.map(rect => ({ width: rect?.width, x: rect?.x }))) + ", viewport=" + width);
+    }
     const readingOrder = daoResult.locator('[data-ideas-order-button="reading"]');
     const giftOrder = daoResult.locator('[data-ideas-order-button="gift"]');
     await readingOrder.tap();
