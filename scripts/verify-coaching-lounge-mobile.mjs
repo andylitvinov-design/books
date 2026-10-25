@@ -130,6 +130,10 @@ async function verify(browserType, locale, width) {
     assert.deepEqual(errors, [], label + ": zero uncaught React errors");
     if (width === 390)
       await page.screenshot({ path: output + "/coaching-" + browserType.name() + "-" + locale + "-390.png", fullPage: false });
+    // Restart at the entry after any optional self-runner navigation. An
+    // independent guest journey must not rely on stale React components.
+    await page.goto(origin + "/" + locale + "/coaching", { waitUntil: "domcontentloaded" });
+    await entry.waitFor({ state: "visible" });
     await entry.locator('[data-coaching-select="free"]').tap();
     const freeMini = entry.locator("[data-coaching-phone-start]");
     await freeMini.waitFor({ state: "visible" });
