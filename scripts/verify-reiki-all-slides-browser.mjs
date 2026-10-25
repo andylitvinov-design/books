@@ -92,7 +92,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(label.text.length > 4, where + ": a meaningful full stage name");
     // Review reading screens deliberately tuck labels off-screen to make space
     // for complete reviews while retaining five dots and SR-accessible names.
-    if (data.kind === "voices" || data.kind === "welcome") continue;
+    if (["voices", "welcome", "reflection"].includes(data.kind)) continue;
     assert.ok(label.width >= 34 && label.height >= 15, where + ": stage name visibly occupies space, not visually hidden: "+JSON.stringify(label));
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
@@ -466,6 +466,78 @@ async function exerciseJourney(page, locale, width) {
   await removeMock();
 }
 
+// Synthetic two-identity boundary: this browser fixture exercises WebKit's
+// actual iPhone JPEG conversion and screen navigation, never real Supabase
+// credentials, personal portraits or a fabricated live CRM lead.
+async function verifyPrivatePhonePhoto(page, locale, width) {
+  const accountId = "00000000-0000-4000-8000-000000000001";
+  const progress = {
+    accountId, enrolled:true, courseId:"academy-energywork-principles",
+    courseVersion:"2026-10-20.p10", slideId:"init-photo-01",
+    status:"active", answers:{}, revision:1, sharingWithTeacher:false,
+    applicationLead:null,
+  };
+  let photo = null;
+  const coursePattern = "**/api/app/academy-energywork";
+  const photoPattern = "**/api/app/academy-energywork/photo";
+  await page.route(coursePattern, async route => {
+    if (route.request().method() === "POST") {
+      const body=route.request().postDataJSON();
+      assert.equal(body.action,"save","Final screen is reached with the real Next handler");
+      assert.equal(body.slideId,"init-photo-01");
+      assert.equal(body.nextSlideId,"end-02");
+      progress.slideId="end-02";
+      progress.status="completed";
+      progress.revision+=1;
+    }
+    await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(progress)});
+  });
+  await page.route(photoPattern, async route => {
+    if (route.request().method() === "POST") {
+      assert.equal(route.request().headers()["x-hh-account-id"],accountId,
+        "Private upload is bound to this learner's account");
+      const body=route.request().postDataBuffer();
+      assert.ok(body?.includes(Buffer.from([0xff,0xd8,0xff])),
+        "Safari uploads a re-encoded JPEG, not an original phone HEIC");
+      assert.ok(body.length < 2_520_000,"Photo multipart request stays bounded");
+      photo = "data:image/jpeg;base64," + photoFixture;
+    }
+    await route.fulfill({status:200,contentType:"application/json",
+      body:JSON.stringify({exists:Boolean(photo),url:photo})});
+  });
+  try {
+    await page.setViewportSize({width,height:844});
+    await page.goto(origin+"/"+locale+"/academy/principles-of-energywork/learn",
+      {waitUntil:"domcontentloaded",timeout:90000});
+    await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute(
+      "data-energywork-slide-id","init-photo-01",{timeout:30000});
+    photoFixture = await page.evaluate(() => {
+      const canvas=document.createElement("canvas");
+      canvas.width=256;canvas.height=256;
+      const ctx=canvas.getContext("2d");
+      ctx.fillStyle="#d9c4aa";ctx.fillRect(0,0,256,256);
+      ctx.fillStyle="#694938";ctx.fillRect(60,50,136,148);
+      return canvas.toDataURL("image/jpeg",.8).split(",")[1];
+    });
+    const picker=page.locator('[data-reiki-initiation-photo] input[type="file"]');
+    await expect(picker).toBeEnabled();
+    await picker.setInputFiles({name:"synthetic-test.jpg",mimeType:"image/jpeg",
+      buffer:Buffer.from(photoFixture,"base64")});
+    const saved=page.locator("[data-reiki-photo-saved]");
+    await expect(saved).toBeVisible({timeout:30000});
+    await expect(saved.locator("img")).toHaveAttribute("referrerpolicy","no-referrer");
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),
+      "Private photo mobile slide must have no horizontal overflow");
+    await page.locator("button[data-energywork-next]").click();
+    await expect(page.locator("[data-energywork-slide-id]")).toHaveAttribute(
+      "data-energywork-slide-id","end-02",{timeout:30000});
+    console.log("REIKI_SAFARI_PRIVATE_PHOTO_UI_PASS",JSON.stringify({locale,width}));
+  } finally {
+    await page.unroute(photoPattern);
+    await page.unroute(coursePattern);
+  }
+}
+
 async function verifySaveOnCompletion(page, locale) {
   // This models an already Google-authenticated first-time enrollee.
   // It exercises the real consented start API path, never a fabricated
@@ -671,6 +743,12 @@ try {
   // the faithful iPhone acceptance, without an invented logged-in account.
   if (engineName === "chromium") {
     for (const [locale,width] of [["en",390],["ru",320]]) await exerciseJourney(page,locale,width);
+  }
+  // Upload a genuinely encoded local JPEG in WebKit on the two compact
+  // phone widths before the guest-mode legacy save checks.
+  if (engineName === "webkit") {
+    for (const [locale,width] of [["en",375],["ru",320]])
+      await verifyPrivatePhonePhoto(page,locale,width);
   }
   // Synthetic private save must succeed before Lesson 2 unlocks.
   if (engineName === "chromium") await verifySaveOnCompletion(page,"ru");
