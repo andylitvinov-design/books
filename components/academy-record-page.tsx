@@ -205,7 +205,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                   <span>{locale === "ru" ? "Бесплатное обучение" : locale === "es" ? "Estudio gratuito" : "Free to study"}</span>
                 </div>
                 <div className="tantra-course-hero__actions">
-                  <Link className="tantra-course-hero__cta" href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{locale === "ru" ? "Получить Тантра Рейки 1-ю ступень в подарок ↗" : locale === "es" ? "Recibir Tantra Reiki Nivel 1 de regalo ↗" : "Get Tantra Reiki Level 1 as a gift ↗"}</Link>
+                  <Link className="tantra-course-hero__cta" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Получить Тантра Рейки 1-ю ступень в подарок ↗" : locale === "es" ? "Recibir Tantra Reiki Nivel 1 de regalo ↗" : "Get Tantra Reiki Level 1 as a gift ↗"}</Link>
                   <Link className="tantra-course-hero__course-cta" href={REIKI_FREE_COURSE_PATH}>{locale === "ru" ? "Начать 5 бесплатных уроков →" : locale === "es" ? "Empezar 5 lecciones gratis →" : "Start the 5 free lessons →"}</Link>
                 </div>
                 <details className="tantra-course-hero__more">
