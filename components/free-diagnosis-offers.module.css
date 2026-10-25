@@ -89,3 +89,10 @@
  .process li{font-size:10px;line-height:1.23}
 }
 @media(prefers-reduced-motion:reduce){.scene{scroll-behavior:auto}}
+
+/* Two compact, always visible phone captures; the selected offer still opens its bottom sheet. */
+.inlineCapture{width:min(860px,100%);margin:0 auto 20px;scroll-margin-top:88px}
+.inlineCapture[data-diagnosis-placement="bottom"]{margin:22px auto 0}
+.inlineCapture :global([data-free-diagnostic-phone-only]){margin:0;background:#f8efe4;border-color:#d7c0ac}
+.formWrap[data-open="false"]{display:none}
+@media(max-width:720px){.inlineCapture{width:100%;margin-bottom:14px}.inlineCapture[data-diagnosis-placement="bottom"]{margin-top:18px}}

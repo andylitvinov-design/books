@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ArrowRight, ShieldCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { FreeDiagnosticStart } from "@/components/free-diagnostic-start";
@@ -133,9 +134,10 @@ const copy: Record<PublicLocale, {
   },
 };
 
-export function FreeDiagnosisOffers({ locale }: { locale: PublicLocale }) {
+export function FreeDiagnosisOffers({ locale, children }: { locale: PublicLocale; children?: ReactNode }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<OfferId>("situation-written-free");
+  const [phone, setPhone] = useState("");
   const [requestOpen, setRequestOpen] = useState(false);
   const activeOffer = t.offers.find(offer => offer.id === selected) ?? t.offers[0];
 
@@ -161,6 +163,9 @@ export function FreeDiagnosisOffers({ locale }: { locale: PublicLocale }) {
   return (
     <section className={styles.wrap} id="free-diagnosis-options" data-free-diagnosis-options lang={locale}
       aria-labelledby="free-diagnosis-options-title">
+      <div className={styles.inlineCapture} data-diagnosis-placement="top">
+        <FreeDiagnosticStart locale={locale} compact id="free-diagnosis-top" contactValue={phone} onContactChange={setPhone} />
+      </div>
       <header className={styles.heading}>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
         <h2 id="free-diagnosis-options-title">{t.heading}</h2>
@@ -213,13 +218,17 @@ export function FreeDiagnosisOffers({ locale }: { locale: PublicLocale }) {
             onClick={() => setRequestOpen(false)}><X size={21} aria-hidden="true" /></button> : null}
         </header>
         {selected === "situation-written-free" ? (
-          <FreeDiagnosticStart locale={locale} compact />
+          <FreeDiagnosticStart locale={locale} compact contactValue={phone} onContactChange={setPhone} />
         ) : (
           <CompactLeadCapture key={selected} locale={locale}
             serviceTitle={activeOffer.title}
-            title={t.formTitle} lead={t.formLead}
-            disclaimer={t.safety} />
+            title={activeOffer.title} lead={t.formLead}
+            phoneOnly variant="diagnosis" contactValue={phone} onContactChange={setPhone} disclaimer={t.safety} />
         )}
+      </div>
+      {children}
+      <div className={styles.inlineCapture} data-diagnosis-placement="bottom">
+        <FreeDiagnosticStart locale={locale} compact id="free-diagnosis-bottom" contactValue={phone} onContactChange={setPhone} />
       </div>
       <p className={styles.safety}><ShieldCheck size={16} aria-hidden="true" />{t.safety}</p>
     </section>

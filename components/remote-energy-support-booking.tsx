@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, stageRemoteSupportPrivateIntention } from "@/lib/practitioners/remote-energy-support";
+import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import styles from "./remote-energy-support-booking.module.css";
 
 type Locale = "en" | "ru" | "es";
@@ -264,6 +264,8 @@ export function RemoteEnergySupportBooking({
   useEffect(() => {
     setMinimumDay(localDateToday());
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Toronto");
+    const stagedIntention = takeRemoteSupportLandingIntention();
+    if (stagedIntention) setIntention(stagedIntention);
   }, []);
   useEffect(() => {
     if (options.length && !options.some((option) => option.duration === duration)) {
