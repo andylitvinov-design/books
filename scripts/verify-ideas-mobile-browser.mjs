@@ -101,8 +101,18 @@ async function verify(browserType, locale, width) {
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
-    // WebKit may dispatch a tap before React finishes the preceding text event.
-    // Keep the real tap and assert the on-page panel rather than masking navigation.
+    // Instrument the actual touch path: no synthetic clicks, no hidden retry.
+    // A lost iPhone tap must remain a failure with actionable event evidence.
+    await testAction.evaluate(el => {
+      window.__ideasTouchDiag = { events: [] };
+      const sample = (event, source) => window.__ideasTouchDiag.events.push({
+        event: event.type, source, target: event.target?.tagName,
+        time: Math.round(performance.now()),
+      });
+      for (const kind of ["touchstart", "touchend", "pointerdown", "pointerup", "click"])
+        el.addEventListener(kind, event => sample(event, "button"), { capture: true });
+      document.addEventListener("click", event => sample(event, "document"), { capture: true });
+    });
     await page.waitForTimeout(120);
     await testAction.tap();
     const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
@@ -112,8 +122,17 @@ async function verify(browserType, locale, width) {
       const current = page.url();
       const input = await hub.locator("#ideas-question").inputValue().catch(() => "(unavailable)");
       const expanded = await testAction.getAttribute("aria-expanded").catch(() => "(unavailable)");
+      const diagnostics = await testAction.evaluate(el => {
+        const box = el.getBoundingClientRect();
+        const point = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return { events: window.__ideasTouchDiag?.events || [], active: document.activeElement?.tagName,
+          viewport: [innerWidth, innerHeight], scrollY, html: el.outerHTML.slice(0, 450),
+          hit: point?.outerHTML.slice(0, 220) };
+      }).catch(error => ({ error: String(error) }));
+      await page.screenshot({ path: output + "/ideas-free-test-tap-failure-" + label.replace(/:/g, "-") + ".png", fullPage: false }).catch(() => {});
       throw new Error(label + ": free test chooser did not open; url=" + current +
-        "; inputLength=" + input.length + "; ariaExpanded=" + expanded, { cause });
+        "; inputLength=" + input.length + "; ariaExpanded=" + expanded +
+        "; diagnostics=" + JSON.stringify(diagnostics), { cause });
     }
     assert.equal(await testAction.getAttribute("aria-expanded"), "true");
     assert.equal(await filtered.locator("[data-ideas-test-start]").count(), 3, label + ": real filtered tests");
