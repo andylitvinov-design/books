@@ -29,6 +29,8 @@ test('chosen offer expands one short phone-first intake; messenger handoff alway
   assert.match(entry, /role="radiogroup"/)
   assert.match(entry, /aria-checked=\{format === item\.value\}/)
   assert.match(entry, /sourcePath=\{"\/" \+ locale \+ "\/coaching"\}/)
+  assert.match(entry, /href="#free-diagnostic-start" onClick=\{\(\) => choose\("free"\)\}/)
+  assert.match(entry, /offer\.id === "free" \? "#free-diagnostic-start" : "#coaching-intake"/)
   assert.doesNotMatch(entry, /window\.open|fetch\(|whatsappEnquiryUrl|sessionStorage|checkout/)
 })
 
