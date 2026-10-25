@@ -26,3 +26,19 @@
 - `HH_OWNER_AI_BOOTSTRAP_SECRET` — 64+ символа, **sensitive**, только Vercel Production; `HH_OWNER_AI_BOOTSTRAP_EXPIRES` — Unix epoch milliseconds, окно максимум 2 часа. GET с точным host/path и одноразовым секретом запускает уже существующую проверенную `registerClientTelegramWebhook` для фиксированного ранее верифицированного бота и чата. Результат подтверждается Telegram `setWebhook` + `getMyCommands`; чужие webhooks не меняются.
 - Применить секрет непосредственно через Vercel, вызвать закрытый endpoint 1 раз, проверить `ok`/`ownerAiCommandsReady`, затем позволить сроку истечь и удалить временный секрет. Ни BotFather token, ни числовой chat ID, ни API-ключи моделей никогда не передавать через URL. Общий GET endpoint без совпадения сильного proof+TTL всегда 404.
 - Включение меню ≠ доступность Gemini/Mistral. Для них всё равно нужны принадлежащие владельцу бесплатные API credentials, которые нельзя получить из GitHub/LLM; оплачиваемые тарифы без отдельного разрешения не включать.
+
+## 2026-10-25 — актуальные бесплатные модели и Telegram-меню
+
+**Наблюдалось до изменения:** private signed webhook /ai принял owner update 2026-10-25 (accepted); за предшествующие семь дней owner AI ledger не содержит вопросов моделям. Vercel Production содержит Gemini/OpenRouter secrets; Supabase owner settings — зашифрованный Mistral Studio key и подтверждения Free Tier. Ключ ≠ работоспособный API. Последняя независимая проверка daily Council: Gemini timeout, Mistral Studio HTTP 429. Mistral нельзя обозначать рабочим без реального ответа.
+
+**Обновлённая логика:**
+- /ai и /status выполняют только authenticated GET preflight к Google model metadata, Mistral Studio catalog (при подтверждённом Free) и OpenRouter key metadata + catalog. Никакой генерации и рассылок при открытии меню.
+- Меню строится заново, показывает причины недоступности, кнопки доступны только для подтверждённых по metadata Free-моделей. Это ещё не E2E.
+- /gemini, /free, /council (Gemini + OpenRouter Free) и старый /mistral вручную обрабатываются при verified owner pairing и существующем rate limit. В UI Mistral скрыт, если Studio 429 и OpenRouter не содержит бесплатной Mistral. Старые команды сообщат реальную ошибку, без выдуманного ответа.
+- OpenRouter Free выбирает фактическую provider/model:free из свежего каталога. Все ценовые поля строго 0, допустима только текстовая модель, нужен проверенный ключ, per-request max_price=0 и allow_fallbacks=false; возвращённый model ID точно совпадает, usage.cost — число 0. Telegram показывает настоящую model ID: это не Mistral и не ChatGPT.
+- /status обновляет availability без inference. Никаких новых ботов, новых cron, таблиц, платных fallback, рассылок или рекламы.
+- OpenRouter Free лимитирован по частоте, не гарантируется для production SLA; сторонние Free API могут иметь политику хранения данных. Клиентские и медицинские сведения не пересылать.
+
+**Release acceptance:** targeted GitHub CI + Vercel READY/alias/SHA + реальный провайдерский Telegram receipt на запрос /free тест или /gemini тест. До этого E2E не подтверждён.
+
+Preserved prior owner bot audio callback/commands from live production; handled by the existing audio service, independent of the AI menu.
