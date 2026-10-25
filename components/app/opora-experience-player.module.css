@@ -714,3 +714,62 @@
   .miniExperimentNote{font-size:11px}
   .practice .panel:has(.miniExperiment) .chips button{min-height:44px;font-size:13px}
 }
+
+
+/* AS-6.0 integrated multimodal exercises: each channel is a separate slide,
+   with a natural page scroll on small phones and 44px+ accessible controls. */
+.bodyExperience{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.emotionExperience{--scene-photo:url('/images/holistic-house/reiki-approved-sunrise-v3.webp')}
+.mentalExperience{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.imageryMeditation{--scene-photo:url('/images/holistic-house/report-lighthouse-coast.webp')}
+.ritualPractice{--scene-photo:url('/images/holistic-house/hero-olive-incense.webp')}
+.integratedExperience{display:grid;gap:clamp(9px,1.6vh,14px);min-width:0}
+.integratedInstruction{
+  margin:0;color:#1f4d5b;font-size:clamp(17px,4.5vw,20px);
+  line-height:1.42;font-weight:620;text-wrap:pretty;
+}
+.integratedHint,.integratedMeta{
+  margin:0;color:#426572;font-size:clamp(12px,3.2vw,14px);
+  line-height:1.36;
+}
+.integratedPlan{
+  display:grid;gap:6px;padding:12px 14px;border-radius:17px;
+  border:1px solid #b7d8d2;background:rgba(242,255,249,.92);
+}
+.integratedPlan span{font-size:13px;letter-spacing:.025em;font-weight:800;color:#196473}
+.integratedPlan p{margin:0;font-size:clamp(15px,3.8vw,17px);line-height:1.35}
+.imagerySymbol{
+  width:54px;height:54px;display:grid;place-items:center;margin:auto;
+  border-radius:50%;background:rgba(207,248,233,.90);color:#277786;
+  border:1px solid rgba(136,196,190,.80);
+}
+.integratedAttemptChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.integratedAttemptChoices button{
+  cursor:pointer;min-height:48px;min-width:0;padding:8px 7px;
+  border:1px solid #b1d1d0;border-radius:12px;
+  background:rgba(252,255,253,.96);color:#22586a;font:730 13px/1.25 system-ui,sans-serif;
+  text-align:center;overflow-wrap:anywhere;
+}
+.integratedAttemptChoices button[aria-pressed=true]{border:2px solid #118d91;background:#dcf9ec;color:#0c555a}
+.integratedAttemptChoices button:focus-visible{outline:3px solid #08788d;outline-offset:2px}
+.integratedAttemptChoices button:disabled{opacity:.55}
+.imageryMeditation .panel{padding:clamp(12px,3.1vw,21px);gap:clamp(8px,1.2vh,12px)}
+.imageryMeditation .integratedExperience{gap:clamp(7px,1vh,10px)}
+.imageryMeditation .title{font-size:clamp(22px,5.45vw,30px)}
+.imageryMeditation .integratedInstruction{font-size:clamp(15px,4vw,18px);line-height:1.35}
+.imageryMeditation .imagerySymbol{width:40px;height:40px}
+.imageryMeditation .integratedMeta{font-size:12px}
+@media(max-width:359px),(max-height:690px){
+  .integratedExperience{gap:8px}
+  .integratedInstruction{font-size:16px;line-height:1.32}
+  .integratedAttemptChoices{gap:5px}
+  .integratedAttemptChoices button{font-size:12px;padding:6px 4px;min-height:44px}
+  .imageryMeditation .panel{padding:11px 12px}
+  .imageryMeditation .integratedHint{font-size:12px}
+  .imageryMeditation .imagerySymbol{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .integratedExperience *, .integratedExperience *::before, .integratedExperience *::after{
+    scroll-behavior:auto;animation:none;transition:none;
+  }
+}
