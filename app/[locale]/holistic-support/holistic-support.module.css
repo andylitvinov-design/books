@@ -112,3 +112,58 @@
 .section[data-holistic-meditations] .libraryLink{margin-top:4px}
 @media(max-width:650px){.meditationAudioRow{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}.meditationAudioRow audio{max-width:100%}.meditationSourceNote{font-size:11.5px}}
 @media(max-width:350px){.meditationAudioRow{padding:9px}.meditationAudioRow h3{font-size:19px}}
+
+
+/* Holistic Support: a complete first-screen selector at 320–430px and on desktop. */
+.journeyHero{position:relative;isolation:isolate;display:flex;align-items:center;min-height:min(690px,calc(100svh - 94px));overflow:hidden;border:1px solid #c0ae99;border-radius:23px;background:#334840;color:#fffaf3}
+.journeyBackground{z-index:-2;object-fit:cover;object-position:center 53%}
+.journeyShade{position:absolute;inset:0;z-index:-1;background:linear-gradient(93deg,rgba(25,44,36,.97) 0%,rgba(29,49,42,.87) 55%,rgba(35,43,37,.65) 100%),linear-gradient(0deg,rgba(25,40,34,.68),transparent 75%);pointer-events:none}
+.journeyContent{width:100%;min-width:0;padding:clamp(22px,4vw,48px)}
+.journeyEyebrow{margin:0 0 10px;color:#f6d5a9;font:800 10px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.14em}
+.journeyContent h1{margin:0;font:400 clamp(42px,6.5vw,78px)/1.03 Georgia,"Times New Roman",serif;letter-spacing:-.045em;text-wrap:balance}
+.journeyLead{max-width:680px;margin:14px 0 25px;color:#f8ede0;font:15px/1.52 Arial,Helvetica,sans-serif}
+.journeyPrompt{margin:0 0 13px;color:#fbebd2;font:600 clamp(16px,1.8vw,21px)/1.2 Georgia,"Times New Roman",serif}
+.journeyChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.journeyChoice{appearance:none;position:relative;display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0;min-height:255px;padding:9px;border:1px solid rgba(250,234,210,.65);border-radius:17px;background:rgba(255,250,242,.96);color:#3c3027;text-align:left;text-decoration:none;font-family:Arial,Helvetica,sans-serif;cursor:pointer;box-shadow:0 9px 26px rgba(18,35,29,.18);transition:transform .16s,border-color .16s,background .16s}
+.journeyChoice:hover{transform:translateY(-2px);border-color:#f5d5aa;background:#fffdf7}
+.journeyChoice:focus-visible{outline:3px solid #f7d18a;outline-offset:4px}
+.journeyChoice[aria-expanded="true"]{border-color:#a78366;background:#f8eee0}
+.journeyChoicePhoto{position:relative;display:block;flex:none;width:100%;height:137px;overflow:hidden;border-radius:11px;background:#dcd0bd}
+.journeyChoicePhoto img{object-fit:cover;object-position:center}
+.journeyChoiceText{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;padding:12px 25px 8px 4px}
+.journeyChoiceIcon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;color:#80563c;background:#efe4d6;border-radius:9px}
+.journeyChoiceText strong{font:400 clamp(20px,2.1vw,26px)/1.12 Georgia,"Times New Roman",serif;overflow-wrap:anywhere}
+.journeyChoiceText small{color:#67594a;font:12px/1.38 Arial,Helvetica,sans-serif;overflow-wrap:break-word}
+.journeyArrow{position:absolute;right:17px;bottom:24px;flex:none;color:#815f45}
+.daoDestination{min-width:0;margin:13px 0 18px;scroll-margin-top:86px}
+.visuallyHidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@media(max-width:700px){
+.journeyHero{min-height:min(680px,calc(100svh - 95px));border-radius:18px}
+.journeyBackground{object-position:63% 45%}
+.journeyContent{padding:21px 13px 16px}
+.journeyContent h1{font-size:clamp(34px,9vw,47px);line-height:1.04}
+.journeyEyebrow{font-size:9px;letter-spacing:.1em}
+.journeyLead{margin:9px 0 17px;font-size:12.5px;line-height:1.42}
+.journeyPrompt{margin-bottom:9px;font-size:16px}
+.journeyChoices{grid-template-columns:minmax(0,1fr);gap:8px}
+.journeyChoice{display:grid;grid-template-columns:88px minmax(0,1fr) 18px;align-items:center;gap:10px;min-height:109px;padding:7px;border-radius:13px}
+.journeyChoicePhoto{width:88px;height:94px;border-radius:9px}
+.journeyChoiceText{gap:4px;padding:2px 0}
+.journeyChoiceText strong{font-size:clamp(19px,5.2vw,23px);line-height:1.12}
+.journeyChoiceText small{font-size:11.6px;line-height:1.31}
+.journeyChoiceIcon{width:23px;height:23px;border-radius:7px}
+.journeyChoiceIcon svg{width:15px;height:15px}
+.journeyArrow{position:static;width:17px;height:17px}
+.daoDestination{margin-top:9px;scroll-margin-top:74px}
+}
+@media(max-width:350px){
+.journeyContent{padding:17px 9px 13px}
+.journeyContent h1{font-size:33px}
+.journeyLead{font-size:12px;margin-bottom:12px}
+.journeyPrompt{font-size:15px}
+.journeyChoice{grid-template-columns:78px minmax(0,1fr) 16px;gap:7px;min-height:104px;padding:6px}
+.journeyChoicePhoto{width:78px;height:90px}
+.journeyChoiceText strong{font-size:18px}
+.journeyChoiceText small{font-size:10.8px}
+}
+@media(prefers-reduced-motion:reduce){.journeyChoice{transition:none}.journeyChoice:hover{transform:none}}
