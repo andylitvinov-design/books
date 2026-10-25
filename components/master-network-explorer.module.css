@@ -228,3 +228,44 @@
 .masterExtraBody { min-width:0; padding-top:10px; }
 .masterExtraBody[hidden] { display:none!important; }
 .masterExtraBody .categories { margin-top:10px; }
+
+/* Pro-only warm compact finder; full /masters keeps its layout. */
+.embeddedExplorer{min-width:0}
+.embeddedExplorer>.filters{margin:0 0 12px;padding:0;gap:10px;border:0;box-shadow:none;border-radius:0;background:transparent}
+.embeddedExplorer .heading{justify-content:flex-end}
+.embeddedExplorer .heading h2{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap}
+.embeddedExplorer .count{background:#ede1d4;color:#604636;font-size:11px}
+.embeddedExplorer .search{min-height:49px;border:1px solid #d9c4b0;border-radius:14px;background-color:#fffefa;font-size:14px}
+.embeddedExplorer .mentorFilterGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.embeddedExplorer .mentorFilterGrid label{font-size:11px;color:#6b5140}
+.embeddedExplorer .mentorFilterGrid select{min-height:44px;padding:8px;border-radius:12px;color:#3e3028;background:#fff}
+.embeddedExplorer .masterQuickBar{display:flex;grid-template-columns:none;overflow-x:auto;gap:8px;padding:3px 2px 9px;scroll-snap-type:x proximity;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.embeddedExplorer .masterQuickBar button,.embeddedExplorer .filters[data-mentor-filters] .masterQuickBar button{flex:0 0 auto;width:auto;min-width:max-content;min-height:44px;white-space:nowrap;padding:8px 14px;border-radius:99px;font-size:11px;scroll-snap-align:start}
+.embeddedExplorer .masterExtra{border-top:1px solid #eaddce}
+.embeddedExplorer .masterExtraToggle{min-height:44px;padding:8px 2px;color:#654839}
+.embeddedExplorer .cardGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.embeddedExplorer .masterCard{background:#fffdf9;border-color:#e5d5c4;box-shadow:0 3px 14px rgb(70 42 26 / 4%)}
+.embeddedExplorer .masterCard h3{color:#382e28}
+.embeddedExplorer .area{color:#925b46}
+.embeddedExplorer .role,.embeddedExplorer .description,.embeddedExplorer .offerPreview{color:#6b6057}
+.embeddedExplorer .meta span{background:#f5ecdf;color:#654e3c}
+.embeddedExplorer .primary,.embeddedExplorer .energyButton{background:#83394b}
+.embeddedExplorer .secondary{color:#624636}
+.embeddedExplorer .portrait,.embeddedExplorer .portraitInitials{border-radius:15px}
+@media(max-width:680px){.embeddedExplorer .cardGrid{grid-template-columns:1fr}}
+@media(max-width:430px){
+.embeddedExplorer>.filters{padding:0;gap:9px}
+.embeddedExplorer .mentorFilterGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.embeddedExplorer .mentorFilterGrid label{font-size:10.5px}
+.embeddedExplorer .mentorFilterGrid select{font-size:11px;padding:8px 5px}
+.embeddedExplorer .masterQuickBar{display:flex;grid-template-columns:none;overflow-x:auto}
+.embeddedExplorer .masterQuickBar button,.embeddedExplorer .filters[data-mentor-filters] .masterQuickBar button{width:auto;font-size:11px;min-height:44px;padding:8px 12px}
+.embeddedExplorer .compactMaster{padding:13px;border-radius:15px}
+.embeddedExplorer .compactMaster .portrait,.embeddedExplorer .compactMaster .portraitInitials{width:62px;height:62px}
+.embeddedExplorer .compactMaster .actions a{min-height:44px}
+}
+@media(max-width:355px){.embeddedExplorer .mentorFilterGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.embeddedExplorer .mentorFilterGrid label:last-child:nth-child(odd){grid-column:1/-1}}
+
+.mediaIntroLink{display:inline-flex;align-items:center;align-self:flex-start;min-height:34px;padding:7px 11px;margin-bottom:10px;border-radius:9px;
+  text-decoration:none;color:#236f64;background:#e8f5ec;font:750 11px/1.4 system-ui,-apple-system,sans-serif}
+.mediaIntroLink:hover,.mediaIntroLink:focus-visible{background:#d5efdf;text-decoration:underline}

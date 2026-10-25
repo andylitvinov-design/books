@@ -271,6 +271,11 @@ async function exercise(engine, browserType, width) {
     assert.deepEqual(errors, []);
     phase = 'visual';
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
+    const stableOffer = page.locator('[data-home-slide]');
+    await expect(stableOffer).toHaveAttribute('data-home-slide', 'services');
+    await pause(8000); // Longer than the retired seven-second autoplay window.
+    await expect(stableOffer).toHaveAttribute('data-home-slide', 'services');
+    await expect(page.locator('[data-home-first-screen-cta="paid"]')).toHaveAttribute('href', '/en/services#consultation');
     const offers = page.locator('[data-home-featured-workspace]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
     await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
@@ -389,11 +394,19 @@ try {
     assert.ok(ready, 'Local production server did not start');
     serverEvent('ready');
   }
-  const outcomes = await Promise.allSettled([['chromium', chromium], ['webkit', webkit]].flatMap(([name, type]) => [390, 1365].map(width => exercise(name, type, width))));
+  const widths = [320, 375, 390, 430, 1365];
+  const outcomes = [];
+  // Two browser workers; keep every phone width without launching ten browsers at once.
+  await Promise.all([['chromium', chromium], ['webkit', webkit]].map(async ([name, type]) => {
+    for (const width of widths) {
+      try { await exercise(name, type, width); outcomes.push({status:'fulfilled'}); }
+      catch (reason) { outcomes.push({status:'rejected', reason}); }
+    }
+  }));
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');
-  assert.equal(results.filter(result => result.firstClickRetained).length, 8);
-  assert.equal(results.filter(result => result.freeJourney).length, 24);
-  console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost inline YouTube playback');
+  assert.equal(results.filter(result => result.firstClickRetained).length, widths.length * 4);
+  assert.equal(results.filter(result => result.freeJourney).length, widths.length * 12);
+  console.log('PASS: twenty delayed-RSC EN/RU switches, Chromium/WebKit,320–430px/desktop; stable offer and no lost inline YouTube playback');
 } finally {
   await writeFile(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ origin, results, fullPlayback: 'Not claimed by this interaction-only test' }, null, 2));
   app?.kill('SIGTERM');

@@ -43,7 +43,7 @@ test('public route uses existing verified guest catalogue, with strict eligibili
     assert.ok(page.includes('/' + locale + '/personality-profiles'))
     assert.ok(component.includes(locale + ': {'))
   }
-  assert.ok(component.includes('type Focus = "identity" | "wellbeing" | "relationships" | "work" | "purpose"'))
+  assert.ok(component.includes('type Focus = "wellbeing" | "relationships" | "work" | "identity"'))
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
   assert.match(component, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
@@ -109,7 +109,7 @@ test('home Stage 2 is one free service while account reports remain separate and
 test('unified profile is multi-select and describes four separate analysis layers', () => {
   const component = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  for (const focus of ['identity', 'wellbeing', 'relationships', 'work', 'purpose']) {
+  for (const focus of ['wellbeing', 'relationships', 'work', 'identity']) {
     assert.ok(component.includes(focus + ': ['), focus)
   }
   for (const token of [
@@ -123,4 +123,52 @@ test('unified profile is multi-select and describes four separate analysis layer
   assert.ok(css.includes('.templateCard[aria-pressed="true"]'))
   assert.ok(css.includes('.layerDetails'))
   assert.ok(css.includes('@media (max-width: 350px)'))
+})
+
+
+test('four life directions retain all nine topics, are localized and require an explicit selection', () => {
+  const component = read('components/personality-profiles-builder.tsx')
+  const sections = [...component.matchAll(/^    focuses: \{\n([\s\S]*?)^    \},/gm)]
+  assert.equal(sections.length, 3, 'EN, RU, ES must have matching focus options')
+  const directions = ['wellbeing', 'relationships', 'work', 'identity']
+  for (const section of sections) {
+    assert.deepEqual([...section[1].matchAll(/^      ([a-z]+): \[/gm)].map(match => match[1]), directions)
+  }
+  for (const phrase of [
+    'Body, health & energy', 'Relationships & connection',
+    'Work, business & money', 'Personality & personal growth',
+    'Тело, здоровье и энергия', 'Отношения и близость',
+    'Дело, бизнес и деньги', 'Личность и развитие',
+    'Cuerpo, salud y energía', 'Relaciones y cercanía',
+    'Trabajo, negocios y dinero', 'Personalidad y crecimiento',
+  ]) assert.ok(component.includes(phrase), phrase)
+  assert.match(component, /identity: \["traits", "support", "meaning"\]/)
+  assert.match(component, /wellbeing: \["emotions", "recovery", "body"\]/)
+  assert.match(component, /relationships: \["connection"\]/)
+  assert.match(component, /work: \["work", "money"\]/)
+  assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
+  assert.match(component, /\[areas, setAreas\] = useState<Area\[]>\(\[\]\)/)
+  assert.doesNotMatch(component, /purpose: \[/)
+  assert.doesNotMatch(component, /not five diagnoses|пять диагнозов|cinco diagnósticos/)
+})
+
+test('browse free tests opens the real catalogue and positions the existing personal review offer once', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const page = read('app/[locale]/client/tests/page.tsx')
+  const explorer = read('components/app/public-test-explorer.jsx')
+  const offers = read('components/sitewide-antistress-banner.tsx')
+  const link = "href={'/' + locale + '/client/tests'} prefetch={false} data-profile-direct-tests"
+  assert.ok(builder.includes(link), 'browse link must go directly to the guest test explorer')
+  assert.ok(!builder.includes("href={'/' + locale + '/tests'} prefetch={false} data-profile-direct-tests"))
+  assert.ok(page.includes("reviewFirst />"), 'only the standalone tests page moves the offer to the top')
+  assert.ok(explorer.includes("reviewFirst && <TestSelectionCourseBanner locale={locale} showCourse={false} showReview />"))
+  assert.ok(explorer.includes("<TestSelectionCourseBanner locale={locale} showReview={!reviewFirst} />"))
+  assert.ok(offers.includes("showReview = false, showCourse = true"))
+  assert.ok(offers.includes("{showCourse && ("))
+  assert.ok(offers.includes('const reviewLanding = "/" + locale + "/services/free-situation-review"'))
+  assert.ok(offers.includes("data-tests-review-banner"))
+  for (const locale of ['en', 'ru', 'es']) {
+    assert.ok(builder.includes('  ' + locale + ': {'), locale + ' profile localization')
+    assert.ok(offers.includes('  ' + locale + ': {'), locale + ' review localization')
+  }
 })

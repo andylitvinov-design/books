@@ -26,3 +26,33 @@
 - `HH_OWNER_AI_BOOTSTRAP_SECRET` — 64+ символа, **sensitive**, только Vercel Production; `HH_OWNER_AI_BOOTSTRAP_EXPIRES` — Unix epoch milliseconds, окно максимум 2 часа. GET с точным host/path и одноразовым секретом запускает уже существующую проверенную `registerClientTelegramWebhook` для фиксированного ранее верифицированного бота и чата. Результат подтверждается Telegram `setWebhook` + `getMyCommands`; чужие webhooks не меняются.
 - Применить секрет непосредственно через Vercel, вызвать закрытый endpoint 1 раз, проверить `ok`/`ownerAiCommandsReady`, затем позволить сроку истечь и удалить временный секрет. Ни BotFather token, ни числовой chat ID, ни API-ключи моделей никогда не передавать через URL. Общий GET endpoint без совпадения сильного proof+TTL всегда 404.
 - Включение меню ≠ доступность Gemini/Mistral. Для них всё равно нужны принадлежащие владельцу бесплатные API credentials, которые нельзя получить из GitHub/LLM; оплачиваемые тарифы без отдельного разрешения не включать.
+
+## 2026-10-25 — актуальные бесплатные модели и Telegram-меню
+
+**Наблюдалось до изменения:** private signed webhook /ai принял owner update 2026-10-25 (accepted); за предшествующие семь дней owner AI ledger не содержит вопросов моделям. Vercel Production содержит Gemini/OpenRouter secrets; Supabase owner settings — зашифрованный Mistral Studio key и подтверждения Free Tier. Ключ ≠ работоспособный API. Последняя независимая проверка daily Council: Gemini timeout, Mistral Studio HTTP 429. Mistral нельзя обозначать рабочим без реального ответа.
+
+**Обновлённая логика:**
+- /ai и /status выполняют только authenticated GET preflight к Google model metadata, Mistral Studio catalog (при подтверждённом Free) и OpenRouter key metadata + catalog. Никакой генерации и рассылок при открытии меню.
+- Меню строится заново, показывает причины недоступности, кнопки доступны только для подтверждённых по metadata Free-моделей. Это ещё не E2E.
+- /gemini, /free, /council (Gemini + OpenRouter Free) и старый /mistral вручную обрабатываются при verified owner pairing и существующем rate limit. В UI Mistral скрыт, если Studio 429 и OpenRouter не содержит бесплатной Mistral. Старые команды сообщат реальную ошибку, без выдуманного ответа.
+- OpenRouter Free выбирает фактическую provider/model:free из свежего каталога. Все ценовые поля строго 0, допустима только текстовая модель, нужен проверенный ключ, per-request max_price=0 и allow_fallbacks=false; возвращённый model ID точно совпадает, usage.cost — число 0. Telegram показывает настоящую model ID: это не Mistral и не ChatGPT.
+- /status обновляет availability без inference. Никаких новых ботов, новых cron, таблиц, платных fallback, рассылок или рекламы.
+- OpenRouter Free лимитирован по частоте, не гарантируется для production SLA; сторонние Free API могут иметь политику хранения данных. Клиентские и медицинские сведения не пересылать.
+
+**Release acceptance:** targeted GitHub CI + Vercel READY/alias/SHA + реальный провайдерский Telegram receipt на запрос /free тест или /gemini тест. До этого E2E не подтверждён.
+
+Preserved prior owner bot audio callback/commands from live production; handled by the existing audio service, independent of the AI menu.
+
+## 25 октября 2026 — Только подтверждённые ответы / Ask All
+
+**Коренная ошибка:** в production таблице app_private.telegram_owner_ai_updates CHECK action остался от первого выпуска (menu/prompt/question/too_long/sensitive), а CHECK model_mode разрешал только both/gemini/mistral. Поэтому кнопки /status, /free, /council, появившиеся позже, могли завершаться ошибкой CHECK до вызова ИИ. Миграция 20261025163000 исправляет ограничения, сохраняя FORCE RLS, backend grant, дедупликацию и отсутствие вопросов/ответов/chat IDs в БД.
+
+**Owner Telegram UX:**
+- /ai открывает компактное меню. **Доступно** означает только успешный настоящий ответ модели (записан как безопасные статусы и model ID) за последние 36 часов + текущее read-only GET-подтверждение model/key; наличие key и положительный GET сами по себе НЕ делают кнопку зеленой.
+- /verify или 🧪 выполняет настоящий короткий обезличенный пробный вопрос максимум дважды за 24 часа (явное действие владельца, без массовых отправок). Выполняются только Free-tier eligible Gemini, прямой Mistral с ранее подтверждённым Free, и до двух моделей OpenRouter с каждым ценовым полем равным 0. Результат: реальные model IDs и причины отказа, без выдуманных ответов. При отсутствии успеха кнопки моделей скрыты; старые /gemini, /mistral, /free остаются ручными проверочными командами.
+- Free AI 1 и Free AI 2 — **не бренды**: две реально присутствующие в текущем OpenRouter каталоге качественные модели **разных авторов**. В ответе отображается настоящий ID, маршрут не подменяется платной моделью, max_price=0, allow_fallbacks=false, data_collection=deny, проверенный usage.cost=0.
+- /all /council /ai вопрос = «Спросить всех» только если >=2 подтвердили реальный ответ. Независимые промпты отправляются параллельно, максимум 4 участвующих: Gemini, Mistral, OpenRouter Free 1, OpenRouter Free 2. Один реальный **дополнительный** запрос к Gemini Free (или одному из ответивших OpenRouter Free) синтезирует JSON: главный вывод, действительные совпадения с указанием моделей, разногласия, 1–3 конкретные действия с критерием проверки, что ещё неизвестно. Если синтез или 2 участника не подтвердились, бот честно показывает статусы и исходные ответы, без фиктивного консенсуса.
+- Бюджет: zero-paid APIs; не более 4 ансамблей/сутки и 2 проверок/сутки, старый лимит 10 вопросов/час сохранён. При неизвестной стоимости или policy privacy deny — fail closed. Клиентские и медицинские данные не отправлять даже в бесплатные модели; free-тарифы могут обрабатывать тексты по своим правилам.
+- Новый cron, бот, отдельная модель OpenAI/Claude через подписку ChatGPT **не создаются**: у сервера нет подтверждённых прямых GPT/Claude API ключей и бесплатных планов. Это нельзя показывать как реально подключённые модели.
+
+**Приёмка:** migration applied, FORCE RLS+CHECK проверены, CI успешен, Vercel exact READY SHA/alias; затем физический владелец нажимает /verify в @Andydotbot и /all обезличенный вопрос. Только модельные response receipts + Bot API message_id и запись статусов в private ledger подтверждают E2E. Build зелёный ≠ доставка.

@@ -4,26 +4,31 @@ import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Spanish Alchemy uses the same eight-section teal landing as English", () => {
+test("Spanish Alchemy shares the ten media-led chapters in EN/RU", () => {
   const enRoute = read("app/[locale]/services/alchemy-of-soul/page.tsx");
   const esRoute = read("app/es/services/alchemy-of-soul/page.tsx");
   const landing = read("components/alchemy-soul-landing.tsx");
-  assert.match(enRoute, /<AlchemySoulLanding locale=\{locale as Locale\} \/>/);
+  assert.match(enRoute, /<AlchemySoulLanding locale=\{locale as PublicLocale\} \/>/);
   assert.match(esRoute, /<AlchemySoulLanding locale="es" \/>/);
   assert.match(esRoute, /<DistanceHomeopathyGuide locale="es" embedded \/>/);
   assert.match(esRoute, /data-alchemy-extended-guide/);
   assert.doesNotMatch(esRoute, /CoreServiceDetail/);
   assert.match(enRoute, /es: "\/es\/services\/alchemy-of-soul"/);
-  for (const id of ["hero", "situations", "method", "video", "reviews", "formats", "faq", "request"]) {
+  for (const id of ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"]) {
     assert.match(landing, new RegExp('data-alchemy-panel="' + id + '"'));
   }
-  for (const phrase of ["Alquimia del Alma", "Constelación — mapa de la situación", "Hipnoterapia — explorar en profundidad", "Psicohomeopatía — apoyo opcional", "Integración — acciones concretas"]) {
+  for (const phrase of ["Alquimia del Alma", "Diagnóstico de la situación", "Constelación sistémica", "Hipnoterapia con imágenes", "Psicohomeopatía opcional"]) {
     assert.ok(landing.includes(phrase), phrase);
   }
   assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
   assert.match(landing, /El audio original está en inglés/);
   assert.match(landing, /homeopatía no tiene pruebas fiables/);
-  assert.match(landing, /language: locale === "es" \? "en" : locale/);
+  // The actual featured recordings declare their own audio language:
+  // Russian for /ru, the approved English recording for /en and /es.
+  assert.match(landing, /language: "en" as const/);
+  assert.match(landing, /language: "ru" as const/);
+  assert.match(landing, /const featuredIntroVideo = locale === "ru" \? featuredIntroVideoRu : featuredIntroVideoEn;/);
+  assert.match(landing, /<SiteVideoPlayer video=\{featuredIntroVideo\} locale=\{locale\}/);
 });
 
 test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU", () => {

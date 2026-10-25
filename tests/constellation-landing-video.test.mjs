@@ -48,8 +48,10 @@ test("mobile free-review starts with the recording, with a compact single-screen
  assert.ok(video > free.indexOf('aria-labelledby="free-entry-title"') && video < free.indexOf('id="what-you-get"'));
  assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
  assert.match(free, /siteVideoWatchUrl\(situationVideo\.video\)/);
- assert.match(free, /Один вопрос и простой рисунок/);
- assert.match(free, /Una pregunta y un dibujo sencillo/);
+ assert.match(free, /videoBadge: "Andrey · EN audio"/);
+ assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
+ assert.match(free, /Личная экспресс-диагностика с Андреем/);
+ assert.match(free, /Revisión personal exprés gratuita con Andrey/);
  assert.match(css, /\.situationHero \.situationVideo\{order:0/);
  assert.match(css, /\.situationHero \.heroCopy\{order:1/);
  assert.match(css, /\.situationHero \.primary\{width:100%/);

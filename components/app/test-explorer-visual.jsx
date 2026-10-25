@@ -16,6 +16,10 @@ const SECONDARY_AXES = TEST_EXPLORER_AXES.slice(10)
 // A personality trait is descriptive and must never be presented as an ideal-to-reach ray.
 const PORTRAIT_AXES = TEST_EXPLORER_AXES.filter((axis) => axis !== 'personality')
 const PORTRAIT_COLLAPSED_COUNT = 10 // Five rows × two columns; the full list is one tap away.
+// Match the focus order already used by My Profile (#1968), without rotating
+// existing sector positions or changing the saved questionnaire measurements.
+const PORTRAIT_PICKER_SECTORS = ['body','relationships','work','growth'].map(key =>
+  PORTRAIT_SECTORS.find(sector => sector.key === key)).filter(Boolean)
 const PORTRAIT_RADAR_RADIUS = 146
 // No minimum offset: 0 maps to the centre and a half-scale value to half the ring.
 const proportionalRadius = (value, maximum) => PORTRAIT_RADAR_RADIUS * value / maximum
@@ -56,9 +60,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     const directional = Number.isFinite(sector.percent) && sector.percent >= 0 && sector.percent <= 100
     return {
       ...sector,
-      displayLabel: sector.key === 'growth'
-        ? (ru ? 'Дух / развитие' : es ? 'Espíritu / desarrollo' : 'Spirit / Growth')
-        : (sector.label[locale] || sector.label.en),
+      displayLabel: sector.radarLabel?.[locale] || sector.radarLabel?.en || sector.label[locale] || sector.label.en,
       score: rawScore(sector.measurement),
       ideal: project(PORTRAIT_RADAR_RADIUS),
       end: directional ? project(proportionalRadius(sector.percent, 100)) : null,
@@ -142,13 +144,13 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           aria-pressed={allSectors} onClick={() => setSelectedSector('all')}>
           <span>{ru ? 'Все' : es ? 'Todo' : 'All'}</span>
         </button>
-        {PORTRAIT_SECTORS.map((sector) => <button type="button" key={sector.key}
+        {PORTRAIT_PICKER_SECTORS.map((sector) => <button type="button" key={sector.key}
           className={styles.portraitSectorChip} data-portrait-sector={sector.key}
           data-selected={selectedSector === sector.key}
+          aria-label={sector.label[locale] || sector.label.en}
           aria-pressed={selectedSector === sector.key} onClick={() => setSelectedSector(sector.key)}>
-          <span>{sector.key === 'growth'
-            ? (ru ? 'Дух / развитие' : es ? 'Espíritu / desarrollo' : 'Spirit / Growth')
-            : (sector.label[locale] || sector.label.en)}</span>
+          <span className={styles.portraitSectorLong}>{sector.label[locale] || sector.label.en}</span>
+          <span className={styles.portraitSectorShort} aria-hidden="true">{sector.shortLabel[locale] || sector.shortLabel.en}</span>
         </button>)}
       </div>
     </div>}
@@ -366,6 +368,6 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           : <span className={styles.axisInterest}>{ru ? 'В фокусе' : es ? 'Enfoque' : 'In focus'}</span>}
       </div>)}
     </div>}
-    {!compact && (!portrait || portraitTab === 'tests') && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (allSectors ? (ru ? 'Каждая цифра — исходный балл одного актуального теста из указанной сферы, с подписью шкалы. Это не оценка сферы и не среднее между тестами. Остальные результаты — внутри каждой вкладки.' : es ? 'Cada número es una puntuación original actual, identificada por su escala; no es el promedio de la categoría. Las demás escalas están en su pestaña.' : 'Each number is one current original test score, with its scale named—not an area score or average. Open a category to see the other scales.') : (ru ? 'Числа у лучей — исходные баллы реальных тестов. Длина луча — позиция внутри конкретной шкалы, не процент здоровья. Без замера нет числа; описательные ответы не имеют направленного луча.' : es ? 'Los números muestran puntuaciones originales; la longitud representa solo la posición dentro de esa prueba. Sin medida no hay número ni rayo.' : 'Numbers next to rays are original questionnaire scores. Ray length reflects only position within that test, not a health percentage. Missing scores are blank; descriptive answers have no directional ray.')) : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
+    {!compact && (!portrait || portraitTab === 'tests') && <div className={styles.visualFooter}>{!portrait && <button type="button" className={styles.reset} onClick={() => setRotation({ x: 0, y: 0 })}>{ru ? 'Сбросить поворот' : es ? 'Restablecer orientación' : 'Reset rotation'}</button>}<p>{portrait ? (allSectors ? (ru ? 'Каждая цифра — балл отдельного теста, не оценка всей сферы. Откройте направление для других шкал.' : es ? 'Cada número es de una prueba individual, no de toda el área. Abre una categoría para ver más escalas.' : 'Each number comes from one test, not an overall area score. Select an area to see other scales.') : (ru ? 'Числа у лучей — исходные баллы реальных тестов. Длина луча — позиция внутри конкретной шкалы, не процент здоровья. Без замера нет числа; описательные ответы не имеют направленного луча.' : es ? 'Los números muestran puntuaciones originales; la longitud representa solo la posición dentro de esa prueba. Sin medida no hay número ni rayo.' : 'Numbers next to rays are original questionnaire scores. Ray length reflects only position within that test, not a health percentage. Missing scores are blank; descriptive answers have no directional ray.')) : (ru ? 'Визуальная модель — только способ отображения. Она не меняет расчёт тестов.' : es ? 'El modelo visual es ilustrativo y no cambia la puntuación de las pruebas.' : 'The visual model is display-only and does not change test scoring.')}</p></div>}
   </section>
 }

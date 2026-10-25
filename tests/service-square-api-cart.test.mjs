@@ -180,3 +180,24 @@ test('cart, endpoints and SQL contain strict order ownership, no fake paid on re
   assert.match(sql,/SQUARE_PAYMENT_REQUIRES_PROVIDER_VERIFICATION/)
   assert.doesNotMatch(cart,/setSquareStatus\("paid"\)\s*;\s*window\.location/)
 })
+
+test('Square paid state must not survive a cart edit or a delayed provider readback', () => {
+  const cart = read('components/commerce/personal-cart.tsx')
+  const removal = cart.match(/function remove\(id: string\) \{([\s\S]*?)\n  \}\n\n  return <section/)
+  assert.ok(removal, 'the existing cart removal handler is present')
+  for (const statement of [
+    'if (squareBusy) return;',
+    'squareStatusGeneration.current += 1;',
+    'squareOperation.current = null;',
+    'setSquareOrderId(null);',
+    'setSquareStatus(null);',
+    'setSquareRepeatOf(null);',
+    'setSquareError(null);',
+  ]) assert.ok(removal[1].includes(statement), statement)
+  assert.match(cart, /onClick=\{\(\) => remove\(product\.id\)\} disabled=\{squareBusy\}/)
+  // Both the initial Square return and the manual status refresh must discard
+  // a late response once the basket has changed.
+  assert.equal(cart.split('if (squareStatusGeneration.current !== requestVersion) return;').length - 1, 2)
+  assert.match(cart, /if \(squareStatusGeneration\.current === requestVersion\) setSquareError/)
+  assert.match(cart, /if \(squareStatusGeneration\.current === requestVersion\)\s+setSquareError/)
+})

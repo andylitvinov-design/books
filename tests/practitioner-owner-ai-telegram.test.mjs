@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
-  OWNER_AI_COMMANDS,parseOwnerAiUpdate,ownerAiMenu,ownerAiPrompt,ownerAiResponseItems
+  OWNER_AI_COMMANDS,parseOwnerAiUpdate,ownerAiMenu,ownerAiPrompt,ownerAiResponseItems,ownerAiEnsembleStatus
 } from '../lib/practitioners/owner-ai-telegram.mjs'
 import {askCouncilTelegram,ownerCouncilPrompt} from '../lib/practitioners/council-free-models.mjs'
 
@@ -19,6 +19,12 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate(event('/ai'),now).action,'menu')
   assert.equal(parseOwnerAiUpdate(event('/gemini Сайт медленно грузится'),now).mode,'gemini')
   assert.equal(parseOwnerAiUpdate(event('/council'),now).action,'prompt')
+  assert.equal(parseOwnerAiUpdate(event('/council'),now).mode,'all')
+  assert.equal(parseOwnerAiUpdate(event('/verify'),now).action,'verify')
+  assert.equal(parseOwnerAiUpdate(event('/all План'),now).mode,'all')
+  assert.equal(parseOwnerAiUpdate(event('/free2 Улучши услуги'),now).mode,'free2')
+  assert.equal(parseOwnerAiUpdate(event('/status'),now).action,'status')
+  assert.equal(parseOwnerAiUpdate(event('/free Улучши страницу услуг'),now).mode,'free')
   assert.equal(parseOwnerAiUpdate(event('/mistral'),now).mode,'mistral')
   assert.equal(parseOwnerAiUpdate(event('/stop'),now),null)
   assert.equal(parseOwnerAiUpdate(event('/start '+'a'.repeat(32)),now),null)
@@ -30,9 +36,13 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate({update_id:'not a number',message:base.message},now),null)
 })
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
-  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['ai','gemini','mistral','council','cancel'])
-  const buttons=ownerAiMenu().reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
-  assert.deepEqual(buttons,['hh-ai:both','hh-ai:gemini','hh-ai:mistral'])
+  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['audio','materials','ai','verify','all','status','gemini','free','free2','council','cancel'])
+  const live=ownerAiMenu({gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
+  const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
+  assert.deepEqual(buttons,['hh-audio:help','hh-ai:all','hh-ai:gemini','hh-ai:free','hh-ai:verify','hh-ai:status'])
+  assert.doesNotMatch(buttons.join(' '),/hh-ai:mistral|hh-ai:both/)
+  assert.match(live.text,/Mistral/)
+  assert.deepEqual(ownerAiMenu().reply_markup.inline_keyboard.flat().map(x=>x.callback_data),['hh-audio:help','hh-ai:verify','hh-ai:status'])
   assert.equal(ownerAiPrompt('mistral').reply_markup.force_reply,true)
   const callback=parseOwnerAiUpdate({update_id:312,callback_query:{
     id:'cb-313',data:'hh-ai:mistral',
@@ -50,7 +60,7 @@ test('owner inline keyboard is bot-authored and a ForceReply selects the next mo
   })
   assert.equal(parseOwnerAiUpdate(reply,now).mode,'mistral')
   assert.equal(parseOwnerAiUpdate(event('Как улучшить CRM?'),now),null)
-  assert.equal(parseOwnerAiUpdate(event('/ai Как улучшить CRM?'),now).mode,'both')
+  assert.equal(parseOwnerAiUpdate(event('/ai Как улучшить CRM?'),now).mode,'all')
 })
 test('secret, contacts and oversized client content is stopped before any model request',()=>{
   assert.equal(parseOwnerAiUpdate(event('/ai Код 123456789:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'),now).action,'sensitive')
@@ -66,7 +76,7 @@ test('absent AI keys never generate fabricated advice or call outside providers'
   assert.equal(reviews.mistral.status,'unavailable')
   const replies=ownerAiResponseItems(reviews,'both')
   assert.equal(replies.length,2)
-  assert.match(replies[0].text,/подтверждённого ответа пока нет/)
+  assert.match(replies[0].text,/реального ответа нет/)
   assert.doesNotMatch(replies[0].text,/✅/)
   await assert.rejects(askCouncilTelegram('Привет','unknown',{},noNet))
 })
@@ -149,4 +159,87 @@ test('signed existing webhook, DB dedup, owner isolation and private RLS are man
   assert.match(sql,/revoke all .*public,anon,authenticated/i)
   assert.match(sql,/on conflict|primary key/i)
   assert.doesNotMatch(sql,/question_body|prompt_text|chat_id|api_key|bot_token/i)
+})
+
+test('live provider menu never offers unverified models and free choice uses verified reply',()=>{
+  const notReady=ownerAiMenu({
+    gemini:{ready:false,reason:'429'},free:{ready:true},mistral:{ready:false,reason:'STUDIO_HTTP_429'}
+  })
+  assert.deepEqual(notReady.reply_markup.inline_keyboard.flat().map(x=>x.callback_data),
+    ['hh-audio:help','hh-ai:free','hh-ai:verify','hh-ai:status'])
+  const reply=event('Нужен совет про лендинг',{reply_to_message:{
+    from:{is_bot:true,username:'Andydotbot'},text:ownerAiPrompt('free').text
+  }})
+  assert.equal(parseOwnerAiUpdate(reply,now).mode,'free')
+  assert.equal(parseOwnerAiUpdate({update_id:444,callback_query:{
+    id:'cb-444',data:'hh-ai:status',from:base.message.from,
+    message:{chat:base.message.chat,from:{is_bot:true,username:'Andydotbot'}}
+  }},now).action,'status')
+  const responses=ownerAiResponseItems({free:{status:'ok',
+    model:'google/gemma-4-31b-it:free',text:'Проверить CTA и CRM лиды.'}},'free')
+  assert.equal(responses.length,1)
+  assert.match(responses[0].text,/Free AI 1 · google\/gemma-4-31b-it:free/)
+  assert.deepEqual(ownerAiResponseItems({
+    gemini:{status:'unavailable',reason:'HTTP 429'},
+    free:{status:'ok',model:'google/gemma-4-31b-it:free',text:'Проверить CTA и CRM лиды.'}
+  },'duo').length,2)
+})
+
+test('only two truly responding assistants unlock all-mode and three actions stay explicit',()=>{
+  const cold=ownerAiMenu({
+    gemini:{candidate:true,model:'gemini-3.8-flash',ready:false},
+    free:{candidate:true,model:'nvidia/nemotron-3-ultra-550b-a55b:free',ready:false},
+    free2:{ready:false},mistral:{ready:false}
+  })
+  const noButtons=cold.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
+  assert.deepEqual(noButtons,['hh-audio:help','hh-ai:verify','hh-ai:status'])
+  assert.match(cold.text,/нет подтверждённых ответов/i)
+  const live=ownerAiMenu({
+    gemini:{ready:true,model:'gemini-3.8-flash'},
+    free:{ready:true,model:'nvidia/nemotron-3-ultra-550b-a55b:free'},
+    free2:{ready:true,model:'google/gemma-4-31b-it:free'},
+    mistral:{ready:false,reason:'HTTP 429'}
+  })
+  const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
+  assert.deepEqual(buttons,[
+    'hh-audio:help','hh-ai:all','hh-ai:gemini','hh-ai:free','hh-ai:free2',
+    'hh-ai:verify','hh-ai:status'
+  ])
+  assert.match(live.text,/nemotron-3-ultra/)
+  assert.doesNotMatch(buttons.join(','),/mistral/)
+  const callback=parseOwnerAiUpdate({update_id:455,callback_query:{
+    id:'cb-455',data:'hh-ai:all',from:base.message.from,
+    message:{chat:base.message.chat,from:{is_bot:true,username:'Andydotbot'}}
+  }},now)
+  assert.equal(callback.action,'prompt')
+  assert.equal(callback.mode,'all')
+  const next=event('Назови три действия', {reply_to_message:{
+    from:{is_bot:true,username:'Andydotbot'},text:ownerAiPrompt('all').text
+  }})
+  assert.equal(parseOwnerAiUpdate(next,now).mode,'all')
+  const verify=parseOwnerAiUpdate({update_id:456,callback_query:{
+    id:'cb-456',data:'hh-ai:verify',from:base.message.from,
+    message:{chat:base.message.chat,from:{is_bot:true,username:'Andydotbot'}}
+  }},now)
+  assert.equal(verify.action,'verify')
+  const status=ownerAiEnsembleStatus({
+    gemini:{status:'ok',model:'gemini-3.8-flash'},
+    free:{status:'error',reason:'HTTP 429'}
+  },{status:'unavailable'})
+  assert.match(status.text,/1\/2/)
+  assert.match(status.text,/HTTP 429/)
+})
+test('Supabase migration explicitly fixes old action/mode CHECK root cause, no new public policy',()=>{
+  const sql=read('supabase/migrations/20261025163000_hh_owner_ai_telegram_real_modes.sql')
+  assert.match(sql,/status','verify','prompt','question'/)
+  assert.match(sql,/'free2','duo','both','all'/)
+  assert.doesNotMatch(sql,/disable row level security|grant .*anon|grant .*authenticated/i)
+  const service=read('lib/practitioners/owner-ai-telegram-service.js')
+  assert.match(service,/recentOwnerModelOutcomes/)
+  assert.match(service,/status='accepted'/)
+  assert.match(service,/36 hours/)
+  assert.match(service,/scope:'hh-owner-ai-verify-day'/)
+  assert.match(service,/scope:'hh-owner-ai-all-day'/)
+  assert.match(service,/aggregateOwnerCouncil/)
+  assert.match(service,/allowed.length<2/)
 })

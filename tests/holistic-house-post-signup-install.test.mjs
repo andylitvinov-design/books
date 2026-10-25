@@ -129,3 +129,13 @@ test('post-signup report Save offers install only for the matching new active ac
   assert.match(offer,/context==='saved'/)
   assert.doesNotMatch(offer,/sessionStorage|localStorage|PushManager|Notification\.requestPermission/)
 })
+
+test('Cabinet install control reuses the pre-login browser prompt and respects native shells',()=>{
+  const panel=read('components/app/install-holistic-house.jsx')
+  assert.match(panel,/onPwaInstallPrompt\(event=>setOffer\(Boolean\(event\)\)\)/)
+  assert.match(panel,/requestPwaInstallation\(\)/)
+  assert.doesNotMatch(panel,/window\.addEventListener\('beforeinstallprompt'/)
+  assert.match(panel,/window\.Capacitor\?\.isNativePlatform\?\.\(\)===true/)
+  assert.match(panel,/navigator\.maxTouchPoints>1/)
+  assert.match(panel,/appinstalled/)
+})

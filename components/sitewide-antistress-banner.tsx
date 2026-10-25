@@ -115,7 +115,7 @@ export function SitewideAntistressBanner({ initialLocale = "en" }: { initialLoca
 
 
 /** Academy-style compact recommendations below the public test explorer. */
-export function TestSelectionCourseBanner({ locale, showReview = false }: { locale: Locale; showReview?: boolean }) {
+export function TestSelectionCourseBanner({ locale, showReview = false, showCourse = true }: { locale: Locale; showReview?: boolean; showCourse?: boolean }) {
   const t = courseCopy[locale] || courseCopy.en;
   const review = reviewCopy[locale] || reviewCopy.en;
   const courseLocale = locale === "es" ? "en" : locale;
@@ -130,7 +130,8 @@ export function TestSelectionCourseBanner({ locale, showReview = false }: { loca
   const lessLabel = locale === "ru" ? "Свернуть" : locale === "es" ? "Ocultar" : "Less details";
 
   return (
-    <section className={styles.testOffers + (showReview ? " " + styles.testOffersPair : "")} data-test-selection-offers aria-label={locale === "ru" ? "Что можно сделать дальше" : locale === "es" ? "Siguientes pasos" : "Your next steps"}>
+    <section className={styles.testOffers + (showReview && showCourse ? " " + styles.testOffersPair : "")} data-test-selection-offers aria-label={locale === "ru" ? "Что можно сделать дальше" : locale === "es" ? "Siguientes pasos" : "Your next steps"}>
+      {showCourse && (
       <aside className={styles.courseCard} data-tests-course-banner aria-label={t.eyebrow}>
         <div className={styles.courseCardInner}>
           <Link className={styles.courseVisual} href={courseLanding} aria-label={t.more} prefetch={false}>
@@ -162,6 +163,7 @@ export function TestSelectionCourseBanner({ locale, showReview = false }: { loca
           </Link>
         </div>
       </aside>
+      )}
       {showReview && (
         <aside className={styles.reviewCard} data-tests-review-banner aria-label={review.eyebrow}>
           <div className={styles.courseCardInner}>

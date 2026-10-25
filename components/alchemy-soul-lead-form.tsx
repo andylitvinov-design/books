@@ -110,7 +110,8 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
     service: locale === "ru" ? "Алхимия души / Психогомеопатия" : locale === "es" ? "Alquimia del Alma / Psicohomeopatía" : "Alchemy of the Soul / Psycho-homeopathy",
     request: t.greeting + " " + t.question,
     option: t.formatNames[format],
-    topic: t.topicNames[topic],
+    // A personal topic belongs only in the consented CRM request, never the
+    // WhatsApp/Telegram draft, where it might reveal sensitive context.
     pagePath: "/" + locale + "/services/alchemy-of-soul",
   });
 
@@ -137,6 +138,8 @@ export function AlchemySoulLeadForm({ locale }: { locale: AlchemyLocale }) {
           </Link>
         ) : (
           <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+            compactPhone compactTrigger stayAfterSave resetKey={format + ":" + topic}
+            publicTopic={t.formatField + ": " + t.formatNames[format] + "; " + t.topicField + ": " + t.topicNames[topic]}
             event="service_request_start" className={styles.formOrderButton}
             attributes={{ "data-alchemy-booking": "personalised" }} />
         )}
@@ -229,6 +232,14 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
           <small>{data.monthNote}</small></span>
         <span className={styles.monthlySparkle} aria-hidden="true">✧</span>
       </button>
+      <details className={styles.formatMore} data-alchemy-format-details>
+        <summary>{locale === "ru" ? "Чем отличаются форматы" : locale === "es" ? "Qué incluye cada formato" : "What each format includes"}</summary>
+        <div>
+          <p><strong>{data.short}</strong> — {data.shortText}</p>
+          <p><strong>{data.long}</strong> — {data.longText}</p>
+          <p><strong>{data.monthTitle}</strong> — {data.monthText} {data.monthNote}</p>
+        </div>
+      </details>
       <p className={styles.formatHint}>{data.choiceHint}</p>
       <div className={styles.optionsOrder}>
         {selected === "month" ? (
@@ -237,6 +248,8 @@ export function AlchemySoulFormatSelector({ locale, wiseEnabled = false, paypalP
           </Link>
         ) : (
           <ContactChannelChooser locale={locale} whatsappUrl={whatsappUrl} label={t.action}
+            compactPhone compactTrigger stayAfterSave resetKey={selected}
+            publicTopic={t.formatField + ": " + t.formatNames[selected]}
             event="service_request_start" className={styles.optionsOrderButton}
             attributes={{ "data-alchemy-booking": "formats" }} />
         )}

@@ -25,10 +25,10 @@ jobs:
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
       - run: npm ci --include=dev --no-audit --no-fund
-      - name: Holistic Support practitioner path EN/RU/ES
+      - name: Holistic Support first screen, private handoff and Coaching Lounge contracts
         run: |
-          node --test tests/temple-support-hub.test.mjs
-          npx eslint 'app/[locale]/holistic-support/page.tsx'
+          node --test tests/temple-support-hub.test.mjs tests/holistic-support-first-screen.test.mjs tests/temple-insights-compact-cta.test.mjs tests/holistic-support-topics.test.mjs tests/remote-energy-support-mobile-compact.test.mjs tests/remote-energy-support-booking.test.mjs tests/practitioner-remote-energy-support.test.mjs tests/holistic-support-meditations.test.mjs
+          npx eslint 'app/[locale]/holistic-support/page.tsx' components/holistic-support-topic-filter.tsx components/remote-energy-support-booking.tsx components/academy-course-video-playlist.tsx
           npx tsc --noEmit
       - name: Energy Love Business inline focus regression
         run: node --test tests/direction-three-sections.test.mjs tests/direction-offers.test.mjs tests/goal-support-offers.test.mjs tests/direction-extras.test.mjs
@@ -38,7 +38,7 @@ jobs:
           npm install --prefix /tmp/hh-public-services-tools --no-audit --no-fund playwright@1.63.0
           /tmp/hh-public-services-tools/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Canonical Homeopathy / Alchemy service routing regression
-        run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs
+        run: node --test tests/practitioner-homeopathy-canonical-route.test.mjs tests/alchemy-soul-mobile-landing.test.mjs tests/alchemy-soul-spanish-parity.test.mjs tests/service-alchemy-one-screen-story.test.mjs tests/alchemy-panel-overflow-diagnostics.test.mjs
       - name: Production build and public browser acceptance
         run: |
           mkdir -p artifacts/public-services-production
@@ -50,9 +50,12 @@ jobs:
             sleep 2
           done
           status=0
+          # Alchemy chapter geometry, 320-430px EN/RU/ES, including 320x568.
+          node scripts/verify-alchemy-one-screen.mjs || status=$?
           node scripts/verify-business-quiz-mobile.mjs || status=$?
           node scripts/verify-ideas-mobile-browser.mjs || status=$?
           node scripts/verify-holistic-master-browser.mjs || status=$?
+          node scripts/verify-holistic-topics-browser.mjs || status=$?
           node scripts/verify-direction-focus-mobile.mjs || status=$?
           node scripts/verify-public-services-production.mjs || status=$?
           node scripts/verify-home-consultation-first-screen.mjs || status=$?
@@ -76,6 +79,8 @@ jobs:
             artifacts/public-services-production/
             artifacts/business-quiz-mobile/
             artifacts/ideas-mobile/
+            artifacts/holistic-support-mobile/
+            artifacts/holistic-topic-mobile/
             artifacts/home-first-screen/
             artifacts/contact-channel-browser/
             artifacts/service-cart/
