@@ -77,7 +77,7 @@ test('new donation order is only created after a consented application and never
   assert.match(service,/donationInitiations|DONATION_NOT_SELECTED/)
   assert.match(service,/application_lead_id=\$1 for update/)
   assert.match(service,/DONATION_ORDER_ALREADY_EXISTS/)
-  assert.match(service,/unique \(account_id, operation_id\)/)
+  assert.match(sql,/unique \(account_id, operation_id\)/)
   assert.match(service,/status === 'paid' \? row\.paid_minor \/ 100 : null/)
   assert.match(service,/status === 'pending'/)
 })
