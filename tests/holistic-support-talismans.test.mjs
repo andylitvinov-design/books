@@ -42,6 +42,6 @@ test('Supabase private image upload includes linux native libvips and never load
   assert.match(config,/node_modules\/@img\/sharp-libvips-linux-x64\/\*\*\/\*/)
   assert.match(config,/node_modules\/@img\/sharp-linux-x64\/\*\*\/\*/)
   assert.doesNotMatch(route,/^import sharp from /m)
-  assert.match(route,/const \{default:sharp\}=await import\('sharp'\)/)
+  assert.match(route,/\(\{default:sharp\}=await import\('sharp'\)\)/)
   assert.ok(route.indexOf("auth.verified()")<route.indexOf("await import('sharp')"))
 })
