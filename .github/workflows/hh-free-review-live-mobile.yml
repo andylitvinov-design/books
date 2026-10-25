@@ -5,12 +5,24 @@ on:
     paths:
       - '.github/workflows/hh-free-review-live-mobile.yml'
       - 'scripts/verify-free-review-live-mobile.mjs'
+      - 'scripts/helpers/free-review-viewport-isolation.mjs'
+      - 'scripts/helpers/free-review-journey-verifier.mjs'
+      - 'tests/free-review-viewport-isolation.test.mjs'
+      - 'tests/current-diagnosis-parent-lifecycle.test.mjs'
+      - 'tests/personal-express-parent-lifecycle.test.mjs'
+      - 'tests/helpers/personal-express-parent-fixture.mjs'
+      - 'tests/helpers/diagnosis-parent-fixture.mjs'
+      - 'tests/free-review-journey-verifier.test.mjs'
+      - 'components/contact-channel-chooser.tsx'
+      - 'components/phone-country-input.tsx'
       - 'components/free-entry-landing.tsx'
       - 'components/free-entry-landing.module.css'
       - 'components/free-diagnosis-offers.tsx'
+      - 'components/personal-express-enquiry.tsx'
+      - 'components/personal-express-enquiry.module.css'
       - 'components/free-diagnosis-offers.module.css'
       - 'components/compact-lead-capture.tsx'
-      - 'app/[locale]/services/free-consultation/page.tsx'
+      - 'app/\[locale\]/services/free-consultation/page.tsx'
       - 'tests/free-diagnosis-three-offers.test.mjs'
       - 'components/personal-testimonials.tsx'
       - 'components/personal-testimonials.module.css'
@@ -27,12 +39,24 @@ on:
     paths:
       - '.github/workflows/hh-free-review-live-mobile.yml'
       - 'scripts/verify-free-review-live-mobile.mjs'
+      - 'scripts/helpers/free-review-viewport-isolation.mjs'
+      - 'scripts/helpers/free-review-journey-verifier.mjs'
+      - 'tests/free-review-viewport-isolation.test.mjs'
+      - 'tests/current-diagnosis-parent-lifecycle.test.mjs'
+      - 'tests/personal-express-parent-lifecycle.test.mjs'
+      - 'tests/helpers/personal-express-parent-fixture.mjs'
+      - 'tests/helpers/diagnosis-parent-fixture.mjs'
+      - 'tests/free-review-journey-verifier.test.mjs'
+      - 'components/contact-channel-chooser.tsx'
+      - 'components/phone-country-input.tsx'
       - 'components/free-entry-landing.tsx'
       - 'components/free-entry-landing.module.css'
       - 'components/free-diagnosis-offers.tsx'
+      - 'components/personal-express-enquiry.tsx'
+      - 'components/personal-express-enquiry.module.css'
       - 'components/free-diagnosis-offers.module.css'
       - 'components/compact-lead-capture.tsx'
-      - 'app/[locale]/services/free-consultation/page.tsx'
+      - 'app/\[locale\]/services/free-consultation/page.tsx'
       - 'tests/free-diagnosis-three-offers.test.mjs'
       - 'components/personal-testimonials.tsx'
       - 'components/personal-testimonials.module.css'
@@ -60,22 +84,22 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - name: Install disposable Chromium and WebKit runners
-        timeout-minutes: 12
-        run: |
-          npm install --prefix /tmp/hh-free-review-browser --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
-          /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Build the real PR app and check focused route/CRM contracts
         if: github.event_name == 'pull_request'
         timeout-minutes: 12
         run: |
           npm ci --include=dev --no-audit --no-fund
-          node --test tests/retired-situation-promo-sitewide.test.mjs tests/constellation-landing-video.test.mjs tests/free-review-conversion.test.mjs tests/private-material-handoff.test.mjs tests/coaching-intake-form.test.mjs tests/contact-channel-chooser.test.mjs tests/ga4-analytics.test.mjs tests/consultation-capture-choice.test.mjs tests/free-diagnosis-three-offers.test.mjs tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs
+          node --test tests/free-review-viewport-isolation.test.mjs tests/current-diagnosis-parent-lifecycle.test.mjs tests/personal-express-parent-lifecycle.test.mjs tests/free-review-journey-verifier.test.mjs tests/retired-situation-promo-sitewide.test.mjs tests/constellation-landing-video.test.mjs tests/free-review-conversion.test.mjs tests/private-material-handoff.test.mjs tests/coaching-intake-form.test.mjs tests/contact-channel-chooser.test.mjs tests/ga4-analytics.test.mjs tests/consultation-capture-choice.test.mjs tests/free-diagnosis-three-offers.test.mjs tests/personal-testimonials-prefetch.test.mjs
           npx eslint components/free-diagnosis-offers.tsx components/compact-lead-capture.tsx app/'[locale]'/services/free-consultation/page.tsx components/sitewide-antistress-banner.tsx components/free-entry-landing.tsx components/personal-testimonials.tsx components/free-drawing-intake.tsx components/coaching-intake-form.tsx components/consultation-choice-capture.tsx lib/coaching/intake-model.js tests/private-material-handoff.test.mjs
           npx tsc --noEmit
           npm run build > /tmp/hh-review-next-build.log 2>&1 || { tail -n 140 /tmp/hh-review-next-build.log; exit 1; }
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Install disposable Chromium and WebKit runners
+        timeout-minutes: 12
+        run: |
+          npm install --prefix /tmp/hh-free-review-browser --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
+          /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Verify PR's local production build, not old live alias
         if: github.event_name == 'pull_request'
         timeout-minutes: 10
@@ -87,6 +111,15 @@ jobs:
             sleep 2
           done
           HH_LIVE_ORIGIN=http://127.0.0.1:3100 node scripts/verify-free-review-live-mobile.mjs
+      - name: Record separate legacy Services testimonial regression
+        if: github.event_name == 'pull_request' && always()
+        run: |
+          if [ -d node_modules ]; then
+            node --test tests/personal-testimonials.test.mjs
+          else
+            echo "Legacy test skipped only because dependencies were not installed"
+            exit 1
+          fi
       - name: Read-only canonical production verification after merge
         if: github.event_name == 'push'
         timeout-minutes: 10

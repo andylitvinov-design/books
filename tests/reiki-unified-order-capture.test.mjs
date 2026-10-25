@@ -1,9 +1,90 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import ts from "typescript";
+import { runInNewContext } from "node:vm";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "../lib/whatsapp-enquiry.js";
 
 const read = (file) => readFile(file, "utf8");
+
+// Execute the actual admission/response predicates, not a spelling-sensitive
+// whole expression. Every prior blocker and the committed lifecycle guards
+// must still reject individually; current and immutable-retry cases must pass.
+function assertSaveGuards(source) {
+  const file = ts.createSourceFile("contact-channel-chooser.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  assert.equal(file.parseDiagnostics.length, 0);
+  const functions = [];
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === "saveEnquiry") functions.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(file);
+  assert.equal(functions.length, 1, "one actual saveEnquiry implementation");
+  const body = functions[0].body;
+  const admission = [...body.statements].slice(0, 2);
+  for (const gate of admission) {
+    assert.ok(ts.isIfStatement(gate) && !gate.elseStatement && ts.isReturnStatement(gate.thenStatement)
+      && !gate.thenStatement.expression, "both admission gates return before any save effects");
+  }
+  const admitted = (context) => runInNewContext(`(() => { ${admission.map(node => node.getText(file)).join("\n")} return true; })()`, context) === true;
+  const baseline = () => ({ mounted: { current: true }, activeContext: { current: "current" }, contextKey: "current",
+    contextRevision: { current: 2 }, renderRevision: 2, busy: false, googleBusy: false, authAttempt: { current: null },
+    saved: null, operation: { current: null }, operationPending: { current: false } });
+  assert.equal(admitted(baseline()), true, "fresh current request remains admissible");
+  const retry = baseline(); retry.operation.current = { confirmed: false, body: "immutable synthetic request" };
+  assert.equal(admitted(retry), true, "unconfirmed immutable attempt remains explicitly retryable");
+  for (const [label, change] of [
+    ["unmounted", state => { state.mounted.current = false; }],
+    ["changed context", state => { state.activeContext.current = "replaced"; }],
+    ["stale revision", state => { state.contextRevision.current = 3; }],
+    ["busy", state => { state.busy = true; }],
+    ["Google busy", state => { state.googleBusy = true; }],
+    ["Google admission", state => { state.authAttempt.current = {}; }],
+    ["saved", state => { state.saved = {}; }],
+    ["confirmed operation", state => { state.operation.current = { confirmed: true }; }],
+    ["pending operation", state => { state.operationPending.current = true; }],
+  ]) {
+    const state = baseline(); change(state);
+    assert.equal(admitted(state), false, `${label} blocks save admission`);
+  }
+  const responses = [];
+  function findResponse(node) {
+    if (ts.isIfStatement(node) && ts.isBlock(node.thenStatement)
+      && node.expression.getText(file).includes("activeContext.current !== attempt.context")) responses.push(node);
+    ts.forEachChild(node, findResponse);
+  }
+  findResponse(body);
+  assert.equal(responses.length, 1, "one stale-confirmation gate");
+  const response = responses[0];
+  assert.equal(response.elseStatement, undefined);
+  assert.equal(response.thenStatement.statements.length, 2);
+  const [close, stop] = response.thenStatement.statements;
+  assert.ok(ts.isTryStatement(close) && close.catchClause && !close.finallyBlock);
+  assert.equal(close.tryBlock.statements.length, 1);
+  assert.equal(close.tryBlock.statements[0].getText(file), "handoffWindow?.close();");
+  assert.equal(close.catchClause.block.statements.length, 0);
+  assert.ok(ts.isReturnStatement(stop) && !stop.expression, "stale response closes only its reserved window and returns");
+  const text = body.getText(file);
+  assert.ok(text.indexOf("const data = await response.json()") < text.indexOf(response.getText(file)));
+  assert.ok(text.indexOf(response.getText(file)) < text.indexOf("operation.current = { ...attempt, confirmed: true }"));
+  const stale = state => runInNewContext(`Boolean(${response.expression.getText(file)})`, state);
+  const currentResponse = () => {
+    const attempt = { context: "current" };
+    return { mounted: { current: true }, activeContext: { current: "current" }, contextRevision: { current: 2 },
+      submittedRevision: 2, attempt, operation: { current: attempt } };
+  };
+  assert.equal(stale(currentResponse()), false, "current confirmed response remains eligible");
+  for (const [label, change] of [
+    ["unmounted response", state => { state.mounted.current = false; }],
+    ["stale response revision", state => { state.contextRevision.current = 3; }],
+    ["changed response context", state => { state.activeContext.current = "replaced"; }],
+    ["replaced attempt", state => { state.operation.current = { ...state.attempt }; }],
+  ]) {
+    const state = currentResponse(); change(state);
+    assert.equal(stale(state), true, `${label} cannot produce a receipt or handoff`);
+  }
+}
+
 
 test("Kundalini joins existing Academy three-card capture style on mobile and desktop", async () => {
   const [page, capture, css, academy] = await Promise.all([
@@ -98,8 +179,7 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
   assert.match(chooser, /data-contact-channel": "whatsapp"/);
   assert.match(chooser, /data-contact-channel": "telegram"/);
   // An unsubmitted or failed request must never produce a fabricated CRM receipt.
-  assert.match(chooser, /if \(busy \|\| googleBusy \|\| authAttempt\.current \|\| saved \|\| operationPending\.current\) return/);
-  assert.match(chooser, /if \(!mounted\.current \|\| activeContext\.current !== attempt\.context \|\| operation\.current !== attempt\) \{\s*try \{ handoffWindow\?\.close\(\); \} catch \{[^}]*\}\s*return;/);
+  assertSaveGuards(chooser);
   assert.match(chooser, /const \[consent, setConsent\] = useState\(false\)/);
   assert.match(chooser, /setError\(c\.error\)/);
 });

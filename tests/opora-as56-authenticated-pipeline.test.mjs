@@ -1,3 +1,4 @@
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { repositoryHarness, mount, findButton, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
@@ -75,7 +76,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
-      const daily=oporaAs60Day(day,locale)
+      const daily=oporaAs60VariedDay(day,locale)
       assert.ok(realLifeChoice?.label,'Archive choices must remain available')
       assert.ok(textOf(player.tree).includes(daily.transfer),'The live player uses a single authored action')
       assert.ok(!textOf(player.tree).includes(realLifeChoice.label),'Old choices are hidden in live lessons')
@@ -160,7 +161,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)
     assert.deepEqual(saved.signals.opora54.answers, {
-        experienceEdition:'as-6.0-experiments-v1',lessonConfidence:'explored'})
+        experienceEdition:'as-6.0-experiments-v1',contentRevision:'variety-v1',lessonConfidence:'explored'})
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)

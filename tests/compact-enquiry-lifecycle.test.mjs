@@ -8,14 +8,15 @@ import ts from 'typescript';
 import * as whatsapp from '../lib/whatsapp-enquiry.js';
 import * as receipt from '../lib/practitioners/enquiry-receipt.mjs';
 const base=resolve(process.env.COMPACT_SOURCE_ROOT||'.');
-const files=Object.fromEntries(await Promise.all(['compact-lead-capture','free-diagnosis-offers'].map(async name=>[name,await readFile(resolve(base,`components/${name}.tsx`),'utf8')])));
-const element=(type,props)=>({type,props:props||{}}); const empty=()=>null;let nextMountId=0;
+const files=Object.fromEntries(await Promise.all(['compact-lead-capture'].map(async name=>[name,await readFile(resolve(base,`components/${name}.tsx`),'utf8')])));
+const element=(type,props,key)=>({type,props:props||{},key}); const empty=()=>null;let nextMountId=0;
 function environment(){
  const requests=[],writes=[],popups=[];
+ const listeners=new Map();const document={body:{style:{overflow:""}},addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:(name,fn)=>{if(listeners.get(name)===fn)listeners.delete(name)},dispatch:(name,event)=>listeners.get(name)?.(event)};
  let popupMode='normal',storageDenied=false;
  let respond=async()=>({ok:false,status:503,json:async()=>({saved:false})});
  const window={crypto:{randomUUID},location:{pathname:'/en/services/hypnotherapy-course'},sessionStorage:{setItem:(...args)=>{if(storageDenied)throw Error('STORAGE_DENIED');writes.push(args)}},open:(url,target)=>{assert.equal(url,'about:blank');assert.equal(target,'_blank');if(popupMode==='throw')throw Error('POPUP_DENIED');if(popupMode==='null')return null;const popup={closed:false,opener:{},destinations:[],close(){this.closed=true},location:{replace:url=>popup.destinations.push(url)}};popups.push(popup);return popup}};
- return{window,requests,writes,popups,setRespond:f=>respond=f,setPopupMode:m=>popupMode=m,setStorageDenied:v=>storageDenied=v,fetch:(url,options)=>{assert.equal(url,'/api/service-enquiries');assert.equal(options.method,'POST');requests.push(options.body);return respond()}};
+ return{window,document,requests,writes,popups,setRespond:f=>respond=f,setPopupMode:m=>popupMode=m,setStorageDenied:v=>storageDenied=v,fetch:(url,options)=>{assert.equal(url,'/api/service-enquiries');assert.equal(options.method,'POST');requests.push(options.body);return respond()}};
 }
 function mount(name, exportName, initialProps, env = environment()) {
     const instanceId = ++nextMountId;
@@ -42,7 +43,7 @@ function mount(name, exportName, initialProps, env = environment()) {
     const loaded = { exports: {} };
     const code = ts.transpileModule(files[name], { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
     vm.runInNewContext(code, { exports: loaded.exports, module: loaded, require: p => { if (p.endsWith('.module.css'))
-            return { default: {} }; assert.ok(p in imports, 'unapproved import ' + p); return imports[p]; }, window: env.window, fetch: env.fetch, URL, URLSearchParams, crypto: { randomUUID }, Date, console });
+            return { default: {} }; assert.ok(p in imports, 'unapproved import ' + p); return imports[p]; }, window: env.window, document: env.document, fetch: env.fetch, URL, URLSearchParams, crypto: { randomUUID }, Date, console });
     const component = loaded.exports[exportName];
     function flush() { for (let count = 0; dirty; count++) {
         assert.ok(count < 30, 'render loop');
@@ -152,16 +153,20 @@ for(const change of [{sourcePath:'/en/services/another-synthetic'},{locale:'ru'}
 test('equivalent freshly allocated controlled format options do not erase contact or receipt',async()=>{
  const f=fixture(controlledProps);fill(f);f.update({formatOptions:controlledOptions.map(x=>({...x}))});assert.equal(f.find('input',p=>p.name==='contact').props.value,'fictional@example.invalid');f.env.setRespond(success);await click(f);f.update({formatOptions:controlledOptions.map(x=>({...x}))});assert.equal(f.nodes().filter(n=>n.props['data-lead-saved']).length,1);
 });
-for(const locale of ['en','ru','es'])test(locale+': actual FreeDiagnosisOffers card and dropdown use one controlled service/format through confirmed receipt',async()=>{
- const parent=mount('free-diagnosis-offers','FreeDiagnosisOffers',{locale});parent.find('diagnostic-start');
- parent.click('a',p=>p['data-diagnosis-order']==='wu-xing-free');const first=parent.find('compact-capture').props;assert.equal(first.selectedFormatValue,'wu-xing-free');
- const env=environment();env.window.location.pathname=`/${locale}/services/free-situation-review`;const child=fixture(first,env);fill(child);
- child.change('select',()=>true,'personal-session-30-eur50');parent.flush();const next=parent.find('compact-capture').props;assert.equal(next.selectedFormatValue,'personal-session-30-eur50');assert.notEqual(next.serviceTitle,first.serviceTitle);child.update(next);
- assert.equal(child.find('input',p=>p.name==='contact').props.value,'fictional@example.invalid');assert.equal(child.find('input',p=>p.type==='checkbox').props.checked,true);assert.equal(env.requests.length,0);
- env.setRespond(success);await click(child);const sent=JSON.parse(env.requests[0]);assert.equal(sent.serviceTitle,next.serviceTitle);assert.ok(sent.description.includes(next.selectedFormatValue));const links=child.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href);
- parent.click('a',p=>p['data-diagnosis-order']==='wu-xing-free');child.update(parent.find('compact-capture').props);assert.equal(child.nodes().filter(n=>n.type==='form').length,0);assert.deepEqual(child.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href),links);assert.equal(env.requests.length,1);
+for(const locale of ['en','ru','es'])test(locale+': confirmed controlled service receipt remains pinned after external offer change',async()=>{
+ const f=fixture({...controlledProps,locale,sourcePath:`/${locale}/services/free-situation-review`});fill(f);f.env.setRespond(success);await click(f);
+ const original=f.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href);assert.equal(original.length,2);
+ f.update({selectedFormatValue:'personal-session-30-eur50',serviceTitle:'Synthetic personal consultation'});
+ assert.equal(f.nodes().filter(n=>n.props['data-lead-saved']).length,1);assert.equal(f.nodes().filter(n=>n.type==='form').length,0);assert.equal(f.env.requests.length,1);
+ assert.deepEqual(f.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href),original);
+ for(const url of original){const text=new URL(url).searchParams.get('text');assert.ok(text.includes('Synthetic Wu Xing reflection'));assert.ok(text.includes('wu-xing-free'));assert.ok(!text.includes('fictional@example.invalid'));}
 });
-test('canonical saved receipt copy retains awaiting-reply and separate scheduling/private-handoff boundaries in all locales',()=>{
+
+// These are standalone CompactLeadCapture contracts, not current diagnosis-parent proof.
+// Current FreeDiagnosisOffers mounts ContactChannelChooser conditionally; its
+// nested lifecycle is exercised in current-diagnosis-parent-lifecycle.test.mjs.
+
+test('standalone compact saved receipt copy retains awaiting-reply and separate scheduling/private-handoff boundaries in all locales',()=>{
  const source=files['compact-lead-capture'];
  for(const text of [
   "Request saved — awaiting a personal reply",
@@ -172,3 +177,82 @@ test('canonical saved receipt copy retains awaiting-reply and separate schedulin
   "Conserva la referencia. Aún no se ha confirmado el plazo de respuesta ni una cita. Usa mensajería solo para coordinar; acuerda una entrega segura para materiales personales."
 ])assert.ok(source.includes(text),text);
 });
+
+// Canonical controlled-phone props execute against the real merged component,
+// including transitions before a server-confirmed receipt exists.
+for(const locale of ['en','ru','es'])test(locale+': phone-only controlled contact is authoritative, normalized, and never leaks to receipt links',async()=>{
+ const changes=[];const f=fixture({locale,phoneOnly:true,contactValue:'+1 (416) 555-0100',onContactChange:value=>changes.push(value)});
+ assert.equal(changes.length,0,'Mount must not erase the parent-owned phone');assert.equal(f.find('input',p=>p.name==='contact').props.inputMode,'tel');assert.equal(f.find('input',p=>p.name==='contact').props.autoComplete,'tel');
+ f.change('input',p=>p.name==='contact','+1 (416) 555-0101');assert.deepEqual(changes,['+1 (416) 555-0101']);assert.equal(f.find('input',p=>p.name==='contact').props.value,'+1 (416) 555-0100');
+ f.update({contactValue:'+1 (416) 555-0101'});assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,false);await click(f);assert.equal(f.env.requests.length,0);
+ f.change('input',p=>p.type==='checkbox',true);f.env.setRespond(success);await click(f);const body=JSON.parse(f.env.requests[0]);assert.equal(body.contact.phone,'+14165550101');assert.equal(body.contact.email,'');assert.equal(body.contactConsent,true);
+ for(const link of f.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']))assert.ok(!decodeURIComponent(link.props.href).includes('14165550101'));
+});
+for(const value of ['fictional@example.invalid','invalid','+0123456789'])test('phone-only validation rejects controlled nonphone '+value,async()=>{
+ const f=fixture({phoneOnly:true,contactValue:value});f.change('input',p=>p.type==='checkbox',true);await click(f);assert.equal(f.env.requests.length,0);assert.equal(f.env.popups.length,0);
+});
+test('unknown controlled-phone attempt ignores field callbacks and freezes the original body',async()=>{
+ const changes=[];const f=fixture({phoneOnly:true,contactValue:'+14165550100',onContactChange:value=>changes.push(value)});f.change('input',p=>p.type==='checkbox',true);await click(f);const body=f.env.requests[0];
+ f.change('input',p=>p.name==='contact','+14165550199');f.change('input',p=>p.type==='checkbox',false);assert.deepEqual(changes,[]);assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,true);
+ f.env.setRespond(success);await click(f);assert.equal(f.env.requests[1],body);
+});
+for(const change of [{contactValue:'+14165550199'},{phoneOnly:false},{contactValue:undefined}])test('pending controlled-phone external change invalidates completion and restores only original retry: '+JSON.stringify(change),async()=>{
+ const original={phoneOnly:true,contactValue:'+14165550100'},f=fixture(original),pending=deferred();f.change('input',p=>p.type==='checkbox',true);f.env.setRespond(()=>pending.promise);f.click('button',p=>p['data-compact-channel']==='whatsapp');const body=f.env.requests[0];
+ f.update(change);assert.equal(f.env.popups[0].closed,true);pending.resolve(success());await tick();f.flush();assert.equal(f.env.writes.length,0);assert.deepEqual(f.env.popups[0].destinations,[]);await click(f);assert.equal(f.env.requests.length,1);
+ f.update(original);assert.equal(f.find('input',p=>p.name==='contact').props.disabled,true);f.env.setRespond(success);await click(f);assert.equal(f.env.requests.length,2);assert.equal(f.env.requests[1],body);
+});
+for(const change of [{contactValue:'+14165550199'},{phoneOnly:false},{contactValue:undefined}])test('unknown controlled-phone external change cannot start another write: '+JSON.stringify(change),async()=>{
+ const original={phoneOnly:true,contactValue:'+14165550100'},f=fixture(original);f.change('input',p=>p.type==='checkbox',true);await click(f);const body=f.env.requests[0];f.update(change);await click(f);assert.equal(f.env.requests.length,1);
+ f.update(original);f.env.setRespond(success);await click(f);assert.equal(f.env.requests[1],body);
+});
+for(const change of [{contactValue:'+14165550199'},{phoneOnly:false},{contactValue:undefined}])test('stale controlled-phone handler cannot submit after external change: '+JSON.stringify(change),async()=>{
+ const f=fixture({phoneOnly:true,contactValue:'+14165550100'});f.change('input',p=>p.type==='checkbox',true);const stale=f.find('button',p=>p['data-compact-channel']==='whatsapp').props.onClick;f.update(change);stale();await tick();assert.equal(f.env.requests.length,0);assert.equal(f.env.popups.length,0);
+});
+for(const change of [{phoneOnly:false},{contactValue:undefined}])test('contact mode replacement before request keeps no consent grant: '+JSON.stringify(change),async()=>{
+ const f=fixture({phoneOnly:true,contactValue:'+14165550100'});f.change('input',p=>p.type==='checkbox',true);f.update(change);assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,false);await click(f);assert.equal(f.env.requests.length,0);assert.equal(f.env.popups.length,0);
+});
+test('controlled phone changes after confirmation cannot rewrite or resubmit the saved receipt',async()=>{
+ const f=fixture({phoneOnly:true,contactValue:'+14165550100'});f.change('input',p=>p.type==='checkbox',true);f.env.setRespond(success);await click(f);const links=f.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href);
+ f.update({contactValue:'+14165550199'});assert.equal(f.env.requests.length,1);assert.deepEqual(f.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href),links);assert.equal(f.nodes().filter(n=>n.type==='form').length,0);
+});
+
+for(const change of [{contactValue:'+14165550199'},{phoneOnly:false},{contactValue:undefined}])test('transient external controlled-phone change cannot revive original completion: '+JSON.stringify(change),async()=>{
+ const original={phoneOnly:true,contactValue:'+14165550100'},f=fixture(original),pending=deferred();f.change('input',p=>p.type==='checkbox',true);f.env.setRespond(()=>pending.promise);f.click('button',p=>p['data-compact-channel']==='whatsapp');const body=f.env.requests[0];f.update(change);f.update(original);pending.resolve(success());await tick();f.flush();assert.equal(f.env.writes.length,0);assert.deepEqual(f.env.popups[0].destinations,[]);f.env.setRespond(success);await click(f);assert.equal(f.env.requests[1],body);
+});
+
+test('restoring a replaced contact mode cannot revive a stale pre-change consent handler',async()=>{
+ const original={phoneOnly:true,contactValue:'+14165550100'},f=fixture(original);f.change('input',p=>p.type==='checkbox',true);const stale=f.find('button',p=>p['data-compact-channel']==='whatsapp').props.onClick;
+ f.update({phoneOnly:false});f.update(original);assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,false);stale();await tick();assert.equal(f.env.requests.length,0);assert.equal(f.env.popups.length,0);
+});
+
+test('fresh current handler submits after restored contact mode and newly explicit consent',async()=>{
+ const original={phoneOnly:true,contactValue:'+14165550100'},f=fixture(original);f.change('input',p=>p.type==='checkbox',true);f.update({phoneOnly:false});f.update(original);assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,false);
+ f.change('input',p=>p.type==='checkbox',true);f.env.setRespond(success);await click(f);assert.equal(f.env.requests.length,1);assert.equal(JSON.parse(f.env.requests[0]).contact.phone,'+14165550100');assert.equal(f.env.writes.length,1);
+});
+test('unchanged-context rerender retains an explicit immutable retry with the current handler',async()=>{
+ const f=fixture({phoneOnly:true,contactValue:'+14165550100'});f.change('input',p=>p.type==='checkbox',true);await click(f);const body=f.env.requests[0];f.update({title:'Synthetic display-only title',lead:'Unchanged request details'});
+ assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,true);assert.equal(f.find('input',p=>p.name==='contact').props.disabled,true);f.env.setRespond(success);await click(f);assert.equal(f.env.requests.length,2);assert.equal(f.env.requests[1],body);assert.equal(f.env.writes.length,1);
+});
+
+// Preserve the standalone capture's active/controlled-contact invariants even
+// though the current diagnosis parent no longer mounts this component.
+test('standalone inactive capture rejects both current and captured active handlers',async()=>{
+ const f=fixture({phoneOnly:true,contactValue:'+14165550100',active:true});f.change('input',p=>p.type==='checkbox',true);const stale=f.find('button',p=>p['data-compact-channel']==='whatsapp').props.onClick
+ f.update({active:false});stale();await click(f);assert.equal(f.env.requests.length,0);assert.equal(f.env.popups.length,0);assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,true);f.unmount()
+})
+for(const reopen of [false,true])test('standalone active=false'+(reopen?'→true':'')+' revokes pending side effects while current explicit retry retains original bytes',async()=>{
+ const f=fixture({phoneOnly:true,contactValue:'+14165550100',active:true}),pending=deferred();f.change('input',p=>p.type==='checkbox',true);f.env.setRespond(()=>pending.promise);f.click('button',p=>p['data-compact-channel']==='whatsapp');const body=f.env.requests[0]
+ f.update({active:false});assert.equal(f.env.popups[0].closed,true);if(reopen)f.update({active:true});pending.resolve(success());await tick();f.flush();assert.equal(f.env.writes.length,0);assert.deepEqual(f.env.popups[0].destinations,[]);assert.equal(f.nodes().filter(n=>n.props['data-lead-saved']).length,0)
+ if(!reopen){await click(f);assert.equal(f.env.requests.length,1);f.update({active:true})}
+ assert.equal(f.find('input',p=>p.name==='contact').props.disabled,true);f.env.setRespond(success);await click(f);assert.equal(f.env.requests.length,2);assert.equal(f.env.requests[1],body);assert.equal(f.env.writes.length,1);f.unmount()
+})
+for(const [locale,contextCopy] of [
+ ['en','Request details changed. Restore the original service, format and contact details'],
+ ['ru','Данные заявки изменились. Верните исходную услугу, формат и контактные данные'],
+ ['es','Los datos de la solicitud cambiaron. Restablece el servicio, formato y contacto originales'],
+])test(locale+': standalone controlled contact mismatch blocks uncertain retry with exact localized explanation until restored',async()=>{
+ const original={locale,phoneOnly:true,contactValue:'+14165550100',active:true},f=fixture(original);f.change('input',p=>p.type==='checkbox',true);await click(f);const body=f.env.requests[0]
+ f.update({active:false,contactValue:'+14165550199'});f.update({active:true});assert.equal(f.find('input',p=>p.name==='contact').props.value,'+14165550199');assert.equal(f.find('input',p=>p.name==='contact').props.disabled,true)
+ await click(f);assert.equal(f.env.requests.length,1);assert.equal(f.env.writes.length,0);assert.deepEqual(f.env.popups.flatMap(p=>p.destinations),[]);assert.ok(f.find('p',p=>p.role==='alert').props.children.includes(contextCopy))
+ f.update(original);f.env.setRespond(success);await click(f);assert.equal(f.env.requests.length,2);assert.equal(f.env.requests[1],body);assert.equal(f.env.writes.length,1);f.unmount()
+})

@@ -7,6 +7,7 @@ import { HomePersonalSpaceProvider } from "@/components/home-personal-space";
 import { SitewideLeadCapture } from "@/components/sitewide-lead-capture";
 import { SitewideAntistressBanner } from "@/components/sitewide-antistress-banner";
 import { AnalyticsConsent } from "@/components/analytics-consent";
+import { PublicPageTraffic } from "@/components/public-page-traffic";
 import { Ga4Analytics } from "@/components/ga4-analytics";
 import { NativeLinkHandler } from "@/components/native-link-handler";
 import { NativeExternalLinks } from "@/components/native-external-links";
@@ -24,6 +25,11 @@ import "./public-wide-layout.css";
 export const metadata: Metadata = {
   metadataBase: metadataBaseFor(),
   title: "Holistic House",
+  // The main site installs as Holistic House, not the separate PsiAlchemy library.
+  manifest: "/holistic-house-app.webmanifest",
+  applicationName: "Holistic House",
+  appleWebApp: { capable: true, title: "Holistic House", statusBarStyle: "black-translucent" },
+  icons: { icon: "/icons/holistic-house-teal.svg", apple: "/holistic-house-icon/180" },
   description: "Holistic House offers free self-checks, educational resources and optional personal sessions with Andrey Litvinov in Toronto and online.",
   verification: { other: { "google-site-verification": "RsXfHdZ-u_AgKVoRSNIv_PKPcGjoDoqBBK3HZLaOzjc" } },
   openGraph: { type: "website", siteName: "Holistic House", images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }] },
@@ -69,7 +75,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><MobileBottomNavigation initialLocale={lang} /></body>
+      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /></body>
     </html>
   );
 }

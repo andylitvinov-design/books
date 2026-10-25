@@ -16,7 +16,7 @@ const jsx = { jsx: element, jsxs: element, Fragment: 'fragment' };
 const css = { default: new Proxy({}, { get: (_, key) => String(key) }) };
 const icons = Object.fromEntries(('ArrowLeft ArrowRight ArrowDown Award BookOpen Check CheckCircle2 ClipboardCopy Clock3 Compass HandHeart Heart LockKeyhole PlayCircle Sparkles Sprout MessageCircle ExternalLink ChevronDown HeartHandshake').split(' ').map(name => [name, 'icon-' + name]));
 
-function compile(source, path, modules) {
+function compile(source, path, modules, block = forbidden) {
   const ast = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   assert.equal(ast.parseDiagnostics.length, 0, path + ' parses');
   const code = ts.transpileModule(source, { fileName: path, compilerOptions: {
@@ -24,7 +24,9 @@ function compile(source, path, modules) {
   } }).outputText;
   const module = { exports: {} };
   vm.runInNewContext(code, { module, exports: module.exports, URL,
-    fetch: forbidden, XMLHttpRequest: forbidden, WebSocket: forbidden,
+    fetch: () => block('fetch'),
+    XMLHttpRequest: function () { return block('XMLHttpRequest'); },
+    WebSocket: function () { return block('WebSocket'); },
     require: name => { assert.ok(Object.hasOwn(modules, name), 'Unexpected dependency: ' + name); return modules[name]; },
   }, { filename: path, timeout: 5000 });
   return module.exports;
@@ -32,8 +34,10 @@ function compile(source, path, modules) {
 
 function sourceLoader(overrides = {}) {
   const cache = new Map();
+  const externalOperations = [];
+  const block = operation => { externalOperations.push(operation); return forbidden(); };
   const source = path => overrides[path] ?? readReikiSource(path);
-  const load = (path, modules = {}) => compile(source(path), path, { 'react/jsx-runtime': jsx, ...modules });
+  const load = (path, modules = {}) => compile(source(path), path, { 'react/jsx-runtime': jsx, ...modules }, block);
   const data = path => {
     if (cache.has(path)) return cache.get(path);
     const imports = {};
@@ -50,7 +54,7 @@ function sourceLoader(overrides = {}) {
     cache.set(path, value);
     return value;
   };
-  return { source, load, data };
+  return { source, load, data, block, assertNoExternalOperations: () => assert.deepEqual(externalOperations, [], 'No external attempts, including caught failures') };
 }
 
 export function reikiNodes(tree) {
@@ -104,11 +108,13 @@ export function createReikiLearner({ locale = 'en', slideId = 'flight-voices', s
     '@/components/academy-video-player': { AcademyVideoPlayer: 'academy-video' },
     '@/components/reiki-lesson-intro-audio': { ReikiLessonIntroAudio: 'intro-audio' },
     '@/components/reiki-course-referral-share': { ReikiCourseReferralShare: 'referral-share' },
-    '@/lib/app/client-fetch': { appFetch: forbidden },
+    // Inspect the real parent's photo props without mounting its upload effects.
+    '@/components/reiki-initiation-photo': { ReikiInitiationPhoto: 'initiation-photo' },
+    '@/lib/app/client-fetch': { appFetch: () => loader.block('appFetch') },
     '@/lib/whatsapp-enquiry': loader.data('lib/whatsapp-enquiry.js'),
     '@/data/academy/english-guided-meditations': loader.data('data/academy/english-guided-meditations.ts'),
     '@/data/academy/reiki-practitioner-lesson-videos': loader.data('data/academy/reiki-practitioner-lesson-videos.ts'),
-    './ocean-practice-audio': { useOceanPracticeAudio: forbidden }, './ocean-sound-toggle': { default: 'ocean-toggle' },
+    './ocean-practice-audio': { useOceanPracticeAudio: () => loader.block('ocean audio') }, './ocean-sound-toggle': { default: 'ocean-toggle' },
     '@/data/academy/energywork-ai-curriculum': curriculum,
     '@/data/academy/energywork-first-lesson': loader.data('data/academy/energywork-first-lesson.js'),
     '@/data/academy/energywork-ai-schema': loader.data('data/academy/energywork-ai-schema.js'),
@@ -120,6 +126,7 @@ export function createReikiLearner({ locale = 'en', slideId = 'flight-voices', s
     hooks = instance; hooks.stateIndex = 0; hooks.refIndex = 0;
     const tree = fn(props);
     if (instance === mainHooks) assert.equal(hooks.stateIndex, names.length, 'All actual learner state hooks executed');
+    loader.assertNoExternalOperations();
     return tree;
   };
   const render = () => renderWith(learner, { locale }, mainHooks);
@@ -132,7 +139,7 @@ export function createReikiLearner({ locale = 'en', slideId = 'flight-voices', s
     const mount = oneReikiNode(render(), node => typeof node.type === 'function' && node.type.name === 'ReikiLessonVideo', 'Actual lesson video mounted');
     return renderWith(mount.type, mount.props, { names: [], seeds: {}, values: [], refs: [] });
   };
-  return { render, mountVoices, mountVideo, slides };
+  return { render, mountVoices, mountVideo, slides, assertNoExternalOperations: loader.assertNoExternalOperations };
 }
 
 export function renderEnergyworkLanding(locale, overrides = {}) {

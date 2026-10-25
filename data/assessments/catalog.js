@@ -1,3 +1,4 @@
+import { withOns4ReferenceAvailability } from '../../lib/assessments/ons4-availability.js'
 import { HH_SPLIT_V2_KEYS } from './hh-split-reflections-v2.js'
 import { IPIP_FIVE_CATALOG } from './ipip-five-2026.js'
 import { IPIP_THREE_CATALOG } from './ipip-three-2026.js'
@@ -733,7 +734,7 @@ export const MONITORING_CATALOG = deepFreeze([
   ...IPIP_VIA_R_COMPLETION_CATALOG,
   ...IPIP_VIA_R_PROFILE_96_CATALOG,
   ...CFPB_FINANCIAL_WELLBEING_SHORT_CATALOG,
-  ...ADDITIONAL_PROFESSIONAL_CATALOG,
+  ...ADDITIONAL_PROFESSIONAL_CATALOG.map(withOns4ReferenceAvailability),
   {
     key: 'mspss',
     version: 'v1',

@@ -16,7 +16,7 @@ import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, coachingSchemeArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
-import CoachingLiveSessionCapture from '@/components/coaching-live-session-capture'
+import { CoachingLoungeEntry } from '@/components/coaching-lounge-entry'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, COACHING_CATALOG_GROUPS, coachingCatalogGroupId, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
@@ -212,8 +212,17 @@ function CoachingLoungeCard({
     <div className={styles.loungeRow}>
       <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
         aria-label={t.fullDetails+': '+title}>
-        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized referrerPolicy="no-referrer"
-          sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
+        {traditionKey
+          ? <>
+              {/* Native eager image avoids Safari/WebKit skipping a lazy,
+                  absolutely positioned Next Image in a long scrolled grid. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.loungeTraditionPhoto} src={cardArtworkUrl(image)}
+                alt="" aria-hidden="true" loading="eager" decoding="async" width="640" height="720"
+                referrerPolicy="no-referrer"/>
+            </>
+          : <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized referrerPolicy="no-referrer"
+              sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>}
       </Link>
       <div className={styles.loungeContent}>
         <div className={styles.loungeMeta}>
@@ -287,6 +296,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const privateCoachingLocale=lang==='es'?'en':lang
   const traditionHref=id=>'/'+privateCoachingLocale+'/app/coaching/'+id+(lang==='es'?'?lang=es':'')
   const [format,setFormat]=useState('all')
+  const [coachingChoice,setCoachingChoice]=useState('free')
   const [outcome,setOutcome]=useState('')
   const [sessionMode,setSessionMode]=useState('all')
   const [question,setQuestion]=useState('')
@@ -538,11 +548,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?<>
-        <header className={styles.hero}>
-          <p className={styles.eyebrow}><Sparkles size={16}/>{t.eyebrow}</p>
-          <h1>{t.title}</h1>
-          <p><span className={styles.leadFull}>{t.lead}</span><span className={styles.leadShort}>{t.leadCompact}</span></p>
-        </header>
+        <CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         <section className={styles.controls} aria-label={t.filters}>
           <fieldset className={styles.topicGroups} data-coaching-topic-first>
             <legend><strong>{t.groupHeading}</strong><span>{t.groupNote}</span></legend>
@@ -694,7 +700,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <ul>{t.coachFitChecks.map((text,i)=><li key={i}>{text}</li>)}</ul>
             <p className={styles.coachOnly}>{t.coachOnly}</p>
           </div>
-          <CoachingLiveSessionCapture locale={lang} />
+          <a href="#coaching-intake" className={styles.primary} data-coaching-human-to-intake
+              onClick={()=>setCoachingChoice("session")}>{t.request}<ArrowRight size={16} aria-hidden="true"/></a>
         </section>}
         
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>

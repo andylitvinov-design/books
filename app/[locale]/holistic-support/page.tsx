@@ -3,17 +3,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { CompactLeadCapture } from "@/components/compact-lead-capture";
-import { FreeDiagnosticStart } from "@/components/free-diagnostic-start";
-import { IdeasDiscovery } from "@/components/ideas-discovery";
-import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
+import { HolisticSupportChoices } from "@/components/holistic-support-choices";
+import { SupportTalismanGallery } from "@/components/support-talisman-gallery";
+import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
+import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { HolisticSupportTopicFilter } from "@/components/holistic-support-topic-filter";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
-import { getAppConfig } from "@/lib/app/config";
-import { createPractitionerRepository } from "@/lib/practitioners/repository";
-import type { PublicPractitioner } from "@/lib/practitioners/public-types";
-import { ArrowRight, HeartHandshake, Sparkles } from "lucide-react";
 import styles from "./holistic-support.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -22,9 +19,9 @@ export const revalidate = 0;
 
 const copy = {
   en: {
-    eyebrow: "HOLISTIC HOUSE · FREE DIAGNOSTIC & PERSONAL SESSIONS",
-    title: "Free Diagnosis & Personal Coaching",
-    lead: "Start with a free written coaching diagnostic or request a personal session with Andrey: €50 / 30 minutes or €100 / 60 minutes.",
+    eyebrow: "HOLISTIC HOUSE · INSIGHT & ENERGY SUPPORT",
+    title: "Holistic Support",
+    lead: "Describe a goal or situation. Receive a free symbolic insight or request a personal energy support session.",
     heroHeadline: "Understand your situation. Choose the next step.",
     heroLead: "Free written coaching review after your questionnaire, or personal support in a 30- or 60-minute session.",
     choose: "Choose your direction",
@@ -62,23 +59,48 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Request distant energy support when you need it. Choose the practitioner, format and preferred time; the master confirms availability and fees.",
     energyAction: "Request distant energy support",
+    talismanTitle: "Talismans",
+    talismanBody: "Explore symbolic talismans by intention and upload a photo of your own to your private collection.",
+    talismanAction: "Browse & upload talismans",
+    talismanEyebrow: "04 · SYMBOLS & TALISMANS",
+    talismanSectionTitle: "Talismans · Your symbolic collection",
+    talismanSectionLead: "Organize personal images by protection, energy, harmony, prosperity, wisdom and more. New uploads stay private.",
+    meditationTitle: "Meditation · Audio & Video",
+    meditationBody: "Listen to a calming soundscape or Andrey’s original English Sun meditation. The PsiMaster archive is preserved in Russian.",
+    meditationAction: "Open free practices",
+    meditationEyebrow: "03 · MEDITATION PRACTICES",
+    meditationSectionTitle: "Meditation · Flight to the Sun",
+    meditationSectionLead: "Begin with an original English-guided Sun practice. The historical free PsiMaster Energy Pump-Ups series is accessible in Russian on the RU page.",
+    meditationAudioTitle: "Audio · Gentle waves & melody",
+    meditationAudioBody: "A 96-second instrumental soundscape for quiet attention. It is not an original PsiMaster guided recording.",
+    meditationAudioLabel: "Play gentle waves and soft music",
+    meditationAudioMissing: "Original standalone MP3/M4A recordings of the Russian PsiMaster pump-ups have not been located. The English Sun video above retains its original sound; no guided audio has been extracted or invented.",
+    meditationVideoIntro: "An original English-language Flight to the Sun practice. The PsiMaster Sun and Energy Pump-Ups archive is in Russian, not translated as English content.",
+    meditationVideoTitle: "Flight to the Sun · Original English video",
+    meditationVideoUnavailable: "The original PsiMaster practice recordings are not available in the catalogue.",
+    meditationMore: "Explore more Academy meditations",
+    meditationRussianArchive: "Open the original PsiMaster series in Russian",
+    meditationAudioFallback: "Your browser does not support audio playback.",
+    meditationToAudio: "Next · Calming audio",
+    meditationBackToVideo: "Back to video",
+
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Situation analysis, constellation-informed reflection and optional homeopathic discussion as a symbolic or complementary approach — not medical treatment.",
     alchemyAction: "Explore Psychic Alchemy",
     practitionerOfferTitle: "I'm a Master — Offer My Services",
     practitionerOfferBody: "Already a practitioner? Create your professional profile, describe your sessions or courses in My Practice, then submit them for review. Listings appear only after approval.",
     practitionerOfferAction: "Start offering my services",
-    practitionersTitle: "Choose a practitioner",
-    practitionersBody: "Only published energy and spiritual practitioners appear below. You can also explore the full directory.",
-    allPractitioners: "Find all practitioners",
     libraryAction: "Explore Temple Studies",
     disclaimer: "Symbolic insights, tarot, runes and constellations are exploratory traditions, not reliable predictions, clinical diagnostics, medical advice or emergency services. Homeopathy lacks reliable evidence for treating health conditions.",
+    coachingAsideTitle: "Looking for personal coaching?",
+    coachingAsideBody: "The free written situation review and individual €50 / 30-minute or €100 / 60-minute sessions are in the Coaching Lounge.",
+    coachingAsideAction: "Explore free diagnostics and coaching",
     privacy: "Free questions stay in your browser. A CRM contact is created only when you explicitly consent to a personal enquiry. Booking and payment are separate confirmations.",
   },
   ru: {
-    eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНЫЙ РАЗБОР И ЛИЧНЫЕ СЕССИИ",
-    title: "Бесплатная диагностика и коучинг",
-    lead: "Бесплатная письменная экспресс-диагностика или личная сессия с Андреем: €50 / 30 минут и €100 / 60 минут.",
+    eyebrow: "HOLISTIC HOUSE · ПОДСКАЗКИ И ЭНЕРГЕТИЧЕСКАЯ ПОДДЕРЖКА",
+    title: "Холистическая поддержка",
+    lead: "Опишите цель или ситуацию. Получите бесплатную символическую подсказку или запросите энергетическую поддержку.",
     heroHeadline: "Разберитесь в ситуации и выберите следующий шаг.",
     heroLead: "Письменный разбор по коучинговой анкете — бесплатно. Личная сессия — 30 или 60 минут.",
     choose: "Выберите направление",
@@ -116,23 +138,48 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Запросите дистанционную энергетическую поддержку, когда она нужна. Выберите мастера, формат и удобное время; доступность и цена подтверждаются отдельно.",
     energyAction: "Запросить дистанционную поддержку",
+    talismanTitle: "Талисманы",
+    talismanBody: "Выбирайте символические талисманы по рубрикам и загружайте свои изображения в личную коллекцию.",
+    talismanAction: "Открыть талисманы",
+    talismanEyebrow: "04 · СИМВОЛЫ И ТАЛИСМАНЫ",
+    talismanSectionTitle: "Талисманы · Личная коллекция",
+    talismanSectionLead: "Защита, энергия, гармония, благополучие, мудрость и другие рубрики. Новые загрузки доступны только вам.",
+    meditationTitle: "Медитации · аудио и видео",
+    meditationBody: "Откройте восстановленные русскоязычные медитации Солнца и энергетические практики PsiMaster. Ниже доступно спокойное инструментальное аудио.",
+    meditationAction: "Открыть бесплатные практики",
+    meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
+    meditationSectionTitle: "Медитации · Бесплатные подкачки",
+    meditationSectionLead: "Три медитации Солнца, «Жизненная Сила», «Круг Огня» и две записи марафонов — оригинальные русскоязычные видео PsiMaster. Выберите запись и нажмите «Смотреть».",
+    meditationAudioTitle: "Аудио · Мягкие волны и мелодия",
+    meditationAudioBody: "Инструментальное сопровождение для спокойного внимания, 96 секунд. Это не оригинальная голосовая подкачка с PsiMaster.",
+    meditationAudioLabel: "Воспроизвести мягкие волны и мелодию",
+    meditationAudioMissing: "Отдельные оригинальные аудиофайлы MP3/M4A авторских подкачек PsiMaster пока не найдены. Выше доступны исходные русскоязычные видеозаписи со звуком; мы не извлекали аудио из видео и не подменяли записи.",
+    meditationVideoIntro: "Семь оригинальных видео PsiMaster на русском: три медитации Солнца, «Жизненная Сила», «Круг Огня», марафоны энергопрактик и чисток. Нажмите «Смотреть» на обложке; если встроенный плеер недоступен, откройте YouTube.",
+    meditationVideoTitle: "Русскоязычные медитации · архив PsiMaster",
+    meditationVideoUnavailable: "Оригинальные материалы PsiMaster пока недоступны в каталоге.",
+    meditationMore: "Другие медитации в Академии",
+    meditationRussianArchive: "Оригинальный архив PsiMaster (RU)",
+    meditationAudioFallback: "Ваш браузер не поддерживает воспроизведение аудио.",
+    meditationToAudio: "Далее · Спокойное аудио",
+    meditationBackToVideo: "Назад к видео",
+
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Разбор ситуации, символическая расстановочная работа и при желании обсуждение гомеопатии как дополнительного подхода — не лечение.",
     alchemyAction: "Подробнее об Алхимии души",
     practitionerOfferTitle: "Я мастер — предложить свои услуги",
     practitionerOfferBody: "Создайте профиль специалиста, добавьте сессии или курсы в «Моей практике» и отправьте на модерацию. Услуги публикуются только после одобрения.",
     practitionerOfferAction: "Предложить свои услуги",
-    practitionersTitle: "Выберите мастера",
-    practitionersBody: "Ниже — только опубликованные специалисты по энергетическим и духовным практикам. Можно открыть полный каталог.",
-    allPractitioners: "Все специалисты",
     libraryAction: "Храмовые традиции",
     disclaimer: "И-Цзин, Руны, Таро и расстановки — символические практики, а не надёжные предсказания, медицинские диагнозы или экстренная помощь. Для лечения заболеваний у гомеопатии нет убедительной доказательной базы.",
+    coachingAsideTitle: "Нужен личный коучинг?",
+    coachingAsideBody: "Бесплатная письменная диагностика ситуации и личные сессии €50 / 30 минут или €100 / 60 минут находятся в гостиной коучинга.",
+    coachingAsideAction: "Бесплатная диагностика и коучинг",
     privacy: "Бесплатный вопрос остаётся в браузере. Контакт попадает в CRM только после вашего согласия и отправки заявки. Запись и оплата подтверждаются отдельно.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · EVALUACIÓN GRATUITA Y SESIONES",
-    title: "Evaluación gratuita y coaching",
-    lead: "Evaluación escrita gratuita o sesión personal con Andrey: €50 / 30 minutos o €100 / 60 minutos.",
+    eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN Y APOYO ENERGÉTICO",
+    title: "Apoyo holístico",
+    lead: "Describe tu objetivo o situación. Recibe una reflexión simbólica gratuita o solicita apoyo energético personal.",
     heroHeadline: "Aclara tu situación y decide el siguiente paso.",
     heroLead: "Revisión escrita con un cuestionario de coaching gratis, o una sesión personal de 30 o 60 minutos.",
     choose: "Elige tu camino",
@@ -170,17 +217,42 @@ const copy = {
     energyTitle: "Energy Support Session",
     energyBody: "Solicita apoyo energético a distancia cuando lo necesites. Elige profesional, formato y horario preferido; disponibilidad y precio se confirman por separado.",
     energyAction: "Solicitar apoyo a distancia",
+    talismanTitle: "Talismanes",
+    talismanBody: "Explora símbolos por categoría y sube una foto de tu talismán a tu colección privada.",
+    talismanAction: "Explorar y subir talismanes",
+    talismanEyebrow: "04 · SÍMBOLOS Y TALISMANES",
+    talismanSectionTitle: "Talismanes · Tu colección",
+    talismanSectionLead: "Protección, energía, armonía, prosperidad, sabiduría y más. Tus fotos nuevas son privadas.",
+    meditationTitle: "Meditación · Audio y vídeo",
+    meditationBody: "Escucha música suave o una meditación original del Sol en inglés. El archivo histórico de PsiMaster se mantiene en ruso.",
+    meditationAction: "Abrir prácticas gratuitas",
+    meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
+    meditationSectionTitle: "Meditación · Flight to the Sun",
+    meditationSectionLead: "Empieza con un vídeo original del Sol en inglés. La serie histórica gratuita PsiMaster está disponible en su idioma original: ruso.",
+    meditationAudioTitle: "Audio · Olas y melodía suave",
+    meditationAudioBody: "Música instrumental de 96 segundos para una pausa tranquila. No es una grabación guiada original de PsiMaster.",
+    meditationAudioLabel: "Reproducir olas y melodía suave",
+    meditationAudioMissing: "No se han localizado los MP3/M4A originales del archivo ruso PsiMaster. Arriba está el vídeo original del Sol en inglés, con su propio audio; no hemos extraído ni inventado pistas.",
+    meditationVideoIntro: "Práctica original Flight to the Sun con audio en inglés. El archivo de PsiMaster es ruso y no se presenta como un curso traducido al español.",
+    meditationVideoTitle: "Flight to the Sun · Vídeo original en inglés",
+    meditationVideoUnavailable: "Las grabaciones originales de PsiMaster no están disponibles en el catálogo.",
+    meditationMore: "Más meditaciones en la Academia",
+    meditationRussianArchive: "Abrir la serie original de PsiMaster en ruso",
+    meditationAudioFallback: "Tu navegador no permite reproducir audio.",
+    meditationToAudio: "Siguiente · Audio tranquilo",
+    meditationBackToVideo: "Volver a los vídeos",
+
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Análisis simbólico de situaciones, constelaciones y reflexión homeopática opcional como práctica complementaria; no es tratamiento médico.",
     alchemyAction: "Explorar Alquimia del Alma",
     practitionerOfferTitle: "Soy profesional — ofrecer mis servicios",
     practitionerOfferBody: "Crea tu perfil profesional, prepara sesiones o cursos en My Practice y envíalos a revisión. Los servicios se publican solo después de la aprobación.",
     practitionerOfferAction: "Ofrecer mis servicios",
-    practitionersTitle: "Encuentra un profesional",
-    practitionersBody: "Solo aparecen profesionales publicados con prácticas energéticas o espirituales. También puedes abrir el directorio completo.",
-    allPractitioners: "Todos los profesionales",
     libraryAction: "Explorar estudios del templo",
     disclaimer: "El I Ching, tarot, runas y constelaciones son tradiciones de reflexión, no predicciones fiables, diagnósticos clínicos ni ayuda urgente. La homeopatía carece de pruebas fiables para tratar enfermedades.",
+    coachingAsideTitle: "¿Buscas coaching personal?",
+    coachingAsideBody: "La evaluación escrita gratuita y las sesiones personales de €50 / 30 minutos o €100 / 60 minutos están en el espacio de coaching.",
+    coachingAsideAction: "Explorar diagnóstico gratuito y coaching",
     privacy: "Las preguntas gratuitas permanecen en el navegador. Tu contacto llega al CRM solo después del consentimiento y envío explícito. Reservas y pagos requieren confirmación aparte.",
   },
 } as const;
@@ -191,7 +263,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = copy[locale];
   return {
     metadataBase: metadataBaseFor(),
-    title: t.title + " · " + t.insightsTitle + " | Holistic House",
+    title: t.title + " | Holistic House",
     description: t.lead,
     alternates: {
       canonical: "/" + locale + "/holistic-support",
@@ -209,116 +281,16 @@ export default async function HolisticSupportPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
-  let practitioners: PublicPractitioner[] = [];
-  try {
-    practitioners = await createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale);
-  } catch {
-    // A temporary practitioner DB failure must not break free insights or linked services.
-  }
-  const energyPractitioners = practitioners.filter(practitioner =>
-    (practitioner.services || []).some(service =>
-      service.areaKey === "energy_spiritual" && service.status === "published"
-    )
-  );
-
   return (
     <main className={styles.page} data-holistic-support lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.shell}>
-        <section className={styles.hero} data-holistic-first-screen aria-labelledby="holistic-support-title">
-          <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority className={styles.heroImage}
-            sizes="(max-width: 650px) 100vw, 1190px" />
-          <div className={styles.heroOverlay} aria-hidden="true" />
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>{t.eyebrow}</p>
-            <h1 id="holistic-support-title">{t.title}</h1>
-            <p className={styles.heroHeadline}>{t.heroHeadline}</p>
-            <p className={styles.heroLead}>{t.heroLead}</p>
-            <nav className={styles.pathControls} aria-label={t.choose}>
-              <a href="#free-diagnostic-start" data-holistic-path="insights">
-                <Sparkles size={21} aria-hidden="true" />
-                <span>{t.insightsNav}</span>
-                <ArrowRight size={18} aria-hidden="true" />
-              </a>
-              <a href="#personal-insights-master" data-holistic-path="healing">
-                <HeartHandshake size={21} aria-hidden="true" />
-                <span>{t.healingNav}</span>
-                <ArrowRight size={18} aria-hidden="true" />
-              </a>
-            </nav>
-          </div>
-        </section>
+        <div id="temple-psychic-insights" className={styles.primaryEntry}>
+          <span id="symbolic-reflection" aria-hidden="true" />
+          <HolisticSupportChoices locale={locale} />
+        </div>
 
-        <section id="temple-psychic-insights" className={styles.section} data-holistic-insights aria-labelledby="holistic-insights-title">
-          <div className={styles.sectionHeading}>
-            <p className={styles.kicker}>{t.insightsEyebrow}</p>
-            <h2 id="holistic-insights-title">{t.insightsTitle}</h2>
-            <p>{t.insightsIntro}</p>
-          </div>
-          <div className={styles.options}>
-            <article className={styles.option} data-holistic-offer="express">
-              <div className={styles.optionPhoto}>
-                <Image src="/images/holistic-house/video-posters/constellations-en-v1.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.freeTag}>{t.free}</span>
-                <h3>{t.expressTitle}</h3>
-                <p>{t.expressBody}</p>
-                <a href="#free-diagnostic-start" className={styles.primaryAction}>
-                  {t.expressAction}<span aria-hidden="true">→</span>
-                </a>
-              </div>
-            </article>
-            <article className={styles.option} data-holistic-offer="master">
-              <div className={styles.optionPhoto}>
-                <Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:700px) 100px, 155px" />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.priceTag}>{t.masterPrice}</span>
-                <h3>{t.masterTitle}</h3>
-                <p>{t.masterBody}</p>
-                <a href="#personal-insights-master" className={styles.primaryAction}>
-                  {t.masterAction}<span aria-hidden="true">→</span>
-                </a>
-              </div>
-            </article>
-            <article className={styles.option} data-holistic-offer="ai">
-              <div className={styles.optionPhoto}>
-                <Image src="/images/holistic-house/ideas-zen-landscape.svg" alt="" fill unoptimized sizes="(max-width:700px) 100px, 155px" />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.freeTag}>{t.free}</span>
-                <h3>{t.aiTitle}</h3>
-                <p>{t.aiBody}</p>
-                <small className={styles.note}>{t.aiCaveat}</small>
-                <a href="#symbolic-reflection" className={styles.secondaryAction}>{t.aiAction}<span aria-hidden="true">→</span></a>
-              </div>
-            </article>
-          </div>
-          <FreeDiagnosticStart locale={locale} />
-          <div className={styles.freePanel} id="symbolic-reflection" data-holistic-free-insight>
-            <div className={styles.innerHeading}>
-              <h3>{t.freeEngineTitle}</h3><p>{t.freeEngineLead}</p>
-            </div>
-            <details className={styles.symbolicDetails}>
-              <summary>{t.symbolicSummary}</summary>
-              <IdeasDiscovery locale={locale} variant="temple" />
-            </details>
-          </div>
-          <div className={styles.masterPanel} id="personal-insights-master" data-holistic-master>
-            <CompactLeadCapture
-              locale={locale}
-              variant="inline"
-              sourcePath={"/" + locale + "/holistic-support"}
-              serviceTitle={"Personal Coaching Session with Andrey"}
-              title={t.masterFormTitle}
-              lead={t.masterFormLead}
-              disclaimer={t.masterDisclaimer}
-              formatOptions={t.paidFormats}
-              formatLabel={t.paidFormatLabel}
-            />
-          </div>
-        </section>
+        <HolisticSupportTopicFilter locale={locale} />
 
         <section id="holistic-healing-support" className={styles.section} data-holistic-healing aria-labelledby="holistic-healing-title">
           <div className={styles.sectionHeading}>
@@ -351,6 +323,30 @@ export default async function HolisticSupportPage({ params }: Props) {
                 </Link>
               </div>
             </article>
+            <article className={styles.option} data-holistic-offer="meditations">
+              <div className={styles.optionPhoto}>
+                <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
+              </div>
+              <div className={styles.optionContent}>
+                <h3>{t.meditationTitle}</h3>
+                <p>{t.meditationBody}</p>
+                <Link href="#meditation-practices" className={styles.secondaryAction} prefetch={false} data-holistic-meditation-cta>
+                  {t.meditationAction}<span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
+            <article className={styles.option} data-holistic-offer="talismans">
+              <div className={styles.optionPhoto}>
+                <Image src="/images/holistic-house/tantra-reiki-yin-yang-cover.svg" alt="" fill sizes="(max-width:700px) 100px, 155px" />
+              </div>
+              <div className={styles.optionContent}>
+                <h3>{t.talismanTitle}</h3>
+                <p>{t.talismanBody}</p>
+                <Link href="#talismans" className={styles.secondaryAction} prefetch={false} data-holistic-talismans-cta>
+                  {t.talismanAction}<span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </article>
             <article className={styles.option} data-holistic-offer="practitioner">
               <div className={styles.optionPhoto}>
                 <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
@@ -364,15 +360,91 @@ export default async function HolisticSupportPage({ params }: Props) {
               </div>
             </article>
           </div>
-          <div className={styles.practitioners} data-holistic-practitioners>
-            <h3>{t.practitionersTitle}</h3>
-            <p>{t.practitionersBody}</p>
-            {energyPractitioners.length ? <MarketplaceMasterFinder practitioners={energyPractitioners} locale={locale} /> : null}
-            <Link href={"/" + locale + "/masters"} prefetch={false} className={styles.libraryLink}>
-              {t.allPractitioners}<span aria-hidden="true">→</span>
-            </Link>
-          </div>
         </section>
+
+        <section id="meditation-practices" className={styles.section} data-holistic-meditations aria-labelledby="holistic-meditation-title">
+          <article className={styles.meditationFrame} data-holistic-meditation-screen="video" aria-label={t.meditationVideoTitle}>
+            <div className={styles.meditationScenic}>
+              <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill sizes="(max-width:650px) 100vw, 42vw" />
+              <div className={styles.meditationScenicCopy}>
+                <p className={styles.meditationEyebrow}>{t.meditationEyebrow} · 01 / 02</p>
+                <h2 id="holistic-meditation-title">{t.meditationSectionTitle}</h2>
+                <p className={styles.meditationScenicLead}>{t.meditationSectionLead}</p>
+              </div>
+            </div>
+            <div className={styles.meditationMain}>
+              <p className={styles.meditationKind}>{t.meditationVideoTitle}</p>
+              {freeMeditationVideos(locale).length > 0 ? (
+                <AcademyCourseVideoPlaylist
+                  locale={locale}
+                  courseTitle={t.meditationVideoTitle}
+                  lessons={freeMeditationVideos(locale)}
+                  introText={t.meditationVideoIntro}
+                  compact
+                />
+              ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
+              <nav className={styles.meditationFooterLinks} aria-label={t.meditationSectionTitle}>
+                {locale !== "ru" ? (
+                  <Link href="/ru/holistic-support#meditation-practices" className={styles.meditationArchiveLink} prefetch={false} data-holistic-russian-archive>
+                    {t.meditationRussianArchive}<span aria-hidden="true">↗</span>
+                  </Link>
+                ) : null}
+                <Link href="#meditation-audio" className={styles.meditationNext} prefetch={false}>
+                  {t.meditationToAudio}<span aria-hidden="true">↓</span>
+                </Link>
+              </nav>
+            </div>
+          </article>
+
+          <article id="meditation-audio" className={styles.meditationFrame} data-holistic-meditation-screen="audio" aria-label={t.meditationAudioTitle}>
+            <div className={styles.meditationScenic}>
+              <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:650px) 100vw, 42vw" />
+              <div className={styles.meditationScenicCopy}>
+                <p className={styles.meditationEyebrow}>{t.meditationEyebrow} · 02 / 02</p>
+                <h2>{t.meditationAudioTitle}</h2>
+                <p className={styles.meditationScenicLead}>{t.meditationAudioBody}</p>
+              </div>
+            </div>
+            <div className={styles.meditationMain}>
+              <div className={styles.meditationAudioRow} data-holistic-audio-player>
+                <span className={styles.freeTag}>{t.free}</span>
+                <h3>{t.meditationAudioTitle}</h3>
+                <audio controls preload="none" aria-label={t.meditationAudioLabel}>
+                  <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
+                  {t.meditationAudioFallback}
+                </audio>
+              </div>
+              <p className={styles.meditationSourceNote} role="note">{t.meditationAudioMissing}</p>
+              <nav className={styles.meditationFooterLinks} aria-label={t.meditationAudioTitle}>
+                <Link href="#meditation-practices" className={styles.meditationArchiveLink} prefetch={false}>
+                  {t.meditationBackToVideo}<span aria-hidden="true">↑</span>
+                </Link>
+                <Link href={"/" + locale + "/academy"} className={styles.meditationNext} prefetch={false}>
+                  {t.meditationMore}<span aria-hidden="true">→</span>
+                </Link>
+              </nav>
+            </div>
+          </article>
+        </section>
+
+        <section id="talismans" className={styles.section} data-holistic-talismans aria-labelledby="holistic-talismans-title">
+          <div className={styles.sectionHeading}>
+            <p className={styles.kicker}>{t.talismanEyebrow}</p>
+            <h2 id="holistic-talismans-title">{t.talismanSectionTitle}</h2>
+            <p>{t.talismanSectionLead}</p>
+          </div>
+          <SupportTalismanGallery locale={locale} />
+        </section>
+
+        <aside className={styles.coachingAside} data-holistic-coaching-followup aria-labelledby="holistic-coaching-followup-title">
+          <div>
+            <h2 id="holistic-coaching-followup-title">{t.coachingAsideTitle}</h2>
+            <p>{t.coachingAsideBody}</p>
+          </div>
+          <Link href={"/" + locale + "/coaching"} prefetch={false} className={styles.coachingAsideAction}>
+            {t.coachingAsideAction}<span aria-hidden="true">→</span>
+          </Link>
+        </aside>
 
         <footer className={styles.privacy} data-holistic-disclaimer>
           <p>{t.disclaimer}</p>

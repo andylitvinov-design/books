@@ -228,7 +228,7 @@
   .lead { font-size: 12px; }
   .offers { gap: 8px; }
   .offer {
-    grid-template-columns: clamp(88px, 28%, 100px) minmax(0, 1fr);
+    grid-template-columns: clamp(90px, 28%, 100px) minmax(0, 1fr);
     column-gap: 0; padding: 0; min-height: 138px;
   }
   .photo { min-height: 136px; }

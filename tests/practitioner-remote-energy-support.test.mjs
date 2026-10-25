@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { mountHolistic, assertClosedHolisticChoices } from './helpers/holistic-current-source-fixture.mjs'
 import { assertMentorDisclosure } from './helpers/current-mentor-contract.mjs'
 import { getSiteNavigation, getCompactNavigation } from '../lib/site-navigation-model.js'
 import {
@@ -71,10 +72,14 @@ test('Practitioners remains compact, and the separate energy-support request flo
   assert.match(page, /<MarketplaceMasterFinder practitioners=/)
   // #1868 deliberately removed the redundant Masters hero. The actual entry
   // is now in the existing Holistic Support hub (#1856), rendered below.
+  // Canonical shared finder still owns the current service CTA.
+  assert.match(finder, /service\.slug === "remote-energy-support"/)
   assert.match(pageCss, /@media \(max-width: 700px\)/)
   assert.match(finder, /MASTER_TOPICS/)
   assert.match(finder, /More filters/)
   assertMentorDisclosure(finder)
+  assert.match(finder, /<div className=\{styles.masterExtra\}>/)
+  assert.match(finder, /className=\{styles.masterExtraToggle\}/)
   assert.match(finderCss, /\.compactMaster/)
   assert.match(supportRoute, /areaKey === "energy_spiritual"/)
   assert.match(supportRoute, /locales?/i)
@@ -91,15 +96,23 @@ test('Practitioners remains compact, and the separate energy-support request flo
 })
 
 // Execute only the public page boundary. Repository reads are synthetic and
-// cannot reach a database; child forms remain explicit component markers.
-async function renderSupport(locale,{unavailable=false,source=read('app/[locale]/holistic-support/page.tsx')}={}){
- const element=(type,props)=>{assert.equal(typeof type,'string','Undefined public-page component');return {type,props:props||{}}}
+// cannot reach a database. Execute actual first-screen choices; unrelated
+// media/gallery children remain explicit markers. The current hub has no directory read.
+async function renderSupport(locale,{unavailable=false,source=read('app/[locale]/holistic-support/page.tsx'),choicesSource}={}){
+ const choices=[]
+ const actualChoices=props=>{assert.equal(props.locale,locale);const h=mountHolistic('choices',props.locale,{sourceOverride:choicesSource});assertClosedHolisticChoices(h.tree,locale);assert.equal(h.find(n=>n.props['data-holistic-choose']==='energy').type,'a');choices.push(h);return h.tree}
+ const element=(type,props)=>{if(type===actualChoices)return type(props);assert.equal(typeof type,'string','Undefined public-page component');return {type,props:props||{}}}
  const reads=[]
  const imports={
   'react/jsx-runtime':{jsx:element,jsxs:element,Fragment:'fragment'},
   'next/image':{default:'img'},'next/link':{default:'a'},
   'lucide-react':{ArrowRight:'icon-arrow-right',HeartHandshake:'icon-heart-handshake',Sparkles:'icon-sparkles'},
   'next/navigation':{notFound:()=>{throw Error('NOT_FOUND')}},
+  '@/components/holistic-support-choices':{HolisticSupportChoices:actualChoices},
+  '@/components/holistic-support-topic-filter':{HolisticSupportTopicFilter:'topic-filter'},
+  '@/components/support-talisman-gallery':{SupportTalismanGallery:'talisman-gallery'},
+  '@/components/academy-course-video-playlist':{AcademyCourseVideoPlaylist:'video-playlist'},
+  '@/data/academy/holistic-support-meditations':{freeMeditationVideos:language=>{assert.equal(language,locale);return []}},
   '@/components/compact-lead-capture':{CompactLeadCapture:'capture'},
   '@/components/ideas-discovery':{IdeasDiscovery:'ideas'},
   '@/components/master-network-explorer':{MarketplaceMasterFinder:'finder'},
@@ -120,7 +133,7 @@ async function renderSupport(locale,{unavailable=false,source=read('app/[locale]
  const tree=await moduleValue.exports.default({params:Promise.resolve({locale})})
  const nodes=[]
  const visit=(node,parents=[])=>{if(Array.isArray(node))return node.forEach(n=>visit(n,parents));if(!node||typeof node!=='object'||!('type'in node))return;nodes.push({...node,parents});visit(node.props.children,[...parents,node])}
- visit(tree);return {nodes,reads}
+ visit(tree);assert.equal(choices.length,1,'Page mounts exactly one actual localized first-screen chooser');return {nodes,reads}
 }
 async function assertSupportEntry(locale,options){
  for(const navigation of [getSiteNavigation(locale),getCompactNavigation(locale)]){
@@ -129,7 +142,7 @@ async function assertSupportEntry(locale,options){
   assert.equal(entry[0].external,false)
  }
  const {nodes,reads}=await renderSupport(locale,options)
- assert.deepEqual(reads,[locale])
+ assert.deepEqual(reads,[],'The current hub renders without a repository dependency, even if one would be unavailable')
  const offers=nodes.filter(n=>n.props['data-holistic-offer']==='energy')
  assert.equal(offers.length,1,'The energy offer remains distinct from paid Temple Insights')
  const links=nodes.filter(n=>n.type==='a'&&n.parents.some(p=>p.props['data-holistic-offer']==='energy'))
@@ -141,7 +154,7 @@ async function assertSupportEntry(locale,options){
   en:'Request distant energy support',ru:'Запросить дистанционную поддержку',es:'Solicitar apoyo a distancia',
  }[locale])
 }
-for(const locale of ['en','ru','es'])for(const unavailable of [false,true])test(`${locale}: actual Holistic Support energy link reaches the existing request route (directory unavailable=${unavailable})`,async()=>{
+for(const locale of ['en','ru','es'])for(const unavailable of [false,true])test(`${locale}: actual Holistic Support energy link reaches the existing request route without a directory dependency (unavailable=${unavailable})`,async()=>{
  await assertSupportEntry(locale,{unavailable})
 })
 test('support entry detects a removed offer, non-link CTA, wrong service or forced English route',async()=>{
@@ -158,5 +171,21 @@ test('support entry detects a removed offer, non-link CTA, wrong service or forc
   const parsed=ts.createSourceFile('support.tsx',changed,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
   assert.equal(parsed.parseDiagnostics.length,0,'Negative control must remain valid JSX')
   await assert.rejects(()=>assertSupportEntry('ru',{source:changed}),error=>error.code==='ERR_ASSERTION')
+ }
+})
+
+test('actual first-screen energy choice also rejects missing, non-link, wrong-service and forced-English destinations', async () => {
+ const source=read('components/holistic-support-choices.tsx')
+ const href='href={`/${locale}/services/remote-energy-support`}'
+ const mutations=[
+  source.replace('data-holistic-choose="energy"','data-holistic-choose="missing-energy"'),
+  source.replace(href,'href={`/${locale}/services/alchemy-of-soul`}'),
+  source.replace(href,'href="/en/services/remote-energy-support"'),
+  source.replace('<Link className={styles.journeyChoice} '+href,'<span className={styles.journeyChoice} '+href).replace('</Link>','</span>'),
+ ]
+ for (const changed of mutations) {
+  assert.notEqual(changed,source)
+  assert.equal(ts.createSourceFile('choices.tsx',changed,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX).parseDiagnostics.length,0)
+  await assert.rejects(()=>assertSupportEntry('ru',{choicesSource:changed}),error=>error.code==='ERR_ASSERTION')
  }
 })

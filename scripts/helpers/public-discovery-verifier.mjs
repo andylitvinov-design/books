@@ -6,9 +6,9 @@ import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
 import { getCompactNavigation } from '../../lib/site-navigation-model.js'
 
 const COPY = {
-  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
-  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
-  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
+  en: { collections: 'Test collections by topic (optional)', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
+  ru: { collections: 'Подборки тестов по темам (необязательно)', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
+  es: { collections: 'Colecciones de pruebas por tema (opcional)', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
 }
 const selectedKeys = picker => picker.locator('[data-public-selected-tests] [data-selected-test-key]')
 const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.map(node => node.dataset.selectedTestKey))
@@ -24,11 +24,11 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
   const links = bar.locator(':scope > a')
   await expect(links).toHaveCount(7)
   const visibleLabels = {
-    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',coaching:'Coaching',pro:'Pro',temple:'Temple Support'},
-    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',coaching:'Коучинг',pro:'Pro',temple:'Храм'},
-    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',coaching:'Coaching',pro:'Pro',temple:'Templo'},
+    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',alchemy:'Psychic Alchemy',pro:'Pro',temple:'Holistic Support'},
+    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',temple:'Поддержка'},
+    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',temple:'Apoyo holístico'},
   }
-  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim() }))), destinations.map(({ id, href }) => ({ id, href, label: visibleLabels[locale][id] })))
+  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim(), ariaLabel: node.getAttribute('aria-label') }))), destinations.map(({ id, href, ariaLabel }) => ({ id, href, label: visibleLabels[locale][id], ariaLabel })))
   await expect(bar.locator('a[aria-current="page"]')).toHaveCount(1)
   await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'profile')
 }
@@ -36,7 +36,7 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
 export async function assertPublicCollectionChips(root, expect, locale, collections, width) {
   const copy = COPY[locale]
   assert.ok(Number.isFinite(width) && width > 0, 'Use the actual viewport for collapsed collection visibility')
-  const collapsedCount = Math.min(width <= 760 ? 4 : 8, collections.length)
+  const collapsedCount = Math.min(2, collections.length)
   await expect(root).toBeVisible()
   await expect(root).toHaveAttribute('data-expanded', 'false')
   await expect(root).toHaveAttribute('aria-labelledby', 'hh-test-curated-heading')

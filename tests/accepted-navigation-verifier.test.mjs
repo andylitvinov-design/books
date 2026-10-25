@@ -7,6 +7,7 @@ import { COPY } from '../components/app/copy.js'
 import * as navigation from '../lib/site-navigation-model.js'
 import { assertCabinetPrimaryNavigation, openCabinetHome } from '../scripts/helpers/cabinet-navigation-verifier.mjs'
 import { assertPublicDiscoveryChrome } from '../scripts/helpers/public-discovery-verifier.mjs'
+import { expectedPublicNavigation, expectedPrivateNavigation } from './helpers/navigation-contract-expectations.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const nodes = node => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)]
@@ -28,7 +29,7 @@ function locator(values) {
 }
 const expect = value => ({
   async toHaveCount(count) { assert.equal(value.values.length, count) },
-  async toBeVisible() { assert.equal(value.values.length, 1) },
+  async toBeVisible() { assert.equal(value.values.length, 1); assert.notEqual(value.values[0].props.hidden, true, 'Navigation must be visible') },
   async toHaveAttribute(name, expected) { assert.equal(value.values.length, 1); assert.equal(element(value.values[0]).getAttribute(name), expected) },
 })
 function compile(source, dependencies) {
@@ -58,20 +59,30 @@ function publicPage(tree, locale) {
     assert.equal(selector, '[data-sitewide-personal-review-banner]'); return locator(locale === 'es' ? [] : [jsx('aside', {})])
   } }
 }
-for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact My Profile and coaching destinations with active My Profile', async () => {
-  for (const path of ['/client', '/client/tests']) await assertPublicDiscoveryChrome(publicPage(mobile(locale, '/' + locale + path), locale), expect, locale)
+for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact My Profile and Psychic Alchemy destinations with active My Profile', async () => {
+  for (const path of ['/client', '/client/tests']) {
+    const tree = mobile(locale, '/' + locale + path), expected = expectedPublicNavigation(locale)
+    assert.deepEqual(navigation.getCompactNavigation(locale), expected.map(({ visibleLabel, ...item }) => item), 'Independent public contract, not model-derived expectations')
+    assert.deepEqual(links(tree).map(node => ({ id: node.props['data-nav-item'], href: node.props.href, label: text(node), ariaLabel: node.props['aria-label'] })), expected.map(item => ({ id: item.id, href: item.href, label: item.visibleLabel, ariaLabel: item.ariaLabel })))
+    assert.ok(links(tree).every(node => node.props.prefetch === false), 'All public journeys remain non-prefetch native links')
+    await assertPublicDiscoveryChrome(publicPage(tree, locale), expect, locale)
+  }
   for (const path of ['/client/session', '/client/personal-selector', '/client/tests/hidden']) assert.equal(mobile(locale, '/' + locale + path), null)
   if (locale !== 'es') assert.equal(mobile(locale, '/' + locale + '/app/portrait'), null)
   assert.equal(mobile(locale, '/admin'), null)
 })
-for (const fault of ['wrongName', 'wrongHref', 'wrongActive', 'missing', 'duplicate']) test('public mobile proof rejects ' + fault, async () => {
-  const tree = mobile('en', '/en/client/tests'), all = links(tree), target = all.find(node => node.props['data-nav-item'] === 'profile')
+for (const locale of ['en', 'ru', 'es']) for (const fault of ['wrongName', 'wrongHref', 'wrongAria', 'wrongLocale', 'wrongAudience', 'wrongActive', 'missing', 'duplicate', 'hidden']) test(locale + ' public mobile proof rejects ' + fault, async () => {
+  const tree = mobile(locale, '/' + locale + '/client/tests'), all = links(tree), target = all.find(node => node.props['data-nav-item'] === 'profile')
   if (fault === 'wrongName') target.props.children = 'My tests'
-  if (fault === 'wrongHref') target.props.href = '/en/client'
+  if (fault === 'wrongHref') target.props.href = '/' + locale + '/client'
+  if (fault === 'wrongAria') target.props['aria-label'] = 'Wrong accessible name'
+  if (fault === 'wrongLocale') target.props.href = '/' + (locale === 'ru' ? 'en' : 'ru') + '/personality-profiles'
+  if (fault === 'wrongAudience') target.props.href = '/' + (locale === 'es' ? 'en' : locale) + '/app/portrait'
+  if (fault === 'hidden') tree.props.hidden = true
   if (fault === 'wrongActive') target.props['data-nav-item'] = 'cabinet'
   if (fault === 'missing') target.type = 'div'
   if (fault === 'duplicate') tree.props.children.push(target)
-  await assert.rejects(assertPublicDiscoveryChrome(publicPage(tree, 'en'), expect, 'en'))
+  await assert.rejects(assertPublicDiscoveryChrome(publicPage(tree, locale), expect, locale))
 })
 const workspace = read('components/app/app-workspace.jsx')
 const model = workspace.slice(workspace.indexOf('const nav = ['), workspace.indexOf('const documentReader', workspace.indexOf('const nav = [')))
@@ -83,14 +94,21 @@ const desktopEnd = workspace.indexOf('</nav>', desktopStart) + '</nav>'.length
 assert.ok(desktopStart >= 0, 'actual desktop navigation exists')
 const { PrivateNav: DesktopNav } = compile(privateSource.slice(0, privateSource.indexOf('return (')) + 'return (' + workspace.slice(desktopStart, desktopEnd) + '); }', { './copy': { COPY } })
 for (const locale of ['en', 'ru']) test(locale + ' actual shared private model preserves five exact destinations and current-page aliases', async () => {
-  for (const Renderer of [PrivateNav, DesktopNav]) for (const page of ['portrait', 'tests', 'portfolio', 'course', 'practice', 'history', 'reports', 'monitoring', 'results']) {
+  for (const Renderer of [PrivateNav, DesktopNav]) for (const page of ['portrait', 'tests', 'portfolio', 'course', 'practice', 'history', 'reports', 'monitoring', 'results', 'labs', 'business', 'coaching']) {
     const tree = Renderer({ locale, page })
+    const current = ['history', 'reports', 'monitoring', 'results'].includes(page) ? 'portfolio' : page === 'labs' ? 'portrait' : ['business', 'coaching'].includes(page) ? 'course' : page
+    assert.deepEqual(links(tree).map(node => ({ href: node.props.href, label: text(node), current: node.props['aria-current'] ?? null, ariaLabel: node.props['aria-label'] ?? null })), expectedPrivateNavigation(locale, { mobile: Renderer === PrivateNav, current }), 'Independent private destinations include explicit Courses index query')
+    assert.ok(links(tree).every(node => node.props.prefetch === false), 'Private links do not prefetch')
     const target = { locator(selector) { assert.equal(selector, 'nav.hh-nav:visible, nav.hh-mobile-app-nav:visible'); return locator([tree]) } }
-    await assertCabinetPrimaryNavigation(target, expect, { locale, current: ['history', 'reports', 'monitoring', 'results'].includes(page) ? 'portfolio' : page })
+    await assertCabinetPrimaryNavigation(target, expect, { locale, current })
   }
 })
-for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'twoVisibleBars', 'missingHome', 'wrongHomeHref', 'wrongHomeLabel', 'wrongHomeAria']) test('private navigation proof rejects ' + fault, async () => {
-  const tree = PrivateNav({ locale: 'en', page: 'portrait' }), all = links(tree)
+for (const locale of ['en', 'ru']) for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'missingCourseQuery', 'wrongCourseQuery', 'wrongAudience', 'hidden', 'extraLink', 'twoVisibleBars', 'missingHome', 'wrongHomeHref', 'wrongHomeLabel', 'wrongHomeAria']) test(locale + ' private navigation proof rejects ' + fault, async () => {
+  const tree = PrivateNav({ locale, page: 'portrait' }), all = links(tree)
+  if (fault === 'missingCourseQuery') all[3].props.href = '/' + locale + '/app/course'
+  if (fault === 'wrongCourseQuery') all[3].props.href = '/' + locale + '/app/course?view=detail'
+  if (fault === 'wrongAudience') all[3].props.href = '/' + locale + '/academy'
+  if (fault === 'hidden') tree.props.hidden = true
   if (fault === 'wrongHomeAria') all[5].props['aria-label'] = 'Go home'
   if (fault === 'missingHome') all[5].type = 'div'
   if (fault === 'wrongHomeHref') all[5].props.href = '/en'
@@ -100,7 +118,7 @@ for (const fault of ['wrongLabel', 'wrongHref', 'wrongCurrent', 'extraLink', 'tw
   if (fault === 'wrongCurrent') all[0].props['aria-current'] = undefined
   if (fault === 'extraLink') tree.props.children.push(jsx('a', { href: '/en/app/other', children: 'Other' }))
   const target = { locator: () => locator(fault === 'twoVisibleBars' ? [tree, tree] : [tree]) }
-  await assert.rejects(assertCabinetPrimaryNavigation(target, expect, { current: 'portrait' }))
+  await assert.rejects(assertCabinetPrimaryNavigation(target, expect, { locale, current: 'portrait' }))
 })
 
 test('core exercises accepted private labels, five private destinations and mobile Home navigation and compact account picker', () => {

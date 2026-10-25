@@ -7,6 +7,8 @@ import { join } from 'node:path'
 import { buildOporaBrowserFixture, oporaFixturePath, oporaFixtureDocument,
   oporaFixtureBundlePath, requireHostedOporaBrowser, assertFixtureCompilation } from '../scripts/opora-as56-browser-fixture.mjs'
 import { OPORA_BROWSER_FRESH_EDITION, OPORA_BROWSER_DAY5_COPY } from '../scripts/fixtures/opora-as60-day5-copy.mjs'
+import { OPORA_BROWSER_FRESH_REVISION, OPORA_BROWSER_DAY5_OVERVIEW } from '../scripts/fixtures/opora-as60-variety-day5-copy.mjs'
+import { OPORA_VARIETY_REVISION, oporaAs60VariedDay } from '../lib/inner-growth/opora-as60-varied-content.js'
 import { OPORA_BROWSER_FRESH_EDITION as HISTORICAL_EDITION, OPORA_BROWSER_DAY5_COPY as HISTORICAL_DAY5_COPY } from '../scripts/fixtures/opora-as59-day5-copy.mjs'
 import { oporaAs60Day, OPORA_EXPERIENTIAL_EDITION } from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import { oporaAs59Day, OPORA_SEVEN_SKILLS_EDITION } from '../lib/inner-growth/opora-as59-seven-skills.js'
@@ -84,10 +86,15 @@ test('OPORA fixture compilation still fails on every build error or warning', ()
 test('fresh AS6.0 browser copy pins exact Day5 fields, not the archived exercise', async () => {
   assert.equal(OPORA_BROWSER_FRESH_EDITION, 'as-6.0-experiments-v1')
   assert.equal(OPORA_BROWSER_FRESH_EDITION, OPORA_EXPERIENTIAL_EDITION)
+  assert.equal(OPORA_BROWSER_FRESH_REVISION, 'variety-v1')
+  assert.equal(OPORA_BROWSER_FRESH_REVISION, OPORA_VARIETY_REVISION)
+  assert.deepEqual(Object.keys(OPORA_BROWSER_DAY5_OVERVIEW), ['ru', 'en', 'es'])
   assert.deepEqual(Object.keys(OPORA_BROWSER_DAY5_COPY), ['ru', 'en', 'es'])
   for (const locale of ['ru', 'en', 'es']) {
     const copy = OPORA_BROWSER_DAY5_COPY[locale], day = oporaAs60Day(5, locale)
     assert.deepEqual(copy, { supportTitle: day.purposeTitle, purpose: day.purpose, practice: day.practice, experiment: day.experiment })
+    assert.equal(OPORA_BROWSER_DAY5_OVERVIEW[locale], oporaAs60VariedDay(5, locale).result)
+    assert.notEqual(OPORA_BROWSER_DAY5_OVERVIEW[locale], copy.purpose)
     assert.notEqual(copy.practice, oporaAs58Day(5, locale).practice)
     assert.notEqual(copy.practice, oporaAs59Day(5, locale).practice)
     assert.ok((copy.practice.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
@@ -102,7 +109,8 @@ test('fresh AS6.0 browser copy pins exact Day5 fields, not the archived exercise
     "toHaveAttribute('data-opora-practical-skills-version', OPORA_BROWSER_FRESH_EDITION)",
     "[data-opora-daily-support=\"5\"]')).toHaveText(copy.purpose)",
     "name: copy.supportTitle, exact: true",
-    "[data-opora-overview-purpose] p')).toHaveText(copy.purpose)",
+    "[data-opora-overview-purpose] p')).toHaveText(OPORA_BROWSER_DAY5_OVERVIEW[locale])",
+    "toHaveAttribute('data-opora-content-revision', OPORA_BROWSER_FRESH_REVISION)",
     "[data-opora-one-daily-practice=\"5\"]')).toBeVisible()",
     "[data-opora-one-daily-practice=\"5\"]')).toHaveText(brief)",
     String.raw`assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)`,
@@ -123,12 +131,13 @@ test('fresh AS6.0 Day5 renders the pinned support, overview and practice without
     const next = { ru: 'Продолжить', en: 'Continue', es: 'Continuar' }[locale]
     try {
       assert.ok(nodes(h.tree).some(n => n.props?.['data-opora-practical-skills-version'] === OPORA_BROWSER_FRESH_EDITION))
+      assert.ok(nodes(h.tree).some(n => n.props?.['data-opora-content-revision'] === OPORA_BROWSER_FRESH_REVISION))
       await advanceOporaTo(h, 'support', next)
       assert.equal(textOf(nodes(h.tree).find(n => n.props?.['data-opora-daily-support'] === 5)), copy.purpose)
       assert.ok(nodes(h.tree).some(n => /^h[1-6]$/.test(n.type) && textOf(n) === copy.supportTitle))
       await advanceOporaTo(h, 'recapPractice', next)
       const purpose = nodes(h.tree).find(n => n.props?.['data-opora-overview-purpose'])
-      assert.equal(textOf(nodes(purpose).find(n => n.type === 'p')), copy.purpose)
+      assert.equal(textOf(nodes(purpose).find(n => n.type === 'p')), OPORA_BROWSER_DAY5_OVERVIEW[locale])
       await advanceOporaTo(h, 'practice', next)
       const practice = nodes(h.tree).find(n => n.props?.['data-opora-one-daily-practice'] === 5)
       assert.equal(textOf(practice.props.children[0]), copy.practice)

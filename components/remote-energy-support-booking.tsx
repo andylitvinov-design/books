@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, stageRemoteSupportPrivateIntention } from "@/lib/practitioners/remote-energy-support";
+import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import styles from "./remote-energy-support-booking.module.css";
 
 type Locale = "en" | "ru" | "es";
@@ -29,13 +29,15 @@ const WORDS = {
   en: {
     eyebrow: "PERSONAL PRACTICE · ONLINE",
     title: "Energy support for your goal",
-    intro: "Tell us what you need first. Then explore practitioners, prices and request a session.",
+    intro: "Choose an area, add any preferences, and explore published practitioner offers.",
     practitioner: "Practitioner",
     focus: "Your focus",
     method: "Practice",
     format: "Support format",
     async: "At a distance, without a call",
+    asyncCompact: "Distance · no call",
     live: "Live online session",
+    liveCompact: "Live online",
     duration: "Requested duration",
     schedule: "Preferred time",
     date: "Date",
@@ -49,7 +51,7 @@ const WORDS = {
     freeReiki: "Explore the free Reiki introduction",
     durations: "10, 20, 30 or 60 minutes",
     pending: "Availability and price confirmed before any payment",
-    steps: "Your intention · Choose a practitioner · Request a time",
+    steps: "Choose a focus · Find options · Request a time",
     safety: "An optional complementary wellbeing practice, not medical treatment, diagnosis or emergency care.",
     needsStorage: "This browser could not hold your choices. Please allow temporary session storage and try again.",
     select: "Choose",
@@ -58,13 +60,15 @@ const WORDS = {
     reviews: "Verified feedback",
     noReviews: "No published reviews yet",
     bookingStatus: "Not booked · No payment yet",
-    question: "What would you like support with?",
-    questionHint: "Begin with your intention. Then explore real practitioners and choose the service that feels right for you.",
-    intentionLabel: "In your own words",
-    intentionPlaceholder: "For example: I would like more calm and clarity before an important decision…",
-    focusPrompt: "Or choose an area of support",
+    question: "Choose your support",
+    questionHint: "Start with one area that matters most to you.",
+    intentionLabel: "Any preferences? (optional)",
+    intentionPlaceholder: "For example: a gentle practice in the evening…",
+    focusPrompt: "Choose one area of support",
     privacyHint: "Keep it brief. Do not include medical records or another person’s private details. You will review the message before sending it in your private account.",
-    specialistsTitle: "Choose your practitioner",
+    privacyShort: "Private until you send · no medical details",
+    findOptions: "Find options",
+    specialistsTitle: "Available practitioners",
     specialistsHint: "Published offers only. Read the details, then request a convenient time.",
     serviceType: "Personal Reiki practice · Online",
     defaultDescription: "Personalized distance support or a live online Reiki practice, with timing agreed together.",
@@ -75,7 +79,7 @@ const WORDS = {
     languagesLabel: "Languages",
     optionTitle: "Your preferred session",
     optionHint: "Select a practice, format, duration and preferred time. This is a request—not a booking or payment.",
-    focusRequired: "Please describe what you would like or choose a support area above.",
+    focusRequired: "Choose an area of support to view available options.",
     pastTime: "Choose a future date and time. This is only a preferred time until confirmed.",
     missingChoice: "Please choose a practitioner and a published duration.",
     publishedFrom: "Published prices",
@@ -86,13 +90,15 @@ const WORDS = {
   ru: {
     eyebrow: "ЛИЧНАЯ ПРАКТИКА · ОНЛАЙН",
     title: "Энергетическая поддержка цели",
-    intro: "Сначала опишите вашу цель. Затем посмотрите специалистов, цены и запросите удобное время.",
+    intro: "Выберите направление, при желании добавьте пожелания и найдите предложения мастеров.",
     practitioner: "Мастер",
     focus: "Запрос",
     method: "Метод",
     format: "Формат поддержки",
     async: "Дистанционно, без видеозвонка",
+    asyncCompact: "Дистанционно",
     live: "Живой онлайн-сеанс",
+    liveCompact: "Онлайн-сеанс",
     duration: "Желаемая длительность",
     schedule: "Удобное время",
     date: "Дата",
@@ -106,7 +112,7 @@ const WORDS = {
     freeReiki: "Открыть бесплатное знакомство с Рейки",
     durations: "10, 20, 30 или 60 минут",
     pending: "Наличие времени и стоимость уточняются до оплаты",
-    steps: "Ваш запрос · Специалисты · Заявка на время",
+    steps: "Выберите направление · Найдите варианты · Запросите время",
     safety: "Дополнительная практика для самочувствия, не замена медицинской помощи, диагностики или неотложной помощи.",
     needsStorage: "Не удалось сохранить выбор в браузере. Разрешите временное хранение данных и попробуйте ещё раз.",
     select: "Выберите",
@@ -115,13 +121,15 @@ const WORDS = {
     reviews: "Отзывы после сеансов",
     noReviews: "Пока нет опубликованных отзывов",
     bookingStatus: "Не подтверждено · Без оплаты",
-    question: "Какую поддержку вы хотите получить?",
-    questionHint: "Сначала расскажите о своём запросе. Ниже выберите специалиста и подходящую услугу.",
-    intentionLabel: "Опишите своими словами",
-    intentionPlaceholder: "Например: хочу больше спокойствия и ясности перед важным решением…",
-    focusPrompt: "Или выберите направление",
+    question: "Выберите поддержку",
+    questionHint: "Начните с одного самого важного для вас направления.",
+    intentionLabel: "Ваши пожелания (необязательно)",
+    intentionPlaceholder: "Например: мягкая практика вечером…",
+    focusPrompt: "Выберите одно направление",
     privacyHint: "Коротко, без диагнозов, медицинских документов и чужих личных данных. Перед отправкой вы проверите сообщение в защищённом кабинете.",
-    specialistsTitle: "Выберите специалиста",
+    privacyShort: "Приватно до отправки · без медданных",
+    findOptions: "Найти варианты",
+    specialistsTitle: "Доступные мастера",
     specialistsHint: "Только опубликованные предложения. Сначала детали и стоимость, затем удобное время.",
     serviceType: "Личная практика Рейки · Онлайн",
     defaultDescription: "Индивидуальная дистанционная поддержка или живая онлайн-практика, время согласовывается с мастером.",
@@ -132,7 +140,7 @@ const WORDS = {
     languagesLabel: "Языки",
     optionTitle: "Параметры вашего сеанса",
     optionHint: "Выберите практику, формат, длительность и удобное время. Это заявка, а не подтверждённая запись или оплата.",
-    focusRequired: "Сначала опишите запрос или выберите направление поддержки выше.",
+    focusRequired: "Выберите направление, чтобы увидеть доступные варианты.",
     pastTime: "Выберите будущую дату и время. Это пожелание, а не подтверждённая запись.",
     missingChoice: "Выберите мастера и опубликованную длительность.",
     publishedFrom: "Опубликованная стоимость",
@@ -143,13 +151,15 @@ const WORDS = {
   es: {
     eyebrow: "PRÁCTICA PERSONAL · EN LÍNEA",
     title: "Apoyo energético para tu objetivo",
-    intro: "Primero describe lo que necesitas. Después elige profesional, precio y horario.",
+    intro: "Elige un área, añade tus preferencias si quieres y explora ofertas publicadas.",
     practitioner: "Profesional",
     focus: "Tu objetivo",
     method: "Práctica",
     format: "Modalidad",
     async: "A distancia, sin videollamada",
+    asyncCompact: "Sin llamada",
     live: "Sesión en vivo en línea",
+    liveCompact: "En vivo",
     duration: "Duración solicitada",
     schedule: "Horario preferido",
     date: "Fecha",
@@ -163,7 +173,7 @@ const WORDS = {
     freeReiki: "Explorar la introducción gratuita a Reiki",
     durations: "10, 20, 30 o 60 minutos",
     pending: "Disponibilidad y precio confirmados antes del pago",
-    steps: "Tu intención · Profesionales · Solicitar horario",
+    steps: "Elige un área · Busca opciones · Solicita horario",
     safety: "Práctica complementaria de bienestar, no diagnóstico ni sustituto de atención médica o urgente.",
     needsStorage: "No se pudieron guardar tus preferencias temporalmente. Permite el almacenamiento de sesión e inténtalo de nuevo.",
     select: "Elige",
@@ -172,13 +182,15 @@ const WORDS = {
     reviews: "Opiniones verificadas",
     noReviews: "Todavía no hay opiniones publicadas",
     bookingStatus: "Sin confirmar · Sin pago",
-    question: "¿Qué apoyo te gustaría recibir?",
-    questionHint: "Primero explica tu intención. Después conoce a los profesionales y elige una oferta real.",
-    intentionLabel: "Cuéntanoslo con tus palabras",
-    intentionPlaceholder: "Por ejemplo: quiero más calma y claridad antes de tomar una decisión…",
-    focusPrompt: "O elige un área de apoyo",
+    question: "Elige tu apoyo",
+    questionHint: "Empieza con el área más importante para ti.",
+    intentionLabel: "¿Alguna preferencia? (opcional)",
+    intentionPlaceholder: "Por ejemplo: una práctica suave por la tarde…",
+    focusPrompt: "Elige un área de apoyo",
     privacyHint: "Escribe brevemente, sin historiales médicos ni datos privados de otras personas. Revisarás el texto antes de enviarlo en tu cuenta privada.",
-    specialistsTitle: "Elige a tu profesional",
+    privacyShort: "Privado hasta el envío · sin datos médicos",
+    findOptions: "Buscar opciones",
+    specialistsTitle: "Profesionales disponibles",
     specialistsHint: "Solo ofertas publicadas. Consulta los detalles y precios antes de elegir la hora.",
     serviceType: "Práctica personal de Reiki · En línea",
     defaultDescription: "Apoyo personal a distancia o práctica Reiki en directo, con horario acordado con el profesional.",
@@ -189,7 +201,7 @@ const WORDS = {
     languagesLabel: "Idiomas",
     optionTitle: "Tu sesión preferida",
     optionHint: "Elige práctica, modalidad, duración y hora. Es una solicitud, no una reserva ni un pago.",
-    focusRequired: "Describe tu intención o elige un área de apoyo arriba.",
+    focusRequired: "Elige un área de apoyo para ver las opciones disponibles.",
     pastTime: "Elige una fecha y hora futuras. No es una reserva confirmada.",
     missingChoice: "Elige un profesional y una duración publicada.",
     publishedFrom: "Precios publicados",
@@ -202,11 +214,9 @@ const WORDS = {
 const FOCUSES = [
   { id: "Inner balance and calm", en: "Calm & balance", ru: "Спокойствие и баланс", es: "Calma y equilibrio" },
   { id: "Grounding and body awareness", en: "Body & grounding", ru: "Тело и опора", es: "Cuerpo y estabilidad" },
-  { id: "Clarity and life direction", en: "Clarity & direction", ru: "Ясность и направление", es: "Claridad y dirección" },
   { id: "Connection and relationships", en: "Connection & relationships", ru: "Отношения и контакт", es: "Conexión y relaciones" },
   { id: "Energy and resources", en: "Energy & resources", ru: "Энергия и ресурсы", es: "Energía y recursos" },
   { id: "Work and money", en: "Work & money", ru: "Работа и деньги", es: "Trabajo y dinero" },
-  { id: "Personal intention", en: "My own intention", ru: "Моё намерение", es: "Mi intención" },
 ] as const;
 
 function localDateToday() {
@@ -229,6 +239,7 @@ export function RemoteEnergySupportBooking({
   );
   const [goal, setGoal] = useState("");
   const [intention, setIntention] = useState("");
+  const [showResults, setShowResults] = useState(Boolean(preferredPractitioner));
   const [method, setMethod] = useState("");
   const [format, setFormat] = useState<Format>("asynchronous");
   const [duration, setDuration] = useState<number>(30);
@@ -264,6 +275,8 @@ export function RemoteEnergySupportBooking({
   useEffect(() => {
     setMinimumDay(localDateToday());
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Toronto");
+    const stagedIntention = takeRemoteSupportLandingIntention();
+    if (stagedIntention) setIntention(stagedIntention);
   }, []);
   useEffect(() => {
     if (options.length && !options.some((option) => option.duration === duration)) {
@@ -274,15 +287,41 @@ export function RemoteEnergySupportBooking({
     if (methods.length && !methods.includes(method)) setMethod(methods[0]);
   }, [methods, method]);
 
+  useEffect(() => {
+    if (!showResults) return;
+    const heading = document.getElementById("remote-practitioners-title");
+    heading?.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, [showResults]);
+
+  function findOptions() {
+    if (!goal) {
+      setError("focus");
+      document.querySelector<HTMLButtonElement>("[data-remote-focus-chip]")?.focus();
+      return;
+    }
+    setError("");
+    if (showResults) {
+      document.getElementById("remote-practitioners-title")?.scrollIntoView({
+        block: "start",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+    } else {
+      setShowResults(true);
+    }
+  }
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     // The public topic is a controlled value; private words are never in URL
     // or sessionStorage. They are reviewed in the authenticated request form.
-    const topic = goal || (intention.trim() ? "Personal intention" : "");
+    const topic = goal;
     if (!topic) {
       setError("focus");
-      document.getElementById("remote-intention")?.focus();
+      document.querySelector<HTMLButtonElement>("[data-remote-focus-chip]")?.focus();
       return;
     }
     if (!selected || !currentPrice || !method || !day || !time ||
@@ -331,26 +370,32 @@ export function RemoteEnergySupportBooking({
             <p>{t.questionHint}</p>
           </div>
         </div>
-        <label className={styles.intentLabel} htmlFor="remote-intention">{t.intentionLabel}</label>
-        <textarea id="remote-intention" className={styles.intentionInput}
-          maxLength={1000} rows={2} value={intention} placeholder={t.intentionPlaceholder}
-          onChange={(event) => { setIntention(event.target.value); setError(""); }}
-          aria-describedby="remote-intention-privacy"/>
-        <p id="remote-intention-privacy" className={styles.privacyHint}>{t.privacyHint}</p>
-        <p className={styles.topicLabel}>{t.focusPrompt}</p>
         <div className={styles.focusChips} role="group" aria-label={t.focusPrompt}>
           {FOCUSES.map((focus) => (
-            <button key={focus.id} type="button" aria-pressed={goal === focus.id}
+            <button key={focus.id} type="button" data-remote-focus-chip aria-pressed={goal === focus.id}
               className={goal === focus.id ? styles.focusActive : ""}
               onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setError(""); }}>
               {focus[locale]}
             </button>
           ))}
         </div>
+        <label className={styles.intentLabel} htmlFor="remote-intention">{t.intentionLabel}</label>
+        <textarea id="remote-intention" className={styles.intentionInput}
+          maxLength={1000} rows={2} value={intention} placeholder={t.intentionPlaceholder}
+          onChange={(event) => { setIntention(event.target.value); setError(""); }}
+          aria-describedby="remote-intention-privacy"/>
+        <details className={styles.privacyDetails}>
+          <summary id="remote-intention-privacy">{t.privacyShort}</summary>
+          <p className={styles.privacyHint}>{t.privacyHint}</p>
+        </details>
         {error === "focus" && <p className={styles.error} role="alert">{t.focusRequired}</p>}
+        <button type="button" data-remote-find-options className={styles.findButton}
+          aria-controls="remote-results" aria-expanded={showResults} onClick={findOptions}>
+          {t.findOptions}<span aria-hidden="true">→</span>
+        </button>
       </section>
 
-      <section className={styles.results} aria-labelledby="remote-practitioners-title">
+      <section id="remote-results" className={styles.results} hidden={!showResults} aria-labelledby="remote-practitioners-title">
         <div className={styles.sectionHeading}>
           <span className={styles.stepNumber} aria-hidden="true">02</span>
           <div>
@@ -374,6 +419,7 @@ export function RemoteEnergySupportBooking({
                 .sort((a, b) => a.duration - b.duration);
               return (
                 <article key={master.serviceId} className={styles.masterOffer}
+                  data-booking-open={isOpen ? "true" : undefined}
                   data-remote-support-specialist={master.serviceId}>
                   <div className={styles.masterCard}>
                     <div className={styles.masterPhoto}>
@@ -434,13 +480,15 @@ export function RemoteEnergySupportBooking({
                         <legend>{t.format}</legend>
                         <label className={format === "asynchronous" ? styles.activeFormat : ""}>
                           <input type="radio" name="remote-format" value="asynchronous"
-                            checked={format === "asynchronous"} onChange={() => setFormat("asynchronous")}/>
-                          {t.async}
+                            checked={format === "asynchronous"} onChange={() => setFormat("asynchronous")} aria-label={t.async}/>
+                          <span className={styles.formatLong}>{t.async}</span>
+                          <span className={styles.formatShort} aria-hidden="true">{t.asyncCompact}</span>
                         </label>
                         <label className={format === "live" ? styles.activeFormat : ""}>
                           <input type="radio" name="remote-format" value="live"
-                            checked={format === "live"} onChange={() => setFormat("live")}/>
-                          {t.live}
+                            checked={format === "live"} onChange={() => setFormat("live")} aria-label={t.live}/>
+                          <span className={styles.formatLong}>{t.live}</span>
+                          <span className={styles.formatShort} aria-hidden="true">{t.liveCompact}</span>
                         </label>
                       </fieldset>
                       <fieldset className={styles.durationGroup}>
@@ -476,13 +524,15 @@ export function RemoteEnergySupportBooking({
                           </div>
                         </div>
                       </div>
-                      <div className={styles.requestSummary}>
-                        <strong>{currentPrice && selected
-                          ? priceLabel(currentPrice.price, selected.currency) + " · " + duration + " " + t.minutes
-                          : t.unavailablePrice}</strong>
-                        <span>{t.bookingStatus}</span>
-                        <p>{t.noSlots} {t.price}</p>
-                      </div>
+                      <details className={styles.requestSummary}>
+                         <summary className={styles.requestSummaryToggle}>
+                           <strong>{currentPrice && selected
+                             ? priceLabel(currentPrice.price, selected.currency) + " · " + duration + " " + t.minutes
+                             : t.unavailablePrice}</strong>
+                           <span>{t.bookingStatus}</span>
+                         </summary>
+                         <p>{t.noSlots} {t.price}</p>
+                       </details>
                       <button className={styles.submit} type="submit" disabled={!currentPrice}>
                         {t.send} <span aria-hidden="true">→</span>
                       </button>

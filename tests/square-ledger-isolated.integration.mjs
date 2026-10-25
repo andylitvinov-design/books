@@ -80,13 +80,18 @@ if (!good) {
       await client.query('SAVEPOINT regressed')
       await assert.rejects(client.query("update app_private.square_service_orders set status='checkout_ready',revision=revision+1 where id=$1",[a]))
       await client.query('ROLLBACK TO SAVEPOINT regressed')
+      // A denied SELECT puts PostgreSQL in the aborted-transaction state.
+      // Keep the expected anonymous-role failure inside its own savepoint,
+      // just like the earlier forbidden write/paid transitions.
+      // No production payment or schema state is changed by this fixture.
       await client.query('RESET ROLE')
+      await client.query('SAVEPOINT anonymous_read')
       await client.query('SET LOCAL ROLE anon')
-      await client.query('SAVEPOINT anon_read_denied')
-      await assert.rejects(client.query("select * from app_private.square_service_orders"))
-      await client.query('ROLLBACK TO SAVEPOINT anon_read_denied')
-      await client.query('RELEASE SAVEPOINT anon_read_denied')
-      await client.query('RESET ROLE')
+      await assert.rejects(client.query("select * from app_private.square_service_orders"),{
+        code:'42501',
+      })
+      await client.query('ROLLBACK TO SAVEPOINT anonymous_read')
+      assert.notEqual((await client.query('select current_user')).rows[0].current_user,'anon')
     } finally {
       await client.query('ROLLBACK').catch(()=>{})
       await client.end()

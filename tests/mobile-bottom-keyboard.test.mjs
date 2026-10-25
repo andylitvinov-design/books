@@ -28,7 +28,7 @@ function assertSevenItemLayout(bottom, currentCss) {
 test('mobile bottom navigation keeps the current seven-item layout and safe-area anchor', () => {
   for (const locale of ['en', 'ru', 'es']) {
     const items = getCompactNavigation(locale);
-    assert.deepEqual(items.map(item => item.id), ['home', 'analysis', 'courses', 'profile', 'coaching', 'pro', 'temple']);
+    assert.deepEqual(items.map(item => item.id), ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']);
     assert.equal(new Set(items.map(item => item.href)).size, 7);
     assert.ok(items.every(item => !item.external && item.ariaLabel));
   }

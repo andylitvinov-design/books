@@ -1,18 +1,27 @@
 'use client'
 import {BookmarkCheck,ShieldCheck} from 'lucide-react'
 import {useSessionExitNavigation} from './session-exit-save-guard'
+import {SESSION_SAVE_COPY} from '@/lib/clients/session-save-copy'
 import styles from './client-session.module.css'
 
 // A secondary voluntary entry. It opens the same consent dialog used when
 // leaving the consultation, rather than a second save implementation.
 export function SaveClientSessionToAccount({locale='en',appAvailable=true,compact=false}){
   const ru=locale==='ru',navigation=useSessionExitNavigation()
-  if(compact)return <button type="button" className={styles.sessionBottomPrimary}
-    disabled={!appAvailable||!navigation} onClick={()=>navigation?.requestSave()}>
-    <BookmarkCheck size={20} aria-hidden="true"/>
-    {navigation?.savedSessionId?(ru?'Открыть сохранённый отчёт':'Open saved report'):
-      ru?'Войти в мой кабинет и сохранить отчёт':'Sign in to my Cabinet and save report'}
-  </button>
+  const copy=SESSION_SAVE_COPY[locale]||SESSION_SAVE_COPY.en
+  if(compact)return <div className={styles.sessionBottomSaveAction}>
+    <button type="button" className={styles.sessionBottomPrimary}
+      disabled={!appAvailable||!navigation} onClick={()=>navigation?.requestSave()}>
+      <BookmarkCheck size={20} aria-hidden="true"/>
+      <span className={styles.sessionBottomPrimaryCopy}>
+        <strong>{navigation?.savedSessionId?copy.open:copy.save}</strong>
+        {!navigation?.savedSessionId&&<small>{copy.google}</small>}
+      </span>
+    </button>
+    <p className={styles.sessionBottomTrust}><ShieldCheck size={15} aria-hidden="true"/>
+      <span>{navigation?.savedSessionId?copy.savedNote:copy.privacy}</span>
+    </p>
+  </div>
   return <section className={styles.saveSessionBox} aria-label={ru?'Сохранить консультацию':'Save consultation'}>
     <div className={styles.saveSessionHeading}>
       <BookmarkCheck size={24} aria-hidden="true"/>

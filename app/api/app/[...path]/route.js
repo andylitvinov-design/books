@@ -20,6 +20,7 @@ import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
 import { readReikiInitiationPhoto, saveReikiInitiationPhoto, REIKI_INITIATION_PHOTO_MAX_BYTES } from '@/lib/academy/reiki-initiation-photo'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
+import { createExpressReportRepository } from '@/lib/practitioners/express-report-repository'
 import {createPractitionerClientMessages} from '@/lib/practitioners/client-messages'
 import {sendBookingMasterEmail} from '@/lib/practitioners/booking-master-email'
 import {dispatchClientMessagePush,dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
@@ -803,6 +804,12 @@ async function handle(request, { params }) {
         status:streamed.status,headers:streamed.headers,
       }))
     }
+    if (joined === 'express-reports' && method === 'GET')
+      return json(await createExpressReportRepository(config).listForClient(actor))
+    if (joined === 'practice/express-reports' && method === 'GET') {
+      await practiceRepo.requireActivated(actor)
+      return json(await createExpressReportRepository(config).listForPractitioner(actor))
+    }
     if (joined === 'practice' && method === 'GET') {
       const workspace = await practiceRepo.getMyPractice(actor)
       let newServices = null
@@ -813,6 +820,10 @@ async function handle(request, { params }) {
         // The UI shows "unavailable" instead of a misleading zero.
       }
       return json({ ...workspace, newServices })
+    }
+    if (joined === 'practice/alias' && method === 'GET') {
+      await consumeRate(config,{op:'practitioner-alias-check',account:actor.id},30,3600)
+      return json(await practiceRepo.checkPublicAlias(actor,new URL(request.url).searchParams.get('alias')))
     }
     if (joined === 'practice/articles' && method === 'GET') {
       await practiceRepo.requireActivated(actor)
@@ -920,6 +931,10 @@ async function handle(request, { params }) {
       await consumeRate(config, { op: 'account-test-rating', account: actor.id }, 20, 3600)
       return json(await saveAccountTestRating(config, actor, body))
     }
+    if (joined === 'practice/alias') {
+      await consumeRate(config,{op:'practitioner-alias-save',account:actor.id},5,3600)
+      return json(await practiceRepo.savePublicAlias(actor,body))
+    }
     if (joined === 'onboarding') return json(await repo.onboarding(actor, body))
     if (joined === 'preferences') return json(await repo.preferences(actor, body))
     if (joined === 'mood') return json(await repo.moodCheckin(actor, body), 201)
@@ -951,8 +966,20 @@ async function handle(request, { params }) {
     }
     // Keep onboarding and own profile/service drafts available during signup.
     // All other master tools require a submitted profile and first offering.
-    if (path[0] === 'practice' && !['onboarding','profile','services'].includes(path[1]))
+    if (path[0] === 'practice' && !['onboarding','profile','services','video-upload'].includes(path[1]))
       await practiceRepo.requireActivated(actor)
+    if (path[0] === 'practice' && path[1] === 'express-reports') {
+      await consumeRate(config,{op:'express-report-write',actor:actor.id},18,3600)
+      const reports = createExpressReportRepository(config)
+      if (path.length === 2) return json(await reports.create(actor,body),201)
+      if (path.length === 3) {
+        requireUUID(path[2])
+        if (body.action === 'publish' || body.action === 'revoke')
+          return json(await reports.changeStatus(actor,path[2],body))
+        return json(await reports.edit(actor,path[2],body))
+      }
+      throw new AppError('NOT_FOUND',404)
+    }
     if (joined === 'practice/video-upload/intent') return json(await createPresentationUploadIntent(config, actor, body), 201)
     if (joined === 'practice/video-upload/complete') return json(await completePresentationUpload(config, actor, body))
     if (joined === 'practice/onboarding') return json(await practiceRepo.onboarding(actor, body))

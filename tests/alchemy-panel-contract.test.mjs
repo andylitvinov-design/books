@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { ALCHEMY_PANEL_IDS, assertAlchemyPanelOrder } from '../scripts/helpers/alchemy-panel-contract.mjs'
 
 const panels = ids => ids.map(name => ({name,height:500,max:764}))
-test('accepts exact nine ordered panels without altering geometry', () => {
+test('accepts exact ten ordered panels without altering geometry', () => {
   const measurements=panels(ALCHEMY_PANEL_IDS)
   const before=structuredClone(measurements)
   assertAlchemyPanelOrder(measurements)
@@ -13,11 +13,11 @@ for (const id of ALCHEMY_PANEL_IDS) {
   test('rejects missing panel '+id, () => assert.throws(() =>
     assertAlchemyPanelOrder(panels(ALCHEMY_PANEL_IDS.filter(name => name!==id)))))
 }
-test('rejects duplicate panel even with count nine', () => {
+test('rejects duplicate panel even with count ten', () => {
   const ids=[...ALCHEMY_PANEL_IDS];ids[0]='hero'
   assert.throws(()=>assertAlchemyPanelOrder(panels(ids)))
 })
-test('rejects wrong panel with count nine', () => {
+test('rejects wrong panel with count ten', () => {
   const ids=[...ALCHEMY_PANEL_IDS];ids[0]='unknown'
   assert.throws(()=>assertAlchemyPanelOrder(panels(ids)))
 })

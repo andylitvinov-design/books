@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import {assertSavedMessengerContract} from "./helpers/saved-messenger-contract.mjs";
+import {assertSavedMessengerContract, mutateSavedMessengerBranch} from "./helpers/saved-messenger-contract.mjs";
 
 const invite = readFileSync(new URL("../components/client-assessment-invite.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../components/client-assessment-invite.module.css", import.meta.url), "utf8");
@@ -45,16 +45,42 @@ test("details link leads to the localized service landing, separate from the gif
   assert.match(css, /\.order\{width:100%\}/);
 });
 
-for (const [name, before, after, reason] of [
-  ['missing receipt gate', '{!saved ? (', '{true ? (', /saved-receipt gate/],
-  ['unconditional messenger', 'href={preparedWhatsApp}', 'href={whatsappUrl}', /preparedWhatsApp/],
-  ['wrong Telegram handoff', 'href={telegramEnquiryUrlFromWhatsApp(preparedWhatsApp)}', 'href={preparedWhatsApp}', /telegramEnquiryUrlFromWhatsApp/],
-  ['missing reference', '{saved.referenceCode}', '{"unverified"}', /verified reference/],
-  ['missing consent gate', ') || !consent}', ')}', /consent gate/],
-  ['dead consent term', ') || !consent}', ') || (!consent && false)}', /effective consent gate/],
-  ['negated consent term', ') || !consent}', ') || !!consent}', /effective consent gate/],
-  ['missing optional disclosure', 'WhatsApp or Telegram is optional.', 'Use a messenger to finish.', /optional/],
+for (const branch of ['normal', 'compact']) for (const [name, target, replacement, reason] of [
+  ['missing receipt gate', 'receiptGate', 'true', /saved-receipt gate/],
+  ['unconditional messenger', 'whatsapp', 'whatsappUrl', /preparedWhatsApp/],
+  ['wrong Telegram handoff', 'telegram', 'preparedWhatsApp', /telegramEnquiryUrlFromWhatsApp/],
+  ['missing reference', 'reference', '"unverified"', /verified reference/],
+]) test(branch + ': gift messenger contract rejects ' + name, () => {
+  const changed = mutateSavedMessengerBranch(channelChooser, branch, target, replacement);
+  assert.notEqual(changed, channelChooser);
+  assert.throws(() => assertSavedMessengerContract(changed), reason);
+});
+
+for (const [name, replacement, reason] of [
+  ['missing consent gate', 'busy || googleBusy || (method === "email" ? !email.trim() : !phone.trim())', /consent gate/],
+  ['dead consent term', 'busy || googleBusy || (method === "email" ? !email.trim() : !phone.trim()) || (!consent && false)', /effective consent gate/],
+  ['negated consent term', 'busy || googleBusy || (method === "email" ? !email.trim() : !phone.trim()) || !!consent', /effective consent gate/],
 ]) test('gift messenger contract rejects ' + name, () => {
-  assert.ok(channelChooser.includes(before), 'Mutation target must exist: ' + name);
-  assert.throws(() => assertSavedMessengerContract(channelChooser.replace(before, after)), reason);
+  assert.throws(() => assertSavedMessengerContract(mutateSavedMessengerBranch(channelChooser, 'normal', 'submitDisabled', replacement)), reason);
+});
+
+test('gift messenger contract rejects fabricated handler consent in both flows', () => {
+  const before = 'contactConsent: consent, website';
+  assert.equal(channelChooser.split(before).length - 1, 1);
+  assert.throws(() => assertSavedMessengerContract(channelChooser.replace(before, 'contactConsent: true, website')), /actual consent/);
+});
+
+test('gift messenger contract rejects missing optional disclosure', () => {
+  const before = 'WhatsApp or Telegram is optional.';
+  assert.equal(channelChooser.split(before).length - 1, 1);
+  assert.throws(() => assertSavedMessengerContract(channelChooser.replace(before, 'Use a messenger to finish.')), /optional/);
+});
+
+test('branch mutation rejects unknown, missing and ambiguous AST targets', () => {
+  assert.throws(() => mutateSavedMessengerBranch(channelChooser, 'unknown', 'reference', 'null'), /Unknown chooser branch/);
+  assert.throws(() => mutateSavedMessengerBranch(channelChooser, 'compact', 'submitDisabled', 'false'), /cardinality/);
+  const missing = mutateSavedMessengerBranch(channelChooser, 'compact', 'reference', 'null');
+  assert.throws(() => mutateSavedMessengerBranch(missing, 'compact', 'reference', 'null'), /cardinality/);
+  const duplicate = mutateSavedMessengerBranch(channelChooser, 'compact', 'reference', 'saved.referenceCode}{saved.referenceCode');
+  assert.throws(() => mutateSavedMessengerBranch(duplicate, 'compact', 'reference', 'null'), /cardinality/);
 });

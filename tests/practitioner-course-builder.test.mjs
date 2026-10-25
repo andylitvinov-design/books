@@ -2,6 +2,7 @@ import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {randomUUID} from 'node:crypto'
+import ts from 'typescript'
 import {COURSE_MEDIA_TYPES,normalizeCourseDraft,assertPublishableCourse,makeCourseSlug} from '../lib/practitioners/course-contracts.js'
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const slide=(kind='text')=>({id:randomUUID(),kind,title:'Introduction',body:'Welcome'})
@@ -63,7 +64,27 @@ test('public course read uses published snapshot rather than pending draft',()=>
 })
 test('existing materials and Academy catalog use new builder without replacing Reiki',()=>{
  const material=read('components/app/practice-materials.jsx')
- assert.match(material,/<PractitionerCourseBuilder locale=\{locale\} accountId=\{accountId\} searchQuery=\{query\} startCreate=\{quickCreateCourse\} onOpenYoutube=\{isOwner\?onOpenYoutube:null\}\/>/)
+ const parsed=ts.createSourceFile('practice-materials.jsx',material,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+ assert.equal(parsed.parseDiagnostics.length,0)
+ const instances=[]
+ const visit=node=>{if(ts.isJsxSelfClosingElement(node)&&node.tagName.getText(parsed)==='PractitionerCourseBuilder')instances.push(node);ts.forEachChild(node,visit)}
+ visit(parsed)
+ assert.equal(instances.length,1,'Exactly one actual course-builder composition')
+ const props=new Map()
+ for(const attribute of instances[0].attributes.properties){
+  assert.ok(ts.isJsxAttribute(attribute),'No spread may replace explicit builder props')
+  assert.ok(!props.has(attribute.name.text),'No duplicate builder prop')
+  assert.ok(attribute.initializer&&ts.isJsxExpression(attribute.initializer)&&attribute.initializer.expression,'Builder props are actual expressions')
+  props.set(attribute.name.text,attribute.initializer.expression)
+ }
+ const expected={locale:'locale',accountId:'accountId',searchQuery:'query',startCreate:'quickCreateCourse',meditationType:'meditationType',onOpenYoutube:'isOwner ? onOpenYoutube : null'}
+ assert.deepEqual([...props.keys()].sort(),Object.keys(expected).sort(),'All prior builder props plus current meditation type remain explicit')
+ const printer=ts.createPrinter({removeComments:true})
+ for(const [name,value] of Object.entries(expected)){
+  const expectedFile=ts.createSourceFile('expected.jsx','const expected = '+value,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  const expression=expectedFile.statements[0].declarationList.declarations[0].initializer
+  assert.equal(printer.printNode(ts.EmitHint.Expression,props.get(name),parsed),printer.printNode(ts.EmitHint.Expression,expression,expectedFile),'Exact builder binding: '+name)
+ }
  assert.match(material,/data-open-reiki-course-audio/)
  assert.match(material,/quickCreateCourse=false/)
  assert.match(read('components/app/practitioner-course-builder.jsx'),/startCreate=false/)

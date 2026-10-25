@@ -1,218 +1,29 @@
+import {expressFixture} from './helpers/personal-express-parent-fixture.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
-import {runInNewContext} from 'node:vm'
-import {randomUUID} from 'node:crypto'
-import ts from 'typescript'
-import * as whatsapp from '../lib/whatsapp-enquiry.js'
-import * as organic from '../lib/organic-event-referrals.js'
-import * as paid from '../lib/paid-ad-referrals.js'
-import * as input from '../lib/practitioners/public-service-enquiry-input.mjs'
-import * as receipt from '../lib/practitioners/enquiry-receipt.mjs'
+import {environment, mount, compileContactModule, readContactSource as read, turn, deferred,
+  success, receipt, intakeModel} from './helpers/contact-component-fixture.mjs'
 
-// Actual current TSX handlers, effects and pure input contracts, not a fake DOM.
-// No browser, server, database, administrator, auth or live transport is imported.
-// These tests establish state/handler/router-intent contracts. The browser
-// adapter owns native validation, hydration, focus, layout and actual navigation.
-const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
-const source = Object.fromEntries(['free-drawing-intake', 'contact-channel-chooser',
-  'compact-lead-capture', 'service-enquiry-thank-you'].map(name => [name, read('components/' + name + '.tsx')]))
-const analyticsSource = read('lib/public-analytics.ts')
 const CONTACT = 'free-review-component-fixture@example.invalid'
 const REFERENCE = 'HH-F4E3D2C1B0A9'
 const pathFor = locale => '/' + locale + '/services/free-situation-review'
 const FOOTER_SERVICE = 'Free written Situation Review'
 const copy = {
-  en: {
-    service: 'Coaching questionnaire — free drawing assessment', topic: 'Topic: Work or business',
-    fields: ['Situation / problem', 'Desired goal', 'Perceived obstacle', 'Previous attempts'],
-    request: 'Request: Please review my coaching answers and handwritten drawing (ME / MY GOAL / MY PROBLEM) and send me a personal written report.',
-    ready: 'Your answers are ready to copy. Nothing has been sent.', button: 'Copy answers',
-    copied: 'Copied — paste them into your chosen chat',
-    fallback: 'Select and copy the text below, then paste it into your chosen chat.',
-    reference: 'Enquiry',
-  },
-  ru: {
-    service: 'Коучинг-форма — бесплатная диагностика по рисунку', topic: 'Тема: Работа и бизнес',
-    fields: ['Ситуация / проблема', 'Желаемая цель', 'Предполагаемое препятствие', 'Что уже предпринимали'],
-    request: 'Запрос: прошу провести диагностику по моим ответам и рисунку (Я / МОЯ ЦЕЛЬ / МОЯ ПРОБЛЕМА) и прислать персональный письменный отчёт.',
-    ready: 'Ответы готовы к копированию. Пока ничего не отправлено.', button: 'Скопировать ответы',
-    copied: 'Скопировано — вставьте в выбранный чат',
-    fallback: 'Выделите и скопируйте текст ниже, затем вставьте его в выбранный чат.',
-    reference: 'Заявка',
-  },
+  en: {service: 'Free drawing-based situation review', reference: 'Enquiry'},
+  ru: {service: 'Бесплатная диагностика ситуации по рисунку', reference: 'Заявка'},
 }
 const markers = locale => ['problem', 'goal', 'obstacle', 'tried'].map(name => 'SYNTHETIC_PRIVATE_' + name + '_' + locale)
-const expectedAnswers = locale => [copy[locale].service, copy[locale].topic,
-  ...markers(locale).map((value, i) => copy[locale].fields[i] + ': ' + value), '', copy[locale].request].join('\n')
-const success = () => ({ok: true, status: 200, json: async () => ({saved: true, referenceCode: REFERENCE})})
-const turn = async f => { await new Promise(resolve => setImmediate(resolve)); f.flush() }
-const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done }); return {promise, resolve} }
-const element = (type, props) => ({type, props: props || {}})
-const empty = () => null
-let nextInstance = 0
 
-function environment(locale, {denyReceiptStorage = false} = {}) {
-  const requests = [], writes = [], navigations = [], popups = [], events = [], frames = [], copies = []
-  const storage = new Map()
-  let respond = success, denyCopy = false
-  const window = {
-    crypto: {randomUUID},
-    location: {pathname: pathFor(locale), search: '', href: 'http://127.0.0.1:3100' + pathFor(locale)},
-    matchMedia: () => ({matches: true}),
-    dispatchEvent: event => events.push(event.detail),
-    sessionStorage: {
-      getItem: key => storage.get(key) ?? null,
-      removeItem: key => storage.delete(key),
-      setItem: (key, value) => {
-        assert.equal(key, receipt.RECEIPT_SESSION_KEY, 'Only the public receipt may be persisted')
-        if (denyReceiptStorage) throw new Error('SYNTHETIC_RECEIPT_STORAGE_DENIED')
-        writes.push([key, value]); storage.set(key, value)
-      },
-    },
-    open: (url, target, features) => {
-      assert.equal(url, 'about:blank'); assert.equal(target, '_blank'); assert.equal(features, undefined)
-      const popup = {closed: false, opener: {}, destinations: [], close() { this.closed = true },
-        location: {replace: destination => popup.destinations.push(destination)}}
-      popups.push(popup); return popup
-    },
-  }
-  return {
-    window, requests, writes, navigations, popups, events, frames, copies, storage,
-    document: {documentElement: {dataset: {analyticsConsent: 'granted'}}},
-    navigator: {clipboard: {writeText: async value => {
-      copies.push(value)
-      if (denyCopy) throw new Error('SYNTHETIC_CLIPBOARD_DENIED')
-    }}},
-    setRespond: fn => { respond = fn }, setCopyDenied: value => { denyCopy = value },
-    router: {push: path => navigations.push(path)},
-    fetch: (url, options) => {
-      assert.equal(url, '/api/service-enquiries', 'Any other API or external request is forbidden')
-      assert.equal(options.method, 'POST'); assert.equal(options.credentials, 'same-origin')
-      assert.equal(options.headers['Content-Type'], 'application/json')
-      assert.equal(typeof options.body, 'string'); requests.push(options.body)
-      return respond()
-    },
-  }
-}
-
-function compile(text, imports, env) {
-  const loaded = {exports: {}}
-  const code = ts.transpileModule(text, {compilerOptions: {
-    jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
-  }}).outputText
-  runInNewContext(code, {
-    exports: loaded.exports, module: loaded,
-    require: name => {
-      if (name.endsWith('.module.css')) return {default: {}}
-      assert.ok(Object.hasOwn(imports, name), 'Unexpected runtime dependency: ' + name)
-      return imports[name]
-    },
-    window: env.window, document: env.document, navigator: env.navigator,
-    fetch: env.fetch, URL, URLSearchParams, crypto: {randomUUID}, Date,
-    requestAnimationFrame: callback => env.frames.push(callback),
-    CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail } },
-  })
-  return loaded.exports
-}
-
-function mount(name, exportName, initialProps, env) {
-  const instance = ++nextInstance, slots = []
-  let index = 0, dirty = true, pending = [], tree, props = initialProps
-  const same = (a, b) => a && b && a.length === b.length && a.every((value, i) => Object.is(value, b[i]))
-  const hooks = {
-    useState(initial) {
-      const i = index++
-      if (!slots[i]) slots[i] = {value: typeof initial === 'function' ? initial() : initial}
-      return [slots[i].value, value => {
-        const next = typeof value === 'function' ? value(slots[i].value) : value
-        if (!Object.is(next, slots[i].value)) { slots[i].value = next; dirty = true }
-      }]
-    },
-    useRef(initial) { const i = index++; return slots[i] || (slots[i] = {current: initial}) },
-    useId() { return 'synthetic-free-review-' + instance + '-' + index++ },
-    useEffect(effect, deps) {
-      const i = index++
-      if (!slots[i] || !same(slots[i].deps, deps)) {
-        slots[i] = {deps, cleanup: slots[i]?.cleanup}
-        pending.push(() => { slots[i].cleanup?.(); slots[i].cleanup = effect() })
-      }
-    },
-  }
-  hooks.useLayoutEffect = hooks.useEffect
-  const analytics = compile(analyticsSource, {}, env)
-  const imports = {
-    react: hooks, 'react/jsx-runtime': {jsx: element, jsxs: element, Fragment: 'fragment'},
-    'next/navigation': {usePathname: () => env.window.location.pathname, useRouter: () => env.router},
-    'next/link': {default: 'a'}, 'next/image': {default: 'img'},
-    'lucide-react': new Proxy({}, {get: () => empty}),
-    '@/components/contact-channel-chooser': {ContactChannelChooser: 'chooser'},
-    '@/components/acquisition-event-link': {AcquisitionEventLink: 'acquisition-link'},
-    '@/components/phone-country-input': {PhoneCountryInput: 'phone-input'},
-    '@/components/static-portrait': {StaticPortrait: empty},
-    '@/components/public-site-header': {PublicSiteHeader: empty},
-    '@/components/site-video-player': {SiteVideoPlayer: empty},
-    '@/data/local-acquisition': {ACQUISITION_EVENTS: []},
-    '@/lib/whatsapp-enquiry': whatsapp, '@/lib/public-analytics': analytics,
-    '@/lib/organic-event-referrals': organic, '@/lib/paid-ad-referrals': paid,
-    '@/lib/practitioners/public-service-enquiry-input.mjs': input,
-    '@/lib/practitioners/enquiry-receipt.mjs': receipt,
-  }
-  const component = compile(source[name], imports, env)[exportName]
-  function flush() {
-    for (let count = 0; dirty; count++) {
-      assert.ok(count < 30, 'Unexpected state/effect loop')
-      dirty = false; index = 0; pending = []; tree = component(props)
-      for (const effect of pending) effect()
-    }
-  }
-  function nodes() {
-    const result = []
-    function walk(value) {
-      if (Array.isArray(value)) { value.forEach(walk); return }
-      if (!value || typeof value !== 'object' || !('type' in value)) return
-      result.push(value); walk(value.props.children)
-    }
-    walk(tree); return result
-  }
-  const f = {
-    env, flush, nodes,
-    find(type, predicate = () => true) {
-      const found = nodes().filter(node => node.type === type && predicate(node.props))
-      assert.equal(found.length, 1, 'Expected exactly one ' + type)
-      return found[0]
-    },
-    change(type, predicate, value) {
-      f.find(type, predicate).props.onChange({target: {value, checked: value}}); flush()
-    },
-    click(type, predicate) { const result = f.find(type, predicate).props.onClick(); flush(); return result },
-    async submit() {
-      const result = f.find('form').props.onSubmit({preventDefault() {}})
-      flush(); await result; flush()
-    },
-    update(value) { props = {...props, ...value}; dirty = true; flush() },
-    unmount() { for (const slot of slots) slot?.cleanup?.() },
-  }
-  flush(); return f
-}
-
-async function preparedIntake(locale, env = environment(locale)) {
-  const f = mount('free-drawing-intake', 'FreeDrawingIntake', {locale}, env)
-  assert.equal(f.nodes().filter(node => node.props.role === 'region').length, 0)
-  const questions = f.nodes().filter(node => node.type === 'textarea')
-  assert.equal(questions.length, 4)
-  assert.deepEqual(questions.map(node => Boolean(node.props.required)), [true, true, false, false])
-  assert.deepEqual(questions.map(node => node.props.maxLength), [3000, 2000, 2000, 2000])
-  // This is an actual topic button handler; optional disclosures are a browser concern.
+// The public questionnaire was replaced by a private-entry link. Test neutral
+// gift contact separately through its real parent; never fabricate old answer
+// controls or restore their private text to a messenger callback.
+async function preparedInvite(locale, env = environment(locale)) {
+  env.navigate(pathFor(locale), '?topic=business&answer=' + markers(locale)[0] + '&email=' + CONTACT)
+  const f = mount('client-assessment-invite', 'ClientAssessmentInvite', {locale}, env)
   const topics = f.nodes().filter(node => node.type === 'button' && 'aria-pressed' in node.props)
   assert.equal(topics.length, 4); assert.equal(topics[0].props['aria-pressed'], true)
   topics[2].props.onClick(); f.flush()
-  for (const [i, value] of markers(locale).entries()) {
-    f.nodes().filter(node => node.type === 'textarea')[i].props.onChange({target: {value: '  ' + value + '  '}})
-    f.flush()
-  }
   assert.deepEqual(env.copies, []); assert.deepEqual(env.requests, []); assert.deepEqual(env.writes, [])
-  await f.submit()
   return f
 }
 
@@ -257,48 +68,10 @@ function assertLink(props, channel, locale, service) {
 }
 
 for (const locale of ['en', 'ru']) {
-  test(locale + ': actual drawing handlers prepare private preview, copy, denial and recovery without transmission', async () => {
-    const f = await preparedIntake(locale), env = f.env
-    const ready = f.find('div', props => props.role === 'region')
-    assert.equal(ready.props['aria-label'], copy[locale].ready)
-    assert.equal(ready.props['aria-live'], 'polite'); assert.equal(ready.props.tabIndex, -1)
-    assert.equal(env.frames.length, 1, 'Preparation requests a later focus attempt')
-    assert.equal(f.find('textarea', props => props.readOnly).props.value, expectedAnswers(locale))
-    const chooser = f.find('chooser').props
-    assert.deepEqual(Object.keys(chooser).sort(), ['className', 'event', 'locale', 'onChannelClick', 'whatsappUrl'])
-    assert.equal(chooser.event, 'contact_click'); assert.equal(chooser.locale, locale)
-    assertNoPrivate(chooser, locale)
-    const draft = new URL(chooser.whatsappUrl).searchParams.get('text')
-    assert.ok(draft.includes(copy[locale].service)); assert.ok(draft.includes(copy[locale].topic))
-    assert.ok(draft.includes('https://holistichouse.vercel.app' + pathFor(locale)))
-    const copyButton = props => Array.isArray(props.children) && props.children.includes(copy[locale].button)
-    const status = () => f.find('p', props => props['aria-live'] === 'polite').props.children
-    f.click('button', copyButton); await turn(f)
-    assert.deepEqual(env.copies, [expectedAnswers(locale)]); assert.equal(status(), copy[locale].copied)
-    env.setCopyDenied(true); f.click('button', copyButton); await turn(f)
-    assert.equal(status(), copy[locale].fallback)
-    assert.equal(f.find('textarea', props => props.readOnly).props.value, expectedAnswers(locale))
-    env.setCopyDenied(false); f.click('button', copyButton); await turn(f)
-    assert.equal(status(), copy[locale].copied)
-    for (const channel of ['whatsapp', 'telegram']) {
-      f.find('chooser').props.onChannelClick(channel); await turn(f)
-      assert.equal(status(), copy[locale].copied)
-    }
-    assert.equal(env.copies.length, 5); assert.ok(env.copies.every(value => value === expectedAnswers(locale)))
-    assert.deepEqual(env.events, [], 'Actual public analytics hold suppresses started/prepared despite stale granted consent')
-    assert.deepEqual(env.requests, []); assert.deepEqual(env.writes, []); assert.deepEqual(env.navigations, []); assert.deepEqual(env.popups, [])
-    f.nodes().filter(node => node.type === 'textarea' && !node.props.readOnly)[0].props.onChange({target: {value: 'SYNTHETIC_CHANGED_PROBLEM'}})
-    f.flush(); assert.equal(f.nodes().filter(node => node.props.role === 'region').length, 0)
-    await f.submit(); assert.equal(status(), null)
-    assert.ok(f.find('textarea', props => props.readOnly).props.value.includes('SYNTHETIC_CHANGED_PROBLEM'))
-    f.nodes().find(node => node.type === 'button' && node.props['aria-pressed'] === false).props.onClick()
-    f.flush(); assert.equal(f.nodes().filter(node => node.props.role === 'region').length, 0)
-    assert.deepEqual(env.requests, []); assert.deepEqual(env.events, [])
-  })
-
-  for (const denied of [false, true]) test(locale + ': questionnaire chooser exact payload and ' + (denied ? 'storage-denied fallback' : 'thank-you router intent'), async () => {
-    const env = environment(locale, {denyReceiptStorage: denied}), parent = await preparedIntake(locale, env)
+  for (const denied of [false, true]) test(locale + ': neutral gift chooser exact payload and ' + (denied ? 'storage-denied fallback' : 'thank-you router intent'), async () => {
+    const env = environment(locale, {denyReceiptStorage: denied}), parent = await preparedInvite(locale, env)
     const chooserProps = parent.find('chooser').props
+    assertNoPrivate(chooserProps, locale)
     const f = mount('contact-channel-chooser', 'ContactChannelChooser', chooserProps, env)
     const consent = () => f.find('input', props => props.type === 'checkbox')
     const submit = () => f.find('button', props => props.type === 'submit')
@@ -325,7 +98,7 @@ for (const locale of ['en', 'ru']) {
       }
       assert.equal(texts[0], texts[1])
       assert.equal(texts[0], new URL(chooserProps.whatsappUrl).searchParams.get('text') + '\n\n' + copy[locale].reference + ': ' + REFERENCE)
-      assert.deepEqual(env.copies, [expectedAnswers(locale), expectedAnswers(locale)])
+      assert.deepEqual(env.copies, [], 'Neutral messenger callbacks must not copy private answers')
       // AcquisitionEventLink itself is a marker here: browser tests own its
       // native anchor default/analytics behavior. The real chooser callback ran.
     } else {
@@ -372,8 +145,8 @@ for (const locale of ['en', 'ru']) {
 }
 
 for (const fault of ['network', 'json', 'http-error', 'saved-false', 'bad-reference', 'array-reference']) {
-  test('questionnaire chooser rejects unconfirmed ' + fault + ' and retries the byte-identical private-free body', async () => {
-    const env = environment('en'), parent = await preparedIntake('en', env)
+  test('neutral gift chooser rejects unconfirmed ' + fault + ' and retries the byte-identical private-free body', async () => {
+    const env = environment('en'), parent = await preparedInvite('en', env)
     const f = mount('contact-channel-chooser', 'ContactChannelChooser', parent.find('chooser').props, env)
     f.change('input', props => props.type === 'email', CONTACT)
     f.change('input', props => props.type === 'checkbox', true)
@@ -397,8 +170,8 @@ for (const fault of ['network', 'json', 'http-error', 'saved-false', 'bad-refere
   })
 }
 
-test('questionnaire deliberate separate contact note is submitted, but neither note nor four drawing answers enters a public draft', async () => {
-  const env = environment('en', {denyReceiptStorage: true}), parent = await preparedIntake('en', env)
+test('neutral gift deliberate contact note is submitted, but neither note nor private query markers enter a public draft', async () => {
+  const env = environment('en', {denyReceiptStorage: true}), parent = await preparedInvite('en', env)
   const f = mount('contact-channel-chooser', 'ContactChannelChooser', parent.find('chooser').props, env)
   const note = 'SYNTHETIC_PRACTICAL_CONTACT_NOTE'
   f.change('input', props => props.type === 'email', CONTACT)
@@ -416,16 +189,21 @@ test('missing receipt cannot make the actual thank-you component invent a confir
   assert.deepEqual(env.requests, []); assert.deepEqual(env.writes, []); assert.deepEqual(env.navigations, [])
 })
 
-test('landing still binds its compact footer separately from the optional drawing form', () => {
-  const landing = read('components/free-entry-landing.tsx')
-  assert.match(landing, /situation: "Free written Situation Review"/)
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/)
-  assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/)
-  assert.match(landing, /<CompactLeadCapture[\s\S]*?serviceTitle=\{serviceTitles\[kind\]\}/)
+test('actual situation landing executes one personal-express parent and optional private entry without duplicate footer', () => {
+  for (const locale of ['en','ru','es']) {
+    const f=expressFixture({locale})
+    assert.equal(f.find('main').props['data-free-entry-landing'],'situation')
+    assert.equal(f.find('section',p=>Object.hasOwn(p,'data-personal-express-enquiry')).props.lang,locale)
+    assert.equal(f.find('private-intake-leaf').props.locale,locale)
+    assert.equal(f.nodes().filter(node=>node.type==='independent-compact-capture').length,0)
+    const details=f.find('details',props=>Object.hasOwn(props,'data-optional-written-review'))
+    assert.equal(details.props.open,undefined)
+    assert.deepEqual(f.env.requests,[]); assert.deepEqual(f.env.writes,[]);f.unmount()
+  }
 })
 
 test('payload and public-link acceptance oracles reject changed consent, identity, route and private-data leaks', async () => {
-  const env = environment('en', {denyReceiptStorage: true}), parent = await preparedIntake('en', env)
+  const env = environment('en', {denyReceiptStorage: true}), parent = await preparedInvite('en', env)
   const f = mount('contact-channel-chooser', 'ContactChannelChooser', parent.find('chooser').props, env)
   f.change('input', props => props.type === 'email', CONTACT)
   f.change('input', props => props.type === 'checkbox', true)
@@ -471,8 +249,8 @@ test('compact free-review uncertain result locks the initial channel and retries
   assert.deepEqual(env.popups[1].destinations, [f.find('a', props => props['data-compact-channel'] === 'telegram').props.href])
 })
 
-test('questionnaire chooser duplicate pending submit and late unmount cannot fabricate a receipt', async () => {
-  const env = environment('en'), parent = await preparedIntake('en', env), hold = deferred()
+test('neutral gift chooser duplicate pending submit and late unmount cannot fabricate a receipt', async () => {
+  const env = environment('en'), parent = await preparedInvite('en', env), hold = deferred()
   const f = mount('contact-channel-chooser', 'ContactChannelChooser', parent.find('chooser').props, env)
   f.change('input', props => props.type === 'email', CONTACT)
   f.change('input', props => props.type === 'checkbox', true)
@@ -486,4 +264,87 @@ test('questionnaire chooser duplicate pending submit and late unmount cannot fab
   assert.deepEqual(env.writes, []); assert.deepEqual(env.navigations, [])
   f.unmount(); hold.resolve(success()); await running; await duplicate; f.flush()
   assert.deepEqual(env.writes, []); assert.deepEqual(env.navigations, []); assert.deepEqual(env.popups, [])
+})
+
+const privateEntryCopy = {
+  en: {title: 'Prepare your question privately', action: 'Open private coaching questionnaire', privacy: 'Do not send private answers, drawings or test results through WhatsApp, Telegram or email.', draft: 'Saving does not send it to a coach or create a booking.'},
+  ru: {title: 'Подготовьте запрос приватно', action: 'Открыть приватную коучинг-анкету', privacy: 'Не отправляйте личные ответы, рисунки и результаты тестов через WhatsApp, Telegram или email.', draft: 'Сохранение не отправляет его коучу и не создаёт запись.'},
+  es: {title: 'Prepara tu consulta en privado', action: 'Abrir formulario privado de coaching', privacy: 'No envíes respuestas privadas, dibujos ni resultados por WhatsApp, Telegram o correo.', draft: 'Guardar no lo envía al coach ni reserva una cita.'},
+}
+const nodeText = node => Array.isArray(node) ? node.map(nodeText).join('') : node && typeof node === 'object' ? nodeText(node.props?.children) : typeof node === 'string' ? node : ''
+function assertPrivateEntry(f, locale, topic) {
+  const section = f.find('section')
+  assert.equal(section.props.lang, locale)
+  const title = f.find('h2')
+  assert.equal(title.props.id, section.props['aria-labelledby'])
+  assert.equal(nodeText(title), privateEntryCopy[locale].title)
+  const link = f.find('a')
+  assert.equal(link.props.href, '/' + locale + '/coaching/intake?topic=' + topic)
+  assert.equal(link.props.prefetch, false)
+  assert.equal(nodeText(link), privateEntryCopy[locale].action)
+  const text = nodeText(section)
+  assert.ok(text.includes(privateEntryCopy[locale].privacy), 'Private answers must not be handed to messengers')
+  assert.ok(text.includes(privateEntryCopy[locale].draft), 'Saving is not sending or booking')
+  assert.equal(f.nodes().filter(node => ['form', 'textarea', 'input', 'chooser', 'acquisition-link', 'button'].includes(node.type)).length, 0,
+    'Public entry collects no answers, offers no copy/share action and submits no enquiry')
+  assertNoPrivate(JSON.stringify(f.nodes()), locale)
+  for (const key of ['requests','writes','navigations','popups','copies','events']) assert.deepEqual(f.env[key], [], 'No ' + key + ' before navigation')
+}
+for (const locale of ['en','ru','es']) test(locale + ': actual private questionnaire entry renders approved public topic only, with no collection or transmission', () => {
+  assert.deepEqual(intakeModel.COACHING_TOPICS.map(topic => topic.id), ['personal','wellbeing','relationships','career','business','goal','other'])
+  for (const topic of ['personal','wellbeing','relationships','career','business','goal','other']) {
+    const env = environment(locale, {search: '?topic=' + topic + '&answer=' + markers(locale)[0] + '&email=' + CONTACT})
+    assertPrivateEntry(mount('free-drawing-intake', 'FreeDrawingIntake', {locale}, env), locale, topic)
+  }
+  for (const search of ['', '?topic=unknown', '?topic=' + encodeURIComponent(markers(locale)[0]), '?topic=//evil.example', '?email=' + CONTACT]) {
+    assertPrivateEntry(mount('free-drawing-intake', 'FreeDrawingIntake', {locale}, environment(locale, {search})), locale, 'personal')
+  }
+})
+
+test('private entry oracle rejects arbitrary query leakage, missing privacy copy and invented public answer collection', () => {
+  const original = read('components/free-drawing-intake.tsx')
+  for (const [before, after] of [
+    ['"/coaching/intake?topic=" + topic', '"/coaching/intake?topic=" + topic + window.location.search'],
+    [privateEntryCopy.en.privacy, 'Send private answers in your messenger.'],
+    ['{t.lead}</p>', '{t.lead}</p><textarea name="private-answer" />'],
+  ]) {
+    assert.equal(original.split(before).length - 1, 1, 'Exact mutation target')
+    const env = environment('en', {search: '?email=' + CONTACT})
+    const changed = mount('free-drawing-intake', 'FreeDrawingIntake', {locale:'en'}, env, {sourceOverride: original.replace(before, after)})
+    assert.throws(() => assertPrivateEntry(changed, 'en', 'personal'))
+  }
+})
+
+test('contact fixture rejects unknown JavaScript/CSS imports and missing JSX exports, not permissive stubs', () => {
+  const env = environment('en')
+  for (const name of ['@/server/private', './unlisted.module.css']) {
+    assert.throws(() => compileContactModule('import value from "' + name + '"; export const x=value;', {}, env), /Unexpected runtime dependency/)
+  }
+  const original = read('components/free-drawing-intake.tsx')
+  assert.throws(() => mount('free-drawing-intake', 'FreeDrawingIntake', {locale:'en'}, env,
+    {sourceOverride: original.replace('ArrowUpRight, FileText', 'MissingIcon, FileText').replace('<ArrowUpRight ', '<MissingIcon ')}), /Missing JSX export/)
+})
+
+test('neutral gift pending old selection or route cannot create receipt, navigate, or unlock a different enquiry', async () => {
+  for (const changed of ['selection', 'route']) {
+    const env = environment('en'), parent = await preparedInvite('en', env), hold = deferred()
+    const locks = []
+    const initial = {...parent.find('chooser').props, onSubmissionLockChange: (...args) => locks.push(args)}
+    const f = mount('contact-channel-chooser', 'ContactChannelChooser', initial, env)
+    f.change('input', props => props.type === 'email', CONTACT)
+    f.change('input', props => props.type === 'checkbox', true)
+    env.setRespond(() => hold.promise)
+    const pending = f.find('form').props.onSubmit({preventDefault() {}}); f.flush()
+    assert.equal(env.requests.length, 1); assert.equal(locks.filter(([locked]) => locked).length, 1)
+    if (changed === 'route') env.navigate('/en/services/other')
+    f.update(changed === 'selection' ? {resetKey: 'new-selection'} : {})
+    hold.resolve(success()); await pending; f.flush()
+    assert.deepEqual(env.writes, []); assert.deepEqual(env.navigations, [])
+    assert.equal(f.nodes().filter(node => node.type === 'acquisition-link').length, 0)
+    assert.equal(locks.filter(([locked]) => !locked).length, 0, 'Stale response must not release the active lock')
+    await f.submit(); assert.equal(env.requests.length, 1, 'Changed context cannot create or retry an unresolved old operation')
+    f.unmount()
+    assert.equal(locks.filter(([locked]) => !locked).length, 1, 'Unmount releases only the instance owner')
+    assert.equal(locks[0][1], locks.at(-1)[1])
+  }
 })

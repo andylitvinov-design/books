@@ -5,6 +5,7 @@ import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { oporaExperienceGuide, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import { OPORA_BROWSER_FRESH_EDITION, OPORA_BROWSER_DAY5_COPY } from './fixtures/opora-as60-day5-copy.mjs'
+import { OPORA_BROWSER_FRESH_REVISION, OPORA_BROWSER_DAY5_OVERVIEW } from './fixtures/opora-as60-variety-day5-copy.mjs'
 import { verifyOporaTakeaway } from './helpers/opora-takeaway-acceptance.mjs'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
@@ -102,6 +103,7 @@ try {
       await expect(page.locator('[data-opora-experience-first="as-5.6"]')).toBeVisible()
       await expect(page.locator('[data-course-visual-theme]')).toHaveAttribute('data-course-visual-theme', OPORA_EXPERIENCE_DESIGN_VERSION)
       await expect(page.locator('[data-opora-experience-first]')).toHaveAttribute('data-opora-practical-skills-version', OPORA_BROWSER_FRESH_EDITION)
+      await expect(page.locator('[data-opora-experience-first]')).toHaveAttribute('data-opora-content-revision', OPORA_BROWSER_FRESH_REVISION)
       await click(t.next)
       await expect(page.locator('[data-opora-daily-support="5"]')).toHaveText(copy.purpose)
       await expect(page.getByRole('heading', { name: copy.supportTitle, exact: true })).toBeVisible()
@@ -119,7 +121,7 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
-      await expect(page.locator('[data-opora-overview-purpose] p')).toHaveText(copy.purpose)
+      await expect(page.locator('[data-opora-overview-purpose] p')).toHaveText(OPORA_BROWSER_DAY5_OVERVIEW[locale])
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
       for (const moment of ['bodyExperience','emotionExperience','mentalExperience','imageryMeditation']) {

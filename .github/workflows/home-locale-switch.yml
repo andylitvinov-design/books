@@ -5,6 +5,7 @@ on:
       - 'components/holistic-house-home.tsx'
       - 'components/home-section-carousel.tsx'
       - 'app/\[locale\]/services/page.tsx'
+      - 'app/es/services/page.tsx'
       - 'tests/stable-session-entry.test.mjs'
       - 'tests/home-section-carousel.test.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
@@ -23,6 +24,7 @@ on:
       - 'app/es/page.tsx'
       - 'tests/home-core-methods.test.mjs'
       - 'components/site-navigation.tsx'
+      - 'tests/home-locale-menu-state.test.mjs'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
       - '.github/workflows/home-locale-switch.yml'
@@ -32,6 +34,7 @@ on:
       - 'components/holistic-house-home.tsx'
       - 'components/home-section-carousel.tsx'
       - 'app/\[locale\]/services/page.tsx'
+      - 'app/es/services/page.tsx'
       - 'tests/stable-session-entry.test.mjs'
       - 'tests/home-section-carousel.test.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
@@ -50,6 +53,7 @@ on:
       - 'app/es/page.tsx'
       - 'tests/home-core-methods.test.mjs'
       - 'components/site-navigation.tsx'
+      - 'tests/home-locale-menu-state.test.mjs'
       - 'app/page.tsx'
       - 'scripts/verify-home-locale-switch.mjs'
       - '.github/workflows/home-locale-switch.yml'
@@ -71,7 +75,7 @@ jobs:
       - name: Stable offer, manual carousel and early existing session selector
         run: |
           node --test tests/stable-session-entry.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs
-          npx --no-install eslint components/home-section-carousel.tsx app/'[locale]'/services/page.tsx tests/stable-session-entry.test.mjs
+          npx --no-install eslint components/home-section-carousel.tsx app/'[locale]'/services/page.tsx app/es/services/page.tsx tests/stable-session-entry.test.mjs
       - name: Seven-step immersion, existing methods, privacy, typecheck and lint
         run: |
           node --test tests/home-featured-workspace.test.mjs tests/personality-profiles-builder.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs
@@ -95,8 +99,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Navigation, types and affected-component lint
         run: |
-          node --test tests/home-core-methods.test.mjs tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
-          npx eslint components/holistic-house-home.tsx components/home-core-methods.tsx app/es/page.tsx
+          node --test tests/home-locale-menu-state.test.mjs tests/home-core-methods.test.mjs tests/navigation-cabinet.test.mjs tests/page-video-release.test.mjs
+          npx eslint components/site-navigation.tsx components/holistic-house-home.tsx components/home-core-methods.tsx app/es/page.tsx
           npx tsc --noEmit
       - name: Build the real application
         run: npm run build

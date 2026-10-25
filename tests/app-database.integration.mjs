@@ -643,6 +643,41 @@ test('master network approval, publication and practitioner isolation use the ex
   assert.equal((await practiceRepo.getMyPractice(b)).requests.length, 0)
 })
 
+test('selected public master alias: real owner transaction, collision, RLS and old URL permanence',async()=>{
+  const before=await practiceRepo.getMyPractice(a)
+  const originalSlug=before.practitioner.slug
+  const first='qa-master-a'
+  const second='qa-master-a-renamed'
+  assert.deepEqual(await practiceRepo.checkPublicAlias(a,first),{
+    alias:first,available:true,mine:false,
+  })
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:first}),{
+    alias:first,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,first)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+  await assert.rejects(()=>practiceRepo.savePublicAlias(b,{alias:first}),e=>e?.code==='ALIAS_TAKEN')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'admin'}),e=>e?.code==='ALIAS_RESERVED')
+  await assert.rejects(()=>practiceRepo.savePublicAlias(a,{alias:'bad--alias'}),e=>e?.code==='INVALID_ALIAS')
+  await assert.rejects(()=>rawAs(a,'authenticated',db=>db.query(
+    'select alias from app.practitioner_profile_aliases'
+  )),e=>e?.code==='42501')
+  const unauthorized=await rawAs(b,'hh_app_backend',db=>db.query(
+    'update app.practitioner_profile_aliases set is_primary=false where alias=$1',[first],
+  ))
+  assert.equal(unauthorized.rowCount,0,'Other masters cannot change this URL even with the backend SQL role')
+  assert.deepEqual(await practiceRepo.savePublicAlias(a,{alias:second}),{
+    alias:second,changed:true,
+  })
+  assert.equal((await practiceRepo.getMyPractice(a)).practitioner.publicAlias,second)
+  assert.equal(await practiceRepo.resolvePublicAlias(first),originalSlug,
+    'Previously shared/printed link must keep working')
+  assert.equal(await practiceRepo.resolvePublicAlias(second),originalSlug)
+  assert.equal((await practiceRepo.checkPublicAlias(a,first)).mine,true)
+  assert.equal((await practiceRepo.checkPublicAlias(b,first)).available,false)
+})
+
 test('article folders: real database ownership, search metadata, archival safety and public draft privacy',async()=>{
  const articleRepo=createArticleRepository(config)
  const folder=await articleRepo.createFolder(a,{name:'Synthetic QA Remedy Cards'})

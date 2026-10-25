@@ -533,13 +533,13 @@ async function verifyPublicServiceConversionJourneys(){
   }
   await publicPage.setViewportSize({width:390,height:844})
   // Separate real components, separate disposable guarded contexts. The short
-  // contact capture never requires the optional browser-local drawing answers.
+  // contact capture never requires answers from the private questionnaire.
   await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'compact'})
   await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'compact',channel:'telegram',denyReceiptStorage:true})
-  // Normal chooser completion navigates to the genuine receipt page. Only the
-  // receipt-storage-denied fallback keeps its redacted messenger links in place.
-  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'drawing'})
-  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'drawing',denyReceiptStorage:true,output})
+  // The retired public drawing preview is now a private questionnaire entry.
+  // Both storage modes must collect nothing and perform no write before navigation.
+  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'private-entry'})
+  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'private-entry',denyReceiptStorage:true,output})
   await publicPage.close()
  }
  assert.deepEqual(publicErrors,[])

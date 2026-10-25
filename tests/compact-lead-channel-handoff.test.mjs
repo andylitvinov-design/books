@@ -16,7 +16,7 @@ test("compact capture asks for an explicit opt-in and routes both messenger choi
   assert.match(source, /checked=\{consent\}/);
   assert.match(source, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
   assert.match(source, /const inFlight = useRef\(false\)/);
-  assert.match(choose, /if \(inFlight\.current \|\| reference \|\| operation\.current\?\.confirmed \|\| !mounted\.current \|\| activeContext\.current !== contextKey\) return;/);
+  assert.match(choose, /if \(!active \|\| contextRevision\.current !== renderRevision \|\| inFlight\.current \|\| reference \|\| operation\.current\?\.confirmed \|\| !mounted\.current \|\| activeContext\.current !== contextKey\) return;/);
   assert.match(choose, /inFlight\.current = true;[\s\S]*window\.open\("about:blank", "_blank"\)[\s\S]*await fetch\(/);
   assert.match(choose, /finally \{\s*inFlight\.current = false;/);
   assert.match(source, /window\.crypto\.randomUUID\(\)/);

@@ -68,9 +68,10 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
    if(failAt===name||(typeof failAt==='function'&&failAt({id,name,args,occurrence})))throw new AggregateError([new Error(marker)],marker,{cause:new Error(marker)})
   }
   const loc=(name)=>({name,
-   locator:selector=>loc(selector==='..'?'label-parent':selector==='span'?'label':selector.includes('email')?'email':selector.includes('checkbox')?'consent':selector.includes('submit')?'submit':selector.includes('data-contact-order')?'open':selector.includes('data-alchemy-format=')?'format':selector.includes('data-contact-channel]')?'links':'container'),
+   locator:selector=>loc(selector==='..'?'label-parent':selector==='span'?'label':selector.includes('type="tel"')?'phone':selector==='select'?'country':selector.includes('checkbox')?'consent':selector==='[data-contact-channel-submit]'?'actions':selector.includes('data-contact-channel-submit="whatsapp"')?'whatsapp':selector.includes('data-contact-channel-submit="telegram"')?'telegram':selector.includes('role="status"')?'receipt':selector.includes('data-contact-order')?'open':selector.includes('data-alchemy-format=')?'format':selector.includes('data-contact-channel]')?'links':'container'),
    click:async()=>{record('click',name);if(name==='label')state.checked=!state.checked},
-   fill:async value=>{record('fill',name,value);state.focus='email'},
+   selectOption:async value=>record('select',name,value),
+   fill:async value=>{record('fill',name,value);state.focus='phone'},
    evaluate:async fn=>{
     if(fn===collectKeyboardFailureTail){record('tail',name);return readKeyboardTail?.(fn)}
     record('evaluate',name,String(fn).includes('getBoundingClientRect')?'visibility':'focus')
@@ -85,6 +86,7 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
     const str=String(fn)
     record('page-evaluate')
     if(str.includes('window.__consentPopupAttempts'))return popup?1:0
+    if(str.includes('sessionStorage.getItem'))return null
     if(str.includes('window.__alchemyFixture.opens'))return []
    },
    keyboard:{press:async key=>{record('key',key);if(key==='Tab'&&!stuckTab)state.focus='consent';if(key==='Shift+Tab')state.focus='previous';if(key==='Space')state.checked=!state.checked}},
@@ -106,8 +108,8 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
   }
   return {toBeFocused:check('focused',state=>assert.equal(state.focus,locator.name)),
    toBeVisible:check('visible',()=>{}),toBeChecked:check('checked',state=>assert.equal(state.checked,true)),
-   toBeEnabled:check('enabled',state=>assert.equal(state.checked,true)),toBeDisabled:check('disabled',state=>assert.equal(state.checked,false)),
-   toHaveCount:check('count',(_,n)=>assert.equal(n,0)),not:{toBeChecked:check('not-checked',state=>assert.equal(state.checked,false)),toBeFocused:check('not-focused',state=>assert.notEqual(state.focus,locator.name))}}
+   toBeEnabled:check('enabled',()=>{}),toBeDisabled:check('disabled',state=>assert.equal(state.checked,false)),
+   toHaveCount:check('count',(_,n)=>assert.equal(n,locator.name==='actions'?2:0)),not:{toBeChecked:check('not-checked',state=>assert.equal(state.checked,false)),toBeFocused:check('not-focused',state=>assert.notEqual(state.focus,locator.name))}}
  }
  return {events,contexts,expect,source:{url:()=>initial,viewportSize:()=>({width:390,height:844}),context:()=>({browser:()=>browser})}}
 }
@@ -116,7 +118,7 @@ test('executes three fresh guarded contexts with native keyboard, label and canc
  assert.equal(h.contexts.length,3);assert.ok(h.contexts.every(c=>c.closed&&c.routes.length===1))
  const actions=id=>h.events.filter(e=>e[0]===id).map(e=>e.slice(1))
  assert.deepEqual(actions(0).filter(e=>e[0]==='key'),[['key','Tab'],['key','Space'],['key','Space'],['key','Shift+Tab']])
- assert.deepEqual(actions(1).filter(e=>e[0]==='click'),[['click','format'],['click','open'],['click','label'],['click','label']])
+ assert.deepEqual(actions(1).filter(e=>e[0]==='click'),[['click','format'],['click','open'],['click','whatsapp'],['click','telegram'],['click','label'],['click','label'],['click','whatsapp'],['click','telegram']])
  assert.deepEqual(actions(2).filter(e=>['move','down','up'].includes(e[0])),[['move',49.5,409.5],['down'],['move',1,1],['up']])
  assert.ok(!h.events.some(e=>e[1]==='click'&&['submit','consent'].includes(e[2])))
  for(let i=0;i<3;i++)assert.ok(actions(i).findIndex(e=>e[0]==='route')<actions(i).findIndex(e=>e[0]==='newPage'))
@@ -129,7 +131,7 @@ for(const options of [{post:true},{popup:true},{pageError:true}])test('native sc
 })
 test('original pointer acceptance keeps exact native check and no new helper invocation',()=>{
  const original=readFileSync(new URL('../scripts/helpers/alchemy-enquiry-journey-verifier.mjs',import.meta.url),'utf8')
- assert.match(original,/assert.equal\(receipt.count,0\)\s+await consent.check\(\)\s+return \{contact,consent,submit\}/)
+ assert.match(original,/assert.equal\(receipt.count,0\)\s+await consent.check\(\)\s+return \{contact,country,consent,actions,submit\}/)
  assert.ok(!original.includes('verifyContactConsentNativeAcceptance'))
 })
 test('receipt path cannot hide an unexpected mutation',async()=>{
@@ -198,7 +200,7 @@ function captureDiagnostics(t) {
 }
 function assertPrivateDataExcluded(error,messages) {
  const output=String(error?.stack||'')+JSON.stringify(error)+JSON.stringify(messages)
- for(const privateValue of ['PRIVATE_MARKER','https://example.invalid','secret@example.invalid','alchemy-browser-fixture@example.invalid'])assert.ok(!output.includes(privateValue))
+ for(const privateValue of ['PRIVATE_MARKER','https://example.invalid','secret@example.invalid','alchemy-browser-fixture@example.invalid','+14165550123','4165550123'])assert.ok(!output.includes(privateValue))
  if(error){assert.equal(error.cause,undefined);assert.equal(error.errors,undefined);assert.equal(error.constructor,Error)}
 }
 const event=(id,name,arg,occurrence=1)=>value=>value.id===id&&value.name===name&&(arg===undefined||value.args[0]===arg)&&value.occurrence===occurrence
@@ -231,7 +233,7 @@ for(const [name,options,expected] of [
  ['format selection',{failAt:event(0,'click','format')},{phase:'format'}],
  ['chooser opening',{failAt:event(0,'click','open')},{phase:'open'}],
  ['initial unchecked',{failAt:assertion(0,'consent','not-checked')},{phase:'initial-state'}],
- ['natural email focus',{failAt:assertion(0,'email','focused')},{phase:'keyboard-focus'}],
+ ['natural phone focus',{failAt:assertion(0,'phone','focused')},{phase:'keyboard-focus'}],
  ['Tab key',{failAt:event(0,'key','Tab')},{phase:'keyboard-tab'}],
  ['Tab limit',{stuckTab:true},{phase:'keyboard-tab'}],
  ['visibility assertion',{failAt:assertion(0,'consent','visible')},{phase:'keyboard-visible'}],
@@ -248,10 +250,10 @@ for(const [name,options,expected] of [
  ['canceled drag',{failAt:event(2,'move',1)},{mode:'canceled-pointer',phase:'canceled-drag'}],
  ['canceled release',{failAt:event(2,'up')},{mode:'canceled-pointer',phase:'canceled-up'}],
  ['canceled unchecked',{failAt:assertion(2,'consent','not-checked',2)},{mode:'canceled-pointer',phase:'canceled-state'}],
- ['terminal disabled',{failAt:assertion(0,'submit','disabled',2)},{phase:'terminal-submit'}],
- ['terminal links',{failAt:assertion(0,'links','count')},{phase:'terminal-links'}],
- ['terminal popup',{popup:true},{phase:'terminal-popup'}],
- ['terminal route failure',{post:true},{phase:'terminal-boundary'}],
+ ['terminal action',{failAt:event(0,'click','whatsapp',2)},{phase:'terminal-submit'}],
+ ['terminal links',{failAt:assertion(0,'links','count',2)},{phase:'terminal-links'}],
+ ['initial popup',{popup:true},{phase:'initial-actions'}],
+ ['initial route failure',{post:true},{phase:'initial-actions'}],
  ['terminal pageerror',{pageError:true},{phase:'terminal-page-errors'}],
  ['late pageerror',{latePageError:true},{phase:'late-page-errors'}],
  ['late write',{latePost:true},{phase:'late-boundary'}],

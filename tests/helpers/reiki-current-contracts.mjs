@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import postcss from 'postcss';
+import { energyworkSequence } from '../../data/academy/energywork-ai-schema.js';
 import { createReikiLearner, oneReikiNode, readReikiSource, reikiNodes, reikiText, renderEnergyworkLanding } from './reiki-current-component.mjs';
 
 const own = (node, key) => Object.hasOwn(node.props, key);
@@ -224,10 +225,13 @@ export function assertCurrentFlightSection(overrides = {}) {
 
 export function assertCurrentReviewSequence(overrides = {}) {
   const slides = createReikiLearner({ overrides }).slides;
-  assert.equal(slides.length, 63);
-  assert.equal(new Set(slides.map(slide => slide.id)).size, 63, 'No duplicate slide identities');
+  const ids = Array.from(slides, slide => slide.id);
+  // The private photo step is additive; never delete it to restore the old count.
+  assert.equal(slides.length, 64, 'All active screens, including the private photo step');
+  assert.equal(new Set(ids).size, 64, 'No duplicate slide identities');
+  assert.deepEqual(ids, energyworkSequence(), 'Editorial and server-readable course order agree');
+  assert.deepEqual(ids.slice(-3), ['intention-04', 'init-photo-01', 'end-02'], 'Photo follows the closing pause and precedes completion');
   for (const prefix of ['flight', 'tan', 'kun', 'ygg']) {
-    const ids = slides.map(slide => slide.id);
     const sequence = [prefix + '-02', prefix + '-voices', prefix + '-04', prefix + '-03', prefix + '-done'];
     let prior = -1;
     for (const id of sequence) {

@@ -17,6 +17,7 @@ const copy = {
     kicker: "PERSONAL REPLY · HOLISTIC HOUSE",
     preference: "Preferred session format",
     contact: "Where can Andrey reply?",
+    phoneLabel: "Your phone number", phoneInvalid: "Enter a phone number with country code, e.g. +1 416 555 0123.",
     placeholder: "Email or +1…",
     consent: "I agree to save my contact for one personal reply about this request. No marketing.",
     channelsTitle: "Continue with Andrey",
@@ -26,7 +27,7 @@ const copy = {
     invalid: "Enter a valid email or an international phone number starting with +.",
     consentRequired: "Please agree to a personal reply before continuing.",
     error: "We could not confirm whether your request was saved. Retry the same request; do not submit a new one yet.",
-    contextChanged: "An earlier request is still unconfirmed. Return to its original service to retry it.",
+    contextChanged: "An earlier request is still unconfirmed. Request details changed. Restore the original service, format and contact details to retry it.",
     handoffError: "Your contact was saved, but the messenger did not open. Use either link below.",
     saved: "Request saved — awaiting a personal reply",
     next: "Keep your reference. No reply time or appointment is confirmed yet. Messengers are for scheduling only; agree a secure handoff for any personal materials.",
@@ -37,6 +38,7 @@ const copy = {
     kicker: "ЛИЧНЫЙ ОТВЕТ · HOLISTIC HOUSE",
     preference: "Предпочитаемый формат",
     contact: "Как с вами связаться?",
+    phoneLabel: "Номер телефона", phoneInvalid: "Укажите телефон с кодом страны, например +1 416 555 0123.",
     placeholder: "Email или +1…",
     consent: "Согласен(-на) сохранить контакт для личного ответа по этой заявке. Без рассылок.",
     channelsTitle: "Напишите Андрею",
@@ -46,7 +48,7 @@ const copy = {
     invalid: "Укажите email или номер телефона с международным кодом +.",
     consentRequired: "Подтвердите согласие на личный ответ по заявке.",
     error: "Пока не удалось подтвердить сохранение заявки. Повторите ту же заявку; пока не создавайте новую.",
-    contextChanged: "Предыдущая заявка ещё не подтверждена. Вернитесь к исходной услуге, чтобы повторить её.",
+    contextChanged: "Предыдущая заявка ещё не подтверждена. Данные заявки изменились. Верните исходную услугу, формат и контактные данные, чтобы повторить её.",
     handoffError: "Контакт сохранён, но чат не открылся. Выберите мессенджер по ссылке ниже.",
     saved: "Заявка сохранена — ожидает личного ответа",
     next: "Сохраните номер заявки. Срок ответа и время встречи ещё не подтверждены. В мессенджере согласуйте только организационные вопросы; для личных материалов нужна защищённая передача.",
@@ -57,6 +59,7 @@ const copy = {
     kicker: "RESPUESTA PERSONAL · HOLISTIC HOUSE",
     preference: "Formato de sesión preferido",
     contact: "¿Dónde puede responderte Andrey?",
+    phoneLabel: "Número de teléfono", phoneInvalid: "Introduce un número con prefijo de país, p. ej. +1 416 555 0123.",
     placeholder: "Correo o +1…",
     consent: "Acepto guardar mi contacto para una respuesta personal sobre esta solicitud. Sin publicidad.",
     channelsTitle: "Escribe a Andrey",
@@ -66,7 +69,7 @@ const copy = {
     invalid: "Introduce un correo válido o un teléfono internacional que empiece por +.",
     consentRequired: "Confirma que aceptas recibir una respuesta personal.",
     error: "No pudimos confirmar si se guardó tu solicitud. Reintenta la misma solicitud; no crees otra todavía.",
-    contextChanged: "Hay una solicitud anterior sin confirmar. Vuelve al servicio original para reintentarla.",
+    contextChanged: "Hay una solicitud anterior sin confirmar. Los datos de la solicitud cambiaron. Restablece el servicio, formato y contacto originales para reintentarla.",
     handoffError: "Tu contacto se guardó, pero no se abrió el chat. Elige uno de los enlaces.",
     saved: "Solicitud guardada — pendiente de respuesta personal",
     next: "Conserva la referencia. Aún no se ha confirmado el plazo de respuesta ni una cita. Usa mensajería solo para coordinar; acuerda una entrega segura para materiales personales.",
@@ -88,6 +91,7 @@ function parseContact(raw: string): { email: string; phone: string } | null {
 /** Shared public intake: a server-confirmed CRM write always precedes messenger handoff. */
 export function CompactLeadCapture({
   locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant, formatOptions, formatLabel, selectedFormatValue, onFormatChange,
+  phoneOnly = false, contactValue, onContactChange, active = true,
 }: {
   locale: PublicLocale;
   serviceTitle: string;
@@ -97,7 +101,12 @@ export function CompactLeadCapture({
   disclaimer?: string;
   /** Public source for a form embedded on /, which is not an allowed enquiry source. */
   sourcePath?: string;
-  variant?: "inline";
+  variant?: "inline" | "diagnosis";
+  phoneOnly?: boolean;
+  /** Hidden parent sheets suspend side effects without clearing an admitted attempt. */
+  active?: boolean;
+  contactValue?: string;
+  onContactChange?: (value: string) => void;
   formatOptions?: readonly { readonly value: string; readonly label: string; readonly description?: string }[];
   formatLabel?: string;
   /** Optional controlled selection shared with offer cards on multi-offer landings. */
@@ -107,7 +116,8 @@ export function CompactLeadCapture({
   const t = copy[locale];
   const pathname = usePathname();
   const initialFormat = formatOptions?.[0]?.value || "";
-  const [address, setAddress] = useState("");
+  const [localAddress, setLocalAddress] = useState("");
+  const address = contactValue ?? localAddress;
   const [internalFormat, setInternalFormat] = useState(initialFormat);
   const selectedFormat = selectedFormatValue ?? internalFormat;
   const [consent, setConsent] = useState(false);
@@ -123,14 +133,19 @@ export function CompactLeadCapture({
   const mounted = useRef(false);
   const handoff = useRef<Window | null>(null);
   const contextKey = JSON.stringify([locale, serviceTitle, sourcePath || pathname,
-    formatOptions || null, selectedFormatValue ?? null]);
+    formatOptions || null, selectedFormatValue ?? null, phoneOnly, contactValue ?? null, contactValue !== undefined, active]);
   // Offer cards and the dropdown can control both format and service title on
   // one landing. Preserve their entered contact and confirmed receipt while
   // switching offers, but still treat every offer as a distinct write context.
   const scopeKey = JSON.stringify([locale, sourcePath || pathname, formatOptions || null,
-    selectedFormatValue === undefined ? serviceTitle : null, selectedFormatValue !== undefined]);
+    selectedFormatValue === undefined ? serviceTitle : null, selectedFormatValue !== undefined,
+    phoneOnly, contactValue !== undefined]);
   const resetScope = useRef<string | null>(null);
   const activeContext = useRef(contextKey);
+  const contextRevision = useRef(0);
+  // Predict the revision committed by the layout effect, without mutating refs
+  // during render. A restored context cannot revive an earlier consent closure.
+  const renderRevision = contextRevision.current + (activeContext.current !== contextKey ? 1 : 0);
 
   const closeHandoff = (popup: Window | null) => {
     try { popup?.close(); } catch { /* A popup failure never changes the save outcome. */ }
@@ -141,6 +156,7 @@ export function CompactLeadCapture({
     return () => { mounted.current = false; closeHandoff(handoff.current); };
   }, []);
   useLayoutEffect(() => {
+    if (activeContext.current !== contextKey) contextRevision.current += 1;
     activeContext.current = contextKey;
     if (operation.current && !operation.current.confirmed) {
       if (operation.current.context !== contextKey) closeHandoff(handoff.current);
@@ -151,7 +167,7 @@ export function CompactLeadCapture({
     resetScope.current = scopeKey;
     operation.current = null;
     setReference(""); setSavedWhatsapp(""); setSavedReferenceLabel("");
-    setLockedChannel(null); setAddress(""); setConsent(false); setError("");
+    setLockedChannel(null); setLocalAddress(""); setConsent(false); setError("");
     setInternalFormat(initialFormat);
   }, [contextKey, scopeKey, initialFormat, t.contextChanged, t.error]);
 
@@ -173,7 +189,7 @@ export function CompactLeadCapture({
 
   async function chooseChannel(channel: Channel) {
     // Ref guard is synchronous, including two taps before React re-renders.
-    if (inFlight.current || reference || operation.current?.confirmed || !mounted.current || activeContext.current !== contextKey) return;
+    if (!active || contextRevision.current !== renderRevision || inFlight.current || reference || operation.current?.confirmed || !mounted.current || activeContext.current !== contextKey) return;
     let attempt = operation.current;
     if (attempt) {
       if (attempt.context !== activeContext.current || attempt.context !== contextKey) {
@@ -182,7 +198,7 @@ export function CompactLeadCapture({
       if (channel !== attempt.channel) return;
     } else {
       const contact = parseContact(address);
-      if (!contact) { setError(t.invalid); return; }
+      if (!contact || (phoneOnly && !contact.phone)) { setError(phoneOnly ? t.phoneInvalid : t.invalid); return; }
       if (!consent) { setError(t.consentRequired); return; }
       const payload = {
         operationId: window.crypto.randomUUID(), serviceTitle,
@@ -196,6 +212,7 @@ export function CompactLeadCapture({
       operation.current = attempt;
     }
     const submitted = attempt;
+    const submittedRevision = contextRevision.current;
     inFlight.current = true;
     setLockedChannel(submitted.channel); setBusy(submitted.channel); setError("");
     let handoffWindow: Window | null = null;
@@ -206,7 +223,8 @@ export function CompactLeadCapture({
     } catch { /* Use confirmed links after the save. */ }
     handoff.current = handoffWindow;
     let committedReference = "";
-    const stillCurrent = () => mounted.current && activeContext.current === submitted.context
+    const stillCurrent = () => mounted.current && contextRevision.current === submittedRevision
+      && activeContext.current === submitted.context
       && operation.current?.body === submitted.body;
     try {
       const response = await fetch("/api/service-enquiries", {
@@ -248,7 +266,7 @@ export function CompactLeadCapture({
   }
 
   return (
-    <section id={id} className={[styles.section, variant === "inline" ? styles.inline : ""].filter(Boolean).join(" ")}
+    <section id={id} className={[styles.section, variant === "inline" ? styles.inline : "", variant === "diagnosis" ? styles.diagnosis : ""].filter(Boolean).join(" ")}
       data-compact-last-slide={variant === "inline" ? undefined : ""}
       data-inline-offer-form={variant === "inline" ? "" : undefined}
       data-service-lead-capture lang={locale} aria-label={title}>
@@ -258,9 +276,9 @@ export function CompactLeadCapture({
           <h2>{title}</h2>
           <p>{lead}</p>
         </div>
-        <StaticPortrait src="/images/holistic-house/andy-about.png" alt="Andrey Litvinov"
+        {variant === "diagnosis" ? null : <StaticPortrait src="/images/holistic-house/andy-about.png" alt="Andrey Litvinov"
           width={160} height={180} className={styles.portrait}
-          sizes="(max-width: 600px) 70px, 82px" loading="lazy" />
+          sizes="(max-width: 600px) 70px, 82px" loading="lazy" />}
       </div>
       {reference ? (
         <div className={styles.confirmation}>
@@ -285,7 +303,7 @@ export function CompactLeadCapture({
         </div>
       ) : (
         <form className={styles.form} data-compact-lead-form onSubmit={event => event.preventDefault()}>
-          {formatOptions?.length ? (
+          {variant !== "diagnosis" && formatOptions?.length ? (
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>
               <select value={selectedFormat} required disabled={locked || busy !== null}
@@ -295,11 +313,11 @@ export function CompactLeadCapture({
             </label>
           ) : null}
           <label className={styles.field}>
-            <span>{t.contact}</span>
-            <input type="text" name="contact" inputMode="text" autoComplete="off"
+            <span>{phoneOnly ? t.phoneLabel : t.contact}</span>
+            <input type="text" name="contact" inputMode={phoneOnly ? "tel" : "text"} autoComplete={phoneOnly ? "tel" : "off"}
               value={address} maxLength={254} required disabled={locked || busy !== null}
-              placeholder={t.placeholder} aria-invalid={Boolean(error)}
-              onChange={event => { if (!mayEdit()) return; setAddress(event.target.value); setError(""); }} />
+              placeholder={phoneOnly ? "+1 416 555 0123" : t.placeholder} aria-invalid={Boolean(error)}
+              onChange={event => { if (!mayEdit()) return; if (onContactChange) onContactChange(event.target.value); else setLocalAddress(event.target.value); setError(""); }} />
           </label>
           <label className={styles.consent}>
             <input type="checkbox" required checked={consent} disabled={locked || busy !== null}

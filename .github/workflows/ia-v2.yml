@@ -42,7 +42,12 @@ jobs:
           }, null, 2));
           JS
       - run: npm ci --no-audit --no-fund
+      - name: Build pinned static artwork for unit tests
+        run: npm run build:static-artwork
       - run: npm run test:unit
+        env:
+          HH_TEST_REDIS_CONTAINER: ${{ job.services.redis.id }}
+          HH_TEST_REDIS_ISOLATED: 'true'
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - run: npm run lint

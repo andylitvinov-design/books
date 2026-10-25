@@ -44,6 +44,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   const siteMenuRef = useRef<HTMLDetailsElement>(null);
   const preference = useNavigationLocale(locale);
   const activeLocale = locale ?? preference;
+  const previousNavigation = useRef({ pathname, locale: activeLocale });
   const text = navigationCopy[activeLocale];
   const siteMenu = siteMenuCopy[activeLocale];
   const current = activeNavigationId(pathname);
@@ -89,6 +90,9 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   }, []);
 
   useEffect(() => {
+    const previous = previousNavigation.current;
+    if (previous.pathname === pathname && previous.locale === activeLocale) return;
+    previousNavigation.current = { pathname, locale: activeLocale };
     if (languageRef.current) languageRef.current.open = false;
     if (siteMenuRef.current) siteMenuRef.current.open = false;
   }, [pathname, activeLocale]);
@@ -191,7 +195,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
               data-nav-item={item.id}
               href={item.href}
               prefetch={false}
-              aria-current={current === item.id ? 'page' : undefined}
+              aria-current={current === item.id && !(menuCurrent === 'alchemy' && item.id === 'services') ? 'page' : undefined}
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}

@@ -12,7 +12,8 @@ test('a course starts with its author-entered title and first editable screen',(
  assert.match(builder,/data-course-quick-start/)
  assert.match(builder,/const title=newTitle\.trim\(\)/)
  assert.match(builder,/if\(!title\)\{setError\(t\.enterTitle\);return\}/)
- assert.match(builder,/course=\{title,description:'',locale:newLocale,slides:\[makeSlide\(\)\]\}/)
+ // Actual submit-handler cases below prove normal and meditation slide construction,
+ // rather than freezing the obsolete single-branch object-literal spelling.
  assert.doesNotMatch(builder,/title:t\.new,description:'',locale:/)
  assert.match(builder,/onSubmit=\{event=>void create\(event\)\}/)
  // #1662 preserves empty-list quick start and adds the explicit Pro entry.
@@ -114,5 +115,35 @@ test('old account response cannot replace the newest account course selection',a
  assert.ok(f.nodes().some(n=>n.type==='input'&&n.props.value==='Newest fictional course'))
  assert.ok(!f.nodes().some(n=>n.type==='input'&&n.props.value==='Old fictional course'))
  assert.ok(f.requests.every(r=>r.options.method==='GET'))
+ f.unmount()
+})
+
+for(const meditationType of ['audio','video','embed'])test(`actual quick-start ${meditationType} keeps one private first slide and authored title`,async()=>{
+ const f=mountPractice(builder,{accountId:'fictional-account',startCreate:true,meditationType},async(_url,options)=>{
+  const sent=options.body&&JSON.parse(options.body)
+  return {ok:true,json:async()=>sent?{item:{...fictionalCourse(),draft:sent.course}}:{items:[]}}
+ })
+ await f.settle()
+ const submit=()=>f.find('form').props.onSubmit({preventDefault(){}})
+ submit();await f.settle()
+ assert.equal(f.requests.length,1,'Blank title must not create a meditation either')
+ f.find('input',p=>p.required).props.onChange({target:{value:'  Fictional authored first slide  '}});f.flush()
+ submit();await f.settle()
+ assert.equal(f.requests.length,2,'Only explicit valid submission creates one draft')
+ const request=f.requests[1],sent=JSON.parse(request.options.body)
+ assert.equal(request.options.method,'POST')
+ assert.equal(request.options.headers['x-hh-account-id'],'fictional-account')
+ assert.deepEqual(Object.keys(sent).sort(),['action','course'])
+ assert.equal(sent.action,'create')
+ assert.equal(sent.course.title,'Fictional authored first slide')
+ assert.equal(sent.course.description,'')
+ assert.equal(sent.course.locale,'en')
+ assert.equal(sent.course.slides.length,1,'One real makeSlide result, never an empty or duplicate draft')
+ assert.equal(sent.course.slides[0].kind,['audio','video'].includes(meditationType)?meditationType:'text','Only supported meditation modes change the initial media kind')
+ assert.match(sent.course.slides[0].id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+ assert.equal(sent.course.slides[0].title,'')
+ assert.equal(sent.course.slides[0].body,'')
+ assert.ok(!f.requests.some(r=>r.options.body&&JSON.parse(r.options.body).action==='publish'))
+ assert.equal(f.nodes().filter(n=>n.type==='form').length,0,'Confirmed private draft opens the editor')
  f.unmount()
 })

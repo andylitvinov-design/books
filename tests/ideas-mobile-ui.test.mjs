@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
+import { diagnosisFixture } from "./helpers/diagnosis-parent-fixture.mjs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -8,7 +9,33 @@ function assertDaoDetailsTarget(ui, intro, offers) {
   assert.match(ui, /href=\{"\/" \+ locale \+ "\/services\/free-consultation#free-diagnosis-options"\} prefetch=\{false\}/);
   assert.doesNotMatch(ui, /\/services\/free-consultation#intro-request/);
   assert.match(intro, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
-  assert.match(offers, /<section[^>]*id="free-diagnosis-options"[^>]*lang=\{locale\}/);
+  assert.equal([...intro.matchAll(/<FreeDiagnosisOffers\b/g)].length, 1, "Exactly one actual hub mount");
+  // The canonical consultation hub anchors its heading inside the localized
+  // full-mode section. Execute that actual parent: a literal anywhere is not proof.
+  for (const locale of ["en", "ru", "es"]) {
+    const f = diagnosisFixture({locale, parentSource: offers, pathname: "/" + locale + "/services/free-consultation"});
+    try {
+      const sections = f.nodes().filter(n => n.type === "section" && Object.hasOwn(n.props, "data-free-diagnosis-options"));
+      assert.equal(sections.length, 1, "One actual consultation offer section");
+      const section = sections[0];
+      assert.equal(section.props.lang, locale);
+      assert.equal(section.props["data-free-diagnosis-layout"], "full", "The default hub is full mode");
+      assert.equal(section.hidden, false);
+      const targets = f.nodes().filter(n => n.props.id === "free-diagnosis-options");
+      assert.equal(targets.length, 1, "Exactly one fragment target");
+      assert.equal(targets[0].type, "header", "Fragment lands at the offer heading");
+      assert.equal(targets[0].hidden, false, "Fragment target is visible before interaction");
+      function contains(node, target) {
+        if (Array.isArray(node)) return node.some(child => contains(child, target));
+        if (!node || typeof node !== "object") return false;
+        return node.element === target.element || contains(node.props?.children, target);
+      }
+      assert.ok(contains(section, targets[0]), "Target belongs to the actual offer section");
+      const headings = f.nodes().filter(n => n.type === "h2" && n.props.id === section.props["aria-labelledby"]);
+      assert.equal(headings.length, 1);
+      assert.ok(contains(targets[0], headings[0]), "Target contains the section's accessible heading");
+    } finally { f.unmount(); }
+  }
 }
 
 test("Tests & Coaching first screen offers four paths, with original private Dao panel preserved on demand", () => {
@@ -145,6 +172,14 @@ test("Dao details navigation rejects stale fragments, missing targets and detach
   const missingTarget = offers.replace('id="free-diagnosis-options"', 'id="missing-offer"');
   assert.notEqual(missingTarget, offers);
   assert.throws(() => assertDaoDetailsTarget(ui, intro, missingTarget), assert.AssertionError);
+  for (const changed of [
+    offers.replace('id="free-diagnosis-options"', 'id="free-diagnosis-options" hidden'),
+    offers.replace('id="free-diagnosis-options-title"', 'id="free-diagnosis-options"'),
+    offers.replace('<header className={styles.heading}', '<div className={styles.heading}').replace('</header>', '</div>'),
+  ]) {
+    assert.notEqual(changed, offers);
+    assert.throws(() => assertDaoDetailsTarget(ui, intro, changed), assert.AssertionError);
+  }
   const detached = intro.replace("<FreeDiagnosisOffers locale={lang} />", "");
   assert.notEqual(detached, intro);
   assert.throws(() => assertDaoDetailsTarget(ui, detached, offers), assert.AssertionError);
@@ -237,7 +272,7 @@ test("Ideas has one compact photographic question banner and two choices immedia
   const css = read("components/ideas-discovery.module.css");
   const catalog = read("data/assessments/catalog.js");
   assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
-  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions role="group" aria-label=\{t\.choose\}>/);
+  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions role="group" aria-label=\{isHolistic \? holisticIntro\[locale\]\.choose : t\.choose\}>/);
   assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.submit\}/);
   assert.ok(ui.includes("data-ideas-free-coaching"));
   assert.ok(ui.includes("data-ideas-free-test"));

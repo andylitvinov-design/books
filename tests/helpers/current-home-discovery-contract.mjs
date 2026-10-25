@@ -210,9 +210,7 @@ export async function assertCurrentHomeDiscovery({locale='en',overrides={}}={}){
   assert.equal(cart.props.locale,locale,'Paid consultation selector preserves the selected locale')
   const sequence=serviceNodes.filter(node=>['services-hero','consultation-cart','media','testimonials','methods','directory-invitation'].includes(node.type)
     ||Object.hasOwn(node.props,'data-services-studio-free')).map(node=>Object.hasOwn(node.props,'data-services-studio-free')?'offers':node.type)
-  assert.deepEqual(sequence,locale==='es'
-    ? ['services-hero','offers','media','testimonials','methods','consultation-cart','directory-invitation']
-    : ['services-hero','consultation-cart','offers','media','testimonials','methods','directory-invitation'],
+  assert.deepEqual(sequence,['services-hero','consultation-cart','offers','media','testimonials','methods','directory-invitation'],
     'Paid consultation selector keeps the current locale-specific Services order')
   const extras=load('components/services-studio-extras.tsx',{
     '@/components/page-video':{PageVideo:'page-video'},'@/components/services-about-entry':{ServicesAboutEntry:'about'},

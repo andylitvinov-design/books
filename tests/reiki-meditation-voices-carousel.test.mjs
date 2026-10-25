@@ -11,7 +11,7 @@ const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 const browser = read("scripts/verify-reiki-all-slides-browser.mjs");
 
-test("Four meditation review screens remain between their videos and reports, before closing practice, among 63 active screens", () => {
+test("Four meditation review screens retain their order among 64 active screens including the private photo step", () => {
   assertCurrentReviewSequence();
 });
 

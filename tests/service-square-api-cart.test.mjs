@@ -173,10 +173,32 @@ test('cart, endpoints and SQL contain strict order ownership, no fake paid on re
   assert.match(service,/squareApiRequest\(settings, 'GET', '\/v2\/payments\/'/)
   assert.match(service,/square_order_id=\$1 and environment=\$2/)
   assert.equal(sql.split("as $$").length - 1, 2, "Both PL/pgSQL guards must have literal $$ delimiters");
-  assert.equal(sql.split("end $$;").length - 1, 2, "Both PL/pgSQL guards must close literal $$ delimiters");
+  assert.equal(sql.split("end; " + String.fromCharCode(36).repeat(2) + ";").length - 1, 2, "Both PL/pgSQL guards must terminate END; before a doubled dollar delimiter");
+  assert.doesNotMatch(sql, /end\s+\$\$;/i, "Invalid PL/pgSQL END without a semicolon must not return");
   assert.match(sql,/force row level security/i)
   assert.match(sql,/square_orders_account_read/)
   assert.match(sql,/square_orders_verified_webhook_read/)
   assert.match(sql,/SQUARE_PAYMENT_REQUIRES_PROVIDER_VERIFICATION/)
   assert.doesNotMatch(cart,/setSquareStatus\("paid"\)\s*;\s*window\.location/)
+})
+
+test('Square paid state must not survive a cart edit or a delayed provider readback', () => {
+  const cart = read('components/commerce/personal-cart.tsx')
+  const removal = cart.match(/function remove\(id: string\) \{([\s\S]*?)\n  \}\n\n  return <section/)
+  assert.ok(removal, 'the existing cart removal handler is present')
+  for (const statement of [
+    'if (squareBusy) return;',
+    'squareStatusGeneration.current += 1;',
+    'squareOperation.current = null;',
+    'setSquareOrderId(null);',
+    'setSquareStatus(null);',
+    'setSquareRepeatOf(null);',
+    'setSquareError(null);',
+  ]) assert.ok(removal[1].includes(statement), statement)
+  assert.match(cart, /onClick=\{\(\) => remove\(product\.id\)\} disabled=\{squareBusy\}/)
+  // Both the initial Square return and the manual status refresh must discard
+  // a late response once the basket has changed.
+  assert.equal(cart.split('if (squareStatusGeneration.current !== requestVersion) return;').length - 1, 2)
+  assert.match(cart, /if \(squareStatusGeneration\.current === requestVersion\) setSquareError/)
+  assert.match(cart, /if \(squareStatusGeneration\.current === requestVersion\)\s+setSquareError/)
 })

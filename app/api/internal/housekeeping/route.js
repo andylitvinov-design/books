@@ -5,6 +5,7 @@ import { refreshHomeGuideQualityDaily } from '@/lib/app/home-guide-quality'
 import { PRIVATE_HEADERS } from '@/lib/app/http'
 import { runHousekeepingCron } from '@/lib/app/housekeeping-cron'
 import { purgeExpiredGoalPhotos } from '@/lib/practitioners/remote-goal-photo'
+import { purgeOldPublicTraffic } from '@/lib/analytics/public-traffic-retention'
 import {
   recordAppHousekeepingFailure,
   runAppHousekeeping,
@@ -28,6 +29,8 @@ export async function GET(request) {
           catch { console.error('HH_HOME_GUIDE_QUALITY_DAILY_FAILED') }
           try { await purgeExpiredGoalPhotos(config) }
           catch { console.error('HH_GOAL_PHOTO_RETENTION_FAILED') }
+          try { await purgeOldPublicTraffic(config) }
+          catch { console.error('HH_PUBLIC_TRAFFIC_RETENTION_FAILED') }
           return result
         } catch (error) {
           await recordAppHousekeepingFailure(config).catch(() => {})

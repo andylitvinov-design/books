@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { traditionCoachingArt } from "../lib/coaching/public-session-art.js";
 
 const root = process.cwd();
 const read = (file) => readFileSync(path.join(root, file), "utf8");
@@ -151,24 +152,64 @@ test("Featured programme buttons open their own landings; only real AI lessons s
 });
 
 
-test("Academy quick path pills and three headings remain mobile-friendly in English, Russian and Spanish", () => {
+test("Academy photo-led first screen mirrors Holistic Support at mobile widths in EN RU ES", () => {
   const source = read("components/academy-discovery.tsx");
   const styles = read("components/academy-discovery.module.css");
-  const hub = read("components/academy-hub.tsx");
-  for (const words of ["Free Courses", "Study Programs", "Live Events", "Бесплатные курсы", "Программы обучения", "Живые встречи", "Cursos gratis", "Programas de estudio", "Eventos en vivo"]) {
-    assert.ok(source.includes(words), words);
-  }
+  const support = read("components/holistic-support-choices.tsx");
+
+  for (const word of [
+    "Free Courses", "Study Programs", "Live Events",
+    "Бесплатные курсы", "Программы обучения", "Живые встречи",
+    "Cursos gratis", "Programas de estudio", "Eventos en vivo",
+    "How would you like to begin?", "С чего хотите начать?", "¿Por dónde quieres empezar?",
+  ]) assert.ok(source.includes(word), word);
+
+  assert.match(source, /data-academy-first-screen/);
+  assert.match(support, /data-holistic-first-screen/);
   assert.match(source, /<nav className=\{styles\.quickPaths\}/);
-  assert.match(source, /<BookOpen size=\{16\}/);
-  assert.match(source, /<GraduationCap size=\{16\}/);
-  assert.match(source, /<CalendarDays size=\{16\}/);
-  assert.match(styles, /\.quickPaths\s*\{/);
-  assert.match(styles, /grid-template-columns:\s*repeat\(4,\s*minmax\(0, 1fr\)\)/);
-  assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.quickPaths \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /@media \(max-width: 620px\)/);
-  assert.match(styles, /\.eventUpper\s*\{/);
-  assert.match(hub, /import \{ PUBLIC_EVENTS \} from "@\/data\/public-events"/);
-  assert.match(hub, /events=\{PUBLIC_EVENTS\}/);
+  assert.match(source, /<Image src="\/images\/holistic-house\/hero-olive-incense\.webp" alt="" fill priority/);
+  assert.match(source, /data-academy-path="free"/);
+  assert.match(source, /data-academy-path="study"/);
+  assert.match(source, /data-academy-path="events"/);
+  assert.match(source, /<BookOpen size=\{18\}/);
+  assert.match(source, /<GraduationCap size=\{18\}/);
+  assert.match(source, /<CalendarDays size=\{18\}/);
+
+  for (const path of [
+    "/images/holistic-house/reiki-practitioner-sunrise.webp",
+    "/academy/reiki-yggdrasil/source/temple-studies.png",
+    "/images/holistic-house/video-posters/constellations-en-v1.webp",
+  ]) assert.ok(source.includes(path), path);
+  for (const section of ["academy-free-courses", "academy-study-programs", "academy-live-events"]) {
+    assert.ok(source.includes('href="#' + section + '"'), section);
+    assert.ok(source.includes('id="' + section + '"'), section);
+  }
+
+  assert.match(styles, /\.quickPaths \{ display: grid; grid-template-columns: repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 700px\)[\s\S]*?\.quickPaths \{ grid-template-columns: minmax\(0,1fr\); gap: 7px; \}/);
+  assert.match(styles, /@media \(max-width: 350px\)/);
+  assert.match(styles, /@media \(max-width: 700px\) and \(max-height: 700px\)/);
+  assert.match(styles, /\.pathCard:focus-visible/);
+  assert.match(styles, /prefers-reduced-motion: reduce/);
+});
+
+test("Academy keeps search, archive, video tab and personal cabinet below the photo entry", () => {
+  const source = read("components/academy-discovery.tsx");
+  const hero = source.indexOf("data-academy-first-screen");
+  const results = source.indexOf('id="academy-programs"');
+  const myCourses = source.indexOf("<AcademyMyCourses locale={locale} />");
+  const finder = source.indexOf("data-academy-course-finder");
+  const search = source.indexOf('id="academy-program-query"');
+  const heading = source.indexOf('id="academy-course-results"');
+  assert.ok(hero >= 0 && hero < results && results < myCourses && myCourses < finder && finder < search && search < heading);
+  assert.match(source, /role="search" onSubmit=\{submitSearch\}/);
+  assert.match(source, /onChange=\{\(event\) => setQuery\(event\.target\.value\)\}/);
+  assert.match(source, /document\.getElementById\("academy-course-results"\)/);
+  assert.match(source, /href="#academy-psimaster-courses"/);
+  assert.match(source, /<DiscoverySectionTabs locale=\{locale\} active="courses" \/>/);
+  assert.match(source, /href="#academy-video-courses"/);
+  assert.match(source, /<AcademyLiveEventList locale=\{locale\} events=\{matchedEvents\}/);
+  assert.doesNotMatch(source, /fetch\(|localStorage\.|sessionStorage\./);
 });
 
 test("Live academy cards show only confirmed future events with real registration links", () => {
@@ -191,7 +232,7 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  const discovery=read("components/academy-discovery.tsx");
  const css=read("components/academy-discovery.module.css");
  const lounge=read("components/public-coaching-discovery.jsx");
- const art=read("lib/coaching/public-session-art.js");
+ // Execute the actual first-party mapping; original Wikimedia filenames are not runtime paths.
  assert.ok(hub.includes("const coachingItem: AcademyCourseItem = "));
  assert.ok(hub.includes("coachingItem={coachingItem}"));
  assert.ok(discovery.includes("data-academy-coaching-session"));
@@ -201,6 +242,8 @@ test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and 
  assert.match(css,/coachingSpotlightCTA/);
  for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
  for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
- assert.match(art,/Egypt_bookofthedead.jpg/);
- assert.match(art,/Marble_statue_of_Athena/);
+ assert.deepEqual({...traditionCoachingArt},{
+  egyptian:"/images/holistic-house/coaching-ancient/egyptian-cover.jpg",
+  greek:"/images/holistic-house/coaching-ancient/greek-cover.jpg",
+ },"Exact current first-party Egyptian/Greek art identities remain distinct");
 });

@@ -18,12 +18,17 @@ const element = (type, props) => ({ type, props: props || {} });
 const empty = () => null;
 let nextMountId = 0;
 function environment({ storageDenied = false } = {}) {
-    const writes = [], navigations = [], requests = [], authRequests = [], profileRequests = [], redirects = [], storage = new Map();
+    const popups = [], writes = [], navigations = [], requests = [], authRequests = [], profileRequests = [], redirects = [], storage = new Map();
     const window = { location: { search: '', pathname: '/en/services/alchemy-of-soul', href: 'https://fixture.invalid/en/services/alchemy-of-soul', assign: url => redirects.push(url) }, matchMedia: () => ({ matches: true }), sessionStorage: { getItem: k => storage.get(k) ?? null, removeItem: k => storage.delete(k), setItem: (k, v) => { if (storageDenied) throw Error('STORAGE_DENIED'); writes.push([k, v]); storage.set(k, v); } }, history: { state: null, replaceState() {} } };
+    window.open = (...args) => {
+        assert.deepEqual(args, ['about:blank', '_blank'], 'Only an inert reservation is permitted');
+        const popup = {args, closed:false, destinations:[], opener:undefined, close(){this.closed=true;}, location:{replace(url){popup.destinations.push(url);}}};
+        popups.push(popup); return popup;
+    };
     let respond = async () => ({ ok: true, json: async () => ({ saved: true, referenceCode: 'HH-ABCDEF123456' }) });
     let authRespond = async () => ({ ok: true, json: async () => ({ redirectUrl: 'https://auth.fixture.invalid/fictional' }) });
     let profileRespond = async () => ({ ok: false, json: async () => ({}) });
-    return { window, writes, navigations, requests, authRequests, profileRequests, redirects, storage,
+    return { window, popups, writes, navigations, requests, authRequests, profileRequests, redirects, storage,
         setRespond: f => respond = f, setAuthRespond: f => authRespond = f, setProfileRespond: f => profileRespond = f,
         fetch: (url, options = {}) => {
             if (url === '/api/app/auth/contact-profile') { profileRequests.push(url); return profileRespond(); }
@@ -80,33 +85,63 @@ function chooser(props = {}, env) { const url = whatsapp.whatsappEnquiryUrl({ lo
 function fill(f) { f.change('input', p => p.type === 'email', 'fictional@example.test'); f.change('input', p => p.type === 'checkbox', true); f.change('textarea', () => true, 'FICTIONAL OPTIONAL COMMENT'); }
 function deferred() { let resolve; const promise = new Promise(r => resolve = r); return { promise, resolve }; }
 const success = () => ({ ok: true, json: async () => ({ saved: true, referenceCode: 'HH-ABCDEF123456' }) });
+function compactFill(f) {
+    f.find('phone-input').props.onChange('+1 (416) 555-0123'); f.flush();
+    f.change('input', p => p.type === 'checkbox', true);
+}
+function compactStart(f, channel='whatsapp') {
+    const action=f.find('button',p=>p['data-contact-channel-submit']===channel).props.onClick;
+    action();f.flush();return action;
+}
+async function compactSubmit(f, channel='whatsapp') {compactStart(f,channel);await tick(f);}
+function compactReceipt(f, expectedUrl, description) {
+    assert.equal(f.env.navigations.length,0, 'Compact Alchemy never redirects');
+    const links=f.nodes().filter(n=>n.type==='a'&&n.props.attributes?.['data-contact-channel']);
+    assert.equal(links.length,2);
+    const expected=new URL(expectedUrl);expected.searchParams.set('text',expected.searchParams.get('text')+'\n\n'+({en:'Enquiry',ru:'Заявка',es:'Solicitud'}[JSON.parse(f.env.requests[0]).locale])+': HH-ABCDEF123456');
+    for(const link of links) {
+        const text=new URL(link.props.href).searchParams.get('text');
+        assert.equal(text,expected.searchParams.get('text'),'Exact frozen public draft plus confirmed reference');
+        assert.doesNotMatch(text,/fictional@example|14165550123|FICTIONAL OPTIONAL COMMENT|Relationships|Отношения|Relaciones|Topic:|Тема:|Tema:/);
+        assert.ok(!text.includes(description),'CRM-only description is not appended to a messenger draft');
+    }
+    const handed=f.env.popups.at(-1);
+    assert.equal(handed.destinations.length,1);
+    assert.ok(links.some(link=>link.props.href===handed.destinations[0]),'Inert handoff matches an exact displayed draft');
+}
 for (const locale of ['en', 'ru', 'es'])
     for (const kind of ['AlchemySoulLeadForm', 'AlchemySoulFormatSelector'])
         for (const format of ['30', '60'])
-            test(`${locale} ${kind} ${format}: selected title, original note and strict receipt → actual thank-you component`, async () => {
+            test(`${locale} ${kind} ${format}: actual compact phone, CRM-only topic and in-place confirmed receipt`, async () => {
                 const parent = mount('alchemy-soul-lead-form', kind, { locale });
-                if (kind === 'AlchemySoulLeadForm')
-                    parent.change('select', () => true, format);
-                else
-                    parent.click('button', p => p['data-alchemy-format'] === format);
+                if (kind === 'AlchemySoulLeadForm') parent.change('select', p=>p.id.endsWith('-format'), format);
+                else parent.click('button', p => p['data-alchemy-format'] === format);
                 const props = parent.find('chooser').props, env = environment();
+                assert.equal(props.compactPhone,true);assert.equal(props.compactTrigger,true);assert.equal(props.stayAfterSave,true);
                 env.window.location.pathname = `/${locale}/services/alchemy-of-soul`;
                 const child = chooser(props, env);
-                fill(child);
-                await child.submit();
-                assert.equal(env.requests.length, 1);
+                compactFill(child);
+                const pending=deferred();env.setRespond(()=>pending.promise);compactStart(child);
+                assert.equal(env.requests.length,1);assert.equal(env.popups.length,1);assert.equal(env.popups[0].destinations.length,0);
+                assert.equal(env.writes.length,0);assert.equal(child.nodes().filter(n=>n.props.attributes?.['data-contact-channel']).length,0);
+                pending.resolve(success());await tick(child);
                 const sent = JSON.parse(env.requests[0]);
                 const option = new URL(props.whatsappUrl).searchParams.get('text').split('\n').find(x => /^(Selected option|Выбранный вариант|Opción elegida):/.test(x)).split(': ').slice(1).join(': ');
-                assert.ok(sent.serviceTitle.endsWith(option));
-                assert.ok(sent.serviceTitle.length <= 160);
-                assert.equal(sent.description, 'FICTIONAL OPTIONAL COMMENT');
-                assert.equal(sent.contactConsent, true);
-                assert.deepEqual(env.navigations, [`/${locale}/thank-you`]);
+                assert.ok(sent.serviceTitle.endsWith(option));assert.ok(sent.serviceTitle.length <= 160);
+                assert.equal(sent.description, props.publicTopic);assert.equal(sent.contactConsent, true);
+                assert.deepEqual(sent.contact,{displayName:'',email:'',phone:'+14165550123'});
+                assert.match(sent.operationId,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+                compactReceipt(child,props.whatsappUrl,props.publicTopic);
                 const stored = JSON.parse(env.storage.get(receipt.RECEIPT_SESSION_KEY));
                 assert.deepEqual(Object.keys(stored).sort(), ['createdAt', 'referenceCode']);
-                const thanks = mount('service-enquiry-thank-you', 'ServiceEnquiryThankYou', { locale, video: null }, env);
-                assert.equal(thanks.find('strong').props.children, 'HH-ABCDEF123456');
+                assert.equal(stored.referenceCode,'HH-ABCDEF123456');
             });
+test('normal email chooser still redirects to the actual thank-you receipt',async()=>{
+    const f=chooser();fill(f);await f.submit();
+    assert.deepEqual(f.env.navigations,['/en/thank-you']);assert.equal(f.env.popups.length,0);
+    const thanks=mount('service-enquiry-thank-you','ServiceEnquiryThankYou',{locale:'en',video:null},f.env);
+    assert.equal(thanks.find('strong').props.children,'HH-ABCDEF123456');
+});
 test('invalid contact, no consent, malformed URL and invalid/honeypot fields never POST', async () => {
     for (const variant of ['empty', 'no-consent', 'email', 'url', 'name', 'note', 'website']) {
         const f = chooser(variant === 'url' ? { whatsappUrl: 'invalid' } : {});
@@ -127,34 +162,22 @@ test('invalid contact, no consent, malformed URL and invalid/honeypot fields nev
         assert.equal(f.env.writes.length, 0, variant);
     }
 });
-test('same-tick duplicate submit is blocked, uncertain response freezes parent and retries identical body', async () => {
+test('compact duplicate action is blocked, uncertain response freezes parent and retries identical body', async () => {
     const parent = mount('alchemy-soul-lead-form', 'AlchemySoulFormatSelector', { locale: 'en' });
-    const f = chooser(parent.find('chooser').props), pending = deferred();
-    fill(f);
-    f.env.setRespond(() => pending.promise);
-    const raw = f.find('form').props.onSubmit;
-    const p = raw({ preventDefault() { } });
-    const repeated = raw({ preventDefault() { } });
-    f.flush();
-    assert.equal(f.env.requests.length, 1);
-    parent.flush();
-    assert.ok(parent.find('button', p => p['data-alchemy-format'] === 'month').props.disabled);
-    assert.ok(f.find('input', p => p.type === 'email').props.disabled);
-    pending.resolve({ ok: false, json: async () => ({ error: 'UNKNOWN' }) });
-    await p;
-    await repeated;
-    f.flush();
-    assert.equal(f.env.writes.length, 0);
-    assert.equal(f.env.navigations.length, 0);
-    assert.ok(f.find('input', p => p.type === 'email').props.disabled);
-    f.change('input', p => p.type === 'email', 'changed@example.test');
-    f.change('textarea', () => true, 'CHANGED FICTIONAL NOTE');
-    f.env.setRespond(success);
-    await f.submit();
-    assert.equal(f.env.requests.length, 2);
-    assert.equal(f.env.requests[0], f.env.requests[1]);
-    parent.flush();
-    assert.equal(parent.find('button', p => p['data-alchemy-format'] === 'month').props.disabled, false);
+    const props=parent.find('chooser').props,f = chooser(props), pending = deferred();
+    compactFill(f);f.env.setRespond(() => pending.promise);
+    const raw=compactStart(f);raw();f.flush();
+    assert.equal(f.env.requests.length,1);assert.equal(f.env.popups.length,1);
+    parent.flush();assert.ok(parent.find('button', p => p['data-alchemy-format'] === 'month').props.disabled);
+    assert.ok(f.find('phone-input').props.disabled);assert.ok(f.find('input',p=>p.type==='checkbox').props.disabled);
+    pending.resolve({ok:false,json:async()=>({error:'UNKNOWN'})});await tick(f);
+    assert.equal(f.env.writes.length,0);assert.equal(f.env.navigations.length,0);assert.equal(f.env.popups[0].closed,true);
+    assert.equal(f.env.popups[0].destinations.length,0);assert.ok(f.find('phone-input').props.disabled);
+    f.find('phone-input').props.onChange('+14165550999');f.flush();
+    f.env.setRespond(success);await compactSubmit(f);
+    assert.equal(f.env.requests.length,2);assert.equal(f.env.requests[0],f.env.requests[1]);
+    compactReceipt(f,props.whatsappUrl,props.publicTopic);
+    parent.flush();assert.equal(parent.find('button',p=>p['data-alchemy-format']==='month').props.disabled,false);
 });
 test('context change suppresses stale success and blocks new UUID; original context retries exact payload', async () => {
     const f = chooser(), pending = deferred();
@@ -273,7 +296,10 @@ for (const changed of ['context','unmount']) test(`stale auth-start after ${chan
 });
 
 test('normal auth-start retains public-only marker and parent lock until navigation unmount', async () => {
-    const parent=mount('alchemy-soul-lead-form','AlchemySoulLeadForm',{locale:'en'}), f=chooser(parent.find('chooser').props);
+    const parent=mount('alchemy-soul-lead-form','AlchemySoulLeadForm',{locale:'en'});
+    // Google remains a normal/email chooser contract, not a compact Alchemy UI.
+    const {onSubmissionLockChange,whatsappUrl}=parent.find('chooser').props;
+    const f=chooser({onSubmissionLockChange,whatsappUrl});
     await google(f)();f.flush();parent.flush();
     assert.equal(f.env.redirects.length,1);assert.equal(f.env.requests.length,0);
     const marker=JSON.parse(f.env.storage.get('hh-google-enquiry-return'));
@@ -336,9 +362,13 @@ test('referral changes cannot replace the frozen public handoff or request body'
     env.window.location.search='?utm_source=facebook&utm_medium=organic_event&utm_campaign=fictional-later';f.update({});
     env.window.location.pathname='/en/services/alchemy-of-soul';f.update({});
     pending.resolve(success());await running;
+    assert.equal(env.writes.length,0);assert.equal(env.navigations.length,0);
+    assert.equal(f.nodes().filter(n=>n.props.attributes?.['data-contact-channel']).length,0,'A stale A→B→A response cannot revive receipt links');
+    env.setRespond(success);await f.submit();
+    assert.equal(env.requests.length,2);assert.equal(env.requests[0],env.requests[1],'Fresh action retries the original frozen body and UUID');
     const draft=new URL(f.find('a',p=>p.attributes?.['data-contact-channel']==='whatsapp').props.href).searchParams.get('text');
     assert.match(draft,/fictional-original/);assert.doesNotMatch(draft,/fictional-later|FICTIONAL OPTIONAL COMMENT|fictional@example/);
-    assert.equal(env.requests.length,1);assert.equal(JSON.parse(env.requests[0]).description,'FICTIONAL OPTIONAL COMMENT');
+    assert.equal(env.requests.length,2);assert.equal(JSON.parse(env.requests[0]).description,'FICTIONAL OPTIONAL COMMENT');
 });
 
 // Reconciled with target d643ca98: quick and standard flows require fresh opt-in.
@@ -384,4 +414,13 @@ test('quick uncertain result keeps explicit consent frozen for identical replay'
     env.setRespond(success); await f.submit();
     assert.equal(env.requests.length, 2); assert.equal(env.requests[0], env.requests[1]);
     assert.equal(JSON.parse(env.requests[1]).contactConsent, true);
+});
+
+for(const channel of ['whatsapp','telegram']) test(`compact ${channel} storage denial keeps an in-place private receipt`,async()=>{
+    const parent=mount('alchemy-soul-lead-form','AlchemySoulLeadForm',{locale:'en'}),props=parent.find('chooser').props;
+    const f=chooser(props,environment({storageDenied:true}));compactFill(f);await compactSubmit(f,channel);
+    assert.equal(f.env.writes.length,0);assert.equal(f.env.storage.size,0);compactReceipt(f,props.whatsappUrl,props.publicTopic);
+    const before=f.nodes().filter(n=>n.props.attributes?.['data-contact-channel']).map(n=>n.props.href);
+    f.update({label:'Harmless label update'});
+    assert.deepEqual(f.nodes().filter(n=>n.props.attributes?.['data-contact-channel']).map(n=>n.props.href),before);
 });

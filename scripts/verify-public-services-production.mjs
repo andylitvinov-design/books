@@ -1,5 +1,8 @@
+import { createPublicServicesPageManager } from './helpers/public-services-isolation.mjs';
+import { createFreeReviewViewportIsolation } from './helpers/free-review-viewport-isolation.mjs';
+import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -16,14 +19,20 @@ const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false, expectedBoundaryConsoleBlocks: 0 };
 let failure;
+const publicServices = createPublicServicesPageManager(browser, { origin });
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pages = new Set();
-  const attachDiagnostics = (page) => {
+  const attachDiagnostics = (page, expectedBoundaryBlock) => {
     pages.add(page);
     page.on("console", (message) => {
+      // Exempt only an exact expected resource denial already recorded by this
+      // page's isolation boundary. Missing/unrelated console sources remain errors.
+      if (expectedBoundaryBlock?.({location: message.location(), type: message.type(), text: message.text()})) {
+        diagnostics.expectedBoundaryConsoleBlocks += 1;
+        return;
+      }
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
         try { path = new URL(message.location().url).pathname; } catch {}
@@ -54,9 +63,8 @@ try {
   };
   const visible = async (locator) => locator.waitFor({ state: "visible", timeout: 30000 });
   const createPage = async (width) => {
-    const page = await context.newPage();
+    const page = await publicServices.createPage(width);
     attachDiagnostics(page);
-    await page.setViewportSize({ width, height: 844 });
     return page;
   };
 
@@ -78,16 +86,16 @@ try {
         "Default Spanish payment details are collapsed before geometry measurement");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-      assert.equal(panelHeights.length, 8, "Eight compact Spanish Alchemy panels");
+      assertAlchemyPanelOrder(panelHeights);
       if (width <= 390) {
-        if (panelHeights.some(p => p.height > p.max)) {
+        if (panelHeights.some(p => p.name !== "reviews" && p.height > p.max)) {
           try {
             await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
           } catch (error) {
             console.error("Alchemy overflow diagnostics could not be saved:", error);
           }
         }
-        assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+        assert.deepEqual(panelHeights.filter(p => p.name !== "reviews" && p.height > p.max), [],
           "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
       }
       assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Spanish long guide is initially collapsed");
@@ -449,8 +457,8 @@ try {
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-          assert.equal(panelHeights.length, 8, "Eight compact Alchemy panels");
-          if (panelHeights.some(p => p.height > p.max)) {
+          assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
+          if (panelHeights.some(p => p.name !== "reviews" && p.height > p.max)) {
             try {
               await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
             } catch (error) {
@@ -458,7 +466,7 @@ try {
               console.error("Alchemy overflow diagnostics could not be saved:", error);
             }
           }
-          assert.deepEqual(panelHeights.filter(p => p.height > p.max), [],
+          assert.deepEqual(panelHeights.filter(p => p.name !== "reviews" && p.height > p.max), [],
             "One semantic section per mobile viewport: " + JSON.stringify(panelHeights));
           assert.equal(await page.locator('details[data-alchemy-extended-guide]').evaluate(node => node.open), false, "Long guide is initially collapsed");
           assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate global enquiry panel");
@@ -479,12 +487,30 @@ try {
             await expect(countryCode).toHaveAttribute("aria-label", locale === "ru" ? "Код страны" : "Country calling code");
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
-              nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));
-            assert.equal(positions.length, 3, "Exactly three original testimonials");
+              nodes.map(node => {
+                const card = node.getBoundingClientRect();
+                const frame = node.querySelector('.site-video-frame')?.getBoundingClientRect();
+                return {
+                  id: node.getAttribute('data-testimonial-video-id'),
+                  audio: node.getAttribute('data-testimonial-original-audio'),
+                  top: card.top, bottom: card.bottom, width: card.width, videoWidth: frame?.width ?? 0,
+                };
+              }));
+            assert.equal(positions.length, 12, "All twelve original-language testimonials are visible in a vertical feed");
+            assert.equal(new Set(positions.map(item => item.id)).size, 12, "No duplicate testimonials");
             assert.ok(positions.every((pos, index) => index === 0 || pos.top >= positions[index-1].bottom),
               "All testimonial videos must stack vertically");
+            assert.ok(positions.every(pos => ["en", "ru"].includes(pos.audio)),
+              "The audio-language disclosure must follow the actual recording");
+            assert.ok(positions.every(pos => pos.videoWidth >= pos.width - 12 && pos.videoWidth >= width - 65),
+              "Every testimonial player fills its mobile card width");
             assert.ok(await reviewStack.evaluate(node => node.scrollWidth <= node.clientWidth + 1),
               "No horizontal scrolling or squeezed testimonials");
+            const bottomGap = await main.locator('[data-alchemy-panel="reviews"]').evaluate(node => {
+              const note = node.querySelector('[data-alchemy-review-note]');
+              return note ? node.getBoundingClientRect().bottom - note.getBoundingClientRect().bottom : 999;
+            });
+            assert.ok(bottomGap >= 0 && bottomGap < 55, "No empty testimonial viewport after the last video");
             const pricing = main.locator('[data-alchemy-booking-formats]');
             // Payments are still available after agreement, but the default
             // 320/390px decision screen must not be extended by transfer notes.
@@ -503,7 +529,7 @@ try {
               "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredContactChannelChooser(pricing, expect, page);
+            const channels = await openRegisteredCompactPhoneChooser(pricing, expect, page);
             const prepared = await assertPreparedContactChannels(channels, expect);
             assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
               "Selected express session must appear in prepared order draft");
@@ -537,7 +563,12 @@ try {
       ["dao", "services/dao-health-profile", "request-free-wu-xing"],
     ]) {
       for (const width of [320, 360, 390, 1188]) {
-        const page = await createPage(width);
+        const diagnosisIsolation = kind === "situation"
+          ? await createFreeReviewViewportIsolation(browser, {origin, locale, viewport:{width,height:844}, mobile:false}) : null;
+        const page = diagnosisIsolation?.page || await createPage(width);
+        if (diagnosisIsolation) attachDiagnostics(page, diagnosisIsolation.consumeExpectedConsoleBlock);
+        let primaryDiagnosisFailure;
+        try {
         await page.goto(origin + "/" + locale + "/" + slug, { waitUntil: "domcontentloaded" });
         const main = page.locator('main[data-free-entry-landing="' + kind + '"]');
         await visible(main.locator("h1"));
@@ -569,33 +600,75 @@ try {
           await visible(featured);
           assert.equal(await featured.locator("iframe").count(), 0,
             "Approved YouTube recording never autoplays before opt-in");
-          const offers = main.locator("[data-diagnosis-offer]");
-          assert.equal(await offers.count(), 3,
-            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
-          assert.equal(await offers.locator("img").count(), 3,
-            "Each diagnosis option has its own real photograph");
-          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
-          await visible(chooser);
-          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
-            "Free situation option reuses the existing coaching questionnaire funnel");
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "No duplicate lead is created before the questionnaire is sent");
-
-          const details = offers.nth(1).locator("details");
-          await details.locator("summary").click();
-          assert.equal(await details.evaluate(el => el.open), true,
-            "Details disclose the Wu Xing offer inline");
-          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          await visible(chooser.locator("[data-service-lead-capture]"));
-          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
-          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
-          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "An offer click does not create a CRM lead, booking or payment");
-
-          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
-          await visible(chooser.locator("[data-free-diagnostic-start]"));
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "Switching back to the written review restores the single secure funnel");
+          assert.equal(await main.locator('[data-diagnosis-offer],[data-free-diagnosis-options]').count(), 0,
+            "The personal express landing is one service, not the separate three-offer hub");
+          const enquiry = main.locator('#' + captureId + '[data-personal-express-enquiry]');
+          assert.equal(await enquiry.count(), 1, "One localized personal express enquiry");
+          const reveal = enquiry.locator('button[data-express-reveal]');
+          const disclosure = enquiry.locator('#express-request-form[data-express-inline-disclosure]');
+          assert.equal(await reveal.getAttribute('aria-expanded'), 'false');
+          assert.equal(await reveal.getAttribute('aria-controls'), 'express-request-form');
+          assert.equal(await disclosure.getAttribute('role'), 'region');
+          assert.equal(await disclosure.isVisible(), false, "Inline form starts folded");
+          assert.equal(await main.locator('[role="dialog"],[aria-modal="true"]').count(), 0,
+            "The new in-flow enquiry never presents modal dialog semantics");
+          assert.equal(await disclosure.locator('[data-reiki-phone-enquiry]').count(), 1,
+            "Folded chooser remains mounted; folding is not cancellation");
+          assert.deepEqual(await enquiry.locator('input[name="express-review-focus"]').evaluateAll(nodes => nodes.map(node => node.value)),
+            ['situation', 'energy']);
+          assert.equal(await enquiry.locator('input[value="situation"]').isChecked(), true);
+          const originalOverflow = await page.evaluate(() => document.body.style.overflow);
+          await reveal.click();
+          for (const focus of ['energy','situation']) {
+            await enquiry.locator('input[name="express-review-focus"][value="' + focus + '"]').check();
+            assert.equal(await enquiry.locator('[data-express-focus="' + focus + '"]').getAttribute('data-selected'), 'true');
+            const form = disclosure.locator('[data-reiki-phone-enquiry] form');
+            await visible(form);
+            const country = form.locator('[data-phone-country-input] select');
+            assert.equal(await country.count(), 1, "Only international country selection");
+            const phone = form.locator('input[type="tel"][required]');
+            assert.equal(await phone.getAttribute('inputmode'), 'tel');
+            assert.equal(await phone.getAttribute('autocomplete'), 'tel-national');
+            assert.equal(await phone.inputValue(), '', "A new focus key starts with empty phone");
+            const consent = form.locator('input[type="checkbox"][required]');
+            assert.equal(await consent.isChecked(), false, "Each new focus key requires fresh consent");
+            assert.deepEqual(await form.locator('button[data-contact-channel-submit]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-contact-channel-submit'))),
+              ['whatsapp', 'telegram']);
+            assert.equal(await disclosure.locator('a[data-contact-channel],[role="status"]').count(), 0,
+              "Opening or changing focus does not save a lead, book, pay or hand off a messenger");
+            await country.selectOption('CA');
+            await phone.fill('4165550123');
+            for (const channel of ['whatsapp','telegram']) {
+              await form.locator('button[data-contact-channel-submit="' + channel + '"]').click();
+              await visible(form.locator('[role="alert"]'));
+              await diagnosisIsolation.assertClean();
+            }
+            await consent.check(); // Deliberately never submit a consented request here.
+            await reveal.click();
+            await disclosure.waitFor({state:'hidden'});
+            assert.equal(await form.count(), 1, "Fold hides, never detaches or cancels, the current chooser");
+            assert.equal(await reveal.getAttribute('aria-expanded'), 'false');
+            await reveal.click();
+            await visible(disclosure);
+            assert.equal(await phone.inputValue(), '4165550123', "Same-key folding preserves current phone");
+            assert.equal(await consent.isChecked(), true, "Same-key folding preserves explicit consent");
+            await phone.focus();
+            await page.keyboard.press('Escape');
+            await disclosure.waitFor({state:'hidden'});
+            await expect(reveal).toBeFocused();
+            assert.equal(await page.evaluate(() => document.body.style.overflow), originalOverflow,
+              "Inline form never locks document scrolling");
+            await hero.locator('a[href="#request-free-review"]').click();
+            await visible(disclosure);
+            assert.equal(new URL(page.url()).hash, '#request-free-review');
+            assert.equal(await phone.inputValue(), '4165550123', "Repeated anchor is a reveal, not a new form");
+            assert.equal(await consent.isChecked(), true);
+            assert.equal(await main.locator('[data-optional-written-review]').count(), focus === 'situation' ? 1 : 0,
+              "Private situation entry follows the selected focus");
+          }
+          await reveal.click();
+          await disclosure.waitFor({state:'hidden'});
+          await diagnosisIsolation.assertClean();
 
           const writtenIntake = main.locator("[data-optional-written-review]");
           assert.equal(await writtenIntake.evaluate(el => el.open), false);
@@ -609,21 +682,29 @@ try {
             assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
               "Expanded information must fit the phone width");
 
-            const hub = await page.context().newPage();
-            await hub.setViewportSize({width, height: 844});
+            const hub = page; // Same guarded public context, not an unguarded extra page.
             await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
             assert.equal(await hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]").count(), 3,
               "The free consultation hub reuses the same three offers");
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-free-diagnostic-start]").count(), 1,
-              "The hub offers the secure free questionnaire without a second CRM form");
-            await hub.close();
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-diagnosis-placement] button[aria-haspopup="dialog"]').count(), 2,
+              "The hub reuses both current inline request actions");
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-diagnosis-order-form]').getAttribute('data-open'), 'false');
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-diagnosis-order-form]').isVisible(), false,
+              "Hub selected-offer dialog is hidden until explicit intent");
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-free-diagnostic-start]').count(), 0);
+            await diagnosisIsolation.assertClean();
+            await page.goto(origin + "/" + locale + "/" + slug, {waitUntil:"domcontentloaded"});
           }
         }
         await assertViewport(page, locale + "/" + slug + "/" + width + "/after-actions");
         if (width === 390 || width === 1188) {
           await page.screenshot({path: output + "/free-" + kind + "-" + locale + "-hero-" + width + ".png", fullPage: false});
         }
-        await page.close();
+        } catch (error) { primaryDiagnosisFailure = error; throw error; }
+        finally {
+          try { if (diagnosisIsolation) await diagnosisIsolation.close(); else await page.close(); }
+          catch (error) { if (!primaryDiagnosisFailure) throw error; }
+        }
       }
     }
   }
@@ -631,12 +712,23 @@ try {
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
   assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
-  await context.close();
+  await publicServices.assertClean();
 } catch (error) {
   failure = error;
 } finally {
-  await writeFile(output + "/browser-diagnostics.json", JSON.stringify(diagnostics, null, 2) + "\n");
-  await browser.close();
+  // Close/drain every context even after UI/assertion failure. Cleanup must not
+  // hide the original failure or prevent the remaining cleanup attempts.
+  try { await publicServices.close(); } catch (error) { failure ||= error; }
+  try { await browser.close(); } catch (error) { failure ||= error; }
+  // Context/browser closure can deliver a final queued diagnostic. Include it
+  // in the verdict and artifact rather than reporting a pre-teardown PASS.
+  try {
+    assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
+    assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
+  } catch (error) { failure ||= error; }
+  diagnostics.network = publicServices.summary();
+  try { await writeFile(output + "/browser-diagnostics.json", JSON.stringify(diagnostics, null, 2) + "\n"); }
+  catch (error) { failure ||= error; }
 }
 if (failure) throw failure;
 console.log("PASS public production service acceptance");

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import {ALCHEMY_CONTACT, alchemyOrigin, alchemyRequestGate, syntheticAlchemyReceipt} from './alchemy-enquiry-journey-verifier.mjs'
+import {ALCHEMY_NATIONAL_PHONE, alchemyOrigin, alchemyRequestGate, syntheticAlchemyReceipt} from './alchemy-enquiry-journey-verifier.mjs'
 
 
 // Diagnostic output contains fixed vocabulary and bounded numbers/booleans only,
@@ -8,7 +8,7 @@ const diagnosticModes=['startup','keyboard','label','canceled-pointer']
 const diagnosticPhases=[
   'none','origin','context','bootstrap-route','bootstrap-socket','bootstrap-binding',
   'bootstrap-pages','bootstrap-init','page','navigation','initial-drain','format',
-  'open','contact-fill','initial-state','keyboard-focus','keyboard-tab',
+  'open','contact-fill','initial-actions','initial-state','keyboard-focus','keyboard-tab',
   'keyboard-visible','keyboard-space-on','keyboard-space-off','keyboard-shift-tab',
   'label-on','label-off','canceled-geometry','canceled-down','canceled-drag',
   'canceled-up','canceled-state','terminal-submit','terminal-links','terminal-receipt',
@@ -240,17 +240,29 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
         const chooser=pricing.locator('[data-contact-channel-chooser]')
         checkpoint(diagnostic,'open')
         await chooser.locator('[data-contact-order]').click()
-        const contact=chooser.locator('input[type="email"]')
+        const phone=chooser.locator('[data-phone-country-input]')
+        const contact=phone.locator('input[type="tel"]')
         const consent=chooser.locator('input[type="checkbox"]')
-        const submit=chooser.locator('button[type="submit"]')
+        const actions=['whatsapp','telegram'].map(channel=>chooser.locator(`[data-contact-channel-submit="${channel}"]`))
+        await expect(chooser.locator('[data-contact-channel-submit]')).toHaveCount(2)
+        for(const action of actions) { await expect(action).toBeVisible(); await expect(action).toBeEnabled() }
         diagnostic.readKeyboardTail=()=>consent.evaluate(collectKeyboardFailureTail)
         checkpoint(diagnostic,'contact-fill')
-        await contact.fill(ALCHEMY_CONTACT)
+        await phone.locator('select').selectOption('CA')
+        await contact.fill(ALCHEMY_NATIONAL_PHONE)
+        checkpoint(diagnostic,'initial-actions')
+        for(const action of actions) await action.click()
+        await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
+        await expect(chooser.locator('[role="status"]')).toHaveCount(0)
+        assert.deepEqual(failures,[])
+        assert.equal(await page.evaluate(()=>window.__consentPopupAttempts),0)
+        // Native fill restores the natural input focus after the rejection taps.
+        await contact.fill(ALCHEMY_NATIONAL_PHONE)
         checkpoint(diagnostic,'initial-state')
         await expect(consent).not.toBeChecked()
-        await expect(submit).toBeDisabled()
+        for(const action of actions) await expect(action).toBeEnabled()
         if (mode==='keyboard') {
-          // Start at naturally focused email, then use real sequential navigation.
+          // Start at naturally focused phone, then use real sequential navigation.
           checkpoint(diagnostic,'keyboard-focus')
           await expect(contact).toBeFocused()
           checkpoint(diagnostic,'keyboard-tab')
@@ -281,7 +293,7 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
           checkpoint(diagnostic,'keyboard-space-on')
           await page.keyboard.press('Space')
           await expect(consent).toBeChecked()
-          await expect(submit).toBeEnabled()
+          for(const action of actions) await expect(action).toBeEnabled()
           checkpoint(diagnostic,'keyboard-space-off')
           await page.keyboard.press('Space')
           await expect(consent).not.toBeChecked()
@@ -293,7 +305,7 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
           const text=consent.locator('..').locator('span')
           await text.click()
           await expect(consent).toBeChecked()
-          await expect(submit).toBeEnabled()
+          for(const action of actions) await expect(action).toBeEnabled()
           checkpoint(diagnostic,'label-off')
           await text.click()
           await expect(consent).not.toBeChecked()
@@ -318,11 +330,13 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
           await expect(consent).not.toBeChecked()
         }
         checkpoint(diagnostic,'terminal-submit')
-        await expect(submit).toBeDisabled()
+        for(const action of actions) { await expect(action).toBeEnabled(); await action.click() }
         checkpoint(diagnostic,'terminal-links')
         await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
         checkpoint(diagnostic,'terminal-receipt')
         assert.equal(receipt.count,0)
+        await expect(chooser.locator('[role="status"]')).toHaveCount(0)
+        assert.equal(await page.evaluate(()=>sessionStorage.getItem('hh-service-enquiry-receipt:v1')),null)
         checkpoint(diagnostic,'terminal-popup')
         assert.equal(await page.evaluate(()=>window.__consentPopupAttempts),0)
         checkpoint(diagnostic,'terminal-boundary')

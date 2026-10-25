@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import ts from "typescript";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -9,8 +10,7 @@ test("EN/RU/ES services give three free and five personal offers before the opti
   const css = read("components/services-studio-offers.module.css");
   const pages = [read("app/[locale]/services/page.tsx"), read("app/es/services/page.tsx")];
   for (const page of pages) {
-    assert.ok(page.indexOf("<ServicesStudioOffers") > page.indexOf("<ServicesConversionHero"));
-    assert.ok(page.indexOf("<ServicesStudioOffers") < page.indexOf("<PublicConsultationCta"));
+    assertServicesExplorerOrder(page);
     assert.ok(!page.includes("<ServicesSmartDiscovery"));
   }
   assert.match(studio, /data-services-studio-free/);
@@ -88,5 +88,23 @@ test("Business browser contract rejects missing route or locale coverage", () =>
   for (const changed of [script.replace('locale + "/services/business-consulting"', 'locale + "/services/wrong"'), script.replaceAll('["en", "ru", "es"]', '["en", "ru"]')]) {
     assert.notEqual(changed, script);
     assert.throws(() => assertBusinessBrowserRoute(changed));
+  }
+});
+
+function assertServicesExplorerOrder(source) {
+  const file=ts.createSourceFile('services.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+  assert.equal(file.parseDiagnostics.length,0);
+  const providers=[];const visit=node=>{if(ts.isJsxElement(node)&&node.openingElement.tagName.getText(file)==='ServicesExplorerProvider')providers.push(node);ts.forEachChild(node,visit)};visit(file);
+  assert.equal(providers.length,1,'One actual services explorer');
+  const content=providers[0].children.filter(node=>!ts.isJsxText(node)||node.text.trim());
+  assert.ok(content.every(ts.isJsxSelfClosingElement),'Services explorer keeps the three direct visible component siblings');
+  assert.deepEqual(content.map(node=>node.tagName.getText(file)),['ServicesConversionHero','PublicConsultationCta','ServicesStudioOffers'],'Exact canonical hero → consultation → studio order');
+}
+for(const route of ['app/[locale]/services/page.tsx','app/es/services/page.tsx'])test(route+': exact current services order rejects missing, duplicated, moved and hidden sections',()=>{
+  const source=read(route);assertServicesExplorerOrder(source);
+  const tags=Object.fromEntries(['ServicesConversionHero','PublicConsultationCta','ServicesStudioOffers'].map(name=>[name,source.match(new RegExp('<'+name+'\\b[^>]*\\/>'))?.[0]]));
+  assert.ok(Object.values(tags).every(Boolean),'All exact JSX mutation anchors exist');
+  for(const changed of [source.replace(tags.PublicConsultationCta,''),source.replace(tags.PublicConsultationCta,tags.PublicConsultationCta+tags.PublicConsultationCta),source.replace(tags.PublicConsultationCta,'TEMP').replace(tags.ServicesStudioOffers,tags.PublicConsultationCta).replace('TEMP',tags.ServicesStudioOffers),source.replace(tags.PublicConsultationCta,'<div hidden>'+tags.PublicConsultationCta+'</div>')]){
+    assert.notEqual(changed,source);assert.throws(()=>assertServicesExplorerOrder(changed),error=>error?.code==='ERR_ASSERTION');
   }
 });

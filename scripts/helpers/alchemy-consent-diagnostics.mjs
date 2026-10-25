@@ -1,7 +1,7 @@
 // Disposable synthetic Alchemy page only. This observer never changes the DOM,
 // native actions, app state, request interception, receipt storage or timeouts.
 // Keep every exported field categorical/numeric; never serialize DOM/text/URLs.
-export function installAlchemyConsentProbe({ expectedContact, expectedPath }) {
+export function installAlchemyConsentProbe({ expectedPhone, expectedPath }) {
   if (window.__alchemyConsentProbe) throw new Error('Duplicate synthetic probe')
   const root = document.querySelector('[data-alchemy-booking-formats]')
   if (!root) throw new Error('Synthetic pricing root missing')
@@ -19,7 +19,9 @@ export function installAlchemyConsentProbe({ expectedContact, expectedPath }) {
     const chooser = root.querySelector('[data-contact-channel-chooser]')
     if (!target || !root.contains(target)) return 'outside'
     if (target === chooser?.querySelector('input[type="checkbox"]')) return 'consent'
-    if (target === chooser?.querySelector('input[type="email"]')) return 'email'
+    if (target === chooser?.querySelector('[data-phone-country-input] input[type="tel"]')) return 'phone'
+    if (target === chooser?.querySelector('[data-phone-country-input] select')) return 'phone-country'
+    for (const channel of ['whatsapp','telegram']) if (target.closest?.(`[data-contact-channel-submit="${channel}"]`)) return channel + '-action'
     if (target.closest?.('label')?.querySelector('input[type="checkbox"]')) return 'consent-label'
     if (target.closest?.('[data-alchemy-format]')) return 'format'
     if (target.closest?.('[data-contact-order]')) return 'open-button'
@@ -28,8 +30,11 @@ export function installAlchemyConsentProbe({ expectedContact, expectedPath }) {
   const state = () => {
     const chooser = root.querySelector('[data-contact-channel-chooser]')
     const consent = chooser?.querySelector('input[type="checkbox"]')
-    const email = chooser?.querySelector('input[type="email"]')
-    const submit = chooser?.querySelector('button[type="submit"]')
+    const phone = chooser?.querySelector('[data-phone-country-input] input[type="tel"]')
+    const channelStates = Object.fromEntries(['whatsapp','telegram'].map(channel => {
+      const action = chooser?.querySelector(`[data-contact-channel-submit="${channel}"]`)
+      return [channel, {present: Boolean(action), disabled: action ? action.disabled === true : null}]
+    }))
     const selected = ['30', '60', 'month'].filter(format =>
       root.querySelector(`[data-alchemy-format="${format}"]`)?.getAttribute('aria-pressed') === 'true')
     const rect = consent?.getBoundingClientRect()
@@ -37,12 +42,12 @@ export function installAlchemyConsentProbe({ expectedContact, expectedPath }) {
       samePath: window.location.pathname === expectedPath,
       rootConnected: root.isConnected,
       chooser: token(chooser), checkbox: token(consent),
-      open: chooser?.getAttribute('data-open') === 'true',
+      open: chooser?.querySelector('[data-contact-order]')?.getAttribute('aria-expanded') === 'true',
       selected: selected.length === 1 ? selected[0] : selected.length ? 'multiple' : 'none',
       checked: consent ? consent.checked === true : null,
       disabled: consent ? consent.disabled === true : null,
-      submitDisabled: submit ? submit.disabled === true : null,
-      emailState: !email ? 'missing' : email.value === '' ? 'empty' : email.value === expectedContact ? 'fixture' : 'other',
+      channelStates,
+      phoneState: !phone ? 'missing' : phone.value === '' ? 'empty' : phone.value === expectedPhone ? 'fixture' : 'other',
       activeTarget: category(document.activeElement),
       rect: rect ? [rect.x, rect.y, rect.width, rect.height].map(number) : null,
       scroll: [window.scrollX, window.scrollY].map(number),
@@ -117,7 +122,7 @@ export function installAlchemyConsentProbe({ expectedContact, expectedPath }) {
     for (const [type, listener, capture] of listeners) document.removeEventListener(type, listener, capture)
     observer.disconnect()
     delete window.__alchemyConsentProbe
-    return {schemaVersion: 2, outcome: 'captured', entries, final: state(), dropped, droppedScroll,
+    return {schemaVersion: 3, outcome: 'captured', entries, final: state(), dropped, droppedScroll,
       layouts, finalGeometry: geometry(), droppedLayouts, scrollEnds, scrollEndSupported: 'onscrollend' in document}
   }
   window.__alchemyConsentProbe = { stop }
@@ -149,16 +154,16 @@ export function installAlchemyConsentProbe({ expectedContact, expectedPath }) {
   listeners.push(['scrollend', scrollend, true])
   document.addEventListener('scrollend', scrollend, {capture: true, passive: true})
   observer.observe(root, {subtree: true, childList: true, attributes: true,
-    attributeFilter: ['disabled', 'checked', 'data-open', 'aria-pressed', 'hidden']})
+    attributeFilter: ['disabled', 'checked', 'aria-expanded', 'aria-pressed', 'hidden']})
   record('start', 'snapshot')
 }
 
-export async function withAlchemyConsentDiagnostics(page, {locale, denyReceiptStorage, expectedContact}, run) {
-  let diagnostic = {schemaVersion: 2, outcome: 'unavailable'}
+export async function withAlchemyConsentDiagnostics(page, {locale, denyReceiptStorage, expectedPhone}, run) {
+  let diagnostic = {schemaVersion: 3, outcome: 'unavailable'}
   // Diagnostic failures must never replace or retry the original native action.
   try {
     await page.evaluate(installAlchemyConsentProbe, {
-      expectedContact, expectedPath: `/${locale}/services/alchemy-of-soul`,
+      expectedPhone, expectedPath: `/${locale}/services/alchemy-of-soul`,
     })
   } catch { /* Report availability, never an error message containing page data. */ }
   try { return await run() }
@@ -167,6 +172,7 @@ export async function withAlchemyConsentDiagnostics(page, {locale, denyReceiptSt
       const captured = await page.evaluate(() => window.__alchemyConsentProbe?.stop())
       if (captured) diagnostic = captured
     } catch { /* The guarded context can disappear; the action failure remains primary. */ }
-    console.log('SYNTHETIC_ALCHEMY_CONSENT', JSON.stringify({locale, denyReceiptStorage, ...diagnostic}))
+    try {console.log('SYNTHETIC_ALCHEMY_CONSENT', JSON.stringify({locale, denyReceiptStorage, ...diagnostic}))}
+    catch { /* Diagnostic output never replaces a native action's verdict. */ }
   }
 }

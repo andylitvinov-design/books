@@ -66,7 +66,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "Free diagnosis: 3 ways", "Бесплатная диагностика: 3 варианта", "Diagnóstico gratis: 3 opciones",
+    "Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.", "Revisión personal exprés gratuita con Andrey.",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -75,12 +75,12 @@ test("all three locales explain real service advantages without health claims or
     "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
-  for (const phrase of ["Free Diagnosis", "Бесплатная диагностика",
-    "Diagnóstico gratis", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
+  for (const phrase of ["Free personal express review with Andrey.", "Личная экспресс-диагностика с Андреем.",
+    "Revisión personal exprés gratuita con Andrey.", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
-  assert.match(landing, /€50/, "The paid 30-minute option must have its real price");
+  assert.match(read("components/free-diagnosis-offers.tsx"), /30 MIN · €50/, "The paid 30-minute option remains €50");
   assert.doesNotMatch(landing + capture, /€100/, "Do not invent a second paid option here");
 });
 
@@ -134,5 +134,12 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
-  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} \/>/);
+  assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
+  assert.doesNotMatch(landing, /<FreeDiagnosisOffers/);
+  assert.match(read("components/personal-express-enquiry.tsx"), /data-personal-express-enquiry/);
+  assert.match(landing, /data-review-stories/);
+  assert.match(css, /\.reviewBenefitsList/);
+  assert.match(css, /\.reviewProcess/);
+  assert.match(css, /\.reviewApproach/);
+  assert.match(landing, /id="how-i-review"/);
 });

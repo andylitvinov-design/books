@@ -2,10 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import vm from 'node:vm'
-import {freeReviewOrigin, freeReviewPath, freeReviewService, freeReviewMarkers, assertFreeReviewBody, syntheticFreeReviewReceipt, freeReviewRequestGate, assertFreeReviewLink, installFreeReviewProbe, freeReviewInitScript, withFreeReviewIsolation, freeReviewSocketBoundary, verifyFreeReviewJourney, FREE_REVIEW_CONTACT, FREE_REVIEW_REFERENCE} from '../scripts/helpers/free-review-journey-verifier.mjs'
+import {freeReviewOrigin, freeReviewPath, freeReviewService, freeReviewPublicTopic, freeReviewMarkers, assertFreeReviewBody, syntheticFreeReviewReceipt, freeReviewRequestGate, assertFreeReviewLink, installFreeReviewProbe, freeReviewInitScript, withFreeReviewIsolation, freeReviewSocketBoundary, verifyFreeReviewJourney, assertFreeReviewPrivateEntrySnapshot, FREE_REVIEW_CONTACT, FREE_REVIEW_PHONE, FREE_REVIEW_REFERENCE} from '../scripts/helpers/free-review-journey-verifier.mjs'
 
 const origin = 'http://127.0.0.1:3100'
-const body = (locale='en', kind='compact', channel='whatsapp') => JSON.stringify({operationId:'27d6bba7-fede-49b3-90d8-c655b72202fd', serviceTitle:freeReviewService(locale, kind), description:kind === 'drawing' ? '' : 'Preferred reply channel: ' + (channel === 'whatsapp' ? 'WhatsApp' : 'Telegram'), sourcePath:freeReviewPath(locale), locale, contact:{displayName:'', email:FREE_REVIEW_CONTACT, phone:''}, contactConsent:true, website:''})
+const body = (locale='en', kind='compact', channel='whatsapp') => JSON.stringify({operationId:'27d6bba7-fede-49b3-90d8-c655b72202fd', serviceTitle:freeReviewService(locale, kind), description:kind === 'drawing' ? '' : freeReviewPublicTopic(locale), sourcePath:freeReviewPath(locale), locale, contact:kind==='compact'?{displayName:'',email:'',phone:FREE_REVIEW_PHONE}:{displayName:'', email:FREE_REVIEW_CONTACT, phone:''}, contactConsent:true, website:''})
 const request = (url=origin+'/api/service-enquiries', method='POST', type='fetch', raw=body()) => ({url:() => url, method:() => method, resourceType:() => type, postData:() => raw, headers:() => ({'content-type':'application/json'})})
 const route = req => {
   const log = []
@@ -29,7 +29,7 @@ for (const kind of ['compact','drawing']) for (const [key,value] of [
   assert.throws(() => assertFreeReviewBody(JSON.stringify(raw),'en',kind,kind==='compact'?'whatsapp':undefined))
 })
 test('reject cross-funnel and cross-channel payloads', () => {
-  assert.throws(() => assertFreeReviewBody(body('en','compact','telegram'),'en','compact','whatsapp'))
+  assert.equal(body('en','compact','telegram'),body('en','compact','whatsapp'),'Current chooser channels share one immutable CRM body')
   assert.throws(() => assertFreeReviewBody(body('en','drawing'),'en','compact','whatsapp'))
   assert.throws(() => assertFreeReviewBody(body(),'en','drawing'))
   assert.throws(() => assertFreeReviewBody(body(),'en','unknown','whatsapp'))
@@ -48,7 +48,7 @@ for (const locale of ['en','ru']) for (const kind of ['compact','drawing']) test
   await gate(duplicate);assert.deepEqual(duplicate.log,['abort']);assert.equal(receipt.count,2);assert.equal(failures.length,1)
   await receipt.close()
 })
-for (const alteration of [raw => raw+' ',raw => raw.replace('27d6bba7','17d6bba7'),raw => raw.replace('WhatsApp','Telegram')]) test('immutable retry rejects bytes, UUID and channel drift', async () => {
+for (const alteration of [raw => raw+' ',raw => raw.replace('27d6bba7','17d6bba7'),raw => raw.replace('Express review focus: Situation','Different selected public topic')]) test('immutable retry rejects bytes, UUID and public topic drift', async () => {
   const receipt=syntheticFreeReviewReceipt('en','compact','whatsapp')
   await receipt.accept(route(request()))
   await assert.rejects(receipt.accept(route(request(undefined,undefined,undefined,alteration(body())))))
@@ -280,11 +280,11 @@ function socketTerminalHarness(onClose=async()=>{}) {
   let httpHandler,socketHandler,initScript,clicks=0,closes=0
   const locator=selector=>({
     locator,getByRole:()=>locator('role'),scrollIntoViewIfNeeded:async()=>{},evaluate:async()=>false,
-    check:async()=>{},uncheck:async()=>{},fill:async()=>{},
+    check:async()=>{},uncheck:async()=>{},fill:async()=>{},selectOption:async()=>{},
     getAttribute:async name=>name==='rel'?'noopener noreferrer':href('en','compact',selector.includes('telegram')?'telegram':'whatsapp'),
     click:async()=>{
-      if(!selector.startsWith('button[data-compact-channel='))return
-      clicks++;if(clicks<3)return
+      if(!selector.startsWith('button[data-contact-channel-submit='))return
+      clicks++;if(clicks<4)return
       const popup=sandbox.window.open('about:blank','_blank');popup.opener=null
       const r=route(request());r.fulfill=async response=>{
         if(response.status===503)popup.close()
@@ -374,16 +374,17 @@ test('integration keeps four widths, original evidence and separate real routes'
   const main=await read('scripts/verify-app-r1.mjs'),helper=await read('scripts/helpers/free-review-journey-verifier.mjs'),landing=await read('components/free-entry-landing.tsx'),drawing=await read('components/free-drawing-intake.tsx')
   assert.match(main,/for\(const width of \[320,360,390,1280\]\)/)
   assert.match(main,/for\(const locale of \['en','ru'\]\)/)
-  for(const call of ["{kind:'compact'}","{kind:'compact',channel:'telegram',denyReceiptStorage:true}","{kind:'drawing'}","{kind:'drawing',denyReceiptStorage:true,output}"]) assert.ok(main.includes('verifyFreeReviewJourney(publicPage,expect,locale,'+call+')'))
+  for(const call of ["{kind:'compact'}","{kind:'compact',channel:'telegram',denyReceiptStorage:true}","{kind:'private-entry'}","{kind:'private-entry',denyReceiptStorage:true,output}"]) assert.ok(main.includes('verifyFreeReviewJourney(publicPage,expect,locale,'+call+')'))
   assert.match(main,/assertPublicViewportFits\(publicPage,locale\+'\/free-review\/'\+width\)/)
   assert.match(main,/width===390\|\|width===1280/)
   assert.doesNotMatch(main,/\[data-free-quick-request\]|openContactChannelChooser\(ready|openRegisteredContactChannelChooser\(ready/)
-  assert.match(helper,/free-review-\$\{locale\}-ready-region-390\.png/);assert.match(helper,/free-review-\$\{locale\}-prepared-390\.png/)
-  assert.match(helper,/await expect\(ready\)\.toBeFocused\(\)/)
+  assert.match(helper,/free-review-\$\{locale\}-private-entry-390\.png/)
+  assert.match(helper,/await expect\(link\)\.toBeFocused\(\)/)
+  assert.doesNotMatch(helper,/verifyFreeReviewDrawingInPage|areas\.nth|answersForm|ready\.getByRole/)
   assert.match(helper,/Temporary analytics hold emits no acquisition event/)
   assert.match(helper,/await expect\(legacy\)\.toHaveAttribute\('href', `\/\$\{locale\}\/coaching\/intake`\)/)
   assert.match(landing,/data-optional-written-review/);assert.match(landing,/<FreeSituationReviewForm locale=\{locale\} \/>/)
-  assert.match(drawing,/<ContactChannelChooser/);assert.doesNotMatch(drawing,/stayAfterSave|localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|FileReader/)
+  assert.match(drawing,/coachingIntakeEntryTopic/);assert.doesNotMatch(drawing,/<ContactChannelChooser|<form|<textarea|navigator\.clipboard/);assert.doesNotMatch(drawing,/stayAfterSave|localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|FileReader/)
   assert.match(helper,/hypnotherapyRequestGate/);assert.match(helper,/alchemyRequestGate/);assert.match(helper,/withHypnotherapyIsolation/)
   assert.match(helper,/routeWebSocket\('\*\*\/\*', sockets.handler\)/)
   assert.doesNotMatch(helper,/route\.continue\(|route\.fallback\(|unroute\(|context\.request|force:true|waitForTimeout|timeout:/)
@@ -391,3 +392,102 @@ test('integration keeps four widths, original evidence and separate real routes'
   assert.match(workflow,/node --test .*tests\/free-review-journey-verifier\.test\.mjs .*tests\/free-review-component-contract\.test\.mjs/)
   // This test reads text; never imports/executes the admin-initializing main script.
 })
+
+// Current private-entry browser mode is read-only even after interaction starts.
+// Legacy `drawing` below remains a pure neutral-receipt boundary fixture only;
+// it is no longer accepted by the current browser journey wrapper.
+for (const locale of ['en','ru']) test(locale + ' private entry blocks every submission and protected navigation before/after opening', async () => {
+  let accepted = 0;
+  const failures = [], blocked = [], receipt = {confirmed:false, accept:async () => {accepted++}};
+  const gate = freeReviewRequestGate(origin,locale,'private-entry',receipt,failures,blocked,{bootstrap:true});
+  const startup = route(request()); await gate(startup); assert.deepEqual(startup.log,['abort']);
+  const initial = route(request(origin + freeReviewPath(locale),'GET','document')); await gate(initial);
+  assert.equal(gate.initialDocumentLoaded,true); gate.beginInteraction();
+  for (const req of [
+    request(), request(origin+'/api/service-enquiries?x=1'), request(origin+'/api/app/bootstrap','GET'),
+    request(origin+'/%61pi/private','GET'), request(origin+'/api%2fprivate','GET'),
+    request(origin+'/'+locale+'/coaching/intake?topic=personal','GET','document'),
+    request(origin+'/'+locale+'/thank-you','GET','document'), request(origin+'/'+locale+'/thank-you?_rsc=abc','GET','fetch'),
+    request(origin+'/other','PUT'), request('https://evil.invalid/','GET','document'),
+  ]) {
+    const r = route(req); await gate(r); assert.deepEqual(r.log,['abort']);
+  }
+  assert.equal(accepted,0,'Private entry cannot reach even the synthetic write adapter');
+  assert.equal(failures.length,11);
+  const asset=route(request(origin+'/_next/static/chunks/a.js','GET','script')); await gate(asset);
+  assert.deepEqual(asset.log[0],{maxRedirects:0}); assert.equal(asset.log.at(-1),'dispose');
+  gate.beginTeardown(); const late=route(request()); await gate(late); assert.deepEqual(late.log,['abort']);
+  assert.equal(accepted,0); assert.equal(failures.length,12);
+});
+
+test('private-entry branch remains fail-closed even with a fabricated receipt confirmation', async () => {
+  let accepted=0;
+  for (const path of ['/en/thank-you','/en/thank-you?_rsc=abc']) {
+    const r=route(request(origin+path,'GET',path.includes('?')?'fetch':'document'));
+    await freeReviewRequestGate(origin,'en','private-entry',{confirmed:true,accept:async()=>{accepted++}},[],[])(r);
+    assert.deepEqual(r.log,['abort']);
+  }
+  const r=route(request());
+  await freeReviewRequestGate(origin,'en','private-entry',{confirmed:true,accept:async()=>{accepted++}},[],[])(r);
+  assert.deepEqual(r.log,['abort']); assert.equal(accepted,0);
+});
+
+test('retired drawing browser branch is rejected before any browser is constructed', async () => {
+  const source={url:()=>origin+freeReviewPath('en'),context:()=>assert.fail('Retired branch must fail before context creation')};
+  await assert.rejects(verifyFreeReviewJourney(source,()=>assert.fail(),'en',{kind:'drawing'}));
+});
+
+for (const locale of ['en','ru']) test(locale + ' browser private-entry oracle accepts only the actual rendered current component', async () => {
+  const {mount,environment} = await import('./helpers/contact-component-fixture.mjs');
+  const text = node => Array.isArray(node) ? node.map(text).join('') : node && typeof node === 'object' ? text(node.props?.children) : typeof node === 'string' ? node : '';
+  for (const topic of ['personal','wellbeing','relationships','career','business','goal','other']) {
+    const f=mount('free-drawing-intake','FreeDrawingIntake',{locale},environment(locale,{search:'?topic='+topic}));
+    const section=f.find('section'),heading=f.find('h2'),links=f.nodes().filter(node=>node.type==='a');
+    const snapshot={lang:section.props.lang,labelledBy:section.props['aria-labelledby'],titleId:heading.props.id,heading:text(heading),hrefs:links.map(link=>link.props.href),linkNames:links.map(text),controls:f.nodes().filter(node=>['form','input','textarea','button','chooser','acquisition-link'].includes(node.type)).length,text:text(section)};
+    assertFreeReviewPrivateEntrySnapshot(snapshot,locale,topic);
+    for (const changes of [
+      {lang:locale==='en'?'ru':'en'}, {labelledBy:'not-the-heading'}, {titleId:''},
+      {hrefs:['https://evil.invalid/intake']}, {hrefs:['/'+locale+'/coaching/intake?topic='+topic+'&answer=private']},
+      {hrefs:['/'+(locale==='en'?'ru':'en')+'/coaching/intake?topic='+topic]}, {hrefs:[...snapshot.hrefs,...snapshot.hrefs]},
+      {linkNames:['Send my answers in WhatsApp']}, {controls:1}, {text:'Share your answers'},
+      {text:snapshot.text+FREE_REVIEW_CONTACT}, {text:snapshot.text+freeReviewMarkers(locale)[0]},
+    ]) assert.throws(()=>assertFreeReviewPrivateEntrySnapshot({...snapshot,...changes},locale,topic));
+  }
+});
+
+for (const locale of ['en','ru']) test(locale + ' browser compact receipt contract matches actual current parent, chooser and phone input',async () => {
+  const {expressFixture,turn}=await import('./helpers/personal-express-parent-fixture.mjs')
+  const f=expressFixture({locale});assert.equal(f.find('input',p=>p.type==='tel').hidden,true)
+  f.reveal();f.select('energy');f.select('situation');assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,false)
+  assert.equal(f.find('div',p=>Object.hasOwn(p,'data-express-inline-disclosure')).props.role,'region')
+  f.phone(FREE_REVIEW_CONTACT);f.consent();f.send();await turn(f);assert.deepEqual(f.env.requests,[]);assert.deepEqual(f.env.popups,[])
+  f.phone('4165550123');f.send();await turn(f);assert.equal(f.env.requests.length,1)
+  for(const channel of ['whatsapp','telegram'])assertFreeReviewBody(f.env.requests[0],locale,'compact',channel)
+  const sent=JSON.parse(f.env.requests[0]);assert.equal(sent.description,freeReviewPublicTopic(locale))
+  assert.throws(()=>assertFreeReviewBody(JSON.stringify({...sent,description:'Preferred reply channel: WhatsApp'}),locale,'compact','whatsapp'))
+  assert.equal(f.links().length,2);assert.equal(f.env.navigations.length,0);f.unmount()
+});
+
+function assertCurrentFreeReviewAdapter(source) {
+  const start=source.indexOf('export async function verifyFreeReviewCompactInPage('),end=source.indexOf('// A snapshot of the actual rendered public entry',start)
+  assert.ok(start>=0&&end>start);const compact=source.slice(start,end)
+  for(const text of ["capture.locator('[data-reiki-phone-enquiry] form')","form.locator('input[type=\"tel\"]')","form.locator('[data-phone-country-input] select')","await country.selectOption('CA')",'button[data-contact-channel-submit=',"[country, contact, consent]","await expect(other).toBeEnabled()","[submit, other, country, contact, consent]","await expect(contact).toHaveValue(FREE_REVIEW_NATIONAL_PHONE)","await expect(capture.locator('[role=\"status\"]')).toBeVisible()","'compact', 'data-contact-channel'","await receipt.confirm()","await assertReceiptStorage(page, denyReceiptStorage)","await assertPrivateState(page, locale)"])assert.ok(compact.includes(text),'Actual compact browser contract: '+text)
+  assert.doesNotMatch(compact,/data-compact-lead-form|data-compact-channel|name="contact"|data-lead-saved|toHaveValue\(FREE_REVIEW_PHONE\)/)
+  assert.match(source,/button\[data-express-reveal\]/)
+  assert.match(compact,/await reveal\.click\(\); await expect\(capture\)\.toBeHidden\(\)/)
+  assert.match(compact,/await expect\(form\)\.toHaveCount\(1\)/)
+  assert.match(compact,/assert\.equal\(receipt\.pending,true,'Folding does not cancel the pending operation'\)/)
+  assert.match(source,/input\[name="express-review-focus"\]\[value="situation"\]/)
+  assert.match(source,/kind === 'drawing' \? '' : freeReviewPublicTopic\(locale\)/)
+}
+test('free-review browser adapter binds current real compact controls and retains native/receipt lock semantics',async()=>{
+ const source=await readFile(new URL('../scripts/helpers/free-review-journey-verifier.mjs',import.meta.url),'utf8');assertCurrentFreeReviewAdapter(source)
+ for(const [before,after] of [["[data-reiki-phone-enquiry] form","[data-compact-lead-form]"],["await expect(other).toBeEnabled()","await expect(other).toBeDisabled()"],["[country, contact, consent]","[contact, consent]"],["await expect(capture.locator('[role=\"status\"]')).toBeVisible()",''],["kind === 'drawing' ? '' : freeReviewPublicTopic(locale)","kind === 'drawing' ? '' : 'Preferred reply channel: WhatsApp'"],["await expect(form).toHaveCount(1)","await expect(form).toHaveCount(0)"],["assert.equal(receipt.pending,true,","assert.equal(receipt.pending,false,"]]){assert.ok(source.includes(before));assert.throws(()=>assertCurrentFreeReviewAdapter(source.replaceAll(before,after)),error=>error?.code==='ERR_ASSERTION')}
+})
+
+for(const locale of ['en','ru'])test(locale+' actual inline fold after unknown result preserves exact explicit-retry body and UUID',async()=>{
+ const {expressFixture,turn,unknown,success}=await import('./helpers/personal-express-parent-fixture.mjs');const f=expressFixture({locale});f.reveal();f.phone('4165550123');f.consent();f.env.setRespond(unknown);f.send();await turn(f);
+ const raw=f.env.requests[0];assertFreeReviewBody(raw,locale,'compact','whatsapp');assert.equal(f.env.writes.length,0);
+ f.reveal();assert.equal(f.find('input',p=>p.type==='tel').hidden,true);assert.equal(f.find('input',p=>p.type==='tel').props.value,'4165550123');assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,true);assert.equal(f.env.requests.length,1);
+ f.reveal();f.env.setRespond(success);f.send('telegram');await turn(f);assert.equal(f.env.requests.length,2);assert.equal(f.env.requests[1],raw);assert.equal(f.env.writes.length,1);assert.equal(f.links().length,2);f.unmount();
+});

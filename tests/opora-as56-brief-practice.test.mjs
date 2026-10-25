@@ -1,3 +1,4 @@
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
@@ -64,7 +65,7 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
       await advanceOporaTo(f.h,'practice',t.next)
-      const current=oporaAs60Day(day,locale),title=current.title
+      const current=oporaAs60VariedDay(day,locale),title=current.title
       assert.ok(textOf(f.h.tree).includes(title))
       const practice=nodes(f.h.tree).find(n=>n.props?.['data-opora-one-daily-practice']===day)
       assert.ok(practice,'Exactly rendered production practice text is present')

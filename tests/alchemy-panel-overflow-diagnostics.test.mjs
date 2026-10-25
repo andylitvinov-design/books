@@ -7,20 +7,20 @@ import test from "node:test";
 import { captureAlchemyPanelOverflow, collectAlchemyPanelGeometry } from "../scripts/helpers/alchemy-panel-overflow-diagnostics.mjs";
 
 const source = await readFile(new URL("../scripts/verify-public-services-production.mjs", import.meta.url), "utf8");
-const start = source.indexOf("          const panelHeights =", source.indexOf('if (kind === "alchemy" && width <= 390)'));
+const start = source.indexOf("          const panelHeights =", source.indexOf('const locale = "es"'));
 const end = source.indexOf("          assert.equal(await page.locator('details[data-alchemy-extended-guide]')", start);
 assert.ok(start >= 0 && end > start, "Test executes the actual production measurement and strict assertion block");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const check = new AsyncFunction("main", "page", "locale", "width", "output", "captureAlchemyPanelOverflow", "assert", "console", source.slice(start, end));
-const names = ["hero", "situations", "method", "video", "reviews", "formats", "faq", "request"];
+const names = ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"];
 
-async function fixture(t, { height = 824, screenshotError = false, geometryError = false, count = 8 } = {}) {
+async function fixture(t, { height = 824, reviewsHeight = 300, overflowPanel = "formats", screenshotError = false, geometryError = false, count = 10 } = {}) {
   const output = await mkdtemp(join(tmpdir(), "alchemy-overflow-diagnostics-"));
   t.after(() => rm(output, { recursive: true, force: true }));
   const calls = [];
   const panels = names.slice(0, count).map(name => ({
     getAttribute: () => name,
-    getBoundingClientRect: () => ({ height: name === "formats" ? height : 300 }),
+    getBoundingClientRect: () => ({ height: name === overflowPanel ? height : name === "reviews" ? reviewsHeight : 300 }),
   }));
   const geometry = { documentLocale: "ru", viewport: { width: 320, height: 844 }, panels: [{ name: "formats", box: { height } }] };
   const page = {
@@ -113,7 +113,7 @@ test("A geometry failure still permits screenshots and JSON with the original me
   await assert.rejects(f.run(), error => originalOverflow(error, 824));
   const evidence = await f.json();
   assert.equal(evidence.geometry, null);
-  assert.equal(evidence.panelHeights.length, 8);
+  assert.equal(evidence.panelHeights.length, 10);
   assert.equal(evidence.screenshot.captured, true);
   assert.deepEqual(evidence.captureErrors.map(item => item.stage), ["geometry"]);
 });
@@ -126,9 +126,9 @@ test("An unwritable artifact target does not mask the strict assertion", async t
   assert.equal(f.calls.some(call => call.diagnosticError?.includes("ENOTDIR")), true);
 });
 
-test("The original eight-panel count assertion remains in force", async t => {
-  const f = await fixture(t, { count: 7 });
-  await assert.rejects(f.run(), { code: "ERR_ASSERTION", message: "Eight compact Alchemy panels\n\n7 !== 8\n" });
+test("The ten-panel count assertion remains in force", async t => {
+  const f = await fixture(t, { count: 9 });
+  await assert.rejects(f.run(), { code: "ERR_ASSERTION", message: "Ten Alchemy chapters including video and public sample report\n\n9 !== 10\n" });
   assert.deepEqual(f.calls, []);
 });
 
@@ -174,4 +174,45 @@ test("Geometry captures panel/card/payment boxes and computed spacing without co
   assert.deepEqual(collected.paymentOptions.children[0].markers, ["data-paypal-personal-offer"]);
   assert.deepEqual(collected.paymentOptions.children[0].children[1].box, rect);
   assert.doesNotMatch(JSON.stringify(collected), /textContent|innerHTML|href|"value"/);
+});
+
+
+test("Only the vertical reviews feed may exceed one viewport; the other nine panels remain bounded", async t => {
+  const feed = await fixture(t, {height:300, reviewsHeight:4800});
+  await feed.run({capture:()=>assert.fail("Twelve-review vertical feed must not be screen-clamped")});
+  assert.deepEqual(feed.calls, []);
+  for (const overflowPanel of names.filter(name => name !== "reviews")) {
+    const f = await fixture(t, {height:765, reviewsHeight:4800, overflowPanel});
+    await assert.rejects(f.run(), error => {
+      assert.equal(error.code,"ERR_ASSERTION");
+      assert.deepEqual(error.actual,[{name:overflowPanel,height:765,max:764}]);
+      return true;
+    });
+  }
+});
+
+const oneScreenSource = await readFile(new URL("../scripts/verify-alchemy-one-screen.mjs", import.meta.url), "utf8");
+const geometryStart = oneScreenSource.indexOf("      const issues = [];");
+const geometryEnd = oneScreenSource.indexOf("      if (await root.locator(", geometryStart);
+assert.ok(geometryStart>=0 && geometryEnd>geometryStart);
+const geometryIssues = new Function("data", "width", "chapters", oneScreenSource.slice(geometryStart,geometryEnd)+"return issues;");
+function validFeed() {
+ return {documentWidth:390,panels:names.map(name=>({name,hasMedia:true,visual:"photo",height:name==="reviews"?4800:300,maxHeight:764,escapingChildren:0})),reviews:{topGap:20,bottomGap:20,cards:Array.from({length:12},(_,i)=>({id:"original-"+i,audio:i%2?"ru":"en",top:100+i*400,bottom:490+i*400,width:360,videoWidth:350}))}};
+}
+test("Actual Alchemy geometry block keeps ten ordered panels and exactly twelve truthful full-width vertical reviews", () => {
+ assert.deepEqual(geometryIssues(validFeed(),390,names),[]);
+ for (const [mutate, expected] of [
+  [d=>d.panels[0].height=765,/exceeds/],
+  [d=>d.panels.find(p=>p.name==="reviews").escapingChildren=1,/escaping/],
+  [d=>d.panels.reverse(),/incorrect chapter order/],
+  [d=>d.panels.pop(),/expected ten chapters/],
+  [d=>d.reviews.cards.pop(),/expected 12/],
+  [d=>d.reviews.cards[1].id=d.reviews.cards[0].id,/duplicate/],
+  [d=>d.reviews.cards[0].audio="translated",/original-audio/],
+  [d=>d.reviews.cards[1].top=0,/overlap/],
+  [d=>d.reviews.cards[0].videoWidth=200,/full mobile width/],
+  [d=>d.reviews.topGap=56,/empty space/],
+  [d=>d.reviews.bottomGap=56,/empty space/],
+  [d=>d.panels.find(p=>p.name==="report").hasMedia=false,/fictional report/],
+ ]) {const data=validFeed();mutate(data);assert.match(geometryIssues(data,390,names).join(";"),expected);}
 });

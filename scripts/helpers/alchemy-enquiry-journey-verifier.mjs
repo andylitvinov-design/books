@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { withAlchemyConsentDiagnostics } from './alchemy-consent-diagnostics.mjs'
+import {createCompactAlchemyRegistrationProfile,assertCompactAlchemyBody,installSyntheticContactPopup} from './contact-channel-verifier.mjs'
 
-export const ALCHEMY_CONTACT = 'alchemy-browser-fixture@example.invalid'
+export const ALCHEMY_PHONE = '+14165550123'
+export const ALCHEMY_NATIONAL_PHONE = '4165550123'
 export const ALCHEMY_REFERENCE = 'HH-A1C4E0F12345'
 export const ALCHEMY_RECEIPT_KEY = 'hh-service-enquiry-receipt:v1'
 const portrait = '/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp'
@@ -20,16 +22,8 @@ export function alchemyOrigin(raw, locale) {
 }
 
 export function assertAlchemyBody(raw, locale) {
-  const body = JSON.parse(raw)
-  assert.deepEqual(Object.keys(body).sort(), ['operationId','serviceTitle','description','sourcePath','locale','contact','contactConsent','website'].sort())
-  assert.match(body.operationId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
-  assert.equal(body.serviceTitle, alchemyService(locale))
-  assert.equal(body.description, '')
-  assert.equal(body.sourcePath, `/${locale}/services/alchemy-of-soul`)
-  assert.equal(body.locale, locale)
-  assert.deepEqual(body.contact, {displayName:'',email:ALCHEMY_CONTACT,phone:''})
-  assert.equal(body.contactConsent, true)
-  assert.equal(body.website, '')
+  const profile=createCompactAlchemyRegistrationProfile(`http://127.0.0.1:3000/${locale}/services/alchemy-of-soul`,{referenceCode:ALCHEMY_REFERENCE})
+  assertCompactAlchemyBody(JSON.parse(raw),profile)
 }
 
 // Only Next's typed static namespace and the exact real receipt destination.
@@ -66,13 +60,15 @@ export function alchemyBoundarySummary(blockedReads, failures, count, completed)
   }))}
 }
 
-export function alchemyRequestGate(origin, locale, accept, failures, blockedReads) {
-  let draining = false
+export function alchemyRequestGate(origin, locale, accept, failures, blockedReads, {initialDocument=false,allowReceipt=true}={}) {
+  let draining = false, initialAllowed = initialDocument
   const gate = async route => {
     const request = route.request()
     try {
       if (request.url() === origin + '/api/service-enquiries' && request.method() === 'POST') return await accept(route)
-      if (permittedAlchemyRead(request, origin, locale)) {
+      const initial = initialAllowed && request.method()==='GET' && request.resourceType()==='document' && request.url()===origin+`/${locale}/services/alchemy-of-soul`
+      const receiptRead = new URL(request.url()).pathname===`/${locale}/thank-you`
+      if (initial || ((!receiptRead || allowReceipt) && permittedAlchemyRead(request, origin, locale))) {
         // Teardown stops admitting reads, but never exempts API/write validation.
         // Already admitted reads still settle and retain every error.
         if (draining) return await route.abort()
@@ -97,17 +93,21 @@ export function alchemyRequestGate(origin, locale, accept, failures, blockedRead
       await route.abort()
     }
   }
+  gate.endInitialDocument = () => { initialAllowed = false }
   gate.beginTeardown = () => { draining = true }
   return gate
 }
 
-export function syntheticAlchemyReceipt(locale) {
-  let firstBody, count = 0, pending = null, closed = false
+export function syntheticAlchemyReceipt(locale, {onSaved=async()=>{}}={}) {
+  let firstBody, count = 0, pending = null, closed = false, armed = false
   return {
+    arm(){ assert.equal(closed,false,'No request accepted after fixture closes'); assert.equal(armed,false); assert.equal(pending,null); assert.ok(count<2,'At most initial failure and explicit retry'); armed=true },
     get count(){ return count },
     get pending(){ return Boolean(pending) },
     async accept(route) {
       assert.equal(closed, false, 'No request accepted after fixture closes')
+      assert.equal(armed,true,'Only an explicit consented channel action may submit')
+      armed=false
       const raw = route.request().postData()
       assertAlchemyBody(raw, locale)
       if (firstBody !== undefined) assert.equal(raw, firstBody, 'Retry body and UUID must be byte-identical')
@@ -121,6 +121,7 @@ export function syntheticAlchemyReceipt(locale) {
       assert.equal(closed, false, 'Stale fixture outcome is rejected')
       assert.ok(pending, 'A real intercepted retry is required')
       const route = pending
+      await onSaved()
       await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({saved:true,referenceCode:ALCHEMY_REFERENCE})})
       pending = null
     },
@@ -132,141 +133,141 @@ export function syntheticAlchemyReceipt(locale) {
   }
 }
 
-export async function withAlchemyIsolation(page, handler, receipt, denyStorage, run) {
-  let primary, result
+// The context guard is installed before any page or navigation exists. Only an
+// exact local public document/static read or the armed synthetic POST is admitted.
+export async function withAlchemyIsolation(context, handler, receipt, denyStorage, run) {
+  let primary, result, page, popupAttempts=0, pageCount=0
   const errors = [], active = new Set()
-  const tracked = route => {
-    const pending = Promise.resolve().then(() => handler(route))
-    active.add(pending)
-    pending.then(() => active.delete(pending), error => { errors.push(error); active.delete(pending) })
+  const track = promise => {
+    const pending=Promise.resolve(promise);active.add(pending)
+    pending.then(()=>active.delete(pending),error=>{errors.push(error);active.delete(pending)})
     return pending
   }
+  const tracked = route => track(Promise.resolve().then(()=>handler(route)))
+  const drain=async()=>{while(active.size) await Promise.allSettled([...active])}
   try {
-    await page.context().route('**/*', tracked)
-    await page.evaluate(({key,deny}) => {
-      sessionStorage.removeItem(key)
-      window.__alchemyFixture = {open:window.open,setItem:Storage.prototype.setItem,opens:[]}
-      window.open = (...args) => { window.__alchemyFixture.opens.push(args[0]); return null }
-      if (deny) Storage.prototype.setItem = function(k,v) {
-        if (this === sessionStorage && k === key) throw new DOMException('Synthetic receipt-only storage denial','SecurityError')
+    await context.route('**/*',tracked)
+    await context.routeWebSocket('**/*',socket=>track(Promise.resolve().then(()=>socket.close())))
+    await context.exposeBinding('__alchemyUnexpectedPopup',()=>{popupAttempts++})
+    context.on('page',opened=>{if(++pageCount>1){popupAttempts++;void track(opened.close())}})
+    await context.addInitScript(({key,deny})=>{
+      window.__alchemyFixture={open:window.open,setItem:Storage.prototype.setItem,opens:0}
+      window.open=()=>{window.__alchemyFixture.opens++;void window.__alchemyUnexpectedPopup().catch(()=>{});return null}
+      if(deny) Storage.prototype.setItem=function(k,v){
+        if(this===sessionStorage&&k===key)throw new DOMException('Synthetic receipt-only storage denial','SecurityError')
         return window.__alchemyFixture.setItem.call(this,k,v)
       }
-    }, {key:ALCHEMY_RECEIPT_KEY,deny:denyStorage})
-    result = await run()
-  } catch (error) { primary = error }
+    },{key:ALCHEMY_RECEIPT_KEY,deny:denyStorage})
+    page=await context.newPage()
+    result=await run(page,drain)
+  } catch(error){primary=error}
   finally {
-    const drain = async () => {
-      while (active.size) await Promise.allSettled([...active])
-    }
-    for (const cleanup of [() => handler.beginTeardown?.(), () => receipt.close(), () => page.evaluate(key => {
-      const fixture = window.__alchemyFixture
-      if (fixture) { window.open = fixture.open; Storage.prototype.setItem = fixture.setItem; delete window.__alchemyFixture }
-      sessionStorage.removeItem(key)
-    }, ALCHEMY_RECEIPT_KEY), drain, () => page.context().close(), drain]) {
-      try { await cleanup() } catch (error) { errors.push(error) }
+    for(const cleanup of [()=>handler.beginTeardown?.(),()=>receipt.close(),drain,
+      async()=>{if(page&&!page.isClosed())await page.evaluate(key=>{
+        const fixture=window.__alchemyFixture
+        if(fixture){window.open=fixture.open;Storage.prototype.setItem=fixture.setItem;delete window.__alchemyFixture}
+        sessionStorage.removeItem(key)
+      },ALCHEMY_RECEIPT_KEY)},
+      // The context-owned guard must remain installed through context.close;
+      // disposing the isolated context also disposes its route ownership.
+      ()=>context.close(),drain]) {
+      try{await cleanup()}catch(error){errors.push(error)}
     }
   }
-  if (primary) throw primary
-  if (errors.length) throw new AggregateError(errors, 'Alchemy fixture cleanup failed')
+  if(primary)throw primary
+  assert.equal(popupAttempts,0,'No unowned popup may escape the isolated fixture')
+  if(errors.length)throw new AggregateError(errors,'Alchemy fixture cleanup failed')
   return result
 }
 
-export async function verifyAlchemyEnquiryJourney(sourcePage, expect, locale, options={}) {
-  const origin = alchemyOrigin(sourcePage.url(),locale)
-  const context = await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
-  let page, primary, result
-  const pageErrors = []
+export async function verifyAlchemyEnquiryJourney(sourcePage, expect, locale, {denyReceiptStorage=false,channel='whatsapp'}={}) {
+  assert.ok(['whatsapp','telegram'].includes(channel))
+  const origin=alchemyOrigin(sourcePage.url(),locale)
+  const profile=createCompactAlchemyRegistrationProfile(sourcePage.url(),{referenceCode:ALCHEMY_REFERENCE})
+  const context=await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
+  const failures=[],blockedReads=[],pageErrors=[]
+  let popup,completed=false
+  const receipt=syntheticAlchemyReceipt(locale,{onSaved:()=>popup.acknowledgeSaved()})
+  const handler=alchemyRequestGate(origin,locale,route=>receipt.accept(route),failures,blockedReads,{initialDocument:true,allowReceipt:false})
   try {
-    page = await context.newPage()
-    page.on('pageerror',error=>pageErrors.push(error.message))
-    await page.goto(origin+`/${locale}/services/alchemy-of-soul`,{waitUntil:'networkidle'})
-    result = await verifyAlchemyInPage(page,expect,locale,options)
-    assert.deepEqual(pageErrors,[])
-  } catch (error) { primary = error }
-  // Also closes partial setup failures before the interaction guard was ready.
-  try { await context.close() } catch (error) { if (!primary) primary = error }
-  if (primary) throw primary
-  return result
-}
-
-async function verifyAlchemyInPage(page, expect, locale, {denyReceiptStorage=false}={}) {
-  const origin = alchemyOrigin(page.url(), locale)
-  const pricing = page.locator('[data-alchemy-booking-formats]')
-  const chooser = pricing.locator('[data-contact-channel-chooser]')
-  const receipt = syntheticAlchemyReceipt(locale), failures = [], blockedReads = []
-  const handler = alchemyRequestGate(origin,locale,route=>receipt.accept(route),failures,blockedReads)
-  let completed = false
-  try {
-  const result = await withAlchemyIsolation(page,handler,receipt,denyReceiptStorage,async () => {
-  const {contact,consent,submit} = await withAlchemyConsentDiagnostics(page,{locale,denyReceiptStorage,expectedContact:ALCHEMY_CONTACT},async () => {
-  await pricing.locator('[data-alchemy-format="30"]').click()
-  await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-    await chooser.locator('[data-contact-order]').click()
-    const contact = chooser.locator('input[type="email"]')
-    const consent = chooser.locator('input[type="checkbox"]')
-    const submit = chooser.locator('button[type="submit"]')
-    await expect(consent).not.toBeChecked()
-    await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
-    await expect(submit).toBeDisabled()
-    await contact.fill(ALCHEMY_CONTACT)
-    await expect(submit).toBeDisabled()
-    assert.equal(receipt.count,0)
-    await consent.check()
-    return {contact,consent,submit}
-  })
-    await submit.click()
-    await expect.poll(()=>receipt.count).toBe(1)
-    await expect(chooser.locator('[role="alert"]')).toBeVisible()
-    await expect(submit).toBeEnabled()
-    await expect(contact).toBeDisabled()
-    await expect(consent).toBeDisabled()
-    for (const format of ['30','60','month']) await expect(pricing.locator(`[data-alchemy-format="${format}"]`)).toBeDisabled()
-    await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
-    assert.equal(await page.evaluate(key=>sessionStorage.getItem(key),ALCHEMY_RECEIPT_KEY),null)
-    await expect(page).toHaveURL(origin+`/${locale}/services/alchemy-of-soul`)
-    await submit.click()
-    await expect.poll(()=>receipt.pending).toBe(true)
-    await expect(submit).toBeDisabled()
-    await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
-    assert.deepEqual(failures,[])
-    await receipt.confirm()
-    if (denyReceiptStorage) {
-      await expect(chooser.locator('[role="status"]')).toContainText(ALCHEMY_REFERENCE)
-      await expect(page).toHaveURL(origin+`/${locale}/services/alchemy-of-soul`)
-      await expect(chooser.locator('form')).toHaveCount(0)
-      for (const [channel,host] of [['whatsapp','wa.me'],['telegram','t.me']]) {
-        const link = chooser.locator(`a[data-contact-channel="${channel}"]`)
-        await expect(link).toBeVisible()
-        const href = await link.getAttribute('href'), url = new URL(href)
-        assert.equal(url.protocol,'https:'); assert.equal(url.hostname,host)
-        const message = url.searchParams.get('text') || ''
-        assert.ok(message.includes(ALCHEMY_REFERENCE) && message.includes('€50') && message.includes(locale==='ru'?'30 минут':'30 min'))
-        assert.ok(!decodeURIComponent(href).includes(ALCHEMY_CONTACT))
-      }
-      assert.equal(await page.evaluate(key=>sessionStorage.getItem(key),ALCHEMY_RECEIPT_KEY),null)
-    } else {
-      await expect(page).toHaveURL(origin+`/${locale}/thank-you`)
-      await expect(page.locator('[data-service-thank-you]')).toContainText(ALCHEMY_REFERENCE)
-      const stored = await page.evaluate(key=>JSON.parse(sessionStorage.getItem(key)),ALCHEMY_RECEIPT_KEY)
-      assert.deepEqual(Object.keys(stored).sort(),['createdAt','referenceCode'])
-      assert.equal(stored.referenceCode,ALCHEMY_REFERENCE)
-      assert.ok(Number.isSafeInteger(stored.createdAt))
-      await expect(page.locator('a[data-contact-channel]')).toHaveCount(0)
-    }
-    assert.deepEqual(await page.evaluate(()=>window.__alchemyFixture.opens),[],'No automatic messenger handoff')
-    assert.equal(receipt.count,2)
-    assert.deepEqual(failures,[])
-    // Blocked ancillary reads are diagnostics, not visual/media acceptance.
-    return {blockedReads}
-  })
-  // These are terminal assertions after context close and handler settlement,
-  // not a snapshot while a late request could still escape or change evidence.
-  assert.equal(receipt.count,2)
-  assert.deepEqual(failures,[])
-  completed = true
-  return result
+    const result=await withAlchemyIsolation(context,handler,receipt,denyReceiptStorage,async(page,drain)=>{
+      page.on('pageerror',error=>pageErrors.push(error.message))
+      await page.goto(origin+profile.sourcePath,{waitUntil:'networkidle'})
+      handler.endInitialDocument();await drain()
+      popup=await installSyntheticContactPopup(page,{expectedDestination:profile[channel+'Url']})
+      let primary
+      try {return await verifyAlchemyInPage(page,expect,profile,{denyReceiptStorage,channel,receipt,popup,failures,blockedReads})}
+      catch(error){primary=error;throw error}
+      finally {try{await popup.restore()}catch(error){if(!primary)throw error}}
+    })
+    assert.equal(receipt.count,2);assert.deepEqual(failures,[]);assert.deepEqual(pageErrors,[])
+    completed=true;return result
   } finally {
     console.log('SYNTHETIC_ALCHEMY_BOUNDARY',JSON.stringify({locale,denyReceiptStorage,
       ...alchemyBoundarySummary(blockedReads,failures,receipt.count,completed)}))
   }
+}
+
+async function verifyAlchemyInPage(page,expect,profile,{denyReceiptStorage,channel,receipt,popup,failures,blockedReads}) {
+  const {locale}=profile, originalURL=page.url()
+  const pricing=page.locator('[data-alchemy-booking-formats]')
+  const chooser=pricing.locator('[data-contact-channel-chooser]')
+  const noReceipt=async()=>{
+    await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
+    await expect(chooser.locator('[role="status"]')).toHaveCount(0)
+    assert.equal(await page.evaluate(key=>sessionStorage.getItem(key),ALCHEMY_RECEIPT_KEY),null)
+    await expect(page).toHaveURL(originalURL)
+  }
+  const {contact,country,consent,actions,submit}=await withAlchemyConsentDiagnostics(page,
+    {locale,denyReceiptStorage,expectedPhone:ALCHEMY_NATIONAL_PHONE},async()=>{
+    await pricing.locator('[data-alchemy-format="30"]').click()
+    await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
+    await chooser.locator('[data-contact-order]').click()
+    const phone=chooser.locator('[data-phone-country-input]'),contact=phone.locator('input[type="tel"]'),country=phone.locator('select')
+    const consent=chooser.locator('input[type="checkbox"]')
+    const actions=['whatsapp','telegram'].map(value=>chooser.locator(`[data-contact-channel-submit="${value}"]`))
+    const submit=chooser.locator(`[data-contact-channel-submit="${channel}"]`)
+    await expect(chooser.locator('[data-contact-channel-submit]')).toHaveCount(2)
+    await expect(consent).not.toBeChecked()
+    for(const action of actions){await expect(action).toBeVisible();await expect(action).toBeEnabled()}
+    await country.selectOption('CA');await contact.fill(ALCHEMY_NATIONAL_PHONE)
+    // Both explicit actions reject missing native consent before popup or POST.
+    for(const action of actions)await action.click()
+    assert.equal(receipt.count,0);await popup.assertClean();assert.deepEqual((await popup.snapshot()).attempts,[])
+    await noReceipt()
+    assert.equal(receipt.count,0)
+    await consent.check()
+    return {contact,country,consent,actions,submit}
+  })
+  assert.equal(receipt.count,0);await noReceipt();assert.deepEqual((await popup.snapshot()).attempts,[])
+  receipt.arm();await popup.arm();await submit.click()
+  await expect.poll(()=>receipt.count).toBe(1)
+  await expect(chooser.locator('[role="alert"]')).toBeVisible()
+  for(const action of actions)await expect(action).toBeEnabled()
+  await popup.assertAttempt({saved:false})
+  await expect(contact).toBeDisabled();await expect(country).toBeDisabled();await expect(consent).toBeDisabled()
+  for(const format of ['30','60','month'])await expect(pricing.locator(`[data-alchemy-format="${format}"]`)).toBeDisabled()
+  await noReceipt()
+  receipt.arm();await popup.arm();await submit.click()
+  await expect.poll(()=>receipt.pending).toBe(true)
+  for(const action of actions)await expect(action).toBeDisabled()
+  await noReceipt();assert.deepEqual(failures,[])
+  assert.deepEqual((await popup.snapshot()).attempts.at(-1).events,['reserved'],'No handoff before saved acknowledgment')
+  await receipt.confirm()
+  await expect(chooser.locator('[role="status"]')).toContainText(ALCHEMY_REFERENCE)
+  await expect(page).toHaveURL(originalURL);await expect(chooser.locator('form')).toHaveCount(0)
+  for(const value of ['whatsapp','telegram']) {
+    const link=chooser.locator(`a[data-contact-channel="${value}"]`)
+    await expect(link).toBeVisible();assert.equal(await link.getAttribute('href'),profile[value+'Url'])
+    assert.ok(!decodeURIComponent(await link.getAttribute('href')).includes(ALCHEMY_PHONE))
+  }
+  await popup.assertAttempt({saved:true})
+  const stored=await page.evaluate(key=>JSON.parse(sessionStorage.getItem(key)),ALCHEMY_RECEIPT_KEY)
+  if(denyReceiptStorage)assert.equal(stored,null)
+  else {assert.deepEqual(Object.keys(stored).sort(),['createdAt','referenceCode']);assert.equal(stored.referenceCode,ALCHEMY_REFERENCE);assert.ok(Number.isSafeInteger(stored.createdAt))}
+  // Closing/reopening the allowed disclosure cannot recalculate the saved draft.
+  await chooser.locator('[data-contact-order]').click();await chooser.locator('[data-contact-order]').click()
+  for(const value of ['whatsapp','telegram'])assert.equal(await chooser.locator(`a[data-contact-channel="${value}"]`).getAttribute('href'),profile[value+'Url'])
+  assert.equal(receipt.count,2);assert.deepEqual(failures,[])
+  return {blockedReads}
 }

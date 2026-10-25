@@ -1,169 +1,308 @@
-// Read-only public acceptance. Chromium/WebKit emulate touch, not a physical iPhone.
-// Never submit forms, create leads, publish media, or send messages.
-import assert from 'node:assert/strict';
-import {mkdirSync,writeFileSync} from 'node:fs';
-const {chromium,webkit}=await import(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright');
-const origin=(process.env.HH_LIVE_ORIGIN || 'https://holistichouse.vercel.app').replace(/\/$/,'');
-const output='artifacts/free-review-live-mobile';
-mkdirSync(output,{recursive:true});
-const results=[];
-const sizes=[[320,568],[375,667],[390,844],[430,932]];
-for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
-  const browser=await driver.launch({headless:true});
-  try{
-    for(const locale of ['en','ru','es']){
-      for(const [width,height] of sizes){
-        const name=engine+'-'+locale+'-'+width+'x'+height;
-        const record={engine,locale,width,height};
-        const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block',reducedMotion:'reduce'});
-        const page=await context.newPage();
+// Read-only mobile acceptance against the exact PR build or canonical alias.
+// Chromium/WebKit emulate touch; this is not physical iPhone Safari verification.
+// Never submit private questionnaires, create CRM leads, send messages or buy anything.
+import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
+import {createFreeReviewViewportIsolation} from './helpers/free-review-viewport-isolation.mjs';
+// Check each actual action after positioning it in the current layout. The
+// expanded inline panel may exceed a screen; its reveal and hero CTA must not.
+function assertActionableGeometry(geometry, label) {
+  const { control, viewport, header, nav } = geometry;
+  assert.ok(control && viewport && header && nav, label + ': action, header and bottom navigation exist');
+  for (const rect of [control, header, nav]) {
+    assert.ok(['left','right','top','bottom','width','height'].every(key => Number.isFinite(rect[key])),
+      label + ': finite rendered geometry');
+  }
+  assert.ok(Number.isFinite(viewport.width) && viewport.width > 0 && Number.isFinite(viewport.height) && viewport.height > 0,
+    label + ': finite viewport');
+  assert.ok(control.width >= 44 && control.height >= 44, label + ': 44px touch target');
+  assert.ok(control.right > control.left && control.bottom > control.top, label + ': nonempty action');
+  assert.ok(control.left >= -2 && control.right <= viewport.width + 2, label + ': horizontal viewport fit');
+  assert.ok(nav.width > 0 && nav.height > 0 && nav.top < viewport.height && nav.bottom <= viewport.height + 2,
+    label + ': visible bottom navigation');
+  const availableTop = Math.max(0, header.bottom);
+  const availableBottom = Math.min(viewport.height, nav.top);
+  assert.ok(control.top >= availableTop - 1, label + ': clear of fixed header');
+  assert.ok(control.bottom <= availableBottom - 1, label + ': clear of bottom navigation and viewport');
+}
+async function inspectActionableControl(control, label) {
+  const geometry = await control.evaluate(element => {
+    element.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+    const rect = node => {
+      if (!node) return null;
+      const {left,right,top,bottom,width,height} = node.getBoundingClientRect();
+      return {left,right,top,bottom,width,height};
+    };
+    return {control:rect(element),viewport:{width:innerWidth,height:innerHeight},
+      header:rect(document.querySelector('header.house-header')),
+      nav:rect(document.querySelector('.mobile-bottom-navigation'))};
+  });
+  assertActionableGeometry(geometry, label);
+  return geometry;
+}
+function assertFirstScreenGeometry(geometry) {
+  assert.ok(geometry.hero && geometry.cta && geometry.nav && geometry.viewport,
+    'First screen has hero, CTA and bottom navigation');
+  assert.ok([geometry.hero.bottom,geometry.cta.bottom,geometry.nav.top,geometry.viewport.height].every(Number.isFinite),
+    'Finite first-screen geometry');
+  const availableBottom = Math.min(geometry.viewport.height, geometry.nav.top);
+  assert.ok(geometry.cta.bottom <= availableBottom - 1, 'First-screen CTA clears bottom navigation');
+  assert.ok(geometry.hero.bottom <= availableBottom + 1, 'First-screen hero fits above bottom navigation');
+}
+const { chromium, webkit } = await import(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const origin = (process.env.HH_LIVE_ORIGIN || "https://holistichouse.vercel.app").replace(/\/$/, "");
+const output = "artifacts/free-review-live-mobile";
+mkdirSync(output, { recursive: true });
+const results = [];
+const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
+// One personal express review, with two focus categories in a single form.
+for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
+  const browser = await driver.launch({ headless: true });
+  try {
+    for (const locale of ["en", "ru", "es"]) {
+      for (const [width, height] of cases) {
+        const name = engine + "-" + locale + "-" + width + "x" + height;
+        const record = { engine, locale, width, height };
+        const isolation=await createFreeReviewViewportIsolation(browser,{origin,locale,viewport:{width,height}});
+        const {page}=isolation;
         const errors=[];
-        const provider=[];
-        page.on('pageerror',e=>errors.push(e.message.slice(0,250)));
-        page.on('response',r=>{if(r.url().includes('/embed/sfVFOQNr2qk'))provider.push({status:r.status(),url:r.url().slice(0,180)});});
-        try{
-          const resp=await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
-          assert.equal(resp?.status(),200,'public URL HTTP 200');
-          assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0,'do not repeat a self-referral promo above the free review');
-          const hero=page.locator('[data-free-entry-landing="situation"] section[aria-labelledby="free-entry-title"]');
-          const video=hero.locator('[data-featured-constellations-video]');
-          const cta=hero.locator('a[href="#free-diagnosis-options"]');
-          const play=video.locator('button.site-video-play');
-          await video.waitFor({state:'visible',timeout:30000});
-          await page.waitForFunction(()=>{const b=document.querySelector('[data-featured-constellations-video] button.site-video-play');return b&&!b.disabled;},null,{timeout:35000});
-          await page.evaluate(()=>document.fonts.ready);
-          assert.equal(await video.locator('iframe').count(),0,'no autoplay iframe');
-          assert.equal(await video.locator('a[href*="youtube.com"]').getAttribute('href'),'https://www.youtube.com/watch?v=sfVFOQNr2qk');
-          const geom=await page.evaluate(()=>{
-            const rect=(e)=>{if(!e)return null;const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width,height:r.height,right:r.right};};
-            const main=document.querySelector('[data-free-entry-landing="situation"]');
-            const hero=main.querySelector('section[aria-labelledby="free-entry-title"]');
-            const video=main.querySelector('[data-featured-constellations-video]');
-            const nav=document.querySelector('.mobile-bottom-navigation');
-            const header=document.querySelector('header.house-header');
+        page.on('pageerror',()=>errors.push('PAGE_ERROR'));
+        try {
+          const response = await page.goto(origin + "/" + locale + "/services/free-situation-review",
+            { waitUntil: "domcontentloaded", timeout: 65000 });
+          assert.equal(response?.status(), 200, "localized page HTTP 200");
+          const main = page.locator('[data-free-entry-landing="situation"]');
+          const hero = main.locator('section[aria-labelledby="free-entry-title"]');
+          const video = main.locator("[data-featured-constellations-video]");
+          const mainCta = hero.locator('a[href="#request-free-review"]');
+          await video.waitFor({ state: "visible", timeout: 25000 });
+          await mainCta.waitFor({ state: "visible" });
+          assert.ok((await hero.locator("h1").innerText()).trim().length > 15);
+          assert.match(await hero.innerText(), /Andrey|Андреем|Андрей/i, "Andrey named in hero");
+          assert.equal(await video.locator("iframe").count(), 0, "hero video does not autoplay");
+          const original = video.locator('a[href*="youtube.com/watch"]');
+          assert.equal(await original.getAttribute("href"), "https://www.youtube.com/watch?v=sfVFOQNr2qk");
+          const outcome = main.locator("#what-you-get");
+          const process = main.locator("#how-it-works");
+          const method = main.locator("#how-i-review");
+          const enquiry = main.locator("[data-personal-express-enquiry]");
+          await method.waitFor({ state: "visible" });
+          await enquiry.waitFor({ state: "visible" });
+          assert.equal(await main.locator("[data-diagnosis-offer]").count(), 0,
+            "three retired offer cards must not be on this landing");
+          assert.equal(await main.locator("[data-free-diagnosis-options]").count(), 0,
+            "no choose-three-options section");
+          assert.equal(await main.locator("[data-personal-express-enquiry]").count(), 1,
+            "only one personal express request form");
+          assert.equal(await main.locator("[data-free-diagnostic-start]").count(), 0,
+            "no retired Step 1 form");
+          await page.evaluate(() => document.fonts.ready);
+          const geometry = await page.evaluate(() => {
+            const r = element => {
+              if (!element) return null;
+              const { left, right, top, bottom, width, height } = element.getBoundingClientRect();
+              return { left, right, top, bottom, width, height };
+            };
+            const main = document.querySelector('[data-free-entry-landing="situation"]');
+            const hero = main.querySelector('section[aria-labelledby="free-entry-title"]');
+            const video = main.querySelector('[data-featured-constellations-video]');
+            const frame = video.querySelector(".site-video-frame");
+            const cta = hero.querySelector('a[href="#request-free-review"]');
+            const nav = document.querySelector(".mobile-bottom-navigation");
+            const process = main.querySelector("#how-it-works");
+            const outcome = main.querySelector("#what-you-get");
+            const method = main.querySelector("#how-i-review");
+            const enquiry = main.querySelector("[data-personal-express-enquiry]");
             return {
-              viewport:{width:innerWidth,height:innerHeight},
-              overflow:document.documentElement.scrollWidth-innerWidth,
-              header:rect(header),hero:rect(hero),video:rect(video),
-              frame:rect(video.querySelector('.site-video-frame')),
-              cta:rect(hero.querySelector('a[href="#free-diagnosis-options"]')),
-              nav:rect(nav),availableBottom:nav?nav.getBoundingClientRect().top:innerHeight,
-              scenes:[...main.querySelectorAll('section[id="what-you-get"],section[id="how-it-works"]')].map(e=>({id:e.id,rect:rect(e)}))
+              overflow: document.documentElement.scrollWidth - innerWidth,
+              viewport: { width: innerWidth, height: innerHeight },
+              hero: r(hero), video: r(video), frame: r(frame), cta: r(cta),
+              nav: r(nav), outcome: r(outcome), method: r(method), process: r(process), enquiry: r(enquiry),
             };
           });
-          record.geometry=geom;
-          await page.screenshot({path:output+'/'+name+'-first-screen.png',animations:'disabled',timeout:20000});
-          assert.ok(geom.overflow<=2,'horizontal overflow '+geom.overflow);
-          assert.ok(geom.frame&&Math.abs(geom.frame.width/geom.frame.height-16/9)<=0.06,'16:9 poster');
-          assert.ok(geom.cta&&geom.nav&&geom.hero&&geom.video,'main mobile UI present');
-          assert.ok(geom.cta.height>=42,'main CTA tap target');
-          assert.ok(geom.video.bottom<geom.cta.top,'video first');
-          assert.ok(geom.cta.bottom<=geom.availableBottom-1,'CTA clipped behind nav: '+JSON.stringify(geom));
-          assert.ok(geom.hero.bottom<=geom.availableBottom+1,'first slide overflows viewport');
-          for(const scene of geom.scenes){
-            const budget=height-(geom.header?.height||0)-(geom.nav?.height||0)-8;
-            assert.ok(scene.rect.height<=budget+2,scene.id+' slide taller than usable viewport: '+scene.rect.height+' > '+budget);
-          }
-          const reviewFeed=page.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
-          await reviewFeed.waitFor({state:'attached',timeout:15000});
-          const reviewGeometry=await reviewFeed.evaluate(element=>{
-            const cards=[...element.querySelectorAll('[data-testimonial-video-id]')];
+          record.geometry = geometry;
+          assertFirstScreenGeometry(geometry);
+          assert.ok(geometry.overflow <= 2, "no horizontal scroll: " + geometry.overflow);
+          assert.ok(geometry.frame && Math.abs(geometry.frame.width / geometry.frame.height - 16 / 9) < 0.06,
+            "landscape intro poster aspect ratio 16:9");
+          assert.ok(geometry.video.bottom < geometry.cta.top, "watch first, CTA follows");
+          assert.ok(geometry.cta.height >= 44, "CTA has 44px touch target");
+          assert.ok(geometry.outcome.top > geometry.hero.top, "benefits after video hero");
+          assert.ok(geometry.method.top > geometry.outcome.top, "one method screen after benefits");
+          assert.ok(geometry.process.top > geometry.method.top, "steps after method");
+          assert.ok(geometry.enquiry.top > geometry.process.top, "one form at the bottom");
+          await page.screenshot({ path: output + "/" + name + "-first-screen.png",
+            animations: "disabled", timeout: 20000 });
+          const reveal = enquiry.locator("[data-express-reveal]");
+          const disclosure = enquiry.locator("[data-express-inline-disclosure]");
+          record.actionableControls = {
+            hero: await inspectActionableControl(mainCta, 'Hero CTA'),
+            revealCollapsed: await inspectActionableControl(reveal, 'Inline reveal collapsed'),
+          };
+          assert.equal(await reveal.count(), 1, "one inline reveal button");
+          assert.equal(await reveal.getAttribute("aria-expanded"), "false", "collapsed by default");
+          assert.equal(await disclosure.isVisible(), false, "form starts folded into landing");
+          assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
+            "no modal or overlay at initial render");
+          const radios = enquiry.locator('input[name="express-review-focus"]');
+          assert.equal(await radios.count(), 2, "exactly two request focuses");
+          assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
+          assert.equal(await enquiry.locator('[data-reiki-phone-enquiry]').count(), 1,
+            "only one CRM-first contact capture");
+          const reviews = main.locator("[data-review-stories]");
+          assert.equal(await reviews.count(), 1, "existing authentic video reviews preserved");
+          assert.equal(await reviews.evaluate(element => element.open), false, "light page until requested");
+          await reviews.locator(":scope > summary").click();
+          const reviewFeed = reviews.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
+          await reviewFeed.waitFor({ state: "visible" });
+          const reviewGeometry = await reviewFeed.evaluate(element => {
+            const cards = [...element.querySelectorAll("[data-testimonial-video-id]")];
             return {
-              direction:getComputedStyle(element).flexDirection,
-              overflowX:getComputedStyle(element).overflowX,
-              ids:cards.map(item=>item.getAttribute('data-testimonial-video-id')),
-              boxes:cards.map(item=>{const r=item.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};}),
-              iframes:element.querySelectorAll('iframe').length,
+              direction: getComputedStyle(element).flexDirection,
+              overflowX: getComputedStyle(element).overflowX,
+              ids: cards.map(item => item.getAttribute("data-testimonial-video-id")),
+              boxes: cards.map(item => {
+                const r = item.getBoundingClientRect();
+                return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+              }),
+              iframes: element.querySelectorAll("iframe").length,
             };
           });
-          const expectedFirst=locale==='ru'?'m9RfDgK76PU':'Dk0LBmOivQo';
-          const expectedSeventh=locale==='ru'?'Dk0LBmOivQo':'m9RfDgK76PU';
-          assert.equal(reviewGeometry.ids.length,12,'all twelve original video testimonials present');
-          assert.equal(new Set(reviewGeometry.ids).size,12,'no duplicated review');
-          assert.equal(reviewGeometry.ids[0],expectedFirst,'matching-language audio first');
-          assert.equal(reviewGeometry.ids[6],expectedSeventh,'other original-language reviews follow');
-          assert.equal(reviewGeometry.direction,'column','vertical feed, not carousel');
-          assert.notEqual(reviewGeometry.overflowX,'auto','no horizontal scroll');
-          assert.notEqual(reviewGeometry.overflowX,'scroll','no horizontal scroll');
-          assert.ok(reviewGeometry.boxes.every((item,index)=>index===0 || item.top>=reviewGeometry.boxes[index-1].bottom-2),'cards must stack top to bottom');
-          assert.ok(reviewGeometry.boxes.every(item=>item.left>=-2&&item.right<=width+2),'cards must fit the phone viewport');
-          assert.equal(reviewGeometry.iframes,0,'no autoplay on the twelve testimonials');
-          record.testimonialFeed={count:reviewGeometry.ids.length,direction:reviewGeometry.direction,firstId:reviewGeometry.ids[0],lastId:reviewGeometry.ids.at(-1)};
-          if(width===390){
-            await reviewFeed.locator('[data-testimonial-video-id]').first().scrollIntoViewIfNeeded();
-            await page.screenshot({path:output+'/'+name+'-testimonials.png',animations:'disabled',timeout:20000});
+          assert.equal(reviewGeometry.ids.length, 12, "all twelve authentic testimonials remain");
+          assert.equal(new Set(reviewGeometry.ids).size, 12, "no duplicated testimonials");
+          assert.equal(reviewGeometry.ids[0], locale === "ru" ? "m9RfDgK76PU" : "Dk0LBmOivQo",
+            "primary locale audio first");
+          assert.equal(reviewGeometry.ids[6], locale === "ru" ? "Dk0LBmOivQo" : "m9RfDgK76PU",
+            "other original-language reviews follow");
+          assert.equal(reviewGeometry.direction, "column", "vertical mobile reviews");
+          assert.notEqual(reviewGeometry.overflowX, 'auto', 'no horizontal review carousel');
+          assert.notEqual(reviewGeometry.overflowX, 'scroll', 'no horizontal review scroll');
+          assert.ok(reviewGeometry.boxes.every((r,i) => i === 0 || r.top >= reviewGeometry.boxes[i-1].bottom - 2),
+            "testimonials vertically aligned");
+          assert.ok(reviewGeometry.boxes.every(r => r.left >= -2 && r.right <= width + 2),
+            "testimonials within viewport");
+          assert.equal(reviewGeometry.iframes, 0, "testimonials do not autoplay");
+          record.testimonials = reviewGeometry.ids.length;
+          if (width === 390) await page.screenshot({
+            path: output + "/" + name + "-reviews.png", animations: "disabled", timeout: 20000 });
+          const play = video.locator("button.site-video-play");
+          await play.waitFor({ state: "visible" });
+          await play.click({ timeout: 15000 });
+          const iframe = video.locator('iframe[data-video-playback="youtube"]');
+          await iframe.waitFor({ state: "attached", timeout: 20000 });
+          assert.match(await iframe.getAttribute("src"), /^https:\/\/www\.youtube-nocookie\.com\/embed\/sfVFOQNr2qk\?/,
+            "approved YouTube source only");
+          // The blocked provider iframe proves opt-in destination intent only.
+          record.videoVerification='opt-in iframe intent only; provider playback not verified';
+          await mainCta.click({ timeout: 15000 });
+          assert.equal(new URL(page.url()).hash, "#request-free-review", "hero goes to start form");
+          await enquiry.waitFor({ state: "visible" });
+          await disclosure.waitFor({ state: "visible" });
+          assert.equal(await reveal.getAttribute("aria-expanded"), "true", "hero CTA unfolds same-page form");
+          assert.equal(await disclosure.getAttribute("role"), "region");
+          record.actionableControls.revealExpanded = await inspectActionableControl(reveal, 'Inline reveal expanded');
+          assert.equal(await disclosure.evaluate(element => getComputedStyle(element).position), "static",
+            "unfolded form stays in normal document flow");
+          const buttonBounds = await reveal.boundingBox();
+          const formBounds = await disclosure.boundingBox();
+          assert.ok(buttonBounds && formBounds && formBounds.y >= buttonBounds.y + buttonBounds.height - 2,
+            "form pushes the landing down directly beneath its reveal button");
+          assert.notEqual(await page.evaluate(() => document.body.style.overflow), "hidden",
+            "capture must not block page scrolling");
+          assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
+            "no modal after clicking the hero CTA");
+          assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
+          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
+            "opening the form is not contact consent");
+          assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
+          assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
+          assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+            "no actual lead saved by navigating");
+          await enquiry.locator('input[value="energy"]').check();
+          assert.equal(await enquiry.locator('[data-express-focus="energy"]').getAttribute('data-selected'), "true");
+          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
+            "changing the focus cannot silently opt the user in");
+          await enquiry.locator('input[value="situation"]').check();
+          assert.equal(await enquiry.locator('[data-express-focus="situation"]').getAttribute('data-selected'), "true");
+          assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+            "changing focus is not a lead or booking");
+          await enquiry.locator('input[type="tel"]').focus();
+          await page.keyboard.press("Escape");
+          assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
+          assert.equal(await disclosure.isVisible(), false);
+          assert.equal(await reveal.evaluate(element => element === document.activeElement), true,
+            "Escape restores focus to the inline reveal, without leaving the page");
+          assert.equal(await enquiry.locator('[data-reiki-phone-enquiry]').count(), 1,
+            "Folding hides the mounted chooser; it does not cancel or detach it");
+          await mainCta.click();
+          assert.equal(await disclosure.isVisible(), true, "Repeated current-hash anchor unfolds the same form");
+          await reveal.click();
+          await reveal.click();
+          assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
+          assert.equal(await disclosure.isVisible(), true);
+          await reveal.click();
+          assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
+            "expanded content still fits viewport");
+          // The independent private entry and three-offer hub remain supported;
+          // the personal express page no longer substitutes for their coverage.
+          if (width === 390) {
+            const optional = main.locator('[data-optional-written-review]');
+            assert.equal(await optional.evaluate(element => element.open), false);
+            await optional.locator(':scope > summary').click();
+            const privateEntry = optional.locator('[data-free-drawing-intake]');
+            await privateEntry.waitFor({state:'visible'});
+            assert.equal(await privateEntry.locator('form,textarea,[data-contact-channel-chooser]').count(), 0,
+              'Private answers are entered only in the protected questionnaire');
+            assert.equal(await privateEntry.locator('a').getAttribute('href'), '/' + locale + '/coaching/intake?topic=personal');
+            assert.ok((await privateEntry.innerText()).includes(locale === 'ru' ? 'Не отправляйте' : locale === 'es' ? 'No envíes' : 'Do not send'));
+            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
+              'Expanded private entry fits the viewport');
+            const hubResponse = await page.goto(origin + '/' + locale + '/services/free-consultation', {waitUntil:'domcontentloaded',timeout:65000});
+            assert.equal(hubResponse?.status(), 200, 'Independent consultation hub HTTP 200');
+            const hub = page.locator('[data-free-consultation-hub]');
+            assert.equal(await hub.locator('[data-diagnosis-offer]').count(), 3, 'Hub retains its three separate offers');
+            assert.equal(await hub.locator('[data-free-diagnostic-start]').count(), 0);
+            await hub.locator('[data-diagnosis-order="wu-xing-free"]').click();
+            const hubChooser = hub.locator('[data-diagnosis-order-form] [data-reiki-phone-enquiry]');
+            await hubChooser.waitFor({state:'visible'});
+            assert.equal(await hubChooser.locator('[data-contact-channel-submit]').count(), 2);
+            assert.equal(await hubChooser.locator('input[type="checkbox"]').isChecked(), false);
+            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2, 'Hub fits viewport');
+            await page.keyboard.press('Escape');
+            await hubChooser.waitFor({state:'detached'}); // Only the old independent hub cancels by unmounting.
           }
-          const capture=page.locator('#request-free-review [data-service-lead-capture]');
-          const cards=page.locator('[data-diagnosis-offer]');
-          assert.equal(await cards.count(),3,'three photo-led offers with one shared form');
-          for(const id of ['situation-written-free','wu-xing-free','personal-session-30-eur50']){
-            assert.equal(await cards.filter({has:page.locator('[data-diagnosis-order="'+id+'"]')}).count(),1,'one order CTA per '+id);
-          }
-          assert.equal(await page.locator('#request-free-review [data-free-diagnostic-start]').count(),1,'free review reuses existing questionnaire entry without creating an early duplicate lead');
-          await play.click({timeout:15000});
-          const iframe=video.locator('iframe[data-video-playback="youtube"]');
-          await iframe.waitFor({state:'attached',timeout:20000});
-          const src=await iframe.getAttribute('src');
-          assert.ok(src.startsWith('https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'),'exact YouTube source on opt-in Play');
-          record.embedSrc=src;
-          if(width===390)await page.screenshot({path:output+'/'+name+'-after-play.png',animations:'disabled',timeout:25000});
-          await cta.click({timeout:15000});
-          assert.equal(new URL(page.url()).hash,'#free-diagnosis-options','hero CTA opens three options');
-          await page.locator('#request-free-review [data-free-diagnostic-start]').waitFor({state:'visible',timeout:18000});
-          assert.equal(await capture.count(),0,'no duplicate CRM form before authored questionnaire');
-          const wuDetail=cards.nth(1).locator('details');
-          await wuDetail.locator('summary').click();
-          assert.equal(await wuDetail.evaluate(el=>el.open),true,'Wu Xing details expand in place');
-          await cards.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          assert.equal(new URL(page.url()).hash,'#request-free-review','order CTA reaches shared form');
-          await capture.waitFor({state:'visible',timeout:18000});
-          assert.equal(await capture.locator('input[name="contact"]').count(),1);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false);
-          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'click is not a real lead');
-          assert.equal(await capture.locator('select').inputValue(),'personal-session-30-eur50','paid option preselected');
-          await capture.locator('select').selectOption('wu-xing-free');
-          assert.equal(await cards.nth(1).getAttribute('data-diagnosis-selected'),'true','form selection updates selected card');
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false,'no implicit consent on selection');
-          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'selection is not a submitted lead');
-          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'expanded details fit viewport');
-          if(width===390){
-            const hubResponse=await page.goto(origin+'/'+locale+'/services/free-consultation',{waitUntil:'domcontentloaded',timeout:65000});
-            assert.equal(hubResponse?.status(),200,'free-consultation route reachable');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-diagnosis-offer]').count(),3,'hub has identical three options');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-free-diagnostic-start]').count(),1,'hub uses existing free coaching questionnaire funnel');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),0,'hub does not create two leads for free situation');
-            await page.locator('[data-free-consultation-hub] [data-diagnosis-order="personal-session-30-eur50"]').click();
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),1,'hub has one CRM capture for paid session');
-            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'hub fits viewport');
-            await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
-          }
-          const privateEntry=page.locator('[data-free-drawing-intake]');
-          await page.locator('[data-optional-written-review] > summary').click();
-          await privateEntry.waitFor({state:'visible'});
-          assert.equal(await privateEntry.locator('form,textarea,[data-contact-channel-chooser]').count(),0,
-            'private answers are not collected twice or copied into messenger');
-          const privateLink=privateEntry.locator('a');
-          assert.equal(await privateLink.count(),1);
-          assert.equal(await privateLink.getAttribute('href'),'/'+locale+'/coaching/intake?topic=personal');
-          assert.ok((await privateEntry.innerText()).includes(locale==='ru'?'Не отправляйте':locale==='es'?'No envíes':'Do not send'));
-          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth),0,
-            'expanded privacy instructions fit the phone width');
-          record.privateIntakeHref=await privateLink.getAttribute('href');
+          await isolation.assertClean();
+          assert.equal(errors.length,0,'PAGE_ERROR');
           record.status='PASS';
-          console.log('PASS '+name+' hero='+Math.round(geom.hero.bottom)+' bar='+Math.round(geom.availableBottom));
-        }catch(error){
-          record.status='FAIL';record.error=String(error.stack||error.message).slice(0,3000);
-          console.error('FAIL '+name+' '+record.error);
-          await page.screenshot({path:output+'/'+name+'-failed.png',fullPage:true,animations:'disabled',timeout:15000}).catch(()=>{});
-        }finally{
-          record.pageErrors=errors;record.providerResponses=provider;results.push(record);
-          await context.close();
+          console.log("PASS " + name + " screen " + Math.round(geometry.hero.height) + "px");
+        } catch (error) {
+          record.status = "FAIL";
+          record.error = String(error.stack || error.message).slice(0, 3000);
+          console.error("FAIL " + name + " " + record.error);
+          await page.screenshot({ path: output + "/" + name + "-failed.png",
+            fullPage: true, animations: "disabled", timeout: 15000 }).catch(() => {});
+        } finally {
+          try { await isolation.close(); } catch(error) {
+            record.status='FAIL';record.boundaryError=String(error.message).slice(0,500);
+          }
+          if(errors.length){record.status='FAIL';record.pageErrorReason='PAGE_ERROR';}
+          record.pageErrors=errors;record.boundary=isolation.summary();results.push(record);
         }
       }
     }
-  }finally{await browser.close();}
+  } finally { await browser.close(); }
 }
-writeFileSync(output+'/results.json',JSON.stringify({origin,checkedAt:new Date().toISOString(),results},null,2));
-const failed=results.filter(x=>x.status!=='PASS');
-console.log('TOTAL '+results.length+' PASS '+(results.length-failed.length)+' FAIL '+failed.length);
-assert.equal(failed.length,0,'Inspect failed mobile geometry and Play screenshots in workflow artifact');
+// browser.close() can emit a last pageerror after a viewport's isolation closed.
+// Normalize only the verdict: preserve original errors, categorical evidence and
+// the results artifact, then let the existing final assertion reject the run.
+for (const record of results) {
+  if (record.pageErrors.length) { record.status='FAIL';record.pageErrorReason='PAGE_ERROR'; }
+}
+writeFileSync(output + "/results.json", JSON.stringify({
+  origin, scriptCommit:process.env.GITHUB_SHA || null,servedCommit:null,deploymentIdentity:'not established by this browser check', checkedAt: new Date().toISOString(), results,
+}, null, 2));
+const failures = results.filter(record => record.status !== "PASS");
+console.log("TOTAL " + results.length + " PASS " + (results.length - failures.length) +
+  " FAIL " + failures.length);
+assert.equal(failures.length, 0, "Inspect screenshots and failed assertions in the workflow artifact");

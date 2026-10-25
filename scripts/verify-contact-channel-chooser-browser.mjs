@@ -1,6 +1,7 @@
 // Public read-only, no outgoing messenger clicks, sends, sign-in, or client records.
 // Test the real hydrated two-step capture on local Next production server.
 import assert from "node:assert/strict";
+import { publicQaRequestAction, fulfillSyntheticServiceEnquiry, createPopupClosureTracker, closePublicQaContext } from "./helpers/public-browser-network-guard.mjs";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -36,7 +37,7 @@ function draft(href, host, path) {
  * the first-party POST, verify its shape, and return a synthetic successful
  * acknowledgement. No real lead is written to production or test Supabase.
  */
-async function submitSyntheticForm(page, chooser, locale, submissions) {
+async function submitSyntheticForm(page, chooser, locale, submissions, receiptRedirect = false) {
   const form=chooser.locator('form');
   await form.waitFor({state:"visible"});
   const button=form.locator('button[type="submit"]');
@@ -68,8 +69,12 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   await form.locator('input[type="checkbox"]').check();
   const priorCount=submissions.length;
   await button.click();
-  const wa=chooser.locator('a[data-contact-channel="whatsapp"]');
-  await wa.waitFor({state:"visible",timeout:10000});
+  if (receiptRedirect) {
+    await page.waitForURL(url => url.pathname === '/' + locale + '/thank-you', {timeout:10000});
+    await page.getByText('HH-CA5016DE79E4', {exact:false}).waitFor({state:'visible'});
+  } else {
+    await chooser.locator('a[data-contact-channel="whatsapp"]').waitFor({state:"visible",timeout:10000});
+  }
   assert.equal(submissions.length,priorCount+1,"Exactly one first-party registration submitted");
   const request=submissions[submissions.length-1];
   assert.equal(request.locale,locale);
@@ -85,7 +90,7 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   assert.ok(!request.website);
 }
 
-async function verifyChooser(page, chooser, locale, name, screenshot, submissions) {
+async function verifyChooser(page, chooser, locale, name, screenshot, submissions, receiptRedirect = false) {
   const trigger = chooser.locator("button[data-contact-order]");
   await trigger.scrollIntoViewIfNeeded();
   await trigger.waitFor({ state:"visible" });
@@ -108,7 +113,11 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   const tg = panel.locator('a[data-contact-channel="telegram"]');
   assert.equal(await wa.count(), 0, "Do not offer messenger before registration is saved");
   assert.equal(await tg.count(), 0, "Do not offer messenger before registration is saved");
-  await submitSyntheticForm(page,chooser,locale,submissions);
+  await submitSyntheticForm(page,chooser,locale,submissions,receiptRedirect);
+  if (receiptRedirect) {
+    results.push({name,locale,contactSubmitted:true,receiptRedirect:true});
+    return;
+  }
   assert.equal(await wa.count(), 1);
   assert.equal(await tg.count(), 1);
   const [waHref,tgHref] = await Promise.all([wa.getAttribute("href"),tg.getAttribute("href")]);
@@ -157,6 +166,76 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],matchingDrafts:true,contactSubmitted:true,keyboardClose:true,nonNavigating:true});
 }
 
+async function verifyTantraCompact(page, locale, name, screenshot, submissions) {
+  const capture = page.locator('[data-tantra-whatsapp-capture]');
+  const selection = capture.locator('select[id="tantra-request-' + locale + '"]');
+  assert.deepEqual(await selection.locator('option').evaluateAll(nodes => nodes.map(node => node.value)),
+    ['free', 'personal', 'session', 'answers', 'feedback'], 'Five exact requests use one compact chooser');
+  const startUrl = page.url();
+  for (const [index, intent] of ['free', 'personal', 'session', 'answers', 'feedback'].entries()) {
+    await selection.selectOption(intent);
+    const selectedLabel = await selection.locator('option:checked').innerText();
+    const chooser = capture.locator('[data-contact-channel-chooser][data-reiki-phone-enquiry]');
+    assert.equal(await chooser.count(), 1, 'Exactly one current compact phone chooser');
+    const form = chooser.locator('form');
+    await form.waitFor({state:'visible'});
+    const phone = form.locator('input[type="tel"]');
+    const consent = form.locator('input[type="checkbox"][required]');
+    assert.equal(await phone.inputValue(), '', 'Changing request clears old contact');
+    assert.equal(await consent.isChecked(), false, 'Each request requires fresh consent');
+    assert.equal(await chooser.locator('a[data-contact-channel]').count(), 0, 'No handoff before receipt');
+    const channel = index % 2 ? 'telegram' : 'whatsapp';
+    const send = form.locator('[data-contact-channel-submit="' + channel + '"]');
+    const prior = submissions.length;
+    await send.click();
+    await form.locator('[role="alert"]').waitFor({state:'visible'});
+    assert.equal(submissions.length, prior, 'Missing contact cannot register a lead');
+    await form.locator('[data-phone-country-input] select').selectOption('CA');
+    await phone.fill('4165550123');
+    await send.click();
+    assert.equal(submissions.length, prior, 'Valid phone still cannot register without consent');
+    await consent.check();
+    const box = await send.boundingBox();
+    assert.ok(box && box.width >= 44 && box.height >= 44, 'Compact messenger has a 44px touch target');
+    await send.click();
+    const wa = chooser.locator('a[data-contact-channel="whatsapp"]');
+    const tg = chooser.locator('a[data-contact-channel="telegram"]');
+    await wa.waitFor({state:'visible',timeout:10000});
+    assert.equal(submissions.length, prior + 1, 'One synthetic first-party registration per explicit request');
+    const payload = submissions[prior];
+    assert.equal(payload.locale, locale);
+    assert.equal(payload.sourcePath, '/' + locale + '/academy/reiki/tantra-reiki/free-initiation');
+    assert.equal(payload.contactConsent, true);
+    assert.deepEqual(payload.contact, {displayName:'', email:'', phone:'+14165550123'});
+    assert.ok(payload.serviceTitle);
+    assert.ok(!payload.website, 'Honeypot stays empty');
+    assert.ok(payload.description.includes(selectedLabel), 'Selected request is retained for practitioner review');
+    assert.match(payload.operationId, /^[a-f0-9-]{36}$/i);
+    assert.equal(await wa.count(), 1); assert.equal(await tg.count(), 1);
+    const waText = draft(await wa.getAttribute('href'), 'wa.me', '/14376066502');
+    const tgText = draft(await tg.getAttribute('href'), 't.me', '/AndyTherapist');
+    assert.equal(waText, tgText, 'Both messengers retain the same approved request');
+    assert.ok(waText.includes('Holistic House') && /Service|Услуга|Servicio/.test(waText));
+    assert.match(waText, /HH-CA5016DE79E4/);
+    assert.doesNotMatch(waText, /4165550123/, 'Phone stays out of messenger URL');
+    for (const link of [wa, tg]) {
+      await link.scrollIntoViewIfNeeded();
+      const bounds = await link.boundingBox();
+      assert.ok(bounds && bounds.width >= 100 && bounds.height >= 44, 'Compact receipt keeps 100×44 messenger targets');
+      assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= page.viewportSize().width + 1, 'Compact messenger stays inside viewport');
+      await link.click({trial:true,timeout:8000});
+      assert.equal(await link.getAttribute('target'), '_blank');
+      assert.match(await link.getAttribute('rel') || '', /noopener/);
+      assert.match(await link.getAttribute('rel') || '', /noreferrer/);
+    }
+    assert.equal(page.url(), startUrl, 'Compact saved receipt stays on current public page');
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), 'No compact phone overflow');
+    if (screenshot && intent === 'free') await chooser.screenshot({path:output + '/' + slug(name) + '-compact.png'});
+    results.push({name,locale,intent,compactPhone:true,contactSubmitted:true,matchingDrafts:true,nonNavigating:true});
+  }
+}
+
+
 async function runEngine(name, engine) {
   const browser = await engine.launch({headless:true});
   try {
@@ -166,18 +245,25 @@ async function runEngine(name, engine) {
           viewport:{width,height:844}, serviceWorkers:"block", reducedMotion:"reduce",
           locale: locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA",
         });
-        const page = await context.newPage();
-        const submissions=[];
-        await page.route("**/api/service-enquiries",async route=>{
-          if(route.request().method()!=="POST")return route.continue();
-          submissions.push(JSON.parse(route.request().postData()||"{}"));
-          await route.fulfill({status:200,contentType:"application/json",
-            body:JSON.stringify({saved:true,referenceCode:"HH-CA5016DE79E4"})});
+        // Keep synthetic submissions and any popup inside the isolated QA context.
+        // No messenger request or unmocked mutation may leave this browser.
+        const unexpectedRequests=[];
+        await context.route("**/*", route => {
+          const action=publicQaRequestAction(route.request().url(),route.request().method(),origin);
+          if (action === "block-mutation") unexpectedRequests.push("UNEXPECTED_MUTATION_REQUEST");
+          return action === "allow-read" ? route.continue() : route.abort();
         });
+        const page = await context.newPage();
+        const popups=createPopupClosureTracker(page);
+        context.on("page", popup => popups.close(popup));
+        const submissions=[];
+        let primaryFailure;
+        await page.route("**/api/service-enquiries",route=>
+          fulfillSyntheticServiceEnquiry(route,origin,submissions,unexpectedRequests));
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
-            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:5},
+            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:1,compactTantra:true},
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
@@ -191,6 +277,10 @@ async function runEngine(name, engine) {
             await page.waitForLoadState("networkidle",{timeout:20000}).catch(()=>{});
             const count = await items.count();
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
+            if (item.compactTantra) {
+              await verifyTantraCompact(page,locale,[name,locale,width,"tantra"].join("-"),width===390,submissions);
+              continue;
+            }
             const indexes = count > 2 ? [0,count-1] : [0];
             for (const i of indexes) {
               await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
@@ -218,16 +308,23 @@ async function runEngine(name, engine) {
             await daoForm.waitFor({state:"visible",timeout:25000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
-            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
-              "Dao form cannot submit without an opt-in");
+            assert.equal(await consent.isChecked(),false,"Dao consent starts unchecked");
+            assert.equal(await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').count(),0,
+              "No Dao receipt before explicit consent");
+            assert.equal(await page.locator('main[data-free-entry-landing="dao"] a[data-compact-channel]').count(),0,
+              "No Dao messenger link before saved receipt");
             assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
               "Dao uses approved first-party contact capture, not a second messenger funnel");
             // The network request is intercepted above; synthetic consent
             // validates the CRM handoff without touching a real lead/account.
             const previous = submissions.length;
-            const submit = daoForm.locator('button[type="submit"]');
+            const submit = daoForm.locator('button[data-compact-channel="whatsapp"]');
+            assert.deepEqual(await daoForm.locator('button[data-compact-channel]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-compact-channel'))),
+              ['whatsapp','telegram'], 'Dao retains the two explicit consented contact channels');
             await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
-            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
+            await submit.click();
+            await daoForm.locator('[role="alert"]').waitFor({state:'visible'});
+            assert.equal(submissions.length,previous,"Contact cannot bypass consent");
             await consent.check();
             await submit.click();
             await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
@@ -247,12 +344,17 @@ async function runEngine(name, engine) {
             await temple.locator('[data-temple-step="initiation"] button').first().click();
             const templeChooser = temple.locator("[data-contact-channel-chooser]");
             await templeChooser.waitFor({state:"visible"});
-            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
-            assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
+            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions,true);
           }
+        } catch (error) {
+          primaryFailure=error;
+          throw error;
         } finally {
-          await page.close();
-          await context.close();
+          const cleanupFailures=await closePublicQaContext(page,context,popups);
+          const guardFailures=[...unexpectedRequests,...cleanupFailures];
+          if (primaryFailure) {
+            if (guardFailures.length) console.error("Additional QA guard failures:",JSON.stringify(guardFailures));
+          } else assert.deepEqual(guardFailures,[],"No unexpected request or unclosed synthetic handoff");
         }
       }
     }
@@ -273,3 +375,4 @@ finally {
 }
 if(failure)throw failure;
 console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);
+

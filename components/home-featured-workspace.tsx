@@ -15,7 +15,7 @@ const photos = {
   "allTests": "/images/holistic-house/ideas-pine-reference.webp",
   "profile": "/images/holistic-house/report-lighthouse-coast.webp",
   "growth": "/images/holistic-house/course-focus-mountain-boy.webp",
-  "review": "/images/holistic-house/andy-about.png",
+  "review": "/images/holistic-house/portrait-static/andy-640-25ce838f1a6e.webp",
   "businessConstellations": "/images/holistic-house/video-posters/constellations-en-v1.webp",
   "constellations": "/images/holistic-house/hero-olive-incense.webp",
   "aiCoaching": "/images/holistic-house/course-start-heron.webp",
@@ -24,7 +24,7 @@ const photos = {
   "energy": "/images/holistic-house/reiki-approved-sunrise-v3.webp",
   "pro": "/images/holistic-house/reiki-approved-sunrise-v3.webp",
   "service": "/images/holistic-house/portrait-static/andy-828-3dcbabded1e9.webp",
-  "course": "/images/holistic-house/andy-about.png"
+  "course": "/images/holistic-house/portrait-static/andy-640-25ce838f1a6e.webp"
 } as const;
 type OfferId = keyof typeof photos;
 // Only explicitly no-cost offerings receive the red corner mark.
