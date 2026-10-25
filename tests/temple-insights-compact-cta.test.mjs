@@ -8,8 +8,8 @@ const styles = read("components/ideas-discovery.module.css");
 
 test("Temple Insights offers two stacked real actions without transferring question data", () => {
   assert.match(source, /<button type="submit" form="ideas-question-form" className=\{styles\.testButton\} data-ideas-tao>/);
-  const templeLink = source.slice(source.indexOf("{isTemple ? <Link"), source.indexOf("</Link> : null}", source.indexOf("{isTemple ? <Link")));
-  assert.ok(templeLink.includes('href={"/" + locale + "/holistic-support#free-diagnostic-start"}'));
+  const templeLink = source.slice(source.indexOf("{variant === "temple" ? <Link"), source.indexOf("</Link> : null}", source.indexOf("{variant === "temple" ? <Link")));
+  assert.ok(templeLink.includes('href={freeOfferHref(locale, "review")}'));
   assert.match(templeLink, /data-ideas-personal-diagnostic/);
   assert.match(templeLink, /prefetch=\{false\}/);
   const first = source.indexOf("data-ideas-tao>");
@@ -24,7 +24,7 @@ test("Temple Insights offers two stacked real actions without transferring quest
   assert.match(source, /\/services\/free-situation-review#request-free-review/);
   const offer = read("components/free-entry-landing.tsx");
   assert.match(offer, /"request-free-review"/);
-  const link = source.slice(source.indexOf("{isTemple ? <Link"), source.indexOf("</Link> : null}", source.indexOf("{isTemple ? <Link")));
+  const link = source.slice(source.indexOf("{variant === "temple" ? <Link"), source.indexOf("</Link> : null}", source.indexOf("{variant === "temple" ? <Link")));
   assert.doesNotMatch(link, /onClick=|fetch\(|question\}/, "free diagnostic must not silently share the browser-only question");
 });
 
