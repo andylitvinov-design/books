@@ -23,7 +23,7 @@ test('manual payment options keep a bounded circle beside readable text at narro
   assert.match(manual, /\.option\{[^}]*min-width:0;/)
   assert.match(manual, /\.option input\[type='radio'\]\{[^}]*flex:0 0 18px;[^}]*max-width:18px;[^}]*min-height:18px;height:18px;[^}]*padding:0;/)
   assert.match(manual, /\.option span\{[^}]*grid-template-columns:minmax\(0,1fr\);flex:1 1 auto;[^}]*min-width:0;/)
-  assert.match(manual, /@media\(max-width:560px\)\{[^}]*\.grid\{grid-template-columns:minmax\(0,1fr\)\}/)
+  assert.match(manual, /@media\(max-width:560px\)\{\.panel\{padding:13px\}\.grid\{grid-template-columns:minmax\(0,1fr\)\}/)
   assert.match(manual, /\.actions button,\.actions a\{width:100%\}/)
 })
 
