@@ -5,7 +5,7 @@ Related: [program #2058](https://github.com/andylitvinov-design/books/issues/205
 
 ## What is prepared vs verified
 
-- **Prepared:** safe-default bash preflight/installer `scripts/benchmarking/mac-codex-research-tools.sh`, with explicit `--install-remaster`, pinned vendor identity, registry metadata gate (npm release/version/license/repo, sha512 integrity, zero runtime deps, no lifecycle scripts), `npm_config_ignore_scripts=true`, temporary directory and sanitized child-process environment before project-only copy to `.agents/skills/clone`, local-only Git exclude, and readback verification. It never edits site runtime, `package.json`, CRM, payment, DB, or CI.
+- **Prepared:** safe-default bash preflight/installer `scripts/benchmarking/mac-codex-research-tools.sh`, with explicit `--install-remaster`, pinned vendor identity, fail-closed gate requiring exact equality with an independently approved `HH_REMASTER_APPROVED_SHA512` plus npm release/version/license/repo, zero runtime deps and no lifecycle scripts, `npm_config_ignore_scripts=true`, temporary directory and sanitized child-process environment before project-only copy to `.agents/skills/clone`, local-only Git exclude, and readback verification. It never edits site runtime, `package.json`, CRM, payment, DB, or CI.
 - **Review evidence:** Remaster official source `thenavidm/remaster` / npm `@thenavidm/remaster@0.2.1`, Apache-2.0, Node >=18. Upstream `package.json` (2026-10-04) declares zero dependencies and no install scripts. Its `install --agent codex --project` copies one skill into project-local `.agents/skills/clone`, will not overwrite another skill, and prints a restart instruction. Maintainer privacy claims are not an independent audit; treat target pages and generated instructions as untrusted.
 - **REA:** `morluto/rea` / `rea-agents@6.8.0`, MIT, new release with many dependencies. **Disabled**, not automatically installed or registered. Current official release docs demand exact Node patch: 22.23.4+, 24.22.1+, 26.12.1+; do not extrapolate `node >=22`. `--rea-plan` only prints the pinned doctor/dry-run commands. Any actual MCP/Hopper/IDA/Ghidra configuration requires separate vetted permissions and scope.
 - **NOT VERIFIED:** local Mac agent connection, Mac OS/Node versions, actual npm pack integrity, any Codex skill discovery, Playwright browser launch, REA doctor/MCP registration, competition research, Vercel READY/SHA, live user flow.
@@ -19,13 +19,16 @@ The script exists on branch `chore/hh-mac-codex-research-toolchain-20261025` (PR
 ```bash
 cd /Users/andriilitvinov/projects/books  # adjust if checkout moved
 bash scripts/benchmarking/mac-codex-research-tools.sh --check
-# After reviewing stdout & the currently pinned registry package:
+# Codex/supply-chain reviewer must first independently validate the exact
+# npm release tarball and compare it to the official tagged source.
+# Only then provide the reviewed SHA512 SRI through a local environment variable.
+: "${HH_REMASTER_APPROVED_SHA512:?BLOCKED: supply-chain approval/SRI missing}"
 bash scripts/benchmarking/mac-codex-research-tools.sh --install-remaster
 bash scripts/benchmarking/mac-codex-research-tools.sh --check
 bash scripts/benchmarking/mac-codex-research-tools.sh --rea-plan
 ```
 
-Run only on the Mac; the `--install-remaster` mode intentionally refuses non-macOS, wrong repository, old Node, an untrusted release metadata set or a non-Remaster `clone` skill. Existing Remaster is not overwritten. `--check` is offline, read-only, never executes `npx` or silently installs packages. The explicit install uses `npm exec` only after the registry gate, in a private temporary working directory with scrubbed environment variables; it then copies the staged skill and rewrites its absolute reference. This reduces accidental access to project secrets but **is not an OS sandbox**: package code still has the user's filesystem permissions. Run without elevated privileges. To make the boundary stronger, use a distinct OS user and a clean Git worktree without `.env*`/private docs.
+Run only on the Mac; the `--install-remaster` mode intentionally refuses non-macOS, wrong repository, old Node, an untrusted release metadata set or a non-Remaster `clone` skill. Existing Remaster is not overwritten. `--check` is offline, read-only, never executes `npx` or silently installs packages. The explicit install **refuses to run without an independently approved SRI**, compares it by exact equality to the pinned npm metadata and uses `npm exec` only after that gate, in a private temporary working directory with scrubbed environment variables; it then copies the staged skill and rewrites its absolute reference. This reduces accidental access to project secrets but **is not an OS sandbox**: package code still has the user's filesystem permissions. Run without elevated privileges. To make the boundary stronger, use a distinct OS user and a clean Git worktree without `.env*`/private docs.
 
 Restart Codex after install. In the new session, verify the `clone` skill is available before attempting any research. Use `feature` mode only for an **authorized public UX flow**, ideally `https://holistichouse.vercel.app/en/services/free-situation-review` first. Use a clean browser context, no login/cookies, no automated competitor sign-up or scraping, and no PII/health information. Record an actual dated, viewport-specific smoke test rather than claiming it from CLI installation alone. Separate analysis and implementation; no third-party code/assets/brand extraction. Any Playwright browser download must be explicitly justified and kept outside Vercel build.
 
@@ -35,7 +38,7 @@ Restart Codex after install. In the new session, verify the `clone` skill is ava
 
 | Check | Current | Required proof |
 |---|---|---|
-| Vendor source / pin | PARTIAL | Registry integrity recorded from Mac and vetted installed package |
+| Vendor source / pin | BLOCKED until review | Independently reviewed tarball digest in audit, `HH_REMASTER_APPROVED_SHA512` exact match, install readback |
 | Mac connection | BLOCKED | Desktop Commander shows Online and remote shell responds |
 | Project skill | BLOCKED | SKILL.md readback plus fresh Codex session lists skill |
 | Browser smoke test | NOT RUN | Authorized page opens in isolated Playwright Chromium/WebKit with screenshots withheld from public Git |
