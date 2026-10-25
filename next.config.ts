@@ -136,6 +136,12 @@ const nextConfig: NextConfig = {
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",
     ],
+    // The nine-stage Tantra Reiki guide loads immutable author archives server-side.
+    // Scope these to the PDF API route instead of copying them into all Functions.
+    "/api/academy/reiki-guide": [
+      "./data/academy/tantra-reiki-full.generated.json",
+      "./data/academy/tantra-reiki-ru-en.generated.json",
+    ],
     "/sitemap.xml": [
       "./data/spanish-remedies.json",
       "./content/remedies/en/*.md",
