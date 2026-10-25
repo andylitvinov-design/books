@@ -8,7 +8,7 @@ import ts from 'typescript';
 import * as whatsapp from '../lib/whatsapp-enquiry.js';
 import * as receipt from '../lib/practitioners/enquiry-receipt.mjs';
 const base=resolve(process.env.COMPACT_SOURCE_ROOT||'.');
-const files={'compact-lead-capture':await readFile(resolve(base,'components/compact-lead-capture.tsx'),'utf8')};
+const files=Object.fromEntries(await Promise.all(['compact-lead-capture','free-diagnosis-offers'].map(async name=>[name,await readFile(resolve(base,`components/${name}.tsx`),'utf8')])));
 const element=(type,props)=>({type,props:props||{}}); const empty=()=>null;let nextMountId=0;
 function environment(){
  const requests=[],writes=[],popups=[];
@@ -38,7 +38,7 @@ function mount(name, exportName, initialProps, env = environment()) {
         } },
     };
     hooks.useLayoutEffect = hooks.useEffect;
-    const imports = { react: hooks, 'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'fragment' }, 'next/navigation': { usePathname: () => env.window.location.pathname, useRouter: () => env.router }, 'next/link': { default: 'a' }, 'next/image': { default: 'img' }, 'lucide-react': new Proxy({}, { get: () => empty }), '@/components/acquisition-event-link': { AcquisitionEventLink: 'a' }, '@/components/phone-country-input': { PhoneCountryInput: 'phone-input' }, '@/components/contact-channel-chooser': { ContactChannelChooser: 'chooser' }, '@/components/static-portrait': { StaticPortrait: empty }, '@/components/public-site-header': { PublicSiteHeader: empty }, '@/components/site-video-player': { SiteVideoPlayer: empty }, '@/data/local-acquisition': { ACQUISITION_EVENTS: [] }, '@/lib/whatsapp-enquiry': whatsapp,  '@/lib/commerce/zen-transfer-inquiry': { buildZenTransferInquiry: () => null },  '@/lib/practitioners/enquiry-receipt.mjs': receipt };
+    const imports = { react: hooks, 'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'fragment' }, 'next/navigation': { usePathname: () => env.window.location.pathname, useRouter: () => env.router }, 'next/link': { default: 'a' }, 'next/image': { default: 'img' }, 'lucide-react': new Proxy({}, { get: () => empty }), '@/components/acquisition-event-link': { AcquisitionEventLink: 'a' }, '@/components/phone-country-input': { PhoneCountryInput: 'phone-input' }, '@/components/contact-channel-chooser': { ContactChannelChooser: 'chooser' }, '@/components/compact-lead-capture': { CompactLeadCapture: 'compact-capture' }, '@/components/free-diagnostic-start': { FreeDiagnosticStart: 'diagnostic-start' }, '@/components/static-portrait': { StaticPortrait: empty }, '@/components/public-site-header': { PublicSiteHeader: empty }, '@/components/site-video-player': { SiteVideoPlayer: empty }, '@/data/local-acquisition': { ACQUISITION_EVENTS: [] }, '@/lib/whatsapp-enquiry': whatsapp,  '@/lib/commerce/zen-transfer-inquiry': { buildZenTransferInquiry: () => null },  '@/lib/practitioners/enquiry-receipt.mjs': receipt };
     const loaded = { exports: {} };
     const code = ts.transpileModule(files[name], { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
     vm.runInNewContext(code, { exports: loaded.exports, module: loaded, require: p => { if (p.endsWith('.module.css'))
@@ -105,3 +105,70 @@ test('a replaced source cannot submit a fresh attempt; restoring source retries 
 test('successful context replacement requires fresh contact and fresh consent',async()=>{const f=fixture();f.env.setRespond(success);fill(f);await click(f);f.update({serviceTitle:'Different service'});assert.equal(f.find('input',p=>p.name==='contact').props.value,'');assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,false);await click(f);assert.equal(f.env.requests.length,1)});
 
 test('an event handler from a replaced context cannot start a request',async()=>{const f=fixture();fill(f);const stale=f.find('button',p=>p['data-compact-channel']==='whatsapp').props.onClick;f.update({serviceTitle:'Different service'});stale();await tick();assert.equal(f.env.requests.length,0);assert.equal(f.env.popups.length,0)});
+
+// Reconciliation coverage for canonical controlled offer cards + PR immutable
+// transaction lifecycle. Actual TSX execution above; no browser or live writes.
+const controlledOptions = [
+ {value:'wu-xing-free',label:'Free Wu Xing'},
+ {value:'personal-session-30-eur50',label:'Personal session · €50'},
+];
+const controlledProps = {formatOptions:controlledOptions,selectedFormatValue:'wu-xing-free',serviceTitle:'Synthetic Wu Xing reflection'};
+for(const locale of ['en','ru','es'])test(locale+': controlled offer default and dropdown callback keep CRM and handoff aligned',async()=>{
+ const changes=[];const f=fixture({...controlledProps,locale,sourcePath:`/${locale}/services/free-situation-review`,onFormatChange:value=>changes.push(value)});
+ assert.equal(f.find('select').props.value,'wu-xing-free');fill(f);
+ f.change('select',()=>true,'personal-session-30-eur50');assert.deepEqual(changes,['personal-session-30-eur50']);
+ assert.equal(f.find('select').props.value,'wu-xing-free','Controlled value is authoritative until parent updates');
+ f.update({selectedFormatValue:'personal-session-30-eur50',serviceTitle:'Synthetic personal consultation'});
+ assert.equal(f.find('select').props.value,'personal-session-30-eur50');assert.equal(f.find('input',p=>p.name==='contact').props.value,'fictional@example.invalid');assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,true);
+ f.env.setRespond(success);await click(f);const body=JSON.parse(f.env.requests[0]);assert.equal(body.serviceTitle,'Synthetic personal consultation');assert.ok(body.description.includes('personal-session-30-eur50'));
+ const draft=new URL(f.env.popups[0].destinations[0]).searchParams.get('text');assert.ok(draft.includes(body.serviceTitle));assert.ok(draft.includes('personal-session-30-eur50'));assert.ok(!draft.includes('fictional@example.invalid'));
+});
+test('uncontrolled dropdown retains internal selection and optional callback without resetting contact',async()=>{
+ const changes=[];const f=fixture({formatOptions:controlledOptions,onFormatChange:value=>changes.push(value)});fill(f);f.change('select',()=>true,'personal-session-30-eur50');assert.equal(f.find('select').props.value,'personal-session-30-eur50');assert.deepEqual(changes,['personal-session-30-eur50']);assert.equal(f.find('input',p=>p.name==='contact').props.value,'fictional@example.invalid');f.env.setRespond(success);await click(f);assert.ok(JSON.parse(f.env.requests[0]).description.includes('personal-session-30-eur50'));
+});
+test('controlled confirmed receipt remains pinned to submitted service and format after external offer change',async()=>{
+ const f=fixture(controlledProps);fill(f);f.env.setRespond(success);await click(f);const original=f.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href);
+ f.update({selectedFormatValue:'personal-session-30-eur50',serviceTitle:'Synthetic personal consultation'});assert.equal(f.nodes().filter(n=>n.props['data-lead-saved']).length,1);assert.equal(f.nodes().filter(n=>n.type==='form').length,0);assert.equal(f.env.requests.length,1);
+ const links=f.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href);assert.deepEqual(links,original);for(const url of links){const text=new URL(url).searchParams.get('text');assert.ok(text.includes('Synthetic Wu Xing reflection'));assert.ok(text.includes('wu-xing-free'));assert.ok(!text.includes('Synthetic personal consultation'));}
+ f.unmount();assert.equal(f.env.popups[0].closed,false,'Confirmed chat must not be closed by cleanup');
+});
+test('controlled format-only replacement closes pending blank and ignores stale success, then restores exact retry',async()=>{
+ const f=fixture(controlledProps),d=deferred();fill(f);f.env.setRespond(()=>d.promise);f.click('button',p=>p['data-compact-channel']==='whatsapp');const body=f.env.requests[0];
+ f.update({selectedFormatValue:'personal-session-30-eur50'});assert.equal(f.env.popups[0].closed,true);d.resolve(success());await tick();f.flush();assert.equal(f.env.writes.length,0);assert.deepEqual(f.env.popups[0].destinations,[]);await click(f);assert.equal(f.env.requests.length,1);
+ f.update({selectedFormatValue:'wu-xing-free'});f.env.setRespond(success);await click(f);assert.equal(f.env.requests[1],body);assert.ok(new URL(f.env.popups[1].destinations[0]).searchParams.get('text').includes('wu-xing-free'));
+});
+test('unknown controlled write locks dropdown callback and contact; external offer cannot create a new UUID',async()=>{
+ const changes=[];const f=fixture({...controlledProps,onFormatChange:value=>changes.push(value)});fill(f);await click(f);const body=f.env.requests[0];
+ f.change('select',()=>true,'personal-session-30-eur50');assert.deepEqual(changes,[]);assert.equal(f.find('select').props.value,'wu-xing-free');
+ f.update({selectedFormatValue:'personal-session-30-eur50',serviceTitle:'Synthetic personal consultation'});await click(f);assert.equal(f.env.requests.length,1);assert.equal(f.find('input',p=>p.name==='contact').props.disabled,true);assert.equal(f.find('input',p=>p.type==='checkbox').props.disabled,true);
+ f.update({selectedFormatValue:'wu-xing-free',serviceTitle:'Synthetic Wu Xing reflection'});f.env.setRespond(success);await click(f);assert.equal(f.env.requests[1],body);
+});
+test('stale event handler cannot submit old controlled offer after parent selection change',async()=>{
+ const f=fixture(controlledProps);fill(f);const stale=f.find('button',p=>p['data-compact-channel']==='whatsapp').props.onClick;f.update({selectedFormatValue:'personal-session-30-eur50'});stale();await tick();assert.equal(f.env.requests.length,0);assert.equal(f.env.popups.length,0);
+});
+for(const change of [{sourcePath:'/en/services/another-synthetic'},{locale:'ru'},{formatOptions:[{value:'another',label:'Another'}]},{selectedFormatValue:undefined}])test('controlled confirmed receipt resets only for a different landing scope: '+JSON.stringify(change),async()=>{
+ const f=fixture(controlledProps);fill(f);f.env.setRespond(success);await click(f);f.update(change);assert.equal(f.nodes().filter(n=>n.props['data-lead-saved']).length,0);assert.equal(f.find('input',p=>p.name==='contact').props.value,'');assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,false);
+});
+test('equivalent freshly allocated controlled format options do not erase contact or receipt',async()=>{
+ const f=fixture(controlledProps);fill(f);f.update({formatOptions:controlledOptions.map(x=>({...x}))});assert.equal(f.find('input',p=>p.name==='contact').props.value,'fictional@example.invalid');f.env.setRespond(success);await click(f);f.update({formatOptions:controlledOptions.map(x=>({...x}))});assert.equal(f.nodes().filter(n=>n.props['data-lead-saved']).length,1);
+});
+for(const locale of ['en','ru','es'])test(locale+': actual FreeDiagnosisOffers card and dropdown use one controlled service/format through confirmed receipt',async()=>{
+ const parent=mount('free-diagnosis-offers','FreeDiagnosisOffers',{locale});parent.find('diagnostic-start');
+ parent.click('a',p=>p['data-diagnosis-order']==='wu-xing-free');const first=parent.find('compact-capture').props;assert.equal(first.selectedFormatValue,'wu-xing-free');
+ const env=environment();env.window.location.pathname=`/${locale}/services/free-situation-review`;const child=fixture(first,env);fill(child);
+ child.change('select',()=>true,'personal-session-30-eur50');parent.flush();const next=parent.find('compact-capture').props;assert.equal(next.selectedFormatValue,'personal-session-30-eur50');assert.notEqual(next.serviceTitle,first.serviceTitle);child.update(next);
+ assert.equal(child.find('input',p=>p.name==='contact').props.value,'fictional@example.invalid');assert.equal(child.find('input',p=>p.type==='checkbox').props.checked,true);assert.equal(env.requests.length,0);
+ env.setRespond(success);await click(child);const sent=JSON.parse(env.requests[0]);assert.equal(sent.serviceTitle,next.serviceTitle);assert.ok(sent.description.includes(next.selectedFormatValue));const links=child.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href);
+ parent.click('a',p=>p['data-diagnosis-order']==='wu-xing-free');child.update(parent.find('compact-capture').props);assert.equal(child.nodes().filter(n=>n.type==='form').length,0);assert.deepEqual(child.nodes().filter(n=>n.type==='a'&&n.props['data-compact-channel']).map(n=>n.props.href),links);assert.equal(env.requests.length,1);
+});
+test('canonical saved receipt copy retains awaiting-reply and separate scheduling/private-handoff boundaries in all locales',()=>{
+ const source=files['compact-lead-capture'];
+ for(const text of [
+  "Request saved — awaiting a personal reply",
+  "Keep your reference. No reply time or appointment is confirmed yet. Messengers are for scheduling only; agree a secure handoff for any personal materials.",
+  "Заявка сохранена — ожидает личного ответа",
+  "Сохраните номер заявки. Срок ответа и время встречи ещё не подтверждены. В мессенджере согласуйте только организационные вопросы; для личных материалов нужна защищённая передача.",
+  "Solicitud guardada — pendiente de respuesta personal",
+  "Conserva la referencia. Aún no se ha confirmado el plazo de respuesta ni una cita. Usa mensajería solo para coordinar; acuerda una entrega segura para materiales personales."
+])assert.ok(source.includes(text),text);
+});

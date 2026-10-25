@@ -249,59 +249,83 @@ function serviceMatches(service: PublicService, f: FilterState) {
     areaName(service.areaKey, "en"), areaName(service.areaKey, "ru"), areaName(service.areaKey, "es"),
   ].join(" ")).includes(clean(f.query));
 }
+function masterAreaKeys(area: string): readonly string[] {
+  const topic = MASTER_TOPICS.find((item) => item.id === area);
+  return topic ? topic.areas : [area];
+}
+
+/** Intersect all offering-specific facets against ONE approved service. */
+function matchingMasterServices(master: PublicPractitioner, f: FilterState): PublicService[] {
+  const chosenServiceId = f.courseKey.startsWith("service:") ? f.courseKey.slice(8) : "";
+  if (f.courseKey && !chosenServiceId) return [];
+  return (master.services || []).filter((service) => {
+    if (f.offeringType && service.offeringType !== f.offeringType) return false;
+    if (chosenServiceId && (service.id !== chosenServiceId || service.offeringType !== "course")) return false;
+    if (f.area && !masterAreaKeys(f.area).includes(service.areaKey)) return false;
+    if (f.format && service.deliveryFormat !== f.format && service.deliveryFormat !== "hybrid") return false;
+    if (f.language && !(service.languages || []).some((lang) => clean(lang) === f.language)) return false;
+    if (f.pricing !== "all" && !serviceMatches(service, { ...INITIAL, pricing: f.pricing })) return false;
+    return true;
+  });
+}
+
+/** Standalone published courses expose language but not format, area or price. */
+function matchingMasterCourses(master: PublicPractitioner, f: FilterState, courses: PublicMentorCourse[]): PublicMentorCourse[] {
+  if ((f.offeringType && f.offeringType !== "course") || f.area ||
+      f.format || f.pricing !== "all" || (f.courseKey && !f.courseKey.startsWith("course:"))) return [];
+  const chosenSlug = f.courseKey.startsWith("course:") ? f.courseKey.slice(7) : "";
+  return courses.filter((course) =>
+    course.practitionerSlug === master.slug &&
+    (!chosenSlug || course.slug === chosenSlug) &&
+    (!f.language || course.locale === f.language));
+}
+
 function masterMatches(master: PublicPractitioner, f: FilterState, courses: PublicMentorCourse[] = []) {
   const profile = master.profile || {};
-  const allServices = master.services || [];
-  const publishedCourses = courses.filter((course) => course.practitionerSlug === master.slug);
-  const typeServices = allServices.filter((service) => !f.offeringType || service.offeringType === f.offeringType);
-  const selectedServiceId = f.courseKey.startsWith("service:") ? f.courseKey.slice("service:".length) : "";
-  const selectedCourseSlug = f.courseKey.startsWith("course:") ? f.courseKey.slice("course:".length) : "";
-  const scopedServices = selectedServiceId ? typeServices.filter((service) =>
-    service.id === selectedServiceId && service.offeringType === "course") :
-    selectedCourseSlug ? [] : typeServices;
+  const serviceMatchesAll = matchingMasterServices(master, f);
+  const courseMatchesAll = matchingMasterCourses(master, f, courses);
+  const requiresSpecificOffering = Boolean(f.offeringType || f.courseKey || f.pricing !== "all" ||
+    (f.area && (f.format || f.language)));
 
-  if (f.query && !clean([
-    profile.displayName, profile.name, profile.professionalTitle, profile.shortBio,
-    profile.fullBio, profile.city, profile.country, ...(profile.methods || []),
-    ...allServices.flatMap((service) => [service.copy.title, service.copy.shortDescription]),
-    ...publishedCourses.flatMap((course) => [course.title, course.description]),
-  ].join(" ")).includes(clean(f.query))) return false;
+  // Selecting a type, course, price or intersecting facets requires a
+  // published offer that satisfies *all* conditions. Profile-wide skills
+  // cannot make an unrelated course/session appear to match.
+  if (requiresSpecificOffering && !serviceMatchesAll.length && !courseMatchesAll.length) return false;
 
-  // Each option comes from real approved public service or published course snapshots.
-  if (f.offeringType && !typeServices.length &&
-      !(f.offeringType === "course" && publishedCourses.length)) return false;
-  if (selectedServiceId && !scopedServices.length) return false;
-  if (selectedCourseSlug && !publishedCourses.some((course) => course.slug === selectedCourseSlug)) return false;
-  if (f.courseKey && !selectedServiceId && !selectedCourseSlug) return false;
-
-  if (f.area) {
-    const quickTopic = MASTER_TOPICS.find((topic) => topic.id === f.area);
-    const areas: readonly string[] = quickTopic ? quickTopic.areas : [f.area];
-    const hasMatchingArea = (profile.areas || []).some((area) => areas.includes(area)) ||
-      typeServices.some((service) => areas.includes(service.areaKey));
+  if (f.area && !requiresSpecificOffering) {
+    const areas = masterAreaKeys(f.area);
+    const matchesArea = (profile.areas || []).some((area) => areas.includes(area)) ||
+      serviceMatchesAll.length > 0;
+    const topic = MASTER_TOPICS.find((item) => item.id === f.area);
     const practitionerText = [
       ...(profile.methods || []), profile.professionalTitle, profile.shortBio,
-      ...typeServices.map((service) => service.copy.title),
+      ...(master.services || []).map((service) => service.copy.title),
     ].join(" ");
-    if (!hasMatchingArea && !(quickTopic && quickTopic.keywords.test(practitionerText))) return false;
+    if (!matchesArea && !(topic && topic.keywords.test(practitionerText))) return false;
   }
-  if (f.format && !(profile.formats || []).includes(f.format) &&
-      !typeServices.some((service) => service.deliveryFormat === f.format ||
-        service.deliveryFormat === "hybrid")) return false;
-  if (f.language && selectedCourseSlug &&
-      !publishedCourses.some((course) => course.slug === selectedCourseSlug && course.locale === f.language)) return false;
-  if (f.language && !(profile.languages || []).some((lang) => clean(lang) === f.language) &&
-      !typeServices.some((service) => service.languages?.some((lang) => clean(lang) === f.language)) &&
-      !(f.offeringType === "course" && publishedCourses.some((course) => course.locale === f.language))) return false;
+  if (f.format && !requiresSpecificOffering &&
+      !(profile.formats || []).includes(f.format) && !serviceMatchesAll.length) return false;
+  if (f.language && !requiresSpecificOffering &&
+      !(profile.languages || []).some((lang) => clean(lang) === f.language) &&
+      !serviceMatchesAll.length && !courseMatchesAll.length) return false;
   if (f.location && ![profile.city, profile.region, profile.country,
-      ...typeServices.map((service) => service.locationLabel)].some((location) =>
+      ...(master.services || []).map((service) => service.locationLabel)].some((location) =>
         clean(location) === clean(f.location))) return false;
   if (f.method && ![...(profile.methods || []),
-      ...typeServices.flatMap((service) => service.methods || [])].some((method) =>
+      ...(master.services || []).flatMap((service) => service.methods || [])].some((method) =>
         clean(method) === f.method)) return false;
-  // A price belongs to a specific public offering, not an unrelated service or an unpriced course.
-  if (f.pricing !== "all" && !scopedServices.some((service) =>
-    serviceMatches(service, { ...INITIAL, pricing: f.pricing }))) return false;
+  if (f.query) {
+    const visibleOffers = requiresSpecificOffering ? serviceMatchesAll : (master.services || []);
+    const visibleCourses = requiresSpecificOffering ? courseMatchesAll :
+      courses.filter((course) => course.practitionerSlug === master.slug);
+    const search = [
+      profile.displayName, profile.name, profile.professionalTitle, profile.shortBio,
+      profile.fullBio, profile.city, profile.country, ...(profile.methods || []),
+      ...visibleOffers.flatMap((service) => [service.copy.title, service.copy.shortDescription]),
+      ...visibleCourses.flatMap((course) => [course.title, course.description]),
+    ].join(" ");
+    if (!clean(search).includes(clean(f.query))) return false;
+  }
   return true;
 }
 
@@ -645,12 +669,10 @@ export function MarketplaceMasterFinder({
     ...(master.profile?.methods || []),
     ...(master.services || []).flatMap((service) => service.methods || []),
   ]).map(clean).filter(Boolean))].sort(), [practitioners]);
-  const locations = useMemo(() => [...new Set(practitioners.flatMap((master) => [
-    master.profile?.city, master.profile?.country,
-    ...(master.services || []).filter((service) => service.deliveryFormat !== "online")
-      .map((service) => service.locationLabel),
-  ]).map((item) => String(item || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, pageLocale)),
-    [practitioners, pageLocale]);
+  // City, rather than hybrid strings like "Toronto / Online", is useful for a mentor.
+  const locations = useMemo(() => [...new Set(practitioners.map((master) =>
+    String(master.profile?.city || master.profile?.country || "").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, pageLocale)), [practitioners, pageLocale]);
   const offeringTypes = useMemo(() => {
     const offered = new Set(practitioners.flatMap((master) =>
       (master.services || []).map((service) => service.offeringType)));
@@ -696,17 +718,18 @@ export function MarketplaceMasterFinder({
             credential.verificationStatus === "verified" &&
             (!credential.expiresOn || credential.expiresOn >= new Date().toISOString().slice(0, 10)));
           const masterServices = master.services || [];
-          const filteredServices = state.offeringType ?
-            masterServices.filter((service) => service.offeringType === state.offeringType) : masterServices;
-          const firstService = state.courseKey.startsWith("service:") ?
-            filteredServices.find((service) => service.id === state.courseKey.slice("service:".length)) :
-            filteredServices[0];
-          const masterCourses = publishedCourses.filter((course) => course.practitionerSlug === master.slug);
-          const featuredCourse = masterCourses.find((course) =>
-            "course:" + course.slug === state.courseKey) || masterCourses[0];
-          const canRequestEnergy = !state.offeringType && !state.courseKey &&
-            masterServices.some((service) =>
-              service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual");
+          const filteredServices = matchingMasterServices(master, state);
+          // Prefer the actual matched service, not the master's unrelated first offering.
+          const queryMatches = state.query ? filteredServices.filter((service) =>
+            clean([service.copy.title, service.copy.shortDescription].join(" ")).includes(clean(state.query))) : [];
+          const firstService = queryMatches[0] || filteredServices[0];
+          const featuredCourse = matchingMasterCourses(master, state, publishedCourses)[0];
+          const filtersActive = Boolean(state.query || state.area || state.offeringType ||
+            state.courseKey || state.language || state.format || state.location ||
+            state.method || state.pricing !== "all");
+          const canRequestEnergy = (firstService?.slug === "remote-energy-support") ||
+            (!filtersActive && masterServices.some((service) =>
+              service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual"));
           return (
             <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id}>
               <div className={styles.masterHeading}>

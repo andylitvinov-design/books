@@ -55,16 +55,17 @@ export function evaluate(source, scope = {}) {
   return { value: moduleValue.exports, clean() { assert.deepEqual(denied, [], 'No external attempts, including caught failures') } }
 }
 
-// Merged #1569 retains this six-screen final lesson; #1620 retires flight-save
-// only and records 63 total / 7 in Lesson 1. This explicit inventory prevents
-// count-preserving loss/replacement, not merely a 60 -> 63 expectation change.
+// Merged #1569 retains the final lesson; #1620 retires flight-save. The
+// canonical course adds init-photo-01 immediately before end-02: 64 total,
+// with 7 screens in Lessons 1 and 5. Keep an explicit inventory to prevent
+// count-preserving loss/replacement rather than checking only a total.
 export const approvedGroups = [
   ['welcome-01','welcome-02','welcome-video'],
   ['flight-01','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'],
   ['tan-01','tan-intro-video','tan-02','tan-voices','tan-04','tan-05','tan-study-04','tan-06','tan-study-06','tan-study-07','tan-study-02','presence-01','presence-04','tan-03','tan-done'],
   ['kun-01','kun-intro-video','kun-02','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-03','kun-done'],
   ['ygg-01','ygg-intro-video','ygg-02','ygg-voices','ygg-04','ygg-05','ygg-study-v2-01','ygg-study-v2-02','ygg-study-v2-03','ygg-study-v2-04','ygg-study-v2-05','ygg-study-v2-06','ygg-study-v2-07','ygg-03','ygg-done'],
-  ['paths-01','paths-03','init-02','end-01','intention-04','end-02'],
+  ['paths-01','paths-03','init-02','end-01','intention-04','init-photo-01','end-02'],
 ]
 function runtimeSource(source) {
   // Keep every declaration. Type exports have no runtime value; the shared
@@ -92,7 +93,7 @@ export function assertCurrentCourse() {
   const curriculum = currentCurriculum(), expected = approvedGroups.flat()
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.equal(curriculum.ENERGYWORK_COURSE_VERSION, ENERGYWORK_VERSION)
-  assert.equal(expected.length, 63)
+  assert.equal(expected.length, 64)
   for (const path of [null, 'tantra', 'kundalini', 'yggdrasil']) {
     assert.deepEqual(energyworkSequence(path), expected, 'Canonical active registry')
     const slides = curriculum.energyworkSlides(path)

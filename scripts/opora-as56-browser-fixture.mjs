@@ -21,6 +21,9 @@ const productionInputs = [
   'lib/inner-growth/opora-as56-experience-guides.js',
   'lib/inner-growth/anti-stress-skills-v6.js',
   'lib/inner-growth/course-slide-sequence.js',
+  'lib/inner-growth/opora-as59-seven-skills.js',
+  'lib/inner-growth/opora-as60-experiential-practices.js',
+  'lib/inner-growth/opora-as60-integrated-journey.js',
 ]
 export function oporaFixturePath(locale) {
   assert.ok(['en', 'ru', 'es'].includes(locale), 'Unsupported OPORA fixture locale')
@@ -79,8 +82,10 @@ export async function buildOporaBrowserFixture({ projectRoot = projectDirectory 
       cache: false,
       // Use the installed Next production minifier explicitly: bundled Webpack's
       // default Terser path is not available in this standalone fixture. This
-      // removes unused curriculum code without mocking the player or its children.
-      // The existing asset/entrypoint budget and fatal warnings remain unchanged.
+      // includes the current AS6.0 and historical AS5.8/5.9 curricula without mocking
+      // the player or its children. Keep the stricter 804 KiB fixture budget,
+      // rather than the unminified target's 1200 KiB; all warnings remain fatal.
+      // This synthetic fixture is not evidence of production Next chunk size.
       optimization: { minimize: true, minimizer: [new MinifyPlugin({})] },
       performance: fixturePerformanceBudget,
       resolve: {

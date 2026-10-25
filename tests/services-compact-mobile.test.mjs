@@ -6,6 +6,7 @@ import {assertCurrentFreeEntry} from "./helpers/current-free-entry-contract.mjs"
 import {assertCurrentHomeDiscovery,currentHomeSource} from "./helpers/current-home-discovery-contract.mjs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+const serviceConsultation = '<PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />';
 
 test("Services landing has free-first cards and preserves original personal paths", () => {
   const page = read("app/[locale]/services/page.tsx");
@@ -17,11 +18,13 @@ test("Services landing has free-first cards and preserves original personal path
   assert.match(page, /<ServicesConversionHero locale=/);
   assert.match(page, /<ServicesIntroMedia locale=/);
   assert.match(page, /<PersonalTestimonials locale=/);
+  assert.match(page, /<PublicConsultationCta locale=/);
   assert.match(page, /<ServicesDirectoryInvitation locale=/);
   assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<ServicesStudioOffers"));
   assert.ok(page.indexOf("<ServicesStudioOffers") < page.indexOf("<ServicesIntroMedia"));
   assert.ok(page.indexOf("<ServicesIntroMedia") < page.indexOf("<PersonalTestimonials"));
-  assert.ok(page.indexOf("<PersonalTestimonials") < page.indexOf("<PublicConsultationCta"));
+  assert.ok(page.indexOf("<ServicesConversionHero") < page.indexOf("<PublicConsultationCta"));
+  assert.ok(page.indexOf("<PublicConsultationCta") < page.indexOf("<ServicesStudioOffers"));
   assert.doesNotMatch(page, /<ServicesSmartDiscovery|<ServiceCart|<FreeInsightsPaths/);
   for (const id of ["tests", "situation", "dao", "alchemy", "hypnotherapy", "business", "constellations", "remote-energy-support"])
     assert.ok(ui.includes('id: "' + id + '"') || ui.includes('session("' + id + '")'), id);
@@ -69,7 +72,7 @@ test("homepage mounts current topic and offer discovery while preserving origina
     ["hidden featured photo ancestor","components/home-featured-workspace.tsx",'<span className={styles.photo} aria-hidden="true">','<span hidden className={styles.photo} aria-hidden="true">',/render-exposed decorative photograph/],
     ["display-none featured photo ancestor","components/home-featured-workspace.tsx",'<span className={styles.photo} aria-hidden="true">','<span style={{display:"none"}} className={styles.photo} aria-hidden="true">',/render-exposed decorative photograph/],
     ["wrong tests navigation","components/home-section-carousel.tsx",'href: "/client/tests"','href: "/client/wrong"',/Carousel keeps exact tests destination/],
-    ["inert tests selector","components/home-section-carousel.tsx",'setIndex(position);','setIndex(0);',/Selecting the real tests dot shows its CTA/],
+    ["inert tests selector","components/home-section-carousel.tsx",'setIndex(position)','setIndex(0)',/Selecting the real tests dot shows its CTA/],
     ["free badge on paid service","components/home-featured-workspace.tsx",'"reiki", "opora", "profile", "review", "aiCoaching",','"reiki", "opora", "profile", "review", "aiCoaching", "therapist",',/Only the explicitly no-cost offers/],
     ["missing free profile badge","components/home-featured-workspace.tsx",'"reiki", "opora", "profile", "review", "aiCoaching",','"reiki", "opora", "review", "aiCoaching",',/Only the explicitly no-cost offers/],
     ["wrong featured service destination","components/home-featured-workspace.tsx",'alchemy: "/" + locale + "/services/alchemy-of-soul"','alchemy: "/" + locale + "/services/wrong"',/Featured offer preserves exact alchemy destination/],
@@ -84,6 +87,15 @@ test("homepage mounts current topic and offer discovery while preserving origina
     ["missing paid original prices","components/services-studio-offers.tsx",'price: "€50 / 30 min · €100 / 60 min"','price: "Ask us"',/Original paid offer retains prices/],
     ["missing catalogue invitation","app/[locale]/services/page.tsx",'<ServicesDirectoryInvitation locale={locale as Locale} />','<div />',/mounts the catalogue invitation/],
     ["wrong dedicated catalogue","components/services-studio-extras.tsx",'href={"/" + locale + "/services/catalog"}','href={"/" + locale + "/services"}',/reaches the dedicated public catalogue/],
+    ["missing paid consultation","app/[locale]/services/page.tsx",serviceConsultation,'<div />',/one visible paid consultation selector/],
+    ["hidden paid consultation ancestor","app/[locale]/services/page.tsx",serviceConsultation,'<div hidden>'+serviceConsultation+'</div>',/one visible paid consultation selector/],
+    ["aria-hidden paid consultation ancestor","app/[locale]/services/page.tsx",serviceConsultation,'<div aria-hidden="true">'+serviceConsultation+'</div>',/one visible paid consultation selector/],
+    ["lost pre-hydration booking selector","app/[locale]/services/page.tsx",'id="consultation" serviceBooking ','id="consultation" serviceBooking={false} ',/one visible paid consultation selector/],
+    ["wrong paid consultation target","app/[locale]/services/page.tsx",'id="consultation" serviceBooking','id="wrong-consultation" serviceBooking',/preserves its public anchor target/],
+    ["wrong paid consultation locale","app/[locale]/services/page.tsx",'<PublicConsultationCta locale={locale as Locale}','<PublicConsultationCta locale="en"',/preserves the selected locale/,"ru"],
+    ["paid consultation moved behind offers","app/[locale]/services/page.tsx",serviceConsultation+'\n        <ServicesStudioOffers locale={locale as Locale} />','<ServicesStudioOffers locale={locale as Locale} />\n        '+serviceConsultation,/locale-specific Services order/],
+    ["Spanish paid consultation moved before testimonials","app/es/services/page.tsx",'<PersonalTestimonials locale="es" variant="services" />\n      <ServicesMethodVideos locale="es" />\n      '+serviceConsultation.replace('locale={locale as Locale}','locale="es"'),serviceConsultation.replace('locale={locale as Locale}','locale="es"')+'\n      <PersonalTestimonials locale="es" variant="services" />\n      <ServicesMethodVideos locale="es" />',/locale-specific Services order/,"es"],
+    ["hidden actual booking branch","components/public-consultation-cta.tsx",'return <ConsultationCartEntry locale={locale} id={id} />;','return <div style={{display:"none"}}><ConsultationCartEntry locale={locale} id={id} /></div>;',/one visible paid consultation selector/],
   ]) await t.test("rejects " + name, async () => {
     const original = currentHomeSource(path);
     assert.ok(original.includes(before), "Exact mutation target exists: " + name);
@@ -119,27 +131,19 @@ test("new DAO free page is independent of two existing personal service landings
   assert.match(read("components/core-service-detail.module.css"), /@media\(max-width:760px\)/);
 });
 
-test("free diagnostic retains private-safe detailed form, drawing instructions, and illustrative scenes", () => {
+test("free diagnostic reuses private intake, drawing instructions and illustrative scenes", () => {
   const intake = read("components/free-drawing-intake.tsx");
-  const tracking = read("components/acquisition-event-link.tsx");
   const landing = read("components/free-entry-landing.tsx");
   const offer = read("app/[locale]/services/free-situation-review/page.tsx");
-  assert.match(intake, /copyButton: "Copy answers"/);
-  assert.match(intake, /<ContactChannelChooser[\s\S]*?whatsappUrl=\{whatsappUrl\}/);
-  assert.match(intake, /onChannelClick=\{\(\) => \{ void copyAnswers\(\); \}\}/);
-  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /readyRef\.current\?\.focus\(\)/);
-  assert.match(intake, /Nothing has been sent/);
-  const draft = intake.slice(intake.indexOf("const whatsappUrl ="), intake.indexOf("function changeAnswer"));
-  assert.match(draft, /request: t\.whatsappIntro/);
-  assert.match(draft, /topic: t\.options\[topic\]/);
-  assert.doesNotMatch(draft, /\b(?:answers|problem|goal|obstacle|tried)\b/);
-  assert.match(tracking, /onClick\?\.\(\); emit\(event\)/);
+  assert.match(intake, /\/coaching\/intake/);
+  assert.match(intake, /ME, MY GOAL and MY PROBLEM/);
+  assert.match(intake, /Saving does not send it to a coach/);
+  assert.match(intake, /Do not send private answers/);
   assert.match(offer, /kind="situation"/);
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\}/);
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/report-lighthouse-coast\.webp"/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|sendBeacon|fetch\(/);
+  assert.doesNotMatch(intake, /navigator\.clipboard|ContactChannelChooser|localStorage|sessionStorage|sendBeacon|fetch\(/);
 });
 
 function assertBusinessPriceScope(source) {

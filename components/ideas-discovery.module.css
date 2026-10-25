@@ -1324,3 +1324,221 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .root .aphorisms{min-width:0;width:100%}
   .root .aphorisms li{width:100%;padding:10px 9px}
 }
+
+
+/* Temple Insights · restore the Co-Ideae scenic composition (25 Oct 2026).
+   All controls are real HTML and use the existing private in-browser engine.
+   Keep this scoped: Ideas/Coaching presentation must not change. */
+.heroLayout { display: contents; }
+.root[data-temple-mode="true"] {
+  margin: 0 0 13px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.templeScenic {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  min-height: 475px;
+  padding: clamp(19px, 3vw, 31px);
+  border: 1px solid #decfbd;
+  border-radius: 19px;
+  overflow: hidden;
+  background: #f4eee2;
+  color: #3f352b;
+}
+.templeScenic::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url("/images/holistic-house/ideas-pine-sharp.avif") 70% 45% / cover no-repeat;
+}
+.templeScenic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgba(255,250,242,.82), rgba(255,250,242,0) 71%),
+    linear-gradient(90deg, rgba(255,250,242,.95), rgba(255,250,242,.76) 36%, rgba(255,250,242,.13) 83%);
+}
+/* Previous global .root .hero rules hide the heading and the artwork.
+   Restore both for Temple only; the scenic wrapper owns the photograph. */
+.root[data-temple-mode="true"] .hero {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 23px;
+  min-height: 226px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+  box-shadow: none;
+}
+.root[data-temple-mode="true"] .hero .heading {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+.root[data-temple-mode="true"] .hero .heading :is(h1,h2) {
+  margin: 8px 0 0;
+  font-size: clamp(40px, 5.6vw, 67px);
+  line-height: 1.03;
+  letter-spacing: -.045em;
+  color: #30251e;
+}
+.root[data-temple-mode="true"] .hero .heading .lead {
+  max-width: 390px;
+  margin-top: 9px;
+  color: #564a40;
+  font-size: 15px;
+  line-height: 1.43;
+}
+.root[data-temple-mode="true"] .hero .question {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.root[data-temple-mode="true"] .hero .question textarea {
+  min-height: 54px;
+  max-height: 146px;
+  padding-top: 14px;
+  padding-bottom: 13px;
+  border: 1px solid #cbb9a8;
+  border-radius: 15px;
+  background: rgba(255,254,251,.94);
+  box-shadow: 0 4px 14px rgba(77,49,32,.09);
+}
+.root[data-temple-mode="true"] .heroActions {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+}
+.root[data-temple-mode="true"] .heroActions .testButton,
+.root[data-temple-mode="true"] .heroActions .diagnosticAction {
+  display: flex;
+  min-height: 54px;
+  width: 100%;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 13px;
+}
+.root[data-temple-mode="true"] .heroActions .testButton {
+  gap: 10px;
+  background: linear-gradient(107deg, #987052, #785039);
+  border: 1px solid #79533c;
+  color: #fffdf7;
+  box-shadow: 0 5px 13px rgba(88,55,30,.12);
+}
+.root[data-temple-mode="true"] .heroActions .testButton:hover {
+  background: linear-gradient(107deg, #845d42, #603d2d);
+}
+.root[data-temple-mode="true"] .heroActions .testButton .modeYin,
+.root[data-temple-mode="true"] .heroActions .testButton .testButtonKicker,
+.root[data-temple-mode="true"] .heroActions .testButton .testButtonText strong {
+  color: #fffdf7;
+}
+.root[data-temple-mode="true"] .heroActions .testButton .testButtonText {
+  text-align: center;
+}
+.root[data-temple-mode="true"] .heroActions .diagnosticAction {
+  background: rgba(255,254,251,.94);
+  border: 2px solid #9a7459;
+  color: #6a4734;
+  font-size: 14px;
+  box-shadow: 0 4px 13px rgba(88,55,30,.07);
+}
+.root[data-temple-mode="true"] .heroActions .diagnosticAction:hover {
+  background: #fffaf4;
+  border-color: #694830;
+}
+.root[data-temple-mode="true"] .heroUtility { margin: 0; }
+.root[data-temple-mode="true"] .utilityLinks {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 4px;
+}
+.root[data-temple-mode="true"] .heroUtility .privacyDisclosure {
+  margin: 0;
+  color: #514c46;
+}
+.root[data-temple-mode="true"] .heroUtility .privacyDisclosure summary { min-height: 36px; }
+.root[data-temple-mode="true"] .heroUtility .freeTestLink {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 9px 13px;
+  border: 1px solid rgba(228,211,191,.64);
+  border-radius: 12px;
+  background: rgba(255,253,249,.86);
+  color: #76543e;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 13px;
+}
+.root[data-temple-mode="true"] .heroUtility .freeTestLink:hover {
+  background: #fffcf8;
+}
+@media (max-width: 600px) {
+  .templeScenic {
+    min-height: 480px;
+    padding: 17px 15px 14px;
+    gap: 7px;
+    border-radius: 17px;
+  }
+  .templeScenic::before { background-position: 69% 45%; }
+  .templeScenic::after {
+    background:
+      linear-gradient(0deg, rgba(255,250,242,.76), rgba(255,250,242,0) 71%),
+      linear-gradient(90deg, rgba(255,250,242,.94) 0%, rgba(255,250,242,.70) 42%, rgba(255,250,242,.10) 90%);
+  }
+  .root[data-temple-mode="true"] .hero { min-height: 231px; gap: 18px; }
+  .root[data-temple-mode="true"] .hero .heading :is(h1,h2) {
+    font-size: clamp(35px, 9.2vw, 44px);
+  }
+  .root[data-temple-mode="true"] .hero .heading .lead {
+    max-width: 84%;
+    margin-top: 7px;
+    font-size: 13.5px;
+    line-height: 1.37;
+  }
+  .root[data-temple-mode="true"] .heroActions .testButton,
+  .root[data-temple-mode="true"] .heroActions .diagnosticAction {
+    min-height: 54px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .root[data-temple-mode="true"] .heroActions .testButton .testButtonText { text-align: center; }
+  .root[data-temple-mode="true"] .heroActions .testButton .testButtonText strong { font-size: 14px; }
+  .root[data-temple-mode="true"] .heroUtility .freeTestLink { min-height: 46px; }
+}
+@media (max-width: 360px) {
+  .templeScenic { min-height: 475px; padding: 13px 11px 12px; }
+  .root[data-temple-mode="true"] .hero { min-height: 226px; }
+  .root[data-temple-mode="true"] .hero .heading :is(h1,h2) { font-size: 34px; }
+  .root[data-temple-mode="true"] .hero .heading .lead { max-width: 92%; font-size: 12.5px; }
+  .root[data-temple-mode="true"] .heroActions .diagnosticAction { font-size: 12.2px; }
+  .root[data-temple-mode="true"] .heroUtility .freeTestLink { font-size: 12px; }
+}

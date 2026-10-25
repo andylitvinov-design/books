@@ -56,3 +56,32 @@
 @media(max-width:650px){.shell{width:calc(100% - 20px);padding:8px 0 92px}.hero{min-height:480px;border-radius:17px;align-items:flex-end}.heroImage{object-position:63% center}.heroOverlay{background:linear-gradient(90deg,rgba(18,40,35,.95),rgba(24,45,38,.75) 74%,rgba(27,47,39,.53)),linear-gradient(0deg,rgba(16,36,31,.54),transparent 74%)}.heroCopy{padding:25px 19px 26px}.heroCopy h1{font-size:clamp(42px,10.5vw,57px);line-height:1.01}.heroHeadline{font-size:clamp(23px,6.4vw,30px);margin:13px 0 9px}.heroLead{font-size:13px;line-height:1.5}.eyebrow{font-size:10px;letter-spacing:.1em}.pathControls{grid-template-columns:1fr;gap:9px;margin-top:20px}.pathControls a{min-height:57px;padding:11px 13px;font-size:13px}.pathControls a>svg:last-child{width:17px;height:17px}.section{margin-bottom:12px;padding:15px 11px;border-radius:17px}.sectionHeading h2{font-size:clamp(25px,6.6vw,34px)}.sectionHeading>p:last-child{font-size:12px}.options{gap:9px}.option{grid-template-columns:clamp(97px,29vw,126px) minmax(0,1fr);gap:10px;padding:7px;border-radius:14px}.optionPhoto{min-height:142px;border-radius:10px}.optionContent{gap:6px;padding:5px 2px 4px 0}.optionContent h3{font-size:clamp(19px,5vw,23px)}.optionContent p{font-size:11.7px;line-height:1.4}.note{font-size:10.5px}.primaryAction,.secondaryAction,.libraryLink{min-height:44px;font-size:11px;padding:8px}.freePanel{padding:8px;margin-top:13px}.masterPanel{margin-top:13px}}
 @media(max-width:350px){.shell{width:calc(100% - 14px)}.hero{min-height:505px}.heroCopy{padding:22px 14px}.heroCopy h1{font-size:42px}.heroHeadline{font-size:22px}.heroLead{font-size:12px}.pathControls a{min-height:54px;font-size:12px;padding:9px 10px}.option{grid-template-columns:84px minmax(0,1fr);gap:8px}.optionPhoto{min-height:132px}.optionContent h3{font-size:18.5px}.optionContent p{font-size:11.2px}.freeTag,.priceTag{font-size:9px}.section{padding:12px 8px}}
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto;transition:none}}
+
+
+/* Conversion-first clarity: free form and live session appear before optional symbolic tools. */
+.option[data-holistic-offer="master"]{grid-column:auto}
+.option[data-holistic-offer="ai"]{grid-column:1/-1;background:#f9f6f0}
+.symbolicDetails{max-width:100%}
+.symbolicDetails summary{display:flex;align-items:center;min-height:44px;padding:12px;border:1px solid #d8c7b5;border-radius:11px;background:#fffbf5;color:#6a4b3a;font:700 13px/1.4 Arial,sans-serif;cursor:pointer}
+.symbolicDetails[open] summary{margin-bottom:12px}
+@media(max-width:850px){.option[data-holistic-offer="ai"]{grid-column:auto}}
+@media(max-width:650px){.hero{min-height:365px}.heroCopy h1{font-size:clamp(34px,9vw,46px)}.heroHeadline{font-size:clamp(21px,5.8vw,27px)}.pathControls{margin-top:16px}}
+@media(max-width:350px){.hero{min-height:392px}.heroCopy h1{font-size:34px}}
+
+/* Temple first: the scenic question block is the primary visual, not a
+   duplicate offer form nested in a tinted panel. Existing offers remain below. */
+.section[data-holistic-insights] .freePanel {
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  scroll-margin-top: 85px;
+}
+@media (max-width: 650px) {
+  .section[data-holistic-insights] { padding: 9px 8px 15px; }
+  .section[data-holistic-insights] .freePanel { margin-bottom: 11px; }
+}
+@media (max-width: 350px) {
+  .section[data-holistic-insights] { padding: 7px 5px 12px; }
+}

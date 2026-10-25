@@ -5,7 +5,7 @@ import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skill
 import {
   oporaExperienceSupport, oporaExperienceSupportValid,
 } from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
+import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -100,9 +100,9 @@ test('support is the SECOND visible screen of each of 14 days in all 3 languages
         const supporting=nodes(h.tree).filter(x=>x.props?.['data-opora-daily-support']===day)
         assert.equal(supporting.length,1,'Missing supportive step '+locale+':'+day)
         assert.ok(textOf(h.tree).includes(kicker[locale]),'Missing WHY label '+locale)
-        assert.ok(textOf(h.tree).includes(oporaAs59Day(day,locale).purposeTitle))
-        assert.ok(textOf(h.tree).includes(oporaAs59Day(day,locale).purpose))
-        assert.ok(!textOf(h.tree).includes(oporaAs59Day(day,locale).practice),'Task shown too early')
+        assert.ok(textOf(h.tree).includes(oporaAs60Day(day,locale).purposeTitle))
+        assert.ok(textOf(h.tree).includes(oporaAs60Day(day,locale).purpose))
+        assert.ok(!textOf(h.tree).includes(oporaAs60Day(day,locale).practice),'Task shown too early')
         assert.ok(!nodes(h.tree).some(x=>x.props?.['data-gentle-guidance']==='support'),'Support is not a hint')
         assert.equal(nodes(h.tree).filter(x=>x.props?.['aria-pressed']!==undefined).length,0,
           'No rating, answer, task confirmation or engagement choice on screen two')
@@ -114,7 +114,7 @@ test('support is the SECOND visible screen of each of 14 days in all 3 languages
         findButton(h.tree,next[locale]).props.onClick();await h.settle()
         await advanceOporaTo(h,'practice',next[locale])
         assert.equal(nodes(h.tree).filter(x=>x.props?.['data-opora-daily-support']).length,0)
-        assert.ok(textOf(h.tree).includes(oporaAs59Day(day,locale).practice),
+        assert.ok(textOf(h.tree).includes(oporaAs60Day(day,locale).practice),
           'Single authored daily practice must be reachable after the support screen')
         assert.equal(writes,0,'Reading support must not persist practice or health data')
       }finally{h.unmount()}

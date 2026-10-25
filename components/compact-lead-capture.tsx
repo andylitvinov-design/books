@@ -28,8 +28,8 @@ const copy = {
     error: "We could not confirm whether your request was saved. Retry the same request; do not submit a new one yet.",
     contextChanged: "An earlier request is still unconfirmed. Return to its original service to retry it.",
     handoffError: "Your contact was saved, but the messenger did not open. Use either link below.",
-    saved: "Your request is saved",
-    next: "Continue in your preferred messenger. Sending the message is your choice.",
+    saved: "Request saved — awaiting a personal reply",
+    next: "Keep your reference. No reply time or appointment is confirmed yet. Messengers are for scheduling only; agree a secure handoff for any personal materials.",
     reference: "Reference",
     message: "I would like to ask about this service. Please let me know the next step.",
   },
@@ -48,8 +48,8 @@ const copy = {
     error: "Пока не удалось подтвердить сохранение заявки. Повторите ту же заявку; пока не создавайте новую.",
     contextChanged: "Предыдущая заявка ещё не подтверждена. Вернитесь к исходной услуге, чтобы повторить её.",
     handoffError: "Контакт сохранён, но чат не открылся. Выберите мессенджер по ссылке ниже.",
-    saved: "Заявка сохранена",
-    next: "Теперь можно написать в удобный мессенджер. Сообщение отправляете вы сами.",
+    saved: "Заявка сохранена — ожидает личного ответа",
+    next: "Сохраните номер заявки. Срок ответа и время встречи ещё не подтверждены. В мессенджере согласуйте только организационные вопросы; для личных материалов нужна защищённая передача.",
     reference: "Номер заявки",
     message: "Хочу узнать подробнее об этой услуге. Подскажите, пожалуйста, следующий шаг.",
   },
@@ -68,8 +68,8 @@ const copy = {
     error: "No pudimos confirmar si se guardó tu solicitud. Reintenta la misma solicitud; no crees otra todavía.",
     contextChanged: "Hay una solicitud anterior sin confirmar. Vuelve al servicio original para reintentarla.",
     handoffError: "Tu contacto se guardó, pero no se abrió el chat. Elige uno de los enlaces.",
-    saved: "Solicitud guardada",
-    next: "Continúa en el mensajero que prefieras. Tú decides si envías el mensaje.",
+    saved: "Solicitud guardada — pendiente de respuesta personal",
+    next: "Conserva la referencia. Aún no se ha confirmado el plazo de respuesta ni una cita. Usa mensajería solo para coordinar; acuerda una entrega segura para materiales personales.",
     reference: "Referencia",
     message: "Me gustaría recibir información sobre este servicio y el próximo paso.",
   },
@@ -87,7 +87,7 @@ function parseContact(raw: string): { email: string; phone: string } | null {
 
 /** Shared public intake: a server-confirmed CRM write always precedes messenger handoff. */
 export function CompactLeadCapture({
-  locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant, formatOptions, formatLabel,
+  locale, serviceTitle, title, lead, id, disclaimer, sourcePath, variant, formatOptions, formatLabel, selectedFormatValue, onFormatChange,
 }: {
   locale: PublicLocale;
   serviceTitle: string;
@@ -100,12 +100,16 @@ export function CompactLeadCapture({
   variant?: "inline";
   formatOptions?: readonly { readonly value: string; readonly label: string; readonly description?: string }[];
   formatLabel?: string;
+  /** Optional controlled selection shared with offer cards on multi-offer landings. */
+  selectedFormatValue?: string;
+  onFormatChange?: (value: string) => void;
 }) {
   const t = copy[locale];
   const pathname = usePathname();
   const initialFormat = formatOptions?.[0]?.value || "";
   const [address, setAddress] = useState("");
-  const [selectedFormat, setSelectedFormat] = useState(initialFormat);
+  const [internalFormat, setInternalFormat] = useState(initialFormat);
+  const selectedFormat = selectedFormatValue ?? internalFormat;
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState<Channel | null>(null);
   const [error, setError] = useState("");
@@ -118,7 +122,14 @@ export function CompactLeadCapture({
   const inFlight = useRef(false);
   const mounted = useRef(false);
   const handoff = useRef<Window | null>(null);
-  const contextKey = JSON.stringify([locale, serviceTitle, sourcePath || pathname, formatOptions || null]);
+  const contextKey = JSON.stringify([locale, serviceTitle, sourcePath || pathname,
+    formatOptions || null, selectedFormatValue ?? null]);
+  // Offer cards and the dropdown can control both format and service title on
+  // one landing. Preserve their entered contact and confirmed receipt while
+  // switching offers, but still treat every offer as a distinct write context.
+  const scopeKey = JSON.stringify([locale, sourcePath || pathname, formatOptions || null,
+    selectedFormatValue === undefined ? serviceTitle : null, selectedFormatValue !== undefined]);
+  const resetScope = useRef<string | null>(null);
   const activeContext = useRef(contextKey);
 
   const closeHandoff = (popup: Window | null) => {
@@ -136,11 +147,13 @@ export function CompactLeadCapture({
       setError(operation.current.context === contextKey ? t.error : t.contextChanged);
       return;
     }
+    if (resetScope.current === scopeKey) return;
+    resetScope.current = scopeKey;
     operation.current = null;
     setReference(""); setSavedWhatsapp(""); setSavedReferenceLabel("");
     setLockedChannel(null); setAddress(""); setConsent(false); setError("");
-    setSelectedFormat(initialFormat);
-  }, [contextKey, initialFormat, t.contextChanged, t.error]);
+    setInternalFormat(initialFormat);
+  }, [contextKey, scopeKey, initialFormat, t.contextChanged, t.error]);
 
   function currentWhatsappUrl() {
     // Contact and private answers never enter the public messenger draft.
@@ -276,7 +289,7 @@ export function CompactLeadCapture({
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>
               <select value={selectedFormat} required disabled={locked || busy !== null}
-                onChange={event => { if (!mayEdit()) return; setSelectedFormat(event.target.value); setError(""); }}>
+                onChange={event => { if (!mayEdit()) return; setInternalFormat(event.target.value); onFormatChange?.(event.target.value); setError(""); }}>
                 {formatOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>

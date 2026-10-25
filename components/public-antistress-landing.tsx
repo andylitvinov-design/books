@@ -134,7 +134,7 @@ const copy = {
     ],
     "processEyebrow": "НЕ ЛЕКЦИИ, А ОПЫТ",
     "processTitle": "Как проходит одно занятие",
-    "processLead": "Короткая последовательность: заметить состояние, выбрать фокус, попробовать упражнение и решить, что сохранить.",
+    "processLead": "Каждый день исследуем один навык через тело, эмоции, мысли и план, образ с необязательной музыкой, короткую практику и ритуал.",
     "steps": [
       {
         "number": "01",
@@ -149,7 +149,7 @@ const copy = {
       {
         "number": "03",
         "title": "Практика",
-        "text": "Фото, короткая инструкция, выбор ответа; доступна мягкая альтернатива."
+        "text": "Отдельные телесный, эмоциональный и ментальный опыты, образная медитация под музыку и маленький ритуал. Можно пропустить."
       },
       {
         "number": "04",
@@ -340,7 +340,7 @@ const copy = {
     ],
     "processEyebrow": "PRACTICE, NOT JUST THEORY",
     "processTitle": "What happens in a lesson",
-    "processLead": "A small sequence: notice how you are, choose a focus, try something and decide what is worth keeping.",
+    "processLead": "Each day explores one skill through body, feelings, thoughts and a future plan, guided imagery with optional music, a small experiment and a ritual.",
     "steps": [
       {
         "number": "01",
@@ -355,7 +355,7 @@ const copy = {
       {
         "number": "03",
         "title": "Guided practice",
-        "text": "An image, brief instructions and a choice of responses, with gentler alternatives."
+        "text": "Separate body, emotional and mental exercises, optional imagery and gentle music, plus a personal ritual. Skip whenever needed."
       },
       {
         "number": "04",
@@ -546,7 +546,7 @@ const copy = {
     ],
     "processEyebrow": "PRÁCTICA, NO SOLO TEORÍA",
     "processTitle": "Cómo es una lección",
-    "processLead": "Una secuencia sencilla: observar tu estado, elegir un enfoque, probar algo y decidir qué conservar.",
+    "processLead": "Cada día explora una habilidad con cuerpo, emoción, pensamiento y plan, imagen con música opcional, un experimento y un ritual.",
     "steps": [
       {
         "number": "01",
@@ -561,7 +561,7 @@ const copy = {
       {
         "number": "03",
         "title": "Práctica guiada",
-        "text": "Una imagen, instrucciones breves y opciones, con alternativas suaves."
+        "text": "Cinco experiencias: cuerpo, emociones, pensamiento y plan, imagen con música opcional y un ritual seguro."
       },
       {
         "number": "04",

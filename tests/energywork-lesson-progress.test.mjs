@@ -13,10 +13,10 @@ const repo = read("lib/academy/energywork-course-repository.js")
 test("The visible slide counter uses five real lesson lengths and a separate introduction", () => {
   const sequence = energyworkSequence()
   const ranges = energyworkLessonRanges(sequence)
-  assert.equal(sequence.length, 63)
+  assert.equal(sequence.length, 64)
   assert.deepEqual(sequence.slice(3,10), ["flight-01","flight-02","flight-voices","flight-05","flight-04","flight-03","flight-done"], "Lesson 1 ends after the timed practice")
   assert.equal(ranges[0].start, 3, "Teacher welcome video and two welcome screens are outside lesson 1")
-  assert.deepEqual(ranges.map(range => range.count), [7, 15, 17, 15, 6])
+  assert.deepEqual(ranges.map(range => range.count), [7, 15, 17, 15, 7])
   assert.deepEqual(ranges.map(range => range.firstSlideId),
     ["flight-01", "tan-01", "kun-01", "ygg-01", "paths-01"])
   for (let i = 0; i < ranges.length; i++) {
@@ -52,6 +52,7 @@ test("Cabinet chapter picker uses saved owner progress and forbids deep-link ski
   assert.match(cabinet, /aria-disabled="true"/)
   assert.match(learner, /requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex/)
   assert.match(repo, /COURSE_STEP_NOT_READY/)
+  assert.match(learner, /async function jumpToSlide\(id: string\)/)
   // #1140 removed learner programme chapter cards; #1157 keeps guide-only links.
   // The actual saved chapter links remain in the cabinet, not this help drawer.
   assert.doesNotMatch(learner, /jumpToSlide\(lesson\.firstSlideId\)/)

@@ -76,15 +76,17 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
     "components/energywork-reiki-capture.tsx",
     "components/reiki-landing-forms.tsx",
     "components/yggdrasil-initiation-form.tsx",
-    "components/tantra-initiation-form.tsx",
+    "components/tantra-initiation-choice.tsx",
     "components/principles-of-energywork.tsx",
   ]) {
     const source = await read(file);
     assert.match(source, /<ContactChannelChooser/);
     assert.match(source, /stayAfterSave/);
   }
+  assert.match(await read("components/tantra-initiation-form.tsx"), /<TantraInitiationChoice/);
+  assert.match(await read("components/tantra-initiation-form.tsx"), /whatsappUrl: tantraInitiationWhatsAppUrl\(locale, intent\)/);
   assert.match(chooser, /stayAfterSave\?: boolean/);
-  assert.match(chooser, /if \(!stayAfterSave\) router\.push/);
+  assert.match(chooser, /if \(!stayAfterSave && !compactPhone\) router\.push/);
   assert.match(chooser, /fetch\("\/api\/service-enquiries", \{/);
   assert.match(chooser, /operationId: crypto\.randomUUID\(\)/);
   assert.match(chooser, /normalizePublicServiceEnquiry\(payload\)/);
@@ -97,7 +99,7 @@ test("all Reiki/Academy request forms wait for server-confirmed save before show
   assert.match(chooser, /data-contact-channel": "telegram"/);
   // An unsubmitted or failed request must never produce a fabricated CRM receipt.
   assert.match(chooser, /if \(busy \|\| googleBusy \|\| authAttempt\.current \|\| saved \|\| operationPending\.current\) return/);
-  assert.match(chooser, /if \(!mounted\.current \|\| activeContext\.current !== attempt\.context \|\| operation\.current !== attempt\) return/);
+  assert.match(chooser, /if \(!mounted\.current \|\| activeContext\.current !== attempt\.context \|\| operation\.current !== attempt\) \{\s*try \{ handoffWindow\?\.close\(\); \} catch \{[^}]*\}\s*return;/);
   assert.match(chooser, /const \[consent, setConsent\] = useState\(false\)/);
   assert.match(chooser, /setError\(c\.error\)/);
 });

@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
-import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
+import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {OPORA_DAY_ONE_RESTORED_KEYS,OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
@@ -58,7 +58,7 @@ async function saveAndOpenMap(f,locale){
   assert.deepEqual(cards.map(n=>n.props['data-opora-journey-day']),
     Array.from({length:14},(_,index)=>index+1),'Each scheduled day appears exactly once, in order')
   for(const card of cards){
-    const day=card.props['data-opora-journey-day'],copy=oporaAs59Day(day,locale)
+    const day=card.props['data-opora-journey-day'],copy=oporaAs60Day(day,locale)
     assert.ok(textOf(card).includes(copy.title),'Day '+day+' uses its own title')
     assert.ok(textOf(card).includes(copy.practice),'Day '+day+' uses its own practice')
     assert.equal(card.props['data-day-status'],day<=f.day?'completed':day===f.day+1?'next':'locked')
@@ -85,7 +85,7 @@ test('Day 1 save shows all fourteen lessons, optional home-screen setup and next
       const map=await saveAndOpenMap(f,locale)
       assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_DAY_ONE_RESTORED_KEYS])
       for(let day=1;day<=14;day++)
-        assert.ok(textOf(map).includes(oporaAs59Day(day,locale).title))
+        assert.ok(textOf(map).includes(oporaAs60Day(day,locale).title))
       assert.equal(f.finishCount,0)
       await press(f.h,"I'm committed")
       assert.ok(textOf(f.h.tree).includes(w.habit))
@@ -114,13 +114,13 @@ test('Days 2, 13 and 14 keep day-specific previews and never invent a fifteenth 
     try{
       const map=await saveAndOpenMap(f,locale)
       assert.deepEqual(f.saved[0].visitedSlideKeys,[...OPORA_EXPERIENCE_PRE_SAVE_KEYS])
-      assert.ok(textOf(map).includes(oporaAs59Day(day,locale).title))
+      assert.ok(textOf(map).includes(oporaAs60Day(day,locale).title))
       if(day===14){
         assert.ok(textOf(map).includes(w.finished))
         assert.doesNotMatch(textOf(map),/Day 15|День 15/)
       }else{
-        assert.ok(textOf(map).includes(oporaAs59Day(day+1,locale).title))
-        assert.ok(textOf(map).includes(oporaAs59Day(day+1,locale).practice))
+        assert.ok(textOf(map).includes(oporaAs60Day(day+1,locale).title))
+        assert.ok(textOf(map).includes(oporaAs60Day(day+1,locale).practice))
       }
       await press(f.h,"I'm committed")
       const ending=oporaEndingCopy(locale)
@@ -148,7 +148,8 @@ test('Day 1 habit setup is optional and backtracking the saved ending never resa
       assert.ok(!nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']))
       assert.equal(f.finishCount,0,'Declining setup still offers the ending before closing')
       await press(f.h,w.back) // Invitation -> optional setup choice, still not configured.
-      assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-habit-skip']))
+      assert.equal(nodes(f.h.tree).filter(n=>n.props?.['data-opora-habit-skip']).length,1,
+        'One explicit decline control; merging invitation implementations must not duplicate it')
       await press(f.h,w.back) // Habit invitation -> read-only map.
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-course-map']==='all-14-days'))
       await press(f.h,w.back) // Map -> confirmed receipt.

@@ -22,5 +22,11 @@ Migration `20261023185000_hh_coaching_tradition_models_seed.sql` inserts 2 model
 ## Remaining work
 1. Merge and verify dependencies PRs #1706 and #1707, including applied migrations, signed-in GROW save/reload and iPhone QA.
 2. Generalize Personal Coaching Session to persist **separate** version-pinned Egyptian/Greek sessions without replacing GROW, with stable choice IDs and private endcap data.
-3. Add independently selectable Academy / My Courses cards, integrate question render, final summary and translated voice interaction; auth/RLS and 320–430px E2E.
+3. Keep Egyptian/Greek methods selectable only inside Coaching, without duplicate Academy or My Courses promotional cards; preserve version-pinned private player and history. Auth/RLS and 320–430px signed-in E2E remain.
 4. Change schemes to `published=true` only after editor/QA gate and verify exact Vercel SHA + READY alias; update #1708.
+
+## Catalog / photograph clarification · 2026-10-25
+- Personal Coaching Session is a standalone photograph-led spotlight in Academy, outside Free Courses and the course count. It opens the existing public Coaching Lounge.
+- Egyptian (11 screens) and Greek (10 screens) Goal Planning remain distinct coaching methods **only in Coaching**. Remove duplicated Academy and My Courses cards while retaining stable template IDs, protected encrypted answers, API, RLS and detail bookmarks. No database deletion.
+- Replace unrelated Reiki covers with matching licensed photographs: Egyptian papyrus ([public domain](https://commons.wikimedia.org/wiki/File:Egypt_bookofthedead.jpg)) and Greek Athena in Louvre ([CC0](https://commons.wikimedia.org/wiki/File:Marble_statue_of_Athena,_Louvre.jpg)). They illustrate cultural motifs, not historical validation of these modern coaching approaches.
+- Reuse PR #1896. No paid API, CRM, messaging or migrations. A real authenticated iPhone Save → reload → resume → PDF remains separate E2E work.

@@ -1337,37 +1337,45 @@
 }
 
 
-/* Reports portrait: keep both green menus on one short iPhone screen.
-   Scope to private Reports only: do not alter the public Test Explorer,
-   result charts or portrait data. The picture and SVG scale together. */
+/* Reports portrait: make the source-backed diagram the first-screen focus.
+   Keep the public test explorer, desktop layout and scoring unchanged.
+   The large photo and SVG resize as one 360:390 composition. */
+.visual:not(.visualCompact) .portraitSectorChip > .portraitSectorShort{display:none}
+.visual:not(.visualCompact) .portraitSectorChip > .portraitSectorLong{display:block}
 @media(max-width:620px){
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact):has(.portraitRadar){
-    padding:3px;
+    padding:4px;
     border:0;
     box-shadow:none;
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorPicker{
-    margin:0 0 3px;
-    padding:3px;
+    margin:0 0 5px;
+    padding:4px;
     border-radius:10px;
+  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorGrid{
+    grid-template-columns:minmax(36px,.6fr) repeat(4,minmax(0,1fr));
+    gap:3px;
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorChip,
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorAll{
-    min-height:44px;
-    padding:3px 2px;
-    font-size:clamp(10px,2.7vw,11.5px);
-    line-height:1.1;
+    min-height:52px;
+    padding:4px 2px;
+    font-size:clamp(9px,2.5vw,11px);
+    line-height:1.15;
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorChip > span{
     max-width:100%;
     overflow-wrap:anywhere;
     hyphens:auto;
   }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorShort{display:block}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorLong{display:none}
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
     min-height:0;
-    /* Keep the SVG's ring circular and legible; shrinking only height would
-       letterbox it inside a wide background and break measured-label alignment. */
-    width:min(100%,clamp(229px,31.38svh,262px));
+    /* 43svh rather than 31.38svh: the user's chart should dominate a normal
+       iPhone viewport. Restrict by card width on narrow/short devices. */
+    width:min(100%,clamp(290px,43svh,390px));
     height:auto;
     aspect-ratio:360 / 390;
     margin:0 auto;
@@ -1377,8 +1385,7 @@
     width:100%;
     height:100%;
   }
-  /* Original photo crops at 80% from its left; scaling from stage height
-     keeps the face under the real-score SVG when the stage gets shorter. */
+  /* Preserve the photograph's crop under each real, original test score. */
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar) .portraitSource{
     width:auto!important;
     height:220%!important;
@@ -1387,23 +1394,20 @@
     transform:translate(-80%,-50%);
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions){
-    gap:4px;
-    margin:3px 0 1px;
+    gap:5px;
+    margin:4px 0 1px;
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button){
     flex-direction:row;
     flex-wrap:wrap;
-    min-height:44px;
-    padding:5px 3px;
+    min-height:52px;
+    padding:6px 3px;
     gap:3px;
-    font-size:clamp(10px,2.6vw,12px);
+    font-size:clamp(10px,2.65vw,12px);
     line-height:1.15;
   }
-  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:first-child){
-    display:none;
-  }
-  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:last-child){
-    width:12px;
-    height:12px;
-  }
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:first-child){display:none}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) :global(.hh-portrait-quick-actions) > :global(button) > :global(svg:last-child){width:12px;height:12px}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter{margin:4px 2px 0}
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter p{font-size:10.5px;line-height:1.32}
 }

@@ -5,9 +5,9 @@ on:
     paths:
       - 'public/holistic-house*.webmanifest'
       - 'app/holistic-house-icon/**'
-      - 'app/[locale]/install/**'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
-      - 'app/[locale]/app/layout.jsx'
+      - 'app/\[locale\]/install/**'
+      - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
+      - 'app/\[locale\]/app/layout.jsx'
       - 'components/app/install-holistic-house.jsx'
       - 'components/app/post-signup-install-offer.*'
       - 'components/app/app-workspace.jsx'
@@ -15,6 +15,7 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/workflow-next-route-filters.test.mjs'
       - 'tests/holistic-house-install-push-regression.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
   push:
@@ -23,8 +24,8 @@ on:
     paths:
       - 'public/holistic-house*.webmanifest'
       - 'app/holistic-house-icon/**'
-      - 'app/[locale]/install/**'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/\[locale\]/install/**'
+      - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
       - 'components/app/install-holistic-house.jsx'
       - 'components/app/post-signup-install-offer.*'
       - 'components/app/app-workspace.jsx'
@@ -32,6 +33,7 @@ on:
       - 'lib/pwa/install-prompt.js'
       - 'tests/holistic-house-post-signup-install.test.mjs'
       - 'tests/holistic-house-pwa.test.mjs'
+      - 'tests/workflow-next-route-filters.test.mjs'
       - '.github/workflows/holistic-house-mobile-install.yml'
 permissions:
   contents: read
@@ -50,7 +52,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify install manifests and private-message safety
-        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
         run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js
       - name: Build public phone installation pages without credentials

@@ -238,7 +238,7 @@
   .lead { margin-top: 5px; font-size: 12px; line-height: 1.45; }
   .offers { gap: 9px; }
   .offer {
-    grid-template-columns: clamp(86px, 28%, 132px) minmax(0, 1fr);
+    grid-template-columns: clamp(90px, 28%, 132px) minmax(0, 1fr);
     grid-template-areas: "photo content";
     column-gap: 9px;
     row-gap: 0;
@@ -283,7 +283,7 @@
   .lead { font-size: 12px; }
   .offers { gap: 8px; }
   .offer {
-    grid-template-columns: clamp(84px, 28%, 103px) minmax(0, 1fr);
+    grid-template-columns: clamp(90px, 28%, 103px) minmax(0, 1fr);
     column-gap: 7px;
     padding: 6px;
     min-height: 142px;

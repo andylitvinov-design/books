@@ -1,9 +1,10 @@
+import {fixtureModuleBody} from './helpers/fixture-module-body.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {createClient} from '@supabase/supabase-js'
 const source=readFileSync(new URL('../lib/clients/session-delivery-storage.js',import.meta.url),'utf8')
-const createStorageClient=new Function('createClient','fetch',source.replace(/^import .*\n/gm,'').replace(/^export \{ client as createPrivateStorageClient \}\r?\n/gm,'').replace(/^export \{client as privateStorageClient, sniff as sniffPrivateMedia\}\r?\n/gm,'').replace(/export /g,'')+';return client')
+const createStorageClient=new Function('createClient','fetch',fixtureModuleBody(source)+';return client')
 
 test('private Storage normalizes modern secret key to apikey rather than user Bearer JWT',async()=>{
   const key='sb_secret_synthetic_not_a_real_key';let captured

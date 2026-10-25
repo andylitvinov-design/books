@@ -1,3 +1,4 @@
+import {fixtureModuleBody} from './helpers/fixture-module-body.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -8,9 +9,7 @@ class AppError extends Error {
   constructor(code,status){super(code);this.name='AppError';this.code=code;this.status=status}
 }
 const storageSource=read('lib/clients/session-delivery-storage.js')
-const model=storageSource.replace(/^import .*\n/gm,'')
-  .replace(/^export \{ client as createPrivateStorageClient \}\r?\n/gm,'').replace(/^export \{client as privateStorageClient, sniff as sniffPrivateMedia\}\r?\n/gm,'')
-  .replace(/^export /gm,'')
+const model=fixtureModuleBody(storageSource)
 const PHOTO=Buffer.concat([Buffer.from([0xff,0xd8,0xff,0xe0]),Buffer.alloc(496)])
 const OWNER='client-owner',SESSION='session-one',ASSET='asset-one'
 const base={

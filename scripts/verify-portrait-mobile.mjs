@@ -161,20 +161,25 @@ try {
           const rect = node => node.getBoundingClientRect()
           const upper = rect(el.querySelector('[data-portrait-sectors]'))
           const lower = rect(el.querySelector('[data-testid="portrait-quick-actions"]'))
+          const picture = rect(el.querySelector('[data-radar-layout="full-circle"]'))
           const upperButtons = [...el.querySelectorAll('[data-portrait-sectors] button')]
           const lowerButtons = [...el.querySelectorAll('[data-testid="portrait-quick-actions"] button')]
           return {
             firstTop: upper.top,
             lastBottom: lower.bottom,
             span: lower.bottom - upper.top,
+            pictureWidth:picture.width,
+            pictureHeight:picture.height,
             minTopTap: Math.min(...upperButtons.map(node => rect(node).height)),
             minBottomTap: Math.min(...lowerButtons.map(node => rect(node).height)),
             viewportHeight: innerHeight,
             overflow: document.documentElement.scrollWidth - innerWidth,
           }
         })
-        assert.ok(frame.span <= 410,
-          `${locale} ${width}x${height}: portrait separates two menus by ${frame.span}px (max 410)`)
+        assert.ok(frame.span <= 535,
+          `${locale} ${width}x${height}: portrait separates two menus by ${frame.span}px (max 535)`)
+        assert.ok(frame.pictureWidth > 262 && Math.abs(frame.pictureHeight / frame.pictureWidth - 390 / 360) < .025,
+          `${locale} ${width}x${height}: chart must be enlarged and retain its native aspect ratio`)
         assert.ok(frame.firstTop >= -2 && frame.lastBottom <= frame.viewportHeight - 70,
           `${locale} ${width}x${height}: both menu rows must be onscreen above bottom nav`)
         assert.ok(frame.minTopTap >= 44 && frame.minBottomTap >= 44,

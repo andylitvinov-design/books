@@ -69,7 +69,9 @@ test('Day1 optional habit decline bypasses setup after one confirmed save in EN/
       await click(labels[locale].map);await click(locale==='es'?'Me comprometo':"I'm committed")
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-invitation']))
       assert.equal(nodes(f.h.tree).filter(n=>n.props?.['data-opora-first-lesson-habit-setup']).length,0)
-      const skip=nodes(f.h.tree).find(n=>n.props?.['data-opora-habit-skip'])
+      const skipControls=nodes(f.h.tree).filter(n=>n.props?.['data-opora-habit-skip'])
+      assert.equal(skipControls.length,1,'Optional device setup has exactly one decline control')
+      const skip=skipControls[0]
       assert.ok(skip);assert.equal(textOf(skip),w.skip);assert.equal(skip.props.disabled,false)
       await click(w.skip)
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-tomorrow-links']==='true'))
@@ -82,7 +84,7 @@ test('Day1 optional habit decline bypasses setup after one confirmed save in EN/
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-first-lesson-habit-setup']))
       assert.equal(nodes(f.h.tree).filter(n=>n.props?.['data-opora-habit-skip']).length,0)
       await click(w.back)
-      assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-habit-skip']))
+      assert.equal(nodes(f.h.tree).filter(n=>n.props?.['data-opora-habit-skip']).length,1)
       assert.equal(f.writes,1);assert.deepEqual(f.data,f.original)
     }finally{f.h.unmount()}
   }
@@ -106,5 +108,30 @@ test('an unconfirmed save never exposes congratulations, course map or habit set
         n.props?.['data-opora-first-lesson-habit-setup']))
       assert.deepEqual(f.data,f.original)
     }finally{f.h.unmount()}
+  }
+})
+
+test('initial Back preserves the explicit path callback while End lesson and the default still close',async()=>{
+  for(const locale of ['en','ru','es'])for(const explicitBack of [false,true]){
+    let pathBack=0,closes=0,writes=0
+    const data={cycle:{id:'00000000-0000-4000-8000-000000007059',day:1,durationDays:14},
+      programme:{id:'stress'},currentSession:null,
+      lesson:lessonFor('calm_regulation',1,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)}
+    const original=structuredClone(data)
+    const h=mount('opora-experience-player',{locale,data,onClose(){closes++},
+      ...(explicitBack?{onBackToPath(){pathBack++}}:{}),onFinish(){},onSession:async()=>{writes++;return true}})
+    try{
+      const back=findButton(h.tree,{en:'Back',ru:'Назад',es:'Atrás'}[locale])
+      assert.ok(back);assert.equal(back.props.disabled,false)
+      await back.props.onClick();await h.settle()
+      assert.equal(pathBack,explicitBack?1:0)
+      assert.equal(closes,explicitBack?0:1)
+      const close=nodes(h.tree).find(n=>n.type==='button'&&n.props?.['aria-label']==={en:'End lesson',ru:'Закончить',es:'Cerrar lección'}[locale])
+      assert.ok(close,'The independent close action remains available')
+      await close.props.onClick();await h.settle()
+      assert.equal(pathBack,explicitBack?1:0)
+      assert.equal(closes,explicitBack?1:2)
+      assert.equal(writes,0);assert.deepEqual(data,original)
+    }finally{h.unmount()}
   }
 })

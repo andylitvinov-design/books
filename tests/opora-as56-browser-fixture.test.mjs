@@ -6,13 +6,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildOporaBrowserFixture, oporaFixturePath, oporaFixtureDocument,
   oporaFixtureBundlePath, requireHostedOporaBrowser, assertFixtureCompilation } from '../scripts/opora-as56-browser-fixture.mjs'
-import { OPORA_BROWSER_FRESH_EDITION, OPORA_BROWSER_DAY5_COPY } from '../scripts/fixtures/opora-as59-day5-copy.mjs'
+import { OPORA_BROWSER_FRESH_EDITION, OPORA_BROWSER_DAY5_COPY } from '../scripts/fixtures/opora-as60-day5-copy.mjs'
+import { OPORA_BROWSER_FRESH_EDITION as HISTORICAL_EDITION, OPORA_BROWSER_DAY5_COPY as HISTORICAL_DAY5_COPY } from '../scripts/fixtures/opora-as59-day5-copy.mjs'
+import { oporaAs60Day, OPORA_EXPERIENTIAL_EDITION } from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import { oporaAs59Day, OPORA_SEVEN_SKILLS_EDITION } from '../lib/inner-growth/opora-as59-seven-skills.js'
 import { oporaAs58Day } from '../lib/inner-growth/opora-as58-one-action.js'
 import { oporaExperienceGuide, oporaExperienceSupport } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { mount, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
+import { mount, findButton, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
 import { advanceOporaTo } from './helpers/opora-gentle-navigation.mjs'
 
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
@@ -62,7 +64,8 @@ test('actual AS5.6 JSX, validators and CSS bundle unchanged with traceable sourc
   assert.ok(fixture.css.includes('.hh-app'))
   for (const path of ['components/app/opora-experience-player.jsx', 'components/app/opora-experience-player.module.css',
     'lib/inner-growth/opora-as56-experience-guides.js', 'lib/inner-growth/anti-stress-skills-v6.js',
-    'lib/inner-growth/course-slide-sequence.js', 'app/globals.css', 'app/[locale]/app/[[...path]]/workspace.css']) {
+    'lib/inner-growth/course-slide-sequence.js', 'lib/inner-growth/opora-as59-seven-skills.js',
+    'lib/inner-growth/opora-as60-experiential-practices.js', 'lib/inner-growth/opora-as60-integrated-journey.js', 'app/globals.css', 'app/[locale]/app/[[...path]]/workspace.css']) {
     const proof = fixture.sourceProof.find(item => item.path === path)
     assert.ok(proof, path)
     assert.equal(proof.sha256, createHash('sha256').update(await read(path)).digest('hex'))
@@ -77,14 +80,16 @@ test('OPORA fixture compilation still fails on every build error or warning', ()
   assert.doesNotThrow(() => assertFixtureCompilation({hasErrors:()=>false,hasWarnings:()=>false}))
 })
 
-test('fresh AS5.9 browser copy pins exact Day5 fields, not the archived exercise', async () => {
-  assert.equal(OPORA_BROWSER_FRESH_EDITION, 'as-5.9-seven-skills-v1')
-  assert.equal(OPORA_BROWSER_FRESH_EDITION, OPORA_SEVEN_SKILLS_EDITION)
+test('fresh AS6.0 browser copy pins exact Day5 fields, not the archived exercise', async () => {
+  assert.equal(OPORA_BROWSER_FRESH_EDITION, 'as-6.0-experiments-v1')
+  assert.equal(OPORA_BROWSER_FRESH_EDITION, OPORA_EXPERIENTIAL_EDITION)
   assert.deepEqual(Object.keys(OPORA_BROWSER_DAY5_COPY), ['ru', 'en', 'es'])
   for (const locale of ['ru', 'en', 'es']) {
-    const copy = OPORA_BROWSER_DAY5_COPY[locale], day = oporaAs59Day(5, locale)
-    assert.deepEqual(copy, { supportTitle: day.purposeTitle, purpose: day.purpose, practice: day.practice })
+    const copy = OPORA_BROWSER_DAY5_COPY[locale], day = oporaAs60Day(5, locale)
+    assert.deepEqual(copy, { supportTitle: day.purposeTitle, purpose: day.purpose, practice: day.practice, experiment: day.experiment })
     assert.notEqual(copy.practice, oporaAs58Day(5, locale).practice)
+    assert.notEqual(copy.practice, oporaAs59Day(5, locale).practice)
+    assert.ok((copy.practice.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
     assert.notEqual(copy.practice, oporaExperienceGuide(5, locale))
     assert.notEqual(copy.purpose, oporaExperienceSupport(5, locale).body)
     assert.ok(copy.practice.length <= 140 && copy.practice.split(/\s+/u).length <= 20)
@@ -104,7 +109,7 @@ test('fresh AS5.9 browser copy pins exact Day5 fields, not the archived exercise
   ]) assert.ok(browser.includes(binding), binding)
 })
 
-test('fresh AS5.9 Day5 renders the pinned support, overview and practice without writes', async () => {
+test('fresh AS6.0 Day5 renders the pinned support, overview and practice without writes', async () => {
   for (const locale of ['ru', 'en', 'es']) {
     const copy = OPORA_BROWSER_DAY5_COPY[locale]
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
@@ -152,5 +157,91 @@ test('saved AS5.8 Day5 retains its original practice and never adopts fresh brow
       assert.equal(saves, 0)
       assert.deepEqual(data, original)
     } finally { h.unmount() }
+  }
+})
+
+// Keep the exact old predicate and negative proof. AS6.0 does not rewrite a
+// saved AS5.9 lesson or retroactively approve its two-action Day5 wording.
+function assertOriginalBriefGate(brief) {
+  assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
+  assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)
+}
+test('historical AS5.9 exact copy remains unchanged and still fails the original single-action gate', () => {
+  assert.equal(HISTORICAL_EDITION, OPORA_SEVEN_SKILLS_EDITION)
+  for (const locale of ['ru', 'en', 'es']) {
+    const copy = HISTORICAL_DAY5_COPY[locale], day = oporaAs59Day(5, locale)
+    assert.deepEqual(copy, { supportTitle: day.purposeTitle, purpose: day.purpose, practice: day.practice })
+    assert.throws(() => assertOriginalBriefGate(copy.practice), { code: 'ERR_ASSERTION' })
+    assertOriginalBriefGate(OPORA_BROWSER_DAY5_COPY[locale].practice)
+  }
+})
+
+test('saved AS5.9 Day5 keeps its exact archived practice without AS6 micro-steps or writes', async () => {
+  for (const locale of ['ru', 'en', 'es']) {
+    const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
+      programme: { id: 'stress' },
+      currentSession: { signals: { opora54: { answers: { experienceEdition: HISTORICAL_EDITION } } } },
+      lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
+    const original = structuredClone(data)
+    let saves = 0
+    const h = mount('opora-experience-player', { locale, data, reviewOnly: true, onClose() {}, onFinish() {},
+      onSession: async () => { saves++; return false } })
+    try {
+      await advanceOporaTo(h, 'practice', { ru: 'Продолжить', en: 'Continue', es: 'Continuar' }[locale])
+      const practice = nodes(h.tree).find(n => n.props?.['data-opora-one-daily-practice'] === 5)
+      assert.equal(textOf(practice.props.children[0]), HISTORICAL_DAY5_COPY[locale].practice)
+      assert.equal(nodes(h.tree).filter(n => n.props?.['data-opora-practical-skills-version'] === HISTORICAL_EDITION).length, 1)
+      assert.equal(nodes(h.tree).filter(n => n.props?.['data-opora-micro-step']).length, 0)
+      assert.equal(saves, 0); assert.deepEqual(data, original)
+    } finally { h.unmount() }
+  }
+})
+
+test('fresh AS6.0 Day5 shows one exact experiment step at a time, with optional unsaved choices', async () => {
+  for (const locale of ['ru', 'en', 'es']) {
+    const copy = OPORA_BROWSER_DAY5_COPY[locale]
+    const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
+      programme: { id: 'stress' }, currentSession: null,
+      lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
+    const original = structuredClone(data)
+    let saves = 0
+    const h = mount('opora-experience-player', { locale, data, onClose() {}, onFinish() {},
+      onSession: async () => { saves++; return false } })
+    const next = { ru: 'Продолжить', en: 'Continue', es: 'Continuar' }[locale]
+    const microNext = { ru: 'Следующий шаг', en: 'Next step', es: 'Siguiente paso' }[locale]
+    const press = async label => { const b=findButton(h.tree,label); assert.ok(b,label); assert.equal(b.props.disabled,false); await b.props.onClick(); await h.settle() }
+    try {
+      await advanceOporaTo(h, 'practice', next)
+      for (let step = 0; step < 3; step++) {
+        const visible = nodes(h.tree).filter(n => n.props?.['data-opora-micro-step'])
+        assert.equal(visible.length, 1)
+        assert.equal(visible[0].props['data-opora-micro-step'], step + 1)
+        assert.equal(textOf(visible[0]), copy.experiment.steps[step])
+        const choices = nodes(h.tree).find(n => n.props?.role === 'group' && n.props?.['aria-label'] === copy.experiment.prompt)
+        if (step < 2) { assert.equal(choices, undefined); await press(microNext) }
+        else {
+          const buttons=nodes(choices).filter(n => n.type === 'button')
+          assert.deepEqual(buttons.map(n => textOf(n)), copy.experiment.choices.map(c => c.label))
+          assert.ok(buttons.every(n => n.props['aria-pressed'] === false))
+          await press(copy.experiment.choices[0].label)
+          assert.equal(findButton(h.tree,copy.experiment.choices[0].label).props['aria-pressed'],true)
+        }
+        assert.equal(saves, 0); assert.deepEqual(data, original)
+      }
+      await press(next)
+      assert.ok(nodes(h.tree).some(n => n.props?.['data-opora-current-screen'] === 'ritualPractice'))
+      assert.equal(nodes(h.tree).filter(n => n.props?.['data-opora-micro-step']).length, 0)
+      assert.equal(saves, 0); assert.deepEqual(data, original)
+    } finally { h.unmount() }
+    // A separate fresh learner can skip without traversing steps or selecting a choice.
+    const skip = mount('opora-experience-player', { locale, data, onClose() {}, onFinish() {},
+      onSession: async () => { saves++; return false } })
+    try {
+      await advanceOporaTo(skip, 'practice', next)
+      assert.equal(nodes(skip.tree).find(n => n.props?.['data-opora-micro-step'])?.props['data-opora-micro-step'], 1)
+      await findButton(skip.tree,next).props.onClick(); await skip.settle()
+      assert.ok(nodes(skip.tree).some(n => n.props?.['data-opora-current-screen'] === 'ritualPractice'))
+      assert.equal(saves, 0); assert.deepEqual(data, original)
+    } finally { skip.unmount() }
   }
 })

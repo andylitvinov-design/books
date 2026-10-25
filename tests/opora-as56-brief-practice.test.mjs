@@ -1,8 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs59Day,OPORA_SEVEN_SKILLS_EDITION} from '../lib/inner-growth/opora-as59-seven-skills.js'
+import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {oporaAs58Day,oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
+import {oporaAs60Day,OPORA_EXPERIENTIAL_EDITION} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -57,21 +58,22 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
     assert.deepEqual(instruction.toLocaleLowerCase().split(/[^\p{L}]+/u).filter(x=>verbs.includes(x)),[actions[locale][day-1]])
     assert.doesNotMatch(instruction,/экзамен|обязан|должны|\bquiz\b|\bexam\b|\byou must\b|\bdebes\b/iu)
   })
-  test(`AS5.7 ${locale} day ${day}: fresh AS5.9 player preserves owner title, practice and voluntary hint without writes`,async()=>{
+  test(`AS5.7 ${locale} day ${day}: fresh AS6.0 player preserves current title, practice and voluntary hint without writes`,async()=>{
     const f=fixture(locale,day),t=words[locale]
     try{
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
       await advanceOporaTo(f.h,'practice',t.next)
-      const title=day===1?{en:'Look at three objects',ru:'Посмотрите на три предмета',es:'Mira tres objetos'}[locale]
-        :oporaAs59Day(day,locale).title
+      const current=oporaAs60Day(day,locale),title=current.title
       assert.ok(textOf(f.h.tree).includes(title))
       const practice=nodes(f.h.tree).find(n=>n.props?.['data-opora-one-daily-practice']===day)
       assert.ok(practice,'Exactly rendered production practice text is present')
-      assert.equal(textOf(practice.props.children[0]),oporaAs59Day(day,locale).practice)
-      assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-practical-skills-version']===OPORA_SEVEN_SKILLS_EDITION))
+      assert.equal(textOf(practice.props.children[0]),current.practice)
+      assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-practical-skills-version']===OPORA_EXPERIENTIAL_EDITION))
       assert.notEqual(textOf(practice.props.children[0]),oporaAs58Day(day,locale).practice,
         'Fresh lessons never revert to the archived AS5.8 exercise')
+      assert.notEqual(textOf(practice.props.children[0]),oporaAs59Day(day,locale).practice,
+        'Fresh lessons never revert to the archived AS5.9 exercise')
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],false)
       await f.click(t.help)
@@ -95,7 +97,7 @@ for(const locale of ['ru','en','es']){
       try{
         await advanceOporaTo(f.h,'practice',t.next)
         if(priorHelp)await f.click(t.help)
-        if(source!=='practice')await f.click(t.next)
+        if(source!=='practice')await advanceOporaTo(f.h,'feel',t.next)
         await f.click(source==='discomfort'?t.hard:t.pause)
         await f.click(t.neutral);assertNeutral(f,locale)
         if(source!=='practice')await f.click(t.previous)

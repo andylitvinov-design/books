@@ -28,6 +28,8 @@ jobs:
         run: node --test tests/opora-invite-harness-regression.test.mjs
       - name: Verify all 14 × EN/RU/ES second-screen skill explanations and unchanged save flow
         run: node --test tests/opora-support-second-screen.test.mjs
+      - name: Verify AS-6.0 five channels per day, 14 practical lessons, music and historical sessions
+        run: node --test tests/opora-as59-seven-practical-skills.test.mjs tests/opora-as60-integrated-journey.test.mjs tests/opora-as60-meditation-audio-programme.test.mjs tests/opora-midlesson-music.test.mjs
       - name: Verify pinned rating polarity, legacy 0–10 charts and clear question labels
         run: node --test tests/my-course-moment-trends.test.mjs tests/opora-baseline-presence-background.test.mjs tests/opora-as57-calm-morning.test.mjs
       - name: Verify all 70 lessons × 15 screens, practical interactions and baseline routing
@@ -83,7 +85,7 @@ jobs:
           npm install --prefix /tmp/hh-opora-browser --no-audit --no-fund @playwright/test@1.63.0
           ln -s /tmp/hh-opora-browser/node_modules/@playwright node_modules/@playwright
           /tmp/hh-opora-browser/node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
-      - name: Verify hydrated Calm Morning RU/EN/ES at 320, 360 and 390 pixels
+      - name: Verify hydrated Calm Morning RU/EN/ES at 320, 360, 390 and 430 pixels
         run: node scripts/verify-opora-as56-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()

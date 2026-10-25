@@ -73,7 +73,7 @@ export function MentorCommunitySwitch({
   mastersUnavailable = false, articlesUnavailable = false,
 }: Props) {
   const t = COPY[locale === "ru" || locale === "es" ? locale : "en"];
-  const [view, setView] = useState<View>(initialView ?? (hasArticles || hasServices ? "articles" : "mentors"));
+  const [view, setView] = useState<View>(initialView ?? "mentors");
   const shellRef = useRef<HTMLElement>(null);
   // SSR markup can be visible before React attaches tab click handlers.
   // Mark the actual hydrated widget so mobile browser QA tests real interaction.

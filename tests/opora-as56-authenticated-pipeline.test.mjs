@@ -5,7 +5,7 @@ import { COURSE_ANTISTRESS_SKILLS_V6, OPORA54_PRE_SAVE_KEYS } from '../lib/inner
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
+import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
@@ -59,7 +59,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
         // The invitation requires an affirmative answer before the first action.
         await click(player,locale==='ru'?'Да, готов(а)':"Yes, I’m ready")
         assert.ok(nodes(player.tree).some(n=>n.props?.['data-opora-practice-overview']===1))
-        await click(player,t.next) // Goal preview -> actual practice.
+        await advanceOporaTo(player,'practice',t.next) // Traverse the actual AS6 experience channels.
       }else{
         // Preserve the existing warm first screen and feedback on Days 2–14.
         await click(player, locale==='ru'?'Напряжённо':'Tense')
@@ -70,12 +70,12 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       }
       if(day===11)await click(player,locale==='ru'?'Доверие':'Trust')
       await click(player,t.tried)
-      await click(player,t.next)
+      await advanceOporaTo(player,'feel',t.next)
       await click(player,t.same)
       await click(player,t.next)
       if(day!==1){await click(player,t.vote);await click(player,t.next)}
       const realLifeChoice=oporaExperienceTransferChoices(day,locale)[0]
-      const daily=oporaAs59Day(day,locale)
+      const daily=oporaAs60Day(day,locale)
       assert.ok(realLifeChoice?.label,'Archive choices must remain available')
       assert.ok(textOf(player.tree).includes(daily.transfer),'The live player uses a single authored action')
       assert.ok(!textOf(player.tree).includes(realLifeChoice.label),'Old choices are hidden in live lessons')
@@ -116,7 +116,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.transferFeeling,undefined,
         'Free-text emotions must never be saved in plain JSONB')
       assert.equal(saved.signals.opora54.answers.transferPlanVersion,'one-v1')
-      assert.equal(saved.signals.opora54.answers.experienceEdition,'as-5.9-seven-skills-v1')
+      assert.equal(saved.signals.opora54.answers.experienceEdition,'as-6.0-experiments-v1')
       if(day===4){
         const answer=locale==='ru'?'спокойствие':'a quieter feeling'
         assert.deepEqual(payload.practiceEmotion,{customText:answer})
@@ -160,7 +160,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.signals.aphorismResponse, null)
     assert.equal(saved.signals.transferStage, null)
     assert.deepEqual(saved.signals.opora54.answers, {
-        experienceEdition:'as-5.9-seven-skills-v1',lessonConfidence:'explored'})
+        experienceEdition:'as-6.0-experiments-v1',lessonConfidence:'explored'})
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)

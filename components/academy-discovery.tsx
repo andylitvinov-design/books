@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { Archive, ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
@@ -32,6 +33,10 @@ const COPY = {
     results: "Matching learning options",
     paths: "EXPLORE THE ACADEMY",
     freeCourses: "Free Courses", freeDescription: "Short guided lessons you can begin today.",
+    coachingLabel: "PERSONAL COACHING · SEPARATE FROM COURSES",
+    coachingMethods: "Egyptian and Greek goal planning are available in the Coaching tab.",
+    coachingDisclosure: "Self-guided reflection · not a live appointment · private account history.",
+    coachingStart: "Start coaching",
     studyPrograms: "Study Programs", studyDescription: "Complete pathways, levels and original study materials.",
     psimaster: "PsiMaster courses & videos", psimasterShort: "PsiMaster archive", psimasterDescription: "Original Russian-language programmes, now readable on Holistic House. Historical descriptions do not confirm current enrollment.",
     psimasterVideos: "Original video courses", psimasterVideoDescription: "Open the preserved Russian lessons in their own course pages.",
@@ -62,6 +67,10 @@ const COPY = {
     results: "Подходящие варианты",
     paths: "НАПРАВЛЕНИЯ АКАДЕМИИ",
     freeCourses: "Бесплатные курсы", freeDescription: "Короткие занятия, которые можно начать прямо сейчас.",
+    coachingLabel: "ЛИЧНАЯ КОУЧ-СЕССИЯ · ОТДЕЛЬНО ОТ КУРСОВ",
+    coachingMethods: "Египетский и греческий коучинг — только во вкладке «Коучинг».",
+    coachingDisclosure: "Самостоятельная практика · не живая встреча · приватная история в кабинете.",
+    coachingStart: "Начать коучинг",
     studyPrograms: "Программы обучения", studyDescription: "Полные учебные маршруты, ступени и авторские материалы.",
     psimaster: "Курсы и видео PsiMaster", psimasterShort: "Архив PsiMaster", psimasterDescription: "Русскоязычные программы из прежней Академии. Каждая кнопка открывает страницу на Holistic House; архивные описания не означают, что набор сейчас открыт.",
     psimasterVideos: "Авторские видеокурсы", psimasterVideoDescription: "Сохранённые уроки на русском, доступные на отдельных страницах курсов.",
@@ -92,6 +101,10 @@ const COPY = {
     results: "Opciones encontradas",
     paths: "EXPLORAR LA ACADEMIA",
     freeCourses: "Cursos gratis", freeDescription: "Lecciones breves que puedes comenzar hoy.",
+    coachingLabel: "COACHING PERSONAL · SEPARADO DE LOS CURSOS",
+    coachingMethods: "La planificación egipcia y griega está en la pestaña Coaching.",
+    coachingDisclosure: "Reflexión autoguiada · sin cita en vivo · historial privado en tu cuenta.",
+    coachingStart: "Empezar coaching",
     studyPrograms: "Programas de estudio", studyDescription: "Recorridos completos, niveles y materiales originales.",
     psimaster: "Cursos y vídeos de PsiMaster", psimasterShort: "Archivo PsiMaster", psimasterDescription: "Programas históricos originales en ruso, ahora accesibles en Holistic House. Su archivo no implica inscripción abierta.",
     psimasterVideos: "Videocursos originales", psimasterVideoDescription: "Abre las lecciones originales en ruso desde su propia página.",
@@ -110,6 +123,7 @@ const COPY = {
 } as const;
 
 const SEARCH_KEYWORDS: Record<string, string> = {
+  "academy-free-personal-coaching": "coaching personal session Egyptian Greek Goal Planning египетское греческое планирование коучинг sesión coaching planificación egipcia griega",
   "academy-free-opora": "opora stress anti-stress antistress antiestrés stress relief стресс антистресс тревога опора 14 days 14 дней",
   "academy-featured-principles-energywork": "free energywork principles basics reiki practitioner study initiation tantra kundalini yggdrasil энергетическая работа основы рейки практик обучение инициация курс gratuito iniciación aprendizaje",
   "academy-featured-egypt-priesthood": "egypt egyptian osiris priesthood ancient temple egyptian mysticism egyptian gods египет жречество осирис жрецы видео курс мистерии egipto sacerdocio osiris",
@@ -206,6 +220,7 @@ export function AcademyDiscovery({
   locale,
   view,
   items,
+  coachingItem,
   legacyCourses,
   legacyVideos,
   label,
@@ -214,6 +229,7 @@ export function AcademyDiscovery({
   locale: PublicLocale;
   view: AcademyView;
   items: AcademyCourseItem[];
+  coachingItem: AcademyCourseItem;
   legacyCourses: AcademyArchiveButton[];
   legacyVideos: AcademyArchiveButton[];
   label: string;
@@ -226,6 +242,10 @@ export function AcademyDiscovery({
   const matchedItems = useMemo(() => items.filter((item) =>
     matchesTerms([item.title, item.subtitle, item.description, SEARCH_KEYWORDS[item.id]].filter(Boolean).join(" "), terms),
   ), [items, terms]);
+  const matchedCoachingItem = useMemo(() =>
+    matchesTerms([coachingItem.title, coachingItem.subtitle, coachingItem.description, SEARCH_KEYWORDS[coachingItem.id]].filter(Boolean).join(" "), terms)
+      ? coachingItem : null,
+  [coachingItem, terms]);
   const matchedLegacyCourses = useMemo(() => legacyCourses.filter((item) =>
     matchesTerms([item.title, item.id, "psimaster psi master псимастер архив"].join(" "), terms),
   ), [legacyCourses, terms]);
@@ -253,7 +273,7 @@ export function AcademyDiscovery({
       COPY.en.liveEvents, COPY.ru.liveEvents, COPY.es.liveEvents,
     ].filter(Boolean).join(" "), terms),
   ), [upcomingEvents, terms]);
-  const resultCount = matchedItems.length + matchedLegacyCourses.length + matchedLegacyVideos.length + matchedEvents.length;
+  const resultCount = matchedItems.length + (matchedCoachingItem ? 1 : 0) + matchedLegacyCourses.length + matchedLegacyVideos.length + matchedEvents.length;
 
   function scrollToResults() {
     const target = document.getElementById("academy-programs");
@@ -322,6 +342,23 @@ export function AcademyDiscovery({
           </div>
           {isSearching && !resultCount ? <p className={styles.empty} role="status">{t.empty}</p> : null}
 
+          {matchedCoachingItem ? (
+            <section className={styles.coachingSpotlight} aria-labelledby="academy-personal-coaching-title" data-academy-coaching-session>
+              <Link className={styles.coachingSpotlightPhoto} href={coachingItem.courseHref ?? coachingItem.href} prefetch={false} aria-label={coachingItem.title}>
+                <Image src={coachingItem.image || "/images/holistic-house/report-lighthouse-coast.avif"} alt="" fill sizes="(max-width: 620px) 94px, 146px" />
+              </Link>
+              <div className={styles.coachingSpotlightBody}>
+                <span className={styles.coachingSpotlightLabel}>{t.coachingLabel}</span>
+                <h3 id="academy-personal-coaching-title">{coachingItem.title}</h3>
+                <p>{coachingItem.description}</p>
+                <p className={styles.coachingSpotlightMethods}>{t.coachingMethods}</p>
+                <small>{t.coachingDisclosure}</small>
+              </div>
+              <Link className={styles.coachingSpotlightCTA} href={coachingItem.courseHref ?? coachingItem.href} prefetch={false}>
+                {t.coachingStart}<ArrowRight aria-hidden="true" size={17} />
+              </Link>
+            </section>
+          ) : null}
           <section className={styles.categoryGroup} id="academy-free-courses" aria-labelledby="academy-free-courses-title">
             <div className={styles.categoryHeading}>
               <span className={styles.categoryNumber} aria-hidden="true">1</span>

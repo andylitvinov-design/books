@@ -169,8 +169,19 @@ export async function assertCurrentHomeDiscovery({locale='en',overrides={}}={}){
     '@/components/services-explorer-state':explorer,'@/components/contact-channel-chooser':{ContactChannelChooser:'chooser'},
     '@/data/core-service-offers':load('data/core-service-offers.ts'),'@/lib/whatsapp-enquiry':whatsapp,'./services-studio-offers.module.css':css,
   })
+  // Execute the real CTA's pre-hydration serviceBooking branch. The cart itself
+  // is outside this discovery contract; only its actual mount/props/order are
+  // inspected here, not checkout behavior or browser/CSS visibility.
+  const consultation=component('components/public-consultation-cta.tsx','PublicConsultationCta',{
+    'next/navigation':{usePathname:()=>'/'+locale+'/services'},
+    '@/components/contact-channel-chooser':{ContactChannelChooser:'chooser'},
+    '@/lib/public-lead-capture':{classifyPublicLead:denied,trainingEnquiryUrl:denied},
+    '@/components/consultation-choice-capture':{ConsultationChoiceCapture:denied},
+    '@/components/commerce/consultation-cart-entry':{ConsultationCartEntry:'consultation-cart'},
+  })
   const services=load(locale==='es'?'app/es/services/page.tsx':'app/[locale]/services/page.tsx',{
     ...composition,'next/navigation':{redirect:denied,notFound:denied},
+    '@/components/public-consultation-cta':{PublicConsultationCta:consultation},
     '@/components/services-conversion-hero':{ServicesConversionHero:'services-hero'},
     '@/components/services-explorer-state':explorer,'@/components/services-studio-offers':studio,
     '@/components/services-studio-extras':{ServicesIntroMedia:'media',ServicesMethodVideos:'methods',ServicesDirectoryInvitation:'directory-invitation'},
@@ -193,6 +204,16 @@ export async function assertCurrentHomeDiscovery({locale='en',overrides={}}={}){
   }
   const invitation=one(visibleNodes(serviceTree).filter(node=>node.type==='directory-invitation'),'Real services page mounts the catalogue invitation')
   assert.equal(invitation.props.locale,locale)
+  const serviceNodes=visibleNodes(serviceTree)
+  const cart=one(serviceNodes.filter(node=>node.type==='consultation-cart'),'Services exposes one visible paid consultation selector before hydration')
+  assert.equal(cart.props.id,'consultation','Paid consultation selector preserves its public anchor target')
+  assert.equal(cart.props.locale,locale,'Paid consultation selector preserves the selected locale')
+  const sequence=serviceNodes.filter(node=>['services-hero','consultation-cart','media','testimonials','methods','directory-invitation'].includes(node.type)
+    ||Object.hasOwn(node.props,'data-services-studio-free')).map(node=>Object.hasOwn(node.props,'data-services-studio-free')?'offers':node.type)
+  assert.deepEqual(sequence,locale==='es'
+    ? ['services-hero','offers','media','testimonials','methods','consultation-cart','directory-invitation']
+    : ['services-hero','consultation-cart','offers','media','testimonials','methods','directory-invitation'],
+    'Paid consultation selector keeps the current locale-specific Services order')
   const extras=load('components/services-studio-extras.tsx',{
     '@/components/page-video':{PageVideo:'page-video'},'@/components/services-about-entry':{ServicesAboutEntry:'about'},
     '@/components/service-video-showcase':{ServiceVideoShowcase:'showcase'},'./services-studio-extras.module.css':css,

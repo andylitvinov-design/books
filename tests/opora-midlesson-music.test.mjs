@@ -27,10 +27,10 @@ async function click(h,label){
   b.props.onClick();await h.settle()
 }
 
-test('meditation is day 14 only, always visible and fully localized',async()=>{
-  assert.match(player,/cycle\.day===14&&scene==='recapFeedback'/)
-  assert.match(player,/moment==='closingMeditation'/)
-  assert.doesNotMatch(player,/data-opora-inline-practice-audio=/)
+test('new 14-day curriculum offers optional, localized imagery music on EVERY day',async()=>{
+  assert.match(player,/cycle\.day===14&&!showIntegratedJourney&&scene==='recapFeedback'/)
+  assert.match(player,/moment==='closingMeditation'/,'Historic edition keeps its Day 14 outro')
+  assert.match(player,/channel==='imagery'&&<OporaOceanOutro locale=\{lang\} paused=\{safety\} compact\/>/)
   assert.doesNotMatch(style,/\.optionalMeditation/)
   assert.match(style,/\.closingMeditationBlock/)
   assert.match(outro,/const DURATION=120/)
@@ -38,29 +38,25 @@ test('meditation is day 14 only, always visible and fully localized',async()=>{
   assert.match(outro,/audio\.pause\(\)/)
   assert.match(outro,/await audio\.play\(\)/)
   assert.match(outro,/onClick=\{running\?pause:play\}/)
-  for(const phrase of ['почувствуйте опору стула','notice the chair or floor supporting you','siente el apoyo de la silla'])
-    assert.ok(player.includes(phrase))
   for(const [locale,next,back] of [
     ['en','Continue','Go back'],['ru','Продолжить','Вернуться'],['es','Continuar','Volver']]){
-    const f=fixture(locale,14),h=f.h
-    try{
-      await advanceOporaTo(h,'practice',next)
-      assert.equal(sound(h).length,0,'No timer at the start of daily practice')
-      await advanceOporaTo(h,'closingMeditation',next)
-      const closing=nodes(h.tree).find(n=>n.props?.['data-opora-final-meditation']==='day-14')
-      assert.ok(closing)
-      assert.equal(nodes(closing).filter(n=>n.type==='details'||n.type==='summary').length,0)
-      assert.ok(nodes(closing).some(n=>n.props?.['data-opora-guided-meditation']==='true'))
-      assert.equal(sound(h).length,1)
-      assert.equal(sound(h)[0].props.paused,false)
-      await click(h,locale==='es'?'Pausa':locale==='ru'?'Пауза':'Pause')
-      assert.equal(sound(h)[0].props.paused,true)
-      await click(h,back)
-      assert.equal(sound(h)[0].props.paused,false)
-      await click(h,next)
-      assert.equal(sound(h).length,0,'Timer unmounts before final feedback')
-      assert.equal(f.writes,0,'Optional audio never fabricates session completion')
-    }finally{h.unmount()}
+    for(const day of [1,7,14]){
+      const f=fixture(locale,day),h=f.h
+      try{
+        await advanceOporaTo(h,'imageryMeditation',next)
+        assert.equal(sound(h).length,1,'Daily guided imagery includes music, day '+day)
+        assert.equal(sound(h)[0].props.paused,false)
+        await click(h,locale==='es'?'Pausa':locale==='ru'?'Пауза':'Pause')
+        assert.equal(sound(h)[0].props.paused,true,'Stop must pause soundtrack')
+        await click(h,back)
+        assert.equal(sound(h)[0].props.paused,false)
+        await click(h,next)
+        assert.equal(sound(h).length,0,'Music unmounts outside the imagery screen')
+        await advanceOporaTo(h,'practice',next)
+        assert.equal(sound(h).length,0,'Three-step physical exercise has no competing soundtrack')
+        assert.equal(f.writes,0,'Listening never marks a session completed')
+      }finally{h.unmount()}
+    }
   }
 })
 
@@ -70,6 +66,7 @@ test('day 4 practice has no expandable panels and still saves exactly once',asyn
     await advanceOporaTo(h,'practice','Continue')
     assert.equal(sound(h).length,0)
     assert.equal(nodes(h.tree).filter(n=>n.type==='details').length,0)
+    assert.ok(nodes(h.tree).some(n=>n.props?.['data-gentle-guidance']==='practice'), 'Accessible hint control remains available')
     const help=findButton(h.tree,'Show gentle guidance')
     assert.ok(help,'Guidance remains available as an explicit optional choice')
     assert.equal(help.props['aria-expanded'],false)

@@ -6,9 +6,9 @@ import { metadataBaseFor } from "@/data/site-metadata";
 
 type Props = { params: Promise<{ locale: string }> };
 const copy = {
-  en: { title: "Free Situation Review — personal written reflection | Holistic House", description: "A free personal written situation review by Andrey Litvinov based on a short coaching questionnaire and your handwritten ME / GOAL / PROBLEM drawing. No video call or diagnosis." },
-  ru: { title: "Бесплатный письменный разбор ситуации | Holistic House", description: "Личный письменный разбор ситуации по коучинг-анкете и рисунку от руки «Я — цель — проблема». Без видеозвонка, медицинских диагнозов и обязательной оплаты." },
-  es: { title: "Revisión escrita gratuita de tu situación | Holistic House", description: "Revisión personal gratuita por escrito basada en un breve cuestionario y dibujo YO / META / PROBLEMA. Sin videollamada ni diagnóstico médico." },
+  en: { title: "Free Diagnosis — Situation, Wu Xing & Personal Session | Holistic House", description: "Choose a free written situation review, a free symbolic Wu Xing Five Elements resource reflection, or a personal 30-minute consultation with Andrey Litvinov for €50." },
+  ru: { title: "Бесплатная диагностика — ситуация, У-Син и консультация | Holistic House", description: "Выберите бесплатный письменный разбор ситуации, символический разбор ресурсов по системе У-Син (Пять стихий) или личную консультацию с Андреем Литвиновым — 30 минут за €50." },
+  es: { title: "Diagnóstico gratis — Situación, Wu Xing y Consulta | Holistic House", description: "Elige una revisión escrita gratuita de tu situación, una reflexión simbólica Wu Xing (Cinco Elementos) gratis o una consulta personal de 30 minutos con Andrey Litvinov por €50." },
 } as const;
 export function generateStaticParams() { return [{ locale: "en" }, { locale: "ru" }, { locale: "es" }]; }
 

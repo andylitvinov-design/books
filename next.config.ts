@@ -90,6 +90,15 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
         ],
       })),
+      // Record the owner's course narration directly on iPhone Safari. Only
+      // these two PIN-protected editing pages need a microphone, not a camera.
+      // All public pages, material indexes and JSON upload APIs stay denied.
+      ...["/admin/materials/coaching/egyptian", "/admin/materials/coaching/greek"].map((source) => ({
+        source,
+        headers: [
+          { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
+        ],
+      })),
     ];
   },
   async redirects() {

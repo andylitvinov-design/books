@@ -14,12 +14,12 @@ const academy = read('components/academy-free-course-banner.tsx')
 const cabinet = read('components/app/cabinet-free-course-banners.jsx')
 const videos = read('data/academy/english-guided-meditations.ts')
 
-test('Unified Reiki Practitioner course has 63 published editorial screens and five ordered lessons', () => {
+test('Unified Reiki Practitioner course has 64 published editorial screens and five ordered lessons', () => {
   assert.match(curriculum, /ENERGYWORK_COURSE_ID = "academy-energywork-principles"/)
   assert.match(curriculum, /ENERGYWORK_COURSE_VERSION = "2026-10-20.p10"/)
   const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match => match[0]).filter(id => id !== 'id: "tan-study-03"')
-  assert.equal(ids.length, 63)
+  assert.equal(ids.length, 64)
   assert.equal(new Set(ids).size, ids.length)
   const phases = ['flight', 'tantra', 'kundalini', 'yggdrasil', 'initiation']
   const expected = ['flight-01','tan-01','kun-01','ygg-01','paths-01']
@@ -63,7 +63,8 @@ test('Actual peer review carousel preserves localized quotes, optional sources a
     'lucide-react': icons('ArrowLeft ArrowRight Award BookOpen Check ClipboardCopy Clock3 Compass HandHeart Heart LockKeyhole PlayCircle Sparkles Sprout MessageCircle ExternalLink ChevronDown'),
     './energywork-ai-learner.module.css': cssModule,
     '@/components/academy-video-player': forbidden('AcademyVideoPlayer'), '@/components/reiki-lesson-intro-audio': forbidden('ReikiLessonIntroAudio'),
-    '@/components/reiki-course-referral-share': forbidden('ReikiCourseReferralShare'), '@/lib/app/client-fetch': forbidden('appFetch'),
+    '@/components/reiki-course-referral-share': forbidden('ReikiCourseReferralShare'),
+    '@/components/reiki-initiation-photo': forbidden('ReikiInitiationPhoto ReikiPhoto'), '@/lib/app/client-fetch': forbidden('appFetch'),
     '@/lib/whatsapp-enquiry': forbidden('whatsappEnquiryUrl telegramEnquiryUrlFromWhatsApp'), '@/data/academy/english-guided-meditations': forbidden('englishGuidedMeditations'),
     '@/data/academy/reiki-practitioner-lesson-videos': forbidden('reikiPractitionerLessonVideos ReikiPractitionerLessonVideo'), './ocean-practice-audio': forbidden('useOceanPracticeAudio'),
     './ocean-sound-toggle': forbidden('default'), '@/data/academy/energywork-ai-curriculum': forbidden('ENERGYWORK_COURSE_ID ENERGYWORK_COURSE_VERSION energyworkPhases energyworkLessons energyworkInitiationRequirements energyworkPathChoices energyworkSlides EnergyworkLocale EnergyworkPath EnergyworkSlide'),

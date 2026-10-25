@@ -1,3 +1,4 @@
+import {fixtureModuleBody} from './helpers/fixture-module-body.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -71,7 +72,7 @@ test('existing session readers always use server-authorized streaming; not R2 be
 
 const storageSource=readFileSync(new URL('../lib/clients/session-delivery-storage.js',import.meta.url),'utf8')
 const loadStorage=(names,values,symbol)=>new Function(...names,
-  storageSource.replace(/^import .*\n/gm,'').replace(/^export \{ client as createPrivateStorageClient \}\r?\n/gm,'').replace(/^export \{client as privateStorageClient, sniff as sniffPrivateMedia\}\r?\n/gm,'').replace(/^export /gm,'')+'\nreturn '+symbol
+  fixtureModuleBody(storageSource)+'\nreturn '+symbol
 )(...values)
 test('gated external intent accepts larger MP4 without invoking Supabase Storage and binds one session',async()=>{
   const inserted=[]

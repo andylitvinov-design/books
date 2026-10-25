@@ -6,7 +6,7 @@ import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PhoneCountryInput } from "@/components/phone-country-input";
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
-import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
+import { emitPublicAnalyticsEvent, type PublicAnalyticsEvent } from "@/lib/public-analytics";
 import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organic-event-referrals";
@@ -49,6 +49,10 @@ const copy = {
     quickSubmit: "Send free request", quickReady: "Google email is ready",
     quickPhone: "Use phone / WhatsApp instead", quickEmail: "Use email instead",
     quickConsent: "Check the box to request one personal reply. No marketing, charge or confirmed booking.",
+    compactConsent: "I agree to a personal reply about this request only. No marketing.",
+    compactPhoneLabel: "Phone number", compactPhoneError: "Enter your international phone number.",
+    compactSaved: "Request saved. Review the message and tap Send in your chat.",
+    compactHandoff: "Chat did not open automatically. Use a button below.",
   },
   ru: {
     order: "Оставить заявку",
@@ -79,6 +83,10 @@ const copy = {
     quickSubmit: "Отправить бесплатный запрос", quickReady: "Email Google готов",
     quickPhone: "Вместо email — телефон / WhatsApp", quickEmail: "Использовать email",
     quickConsent: "Отметьте согласие выше, чтобы получить личный ответ. Без рекламы, оплаты и автоматической записи.",
+    compactConsent: "Согласен(на) на личный ответ по заявке. Без рекламы.",
+    compactPhoneLabel: "Номер телефона", compactPhoneError: "Введите номер телефона с кодом страны.",
+    compactSaved: "Заявка сохранена. Проверьте сообщение и нажмите «Отправить» в чате.",
+    compactHandoff: "Чат не открылся автоматически. Нажмите кнопку ниже.",
   },
   es: {
     order: "Solicitar plaza",
@@ -109,6 +117,10 @@ const copy = {
     quickSubmit: "Enviar solicitud gratis", quickReady: "Correo de Google listo",
     quickPhone: "Usar teléfono / WhatsApp", quickEmail: "Usar correo electrónico",
     quickConsent: "Marca la casilla para solicitar una respuesta personal. Sin publicidad, cobro ni reserva confirmada.",
+    compactConsent: "Acepto recibir una respuesta personal sobre esta solicitud. Sin publicidad.",
+    compactPhoneLabel: "Número de teléfono", compactPhoneError: "Introduce tu teléfono con prefijo internacional.",
+    compactSaved: "Solicitud guardada. Revisa el mensaje y pulsa Enviar en el chat.",
+    compactHandoff: "El chat no se abrió. Usa un botón de abajo.",
   },
 } as const;
 
@@ -123,6 +135,8 @@ type Props = {
   attributes?: Record<string, string>;
   id?: string;
   quick?: boolean;
+  /** One-step phone + WhatsApp / Telegram handoff; never show the sign-up/Google panel. */
+  compactPhone?: boolean;
   /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
   stayAfterSave?: boolean;
   resetKey?: string;
@@ -134,7 +148,7 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, stayAfterSave = false, resetKey, publicTopic, onSubmissionLockChange,
+  onChannelClick, attributes, id, quick = false, compactPhone = false, stayAfterSave = false, resetKey, publicTopic, onSubmissionLockChange,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -151,6 +165,7 @@ export function ContactChannelChooser({
   const [error, setError] = useState("");
   const operation = useRef<EnquiryAttempt | null>(null);
   const operationPending = useRef(false);
+  const pendingHandoff = useRef<Window | null>(null);
   const [locked, setLocked] = useState(false);
   const mounted = useRef(false);
   const authAttempt = useRef<{ context: string } | null>(null);
@@ -163,7 +178,7 @@ export function ContactChannelChooser({
   const panelRef = useRef<HTMLDivElement>(null);
   const c = copy[locale];
   const enquiryResetKey = resetKey || whatsappUrl;
-  const contextKey = JSON.stringify([enquiryResetKey, whatsappUrl, pathname, locale, quick, publicTopic, stayAfterSave]);
+  const contextKey = JSON.stringify([enquiryResetKey, whatsappUrl, pathname, locale, quick, compactPhone, publicTopic, stayAfterSave]);
   const activeContext = useRef(contextKey);
 
   useLayoutEffect(() => { lockCallback.current = onSubmissionLockChange; }, [onSubmissionLockChange]);
@@ -172,6 +187,8 @@ export function ContactChannelChooser({
     return () => {
       mounted.current = false;
       authAttempt.current = null;
+      try { pendingHandoff.current?.close(); } catch { /* Close only our unsent blank window. */ }
+      pendingHandoff.current = null;
       // A replacing child may already own a newer lock. Parent releases only
       // a matching owner, never whichever request happens to be current.
       lockCallback.current?.(false, panelId);
@@ -195,13 +212,29 @@ export function ContactChannelChooser({
     }).toString() : "");
   }, [pathname]);
 
-  useLayoutEffect(() => { activeContext.current = contextKey; }, [contextKey]);
+  useLayoutEffect(() => {
+    if (activeContext.current !== contextKey) {
+      try { pendingHandoff.current?.close(); } catch { /* Never hand off a stale selection. */ }
+      pendingHandoff.current = null;
+    }
+    activeContext.current = contextKey;
+  }, [contextKey]);
 
   useEffect(() => {
     // A lost response does not mean no write. Keep the original body and UUID
     // in memory; changing a prop must not create a second uncertain enquiry.
     if (operation.current && !operation.current.confirmed) {
       setError(operation.current.context === contextKey ? c.error : c.contextChanged);
+      return;
+    }
+    if (compactPhone) {
+      // Preserve the entered phone when changing a confirmed/public selection.
+      // An unresolved operation above always retains its exact body and lock.
+      setMethod("phone");
+      setSaved(null);
+      setError("");
+      operation.current = null;
+      setLocked(false);
       return;
     }
     setOpen(false);
@@ -217,10 +250,10 @@ export function ContactChannelChooser({
     setError("");
     operation.current = null;
     setLocked(false);
-  }, [contextKey, quick, c.error, c.contextChanged]);
+  }, [contextKey, quick, compactPhone, c.error, c.contextChanged]);
 
   useEffect(() => {
-    if (!open && !(quick && saved)) return;
+    if (compactPhone || (!open && !(quick && saved))) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // On iPhone, the form shrinks after save and the messenger actions can fall
     // under the fixed bottom navigation. Reposition the saved actions, not just
@@ -229,7 +262,7 @@ export function ContactChannelChooser({
       ? panelRef.current?.querySelector('[data-contact-channel="whatsapp"]')
       : panelRef.current;
     target?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
-  }, [open, saved, quick]);
+  }, [open, saved, quick, compactPhone]);
 
   const referredWhatsappUrl = withPaidAdReferral(
     withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
@@ -248,7 +281,7 @@ export function ContactChannelChooser({
   // A same-tab OAuth return uses only non-sensitive, public service identity in
   // sessionStorage; never save entered contacts, private notes or tokens there.
   useEffect(() => {
-    if (operation.current || authAttempt.current) return;
+    if (compactPhone || operation.current || authAttempt.current) return;
     const url = new URL(window.location.href);
     if (url.searchParams.get("hh_enquiry") !== "google") return;
     let pending: { path?: string; service?: string; panel?: string } | null = null;
@@ -281,12 +314,12 @@ export function ContactChannelChooser({
         if (active && mounted.current && activeContext.current === contextKey && !operation.current) setError(c.googleError);
       });
     return () => { active = false; };
-  }, [pathname, serviceTitle, panelId, c.googleError, contextKey]);
+  }, [pathname, serviceTitle, panelId, c.googleError, contextKey, compactPhone]);
 
   // Prefill from a verified account without silently creating a lead.
   // Reply consent still requires the unchecked, explicit checkbox.
   useEffect(() => {
-    if (!quick || operation.current) return;
+    if (compactPhone || !quick || operation.current) return;
     let active = true;
     fetch("/api/app/auth/contact-profile", { method: "GET", credentials: "same-origin", cache: "no-store" })
       .then(response => response.ok ? response.json() : null)
@@ -300,10 +333,10 @@ export function ContactChannelChooser({
         setGoogleReady(true);
       }).catch(() => { /* A guest can submit a request without Google. */ });
     return () => { active = false; };
-  }, [quick, contextKey]);
+  }, [quick, contextKey, compactPhone]);
 
   async function startGoogle() {
-    if (googleBusy || busy || operation.current || authAttempt.current) return;
+    if (compactPhone || googleBusy || busy || operation.current || authAttempt.current) return;
     const attempt = { context: contextKey };
     authAttempt.current = attempt;
     let markerSaved = false;
@@ -344,6 +377,10 @@ export function ContactChannelChooser({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await saveEnquiry();
+  }
+
+  async function saveEnquiry(channel?: "whatsapp" | "telegram") {
     if (busy || googleBusy || authAttempt.current || saved || operationPending.current) return;
     if (operation.current && operation.current.context !== contextKey) {
       setError(c.contextChanged);
@@ -352,11 +389,12 @@ export function ContactChannelChooser({
     let attempt = operation.current;
     if (!attempt) {
       const cleanedPhone = phone.replace(/[\s().-]/g, "");
+      const usePhone = compactPhone || method === "phone";
       const payload = {
         operationId: crypto.randomUUID(), serviceTitle,
-        description: description.trim() || (quick ? publicTopic?.trim() || "" : ""),
+        description: description.trim() || ((quick || compactPhone) ? publicTopic?.trim() || "" : ""),
         sourcePath: pathname, locale,
-        contact: { displayName: displayName.trim(), email: method === "email" ? email.trim() : "", phone: method === "phone" ? cleanedPhone : "" },
+        contact: { displayName: displayName.trim(), email: usePhone ? "" : email.trim(), phone: usePhone ? cleanedPhone : "" },
         contactConsent: consent, website,
       };
       try {
@@ -364,7 +402,7 @@ export function ContactChannelChooser({
         // optional note unchanged. Server normalization remains authoritative.
         normalizePublicServiceEnquiry(payload);
       } catch {
-        setError(c.contactError);
+        setError(compactPhone ? c.compactPhoneError : c.contactError);
         return;
       }
       attempt = { body: JSON.stringify(payload), context: contextKey,
@@ -372,6 +410,16 @@ export function ContactChannelChooser({
       operation.current = attempt;
     }
     operationPending.current = true;
+    // Reserve a blank tab during the explicit messenger tap, before awaiting
+    // CRM. Never put contact details in its URL, and never hand off before save.
+    let handoffWindow: Window | null = null;
+    if (channel) {
+      try {
+        handoffWindow = window.open("about:blank", "_blank");
+        pendingHandoff.current = handoffWindow;
+        if (handoffWindow) handoffWindow.opener = null;
+      } catch { /* The saved receipt still shows manually tappable links. */ }
+    }
     setLocked(true);
     onSubmissionLockChange?.(true, panelId);
     setBusy(true);
@@ -386,7 +434,10 @@ export function ContactChannelChooser({
       if (!response.ok || data.saved !== true || typeof data.referenceCode !== "string" || !/^HH-[A-F0-9]{12}$/.test(data.referenceCode)) {
         throw new Error(data.error || "NOT_SAVED");
       }
-      if (!mounted.current || activeContext.current !== attempt.context || operation.current !== attempt) return;
+      if (!mounted.current || activeContext.current !== attempt.context || operation.current !== attempt) {
+        try { handoffWindow?.close(); } catch { /* Stale results cannot navigate. */ }
+        return;
+      }
       operation.current = { ...attempt, confirmed: true };
       setLocked(false);
       onSubmissionLockChange?.(false, panelId);
@@ -397,14 +448,39 @@ export function ContactChannelChooser({
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
           referenceCode: data.referenceCode, createdAt: Date.now(),
         }));
-        if (!stayAfterSave) router.push("/" + locale + "/thank-you");
+        if (!stayAfterSave && !compactPhone) router.push("/" + locale + "/thank-you");
       } catch {
         // Private browsing may block sessionStorage. The existing in-place
         // confirmation and optional messenger handoff remain available.
       }
+      if (channel) {
+        const draftUrl = new URL(attempt.whatsappUrl);
+        draftUrl.searchParams.set("text",
+          (draftUrl.searchParams.get("text") || "") + "\n\n" + c.reference + ": " + data.referenceCode,
+        );
+        const destination = channel === "whatsapp"
+          ? draftUrl.toString()
+          : telegramEnquiryUrlFromWhatsApp(draftUrl.toString());
+        try {
+          if (!handoffWindow || handoffWindow.closed) throw new Error("HANDOFF_BLOCKED");
+          handoffWindow.location.replace(destination);
+          // This is now the visitor's chat, not a pending window to close.
+          pendingHandoff.current = null;
+        } catch {
+          try { handoffWindow?.close(); } catch { /* No effect on the saved request. */ }
+          setError(c.compactHandoff);
+          return;
+        }
+        // Optional notification/analytics must never turn a saved receipt into
+        // an unknown outcome or close an already-opened messenger.
+        try { onChannelClick?.(channel); } catch { /* The request is already saved. */ }
+        try { if (analyticsEvent) emitPublicAnalyticsEvent(analyticsEvent); } catch { /* Best effort only. */ }
+      }
     } catch {
+      try { handoffWindow?.close(); } catch { /* Never hand off an unsaved request. */ }
       if (mounted.current && activeContext.current === attempt.context) setError(c.error);
     } finally {
+      if (pendingHandoff.current === handoffWindow) pendingHandoff.current = null;
       operationPending.current = false;
       if (mounted.current) setBusy(false);
     }
@@ -418,6 +494,74 @@ export function ContactChannelChooser({
     );
     preparedWhatsApp = draftUrl.toString();
   }
+
+  if (compactPhone) {
+    return (
+      <div className={styles.compactPhone} data-contact-channel-chooser data-reiki-phone-enquiry>
+        {!saved ? (
+          <form className={styles.compactPhoneForm} onSubmit={event => event.preventDefault()}>
+            <div className={styles.compactPhoneField}>
+              <label htmlFor={panelId + "-phone"}>{c.compactPhoneLabel}</label>
+              <PhoneCountryInput id={panelId + "-phone"} locale={locale} value={phone}
+                disabled={locked || busy || googleBusy} required onChange={value => {
+                  setPhone(value); setError("");
+                }} />
+            </div>
+            <label className={styles.compactConsent}>
+              <input type="checkbox" checked={consent} required disabled={locked || busy || googleBusy}
+                onPointerDown={event => {
+                  if (event.defaultPrevented || !event.isPrimary || event.button !== 0 || event.currentTarget.disabled) return;
+                  event.currentTarget.focus({ preventScroll: true });
+                }}
+                onChange={event => { setConsent(event.target.checked); setError(""); }} />
+              <span>{c.compactConsent}</span>
+            </label>
+            <label className={styles.honeypot} aria-hidden="true">
+              Website <input type="text" tabIndex={-1} autoComplete="off"
+                disabled={locked || busy || googleBusy} value={website} onChange={event => setWebsite(event.target.value)} />
+            </label>
+            <div className={styles.compactChannels} role="group" aria-label={c.messengers}>
+              <button type="button" className={styles.whatsapp} disabled={busy || googleBusy}
+                aria-label={locked ? c.retry + ": WhatsApp" : "WhatsApp"}
+                data-contact-channel-submit="whatsapp" onClick={() => { void saveEnquiry("whatsapp"); }}>
+                <MessageCircle size={19} aria-hidden="true" />{busy ? c.sending : "WhatsApp"}
+              </button>
+              <button type="button" className={styles.telegram} disabled={busy || googleBusy}
+                aria-label={locked ? c.retry + ": Telegram" : "Telegram"}
+                data-contact-channel-submit="telegram" onClick={() => { void saveEnquiry("telegram"); }}>
+                <Send size={19} aria-hidden="true" />{busy ? c.sending : "Telegram"}
+              </button>
+            </div>
+            {error ? <p className={styles.error} role="alert">{error}</p> : null}
+          </form>
+        ) : (
+          <div className={styles.compactReceipt}>
+            <p className={styles.saved} role="status">{c.saved} · {saved.referenceCode}</p>
+            <p className={styles.next}>{c.compactSaved}</p>
+            <div className={styles.compactChannels} role="group" aria-label={c.messengers}>
+              <AcquisitionEventLink prefetch={false} className={styles.whatsapp}
+                href={preparedWhatsApp} event={event} analyticsEvent={analyticsEvent}
+                onClick={() => onChannelClick?.("whatsapp")}
+                target="_blank" rel="noopener noreferrer"
+                attributes={{ ...attributes, "data-contact-channel": "whatsapp" }}>
+                <MessageCircle size={19} aria-hidden="true" />WhatsApp
+              </AcquisitionEventLink>
+              <AcquisitionEventLink prefetch={false} className={styles.telegram}
+                href={telegramEnquiryUrlFromWhatsApp(preparedWhatsApp)}
+                event={event} analyticsEvent={analyticsEvent}
+                onClick={() => onChannelClick?.("telegram")}
+                target="_blank" rel="noopener noreferrer"
+                attributes={{ ...attributes, "data-contact-channel": "telegram" }}>
+                <Send size={19} aria-hidden="true" />Telegram
+              </AcquisitionEventLink>
+            </div>
+            {error ? <p className={styles.error} role="alert">{error}</p> : null}
+          </div>
+        )}
+      </div>
+    );
+  }
+
 
   return (
     <div className={styles.wrapper} data-contact-channel-chooser data-open={open || quick} data-quick={quick}>
