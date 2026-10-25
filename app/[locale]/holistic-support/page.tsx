@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
+import { FreeDiagnosticStart } from "@/components/free-diagnostic-start";
 import { IdeasDiscovery } from "@/components/ideas-discovery";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -21,34 +22,40 @@ export const revalidate = 0;
 
 const copy = {
   en: {
-    eyebrow: "HOLISTIC HOUSE · INSIGHTS & CARE",
-    title: "Holistic Support",
-    lead: "Ask a question, explore symbolic traditions or choose an individual support practice. Two clear paths, one gentle place to begin.",
-    heroHeadline: "A gentle place to find your next step.",
-    heroLead: "Start with a personal question or explore a practice for support.",
+    eyebrow: "HOLISTIC HOUSE · FREE DIAGNOSTIC & PERSONAL SESSIONS",
+    title: "Free Diagnosis & Personal Coaching",
+    lead: "Start with a free written coaching diagnostic or request a personal session with Andrey: €50 / 30 minutes or €100 / 60 minutes.",
+    heroHeadline: "Understand your situation. Choose the next step.",
+    heroLead: "Free written coaching review after your questionnaire, or personal support in a 30- or 60-minute session.",
     choose: "Choose your direction",
-    insightsNav: "Temple & Psychic Insights",
-    healingNav: "Holistic Healing & Support",
-    insightsEyebrow: "01 · ASK & EXPLORE",
-    insightsTitle: "Temple & Psychic Insights",
-    insightsIntro: "Ask your question directly and explore a symbolic reflection — no need to choose a tradition, and no prediction or diagnosis.",
+    insightsNav: "Book free express diagnostic",
+    healingNav: "Request personal session · from €50",
+    insightsEyebrow: "01 · PERSONAL COACHING",
+    insightsTitle: "Choose how to work with Andrey",
+    insightsIntro: "Free diagnostic: leave your contact, clarify your topic and answer Andrey's coaching questionnaire. Or enquire about a live paid session.",
     aiTitle: "AI Insight",
     free: "FREE",
     aiBody: "Ask your question and receive a free symbolic I Ching reflection with related aphorisms.",
     aiCaveat: "Current free guidance uses authored, browser-based symbolic material. A generative AI model is not connected yet.",
     aiAction: "Ask your question",
-    expressTitle: "Personal Express Diagnostics",
-    expressBody: "A free individual written situation review: answer a short questionnaire and draw Me – Goal – Problem. No free video call or medical diagnosis.",
-    expressAction: "Start free express review",
-    masterTitle: "Personal Insights with a Master",
-    masterBody: "Request a focused 20-minute personal session. Together we can choose an approach that fits your question.",
-    masterPrice: "CAD 50 / 20 min",
-    masterAction: "Request your 20-minute insight",
-    masterFormTitle: "Ask Andrey about a personal insight",
-    masterFormLead: "Add your email or phone, give consent and choose WhatsApp or Telegram for a reply. Your request is not a confirmed booking or payment.",
-    masterDisclaimer: "A session is priced at CAD 50 for 20 minutes, subject to personal confirmation of time and format. Sending a request is free; no payment is collected here.",
-    freeEngineTitle: "Try your free insight",
-    freeEngineLead: "Start with your question. The free tool uses the I Ching and authored aphorisms. Personal guidance can explore other approaches together.",
+    expressTitle: "Free Express Coaching Diagnostic",
+    expressBody: "First enter your contact and a short question. Then complete Andrey's coaching questionnaire and send it for a personal written review. No free video call or medical diagnosis.",
+    expressAction: "Book my free diagnostic",
+    masterTitle: "Personal Coaching Session",
+    masterBody: "Choose an individual live session: 30 minutes for one focused question, or 60 minutes for deeper work. Request a time; Andrey confirms availability personally.",
+    masterPrice: "€50 / 30 min · €100 / 60 min",
+    masterAction: "Request my personal session",
+    masterFormTitle: "Request a personal session with Andrey",
+    masterFormLead: "Choose 30 or 60 minutes, enter email or phone, consent to one reply, and request a time through WhatsApp or Telegram.",
+    masterDisclaimer: "€50 for 30 minutes or €100 for 60 minutes. This sends an enquiry, not a confirmed appointment or payment.",
+    paidFormatLabel: "Session length",
+    paidFormats: [
+      { value: "30 min · €50", label: "30 minutes · €50" },
+      { value: "60 min · €100", label: "60 minutes · €100" },
+    ],
+    symbolicSummary: "See the optional symbolic reflection",
+    freeEngineTitle: "Optional: a symbolic I Ching reflection",
+    freeEngineLead: "This separate, browser-based symbolic reflection is not the personal coaching diagnostic or a booking. No AI practitioner or medical diagnosis.",
     healingEyebrow: "02 · PRACTICES & SUPPORT",
     healingTitle: "Holistic Healing & Support",
     healingIntro: "Choose a complementary practice or an individual conversation. No guaranteed health outcomes or changes to prescribed care.",
@@ -69,34 +76,40 @@ const copy = {
     privacy: "Free questions stay in your browser. A CRM contact is created only when you explicitly consent to a personal enquiry. Booking and payment are separate confirmations.",
   },
   ru: {
-    eyebrow: "HOLISTIC HOUSE · ПОДСКАЗКИ И ПОДДЕРЖКА",
-    title: "Holistic Support",
-    lead: "Задайте вопрос, исследуйте символические традиции или выберите личную практику поддержки. Два понятных направления — без лишних шагов.",
-    heroHeadline: "Начните с вопроса или поддержки.",
-    heroLead: "Выберите то, что нужно вам сейчас: символическую подсказку или практику с мастером.",
+    eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНЫЙ РАЗБОР И ЛИЧНЫЕ СЕССИИ",
+    title: "Бесплатная диагностика и коучинг",
+    lead: "Бесплатная письменная экспресс-диагностика или личная сессия с Андреем: €50 / 30 минут и €100 / 60 минут.",
+    heroHeadline: "Разберитесь в ситуации и выберите следующий шаг.",
+    heroLead: "Письменный разбор по коучинговой анкете — бесплатно. Личная сессия — 30 или 60 минут.",
     choose: "Выберите направление",
-    insightsNav: "Храмовые и интуитивные подсказки",
-    healingNav: "Холистическая поддержка",
-    insightsEyebrow: "01 · ВОПРОС И ПОДСКАЗКА",
-    insightsTitle: "Temple & Psychic Insights",
-    insightsIntro: "Просто задайте свой вопрос и получите символическую подсказку. Выбирать традицию не нужно; это не предсказание и не диагноз.",
+    insightsNav: "Записаться на бесплатную диагностику",
+    healingNav: "Заказать личную сессию · от €50",
+    insightsEyebrow: "01 · ЛИЧНЫЙ КОУЧИНГ",
+    insightsTitle: "Как вы хотите работать с Андреем?",
+    insightsIntro: "Бесплатно: оставьте контакт, уточните запрос, ответьте на вопросы коучинговой анкеты и отправьте её на личный письменный разбор. Или запросите платную сессию.",
     aiTitle: "AI Insight",
     free: "БЕСПЛАТНО",
     aiBody: "Задайте вопрос и получите бесплатную символическую подсказку И-Цзин с подходящими афоризмами.",
     aiCaveat: "Сейчас бесплатный подбор основан на авторских текстах и алгоритме в браузере. Генеративная AI-модель ещё не подключена.",
     aiAction: "Задать вопрос",
-    expressTitle: "Personal Express Diagnostics",
-    expressBody: "Бесплатный личный письменный экспресс-разбор: короткая анкета и рисунок «Я — Цель — Проблема». Без видеозвонка и медицинской диагностики.",
-    expressAction: "Начать бесплатный разбор",
-    masterTitle: "Личная подсказка Мастера",
-    masterBody: "Запросите 20-минутную личную сессию. Подходящий подход к вашему вопросу выберем вместе.",
-    masterPrice: "50 CAD / 20 мин",
-    masterAction: "Запросить личную подсказку",
-    masterFormTitle: "Запросить персональную подсказку у Андрея",
-    masterFormLead: "Укажите email или телефон, дайте согласие и выберите WhatsApp или Telegram для ответа. Заявка не является записью или оплатой.",
-    masterDisclaimer: "Стоимость личной сессии — 50 CAD за 20 минут. Время и формат мастер подтверждает отдельно. Отправка заявки бесплатна; оплата здесь не взимается.",
-    freeEngineTitle: "Попробуйте бесплатную подсказку",
-    freeEngineLead: "Начните со своего вопроса. Бесплатная подсказка основана на И-Цзин и авторских афоризмах; другие подходы можно обсудить лично.",
+    expressTitle: "Бесплатная экспресс-диагностика",
+    expressBody: "Сначала контакты и короткий вопрос, затем авторская коучинговая анкета Андрея. После отправки вы сможете получить письменную обратную связь. Это не бесплатный видеозвонок и не медицинский диагноз.",
+    expressAction: "Записаться на бесплатный разбор",
+    masterTitle: "Личная коучинговая сессия",
+    masterBody: "30 минут — для одного вопроса; 60 минут — для глубокой работы. Отправьте заявку, Андрей лично подтвердит время.",
+    masterPrice: "€50 / 30 мин · €100 / 60 мин",
+    masterAction: "Записаться на личную сессию",
+    masterFormTitle: "Записаться на личную сессию с Андреем",
+    masterFormLead: "Выберите 30 или 60 минут, укажите email или телефон и согласитесь на ответ. Запросить время можно через WhatsApp или Telegram.",
+    masterDisclaimer: "€50 за 30 минут или €100 за 60 минут. Заявка ещё не подтверждённая запись и не оплата.",
+    paidFormatLabel: "Длительность сессии",
+    paidFormats: [
+      { value: "30 min · €50", label: "30 минут · €50" },
+      { value: "60 min · €100", label: "60 минут · €100" },
+    ],
+    symbolicSummary: "Посмотреть необязательную символическую подсказку",
+    freeEngineTitle: "Дополнительно: символическая подсказка И-Цзин",
+    freeEngineLead: "Это отдельная символическая практика в браузере, не личная диагностика, не запись и не медицинский совет.",
     healingEyebrow: "02 · ПРАКТИКА И ПОМОЩЬ",
     healingTitle: "Holistic Healing & Support",
     healingIntro: "Выберите дополнительную практику или личную консультацию. Мы не обещаем лечебных результатов и не предлагаем отменять медицинскую помощь.",
@@ -117,34 +130,40 @@ const copy = {
     privacy: "Бесплатный вопрос остаётся в браузере. Контакт попадает в CRM только после вашего согласия и отправки заявки. Запись и оплата подтверждаются отдельно.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN Y APOYO",
-    title: "Holistic Support",
-    lead: "Haz una pregunta, explora tradiciones simbólicas o solicita una práctica de apoyo personal. Dos caminos sencillos para empezar.",
-    heroHeadline: "Un espacio para encontrar tu camino.",
-    heroLead: "Empieza con una pregunta o elige una práctica de apoyo.",
+    eyebrow: "HOLISTIC HOUSE · EVALUACIÓN GRATUITA Y SESIONES",
+    title: "Evaluación gratuita y coaching",
+    lead: "Evaluación escrita gratuita o sesión personal con Andrey: €50 / 30 minutos o €100 / 60 minutos.",
+    heroHeadline: "Aclara tu situación y decide el siguiente paso.",
+    heroLead: "Revisión escrita con un cuestionario de coaching gratis, o una sesión personal de 30 o 60 minutos.",
     choose: "Elige tu camino",
-    insightsNav: "Reflexiones del templo",
-    healingNav: "Apoyo holístico",
-    insightsEyebrow: "01 · PREGUNTAR Y EXPLORAR",
-    insightsTitle: "Temple & Psychic Insights",
-    insightsIntro: "Haz tu pregunta directamente y recibe una reflexión simbólica. No necesitas elegir una tradición; no es predicción ni diagnóstico.",
+    insightsNav: "Solicitar evaluación gratuita",
+    healingNav: "Solicitar sesión personal · desde €50",
+    insightsEyebrow: "01 · COACHING PERSONAL",
+    insightsTitle: "Elige cómo trabajar con Andrey",
+    insightsIntro: "Gratis: deja tu contacto, explica el tema, responde el cuestionario y envíalo para una revisión escrita. O solicita una sesión de pago.",
     aiTitle: "AI Insight",
     free: "GRATIS",
     aiBody: "Escribe una pregunta y recibe una reflexión simbólica gratuita del I Ching con aforismos.",
     aiCaveat: "Por ahora las reflexiones gratuitas proceden de textos editoriales y un algoritmo local. La IA generativa todavía no está conectada.",
     aiAction: "Hacer mi pregunta",
-    expressTitle: "Personal Express Diagnostics",
-    expressBody: "Análisis personal gratuito por escrito: un cuestionario breve y el dibujo Yo – Meta – Problema. Sin videollamada ni diagnóstico médico.",
-    expressAction: "Empezar revisión gratis",
-    masterTitle: "Orientación personal con un Maestro",
-    masterBody: "Solicita una sesión personal de 20 minutos. Juntos elegiremos un enfoque adecuado a tu pregunta.",
-    masterPrice: "50 CAD / 20 min",
-    masterAction: "Solicitar orientación personal",
-    masterFormTitle: "Solicitar orientación de Andrey",
-    masterFormLead: "Indica tu email o teléfono, da tu consentimiento y elige WhatsApp o Telegram para la respuesta. Esto no confirma una reserva ni un pago.",
-    masterDisclaimer: "La sesión personal cuesta 50 CAD por 20 minutos. El horario y formato requieren confirmación. Enviar la solicitud es gratis y no se cobra aquí.",
-    freeEngineTitle: "Prueba una reflexión gratuita",
-    freeEngineLead: "Empieza con tu pregunta. La herramienta gratuita utiliza el I Ching y aforismos; otros enfoques pueden explorarse en una sesión personal.",
+    expressTitle: "Evaluación exprés gratuita",
+    expressBody: "Primero tus datos y una pregunta breve; luego responde el cuestionario de Andrey y envíalo para una revisión personal escrita. No incluye videollamada gratuita ni diagnóstico médico.",
+    expressAction: "Solicitar mi evaluación gratis",
+    masterTitle: "Sesión personal de coaching",
+    masterBody: "30 minutos para una cuestión concreta o 60 minutos para un trabajo profundo. Solicita un horario que Andrey confirmará personalmente.",
+    masterPrice: "€50 / 30 min · €100 / 60 min",
+    masterAction: "Solicitar sesión personal",
+    masterFormTitle: "Solicitar una sesión con Andrey",
+    masterFormLead: "Elige 30 o 60 minutos, deja email o teléfono, acepta una respuesta y solicita un horario por WhatsApp o Telegram.",
+    masterDisclaimer: "€50 por 30 minutos o €100 por 60 minutos. La solicitud no confirma cita ni pago.",
+    paidFormatLabel: "Duración de la sesión",
+    paidFormats: [
+      { value: "30 min · €50", label: "30 minutos · €50" },
+      { value: "60 min · €100", label: "60 minutos · €100" },
+    ],
+    symbolicSummary: "Ver la reflexión simbólica opcional",
+    freeEngineTitle: "Opcional: una reflexión simbólica del I Ching",
+    freeEngineLead: "Es otra práctica simbólica en el navegador, no una evaluación personal, cita ni diagnóstico médico.",
     healingEyebrow: "02 · PRÁCTICAS Y APOYO",
     healingTitle: "Holistic Healing & Support",
     healingIntro: "Elige una práctica complementaria o una sesión personal, sin promesas de resultados médicos ni cambios en tratamientos prescritos.",
@@ -216,12 +235,12 @@ export default async function HolisticSupportPage({ params }: Props) {
             <p className={styles.heroHeadline}>{t.heroHeadline}</p>
             <p className={styles.heroLead}>{t.heroLead}</p>
             <nav className={styles.pathControls} aria-label={t.choose}>
-              <a href="#temple-psychic-insights" data-holistic-path="insights">
+              <a href="#free-diagnostic-start" data-holistic-path="insights">
                 <Sparkles size={21} aria-hidden="true" />
                 <span>{t.insightsNav}</span>
                 <ArrowRight size={18} aria-hidden="true" />
               </a>
-              <a href="#holistic-healing-support" data-holistic-path="healing">
+              <a href="#personal-insights-master" data-holistic-path="healing">
                 <HeartHandshake size={21} aria-hidden="true" />
                 <span>{t.healingNav}</span>
                 <ArrowRight size={18} aria-hidden="true" />
@@ -230,23 +249,13 @@ export default async function HolisticSupportPage({ params }: Props) {
           </div>
         </section>
 
-        <section id="temple-psychic-insights" className={styles.section} data-holistic-insights aria-labelledby="ideas-title">
-          <div className={styles.freePanel} id="free-ai-insight" data-holistic-free-insight>
-            <IdeasDiscovery locale={locale} variant="temple" />
+        <section id="temple-psychic-insights" className={styles.section} data-holistic-insights aria-labelledby="holistic-insights-title">
+          <div className={styles.sectionHeading}>
+            <p className={styles.kicker}>{t.insightsEyebrow}</p>
+            <h2 id="holistic-insights-title">{t.insightsTitle}</h2>
+            <p>{t.insightsIntro}</p>
           </div>
           <div className={styles.options}>
-            <article className={styles.option} data-holistic-offer="ai">
-              <div className={styles.optionPhoto}>
-                <Image src="/images/holistic-house/ideas-zen-landscape.svg" alt="" fill unoptimized sizes="(max-width:700px) 100px, 155px" />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.freeTag}>{t.free}</span>
-                <h3>{t.aiTitle}</h3>
-                <p>{t.aiBody}</p>
-                <small className={styles.note}>{t.aiCaveat}</small>
-                <a href="#free-ai-insight" className={styles.primaryAction}>{t.aiAction}<span aria-hidden="true">→</span></a>
-              </div>
-            </article>
             <article className={styles.option} data-holistic-offer="express">
               <div className={styles.optionPhoto}>
                 <Image src="/images/holistic-house/video-posters/constellations-en-v1.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
@@ -255,9 +264,9 @@ export default async function HolisticSupportPage({ params }: Props) {
                 <span className={styles.freeTag}>{t.free}</span>
                 <h3>{t.expressTitle}</h3>
                 <p>{t.expressBody}</p>
-                <Link href={"/" + locale + "/services/free-situation-review"} className={styles.secondaryAction} prefetch={false}>
+                <a href="#free-diagnostic-start" className={styles.primaryAction}>
                   {t.expressAction}<span aria-hidden="true">→</span>
-                </Link>
+                </a>
               </div>
             </article>
             <article className={styles.option} data-holistic-offer="master">
@@ -268,21 +277,45 @@ export default async function HolisticSupportPage({ params }: Props) {
                 <span className={styles.priceTag}>{t.masterPrice}</span>
                 <h3>{t.masterTitle}</h3>
                 <p>{t.masterBody}</p>
-                <a href="#personal-insights-master" className={styles.secondaryAction}>
+                <a href="#personal-insights-master" className={styles.primaryAction}>
                   {t.masterAction}<span aria-hidden="true">→</span>
                 </a>
               </div>
             </article>
+            <article className={styles.option} data-holistic-offer="ai">
+              <div className={styles.optionPhoto}>
+                <Image src="/images/holistic-house/ideas-zen-landscape.svg" alt="" fill unoptimized sizes="(max-width:700px) 100px, 155px" />
+              </div>
+              <div className={styles.optionContent}>
+                <span className={styles.freeTag}>{t.free}</span>
+                <h3>{t.aiTitle}</h3>
+                <p>{t.aiBody}</p>
+                <small className={styles.note}>{t.aiCaveat}</small>
+                <a href="#symbolic-reflection" className={styles.secondaryAction}>{t.aiAction}<span aria-hidden="true">→</span></a>
+              </div>
+            </article>
+          </div>
+          <FreeDiagnosticStart locale={locale} />
+          <div className={styles.freePanel} id="symbolic-reflection" data-holistic-free-insight>
+            <div className={styles.innerHeading}>
+              <h3>{t.freeEngineTitle}</h3><p>{t.freeEngineLead}</p>
+            </div>
+            <details className={styles.symbolicDetails}>
+              <summary>{t.symbolicSummary}</summary>
+              <IdeasDiscovery locale={locale} variant="temple" />
+            </details>
           </div>
           <div className={styles.masterPanel} id="personal-insights-master" data-holistic-master>
             <CompactLeadCapture
               locale={locale}
               variant="inline"
               sourcePath={"/" + locale + "/holistic-support"}
-              serviceTitle={"Personal Temple Insights with Andrey · CAD 50 / 20 min"}
+              serviceTitle={"Personal Coaching Session with Andrey"}
               title={t.masterFormTitle}
               lead={t.masterFormLead}
               disclaimer={t.masterDisclaimer}
+              formatOptions={t.paidFormats}
+              formatLabel={t.paidFormatLabel}
             />
           </div>
         </section>

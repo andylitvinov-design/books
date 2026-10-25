@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Check, ClipboardCopy, LockKeyhole, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { appFetch } from "@/lib/app/client-fetch";
 import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOPICS, coachingIntakeEntryTopic } from "@/lib/coaching/intake-model";
+import { DIAGNOSTIC_START_KEY, parseDiagnosticStart } from "@/lib/coaching/diagnostic-enquiry.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./coaching-intake-form.module.css";
 
@@ -22,6 +23,23 @@ const blank = (): Draft => ({ topic: "personal", name: "", city: "", answers: {}
 
 const copy = {
   en: {
+    sendEyebrow: "FINAL STEP · SEND YOUR REQUEST",
+    sendTitle: "Request your free written diagnostic",
+    sendLead: "Choose a free written review or request a live consultation. Andrey receives your contact and the completed coaching questionnaire only when you explicitly send it.",
+    sendOption: "What would you like to request?",
+    sendFree: "Free written diagnostic · €0",
+    sendShort: "Personal session · 30 min · €50",
+    sendFull: "Personal session · 60 min · €100",
+    sendEmail: "Email for a reply",
+    sendPhone: "Phone (optional if email is supplied)",
+    sendConsent: "I explicitly agree to send all my completed coaching answers and contact details securely to Andrey in Holistic House CRM for one personal response. No marketing.",
+    sendButton: "Send questionnaire and request",
+    sendError: "Complete the three essential questions, provide an email or phone, and agree to send your answers.",
+    sendFailure: "Your request could not be confirmed. Please retry; your answers are still here.",
+    sendSuccess: "Your questionnaire and contact were received. Reference:",
+    sendUpgrade: "Would you prefer a live consultation? Request 30 minutes (€50) or 60 minutes (€100).",
+    sendNext: "Your request awaits personal review. This does not book an appointment, collect payment or guarantee availability.",
+    saveOptional: "OPTIONAL · KEEP A PRIVATE COPY",
     eyebrow: "AUTHOR'S COACHING QUESTIONNAIRE · HOLISTIC HOUSE",
     title: "Your coaching questions",
     lead: "One question per line. Answer at your own pace.",
@@ -59,6 +77,23 @@ const copy = {
     privacy: "Your draft is visible only to you until you deliberately copy or share it. Do not include medical emergencies here; seek qualified urgent help instead.",
   },
   ru: {
+    sendEyebrow: "ЗАВЕРШЕНИЕ · ОТПРАВКА ЗАЯВКИ",
+    sendTitle: "Запросить бесплатную письменную диагностику",
+    sendLead: "Выберите бесплатный письменный разбор или личную сессию. Только после отправки Андрей получит ваши контакты и заполненную коучинговую анкету в защищённой CRM.",
+    sendOption: "Что вы хотите заказать?",
+    sendFree: "Бесплатная письменная диагностика · €0",
+    sendShort: "Личная сессия · 30 минут · €50",
+    sendFull: "Личная сессия · 60 минут · €100",
+    sendEmail: "Email для ответа",
+    sendPhone: "Телефон (необязателен, если указан email)",
+    sendConsent: "Я явно согласен(на) отправить все ответы коучинговой анкеты и контакты Андрею в защищённую CRM Holistic House для одного личного ответа. Без рекламы и рассылок.",
+    sendButton: "Отправить анкету и заявку",
+    sendError: "Ответьте на три основных вопроса, укажите email или телефон и подтвердите согласие на отправку.",
+    sendFailure: "Не удалось подтвердить получение заявки. Попробуйте повторить: ответы сохранились на экране.",
+    sendSuccess: "Ваша анкета и контакт получены. Номер заявки:",
+    sendUpgrade: "Хотите обсудить вопрос лично? Запросите 30 минут (€50) или 60 минут (€100).",
+    sendNext: "Андрей рассмотрит заявку. Это пока не подтверждённая запись, не оплата и не гарантия свободного времени.",
+    saveOptional: "ДОПОЛНИТЕЛЬНО · ПРИВАТНАЯ КОПИЯ",
     eyebrow: "АВТОРСКАЯ КОУЧИНГ-АНКЕТА · HOLISTIC HOUSE",
     title: "Вопросы и ответы",
     lead: "Один пункт — один вопрос. Отвечайте в своём темпе.",
@@ -96,6 +131,23 @@ const copy = {
     privacy: "Черновик видите только вы, пока сами не решите им поделиться. При неотложных состояниях обращайтесь за квалифицированной помощью.",
   },
   es: {
+    sendEyebrow: "ÚLTIMO PASO · ENVÍA TU SOLICITUD",
+    sendTitle: "Solicitar evaluación escrita gratuita",
+    sendLead: "Elige una revisión gratuita o sesión personal. Andrey recibe tu contacto y el cuestionario únicamente cuando confirmas el envío.",
+    sendOption: "¿Qué te gustaría solicitar?",
+    sendFree: "Evaluación escrita gratis · €0",
+    sendShort: "Sesión personal · 30 min · €50",
+    sendFull: "Sesión personal · 60 min · €100",
+    sendEmail: "Email de contacto",
+    sendPhone: "Teléfono (opcional con email)",
+    sendConsent: "Acepto expresamente enviar todas mis respuestas y datos de contacto a Andrey mediante el CRM privado de Holistic House para recibir una respuesta personal. Sin publicidad.",
+    sendButton: "Enviar cuestionario y solicitud",
+    sendError: "Completa las tres preguntas esenciales, indica email o teléfono y acepta enviar tus respuestas.",
+    sendFailure: "No se pudo confirmar el envío. Vuelve a intentarlo; tus respuestas siguen aquí.",
+    sendSuccess: "Hemos recibido tu cuestionario y contacto. Referencia:",
+    sendUpgrade: "¿Prefieres una sesión en vivo? Solicita 30 minutos (€50) o 60 minutos (€100).",
+    sendNext: "Andrey revisará la solicitud. No confirma una cita, disponibilidad ni pago.",
+    saveOptional: "OPCIONAL · GUARDAR COPIA PRIVADA",
     eyebrow: "FORMULARIO DE COACHING DEL AUTOR · HOLISTIC HOUSE",
     title: "Tus preguntas de coaching",
     lead: "Una pregunta por apartado. Responde a tu ritmo.",
@@ -174,6 +226,13 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [fallbackCopy, setFallbackCopy] = useState(false);
+  const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
+  const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
+  const [sendConsent, setSendConsent] = useState(false);
+  const [leadBusy, setLeadBusy] = useState(false);
+  const [leadError, setLeadError] = useState("");
+  const [leadReceipt, setLeadReceipt] = useState("");
+  const leadAttempt = useRef<{ id: string; body: string } | null>(null);
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
@@ -183,8 +242,9 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   useEffect(() => {
     let active = true;
     let restored: Draft | null = null;
-    // Apply public preselection only to an empty draft. OAuth/saved drafts below win.
-    setDraft(previous => hasSomeAnswers(previous) ? previous : { ...previous, topic: coachingIntakeEntryTopic(window.location.search) });
+    // Only a public, allowlisted topic may cross this page link.
+    setDraft(previous => hasSomeAnswers(previous) ? previous
+      : { ...previous, topic: coachingIntakeEntryTopic(window.location.search) });
     try {
       const value = sessionStorage.getItem(key);
       sessionStorage.removeItem(key);
@@ -192,6 +252,18 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
         const parsed = JSON.parse(value);
         if (parsed.version === COACHING_INTAKE_VERSION && Number(parsed.expires) > Date.now()) {
           restored = normalise(parsed.draft);
+          setDraft(restored);
+          setDirty(hasSomeAnswers(restored));
+        }
+      }
+      const staged = parseDiagnosticStart(sessionStorage.getItem(DIAGNOSTIC_START_KEY), locale);
+      if (staged) {
+        setReplyContact({ email: staged.email, phone: staged.phone });
+        if (!restored) {
+          restored = normalise({
+            ...blank(), name: staged.name, topic: staged.topic,
+            answers: staged.question ? { request: staged.question } : {},
+          });
           setDraft(restored);
           setDirty(hasSomeAnswers(restored));
         }
@@ -281,6 +353,43 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       setNotice(t.deleted);
     } catch { setError(t.deleteError); } finally { setBusy(false); }
   }
+  async function submitDiagnostic() {
+    if (leadBusy || leadReceipt || busy || collision) return;
+    if (missing || !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())) {
+      setLeadError(t.sendError); return;
+    }
+    setLeadBusy(true); setLeadError("");
+    try {
+      if (!leadAttempt.current) {
+        const id = window.crypto.randomUUID();
+        leadAttempt.current = { id, body: JSON.stringify({
+          operationId: id, locale, offer: offerChoice,
+          topic: draft.topic, name: draft.name, city: draft.city,
+          answers: draft.answers, questions: draft.questions,
+          contact: { displayName: draft.name, email: replyContact.email.trim(), phone: replyContact.phone.trim() },
+          contactConsent: true, website: "",
+        }) };
+      }
+      const response = await fetch("/api/coaching-diagnostic", {
+        method: "POST", credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: leadAttempt.current.body,
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
+        // A rejected payload was never saved, so edits must get a fresh idempotency key.
+        if (response.status === 400) leadAttempt.current = null;
+        throw new Error("COACHING_ENQUIRY_NOT_CONFIRMED");
+      }
+      setLeadReceipt(result.referenceCode);
+      try { sessionStorage.removeItem(DIAGNOSTIC_START_KEY); } catch { /* optional */ }
+    } catch {
+      // Retain the exact idempotency key and frozen payload across retries.
+      // A lost response must not create a second coach request.
+      setLeadError(t.sendFailure);
+    } finally { setLeadBusy(false); }
+  }
+
   async function copyAnswers() {
     try {
       await navigator.clipboard.writeText(fullText);
@@ -383,6 +492,48 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     </section>)}
 
     <section className={styles.finish} aria-label={locale === "ru" ? "Сохранение анкеты" : locale === "es" ? "Guardar formulario" : "Save questionnaire"}>
+      <div className={styles.requestBox} data-coaching-request>
+        <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
+        <h3>{t.sendTitle}</h3>
+        <p className={styles.requestLead}>{t.sendLead}</p>
+        {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
+          <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
+          {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
+            {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
+          </Link> : null}
+        </div> : <>
+          <fieldset className={styles.choiceFieldset} disabled={leadBusy || busy || collision}>
+            <legend>{t.sendOption}</legend>
+            <div className={styles.choiceGrid}>
+              {(["free", "short", "full"] as const).map(option => <label key={option} data-selected={offerChoice === option}>
+                <input type="radio" name="coaching-service-request" checked={offerChoice === option}
+                  onChange={() => { setOfferChoice(option); setLeadError(""); }} />
+                <span>{option === "free" ? t.sendFree : option === "short" ? t.sendShort : t.sendFull}</span>
+              </label>)}
+            </div>
+          </fieldset>
+          <div className={styles.replyFields}>
+            <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
+              disabled={leadBusy || busy || collision} value={replyContact.email}
+              onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
+            <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
+              disabled={leadBusy || busy || collision} value={replyContact.phone}
+              onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label>
+          </div>
+          <label className={styles.sendConsent}>
+            <input type="checkbox" checked={sendConsent} disabled={leadBusy || busy || collision}
+              onChange={event => setSendConsent(event.target.checked)} />
+            <span>{t.sendConsent}</span>
+          </label>
+          {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
+          <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
+            !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())} onClick={() => void submitDiagnostic()}>
+            {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
+          </button>
+          <p className={styles.requestFootnote}>{t.sendNext}</p>
+        </>}
+      </div>
+      <p className={styles.requestEyebrow}>{t.saveOptional}</p>
       <div className={styles.saveStatus}><ShieldCheck size={19} aria-hidden="true" />{dirty ? t.dirty : saved?.intake ? t.upToDate : t.unsaved}</div>
       {auth === "signed" ? <label className={styles.consent}>
         <input type="checkbox" checked={consent} disabled={busy || collision} onChange={event => setConsent(event.target.checked)} />
