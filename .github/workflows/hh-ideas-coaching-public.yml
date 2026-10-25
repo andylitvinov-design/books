@@ -5,6 +5,10 @@ on:
     paths:
       - '.github/workflows/hh-ideas-coaching-public.yml'
       - 'components/ideas-discovery.tsx'
+      - 'components/holistic-support-choices.tsx'
+      - 'scripts/verify-holistic-support-browser.mjs'
+      - 'tests/holistic-support-*.test.mjs'
+      - 'tests/temple-support-hub.test.mjs'
       - 'components/coaching-intake-form.tsx'
       - 'components/coaching-intake-form.module.css'
       - 'components/free-diagnostic-start.tsx'
@@ -64,12 +68,13 @@ jobs:
           node --check lib/personal-coaching/model-matcher.js
           node --check scripts/verify-coaching-lounge-mobile.mjs
           node --check scripts/verify-ideas-mobile-browser.mjs
+          node --check scripts/verify-holistic-support-browser.mjs
           node --check lib/app/personal-coaching-catalog.js
           node --check lib/coaching/public-coaching-catalog.js
           node --check lib/coaching/public-session-art.js
-          node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs
+          node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs tests/holistic-support-first-screen.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-three-choices.test.mjs tests/temple-support-hub.test.mjs
       - name: Lint modified application components
-        run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts components/free-diagnostic-start.tsx components/coaching-intake-form.tsx app/\[locale\]/holistic-support/page.tsx app/\[locale\]/temple-insights/page.tsx app/api/coaching-diagnostic/route.js lib/coaching/diagnostic-enquiry.mjs lib/practitioners/public-service-enquiry-input.mjs lib/whatsapp-enquiry.js
+        run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/holistic-support-choices.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts components/free-diagnostic-start.tsx components/coaching-intake-form.tsx app/\[locale\]/holistic-support/page.tsx app/\[locale\]/temple-insights/page.tsx app/api/coaching-diagnostic/route.js lib/coaching/diagnostic-enquiry.mjs lib/practitioners/public-service-enquiry-input.mjs lib/whatsapp-enquiry.js
       - name: TypeScript noEmit
         run: npx --no-install tsc --noEmit
       - name: Next.js production build
@@ -94,11 +99,13 @@ jobs:
           if [ "$ready" != 1 ]; then tail -n 120 /tmp/hh-ideas-next.log; exit 1; fi
           node scripts/verify-coaching-lounge-mobile.mjs
           node scripts/verify-ideas-mobile-browser.mjs
+          node scripts/verify-holistic-support-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ideas-mobile-choice-first
           path: |
+            artifacts/holistic-support/
             artifacts/ideas-mobile/
             artifacts/coaching-mobile/
           retention-days: 7
