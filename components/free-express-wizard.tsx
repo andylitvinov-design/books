@@ -151,17 +151,24 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
   useEffect(() => {
     if (attempted.current) return;
     attempted.current = true;
-    let resume = false;
-    try { resume = window.sessionStorage.getItem(RESUME) === locale; }
+    let prior: { locale?: string; referenceCode?: string } | null = null;
+    try { prior = JSON.parse(window.sessionStorage.getItem(RESUME) || "null"); }
     catch { /* A missing session marker never initiates an enquiry. */ }
-    const isGoogleReturn = new URLSearchParams(window.location.search).get("hh_enquiry") === "google";
-    if (!resume && !isGoogleReturn) return;
+    const resume = prior?.locale === locale
+      && /^HH-[A-F0-9]{12}$/.test(prior.referenceCode || "");
+    // An OAuth marker is not sufficient: the browser must have our specific
+    // prior receipt too, otherwise another Google enquiry could be claimed.
+    const isGoogleReturn = resume && new URLSearchParams(window.location.search).get("hh_enquiry") === "google";
+    if (!resume) return;
     void (async () => {
       try {
         const res = await fetch("/api/free-express", { credentials: "same-origin", cache: "no-store" });
-        if (!res.ok) return;
+        if (!res.ok) { if (res.status === 401 || res.status === 409) setError(t.timeout); return; }
         const data = await res.json();
-        if (!data.saved || !/^HH-[A-F0-9]{12}$/.test(data.referenceCode || "")) return;
+        if (!data.saved || data.referenceCode !== prior?.referenceCode) {
+          setError(t.timeout);
+          return;
+        }
         setReceipt({ saved: true, referenceCode: data.referenceCode });
         setDetailsSaved(data.contextSaved === true);
         onSaved?.();
@@ -176,8 +183,8 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
     })();
   }, [locale, onSaved, t.restored]);
 
-  function remember() {
-    try { window.sessionStorage.setItem(RESUME, locale); }
+  function remember(referenceCode: string) {
+    try { window.sessionStorage.setItem(RESUME, JSON.stringify({ locale, referenceCode })); }
     catch { /* A blocked browser store never invalidates a committed lead. */ }
   }
 
@@ -209,7 +216,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
       if (!res.ok || data?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(data.referenceCode || ""))
         throw new Error("NOT_COMMITTED");
       setReceipt({ saved: true, referenceCode: data.referenceCode });
-      setStep(1); onSaved?.(); remember();
+      setStep(1); onSaved?.(); remember(data.referenceCode);
       pending.current = null;
       try { window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
         referenceCode: data.referenceCode, createdAt: Date.now(),
@@ -301,7 +308,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
       const value = await auth.json().catch(() => null);
       if (!auth.ok || typeof value?.redirectUrl !== "string" || !value.redirectUrl.startsWith("https://"))
         throw new Error("GOOGLE_UNAVAILABLE");
-      remember();
+      remember(receipt?.referenceCode || "");
       window.location.assign(value.redirectUrl);
     } catch { setError(t.googleError); }
     finally { setBusy(false); }
