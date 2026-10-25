@@ -55,7 +55,13 @@ create policy reiki_donations_student_read on app_private.reiki_donation_orders
 create policy reiki_donations_student_insert on app_private.reiki_donation_orders
   for insert to hh_app_backend
   with check (account_id = (select auth.uid()) and (select app_private.account_active())
-    and status = 'pending' and paid_minor is null and verified_at is null);
+    and status = 'pending' and paid_minor is null and verified_at is null
+    and exists (
+      select 1 from app_private.reiki_course_leads as application
+      where application.id = application_lead_id
+        and application.account_id = (select auth.uid())
+        and application.stage = 'application'
+    ));
 create policy reiki_donations_student_claim on app_private.reiki_donation_orders
   for update to hh_app_backend
   using (account_id = (select auth.uid()) and (select app_private.account_active())
