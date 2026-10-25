@@ -509,7 +509,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 <span aria-hidden="true" className={styles.topicGroupIcon}>{group.icon}</span>
                 <span className={styles.topicGroupName}>{tr(group.label,lang)}</span>
                 <span className={styles.topicGroupCount} aria-label={t.groupCount}>
-                  {coachingTopicSchemeCount(schemes,group.id)}</span>
+                  {coachingTopicSchemeCount(schemes.filter(s=>coachingSchemeMatchesSessionMode(s,sessionMode)),group.id)}</span>
               </button>)}
             </div>
           </fieldset>
