@@ -59,6 +59,8 @@ test("Request opens a bottom sheet, while two compact inline phone forms remain 
   assert.match(offers, /data-diagnosis-placement="bottom"/);
   assert.match(offers, /id="free-diagnosis-top"/);
   assert.match(offers, /id="free-diagnosis-bottom"/);
+  assert.match(offers, /const \[phone, setPhone\] = useState\(""\)/);
+  assert.match(offers, /contactValue=\{phone\} onContactChange=\{setPhone\}/);
   assert.match(offers, /\{children\}/);
   assert.match(css, /\.formWrap\[data-open="false"\]\{display:none\}/);
   assert.match(offers, /data-open=\{requestOpen \? "true" : "false"\}/);

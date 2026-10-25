@@ -47,10 +47,17 @@ const concise = {
   es: { intro: "Solo necesitas dejar tu teléfono. Después describirás tu pregunta y completarás el cuestionario.", phone: "Teléfono", action: "Comenzar diagnóstico gratis", error: "Introduce un teléfono de 8 a 15 dígitos." },
 } as const;
 
-export function FreeDiagnosticStart({ locale, compact = false, id = "free-diagnostic-start" }: { locale: PublicLocale; compact?: boolean; id?: string }) {
+export function FreeDiagnosticStart({ locale, compact = false, id = "free-diagnostic-start", contactValue, onContactChange }: {
+  locale: PublicLocale; compact?: boolean; id?: string; contactValue?: string; onContactChange?: (value: string) => void;
+}) {
   const t = copy[locale];
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
+  const [localContact, setLocalContact] = useState("");
+  const contact = contactValue ?? localContact;
+  const setContact = (value: string) => {
+    if (onContactChange) onContactChange(value);
+    else setLocalContact(value);
+  };
   const [topic, setTopic] = useState("personal");
   const [question, setQuestion] = useState("");
   const [error, setError] = useState("");
