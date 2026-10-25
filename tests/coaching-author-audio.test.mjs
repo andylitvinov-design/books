@@ -98,11 +98,11 @@ test('server-only owner upload and signed student playback use distinct scopes a
 })
 test('iPhone microphone allowed only on PIN-protected Egyptian and Greek editors',()=>{
  const next=read('next.config.ts')
- assert.match(next,/source: "\\/:path\\*"/)
- assert.match(next,/camera=\\(\\), microphone=\\(\\), geolocation=\\(\\)/)
- assert.match(next,/\\["\\/admin\\/materials\\/coaching\\/egyptian", "\\/admin\\/materials\\/coaching\\/greek"\\]/)
- assert.match(next,/camera=\\(\\), microphone=\\(self\\), geolocation=\\(\\)/)
- assert.doesNotMatch(next,/\\/admin\\/coaching-audio\\/data.*microphone=\\(self\\)/)
+ assert.ok(next.includes('source: "/:path*"'))
+ assert.ok(next.includes('camera=(), microphone=(), geolocation=()'))
+ assert.ok(next.includes('["/admin/materials/coaching/egyptian", "/admin/materials/coaching/greek"]'))
+ assert.ok(next.includes('camera=(), microphone=(self), geolocation=()'))
+ assert.ok(!next.includes('"/admin/coaching-audio/data"'))
 })
 test('owner folders discoverable; signed storage allowed only by scoped CSP; friendly mobile UI',()=>{
  const index=read('app/admin/materials/page.js'),folder=read('app/admin/materials/coaching/page.jsx')
