@@ -17,3 +17,16 @@
 .error{grid-column:1/-1;margin:0;color:#9d2828;font:700 12px/1.4 Arial,sans-serif}
 @media(max-width:530px){.form{grid-template-columns:1fr;gap:10px}.heading{gap:9px}.card{padding:13px}.form label{font-size:12px}}
 @media(max-width:350px){.card{padding:11px}.heading h3{font-size:21px}.action{font-size:12px}}
+
+/* Coaching Lounge: only one phone field before the private guided intake. */
+.mini{box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;box-shadow:none;min-width:0}
+.miniForm{display:grid;gap:9px}
+.miniForm label{display:grid;gap:5px;color:#405650;font:700 12px/1.35 system-ui,sans-serif}
+.miniForm input{box-sizing:border-box;display:block;width:100%;min-width:0;height:46px;
+  padding:9px 13px;border:1px solid #cbb8aa;border-radius:11px;background:#fff;color:#294248;
+  font:400 16px/1.3 system-ui,sans-serif}
+.miniForm input:focus-visible{outline:3px solid #3b8685;outline-offset:2px}
+.miniForm .action{width:100%;min-height:47px;margin:0;border-radius:11px;background:#893751;white-space:normal}
+.mini .privacy{display:flex;align-items:flex-start;gap:6px;margin:8px 0 0;color:#72685f;font:11px/1.42 system-ui,sans-serif}
+.mini .privacy svg{flex:none;margin-top:1px}
+@media(max-width:350px){.miniForm .action{font-size:12px;padding:10px 8px}}
