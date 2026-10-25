@@ -235,7 +235,7 @@ export function CompactLeadCapture({
               <p>{t.next}</p>
               <small>{t.reference}: {reference}</small>
             </div>
-          </div> : null}
+          </div>
           <div className={styles.channels} role="group" aria-label={t.channelsTitle}>
             <a href={channelUrl(reference, "whatsapp")} target="_blank" rel="noopener noreferrer"
               className={[styles.channel, styles.whatsapp].join(" ")} data-compact-channel="whatsapp">
@@ -273,7 +273,7 @@ export function CompactLeadCapture({
           {!coachingMini ? <div className={styles.channelHeading}>
             <strong>{t.channelsTitle}</strong>
             <span>{t.channelsHint}</span>
-          </div>
+          </div> : null}
           <div className={styles.channels} role="group" aria-label={t.channelsTitle}>
             <button className={[styles.channel, styles.whatsapp].join(" ")} type="button"
               disabled={busy !== null} onClick={() => { void chooseChannel("whatsapp"); }}
