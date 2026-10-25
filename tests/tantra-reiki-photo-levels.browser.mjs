@@ -56,16 +56,16 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
             assert.ok(dimensions[i].top >= dimensions[i - 1].bottom - 2, engineName + "/" + locale + "/" + width + ": single full-width column");
           }
           const first = cards.first();
-          await first.locator("summary").click();
+          await first.locator(":scope > summary").click();
           assert.equal(await first.getAttribute("open"), "", "tap opens native disclosure");
           assert.ok(await first.locator(".tantra-journey__collapsed-learning").isVisible(), "stage explanation and practice visible");
           assert.ok((await first.locator(".tantra-journey__collapsed-learning p").count()) >= 2, "what you learn + practical assignment");
           assert.ok(await first.locator(".tantra-journey__source > summary").isVisible(), "full author source preserved");
-          await first.locator("summary").first().click();
+          await first.locator(":scope > summary").click();
           assert.equal(await first.getAttribute("open"), null, "tap closes disclosure");
           // Test that the same semantic native summary is keyboard operable.
           if (width === 390) {
-            await first.locator("summary").focus();
+            await first.locator(":scope > summary").focus();
             await page.keyboard.press("Enter");
             assert.equal(await first.getAttribute("open"), "", "Enter opens disclosure");
           }
