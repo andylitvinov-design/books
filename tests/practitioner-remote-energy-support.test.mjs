@@ -52,7 +52,8 @@ test('Practitioners is compact, and energy support is a separate EN/RU/ES bookin
   const wizard = read('components/remote-energy-support-booking.tsx')
   const cabinet = read('components/app/app-workspace.jsx')
   assert.match(page, /<MarketplaceMasterFinder practitioners=/)
-  assert.match(page, /services\/remote-energy-support/)
+  // The current Masters page delegates its service CTA to the shared finder.
+  assert.match(finder, /service\.slug === "remote-energy-support"/)
   assert.match(pageCss, /@media \(max-width: 700px\)/)
   assert.match(finder, /MASTER_TOPICS/)
   assert.match(finder, /More filters/)
