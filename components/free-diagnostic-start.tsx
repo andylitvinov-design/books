@@ -47,10 +47,17 @@ const concise = {
   es: { intro: "Solo necesitas dejar tu teléfono. Después describirás tu pregunta y completarás el cuestionario.", phone: "Teléfono", action: "Comenzar diagnóstico gratis", error: "Introduce un teléfono de 8 a 15 dígitos." },
 } as const;
 
-export function FreeDiagnosticStart({ locale, compact = false }: { locale: PublicLocale; compact?: boolean }) {
+export function FreeDiagnosticStart({ locale, compact = false, id = "free-diagnostic-start", contactValue, onContactChange }: {
+  locale: PublicLocale; compact?: boolean; id?: string; contactValue?: string; onContactChange?: (value: string) => void;
+}) {
   const t = copy[locale];
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
+  const [localContact, setLocalContact] = useState("");
+  const contact = contactValue ?? localContact;
+  const setContact = (value: string) => {
+    if (onContactChange) onContactChange(value);
+    else setLocalContact(value);
+  };
   const [topic, setTopic] = useState("personal");
   const [question, setQuestion] = useState("");
   const [error, setError] = useState("");
@@ -72,7 +79,7 @@ export function FreeDiagnosticStart({ locale, compact = false }: { locale: Publi
   }
   if (compact) {
     const short = concise[locale];
-    return <section id="free-diagnostic-start" className={[styles.card, styles.compact].join(" ")}
+    return <section id={id} className={[styles.card, styles.compact].join(" ")}
       data-free-diagnostic-start data-free-diagnostic-phone-only lang={locale}>
       <p className={styles.kicker}>{t.kicker}</p>
       <p className={styles.compactIntro}>{short.intro}</p>
@@ -89,7 +96,7 @@ export function FreeDiagnosticStart({ locale, compact = false }: { locale: Publi
     </section>;
   }
 
-  return <section id="free-diagnostic-start" className={styles.card} data-free-diagnostic-start lang={locale}>
+  return <section id={id} className={styles.card} data-free-diagnostic-start lang={locale}>
     <div className={styles.heading}>
       <span className={styles.icon}><Sparkles size={21} aria-hidden="true" /></span>
       <div><p className={styles.kicker}>{t.kicker}</p><h3>{t.title}</h3><p>{t.intro}</p></div>
