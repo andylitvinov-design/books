@@ -308,7 +308,8 @@ export function ContactChannelChooser({
   }
 
   async function saveEnquiry(channel?: "whatsapp" | "telegram") {
-    if (busy || saved || submitting.current) return;
+    if (busy || saved) return;
+    if (submitting.current) return;
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
     const usePhone = compactPhone || method === "phone";
     if ((!usePhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
@@ -354,7 +355,7 @@ export function ContactChannelChooser({
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
           referenceCode: data.referenceCode, createdAt: Date.now(),
         }));
-        if (!stayAfterSave && !compactPhone) router.push("/" + locale + "/thank-you");
+        if (!stayAfterSave) router.push("/" + locale + "/thank-you");
       } catch {
         // Private browsing may block sessionStorage. The existing in-place
         // confirmation and optional messenger handoff remain available.
