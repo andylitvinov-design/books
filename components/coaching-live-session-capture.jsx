@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowRight, Check, HeartHandshake } from 'lucide-react'
-import { AcquisitionEventLink } from '@/components/acquisition-event-link'
-import { ContactChannelChooser } from '@/components/contact-channel-chooser'
-import { whatsappEnquiryUrl } from '@/lib/whatsapp-enquiry'
+import { ArrowRight, Check, ChevronDown, HeartHandshake } from 'lucide-react'
+import { CompactLeadCapture } from '@/components/compact-lead-capture'
+import { FreeDiagnosticStart } from '@/components/free-diagnostic-start'
 import { humanCoachingArt } from '@/lib/coaching/public-session-art'
 import styles from './coaching-live-session-capture.module.css'
 
@@ -86,14 +85,18 @@ export default function CoachingLiveSessionCapture({ locale = 'en' }) {
   const lang = Object.prototype.hasOwnProperty.call(content, locale) ? locale : 'en'
   const t = content[lang]
   const [selected, setSelected] = useState('free')
-  const paid = selected !== 'free'
+  const [opened, setOpened] = useState(false)
+  const sheetRef = useRef(null)
   const option = t.options[selected]
-  const whatsappUrl = paid ? whatsappEnquiryUrl({
-    locale: lang,
-    service: t.service + ' · ' + option.title + ' · ' + option.price,
-    option: option.title + ' · ' + option.price,
-    request: t.requests[selected],
-  }) : null
+  const paid = selected !== 'free'
+
+  // The panel stays in the document flow, below the selected offer. Never
+  // open a messenger, send contact details or create a lead merely on a tap.
+  useEffect(() => {
+    if (!opened) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    sheetRef.current?.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'instant' : 'smooth' })
+  }, [opened, selected])
 
   return (
     <div className={styles.capture} data-coaching-live-capture lang={lang}>
@@ -117,7 +120,7 @@ export default function CoachingLiveSessionCapture({ locale = 'en' }) {
             const active = key === selected
             return <button key={key} type="button" role="radio" aria-checked={active}
               className={styles.option} data-selected={active} data-coaching-booking-option={key}
-              onClick={() => setSelected(key)}>
+              onClick={() => { setSelected(key); setOpened(false) }}>
               <span className={styles.indicator} aria-hidden="true">{active && <Check size={15} strokeWidth={3} />}</span>
               <span className={styles.optionText}>
                 <strong>{item.title}</strong>
@@ -129,16 +132,21 @@ export default function CoachingLiveSessionCapture({ locale = 'en' }) {
         </div>
       </fieldset>
 
-      {paid ? <ContactChannelChooser key={selected} locale={lang} whatsappUrl={whatsappUrl}
-        className={styles.primary} label={t.actions[selected]} event="service_request_start"
-        attributes={{ 'data-coaching-booking-choice': selected }} />
-        : <AcquisitionEventLink prefetch={false} className={styles.primary}
-            href={'/' + lang + '/services/free-situation-review'}
-            event="service_request_start" analyticsEvent="free_situation_assessment_click"
-            attributes={{ 'data-coaching-booking-choice': 'free' }}>
-            {t.actions.free}<ArrowRight size={18} aria-hidden="true" />
-          </AcquisitionEventLink>}
-      <p className={styles.note}>{paid ? t.paidNote : t.freeNote}</p>
+      <button type="button" className={styles.primary} data-coaching-booking-choice={selected}
+        aria-expanded={opened} aria-controls="coaching-request-sheet"
+        onClick={() => setOpened(value => !value)}>
+        <span>{t.actions[selected]}</span>
+        <ChevronDown className={opened ? styles.chevronOpen : ''} size={19} aria-hidden="true" />
+      </button>
+      <div ref={sheetRef} id="coaching-request-sheet" className={styles.sheet}
+        data-coaching-request-sheet={selected} data-open={opened ? 'true' : 'false'} hidden={!opened}>
+        {opened && (paid
+          ? <CompactLeadCapture key={selected} locale={lang} variant="coaching"
+              sourcePath={'/' + lang + '/coaching'} serviceTitle={t.service + ' · ' + option.title + ' · ' + option.price}
+              title={t.actions[selected]} lead={t.paidNote} />
+          : <FreeDiagnosticStart locale={lang} variant="coaching" />)}
+      </div>
+      {!opened && <p className={styles.note}>{paid ? t.paidNote : t.freeNote}</p>}
     </div>
   )
 }
