@@ -7,6 +7,7 @@ import { IdeasDiscovery } from "@/components/ideas-discovery";
 import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { HolisticSupportTopicFilter } from "@/components/holistic-support-topic-filter";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "./holistic-support.module.css";
@@ -260,6 +261,8 @@ export default async function HolisticSupportPage({ params }: Props) {
           <span id="symbolic-reflection" aria-hidden="true" />
           <IdeasDiscovery locale={locale} variant="holistic" />
         </div>
+
+        <HolisticSupportTopicFilter locale={locale} />
 
         <section id="holistic-healing-support" className={styles.section} data-holistic-healing aria-labelledby="holistic-healing-title">
           <div className={styles.sectionHeading}>
