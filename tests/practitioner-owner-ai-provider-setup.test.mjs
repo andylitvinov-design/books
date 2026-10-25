@@ -56,3 +56,13 @@ test('owner readiness performs only read-only authenticated Studio model GET and
  assert.ok(!page.includes('HH_COUNCIL_MISTRAL_API_KEY'))
  assert.ok(!page.includes('mistral_key_ciphertext'))
 })
+
+test('owner mobile status never equates saved Studio key with usable API access',()=>{
+ const page=read('app/admin/telegram-setup/page.js')
+ assert.ok(page.includes('Ключ сохранён; Free mode подтверждён, но API-доступ требует отдельной проверки'))
+ assert.ok(page.includes('Key stored; Free mode confirmed, actual API access checked separately'))
+ assert.ok(page.includes('read-only GET was rate-limited (429)'))
+ assert.ok(page.includes('A saved Studio key and Free plan do not prove API access'))
+ assert.ok(page.includes('If Mistral asks you to upgrade, do not buy a plan'))
+ assert.ok(page.includes('only zero-priced Mistral :free can be requested'))
+})
