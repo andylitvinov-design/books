@@ -263,7 +263,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
           disabled={busy} onClick={()=>setNoteExpanded(value=>!value)}>
           {t.note}<span aria-hidden="true">{noteExpanded?'−':'+'}</span>
         </button>}
-        {(!quickChoices||noteExpanded)&&<div id="tradition-coaching-note-section" className={extra.noteSection}>
+        <div id="tradition-coaching-note-section" className={extra.noteSection} hidden={quickChoices&&!noteExpanded}>
           <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
           <textarea id="tradition-coaching-note" className={extra.note} value={note}
             data-tradition-open-reflection={!quickChoices?'true':undefined}
@@ -271,7 +271,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
             placeholder={quickChoices?t.placeholder:t.openPlaceholder}
             onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
           <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
-        </div>}
+        </div>
         {notice&&<p role="status" className={base.notice}><Check size={15}/>{notice}</p>}
         {error&&<p role="alert" className={base.error}>{error}</p>}
       </div>
