@@ -7,12 +7,14 @@ const page = read("components/academy-record-page.tsx");
 const journey = read("components/tantra-reiki-journey.tsx");
 const css = read("app/academy.css");
 
-test("Tantra Reiki has one real hero heading and two distinct first-screen learning routes", () => {
+test("Tantra Reiki has one real hero heading and three distinct first-screen pathways", () => {
   assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? \(/);
   assert.match(page, /<h1 id="tantra-course-hero-title">/);
   assert.doesNotMatch(page, /<h2 id="tantra-course-hero-title">/);
   assert.match(page, /className="tantra-course-hero__cta"/);
-  assert.match(page, /className="tantra-course-hero__course-cta" href=\{REIKI_FREE_COURSE_PATH\}/);
+  assert.match(page, /className="tantra-course-hero__cta" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
+  assert.match(page, /className="tantra-course-hero__healing-cta"/);
+  assert.match(page, /className="tantra-course-hero__initiation-cta" href=\{\"\/\" \+ locale \+ \"\/academy\/reiki\/tantra-reiki\/free-initiation#apply-personal\"\}/);
   assert.match(page, /className="tantra-course-hero__more"/);
   assert.match(page, /<nav className="tantra-course-hero__secondary-links"/);
   assert.match(page, /href="#tantra-level-1"/);

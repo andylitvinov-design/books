@@ -5023,3 +5023,94 @@
 @media (prefers-reduced-motion: reduce) {
   .academy-reading-shell--tantra .tantra-teacher__history-chevron { transition: none; }
 }
+
+
+/* 2026-10-24: Three different Tantra Reiki first-screen actions.
+   The healing request opens only on demand; no second registration screen. */
+.academy-reading-shell--tantra .tantra-course-hero__actions {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__cta,
+.academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__initiation-cta,
+.academy-reading-shell--tantra .tantra-course-hero__healing-request > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 13px;
+  border-radius: 11px;
+  font-size: clamp(12px, 1.3vw, 14px);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  text-decoration: none;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__cta {
+  border: 1px solid #dbbd8c;
+  color: #153e41;
+  background: linear-gradient(115deg, #f9e4bd, #e7bb79);
+}
+.academy-reading-shell--tantra .tantra-course-hero__healing-request {
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+}
+.academy-reading-shell--tantra .tantra-course-hero__healing-request > summary {
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid #a9d3d1;
+  background: #175b60;
+  color: #fffdfa;
+}
+.academy-reading-shell--tantra .tantra-course-hero__healing-request > summary::-webkit-details-marker {
+  display: none;
+}
+.academy-reading-shell--tantra .tantra-course-hero__healing-request > summary:hover {
+  background: #247279;
+}
+.academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__initiation-cta {
+  border: 1px solid rgba(250, 228, 195, .76);
+  background: rgba(255, 252, 243, .07);
+  color: #fff8ed;
+}
+.academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__initiation-cta:hover {
+  background: rgba(255, 252, 243, .19);
+}
+.academy-reading-shell--tantra .tantra-course-hero__healing-request > summary:focus-visible,
+.academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__initiation-cta:focus-visible,
+.academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__cta:focus-visible {
+  outline: 3px solid #f4dda9;
+  outline-offset: 3px;
+}
+.academy-reading-shell--tantra .tantra-course-hero__healing-panel {
+  margin-top: 6px;
+  padding: 12px;
+  border-radius: 11px;
+  background: #f8f3e9;
+  color: #244444;
+}
+.academy-reading-shell--tantra .tantra-course-hero__healing-panel > p {
+  margin: 0 0 9px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+@media (max-width: 700px) {
+  .academy-reading-shell--tantra .tantra-course-hero__actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+  .academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__cta,
+  .academy-reading-shell--tantra .tantra-course-hero__actions > a.tantra-course-hero__initiation-cta,
+  .academy-reading-shell--tantra .tantra-course-hero__healing-request > summary {
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+}
