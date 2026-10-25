@@ -86,8 +86,8 @@ try {
 
         // Actual hydrated mentor filtering stays above the first card at every
         // phone width (including the one-mentor layout from the owner's iPhone).
-        const articlesWereSelected = await articleTab.getAttribute("aria-selected") === "true";
-        await mentorTab.tap();
+        assert.equal(await mentorTab.getAttribute("aria-selected"), "true",
+          label + ": find a mentor must be the default view");
         await mentorPanel.waitFor({ state: "visible" });
         const menu = mentorPanel.locator("[data-mentor-filters]");
         const offers = mentorPanel.locator("#mentor-filter-offering");
@@ -127,6 +127,21 @@ try {
             label + ": choosing a course automatically sets the service type");
           assert.equal(await syntheticCard.count(), 1,
             label + ": course selector finds the actual approved course");
+          assert.ok(await syntheticCard.getByText(syntheticCourseTitle).count() >= 1,
+            label + ": preview reflects the selected course, not an unrelated service");
+          const deliveryFormat = menu.locator("[data-mentor-primary-filters] select").nth(2);
+          await deliveryFormat.selectOption("in_person");
+          assert.equal(await mentorCards.count(), 0,
+            label + ": an online course must not match an in-person-only choice");
+          await deliveryFormat.selectOption("");
+          assert.equal(await syntheticCard.count(), 1,
+            label + ": clearing the format restores the course");
+          await searchMentors.fill("Synthetic free introduction");
+          assert.equal(await mentorCards.count(), 0,
+            label + ": an unrelated session title must not match a course-only search");
+          await searchMentors.fill("");
+          assert.equal(await syntheticCard.count(), 1,
+            label + ": clearing the query restores the matching course");
           await offers.selectOption("");
           assert.equal(await learning.inputValue(), "",
             label + ": clearing service type also clears dependent course");
@@ -149,12 +164,26 @@ try {
         await menu.locator("#mentor-extra-filters").waitFor({ state: "visible", timeout: 10000 });
         assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "true",
           label + ": advanced menu opens from a touch");
+        if (phase === "populated") {
+          const pricing = menu.locator("#mentor-extra-filters select").nth(2);
+          await pricing.selectOption("free");
+          const freePreview = mentorPanel.locator("[data-mentor-cards] > article")
+            .filter({ hasText: "Synthetic Mentor" });
+          assert.ok(await freePreview.getByText({
+            en: "Synthetic free introduction",
+            ru: "Тестовое знакомство",
+            es: "Introducción gratuita de prueba",
+          }[locale]).count() >= 1,
+            label + ": free price filter previews the actual free service");
+          await pricing.selectOption("all");
+        }
         await noHorizontalOverflow(page, label + " expanded filters");
         await moreMentorFilters.tap();
         await menu.locator("#mentor-extra-filters").waitFor({ state: "hidden", timeout: 10000 });
         assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "false",
           label + ": advanced menu closes from a touch");
-        if (articlesWereSelected) await articleTab.tap();
+        await articleTab.tap();
+        await articlePanel.waitFor({ state: "visible" });
 
         if (phase === "empty") {
           // The isolated application seed can contain approved public services
@@ -182,9 +211,8 @@ try {
             await articleTab.tap();
             assert.equal(await articleTab.getAttribute("aria-selected"), "true");
           } else {
-            assert.equal(await mentorTab.getAttribute("aria-selected"), "true",
-              label + ": no published articles or services defaults to mentor search");
-            await articleTab.tap();
+            assert.equal(await articleTab.getAttribute("aria-selected"), "true",
+              label + ": article tab remains accessible when the feed is empty");
             await articlePanel.locator('[data-community-empty="articles"]').waitFor();
             const invite = articlePanel.locator('[data-community-empty="articles"]');
             await assertTouchSize(invite.getByRole("button"), label + " empty CTA");
@@ -202,7 +230,7 @@ try {
           await noHorizontalOverflow(page, label + " zero published articles");
         } else {
           assert.equal(await articleTab.getAttribute("aria-selected"), "true",
-            label + ": only approved articles may activate initial feed");
+            label + ": articles open when the visitor selects the secondary tab");
           await articlePanel.waitFor({ state: "visible" });
           const cards = articlePanel.locator("article");
           assert.equal(await cards.count(), 2, label + ": exactly two approved locale articles");
@@ -268,6 +296,18 @@ try {
             assert.equal(privateResponse.status(), 404,
               label + ": unreleased draft must be HTTP 404");
           }
+        }
+        if (width === 390) {
+          const deepLink = await page.goto(origin + "/" + locale + "/masters?view=articles",
+            { waitUntil: "domcontentloaded", timeout: 60000 });
+          assert.equal(deepLink?.status(), 200, label + ": explicit articles deep link HTTP 200");
+          await page.locator('[data-mentor-community][data-community-hydrated="true"]')
+            .waitFor({ state: "visible", timeout: 30000 });
+          assert.equal(await page.locator("#mentor-community-tab-articles").getAttribute("aria-selected"), "true",
+            label + ": explicit articles deep link opens articles");
+          await page.locator("#mentor-community-tab-mentors").tap();
+          assert.equal(await page.locator("#mentor-community-tab-mentors").getAttribute("aria-selected"), "true",
+            label + ": user can return from article link to filters");
         }
         assert.deepEqual(errors, [], label + ": unexpected page exceptions");
         results.push({ engine: engineName, locale, width, phase, passed: true });

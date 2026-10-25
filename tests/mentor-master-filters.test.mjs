@@ -39,6 +39,11 @@ test("real offering types, methods, locations, languages and course metadata dri
   assert.match(finder, /f\.location/);
   assert.match(finder, /f\.language/);
   assert.match(finder, /f\.pricing/);
+  assert.match(finder, /matchingMasterServices\(master, f\)/);
+  assert.match(finder, /matchingMasterCourses\(master, f, courses\)/);
+  assert.match(finder, /requiresSpecificOffering/);
+  assert.match(finder, /chosenServiceId/);
+  assert.match(finder, /const firstService = queryMatches\[0\] \|\| filteredServices\[0\]/);
   assert.match(finder, /getPublicServiceDetailHref/);
   assert.match(finder, /\/courses\/masters\//);
   assert.match(page, /createPractitionerCourseRepository\(config\)\.catalog\(\)/);
@@ -56,6 +61,9 @@ test("browser acceptance exercises mobile ordering and real filter interactions"
   assert.match(script, /offers\.selectOption\("session"\)/);
   assert.match(script, /searchMentors\.fill\("NO_SYNTHETIC_MENTOR_MATCH_887"\)/);
   assert.match(script, /moreMentorFilters\.tap\(\)/);
+  assert.match(script, /find a mentor must be the default view/);
+  assert.match(script, /online course must not match an in-person-only choice/);
+  assert.match(script, /explicit articles deep link opens articles/);
   assert.match(script, /noHorizontalOverflow\(page, label \+ " expanded filters"\)/);
   assert.match(script, /320, 375, 390, 430/);
 });

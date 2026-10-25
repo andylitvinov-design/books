@@ -15,6 +15,7 @@ test("community reuses approved public practitioner and article sources", async 
   assert.match(page, /<MarketplaceMasterFinder practitioners=/);
   assert.match(page, /<ArticleDirectory locale=\{locale\} preview articles=/);
   assert.match(page, /<MentorCommunitySwitch/);
+  assert.match(page, /requestedView === "articles" \? "articles" : "mentors"/);
   assert.match(page, /articles\.length > 0/);
   assert.match(articlesRepo, /a\.published<>'\{\}'::jsonb/);
   assert.match(articlesRepo, /p\.status in\('approved','submitted','changes_requested'\)/);
@@ -28,6 +29,7 @@ test("community switch exposes an accessible, keyboard-driven two-panel view", a
     read("components/mentor-community-switch.module.css"),
   ]);
   assert.match(switcher, /role="tablist"/);
+  assert.match(switcher, /initialView \?\? "mentors"/);
   assert.match(switcher, /role="tabpanel"/);
   assert.match(switcher, /aria-selected=\{view === item\}/);
   assert.match(switcher, /hidden=\{view !== "mentors"\}/);

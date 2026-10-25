@@ -9,6 +9,7 @@ import {traditionStages,traditionStageGuide,traditionStageImage,traditionStageSo
 import {coachingReportDate,downloadCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
+import TraditionCoachingAudio from './tradition-coaching-audio'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
 import {coachingRequestTopicLabel} from '@/lib/coaching/session-onboarding'
@@ -293,6 +294,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
             </div>
           </CoachingChatThread>
         </div>
+        <TraditionCoachingAudio template={template} question={question.id} locale={lang} accountId={accountId}/>
         {quickChoices&&<p className={extra.hint}>{question.hint?.[lang]||''}</p>}
         {quickChoices&&<div className={extra.choices} role="radiogroup" aria-label={question.question?.[lang]} onKeyDown={onChoiceKeyDown}>
           {question.choices?.map((option,optionIndex)=><button type="button" role="radio" key={option.id}

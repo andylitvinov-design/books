@@ -23,6 +23,7 @@ export default async function MaterialsPage(){
       <Link href={workspace+'services'}><Leaf aria-hidden="true"/>{ru?'Услуги':'Services'}</Link>
       <Link href="/admin/materials/courses"><BookOpen aria-hidden="true"/>{ru?'Курсы':'Courses'}</Link>
       <Link href="/admin/materials/courses/reiki-practitioner"><Headphones aria-hidden="true"/>{ru?'Аудио':'Audio'}</Link>
+      <Link href="/admin/materials/coaching"><FolderOpen aria-hidden="true"/>{ru?'Коучинг':'Coaching'}</Link>
       <Link href={workspace+'videos'}><Film aria-hidden="true"/>{ru?'Видео':'Video'}</Link>
     </nav>
     <section className={folders.collection} aria-labelledby="materials-course-folders" data-materials-course-folder>
@@ -36,6 +37,14 @@ export default async function MaterialsPage(){
           <span className={folders.folderName}>
             <strong>{ru?'Курсы мастера':'Master courses'}</strong>
             <small>{ru?'Reiki Practitioner · 5 уроков · записи RU / EN':'Reiki Practitioner · 5 lessons · RU / EN recordings'}</small>
+          </span>
+          <ChevronRight className={folders.arrow} aria-hidden="true"/>
+        </Link>
+        <Link href="/admin/materials/coaching" className={folders.folderLink} data-owner-coaching-folder-link>
+          <span className={folders.folderIcon}><Headphones aria-hidden="true"/></span>
+          <span className={folders.folderName}>
+            <strong>{ru?'Коучинг':'Coaching'}</strong>
+            <small>{ru?'Египетский · Греческий · запись голоса с телефона':'Egyptian · Greek · record your own narration on your phone'}</small>
           </span>
           <ChevronRight className={folders.arrow} aria-hidden="true"/>
         </Link>

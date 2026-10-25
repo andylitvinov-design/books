@@ -318,3 +318,15 @@
   .courseSession .courseScroll .stageCard{margin:3px 0 5px;padding:6px}
   .courseSession footer[data-coaching-messenger-footer] .chatComposer{padding:5px 8px}
 }
+
+/* Optional per-language sample avoids playing a private coaching prompt during voice setup. */
+.voiceSettingsPanel .voiceSample{
+  grid-column:1/-1;min-height:44px;border-radius:10px;
+  background:#fff9ed;border:1px solid #cfbca4;color:#67533b;
+  padding:9px 13px;font:inherit;font-size:13px;font-weight:750;
+  cursor:pointer;text-align:center
+}
+.voiceSettingsPanel .voiceSample:focus-visible{
+  outline:3px solid #00afb1;outline-offset:3px
+}
+.voiceSettingsPanel .voiceSample:disabled{opacity:.55;cursor:wait}

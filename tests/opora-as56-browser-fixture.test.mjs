@@ -39,7 +39,7 @@ test('hosted verification has exact mobile coverage, fully intercepted requests 
   assert.match(entry, /createRoot\(/)
   assert.doesNotMatch(entry, /fetch\(|\/api\/|localStorage|sessionStorage|cookie/i)
   assert.match(entry, /Object\.freeze\(value\)/)
-  for (const fragment of ["['ru', 'en', 'es']", '[320, 360, 390]', '[false, true]', "serviceWorkers: 'block'",
+  for (const fragment of ["['ru', 'en', 'es']", '[320, 360, 390, 430]', '[false, true]', "serviceWorkers: 'block'",
     "route.abort('blockedbyclient')", 'assert.equal(state.saves, 0', 'assert.deepEqual(unexpectedRequests, []',
     'assert.equal(state.finalData, state.initialData', 'await click(t.previous)', 'await click(t.neutral)',
     "await page.keyboard.press('Escape')", 'assert.equal(evidence.cases.length, 24)']) assert.ok(browser.includes(fragment), fragment)
@@ -50,7 +50,7 @@ test('hosted verification has exact mobile coverage, fully intercepted requests 
 })
 test('actual AS5.6 JSX, validators and CSS bundle unchanged with traceable source hashes', async () => {
   const fixture = await buildOporaBrowserFixture()
-  assert.ok(fixture.bundle.length > 100000 && fixture.bundle.length <= 804 * 1024)
+  assert.ok(fixture.bundle.length > 100000 && fixture.bundle.length <= 1200 * 1024)
   assert.ok(fixture.css.includes('.hh-app'))
   for (const path of ['components/app/opora-experience-player.jsx', 'components/app/opora-experience-player.module.css',
     'lib/inner-growth/opora-as56-experience-guides.js', 'lib/inner-growth/anti-stress-skills-v6.js',

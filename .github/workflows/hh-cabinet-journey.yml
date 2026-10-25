@@ -6,8 +6,9 @@ on:
       - 'lib/app/learning-journey*'
       - 'components/app/cabinet-journey.*'
       - 'components/app/profile-domains.jsx'
-      - 'app/api/app/[...path]/route.js'
+      - 'app/api/app/\[...path\]/route.js'
       - 'tests/cabinet-learning-journey.test.mjs'
+      - 'tests/workflow-next-route-filters.test.mjs'
       - 'components/app/app-workspace.jsx'
       - 'supabase/migrations/20261023154000_hh_journey_free_intro_availability.sql'
       - '.github/workflows/hh-cabinet-journey.yml'
@@ -30,7 +31,7 @@ jobs:
         with: {node-version: 22, cache: npm}
       - run: npm ci --include=dev --no-audit --no-fund
       - name: Verified participation and permissions regressions
-        run: node --test tests/cabinet-learning-journey.test.mjs
+        run: node --test tests/cabinet-learning-journey.test.mjs tests/workflow-next-route-filters.test.mjs
       - name: Scoped ESLint
         run: npx --no-install eslint components/app/cabinet-journey.jsx components/app/profile-domains.jsx components/app/app-workspace.jsx lib/app/learning-journey.mjs lib/app/learning-journey-repository.js app/api/app/'[...path]'/route.js tests/cabinet-learning-journey.test.mjs
       - name: TypeScript

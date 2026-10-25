@@ -91,7 +91,7 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
-      <MentorCommunitySwitch locale={locale} initialView={requestedView === "mentors" ? "mentors" : undefined} hasArticles={articles.length > 0} hasServices={services.length > 0}
+      <MentorCommunitySwitch locale={locale} initialView={requestedView === "articles" ? "articles" : "mentors"} hasArticles={articles.length > 0} hasServices={services.length > 0}
         mastersUnavailable={mastersResult.status === "rejected"}
         articlesUnavailable={articlesResult.status === "rejected"}
         mentors={<MarketplaceMasterFinder practitioners={practitioners} courses={courses} coursesUnavailable={coursesResult.status === "rejected"} locale={locale} />}
