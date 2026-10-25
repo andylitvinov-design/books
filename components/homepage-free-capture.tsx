@@ -34,7 +34,7 @@ const copy = {
         compactTitle: "Free personal analysis",
         description: "Complete a short questionnaire and send your Me / Goal / Problem drawing for a personal written review.",
         action: "Get my free personal analysis",
-        note: "Next: leave your phone number and choose WhatsApp or Telegram. Andrey will explain how to send your questionnaire and drawing for a free written review, not a live consultation.",
+        note: "Next: leave your phone number and choose WhatsApp or Telegram. Andrey will explain how to send your questionnaire and drawing for a free written review, not a free live consultation.",
       },
       reiki: {
         title: "Free Reiki Practitioner Program",
@@ -68,7 +68,7 @@ const copy = {
         compactTitle: "Личный разбор",
         description: "Заполните небольшую анкету и пришлите рисунок «Я / Цель / Проблема» для письменного разбора.",
         action: "Получить бесплатный личный разбор",
-        note: "Далее: оставьте номер телефона и выберите WhatsApp или Telegram. Андрей объяснит, как отправить анкету и рисунок для бесплатного письменного разбора, а не онлайн-консультации.",
+        note: "Далее: оставьте номер телефона и выберите WhatsApp или Telegram. Андрей объяснит, как отправить анкету и рисунок. Вы получите письменный разбор бесплатно, без обязательной онлайн-консультации.",
       },
       reiki: {
         title: "Бесплатная программа «Практик Рейки»",
