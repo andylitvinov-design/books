@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import vm from "node:vm";
+import ts from "typescript";
 import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -10,7 +12,7 @@ test("Holistic Support has an accessible audio and video meditation destination 
   const css = read("app/[locale]/holistic-support/holistic-support.module.css");
   for (const label of [
     "Meditation · Audio & Video", "Медитации · аудио и видео", "Meditación · Audio y vídeo",
-    "Free Energy Pump-Ups", "Бесплатные подкачки", "Prácticas energéticas gratuitas",
+    "Meditation · Flight to the Sun", "Бесплатные подкачки", "Meditación · Flight to the Sun",
   ]) assert.ok(page.includes(label), "missing locale text " + label);
   assert.match(page, /data-holistic-offer="meditations"/);
   assert.match(page, /data-holistic-meditation-cta/);
@@ -25,7 +27,8 @@ test("Holistic Support has an accessible audio and video meditation destination 
   assert.match(page, /\/ru\/holistic-support#meditation-practices/);
   assert.ok(page.includes("Flight to the Sun · Original English video"));
   assert.ok(page.includes("Flight to the Sun · Vídeo original en inglés"));
-  assert.ok(page.includes("«Полёт к солнцу»"));
+  assert.ok(page.includes("Русскоязычные медитации · архив PsiMaster"));
+  assert.doesNotMatch(page, /Первое видео — «Полёт к солнцу»/);
   assert.ok(page.indexOf("<AcademyCourseVideoPlaylist") < page.indexOf("data-holistic-audio-player"),
     "video should be encountered before the ambient audio on narrow screens");
   assert.match(css, /\.section\[data-holistic-meditations\]\{scroll-margin-top/);
@@ -44,11 +47,9 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   assert.match(model, /english-guided-meditations/);
   assert.match(model, /if \(locale !== "ru"\)/);
   assert.match(model, /item\.key === "flight-to-sun"/);
-  // RU opens the verified original Sun Flight first, with its real English audio,
-  // then retains 7 unique PsiMaster recordings. EN/ES stay English-only.
-  assert.match(model, /"Полёт к солнцу · авторская видеомедитация \(звук на английском\)"/);
-  assert.match(model, /order: 0/);
-  assert.match(model, /!seen\.has\(englishSun\.youtubeId\)/);
+  // The English video must never be injected into the RU PsiMaster selector.
+  assert.doesNotMatch(model, /"Полёт к солнцу · авторская видеомедитация/);
+  assert.doesNotMatch(model, /return \[\{\s*id: englishSun\.youtubeId[\s\S]*\.\.\.archive/);
   assert.match(read("data/academy/english-guided-meditations.ts"), /youtubeId: "HqfixazXqRY"/);
   assert.match(model, /seen\.has\(recording\.videoId\)/);
   assert.match(playlist, /introText \?\? t\.intro/);
@@ -65,4 +66,61 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
     assert.equal(rows.length, 1, family + " position " + order);
     assert.match(rows[0].videoId, /^[A-Za-z0-9_-]{11}$/);
   }
+});
+
+
+// Execute the actual TypeScript playlist model without reaching an external
+// video provider; this catches a cross-language regression that text tests miss.
+function evalTypeScript(path, mocks = {}) {
+  const compiled = ts.transpileModule(read(path), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+  }).outputText;
+  const module = { exports: {} };
+  vm.runInNewContext(compiled, {
+    module,
+    exports: module.exports,
+    require: id => {
+      if (Object.prototype.hasOwnProperty.call(mocks, id)) return mocks[id];
+      throw new Error("Unexpected source dependency: " + id);
+    },
+  }, { filename: path, timeout: 1000 });
+  return module.exports;
+}
+
+test("language-aware meditation selector: EN Flight to the Sun, RU only seven original PsiMaster videos", () => {
+  const english = evalTypeScript("data/academy/english-guided-meditations.ts");
+  const originalSun = english.englishGuidedMeditations.find(item => item.key === "flight-to-sun");
+  assert.equal(originalSun?.youtubeId, "HqfixazXqRY");
+
+  const { freeMeditationVideos } = evalTypeScript("data/academy/holistic-support-meditations.ts", {
+    "./english-guided-meditations": english,
+    "./psimaster-media.generated.json": media,
+  });
+  const en = freeMeditationVideos("en");
+  const es = freeMeditationVideos("es");
+  const ru = freeMeditationVideos("ru");
+
+  assert.deepEqual(Array.from(en, video => video.id), [originalSun.youtubeId]);
+  assert.deepEqual(Array.from(es, video => video.id), [originalSun.youtubeId]);
+  assert.match(en[0].title, /original English audio/);
+  assert.match(es[0].title, /audio original en inglés/);
+
+  const expectedRu = [
+    ["videos/strength-protection", 5],
+    ["videos/strength-protection", 6],
+    ["videos/strength-protection", 7],
+    ["videos/strength-protection", 3],
+    ["videos/strength-protection", 1],
+    ["videos/energy-pump-ups", 1],
+    ["videos/energy-pump-ups", 2],
+  ].map(([logicalId, order]) => {
+    const item = media.find(row => row.logicalId === logicalId && row.order === order && row.status === "verified_legacy_public_embed");
+    assert.ok(item, "missing original PsiMaster source " + logicalId + " #" + order);
+    return item.videoId;
+  });
+  assert.deepEqual(Array.from(ru, video => video.id), expectedRu);
+  assert.equal(ru.length, 7);
+  assert.equal(new Set(ru.map(video => video.id)).size, 7);
+  assert.ok(ru.every(video => video.id !== originalSun.youtubeId));
+  assert.ok(ru.every(video => !video.title.includes("original English")));
 });
