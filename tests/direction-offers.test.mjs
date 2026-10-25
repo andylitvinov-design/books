@@ -9,7 +9,7 @@ test('Legacy Energy / Love / Business categories remain available in More but no
   for (const locale of ['en', 'ru', 'es']) {
     const primary = getSiteNavigation(locale)
     const bottom = getCompactNavigation(locale)
-    assert.deepEqual(bottom.map(item => item.id), ['home','analysis','courses','profile','coaching','pro','temple'])
+    assert.deepEqual(bottom.map(item => item.id), ['home','analysis','courses','profile','alchemy','pro','temple'])
     for (const [id, slug] of [['energy','energy'],['love','love'],['business','business']]) {
       assert.equal(primary.find(item => item.id === id).href, '/' + locale + '/explore/' + slug)
       assert.ok(!bottom.some(item => item.id === id), 'Topic remains outside fixed bottom bar')
