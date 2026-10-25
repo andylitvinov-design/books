@@ -79,6 +79,7 @@ const AccountTestBattery = dynamic(() => import('@/components/app/account-test-b
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
+const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
@@ -634,7 +635,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
               <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
               <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
-                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
+                reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
             </>
           )}
           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
@@ -739,7 +740,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             recordId ? (
               <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
             ) : (
-              <ReportsIndex data={data} locale={locale} />
+              <><ReportsIndex data={data} locale={locale} /><ClientExpressReports locale={locale} accountId={data.account.id}/></>
             )
           )}
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}

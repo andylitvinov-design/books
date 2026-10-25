@@ -273,7 +273,7 @@ const copy = {
 
     requestKicker: "TU PRIMER PASO",
     requestTitle: "Empecemos por tu pregunta",
-    requestIntro: "Elige el formato y el tema; después selecciona WhatsApp o Telegram para solicitar tu sesión.",
+    requestIntro: "Elige formato y tema. Solicita tu sesión por WhatsApp o Telegram.",
     safety: "Esta es una consulta reflexiva y simbólica de autor, no un sustituto de la atención médica o psiquiátrica. La homeopatía no tiene pruebas fiables de eficacia para tratar problemas de salud. No cambies tratamientos prescritos sin orientación médica. No se garantizan resultados.",
   },
 } as const;

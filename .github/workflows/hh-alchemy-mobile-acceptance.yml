@@ -83,8 +83,10 @@ jobs:
             sleep 2
           done
           if [ "$ready" != 1 ]; then tail -n 80 /tmp/hh-alchemy-qa-next.log; exit 1; fi
-          node scripts/verify-alchemy-one-screen.mjs
-          HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs
+          browser_status=0
+          node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
+          HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs || browser_status=$?
+          exit "$browser_status"
       - name: Upload non-private mobile geometry summary
         uses: actions/upload-artifact@v4
         if: always()
