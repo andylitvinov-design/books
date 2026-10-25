@@ -7,7 +7,7 @@ import {
 } from '../data/academy/reiki-donation-model.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
-const sql = read('supabase/migrations/20261025130000_hh_reiki_donation_manual_receipts.sql')
+const sql = read('supabase/migrations/20261025122852_hh_reiki_donation_manual_receipts_20261025.sql')
 const service = read('lib/academy/reiki-donation-orders.js')
 const route = read('app/api/app/reiki-donations/route.js')
 const adminRoute = read('app/admin/reiki-leads/data/route.js')
