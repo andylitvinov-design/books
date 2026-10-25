@@ -1,41 +1,43 @@
-.thread{display:flex;flex-direction:column;gap:11px;width:100%;max-width:720px;min-width:0;margin:7px 0 13px}
-.userRow{display:flex;justify-content:flex-end;min-width:0}
-.userBubble{min-width:0;max-width:min(85%,510px);padding:9px 13px 11px;
-  background:#dcefe7;border:1px solid #c8e1d5;border-radius:16px 16px 5px 16px;
-  box-shadow:0 2px 9px #2646370b;color:#214c45;overflow-wrap:anywhere}
-.userLabel{display:block;margin-bottom:4px;font-size:11px;font-weight:850;color:#3e796a}
-.userBubble p{font-size:14px;line-height:1.47;white-space:pre-wrap;margin:0}
-.coachRow{display:flex;align-items:flex-start;gap:9px;min-width:0}
+/* Shared conversational surface for guest, encrypted and symbolic sessions.
+   Previous submitted answer -> coach's current response -> pending quick reply. */
+.thread{display:flex;flex-direction:column;gap:10px;width:100%;max-width:720px;min-width:0;
+  margin:7px 0 12px;padding:4px 0;overflow-wrap:anywhere}
+.userRow{display:flex;justify-content:flex-end;min-width:0;padding-left:38px}
+.userBubble,.draftBubble{min-width:0;max-width:min(86%,530px);padding:10px 14px 12px;
+  background:#dcece5;border:1px solid #bcd9cb;border-radius:18px 18px 5px 18px;
+  box-shadow:0 3px 12px #274c3810;color:#294d45;overflow-wrap:anywhere}
+.userLabel,.draftLabel{display:block;margin-bottom:4px;font-size:10px;font-weight:800;
+  letter-spacing:.02em;color:#386c60}
+.userBubble p,.draftBubble p{font-size:14px;line-height:1.45;white-space:pre-wrap;margin:0}
+.coachRow{display:flex;align-items:flex-end;gap:9px;min-width:0}
 .avatar{display:block;flex:none;width:40px;height:40px;object-fit:cover;object-position:center;
   border:2px solid #fff;border-radius:50%;background:#eadfd0;box-shadow:0 2px 9px #35453e2d}
-.coachBubble{min-width:0;flex:1;max-width:640px;padding:13px 16px 14px;
-  border:1px solid #e4ded4;border-radius:6px 17px 17px 17px;
-  background:rgba(255,255,255,.97);box-shadow:0 3px 16px #554d4212;
-  color:#284644;overflow-wrap:anywhere}
-.byline{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px;row-gap:2px;margin-bottom:8px}
-.byline strong{font-size:12px;color:#315e58;letter-spacing:.01em}
-.byline span{font-size:10px;color:#647a73;line-height:1.25}
+.coachBubble{position:relative;min-width:0;max-width:min(85%,620px);padding:14px 17px;
+  border:1px solid #e6ddd2;border-radius:18px 18px 18px 5px;
+  background:#fffdf9;box-shadow:0 5px 17px #554d4210;color:#284644;overflow-wrap:anywhere}
+.byline{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:9px;row-gap:1px;margin-bottom:7px}
+.byline strong{font-size:12px;color:#315e58;letter-spacing:.015em}
+.byline span{font-size:10px;color:#73827a;line-height:1.35}
 .question{min-width:0}
-.thread .coachBubble .question :global(h1){font-family:Georgia,"Times New Roman",serif;
-  font-weight:600;font-size:clamp(20px,4.4vw,29px)!important;line-height:1.2!important;
-  letter-spacing:-.02em;margin:7px 0 2px!important;max-width:100%;color:#2a3936!important;outline:none}
+.thread .coachBubble .question :global(h1){font-family:inherit!important;font-weight:710!important;
+  font-size:clamp(19px,3vw,23px)!important;line-height:1.3!important;letter-spacing:-.02em;
+  margin:8px 0 1px!important;max-width:100%;color:#2a3936!important;outline:none}
+.reply{font-size:14px;line-height:1.53;margin:0 0 5px;color:#476a61}
+.draftBubble{background:#edf5ef;border:1px dashed #8eafa5;box-shadow:none}
+.draftLabel{color:#687f75}
 @media(max-width:430px){
-  .thread{gap:8px;margin:4px 0 10px}
+  .thread{gap:8px;margin:2px 0 7px;padding:1px 0}
   .coachRow{gap:7px}
-  .avatar{width:35px;height:35px}
-  .coachBubble{padding:11px 12px 12px;border-radius:5px 15px 15px 15px}
-  .userBubble{padding:8px 11px 9px}
-  .userBubble p{font-size:13px}
-  .byline{margin-bottom:5px}
-  .thread .coachBubble .question :global(h1){font-size:clamp(19px,5.4vw,25px)!important}
-}
-@media(max-width:350px){
-  .avatar{width:31px;height:31px}
-  .coachRow{gap:5px}
-  .coachBubble{padding:9px 10px}
+  .avatar{width:34px;height:34px}
+  .coachBubble{max-width:calc(100% - 43px);padding:10px 12px;border-radius:15px 15px 15px 4px}
+  .userBubble,.draftBubble{padding:8px 11px 9px}
+  .userBubble p,.draftBubble p{font-size:13px;line-height:1.4}
+  .byline{margin-bottom:3px}
+  .byline strong{font-size:11px}
   .byline span{font-size:9px}
+  .thread .coachBubble .question :global(h1){font-size:clamp(18px,5vw,21px)!important;margin-top:5px!important}
+  .reply{font-size:12.5px;line-height:1.45;margin-bottom:3px}
 }
+@media(max-width:350px){.avatar{width:30px;height:30px}.coachRow{gap:5px}
+  .coachBubble{max-width:calc(100% - 35px);padding:9px 10px}.byline span{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.thread *{transition:none!important}}
-
-.reply{font-size:14px;line-height:1.5;margin:0 0 8px;color:#426a62}
-@media(max-width:430px){.reply{font-size:13px;line-height:1.43;margin-bottom:6px}}
