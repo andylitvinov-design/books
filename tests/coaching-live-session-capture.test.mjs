@@ -4,45 +4,42 @@ import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
-const component = read('components/coaching-live-session-capture.jsx')
-const css = read('components/coaching-live-session-capture.module.css')
+const entry = read('components/coaching-lounge-entry.tsx')
+const css = read('components/coaching-lounge-entry.module.css')
 const lounge = read('components/public-coaching-discovery.jsx')
 
-test('Coaching & Hypnotherapy has one live capture with all three localized options', () => {
-  assert.match(lounge, /<CoachingLiveSessionCapture locale=\{lang\}/)
-  assert.equal((lounge.match(/data-coaching-session-capture/g) || []).length, 1)
-  assert.doesNotMatch(lounge, /data-coaching-practitioner-checklist|data-coaching-paid-sessions/)
-  assert.match(component, /offers = \['free', 'short', 'full'\]/)
+test('Coaching Lounge has one active three-path entry, not a duplicate legacy capture', () => {
+  assert.match(lounge, /<CoachingLoungeEntry locale=\{lang\} \/>/)
+  assert.doesNotMatch(lounge, /<CoachingLiveSessionCapture/)
+  assert.match(entry, /data-coaching-three-paths/)
   for (const label of [
-    'Coaching & Hypnotherapy', 'Коучинг и гипнотерапия', 'Coaching e hipnoterapia',
-    'Free express assessment', 'Бесплатная экспресс-диагностика', 'Evaluación exprés gratuita',
-    'Short session · 30 min', 'Краткая сессия · 30 мин', 'Sesión breve · 30 min',
-    'Full session · 60 min', 'Полная сессия · 60 мин', 'Sesión completa · 60 min',
-    '€50', '€100',
-  ]) assert.ok(component.includes(label), label)
+    'Free situation diagnosis', 'Бесплатная диагностика ситуации', 'Diagnóstico gratuito de la situación',
+    'Personal coaching session', 'Личная коучинг-сессия', 'Sesión personal de coaching',
+    '30 min · €50', '60 min · €100',
+  ]) assert.ok(entry.includes(label), label)
 })
 
-test('free choice opens existing free intake, paid choices open a truthful consent-based request', () => {
-  assert.match(component, /useState\('free'\)/)
-  assert.match(component, /role="radiogroup"/)
-  assert.match(component, /role="radio" aria-checked=\{active\}/)
-  assert.match(component, /onClick=\{\(\) => setSelected\(key\)\}/)
-  assert.match(component, /whatsappEnquiryUrl\(\{/)
-  assert.match(component, /ContactChannelChooser/)
-  assert.match(component, /label=\{t\.actions\[selected\]\}/)
-  assert.match(component, /\/services\/free-situation-review/)
-  assert.match(component, /analyticsEvent="free_situation_assessment_click"/)
-  assert.match(component, /time and format are confirmed personally before any payment/)
-  assert.match(component, /not a live call or medical diagnosis/)
-  assert.doesNotMatch(component, /localStorage|sessionStorage|fetch\(|window\.open|checkout/)
+test('chosen offer expands one short phone-first intake; messenger handoff always remains a separately consented action', () => {
+  assert.match(entry, /useState\(false\)/)
+  assert.match(entry, /setRequestOpen\(true\)/)
+  assert.match(entry, /hidden=\{!requestOpen\}/)
+  assert.match(entry, /data-open=\{requestOpen \? "true" : "false"\}/)
+  assert.match(entry, /<FreeDiagnosticStart locale=\{locale\} compact \/>/)
+  assert.match(entry, /<CompactLeadCapture key=\{format\} locale=\{locale\} variant="coaching"/)
+  assert.match(entry, /role="radiogroup"/)
+  assert.match(entry, /aria-checked=\{format === item\.value\}/)
+  assert.match(entry, /sourcePath=\{"\/" \+ locale \+ "\/coaching"\}/)
+  assert.match(entry, /href="#free-diagnostic-start" onClick=\{\(\) => choose\("free"\)\}/)
+  assert.match(entry, /offer\.id === "free" \? "#free-diagnostic-start" : "#coaching-intake"/)
+  assert.doesNotMatch(entry, /window\.open|fetch\(|whatsappEnquiryUrl|sessionStorage|checkout/)
 })
 
-test('capture is mobile legible and parses as JSX', () => {
-  assert.match(css, /background:#fcf8f1/)
-  assert.match(css, /background:#893751/)
-  assert.match(css, /@media\(max-width:600px\)/)
+test('coaching offer picker and mini-panel are responsive and parse as TSX', () => {
+  assert.match(css, /\.intake\[hidden\]/)
+  assert.match(css, /\.durationChoice/)
+  assert.match(css, /@media\(max-width:350px\)/)
   assert.match(css, /prefers-reduced-motion/)
   assert.match(css, /:focus-visible/)
-  const parsed = ts.createSourceFile('coaching-live-session-capture.jsx', component, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX)
-  assert.equal(parsed.parseDiagnostics.length, 0)
+  const parsed = ts.createSourceFile('coaching-lounge-entry.tsx', entry, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  assert.deepEqual(parsed.parseDiagnostics.map(e => e.messageText), [])
 })

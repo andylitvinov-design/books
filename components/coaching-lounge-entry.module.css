@@ -66,3 +66,15 @@
   .cardButton{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto}}
+
+/* One small inline slide-down request, opened on an explicit service-choice tap. */
+.intake[hidden]{display:none!important}
+.intake[data-open="true"]{animation:coachingIntakeIn .2s ease-out}
+@keyframes coachingIntakeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.durationChoice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.durationChoice button{min-height:44px;min-width:0;padding:10px;border:1px solid #cdb8aa;
+  border-radius:11px;background:#fff9f3;color:#684b3d;font:750 12px/1.35 Arial,sans-serif;cursor:pointer}
+.durationChoice button[aria-checked="true"]{border-color:#893751;background:#fcebf1;color:#813451;box-shadow:inset 0 0 0 1px #893751}
+.durationChoice button:focus-visible{outline:3px solid #3b8585;outline-offset:3px}
+@media(max-width:350px){.durationChoice{gap:6px}.durationChoice button{font-size:11px;padding-inline:6px}}
+@media(prefers-reduced-motion:reduce){.intake[data-open="true"]{animation:none}}

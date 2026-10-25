@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Flower2, HeartHandshake, Sparkles } from "lucide-react";
@@ -122,6 +122,31 @@ const copy = {
 export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<Choice>("free");
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [format, setFormat] = useState<string>(t.formats[0].value);
+  function choose(choice: Choice) { setSelected(choice); setRequestOpen(true); }
+  // Legacy in-page CTAs point to the same registration section. Open the
+  // appropriate panel for direct deep links instead of scrolling to hidden UI.
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === "#coaching-intake") {
+        setSelected("session"); setRequestOpen(true);
+      } else if (window.location.hash === "#free-diagnostic-start") {
+        setSelected("free"); setRequestOpen(true);
+      }
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
+  useEffect(() => {
+    if (!requestOpen) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("coaching-intake")?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth", block: "start"
+    });
+  }, [requestOpen, selected]);
+
   const offers = [
     { id: "free", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", badge: t.freeBadge,
       title: t.freeTitle, body: t.freeBody, detail: t.freeDetail },
@@ -142,10 +167,10 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
         <p className={styles.heroHeadline}>{t.headline}</p>
         <p className={styles.heroLead}>{t.lead}</p>
         <nav className={styles.heroChoices} aria-label={t.choose}>
-          <a href="#coaching-intake" onClick={() => setSelected("free")} data-coaching-hero-choice="free">
+          <a href="#free-diagnostic-start" onClick={() => choose("free")} data-coaching-hero-choice="free">
             <Sparkles size={20} aria-hidden="true"/><span>{t.freeAction}</span><ArrowRight size={19} aria-hidden="true"/>
           </a>
-          <a href="#coaching-intake" onClick={() => setSelected("session")} data-coaching-hero-choice="session">
+          <a href="#coaching-intake" onClick={() => choose("session")} data-coaching-hero-choice="session">
             <HeartHandshake size={20} aria-hidden="true"/><span>{t.sessionAction}</span><ArrowRight size={19} aria-hidden="true"/>
           </a>
           <Link href={"/" + locale + "/services/imagery-therapy#request-session"} prefetch={false} data-coaching-hero-choice="deep">
@@ -179,8 +204,8 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
                 <Link href={"/" + locale + "/services/imagery-therapy#request-session"} className={styles.cardButton}
                   prefetch={false} data-coaching-select="deep">{t.learn}<ArrowRight size={15} aria-hidden="true"/></Link>
               ) : (
-                <a href="#coaching-intake" className={styles.cardButton}
-                  onClick={() => setSelected(offer.id as Choice)} data-coaching-select={offer.id}>
+                <a href={offer.id === "free" ? "#free-diagnostic-start" : "#coaching-intake"} className={styles.cardButton}
+                  onClick={() => choose(offer.id as Choice)} data-coaching-select={offer.id}>
                   {t.request}<ArrowRight size={15} aria-hidden="true"/>
                 </a>
               )}
@@ -190,14 +215,20 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
       </div>
     </section>
 
-    <section className={styles.intake} id="coaching-intake" aria-label={t.choose} data-coaching-intake>
+    <section className={styles.intake} id="coaching-intake" aria-label={t.choose} data-coaching-intake
+      data-open={requestOpen ? "true" : "false"} hidden={!requestOpen}>
       <p className={styles.selectedText} role="status">{selected === "free" ? t.freeSelected : t.sessionSelected}</p>
-      {selected === "free" ? <FreeDiagnosticStart locale={locale} /> : (
+      {selected === "free" ? <FreeDiagnosticStart locale={locale} compact /> : (
         <div id="coaching-session-request" data-coaching-session-request>
-          <CompactLeadCapture locale={locale} variant="inline" sourcePath={"/" + locale + "/coaching"}
-            serviceTitle="Personal Coaching Session with Andrey"
-            title={t.formTitle} lead={t.formLead} disclaimer={t.formDisclaimer}
-            formatOptions={t.formats} formatLabel={t.formatLabel} />
+          <div className={styles.durationChoice} role="radiogroup" aria-label={t.formatLabel}>
+            {t.formats.map(item => <button key={item.value} type="button" role="radio"
+              aria-checked={format === item.value} data-coaching-session-format={item.value}
+              onClick={() => setFormat(item.value)}>{item.label}</button>)}
+          </div>
+          <CompactLeadCapture key={format} locale={locale} variant="coaching"
+            sourcePath={"/" + locale + "/coaching"}
+            serviceTitle={"Personal Coaching Session with Andrey · " + format}
+            title={t.formTitle} lead={t.formLead} />
         </div>
       )}
       <p className={styles.safety}>{t.note}</p>

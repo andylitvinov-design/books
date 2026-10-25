@@ -189,6 +189,60 @@ const copy = {
   },
 } as const;
 
+const guidedCopy: Record<PublicLocale, {
+  eyebrow: string; firstTitle: string; invitationTitle: string; invitationBody: string;
+  introNext: string; next: string; back: string; skip: string; review: string;
+  step: string; of: string; optional: string; essential: string; enterAnswer: string;
+  finishTitle: string; finishLead: string; finishPhone: string; finishPrivacy: string;
+  missingPhone: string; noSend: string;
+}> = {
+  en: {
+    eyebrow: "FREE DIAGNOSIS · PERSONAL QUESTIONNAIRE",
+    firstTitle: "Briefly, what is your question about?",
+    invitationTitle: "Would you like to answer Andrey's coaching questions?",
+    invitationBody: "Next, one question appears on each screen. Three answers are essential; the others are optional. You can go back and change an answer at any time.",
+    introNext: "Continue to the questionnaire", next: "Next question", back: "Back",
+    skip: "Skip for now", review: "Review my request", step: "Step", of: "of",
+    optional: "Optional", essential: "Essential", enterAnswer: "Write your answer…",
+    finishTitle: "Send my free diagnosis request",
+    finishLead: "Your phone is ready. Review the consent, then securely send your answers for a personal written review.",
+    finishPhone: "Phone number for Andrey's reply",
+    finishPrivacy: "Only after you press Send will your answers and phone be saved securely for Andrey's personal reply. No marketing.",
+    missingPhone: "Enter an international phone number, for example +1 416 555 0123.",
+    noSend: "Not a live appointment, medical diagnosis or confirmed booking.",
+  },
+  ru: {
+    eyebrow: "БЕСПЛАТНАЯ ДИАГНОСТИКА · КОУЧИНГ-АНКЕТА",
+    firstTitle: "Укажите кратко, в чём суть вашего вопроса",
+    invitationTitle: "Предлагаем ответить на вопросы коучинговой анкеты",
+    invitationBody: "Далее — по одному вопросу на каждом экране. Три ответа обязательны, остальные — по желанию. Можно вернуться и исправить ответы.",
+    introNext: "Начать коучинговую анкету", next: "Следующий вопрос", back: "Назад",
+    skip: "Пропустить", review: "Завершить анкету", step: "Шаг", of: "из",
+    optional: "Необязательно", essential: "Обязательно", enterAnswer: "Напишите ваш ответ…",
+    finishTitle: "Отправить запрос на бесплатную диагностику",
+    finishLead: "Ваш номер сохранён в этой вкладке. Подтвердите согласие и отправьте ответы для личного письменного разбора.",
+    finishPhone: "Телефон для личного ответа Андрея",
+    finishPrivacy: "Только после нажатия «Отправить» ответы и телефон будут защищённо сохранены для личного ответа Андрея. Без рассылок.",
+    missingPhone: "Укажите номер с кодом страны, например +1 416 555 0123.",
+    noSend: "Это письменный разбор, не видеовстреча, медицинский диагноз или запись на сессию.",
+  },
+  es: {
+    eyebrow: "DIAGNÓSTICO GRATUITO · FORMULARIO DE COACHING",
+    firstTitle: "Describe brevemente cuál es tu pregunta",
+    invitationTitle: "¿Quieres responder al cuestionario de coaching de Andrey?",
+    invitationBody: "A continuación verás una pregunta por pantalla. Tres respuestas son esenciales y las demás son opcionales. Puedes volver y editar tus respuestas.",
+    introNext: "Empezar cuestionario", next: "Siguiente pregunta", back: "Atrás",
+    skip: "Omitir", review: "Revisar mi solicitud", step: "Paso", of: "de",
+    optional: "Opcional", essential: "Esencial", enterAnswer: "Escribe tu respuesta…",
+    finishTitle: "Enviar mi solicitud de diagnóstico gratuito",
+    finishLead: "Tu número está preparado. Da tu consentimiento y envía las respuestas para una revisión personal escrita.",
+    finishPhone: "Teléfono para que Andrey responda",
+    finishPrivacy: "Las respuestas y el teléfono se guardan de forma segura solo tras pulsar Enviar. Sin publicidad.",
+    missingPhone: "Introduce tu número internacional, por ejemplo +1 416 555 0123.",
+    noSend: "No es una cita, una consulta médica ni una reserva confirmada.",
+  },
+};
+
 function normalise(value: Draft | null | undefined): Draft {
   if (!value) return blank();
   return {
@@ -217,8 +271,10 @@ function formatAnswers(draft: Draft, locale: PublicLocale) {
   return lines.join("\n");
 }
 
-export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
+export function CoachingIntakeForm({ locale, guided = false }: { locale: PublicLocale; guided?: boolean }) {
   const t = copy[locale];
+  const g = guidedCopy[locale];
+  const [guidedStep, setGuidedStep] = useState(0);
   const [draft, setDraft] = useState<Draft>(blank);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [auth, setAuth] = useState<"checking" | "guest" | "signed" | "error">("checking");
@@ -415,6 +471,94 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   function keepLocal() {
     setCollision(false); setDirty(true); setNotice(""); setError("");
   }
+
+  // Entry phone and answers remain local until explicit final consent and submission.
+  // The original one-page author questionnaire remains available without ?guided=1.
+  const guidedLastStep = COACHING_FIELDS.length + 1;
+  const guidedField = guidedStep === 0 ? COACHING_FIELDS[0]
+    : guidedStep >= 2 && guidedStep <= COACHING_FIELDS.length ? COACHING_FIELDS[guidedStep - 1] : null;
+  const guidedFinish = guidedStep === guidedLastStep;
+  const guidedCanNext = !guidedField?.required || Boolean(draft.answers[guidedField.id]?.trim());
+  const guidedNext = () => setGuidedStep(step => Math.min(guidedLastStep, step + 1));
+  const guidedBack = () => setGuidedStep(step => Math.max(0, step - 1));
+
+  if (guided) return <section className={styles.guided} aria-labelledby="guided-coaching-title"
+    data-coaching-intake data-coaching-guided lang={locale}>
+    <header className={styles.guidedHeader}>
+      <p className={styles.guidedEyebrow}><LockKeyhole size={14} aria-hidden="true" />{g.eyebrow}</p>
+      <div className={styles.guidedProgressText}>
+        <span>{g.step} {guidedStep + 1} {g.of} {guidedLastStep + 1}</span>
+        <span>{Math.round((guidedStep + 1) / (guidedLastStep + 1) * 100)}%</span>
+      </div>
+      <div className={styles.guidedProgress} role="progressbar" aria-valuenow={guidedStep + 1}
+        aria-valuemin={0} aria-valuemax={guidedLastStep + 1}
+        aria-label={g.step}><span style={{ width: Math.round((guidedStep + 1) / (guidedLastStep + 1) * 100) + "%" }} /></div>
+    </header>
+    {collision ? <div className={styles.conflict} role="alert">
+      <p>{t.accountConflict}</p>
+      <div><button type="button" onClick={loadSaved}>{t.chooseSaved}</button>
+        <button type="button" onClick={keepLocal}>{t.chooseLocal}</button></div>
+    </div> : null}
+    <div className={styles.guidedCard} aria-live="polite">
+      {guidedField ? <>
+        <h2 id="guided-coaching-title">{guidedStep === 0 ? g.firstTitle : guidedField.label[locale]}</h2>
+        <p className={styles.guidedHint}>{guidedField.required ? g.essential : g.optional}</p>
+        <label className={styles.guidedInput}>
+          <span className={styles.visuallyHidden}>{guidedField.label[locale]}</span>
+          <textarea data-guided-coaching-question={guidedField.id} rows={4}
+            maxLength={guidedField.max} aria-required={guidedField.required}
+            disabled={collision || busy || leadBusy} autoFocus={false}
+            placeholder={g.enterAnswer} value={draft.answers[guidedField.id] || ""}
+            onChange={event => fieldChange(guidedField.id, event.target.value)} />
+        </label>
+      </> : guidedStep === 1 ? <>
+        <h2 id="guided-coaching-title">{g.invitationTitle}</h2>
+        <p className={styles.guidedDescription}>{g.invitationBody}</p>
+        <div className={styles.guidedVisual} aria-hidden="true"><ShieldCheck size={26} /></div>
+      </> : <>
+        <h2 id="guided-coaching-title">{g.finishTitle}</h2>
+        <p className={styles.guidedDescription}>{g.finishLead}</p>
+        {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
+          <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong>
+          <p>{t.sendNext}</p>
+          <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
+            {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
+          </Link></div>
+        </div> : <>
+          <label className={styles.guidedPhone}>{g.finishPhone}
+            <input type="tel" inputMode="tel" autoComplete="tel" maxLength={28}
+              value={replyContact.phone} disabled={leadBusy || busy || collision}
+              onChange={event => { setReplyContact(value => ({ ...value, email: "", phone: event.target.value })); setLeadError(""); }} />
+            <small>{g.missingPhone}</small>
+          </label>
+          <label className={styles.guidedConsent}>
+            <input type="checkbox" checked={sendConsent} disabled={leadBusy || busy || collision}
+              onChange={event => { setSendConsent(event.target.checked); setLeadError(""); }} />
+            <span>{t.sendConsent}</span>
+          </label>
+          {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
+          <button type="button" className={styles.guidedSend} data-guided-coaching-send
+            disabled={leadBusy || busy || collision || missing > 0 || !sendConsent ||
+              !/^\+[1-9][0-9]{7,14}$/.test(replyContact.phone.replace(/[\s().-]/g, ""))}
+            onClick={() => void submitDiagnostic()}>
+            {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
+          </button>
+          <p className={styles.guidedPrivacy}>{g.finishPrivacy}</p>
+        </>}
+        <p className={styles.guidedPrivacy}>{g.noSend}</p>
+      </>}
+    </div>
+    {!guidedFinish || !leadReceipt ? <nav className={styles.guidedActions} aria-label={g.step}>
+      <button type="button" className={styles.guidedBack} data-guided-back onClick={guidedBack}
+        disabled={guidedStep === 0 || leadBusy || busy}>{g.back}</button>
+      {!guidedFinish && <button type="button" className={styles.guidedNext} data-guided-next onClick={guidedNext}
+        disabled={!guidedCanNext || busy || collision}>
+        {guidedStep === 1 ? g.introNext : guidedStep === guidedLastStep - 1 ? g.review
+          : guidedField && !guidedField.required && !draft.answers[guidedField.id]?.trim() ? g.skip : g.next}
+        <ArrowRight size={17} aria-hidden="true" />
+      </button>}
+    </nav> : null}
+  </section>;
 
   return <section className={styles.form} aria-labelledby="coaching-form-title" data-coaching-intake lang={locale}>
     <header className={styles.intro}>

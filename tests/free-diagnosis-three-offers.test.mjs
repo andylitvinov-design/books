@@ -83,9 +83,9 @@ test("free request is phone-only before the existing step-by-step coaching quest
   assert.match(diagnostic, /compact = false/);
   assert.match(diagnostic, /data-free-diagnostic-phone-only/);
   assert.match(diagnostic, /type="tel" inputMode="tel" autoComplete="tel"/);
-  assert.match(diagnostic, /compact && !phone/);
+  assert.match(diagnostic, /const e164 = value\.replace/);
   assert.match(diagnostic, /sessionStorage\.setItem\(DIAGNOSTIC_START_KEY/);
-  assert.match(diagnostic, /window\.location\.assign\("\/" \+ locale \+ "\/coaching\/intake"\)/);
+  assert.match(diagnostic, /window\.location\.assign\("\/" \+ locale \+ "\/coaching\/intake" \+ \(compact \? "\?guided=1" : ""\)\)/);
   assert.match(diagnostic, /until you explicitly send your completed questionnaire/);
   assert.match(phoneCss, /\.compactForm/);
   assert.match(phoneCss, /@media\(max-width:610px\)/);

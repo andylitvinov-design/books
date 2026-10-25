@@ -67,20 +67,26 @@ export function FreeDiagnosticStart({ locale, compact = false, id = "free-diagno
     const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254 ? value : "";
     const phone = !email && /^\+?[0-9 ().-]{8,28}$/.test(value) &&
       value.replace(/\D/g, "").length >= 8 && value.replace(/\D/g, "").length <= 15 ? value : "";
-    if ((compact && !phone) || (!email && !phone)) { setError(compact ? concise[locale].error : t.error); return; }
+    const e164 = value.replace(/[\s().-]/g, "");
+    if ((compact && !/^\+[1-9][0-9]{7,14}$/.test(e164)) || (!compact && !email && !phone)) {
+      setError(compact ? (locale === "ru" ? "Введите номер с кодом страны, например +1 416…" :
+        locale === "es" ? "Incluye el prefijo del país, por ejemplo +1 416…" :
+        "Enter your international number, e.g. +1 416…") : t.error); return;
+    }
     try {
       sessionStorage.setItem(DIAGNOSTIC_START_KEY, JSON.stringify({
-        createdAt: Date.now(), locale, name: name.trim(), email, phone, topic, question: question.trim(),
+        createdAt: Date.now(), locale, name: compact ? "" : name.trim(), email: compact ? "" : email,
+        phone: compact ? e164 : phone, topic: compact ? "personal" : topic, question: compact ? "" : question.trim(),
       }));
     } catch {
       // The questionnaire still permits entering contact details at the final consent screen.
     }
-    window.location.assign("/" + locale + "/coaching/intake");
+    window.location.assign("/" + locale + "/coaching/intake" + (compact ? "?guided=1" : ""));
   }
   if (compact) {
     const short = concise[locale];
     return <section id={id} className={[styles.card, styles.compact].join(" ")}
-      data-free-diagnostic-start data-free-diagnostic-phone-only lang={locale}>
+      data-free-diagnostic-start data-free-diagnostic-phone-only data-coaching-phone-start lang={locale}>
       <p className={styles.kicker}>{t.kicker}</p>
       <p className={styles.compactIntro}>{short.intro}</p>
       <form className={styles.compactForm} onSubmit={continueIntake}>
@@ -90,7 +96,7 @@ export function FreeDiagnosticStart({ locale, compact = false, id = "free-diagno
             onChange={event => { setContact(event.target.value); setError(""); }} />
         </label>
         {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-        <button type="submit" className={styles.action}>{short.action}<ArrowRight size={18} aria-hidden="true" /></button>
+        <button type="submit" className={styles.action} data-free-coaching-start>{short.action}<ArrowRight size={18} aria-hidden="true" /></button>
       </form>
       <p className={styles.privacy}><LockKeyhole size={15} aria-hidden="true" />{t.privacy}</p>
     </section>;

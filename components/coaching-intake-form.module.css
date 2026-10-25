@@ -291,3 +291,67 @@
 .requestUpgrade{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border:1px solid #8c6146;border-radius:10px;color:#65412e;background:#fffdf7;text-decoration:none;font:700 12px/1.4 Arial,sans-serif}
 .requestUpgrade:hover{background:#f7e9d9}
 .requestUpgrade:focus-visible{outline:3px solid #3d8580;outline-offset:2px}
+
+/* Optional course-like guest questionnaire. Existing one-page signed-in editor is unchanged. */
+.guided{
+  box-sizing:border-box;width:100%;min-width:0;max-width:750px;margin:0 auto;
+  padding:clamp(13px,2.7vw,25px);padding-bottom:calc(100px + env(safe-area-inset-bottom));
+  border:1px solid #dfd0bf;border-radius:19px;background:#fcf8f1;color:#29484a;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+.guided *, .guided *::before, .guided *::after{box-sizing:border-box}
+.guidedHeader{margin-bottom:15px}
+.guidedEyebrow{display:flex;align-items:center;gap:7px;margin:0 0 11px;
+  color:#895469;font:800 11px/1.35 system-ui,sans-serif;letter-spacing:.06em}
+.guidedEyebrow svg{flex:none}
+.guidedProgressText{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:5px;font:750 12px/1.4 system-ui,sans-serif;color:#56716d;font-variant-numeric:tabular-nums}
+.guidedProgress{height:6px;overflow:hidden;border-radius:10px;background:#e6e1d8}
+.guidedProgress>span{display:block;height:100%;border-radius:inherit;background:#893751;transition:width .18s ease}
+.guidedCard{display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:270px;
+  padding:clamp(17px,3vw,27px);border:1px solid #e3d7c8;border-radius:17px;background:#fffdf8}
+.guidedCard h2{margin:0 0 10px;color:#26484d;font:400 clamp(24px,5vw,33px)/1.16 Georgia,serif;
+  letter-spacing:-.027em;text-wrap:balance}
+.guidedHint{margin:0 0 10px;color:#80586a;font:700 11px/1.4 system-ui,sans-serif}
+.guidedDescription{max-width:590px;margin:0;color:#5b6d66;font:15px/1.58 system-ui,sans-serif}
+.guidedVisual{display:grid;place-items:center;width:55px;height:55px;margin-top:23px;
+  border-radius:17px;background:#f7eaf0;color:#893751}
+.guidedInput{display:block;width:100%;min-width:0}
+.guidedInput textarea{display:block;width:100%;min-width:0;min-height:108px;max-height:35vh;
+  resize:vertical;padding:13px;border:1px solid #cbbcaf;border-radius:12px;
+  outline:none;background:#fff;color:#2e4648;font:400 16px/1.48 system-ui,sans-serif}
+.guidedInput textarea:focus{border-color:#7c475e;box-shadow:0 0 0 3px #8937511a}
+.visuallyHidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.guidedActions{display:grid;grid-template-columns:minmax(0,.68fr) minmax(0,1.32fr);gap:9px;margin-top:12px}
+.guidedActions button,.guidedSend{display:flex;justify-content:center;align-items:center;gap:8px;min-width:0;min-height:50px;
+  padding:10px 12px;border-radius:12px;font:750 14px/1.3 system-ui,sans-serif;
+  text-align:center;cursor:pointer}
+.guidedBack{border:1px solid #cbb6aa;background:#fffbf6;color:#75584b}
+.guidedNext,.guidedSend{border:1px solid #893751;background:#893751;color:#fff}
+.guidedNext:hover,.guidedSend:hover:not(:disabled){background:#743047}
+.guided button:disabled{opacity:.53;cursor:not-allowed}
+.guided :is(button,input,textarea,a):focus-visible{outline:3px solid #3b8585;outline-offset:2px}
+.guidedPhone{display:grid;gap:6px;width:100%;margin:12px 0;color:#445d55;
+  font:750 12px/1.45 system-ui,sans-serif}
+.guidedPhone input{min-height:47px;width:100%;min-width:0;padding:10px 12px;
+  border:1px solid #cbbcaf;border-radius:11px;background:#fff;color:#2e4648;font:400 16px/1.3 system-ui,sans-serif}
+.guidedConsent{display:flex;align-items:flex-start;gap:9px;margin:9px 0 12px;color:#55655e;
+  font:12px/1.45 system-ui,sans-serif}
+.guidedConsent input{width:20px;height:20px;flex:none;margin:0;accent-color:#893751}
+.guidedSend{width:100%;margin-top:5px}
+.guidedPrivacy{margin:9px 0 0;color:#796b64;font:11px/1.5 system-ui,sans-serif}
+@media(max-width:520px){
+  .guided{padding:11px 10px calc(88px + env(safe-area-inset-bottom));border-radius:14px}
+  .guidedHeader{margin-bottom:10px}
+  .guidedEyebrow{font-size:9px;margin-bottom:8px}
+  .guidedCard{min-height:245px;padding:16px 13px;border-radius:13px}
+  .guidedCard h2{font-size:clamp(23px,6vw,29px)}
+  .guidedDescription{font-size:13px;line-height:1.5}
+  .guidedInput textarea{min-height:92px}
+  .guidedActions{margin-top:9px;gap:7px}
+  .guidedActions button{min-height:47px;font-size:12px;padding:8px}
+  .guidedPhone input{min-height:44px}
+}
+@media(max-width:350px){.guidedCard{min-height:232px;padding:13px 11px}
+  .guidedCard h2{font-size:22px}.guidedActions{grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr)}}
+@media(prefers-reduced-motion:reduce){.guidedProgress>span{transition:none}}

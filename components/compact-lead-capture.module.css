@@ -198,3 +198,22 @@
 .diagnosis .disclaimer{display:none}
 @media(max-width:600px){.section.diagnosis{width:100%;padding:13px 12px;border-radius:16px;margin:0}.diagnosis .head h2{font-size:21px}.diagnosis .channels{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.diagnosis .channel{min-height:46px;padding:9px 7px;font-size:12px}}
 @media(max-width:340px){.diagnosis .channel{font-size:11px;gap:4px}.diagnosis .channel svg{width:16px;height:16px}}
+
+/* Embedded under Coaching & Hypnotherapy: one phone, consent, two real CRM-first channels. */
+.section.coachingMini{width:100%;max-width:none;margin:0;padding:13px;border:1px solid #e0d0c0;border-radius:14px;
+  background:#faf3ec;box-shadow:none;color:#374a46}
+.coachingMini .miniHeading{margin:0 0 10px}
+.coachingMini .miniHeading h3{margin:0 0 3px;color:#324c4b;font:750 14px/1.3 system-ui,sans-serif}
+.coachingMini .miniHeading p{margin:0;color:#796a5f;font:11px/1.4 system-ui,sans-serif}
+.coachingMini .form{gap:8px}
+.coachingMini .field{font-size:12px;color:#3b534d}
+.coachingMini .field input{min-height:46px;border-radius:11px;font-size:16px}
+.coachingMini .consent{min-height:34px;margin:0;padding:0;font-size:11px;line-height:1.35}
+.coachingMini .consent input{width:18px;height:18px}
+.coachingMini .channels{gap:7px}
+.coachingMini .channel{min-height:46px;padding:8px 7px;border-radius:11px;font-size:13px}
+.coachingMini .notice{font-size:10px}
+.coachingMini .confirmation{gap:8px}
+.coachingMini .receipt{padding:9px}
+@media(max-width:365px){.coachingMini .channels{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.coachingMini .channel{min-height:46px;font-size:12px;gap:5px}}

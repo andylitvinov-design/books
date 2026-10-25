@@ -140,11 +140,12 @@ test("Coaching Lounge owns the former scenic first screen and exactly three dist
     "Personal coaching session","Личная коучинг-сессия","Sesión personal de coaching",
     "Depth-oriented personal work","Глубинная терапия","Trabajo personal profundo"])
     assert.ok(entry.includes(label), "missing locale offer " + label);
-  assert.match(entry, /<FreeDiagnosticStart locale=\{locale\} \/>/);
-  assert.match(entry, /<CompactLeadCapture locale=\{locale\} variant="inline"/);
+  assert.match(entry, /<FreeDiagnosticStart locale=\{locale\} compact \/>/);
+  assert.match(entry, /<CompactLeadCapture key=\{format\} locale=\{locale\} variant="coaching"/);
   assert.equal((entry.match(/<CompactLeadCapture/g) || []).length, 1);
   assert.match(entry, /sourcePath=\{"\/" \+ locale \+ "\/coaching"\}/);
-  assert.match(entry, /formatOptions=\{t\.formats\}/);
+  assert.match(entry, /data-coaching-session-format=\{item\.value\}/);
+  assert.match(entry, /hidden=\{!requestOpen\}/);
   assert.match(entry, /30 min · €50/);
   assert.match(entry, /60 min · €100/);
   assert.match(ideas, /coaching#free-diagnostic-start/);
