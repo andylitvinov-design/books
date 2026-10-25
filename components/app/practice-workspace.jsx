@@ -163,7 +163,7 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState(''),[proStarter,setProStarter]=useState(''),[proCourseStart,setProCourseStart]=useState(false)
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState(''),[proStarter,setProStarter]=useState(''),[proCourseStart,setProCourseStart]=useState(false),[meditationType,setMeditationType]=useState(''),[meditationPickerOpen,setMeditationPickerOpen]=useState(false),[creationGoal,setCreationGoal]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
@@ -219,6 +219,40 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   async function act(fn,{rethrow=false}={}){setBusy(true);setError('');try{await fn();await load()}catch(e){setError(e.code||e.message);if(rethrow)throw e}finally{setBusy(false)}}
   const d=DASHBOARD_COPY[ru?'ru':'en']
   const isOwner=Boolean(ownerTools)
+  const creationCopy=ru?{
+    eyebrow:'ВАША ПРАКТИКА',title:'Что хотите предложить людям?',subtitle:'Начните с одного предложения — остальное можно добавить позже.',
+    service:'Разместить услугу',serviceDetail:'Сессия, диагностика или персональная поддержка',
+    meditation:'Добавить медитацию',meditationDetail:'Запись голоса или видео для ваших клиентов',
+    audio:'Аудиомедитация',audioDetail:'Записать или загрузить аудио',
+    video:'Видеомедитация',videoDetail:'Загрузить видео',
+    safety:'Черновик сохраняется приватно. Публикация — только после вашего подтверждения.',
+    limit:'Лимит услуг достигнут',
+    registration:'Сначала завершите оформление профиля мастера и первой услуги. После активации откроется выбранный редактор.',
+  }:locale==='es'?{
+    eyebrow:'TU PRÁCTICA',title:'¿Qué quieres compartir?',subtitle:'Empieza con una propuesta. Puedes añadir más después.',
+    service:'Publicar un servicio',serviceDetail:'Sesión, diagnóstico o apoyo personal',
+    meditation:'Añadir una meditación',meditationDetail:'Audio o vídeo para tus clientes',
+    audio:'Meditación en audio',audioDetail:'Grabar o subir un audio',
+    video:'Meditación en vídeo',videoDetail:'Subir un vídeo',
+    safety:'Empiezas con un borrador privado. La publicación requiere tu confirmación.',
+    limit:'Has alcanzado tu límite de servicios',
+    registration:'Completa primero tu perfil profesional y envía el primer servicio. Después se abrirá el editor elegido.',
+  }:{
+    eyebrow:'YOUR PRACTICE',title:'What would you like to share?',subtitle:'Start with one offering. You can always add more later.',
+    service:'List a service',serviceDetail:'A session, personal review or one-to-one support',
+    meditation:'Add a meditation',meditationDetail:'Share a guided audio or video practice',
+    audio:'Audio meditation',audioDetail:'Record or upload your audio',
+    video:'Video meditation',videoDetail:'Upload a guided video',
+    safety:'Start with a private draft. Nothing goes public without your confirmation.',
+    limit:'Service limit reached',
+    registration:'Complete your practitioner profile and submit your first service. Your chosen editor will open once the practice is activated.',
+  }
+  useEffect(()=>{
+    if(!data?.practiceActivated||!creationGoal)return
+    if(creationGoal==='service')addService()
+    else startMeditation(creationGoal)
+    setCreationGoal('')
+  },[data?.practiceActivated,creationGoal])
   const marketingTools=[
     {destination:'growth',icon:Megaphone,title:'Growth Studio',description:ru?'Публикации, черновики и ручной календарь.':locale==='es'?'Publicaciones, borradores y calendario manual.':'Posts, drafts and manual calendar.'},
     {destination:'seo',icon:BarChart3,title:ru?'SEO и поиск':locale==='es'?'SEO y búsqueda':'SEO & search',description:ru?'Проверенные данные поиска и индексации.':locale==='es'?'Búsqueda e indexación verificadas.':'Verified search and indexing data.'},
@@ -267,10 +301,14 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   }
   function closePanel(){
     setActivePanel(null)
+    setProCourseStart(false)
+    setMeditationType('')
     setPanelRoute(null)
     setError('')
   }
   function openMaterialsPanel(tab){
+    setProCourseStart(false)
+    setMeditationType('')
     setActivePanel('materials')
     setMaterialTab(tab)
     setMaterialShortcut(current=>({tab,nonce:current.nonce+1}))
@@ -281,6 +319,31 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     setActivePanel('services')
     setPanelRoute('services')
     setNewServiceRequest(current=>current+1)
+    setError('')
+  }
+  function startService(){
+    if(!data?.practiceActivated){
+      setCreationGoal('service')
+      document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
+      return
+    }
+    if(data.serviceQuota?.canAdd===false){setError('SERVICE_LIMIT_REACHED');return}
+    addService()
+  }
+  function startMeditation(kind){
+    if(!['audio','video'].includes(kind))return
+    if(!data?.practiceActivated){
+      setCreationGoal(kind)
+      document.getElementById('hh-practice-onboarding')?.scrollIntoView({behavior:'smooth',block:'start'})
+      return
+    }
+    setProCourseStart(true)
+    setMeditationType(kind)
+    setMaterialTab('courses')
+    setActivePanel('materials')
+    setMaterialShortcut(current=>({tab:'courses',nonce:current.nonce+1}))
+    setPanelRoute('materials','courses')
+    setMeditationPickerOpen(false)
     setError('')
   }
   if(!data)return <section className="hh-practice-dashboard" aria-busy={!error}>
@@ -374,7 +437,36 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         {p.isPartner&&<span className="hh-practice-status-chip">{d.partner}</span>}
       </div>}
     </header>
-    
+    {!activePanel&&<section className="hh-practice-first-actions" data-practice-create-first aria-label={creationCopy.title}>
+      <header className="hh-practice-first-actions-heading">
+        <span>{creationCopy.eyebrow}</span>
+        <h2>{creationCopy.title}</h2>
+        <p>{creationCopy.subtitle}</p>
+      </header>
+      <div className="hh-practice-first-actions-grid">
+        <button type="button" className="hh-practice-first-action is-service" data-create-practice-service
+          disabled={!needsOnboarding&&!serviceQuota.canAdd} onClick={startService}>
+          <span className="hh-practice-first-action-icon"><Leaf aria-hidden="true"/></span>
+          <span className="hh-practice-first-action-copy"><strong>{serviceQuota.canAdd||needsOnboarding?creationCopy.service:creationCopy.limit}</strong>
+            <small>{creationCopy.serviceDetail}</small></span>
+          <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
+        </button>
+        <button type="button" className="hh-practice-first-action is-meditation" data-create-practice-meditation
+          aria-expanded={meditationPickerOpen} aria-controls="hh-practice-meditation-picker"
+          onClick={()=>setMeditationPickerOpen(open=>!open)}>
+          <span className="hh-practice-first-action-icon"><Headphones aria-hidden="true"/></span>
+          <span className="hh-practice-first-action-copy"><strong>{creationCopy.meditation}</strong>
+            <small>{creationCopy.meditationDetail}</small></span>
+          <ChevronRight aria-hidden="true" className="hh-practice-first-action-arrow"/>
+        </button>
+      </div>
+      {meditationPickerOpen&&<div id="hh-practice-meditation-picker" className="hh-practice-meditation-picker" data-meditation-choice>
+        <button type="button" onClick={()=>startMeditation('audio')}><Headphones aria-hidden="true"/><span><strong>{creationCopy.audio}</strong><small>{creationCopy.audioDetail}</small></span><ChevronRight aria-hidden="true"/></button>
+        <button type="button" onClick={()=>startMeditation('video')}><Film aria-hidden="true"/><span><strong>{creationCopy.video}</strong><small>{creationCopy.videoDetail}</small></span><ChevronRight aria-hidden="true"/></button>
+      </div>}
+      <p className="hh-practice-first-actions-note"><CheckCircle2 aria-hidden="true"/>{creationCopy.safety}</p>
+    </section>}
+
     {!needsOnboarding&&<section id="hh-practice-workspace-top" className="hh-practice-v4-launch" aria-label={ru?'Основные инструменты мастера':locale==='es'?'Herramientas del profesional':'Practitioner essentials'} data-practitioner-v4-dashboard>
       <div className="hh-practice-v4-grid">
         <button type="button" onClick={()=>choosePanel('clients')} aria-pressed={activePanel==='clients'}>
@@ -402,9 +494,6 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
           <Plus aria-hidden="true"/><span>{ru?'Ещё':locale==='es'?'Más':'More'}</span>
         </button>
       </div>
-      {!activePanel&&<button type="button" className="hh-practice-v4-materials-cta" onClick={()=>openMaterialsPanel('courses')}>
-        <Headphones aria-hidden="true"/><span><strong>{ru?'Создавайте и делитесь знаниями':locale==='es'?'Crea y comparte conocimientos':'Create and share knowledge'}</strong><small>{ru?'Статьи, услуги, курсы, медитации и видео':locale==='es'?'Artículos, servicios, cursos, audio y vídeo':'Articles, services, courses, meditations and videos'}</small></span><ChevronRight aria-hidden="true"/>
-      </button>}
       {!activePanel&&<nav className="hh-practice-community-shortcuts" aria-label={ru?'Сообщество мастеров':locale==='es'?'Comunidad de mentores':'Mentor community'}>
         <Link href={'/'+locale+'/masters'} prefetch={false}>
           <UsersRound aria-hidden="true"/>
@@ -504,7 +593,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </section>
       </details>
     </>}
-    {needsOnboarding? <div id="hh-practice-onboarding"><MasterOnboarding
+    {needsOnboarding? <div id="hh-practice-onboarding">{creationGoal&&<p className="hh-practice-registration-intent" role="status">{creationCopy.registration}</p>}<MasterOnboarding
         key={(p?.revision||'new')+':'+(onboardingService?.revision||'none')}
         data={data} practitioner={p} service={onboardingService} locale={locale} t={t}
         busy={busy} onAction={payload=>act(()=>practiceFetch('/onboarding',payload))} /></div>:
@@ -541,7 +630,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenCoachingAudio={slug=>openOwner('coachingAudio',undefined,slug)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} meditationType={meditationType} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenCoachingAudio={slug=>openOwner('coachingAudio',undefined,slug)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSaveSitePresentation={video=>act(()=>practiceFetch('/profile',{action:'save',
