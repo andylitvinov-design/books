@@ -81,7 +81,7 @@ test('All 64 steps, private meditation reports and course progress remain intact
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)
   assert.match(repo,/deleteReikiLeads/)
-  assert.match(learner,/disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\}/)
+  assert.match(learner,/disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable" \|\|/)
   assert.doesNotMatch(leads,/insert into app\.crm_contacts/i)
   assert.doesNotMatch(leads,/select \* from app_private\.academy_course_progress/i)
 })
