@@ -48,11 +48,6 @@ export default function CrmIntegrationDiagnostics({locale='en',setup}){
   const t=COPY[locale]||COPY.en
   const telegramContext=TELEGRAM_CONTEXT[locale]||TELEGRAM_CONTEXT.en
   const items=[['email',setup?.email],['sms',setup?.sms],...(setup?.messengers||[]).map(item=>[item.channel,item])]
-  const distinction=locale==='ru'
-    ?'Telegram для уведомлений клиентов и Telegram в CRM Inbox — разные каналы. Настройка клиентского бота находится ниже.'
-    :locale==='es'
-      ?'Telegram de avisos al cliente y Telegram de la bandeja CRM son canales distintos. La configuración de avisos está abajo.'
-      :'Client Telegram alerts and the CRM Telegram Inbox are separate integrations. Client bot setup is below.'
   return <section className={styles.formCard} aria-labelledby="crm-integrations-title">
     <h3 id="crm-integrations-title">{t.title}</h3><p className={styles.fine}>{t.intro}</p>
     <p className={styles.fine}>{telegramContext.explanation}{' '}
