@@ -76,7 +76,7 @@ test("Request opens a bottom sheet, while two compact inline phone forms remain 
   assert.match(offers, /data-open=\{requestOpen \? "true" : "false"\}/);
   assert.match(offers, /role=\{requestOpen \? "dialog" : undefined\}/);
   assert.match(offers, /aria-modal=\{requestOpen \|\| undefined\}/);
-  assert.match(offers, /<FreeDiagnosticStart locale=\{locale\} compact \/>/);
+  assert.match(offers, /<FreeDiagnosticStart locale=\{locale\} compact contactValue=\{phone\}/);
   assert.match(offers, /<CompactLeadCapture key=\{selected\} locale=\{locale\}/);
   assert.match(offers, /phoneOnly variant="diagnosis"/);
   assert.match(offers, /serviceTitle=\{activeOffer\.title\}/);
