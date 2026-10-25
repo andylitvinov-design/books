@@ -121,9 +121,9 @@
 .requestText h2{color:#fff}
 .requestText>p{color:#daf7f1}
 .leadForm{min-width:0;display:grid;gap:11px;padding:21px;border:1px solid rgba(22,119,124,.12);border-radius:21px;background:#fff;box-shadow:0 10px 26px rgba(5,42,51,.12);color:#234f5b}
-.leadForm label{display:flex;flex-direction:column;gap:5px;min-width:0;color:#365a64;font-size:12px;font-weight:800}
-.leadForm select,.leadForm input{appearance:auto;width:100%;min-width:0;height:42px;padding:8px 10px;border:1px solid #c9e2df;border-radius:11px;background:#fafdfe;color:#204956;font:13px/1.5 Arial,Helvetica,sans-serif}
-.leadForm :is(input,select):focus-visible{outline:2px solid #18a5a2;outline-offset:1px}
+.leadForm > label{display:flex;flex-direction:column;gap:5px;min-width:0;color:#365a64;font-size:12px;font-weight:800}
+.leadForm > label > select{appearance:auto;width:100%;min-width:0;height:42px;padding:8px 10px;border:1px solid #c9e2df;border-radius:11px;background:#fafdfe;color:#204956;font:13px/1.5 Arial,Helvetica,sans-serif}
+.leadForm > label > select:focus-visible{outline:2px solid #18a5a2;outline-offset:1px}
 .formSubmit{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;margin-top:3px;padding:10px 12px;border:0;border-radius:100px;background:#ac5263;color:#fff;font:800 13px/1.4 Arial,Helvetica,sans-serif;cursor:pointer}
 .formSubmit:hover{background:#914456}
 .formNote{margin:0;color:#59737b;font-size:11px;line-height:1.45}
@@ -201,7 +201,7 @@
   .faqList summary::after{top:10px}
   .requestSection{gap:15px}
   .leadForm{gap:9px;padding:15px;border-radius:18px}
-  .leadForm select,.leadForm input{height:40px;font-size:12px}
+  .leadForm > label > select{min-height:44px;font-size:16px}
   .formSubmit{min-height:46px;font-size:12px}
   .formNote{font-size:10px}
   .formPrivacy{font-size:10px}
