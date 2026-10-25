@@ -32,3 +32,12 @@ For every **active coaching runner**:
 ### Explicitly NOT included
 
 This is **not a live generative AI coach**. Genuine semantic multi-turn listening, custom branching across arbitrary topics, human therapist handoff and memory-based dialogue require a reviewed P2 plan with approved privacy/retention/consent, server-side provider integration, budget and safety. Do not send private answers to the owner free-tier AI Council or enable paid calls implicitly. Existing issue #1774 tracks this phase; #1777 and #1701 retain their real-device acceptance gates.
+
+
+## v1.1 · Messaging-style guided session UI (24 October 2026)
+
+- Reuse one `CoachingChatThread` for all three existing runners: public guest, encrypted personal and Egyptian/Greek.
+- Real existing Andrey portrait (first-party `portrait-static/andy-96`) beside the reviewed coach turn; previous client reply appears on the opposite side. Only the immediately previous, authorized local/user-owned answer is displayed, capped at 260 characters for layout. No history fetch, provider transmission or analytics.
+- The current single authored question remains inside the coach bubble (focusable heading) with optional on-demand spoken question and dictation below; text answer becomes a compact bottom composer above existing explicit save/back/skip actions.
+- EN/RU/ES explain this is a self-guided session, NOT a live chat with Andrey or a generated AI response. No fake typing/presence/read receipts.
+- Acceptance: shared JSX parsing, source contracts, focused coaching suites + typecheck/build; verify 320, 390 and 430px, voice consent denial and actual signed-in persistence separately on physical iPhone.

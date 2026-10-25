@@ -146,3 +146,11 @@
 }
 .voiceSettingsPanel small{grid-column:1/-1}
 @media(max-width:360px){.voiceSettingsPanel{grid-template-columns:minmax(0,1fr)}}
+
+/* A compact chat composer inside the existing scrollable lesson shell. */
+.chatComposer{margin-top:auto;border:1px solid #d5e2dc;border-radius:16px;padding:11px 12px 10px;
+  background:#fff;box-shadow:0 3px 15px #2642370a;min-width:0}
+.chatComposer .note{min-height:67px;max-height:25dvh;background:#fcfdfb;border-color:#d0dfd8}
+.chatComposer .noteTip{margin-top:6px}
+@media(max-width:430px){.chatComposer{padding:8px 9px;border-radius:13px}
+  .chatComposer .note{min-height:57px}}

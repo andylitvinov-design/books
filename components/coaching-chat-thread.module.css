@@ -1,0 +1,38 @@
+.thread{display:flex;flex-direction:column;gap:11px;width:100%;max-width:720px;min-width:0;margin:7px 0 13px}
+.userRow{display:flex;justify-content:flex-end;min-width:0}
+.userBubble{min-width:0;max-width:min(85%,510px);padding:9px 13px 11px;
+  background:#dcefe7;border:1px solid #c8e1d5;border-radius:16px 16px 5px 16px;
+  box-shadow:0 2px 9px #2646370b;color:#214c45;overflow-wrap:anywhere}
+.userLabel{display:block;margin-bottom:4px;font-size:11px;font-weight:850;color:#3e796a}
+.userBubble p{font-size:14px;line-height:1.47;white-space:pre-wrap;margin:0}
+.coachRow{display:flex;align-items:flex-start;gap:9px;min-width:0}
+.avatar{display:block;flex:none;width:40px;height:40px;object-fit:cover;object-position:center;
+  border:2px solid #fff;border-radius:50%;background:#eadfd0;box-shadow:0 2px 9px #35453e2d}
+.coachBubble{min-width:0;flex:1;max-width:640px;padding:13px 16px 14px;
+  border:1px solid #e4ded4;border-radius:6px 17px 17px 17px;
+  background:rgba(255,255,255,.97);box-shadow:0 3px 16px #554d4212;
+  color:#284644;overflow-wrap:anywhere}
+.byline{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px;row-gap:2px;margin-bottom:8px}
+.byline strong{font-size:12px;color:#315e58;letter-spacing:.01em}
+.byline span{font-size:10px;color:#647a73;line-height:1.25}
+.question{min-width:0}
+.thread .coachBubble .question :global(h1){font-family:Georgia,"Times New Roman",serif;
+  font-weight:600;font-size:clamp(20px,4.4vw,29px)!important;line-height:1.2!important;
+  letter-spacing:-.02em;margin:7px 0 2px!important;max-width:100%;color:#2a3936!important;outline:none}
+@media(max-width:430px){
+  .thread{gap:8px;margin:4px 0 10px}
+  .coachRow{gap:7px}
+  .avatar{width:35px;height:35px}
+  .coachBubble{padding:11px 12px 12px;border-radius:5px 15px 15px 15px}
+  .userBubble{padding:8px 11px 9px}
+  .userBubble p{font-size:13px}
+  .byline{margin-bottom:5px}
+  .thread .coachBubble .question :global(h1){font-size:clamp(19px,5.4vw,25px)!important}
+}
+@media(max-width:350px){
+  .avatar{width:31px;height:31px}
+  .coachRow{gap:5px}
+  .coachBubble{padding:9px 10px}
+  .byline span{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.thread *{transition:none!important}}

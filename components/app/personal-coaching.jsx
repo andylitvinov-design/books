@@ -8,10 +8,10 @@ import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
-import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
+import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -164,7 +164,6 @@ export default function PersonalCoaching({locale='en',accountId}){
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
   const quickChoices=coachingQuickChoicesAllowed(question,index)
-  const gentleGuide=coachingGentleGuide(question,index,activeQuestions.length,lang)
   const previousQuestion=activeQuestions[index-1]
   const conversationTurn=coachingConversationTurn({
     question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
@@ -465,20 +464,25 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressTrack}><span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/></div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
-            <CoachingDialogueTurn turn={followupTurn}/>
-            <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
+            <CoachingChatThread turn={followupTurn} locale={lang}
+              previousReply={session?.answers?.[question.id]
+                ?prettyAnswer(session.answers[question.id],question,lang,t.noAnswer):''}>
+              <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
+            </CoachingChatThread>
             <p>{followupCopy[lang].why}</p>
             <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang}
               text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               disabled={busy} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={setDictating}
               onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
-            <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
             <textarea id="hh-coaching-followup" className={styles.textarea}
               value={reflectionDraft} maxLength={500} rows={3} disabled={busy}
               placeholder={followupCopy[lang].placeholder}
               onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
             <span className={styles.counter}>{reflectionDraft.length}/500</span>
+            </div>
             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
           <footer className={styles.footer}>
@@ -509,8 +513,13 @@ export default function PersonalCoaching({locale='en',accountId}){
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
-            {gentleGuide&&<div data-coaching-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
-            <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
+            <div data-coaching-gentle-guide>
+              <CoachingChatThread turn={conversationTurn} locale={lang}
+                previousReply={previousQuestion&&session?.answers?.[previousQuestion.id]
+                  ?prettyAnswer(session.answers[previousQuestion.id],previousQuestion,lang,t.noAnswer):''}>
+                <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
+              </CoachingChatThread>
+            </div>
             {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
               <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
               <p>{adaptive.why}</p>
@@ -549,6 +558,7 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
             {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
+            <div className={styles.chatComposer} data-coaching-composer>
             <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
               {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
             <textarea id="hh-personal-coach-answer" className={styles.textarea}
@@ -557,6 +567,7 @@ export default function PersonalCoaching({locale='en',accountId}){
               maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
               onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
             <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
+            </div>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
