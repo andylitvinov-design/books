@@ -34,12 +34,11 @@ export async function GET(request){
     const own=await listMyTalismans(access.config,access.actor)
     const items=await Promise.all(own.map(async item=>{
       const {data,error}=await auth.client.storage.from(TALISMAN_BUCKET).createSignedUrl(item.path,600)
-      // Failed signing is not a public URL fallback: preserve privacy.
-      return error||!data?.signedUrl?null:{
-        id:item.id,title:item.title,category:item.category,createdAt:item.createdAt,imageUrl:data.signedUrl
-      }
+      // Never make signed-URL failures look like an empty collection.
+      if(error||!data?.signedUrl)throw new AppError('TALISMAN_READ_FAILED',503)
+      return {id:item.id,title:item.title,category:item.category,createdAt:item.createdAt,imageUrl:data.signedUrl}
     }))
-    return auth.apply(NextResponse.json({items:items.filter(Boolean)},{headers:PRIVATE_HEADERS}))
+    return auth.apply(NextResponse.json({items},{headers:PRIVATE_HEADERS}))
   }catch(error){return failure(error,auth)}
 }
 export async function POST(request){
