@@ -87,7 +87,7 @@ test('day one restores five opening screens and all days add untracked support a
     // with a clear purpose in the learner's language, never an attempt claim.
     assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-practice-overview']===day))
     assert.ok(nodes(h.tree).some(n=>n.props?.['data-opora-overview-purpose']==='true'))
-    const goal=day===1?oporaGentleCopy(lang).dayOnePurpose:oporaAs60VariedDay(day,lang).result
+    const goal=day===1?oporaAs60VariedDay(day,lang).purpose:oporaAs60VariedDay(day,lang).result
     assert.ok(textOf(h.tree).includes(goal))
     assert.ok(textOf(h.tree).includes(oporaAs60VariedDay(day,lang).practice))
     assert.ok(!findButton(h.tree,d.try),'Overview is an invitation, not a practice report')
