@@ -162,7 +162,7 @@ test('stages are illustrated before the question and shown in a pre-course map w
  assert.match(component,/traditionStages\(def\.slug\)\.map/)
  assert.match(component,/entryStep==='roadmap'/)
  assert.match(component,/TraditionStageArt stage=\{stageGuide\}/)
- assert.ok(component.indexOf('TraditionStageArt stage={stageGuide}')<component.indexOf('question.question?.[lang]</h1>'))
+ assert.ok(component.indexOf('TraditionStageArt stage={stageGuide}')<component.indexOf('>{question.question?.[lang]}</h1>'))
  assert.match(component,/referrerPolicy="no-referrer"/)
  assert.match(component,/loading="lazy"/)
  assert.match(component,/rel="noopener noreferrer"/)
