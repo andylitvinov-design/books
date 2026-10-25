@@ -142,3 +142,43 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
   const parsed=ts.createSourceFile('components/coaching-dialogue-turn.jsx',component,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
   assert.equal(parsed.parseDiagnostics.length,0)
 })
+
+
+test('explicit mixed desire/concern gets a correctable coaching reflection in three locales',()=>{
+  const next={id:'reality',stepKey:'reality'}
+  const cases=[
+    ['en','I want to change jobs but I am worried about leaving the team','It sounds like'],
+    ['ru','Я хочу сменить работу, но боюсь подвести свою команду','Похоже, здесь'],
+    ['es','Quiero cambiar de trabajo pero me preocupa dejar el equipo','Parece que'],
+  ]
+  for(const [lang,answer,phrase] of cases){
+    const turn=coachingConversationTurn({question:next,previousAnswer:answer,index:2,total:6,locale:lang})
+    assert.ok(turn.coachReply.includes(phrase),lang)
+    assert.ok(turn.quote.length<=97)
+    assert.ok(!turn.speech.includes(answer),'no raw user words in TTS')
+    assert.doesNotMatch(turn.coachReply,/[?!]$/,'not a second question')
+  }
+  const neutral=coachingConversationTurn({question:next,previousAnswer:'I am unsure which lunch to order',index:1,total:4})
+  assert.doesNotMatch(neutral.coachReply,/wish for change/)
+  const vague=coachingConversationTurn({question:next,previousAnswer:'Не знаю, что сказать',index:1,total:4,locale:'ru'})
+  assert.equal(vague.quote,'')
+  assert.match(vague.coachReply,/Необязательно знать/)
+  const safety=coachingConversationTurn({question:next,previousAnswer:'Я хочу сменить работу и боюсь покончить с собой',index:2,total:6,locale:'ru'})
+  assert.equal(safety.quote,'')
+  assert.doesNotMatch(safety.coachReply,/желание перемен/)
+})
+
+test('the new dialogue layout separates bounded user excerpts from the coach reply',()=>{
+  const component=source('components/coaching-dialogue-turn.jsx')
+  const css=source('components/coaching-dialogue-turn.module.css')
+  const helper=source('lib/personal-coaching/gentle-dialogue.js')
+  assert.match(component,/data-coaching-client-bubble/)
+  assert.match(component,/data-coaching-reply-bubble/)
+  assert.match(component,/turn\.coachReply\|\|turn\.response/)
+  assert.match(component,/<q className=\{styles\.quote\}>/)
+  assert.match(css,/max-width:89%/)
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.doesNotMatch(helper+component,/fetch\(|sendBeacon|dangerouslySetInnerHTML/)
+  const parsed=ts.createSourceFile('components/coaching-dialogue-turn.jsx',component,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0)
+})
