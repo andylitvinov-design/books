@@ -136,6 +136,12 @@ try {
           await deliveryFormat.selectOption("");
           assert.equal(await syntheticCard.count(), 1,
             label + ": clearing the format restores the course");
+          await searchMentors.fill("Synthetic free introduction");
+          assert.equal(await mentorCards.count(), 0,
+            label + ": an unrelated session title must not match a course-only search");
+          await searchMentors.fill("");
+          assert.equal(await syntheticCard.count(), 1,
+            label + ": clearing the query restores the matching course");
           await offers.selectOption("");
           assert.equal(await learning.inputValue(), "",
             label + ": clearing service type also clears dependent course");
@@ -158,6 +164,19 @@ try {
         await menu.locator("#mentor-extra-filters").waitFor({ state: "visible", timeout: 10000 });
         assert.equal(await moreMentorFilters.getAttribute("aria-expanded"), "true",
           label + ": advanced menu opens from a touch");
+        if (phase === "populated") {
+          const pricing = menu.locator("#mentor-extra-filters select").nth(2);
+          await pricing.selectOption("free");
+          const freePreview = mentorPanel.locator("[data-mentor-cards] > article")
+            .filter({ hasText: "Synthetic Mentor" });
+          assert.ok(await freePreview.getByText({
+            en: "Synthetic free introduction",
+            ru: "Тестовое знакомство",
+            es: "Introducción gratuita de prueba",
+          }[locale]).count() >= 1,
+            label + ": free price filter previews the actual free service");
+          await pricing.selectOption("all");
+        }
         await noHorizontalOverflow(page, label + " expanded filters");
         await moreMentorFilters.tap();
         await menu.locator("#mentor-extra-filters").waitFor({ state: "hidden", timeout: 10000 });
