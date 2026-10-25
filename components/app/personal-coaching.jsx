@@ -506,23 +506,30 @@ export default function PersonalCoaching({locale='en',accountId}){
               <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p>{followupCopy[lang].why}</p>
-            <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang}
-              text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
-              disabled={busy} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-              onListeningChange={setDictating}
-              onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
+            <p className={styles.messageTip}>{followupCopy[lang].why}</p>
+             {error&&<p className={styles.error} role="alert">{error}</p>}
+          </div>
+          <footer className={styles.footer} data-coaching-messenger-footer>
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
-            <textarea id="hh-coaching-followup" className={styles.textarea} aria-describedby="hh-coaching-followup-report-note"
-              value={reflectionDraft} maxLength={500} rows={3} disabled={busy}
-              placeholder={followupCopy[lang].placeholder}
-              onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
-            <span className={styles.counter}>{reflectionDraft.length}/500</span>
-               <small className={styles.answerRetention} id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+              <textarea id="hh-coaching-followup" className={styles.textarea}
+                aria-describedby="hh-coaching-followup-report-note" value={reflectionDraft}
+                maxLength={500} rows={2} disabled={busy}
+                placeholder={followupCopy[lang].placeholder}
+                onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+              <div className={styles.composerTools}>
+                <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang} compact
+                  text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')}
+                  locale={lang} mode="answer" disabled={busy}
+                  speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+                  onListeningChange={setDictating}
+                  onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
+                <small className={styles.draftCount}>{reflectionDraft.length}/500</small>
+              </div>
+              <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+                <small id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+              </details>
             </div>
-            {error&&<p className={styles.error} role="alert">{error}</p>}
-          </div>
-          <footer className={styles.footer}>
             <div className={styles.footerActions}>
               <button className={styles.back} type="button" disabled={busy} onClick={backward}>
                 <ChevronLeft size={18}/>{t.back}
@@ -551,7 +558,8 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
             <div data-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang}>
+              <CoachingChatThread turn={conversationTurn} locale={lang}
+                 draftPreview={quickChoices&&draft.startsWith('choice:')?prettyAnswer(draft,question,lang,t.noAnswer):''}>
                 <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
               </CoachingChatThread>
             </div>
@@ -563,14 +571,6 @@ export default function PersonalCoaching({locale='en',accountId}){
                 {useStandardPrompt?iCopy.tailored:iCopy.standard}
               </button>
             </div>}
-            <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')}
-              text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
-              mode="answer" disabled={busy} speechConsent={speechConsent}
-              onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
-              onTranscript={words=>{
-                setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
-                setError('');setNotice('')
-              }}/>
             {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
@@ -593,17 +593,6 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
             {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
-            <div className={styles.chatComposer} data-coaching-composer>
-            <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-              {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
-            <textarea id="hh-personal-coach-answer" className={styles.textarea} aria-describedby="hh-personal-coach-answer-report-note"
-              data-coaching-open-reflection={!quickChoices?'true':undefined}
-              value={draft.startsWith('choice:')?'':draft}
-              maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
-              onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
-            <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
-            <small className={styles.answerRetention} id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
-            </div>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
@@ -612,11 +601,35 @@ export default function PersonalCoaching({locale='en',accountId}){
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
-          <footer className={styles.footer}>
+          <footer className={styles.footer} data-coaching-messenger-footer>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
+                {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
+              <textarea id="hh-personal-coach-answer" className={styles.textarea}
+                aria-describedby="hh-personal-coach-answer-report-note"
+                data-coaching-open-reflection={!quickChoices?'true':undefined}
+                value={draft.startsWith('choice:')?'':draft}
+                maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
+                onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
+              <div className={styles.composerTools}>
+                <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')} compact
+                  text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
+                  mode="answer" disabled={busy} speechConsent={speechConsent}
+                  onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
+                  onTranscript={words=>{
+                    setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
+                    setError('');setNotice('')
+                  }}/>
+                <small className={styles.draftCount}>{draft.startsWith('choice:')?0:draft.length}/800</small>
+              </div>
+              <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+                <small id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+              </details>
+            </div>
             <div className={styles.footerActions}>
               <button type="button" className={styles.back} onClick={backward} disabled={busy||index===0}><ChevronLeft size={18}/>{t.back}</button>
               <button type="button" className={styles.primary} disabled={busy} onClick={()=>next(false)}>
-                {busy?t.saving:index===activeQuestions.length-1?t.finish:t.next}<ArrowRight size={18}/>
+                {busy?t.saving:index===activeQuestions.length-1?t.finish:(lang==='ru'?'Отправить и далее':lang==='es'?'Enviar y seguir':'Send & continue')}<ArrowRight size={18}/>
               </button>
             </div>
             {!question.required&&<button type="button" className={styles.skip} disabled={busy} onClick={()=>next(true)}>{t.skip}</button>}
