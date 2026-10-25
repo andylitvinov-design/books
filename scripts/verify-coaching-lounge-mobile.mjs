@@ -66,14 +66,24 @@ async function verify(browserType, locale, width) {
     const note = root.locator(".ignore-nothing");
     assert.equal(await root.locator('[role="status"]').filter({ hasText: /suggestion|рекомендац|sugerencia|opciones/i }).count() > 0
       || await root.locator("[data-public-coaching-models]").count() === 0, true, label + ": transparent matching");
-    const paid = root.locator("[data-coaching-paid-sessions]");
-    const human = root.locator("button").filter({ hasText: /With Andrey|С Андреем|Con Andrey/ }).first();
-    await human.tap();
-    assert.equal(await human.getAttribute("aria-pressed"), "true", label + ": human selection");
+    // Live human offers now share the existing three-choice capture. It lists
+    // a free *written* assessment and two paid sessions, not course cards.
+    const paid = root.locator("[data-coaching-session-capture]");
+    const humanChoice = advanced.locator("button").filter({ hasText: /With Andrey|С Андреем|Con Andrey/i }).first();
+    await humanChoice.tap();
+    assert.equal(await humanChoice.getAttribute("aria-pressed"), "true", label + ": human selection");
     await paid.waitFor({ state: "visible" });
-    assert.equal(await paid.locator("[data-coaching-item]").count(), 2, label + ": both actual prices, independent of free preferences");
-    const paidTexts = await paid.innerText();
-    assert.ok(paidTexts.includes("€50") && paidTexts.includes("€100"), label + ": confirmed published prices not booked");
+    const capture = paid.locator("[data-coaching-live-capture]");
+    assert.equal(await capture.locator("[data-coaching-booking-option]").count(), 3,
+      label + ": free written assessment and both live session offers");
+    const short = capture.locator('[data-coaching-booking-option="short"]');
+    const full = capture.locator('[data-coaching-booking-option="full"]');
+    assert.match(await short.innerText(), /€50/, label + ": 30-minute session costs €50");
+    assert.match(await full.innerText(), /€100/, label + ": 60-minute session costs €100");
+    await short.tap();
+    assert.equal(await short.getAttribute("aria-checked"), "true", label + ": 30-minute price selection");
+    await full.tap();
+    assert.equal(await full.getAttribute("aria-checked"), "true", label + ": 60-minute price selection");
     assert.equal(await root.locator("[data-coaching-practitioner-checklist]").isVisible(), true,
       label + ": visible trust/training and availability checks");
     const free = root.locator("button").filter({ hasText: /Try it free|Самостоятельно|Por mi cuenta/ }).first();
