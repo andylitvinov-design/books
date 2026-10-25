@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync,statSync} from 'node:fs'
+import {readFileSync} from 'node:fs'
 import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {oporaAs60Journey,OPORA_EXPERIENCE_CHANNELS} from '../lib/inner-growth/opora-as60-integrated-journey.js'
 import {antiStressBlueprint} from '../lib/inner-growth/anti-stress-blueprint.js'
@@ -34,12 +34,16 @@ test('public catalogue and lesson player share each of five day-specific exercis
  assert.match(overview,/!day\.experiences&&<details/)
 })
 
-test('local soundtrack exists, 2-minute meditations are tap-only and cancel on stop, hidden or unmount',()=>{
- const filepath=new URL('../public/audio/holistic-house-soft-melody-gentle-waves-20s.wav',import.meta.url)
- assert.ok(statSync(filepath).size>=500000,'WAV file is an actual recording, not a missing path')
+test('full 96-second soundtrack is generated before build; 2-minute meditation is tap-only and safely stoppable',()=>{
+ const generator=source('scripts/generate-soft-ocean-melody.mjs')
+ const scripts=JSON.parse(source('package.json')).scripts
+ assert.match(scripts.prebuild,/node scripts\/generate-soft-ocean-melody\.mjs/)
+ assert.match(scripts.predev,/node scripts\/generate-soft-ocean-melody\.mjs/)
+ assert.match(generator,/holistic-house-soft-melody-gentle-waves-96s\.wav/)
+ assert.match(generator,/DURATION=96/)
  const audio=source('components/ocean-practice-audio.ts')
- assert.match(audio,/OCEAN_LOOP = "\/audio\/holistic-house-soft-melody-gentle-waves-20s.wav"/)
- assert.doesNotMatch(audio,/holistic-house-soft-melody-gentle-waves-96s.wav/)
+ assert.match(audio,/OCEAN_LOOP = "\/audio\/holistic-house-soft-melody-gentle-waves-96s\.wav"/)
+ assert.doesNotMatch(audio,/OCEAN_LOOP = ".*20s\.wav"/)
  assert.match(audio,/return soundRef\.current\.play\(\)/)
  assert.match(audio,/document\.hidden/)
  assert.match(audio,/soundRef\.current\?\.dispose\(\)/)
