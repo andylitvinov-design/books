@@ -83,7 +83,7 @@ const copy = {
       value: "Personal written reflections · no call · no payment.",
       bullets: ["Clarify what you want to change or understand.", "Explore the roles, tensions and resources in your situation.", "Receive personal written observations to reflect on."],
       outcomeTitle: "Clarity you can act on",
-      outcomeLead: "See your goal, your obstacles and the resources you can draw on."
+      outcomeLead: "See your goal, your obstacles and the resources you can draw on.",
       outcomes: [
         { title: "Clarity", text: "Put the real question into words." },
         { title: "Fresh perspective", text: "Explore patterns, obstacles and resources." },
@@ -186,7 +186,7 @@ const copy = {
       value: "Личный письменный ответ · без звонка · без оплаты.",
       bullets: ["Проясните, что хотите понять или изменить.", "Исследуйте роли, напряжения и ресурсы ситуации.", "Получите письменные наблюдения для размышления."],
       outcomeTitle: "Ясность и новые возможности",
-      outcomeLead: "Разберите цель, препятствия и ресурсы, на которые можно опереться."
+      outcomeLead: "Разберите цель, препятствия и ресурсы, на которые можно опереться.",
       outcomes: [
         { title: "Ясность", text: "Определите главный вопрос." },
         { title: "Новый взгляд", text: "Исследуйте связи, препятствия и ресурсы." },
@@ -289,7 +289,7 @@ const copy = {
       value: "Respuesta personal escrita · sin llamada · sin pago.",
       bullets: ["Aclara lo que quieres comprender o cambiar.", "Explora roles, tensiones y recursos de la situación.", "Recibe observaciones personales por escrito."],
       outcomeTitle: "Claridad para avanzar",
-      outcomeLead: "Explora tu objetivo, los obstáculos y los recursos disponibles."
+      outcomeLead: "Explora tu objetivo, los obstáculos y los recursos disponibles.",
       outcomes: [
         { title: "Claridad", text: "Pon en palabras tu pregunta principal." },
         { title: "Nueva perspectiva", text: "Explora patrones, obstáculos y recursos." },
