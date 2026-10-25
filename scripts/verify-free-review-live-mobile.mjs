@@ -4,17 +4,12 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 const { chromium, webkit } = await import(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
-const origin = (process.env.HH_LIVE_ORIGIN || "https://holistichouse.vercel.app").replace(/\\/$/, "");
+const origin = (process.env.HH_LIVE_ORIGIN || "https://holistichouse.vercel.app").replace(/\/$/, "");
 const output = "artifacts/free-review-live-mobile";
 mkdirSync(output, { recursive: true });
 const results = [];
 const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 const ids = ["situation-written-free", "wu-xing-free", "personal-session-30-eur50"];
-const rect = element => {
-  if (!element) return null;
-  const { left, right, top, bottom, width, height } = element.getBoundingClientRect();
-  return { left, right, top, bottom, width, height };
-};
 for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
   const browser = await driver.launch({ headless: true });
   try {
@@ -113,7 +108,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const reviews = main.locator("[data-review-stories]");
           assert.equal(await reviews.count(), 1, "existing authentic video reviews preserved");
           assert.equal(await reviews.evaluate(element => element.open), false, "light page until requested");
-          await reviews.locator("summary").click();
+          await reviews.locator(":scope > summary").click();
           const reviewFeed = reviews.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
           await reviewFeed.waitFor({ state: "visible" });
           const reviewGeometry = await reviewFeed.evaluate(element => {
