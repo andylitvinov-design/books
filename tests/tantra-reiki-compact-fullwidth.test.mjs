@@ -50,16 +50,16 @@ test("Tantra PDF remains downloadable, with a visible Reiki Practitioner offer i
   assert.match(block, /tantra-mobile-guide--promo reiki-screen/);
   assert.doesNotMatch(block, /tantra-mobile-guide__toc|TantraReikiOverviewLinks|Explore the 9-level study map/);
   assert.match(block, /tantra-mobile-guide__course-promo/);
-  assert.match(block, /className="tantra-mobile-guide__course-link" href=\\{REIKI_FREE_COURSE_PATH\\} data-reiki-course-cta/);
+  assert.match(block, /className="tantra-mobile-guide__course-link" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
   assert.match(block, /Reiki Practitioner: Study & Initiation/);
   assert.match(block, /Практик Рейки: обучение и инициация/);
   assert.match(block, /Reiki Practitioner: estudio e iniciación/);
   assert.match(block, /className="tantra-mobile-guide__download"/);
-  assert.match(block, /\\/api\\/academy\\/reiki-guide\\?course=tantra&locale=/);
-  assert.match(screensCss, /\\.tantra-mobile-guide--promo \\.tantra-mobile-guide__course-promo/);
-  assert.match(screensCss, /@media \\(max-width: 820px\\)/);
-  assert.match(screensCss, /@media \\(max-width: 620px\\)/);
-  assert.match(screensCss, /@media \\(max-width: 360px\\)/);
+  assert.match(block, /\/api\/academy\/reiki-guide\?course=tantra&locale=/);
+  assert.match(screensCss, /\.tantra-mobile-guide--promo \.tantra-mobile-guide__course-promo/);
+  assert.match(screensCss, /@media \(max-width: 820px\)/);
+  assert.match(screensCss, /@media \(max-width: 620px\)/);
+  assert.match(screensCss, /@media \(max-width: 360px\)/);
 });
 
 test("Mobile layout widens scenes and fits brief story cards without forced scroll snapping", () => {
