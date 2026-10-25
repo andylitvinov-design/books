@@ -92,6 +92,9 @@ function LeadStatus({ lead, label, copy, busy, update }) {
 export default function AdminReikiLeads() {
   const [locale,setLocale] = useState('ru')
   const [leads,setLeads] = useState([])
+  const [donations,setDonations] = useState([])
+  const [receiptRefs,setReceiptRefs] = useState({})
+  const [verifiedConsent,setVerifiedConsent] = useState({})
   const [publicReviews,setPublicReviews] = useState([])
   const [filter,setFilter] = useState('all')
   const [search,setSearch] = useState('')
@@ -107,9 +110,11 @@ export default function AdminReikiLeads() {
       if(!response.ok) throw new Error('LOAD_FAILED')
       const data=await response.json()
       setLeads(Array.isArray(data.leads)?data.leads:[])
+      setDonations(Array.isArray(data.donations)?data.donations:[])
       setPublicReviews(Array.isArray(data.reviews)?data.reviews:[])
     } catch {
       setLeads([])
+      setDonations([])
       setPublicReviews([])
       setError('fetch')
     } finally {setLoading(false)}
@@ -119,13 +124,18 @@ export default function AdminReikiLeads() {
     const map=new Map()
     for(const lead of leads){
       if(!lead || !['start','application'].includes(lead.stage))continue
-      const item=map.get(lead.accountId)||{accountId:lead.accountId,start:null,application:null}
+      const item=map.get(lead.accountId)||{accountId:lead.accountId,start:null,application:null,donation:null}
       item[lead.stage]=lead
       map.set(lead.accountId,item)
     }
+    for(const donation of donations){
+      if(!donation || !donation.accountId) continue
+      const item=map.get(donation.accountId)
+      if(item) item.donation=donation
+    }
     return [...map.values()].sort((a,b)=>String(b.application?.createdAt||b.start?.createdAt||'')
       .localeCompare(String(a.application?.createdAt||a.start?.createdAt||'')))
-  },[leads])
+  },[leads,donations])
   const visible=groups.filter(group=>{
     if(filter==='start'&&!group.start)return false
     if(filter==='application'&&!group.application)return false
@@ -144,6 +154,23 @@ export default function AdminReikiLeads() {
       if(!response.ok) throw new Error('UPDATE_FAILED')
       await load()
     }catch{setError('update')}finally{setBusy(false)}
+  }
+  async function verifyDonation(order){
+    if(busy || !verifiedConsent[order.id])return
+    setBusy(true);setError('')
+    try{
+      const response=await fetch('/admin/reiki-leads/data',{
+        method:'POST',cache:'no-store',credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'verify-donation',orderId:order.id,
+          expectedRevision:order.revision,receiptReference:receiptRefs[order.id]||'',
+          amountEur:order.amountEur,confirmed:true}),
+      })
+      if(!response.ok)throw new Error('PROOF_NOT_VERIFIED')
+      setVerifiedConsent(previous=>({...previous,[order.id]:false}))
+      setReceiptRefs(previous=>({...previous,[order.id]:''}))
+      await load()
+    }catch{setError('donation')}finally{setBusy(false)}
   }
   async function moderateReview(review,status){
     if(busy)return
@@ -220,6 +247,44 @@ export default function AdminReikiLeads() {
             <LeadStatus lead={group.start} label={copy.started} copy={copy} busy={busy} update={update}/>
             <LeadStatus lead={group.application} label={copy.applied} copy={copy} busy={busy} update={update}/>
           </div>
+          {group.donation ? <section className={styles.donation} data-reiki-donation-crm>
+            <h3>{locale==='ru'?'Донейшн · Reiki Practitioner':'Donation · Reiki Practitioner'}</h3>
+            <p>{locale==='ru'?'Запрошенная сумма':'Requested amount'}: <b>€{group.donation.amountEur} EUR</b></p>
+            <p>{locale==='ru'?'Выбранные системы':'Selected systems'}: {group.donation.traditions?.join(', ')}</p>
+            {group.donation.status==='paid' ? <p className={styles.donationPaid} data-reiki-crm-received>
+              <CheckCircle2 size={16} aria-hidden="true"/>
+              {locale==='ru'?'Получено и проверено':'Received and verified'}:
+              <b>€{group.donation.receivedEur} EUR</b> · {when(group.donation.verifiedAt,locale)}
+            </p> : group.donation.status==='review' ? <>
+              <p className={styles.donationReview}>{locale==='ru'
+                ?'Клиент сообщил номер перевода. Деньги ещё не подтверждены.'
+                :'The learner submitted a transaction ID. Funds are not confirmed.'}</p>
+              <p>{locale==='ru'?'Заявленный номер':'Claimed reference'}:
+                <code>{group.donation.receiptReference||'—'}</code></p>
+              <label className={styles.donationField}>
+                <span>{locale==='ru'?'Номер транзакции из PayPal Activity':'Reference from PayPal Activity'}</span>
+                <input type="text" autoComplete="off" spellCheck={false}
+                  value={receiptRefs[group.donation.id]||''}
+                  onChange={event=>setReceiptRefs(previous=>({...previous,[group.donation.id]:event.target.value}))}
+                  maxLength={80}/>
+              </label>
+              <label className={styles.donationConsent}>
+                <input type="checkbox" checked={Boolean(verifiedConsent[group.donation.id])}
+                  onChange={event=>setVerifiedConsent(previous=>({...previous,[group.donation.id]:event.target.checked}))}/>
+                <span>{locale==='ru'
+                  ?'Я независимо проверил получение точной суммы и этот ID в PayPal. Это не скриншот клиента.'
+                  :'I independently checked the exact amount and this ID in PayPal. Not a customer screenshot.'}</span>
+              </label>
+              <button type="button" className={styles.verifyDonation}
+                disabled={busy || !verifiedConsent[group.donation.id] ||
+                  !/^[A-Za-z0-9][A-Za-z0-9_-]{5,79}$/.test((receiptRefs[group.donation.id]||'').trim())}
+                onClick={()=>void verifyDonation(group.donation)}>
+                {locale==='ru'?'Подтвердить поступление €'+group.donation.amountEur
+                  :'Verify received €'+group.donation.amountEur}</button>
+            </> : <p>{locale==='ru'
+              ?'Корзина создана; данных о переводе пока нет.'
+              :'Cart prepared; no payment proof submitted yet.'}</p>}
+          </section> : null}
           <p className={styles.progress}>{copy.step}: <strong>{titles.get(snapshot?.slideId)?.[locale]||snapshot?.slideId||'—'}</strong></p>
           {group.application?.reason?<section className={styles.letter}>
             <h3>{copy.letter}</h3><blockquote>{group.application.reason}</blockquote>
