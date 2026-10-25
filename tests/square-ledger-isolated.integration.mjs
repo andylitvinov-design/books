@@ -12,7 +12,7 @@ const good = process.env.CI === 'true' &&
 if (!good) {
   test('Square migration executes only against synthetic isolated PG17 in CI', { skip: true }, () => {})
 } else {
-  const migration = readFileSync(new URL('../supabase/migrations/20261024185000_hh_square_cart_one_time.sql',import.meta.url),'utf8')
+  const migration = readFileSync(new URL('../supabase/migrations/20261025190309_hh_square_cart_one_time_20261024.sql',import.meta.url),'utf8')
   const a = '123e4567-e89b-42d3-a456-426614174000'
   const b = '123e4567-e89b-42d3-a456-426614174001'
   const c = '123e4567-e89b-42d3-a456-426614174002'
