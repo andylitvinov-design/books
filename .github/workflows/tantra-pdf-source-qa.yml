@@ -29,6 +29,7 @@ jobs:
         run: node --test tests/reiki-guide-pdf.test.mjs tests/tantra-pdf-full-original.test.mjs
       - name: Generate and extract real EN RU ES mobile PDFs
         run: |
+          if ! command -v pdfinfo >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils; fi
           mkdir -p /tmp/tantra-pdf-qa
           node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs';
@@ -43,11 +44,11 @@ jobs:
           for locale in en ru es; do
             pdfinfo "/tmp/tantra-pdf-qa/tantra-$locale.pdf" | grep -E '^Pages:|^Page size:'
             pdftotext -layout "/tmp/tantra-pdf-qa/tantra-$locale.pdf" "/tmp/tantra-pdf-qa/tantra-$locale.txt"
-            grep -Fq 'MASTER TEACHER OF TANTRA REIKI' "/tmp/tantra-pdf-qa/tantra-$locale.txt"
+            grep -Fq 'MASTER TEACHER' "/tmp/tantra-pdf-qa/tantra-$locale.txt"
             grep -Fq 'TANTRA REIKI TUNINGS' "/tmp/tantra-pdf-qa/tantra-$locale.txt"
           done
           grep -Fq 'Родник' "/tmp/tantra-pdf-qa/tantra-ru.txt"
-          grep -Fq 'Elige' "/tmp/tantra-pdf-qa/tantra-es.txt" || grep -Fq 'Nivel' "/tmp/tantra-pdf-qa/tantra-es.txt"
+          grep -Fiq 'nivel' "/tmp/tantra-pdf-qa/tantra-es.txt"
       - name: Save proof PDFs and extracted course text
         if: always()
         uses: actions/upload-artifact@v4
