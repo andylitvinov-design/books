@@ -480,7 +480,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </details>
         ) : null}
 
-        {kind === "situation" ? <PersonalTestimonials locale={locale === "es" ? "en" : locale} variant="all" /> : null}
+        {kind === "situation" ? <PersonalTestimonials locale={locale} variant="all" /> : null}
 
         <CompactLeadCapture
           locale={locale}
