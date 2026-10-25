@@ -47,6 +47,7 @@ const copy = {
     quickPhone: "Use phone / WhatsApp instead", quickEmail: "Use email instead",
     quickConsent: "Check the box to request one personal reply. No marketing, charge or confirmed booking.",
     compactConsent: "I agree to a personal reply about this request only. No marketing.",
+    compactPhoneLabel: "Phone number", compactPhoneError: "Enter your international phone number.",
     compactSaved: "Request saved. Review the message and tap Send in your chat.",
     compactHandoff: "Chat did not open automatically. Use a button below.",
   },
@@ -79,6 +80,7 @@ const copy = {
     quickPhone: "Вместо email — телефон / WhatsApp", quickEmail: "Использовать email",
     quickConsent: "Отметьте согласие выше, чтобы получить личный ответ. Без рекламы, оплаты и автоматической записи.",
     compactConsent: "Согласен(на) на личный ответ по заявке. Без рекламы.",
+    compactPhoneLabel: "Номер телефона", compactPhoneError: "Введите номер телефона с кодом страны.",
     compactSaved: "Заявка сохранена. Проверьте сообщение и нажмите «Отправить» в чате.",
     compactHandoff: "Чат не открылся автоматически. Нажмите кнопку ниже.",
   },
@@ -111,6 +113,7 @@ const copy = {
     quickPhone: "Usar teléfono / WhatsApp", quickEmail: "Usar correo electrónico",
     quickConsent: "Marca la casilla para solicitar una respuesta personal. Sin publicidad, cobro ni reserva confirmada.",
     compactConsent: "Acepto recibir una respuesta personal sobre esta solicitud. Sin publicidad.",
+    compactPhoneLabel: "Número de teléfono", compactPhoneError: "Introduce tu teléfono con prefijo internacional.",
     compactSaved: "Solicitud guardada. Revisa el mensaje y pulsa Enviar en el chat.",
     compactHandoff: "El chat no se abrió. Usa un botón de abajo.",
   },
@@ -314,7 +317,7 @@ export function ContactChannelChooser({
     const usePhone = compactPhone || method === "phone";
     if ((!usePhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
       (usePhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
-      setError(c.contactError);
+      setError(compactPhone ? c.compactPhoneError : c.contactError);
       return;
     }
     // Open synchronously during the messenger tap: iPhone Safari blocks a new
@@ -400,7 +403,7 @@ export function ContactChannelChooser({
         {!saved ? (
           <form className={styles.compactPhoneForm} onSubmit={event => event.preventDefault()}>
             <div className={styles.compactPhoneField}>
-              <label htmlFor={panelId + "-phone"}>{c.phone}</label>
+              <label htmlFor={panelId + "-phone"}>{c.compactPhoneLabel}</label>
               <PhoneCountryInput id={panelId + "-phone"} locale={locale} value={phone}
                 disabled={busy} required onChange={value => {
                   setPhone(value); setError(""); operationId.current = null;
