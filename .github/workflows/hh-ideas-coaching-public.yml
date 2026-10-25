@@ -5,6 +5,19 @@ on:
     paths:
       - '.github/workflows/hh-ideas-coaching-public.yml'
       - 'components/ideas-discovery.tsx'
+      - 'components/coaching-intake-form.tsx'
+      - 'components/coaching-intake-form.module.css'
+      - 'components/free-diagnostic-start.tsx'
+      - 'components/free-diagnostic-start.module.css'
+      - 'app/[locale]/holistic-support/**'
+      - 'app/[locale]/temple-insights/**'
+      - 'app/api/coaching-diagnostic/**'
+      - 'lib/coaching/diagnostic-enquiry.*'
+      - 'lib/practitioners/public-service-enquiry-input.mjs'
+      - 'lib/whatsapp-enquiry.js'
+      - 'tests/coaching-diagnostic-funnel.test.mjs'
+      - 'tests/coaching-intake-form.test.mjs'
+      - 'tests/temple-insights-compact-cta.test.mjs'
       - 'components/tests-coaching-switchboard.tsx'
       - 'components/tests-coaching-switchboard.module.css'
       - 'components/ideas-discovery.module.css'
@@ -21,7 +34,7 @@ on:
       - 'app/[locale]/books/page.tsx'
       - 'app/es/books/page.tsx'
       - 'tests/ideas-guidance.test.mjs'
-      - 'tests/tests-coaching-switchboard.test.mjs'
+      - 'tests/tests-coaching-switchboard.test.mjs tests/coaching-diagnostic-funnel.test.mjs tests/coaching-intake-form.test.mjs tests/temple-insights-compact-cta.test.mjs tests/public-service-enquiries.test.mjs'
       - 'scripts/verify-ideas-mobile-browser.mjs'
       - 'scripts/verify-coaching-lounge-mobile.mjs'
       - 'tests/ideas-mobile-ui.test.mjs'
@@ -56,7 +69,7 @@ jobs:
           node --check lib/coaching/public-session-art.js
           node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs
       - name: Lint modified application components
-        run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts
+        run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts components/free-diagnostic-start.tsx components/coaching-intake-form.tsx app/\[locale\]/holistic-support/page.tsx app/\[locale\]/temple-insights/page.tsx app/api/coaching-diagnostic/route.js lib/coaching/diagnostic-enquiry.mjs lib/practitioners/public-service-enquiry-input.mjs lib/whatsapp-enquiry.js
       - name: TypeScript noEmit
         run: npx --no-install tsc --noEmit
       - name: Next.js production build

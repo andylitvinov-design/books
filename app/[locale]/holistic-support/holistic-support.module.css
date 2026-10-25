@@ -58,6 +58,16 @@
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto;transition:none}}
 
 
+/* Conversion-first clarity: free form and live session appear before optional symbolic tools. */
+.option[data-holistic-offer="master"]{grid-column:auto}
+.option[data-holistic-offer="ai"]{grid-column:1/-1;background:#f9f6f0}
+.symbolicDetails{max-width:100%}
+.symbolicDetails summary{display:flex;align-items:center;min-height:44px;padding:12px;border:1px solid #d8c7b5;border-radius:11px;background:#fffbf5;color:#6a4b3a;font:700 13px/1.4 Arial,sans-serif;cursor:pointer}
+.symbolicDetails[open] summary{margin-bottom:12px}
+@media(max-width:850px){.option[data-holistic-offer="ai"]{grid-column:auto}}
+@media(max-width:650px){.hero{min-height:365px}.heroCopy h1{font-size:clamp(34px,9vw,46px)}.heroHeadline{font-size:clamp(21px,5.8vw,27px)}.pathControls{margin-top:16px}}
+@media(max-width:350px){.hero{min-height:392px}.heroCopy h1{font-size:34px}}
+
 /* Temple first: the scenic question block is the primary visual, not a
    duplicate offer form nested in a tinted panel. Existing offers remain below. */
 .section[data-holistic-insights] .freePanel {

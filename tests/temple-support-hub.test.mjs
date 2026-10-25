@@ -54,8 +54,8 @@ test("Holistic Support provides two main areas and six concrete choices", () => 
   assert.match(page, /data-holistic-healing/);
   assert.match(page, /<section className=\{styles.hero\} data-holistic-first-screen aria-labelledby="holistic-support-title">/);
   assert.match(page, /<nav className=\{styles.pathControls\} aria-label=\{t.choose\}>/);
-  assert.match(page, /href="#temple-psychic-insights" data-holistic-path="insights"/);
-  assert.match(page, /href="#holistic-healing-support" data-holistic-path="healing"/);
+  assert.match(page, /href="#free-diagnostic-start" data-holistic-path="insights"/);
+  assert.match(page, /href="#personal-insights-master" data-holistic-path="healing"/);
   assert.equal((page.match(/data-holistic-path=/g) || []).length, 2, "exactly two hero journeys");
   assert.doesNotMatch(page, /styles\.primaryNav/);
   assert.match(styles, /\.hero\{[^}]*min-height:clamp\(440px/);
@@ -65,7 +65,7 @@ test("Holistic Support provides two main areas and six concrete choices", () => 
     assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
   assert.doesNotMatch(page, /data-holistic-tradition|styles\.methods|methodOptions|methodPaths/);
   assert.doesNotMatch(styles, /\.methods\{/);
-  assert.match(page, /\/services\/free-situation-review/);
+  assert.match(page, /<FreeDiagnosticStart locale=\{locale\} \/>/);
   assert.match(page, /\/services\/remote-energy-support/);
   assert.match(page, /\/services\/alchemy-of-soul/);
   assert.match(page, /data-holistic-practitioner-cta/);
@@ -88,18 +88,19 @@ test("Holistic Support provides two main areas and six concrete choices", () => 
     assert.ok(existsSync(new URL("../public/images/holistic-house/" + image, import.meta.url)), "missing media " + image);
 });
 
-test("AI Insight is honest about its non-LLM source; master enquiry is CAD 50 for 20 minutes and consented", () => {
+test("symbolic insight remains honest; coaching uses €50/30 and €100/60 with consent", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const ideas = read("components/ideas-discovery.tsx");
   const capture = read("components/compact-lead-capture.tsx");
   const alchemy = read("app/[locale]/services/alchemy-of-soul/page.tsx");
   assert.match(page, /AI Insight/);
   assert.match(page, /generative AI model is not connected/);
-  assert.match(page, /50 CAD \/ 20 мин/);
-  assert.match(page, /CAD 50 \/ 20 min/);
+  assert.match(page, /€50 \/ 30 мин/);
+  assert.match(page, /€100 \/ 60 min/);
   assert.match(page, /sourcePath=\{"\/" \+ locale \+ "\/holistic-support"\}/);
-  assert.doesNotMatch(page, /formatOptions=|formatLabel=/);
-  assert.match(page, /serviceTitle=\{"Personal Temple Insights with Andrey · CAD 50 \/ 20 min"\}/);
+  assert.match(page, /formatOptions=\{t.paidFormats\}/);
+  assert.match(page, /formatLabel=\{t.paidFormatLabel\}/);
+  assert.match(page, /serviceTitle=\{"Personal Coaching Session with Andrey"\}/);
   assert.match(page, /<CompactLeadCapture/);
   assert.match(page, /data-holistic-master/);
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
@@ -113,15 +114,17 @@ test("AI Insight is honest about its non-LLM source; master enquiry is CAD 50 fo
 });
 
 
-test("Temple Insights recovers the old scenic Ideas card without affecting Ideas or the privacy contract", () => {
+test("Temple preserves its scenic Ideas card as optional; personal conversion is first", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const ideas = read("components/ideas-discovery.tsx");
   const scenic = read("components/ideas-discovery.module.css");
   const layout = read("app/[locale]/holistic-support/holistic-support.module.css");
 
-  assert.match(page, /data-holistic-insights aria-labelledby="ideas-title"/);
-  assert.ok(page.indexOf("data-holistic-free-insight") < page.indexOf('data-holistic-offer="ai"'),
-    "the question card should be the first offer shown");
+  assert.match(page, /data-holistic-insights aria-labelledby="holistic-insights-title"/);
+  assert.ok(page.indexOf('data-holistic-offer="express"') < page.indexOf("data-holistic-free-insight"),
+    "free diagnostic should precede the optional symbolic tool");
+  assert.ok(page.indexOf('data-holistic-offer="master"') < page.indexOf("data-holistic-free-insight"),
+    "personal session should precede the optional symbolic tool");
   assert.equal((page.match(/<IdeasDiscovery locale=\{locale\} variant="temple" \/>/g) || []).length, 1,
     "reuse the single private local Ideas engine");
   assert.match(layout, /\.section\[data-holistic-insights\] \.freePanel\s*\{/);
@@ -139,7 +142,7 @@ test("Temple Insights recovers the old scenic Ideas card without affecting Ideas
   assert.match(ideas, /data-ideas-personal-diagnostic/);
   assert.match(ideas, /data-ideas-free-test/);
   assert.doesNotMatch(ideas, /!isTemple \? <button[^>]*data-ideas-free-test/);
-  assert.match(ideas, /href=\{freeOfferHref\(locale, "review"\)\}/);
+  assert.match(ideas, /href=\{"/" \+ locale \+ "\/holistic-support#free-diagnostic-start"\}/);
   assert.match(ideas, /id="ideas-question-privacy"/);
   assert.match(ideas, /getIdeasAphorismMatches\(/);
   assert.match(ideas, /drawRandomHexagram\(\)/);
