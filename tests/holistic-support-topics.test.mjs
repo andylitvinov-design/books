@@ -13,7 +13,9 @@ test("Holistic Support thematic navigation reuses existing public routes and pra
 
   assert.match(page, /<HolisticSupportTopicFilter locale=\{locale\} \/>/);
   assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf('id="holistic-healing-support"'));
-  assert.match(page, /data-holistic-first-screen/);
+  const firstScreen = existsSync(new URL("../components/holistic-support-choices.tsx", import.meta.url))
+    ? read("components/holistic-support-choices.tsx") : "";
+  assert.match(page + firstScreen, /data-holistic-first-screen/);
   assert.match(filter, /data-holistic-topic-filter/);
   assert.match(filter, /data-holistic-topic-selected=\{activeTopic\}/);
   assert.match(filter, /data-holistic-topic-card=\{id\}/);
