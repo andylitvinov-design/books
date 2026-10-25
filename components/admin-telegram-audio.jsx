@@ -33,7 +33,7 @@ export default function AdminTelegramAudio({locale='en'}){
   const lang=['ru','en','es'].includes(locale)?locale:'en',t=LABELS[lang]
   const [files,setFiles]=useState([])
   const [drafts,setDrafts]=useState({})
-  const [folder,setFolder]=useState('inbox')
+  const [folder,setFolder]=useState('all')
   const [busy,setBusy]=useState(false),[saving,setSaving]=useState('')
   const [notice,setNotice]=useState(''),[error,setError]=useState('')
   const [truncated,setTruncated]=useState(false)
