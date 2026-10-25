@@ -22,8 +22,8 @@ test("the approved bottom blue capture contains the three requested free offers,
   assert.doesNotMatch(capture, /"wu"|"stress"/);
 });
 
-test("each free offer leads directly to its existing entry route, with self-test selected by default", () => {
-  for (const slug of ["/client/tests", "/services/free-situation-review", "/academy/principles-of-energywork/learn"]) {
+test("self-test and Reiki keep direct routes; personal review opens the shared phone-and-messenger form in place", () => {
+  for (const slug of ["/client/tests", "/academy/principles-of-energywork/learn"]) {
     assert.ok(capture.includes(slug), "Missing destination: " + slug);
   }
   for (const path of [
@@ -36,11 +36,23 @@ test("each free offer leads directly to its existing entry route, with self-test
   assert.match(capture, /useState<FreeOffer>\("selfTest"\)/);
   assert.match(capture, /aria-pressed=\{selected === id\}/);
   assert.match(capture, /onClick=\{\(\) => setSelected\(id\)\}/);
-  assert.match(capture, /data-home-free-action": selected/);
-  assert.match(capture, /event=\{selected === "selfTest" \? "self_check_start" : selected === "analysis" \? "service_request_start" : "service_view"\}/);
-  assert.match(capture, /analyticsEvent=\{selected === "analysis" \? "free_situation_assessment_click" : undefined\}/);
+  assert.match(capture, /selected === "analysis" \? \(/);
+  assert.match(capture, /<ContactChannelChooser[\s\S]*?compactPhone compactTrigger stayAfterSave/);
+  assert.match(capture, /whatsappUrl=\{analysisWhatsAppUrl\}/);
+  assert.match(capture, /publicTopic=\{locale === "ru"/);
+  assert.match(capture, /event="service_request_start"/);
+  assert.match(capture, /analyticsEvent="free_situation_assessment_click"/);
+  assert.match(capture, /pagePath: locale === "ru" \? "\/ru" : "\/"/);
   assert.match(capture, /href=\{href\}/);
   assert.match(capture, /prefetch=\{false\}/);
+  assert.doesNotMatch(capture, /selected === "analysis" \? `\/\$\{locale\}\/services\/free-situation-review`/);
+  const chooser = read("components/contact-channel-chooser.tsx");
+  assert.match(chooser, /data-contact-channel-submit="whatsapp"/);
+  assert.match(chooser, /data-contact-channel-submit="telegram"/);
+  assert.match(chooser, /<PhoneCountryInput/);
+  assert.match(chooser, /contactConsent: consent/);
+  assert.match(chooser, /sourcePath: pathname/);
+  assert.match(chooser, /if \(!response\.ok \|\| data\.saved !== true/);
 });
 
 test("EN/RU copy describes real free services and preserves accurate safety and teacher-initiation limits", () => {
