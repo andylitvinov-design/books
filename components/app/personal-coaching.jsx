@@ -3,9 +3,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, ChevronLeft, Copy, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, Copy, Download, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
+import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
@@ -42,6 +43,8 @@ const copy={
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
     noAnswer:'Skipped',history:'Earlier private sessions',historyItem:'Previous session',
     share:'Nothing is sent to a coach or messenger automatically.',
+    reportNotice:'Your answers are saved privately. When you finish, you can download a dated PDF report with every question and your answers.',
+    pdf:'Download PDF report',pdfError:'Could not create the PDF. Your private answers remain saved.',date:'Session date',
     restart:'This starts a new session and saves the completed one to your private history.',
     home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? This cannot be undone.',
     completeNote:'This is a self-reflection tool, not a diagnosis, guaranteed result, or booked consultation.',
@@ -65,6 +68,8 @@ const copy={
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
     noAnswer:'Пропущено',history:'Предыдущие личные сессии',historyItem:'Прошлая сессия',
     share:'Ответы не отправляются коучу или в мессенджеры автоматически.',
+    reportNotice:'Ваши ответы будут сохранены в личном кабинете. В конце вы получите PDF-отчёт с датой, всеми вопросами и ответами.',
+    pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы сохранены в кабинете.',date:'Дата сессии',
     restart:'Новая сессия сохранит завершённую в вашей личной истории.',
     home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Это действие нельзя отменить.',
     completeNote:'Это практика размышления, а не диагноз, обещание результата или запись на консультацию.',
@@ -86,6 +91,8 @@ const copy={
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
     history:'Sesiones anteriores',historyItem:'Sesión anterior',share:'No enviamos tus respuestas a otras personas.',
+    reportNotice:'Tus respuestas se guardan en privado. Al terminar puedes descargar un PDF con fecha, preguntas y respuestas.',
+    pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',
     restart:'La sesión completada se guardará en tu historial.',home:'Mis cursos',delete:'Borrar mis notas',
     deleteConfirm:'¿Eliminar todas tus respuestas e historial? No se puede deshacer.',
     completeNote:'Esto es autorreflexión, no un diagnóstico ni una consulta reservada.',
@@ -356,6 +363,33 @@ export default function PersonalCoaching({locale='en',accountId}){
       setClipboardState('copied')
     }catch{setClipboardState('error')}
   }
+  function downloadReport(target){
+    if(target?.status!=='completed')return
+    const targetQuestions=questionsFor({current:target},catalog)
+    const targetScheme=target.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===target.schemeKey):null
+    const plan=target.actionPlan
+    const planText=plan?.approvedAt?[
+      plan.goal,plan.obstacle,plan.actionText,plan.when,
+      Number.isInteger(plan.confidence)?String(plan.confidence)+'/10':'',
+    ].filter(Boolean).join('\n'):'' // Only the client's approved plan, no auto-inferred goals.
+    try{
+      downloadCoachingSessionPdf({
+        locale:lang,
+        title:targetScheme?coachingSessionTitle(targetScheme.schemeKey,lang,translated(targetScheme.name,lang)):t.title,
+        slug:target.schemeKey||'personal-coaching',
+        sessionDate:target.completedAt||target.startedAt,
+        topic:target.clientTopic?coachingRequestTopicLabel(target.clientTopic,lang):'',
+        clientQuestion:target.clientQuestion||'',
+        entries:targetQuestions.map(item=>({
+          question:translated(item.prompt||item.question,lang),
+          answer:prettyAnswer(target.answers?.[item.id],item,lang,t.noAnswer),
+          reflection:target.reflections?.[item.id]?.text||'',
+        })),
+        actionPlan:planText,
+      })
+      setError('')
+    }catch{setError(t.pdfError)}
+  }
   async function erase(){
     if(!window.confirm(t.deleteConfirm))return
     const result=await command('delete',{confirmed:true})
@@ -404,6 +438,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
           <p>{t.finished}</p>
+          <p className={styles.subtle}>{t.date}: {coachingReportDate(session.completedAt||session.startedAt,lang)}</p>
           {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
           {session.clientTopic&&<p className={styles.contextQuestion}><strong>{entryCopy.topicTitle}:</strong> {coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
@@ -439,14 +474,16 @@ export default function PersonalCoaching({locale='en',accountId}){
                 onFocus={event=>event.target.select()} />
             </label>}
           </section>}
+          <button type="button" className={styles.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
             <summary>{t.history} ({course.history.length})</summary>
             {course.history.map(old=><article key={old.id}>
-              <strong>{t.historyItem} · {new Date(old.completedAt||old.startedAt).toLocaleDateString(lang)}</strong>
+              <strong>{t.historyItem} · {coachingReportDate(old.completedAt||old.startedAt,lang)}</strong>
               {questionsFor({current:old},catalog).map(item=><p key={item.id}>
                 <b>{translated(item.prompt||item.question,lang)}</b> {prettyAnswer(old.answers[item.id],item,lang,t.noAnswer)}
               </p>)}
+              {old.status==='completed'&&<button type="button" className={styles.back} onClick={()=>downloadReport(old)}><Download size={16}/>{t.pdf}</button>}
             </article>)}
           </details>}
           <p className={styles.subtle}>{t.restart}</p>
@@ -560,6 +597,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
+            <p className={styles.subtle} data-coaching-save-report-notice>{t.reportNotice}</p>
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
