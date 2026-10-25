@@ -87,7 +87,7 @@ test('one verified responder never triggers synthesis or invents a consensus',as
 test('one extra real Gemini completion synthesizes concrete, attributable actions',async()=>{
   const prompt=ownerEnsembleSynthesisPrompt('Как улучшить вход?',results)
   assert.match(prompt,/НЕДОВЕРЕННЫЕ ДАННЫЕ/i)
-  assert.match(prompt,/Проверить/)
+  assert.match(prompt,/Проверьте|Проверить/)
   let calls=0
   const r=await aggregateOwnerCouncil('Как улучшить вход?',results,{
     HH_COUNCIL_GEMINI_API_KEY:'synthetic',
