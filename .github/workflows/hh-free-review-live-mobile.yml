@@ -64,11 +64,6 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - name: Install disposable Chromium and WebKit runners
-        timeout-minutes: 12
-        run: |
-          npm install --prefix /tmp/hh-free-review-browser --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
-          /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Build the real PR app and check focused route/CRM contracts
         if: github.event_name == 'pull_request'
         timeout-minutes: 12
@@ -80,6 +75,11 @@ jobs:
           npm run build > /tmp/hh-review-next-build.log 2>&1 || { tail -n 140 /tmp/hh-review-next-build.log; exit 1; }
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Install disposable Chromium and WebKit runners
+        timeout-minutes: 12
+        run: |
+          npm install --prefix /tmp/hh-free-review-browser --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
+          /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Verify PR's local production build, not old live alias
         if: github.event_name == 'pull_request'
         timeout-minutes: 10

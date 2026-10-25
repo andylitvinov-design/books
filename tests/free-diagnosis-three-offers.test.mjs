@@ -35,6 +35,34 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(css, /\.expandedInfo/);
 });
 
+test("personal express diagnosis unfolds inside the same landing, without a modal", () => {
+  const enquiry = source("components/personal-express-enquiry.tsx");
+  const enquiryCss = source("components/personal-express-enquiry.module.css");
+  assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
+  assert.match(enquiry, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(enquiry, /aria-controls="express-request-form"/);
+  assert.match(enquiry, /data-express-inline-disclosure hidden=\{!expanded\}/);
+  assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);
+  assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
+  assert.match(enquiry, /document\.addEventListener\("click", openFromAnchor\)/);
+  assert.match(enquiry, /onClick=\{\(\) => setExpanded\(open => !open\)\}/);
+  assert.match(enquiry, /useEffect\(\(\) => \{/);
+  assert.match(enquiry, /setExpanded\(false\)/);
+  assert.match(enquiry, /revealRef\.current\?\.focus\(\)/);
+  assert.match(enquiry, /<ContactChannelChooser key=\{focus\}/);
+  assert.match(enquiry, /compactPhone stayAfterSave resetKey=\{focus\}/);
+  assert.match(enquiry, /"situation" \| "energy"/);
+  for (const localized of ["Request my free review", "Заказать бесплатную диагностику", "Solicitar mi revisión gratuita"]) {
+    assert.ok(enquiry.includes(localized), localized);
+  }
+  assert.match(enquiryCss, /\.disclosure\[hidden\]\{display:none!important\}/);
+  assert.match(enquiryCss, /animation:expressUnfold/);
+  assert.match(enquiryCss, /@media\(max-width:720px\)/);
+  assert.match(enquiryCss, /@media\(prefers-reduced-motion:reduce\)/);
+  assert.doesNotMatch(enquiry, /role="dialog"|aria-modal|style\.overflow|fetch\(|booking_confirmed|payment_received/);
+  assert.doesNotMatch(enquiryCss, /position:fixed|\.scrim/);
+});
+
 test("the old consultation hub retains three separate offer scenes without changing them", () => {
   for (const id of ["situation-written-free", "wu-xing-free", "personal-session-30-eur50"]) {
     assert.equal((offers.match(new RegExp('id: "' + id + '"', "g")) || []).length, 3, id + " in all locales");
