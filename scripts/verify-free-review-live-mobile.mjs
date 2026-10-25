@@ -88,6 +88,13 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.ok(geometry.enquiry.top > geometry.process.top, "one form at the bottom");
           await page.screenshot({ path: output + "/" + name + "-first-screen.png",
             animations: "disabled", timeout: 20000 });
+          const reveal = enquiry.locator("[data-express-reveal]");
+          const disclosure = enquiry.locator("[data-express-inline-disclosure]");
+          assert.equal(await reveal.count(), 1, "one inline reveal button");
+          assert.equal(await reveal.getAttribute("aria-expanded"), "false", "collapsed by default");
+          assert.equal(await disclosure.isVisible(), false, "form starts folded into landing");
+          assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
+            "no modal or overlay at initial render");
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
@@ -135,6 +142,19 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           await mainCta.click({ timeout: 15000 });
           assert.equal(new URL(page.url()).hash, "#request-free-review", "hero goes to start form");
           await enquiry.waitFor({ state: "visible" });
+          await disclosure.waitFor({ state: "visible" });
+          assert.equal(await reveal.getAttribute("aria-expanded"), "true", "hero CTA unfolds same-page form");
+          assert.equal(await disclosure.getAttribute("role"), "region");
+          assert.equal(await disclosure.evaluate(element => getComputedStyle(element).position), "static",
+            "unfolded form stays in normal document flow");
+          const buttonBounds = await reveal.boundingBox();
+          const formBounds = await disclosure.boundingBox();
+          assert.ok(buttonBounds && formBounds && formBounds.y >= buttonBounds.y + buttonBounds.height - 2,
+            "form pushes the landing down directly beneath its reveal button");
+          assert.notEqual(await page.evaluate(() => document.body.style.overflow), "hidden",
+            "capture must not block page scrolling");
+          assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
+            "no modal after clicking the hero CTA");
           assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
           assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
             "opening the form is not contact consent");
@@ -150,6 +170,15 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await enquiry.locator('[data-express-focus="situation"]').getAttribute('data-selected'), "true");
           assert.equal(await enquiry.locator('[role="status"]').count(), 0,
             "changing focus is not a lead or booking");
+          await enquiry.locator('input[type="tel"]').focus();
+          await page.keyboard.press("Escape");
+          assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
+          assert.equal(await disclosure.isVisible(), false);
+          await reveal.click();
+          assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
+          assert.equal(await disclosure.isVisible(), true);
+          await reveal.click();
+          assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");
           record.status = "PASS";
