@@ -357,7 +357,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           image: "/academy/reiki-yggdrasil/source/temple-studies.png",
           actionLabel: action.program,
         },
-      ];
+      ].filter((item) => locale === "ru" || item.id !== "academy-featured-egypt-priesthood");
 
   // Historical PsiMaster content is already in the Academy catalogue. Link to
   // the existing native pages; never copy course records or create an enrollment.
@@ -375,22 +375,38 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
     const index = featuredLegacyIds.indexOf(id);
     return index < 0 ? featuredLegacyIds.length : index;
   };
-  const legacyCourses: AcademyArchiveButton[] = preferredAcademyRecords(locale, (record) =>
-    record.sourceProvider === "psimaster" && record.sourceLocale === "ru"
-  ).map((record) => ({
-    id: record.logicalId,
-    title: academyDisplayTitle(record, locale),
-    href: "/" + locale + "/academy/" + record.routeKey,
-    archived: record.status === "archive_only",
-  })).sort((a, b) => legacyRank(a.id) - legacyRank(b.id) || a.title.localeCompare(b.title, locale));
-  const psimasterVideoIds = new Set(psimasterMedia.map((item) => item.logicalId));
-  const legacyVideos: AcademyArchiveButton[] = videoRecords(locale)
-    .filter((record) => psimasterVideoIds.has(record.logicalId))
-    .map((record) => ({
+  // Preserve historical source routes, but never advertise a Russian-language
+  // lesson as if the English / Spanish catalogue offered an English recording.
+  const legacyCourses: AcademyArchiveButton[] = locale === "ru"
+    ? preferredAcademyRecords(locale, (record) =>
+      record.sourceProvider === "psimaster" && record.sourceLocale === "ru"
+    ).map((record, index) => ({
       id: record.logicalId,
       title: academyDisplayTitle(record, locale),
+      subtitle: record.status === "archive_only" ? "ТОЛЬКО АРХИВ" : "ИСТОРИЧЕСКАЯ ПРОГРАММА · НА РУССКОМ",
+      description: "Описание прежней программы на русском языке. Актуальный набор и наличие видеоуроков не подтверждены.",
       href: "/" + locale + "/academy/" + record.routeKey,
-    }));
+      image: recordImage(record, index),
+      actionLabel: action.program,
+      archiveKind: "course" as const,
+      archived: record.status === "archive_only",
+    })).sort((a, b) => legacyRank(a.id) - legacyRank(b.id) || a.title.localeCompare(b.title, locale))
+    : [];
+  const psimasterVideoIds = new Set(psimasterMedia.map((item) => item.logicalId));
+  const legacyVideos: AcademyArchiveButton[] = locale === "ru"
+    ? videoRecords(locale)
+      .filter((record) => psimasterVideoIds.has(record.logicalId) && record.sourceLocale === "ru")
+      .map((record) => ({
+        id: record.logicalId,
+        title: academyDisplayTitle(record, locale),
+        subtitle: "ВИДЕОУРОКИ · НА РУССКОМ",
+        description: "Оригинальные русскоязычные видеоуроки в сохранённом порядке. Воспроизведение начинается только после вашего нажатия.",
+        href: "/" + locale + "/academy/" + record.routeKey,
+        image: recordImage(record),
+        actionLabel: action.video,
+        archiveKind: "video" as const,
+      }))
+    : [];
 
   return (
     <main className="library-shell academy-shell" lang={locale}>
