@@ -321,7 +321,6 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const titleRef=useRef(null)
   const sessionScrollRef=useRef(null)
   const rootRef=useRef(null)
-  const customAnswerRef=useRef(null)
   useEffect(()=>{
     if(!session)return
     // The public session is an immersive viewport, not a card inside the site.
@@ -756,65 +755,67 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <CoachingChatThread turn={followupTurn} locale={lang}>
               <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
-            <CoachingQuestionVoice key={'guest-followup-'+pendingFollowup.key+'-'+pendingFollowup.questionId+'-'+lang}
-              text={[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
-              speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-              onListeningChange={setDictating}
-              onTranscript={words=>{setReflectionDraft(previous=>appendSpokenAnswer(previous,words,500));setError('')}}/>
-            {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             <p className={styles.hint}>{t.clarifyWhy}</p>
-            <div className={styles.chatComposer} data-coaching-composer>
-              <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
-            <textarea id="public-coaching-reflection" className={styles.questionInput} aria-describedby="public-coaching-followup-report-note" rows={3}
-              maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
-              <p className={styles.answerRetention} id="public-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>
-            </div>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <div data-public-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang}>
+              <CoachingChatThread turn={conversationTurn} locale={lang}
+                 draftPreview={quickChoices&&draft.startsWith('choice:')?answerText(draft,current,lang,t):''}>
                 <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
               </CoachingChatThread>
             </div>
-            <CoachingQuestionVoice key={'guest-question-'+current.id+'-'+lang}
-              text={[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
-              speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-              onListeningChange={active=>{setDictating(active);if(active&&customAnswerRef.current)customAnswerRef.current.open=true}}
-              onTranscript={words=>{
-                if(customAnswerRef.current)customAnswerRef.current.open=true
-                setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
-                setError('')
-              }}/>
-            {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-            <div className={styles.chatComposer} data-coaching-composer>
-            {quickChoices&&options.length>0&&!needsCustomPlan&&<>
-              <p className={styles.questionLabel}>{t.choices}</p>
-              <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
-                {options.map(option=><button type="button" key={option.id}
-                  aria-pressed={draft==='choice:'+option.id} disabled={dictating} onClick={()=>{setDraft('choice:'+option.id);if(customAnswerRef.current)customAnswerRef.current.open=false;setError('')}}>{tr(option.label,lang)}</button>)}
-              </div>
-            </>}
-            {quickChoices&&options.length>0&&!needsCustomPlan
-              ?<details key={current.id} className={styles.customAnswer} ref={customAnswerRef} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
-                <summary>{t.ownAnswer}</summary>
-                <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer} aria-describedby="public-coaching-report-note"
-                  rows={2} maxLength={800} placeholder={t.answerPlaceholder}
-                  value={draft.startsWith('choice:')?'':draft} onChange={e=>{setDraft(e.target.value);setError('')}}/>
-              </details>
-              :<>{!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>{answerText(draft,current,lang,t)}</p>}
-                <label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.openAnswer}</label>
-                <textarea id="public-coaching-answer" className={styles.questionInput} aria-describedby="public-coaching-report-note" rows={4} maxLength={800}
-                  data-public-coaching-open-reflection={!quickChoices?'true':undefined}
-                  placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
-                  onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
-              <p className={styles.answerRetention} id="public-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>
-            </div>
-            {error&&<p className={styles.alert} role="alert">{error}</p>}
+             {needsCustomPlan&&<p className={styles.hint}>{t.plan}</p>}
+             {quickChoices&&options.length>0&&!needsCustomPlan&&<div className={styles.quickReplies} data-coaching-quick-replies>
+               <span className={styles.quickReplyCaption}>{t.choices}</span>
+               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
+                 {options.map(option=><button type="button" key={option.id}
+                   aria-pressed={draft==='choice:'+option.id} disabled={dictating}
+                   onClick={()=>{setDraft('choice:'+option.id);setError('')}}>{tr(option.label,lang)}</button>)}
+               </div>
+             </div>}
+             {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>{answerText(draft,current,lang,t)}</p>}
+             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>}
         </div>
-        {!finished&&(entryStep!=='questions'||!requiresAdult||adultAcknowledged)&&<footer className={styles.sessionFooter}>
+        {!finished&&(entryStep!=='questions'||!requiresAdult||adultAcknowledged)&&<footer className={styles.sessionFooter} data-coaching-messenger-footer={entryStep==='questions'?'true':undefined}>
+          {entryStep==='questions'&&<div className={styles.messengerReply} data-coaching-composer>
+            <div className={styles.replyHeading}>
+              <label htmlFor={pendingFollowup?'public-coaching-reflection':'public-coaching-answer'}>{pendingFollowup?t.clarifyAnswer:t.openAnswer}</label>
+              <span>{lang==='ru'?'Ваше сообщение':lang==='es'?'Tu mensaje':'Your message'}</span>
+            </div>
+            {pendingFollowup
+              ?<textarea id="public-coaching-reflection" className={styles.messageInput}
+                aria-describedby="public-coaching-followup-report-note"
+                rows={2} maxLength={500} placeholder={t.answerPlaceholder}
+                value={reflectionDraft} disabled={dictating}
+                onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+              :<textarea id="public-coaching-answer" className={styles.messageInput}
+                aria-describedby="public-coaching-report-note"
+                data-public-coaching-open-reflection={!quickChoices?'true':undefined}
+                rows={2} maxLength={800} placeholder={t.answerPlaceholder}
+                value={draft.startsWith('choice:')?'':draft} disabled={dictating}
+                onChange={e=>{setDraft(e.target.value);setError('')}}/>}
+            <div className={styles.replyTools}>
+              <CoachingQuestionVoice key={(pendingFollowup?'guest-followup-':'guest-question-')+current.id+'-'+lang}
+                compact text={pendingFollowup?[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' '):[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')}
+                locale={lang} mode="answer" speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+                onListeningChange={setDictating}
+                onTranscript={words=>{
+                  if(pendingFollowup)setReflectionDraft(old=>appendSpokenAnswer(old,words,500))
+                  else setDraft(old=>appendSpokenAnswer(old.startsWith('choice:')?'':old,words))
+                  setError('')
+                }}/>
+              <details className={styles.reportDetails}>
+                <summary>{lang==='ru'?'О сохранении и PDF':lang==='es'?'Privacidad y PDF':'Privacy & PDF'}</summary>
+                {pendingFollowup
+                  ?<p id="public-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>
+                  :<p id="public-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>}
+              </details>
+            </div>
+            {dictating&&<p className={styles.dictationStatus} role="status">{t.stopMic}</p>}
+          </div>}
           <div className={styles.sessionActions}>
             <button type="button" className={styles.secondary} disabled={dictating} onClick={moveBack}>{t.previous}</button>
             {entryStep==='intro'
@@ -823,7 +824,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               ?<button type="button" className={styles.primary} disabled={!sessionTopic} onClick={()=>setEntryStep('questions')}>{t.beginQuestions}<ArrowRight size={17}/></button>
               :pendingFollowup
               ?<button type="button" className={styles.primary} disabled={dictating} onClick={()=>finishFollowup(false)}>{t.clarifySave}<ArrowRight size={17}/></button>
-              :<button type="button" className={styles.primary} disabled={dictating} onClick={()=>advance(false)}>{index===session.questions.length-1?t.finish:t.next}<ArrowRight size={17}/></button>}
+              :<button type="button" className={styles.primary} disabled={dictating} onClick={()=>advance(false)}>{index===session.questions.length-1?t.finish:(lang==='ru'?'Отправить ответ':lang==='es'?'Enviar respuesta':'Send reply')}<ArrowRight size={17}/></button>}
           </div>
           {entryStep==='questions'&&pendingFollowup&&<button type="button" className={styles.followupSkip} disabled={dictating} onClick={()=>finishFollowup(true)}>{t.clarifySkip}</button>}
            {entryStep==='questions'&&requiresAdult&&!pendingFollowup&&<button type="button" className={styles.sensitiveSkip} disabled={dictating} onClick={()=>advance(true)}>{t.skipSensitive}</button>}
