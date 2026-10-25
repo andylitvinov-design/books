@@ -32,7 +32,7 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
           const whereHero = engineName + "/" + locale + "/" + width + " hero";
           assert.equal(await hero.locator(":scope > *").count(), 3, whereHero + ": exactly three different actions");
           assert.equal(await free.getAttribute("href"), "/en/academy/principles-of-energywork/learn", whereHero + ": free learner");
-          assert.equal(await initiation.getAttribute("href"), "/" + locale + "/academy/reiki/tantra-reiki/free-initiation#apply-personal", whereHero + ": personal initiation request");
+          assert.equal(await initiation.getAttribute("href"), "#tantra-master-course", whereHero + ": personal initiation scrolls to the same-page form");
           assert.equal(await healing.getAttribute("open"), null, whereHero + ": phone capture initially closed");
           const rowGeometry = await hero.locator(":scope > *").evaluateAll((items) => items.map((item) => {
             const r = item.getBoundingClientRect();
@@ -56,6 +56,25 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
             assert.equal(await healing.getAttribute("open"), "", whereHero + ": keyboard opens healing request");
             await page.keyboard.press("Enter");
           }
+          // Do not present an extra resources dropdown on the first screen.
+          // The personal CTA must jump to the one existing bottom capture and
+          // preselect the personal option, without submitting an enquiry.
+          assert.equal(await page.locator(".tantra-course-hero__more").count(), 0, whereHero + ": extras menu removed");
+          assert.equal(await page.locator("#tantra-master-course").count(), 1, whereHero + ": single lower anchor");
+          await initiation.click();
+          await page.waitForFunction(() => {
+            const selected = document.querySelector('#tantra-next-steps button[data-selected="true"]');
+            return window.location.hash === "#tantra-master-course" &&
+              /Personal|Личная|personal/i.test(selected?.textContent || "");
+          }, null, { timeout: 6000 });
+          assert.equal(new URL(page.url()).pathname, "/" + locale + "/academy/reiki/tantra-reiki", whereHero + ": stays on this page");
+          const bottomCapture = page.locator('#tantra-next-steps[data-reiki-choice-capture="tantra"]');
+          assert.equal(await bottomCapture.count(), 1, whereHero + ": existing form reused");
+          assert.equal(await bottomCapture.locator("[data-contact-channel-chooser]").count(), 1, whereHero + ": personal contact form visible");
+          assert.ok(await bottomCapture.evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            return rect.top < innerHeight && rect.bottom > 0;
+          }), whereHero + ": anchor scrolls the lower form into view");
           const cards = page.locator("details.tantra-journey__collapsed");
           assert.equal(await cards.count(), 8, engineName + " " + locale + ": eight later levels");
           const dimensions = await cards.evaluateAll((items) =>
