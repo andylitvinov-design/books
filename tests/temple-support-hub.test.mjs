@@ -60,7 +60,7 @@ test("Holistic Support provides two main areas and six concrete choices", () => 
   assert.doesNotMatch(page, /styles\.primaryNav/);
   assert.match(styles, /\.hero\{[^}]*min-height:clamp\(440px/);
   assert.match(styles, /\.pathControls a\{[^}]*min-height:62px/);
-  assert.match(styles, /@media\(max-width:650px\)\{[^}]*\.pathControls\{grid-template-columns:1fr/);
+  assert.match(styles, /@media\(max-width:650px\)\{[\s\S]*?\.pathControls\{grid-template-columns:1fr/);
   for (const id of ["ai", "express", "master", "energy", "alchemy", "practitioner"])
     assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
   assert.doesNotMatch(page, /data-holistic-tradition|styles\.methods|methodOptions|methodPaths/);
