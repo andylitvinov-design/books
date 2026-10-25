@@ -94,7 +94,7 @@ const copy = {
       steps: [
         { title: "Choose your focus", text: "At the bottom, select situation or energy and wellbeing." },
         { title: "Leave one contact", text: "Phone number and consent for one reply via WhatsApp or Telegram." },
-        { title: "Agree a secure handoff", text: "Andrey explains how to share details privately, then provides a written reflection." },
+        { title: "Agree a secure handoff", text: "Do not send private answers or drawings via messengers. Andrey explains how to share details privately and receive a written reflection." },
       ],
       startTitle: "What would you like to explore?",
       startLead: "Select your focus and leave your phone. Do not share private details in the chat.",
@@ -197,7 +197,7 @@ const copy = {
       steps: [
         { title: "Выберите тему", text: "Внизу страницы укажите: ситуация или энергия и самочувствие." },
         { title: "Оставьте контакт", text: "Телефон и согласие на один личный ответ через WhatsApp или Telegram." },
-        { title: "Согласуйте безопасный обмен", text: "Андрей объяснит, как передать детали приватно и получить письменный разбор." },
+        { title: "Согласуйте безопасный обмен", text: "Не отправляйте личные ответы и рисунки в мессенджерах. Андрей объяснит защищённый способ передачи подробностей и получения письменного разбора." },
       ],
       startTitle: "Что хотите исследовать?",
       startLead: "Выберите направление и оставьте телефон. Личные подробности не нужны в чате.",
@@ -300,7 +300,7 @@ const copy = {
       steps: [
         { title: "Elige tu tema", text: "Al final selecciona situación o energía y bienestar." },
         { title: "Deja tu contacto", text: "Tu teléfono y el consentimiento para una respuesta por mensajería." },
-        { title: "Acuerda un envío seguro", text: "Andrey explica cómo compartir detalles de forma privada y recibir la revisión." },
+        { title: "Acuerda un envío seguro", text: "No envíes respuestas privadas ni dibujos por mensajería. Andrey explica cómo compartir detalles de forma segura y recibir la revisión." },
       ],
       startTitle: "¿Qué deseas explorar?",
       startLead: "Elige el tema y deja tu teléfono, sin datos personales por chat.",
