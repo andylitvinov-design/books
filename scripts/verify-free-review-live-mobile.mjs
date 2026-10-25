@@ -90,7 +90,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             animations: "disabled", timeout: 20000 });
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
-          assert.equal(await radios.filter({ checked: true }).count(), 1, "a single selected focus");
+          assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
           assert.equal(await enquiry.locator('[data-reiki-phone-enquiry]').count(), 1,
             "only one CRM-first contact capture");
           const reviews = main.locator("[data-review-stories]");
