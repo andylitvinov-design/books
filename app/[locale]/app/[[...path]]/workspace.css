@@ -334,7 +334,7 @@
   gap: 7px;
   font-size: 15px;
 }
-.hh-app input:not([type='checkbox']),
+.hh-app input:not([type='checkbox']):not([type='radio']),
 .hh-app select,
 .hh-app textarea {
   min-height: 46px;
