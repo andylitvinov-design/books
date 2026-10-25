@@ -1542,3 +1542,9 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .root[data-temple-mode="true"] .heroActions .diagnosticAction { font-size: 12.2px; }
   .root[data-temple-mode="true"] .heroUtility .freeTestLink { font-size: 12px; }
 }
+
+/* Holistic Support: compact second row for meditation and personal talismans. */
+[data-holistic-entry="true"] .holisticQuickLink{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:44px;border:1px solid #dcc9b6;border-radius:12px;padding:8px 10px;background:#faf1e5;color:#72513b;text-align:center;text-decoration:none;font-size:12px;font-weight:700;line-height:1.25}
+[data-holistic-entry="true"] .holisticQuickLink:hover,[data-holistic-entry="true"] .holisticQuickLink:focus-visible{border-color:#926a4e;background:#f2e5d4}
+[data-holistic-entry="true"] .holisticQuickLink span:first-child{font-size:20px;line-height:1}
+@media(max-width:350px){[data-holistic-entry="true"] .holisticQuickLink{padding:7px 5px;font-size:10.5px;gap:4px}}

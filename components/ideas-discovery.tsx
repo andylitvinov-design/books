@@ -297,6 +297,8 @@ const holisticIntro = {
     choose: "Choose how to get support",
     ask: "Get a free symbolic insight",
     energy: "Request energy support",
+    meditations: "Audio & video meditations",
+    talismans: "Talismans",
     privacyShort: "Private in this browser · How it works",
     privacy: "Your words stay in this tab. For energy support they pass only to the next page in temporary memory, not in a URL, cookie or analytics. You review any request before choosing to send it.",
   },
@@ -309,6 +311,8 @@ const holisticIntro = {
     choose: "Выберите вид поддержки",
     ask: "Получить бесплатную подсказку",
     energy: "Получить энергетическую поддержку",
+    meditations: "Аудио- и видеомедитации",
+    talismans: "Талисманы",
     privacyShort: "Приватно в браузере · Как это работает",
     privacy: "Ваши слова остаются в этой вкладке. При выборе энергетической поддержки они передаются только на следующую страницу во временной памяти, без URL, cookies и аналитики. Заявка отправляется только после вашего согласия.",
   },
@@ -321,6 +325,8 @@ const holisticIntro = {
     choose: "Elige tu tipo de apoyo",
     ask: "Recibir una reflexión gratuita",
     energy: "Solicitar apoyo energético",
+    meditations: "Meditaciones de audio y vídeo",
+    talismans: "Talismanes",
     privacyShort: "Privado en este navegador · Cómo funciona",
     privacy: "Tus palabras permanecen en esta pestaña. Si eliges apoyo energético se transfieren a la página siguiente solo en memoria temporal, nunca en la URL, cookies ni analítica. Revisarás la solicitud antes de enviarla.",
   },
@@ -711,6 +717,14 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           <span>{holisticIntro[locale].energy}</span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link> : null}
+        {isHolistic ? <>
+          <Link href="#meditation-practices" className={styles.holisticQuickLink} data-ideas-meditations>
+            <span aria-hidden="true">☀</span><span>{holisticIntro[locale].meditations}</span>
+          </Link>
+          <Link href="#talismans" className={styles.holisticQuickLink} data-ideas-talismans>
+            <span aria-hidden="true">◇</span><span>{holisticIntro[locale].talismans}</span>
+          </Link>
+        </> : null}
       </div>
       {!isTemple ? <nav className={styles.exploreLinks} aria-label={t.exploreMore} data-ideas-explore>
         <Link href={coachingHref} prefetch={false} className={styles.exploreLink}
