@@ -130,4 +130,9 @@ test('webhook still exclusively validates signed Telegram, preserves audio and c
   assert.match(code,/receiveOwnerAiTelegramWebhook/)
   assert.match(code,/receiveClientTelegramWebhook/)
   assert.match(code,/maxDuration=120/)
+  assert.match(code,/NextResponse,after/)
+  assert.match(code,/after\(async\(\)=>/)
+  assert.ok(code.indexOf('verifyClientTelegramSecret')<code.indexOf('parseOwnerAiUpdate(update)'))
+  assert.ok(code.indexOf('receiveOwnerTelegramAudioWebhook(config,update)')<
+    code.indexOf('parseOwnerAiUpdate(update)'))
 })
