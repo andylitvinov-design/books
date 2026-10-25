@@ -220,7 +220,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   if(!title){setError(t.enterTitle);return}
   setBusy(true);setError('');setMessage('')
   try{
-   const course={title,description:'',locale:newLocale,slides:[isMeditation?{...makeSlide(),kind:meditationType}:makeSlide()]}
+   const course={title,description:'',locale:newLocale,contentType:isMeditation?meditationType+'_meditation':'course',slides:[isMeditation?{...makeSlide(),kind:meditationType}:makeSlide()]}
    const {item}=await api({action:'create',course})
    applyItem(item);setMessage(t.saved)
   }catch(e){setError(e.message||t.createError)}
