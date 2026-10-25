@@ -5543,3 +5543,17 @@
 @media (prefers-reduced-motion: reduce) {
   .page[data-reiki-cover="true"] .welcomeGift summary svg:last-child { transition: none; }
 }
+
+
+/* Keep the verified donation receipt full-width without squashing the course completion badge. */
+.page[data-reiki-reviews="v4"] .finalReceipt:has([data-reiki-donation-checkout]) {
+  display:grid;grid-template-columns:32px minmax(0,1fr);align-items:start;
+}
+.page[data-reiki-reviews="v4"] .finalReceipt [data-reiki-donation-checkout] {
+  grid-column:1 / -1;width:100%;min-width:0;margin-top:4px;
+}
+@media (max-width:430px) {
+  .page[data-reiki-reviews="v4"] .finalReceipt:has([data-reiki-donation-checkout]) {
+    grid-template-columns:28px minmax(0,1fr);
+  }
+}
