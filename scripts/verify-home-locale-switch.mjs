@@ -103,7 +103,7 @@ async function verifyFreeOffers(page, locale, engine, width) {
     assert.ok(size.height >= 46 && size.font >= 14, 'Small ' + locale + ' ' + id + ' CTA: ' + JSON.stringify(size));
   }
   const captureAfterServices = await capture.evaluate(element => {
-    const services = document.querySelector('[data-core-service-offers="home"]');
+    const services = document.querySelector('[data-home-featured-workspace]');
     return services && (services.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
   });
   assert.equal(captureAfterServices, true, 'Free chooser must be in the bottom capture after the existing service cards');
@@ -271,18 +271,21 @@ async function exercise(engine, browserType, width) {
     assert.deepEqual(errors, []);
     phase = 'visual';
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
-    const offers = page.locator('[data-core-service-offers="home"]');
+    const offers = page.locator('[data-home-featured-workspace]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
     await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
     const bottomFree = page.locator('[data-home-contact-capture] [data-home-free-capture]');
     await expect(bottomFree).toHaveCount(1);
     assert.deepEqual(await bottomFree.locator('[data-home-free-option]').evaluateAll(buttons => buttons.map(button => button.dataset.homeFreeOption)), ['selfTest', 'analysis', 'reiki']);
     await expect(bottomFree.locator('a[data-home-free-action="selfTest"]')).toHaveAttribute('href', '/en/client/tests');
-    await expect(offers.locator('[data-core-service-id]')).toHaveCount(4);
-    for (const id of ['situation', 'dao', 'alchemy', 'hypnotherapy']) {
-      await expect(offers.locator('[data-core-service-id="' + id + '"]')).toHaveCount(1);
+    const modules = offers.locator('[data-home-module]');
+    await expect(modules).toHaveCount(7);
+    assert.deepEqual(await modules.evaluateAll(items => items.map(item => item.dataset.homeModule)), ['courses', 'personality', 'situation', 'coaching', 'alchemy', 'energy', 'master']);
+    await expect(offers.locator('[data-home-offer-card]')).toHaveCount(14);
+    for (const id of ['reiki', 'review', 'aiCoaching', 'therapist']) {
+      await expect(offers.locator('[data-home-offer-card="' + id + '"]')).toHaveCount(1);
     }
-    const firstOfferPhoto = offers.locator('[data-core-service-id="situation"] img');
+    const firstOfferPhoto = offers.locator('[data-home-offer-card="review"] img');
     await firstOfferPhoto.scrollIntoViewIfNeeded();
     await expect.poll(() => firstOfferPhoto.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     await expect(page.locator('[data-home-contact-capture]')).toHaveCount(1);
@@ -300,13 +303,14 @@ async function exercise(engine, browserType, width) {
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     const measurements = await page.evaluate(() => {
       const bounds = selector => document.querySelector(selector)?.getBoundingClientRect();
-      const first = bounds('[data-core-service-id="situation"]');
-      const photo = bounds('[data-core-service-id="situation"] img');
+      const first = bounds('[data-home-offer-card="review"]');
+      const photo = bounds('[data-home-offer-card="review"] img');
       const portrait = bounds('.service-home-about__image');
       const contact = bounds('[data-home-contact-capture]');
       const frame = document.querySelector('[data-home-contact-capture]');
       return {
-        cardCount: document.querySelectorAll('[data-core-service-offers="home"] [data-core-service-id]').length,
+        moduleCount: document.querySelectorAll('[data-home-featured-workspace] [data-home-module]').length,
+        cardCount: document.querySelectorAll('[data-home-featured-workspace] [data-home-offer-card]').length,
         overflow: document.documentElement.scrollWidth - innerWidth,
         featuredCardWidth: first?.width,
         featuredPhotoWidth: photo?.width,
@@ -319,7 +323,8 @@ async function exercise(engine, browserType, width) {
         contactBackground: frame && getComputedStyle(frame.querySelector('[data-consultation-capture="home-free"]')).backgroundImage,
       };
     });
-    assert.equal(measurements.cardCount, 4, 'Home must show all four restored image-left cards');
+    assert.equal(measurements.moduleCount, 7, 'Home must render all seven journey modules');
+    assert.equal(measurements.cardCount, 14, 'Home must render all fourteen journey cards');
     assert.ok(measurements.overflow <= 2, 'Homepage causes horizontal scroll: ' + JSON.stringify(measurements));
     assert.ok(measurements.featuredCardWidth > (width === 390 ? 250 : 200), 'First offer card is too narrow: ' + JSON.stringify(measurements));
     assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 95, 'Featured service image is tiny or hidden: ' + JSON.stringify(measurements));
