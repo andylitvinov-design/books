@@ -151,7 +151,8 @@ export async function middleware(request: NextRequest) {
   // Public-only master marketing images. Never grant the private client media
   // origin to unrelated Account, client report, admin, or API pages.
   const listingImageOrigin = (() => {
-    if(!/^\/(en|ru|es)\/(app\/practice(?:\/|$)|masters(?:\/|$)|services(?:\/|$))/.test(pathname))return ''
+    if(!(/^\/(en|ru|es)\/(app\/practice(?:\/|$)|masters(?:\/|$)|m\/[a-z0-9-]{3,24}\/?$|services(?:\/|$))/.test(pathname) ||
+      /^\/m\/[a-z0-9-]{3,24}\/?$/.test(pathname)))return ''
     try{
       const url=new URL(process.env.HH_APP_SUPABASE_URL||'')
       return url.protocol==='https:'&&url.hostname.endsWith('.supabase.co')?' '+url.origin:''

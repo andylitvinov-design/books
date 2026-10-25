@@ -1,21 +1,30 @@
 'use client'
 import {useState} from 'react'
-import type {VideoPresentation} from '@/lib/practitioners/public-types'
+import type {VideoPresentation,ServiceIntroduction} from '@/lib/practitioners/public-types'
 import styles from './practitioner-presentation-video.module.css'
 
 const labels={
- en:{title:'Video introduction',service:'Watch this service explained',watch:'Watch video',note:'This is a public presentation.'},
- ru:{title:'Знакомство с мастером',service:'Видео об услуге',watch:'Смотреть видео',note:'Публичная видеопрезентация.'},
- es:{title:'Presentación del profesional',service:'Vídeo sobre este servicio',watch:'Ver vídeo',note:'Vídeo de presentación público.'}
+ en:{title:'Video introduction',service:'Watch this service explained',watch:'Watch video',listen:'Listen to audio',note:'This is a public presentation.'},
+ ru:{title:'Знакомство с мастером',service:'Видео об услуге',watch:'Смотреть видео',listen:'Слушать аудио',note:'Публичная видеопрезентация.'},
+ es:{title:'Presentación del profesional',service:'Vídeo sobre este servicio',watch:'Ver vídeo',listen:'Escuchar audio',note:'Vídeo de presentación público.'}
 }
-export default function PractitionerPresentationVideo({video,locale='en',service=false,playbackUrl=''}:{
- video?:VideoPresentation|null,locale?:string,service?:boolean,playbackUrl?:string
+type Preview=ServiceIntroduction & {playbackUrl:string}
+const languageNames={en:'English',ru:'Русский',es:'Español'}
+export default function PractitionerPresentationVideo({video,locale='en',service=false,playbackUrl='',introductions=[]}:{
+ video?:VideoPresentation|null,locale?:string,service?:boolean,playbackUrl?:string,introductions?:Preview[]
 }){
  const [playing,setPlaying]=useState(false)
- if(!video)return null
+ const [selectedLanguage,setSelectedLanguage]=useState(locale)
+ const fallbacks:Preview[]=video?[{language:(locale in languageNames?locale:'en') as 'en'|'ru'|'es',
+   type:'video',media:video,playbackUrl}]:[]
+ const available=introductions.length?introductions:fallbacks
+ if(!available.length)return null
+ const active=available.find(item=>item.language===selectedLanguage)||available[0]
+ const media=active.media
+ const isAudio=active.type==='audio'
  const t=labels[locale as keyof typeof labels]||labels.en
- const isExternal=video.kind==='external'
- const url=isExternal?video.url:playbackUrl
+ const isExternal=media.kind==='external'
+ const url=isExternal?media.url:active.playbackUrl
  if(!url)return null
  let embedUrl='',posterUrl=''
  if(isExternal){
@@ -31,15 +40,20 @@ export default function PractitionerPresentationVideo({video,locale='en',service
    embedUrl='https://player.vimeo.com/video/'+id+'?autoplay=1&dnt=1'
   }else return null
  }
- return <section className={styles.section} aria-label={service?t.service:t.title}>
-   <div className={styles.heading}><span className={styles.eyebrow}>Holistic House · Video</span>
+ return <section id={service?'service-introduction':undefined} className={service?styles.section+' '+styles.inService:styles.section} aria-label={service?t.service:t.title} data-service-introduction={service||undefined}>
+   <div className={styles.heading}><span className={styles.eyebrow}>Holistic House · {isAudio?'Audio':'Video'} · {languageNames[active.language]}</span>
      <h2>{service?t.service:t.title}</h2></div>
-   <div className={styles.screen}>
+   {available.length>1&&<nav className={styles.languages} aria-label={locale==='ru'?'Язык обращения':locale==='es'?'Idioma del mensaje':'Message language'}>
+     {available.map(item=><button type="button" key={item.language}
+       aria-pressed={active.language===item.language} onClick={()=>{setSelectedLanguage(item.language);setPlaying(false)}}>
+       {languageNames[item.language]} · {item.type==='audio'?'♫':'▶'}</button>)}</nav>}
+   <div className={isAudio?styles.screen+' '+styles.audioScreen:styles.screen}>
      {!playing?<button type="button" className={styles.poster} onClick={()=>setPlaying(true)}
        style={posterUrl?{backgroundImage:`linear-gradient(0deg,rgba(6,23,40,.65),rgba(6,23,40,.18)),url("${posterUrl}")`}:undefined}
-       aria-label={t.watch}>
-       <span className={styles.play} aria-hidden="true">▶</span><span>{t.watch}</span>
-     </button>:isExternal?<iframe src={embedUrl} className={styles.player} allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+       aria-label={isAudio?t.listen:t.watch}>
+       <span className={styles.play} aria-hidden="true">{isAudio?'♫':'▶'}</span><span>{isAudio?t.listen:t.watch}</span>
+     </button>:isAudio?<div className={styles.audioPlayer}><audio controls autoPlay preload="metadata" src={url} aria-label={t.listen}/></div>
+       :isExternal?<iframe src={embedUrl} className={styles.player} allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
        title={service?t.service:t.title} referrerPolicy="strict-origin-when-cross-origin" loading="eager" allowFullScreen/>
        :<video src={url} controls autoPlay playsInline preload="metadata" className={styles.player}
          aria-label={service?t.service:t.title}/>}

@@ -59,8 +59,32 @@ const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
-export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',startCreate=false,onOpenYoutube=null}){
- const t=translations[locale]||translations.en
+export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',startCreate=false,meditationType='',onOpenYoutube=null}){
+ const base=translations[locale]||translations.en
+ const isMeditation=meditationType==='audio'||meditationType==='video'
+ const meditationCopy=locale==='ru'?{
+   heading:meditationType==='audio'?'Аудиомедитация':'Видеомедитация',
+   sub:'Создайте черновик, добавьте запись и опубликуйте после одобрения профиля.',
+   new:'Новая медитация',startTitle:'Как называется ваша медитация?',
+   startHint:meditationType==='audio'?'Сначала название, затем можно записать голос или загрузить аудиофайл.':'Сначала название, затем загрузите видео или добавьте ссылку.',
+   startExample:meditationType==='audio'?'Например, Подкачка солнца':'Например, Полёт к солнцу',
+   createNow:'Создать черновик медитации',
+ }:locale==='es'?{
+   heading:meditationType==='audio'?'Meditación en audio':'Meditación en vídeo',
+   sub:'Crea el borrador, añade la grabación y publica tras la aprobación de tu perfil.',
+   new:'Nueva meditación',startTitle:'¿Cómo se llama tu meditación?',
+   startHint:meditationType==='audio'?'Escribe el título y después graba o sube el audio.':'Escribe el título y después sube un vídeo o añade un enlace.',
+   startExample:meditationType==='audio'?'Por ejemplo, Energía del sol':'Por ejemplo, Vuelo hacia el sol',
+   createNow:'Crear borrador de meditación',
+ }:{
+   heading:meditationType==='audio'?'Audio meditation':'Video meditation',
+   sub:'Create a draft, attach your recording and publish after your profile is approved.',
+   new:'New meditation',startTitle:'What is your meditation called?',
+   startHint:meditationType==='audio'?'Start with a title. Then record your voice or upload audio.':'Start with a title. Then upload a video or add a link.',
+   startExample:meditationType==='audio'?'e.g. A moment of sunshine':'e.g. Flight to the Sun',
+   createNow:'Create meditation draft',
+ }
+ const t=isMeditation?{...base,...meditationCopy}:base
  const api=body=>request(body,accountId)
  const [items,setItems]=useState([])
  const [selected,setSelected]=useState(null)
@@ -196,7 +220,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   if(!title){setError(t.enterTitle);return}
   setBusy(true);setError('');setMessage('')
   try{
-   const course={title,description:'',locale:newLocale,slides:[makeSlide()]}
+   const course={title,description:'',locale:newLocale,contentType:isMeditation?meditationType+'_meditation':'course',slides:[isMeditation?{...makeSlide(),kind:meditationType}:makeSlide()]}
    const {item}=await api({action:'create',course})
    applyItem(item);setMessage(t.saved)
   }catch(e){setError(e.message||t.createError)}
