@@ -1,0 +1,5 @@
+.root{border:1px solid #e2ccb9;border-radius:15px;background:#fff8ef;color:#503b31;padding:14px;margin:13px 0}
+.root h3{font:750 17px/1.4 system-ui,sans-serif;margin:0 0 6px}.root p{font:400 12px/1.5 system-ui,sans-serif;margin:0 0 9px;color:#756052}
+.root ol{padding:0;margin:0;list-style:none;display:grid;gap:8px}.root li{border-radius:9px;border:1px solid #e7d6c8;padding:10px;background:white;display:grid;gap:4px;word-break:break-word}
+.root strong{font:750 13px/1.4 system-ui,sans-serif}.root small{font:450 11px/1.4 system-ui,sans-serif;color:#80695d}
+@media(max-width:430px){.root{padding:11px}}
