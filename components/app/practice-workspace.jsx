@@ -249,8 +249,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   }
   useEffect(()=>{
     if(!data?.practiceActivated||!creationGoal)return
-    if(creationGoal==='service')addService()
-    else startMeditation(creationGoal)
+    // Registration already creates the first service; do not open a duplicate draft.
+    if(creationGoal==='service'){
+      if(!data.services?.length)addService()
+    } else startMeditation(creationGoal)
     setCreationGoal('')
   },[data?.practiceActivated,creationGoal])
   const marketingTools=[
