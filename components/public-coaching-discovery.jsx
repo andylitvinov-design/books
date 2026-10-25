@@ -19,7 +19,7 @@ import { coachingArt, coachingSchemeArt, traditionCoachingArt, coachingWorksheet
 import CoachingLiveSessionCapture from '@/components/coaching-live-session-capture'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
-import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
+import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, COACHING_CATALOG_GROUPS, coachingCatalogGroupId, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
 import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
 
@@ -43,7 +43,7 @@ const copy={
     format:'How would you like support?',allFormats:'Compare both',self:'Try it free',human:'With Andrey',filters:'Find a session',
     topic:'Topic',allTopics:'All topics',duration:'Time I have',anyTime:'Any length',
     style:'Session depth',allStyles:'Any depth',quick:'Practical',reflective:'Reflective',anyShort:'Any',upTo:'Up to',
-    models:'Choose a session',all:'All coaching sessions',recommended:'Suggested for your question',
+    models:'Choose a session',showMoreSessions:'Show more sessions',showFewerSessions:'Show fewer',imageryGroupTitle:'Imagery sessions',imageryGroupNote:'Egyptian and Greek symbolic journeys for reflecting on your question.',all:'All coaching sessions',recommended:'Suggested for your question',
     noExact:'No specific match found. You can choose any model below.',
     empty:'No models match these filters. Try a different topic or duration.',
     unavailable:'Coaching models are temporarily unavailable. You can still request a personal session.',
@@ -91,7 +91,7 @@ const copy={
     format:'Как вам удобнее работать?',allFormats:'Оба варианта',self:'Самостоятельно',human:'С Андреем',filters:'Подобрать сессию',
     topic:'Тема',allTopics:'Все темы',duration:'Сколько времени',anyTime:'Любая',
     style:'Глубина работы',allStyles:'Любая',quick:'Практичная',reflective:'Рефлексия',anyShort:'Любое',upTo:'До',
-    models:'Выберите сессию',all:'Все коуч-сессии',recommended:'Рекомендуем по вашему вопросу',
+    models:'Выберите сессию',showMoreSessions:'Показать ещё сессии',showFewerSessions:'Свернуть',imageryGroupTitle:'Образные сессии',imageryGroupNote:'Египетское и греческое планирование через образы и символы.',all:'Все коуч-сессии',recommended:'Рекомендуем по вашему вопросу',
     noExact:'Точного совпадения нет. Выберите подходящую модель самостоятельно.',
     empty:'Нет моделей с такими фильтрами. Измените тему или длительность.',
     unavailable:'Каталог моделей временно недоступен. Можно запросить личную сессию.',
@@ -139,7 +139,7 @@ const copy={
     format:'¿Cómo quieres trabajar?',allFormats:'Ambas opciones',self:'Por mi cuenta',human:'Con Andrey',filters:'Encontrar sesión',
     topic:'Tema',allTopics:'Todos los temas',duration:'Tiempo disponible',anyTime:'Sin límite',
     style:'Profundidad',allStyles:'Cualquiera',quick:'Práctica',reflective:'Reflexiva',anyShort:'Cualquiera',upTo:'Hasta',
-    models:'Elige una sesión',all:'Todas las sesiones de coaching',recommended:'Sugeridos para tu pregunta',
+    models:'Elige una sesión',showMoreSessions:'Ver más sesiones',showFewerSessions:'Mostrar menos',imageryGroupTitle:'Sesiones con imágenes',imageryGroupNote:'Planificación simbólica egipcia y griega para explorar tu pregunta.',all:'Todas las sesiones de coaching',recommended:'Sugeridos para tu pregunta',
     noExact:'No hay una coincidencia específica. Puedes elegir cualquier modelo.',
     empty:'No hay modelos con esos filtros. Cambia el tema o la duración.',
     unavailable:'El catálogo no está disponible temporalmente. Puedes solicitar una sesión personal.',
@@ -255,6 +255,33 @@ function CoachingLoungeCard({
   </article>
 }
 
+function CoachingCatalogGroup({group,items,locale,renderCard}){
+  const [limit,setLimit]=useState(3)
+  const t=copy[locale]
+  if(!items.length)return null
+  const remaining=Math.max(0,items.length-limit)
+  return <section className={styles.modelGroup} data-coaching-category={group.id}
+    aria-labelledby={'coaching-category-'+group.id}>
+    <header className={styles.modelGroupHeader}>
+      <div className={styles.modelGroupHeading}>
+        <h3 id={'coaching-category-'+group.id}>{tr(group.label,locale)}</h3>
+        <p>{tr(group.hint,locale)}</p>
+      </div>
+      <span className={styles.modelGroupCount} aria-label={t.groupCount}>{items.length}</span>
+    </header>
+    <div className={styles.cards}>{items.slice(0,limit).map(renderCard)}</div>
+    {remaining>0
+      ?<button type="button" className={styles.modelGroupMore}
+          aria-label={t.showMoreSessions+' · '+tr(group.label,locale)}
+          onClick={()=>setLimit(count=>Math.min(items.length,count+3))}>
+        {t.showMoreSessions} <span>+{Math.min(3,remaining)}</span><ChevronDown size={17} aria-hidden="true"/>
+      </button>
+      :limit>3&&<button type="button" className={styles.modelGroupMore} onClick={()=>setLimit(3)}>
+        {t.showFewerSessions}<ChevronDown size={17} className={styles.chevronOpen} aria-hidden="true"/>
+      </button>}
+  </section>
+}
+
 export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const privateCoachingLocale=lang==='es'?'en':lang
@@ -351,6 +378,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const suggestionKeys=useMemo(()=>new Set(question.trim().length>=8&&recommendation.recognized?recommendation.suggestions.filter(s=>s.matchedTags.length>0).map(s=>s.schemeKey):[]),[question,recommendation])
   const shown=useMemo(()=>schemes.filter(s=>coachingSchemeMatchesSessionMode(s,sessionMode)&&coachingSchemeInGroup(s,topicGroup)&&(topic==='all'||s.tags?.includes(topic))&&(duration===0||s.minutes<=duration)&&(style==='all'||s.style===style))
     .sort((a,b)=>Number(suggestionKeys.has(b.schemeKey))-Number(suggestionKeys.has(a.schemeKey))||outcomeScore(b,outcome,topicGroup)-outcomeScore(a,outcome,topicGroup)||a.minutes-b.minutes||a.schemeKey.localeCompare(b.schemeKey)),[schemes,sessionMode,topicGroup,topic,duration,style,outcome,suggestionKeys])
+  const useGroupedCatalog=format==='all'&&sessionMode==='all'&&topicGroup==='all'&&topic==='all'&&duration===0&&style==='all'&&!outcome&&!question.trim()&&shown.length>6
   const shownTraditions=useMemo(()=>{
     if(sessionMode==='express'||sessionMode==='extended')return []
     if(sessionMode==='imagery')return Object.keys(traditionFit)
@@ -491,6 +519,23 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     try{await navigator.clipboard.writeText(summaryText());setCopied(true);setCopyError(false)}
     catch{setCopyError(true)}
   }
+  const renderSchemeCard=s=>{
+    const model=models.get(s.modelKey)
+    return <CoachingLoungeCard key={s.schemeKey} locale={lang} id={s.schemeKey}
+      title={coachingSessionTitle(s.schemeKey,lang,tr(s.name,lang)||tr(model.name,lang))}
+      meta={(s.style==='quick'?t.quick:t.reflective)+' · '+s.minutes+' '+t.minutes}
+      price="€0" image={coachingSchemeArt[s.schemeKey]||coachingArt[s.modelKey]||coachingArt.grow_v1}
+      description={coachingSessionSummary(s.schemeKey,lang,tr(model.selectionComment,lang)||tr(model.focus,lang))}
+      method={tr(model.name,lang)} detail={tr(model.focus,lang)}
+      outcome={tr(s.result,lang)} caution={tr(model.caution,lang)}
+      examples={model.exampleQuestions?.[lang]||model.exampleQuestions?.en||[]}
+      suggested={suggestionKeys.has(s.schemeKey)||outcomeScore(s,outcome,topicGroup)>0}
+      suggestionLabel={suggestionKeys.has(s.schemeKey)?t.recommendedLabel:t.outcomeFitLabel}
+      schemeKey={s.schemeKey} primaryLabel={t.start}
+      onPrimary={()=>start(s)}
+      onLanding={()=>stageIdeasCoachingQuestion(question)}
+      landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
+  }
   return <main ref={rootRef} className={styles.root} data-public-coaching data-public-coaching-active={session?'true':undefined} lang={lang}>
     <div className={styles.wrap}>
       {!session?<>
@@ -600,32 +645,18 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           {recommendation.blocked?<p className={styles.alert} role="alert">{t.alert}</p>:
             !catalog?<p className={styles.alert} role="status">{t.unavailable}</p>:
             shown.length===0?<div className={styles.alert} role="status"><p>{t.empty}</p><button type="button" onClick={()=>selectSessionMode('all')}>{t.showAllModes}</button></div>:
-            <div className={styles.cards} data-public-coaching-models>
-              {shown.map(s=>{
-                const model=models.get(s.modelKey)
-                return <CoachingLoungeCard key={s.schemeKey} locale={lang} id={s.schemeKey}
-                  title={coachingSessionTitle(s.schemeKey,lang,tr(s.name,lang)||tr(model.name,lang))}
-                  meta={(s.style==='quick'?t.quick:t.reflective)+' · '+s.minutes+' '+t.minutes}
-                  price="€0" image={coachingSchemeArt[s.schemeKey]||coachingArt[s.modelKey]||coachingArt.grow_v1}
-                  description={coachingSessionSummary(s.schemeKey,lang,tr(model.selectionComment,lang)||tr(model.focus,lang))}
-                  method={tr(model.name,lang)}
-                  detail={tr(model.focus,lang)}
-                  outcome={tr(s.result,lang)}
-                  caution={tr(model.caution,lang)}
-                  examples={model.exampleQuestions?.[lang]||model.exampleQuestions?.en||[]}
-                  suggested={suggestionKeys.has(s.schemeKey)||outcomeScore(s,outcome,topicGroup)>0}
-                   suggestionLabel={suggestionKeys.has(s.schemeKey)?t.recommendedLabel:t.outcomeFitLabel}
-                  schemeKey={s.schemeKey} primaryLabel={t.start}
-                  onPrimary={()=>start(s)}
-                  onLanding={()=>stageIdeasCoachingQuestion(question)}
-                  landingHref={'/'+lang+'/coaching/session/'+s.schemeKey}/>
-              })}
-            </div>}
+            useGroupedCatalog
+              ? <div className={styles.modelGroups} data-public-coaching-models>
+                  {COACHING_CATALOG_GROUPS.map(group=><CoachingCatalogGroup key={group.id} group={group} locale={lang}
+                    items={shown.filter(s=>coachingCatalogGroupId(s)===group.id).sort((a,b)=>Number(coachingSchemeRequiresAdultConsent(a))-Number(coachingSchemeRequiresAdultConsent(b)))}
+                    renderCard={renderSchemeCard}/>)}
+                </div>
+              : <div className={styles.cards} data-public-coaching-models>{shown.map(s=>renderSchemeCard(s))}</div>}
           <p className={styles.disclaimer}>{t.safe}</p>
         </section>}
         {format!=='human'&&!recommendation.blocked&&(sessionMode==='imagery'||sessionMode==='all'&&(topicGroup==='all'||topicGroup==='growth'||topicGroup==='business'))&&<section className={styles.morePaths} aria-labelledby="coaching-more-paths">
-          <h2 id="coaching-more-paths">{sessionMode==='imagery'?t.imageryTitle:t.otherWays}</h2>
-          <p>{sessionMode==='imagery'?t.imageryNote:t.otherWaysNote}</p>
+          <h2 id="coaching-more-paths">{sessionMode==='imagery'?t.imageryTitle:useGroupedCatalog?t.imageryGroupTitle:t.otherWays}</h2>
+          <p>{sessionMode==='imagery'?t.imageryNote:useGroupedCatalog?t.imageryGroupNote:t.otherWaysNote}</p>
           {sessionMode==='imagery'&&<aside className={styles.imageryPractice} data-coaching-imagery-practice><strong>{t.imageryPracticeTitle}</strong><p>{t.imageryPractice}</p></aside>}
           <div className={styles.morePathGrid}>
             {shownTraditions.includes('egyptian')&&<CoachingLoungeCard
@@ -644,13 +675,18 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               suggested={suggestedTraditions.has('greek')}
               primaryHref={traditionHref('greek')} primaryLabel={t.chooseTradition}
               landingHref={'/'+lang+'/academy/coaching/greek'}/>}
-            {sessionMode!=='imagery'&&(topicGroup==='all'||topicGroup==='growth')&&<CoachingLoungeCard key="worksheet" locale={lang} id="worksheet"
+            {sessionMode!=='imagery'&&!useGroupedCatalog&&(topicGroup==='all'||topicGroup==='growth')&&<CoachingLoungeCard key="worksheet" locale={lang} id="worksheet"
               title={t.worksheet} meta={t.freeMeta} price="€0"
               image={coachingWorksheetArt} description={t.worksheetNote}
               detail={t.worksheetNote}
               primaryHref={'/'+lang+'/coaching/intake'} primaryLabel={t.openWorksheet}
               landingHref={'/'+lang+'/coaching/intake'}/>}
           </div>
+          {useGroupedCatalog&&<p className={styles.modelGroupWorksheet}>
+            <Link href={'/'+lang+'/coaching/intake'} prefetch={false}>
+              {t.worksheet} · {t.openWorksheet}<ArrowRight size={14} aria-hidden="true"/>
+            </Link>
+          </p>}
         </section>}
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title" data-coaching-session-capture>
           <div className={styles.coachFit} data-coaching-practitioner-checklist>
