@@ -15,7 +15,7 @@ Production integration target: `codex/public-book-library`, `holistichouse.verce
 ## Architecture
 
 - Pure validation: `data/academy/reiki-donation-model.js`.
-- New **separate financial ledger**, not duplicate CRM contact: `app_private.reiki_donation_orders`, schema `supabase/migrations/20261025130000_hh_reiki_donation_manual_receipts.sql`.
+- New **separate financial ledger**, not duplicate CRM contact: `app_private.reiki_donation_orders`, schema `supabase/migrations/20261025122852_hh_reiki_donation_manual_receipts_20261025.sql`.
 - Strict `ENABLE/FORCE RLS`; student backend can insert own pending and submit own claim, **cannot update paid columns**. `hh_app_inbox` has read and specific paid columns only under practitioner-id scope. No public, anon, authenticated or service-role access.
 - Service: `lib/academy/reiki-donation-orders.js`, using existing `transaction`, verified Google account context, opt-in application encryption and PayPal.Me payee.
 - Learner private API: `/api/app/reiki-donations` GET status, POST `create|claim`; same-origin CSRF, verified authentication, rate limits, private no-store response.
