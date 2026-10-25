@@ -1,0 +1,117 @@
+"use client";
+
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useState, type ReactNode } from "react";
+import { CheckCircle2, HeartPulse, MessageCircle, ShieldCheck } from "lucide-react";
+
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import type { PublicLocale } from "@/lib/public-locales";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
+import styles from "./personal-express-enquiry.module.css";
+
+type Focus = "situation" | "energy";
+const copy = {
+  en: {
+    label: "04 / PERSONAL REQUEST",
+    title: "Ask Andrey for your free express review",
+    lead: "One personal written review. Choose what your question is about; the service stays the same.",
+    legend: "What is your request about?",
+    areas: {
+      situation: { title: "My situation", hint: "A decision, relationship, work or something that feels stuck.", tag: "Situation" },
+      energy: { title: "Energy & health", hint: "Your energy, wellbeing and everyday resources — not a medical diagnosis.", tag: "Energy and wellbeing" },
+    },
+    step: "Leave your phone and agree to one personal reply, then choose a messenger. No payment or appointment is required for the initial written review.",
+    privacy: "Please do not include symptoms, diagnoses, reports or private drawings here or in the chat. Andrey can agree a secure way to review details later.",
+    service: "Free personal express review",
+    request: "I would like a free personal express review. Please tell me how to continue securely.",
+    note: "Submitting saves a consented contact request in Holistic House CRM. WhatsApp and Telegram open a draft that you must send yourself; a chat opening is not a confirmed consultation.",
+    alt: "Andrey Litvinov",
+  },
+  ru: {
+    label: "04 / ЛИЧНАЯ ЗАЯВКА",
+    title: "Запросить бесплатную экспресс-диагностику",
+    lead: "Один личный письменный разбор. Выберите тему обращения — это не разные услуги.",
+    legend: "С чем связан ваш запрос?",
+    areas: {
+      situation: { title: "По ситуации", hint: "Решение, отношения, работа или вопрос, в котором вы застряли.", tag: "Ситуация" },
+      energy: { title: "По энергии и здоровью", hint: "Самочувствие, энергия и ресурсы — без медицинской диагностики.", tag: "Энергия и самочувствие" },
+    },
+    step: "Оставьте телефон, согласитесь на один личный ответ и выберите мессенджер. Первичный письменный разбор — без оплаты и без записи на звонок.",
+    privacy: "Не отправляйте здесь и в чат симптомы, диагнозы, анализы или личные рисунки. При необходимости Андрей согласует защищённую передачу информации.",
+    service: "Бесплатная личная экспресс-диагностика",
+    request: "Хочу получить бесплатный личный экспресс-разбор. Подскажите, как безопасно продолжить.",
+    note: "После согласия контактная заявка сохраняется в CRM. В WhatsApp или Telegram откроется черновик: нажать «Отправить» нужно самостоятельно. Заявка не подтверждает запись.",
+    alt: "Андрей Литвинов",
+  },
+  es: {
+    label: "04 / SOLICITUD PERSONAL",
+    title: "Solicita tu revisión personal exprés gratuita",
+    lead: "Una sola revisión personal escrita. Elige el tema de tu pregunta, no un servicio diferente.",
+    legend: "¿Sobre qué es tu consulta?",
+    areas: {
+      situation: { title: "Mi situación", hint: "Decisiones, relaciones, trabajo o algo que te bloquea.", tag: "Situación" },
+      energy: { title: "Energía y salud", hint: "Bienestar y recursos personales, sin diagnóstico médico.", tag: "Energía y bienestar" },
+    },
+    step: "Deja tu teléfono, acepta una respuesta personal y elige mensajería. La revisión inicial escrita no requiere pago ni cita.",
+    privacy: "No compartas síntomas, diagnósticos, informes ni dibujos privados aquí ni por chat. Andrey puede acordar un intercambio seguro más adelante.",
+    service: "Revisión personal exprés gratuita",
+    request: "Quisiera solicitar una revisión personal exprés gratuita. Indícame cómo continuar de forma segura.",
+    note: "La solicitud con consentimiento se guarda en el CRM. WhatsApp o Telegram solo abre un borrador que debes enviar tú; no confirma una cita.",
+    alt: "Andrey Litvinov",
+  },
+} as const;
+
+/** The two focuses are intake categories, not a choice between separate services. */
+export function PersonalExpressEnquiry({
+  locale, intro, children,
+}: {
+  locale: PublicLocale; intro?: ReactNode; children?: ReactNode;
+}) {
+  const t = copy[locale];
+  const pathname = usePathname();
+  const [focus, setFocus] = useState<Focus>("situation");
+  const whatsappUrl = whatsappEnquiryUrl({
+    locale, service: t.service, request: t.request, pagePath: pathname,
+    // Deliberately omit the selected focus and all health/personal information
+    // from the external WhatsApp / Telegram message.
+  });
+
+  return (
+    <div className={styles.wrapper} data-personal-express-review>
+      {intro}
+      <section className={styles.capture} id="request-free-review" data-personal-express-enquiry
+        lang={locale} aria-labelledby="express-enquiry-title">
+        <div className={styles.photo}>
+          <Image src="/images/holistic-house/andy-about.png" alt={t.alt}
+            fill sizes="(max-width: 720px) 90px, 38vw" />
+          <span className={styles.photoMark}><CheckCircle2 size={15} aria-hidden="true" />{locale === "ru" ? "Лично с Андреем" : locale === "es" ? "Con Andrey" : "Personally with Andrey"}</span>
+        </div>
+        <div className={styles.body}>
+          <p className={styles.eyebrow}><MessageCircle size={15} aria-hidden="true" />{t.label}</p>
+          <h2 id="express-enquiry-title">{t.title}</h2>
+          <p className={styles.lead}>{t.lead}</p>
+          <fieldset className={styles.choices} data-express-focus-group>
+            <legend>{t.legend}</legend>
+            {(["situation", "energy"] as const).map((area) => (
+              <label className={styles.choice} data-express-focus={area} key={area}
+                data-selected={focus === area ? "true" : "false"}>
+                <input type="radio" name="express-review-focus" value={area}
+                  checked={focus === area} onChange={() => setFocus(area)} />
+                {area === "situation" ? <MessageCircle size={19} aria-hidden="true" /> : <HeartPulse size={19} aria-hidden="true" />}
+                <span><strong>{t.areas[area].title}</strong><small>{t.areas[area].hint}</small></span>
+              </label>
+            ))}
+          </fieldset>
+          <p className={styles.step}>{t.step}</p>
+          <ContactChannelChooser key={focus} locale={locale}
+            whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
+            publicTopic={"Express review focus: " + t.areas[focus].tag} />
+          <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
+          <p className={styles.note}>{t.note}</p>
+        </div>
+      </section>
+      {focus === "situation" ? children : null}
+    </div>
+  );
+}
