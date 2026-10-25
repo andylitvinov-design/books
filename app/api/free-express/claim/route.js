@@ -3,6 +3,7 @@ import { AppError } from '@/lib/assessments/contracts'
 import { getAppConfig, requestOrigin, requireSameOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { consumeRate, transaction } from '@/lib/app/database'
+import { openSealed } from '@/lib/app/crypto'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { freeExpressProof, withFreeExpressRequest } from '@/lib/practitioners/free-express-enquiry'
 
@@ -41,13 +42,37 @@ async function handle(request) {
       })) }
     } else {
       const input = await readBody(request, 512)
-      if (!input || Object.keys(input).some(key => !['consent','referenceCode'].includes(key)) || input.consent !== true)
-        throw new AppError('EXPLICIT_CONSENT_REQUIRED', 400)
-      const proof = freeExpressProof(request, config)
-      const row = await withFreeExpressRequest(config, proof, ({ row }) => row)
-      if (input.referenceCode !== row.reference_code)
-        throw new AppError('ENQUIRY_CONTINUATION_MISMATCH', 409)
-      const linked = await transaction(config, actor, async db => {
+      if (!input || typeof input !== 'object' || Array.isArray(input)
+        || typeof input.referenceCode !== 'string'
+        || !/^HH-[A-F0-9]{12}$/.test(input.referenceCode))
+        throw new AppError('INVALID_REQUEST', 400)
+      if (input.action === 'read') {
+        if (Object.keys(input).some(key => !['action','referenceCode'].includes(key)))
+          throw new AppError('INVALID_REQUEST', 400)
+        const found = await transaction(config, actor, async db =>
+          (await db.query(
+            `select e.id,e.recipient_practitioner_id,e.description_ciphertext
+             from app_private.free_express_account_links l
+             join app.public_service_enquiries e on e.id=l.enquiry_id
+             where l.account_id=$1 and l.reference_code=$2 limit 1`,
+            [actor.id, input.referenceCode],
+          )).rows[0])
+        if (!found) throw new AppError('NOT_FOUND', 404)
+        const description = openSealed(found.description_ciphertext, {
+          accountId: found.recipient_practitioner_id, recordId: found.id,
+          field: 'public_lead.message',
+        }, config)
+        if (typeof description !== 'string') throw new AppError('PRIVATE_DATA_UNAVAILABLE', 503)
+        result = { saved: true, referenceCode: input.referenceCode, description }
+      } else {
+        if (Object.keys(input).some(key => !['consent','referenceCode'].includes(key))
+          || input.consent !== true)
+          throw new AppError('EXPLICIT_CONSENT_REQUIRED', 400)
+        const proof = freeExpressProof(request, config)
+        const row = await withFreeExpressRequest(config, proof, ({ row }) => row)
+        if (input.referenceCode !== row.reference_code)
+          throw new AppError('ENQUIRY_CONTINUATION_MISMATCH', 409)
+        const linked = await transaction(config, actor, async db => {
         // The row may be claimed by one and only one verified account.
         await db.query(
           `insert into app_private.free_express_account_links
@@ -61,7 +86,8 @@ async function handle(request) {
         )).rows[0]
       })
       if (!linked) throw new AppError('ENQUIRY_ALREADY_CLAIMED', 409)
-      result = { saved: true, referenceCode: row.reference_code }
+        result = { saved: true, referenceCode: row.reference_code }
+      }
     }
     return auth.apply(NextResponse.json(result, { headers: PRIVATE_HEADERS }))
   } catch (error) {
