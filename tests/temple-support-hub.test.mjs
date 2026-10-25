@@ -142,7 +142,7 @@ test("Temple preserves its scenic Ideas card as optional; personal conversion is
   assert.match(ideas, /data-ideas-personal-diagnostic/);
   assert.match(ideas, /data-ideas-free-test/);
   assert.doesNotMatch(ideas, /!isTemple \? <button[^>]*data-ideas-free-test/);
-  assert.match(ideas, /href=\{"/" \+ locale \+ "\/holistic-support#free-diagnostic-start"\}/);
+  assert.ok(ideas.includes('href={"/" + locale + "/holistic-support#free-diagnostic-start"}'));
   assert.match(ideas, /id="ideas-question-privacy"/);
   assert.match(ideas, /getIdeasAphorismMatches\(/);
   assert.match(ideas, /drawRandomHexagram\(\)/);
