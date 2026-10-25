@@ -27,7 +27,7 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
           assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0,'do not repeat a self-referral promo above the free review');
           const hero=page.locator('[data-free-entry-landing="situation"] section[aria-labelledby="free-entry-title"]');
           const video=hero.locator('[data-featured-constellations-video]');
-          const cta=hero.locator('a[href="#request-free-review"]');
+          const cta=hero.locator('a[href="#free-diagnosis-options"]');
           const play=video.locator('button.site-video-play');
           await video.waitFor({state:'visible',timeout:30000});
           await page.waitForFunction(()=>{const b=document.querySelector('[data-featured-constellations-video] button.site-video-play');return b&&!b.disabled;},null,{timeout:35000});
@@ -46,7 +46,7 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
               overflow:document.documentElement.scrollWidth-innerWidth,
               header:rect(header),hero:rect(hero),video:rect(video),
               frame:rect(video.querySelector('.site-video-frame')),
-              cta:rect(hero.querySelector('a[href="#request-free-review"]')),
+              cta:rect(hero.querySelector('a[href="#free-diagnosis-options"]')),
               nav:rect(nav),availableBottom:nav?nav.getBoundingClientRect().top:innerHeight,
               scenes:[...main.querySelectorAll('section[id="what-you-get"],section[id="how-it-works"]')].map(e=>({id:e.id,rect:rect(e)}))
             };
@@ -65,6 +65,11 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
             assert.ok(scene.rect.height<=budget+2,scene.id+' slide taller than usable viewport: '+scene.rect.height+' > '+budget);
           }
           const capture=page.locator('#request-free-review[data-service-lead-capture]');
+          const cards=page.locator('[data-diagnosis-offer]');
+          assert.equal(await cards.count(),3,'three photo-led offers with one shared form');
+          for(const id of ['situation-written-free','wu-xing-free','personal-session-30-eur50']){
+            assert.equal(await cards.filter({has:page.locator('[data-diagnosis-order="'+id+'"]')}).count(),1,'one order CTA per '+id);
+          }
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false,'consent defaults unchecked');
           await play.click({timeout:15000});
           const iframe=video.locator('iframe[data-video-playback="youtube"]');
@@ -74,11 +79,30 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
           record.embedSrc=src;
           if(width===390)await page.screenshot({path:output+'/'+name+'-after-play.png',animations:'disabled',timeout:25000});
           await cta.click({timeout:15000});
-          assert.equal(new URL(page.url()).hash,'#request-free-review','hero CTA scroll anchor');
+          assert.equal(new URL(page.url()).hash,'#free-diagnosis-options','hero CTA opens three options');
           await capture.waitFor({state:'visible',timeout:18000});
           assert.equal(await capture.locator('input[name="contact"]').count(),1);
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false);
           assert.equal(await capture.locator('[data-lead-saved]').count(),0,'click is not a real lead');
+          const wuDetail=cards.nth(1).locator('details');
+          await wuDetail.locator('summary').click();
+          assert.equal(await wuDetail.evaluate(el=>el.open),true,'Wu Xing details expand in place');
+          await cards.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
+          assert.equal(new URL(page.url()).hash,'#request-free-review','order CTA reaches shared form');
+          assert.equal(await capture.locator('select').inputValue(),'personal-session-30-eur50','paid option preselected');
+          await capture.locator('select').selectOption('wu-xing-free');
+          assert.equal(await cards.nth(1).getAttribute('data-diagnosis-selected'),'true','form selection updates selected card');
+          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false,'no implicit consent on selection');
+          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'selection is not a submitted lead');
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'expanded details fit viewport');
+          if(width===390){
+            const hubResponse=await page.goto(origin+'/'+locale+'/services/free-consultation',{waitUntil:'domcontentloaded',timeout:65000});
+            assert.equal(hubResponse?.status(),200,'free-consultation route reachable');
+            assert.equal(await page.locator('[data-free-consultation-hub] [data-diagnosis-offer]').count(),3,'hub has identical three options');
+            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),1,'hub has one CRM form');
+            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'hub fits viewport');
+            await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
+          }
           const privateEntry=page.locator('[data-free-drawing-intake]');
           await page.locator('[data-optional-written-review] > summary').click();
           await privateEntry.waitFor({state:'visible'});
