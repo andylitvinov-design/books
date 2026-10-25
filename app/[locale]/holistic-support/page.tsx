@@ -128,17 +128,17 @@ const copy = {
     energyBody: "Запросите дистанционную энергетическую поддержку, когда она нужна. Выберите мастера, формат и удобное время; доступность и цена подтверждаются отдельно.",
     energyAction: "Запросить дистанционную поддержку",
     meditationTitle: "Медитации · аудио и видео",
-    meditationBody: "Слушайте мягкое звуковое сопровождение и откройте бесплатные практики Солнца и энергетические записи из архива PsiMaster.",
+    meditationBody: "Посмотрите видеомедитацию «Полёт к солнцу» и оригинальные практики PsiMaster. Ниже доступно спокойное инструментальное аудио.",
     meditationAction: "Открыть бесплатные практики",
     meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
     meditationSectionTitle: "Медитации · Бесплатные подкачки",
-    meditationSectionLead: "Начните с трёх практик Солнца, затем выберите другие оригинальные записи PsiMaster. Выберите урок и включите его по своему желанию.",
+    meditationSectionLead: "Сначала откройте авторскую видеомедитацию «Полёт к солнцу» (оригинальный звук на английском). Затем — три практики Солнца и другие записи PsiMaster на русском.",
     meditationAudioTitle: "Аудио · Мягкие волны и мелодия",
     meditationAudioBody: "Инструментальное сопровождение для спокойного внимания, 96 секунд. Это не оригинальная голосовая подкачка с PsiMaster.",
     meditationAudioLabel: "Воспроизвести мягкие волны и мелодию",
     meditationAudioMissing: "Отдельные оригинальные аудиофайлы MP3/M4A авторских подкачек PsiMaster пока не найдены. Ниже доступны исходные видеозаписи со звуком; мы не извлекали аудио из видео и не подменяли записи.",
-    meditationVideoIntro: "Бесплатная подборка из архива PsiMaster: сначала три практики Солнца, затем другие видеомедитации и материалы марафона. Оригинальные записи на русском. Воспроизведение на YouTube зависит от доступности источников.",
-    meditationVideoTitle: "Бесплатные практики Солнца · PsiMaster",
+    meditationVideoIntro: "Первое видео — «Полёт к солнцу», оригинальная медитация Андрея на английском. Далее идут три русскоязычные практики Солнца и архив PsiMaster. Нажмите «Смотреть» на обложке; при ограничении встроенного просмотра откройте ссылку YouTube.",
+    meditationVideoTitle: "Полёт к солнцу · видеомедитации и PsiMaster",
     meditationVideoUnavailable: "Оригинальные материалы PsiMaster пока недоступны в каталоге.",
     meditationMore: "Другие медитации в Академии",
     meditationRussianArchive: "Оригинальный архив PsiMaster (RU)",
@@ -325,18 +325,6 @@ export default async function HolisticSupportPage({ params }: Props) {
             <h2 id="holistic-meditation-title">{t.meditationSectionTitle}</h2>
             <p>{t.meditationSectionLead}</p>
           </div>
-          <div className={styles.meditationAudioRow} data-holistic-audio-player>
-            <div>
-              <span className={styles.freeTag}>{t.free}</span>
-              <h3>{t.meditationAudioTitle}</h3>
-              <p>{t.meditationAudioBody}</p>
-            </div>
-            <audio controls preload="none" aria-label={t.meditationAudioLabel}>
-              <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
-              {t.meditationAudioFallback}
-            </audio>
-          </div>
-          <p className={styles.meditationSourceNote} role="note">{t.meditationAudioMissing}</p>
           {freeMeditationVideos(locale).length > 0 ? (
             <AcademyCourseVideoPlaylist
               locale={locale}
@@ -350,6 +338,18 @@ export default async function HolisticSupportPage({ params }: Props) {
               {t.meditationRussianArchive}<span aria-hidden="true">→</span>
             </Link>
           ) : null}
+          <div className={styles.meditationAudioRow} data-holistic-audio-player>
+            <div>
+              <span className={styles.freeTag}>{t.free}</span>
+              <h3>{t.meditationAudioTitle}</h3>
+              <p>{t.meditationAudioBody}</p>
+            </div>
+            <audio controls preload="none" aria-label={t.meditationAudioLabel}>
+              <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
+              {t.meditationAudioFallback}
+            </audio>
+          </div>
+          <p className={styles.meditationSourceNote} role="note">{t.meditationAudioMissing}</p>
           <Link href={"/" + locale + "/academy"} className={styles.libraryLink} prefetch={false}>
             {t.meditationMore}<span aria-hidden="true">→</span>
           </Link>

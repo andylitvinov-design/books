@@ -25,3 +25,11 @@ The 2026-10-24 PsiMaster catalogue policy requires **RU-only original recordings
 
 This is a corrective follow-up to PR #2003 and must receive a separate READY + canonical live readback before calling the user request deployed.
 \n## Build fix for Vercel `dpl_FPYpPCYU1XHbtfJthuP6zMR7WTqZ`\nThe first merge (#2003) failed on CSS Modules strict-scoping: `[data-holistic-meditations]{...}` was not a pure selector. Changed to `.section[data-holistic-meditations]{...}` (existing local class) and aligned the test. Do not call #2003 READY.\n
+## Explicit Sun Flight video in RU · 2026-10-25
+
+Owner follow-up requested the **specific** “Полёт к солнцу” video inside Holistic Support → Медитации, ready to open and watch. The earlier EN/ES selection already used the teacher-confirmed original English recording **HqfixazXqRY**, but RU showed only seven PsiMaster-era recordings.
+
+- RU discovery now starts with “Полёт к солнцу · авторская видеомедитация (звук на английском)”, followed by the **same** seven original Russian PsiMaster videos, without duplicates or false dubbing claims.
+- EN/ES still show just the original English Sun video. No new uploads, generated videos, translations, private sources or provider spending.
+- Video playlist is above the ambient audio on all locales; users explicitly press **Смотреть / Play**, with a direct YouTube fallback in the existing `AcademyVideoPlayer`.
+- Complete on actual Vercel READY + matching SHA/alias + real RU video-click/playback check. GitHub merge alone is insufficient for that last claim.

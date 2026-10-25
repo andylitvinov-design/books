@@ -18,12 +18,14 @@ const selection = [
 const validYoutubeId = /^[A-Za-z0-9_-]{11}$/;
 
 export function freeMeditationVideos(locale: PublicLocale) {
-  // The original PsiMaster archive is Russian-only. The EN/ES public discovery
-  // presents the teacher-supplied, originally English Sun video instead.
+  // Reuse the one owner-approved Sun Flight source across locales, without
+  // copying media or inventing a dubbed soundtrack.
+  const englishSun = englishGuidedMeditations.find(
+    item => item.key === "flight-to-sun" && item.youtubeId && validYoutubeId.test(item.youtubeId),
+  );
+  // The original PsiMaster archive is Russian-only. EN/ES discovery shows only
+  // the original English Sun video, not Russian lessons with translated labels.
   if (locale !== "ru") {
-    const englishSun = englishGuidedMeditations.find(
-      item => item.key === "flight-to-sun" && item.youtubeId && validYoutubeId.test(item.youtubeId),
-    );
     return englishSun?.youtubeId ? [{
       id: englishSun.youtubeId,
       title: englishSun.title + (locale === "es" ? " · audio original en inglés" : " · original English audio"),
@@ -31,7 +33,7 @@ export function freeMeditationVideos(locale: PublicLocale) {
     }] : [];
   }
   const seen = new Set<string>();
-  return selection.flatMap(([logicalId, order]) => {
+  const archive = selection.flatMap(([logicalId, order]) => {
     const recording = psimasterMedia.find(
       item => item.logicalId === logicalId
         && item.order === order
@@ -48,4 +50,15 @@ export function freeMeditationVideos(locale: PublicLocale) {
       order: recording.order,
     }];
   });
+  // Put the owner's requested "Полёт к солнцу" video first on RU, with an
+  // honest original-language label. Then retain the seven Russian recordings.
+  // The shared video ID may never be inserted twice in the same playlist.
+  if (englishSun?.youtubeId && !seen.has(englishSun.youtubeId)) {
+    return [{
+      id: englishSun.youtubeId,
+      title: "Полёт к солнцу · авторская видеомедитация (звук на английском)",
+      order: 0,
+    }, ...archive];
+  }
+  return archive;
 }

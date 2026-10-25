@@ -25,6 +25,9 @@ test("Holistic Support has an accessible audio and video meditation destination 
   assert.match(page, /\/ru\/holistic-support#meditation-practices/);
   assert.ok(page.includes("Flight to the Sun · Original English video"));
   assert.ok(page.includes("Flight to the Sun · Vídeo original en inglés"));
+  assert.ok(page.includes("«Полёт к солнцу»"));
+  assert.ok(page.indexOf("<AcademyCourseVideoPlaylist") < page.indexOf("data-holistic-audio-player"),
+    "video should be encountered before the ambient audio on narrow screens");
   assert.match(css, /\.section\[data-holistic-meditations\]\{scroll-margin-top/);
   assert.match(css, /@media\(max-width:350px\)/);
   assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("data-holistic-healing"));
@@ -41,6 +44,12 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   assert.match(model, /english-guided-meditations/);
   assert.match(model, /if \(locale !== "ru"\)/);
   assert.match(model, /item\.key === "flight-to-sun"/);
+  // RU opens the verified original Sun Flight first, with its real English audio,
+  // then retains 7 unique PsiMaster recordings. EN/ES stay English-only.
+  assert.match(model, /"Полёт к солнцу · авторская видеомедитация \(звук на английском\)"/);
+  assert.match(model, /order: 0/);
+  assert.match(model, /!seen\.has\(englishSun\.youtubeId\)/);
+  assert.match(read("data/academy/english-guided-meditations.ts"), /youtubeId: "HqfixazXqRY"/);
   assert.match(model, /seen\.has\(recording\.videoId\)/);
   assert.match(playlist, /introText \?\? t\.intro/);
   assert.match(playlist, /key=\{active\.id\}/);
