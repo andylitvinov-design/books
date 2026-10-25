@@ -877,3 +877,125 @@
 @media(prefers-reduced-motion:reduce){
   .sessionScroll .questionScreen .quickReplies .choices button{transition:none!important}
 }
+
+/* The guest Coaching Lounge uses the same one-screen question contract as
+   account/private sessions. Intro, consent, completed reports remain scrollable. */
+.root[data-public-coaching-active="true"] .session[data-coaching-one-viewport="true"]{
+  grid-template-rows:auto minmax(0,1fr) auto;min-height:0;overflow:hidden;
+}
+.session[data-coaching-one-viewport="true"] .sessionHeader{
+  min-height:52px;padding:5px clamp(9px,2.7vw,22px);
+}
+.session[data-coaching-one-viewport="true"] .sessionHeaderInfo{gap:4px}
+.session[data-coaching-one-viewport="true"] .sessionHeaderInfo .eyebrow{
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:10px;line-height:1.14;overflow-wrap:normal
+}
+.session[data-coaching-one-viewport="true"] .sessionHeaderInfo .progress{
+  font-size:10px;gap:8px
+}
+.session[data-coaching-one-viewport="true"] .sessionScroll{
+  overflow:hidden!important;overscroll-behavior:none;
+  scrollbar-width:none;padding:6px clamp(9px,2.7vw,22px)!important;
+  background:#f7f5ee
+}
+.session[data-coaching-one-viewport="true"] .questionScreen{
+  display:flex;flex-direction:column;gap:3px;
+  min-height:0;max-height:100%;height:100%;overflow:hidden;padding:0
+}
+.session[data-coaching-one-viewport="true"] .questionScreen .stage{
+  flex:none;margin:0;font-size:10px;line-height:1.25;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden
+}
+.session[data-coaching-one-viewport="true"] .questionScreen .context{
+  flex:none;margin:0;padding:5px 7px;font-size:10.5px;
+  line-height:1.24;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:1;overflow:hidden
+}
+.session[data-coaching-one-viewport="true"] .questionScreen [data-public-coaching-gentle-guide]{
+  flex:none;min-width:0
+}
+.session[data-coaching-one-viewport="true"] .questionScreen .hint{
+  flex:none;margin:0;font-size:10.5px;line-height:1.25
+}
+.session[data-coaching-one-viewport="true"] .questionScreen .quickReplies{
+  flex:none;align-self:stretch;width:100%;max-width:none;margin:2px 0 0
+}
+.session[data-coaching-one-viewport="true"] .quickReplyCaption{
+  margin:0 0 3px;text-align:left;font-size:10.5px
+}
+.session[data-coaching-one-viewport="true"] .sessionScroll .questionScreen .quickReplies .choices{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  width:100%;align-self:stretch;gap:5px;margin:0
+}
+.session[data-coaching-one-viewport="true"] .sessionScroll .questionScreen .quickReplies .choices button{
+  width:100%;max-width:none;min-height:44px;padding:5px 8px;
+  border-radius:11px;font-size:11.5px;line-height:1.17;overflow-wrap:anywhere
+}
+.session[data-coaching-one-viewport="true"] .sessionScroll .questionScreen .choices[data-scale="true"]{
+  grid-template-columns:repeat(6,minmax(0,1fr));gap:4px
+}
+.session[data-coaching-one-viewport="true"] .sessionFooter{
+  position:relative;flex:none;min-height:0;gap:3px;
+  padding:4px clamp(8px,2.6vw,22px) calc(4px + env(safe-area-inset-bottom))!important
+}
+.session[data-coaching-one-viewport="true"] .messengerReply{
+  display:grid;grid-template-columns:minmax(0,1fr);
+  min-width:0;gap:3px;padding:5px 7px;margin:0;border-radius:12px
+}
+.session[data-coaching-one-viewport="true"] .replyHeading{gap:6px}
+.session[data-coaching-one-viewport="true"] .replyHeading label{font-size:10.5px}
+.session[data-coaching-one-viewport="true"] .replyHeading span{display:none}
+.session[data-coaching-one-viewport="true"] .messengerReply .messageInput{
+  width:100%;min-height:40px!important;height:40px;max-height:12dvh;
+  resize:none;padding:6px 9px;border-radius:9px;font-size:16px;line-height:1.25
+}
+.session[data-coaching-one-viewport="true"] .replyTools{
+  min-width:0;gap:5px;justify-content:flex-start
+}
+.session[data-coaching-one-viewport="true"] .reportDetails{
+  position:relative;z-index:6;flex:none;max-width:94px;margin-left:auto;
+  color:#587a70;font-size:10px
+}
+.session[data-coaching-one-viewport="true"] .reportDetails summary{
+  display:flex;min-height:42px;text-align:right;line-height:1.17
+}
+.session[data-coaching-one-viewport="true"] .reportDetails[open] p{
+  position:absolute;right:0;bottom:calc(100% + 5px);
+  width:min(260px,calc(100vw - 22px));max-height:40dvh;overflow-y:auto;
+  padding:10px;border:1px solid #bed5c7;border-radius:11px;
+  background:#fffdf7;box-shadow:0 9px 30px #1e393055;
+  color:#365f55;font-size:11px;line-height:1.35;text-align:left
+}
+.session[data-coaching-one-viewport="true"] .sessionActions{gap:6px;margin:0}
+.session[data-coaching-one-viewport="true"] .sessionActions .primary{
+  min-height:44px;padding:7px 8px;font-size:12.5px;color:#fff
+}
+.session[data-coaching-one-viewport="true"] .sessionActions .secondary{
+  min-height:44px;padding:6px 9px;font-size:12px
+}
+.session[data-coaching-one-viewport="true"] .disclaimer{
+  min-height:0;max-height:none;margin:0;font-size:9px;line-height:1.15
+}
+.session[data-coaching-one-viewport="true"] .followupSkip,
+.session[data-coaching-one-viewport="true"] .sensitiveSkip{
+  align-self:start;min-height:27px;margin:0;padding:3px 7px;
+  font-size:10.5px;text-align:left
+}
+@media(max-height:650px){
+  .session[data-coaching-one-viewport="true"] .sessionHeader{
+    min-height:45px;padding-top:3px;padding-bottom:3px
+  }
+  .session[data-coaching-one-viewport="true"] .sessionScroll{
+    padding-top:4px!important;padding-bottom:4px!important
+  }
+  .session[data-coaching-one-viewport="true"] .disclaimer{display:none}
+}
+@media(max-height:520px){
+  .session[data-coaching-one-viewport="true"]:has(textarea:focus) .quickReplies{display:none}
+  .session[data-coaching-one-viewport="true"] .questionScreen .context{display:none}
+  .session[data-coaching-one-viewport="true"] .questionScreen .hint{display:none}
+  .session[data-coaching-one-viewport="true"] .messengerReply .messageInput{
+    min-height:38px!important;height:38px
+  }
+}
