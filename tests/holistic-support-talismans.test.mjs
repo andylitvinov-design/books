@@ -18,7 +18,7 @@ test('Holistic Support offers and opens personal talismans in all three locales'
 })
 
 test('Talismans are private, account-owned, and cannot become published by upload',()=>{
-  const migration=read('supabase/migrations/20261025174500_hh_support_personal_talismans.sql')
+  const migration=read('supabase/migrations/20261025155308_hh_support_personal_talismans.sql')
   const route=read('app/api/holistic-support/talismans/route.js')
   const repository=read('lib/app/support-talismans.js')
   assert.match(migration,/public,file_size_limit,allowed_mime_types\)\s*values\s*\('hh-support-talismans','hh-support-talismans',false/)
