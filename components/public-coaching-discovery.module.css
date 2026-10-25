@@ -754,3 +754,9 @@
  .sessionModeText small{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.sessionModeGrid button{transition:none}}
+
+/* Coaching Lounge: user-selectable filters require accessible mobile tap targets. */
+@media(max-width:600px){
+ .format button{min-height:44px}
+ .pillOptions button{min-height:44px}
+}
