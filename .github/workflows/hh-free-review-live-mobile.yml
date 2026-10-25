@@ -1,0 +1,51 @@
+name: HH Free Review live mobile browser QA
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-free-review-live-mobile.yml'
+      - 'scripts/verify-free-review-live-mobile.mjs'
+      - 'components/free-entry-landing.tsx'
+      - 'components/free-entry-landing.module.css'
+      - 'components/site-video-player.tsx'
+      - 'data/service-video-library.ts'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-free-review-live-mobile.yml'
+      - 'scripts/verify-free-review-live-mobile.mjs'
+      - 'components/free-entry-landing.tsx'
+      - 'components/free-entry-landing.module.css'
+      - 'components/site-video-player.tsx'
+      - 'data/service-video-library.ts'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-only-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      CI: 'true'
+      HH_LIVE_ORIGIN: https://holistichouse.vercel.app
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-free-review-browser/node_modules/playwright/index.mjs
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Install disposable Chromium and WebKit runners
+        timeout-minutes: 12
+        run: |
+          npm install --prefix /tmp/hh-free-review-browser --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
+          /tmp/hh-free-review-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Read-only production mobile screenshot, YouTube Play and CTA verification
+        timeout-minutes: 10
+        run: node scripts/verify-free-review-live-mobile.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-free-review-live-mobile
+          path: artifacts/free-review-live-mobile/
+          retention-days: 7
+          if-no-files-found: warn
