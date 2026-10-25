@@ -129,6 +129,13 @@ const nextConfig: NextConfig = {
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
+    // Sharp 0.35 loads libvips from an optional native package. Next tracing
+    // otherwise bundles the .node file without libvips-cpp.so into the Function.
+    // Include only for this small private upload route, never all routes.
+    "/api/holistic-support/talismans": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
     "/sitemap.xml": [
       "./data/spanish-remedies.json",
       "./content/remedies/en/*.md",

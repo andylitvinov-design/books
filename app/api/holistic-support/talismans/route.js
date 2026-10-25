@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import sharp from 'sharp'
 import { getAppConfig,requireSameOrigin } from '@/lib/app/config'
 import { createRequestAuth } from '@/lib/app/session'
 import { consumeRate } from '@/lib/app/database'
@@ -58,6 +57,14 @@ export async function POST(request){
     if(!file||typeof file.arrayBuffer!=='function'||!ACCEPTED.has(file.type))
       throw new AppError('INVALID_IMAGE',400)
     if(file.size<128||file.size>MAX_INPUT)throw new AppError('TALISMAN_TOO_LARGE',413)
+    // Do not mask a missing native codec as a bad user image.
+    let sharp
+    try{
+      ({default:sharp}=await import('sharp'))
+    }catch(error){
+      console.error('[talismans] image codec unavailable',error instanceof Error?error.message:'unknown')
+      throw new AppError('TALISMAN_CODEC_UNAVAILABLE',503)
+    }
     let clean
     try{
       clean=await sharp(Buffer.from(await file.arrayBuffer()),{limitInputPixels:24_000_000,failOn:'error'})
