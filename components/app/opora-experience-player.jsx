@@ -10,6 +10,7 @@ import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceSupport,oporaExpe
 import {oporaAs58Day,OPORA_PRIMARY_EMOTIONS,OPORA_EMOTION_DAYS,OPORA_ONE_ACTION_VERSION} from '@/lib/inner-growth/opora-as58-one-action'
 import {oporaAs59Day,OPORA_SEVEN_SKILLS_EDITION} from '@/lib/inner-growth/opora-as59-seven-skills'
 import {oporaAs60Day,OPORA_EXPERIENTIAL_EDITION} from '@/lib/inner-growth/opora-as60-experiential-practices'
+import {oporaAs60Journey,OPORA_EXPERIENCE_SCENES} from '@/lib/inner-growth/opora-as60-integrated-journey'
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner-growth/opora-gentle-journey'
@@ -19,6 +20,18 @@ import styles from './opora-experience-player.module.css'
 // AS-5.6 presentation of existing AS-5.5/V7 lessons.
 // Five persisted moments plus a clear, non-interactive skill rationale at step two.
 // Existing server visit keys, practice signals and open sessions are preserved.
+const JOURNEY_COPY=Object.freeze({
+  ru:{plan:'Мой будущий маленький шаг',tried:'Попробовал(а)',read:'Только прочитал(а)',
+    skip:'Не сегодня',optional:'Без оценок. Ваш выбор остаётся только на устройстве до закрытия урока.'},
+  en:{plan:'My small future option',tried:'I tried it',read:'Read only',
+    skip:'Not today',optional:'No grading. Your choice stays on this device until the lesson closes.'},
+  es:{plan:'Un paso futuro posible',tried:'Lo probé',read:'Solo lo leí',
+    skip:'Hoy no',optional:'Sin calificaciones. Tu elección queda en este dispositivo hasta cerrar la lección.'},
+})
+const EXPERIENCE_SCENE_KEY=Object.freeze({
+  bodyExperience:'body',emotionExperience:'emotion',mentalExperience:'mental',
+  imageryMeditation:'imagery',ritualPractice:'ritual',
+})
 const EXPERIMENT_WORDS=Object.freeze({
   ru:{title:'ПРАКТИКА-ЭКСПЕРИМЕНТ',step:'Шаг',next:'Следующий шаг',
     prompt:'Выберите то, что подходит',note:'Это личный выбор, а не оценка. Отмечайте попытку честно; можно остановиться или пропустить.'},
@@ -443,13 +456,19 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const lesson=data?.lesson||{},cycle=data?.cycle||{},authored=lesson?.opora54||{}
   const hasSaved=Boolean(data?.currentSession)
   const scenes=cycle.day===1?OPORA_DAY_ONE_RESTORED_KEYS:OPORA_EXPERIENCE_PRE_SAVE_KEYS
+  const showIntegratedJourney=!hasSaved||data?.currentSession?.signals?.opora54?.answers?.experienceEdition===OPORA_EXPERIENTIAL_EDITION
   // Day 1 retains the five restored opening screens. Days 2–14 have four
   // extra editorial moments before practice, all private and non-persisted.
   // The existing Today's Practice card now introduces the goal immediately
   // before the actual activity. Keep its editorial key unpersisted and render
   // it only once; the server's visitedSlideKeys retain their original order.
   const openingScenes=scenes.slice(1).flatMap(scene=>
-    scene==='practice'?['recapPractice',scene]:[scene])
+    scene==='practice'?[
+      'recapPractice',
+      ...(showIntegratedJourney?OPORA_EXPERIENCE_SCENES.slice(0,4):[]),
+      scene,
+      ...(showIntegratedJourney?OPORA_EXPERIENCE_SCENES.slice(4):[]),
+    ]:[scene])
   const displayScenes=cycle.day===1
     ?[scenes[0],'support',...openingScenes]
     :[scenes[0],'support',...OPORA_GENTLE_INTRO,...openingScenes]
@@ -458,7 +477,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   // screen never changes persisted visit keys or reports a practice attempt.
   const flowScenes=[...displayScenes,...OPORA_GENTLE_RECAP.filter(scene=>
     scene!=='recapPractice').flatMap(scene=>
-    cycle.day===14&&scene==='recapFeedback'?['closingMeditation',scene]:[scene])]
+    cycle.day===14&&!showIntegratedJourney&&scene==='recapFeedback'?['closingMeditation',scene]:[scene])]
   const [step,setStep]=useState(reviewOnly?0:hasSaved?flowScenes.length:0)
   const [previewIndex,setPreviewIndex]=useState(-1)
   const [habitSetup,setHabitSetup]=useState(false)
@@ -485,6 +504,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   // record and do NOT certify that an exercise was attempted.
   const [microStep,setMicroStep]=useState(0)
   const [microChoice,setMicroChoice]=useState('')
+  const [channelAttempts,setChannelAttempts]=useState({})
   const [practiceReport,setPracticeReport]=useState(
     data?.currentSession?.signals?.practiceAttempt==='tried'?'tried':
     data?.currentSession?.signals?.practiceAttempt==='simplified'?'partly':null)
@@ -516,7 +536,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
   const dayCopy=oporaExperienceDay(cycle.day,lang)
   // Only unsaved activities or records explicitly marked AS-5.9 use this
   // edition. Old saved receipts keep their original exercise/quotation/plan.
-  const showSkill60=!hasSaved||answers.experienceEdition===OPORA_EXPERIENTIAL_EDITION
+  const showSkill60=showIntegratedJourney
   const showSkill59=!showSkill60&&answers.experienceEdition===OPORA_SEVEN_SKILLS_EDITION
   const showCurrentSkill=showSkill60||showSkill59
   const dailyPlan=showSkill60?oporaAs60Day(cycle.day,lang):
@@ -529,6 +549,9 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     ?{why:dailyPlan?.purpose,scenario:dailyPlan?.scenario,
       alternative:dailyPlan?.alternative,everyday:dailyPlan?.transfer}
     :oporaExperienceDepth(cycle.day,lang)
+  const journey=showSkill60?oporaAs60Journey(cycle.day,lang):null
+  const channel=EXPERIENCE_SCENE_KEY[moment]||null
+  const channelCard=channel?journey?.[channel]:null
   const practiceGuide=(showNewPlan?dailyPlan?.practice:null)||
     oporaExperienceGuide(cycle.day,lang)||authored.screens?.find(screen=>screen.key==='act')?.text||t.practiceText
   const legacyPlan=dayCopy?.reminder||authored.exercises?.transfer?.choices?.[0]||lesson.workbook?.microPractice||''
@@ -709,6 +732,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
     moment==='recall'?opening.recall:
     moment==='arrive'?(cycle.day===1?(newDayOneIntro?t.firstExerciseTitle:t.arrivalWarmTitle):t.arriveTitle):
     moment==='support'?support?.title:
+    channelCard?channelCard.title:
     moment==='why'?j.whyTitle:moment==='story'?j.storyTitle:
     moment==='options'?j.optionsTitle:moment==='settle'?j.settleTitle:
     moment==='practice'?(showSkill60?dailyPlan?.title:newDayOneIntro?t.firstExerciseAction:(showNewPlan?dailyPlan?.title:null)||dayCopy?.title||t.learn):
@@ -869,6 +893,32 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.lead}>{j.settleLead}</p>
             <p className={styles.soft}>{j.settleNote}</p>
           </>}
+          {channelCard&&!neutralSupport&&
+            <section className={styles.integratedExperience}
+              data-opora-integrated-day={cycle.day}
+              data-opora-experience-channel={channel}>
+              {channel==='imagery'&&<div className={styles.imagerySymbol}
+                aria-hidden="true"><Sparkles size={29}/></div>}
+              <p className={styles.integratedInstruction}>{channelCard.text}</p>
+              {channel==='mental'&&<div className={styles.integratedPlan}>
+                <span>{JOURNEY_COPY[lang].plan}</span>
+                <p>{channelCard.plan}</p>
+              </div>}
+              {channel==='imagery'&&<OporaOceanOutro locale={lang} paused={safety} compact/>}
+              <p className={styles.integratedHint}>{channelCard.hint}</p>
+              <div className={styles.integratedAttemptChoices} role="group"
+                aria-label={channelCard.title}>
+                {[[JOURNEY_COPY[lang].tried,'tried'],
+                  [JOURNEY_COPY[lang].read,'read'],
+                  [JOURNEY_COPY[lang].skip,'skip']].map(([label,value])=>
+                  <button type="button" key={value} disabled={locked}
+                    aria-pressed={channelAttempts[channel]===value}
+                    onClick={()=>setChannelAttempts(prior=>({...prior,[channel]:value}))}>
+                    {label}
+                  </button>)}
+              </div>
+              <p className={styles.integratedMeta}>{JOURNEY_COPY[lang].optional}</p>
+            </section>}
           {moment==='practice'&&<>
             {!neutralSupport&&cycle.day===1&&dayCopy?.purpose&&!newDayOneIntro&&
               <div className={styles.coreWhy} data-opora-core-purpose="true">
@@ -1062,8 +1112,8 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
               <a href={'/'+lang+'/services/free-consultation'}><span aria-hidden="true">🤝</span>{c.consultation}<ArrowRight size={19}/></a>
             </nav>
           </>}
-          {/* Guidance can be opened without competing with the one daily task.
-               The separate Day 14 meditation is always visible, never folded. */}
+          {/* Historic Day 14 meditation remains for older editions only;
+               AS-6.0 has an opt-in guided imagery/music screen daily. */}
           {guidanceForMoment&&
             <div className={styles.guidanceGroup} data-gentle-guidance={moment}>
             <div className={styles.guidanceRow}>
