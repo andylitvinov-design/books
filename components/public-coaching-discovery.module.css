@@ -24,6 +24,7 @@
 .questionInput{display:block;width:100%;background:#fff;border:1px solid #cdbbab;border-radius:13px;min-height:61px;padding:12px 14px;
   color:#25393b;font:inherit;font-size:16px;line-height:1.55;resize:vertical;outline:none}
 .questionInput::placeholder{color:#71817d}
+.answerRetention{color:#4d6d65;font-size:11px;line-height:1.4;margin:5px 0 0}
 .privacy,.disclaimer{display:flex;align-items:flex-start;gap:8px;color:var(--muted);font-size:12px;line-height:1.5;margin:11px 0}
 .privacy svg,.disclaimer svg{flex:none;margin-top:2px}
 .filters{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin-top:13px}

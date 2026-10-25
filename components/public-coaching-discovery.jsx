@@ -61,7 +61,7 @@ const copy={
     completed:'Session complete',summary:'Your reflection',nextStep:'Your last step',copy:'Copy my summary',
     copied:'Copied',copyFallback:'Select and copy your notes below.',
     restart:'Choose another model',memory:'This free session stays in this tab only. Nothing is saved to an account or sent to a coach.',
-    reportNotice:'In this guest session, answers stay only in this tab. At the end you can download a dated PDF with all your questions and answers; download it before leaving.',
+    reportNotice:'Your answers stay in this tab only, not in an account. At the end download a PDF with your thoughts and answers before leaving.',
     pdf:'Download PDF report',pdfError:'The PDF could not be created. Your answers are still visible in this tab.',date:'Session date',
     discard:'Leave this session? Your unsaved answers will be lost.',noAnswer:'Skipped',
     otherWays:'More ways to work with your question',
@@ -109,7 +109,7 @@ const copy={
     completed:'Сессия завершена',summary:'Ваши ответы',nextStep:'Ваш последний шаг',copy:'Скопировать результат',
     copied:'Скопировано',copyFallback:'Выделите и скопируйте текст ниже.',
     restart:'Выбрать другую модель',memory:'Бесплатная сессия хранится только в открытой вкладке. В личный кабинет или коучу ничего не отправляется.',
-    reportNotice:'В гостевой сессии ответы не сохраняются в кабинете. В конце вы сможете скачать PDF с датой, вопросами и ответами. Скачайте его до закрытия вкладки.',
+    reportNotice:'Ваш ответ остаётся только в этой вкладке, не в личном кабинете. В конце скачайте PDF с вашими мыслями и ответами до закрытия вкладки.',
     pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы пока доступны в этой вкладке.',date:'Дата сессии',
     discard:'Выйти из сессии? Несохранённые ответы будут потеряны.',noAnswer:'Пропущено',
     otherWays:'Другие способы разобраться в своём вопросе',
@@ -157,7 +157,7 @@ const copy={
     completed:'Sesión terminada',summary:'Tu reflexión',nextStep:'Tu último paso',copy:'Copiar resumen',
     copied:'Copiado',copyFallback:'Selecciona y copia tu texto abajo.',
     restart:'Elegir otro modelo',memory:'Esta sesión gratis solo vive en esta pestaña. No se guarda ni se envía al coach.',
-    reportNotice:'En esta sesión de invitado, las respuestas solo están en esta pestaña. Al terminar podrás descargar un PDF con fecha, preguntas y respuestas. Guárdalo antes de salir.',
+    reportNotice:'Tus respuestas quedan solo en esta pestaña, no en una cuenta. Al final descarga un PDF con tus reflexiones y respuestas antes de salir.',
     pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen en esta pestaña.',date:'Fecha de la sesión',
     discard:'¿Salir? Se perderán tus respuestas.',noAnswer:'Omitido',
     otherWays:'Otras formas de explorar tu pregunta',
@@ -739,8 +739,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.hint}>{t.clarifyWhy}</p>
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
-            <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
+            <textarea id="public-coaching-reflection" className={styles.questionInput} aria-describedby="public-coaching-followup-report-note" rows={3}
               maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+              <p className={styles.answerRetention} id="public-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>
             </div>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
@@ -772,18 +773,18 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {quickChoices&&options.length>0&&!needsCustomPlan
               ?<details key={current.id} className={styles.customAnswer} ref={customAnswerRef} defaultOpen={Boolean(draft&&!draft.startsWith('choice:'))}>
                 <summary>{t.ownAnswer}</summary>
-                <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer}
+                <textarea id="public-coaching-answer" className={styles.questionInput} aria-label={t.ownAnswer} aria-describedby="public-coaching-report-note"
                   rows={2} maxLength={800} placeholder={t.answerPlaceholder}
                   value={draft.startsWith('choice:')?'':draft} onChange={e=>{setDraft(e.target.value);setError('')}}/>
               </details>
               :<>{!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>{answerText(draft,current,lang,t)}</p>}
                 <label className={styles.questionLabel} htmlFor="public-coaching-answer">{needsCustomPlan?t.plan:t.openAnswer}</label>
-                <textarea id="public-coaching-answer" className={styles.questionInput} rows={4} maxLength={800}
+                <textarea id="public-coaching-answer" className={styles.questionInput} aria-describedby="public-coaching-report-note" rows={4} maxLength={800}
                   data-public-coaching-open-reflection={!quickChoices?'true':undefined}
                   placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
                   onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
+              <p className={styles.answerRetention} id="public-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</p>
             </div>
-            <p className={styles.hint} data-coaching-save-report-notice>{t.reportNotice}</p>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>}
         </div>

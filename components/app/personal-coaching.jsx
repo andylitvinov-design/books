@@ -43,7 +43,7 @@ const copy={
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
     noAnswer:'Skipped',history:'Earlier private sessions',historyItem:'Previous session',
     share:'Nothing is sent to a coach or messenger automatically.',
-    reportNotice:'Your answers are saved privately. When you finish, you can download a dated PDF report with every question and your answers.',
+    reportNotice:'After tapping Save, your answer is kept in your private account. At the end you can download a PDF with your questions, answers and reflections.',
     pdf:'Download PDF report',pdfError:'Could not create the PDF. Your private answers remain saved.',date:'Session date',
     restart:'This starts a new session and saves the completed one to your private history.',
     home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? This cannot be undone.',
@@ -68,7 +68,7 @@ const copy={
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
     noAnswer:'Пропущено',history:'Предыдущие личные сессии',historyItem:'Прошлая сессия',
     share:'Ответы не отправляются коучу или в мессенджеры автоматически.',
-    reportNotice:'Ваши ответы будут сохранены в личном кабинете. В конце вы получите PDF-отчёт с датой, всеми вопросами и ответами.',
+    reportNotice:'После нажатия «Сохранить» ваш ответ останется в личном кабинете. В конце сможете скачать PDF с вашими мыслями, вопросами и ответами.',
     pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы сохранены в кабинете.',date:'Дата сессии',
     restart:'Новая сессия сохранит завершённую в вашей личной истории.',
     home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Это действие нельзя отменить.',
@@ -91,7 +91,7 @@ const copy={
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
     history:'Sesiones anteriores',historyItem:'Sesión anterior',share:'No enviamos tus respuestas a otras personas.',
-    reportNotice:'Tus respuestas se guardan en privado. Al terminar puedes descargar un PDF con fecha, preguntas y respuestas.',
+    reportNotice:'Al pulsar Guardar, tu respuesta queda en tu cuenta privada. Al final podrás descargar un PDF con tus reflexiones, preguntas y respuestas.',
     pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',
     restart:'La sesión completada se guardará en tu historial.',home:'Mis cursos',delete:'Borrar mis notas',
     deleteConfirm:'¿Eliminar todas tus respuestas e historial? No se puede deshacer.',
@@ -513,11 +513,12 @@ export default function PersonalCoaching({locale='en',accountId}){
               onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
-            <textarea id="hh-coaching-followup" className={styles.textarea}
+            <textarea id="hh-coaching-followup" className={styles.textarea} aria-describedby="hh-coaching-followup-report-note"
               value={reflectionDraft} maxLength={500} rows={3} disabled={busy}
               placeholder={followupCopy[lang].placeholder}
               onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
             <span className={styles.counter}>{reflectionDraft.length}/500</span>
+               <small className={styles.answerRetention} id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
             </div>
             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
@@ -595,17 +596,18 @@ export default function PersonalCoaching({locale='en',accountId}){
             <div className={styles.chatComposer} data-coaching-composer>
             <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
               {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
-            <textarea id="hh-personal-coach-answer" className={styles.textarea}
+            <textarea id="hh-personal-coach-answer" className={styles.textarea} aria-describedby="hh-personal-coach-answer-report-note"
               data-coaching-open-reflection={!quickChoices?'true':undefined}
               value={draft.startsWith('choice:')?'':draft}
               maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
               onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
             <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
+            <small className={styles.answerRetention} id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
             </div>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
-            <p className={styles.subtle} data-coaching-save-report-notice>{t.reportNotice}</p>
+            
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
