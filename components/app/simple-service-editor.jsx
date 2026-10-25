@@ -178,7 +178,7 @@ function initialDraft(item,locale,starter='') {
         copy:item.localizedCopy||{}, areaKey:item.areaKey, offeringType:item.offeringType,
         deliveryFormat:item.deliveryFormat, locationLabel:item.locationLabel, languages:item.languages,
         pricingMode:item.pricingMode, confirmedPrice:item.confirmedPrice??'', currency:item.currency||'CAD',
-        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, serviceIntroductions:item.serviceIntroductions||[], goals:item.goals||[],
+        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, serviceIntroductions:item.serviceIntroductions?.length?item.serviceIntroductions:undefined, goals:item.goals||[],
         methods:item.methods||[], benefits:item.benefits||[], faq:item.faq||[],
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
