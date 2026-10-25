@@ -205,7 +205,7 @@ test('only two truly responding assistants unlock all-mode and three actions sta
     'hh-audio:help','hh-ai:all','hh-ai:gemini','hh-ai:free','hh-ai:free2',
     'hh-ai:verify','hh-ai:status'
   ])
-  assert.match(live.text,/nvidia\/nemotron/)
+  assert.match(live.text,/nemotron-3-ultra/)
   assert.doesNotMatch(buttons.join(','),/mistral/)
   const callback=parseOwnerAiUpdate({update_id:455,callback_query:{
     id:'cb-455',data:'hh-ai:all',from:base.message.from,
