@@ -47,7 +47,7 @@ const voicePreferences={}
 
 export default function CoachingQuestionVoice({
   text,locale='en',onTranscript,onInterim,onListeningChange,disabled=false,mode='note',
-  speechConsent=false,onConsent,
+  speechConsent=false,onConsent,compact=false,
 }){
   const lang=['en','ru','es'].includes(locale)?locale:'en'
   const t=copy[lang]
@@ -241,15 +241,15 @@ export default function CoachingQuestionVoice({
     }
   }
 
-  return <div className={styles.voice} data-tradition-voice data-coaching-question-voice>
+  return <div className={styles.voice+(compact?' '+styles.voiceCompact:'')} data-tradition-voice data-coaching-question-voice data-coaching-voice-compact={compact?'true':undefined}>
     <div className={styles.voiceActions}>
       {support.tts?<button type="button" disabled={disabled} onClick={toggleVoice}
-        aria-label={speaking?t.stop:t.listen} aria-pressed={speaking}>
-        {speaking?<VolumeX size={18}/>:<Volume2 size={18}/>} {speaking?t.stop:t.listen}
+        aria-label={speaking?t.stop:t.listen} title={speaking?t.stop:t.listen} aria-pressed={speaking}>
+        {speaking?<VolumeX size={18}/>:<Volume2 size={18}/>} {!compact&&(speaking?t.stop:t.listen)}
       </button>:<small>{t.unavailable}</small>}
       {support.stt&&<button type="button" disabled={disabled} onClick={toggleMic}
-        aria-label={listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote} aria-pressed={listening}>
-        {listening?<MicOff size={18}/>:<Mic size={18}/>} {listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote}
+        aria-label={listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote} title={listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote} aria-pressed={listening}>
+        {listening?<MicOff size={18}/>:<Mic size={18}/>} {!compact&&(listening?t.stopMic:mode==='answer'?t.micAnswer:t.micNote)}
       </button>}
     </div>
     {support.tts&&<>
@@ -276,7 +276,7 @@ export default function CoachingQuestionVoice({
         <small>{coachingLocalVoices(voices,spoken).length?t.voiceLimit:t.noVoiceChoices}</small>
       </div>}
     </>}
-    <small role="status" aria-live="polite">{listening?t.hearing:!support.stt?t.unsupported:t.device}</small>
+    <small role="status" aria-live="polite" className={compact&&!listening?styles.voiceVisuallyHidden:undefined}>{listening?t.hearing:!support.stt?t.unsupported:t.device}</small>
     {interim&&<small className={styles.voiceInterim} aria-live="polite">{t.interim}: {interim}</small>}
     {error&&<small role="alert" className={styles.voiceError}>{error}</small>}
   </div>
