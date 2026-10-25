@@ -143,10 +143,14 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
   const cameraInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!selected) { setPreview(""); return; }
-    const url = URL.createObjectURL(selected);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
+    if (!selected || selected.size > PHOTO_LIMIT) { setPreview(""); return; }
+    // Public landing CSP permits data: images, not blob: images. Read a small
+    // local preview without uploading or widening CSP for other visitors.
+    const reader = new FileReader();
+    reader.onload = () => { if (typeof reader.result === "string") setPreview(reader.result); };
+    reader.onerror = () => setPreview("");
+    reader.readAsDataURL(selected);
+    return () => { if (reader.readyState === FileReader.LOADING) reader.abort(); };
   }, [selected]);
 
   useEffect(() => {
