@@ -108,13 +108,8 @@
   .compactMaster .secondary { min-height:40px; font-size:11px; }
 }
 
-/* One real practitioner: the first mobile screen should expose their service action. */
-@media (max-width:640px) {
-  .singleMaster { display:flex; flex-direction:column; }
-  .singleMaster > .cardGrid { order:0; margin-bottom:10px; }
-  .singleMaster > .filters { order:1; }
-  .singleMaster > .empty { order:0; }
-}
+/* Keep mentor filters ABOVE the card even when only one practitioner is approved.
+   The former singleMaster flex-order rule hid the entire filter menu below Andy. */
 
 /* On mobile and desktop, Details/Profile remains left of the burgundy action. */
 .actions > .primary,.actions > .energyButton { margin-inline-start:auto; }
@@ -190,3 +185,37 @@
 .filters{gap:9px;margin-bottom:12px}.search{min-height:46px}
 }
 @media(max-width:355px){.masterQuickBar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Mentor discovery: compact, visible first-level facets before all results. */
+.filters[data-mentor-filters] { background:#fffcf7; border-color:#e3d4c3; color:#352a22; box-shadow:0 3px 14px rgb(82 56 37 / 5%); }
+.filters[data-mentor-filters] .heading h2 { color:#352a22; }
+.filters[data-mentor-filters] .count { background:#efe4d9; color:#5d4536; }
+.filters[data-mentor-filters] .search { border-color:#d9c7b7; color:#352a22; }
+.mentorFilterGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; min-width:0; }
+.mentorFilterGrid label { display:grid; gap:5px; min-width:0; color:#6b5545; font:700 12px/1.35 system-ui,sans-serif; }
+.mentorFilterGrid select { display:block; min-width:0; width:100%; height:44px; padding:9px 9px; border:1px solid #d8c8b8; border-radius:12px; background:#fff; color:#352a22; font:600 12px/1.25 system-ui,sans-serif; text-overflow:ellipsis; }
+.mentorFilterGrid select:disabled { background:#f4eee8; color:#7d736c; opacity:1; cursor:not-allowed; }
+.filters[data-mentor-filters] .masterQuickBar button { border-color:#decec0; background:#f6eee4; color:#624738; }
+.filters[data-mentor-filters] .masterQuickBar button.selected { border-color:#193b49; background:#193b49; color:#fff; }
+.filters[data-mentor-filters] .masterExtra { border-color:#e9ddd1; }
+.filters[data-mentor-filters] .masterExtra summary { width:100%; min-height:44px; color:#624738; white-space:normal; }
+.filters[data-mentor-filters] .masterExtra .categories { margin-top:10px; }
+.filters[data-mentor-filters] .reset { color:#853148; min-height:44px; }
+.coursePreview { margin:0 0 10px; padding:7px 10px; border-radius:11px; background:#f5eee5; color:#5d4536; font:650 11px/1.35 system-ui,sans-serif; }
+.coursePreview a { display:inline-flex; align-items:center; min-height:44px; color:inherit; text-underline-offset:3px; overflow-wrap:anywhere; }
+.coursePreview a:focus-visible { outline:3px solid #a73f55; outline-offset:2px; }
+@media (max-width:760px) {
+  .mentorFilterGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+}
+@media (max-width:430px) {
+  .filters[data-mentor-filters] { padding:11px 12px; gap:8px; }
+  .mentorFilterGrid label { font-size:11px; }
+  .mentorFilterGrid select { font-size:11px; padding:8px 7px; }
+  .filters[data-mentor-filters] .masterExtra .selectGrid { gap:7px; }
+  .filters[data-mentor-filters] .masterQuickBar button { min-height:44px; }
+}
+@media (max-width:355px) {
+  .mentorFilterGrid { gap:6px; }
+  .mentorFilterGrid select { font-size:10.5px; }
+}
