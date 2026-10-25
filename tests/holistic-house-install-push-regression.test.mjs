@@ -37,7 +37,7 @@ test('installation instructions and native install prompt are visible in Cabinet
   assert.match(cabinet,/import InstallHolisticHouse/)
   assert.equal((cabinet.match(/<InstallHolisticHouse locale=\{locale\}/g)||[]).length,2)
   assert.match(cabinet,/settings#hh-phone-notifications/)
-  assert.match(cabinet,/autoOpen=\{requestedMessageId === request.id\}/)
+  assert.match(cabinet,/autoOpen=\{requestedMessageId === request.id \|\| Number\(request.newMessageCount\)>0\}/)
 })
 test('manifest and Service Worker remain scoped and do not cache private consultation pages',()=>{
   const manifest=JSON.parse(read('public/holistic-house-app.webmanifest'))
