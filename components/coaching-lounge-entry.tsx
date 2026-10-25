@@ -125,6 +125,20 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
   const [requestOpen, setRequestOpen] = useState(false);
   const [format, setFormat] = useState<string>(t.formats[0].value);
   function choose(choice: Choice) { setSelected(choice); setRequestOpen(true); }
+  // Legacy in-page CTAs point to the same registration section. Open the
+  // appropriate panel for direct deep links instead of scrolling to hidden UI.
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === "#coaching-intake") {
+        setSelected("session"); setRequestOpen(true);
+      } else if (window.location.hash === "#free-diagnostic-start") {
+        setSelected("free"); setRequestOpen(true);
+      }
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
   useEffect(() => {
     if (!requestOpen) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
