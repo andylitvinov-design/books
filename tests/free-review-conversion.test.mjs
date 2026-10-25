@@ -66,7 +66,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "Free diagnosis or a personal session", "Бесплатная диагностика или личная консультация", "Diagnóstico gratuito o consulta personal",
+    "Free diagnosis: 3 ways", "Бесплатная диагностика: 3 варианта", "Diagnóstico gratis: 3 opciones",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
