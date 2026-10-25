@@ -79,6 +79,18 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
           assert.equal(await capture.locator('input[name="contact"]').count(),1);
           assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false);
           assert.equal(await capture.locator('[data-lead-saved]').count(),0,'click is not a real lead');
+          const privateEntry=page.locator('[data-free-drawing-intake]');
+          await page.locator('[data-optional-written-review] > summary').click();
+          await privateEntry.waitFor({state:'visible'});
+          assert.equal(await privateEntry.locator('form,textarea,[data-contact-channel-chooser]').count(),0,
+            'private answers are not collected twice or copied into messenger');
+          const privateLink=privateEntry.locator('a');
+          assert.equal(await privateLink.count(),1);
+          assert.equal(await privateLink.getAttribute('href'),'/'+locale+'/coaching/intake?topic=personal');
+          assert.ok((await privateEntry.innerText()).includes(locale==='ru'?'Не отправляйте':locale==='es'?'No envíes':'Do not send'));
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth),0,
+            'expanded privacy instructions fit the phone width');
+          record.privateIntakeHref=await privateLink.getAttribute('href');
           record.status='PASS';
           console.log('PASS '+name+' hero='+Math.round(geom.hero.bottom)+' bar='+Math.round(geom.availableBottom));
         }catch(error){

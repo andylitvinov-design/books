@@ -83,20 +83,14 @@ test("all three locales explain real service advantages without health claims or
   assert.doesNotMatch(landing + capture, /€50|€100/, "The free offering must not be upsold before being explained");
 });
 
-test("the real free drawing questionnaire remains reachable and keeps answers local until deliberate copy", () => {
+test("free drawing entry reuses private intake without duplicate collection or messenger export", () => {
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
-  for (const field of ["problem", "goal", "obstacle", "tried"]) assert.ok(intake.includes("set" + field[0].toUpperCase() + field.slice(1)), field);
-  assert.match(intake, /<form onSubmit=/);
-  assert.match(intake, /<textarea required/);
-  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /setPrepared\(true\)/);
-  assert.match(intake, /Nothing has been sent/);
-  assert.match(intake, /aria-live="polite"/);
-  assert.match(intake, /<ContactChannelChooser/);
-  assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|\/api\/app\/|FileReader/);
+  assert.match(intake, /\/coaching\/intake\?topic=/);
+  assert.match(intake, /Sign in to save an encrypted private draft/);
+  assert.match(intake, /Saving does not send it to a coach/);
+  assert.match(intake, /Keep the photo on your device/);
+  assert.doesNotMatch(intake, /<form|<textarea|navigator\.clipboard|ContactChannelChooser|whatsappEnquiryUrl|localStorage|sessionStorage|fetch\(|sendBeacon/);
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
 
