@@ -480,7 +480,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         </section>
 
         {kind === "situation" ? (
-          <PersonalExpressEnquiry locale={locale} enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"} intro={
+          <PersonalExpressEnquiry locale={locale} intro={
             <>
               <section className={styles.reviewOutcome} id="what-you-get" aria-labelledby="free-outcomes-title">
                 <div className={styles.reviewOutcomePhoto}><Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
@@ -536,7 +536,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 <PersonalTestimonials locale={locale} variant="all" />
               </details>
             </>
-          }>
+          } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
             <div className={styles.coachingLink}>
               <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
                 {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />
