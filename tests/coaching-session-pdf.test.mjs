@@ -78,6 +78,8 @@ test('dated report uses true persisted date, paints EN/RU/ES Unicode and long an
     assert.ok(lines.some(s=>s.includes('Греческое')))
     assert.ok(lines.some(s=>s.includes('Что действительно')))
     assert.ok(lines.some(s=>s.includes('24 октября 2026')))
+    const undated=createCoachingSessionPdf({title:'Historical session',sessionDate:null,entries:[{question:'Question?',answer:'Response'}]})
+    assert.equal(undated.filename,'holistic-house-session-undated.pdf')
     snapshots.push(report.pages)
   })
   assert.ok(snapshots[0]>1)
