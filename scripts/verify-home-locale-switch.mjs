@@ -85,19 +85,74 @@ async function installEntryDiagnostics(context, page) {
   return requests;
 }
 
+// Personal analysis deliberately stays on Home: selecting it reveals the shared
+// phone-and-messenger disclosure. Inspect only the untouched form; never submit.
+async function verifyHomeAnalysisCapture(page, capture, locale) {
+  await expect(capture).toHaveAttribute('lang', locale);
+  const chooser = capture.locator('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
+  await expect(chooser).toHaveCount(1);
+  await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveCount(0);
+  const trigger = chooser.locator('button[data-contact-order]');
+  await expect(trigger).toHaveCount(1);
+  await expect(trigger).toHaveAttribute('type', 'button');
+  await expect(trigger).toHaveText(locale === 'ru' ? 'Получить бесплатный личный разбор' : 'Get my free personal analysis');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toBeEnabled();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  const panelId = await trigger.getAttribute('aria-controls');
+  assert.ok(panelId, 'Analysis disclosure must identify its own panel');
+  const panel = chooser.locator('[id=' + JSON.stringify(panelId) + ']');
+  await expect(panel).toHaveCount(1);
+  await expect(panel).toBeHidden();
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(panel).toBeVisible();
+  await expect(page).toHaveURL(origin + homePath(locale));
+  const form = panel.locator('form');
+  await expect(form).toHaveCount(1);
+  const phone = form.locator('[data-phone-country-input] input[type="tel"]');
+  await expect(phone).toBeVisible();
+  await expect(phone).toBeEnabled();
+  await expect(phone).toHaveAttribute('aria-label', locale === 'ru' ? 'Номер телефона' : 'Phone number');
+  await expect(phone).toHaveValue('');
+  await expect(phone).toHaveAttribute('required', '');
+  const consent = form.locator('input[type="checkbox"]');
+  await expect(consent).toHaveCount(1);
+  await expect(consent).toBeVisible();
+  await expect(consent).toBeEnabled();
+  await expect(consent).not.toBeChecked();
+  await expect(consent).toHaveAttribute('required', '');
+  for (const channel of ['whatsapp', 'telegram']) {
+    const submit = form.locator('button[data-contact-channel-submit="' + channel + '"]');
+    await expect(submit).toHaveCount(1);
+    await expect(submit).toHaveAttribute('type', 'button');
+    await expect(submit).toBeVisible();
+    await expect(submit).toBeEnabled();
+  }
+  await expect(form.locator('textarea, input[type="email"]')).toHaveCount(0);
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(origin + homePath(locale));
+  return trigger;
+}
+
 async function verifyFreeOffers(page, locale, engine, width) {
   await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
   const capture = page.locator('[data-home-contact-capture] [data-home-free-capture]');
   await expect(capture).toHaveCount(1);
   const options = capture.locator('[data-home-free-option]');
   assert.deepEqual(await options.evaluateAll(items => items.map(item => item.dataset.homeFreeOption)), ['selfTest', 'analysis', 'reiki']);
-  for (const [id, suffix] of [['selfTest', '/client/tests'], ['analysis', '/services/free-situation-review'], ['reiki', '/academy/principles-of-energywork/learn']]) {
+  for (const [id, suffix] of [['selfTest', '/client/tests'], ['analysis', null], ['reiki', '/academy/principles-of-energywork/learn']]) {
     const option = capture.locator('button[data-home-free-option="' + id + '"]');
     await expect(option).toBeVisible();
     await option.click();
     await expect(option).toHaveAttribute('aria-pressed', 'true');
-    const cta = capture.locator('a[data-home-free-action="' + id + '"]');
-    await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
+    const cta = id === 'analysis'
+      ? await verifyHomeAnalysisCapture(page, capture, locale)
+      : capture.locator('a[data-home-free-action="' + id + '"]');
+    if (id !== 'analysis') await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
     await expect(cta).toBeVisible();
     const size = await cta.evaluate(element => ({ height: element.getBoundingClientRect().height, font: parseFloat(getComputedStyle(element).fontSize) }));
     assert.ok(size.height >= 46 && size.font >= 14, 'Small ' + locale + ' ' + id + ' CTA: ' + JSON.stringify(size));
@@ -130,7 +185,7 @@ async function exerciseFreeJourneys(page, engine, width) {
   for (const locale of ['en', 'ru']) {
     for (const [id, suffix, target] of [
       ['selfTest', '/client/tests', '[data-prelogin-test-picker]'],
-      ['analysis', '/services/free-situation-review', '#free-entry-title'],
+      ['analysis', null, null],
       ['reiki', '/academy/principles-of-energywork/learn', '[data-energywork-ai-learner]'],
     ]) {
       await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
@@ -139,6 +194,12 @@ async function exerciseFreeJourneys(page, engine, width) {
       await page.waitForLoadState('networkidle');
       const chooser = page.locator('[data-home-free-capture]');
       await chooser.locator('button[data-home-free-option="' + id + '"]').click();
+      if (id === 'analysis') {
+        await verifyHomeAnalysisCapture(page, chooser, locale);
+        await page.waitForLoadState('networkidle');
+        results.push({ engine, width, locale, freeJourney: id, inPageCapture: true, stayedOnHome: true, submitted: false });
+        continue;
+      }
       const cta = chooser.locator('a[data-home-free-action="' + id + '"]');
       const beforeClick = await cta.evaluate(element => ({ url: location.href, href: element.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), reactProps: Object.keys(element).some(key => key.startsWith('__reactProps$')) }));
       results.push({ engine, width, locale, entryClickAttempt: id, time: Date.now(), beforeClick });
@@ -206,6 +267,7 @@ async function exercise(engine, browserType, width) {
   let phase = 'setup';
   const transport = createHomeRouteSupervisor({origin, engine, width, stage:() => phase, pageUrl:() => page.url()});
   const cleanupErrors = [];
+  const unexpectedEnquiryRequests = [];
   let caseFailure;
   let delayedLocale = null;
   let heldRequests = 0;
@@ -223,6 +285,20 @@ async function exercise(engine, browserType, width) {
       await perform('gate', () => gate);
       await perform('fulfill', () => route.fulfill({ response }));
     } else await perform('continue', () => route.continue());
+    });
+  });
+  // This test opens an empty disclosure only. Block every enquiry endpoint
+  // attempt before any Home interaction so a regression cannot create a lead.
+  // Register after the catch-all route: Playwright uses the last matching route.
+  await page.route('**/api/service-enquiries**', async route => {
+    await transport.handle(route, async perform => {
+      const method = route.request().method();
+      const blocked = { method: ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method) ? method : 'OTHER' };
+      unexpectedEnquiryRequests.push(blocked);
+      results.push({ engine, width, enquiryRequestBlocked: true, ...blocked });
+      await perform('fulfill', () => route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"SUBMISSION_FORBIDDEN"}' }));
+      // A late attempt must remain fatal even after the last acceptance check.
+      throw new Error('Home capture inspection attempted an enquiry');
     });
   });
   try {
@@ -265,6 +341,7 @@ async function exercise(engine, browserType, width) {
       results.push({ engine, width, from, to, heldRsc: true, firstClickRetained: true });
       phase = 'free-offers';
       await verifyFreeOffers(page, to, engine, width);
+      assert.deepEqual(unexpectedEnquiryRequests, [], 'Home capture inspection must not submit an enquiry');
       transport.assertHealthy();
     }
     transport.assertHealthy();
@@ -298,7 +375,7 @@ async function exercise(engine, browserType, width) {
     await expect(capture).toBeVisible();
     await expect(capture.locator('[data-choice-layout="home-free"] button')).toHaveCount(3);
     await capture.locator('button[data-home-free-option="analysis"]').click();
-    await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveAttribute('href', '/en/services/free-situation-review');
+    await verifyHomeAnalysisCapture(page, capture, 'en');
     await capture.locator('button[data-home-free-option="reiki"]').click();
     await expect(capture.locator('a[data-home-free-action="reiki"]')).toHaveAttribute('href', '/en/academy/principles-of-energywork/learn');
     await capture.locator('button[data-home-free-option="selfTest"]').click();
@@ -347,6 +424,7 @@ async function exercise(engine, browserType, width) {
 
     phase = 'journeys';
     await exerciseFreeJourneys(page, engine, width);
+    assert.deepEqual(unexpectedEnquiryRequests, [], 'Home capture inspection must not submit an enquiry');
     transport.assertHealthy();
     assert.deepEqual(errors, []);
 

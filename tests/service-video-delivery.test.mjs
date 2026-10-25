@@ -54,7 +54,7 @@ function assertServicePageOrder(source, expectedLocale='locale as Locale') {
   const visit=n=>{if(ts.isJsxSelfClosingElement(n)||ts.isJsxOpeningElement(n))nodes.push(n);ts.forEachChild(n,visit)};
   visit(returned);
   // #1153 moved complete sections, #1393 retained open method posters.
-  const order=['ServicesStudioOffers','ServicesIntroMedia','PersonalTestimonials','ServicesMethodVideos','PublicConsultationCta','ServicesDirectoryInvitation'];
+  const order=['PublicConsultationCta','ServicesStudioOffers','ServicesIntroMedia','PersonalTestimonials','ServicesMethodVideos','ServicesDirectoryInvitation'];
   const attr=(node,name)=>node.attributes.properties.find(p=>ts.isJsxAttribute(p)&&p.name.text===name)?.initializer;
   const tags=nodes.map(n=>n.tagName.getText(ast));
   for(const tag of order){
@@ -83,7 +83,7 @@ function renderStudioMedia(name,locale){
   const visit=(node,parents=[])=>{if(Array.isArray(node))return node.forEach(n=>visit(n,parents));if(!node||typeof node!=='object'||!('type'in node))return;nodes.push({...node,parents});visit(node.props.children,[...parents,node])};
   visit(moduleValue.exports[name]({locale}));return nodes;
 }
-test("Services preserves current testimonials → open method gallery → booking order in EN/RU/ES", () => {
+test("Services source keeps consultation first, then offers → intro → testimonials → open methods → directory in EN/RU/ES", () => {
   assertServicePageOrder(read('app/[locale]/services/page.tsx'));
   assertServicePageOrder(read('app/es/services/page.tsx'),'es');
   const browser=read('scripts/verify-site-video-browser.mjs');

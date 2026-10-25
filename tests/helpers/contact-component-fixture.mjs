@@ -83,7 +83,7 @@ export function compileContactModule(text, imports, env) {
   return loaded.exports
 }
 let nextInstance = 0
-export function mount(name, exportName, initialProps, env, {sourceOverride} = {}) {
+export function mount(name, exportName, initialProps, env, {sourceOverride, composeHomeCapture = false, chooserSourceOverride} = {}) {
   const instance = ++nextInstance, instances = new Map(), effects = []
   let current, dirty = true, tree, props = initialProps, unmounted = false
   const same = (a, b) => a && b && a.length === b.length && a.every((value, i) => Object.is(value, b[i]))
@@ -136,6 +136,18 @@ export function mount(name, exportName, initialProps, env, {sourceOverride} = {}
     '@/lib/practitioners/public-service-enquiry-input.mjs': input,
     '@/lib/practitioners/enquiry-receipt.mjs': receipt,
     ...Object.fromEntries(['free-drawing-intake', 'contact-channel-chooser', 'compact-lead-capture', 'service-enquiry-thank-you', 'client-assessment-invite', 'free-diagnosis-offers', 'free-entry-landing'].map(name => ['./' + name + '.module.css', {default: {}}])),
+  }
+  // Opt-in composition executes the complete current Home capture and shared
+  // chooser, including the actual PhoneCountryInput above, rather than a JSX
+  // placeholder at the contact boundary. No native-browser success is implied.
+  if (composeHomeCapture) {
+    assert.equal(name, 'homepage-free-capture')
+    imports['lucide-react'] = {...icons, Brain:'icon-Brain', GraduationCap:'icon-GraduationCap'}
+    imports['./consultation-choice-capture.module.css'] = {default:{}}
+    imports['@/components/acquisition-event-link'] = compileContactModule(
+      readContactSource('components/acquisition-event-link.tsx'), imports, env)
+    imports['@/components/contact-channel-chooser'] = compileContactModule(
+      chooserSourceOverride ?? readContactSource('components/contact-channel-chooser.tsx'), imports, env)
   }
   const component = compileContactModule(sourceOverride ?? readContactSource('components/' + name + '.tsx'), imports, env)[exportName]
   assert.equal(typeof component, 'function', 'Exact component export must exist')

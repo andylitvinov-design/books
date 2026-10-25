@@ -236,7 +236,7 @@ test('font wait and each actual action geometry call are non-optional source con
  ]){assert.ok(source.includes(before));assert.throws(()=>assertVerifierIsolation(source.replace(before,after)),error=>error?.code==='ERR_ASSERTION')}
 });
 test('complete actual mobile runner includes browser-close pageerrors in artifact and terminal verdict without erasing primary errors',async()=>{
- const raw=readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8');
+ const raw=restoreDisclosureHarness(readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8'));
  const start='          const response = await page.goto(',end='          await isolation.assertClean();';
  assert.equal(raw.split(start).length-1,1);assert.equal(raw.split(end).length-1,1);
  for(const phase of ['clean','isolation-close','browser-close','primary']){
@@ -266,7 +266,57 @@ test('actual unscrolled first-screen guard keeps prior CTA−1 and hero+1 naviga
 
 
 const DISCLOSURE_PRE_DIAGNOSTIC_SHA256='729516db4abfa9e9a07f1e2a5eac4baab80775e9d0265649e1021e10d9dc364e';
+
+// Explicit harness-only delta contract; this is not a diagnostic/hash waiver.
+function restoreDisclosureHarness(source) {
+ const approved = {
+  "import": {
+    "sha256": "5e9f043d86e9dee3efd518a2b341813f7913ef1bb91834d0bb772a7520712db4",
+    "restore": "import {createFreeReviewViewportIsolation} from './helpers/free-review-viewport-isolation.mjs';\n"
+  },
+  "abort-state": {
+    "sha256": "62d9da8b0f15a76198a47783bcfccf09f482fcbbe6d42b8d42b7f2f3ea8d1530",
+    "restore": "const results = [];\n"
+  },
+  "toggle-sequence": {
+    "sha256": "0b31670cb7f2e612524e228b27eb23fb9a91f4a1935c82d78aa8c798d01ba2d2",
+    "restore": "          await reveal.click();\n          await reveal.click();\n          assert.equal(await reveal.getAttribute(\"aria-expanded\"), \"true\", \"local CTA unfolds again\");\n          assert.equal(await disclosure.isVisible(), true);\n          await reveal.click();\n          assert.equal(await disclosure.isVisible(), false, \"second tap closes in place\");\n"
+  },
+  "abort-detection": {
+    "sha256": "6d7ef4bdee7be247791b3092d8db187ac4fcae5d024867b546bc26db4ef43fe8",
+    "restore": "          console.error(\"FAIL \" + name + \" \" + record.error);\n"
+  },
+  "abort-next-case": {
+    "sha256": "60ba6466f46c40b95318b094fe36f614f4bf36de001abb82b5a60b6d32d5d95c",
+    "restore": "      }\n    }\n  } finally { await browser.close(); }\n}\n"
+  },
+  "abort-verdict": {
+    "sha256": "c85eda843ba72c7c3b66d10d47db874501a7232ea2c341f211a071e5751b0754",
+    "restore": "const failures = results.filter(record => record.status !== \"PASS\");\n"
+  },
+  "abort-snapshot": {
+    "sha256": "07731f3c2ebbc6b8473b7673f5dba66b1e3dbfc17f3659978d65a9102f68014b",
+    "restore": "          await page.screenshot({ path: output + \"/\" + name + \"-failed.png\",\n            fullPage: true, animations: \"disabled\", timeout: 15000 }).catch(() => {});\n"
+  },
+  "abort-page-cleanup": {
+    "sha256": "1e00dde8a06f0aa1ec7e1968e3d965dd1c0af01adf6aadcf6cfc2a3ab8a18a96",
+    "restore": "          // HH_DISCLOSURE_DIAGNOSTICS_BEGIN export\n          // After the original verdict, never replacing its error.\n          try {\n            record.disclosureDiagnostics = await page.evaluate(() =>\n              window.__hhDisclosureDiagnostics?.finish() ?? {version:1,status:'UNAVAILABLE'});\n          } catch {\n            record.disclosureDiagnostics = {version:1,status:'UNAVAILABLE'};\n          }\n          // HH_DISCLOSURE_DIAGNOSTICS_END export\n          try { await isolation.close(); } catch(error) {\n            record.status='FAIL';record.boundaryError=String(error.message).slice(0,500);\n          }\n"
+  }
+};
+ const seen=[];
+ const restored=source.replace(/^\/\/ HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN ([a-z-]+)\n[\s\S]*?^\/\/ HH_DISCLOSURE_ACTION_EXPERIMENT_END \1\n/gm,(block,id)=>{
+  assert.ok(approved[id], 'Unknown harness delta');
+  assert.equal(seen.includes(id),false,'Repeated harness delta');seen.push(id);
+  assert.equal(createHash('sha256').update(block).digest('hex'),approved[id].sha256,'Harness change requires explicit independent re-review: '+id);
+  return approved[id].restore;
+ });
+ if(seen.length)assert.deepEqual(seen,['import','abort-state','toggle-sequence','abort-detection','abort-snapshot','abort-page-cleanup','abort-next-case','abort-verdict'],'Complete approved harness delta only');
+ assert.doesNotMatch(restored,/HH_DISCLOSURE_ACTION_EXPERIMENT/);
+ return restored;
+}
+
 function stripDisclosureDiagnosticBlocks(source) {
+ source=restoreDisclosureHarness(source);
  const lines=source.split(/(?<=\n)/),kept=[],ids=new Set();let active=null;
  for(const line of lines){
   const begin=line.match(/^\s*\/\/ HH_DISCLOSURE_DIAGNOSTICS_BEGIN ([a-zA-Z0-9_-]+)\s*$/);
@@ -278,8 +328,8 @@ function stripDisclosureDiagnosticBlocks(source) {
  assert.equal(active,null,'Every diagnostic block is closed');assert.deepEqual([...ids],['installer','install','export'],'Only the three approved diagnostic chunks are inserted');
  return kept.join('');
 }
-test('passive diagnostics leave original native actions, awaited sequence, timeouts and verdict byte-identical',()=>{
- const source=readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8');
+test('outside the exact approved harness delta, passive diagnostics leave original native actions and verdict byte-identical',()=>{
+ const source=restoreDisclosureHarness(readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8'));
  const stripped=stripDisclosureDiagnosticBlocks(source);
  assert.equal(createHash('sha256').update(stripped).digest('hex'),DISCLOSURE_PRE_DIAGNOSTIC_SHA256,
   'Only explicitly marked diagnostic insertions may differ from the exact original runner');
@@ -409,6 +459,7 @@ test('diagnostic chunks are observation-only and cannot add awaited work between
 // Separate passive scroll stream: synthetic execution of the actual installer only.
 const DISCLOSURE_PRE_SCROLL_SHA256='3e84e2937792844e12c84974ef14c5bf1da8fd1037e5e371888a9d4b3925aa29';
 function stripScrollDiagnosticBlocks(source) {
+ source=restoreDisclosureHarness(source);
  const kept=[],ids=[];let active=null;
  for(const line of source.split(/(?<=\n)/)){
   const begin=line.match(/^\s*\/\/ HH_SCROLL_DIAGNOSTICS_BEGIN ([a-z-]+)\s*$/),end=line.match(/^\s*\/\/ HH_SCROLL_DIAGNOSTICS_END ([a-z-]+)\s*$/);

@@ -8,6 +8,9 @@ import { OPORA_SEVEN_SKILLS, oporaSkillCards, oporaSkillForDay, oporaSkillPasspo
 import { lessonFor, COURSE_ANTISTRESS_OUTCOME_V3 } from '../lib/inner-growth/lesson-library.js'
 import { buildCourseSlides, verifyCourseSlideVisitOrder } from '../lib/inner-growth/course-slide-sequence.js'
 import { antiStressBlueprint } from '../lib/inner-growth/anti-stress-blueprint.js'
+import * as publicPlans from '../lib/inner-growth/anti-stress-day-scheme.js'
+import * as as60Practices from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import * as as60Journey from '../lib/inner-growth/opora-as60-integrated-journey.js'
 
 const read = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
 
@@ -55,28 +58,129 @@ test('New V5 enrolments have seven compact slides; older V3 lessons preserve 15 
  }
 })
 
-test('Public V6 fifteen-screen preview preserves seven skill IDs and supports all three public languages',()=>{
+// PR #1921 intentionally changed the current public blueprint from three AS-5.9
+// labels to five AS-6.0 experiences. These are method channels, not access slots;
+// V5/V6 historical plans and the V7 public screen metadata are separate.
+const PUBLIC_CHANNELS=['body','emotion','mental','imagery','ritual']
+const V6_PUBLIC_ROLES=['welcome','baseline','pace','focus','aphorism','demo','prepare',
+ 'notice','act','rehearse','scenario','transfer','reflection','save','receipt']
+function verifyCurrentPublicBlueprint(blueprintFor=antiStressBlueprint){
+ assert.deepEqual(as60Journey.OPORA_EXPERIENCE_CHANNELS,PUBLIC_CHANNELS)
  for(const locale of ['ru','en','es']){
-   const blueprint=antiStressBlueprint(locale)
+   const blueprint=blueprintFor(locale)
+   const pinned=publicPlans.antiStressPublicPlanV7(locale)
+   assert.equal(blueprint.locale,locale)
    assert.equal(blueprint.skills.length,7)
    assert.equal(blueprint.days.length,14)
    assert.deepEqual(blueprint.skills.map(skill=>skill.days),[[1,8],[2,9],[3,10],[4,11],[5,12],[6,13],[7,14]])
    for(let day=1;day<=14;day++){
      const d=blueprint.days[day-1]
      const ref=oporaSkillForDay(day,locale==='es'?'en':locale)
+     const journey=as60Journey.oporaAs60Journey(day,locale)
      assert.equal(d.day,day)
      assert.equal(d.skillId,ref.skillId)
      assert.equal(d.week,ref.week)
      assert.equal(d.checkDay,day>7)
      assert.equal(d.screens.length,15)
      assert.ok(d.screens.every(s=>s.expected.length>=10))
+     assert.deepEqual(d.screens.map(screen=>screen.role),V6_PUBLIC_ROLES)
+     assert.deepEqual(d.screens,pinned[day-1].screens,'Current editorial channels do not rewrite V7 screens')
      assert.equal(d.methodStatus,'implemented')
-     assert.equal(d.methodNames.length,3)
+     assert.equal(d.methodVersion,'AS-6.0')
+     assert.deepEqual(d.experiences.map(item=>item.id),PUBLIC_CHANNELS,'Exact channel identity and order, not merely a count')
+     assert.deepEqual(d.experiences,PUBLIC_CHANNELS.map(id=>({id,...journey[id]})),
+       'Each day and locale retains the authored title, text, hint and optional mental plan')
+     assert.deepEqual(d.methodNames,PUBLIC_CHANNELS.map(id=>journey[id].title))
    }
+ }
+}
+
+test('Current AS-6.0 public blueprint preserves seven skill IDs, V7 screen contract and five ordered channels in EN/RU/ES',()=>{
+ verifyCurrentPublicBlueprint()
+})
+
+test('Historical V5 and V6 public plans remain distinct from the current AS-6.0 editorial blueprint',()=>{
+ for(const locale of ['ru','en','es']){
+   const v5=publicPlans.antiStressPublicPlanV5(locale)
+   const v6=publicPlans.antiStressPublicPlanV6(locale)
+   const before=structuredClone({v5,v6})
+   antiStressBlueprint(locale)
+   assert.equal(v5.length,14)
+   assert.equal(v6.length,14)
+   for(let index=0;index<14;index++){
+     for(const plan of [v5,v6]){
+       assert.equal(plan[index].day,index+1)
+       assert.equal(plan[index].skillId,'S'+(index%7+1))
+       assert.equal(Object.hasOwn(plan[index],'experiences'),false)
+       assert.equal(Object.hasOwn(plan[index],'methodNames'),false)
+       assert.equal(Object.hasOwn(plan[index],'methodVersion'),false)
+     }
+     assert.deepEqual(v5[index].screens.map(screen=>screen.role),
+       ['welcome','checkin','guided','ritual','transfer','reflection','feedback'])
+     assert.deepEqual(v6[index].screens.map(screen=>screen.role),V6_PUBLIC_ROLES)
+     assert.equal(v6[index].methodStatus,'implemented')
+   }
+   assert.deepEqual({v5,v6},before,'Current preview must not mutate historical plan objects')
+   assert.deepEqual({v5:publicPlans.antiStressPublicPlanV5(locale),
+     v6:publicPlans.antiStressPublicPlanV6(locale)},before,'Historical helpers remain independently repeatable')
  }
 })
 
-test('V5 remains version-pinned while new AS2 cycles select V6 and keep old module routes',()=>{
+// Mutate only an in-memory source copy. The real pure dependencies are retained;
+// no production source, course data, access rule, workflow or database is edited.
+function blueprintFromSource(source){
+ const modules={
+   './anti-stress-day-scheme.js':publicPlans,
+   './opora-as60-experiential-practices.js':as60Practices,
+   './opora-as60-integrated-journey.js':as60Journey,
+ }
+ const compiled=ts.transpileModule(source,{compilerOptions:{
+   target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,
+ }}).outputText
+ const exports={}
+ new Function('require','exports',compiled)(path=>{
+   assert.ok(Object.hasOwn(modules,path),'Unexpected blueprint dependency: '+path)
+   return modules[path]
+ },exports)
+ return exports.antiStressBlueprint
+}
+test('Current public blueprint checks reject count-only, identity, order, locale, day and historical-screen regressions',async t=>{
+ const source=read('lib/inner-growth/anti-stress-blueprint.js')
+ verifyCurrentPublicBlueprint(blueprintFromSource(source))
+ const mutants=[
+   ['three obsolete method labels','OPORA_EXPERIENCE_CHANNELS.map(channel=>five[channel].title)',
+     'OPORA_EXPERIENCE_CHANNELS.slice(0,3).map(channel=>five[channel].title)'],
+   ['same-count reordered names','OPORA_EXPERIENCE_CHANNELS.map(channel=>five[channel].title)',
+     '[...OPORA_EXPERIENCE_CHANNELS].reverse().map(channel=>five[channel].title)'],
+   ['same-count duplicate names','OPORA_EXPERIENCE_CHANNELS.map(channel=>five[channel].title)',
+     'OPORA_EXPERIENCE_CHANNELS.map(()=>five.body.title)'],
+   ['same-count wrong experience identity','id:channel,...five[channel]',"id:'body',...five[channel]"],
+   ['same-count reordered experience cards','experiences:OPORA_EXPERIENCE_CHANNELS.map',
+     'experiences:[...OPORA_EXPERIENCE_CHANNELS].reverse().map'],
+   ['Spanish or Russian incorrectly use English channels','oporaAs60Journey(day.day,lang)',
+     "oporaAs60Journey(day.day,'en')"],
+   ['every day incorrectly uses day-one material','oporaAs60Journey(day.day,lang)',
+     'oporaAs60Journey(1,lang)'],
+   ['lost authored neutral alternative','id:channel,...five[channel]',
+     "id:channel,...five[channel],hint:'removed'"],
+   ['wrong current editorial version',"methodVersion:'AS-6.0'","methodVersion:'AS-5.9'"],
+   ['removed historical receipt screen','screens:day.screens','screens:day.screens.slice(0,-1)'],
+   ['same-count reordered historical screens','screens:day.screens','screens:[...day.screens].reverse()'],
+ ]
+ for(const [name,from,to] of mutants)await t.test(name,()=>{
+   assert.equal(source.split(from).length,2,'Mutation target must occur exactly once')
+   const mutated=blueprintFromSource(source.replace(from,to))
+   assert.throws(()=>verifyCurrentPublicBlueprint(mutated),{name:'AssertionError'},name)
+ })
+ await t.test('equivalent named-channel enumeration keeps the authored result',()=>{
+   const equivalent=source.replace('methodNames:OPORA_EXPERIENCE_CHANNELS.map(channel=>five[channel].title)',
+     "methodNames:['body','emotion','mental','imagery','ritual'].map(channel=>five[channel].title)")
+   assert.notEqual(equivalent,source)
+   verifyCurrentPublicBlueprint(blueprintFromSource(equivalent))
+ })
+})
+
+test('V5 remains version-pinned while new AS2 cycles select V7 and keep old module routes',()=>{
  const server=read('lib/app/growth-daily.js')
  const player=read('components/app/course-slide-player.jsx')
  const passport=read('docs/myspace/HOLISTIC_HOUSE_OPORA_ANTISTRESS_7_SKILLS_COURSE_PASSPORT_AS5_2026-10-17.md')

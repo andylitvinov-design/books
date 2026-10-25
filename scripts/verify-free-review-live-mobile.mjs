@@ -3,7 +3,10 @@
 // Never submit private questionnaires, create CRM leads, send messages or buy anything.
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN import
 import {createFreeReviewViewportIsolation} from './helpers/free-review-viewport-isolation.mjs';
+import {clickDisclosureOnce,unsafeDisclosureCleanup,boundedDisclosureCleanup} from './helpers/free-review-native-disclosure-action.mjs';
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END import
 // HH_DISCLOSURE_DIAGNOSTICS_BEGIN installer
 // Bounded passive observation; never a repaired-behavior claim.
 function installDisclosureDiagnostics() {
@@ -219,7 +222,10 @@ const { chromium, webkit } = await import(process.env.HH_PLAYWRIGHT_PACKAGE || "
 const origin = (process.env.HH_LIVE_ORIGIN || "https://holistichouse.vercel.app").replace(/\/$/, "");
 const output = "artifacts/free-review-live-mobile";
 mkdirSync(output, { recursive: true });
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN abort-state
 const results = [];
+let unsafeActionFailure = null;
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END abort-state
 const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
 // One personal express review, with two focus categories in a single form.
 for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
@@ -424,12 +430,16 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "Folding hides the mounted chooser; it does not cancel or detach it");
           await mainCta.click();
           assert.equal(await disclosure.isVisible(), true, "Repeated current-hash anchor unfolds the same form");
-          await reveal.click();
-          await reveal.click();
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN toggle-sequence
+          await clickDisclosureOnce({page,reveal,context:isolation.context});
+          assert.equal(await reveal.getAttribute("aria-expanded"), "false", "first local CTA folds the form");
+          assert.equal(await disclosure.isVisible(), false, "first local CTA hides the disclosure");
+          await clickDisclosureOnce({page,reveal,context:isolation.context});
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
           assert.equal(await disclosure.isVisible(), true);
-          await reveal.click();
+          await clickDisclosureOnce({page,reveal,context:isolation.context});
           assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END toggle-sequence
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");
           // The independent private entry and three-offer hub remain supported;
@@ -467,10 +477,22 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
         } catch (error) {
           record.status = "FAIL";
           record.error = String(error.stack || error.message).slice(0, 3000);
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN abort-detection
           console.error("FAIL " + name + " " + record.error);
+          if (unsafeDisclosureCleanup(error)) {
+            unsafeActionFailure = error;
+            record.actionAbort = 'UNCONFIRMED_CONTEXT_CLEANUP';
+          }
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END abort-detection
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN abort-snapshot
+          if (!unsafeActionFailure) {
           await page.screenshot({ path: output + "/" + name + "-failed.png",
             fullPage: true, animations: "disabled", timeout: 15000 }).catch(() => {});
+          }
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END abort-snapshot
         } finally {
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN abort-page-cleanup
+          if (!unsafeActionFailure) {
           // HH_DISCLOSURE_DIAGNOSTICS_BEGIN export
           // After the original verdict, never replacing its error.
           try {
@@ -483,13 +505,24 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           try { await isolation.close(); } catch(error) {
             record.status='FAIL';record.boundaryError=String(error.message).slice(0,500);
           }
+          }
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END abort-page-cleanup
           if(errors.length){record.status='FAIL';record.pageErrorReason='PAGE_ERROR';}
           record.pageErrors=errors;record.boundary=isolation.summary();results.push(record);
         }
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN abort-next-case
+        if (unsafeActionFailure) break;
       }
+      if (unsafeActionFailure) break;
     }
-  } finally { await browser.close(); }
+  } finally {
+    if (unsafeActionFailure) {
+      try { await boundedDisclosureCleanup(()=>browser.close()); } catch { /* primary remains fatal */ }
+    } else await browser.close();
+  }
+  if (unsafeActionFailure) break;
 }
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END abort-next-case
 // browser.close() can emit a last pageerror after a viewport's isolation closed.
 // Normalize only the verdict: preserve original errors, categorical evidence and
 // the results artifact, then let the existing final assertion reject the run.
@@ -499,7 +532,11 @@ for (const record of results) {
 writeFileSync(output + "/results.json", JSON.stringify({
   origin, scriptCommit:process.env.GITHUB_SHA || null,servedCommit:null,deploymentIdentity:'not established by this browser check', checkedAt: new Date().toISOString(), results,
 }, null, 2));
+// HH_DISCLOSURE_ACTION_EXPERIMENT_BEGIN abort-verdict
+// Partial output remains explicitly nonpassing; preserve the primary input error.
+if (unsafeActionFailure) throw unsafeActionFailure;
 const failures = results.filter(record => record.status !== "PASS");
+// HH_DISCLOSURE_ACTION_EXPERIMENT_END abort-verdict
 console.log("TOTAL " + results.length + " PASS " + (results.length - failures.length) +
   " FAIL " + failures.length);
 assert.equal(failures.length, 0, "Inspect screenshots and failed assertions in the workflow artifact");

@@ -159,14 +159,28 @@ try {
         "Method videos must not eagerly load third-party players");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // Canonical header: Cabinet is immediately accessible; Books occupies the bottom bar.
+      // Canonical header: the provider-mounted My Space button controls a private dialog.
+      // Inspect its initial affordance only; do not open it or initiate private/auth reads.
       const header = page.locator("header.house-header--services");
-      const cabinetEntry = header.locator("a.site-cabinet-entry");
+      const cabinetEntry = header.locator('button.site-cabinet-entry[data-nav-item="cabinet"]');
+      await expect(header.locator(".site-cabinet-entry")).toHaveCount(1);
       await expect(cabinetEntry).toHaveCount(1);
       await visible(cabinetEntry);
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top Cabinet opens the authenticated app");
+      await expect(cabinetEntry).toBeEnabled();
+      await expect(cabinetEntry).toHaveAttribute("type", "button");
+      await expect(cabinetEntry).toHaveAccessibleName(locale === "ru" ? "Моё пространство" : "My Space");
+      await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
+      await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
+      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+      const spaceDialog = page.locator("dialog#home-personal-space-dialog");
+      await expect(spaceDialog).toHaveCount(1);
+      assert.equal(await spaceDialog.evaluate(node => node.open), false, "My Space dialog is mounted but initially closed");
+      await expect(spaceDialog).toBeHidden();
+      assert.equal(await cabinetEntry.evaluate(node => node.tabIndex >= 0 &&
+        !node.closest("[inert]") && node.getAttribute("aria-disabled") !== "true" &&
+        getComputedStyle(node).pointerEvents !== "none"), true, "My Space has an enabled keyboard/pointer affordance");
       const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
+      assert.ok(cabinetBounds && cabinetBounds.width > 0 && cabinetBounds.height > 0 && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
@@ -176,13 +190,46 @@ try {
         "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
-      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/books"]');
-      await expect(booksEntry).toHaveCount(1);
-      await visible(booksEntry);
-      await expect(booksEntry).toHaveText(locale === "ru" ? "Идеи" : "Ideas");
-      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/books", "Books opens the locale-specific library books view");
-      const booksBounds = await booksEntry.boundingBox();
-      assert.ok(booksBounds && booksBounds.x >= 0 && booksBounds.x + booksBounds.width <= width + 1, "Books entry must fit the opened menu: " + locale + "/" + width);
+      // Independent current authored structure: seven visitor journeys, then public extras.
+      // Retired /books + Ideas menu expectations must not restore old runtime navigation.
+      const menuCopy = locale === "ru" ? {
+        home: "Главная", analysis: "Бесплатный разбор", courses: "Курсы", profile: "Мой профиль",
+        alchemy: "Алхимия души", pro: "Pro", temple: "Холистическая поддержка", shop: "Магазин", cart: "Корзина",
+        energy: "Тело и энергия", love: "Стресс и отношения", business: "Деньги и бизнес", library: "Библиотека",
+        events: "События", insights: "Храмовые подсказки", services: "Услуги", about: "Обо мне",
+      } : {
+        home: "Home", analysis: "Free Analysis", courses: "Courses", profile: "My Profile",
+        alchemy: "Psychic Alchemy", pro: "Pro", temple: "Holistic Support", shop: "Shop", cart: "Cart",
+        energy: "Body and Energy", love: "Stress and Relationships", business: "Money and Business", library: "Library",
+        events: "Events", insights: "Temple Insights", services: "Services", about: "About",
+      };
+      for (const [selector, entries] of [
+        [".site-main-menu-grid a[data-nav-item]", [
+          ["home", locale === "en" ? "/" : "/" + locale], ["analysis", "/" + locale + "/services/free-situation-review"],
+          ["courses", "/" + locale + "/academy"], ["profile", "/" + locale + "/personality-profiles"],
+          ["alchemy", "/" + locale + "/services/alchemy-of-soul"], ["pro", "/" + locale + "/pro"],
+          ["temple", "/" + locale + "/holistic-support"],
+        ]],
+        [".site-main-menu-more a[data-nav-item]", [
+          ["shop", "/" + locale + "/shop"], ["cart", "/" + locale + "/cart"],
+          ["energy", "/" + locale + "/explore/energy"], ["love", "/" + locale + "/explore/love"],
+          ["business", "/" + locale + "/explore/business"], ["library", "/" + locale + "/library"],
+          ["events", "/" + locale + "/events"], ["insights", "/" + locale + "/temple-insights"],
+          ["services", "/" + locale + "/services"], ["about", "/" + locale + "/about"],
+        ]],
+      ]) {
+        const links = siteMenu.locator(selector);
+        assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({
+          id: node.getAttribute("data-nav-item"), href: node.getAttribute("href"), text: node.textContent.trim(),
+        }))), entries.map(([id, href]) => ({ id, href, text: menuCopy[id] })), "Current authored menu identity/order/locale: " + locale);
+        for (let index = 0; index < entries.length; index += 1) {
+          const link = links.nth(index);
+          await visible(link);
+          const bounds = await link.boundingBox();
+          assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width + 1,
+            "Public menu entry must fit the opened menu: " + locale + "/" + width + "/" + entries[index][0]);
+        }
+      }
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);

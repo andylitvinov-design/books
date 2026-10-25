@@ -2,6 +2,7 @@ import { verifyHypnotherapyEnquiryJourney } from './helpers/hypnotherapy-enquiry
 import { verifyAlchemyEnquiryJourney } from './helpers/alchemy-enquiry-journey-verifier.mjs'
 import { verifyContactConsentNativeAcceptance } from './helpers/contact-consent-native-acceptance.mjs'
 import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs'
+import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs'
 import { verifyDaoLeadJourney } from './helpers/dao-lead-journey-verifier.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
@@ -464,6 +465,14 @@ async function verifyPublicServiceConversionJourneys(){
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assertAlchemyPanelOrder(measurements)
+     if(measurements.some(x=>x.name!=='reviews'&&x.height>x.max)){
+      try{
+       await captureAlchemyPanelOverflow({page:servicePage,output,locale,width,
+        panelHeights:measurements.map(panel=>({...panel}))})
+      }catch{
+       console.error('ALCHEMY_PANEL_DIAGNOSTIC_FAILED')
+      }
+     }
      assert.deepEqual(measurements.filter(x=>x.name!=='reviews'&&x.height>x.max),[],
       'Every collapsed Alchemy section except the twelve-video reviews feed must fit one phone screen: '+JSON.stringify(measurements))
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)

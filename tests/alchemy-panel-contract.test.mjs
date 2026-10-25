@@ -38,47 +38,76 @@ test('source integration retains ordered panels, expanded payments and DAO verif
 // Execute only the actual collapsed-panel assertion block. No browser/DOM or
 // application startup is imported; hosted Chromium/WebKit are still required.
 const script=await (await import('node:fs/promises')).readFile(new URL('../scripts/verify-app-r1.mjs',import.meta.url),'utf8')
-function assertCollapsedGeometry(source, measurements) {
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+async function assertCollapsedGeometry(source, measurements, capture = async () => {}) {
   const start='     assertAlchemyPanelOrder(measurements)\n'
   const end='     await assertAlchemyPaymentsExpanded(servicePage,expect,width)'
   assert.equal(source.split(start).length,2,'One actual ordered-panel assertion block')
   assert.equal(source.split(end).length,2,'One following expanded-payment journey')
   const from=source.indexOf(start),to=source.indexOf(end,from)
   assert.ok(to>from,'The collapsed budget precedes expanded payment checks')
-  new Function('assert','assertAlchemyPanelOrder','measurements',source.slice(from,to))(assert,assertAlchemyPanelOrder,measurements)
+  return new AsyncFunction('assert','assertAlchemyPanelOrder','measurements','captureAlchemyPanelOverflow',
+    'servicePage','output','locale','width','console',source.slice(from,to))(
+      assert,assertAlchemyPanelOrder,measurements,capture,Object.freeze({}),
+      'artifacts/unit-alchemy','en',1280,{error:()=>{}})
 }
 const measured=reviewHeight=>ALCHEMY_PANEL_IDS.map(name=>({name,height:name==='reviews'?reviewHeight:740,max:764}))
-for(const height of [4075,4225]) test('actual main verifier admits the approved twelve-video reviews height '+height,()=>{
+for(const height of [4075,4225]) test('actual main verifier admits the approved twelve-video reviews height '+height,async()=>{
   const values=measured(height),before=structuredClone(values)
-  assertCollapsedGeometry(script,values)
+  await assertCollapsedGeometry(script,values)
   assert.deepEqual(values,before,'The verifier never clamps or edits measured geometry')
 })
-for(const name of ALCHEMY_PANEL_IDS.filter(name=>name!=='reviews')) test('actual main verifier rejects overflow of non-review panel '+name,()=>{
+for(const name of ALCHEMY_PANEL_IDS.filter(name=>name!=='reviews')) test('actual main verifier rejects overflow of non-review panel '+name,async()=>{
   const values=measured(4225);values.find(panel=>panel.name===name).height=765
-  assert.throws(()=>assertCollapsedGeometry(script,values),error=>error.code==='ERR_ASSERTION'&&error.message.includes('must fit one phone screen'))
+  await assert.rejects(assertCollapsedGeometry(script,values),error=>error.code==='ERR_ASSERTION'&&error.message.includes('must fit one phone screen'))
 })
-test('actual main verifier preserves the inclusive exact budget for all nine other panels',()=>{
+test('actual main verifier preserves the inclusive exact budget for all nine other panels',async()=>{
   const values=measured(4225);for(const panel of values)if(panel.name!=='reviews')panel.height=panel.max
-  assertCollapsedGeometry(script,values)
+  await assertCollapsedGeometry(script,values)
 })
 for(const [name,change] of [
   ['missing reviews',values=>values.filter(panel=>panel.name!=='reviews')],
   ['renamed reviews',values=>values.map(panel=>panel.name==='reviews'?{...panel,name:'reviews-extra'}:panel)],
   ['duplicated reviews',values=>values.map(panel=>panel.name==='formats'?{...panel,name:'reviews'}:panel)],
   ['changed order',values=>[values[1],values[0],...values.slice(2)]],
-]) test('actual budget cannot hide panel identity violation: '+name,()=>{
-  assert.throws(()=>assertCollapsedGeometry(script,change(measured(4225))),error=>error.code==='ERR_ASSERTION'&&error.message.includes('exactly ten unique panels'))
+]) test('actual budget cannot hide panel identity violation: '+name,async()=>{
+  await assert.rejects(assertCollapsedGeometry(script,change(measured(4225))),error=>error.code==='ERR_ASSERTION'&&error.message.includes('exactly ten unique panels'))
 })
 for(const [name,before,after,values] of [
   ['all-panel exemption',"x.name!=='reviews'&&x.height>x.max",'false',()=>{const values=measured(4225);values[0].height=765;return values}],
   ['wrong identity exempted',"x.name!=='reviews'","x.name!=='formats'",()=>measured(4225)],
   ['inverse height predicate','x.height>x.max','x.height<x.max',()=>measured(4225)],
   ['strict boundary regression','x.height>x.max','x.height>=x.max',()=>measured(4225).map(panel=>panel.name==='reviews'?panel:{...panel,height:764})],
-]) test('geometry oracle rejects meaningful verifier mutant: '+name,()=>{
-  assert.equal(script.split(before).length,2,'Mutation targets the one actual predicate')
-  const mutant=script.replace(before,after)
-  if(name==='all-panel exemption')assert.throws(()=>assert.throws(()=>assertCollapsedGeometry(mutant,values())),error=>error.code==='ERR_ASSERTION')
-  else assert.throws(()=>assertCollapsedGeometry(mutant,values()),error=>error.code==='ERR_ASSERTION')
+]) test('geometry oracle rejects meaningful verifier mutant: '+name,async()=>{
+  // Mutate the original acceptance assertion, never the diagnostic-only predicate.
+  const from=script.indexOf('     assert.deepEqual(measurements.filter(')
+  const to=script.indexOf('     await assertAlchemyPaymentsExpanded(servicePage,expect,width)',from)
+  assert.ok(from>=0&&to>from)
+  const acceptance=script.slice(from,to)
+  assert.equal(acceptance.split(before).length,2,'Mutation targets the one original acceptance predicate')
+  const mutant=script.slice(0,from)+acceptance.replace(before,after)+script.slice(to)
+  if(name==='all-panel exemption') {
+    await assert.rejects(assert.rejects(assertCollapsedGeometry(mutant,values())),
+      error=>error.code==='ERR_ASSERTION'&&error.message.includes('Missing expected rejection'))
+  } else {
+    await assert.rejects(assertCollapsedGeometry(mutant,values()),
+      error=>error.code==='ERR_ASSERTION'&&error.message.includes('must fit one phone screen'))
+  }
+})
+for(const throwing of [false,true]) test('diagnostic mutation cannot replace the original assertion, throwing='+throwing,async()=>{
+  const values=measured(7325);values.find(panel=>panel.name==='formats').height=890
+  const before=structuredClone(values)
+  await assert.rejects(assertCollapsedGeometry(script,values,async({panelHeights})=>{
+    panelHeights.find(panel=>panel.name==='formats').height=0
+    if(throwing)throw new Error('synthetic diagnostic failure')
+  }),error=>{
+    assert.equal(error.code,'ERR_ASSERTION')
+    assert.ok(error.message.includes('must fit one phone screen'))
+    assert.deepEqual(error.actual,[{name:'formats',height:890,max:764}])
+    assert.deepEqual(error.expected,[])
+    return true
+  })
+  assert.deepEqual(values,before,'Diagnostic changes cannot mutate the original measurement array')
 })
 
 const reviewIds={

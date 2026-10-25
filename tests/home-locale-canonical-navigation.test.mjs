@@ -69,7 +69,7 @@ for (const locale of ['en', 'ru']) {
   })) test(`${locale} anchor selection rejects ${name}`, () => assert.rejects(chooseScenario(locale, input)));
 }
 
-const routeSource = extract("  await page.route('**/*', async route => {", '\n  try {');
+const routeSource = extract("  await page.route('**/*', async route => {", '\n  // This test opens an empty disclosure only.');
 test('the actual RSC handler fetches the real response and cannot fulfill before the observation gate', async () => {
   let handler, release;
   const gate = new Promise(resolve => { release = resolve; });
@@ -148,11 +148,12 @@ for (const [from, to] of [['en', 'ru'], ['ru', 'en']]) {
 const journeys = extract('async function exerciseFreeJourneys(', 'async function verifyHomeTestimonialPosters(');
 async function journeyScenario({ wrongBack = false, wrongDestination = false, privateRequest = false } = {}) {
   let url, home, selected, routeHandler;
-  const results = [], openedHomes = [];
-  const suffixes = { selfTest: '/client/tests', analysis: '/services/free-situation-review', reiki: '/academy/principles-of-energywork/learn' };
+  const results = [], openedHomes = [], inPageCaptures = [];
+  const suffixes = { selfTest: '/client/tests', reiki: '/academy/principles-of-energywork/learn' };
   const chooser = { locator(selector) {
     const option = selector.match(/^button\[data-home-free-option="([a-zA-Z]+)"\]$/);
     if (option) return { async click() { selected = option[1]; } };
+    assert.notEqual(selected, 'analysis', 'Analysis must use the in-page capture, not an anchor');
     assert.equal(selector, `a[data-home-free-action="${selected}"]`);
     return { async evaluate() { return { url }; }, async click() {
       const locale = home.endsWith('/ru') ? 'ru' : 'en';
@@ -176,11 +177,19 @@ async function journeyScenario({ wrongBack = false, wrongDestination = false, pr
     async toBeVisible() { assert.ok(target.selector); },
     async toHaveCount(count) { assert.equal(target.selector, '#cabinet-tests'); assert.equal(count, 1); },
   });
-  await new Function('assert', 'expect', 'origin', 'homePath', 'results', `${journeys}; return exerciseFreeJourneys;`)(assert, expect, origin, homePath, results)(page, 'test', 390);
+  // Canonical-route bookkeeping only; actual Home/chooser source and disclosure
+  // acceptance are executed separately in home-locale-free-capture.test.mjs.
+  const verifyHomeAnalysisCapture = async (target, scope, locale) => {
+    assert.equal(target, page); assert.equal(scope, chooser); assert.equal(selected, 'analysis');
+    assert.equal(url, origin + homePath(locale)); inPageCaptures.push(locale);
+  };
+  await new Function('assert', 'expect', 'origin', 'homePath', 'results', 'verifyHomeAnalysisCapture', `${journeys}; return exerciseFreeJourneys;`)(assert, expect, origin, homePath, results, verifyHomeAnalysisCapture)(page, 'test', 390);
   assert.deepEqual(openedHomes, ['/', '/', '/', '/ru', '/ru', '/ru'].map(path => origin + path));
-  assert.equal(results.filter(result => result.freeJourney && result.backReturned && !result.submitted).length, 6);
+  assert.equal(results.filter(result => result.freeJourney && result.backReturned && !result.submitted).length, 4);
+  assert.deepEqual(inPageCaptures, ['en', 'ru']);
+  assert.equal(results.filter(result => result.freeJourney === 'analysis' && result.inPageCapture && result.stayedOnHome && !result.submitted).length, 2);
 }
-test('all six free journeys start and return to exact canonical EN/RU homes', () => journeyScenario());
+test('four direct entries return and two in-page captures stay on exact canonical EN/RU homes', () => journeyScenario());
 for (const name of ['wrongBack', 'wrongDestination', 'privateRequest']) test(`free journeys reject ${name}`, () => assert.rejects(journeyScenario({ [name]: true })));
 
 test('real-browser matrices, privacy, no-discard, visuals and errors stay mandatory', () => {
