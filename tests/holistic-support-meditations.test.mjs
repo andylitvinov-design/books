@@ -21,7 +21,9 @@ test("Holistic Support has an accessible audio and video meditation destination 
   assert.match(page, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
   assert.match(page, /<AcademyCourseVideoPlaylist/);
   assert.match(page, /introText=\{t\.meditationVideoIntro\}/);
-  assert.match(css, /\[data-holistic-meditations\]\{scroll-margin-top/);
+  assert.match(css, /\.section\[data-holistic-meditations\]\{scroll-margin-top/);
+  assert.match(css, /\.section\[data-holistic-meditations\] \.libraryLink\{/);
+  assert.doesNotMatch(css, /(?:^|\n)\[data-holistic-meditations\]/);
   assert.match(css, /@media\(max-width:350px\)/);
   assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("data-holistic-healing"));
   assert.ok(page.indexOf("data-holistic-meditations") < page.indexOf("data-holistic-coaching-followup"));
