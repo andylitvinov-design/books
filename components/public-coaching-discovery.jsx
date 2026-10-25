@@ -756,20 +756,21 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         {!finished&&(entryStep!=='questions'||!requiresAdult||adultAcknowledged)&&<footer className={styles.sessionFooter} data-coaching-messenger-footer={entryStep==='questions'?'true':undefined}>
           {entryStep==='questions'&&<div className={styles.messengerReply} data-coaching-composer>
             <div className={styles.replyHeading}>
-              <label htmlFor="public-coaching-message">{pendingFollowup?t.clarifyAnswer:t.openAnswer}</label>
+              <label htmlFor={pendingFollowup?'public-coaching-reflection':'public-coaching-answer'}>{pendingFollowup?t.clarifyAnswer:t.openAnswer}</label>
               <span>{lang==='ru'?'Ваше сообщение':lang==='es'?'Tu mensaje':'Your message'}</span>
             </div>
-            <textarea id="public-coaching-message" className={styles.messageInput}
-              aria-describedby={pendingFollowup?'public-coaching-followup-report-note':'public-coaching-report-note'}
-              data-public-coaching-open-reflection={!pendingFollowup&&!quickChoices?'true':undefined} rows={2} maxLength={pendingFollowup?500:800}
-              placeholder={t.answerPlaceholder}
-              value={pendingFollowup?reflectionDraft:(draft.startsWith('choice:')?'':draft)}
-              disabled={dictating}
-              onChange={e=>{
-                if(pendingFollowup)setReflectionDraft(e.target.value)
-                else setDraft(e.target.value)
-                setError('')
-              }}/>
+            {pendingFollowup
+              ?<textarea id="public-coaching-reflection" className={styles.messageInput}
+                aria-describedby="public-coaching-followup-report-note"
+                rows={2} maxLength={500} placeholder={t.answerPlaceholder}
+                value={reflectionDraft} disabled={dictating}
+                onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+              :<textarea id="public-coaching-answer" className={styles.messageInput}
+                aria-describedby="public-coaching-report-note"
+                data-public-coaching-open-reflection={!quickChoices?'true':undefined}
+                rows={2} maxLength={800} placeholder={t.answerPlaceholder}
+                value={draft.startsWith('choice:')?'':draft} disabled={dictating}
+                onChange={e=>{setDraft(e.target.value);setError('')}}/>}
             <div className={styles.replyTools}>
               <CoachingQuestionVoice key={(pendingFollowup?'guest-followup-':'guest-question-')+current.id+'-'+lang}
                 compact text={pendingFollowup?[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' '):[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')}
