@@ -152,8 +152,21 @@ export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale })
             id={"holistic-topic-tab-" + id}
             aria-controls="holistic-topic-panel"
             aria-selected={activeTopic === id}
+            aria-label={t.topics[id].label}
+            tabIndex={activeTopic === id ? 0 : -1}
             data-holistic-topic={id}
             className={styles.tab}
+            onKeyDown={(event) => {
+              const index = topicOrder.findIndex(item => item.id === id);
+              const next = event.key === "ArrowRight" ? (index + 1) % topicOrder.length
+                : event.key === "ArrowLeft" ? (index + topicOrder.length - 1) % topicOrder.length
+                : event.key === "Home" ? 0 : event.key === "End" ? topicOrder.length - 1 : -1;
+              if (next < 0) return;
+              event.preventDefault();
+              const nextId = topicOrder[next].id;
+              setActiveTopic(nextId);
+              document.getElementById("holistic-topic-tab-" + nextId)?.focus();
+            }}
             onClick={() => setActiveTopic(id)}>
             <Icon size={18} strokeWidth={1.7} aria-hidden="true" />
             <span>{t.topics[id].label}</span>
