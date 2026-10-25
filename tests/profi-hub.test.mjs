@@ -49,11 +49,11 @@ test('every Pro card has existing locally-hosted photography and a real action',
     }
     assert.ok(find(view,'data-profi-action','start-course-overview'),'direct course CTA above the fold')
     assert.equal(find(view,'data-profi-path','practice').props.href,'#profi-practice')
-    for(const key of ['session','intro','workshop','course']){
+    for(const key of ['diagnostic','energy','meditation','personal']){
       const offer=find(view,'data-profi-offer',key)
       assert.ok(nodes(offer).some(node=>node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'offer image at left: '+key)
     }
-    const preview=find(view,'data-profi-preview','session')
+    const preview=find(view,'data-profi-preview','diagnostic')
     assert.ok(nodes(preview).some(node=>node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')))
     assert.equal(nodes(preview).filter(node=>node.props?.className==='fakeButton').length,0)
     assert.equal(find(view,'data-profi-action','create-service').props.prefetch,false)
@@ -126,19 +126,21 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
   assert.match(hub,/locale === "es" \? "en" : locale/)
 })
 
-test('bottom bar and hamburger replace Tests with Pro while keeping six usable links',()=>{
-  const expected=['home','profile','coaching','insights','support','pro']
+test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
+  const expected=['home','analysis','courses','profile','coaching','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
-    assert.equal(nav.at(-1).href,'/'+locale+'/pro')
+    assert.equal(nav.at(-2).href,'/'+locale+'/pro')
+    assert.equal(nav.at(-1).href,'/'+locale+'/holistic-support')
     assert.equal(getSiteNavigation(locale).find(x=>x.id==='pro')?.href,'/'+locale+'/pro')
     assert.equal(activeCompactNavigationId('/'+locale+'/pro'),'pro')
   }
   assert.match(read('components/compact-navigation-icons.ts'),/pro: GraduationCap/)
+  assert.match(read('components/compact-navigation-icons.ts'),/temple: Landmark/)
   assert.match(read('components/mobile-bottom-navigation.tsx'),/getCompactNavigation\(locale\)/)
-  assert.match(read('app/ia-v2.css'),/repeat\(6,minmax\(0,1fr\)\)/)
-  assert.match(read('app/holistic-house-home.css'),/repeat\(6, minmax\(0,1fr\)\)/)
+  assert.match(read('app/ia-v2.css'),/repeat\(7,minmax\(0,1fr\)\)/)
+  assert.match(read('app/holistic-house-home.css'),/repeat\(7, minmax\(0,1fr\)\)/)
 })
 
 
@@ -201,10 +203,10 @@ test('actual interactive learner track explores five steps but launches only exi
 
 test('offer studio really switches all four starter destinations, not fake publish forms',()=>{
   const choices=[
-    ['session','?panel=services&create=1&starter=session','create-service'],
-    ['intro','?panel=services&create=1&starter=intro','create-service'],
-    ['workshop','?panel=services&create=1&starter=workshop','create-service'],
-    ['course','?panel=materials&materialTab=courses&create=1','create-course'],
+    ['diagnostic','?panel=services&create=1&starter=diagnostic','create-service'],
+    ['energy','?panel=services&create=1&starter=energy','create-service'],
+    ['meditation','?panel=materials&materialTab=courses&create=1','create-course'],
+    ['personal','?panel=services&create=1&starter=personal','create-service'],
   ]
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
@@ -225,11 +227,35 @@ test('offer studio really switches all four starter destinations, not fake publi
   }
 })
 
+test('Master offer choices are localized, non-medical, and backed by approved service types',()=>{
+  const labels={
+    en:['Personal diagnostics','Energy support','Create a meditation course','Personal service'],
+    ru:['Персональная диагностика','Энергетическая поддержка','Создать онлайн-курс медитации','Персональная услуга'],
+    es:['Diagnóstico personal','Apoyo energético','Crear un curso de meditación','Servicio personal'],
+  }
+  const keys=['diagnostic','energy','meditation','personal']
+  for(const locale of ['en','ru','es']){
+    const view=mount(locale).render()
+    assert.equal(find(view,'data-profi-offer','diagnostic').props['aria-pressed'],true)
+    keys.forEach((key,index)=>{
+      const option=find(view,'data-profi-offer',key)
+      assert.ok(JSON.stringify(option).includes(labels[locale][index]),locale+': '+key)
+      assert.equal(option.props.type,'button')
+    })
+  }
+  assert.match(editor,/diagnostic: \{ areaKey:'personal_development', offeringType:'assessment'/)
+  assert.match(editor,/energy: \{ areaKey:'energy_spiritual', offeringType:'session'/)
+  assert.match(editor,/personal: \{ areaKey:'personal_development', offeringType:'session'/)
+  assert.match(hub,/not a medical diagnosis or treatment/)
+  assert.match(hub,/Это не медицинский диагноз или лечение/)
+  assert.match(hub,/No es un diagnóstico ni un tratamiento médico/)
+})
+
 test('safe Google OAuth continuation validates and maps only categorical Pro intents',()=>{
   assert.match(app,/page === 'practice' \? \{ continueTo: 'my-practice'/)
   assert.match(app,/proPanel === 'services' && proCreate/)
   assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'[^\]]*\]\)/)
-  assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'course', 'profile', 'requests'\]/g)||[]).length,2)
+  assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'\]/g)||[]).length,2)
   assert.match(auth,/profi === 'course' \? '\?panel=materials&materialTab=courses&create=1'/)
   assert.match(auth,/profi === 'profile' \? '\?panel=profile'/)
   assert.match(auth,/profi === 'requests' \? '\?panel=requests'/)
@@ -240,10 +266,10 @@ test('safe Google OAuth continuation validates and maps only categorical Pro int
 test('actual protected editors open the requested draft without saving before user confirmation',()=>{
   assert.match(practice,/params\.get\('create'\)==='1'/)
   assert.match(practice,/setNewServiceRequest\(current=>current\+1\)/)
-  assert.match(practice,/setProStarter\(\['session','intro','workshop'\]\.includes/)
+  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal'\]\.includes/)
   assert.match(practice,/quickCreateCourse=\{proCourseStart\}/)
   assert.match(practice,/starter=\{item\?null:starter\}/)
-  for(const kind of ['session','intro','workshop']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
+  for(const kind of ['diagnostic','energy','personal']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
   assert.match(editor,/!item && Object\.hasOwn\(PRO_STARTERS,starter\)/)
   assert.match(editor,/onSaveAndSubmit\(item\?\.id\|\|null,makePayload\(\),item\?\.revision\)/)
   assert.match(materials,/setCourseComposerOpen\(true\)/)

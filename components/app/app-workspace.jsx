@@ -252,7 +252,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       const proPanel = page === 'practice' ? searchParams.get('panel') : null
       const proStarter = searchParams.get('starter')
       const proCreate = searchParams.get('create') === '1'
-      const proIntent = proPanel === 'services' && proCreate && ['session','intro','workshop'].includes(proStarter)
+      const proIntent = proPanel === 'services' && proCreate && ['session','intro','workshop','diagnostic','energy','personal'].includes(proStarter)
         ? proStarter
         : proPanel === 'materials' && searchParams.get('materialTab') === 'courses' && proCreate
           ? 'course'
