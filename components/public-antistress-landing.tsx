@@ -561,7 +561,7 @@ const copy = {
       {
         "number": "03",
         "title": "Práctica guiada",
-        "text": "Una imagen, instrucciones breves y opciones, con alternativas suaves."
+        "text": "Cinco experiencias: cuerpo, emociones, pensamiento y plan, imagen con música opcional y un ritual seguro."
       },
       {
         "number": "04",
