@@ -25,6 +25,7 @@ const copy = {
   en: {
     sendEyebrow: "FINAL STEP · SEND YOUR REQUEST",
     sendTitle: "Request your free written diagnostic",
+    sendPaidTitle: "Request a personal coaching session",
     sendLead: "Choose a free written review or request a live consultation. Andrey receives your contact and the completed coaching questionnaire only when you explicitly send it.",
     sendOption: "What would you like to request?",
     sendFree: "Free written diagnostic · €0",
@@ -79,6 +80,7 @@ const copy = {
   ru: {
     sendEyebrow: "ЗАВЕРШЕНИЕ · ОТПРАВКА ЗАЯВКИ",
     sendTitle: "Запросить бесплатную письменную диагностику",
+    sendPaidTitle: "Записаться на личную коучинговую сессию",
     sendLead: "Выберите бесплатный письменный разбор или личную сессию. Только после отправки Андрей получит ваши контакты и заполненную коучинговую анкету в защищённой CRM.",
     sendOption: "Что вы хотите заказать?",
     sendFree: "Бесплатная письменная диагностика · €0",
@@ -133,6 +135,7 @@ const copy = {
   es: {
     sendEyebrow: "ÚLTIMO PASO · ENVÍA TU SOLICITUD",
     sendTitle: "Solicitar evaluación escrita gratuita",
+    sendPaidTitle: "Solicitar una sesión personal de coaching",
     sendLead: "Elige una revisión gratuita o sesión personal. Andrey recibe tu contacto y el cuestionario únicamente cuando confirmas el envío.",
     sendOption: "¿Qué te gustaría solicitar?",
     sendFree: "Evaluación escrita gratis · €0",
@@ -494,7 +497,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     <section className={styles.finish} aria-label={locale === "ru" ? "Сохранение анкеты" : locale === "es" ? "Guardar formulario" : "Save questionnaire"}>
       <div className={styles.requestBox} data-coaching-request>
         <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
-        <h3>{t.sendTitle}</h3>
+        <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
         <p className={styles.requestLead}>{t.sendLead}</p>
         {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
           <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
