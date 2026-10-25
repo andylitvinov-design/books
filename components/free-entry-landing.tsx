@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, ShieldCheck, Sparkle
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
-import { FreeDiagnosisOffers } from "@/components/free-diagnosis-offers";
+import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
@@ -77,33 +77,33 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "FREE PERSONAL REVIEW · WITH ANDREY",
-      title: "Free situation review — personally with Andrey.",
-      lead: "Tell me what feels stuck. I will help you look at your question, possible obstacles and the next practical step — in a free personal written review.",
-      value: "Personal written reflections · no call · no payment.",
-      bullets: ["Clarify what you want to change or understand.", "Explore the roles, tensions and resources in your situation.", "Receive personal written observations to reflect on."],
-      outcomeTitle: "Clarity you can act on",
-      outcomeLead: "See your goal, your obstacles and the resources you can draw on.",
+      eyebrow: "FREE PERSONAL EXPRESS REVIEW · WITH ANDREY",
+      title: "Free personal express review with Andrey.",
+      lead: "One personal written review of your question — a life situation or your energy and wellbeing. We explore resources and a next step, not a medical diagnosis.",
+      value: "One personal written express review · free · no call.",
+      bullets: ["Identify the main question.", "See obstacles and available resources.", "Find a possible next step."],
+      outcomeTitle: "A clearer view of your question",
+      outcomeLead: "Personal observations, rather than another generic online test.",
       outcomes: [
-        { title: "Clarity", text: "Put the real question into words." },
-        { title: "Fresh perspective", text: "Explore patterns, obstacles and resources." },
-        { title: "One next step", text: "Receive personal written observations." },
+        { title: "Your central question", text: "Separate what matters from the surrounding noise." },
+        { title: "A fresh perspective", text: "Look at context, obstacles and resources together." },
+        { title: "A possible next step", text: "Receive personal written observations to consider." },
       ],
-      processTitle: "Three simple steps",
-      processLead: "No payment, long registration or video appointment is required for the free written format.",
+      processTitle: "A private, simple way to begin",
+      processLead: "The initial written express review is free; no appointment or call is needed.",
       steps: [
-        { title: "Tell me your situation", text: "Complete a short questionnaire about your question and goal." },
-        { title: "Draw three elements", text: "Sketch ME, GOAL and PROBLEM on paper and photograph it." },
-        { title: "Private handoff", text: "Do not send private answers or your drawing via messengers. Agree a secure handoff in your account." },
+        { title: "Choose your focus", text: "At the bottom, select situation or energy and wellbeing." },
+        { title: "Leave one contact", text: "Phone number and consent for one reply via WhatsApp or Telegram." },
+        { title: "Agree a secure handoff", text: "Andrey explains how to share details privately, then provides a written reflection." },
       ],
-      startTitle: "Tell me what you would like to explore",
-      startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
-      cta: "Start my free review", secondary: "How it works",
+      startTitle: "What would you like to explore?",
+      startLead: "Select your focus and leave your phone. Do not share private details in the chat.",
+      cta: "Request my free express review", secondary: "How it works",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Lighthouse on the coast", processAlt: "Calm, sunlit room",
       faq: [
-        ["What is included for free?", "A personal written review of your coaching questionnaire and handwritten drawing. It does not include a video call or live consultation."],
-        ["Do I need artistic skills?", "No. Three simple shapes or symbols on paper are enough; the drawing is a prompt for reflection, not an art test."],
-        ["Will you save my answers here?", "The contact request saves contact details only. Sign in and consent to save an encrypted questionnaire draft in your account. Saving does not send it to a practitioner. Drawings remain on your device."],
+        ["What is free?", "An initial personal written express review after agreeing a secure handoff. Live consultations are separate and optional."],
+        ["Do I need a drawing?", "For a situation question Andrey may suggest a simple ME–GOAL–PROBLEM drawing. Energy and wellbeing questions use different prompts."],
+        ["Is this health diagnosis?", "No. This is symbolic reflection, not a medical assessment or treatment. Please consult a qualified clinician about health concerns."],
       ],
     },
     dao: {
@@ -180,33 +180,33 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "БЕСПЛАТНЫЙ ЛИЧНЫЙ РАЗБОР · С АНДРЕЕМ",
-      title: "Бесплатный разбор вашей ситуации с Андреем.",
-      lead: "Расскажите, что вас беспокоит. Я помогу увидеть главный вопрос, возможные препятствия и следующий практический шаг — в бесплатном письменном разборе.",
-      value: "Личный письменный ответ · без звонка · без оплаты.",
-      bullets: ["Проясните, что хотите понять или изменить.", "Исследуйте роли, напряжения и ресурсы ситуации.", "Получите письменные наблюдения для размышления."],
-      outcomeTitle: "Ясность и новые возможности",
-      outcomeLead: "Разберите цель, препятствия и ресурсы, на которые можно опереться.",
+      eyebrow: "ЛИЧНАЯ ЭКСПРЕСС-ДИАГНОСТИКА · С АНДРЕЕМ",
+      title: "Личная экспресс-диагностика с Андреем.",
+      lead: "Один бесплатный личный письменный разбор — по ситуации либо по энергии и самочувствию. Посмотрим на суть вопроса, ресурсы и возможный следующий шаг.",
+      value: "Личный письменный экспресс-разбор · бесплатно · без звонка.",
+      bullets: ["Уточнить главный вопрос.", "Увидеть препятствия и ресурсы.", "Наметить следующий шаг."],
+      outcomeTitle: "Понять суть своего запроса",
+      outcomeLead: "Личный взгляд на вашу задачу, а не обезличенный онлайн-тест.",
       outcomes: [
-        { title: "Ясность", text: "Определите главный вопрос." },
-        { title: "Новый взгляд", text: "Исследуйте связи, препятствия и ресурсы." },
-        { title: "Следующий шаг", text: "Получите личные письменные наблюдения." },
+        { title: "Суть вопроса", text: "Отделить главное от сопутствующих обстоятельств." },
+        { title: "Новый взгляд", text: "Увидеть связи, препятствия и собственные ресурсы." },
+        { title: "Следующий шаг", text: "Получить личные письменные наблюдения." },
       ],
-      processTitle: "Всего три шага",
-      processLead: "Бесплатный письменный формат не требует оплаты, долгой регистрации и видеовстречи.",
+      processTitle: "Лично, просто и конфиденциально",
+      processLead: "Первичный письменный экспресс-разбор бесплатный, без записи на звонок.",
       steps: [
-        { title: "Опишите ситуацию", text: "Ответьте на несколько вопросов о проблеме и цели." },
-        { title: "Нарисуйте три элемента", text: "Изобразите на бумаге «Я», «ЦЕЛЬ» и «ПРОБЛЕМА»." },
-        { title: "Приватная передача", text: "Не отправляйте личные ответы и рисунок в мессенджерах. Согласуйте защищённую передачу в кабинете." },
+        { title: "Выберите тему", text: "Внизу страницы укажите: ситуация или энергия и самочувствие." },
+        { title: "Оставьте контакт", text: "Телефон и согласие на один личный ответ через WhatsApp или Telegram." },
+        { title: "Согласуйте безопасный обмен", text: "Андрей объяснит, как передать детали приватно и получить письменный разбор." },
       ],
-      startTitle: "С чего хотите начать?",
-      startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
-      cta: "Начать бесплатный разбор", secondary: "Как это работает",
+      startTitle: "Что хотите исследовать?",
+      startLead: "Выберите направление и оставьте телефон. Личные подробности не нужны в чате.",
+      cta: "Получить бесплатный экспресс-разбор", secondary: "Как это работает",
       photoAlt: "Андрей Литвинов", outcomeAlt: "Маяк на побережье", processAlt: "Спокойная комната с утренним светом",
       faq: [
-        ["Что именно бесплатно?", "Личный письменный разбор по коучинг-анкете и рисунку. Он не включает видеозвонок или живую консультацию."],
-        ["Нужно красиво рисовать?", "Нет. Достаточно трёх простых символов или фигур на бумаге — это материал для рефлексии, а не проверка художественных навыков."],
-        ["Где хранятся мои ответы?", "В заявке сохраняется только контакт. Войдите и дайте согласие на сохранение зашифрованной анкеты в кабинете. Сохранение не отправляет её мастеру. Рисунок остаётся на вашем устройстве."],
+        ["Что входит в бесплатный разбор?", "Первичный личный письменный экспресс-разбор после согласованной защищённой передачи информации. Живая консультация — отдельно и по желанию."],
+        ["Нужно ли рисовать?", "Для запроса по ситуации я могу предложить рисунок «Я–Цель–Проблема». Для самочувствия — другие вопросы для самоисследования."],
+        ["Это медицинская диагностика?", "Нет. Это символический разбор ресурсов, не диагностика или лечение заболеваний. По здоровью обратитесь к квалифицированному врачу."],
       ],
     },
     dao: {
@@ -283,33 +283,33 @@ const copy = {
       ],
     },
     situation: {
-      eyebrow: "REVISIÓN PERSONAL GRATUITA · CON ANDREY",
-      title: "Revisión gratuita de tu situación con Andrey.",
-      lead: "Cuéntame qué te preocupa. Te ayudaré a mirar tu pregunta, posibles obstáculos y el siguiente paso en una revisión personal escrita gratuita.",
-      value: "Respuesta personal escrita · sin llamada · sin pago.",
-      bullets: ["Aclara lo que quieres comprender o cambiar.", "Explora roles, tensiones y recursos de la situación.", "Recibe observaciones personales por escrito."],
-      outcomeTitle: "Claridad para avanzar",
-      outcomeLead: "Explora tu objetivo, los obstáculos y los recursos disponibles.",
+      eyebrow: "REVISIÓN PERSONAL EXPRÉS · CON ANDREY",
+      title: "Revisión personal exprés gratuita con Andrey.",
+      lead: "Una sola revisión escrita personal sobre tu situación o tu energía y bienestar. Exploramos recursos y un próximo paso, sin diagnóstico médico.",
+      value: "Revisión personal escrita · gratis · sin llamada.",
+      bullets: ["Define tu pregunta.", "Observa recursos y dificultades.", "Explora un posible próximo paso."],
+      outcomeTitle: "Comprende mejor tu pregunta",
+      outcomeLead: "Una mirada personal y no otro test genérico.",
       outcomes: [
-        { title: "Claridad", text: "Pon en palabras tu pregunta principal." },
-        { title: "Nueva perspectiva", text: "Explora patrones, obstáculos y recursos." },
-        { title: "Próximo paso", text: "Recibe observaciones personales por escrito." },
+        { title: "Tu pregunta central", text: "Distingue lo principal de los detalles secundarios." },
+        { title: "Una nueva perspectiva", text: "Explora conexiones, retos y recursos." },
+        { title: "Un paso posible", text: "Recibe observaciones escritas para reflexionar." },
       ],
-      processTitle: "Tres pasos sencillos",
-      processLead: "El formato escrito gratuito no necesita pago ni videollamada.",
+      processTitle: "Personal, sencillo y privado",
+      processLead: "La primera revisión escrita es gratuita, sin cita o videollamada.",
       steps: [
-        { title: "Describe tu situación", text: "Responde sobre el problema y tu objetivo." },
-        { title: "Dibuja tres elementos", text: "Representa YO, META y PROBLEMA en papel." },
-        { title: "Entrega privada", text: "No envíes respuestas privadas ni dibujos por mensajería. Acuerda un envío seguro en tu cuenta." },
+        { title: "Elige tu tema", text: "Al final selecciona situación o energía y bienestar." },
+        { title: "Deja tu contacto", text: "Tu teléfono y el consentimiento para una respuesta por mensajería." },
+        { title: "Acuerda un envío seguro", text: "Andrey explica cómo compartir detalles de forma privada y recibir la revisión." },
       ],
-      startTitle: "¿Qué te gustaría explorar?",
-      startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
-      cta: "Empezar mi revisión gratuita", secondary: "Cómo funciona",
-      photoAlt: "Andrey Litvinov", outcomeAlt: "Faro en la costa", processAlt: "Espacio tranquilo con luz matinal",
+      startTitle: "¿Qué deseas explorar?",
+      startLead: "Elige el tema y deja tu teléfono, sin datos personales por chat.",
+      cta: "Solicitar revisión exprés gratis", secondary: "Cómo funciona",
+      photoAlt: "Andrey Litvinov", outcomeAlt: "Faro junto al mar", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
-        ["¿Qué incluye la oferta gratuita?", "Una revisión personal por escrito del cuestionario y un dibujo a mano. No incluye videollamada ni consulta en directo."],
-        ["¿Debo saber dibujar?", "No. Unos símbolos o figuras sencillos en papel son suficientes."],
-        ["¿Se guardan mis respuestas?", "La solicitud guarda solo el contacto. Inicia sesión y autoriza guardar un borrador cifrado en tu cuenta. Guardar no lo envía al profesional. El dibujo permanece en tu dispositivo."],
+        ["¿Qué incluye?", "Una primera revisión personal escrita tras acordar el intercambio seguro. Una consulta en directo es opcional y aparte."],
+        ["¿Tengo que dibujar?", "Para una situación puedo proponer YO–META–PROBLEMA. Para bienestar se utilizan otras preguntas reflexivas."],
+        ["¿Es un diagnóstico médico?", "No. Es una reflexión simbólica, no diagnostica ni trata enfermedades. Consulta a profesionales sanitarios."],
       ],
     },
     dao: {
@@ -367,6 +367,36 @@ const situationFirstScreen = {
   en: { lead: "Your question · a fresh perspective · a next step.", source: "Watch on YouTube", videoBadge: "Andrey · EN audio", reviews: "See real client stories · 12 videos" },
   ru: { lead: "Ваш вопрос · новый взгляд · следующий шаг.", source: "Смотреть на YouTube", videoBadge: "Андрей · EN аудио", reviews: "Настоящие отзывы клиентов · 12 видео" },
   es: { lead: "Tu pregunta · otra perspectiva · un paso más.", source: "Ver en YouTube", videoBadge: "Andrey · audio EN", reviews: "Testimonios reales · 12 vídeos" },
+} as const;
+
+const situationApproach = {
+  en: {
+    label: "PERSONAL METHOD", title: "One review, adapted to your question",
+    lead: "I listen to your question and use reflective tools when helpful. The focus changes the questions, not the service.",
+    items: [
+      { title: "If it is about a situation", text: "We clarify your goal, obstacles and resources. A simple ME–GOAL–PROBLEM sketch or symbolic constellation can help explore patterns." },
+      { title: "If it is about energy and health", text: "We reflect on everyday energy and resources; Wu Xing (Five Elements) may offer a symbolic map, never a medical diagnosis or treatment." },
+    ],
+    safety: "Please keep personal details out of messengers. Medical concerns belong with qualified healthcare professionals.",
+  },
+  ru: {
+    label: "ЛИЧНЫЙ МЕТОД", title: "Один разбор — с учётом вашего вопроса",
+    lead: "Я изучаю запрос лично, при необходимости используя коучинговые и символические инструменты. Это одна услуга, а не два тарифа.",
+    items: [
+      { title: "Если речь о ситуации", text: "Уточняем цель, препятствия, связи и ресурсы. При необходимости используем рисунок «Я–Цель–Проблема» или символическую расстановку." },
+      { title: "Если речь об энергии и здоровье", text: "Исследуем самочувствие, повседневные ресурсы и баланс. При необходимости — символическую модель У-Син (Пять стихий), без медицинской диагностики и лечения." },
+    ],
+    safety: "Не передавайте личные подробности в мессенджерах. По вопросам здоровья консультируйтесь с квалифицированным врачом.",
+  },
+  es: {
+    label: "MÉTODO PERSONAL", title: "Una revisión adaptada a tu pregunta",
+    lead: "Escucho tu consulta y utilizo herramientas reflexivas cuando ayudan. El tema cambia las preguntas, no el servicio.",
+    items: [
+      { title: "Cuando se trata de una situación", text: "Exploramos la meta, los obstáculos y los recursos. Un dibujo YO–META–PROBLEMA o una constelación simbólica puede ayudar." },
+      { title: "Cuando se trata de energía y salud", text: "Reflexionamos sobre bienestar y recursos; Wu Xing (Cinco Elementos) es un mapa simbólico, nunca un diagnóstico ni tratamiento." },
+    ],
+    safety: "No compartas datos privados por mensajería. Para cuestiones médicas consulta profesionales sanitarios.",
+  },
 } as const;
 
 const serviceTitles = {
@@ -435,7 +465,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         </section>
 
         {kind === "situation" ? (
-          <FreeDiagnosisOffers locale={locale} compact intro={
+          <PersonalExpressEnquiry locale={locale} intro={
             <>
               <section className={styles.reviewOutcome} id="what-you-get" aria-labelledby="free-outcomes-title">
                 <div className={styles.reviewOutcomePhoto}><Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
@@ -452,9 +482,28 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                   <a className={styles.reviewCta} href="#request-free-review">{t.cta}<ArrowRight size={17} aria-hidden="true" /></a>
                 </div>
               </section>
+              <section className={styles.reviewApproach} id="how-i-review" aria-labelledby="express-method-title">
+                <div className={styles.reviewApproachCopy}>
+                  <p className={styles.sectionLabel}>02 / {situationApproach[locale].label}</p>
+                  <h2 id="express-method-title">{situationApproach[locale].title}</h2>
+                  <p className={styles.sectionLead}>{situationApproach[locale].lead}</p>
+                  <div className={styles.approachList}>
+                    {situationApproach[locale].items.map((item, index) => (
+                      <article key={item.title}>
+                        <span aria-hidden="true">0{index + 1}</span>
+                        <div><h3>{item.title}</h3><p>{item.text}</p></div>
+                      </article>
+                    ))}
+                  </div>
+                  <p className={styles.reviewPrivacy}><ShieldCheck size={16} aria-hidden="true" />{situationApproach[locale].safety}</p>
+                </div>
+                <div className={styles.reviewApproachPhoto}>
+                  <Image src={images.hero} alt={t.photoAlt} fill sizes="(max-width: 720px) 100vw, 40vw" />
+                </div>
+              </section>
               <section className={styles.reviewProcess} id="how-it-works" aria-labelledby="free-process-title">
                 <div className={styles.reviewProcessCopy}>
-                  <p className={styles.sectionLabel}>02 / {common.process}</p>
+                  <p className={styles.sectionLabel}>03 / {common.process}</p>
                   <h2 id="free-process-title">{t.processTitle}</h2>
                   <p className={styles.sectionLead}>{t.processLead}</p>
                   <ol className={styles.reviewSteps}>
@@ -482,7 +531,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               <summary>{common.fullForm}</summary>
               <FreeSituationReviewForm locale={locale} />
             </details>
-          </FreeDiagnosisOffers>
+          </PersonalExpressEnquiry>
         ) : null}
 
         {kind !== "situation" ? <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
