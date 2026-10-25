@@ -15,7 +15,8 @@ import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
-import { coachingArt, coachingSchemeArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
+import { coachingArt, coachingSchemeArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
+import CoachingLiveSessionCapture from '@/components/coaching-live-session-capture'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
@@ -651,25 +652,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               landingHref={'/'+lang+'/coaching/intake'}/>}
           </div>
         </section>}
-        {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title">
-          <h2 id="human-coaching-title">{t.humanTitle}</h2><p>{t.humanText}</p>
-          <div className={styles.coachFit} data-coaching-practitioner-checklist>
-            <strong>{t.coachFitTitle}</strong><p>{t.coachFitIntro}</p>
-            <ul>{t.coachFitChecks.map((text,i)=><li key={i}>{text}</li>)}</ul>
-            <p className={styles.coachOnly}>{t.coachOnly}</p>
-          </div>
-          <div className={styles.cards} data-coaching-paid-sessions>
-            {[{name:t.half,minutes:30,price:'€50',style:'quick'},{name:t.hour,minutes:60,price:'€100',style:'reflective'}]
-              .map(option=><CoachingLoungeCard key={option.minutes} locale={lang}
-                id={'personal-'+option.minutes} title={option.name}
-                meta={option.minutes+' '+t.minutes} price={option.price}
-                image={humanCoachingArt} description={t.humanText}
-                detail={t.humanText} caution={t.notBooking}
-                primaryHref={'/'+lang+'/services#consultation'} primaryLabel={t.request}
-                landingHref={'/'+lang+'/coaching/session/personal-'+option.minutes}/>)}
-          </div>
-          <p className={styles.disclaimer}>{t.notBooking}</p>
-          <p className={styles.filterNote}><Link href={'/'+lang+'/coaching/intake'} prefetch={false}>{t.openWorksheet}<ArrowRight size={15}/></Link> · {t.worksheetNote}</p>
+        {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title" data-coaching-session-capture>
+          <CoachingLiveSessionCapture locale={lang} />
         </section>}
         
       </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>
