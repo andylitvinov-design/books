@@ -49,6 +49,8 @@ test('top free-review bar exactly matches approved screenshot while beige strip 
   assert.match(offers, /FREE PERSONAL SITUATION REVIEW/)
   assert.ok(offers.includes('className={styles.cta} href={`/${locale}/services/free-situation-review`}'), 'burgundy CTA must open the free written review')
   assert.match(offers, /\/services\/free-situation-review/)
+  // Do not spend a whole mobile row advertising the page the visitor is already reading.
+  assert.match(offers, /services\\/free-situation-review\\/\\?\$\\/\.test\(pathname\)/);
   for (const label of ['Получить разбор', 'Get free review', 'Solicitar gratis']) {
     assert.ok(offers.includes(label), label)
   }
