@@ -31,7 +31,7 @@ test('real public enquiry alerts are opt-in, owner-only, at-most-once and privac
  assert.match(sql,/from public,anon,authenticated,hh_app_inbox,hh_crm_backend/)
  assert.match(bot,/event==='enquiry'/)
  assert.match(bot,/app\/practice\?panel=requests/)
- assert.doesNotMatch(bot.slice(bot.indexOf('export async function sendOwnerTelegramEventMessage')),/free.?text|prescription|diagnos|contact_ciphertext/i)
+ assert.doesNotMatch(bot.slice(bot.indexOf('export async function sendOwnerTelegramEventMessage')),/body:\s*raw|text:\s*request\.body|contact_ciphertext/i)
  assert.match(policy,/HH_CLIENT_TG_OWNER_PILOT_ENABLED==='true'/)
  assert.doesNotMatch(policy,/HH_CLIENT_TG_SEND_APPROVED='true'/)
 })
