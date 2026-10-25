@@ -18,15 +18,15 @@
 @media(max-width:530px){.form{grid-template-columns:1fr;gap:10px}.heading{gap:9px}.card{padding:13px}.form label{font-size:12px}}
 @media(max-width:350px){.card{padding:11px}.heading h3{font-size:21px}.action{font-size:12px}}
 
-/* Coaching Lounge: only one phone field before the private guided intake. */
-.mini{box-sizing:border-box;margin:0;padding:0;border:0;background:transparent;box-shadow:none;min-width:0}
-.miniForm{display:grid;gap:9px}
-.miniForm label{display:grid;gap:5px;color:#405650;font:700 12px/1.35 system-ui,sans-serif}
-.miniForm input{box-sizing:border-box;display:block;width:100%;min-width:0;height:46px;
-  padding:9px 13px;border:1px solid #cbb8aa;border-radius:11px;background:#fff;color:#294248;
-  font:400 16px/1.3 system-ui,sans-serif}
-.miniForm input:focus-visible{outline:3px solid #3b8685;outline-offset:2px}
-.miniForm .action{width:100%;min-height:47px;margin:0;border-radius:11px;background:#893751;white-space:normal}
-.mini .privacy{display:flex;align-items:flex-start;gap:6px;margin:8px 0 0;color:#72685f;font:11px/1.42 system-ui,sans-serif}
-.mini .privacy svg{flex:none;margin-top:1px}
-@media(max-width:350px){.miniForm .action{font-size:12px;padding:10px 8px}}
+/* Short, phone-first free request shared by the full-screen diagnosis scenes. */
+.card.compact{margin:9px 0 0;padding:13px;border:1px solid #e1ceb9;border-radius:14px;background:#fff8ed;box-shadow:none}
+.compact .kicker{font-size:9px}
+.compactIntro{margin:0 0 11px;color:#665348;font:12px/1.45 Arial,sans-serif}
+.compactForm{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+.compactForm label{display:grid;gap:5px;color:#5c493f;font:700 12px/1.35 Arial,sans-serif}
+.compactForm input{width:100%;min-width:0;min-height:46px;padding:10px 12px;border:1px solid #cbb8a8;border-radius:11px;background:#fffefa;color:#44362d;font:16px/1.3 Arial,sans-serif}
+.compactForm .action{grid-column:auto;min-width:210px;min-height:46px;margin:0;background:#843e53}
+.compactForm .action:hover{background:#9b4d64}
+.compactForm .error{grid-column:1/-1}
+.compactForm :is(input,button):focus-visible{outline:3px solid #b17454;outline-offset:2px}
+@media(max-width:610px){.compactForm{grid-template-columns:1fr}.compactForm .action{min-width:0;width:100%}}

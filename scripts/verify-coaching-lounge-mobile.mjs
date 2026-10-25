@@ -34,6 +34,29 @@ async function verify(browserType, locale, width) {
     assert.equal(response?.status(), 200, label + ": public route");
     const root = page.locator("[data-public-coaching]");
     await root.waitFor({ state: "visible", timeout: 30000 });
+    const entry = root.locator("[data-coaching-three-paths]");
+    await entry.waitFor({ state: "visible" });
+    assert.equal(await entry.locator("[data-coaching-offer]").count(), 3,
+      label + ": all 3 human offer cards remain");
+    const miniPanel = entry.locator("[data-coaching-intake]");
+    assert.equal(await miniPanel.isVisible(), false, label + ": no long form by default");
+    await entry.locator('[data-coaching-select="session"]').tap();
+    await miniPanel.waitFor({ state: "visible" });
+    assert.equal(await miniPanel.getAttribute("data-open"), "true",
+      label + ": paid registration expands below offers");
+    const formatChoice = miniPanel.locator('[data-coaching-session-format="60 min · €100"]');
+    await formatChoice.tap();
+    assert.equal(await formatChoice.getAttribute("aria-checked"), "true",
+      label + ": 60 min €100 remains selectable");
+    const paidMini = miniPanel.locator("[data-coaching-paid-phone]");
+    await paidMini.waitFor({ state: "visible" });
+    assert.equal(await paidMini.locator('input[type="tel"]').count(), 1,
+      label + ": one paid phone field");
+    assert.equal(await paidMini.locator('[data-compact-channel]').count(), 2,
+      label + ": only WhatsApp/Telegram contact CTAs");
+    assert.equal(await paidMini.locator('input[type="checkbox"]').isChecked(), false,
+      label + ": one-off contact permission is opt-in");
+
     const topics = root.locator("[data-coaching-topic-first]");
     const outcomes = root.locator("[data-coaching-outcome-first]");
     const formats = root.locator("fieldset").filter({
@@ -73,28 +96,6 @@ async function verify(browserType, locale, width) {
     await humanChoice.tap();
     assert.equal(await humanChoice.getAttribute("aria-pressed"), "true", label + ": human selection");
     await paid.waitFor({ state: "visible" });
-    const capture = paid.locator("[data-coaching-live-capture]");
-    assert.equal(await capture.locator("[data-coaching-booking-option]").count(), 3,
-      label + ": free written assessment and both live session offers");
-    const short = capture.locator('[data-coaching-booking-option="short"]');
-    const full = capture.locator('[data-coaching-booking-option="full"]');
-    assert.match(await short.innerText(), /€50/, label + ": 30-minute session costs €50");
-    assert.match(await full.innerText(), /€100/, label + ": 60-minute session costs €100");
-    await short.tap();
-    assert.equal(await short.getAttribute("aria-checked"), "true", label + ": 30-minute price selection");
-    await capture.locator('[data-coaching-booking-choice="short"]').tap();
-    const mini = capture.locator("[data-coaching-paid-phone]");
-    await mini.waitFor({ state: "visible" });
-    assert.equal(await mini.locator('input[type="tel"]').count(), 1, label + ": paid phone only");
-    assert.equal(await mini.locator('[data-compact-channel]').count(), 2,
-      label + ": two opt-in messenger choices and no giant sign-in form");
-    assert.equal(await mini.locator('input[type="checkbox"]').isChecked(), false,
-      label + ": CRM contact opt-in starts unchecked");
-    await full.tap();
-    assert.equal(await capture.locator('[data-coaching-request-sheet]').getAttribute("data-open"), "false",
-      label + ": changing price collapses old request");
-
-    assert.equal(await full.getAttribute("aria-checked"), "true", label + ": 60-minute price selection");
     assert.equal(await root.locator("[data-coaching-practitioner-checklist]").isVisible(), true,
       label + ": visible trust/training and availability checks");
     const free = root.locator("button").filter({ hasText: /Try it free|Самостоятельно|Por mi cuenta/ }).first();
@@ -129,41 +130,36 @@ async function verify(browserType, locale, width) {
     assert.deepEqual(errors, [], label + ": zero uncaught React errors");
     if (width === 390)
       await page.screenshot({ path: output + "/coaching-" + browserType.name() + "-" + locale + "-390.png", fullPage: false });
-    // Exercise free mobile handoff without performing a real CRM submission.
-    if (!(await advanced.evaluate(node => node.open))) await advanced.locator("summary").tap();
-    await humanChoice.tap();
-    const freeCapture = root.locator("[data-coaching-live-capture]");
-    await freeCapture.locator('[data-coaching-booking-option="free"]').tap();
-    await freeCapture.locator('[data-coaching-booking-choice="free"]').tap();
-    const freePhone = freeCapture.locator("[data-coaching-phone-start]");
-    await freePhone.waitFor({ state: "visible" });
-    assert.equal(await freePhone.locator('input[type="tel"]').count(), 1,
-      label + ": free flow asks for phone only");
-    assert.equal(await freePhone.locator('[data-compact-channel]').count(), 0,
-      label + ": free flow never opens messengers");
-    await freePhone.locator('input[type="tel"]').fill("+14165550123");
-    await freePhone.locator('[data-free-coaching-start]').tap();
+    await entry.locator('[data-coaching-select="free"]').tap();
+    const freeMini = entry.locator("[data-coaching-phone-start]");
+    await freeMini.waitFor({ state: "visible" });
+    assert.equal(await freeMini.locator('input[type="tel"]').count(), 1,
+      label + ": free registration asks only for phone");
+    assert.equal(await freeMini.locator('[data-compact-channel]').count(), 0,
+      label + ": free request never shows messengers");
+    await freeMini.locator('input[type="tel"]').fill("+14165550123");
+    await freeMini.locator('[data-free-coaching-start]').tap();
     await page.waitForURL(origin + "/" + locale + "/coaching/intake?guided=1");
     const guided = page.locator("[data-coaching-guided]");
     await guided.waitFor({ state: "visible" });
-    assert.equal(await guided.locator('[data-guided-coaching-question="request"]').count(), 1,
-      label + ": first slide asks for a short question");
+    const first = guided.locator('[data-guided-coaching-question="request"]');
+    assert.equal(await first.count(), 1, label + ": first question is a full slide");
     assert.equal(await guided.locator('[data-guided-coaching-send]').count(), 0,
-      label + ": no premature CRM submit");
-    await guided.locator('[data-guided-coaching-question="request"]').fill("Synthetic QA: choosing my next step.");
+      label + ": initial phone was NOT sent to CRM");
+    await first.fill("Synthetic QA: choosing my next step.");
     await guided.locator('[data-guided-next]').tap();
     assert.equal(await guided.locator('[data-guided-coaching-question]').count(), 0,
-      label + ": second slide is the authored questionnaire invitation");
+      label + ": second slide invites the coaching questionnaire");
     await guided.locator('[data-guided-next]').tap();
     assert.equal(await guided.locator('[data-guided-coaching-question="occupation"]').count(), 1,
-      label + ": subsequent slides ask one authored question at a time");
+      label + ": next screen shows one authored question");
     const guidedDimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
     }));
     assert.ok(guidedDimensions.scrollWidth <= guidedDimensions.viewport + 2,
-      label + ": guided viewport does not scroll horizontally");
-    assert.deepEqual(errors, [], label + ": zero runtime errors after guided handoff");
+      label + ": guided screens have no accidental horizontal scroll");
+    assert.deepEqual(errors, [], label + ": no uncaught browser errors on free guided flow");
     evidence.push({ browser: browserType.name(), locale, width, result: "pass",
       catalogPresent: initialCatalogCount > 0, activatedFreeRunner: availableCards > 0 });
     console.log("OK " + label + " catalog=" + initialCatalogCount);

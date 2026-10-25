@@ -64,12 +64,3 @@
   .freePrice{font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){.option{transition:none}}
-
-/* Request sheet opens only on an explicit tap, immediately under the 3 choices. */
-.chevronOpen{transform:rotate(180deg)}
-.primary span{flex:1}
-.primary svg{transition:transform .16s ease}
-.sheet{width:100%;min-width:0;scroll-margin-bottom:calc(106px + env(safe-area-inset-bottom));animation:coachingSheetIn .2s ease-out}
-.sheet[hidden]{display:none!important}
-@keyframes coachingSheetIn{from{opacity:0;transform:translateY(11px)}to{opacity:1;transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.sheet{animation:none}.primary svg{transition:none}}

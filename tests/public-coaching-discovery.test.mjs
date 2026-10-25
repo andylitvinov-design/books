@@ -54,7 +54,7 @@ test('public models and private questions never leave memory or go to marketing 
  assert.doesNotMatch(ui,/localStorage|sessionStorage|sendBeacon\(|gtag\(|fbq\(|\bfetch\(|appFetch|crm_contacts/)
  assert.match(booking,/€50/)
  assert.match(booking,/€100/)
- assert.match(booking,/<FreeDiagnosticStart locale=\{lang\} variant="coaching" \/>/)
+ assert.match(booking,/\/services\/free-situation-review/)
  for(const locale of ['en','ru','es'])assert.match(ui,new RegExp('\\b'+locale+':\\{'))
  assert.match(css,/@media\(max-width:360px\)/)
  assert.match(css,/:focus-visible/)
@@ -94,7 +94,7 @@ test('guest lounge shows different forms and author tracks with real actions and
  assert.match(ui,/\/academy\/coaching\/egyptian/)
  assert.match(ui,/\/academy\/coaching\/greek/)
  assert.match(ui,/coaching\/intake/)
- assert.match(booking,/<FreeDiagnosticStart locale=\{lang\} variant="coaching" \/>/)
+ assert.match(booking,/\/services\/free-situation-review/)
  assert.match(srv,/id="consultation"/)
  assert.match(booking,/€50/)
  assert.match(booking,/€100/)
@@ -199,6 +199,7 @@ test('public model cards include only known first-party photographs with mobile-
 test('the public Coaching Lounge, Ideas and entry page all parse as JSX before a Vercel build',()=>{
  for(const [path,kind] of [
    ['components/public-coaching-discovery.jsx',ts.ScriptKind.JSX],
+   ['components/coaching-lounge-entry.tsx',ts.ScriptKind.TSX],
    ['components/ideas-discovery.tsx',ts.ScriptKind.TSX],
    ['app/[locale]/coaching/page.jsx',ts.ScriptKind.JSX],
    ['app/[locale]/coaching/session/[sessionId]/page.jsx',ts.ScriptKind.JSX],
@@ -247,8 +248,12 @@ test('public lounge uses horizontal photo-left cards, filtered offers and origin
  assert.match(ui,/traditionKey="egyptian"/)
  assert.match(ui,/traditionKey="greek"/)
  for(const marker of ["chooseTradition:'Choose this session'","chooseTradition:'Выбрать сессию'","chooseTradition:'Elegir sesión'"])assert.ok(ui.includes(marker))
- assert.ok(ui.indexOf('className={styles.morePaths}')<ui.indexOf('<CoachingLiveSessionCapture'),
-   'free models and both traditions precede separately priced human sessions')
+ assert.match(ui, /<CoachingLoungeEntry locale=\{lang\} \/>/,
+   'three visible personal options now live in the Coaching Lounge first screen')
+ assert.ok(ui.indexOf('<CoachingLoungeEntry locale={lang} />')<ui.indexOf('className={styles.morePaths}'),
+   'the three personal options precede the model discovery catalogue')
+ assert.ok(ui.indexOf('className={styles.morePaths}')<ui.indexOf('data-coaching-session-capture'),
+   'author traditions are still shown before the practitioner checklist and repeat CTA')
  assert.match(academy,/href: "\/" \+ locale \+ "\/coaching"/)
  assert.match(route,/PublicCoachingDiscovery/)
  assert.match(alias,/permanentRedirect\('\/'\+locale\+'\/coaching'\)/)
@@ -308,10 +313,10 @@ test('Details expands a bottom panel; paid live sessions use a single conversion
  assert.match(ui,/className=\{styles\.loungeLanding\}/)
  assert.match(ui,/landingHref=\{'\/'\+lang\+'\/coaching\/session\/'\+s\.schemeKey\}/)
  assert.match(booking,/data-coaching-booking-option=\{key\}/)
- assert.match(booking,/<CompactLeadCapture key=\{selected\}/)
+ assert.match(booking,/whatsappEnquiryUrl\(\{/)
  assert.match(ui,/primaryLabel=\{t\.start\}/)
  assert.match(ui,/onLanding=\{\(\)=>stageIdeasCoachingQuestion\(question\)\}/)
- assert.match(booking,/title=\{t\.actions\[selected\]\}/)
+ assert.match(booking,/label=\{t\.actions\[selected\]\}/)
  assert.match(booking,/paidNote/)
  assert.match(landing,/getPublicCoachingCatalog\(\)/)
  assert.match(landing,/catalog\.schemes\.find\(s=>s\.schemeKey===id\)/)
@@ -478,4 +483,16 @@ test('unfiltered coaching catalogue groups sessions, initially showing at most t
  assert.match(ui,/useGroupedCatalog&&<p className=\{styles\.modelGroupWorksheet\}/)
  assert.match(css,/\.modelGroups\{display:grid/)
  assert.match(css,/\.modelGroupMore:focus-visible/)
+})
+
+
+test('the Egyptian and Greek coaching cards reference self-hosted covers, not Wikimedia hotlinks',async()=>{
+ const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
+ const ui=read('components/public-coaching-discovery.jsx')
+ for(const slug of ['egyptian','greek']){
+  assert.equal(traditionCoachingArt[slug],'/images/holistic-house/coaching-ancient/'+slug+'-cover.jpg')
+  assert.match(ui,new RegExp('image=\\{traditionCoachingArt\\.'+slug+'\\}'))
+ }
+ assert.match(ui,/className=\{styles\.loungePhoto\}/)
+ assert.match(ui,/unoptimized referrerPolicy="no-referrer"/)
 })
