@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { activeCompactNavigationId, compactNavigationIds, getCompactNavigation, getSiteNavigation, navigationCopy } from '../lib/site-navigation-model.js'
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const order = ['home','analysis','courses','profile','coaching','pro','temple']
+const order = ['home','analysis','courses','profile','alchemy','pro','temple']
 test('seven accessible public tabs lead to distinct routes in EN/RU/ES', () => {
   assert.deepEqual(compactNavigationIds, order)
-  const routes = {analysis:'services/free-situation-review',courses:'academy',profile:'personality-profiles',coaching:'coaching',pro:'pro',temple:'holistic-support'}
+  const routes = {analysis:'services/free-situation-review',courses:'academy',profile:'personality-profiles',alchemy:'services/alchemy-of-soul',pro:'pro',temple:'holistic-support'}
   for (const locale of ['en','ru','es']) {
     const items = getCompactNavigation(locale)
     assert.deepEqual(items.map(x=>x.id), order)
@@ -21,7 +21,11 @@ test('seven accessible public tabs lead to distinct routes in EN/RU/ES', () => {
     assert.equal(activeCompactNavigationId('/'+locale+'/personality-profiles'),'profile')
     assert.equal(activeCompactNavigationId('/'+locale+'/client/tests'),'profile')
     assert.equal(activeCompactNavigationId('/'+locale+'/tests'),'profile')
-    assert.equal(activeCompactNavigationId('/'+locale+'/coaching'),'coaching')
+    assert.equal(activeCompactNavigationId('/'+locale+'/coaching'),undefined)
+    assert.equal(activeCompactNavigationId('/'+locale+'/services/alchemy-of-soul'),'alchemy')
+    assert.equal(activeCompactNavigationId('/'+locale+'/services/psychohomeopathy'),'alchemy')
+    assert.equal(items.find(item=>item.id==='alchemy')?.label, {en:'Psychic Alchemy',ru:'Алхимия души',es:'Alquimia del Alma'}[locale])
+    assert.ok(!items.some(item=>item.id==='coaching'))
     assert.equal(activeCompactNavigationId('/'+locale+'/services/free-situation-review'),'analysis')
     assert.equal(activeCompactNavigationId('/'+locale+'/academy'),'courses')
     assert.equal(activeCompactNavigationId('/'+locale+'/temple-insights'),'temple')
@@ -39,7 +43,8 @@ test('bottom bar and hamburger share model, private menu remains separate', () =
   const bottom=read('components/mobile-bottom-navigation.tsx')
   const header=read('components/site-navigation.tsx')
   const icons=read('components/compact-navigation-icons.ts')
-  for (const key of ['analysis','courses','profile','coaching','pro','temple']) assert.match(icons,new RegExp(key+': '))
+  for (const key of ['analysis','courses','profile','alchemy','pro','temple']) assert.match(icons,new RegExp(key+': '))
+  assert.match(icons,/alchemy: FlaskConical/)
   assert.ok(bottom.includes('const mobileItems = getCompactNavigation(locale)'))
   assert.ok(bottom.includes('aria-label={item.ariaLabel}'))
   assert.ok(header.includes('const mainMenuItems = getCompactNavigation(activeLocale)'))
