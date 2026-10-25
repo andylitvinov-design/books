@@ -286,18 +286,13 @@ export default function TraditionCoaching({locale='en',accountId,template}){
         <TraditionStageArt stage={stageGuide} lang={lang}/>
         <p className={extra.stagePrompt}>{v.reflect}</p>
         <div data-tradition-gentle-guide>
-          <CoachingChatThread turn={conversationTurn} locale={lang}>
+          <CoachingChatThread turn={conversationTurn} locale={lang}
+             draftPreview={quickChoices&&choice?selectedText(question,{choiceId:choice,note:''},lang,t.empty):''}>
             <div className={extra.questionHeader}>
               <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
             </div>
           </CoachingChatThread>
         </div>
-        <CoachingQuestionVoice key={question.id} text={[conversationTurn?.speech,question.question?.[lang]||''].filter(Boolean).join(' ')}
-           locale={lang} disabled={busy} onTranscript={value=>{
-             setNote(old=>((old?old+' ':'')+value).slice(0,500))
-             if(!quickChoices)setChoice('')
-             setNotice('');setError('')
-           }}/>
         {quickChoices&&<p className={extra.hint}>{question.hint?.[lang]||''}</p>}
         {quickChoices&&<div className={extra.choices} role="radiogroup" aria-label={question.question?.[lang]} onKeyDown={onChoiceKeyDown}>
           {question.choices?.map((option,optionIndex)=><button type="button" role="radio" key={option.id}
@@ -309,24 +304,37 @@ export default function TraditionCoaching({locale='en',accountId,template}){
             {option.label?.[lang]||option.label?.en}</button>)}
         </div>}
         {!quickChoices&&choice&&<p className={extra.legacyChoice}>{t.earlierChoice}: {selectedText(question,{choiceId:choice,note:''},lang,t.empty)}</p>}
-        <div className={extra.chatComposer} data-coaching-composer>
-        <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
-        <textarea id="tradition-coaching-note" className={extra.note} value={note} aria-describedby="tradition-coaching-report-note"
-          data-tradition-open-reflection={!quickChoices?'true':undefined}
-          disabled={busy} maxLength={500} rows={quickChoices?2:4}
-          placeholder={quickChoices?t.placeholder:t.openPlaceholder}
-          onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
-        <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
-         <small className={extra.noteTip} id="tradition-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
-         </div>
         {notice&&<p role="status" className={base.notice}><Check size={15}/>{notice}</p>}
         {error&&<p role="alert" className={base.error}>{error}</p>}
       </div>
-      <footer className={base.footer}>
+      <footer className={base.footer} data-coaching-messenger-footer>
+         <div className={base.chatComposer+' '+extra.chatComposer} data-coaching-composer>
+           <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
+           <textarea id="tradition-coaching-note" className={base.textarea+' '+extra.note}
+             value={note} aria-describedby="tradition-coaching-report-note"
+             data-tradition-open-reflection={!quickChoices?'true':undefined}
+             disabled={busy} maxLength={500} rows={2}
+             placeholder={quickChoices?t.placeholder:t.openPlaceholder}
+             onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
+           <div className={base.composerTools}>
+             <CoachingQuestionVoice key={question.id} text={[conversationTurn?.speech,question.question?.[lang]||''].filter(Boolean).join(' ')}
+               locale={lang} compact disabled={busy} onTranscript={value=>{
+                 setNote(old=>((old?old+' ':'')+value).slice(0,500))
+                 if(!quickChoices)setChoice('')
+                 setNotice('');setError('')
+               }}/>
+             <small className={base.draftCount}>{note.length}/500</small>
+           </div>
+           <details className={base.reportDetails}>
+             <summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+             <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
+             <small className={extra.noteTip} id="tradition-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+           </details>
+         </div>
         <div className={base.footerActions}>
           <button type="button" className={base.back} disabled={busy||index===0} onClick={backward}><ChevronLeft size={18}/>{t.back}</button>
           <button type="button" className={base.primary} disabled={busy} onClick={()=>advance(false)}>
-            {busy?t.save:index===questions.length-1?t.finish:t.continue}<ArrowRight size={18}/>
+            {busy?t.save:index===questions.length-1?t.finish:(lang==='ru'?'Отправить и далее':lang==='es'?'Enviar y seguir':'Send & continue')}<ArrowRight size={18}/>
           </button>
         </div>
         {!question.required&&<button type="button" className={base.skip} disabled={busy} onClick={()=>advance(true)}>{t.skip}</button>}
