@@ -583,3 +583,13 @@
   .session[data-coaching-one-viewport]:has(textarea:focus) .questionArea .optionScale,
   .session[data-coaching-one-viewport]:has(textarea:focus) .questionArea .suggestions{display:none}
 }
+
+/* Additional adaptive guidance opens above the content; the question never moves. */
+.session[data-coaching-one-viewport] .adaptivePanel{position:relative}
+.session[data-coaching-one-viewport] .adaptiveMore{
+  position:absolute;top:calc(100% + 3px);right:0;z-index:8;
+  width:min(295px,calc(100vw - 22px));max-height:44dvh;overflow:auto;
+  padding:10px;border:1px solid #bed4cb;border-radius:12px;
+  background:#fffdf8;box-shadow:0 9px 30px #20342e55
+}
+.session[data-coaching-one-viewport] .adaptiveMore p{margin:0 0 8px}
