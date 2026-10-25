@@ -11,6 +11,7 @@ import CrmFreeEmail from './crm-free-email'
 import CrmContactEditor from './crm-contact-editor'
 import CrmExportTools from './crm-export-tools'
 import CrmMessengerPanel from './crm-messenger'
+import CrmSalesbot from './crm-salesbot'
 import CrmMessagesNavigation from './crm-messages-navigation'
 import CrmBusinessEnquiries from './crm-business-enquiries'
 import CrmMarketingPanel from './crm-marketing'
@@ -37,7 +38,7 @@ const EXTRA_COPY = {
   ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Поиск и фильтры работают по загруженным контактам. Для остальных нажмите «Загрузить ещё».', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
   es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'La búsqueda y los filtros abarcan los contactos cargados. Carga más para ver los demás.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
 }
-const CRM_SECTION_IDS=new Set(['overview','tasks','messages','sms','integrations','contacts'])
+const CRM_SECTION_IDS=new Set(['overview','tasks','leads','messages','automations','sms','integrations','contacts'])
 export default function CrmManager({ locale = 'en', accountId }) {
   const language = COPY[locale] ? locale : 'en'
   const c = { ...COPY[language], ...EXTRA_COPY[language] }
@@ -368,6 +369,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         ['tasks',language==='ru'?'Задачи':language==='es'?'Tareas':'Tasks'],
         ['leads',language==='ru'?'Лиды':language==='es'?'Leads':'Leads'],
         ['messages',language==='ru'?'Сообщения':language==='es'?'Mensajes':'Messages'],
+        ['automations',language==='ru'?'Автоматизации':language==='es'?'Automatizaciones':'Automations'],
         ['sms','SMS'],
         ['integrations',language==='ru'?'Подключения':language==='es'?'Conexiones':'Connections'],
         ['contacts',language==='ru'?'Контакты':language==='es'?'Contactos':'Contacts'],
@@ -421,6 +423,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
       {notice&&<p role="status" className={styles.notice}>{notice}</p>}
     </div>}
     {data&&<>
+      {activeSection==='automations'&&<CrmSalesbot key={accountId+'-salesbot'} accountId={accountId} locale={language} />}
       {activeSection==='overview'&&<>
        <button type="button" className={styles.leadShortcut} onClick={()=>setActiveSection('leads')}>
          {language==='ru'?'Лиды без открытой задачи':language==='es'?'Leads sin tarea abierta':'Leads without an open task'} · {data.overview?.unplannedLeads??0} →
