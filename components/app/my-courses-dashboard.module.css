@@ -118,13 +118,4 @@
 .tileRemoveButton:focus-visible{outline:3px solid #83e8ea;outline-offset:2px}
 @media(max-width:370px){.cardControls{gap:3px}.mainCard .cardTop,.smallCard .cardTop{gap:5px}}
 
-/* Ancient coaching tracks share the established photo-left, phone-safe course tiles. */
-.traditionLinks{display:grid;gap:10px;margin-top:-5px}
-.traditionLinks .businessTrack{min-width:0}
-.traditionLinks .businessTrackPhoto{min-height:135px}
-.traditionLinks .businessTrackBody{gap:7px}
-@media(min-width:750px){.traditionLinks{grid-template-columns:repeat(2,minmax(0,1fr))}.traditionLinks .businessTrack{grid-template-columns:108px minmax(0,1fr)}}
-@media(max-width:370px){.traditionLinks .businessTrackPhoto{min-height:125px}}
 
-.traditionProgress{display:block;padding-top:3px;font-weight:800;font-size:12px;color:#9de6d6}
-.traditionLinks [role="status"]{min-height:18px}

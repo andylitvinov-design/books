@@ -212,7 +212,7 @@ function CoachingLoungeCard({
     <div className={styles.loungeRow}>
       <Link className={styles.loungePhoto} href={landingHref} prefetch={false} onClick={onLanding}
         aria-label={t.fullDetails+': '+title}>
-        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized
+        <Image src={cardArtworkUrl(image)} alt="" fill loading="lazy" unoptimized referrerPolicy="no-referrer"
           sizes="(max-width:360px) 105px, (max-width:600px) 34vw, 180px"/>
       </Link>
       <div className={styles.loungeContent}>
@@ -661,7 +661,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {shownTraditions.includes('egyptian')&&<CoachingLoungeCard
               key="egyptian" locale={lang} id="egyptian" traditionKey="egyptian"
               title={t.egyptian} meta={t.egyptianMethod} price="€0"
-              image={traditionCoachingArt} description={t.egyptianNote}
+              image={traditionCoachingArt.egyptian} description={t.egyptianNote}
               detail={t.egyptianNote} caution={t.safe}
               suggested={suggestedTraditions.has('egyptian')}
               primaryHref={traditionHref('egyptian')} primaryLabel={t.chooseTradition}
@@ -669,7 +669,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             {shownTraditions.includes('greek')&&<CoachingLoungeCard
               key="greek" locale={lang} id="greek" traditionKey="greek"
               title={t.greek} meta={t.greekMethod} price="€0"
-              image={traditionCoachingArt} description={t.greekNote}
+              image={traditionCoachingArt.greek} description={t.greekNote}
               detail={t.greekNote} caution={t.safe}
               suggested={suggestedTraditions.has('greek')}
               primaryHref={traditionHref('greek')} primaryLabel={t.chooseTradition}

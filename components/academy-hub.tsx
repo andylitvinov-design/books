@@ -183,8 +183,8 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   const text = academyCopy[locale];
   const action = academyActionCopy[locale];
   const hints = academyCourseHints[locale];
-  const items: AcademyCourseItem[] = [
-    {
+  // Personal Coaching is a standalone service, excluded from the course count.
+  const coachingItem: AcademyCourseItem = {
       id: "academy-free-personal-coaching",
       detailsHint: locale === "ru" ? "Самостоятельная короткая сессия. Ответы доступны только в вашем кабинете, живой специалист не участвует." : locale === "es" ? "Sesión privada autoguiada, no un coach humano ni una cita. Disponible en inglés." : "Compare self-guided models and personal coaching in the public lounge before deciding.",
       title: locale === "ru" ? "Личная коуч-сессия" : locale === "es" ? "Sesión personal de coaching" : "Personal Coaching Session",
@@ -196,37 +196,12 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
           : "Enter your question, compare three suitable coaching models, then answer one simple question per screen.",
       href: "/" + locale + "/coaching",
       courseHref: "/" + locale + "/coaching",
-      image: "/images/holistic-house/books-library.webp",
+      image: "/images/holistic-house/report-lighthouse-coast.avif",
       duration: locale === "ru" ? "Сценарий на выбор · в своём темпе" : locale === "es" ? "Elige entre modelos gratis" : "3 suggested models · at your pace",
       free: true,
       actionLabel: locale === "ru" ? "Начать сессию" : locale === "es" ? "Elegir sesión" : "Start session",
-    },
-    {
-      id: "academy-free-egyptian-goal-planning",
-      detailsHint: locale === "ru" ? "Авторская египетская символическая модель. Ответы остаются приватными, не передаются мастеру." : locale === "es" ? "Modelo egipcio simbólico del autor; tus respuestas son privadas." : "Author-sourced Egyptian symbolic planning. Your answers remain private.",
-      title: locale === "ru" ? "Египетское планирование" : locale === "es" ? "Planificación egipcia" : "Egyptian Goal Planning",
-      subtitle: locale === "ru" ? "8 УРОВНЕЙ · 11 ЭКРАНОВ" : locale === "es" ? "8 NIVELES · 11 PANTALLAS" : "8 LEVELS · 11 SCREENS",
-      description: locale === "ru" ? "Путь от желания через Ка, Ба, Иб, Сах, Хайбит, Ху, Рен и Секхем к ближайшему шагу." : locale === "es" ? "Explora una meta a través de ocho niveles simbólicos de la tradición egipcia, a tu ritmo." : "Reflect on a goal through eight symbolic Egyptian levels, from desire and values to a next step.",
-      href: "/" + locale + "/academy/coaching/egyptian",
-      courseHref: "/" + locale + "/coaching#coaching-tradition-egyptian",
-      image: "/academy/reiki-yggdrasil/source/temple-studies.png",
-      duration: locale === "ru" ? "11 экранов · в своём темпе" : locale === "es" ? "11 pantallas · a tu ritmo" : "11 screens · at your pace",
-      free: true,
-      actionLabel: locale === "ru" ? "Начать коучинг" : locale === "es" ? "Empezar coaching" : "Start coaching",
-    },
-    {
-      id: "academy-free-greek-goal-planning",
-      detailsHint: locale === "ru" ? "Авторская адаптация античных идей, не стандартизированный психологический тест." : locale === "es" ? "Adaptación original de ideas antiguas; no es una prueba clínica." : "Author-sourced adaptation of ancient concepts, not a standardized assessment.",
-      title: locale === "ru" ? "Греческое планирование" : locale === "es" ? "Planificación griega" : "Greek Goal Planning",
-      subtitle: locale === "ru" ? "8 УРОВНЕЙ · 10 ЭКРАНОВ" : locale === "es" ? "8 NIVELES · 10 PANTALLAS" : "8 LEVELS · 10 SCREENS",
-      description: locale === "ru" ? "Эпитемия, Тюмос, Логос, Ноос, Эйдос, Идея, Даймон, Телос: от желания к действиям." : locale === "es" ? "Del deseo y el coraje a la razón, la visión ideal y un próximo paso concreto." : "Move from desire and courage through order, meaning, ideal form and a concrete next step.",
-      href: "/" + locale + "/academy/coaching/greek",
-      courseHref: "/" + locale + "/coaching#coaching-tradition-greek",
-      image: "/academy/reiki-yggdrasil/source/western-tradition.png",
-      duration: locale === "ru" ? "10 экранов · в своём темпе" : locale === "es" ? "10 pantallas · a tu ritmo" : "10 screens · at your pace",
-      free: true,
-      actionLabel: locale === "ru" ? "Начать коучинг" : locale === "es" ? "Empezar coaching" : "Start coaching",
-    },
+    };
+  const items: AcademyCourseItem[] = [
     {
       id: "academy-free-opora",
       detailsHint: hints.opora,
@@ -411,7 +386,7 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
-      <AcademyDiscovery locale={locale} view={view} items={items} legacyCourses={legacyCourses} legacyVideos={legacyVideos} events={PUBLIC_EVENTS} label={text.allPrograms} />
+      <AcademyDiscovery locale={locale} view={view} items={items} coachingItem={coachingItem} legacyCourses={legacyCourses} legacyVideos={legacyVideos} events={PUBLIC_EVENTS} label={text.allPrograms} />
       {view === "videos" ? (
         <section id="academy-video-courses">
           <AcademyVideoCourses locale={locale} />
