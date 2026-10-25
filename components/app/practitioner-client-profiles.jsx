@@ -72,6 +72,15 @@ const MANUAL_COPY={
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
+// Remote session states are distinct from a canceled ordinary enquiry.
+const remoteMessageStatus=(status,locale)=>{
+ const labels={
+  en:{reschedule_proposed:'Reschedule proposed',confirmed:'Confirmed',in_progress:'In progress',completed:'Completed',declined:'Declined'},
+  ru:{reschedule_proposed:'Предложен перенос',confirmed:'Подтверждено',in_progress:'В процессе',completed:'Завершено',declined:'Отклонено'},
+  es:{reschedule_proposed:'Cambio de fecha',confirmed:'Confirmada',in_progress:'En curso',completed:'Completada',declined:'Rechazada'},
+ }
+ return (labels[locale]||labels.en)[status]||status
+}
 export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
@@ -300,9 +309,11 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                 <div className={styles.requestHead}>
                   <strong>{name}</strong>
                   <small>{labelDate(request.createdAt,lang)} · {
-                    request.status==='requested'?t.requested:
-                    request.status==='contacted'?t.contacted:
-                    request.status==='closed'?t.closedStatus:t.cancelled
+                    request.remoteBooking&&['reschedule_proposed','confirmed','in_progress','completed','declined'].includes(request.status)
+                      ?remoteMessageStatus(request.status,lang)
+                      :request.status==='requested'?t.requested:
+                       request.status==='contacted'?t.contacted:
+                       request.status==='closed'?t.closedStatus:t.cancelled
                   }{request.messageCount>0?' · '+t.messageCount+': '+request.messageCount:''}
                   {request.needsReply?' · '+t.awaiting:''}
                   {request.newMessageCount>0?' · '+t.newMessages+': '+request.newMessageCount:''}</small>
