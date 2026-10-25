@@ -377,3 +377,20 @@
   .session .questionArea .textarea{min-height:74px}
   .session .footer{padding-top:5px}
 }
+
+
+/* Adaptive explanation is progressive disclosure, not a second always-open
+   paragraph competing with the question and answer. */
+.adaptivePanel{margin:3px 0 8px;padding:0 10px}
+.adaptivePanel>summary{
+  display:flex;align-items:center;gap:6px;
+  min-height:42px;padding:7px 0;cursor:pointer;
+  font-size:12px;font-weight:800;line-height:1.3;color:#2d6260;
+}
+.adaptivePanel[open]>summary{border-bottom:1px solid #c0ddd4}
+.adaptivePanel[open]{padding-bottom:7px}
+.adaptivePanel>p{margin:6px 0 0}
+@media(max-width:600px){
+  .session .questionArea .adaptivePanel{margin:3px 0 6px;padding-inline:9px}
+  .session .questionArea .adaptivePanel>summary{min-height:36px;font-size:11px;padding:5px 0}
+}
