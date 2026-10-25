@@ -297,6 +297,8 @@ const holisticIntro = {
     choose: "Choose how to get support",
     ask: "Get a free symbolic insight",
     energy: "Request energy support",
+    daoLead: "Ask one specific question and receive a free symbolic I Ching reflection. This is not a prediction.",
+    diagnostic: "Get a free diagnostic from the Master",
     privacyShort: "Private in this browser · How it works",
     privacy: "Your words stay in this tab. For energy support they pass only to the next page in temporary memory, not in a URL, cookie or analytics. You review any request before choosing to send it.",
   },
@@ -309,6 +311,8 @@ const holisticIntro = {
     choose: "Выберите вид поддержки",
     ask: "Получить бесплатную подсказку",
     energy: "Получить энергетическую поддержку",
+    daoLead: "Задайте конкретный вопрос и получите бесплатную символическую подсказку И-Цзин. Это не предсказание.",
+    diagnostic: "Получить бесплатную диагностику от мастера",
     privacyShort: "Приватно в браузере · Как это работает",
     privacy: "Ваши слова остаются в этой вкладке. При выборе энергетической поддержки они передаются только на следующую страницу во временной памяти, без URL, cookies и аналитики. Заявка отправляется только после вашего согласия.",
   },
@@ -321,6 +325,8 @@ const holisticIntro = {
     choose: "Elige tu tipo de apoyo",
     ask: "Recibir una reflexión gratuita",
     energy: "Solicitar apoyo energético",
+    daoLead: "Plantea una pregunta concreta y recibe una reflexión simbólica gratuita del I Ching. No es una predicción.",
+    diagnostic: "Solicitar evaluación gratuita del maestro",
     privacyShort: "Privado en este navegador · Cómo funciona",
     privacy: "Tus palabras permanecen en esta pestaña. Si eliges apoyo energético se transfieren a la página siguiente solo en memoria temporal, nunca en la URL, cookies ni analítica. Revisarás la solicitud antes de enviarla.",
   },
@@ -479,12 +485,17 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
   );
 }
 
-export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLocale; variant?: "ideas" | "temple" | "holistic" }) {
+export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLocale; variant?: "ideas" | "temple" | "holistic" | "holistic-dao" }) {
   const t = copy[locale];
-  const isHolistic = variant === "holistic";
+  const daoFocused = variant === "holistic-dao";
+  const isHolistic = variant === "holistic" || daoFocused;
   const isTemple = variant !== "ideas";
-  const intro = isHolistic ? holisticIntro[locale] : isTemple ? templeIntro[locale] : t;
-  const HeadingTag = variant === "temple" ? "h2" : "h1";
+  const intro = isHolistic
+    ? daoFocused
+      ? { ...holisticIntro[locale], title: t.dao, lead: holisticIntro[locale].daoLead, ask: t.ask }
+      : holisticIntro[locale]
+    : isTemple ? templeIntro[locale] : t;
+  const HeadingTag = variant === "temple" || daoFocused ? "h2" : "h1";
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [testPickerOpen, setTestPickerOpen] = useState(false);
@@ -700,7 +711,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           <span>{templeIntro[locale].diagnostic}</span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link> : null}
-        {isHolistic ? <Link
+        {isHolistic && !daoFocused ? <Link
           href={"/" + locale + "/services/remote-energy-support"}
           className={styles.diagnosticAction}
           data-ideas-energy-support
@@ -709,6 +720,15 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
         >
           <HeartHandshake size={19} aria-hidden="true" />
           <span>{holisticIntro[locale].energy}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link> : null}
+        {daoFocused ? <Link
+          href={"/" + locale + "/services/free-consultation#free-diagnosis-options"}
+          className={styles.diagnosticAction}
+          data-ideas-free-diagnostic prefetch={false}
+        >
+          <ClipboardCheck size={19} aria-hidden="true" />
+          <span>{holisticIntro[locale].diagnostic}</span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link> : null}
       </div>
@@ -739,7 +759,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
             <summary id="ideas-question-privacy">{isHolistic ? holisticIntro[locale].privacyShort : t.privacyShort}</summary>
             <p className={styles.privacy}>{isHolistic ? holisticIntro[locale].privacy : t.privacy}</p>
           </details>
-          {isTemple ? (
+          {!daoFocused && (isTemple ? (
             <Link href={freeOfferHref(locale, "tests")} prefetch={false}
               className={styles.freeTestLink} data-ideas-free-test data-temple-test-catalog>
               {t.testLink}<ArrowRight size={15} aria-hidden="true" />
@@ -749,7 +769,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
               aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
               onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
               onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
-          )}
+          ))}
         </div>
       </div>
       </div>
@@ -778,9 +798,9 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
       </section>
 
 
-      <h2 id="temple-insights" className={styles.templeHeading}>
+      {!daoFocused ? <h2 id="temple-insights" className={styles.templeHeading}>
         <Sparkles size={15} aria-hidden="true" />{t.templeHeading}
-      </h2>
+      </h2> : null}
 
       {result ? (
         <div className={`${styles.results} ${result.mode === "personal" ? styles.personalResults : ""}`} key={result.mode + "-" + result.topic} aria-live="polite" data-ideas-result={result.mode} data-question-language={answerLocale} lang={answerLocale}>
@@ -860,7 +880,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
               </div>
             </div>
           ) : null}
-          {result.mode === "dao" && hexagram ? (
+          {result.mode === "dao" && hexagram && !daoFocused ? (
             <DaoOfferCards locale={answerLocale} openOffer={openOffer}
               onToggle={offer => setOpenOffer(current => current === offer ? null : offer)} />
           ) : null}
@@ -924,7 +944,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
           ) : null}
           {result.mode !== "dao" ? <p className={styles.note}>{result.mode === "aphorisms" ? answerCopy.aphorismNote : answerCopy.personalNote}</p> : null}
         </div>
-      ) : exampleHexagram ? (
+      ) : exampleHexagram && !daoFocused ? (
         <div className={styles.results + " " + styles.preview} data-ideas-preview aria-label={t.preview}
           data-ideas-preview-ready={previewReady ? "" : undefined}>
           <AphorismTiles items={previewAphorisms} locale={locale} heading={t.sampleAphorisms} />
