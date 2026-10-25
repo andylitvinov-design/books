@@ -157,7 +157,7 @@ test('malformed input and owner/revision spoofing reject without mutating rows',
 test('owner route, CRM role and migration enforce privacy; no providers or customer writes', () => {
   const route = read('app/api/app/crm/salesbot/drafts/route.js')
   const wrapper = read('lib/crm/repository.js')
-  const sql = read('supabase/migrations/20261025190800_hh_crm_salesbot_owner_drafts_20261025.sql')
+  const sql = read('supabase/migrations/20261025192412_hh_crm_salesbot_owner_drafts_20261025.sql')
   const manager = read('components/app/crm-salesbot.jsx')
   const controls = read('components/app/crm-salesbot-drafts.jsx')
   assert.match(route, /createRequestAuth/)
