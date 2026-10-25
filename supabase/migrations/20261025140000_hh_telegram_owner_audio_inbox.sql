@@ -43,6 +43,7 @@ do $roles$ begin
   end if;
 end $roles$;
 grant select, insert, update on app_private.telegram_owner_audio to hh_app_backend;
+drop policy if exists telegram_owner_audio_owner_backend on app_private.telegram_owner_audio;
 create policy telegram_owner_audio_owner_backend on app_private.telegram_owner_audio
   for all to hh_app_backend
   using (current_setting('hh.owner_audio_manager',true)='1')
