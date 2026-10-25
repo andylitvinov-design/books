@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
+import { Mic, MicOff, SlidersHorizontal, Volume2, VolumeX } from 'lucide-react'
 import { speechResultSegments } from '@/lib/personal-coaching/speech-text'
 import { chooseCoachingVoice, coachingLocalVoices, coachingSpeechProfile, coachingVoiceSample } from '@/lib/personal-coaching/voice-quality'
 import styles from './tradition-coaching.module.css'
@@ -276,7 +276,7 @@ export default function CoachingQuestionVoice({
     {support.tts&&<>
       <button type="button" className={styles.voiceSettingsToggle} aria-label={t.voiceSettings} title={t.voiceSettings} aria-expanded={voicePanel}
         aria-controls={soundPanelId} onClick={()=>{setVoices(window.speechSynthesis?.getVoices?.()||[]);setVoicePanel(open=>!open)}}>
-        {t.voiceSettings}
+        {compact?<SlidersHorizontal size={19} aria-hidden="true"/>:t.voiceSettings}
       </button>
       {voicePanel&&<div id={soundPanelId} className={styles.voiceSettingsPanel}>
         <label>{t.voiceLabel}
