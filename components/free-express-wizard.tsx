@@ -113,8 +113,9 @@ const copy = {
   },
 } as const;
 
-export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
+export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRestoredFocus }: {
   locale: PublicLocale; focus: Focus; serviceTitle: string; onSaved?: () => void;
+  onRestoredFocus?: (nextFocus: Focus) => void;
 }) {
   const t = copy[locale];
   const [step, setStep] = useState(0);
