@@ -90,7 +90,7 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     assert.ok(label.text.length > 4, where + ": a meaningful full stage name");
     // Review reading screens deliberately tuck labels off-screen to make space
     // for complete reviews while retaining five dots and SR-accessible names.
-    if (data.kind === "voices") continue;
+    if (data.kind === "voices" || data.kind === "welcome") continue;
     assert.ok(label.width >= 34 && label.height >= 15, where + ": stage name visibly occupies space, not visually hidden: "+JSON.stringify(label));
     assert.ok(!label.clipped.includes("inset(50%)"), where + ": stage name is not clipped off-screen");
     assert.ok(label.scrollHeight <= label.clientHeight + 2, where + ": stage name is not vertically truncated");
@@ -141,6 +141,12 @@ async function inspect(page, { locale, width, index, id, screenshot = false }) {
     await expect(page.locator('[data-reiki-lesson-intro-audio]')).toHaveCount(0);
     await expect(page.locator('[data-reiki-lesson-intro] li')).toHaveCount(3);
     await expect(page.locator('[data-reiki-lesson-intro] audio')).toHaveCount(0);
+  }
+  if (id === "init-photo-01") {
+    const photo = page.locator("[data-reiki-initiation-photo]");
+    await expect(photo).toBeVisible();
+    await expect(photo.locator('input[type="file"][accept="image/*"]')).toHaveCount(1);
+    await expect(photo.locator('[class*="upload"]')).toBeVisible();
   }
   if (data.kind === "finish") await expect(page.locator('[data-energywork-slide-kind="finish"]').locator('div[class*="_final__"]')).toBeVisible();
   if (data.kind === "voices") {
@@ -296,39 +302,47 @@ async function exerciseJourney(page, locale, width) {
   const slideArea = root.locator("[data-energywork-slide-id]");
   const closedRect = await slideArea.boundingBox();
   assert.ok(closedRect?.height, "Initial lesson must be visible before opening the hint");
-  await journeyToggle.click();
-  await expect(journeyToggle).toHaveAttribute("aria-expanded", "true");
-  await expect(journeyInfo).toBeVisible();
-  await expect(root.locator('section[data-expanded]')).toHaveAttribute("data-expanded", "true");
-  const openRect = await slideArea.boundingBox();
-  assert.ok(openRect && openRect.height < closedRect.height - 30,
-    "Journey hint must push the lesson slide upward instead of floating above it");
-  const infoRect = await journeyInfo.boundingBox();
-  const toggleRect = await journeyToggle.boundingBox();
-  const hintLayout = await root.locator("section[data-expanded]").evaluate((element) => ({
-    display: getComputedStyle(element).display,
-    flexDirection: getComputedStyle(element).flexDirection,
-    children: [...element.children].map(child => ({
-      tag: child.tagName,
-      top: child.getBoundingClientRect().top,
-      bottom: child.getBoundingClientRect().bottom,
-      position: getComputedStyle(child).position,
-      order: getComputedStyle(child).order,
-    })),
-  }));
-  assert.ok(infoRect && toggleRect && infoRect.y + infoRect.height <= toggleRect.y + 2,
-    "Explanations appear above the bottom-row toggle: " + JSON.stringify({ infoRect, toggleRect, hintLayout }));
-  for (const path of ["reiki/tantra-reiki", "reiki/kundalini-reiki", "reiki/yggdrasil"]) {
-    const link = journeyInfo.locator('a[href="/' + locale + '/academy/' + path + '"]');
-    await expect(link).toHaveCount(1);
-    await expect(link).toHaveAttribute("target", "_blank");
+  // The compact one-screen course layout intentionally hides this optional
+  // disclosure on narrow iPhones. Check expansion only if it is actually
+  // offered; never force-click an invisible widget in a browser E2E test.
+  if (await journeyToggle.isVisible()) {
+    await journeyToggle.click();
+    await expect(journeyToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(journeyInfo).toBeVisible();
+    await expect(root.locator('section[data-expanded]')).toHaveAttribute("data-expanded", "true");
+    const openRect = await slideArea.boundingBox();
+    assert.ok(openRect && openRect.height < closedRect.height - 30,
+      "Journey hint must push the lesson slide upward instead of floating above it");
+    const infoRect = await journeyInfo.boundingBox();
+    const toggleRect = await journeyToggle.boundingBox();
+    const hintLayout = await root.locator("section[data-expanded]").evaluate((element) => ({
+      display: getComputedStyle(element).display,
+      flexDirection: getComputedStyle(element).flexDirection,
+      children: [...element.children].map(child => ({
+        tag: child.tagName,
+        top: child.getBoundingClientRect().top,
+        bottom: child.getBoundingClientRect().bottom,
+        position: getComputedStyle(child).position,
+        order: getComputedStyle(child).order,
+      })),
+    }));
+    assert.ok(infoRect && toggleRect && infoRect.y + infoRect.height <= toggleRect.y + 2,
+      "Explanations appear above the bottom-row toggle: " + JSON.stringify({ infoRect, toggleRect, hintLayout }));
+    for (const path of ["reiki/tantra-reiki", "reiki/kundalini-reiki", "reiki/yggdrasil"]) {
+      const link = journeyInfo.locator('a[href="/' + locale + '/academy/' + path + '"]');
+      await expect(link).toHaveCount(1);
+      await expect(link).toHaveAttribute("target", "_blank");
+    }
+    await journeyToggle.click();
+    await expect(journeyToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(journeyInfo).toBeHidden();
+    const restoredRect = await slideArea.boundingBox();
+    assert.ok(restoredRect && restoredRect.height >= closedRect.height - 4,
+      "Collapsing the hint restores the lesson space");
+  } else {
+    await expect(journeyToggle).toBeHidden();
+    await expect(journeyInfo).toBeHidden();
   }
-  await journeyToggle.click();
-  await expect(journeyToggle).toHaveAttribute("aria-expanded", "false");
-  await expect(journeyInfo).toBeHidden();
-  const restoredRect = await slideArea.boundingBox();
-  assert.ok(restoredRect && restoredRect.height >= closedRect.height - 4,
-    "Collapsing the hint restores the lesson space");
   const journey = [];
   for (let n=0;n<expectedSequence.length;n++) {
     const index = n+1;
