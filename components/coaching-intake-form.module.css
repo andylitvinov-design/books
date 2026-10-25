@@ -287,3 +287,7 @@
 .requestSuccess>svg{flex:none}.requestSuccess p{margin:4px 0 0}
 .requestBox :is(button,input):focus-visible{outline:3px solid #3d8580;outline-offset:2px}
 @media(max-width:700px){.choiceGrid{grid-template-columns:1fr}.replyFields{grid-template-columns:1fr}.requestBox{padding:12px}.requestBox h3{font-size:24px}.choiceGrid label{min-height:48px}}
+
+.requestUpgrade{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border:1px solid #8c6146;border-radius:10px;color:#65412e;background:#fffdf7;text-decoration:none;font:700 12px/1.4 Arial,sans-serif}
+.requestUpgrade:hover{background:#f7e9d9}
+.requestUpgrade:focus-visible{outline:3px solid #3d8580;outline-offset:2px}
