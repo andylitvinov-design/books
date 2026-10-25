@@ -13,8 +13,8 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(page, /<AlchemySoulLanding locale=/);
   assert.match(page, /<DistanceHomeopathyGuide locale=\{locale as PublicLocale\} embedded \/>/);
   assert.match(page, /data-alchemy-extended-guide/);
-  for (const term of ["Расстановка — карта ситуации", "Гипнотерапия — глубинный уровень", "Психогомеопатия — подбор ресурса", "Интеграция — реальный шаг", "Constellation — map the situation", "Hypnotherapy — explore deeper", "Psycho-homeopathy — optional support", "Integration — practical action"]) assert.ok(landing.includes(term), term);
-  for (const section of ["hero", "situations", "method", "video", "reviews", "formats", "faq", "request"]) assert.match(landing, new RegExp('data-alchemy-panel="' + section + '"'));
+  for (const term of ["Диагностика ситуации", "Системная расстановка", "Образная гипнотерапия", "Психогомеопатия — по желанию", "Situation diagnosis", "Systemic constellation", "Guided-imagery hypnotherapy", "Optional psycho-homeopathy"]) assert.ok(landing.includes(term), term);
+  for (const section of ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"]) assert.match(landing, new RegExp('data-alchemy-panel="' + section + '"'));
   assert.equal((landing.match(/<AlchemySoulLeadForm locale=\{locale\}/g) || []).length, 1, "One enquiry form only");
   assert.match(form, /ContactChannelChooser/);
   assert.match(form, /whatsappEnquiryUrl/);
@@ -26,6 +26,8 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(landing, /MIVLm1GUTtM/);
   assert.match(landing, /Dk0LBmOivQo/);
   assert.match(css, /100svh/);
+  assert.match(landing, /data-alchemy-method-sequence/);
+  assert.match(landing, /data-alchemy-report-example/);
   assert.match(landing, /data-alchemy-review-stack/);
   assert.match(landing, /className=\{styles\.reviewStack\}/);
   assert.match(css, /\.reviewStack\{display:grid;grid-template-columns:minmax\(0,1fr\)/);

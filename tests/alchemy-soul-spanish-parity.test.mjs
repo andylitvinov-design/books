@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Spanish Alchemy shares the nine media-led chapters in EN/RU", () => {
+test("Spanish Alchemy shares the ten media-led chapters in EN/RU", () => {
   const enRoute = read("app/[locale]/services/alchemy-of-soul/page.tsx");
   const esRoute = read("app/es/services/alchemy-of-soul/page.tsx");
   const landing = read("components/alchemy-soul-landing.tsx");
@@ -14,10 +14,10 @@ test("Spanish Alchemy shares the nine media-led chapters in EN/RU", () => {
   assert.match(esRoute, /data-alchemy-extended-guide/);
   assert.doesNotMatch(esRoute, /CoreServiceDetail/);
   assert.match(enRoute, /es: "\/es\/services\/alchemy-of-soul"/);
-  for (const id of ["featured-video", "hero", "situations", "method", "video", "reviews", "formats", "faq", "request"]) {
+  for (const id of ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"]) {
     assert.match(landing, new RegExp('data-alchemy-panel="' + id + '"'));
   }
-  for (const phrase of ["Alquimia del Alma", "Constelación — mapa de la situación", "Hipnoterapia — explorar en profundidad", "Psicohomeopatía — apoyo opcional", "Integración — acciones concretas"]) {
+  for (const phrase of ["Alquimia del Alma", "Diagnóstico de la situación", "Constelación sistémica", "Hipnoterapia con imágenes", "Psicohomeopatía opcional"]) {
     assert.ok(landing.includes(phrase), phrase);
   }
   assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);

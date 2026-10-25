@@ -9,7 +9,7 @@ const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Alchemy QA requires an isolated loopback server");
 
-const chapters = ["featured-video", "hero", "situations", "method", "video", "reviews", "formats", "faq", "request"];
+const chapters = ["featured-video", "hero", "situations", "method", "report", "video", "reviews", "formats", "faq", "request"];
 const cases = [
   ...["en", "ru", "es"].flatMap(locale => [320, 375, 390, 430].map(width => ({ locale, width, height: 844 }))),
   { locale: "en", width: 320, height: 568 },
@@ -55,7 +55,7 @@ try {
       });
       const issues = [];
       if (data.documentWidth > width + 1) issues.push("horizontal document overflow " + data.documentWidth);
-      if (data.panels.length !== chapters.length) issues.push("expected nine chapters, got " + data.panels.length);
+      if (data.panels.length !== chapters.length) issues.push("expected ten chapters, got " + data.panels.length);
       for (let i=0;i<data.panels.length;i++) {
         const p=data.panels[i];
         if (p.name !== chapters[i]) issues.push("incorrect chapter order "+i+":"+p.name);
@@ -63,13 +63,24 @@ try {
         if (p.height > p.maxHeight) issues.push(p.name+" "+p.height+"px exceeds "+p.maxHeight+"px");
         if (p.escapingChildren) issues.push(p.name+" has "+p.escapingChildren+" escaping controls/content");
       }
+      if (!data.panels.some(p => p.name === "report" && p.hasMedia))
+        issues.push("public fictional report sample must include a visible photo");
+      if (await root.locator('[data-alchemy-method-sequence] li').count() !== 4)
+        issues.push("all four method stages must be visible without expanding details");
+      if (await root.locator('[data-alchemy-report-example] .does-not-exist').count() !== 0)
+        issues.push("report placeholder unexpectedly found");
+      const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
+      if (reportLink !== 1) issues.push("example report route link missing");
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
         failures.push(key+": "+issues.join("; "));
         console.error("ALCHEMY_GEOMETRY_FAIL "+key+" "+issues.join("; "));
       } else {
-        console.log("PASS Alchemy "+key+" nine photographed/video chapters fit with no overflowing controls");
+        console.log("PASS Alchemy "+key+" ten photographed/video chapters fit with no overflowing controls");
       }
+      const sampleResponse = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul/example-report", {waitUntil:"domcontentloaded",timeout:45000});
+      assert.equal(sampleResponse?.status(),200,key+": sample report");
+      assert.equal(await page.locator('[data-alchemy-example-report="fictional"]').count(),1,key+": no private client data");
     } catch (error) {
       failures.push(key+": "+String(error));
       console.error("ALCHEMY_QA_ERROR "+key+" "+String(error));
