@@ -241,7 +241,8 @@ export default function CoachingQuestionVoice({
     }
   }
 
-  return <div className={styles.voice} data-tradition-voice data-coaching-question-voice>
+  return <div className={styles.voice} data-tradition-voice data-coaching-question-voice
+    data-coaching-listening={listening?'true':support.stt?'false':'unavailable'}>
     <div className={styles.voiceActions}>
       {support.tts?<button type="button" disabled={disabled} onClick={toggleVoice}
         aria-label={speaking?t.stop:t.listen} aria-pressed={speaking}>
@@ -273,7 +274,7 @@ export default function CoachingQuestionVoice({
             <option value="clear">{t.paceClear}</option>
           </select>
         </label>
-        <small>{coachingLocalVoices(voices,spoken).length?t.voiceLimit:t.noVoiceChoices}</small>
+        <small>{coachingLocalVoices(voices,spoken).length?t.voiceLimit:t.noVoiceChoices} {t.device}</small>
       </div>}
     </>}
     <small role="status" aria-live="polite">{listening?t.hearing:!support.stt?t.unsupported:t.device}</small>

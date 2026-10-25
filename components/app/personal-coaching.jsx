@@ -9,6 +9,7 @@ import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
+import { useCoachingVisualViewport } from './use-coaching-visual-viewport'
 import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
@@ -162,10 +163,13 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [entry,setEntry]=useState(null)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
+  const [showOwnWords,setShowOwnWords]=useState(false)
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
+  const viewportRef=useRef(null),questionScrollRef=useRef(null)
+  useCoachingVisualViewport(viewportRef)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const activeQuestions=questionsFor(course,catalog)
@@ -200,6 +204,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     setIndex(next)
     const saved=values?.[items[next]?.id]
     setDraft(typeof saved==='string'?saved:'')
+    setShowOwnWords(typeof saved==='string'&&saved.length>0&&!saved.startsWith('choice:')&&
+      !(items[next]?.examples?.[lang]||[]).includes(saved))
+    if(questionScrollRef.current)questionScrollRef.current.scrollTop=0
     setDictating(false)
     setPendingFollowup(null);setReflectionDraft('')
     setUseStandardPrompt(false)
@@ -235,6 +242,8 @@ export default function PersonalCoaching({locale='en',accountId}){
       setIndex(next)
       const answer=value.course?.current?.answers?.[list[next]?.id]
       setDraft(typeof answer==='string'?answer:'')
+      setShowOwnWords(typeof answer==='string'&&answer.length>0&&!answer.startsWith('choice:')&&
+        !(list[next]?.examples?.[lang]||[]).includes(answer))
       setError('')
     }).catch(()=>{if(live)setError(t.loadError)})
       .finally(()=>{if(live)setLoading(false)})
@@ -242,6 +251,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   },[accountId,t.loadError])
   useEffect(()=>{
     if(loading||(!entry&&!session)||finished&&!entry)return
+    if(questionScrollRef.current)questionScrollRef.current.scrollTop=0
     titleRef.current?.focus({preventScroll:true})
   },[index,loading,session?.id,finished,pendingFollowup,entry?.step])
   useEffect(()=>{
@@ -395,7 +405,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     const result=await command('delete',{confirmed:true})
     if(result){setNotice('');setNewSelection(false);visit(0,{},PERSONAL_COACH_QUESTIONS)}
   }
-  return <main className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
+  return <main ref={viewportRef} className={styles.root} data-personal-coaching data-coaching-version="1" lang={lang}>
     <div className={styles.scenery} aria-hidden="true"/>
     <div className={styles.layout}>
       <header className={styles.header}>
@@ -500,7 +510,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
           </div>
           <div className={styles.progressTrack}><span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/></div>
-          <div className={styles.questionArea}>
+          <div ref={questionScrollRef} className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
             <CoachingDialogueTurn turn={followupTurn}/>
             <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
@@ -541,27 +551,28 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressTrack} role="progressbar" aria-label={t.question} aria-valuemin={0} aria-valuemax={activeQuestions.length} aria-valuenow={index+1}>
             <span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/>
           </div>
-          <div className={styles.questionArea}>
+          <div ref={questionScrollRef} className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
             {gentleGuide&&<div data-coaching-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
             <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
-            {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
-              <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
+            {adaptive&&<details className={styles.adaptivePanel} data-coaching-adaptive-prompt>
+              <summary><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</summary>
               <p>{adaptive.why}</p>
               <button type="button" disabled={busy||dictating}
                 onClick={()=>setUseStandardPrompt(value=>!value)}>
                 {useStandardPrompt?iCopy.tailored:iCopy.standard}
               </button>
-            </div>}
+            </details>}
             <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')}
               text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
               mode="answer" disabled={busy} speechConsent={speechConsent}
               onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
               onTranscript={words=>{
                 setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
+                setShowOwnWords(true)
                 setError('');setNotice('')
               }}/>
             {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
@@ -571,7 +582,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                   ? Array.from({length:11},(_,value)=>({id:String(value),label:{en:String(value),ru:String(value),es:String(value)}}))
                   : question.choices||[]).map(option=><button key={option.id} type="button" disabled={busy||dictating}
                   className={styles.optionChip} aria-pressed={draft==='choice:'+option.id}
-                  onClick={()=>{setDraft('choice:'+option.id);setError('');setNotice('')}}>
+                  onClick={()=>{setDraft('choice:'+option.id);setShowOwnWords(false);setError('');setNotice('')}}>
                   {translated(option.label,lang)}</button>)}
               </div>
             </>}
@@ -580,20 +591,27 @@ export default function PersonalCoaching({locale='en',accountId}){
             {quickChoices&&!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
               {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy||dictating}
                 className={draft.trim()===option?styles.chosen:undefined} aria-pressed={draft.trim()===option}
-                onClick={()=>{setDraft(option);setError('');setNotice('')}}>{option}</button>)}
+                onClick={()=>{setDraft(option);setShowOwnWords(false);setError('');setNotice('')}}>{option}</button>)}
             </div>}
             {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
             {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
-            <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-              {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
-            <textarea id="hh-personal-coach-answer" className={styles.textarea}
-              data-coaching-open-reflection={!quickChoices?'true':undefined}
-              value={draft.startsWith('choice:')?'':draft}
-              maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
-              onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
-            <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
+            {quickChoices&&<button type="button" className={styles.ownWordsToggle}
+              aria-controls="hh-personal-coach-own-words" aria-expanded={showOwnWords}
+              onClick={()=>setShowOwnWords(value=>!value)} disabled={busy||dictating}>
+              {langCopy.orWrite}<span aria-hidden="true">{showOwnWords?'−':'+'}</span>
+            </button>}
+            <div id="hh-personal-coach-own-words" hidden={quickChoices&&!showOwnWords}>
+              <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
+                {quickChoices?langCopy.orWrite:t.hint}</label>
+              <textarea id="hh-personal-coach-answer" className={styles.textarea}
+                data-coaching-open-reflection={!quickChoices?'true':undefined}
+                value={draft.startsWith('choice:')?'':draft}
+                maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
+                onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
+              <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
+            </div>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
