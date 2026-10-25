@@ -678,7 +678,8 @@ async function handle(request, { params }) {
     if (joined === 'bootstrap' && method === 'GET') {
       // A reduced initial payload is safe only after the normal verified session,
       // account check and private rate limit above. Other tabs stay unchanged.
-      const view = new URL(request.url).searchParams.get('view') === 'portrait' ? 'portrait' : 'full'
+      const requestedView = new URL(request.url).searchParams.get('view')
+      const view = requestedView === 'portrait' || requestedView === 'practice' ? requestedView : 'full'
       return json(await repo.bootstrap(actor, { view }))
     }
     if (joined === 'personal-analysis-reports' && method === 'GET')

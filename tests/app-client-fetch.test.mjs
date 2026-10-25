@@ -31,6 +31,20 @@ test('valid active and onboarding bootstrap responses preserve their data', asyn
   }
 })
 
+test('My Practice opens with a minimal bootstrap over authenticated same-origin GET', async t => {
+  const practice = { ...bootstrap, practitioner: true,
+    practice: { id: 'synthetic-practitioner', status: 'approved' },
+    savedReports: [], savedDocuments: [], savedSessions: [] }
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url, '/api/app/bootstrap?view=practice')
+    assert.equal(options.method, 'GET')
+    assert.equal(options.credentials, 'same-origin')
+    assert.equal(options.cache, 'no-store')
+    return Response.json(practice)
+  })
+  assert.deepEqual(await appFetch('bootstrap?view=practice'), practice)
+})
+
 test('HTTP errors preserve authentication and conflict handling', async t => {
   for (const [status, code] of [[401, 'SIGN_IN_REQUIRED'], [409, 'REVISION_CONFLICT'], [403, 'DELETION_REQUESTED']]) {
     t.mock.method(globalThis, 'fetch', async () => Response.json({ error: code }, { status }))
