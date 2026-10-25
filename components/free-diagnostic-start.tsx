@@ -11,6 +11,8 @@ import styles from "./free-diagnostic-start.module.css";
 const copy = {
   en: {
     kicker: "STEP 1 OF 2 · FREE WRITTEN DIAGNOSTIC",
+    miniPhone: "Phone number", miniStart: "Start free diagnosis",
+    miniNote: "Your number stays in this browser tab. Nothing is sent until you finish the questions and agree.",
     title: "Tell us how to reach you",
     intro: "Choose your topic and describe your situation briefly. Next, answer Andrey's coaching questions.",
     name: "Your name (optional)", contact: "Email or phone", topic: "Your topic",
@@ -21,6 +23,8 @@ const copy = {
   },
   ru: {
     kicker: "ШАГ 1 ИЗ 2 · БЕСПЛАТНЫЙ ПИСЬМЕННЫЙ РАЗБОР",
+    miniPhone: "Номер телефона", miniStart: "Начать бесплатную диагностику",
+    miniNote: "Номер пока остаётся в этой вкладке. Запрос отправится только после анкеты и вашего согласия.",
     title: "Оставьте контакты и тему",
     intro: "Уточните, что вас интересует. Затем заполните авторскую коучинговую анкету Андрея.",
     name: "Ваше имя (необязательно)", contact: "Email или телефон", topic: "Тема запроса",
@@ -31,6 +35,8 @@ const copy = {
   },
   es: {
     kicker: "PASO 1 DE 2 · EVALUACIÓN ESCRITA GRATIS",
+    miniPhone: "Número de teléfono", miniStart: "Iniciar diagnóstico gratuito",
+    miniNote: "Tu número queda en esta pestaña. Solo se envía al completar las preguntas y dar tu consentimiento.",
     title: "Deja tu contacto y tu tema",
     intro: "Cuéntanos brevemente qué te preocupa. Después completa el cuestionario de coaching de Andrey.",
     name: "Tu nombre (opcional)", contact: "Email o teléfono", topic: "Tema",
@@ -41,7 +47,8 @@ const copy = {
   },
 } as const;
 
-export function FreeDiagnosticStart({ locale }: { locale: PublicLocale }) {
+export function FreeDiagnosticStart({ locale, variant }: { locale: PublicLocale; variant?: "coaching" }) {
+  const compact = variant === "coaching";
   const t = copy[locale];
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -54,16 +61,32 @@ export function FreeDiagnosticStart({ locale }: { locale: PublicLocale }) {
     const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254 ? value : "";
     const phone = !email && /^\+?[0-9 ().-]{8,28}$/.test(value) &&
       value.replace(/\D/g, "").length >= 8 && value.replace(/\D/g, "").length <= 15 ? value : "";
-    if (!email && !phone) { setError(t.error); return; }
+    const e164 = value.replace(/[\s().-]/g, "");
+    if ((compact && !/^\+[1-9][0-9]{7,14}$/.test(e164)) || (!compact && !email && !phone)) {
+      setError(compact ? (locale === "ru" ? "Введите номер с кодом страны, например +1 416…" : locale === "es" ? "Incluye el prefijo de país, por ejemplo +1 416…" : "Include your country code, e.g. +1 416…") : t.error); return;
+    }
     try {
       sessionStorage.setItem(DIAGNOSTIC_START_KEY, JSON.stringify({
-        createdAt: Date.now(), locale, name: name.trim(), email, phone, topic, question: question.trim(),
+        createdAt: Date.now(), locale, name: compact ? "" : name.trim(), email: compact ? "" : email,
+        phone: compact ? e164 : phone, topic: compact ? "personal" : topic, question: compact ? "" : question.trim(),
       }));
     } catch {
       // The questionnaire still permits entering contact details at the final consent screen.
     }
-    window.location.assign("/" + locale + "/coaching/intake");
+    window.location.assign("/" + locale + "/coaching/intake" + (compact ? "?guided=1" : ""));
   }
+  if (compact) return <section className={styles.mini} data-coaching-phone-start data-free-diagnostic-start lang={locale}>
+    <form onSubmit={continueIntake} className={styles.miniForm}>
+      <label>{t.miniPhone}
+        <input required type="tel" inputMode="tel" autoComplete="tel" maxLength={28}
+          value={contact} onChange={event => { setContact(event.target.value); setError(""); }}
+          placeholder="+1 416 555 0123" aria-invalid={Boolean(error)} />
+      </label>
+      {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+      <button type="submit" className={styles.action} data-free-coaching-start>{t.miniStart}<ArrowRight size={18} aria-hidden="true" /></button>
+    </form>
+    <p className={styles.privacy}><LockKeyhole size={14} aria-hidden="true" />{t.miniNote}</p>
+  </section>;
   return <section id="free-diagnostic-start" className={styles.card} data-free-diagnostic-start lang={locale}>
     <div className={styles.heading}>
       <span className={styles.icon}><Sparkles size={21} aria-hidden="true" /></span>
