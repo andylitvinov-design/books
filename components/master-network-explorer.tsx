@@ -432,11 +432,14 @@ function Filters({
               </button>
             ))}
           </div>
-          <details className={styles.masterExtra} open={mastersMoreOpen}>
-            <summary onClick={(event) => {
-              event.preventDefault();
-              setMastersMoreOpen((previous) => !previous);
-            }} aria-expanded={mastersMoreOpen}>{locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"} <span aria-hidden="true">⌄</span></summary>
+          <div className={styles.masterExtra}>
+            <button type="button" className={styles.masterExtraToggle}
+              aria-expanded={mastersMoreOpen} aria-controls="mentor-extra-filters"
+              onClick={() => setMastersMoreOpen((previous) => !previous)}>
+              {locale === "ru" ? "Метод, город, цена и другие направления" : locale === "es" ? "Método, lugar, precio y áreas" : "Method, location, price & more"}
+              <span aria-hidden="true">⌄</span>
+            </button>
+            <div id="mentor-extra-filters" className={styles.masterExtraBody} hidden={!mastersMoreOpen}>
             <div className={styles.selectGrid}>
               <label>{t.method}
                 <select value={state.method} onChange={(event) => set("method", event.target.value)}>
@@ -454,7 +457,8 @@ function Filters({
               {sortSelect}
             </div>
             {areaFilters}
-          </details>
+            </div>
+          </div>
         </>
       ) : (
         <>
