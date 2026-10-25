@@ -1,13 +1,17 @@
-import { Check, MessageCircle } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./tantra-free-initiation.module.css";
 
 type Intent = "free" | "personal" | "session" | "answers" | "feedback";
+const intents: Intent[] = ["free", "personal", "session", "answers", "feedback"];
 
-// This is an intentionally small, server-rendered WhatsApp handoff.
-// There are no website fields, uploads, registration or automatic messages.
+// One compact client-side choice, using the existing CRM-first phone and messenger handoff.
+// Answers and feedback are composed by the visitor in their own chat, not stored in URLs.
 const copy = {
   en: {
     service: "Tantra Reiki · Level 1",
@@ -20,15 +24,16 @@ const copy = {
     },
     answerContext: "I will write or paste the answers to questions 1–7 directly into our selected chat.",
     feedbackContext: "My impressions after the practice (I will add them in the selected chat):",
-    heading: "Write directly to Andrey",
-    lead: "No form, name, email or account required. Choose an option, then decide between WhatsApp and Telegram.",
+    heading: "Write to Andrey",
+    lead: "Choose what you need, add your phone and select a messenger.",
+    choose: "I would like to",
     free: "Request free initiation",
     personal: "Personal online initiation · €50 / 30 min",
     session: "Personal session + initiation · €100 / 60 min",
-    answers: "Already answered the 7 questions? Send your answers",
-    feedback: "Share your impressions after the practice",
-    note: "Choose WhatsApp or Telegram. Review the prepared message and tap Send yourself — nothing is sent by the website.",
-    tagline: "Direct conversation · no registration",
+    answers: "Send my 7 answers",
+    feedback: "Share my practice impressions",
+    note: "With your consent, your phone and request are saved for a personal reply. The chat message is only sent if you tap Send yourself.",
+    tagline: "PERSONAL REPLY · NO REGISTRATION",
   },
   ru: {
     service: "Тантра Рейки · 1-я ступень",
@@ -41,15 +46,16 @@ const copy = {
     },
     answerContext: "Я напишу или вставлю ответы на вопросы 1–7 в выбранном мессенджере перед отправкой.",
     feedbackContext: "Мой отзыв после практики (допишу в выбранном мессенджере):",
-    heading: "Напишите Андрею напрямую",
-    lead: "Никаких анкет, имени, email или регистрации. Выберите действие, затем удобный мессенджер.",
+    heading: "Напишите Андрею",
+    lead: "Выберите запрос, укажите телефон и удобный мессенджер.",
+    choose: "Меня интересует",
     free: "Запросить инициацию бесплатно",
     personal: "Личная онлайн-инициация · €50 / 30 мин",
     session: "Сессия + инициация · 100 € / 60 мин",
-    answers: "Уже ответили на 7 вопросов? Отправить ответы",
-    feedback: "Поделиться впечатлениями после практики",
-    note: "Выберите WhatsApp или Telegram, проверьте подготовленный текст и нажмите «Отправить» — сайт ничего не отправляет автоматически.",
-    tagline: "Личное общение · без регистрации",
+    answers: "Отправить 7 ответов",
+    feedback: "Поделиться впечатлениями",
+    note: "После вашего согласия телефон и запрос сохраняются для личного ответа. Сообщение в чате вы отправляете самостоятельно.",
+    tagline: "ЛИЧНЫЙ ОТВЕТ · БЕЗ РЕГИСТРАЦИИ",
   },
   es: {
     service: "Tantra Reiki · Nivel 1",
@@ -62,15 +68,16 @@ const copy = {
     },
     answerContext: "Escribiré o pegaré las respuestas a las preguntas 1–7 en el chat elegido antes de enviar.",
     feedbackContext: "Mis impresiones de la práctica (las escribiré en el chat elegido):",
-    heading: "Escribe directamente a Andrey",
-    lead: "Sin formulario, nombre, correo electrónico ni registro. Elige una opción y luego WhatsApp o Telegram.",
+    heading: "Escribe a Andrey",
+    lead: "Elige una solicitud, añade tu teléfono y selecciona un chat.",
+    choose: "Me interesa",
     free: "Solicitar iniciación gratis",
     personal: "Iniciación personal online · €50 / 30 min",
     session: "Sesión personal + iniciación · 100 € / 60 min",
-    answers: "¿Ya respondiste a las 7 preguntas? Envíalas",
-    feedback: "Compartir mis impresiones tras la práctica",
-    note: "Elige WhatsApp o Telegram, revisa el mensaje y pulsa Enviar; el sitio no envía nada automáticamente.",
-    tagline: "Contacto directo · sin registro",
+    answers: "Enviar mis 7 respuestas",
+    feedback: "Compartir mis impresiones",
+    note: "Con tu consentimiento guardamos el teléfono y la solicitud para responderte. El mensaje del chat solo se envía cuando tú pulsas Enviar.",
+    tagline: "RESPUESTA PERSONAL · SIN REGISTRO",
   },
 } as const;
 
@@ -87,29 +94,55 @@ export function tantraInitiationWhatsAppUrl(locale: PublicLocale, intent: Intent
 
 export function TantraInitiationForm({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
+  const [intent, setIntent] = useState<Intent>("free");
+
+  // All five existing deep links remain valid. Entering from a personal,
+  // answer or feedback CTA preselects the corresponding single form choice.
+  useEffect(() => {
+    const selectFromHash = () => {
+      const next = intents.find(value => window.location.hash === "#apply-" + value);
+      if (next) setIntent(next);
+    };
+    selectFromHash();
+    window.addEventListener("hashchange", selectFromHash);
+    return () => window.removeEventListener("hashchange", selectFromHash);
+  }, []);
+
   return (
     <div className={styles.whatsappCapture} data-tantra-whatsapp-capture>
       <div className={styles.whatsappIntro}>
-        <span className={styles.whatsappSymbol}><MessageCircle size={24} aria-hidden="true" /></span>
-        <div>
-          <p className={styles.whatsappTagline}><Check size={14} aria-hidden="true" /> {t.tagline}</p>
-          <h3 className={styles.whatsappTitle}>{t.heading}</h3>
-          <p className={styles.whatsappLead}>{t.lead}</p>
-        </div>
+        <p className={styles.whatsappTagline}>{t.tagline}</p>
+        <h3 className={styles.whatsappTitle}>{t.heading}</h3>
+        <p className={styles.whatsappLead}>{t.lead}</p>
       </div>
-      <div className={styles.whatsappActions}>
-        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "free")} label={t.free} className={styles.whatsappPrimary} id="apply-free" />
-        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "personal")} label={t.personal} className={styles.whatsappSecondary} id="apply-personal" />
-        <div className={styles.whatsappCombinedSlot}>
-          <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "session")} label={t.session} className={styles.whatsappCombined} id="apply-session" />
-        </div>
+      <div className={styles.whatsappAnchors} aria-hidden="true">
+        {intents.map(value => <span id={"apply-" + value} key={value} />)}
       </div>
-      <div className={styles.whatsappAnswersSlot}>
-        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "answers")} label={t.answers} id="apply-answers" />
+      <div className={styles.whatsappField}>
+        <label htmlFor={"tantra-request-" + locale}>{t.choose}</label>
+        <span className={styles.whatsappSelectWrap}>
+          <select
+            id={"tantra-request-" + locale}
+            value={intent}
+            onChange={event => {
+              const next = event.target.value;
+              if (intents.some(value => value === next)) setIntent(next as Intent);
+            }}
+          >
+            {intents.map(value => <option key={value} value={value}>{t[value]}</option>)}
+          </select>
+          <ChevronDown size={19} aria-hidden="true" />
+        </span>
       </div>
-      <div className={styles.whatsappFeedbackSlot}>
-        <ContactChannelChooser stayAfterSave locale={locale} whatsappUrl={tantraInitiationWhatsAppUrl(locale, "feedback")} label={t.feedback} id="apply-feedback" />
-      </div>
+      <ContactChannelChooser
+        key={intent}
+        compactPhone
+        stayAfterSave
+        locale={locale}
+        resetKey={"tantra-initiation-" + locale + "-" + intent}
+        whatsappUrl={tantraInitiationWhatsAppUrl(locale, intent)}
+        publicTopic={t.service + " · " + t[intent]}
+      />
       <p className={styles.whatsappNote}>{t.note}</p>
     </div>
   );
