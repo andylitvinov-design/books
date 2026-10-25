@@ -58,3 +58,12 @@ This is **not a live generative AI coach**. Genuine semantic multi-turn listenin
 **P3:** opt-in editable/deletable approved memory in existing owner journal and My Development Path; no mixing with CRM Contacts and no raw health details in notifications.
 **P4:** optional fictional roleplay and user-selected private summary sharing to human professional via real tested CRM flow; booking/payment only when provider-confirmed. No HeyGen generation or mass outreach under this request.
 **Evaluation before P2 launch:** at least 30 fictional EN/RU/ES scenarios; blind raters ≥80% relevant and ≥90% structurally compliant, 100% privacy-negative gates, zero unauthorized provider transmissions. These are proposed targets, **not** verified outcomes. No medical, psychotherapy or homeopathy claims.
+
+
+## PR #1891 · Unified messenger presentation (24 Oct 2026)
+
+Preserves the improved contextual semantics, redacted excerpt and full-source QA tests from merged PR #1892 without rendering its internal star-avatar bubbles a second time. New `CoachingChatThread` presents one owner-side **reviewed/redacted** user excerpt opposite the existing first-party Andrey portrait, a single local editorial coach reply and its published question inside one mobile-friendly bubble. The chat never receives raw previous answers as props: `turn.quote` is the only user excerpt, suppressed by the existing safety logic when necessary.
+
+Applied to existing public guest / private account / Egyptian and Greek coaching screens and authored followups, EN/RU/ES. Voice permission, explicitly saving, editing, skip/back, guest in-memory-only and account AES-GCM/RLS remain unchanged. No real-time generative coach, external delivery, new data model, notifications, additional HeyGen renders or billing.
+
+CI acceptance: run focused public + private regression, lint, typecheck, build; test desktop and mobile WebKit/Chromium; verify new production READY SHA and canonical route. Real signed-in Safari Google-save/logout/relogin and microphone recognition are still separate physical-device acceptance gates.

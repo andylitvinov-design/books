@@ -121,7 +121,8 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
   const css=source('components/coaching-dialogue-turn.module.css')
   for(const [name,ui] of [['guest',guest],['personal',signed],['tradition',symbolic]]){
     assert.match(ui,/coachingConversationTurn\(\{/,'context derived in '+name)
-    assert.match(ui,/<CoachingDialogueTurn turn=\{conversationTurn\}\/>/,'visible reply in '+name)
+    assert.match(ui,/<CoachingChatThread turn=\{conversationTurn\}/,'chat-shaped reviewed reply in '+name)
+    assert.match(ui,/data-coaching-composer/,'editable messenger-style composer: '+name)
     assert.match(ui,/conversationTurn\?\.speech/,'same reply read aloud in '+name)
     assert.match(ui,/previousAnswer:/,'previous answer from session in '+name)
     assert.doesNotMatch(ui,/dangerouslySetInnerHTML/,'no raw HTML echo in '+name)
@@ -131,7 +132,7 @@ test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoke
     assert.equal(parsed.parseDiagnostics.length,0,name+' JSX syntax')
   }
   for(const ui of [guest,signed]){
-    assert.match(ui,/<CoachingDialogueTurn turn=\{followupTurn\}\/>/)
+    assert.match(ui,/<CoachingChatThread turn=\{followupTurn\}/)
     assert.match(ui,/followupTurn\?\.speech/)
   }
   assert.match(component,/data-coaching-conversational-turn/)
@@ -180,5 +181,28 @@ test('the new dialogue layout separates bounded user excerpts from the coach rep
   assert.match(css,/@media\(max-width:430px\)/)
   assert.doesNotMatch(helper+component,/fetch\(|sendBeacon|dangerouslySetInnerHTML/)
   const parsed=ts.createSourceFile('components/coaching-dialogue-turn.jsx',component,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0)
+})
+
+
+test('all runners use one accessible, localized coach portrait chat and only reviewed excerpts',()=>{
+  const thread=source('components/coaching-chat-thread.jsx')
+  const css=source('components/coaching-chat-thread.module.css')
+  assert.match(thread,/data-coaching-chat-thread/)
+  assert.match(thread,/data-coaching-chat-user-turn/)
+  assert.match(thread,/data-coaching-chat-coach-turn/)
+  assert.match(thread,/portrait-static\/andy-96-b9d7800d1448\.webp/)
+  assert.match(thread,/typeof turn\?\.quote==='string'/,'never echo unsanitized user input')
+  assert.doesNotMatch(thread,/previousReply|sessionStorage|localStorage|fetch\(|sendBeacon|dangerouslySetInnerHTML/)
+  assert.match(thread,/turn\.coachReply\|\|turn\.response/,'retain latest QA editorial coach reply')
+  for(const language of ['Self-guided session · not a live chat',
+    'Самостоятельная сессия · не живой чат',
+    'Sesión autoguiada · no es un chat en vivo'])
+    assert.ok(thread.includes(language))
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.match(css,/@media\(max-width:350px\)/)
+  assert.match(css,/overflow-wrap:anywhere/)
+  const parsed=ts.createSourceFile('components/coaching-chat-thread.jsx',thread,
+    ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
   assert.equal(parsed.parseDiagnostics.length,0)
 })
