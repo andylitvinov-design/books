@@ -13,7 +13,7 @@ const copy={
   choose:'Choose an audio file',format:'M4A, MP3 or WAV · 20 MB max. iPhone Voice Memos work via Files.',upload:'Save in My Materials',uploading:'Uploading audio…',
   files:'Saved recordings',empty:'Nothing has been recorded in this folder yet.',listen:'Listen',assign:'Add this audio to the course',active:'Currently on the lesson',
   assigned:'Your narration is now on this lesson.',remove:'Remove from lesson',removed:'Audio detached; original still saved.',
-  uploadDone:'Audio saved privately. Listen, then add it to the course.',approval:'Make this recording available to signed-in learners of this lesson? Do not publish private client details.',
+  uploadDone:'Audio saved privately. Listen, then add it to the course.',previewFailed:'Audio was saved; preview is temporarily unavailable. Refresh this folder and choose the saved file.',approval:'Make this recording available to signed-in learners of this lesson? Do not publish private client details.',
   detach:'Remove this recording from the learner lesson? Previously issued links may remain valid for up to 15 minutes.',
   failed:'The operation failed. Your previously saved files have not been deleted.',invalid:'Choose an MP3, M4A or WAV file from 512 bytes to 20 MB.',
   noAudio:'Select a saved recording to preview and assign.',preview:'Preview selected audio',view:'Open the student course',
@@ -24,7 +24,7 @@ const copy={
   choose:'Выбрать аудиофайл',format:'M4A, MP3 или WAV · до 20 МБ. Можно брать записи из «Диктофона» через «Файлы».',upload:'Сохранить в «Моих материалах»',uploading:'Загружаем аудио…',
   files:'Сохранённые аудиозаписи',empty:'В этой папке пока нет аудиозаписей.',listen:'Прослушать',assign:'Добавить аудио в курс',active:'Сейчас на слайде',
   assigned:'Ваш голос теперь звучит на этом слайде курса.',remove:'Убрать со слайда',removed:'Аудио снято со слайда. Оригинал остался в материалах.',
-  uploadDone:'Аудио сохранено приватно. Прослушайте и добавьте его в курс.',approval:'Открыть эту запись для учеников, вошедших в свой кабинет? Не публикуйте личные данные клиентов.',
+  uploadDone:'Аудио сохранено приватно. Прослушайте и добавьте его в курс.',previewFailed:'Запись сохранилась. Не удалось открыть предпрослушивание. Обновите папку и выберите сохранённый файл — загружать повторно не нужно.',approval:'Открыть эту запись для учеников, вошедших в свой кабинет? Не публикуйте личные данные клиентов.',
   detach:'Убрать аудио из курса? Уже выданные временные ссылки могут работать до 15 минут.',
   failed:'Не удалось выполнить действие. Ранее сохранённые файлы не удалены.',invalid:'Выберите MP3, M4A или WAV от 512 байт до 20 МБ.',
   noAudio:'Выберите сохранённую запись, прослушайте и назначьте её.',preview:'Прослушивание выбранной записи',view:'Открыть курс ученика',
@@ -35,7 +35,7 @@ const copy={
   choose:'Elegir audio',format:'M4A, MP3 o WAV · máximo 20 MB.',upload:'Guardar en Mis materiales',uploading:'Subiendo audio…',
   files:'Grabaciones guardadas',empty:'Aún no hay grabaciones.',listen:'Escuchar',assign:'Añadir audio al curso',active:'Audio en esta lección',
   assigned:'Tu voz ahora está en esta lección.',remove:'Quitar del curso',removed:'Audio retirado; el original sigue guardado.',
-  uploadDone:'Guardado de forma privada. Escucha y añádelo al curso.',approval:'¿Compartir este audio con alumnos que iniciaron sesión? No incluyas datos privados de clientes.',
+  uploadDone:'Guardado de forma privada. Escucha y añádelo al curso.',previewFailed:'Archivo guardado, pero no se pudo escuchar aún. Actualiza la carpeta; no lo subas otra vez.',approval:'¿Compartir este audio con alumnos que iniciaron sesión? No incluyas datos privados de clientes.',
   detach:'¿Quitar el audio? Los enlaces anteriores pueden durar hasta 15 minutos.',
   failed:'Error de operación; no se borraron archivos anteriores.',invalid:'Elige MP3, M4A o WAV de 512 bytes a 20 MB.',
   noAudio:'Elige un archivo para escucharlo y asignarlo.',preview:'Escuchar grabación seleccionada',view:'Abrir curso del alumno',
@@ -97,13 +97,17 @@ export default function AdminCoachingAudio({course,initialQuestion,initialLocale
    if(!alive.current){source.getTracks().forEach(track=>track.stop());return}
    const recordingDevice=new MediaRecorder(source,{mimeType:'audio/mp4'})
    stream.current=source;recorder.current=recordingDevice;chunks.current=[]
+   let recorderFailed=false
    recordingDevice.ondataavailable=event=>{if(event.data?.size)chunks.current.push(event.data)}
-   recordingDevice.onerror=()=>{if(alive.current)setError(t.recordError)}
+   recordingDevice.onerror=()=>{recorderFailed=true
+    if(recordingDevice.state==='recording')recordingDevice.stop()
+   }
    recordingDevice.onstop=()=>{
     source.getTracks().forEach(track=>track.stop());stream.current=null
     if(!alive.current)return
     const blob=new Blob(chunks.current,{type:'audio/mp4'});chunks.current=[]
     setRecording(false)
+    if(recorderFailed){setError(t.recordError);return}
     if(blob.size<512||blob.size>COACHING_AUDIO_MAX_BYTES){setError(t.invalid);return}
     setFile(new File([blob],course+'-'+question+'-'+Date.now()+'.m4a',{type:'audio/mp4'}))
     setSelected('');setPreview('');setNotice(t.recorded)
@@ -123,11 +127,22 @@ export default function AdminCoachingAudio({course,initialQuestion,initialLocale
    const upload=createClient(intent.supabaseUrl,intent.publishableKey,{
     auth:{persistSession:false,autoRefreshToken:false}}).storage.from(intent.bucket)
    const {error:uploadError}=await upload.uploadToSignedUrl(intent.path,intent.token,file,{contentType:intent.mime})
-   if(uploadError)throw uploadError
-   const result=await post({action:'preview',path:intent.path})
-   setSelected(intent.path);setPreview(result.previewUrl);setFile(null)
+   // If the phone lost the upload acknowledgement, verify this exact object
+   // before offering a retry: the original may already be safely stored.
+   let storedPreview=null
+   if(uploadError){
+    try{storedPreview=await post({action:'preview',path:intent.path})}
+    catch{throw uploadError}
+   }
+   // Do not re-send successfully uploaded bytes if preview or readback fails.
+   setFile(null)
    if(input.current)input.current.value=''
    setReload(v=>v+1);setNotice(t.uploadDone)
+   if(!storedPreview){
+    try{storedPreview=await post({action:'preview',path:intent.path})}
+    catch{setError(t.previewFailed)}
+   }
+   setSelected(intent.path);setPreview(storedPreview?.previewUrl||'')
   }catch{setError(t.failed)}
   finally{setBusy(false)}
  }
