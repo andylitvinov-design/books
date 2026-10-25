@@ -529,6 +529,7 @@ export function CoachingIntakeForm({ locale, guided = false }: { locale: PublicL
             <input type="tel" inputMode="tel" autoComplete="tel" maxLength={28}
               value={replyContact.phone} disabled={leadBusy || busy || collision}
               onChange={event => { setReplyContact(value => ({ ...value, email: "", phone: event.target.value })); setLeadError(""); }} />
+            <small>{g.missingPhone}</small>
           </label>
           <label className={styles.guidedConsent}>
             <input type="checkbox" checked={sendConsent} disabled={leadBusy || busy || collision}
@@ -539,13 +540,7 @@ export function CoachingIntakeForm({ locale, guided = false }: { locale: PublicL
           <button type="button" className={styles.guidedSend} data-guided-coaching-send
             disabled={leadBusy || busy || collision || missing > 0 || !sendConsent ||
               !/^\+[1-9][0-9]{7,14}$/.test(replyContact.phone.replace(/[\s().-]/g, ""))}
-            onClick={() => {
-              if (!/^\+[1-9][0-9]{7,14}$/.test(replyContact.phone.replace(/[\s().-]/g, ""))) {
-                setLeadError(g.missingPhone); return;
-              }
-              setReplyContact(value => ({ ...value, email: "", phone: value.phone.replace(/[\s().-]/g, "") }));
-              void submitDiagnostic();
-            }}>
+            onClick={() => void submitDiagnostic()}>
             {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
           </button>
           <p className={styles.guidedPrivacy}>{g.finishPrivacy}</p>
