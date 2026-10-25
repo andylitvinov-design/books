@@ -563,11 +563,13 @@ export default function PersonalCoaching({locale='en',accountId}){
             </div>
             {adaptive&&<details className={styles.adaptivePanel} data-coaching-adaptive-prompt>
               <summary><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</summary>
-              <p>{adaptive.why}</p>
-              <button type="button" disabled={busy||dictating}
-                onClick={()=>setUseStandardPrompt(value=>!value)}>
-                {useStandardPrompt?iCopy.tailored:iCopy.standard}
-              </button>
+              <div className={styles.adaptiveMore}>
+                <p>{adaptive.why}</p>
+                <button type="button" disabled={busy||dictating}
+                  onClick={()=>setUseStandardPrompt(value=>!value)}>
+                  {useStandardPrompt?iCopy.tailored:iCopy.standard}
+                </button>
+              </div>
             </details>}
             {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
