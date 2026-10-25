@@ -21,6 +21,7 @@ import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-cours
 import { readReikiInitiationPhoto, saveReikiInitiationPhoto, REIKI_INITIATION_PHOTO_MAX_BYTES } from '@/lib/academy/reiki-initiation-photo'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import {createPractitionerClientMessages} from '@/lib/practitioners/client-messages'
+import {sendBookingMasterEmail} from '@/lib/practitioners/booking-master-email'
 import {dispatchClientMessagePush,dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
 import {dispatchNativeClientMessagePush} from '@/lib/app/native-push-dispatch'
 import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
@@ -81,29 +82,44 @@ export const runtime = 'nodejs'
 export const preferredRegion = 'yul1'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-const notifyBookingParticipants=(config,actor,requestId,recipient)=>{
-  // A DB-confirmed status change is the only source of this neutral event.
-  // Reuse opt-in private notifications, never expose goal/photo/health in push.
+const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update',revision=null,practitionerId=null}={})=>{
+  // A committed booking status change is the source of truth. Notifications
+  // contain only neutral text; private goals, photos and contacts stay in Cabinet.
   after(async()=>{
     try{
       const result=await createPractitionerClientMessages(config).send(actor,{
         requestId,operationId:randomUUID(),visibility:'participants',
         text:recipient==='client'
           ? 'Your Holistic House booking has an update. Open your secure Cabinet for details.'
-          : 'A Holistic House booking request changed. Open My Practice for details.',
+          : event==='new'
+            ? 'You received a new Holistic House booking request. Open My Practice to respond.'
+            : 'A Holistic House booking request changed. Open My Practice for details.',
       })
-      if(result.duplicate!==false)return
-      const messageId=result.id
-      if(recipient==='client')await Promise.allSettled([
-        dispatchClientMessagePush(config,messageId),
-        dispatchNativeClientMessagePush(config,messageId),
-        dispatchClientTelegramNotification(config,messageId),
-      ])
-      else await Promise.allSettled([
-        dispatchPractitionerMessagePush(config,messageId),
-        dispatchClientTelegramNotification(config,messageId),
-      ])
-    }catch{ /* The booking transaction remains committed; no secret logs. */ }
+      if(result.duplicate===false){
+        const messageId=result.id
+        if(recipient==='client')await Promise.allSettled([
+          dispatchClientMessagePush(config,messageId),
+          dispatchNativeClientMessagePush(config,messageId),
+          dispatchClientTelegramNotification(config,messageId),
+        ])
+        else await Promise.allSettled([
+          dispatchPractitionerMessagePush(config,messageId),
+          dispatchClientTelegramNotification(config,messageId),
+        ])
+      }
+    }catch{
+      // A neutral error code for operations, never a sensitive request payload.
+      console.error('HH_BOOKING_IN_APP_NOTIFICATION_FAILED')
+    }
+    // This is an independent, optional transactional channel. A failed email
+    // must not block an already accepted booking or its in-app notification.
+    if(recipient==='master'&&Number.isSafeInteger(revision)){
+      try{
+        await sendBookingMasterEmail({requestId,revision,practitionerId,event})
+      }catch{
+        console.error('HH_BOOKING_EMAIL_DELIVERY_UNCONFIRMED')
+      }
+    }
   })
 }
 async function handle(request, { params }) {
@@ -910,10 +926,21 @@ async function handle(request, { params }) {
       if (path[2] === 'submit') return json(await repo.submitRun(actor, path[1], body))
       if (path[2] === 'discard') return json(await repo.discardRun(actor, path[1], body))
     }
-    if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
+    if (joined === 'requests') {
+      const result=await repo.createRequest(actor,body)
+      if(result.bookingNotice===true)
+        notifyBookingParticipants(config,actor,result.id,'master',{
+          event:'new',revision:result.revision,practitionerId:result.practitionerId,
+        })
+      delete result.bookingNotice
+      return json(result,201)
+    }
     if (path[0] === 'requests' && path.length === 2) {
       const result=await repo.updateRequest(actor,path[1],body)
-      if(result.bookingNotice===true)notifyBookingParticipants(config,actor,path[1],'master')
+      if(result.bookingNotice===true)
+        notifyBookingParticipants(config,actor,path[1],'master',{
+          event:'update',revision:result.revision,practitionerId:result.practitionerId,
+        })
       delete result.bookingNotice
       return json(result)
     }
