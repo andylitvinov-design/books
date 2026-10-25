@@ -3,7 +3,7 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import { COACHING_TOPIC_GROUPS, coachingSchemeInGroup, coachingTopicSchemeCount,
-  coachingSignalInGroup, coachingSchemeRequiresAdultConsent } from '../lib/coaching/coaching-topic-groups.js'
+  coachingSignalInGroup, coachingSchemeRequiresAdultConsent, COACHING_OUTCOMES, coachingOutcomeFit, COACHING_SESSION_MODES, coachingSchemeMatchesSessionMode } from '../lib/coaching/coaching-topic-groups.js'
 import { coachingQuestionTopics, recommendCoachingForQuestion } from '../lib/personal-coaching/model-matcher.js'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -113,4 +113,80 @@ test('health or money questions get local topic signals without medical or inves
   ]}
   assert.equal(recommendCoachingForQuestion('My health is important',catalog).suggestions[0].schemeKey,'woop_wellbeing_routine_v1')
   assert.equal(recommendCoachingForQuestion('Reducir gastos',catalog).suggestions[0].schemeKey,'oskar_money_confidence_v1')
+})
+
+test('client outcomes are localized, rank existing real methods and never exclude valid sessions',()=>{
+  assert.deepEqual(COACHING_OUTCOMES.map(goal=>goal.id),
+    ['clarity','decision','action','habit','reflection'])
+  for(const goal of COACHING_OUTCOMES){
+    assert.ok(goal.icon)
+    for(const lang of ['en','ru','es'])assert.ok(goal.label[lang]?.trim(),goal.id+'/'+lang)
+    assert.ok(goal.schemeKeys.length>0&&goal.tags.length>0,goal.id)
+  }
+  const cases=[
+    ['habit','woop_money_habit_v1',['money','budget']],
+    ['decision','oskar_money_confidence_v1',['money','confidence']],
+    ['clarity','tgrow_compass_v1',['unclear','transition']],
+    ['action','fuel_development_v1',['career','business']],
+    ['reflection','solution_focus_reflect_v1',['growth']],
+  ]
+  for(const [outcome,schemeKey,tags] of cases)
+    assert.equal(coachingOutcomeFit({schemeKey,tags},outcome),2,outcome)
+  assert.equal(coachingOutcomeFit({schemeKey:'woop_habit_v1',tags:[]},'clarity'),0)
+  assert.equal(coachingOutcomeFit({schemeKey:'woop_habit_v1',tags:[]},''),0)
+  assert.equal(coachingOutcomeFit({schemeKey:'new_scheme',tags:['decision']},'decision'),1)
+  const ui=source('components/public-coaching-discovery.jsx')
+  const css=source('components/public-coaching-discovery.module.css')
+  assert.match(ui,/data-coaching-outcome-first/)
+  assert.match(ui,/aria-pressed=\{outcome===item.id\}/)
+  assert.match(ui,/onClick=\{\(\)=>setOutcome\(value=>value===item.id\?'':item.id\)\}/)
+  assert.match(ui,/data-coaching-advanced-preferences/)
+  assert.match(ui,/data-coaching-practitioner-checklist/)
+  assert.match(ui,/format!=='human'&&<>/)
+  assert.match(ui,/setFormat\('human'\);setDuration\(0\);setStyle\('all'\)/)
+  assert.ok(ui.indexOf('data-coaching-topic-first')<ui.indexOf('data-coaching-outcome-first'))
+  assert.ok(ui.indexOf('data-coaching-outcome-first')<ui.indexOf('className={styles.format}'))
+  assert.match(css,/\.outcomeGrid\{/)
+  assert.match(css,/\.advanced>summary\{/)
+  assert.match(css,/@media\(max-width:360px\)/)
+  assert.doesNotMatch(ui,/\bfetch\(|sendBeacon\(|localStorage|sessionStorage|gtag\(|fbq\(/)
+})
+
+test('session mode buttons map to real durations and authored imagery without inventing meditations',()=>{
+  assert.deepEqual(COACHING_SESSION_MODES.map(mode=>mode.id),
+    ['express','extended','imagery','all'])
+  for(const mode of COACHING_SESSION_MODES){
+    for(const locale of ['en','ru','es']){
+      assert.ok(mode.label[locale]?.trim(),mode.id+'/'+locale)
+      assert.ok(mode.hint[locale]?.trim(),mode.id+'/'+locale)
+    }
+  }
+  const schemes=[
+    {schemeKey:'grow_quick_v1',minutes:10},
+    {schemeKey:'solution_focus_quick_v1',minutes:12},
+    {schemeKey:'tantric_desire_presence_v1',minutes:15},
+    {schemeKey:'tgrow_compass_v1',minutes:20},
+    {schemeKey:'grow_reflect_v1',minutes:25},
+    {schemeKey:'appreciative_future_v1',minutes:30},
+  ]
+  const matching=mode=>schemes.filter(s=>coachingSchemeMatchesSessionMode(s,mode)).map(s=>s.schemeKey)
+  assert.deepEqual(matching('express'),['grow_quick_v1'])
+  assert.deepEqual(matching('extended'),['solution_focus_quick_v1','tantric_desire_presence_v1','tgrow_compass_v1'])
+  assert.deepEqual(matching('imagery'),[])
+  assert.deepEqual(matching('all'),schemes.map(s=>s.schemeKey))
+  assert.equal(coachingSchemeMatchesSessionMode({minutes:undefined},'express'),false)
+  assert.equal(coachingSchemeMatchesSessionMode({minutes:35},'extended'),false)
+  assert.equal(coachingSchemeMatchesSessionMode({minutes:10},'unknown-mode'),false)
+  const ui=source('components/public-coaching-discovery.jsx')
+  const css=source('components/public-coaching-discovery.module.css')
+  assert.match(ui,/data-coaching-session-mode-first/)
+  assert.match(ui,/aria-pressed=\{sessionMode===item.id\}/)
+  assert.match(ui,/coachingSchemeMatchesSessionMode\(s,sessionMode\)/)
+  assert.match(ui,/sessionMode==='imagery'\?t.imageryNote/)
+  assert.match(ui,/data-coaching-imagery-practice/)
+  assert.match(ui,/No recorded audio or video meditation is included/)
+  assert.match(ui,/Готовых аудио- и видеомедитаций здесь пока нет/)
+  assert.match(css,/\.sessionModeGrid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(css,/@media\(max-width:700px\)\{[\s\S]*?\.sessionModeGrid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(css,/\.sessionModeGrid button\{min-height:58px/)
 })

@@ -177,7 +177,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       setActivePanel('services')
       if(params.get('create')==='1'){
         const starter=params.get('starter')
-        setProStarter(['session','intro','workshop'].includes(starter)?starter:'')
+        setProStarter(['session','intro','workshop','diagnostic','energy','personal'].includes(starter)?starter:'')
         setNewServiceRequest(current=>current+1)
       }
     }
@@ -241,10 +241,13 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       if(typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('/admin'))throw new Error('OPEN_UNAVAILABLE')
       // Select an allowed lesson only after the server authorizes this owner route.
       const safeLesson=['flight','tantra','kundalini','yggdrasil','initiation'].includes(lesson)?lesson:null
+      const safeTradition=['egyptian','greek'].includes(lesson)?lesson:null
       const destinationUrl=destination==='reikiCourse'&&safeLesson&&
         result.redirectUrl==='/admin/materials/courses/reiki-practitioner'
         ?result.redirectUrl+'?lesson='+safeLesson+'&lang='+(locale==='ru'?'ru':'en')+(mode==='record'?'&mode=record':'')
-        :result.redirectUrl
+        :destination==='coachingAudio'&&result.redirectUrl==='/admin/materials/coaching'&&safeTradition
+          ?result.redirectUrl+'/'+safeTradition+'?lang='+(['ru','es'].includes(locale)?locale:'en')
+          :result.redirectUrl
       window.location.assign(destinationUrl)
     } catch {
       setError(d.ownerError);setBusy(false)
@@ -538,7 +541,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             </button>)}
           </div>
         </div>}
-        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
+        {activePanel==='materials'&&<PracticeMaterials key={p?.id||'materials'} quickCreateCourse={proCourseStart} shortcut={materialShortcut} onTabChange={setMaterialTab} locale={locale} practitioner={p} services={services} busy={busy} isOwner={isOwner} onOpenReikiCourse={(lesson,mode)=>openOwner('reikiCourse',undefined,lesson,mode)} onOpenCoachingAudio={slug=>openOwner('coachingAudio',undefined,slug)} onOpenServices={()=>choosePanel('services')} onAddService={addService} onOpenYoutube={()=>openOwner('youtube')} accountId={accountId}
            onSaveVideos={videos=>act(()=>practiceFetch('/profile',{action:'save',
              profile:{...emptyProfile,...(p?.draftProfile||{}),videoMaterials:videos},expectedRevision:p.revision}),{rethrow:true})}
            onSaveSitePresentation={video=>act(()=>practiceFetch('/profile',{action:'save',

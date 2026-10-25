@@ -113,9 +113,10 @@ test("Dao insight offers two localized cards with in-place consented enquiries a
   assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?<DaoOfferCards locale=\{answerLocale\}[\s\S]*?result\.mode === "aphorisms"/);
   assert.match(ui, /t\.daoPromoReading\.title/);
   assert.match(ui, /t\.daoPromoGift\.title/);
-  assert.match(ui, /\/services\/free-consultation#intro-request/);
+  assert.match(ui, /\/services\/free-consultation#free-diagnosis-options/);
   assert.match(ui, /\/services\/free-situation-review#request-free-review/);
-  assert.match(intro, /id="intro-request"/);
+  assert.match(intro, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
+  assert.match(read("components/free-diagnosis-offers.tsx"), /id="free-diagnosis-options"/);
   assert.match(free, /FreeEntryLanding locale=\{locale\} kind="situation"/);
   for (const text of ["Получите персональное даосское гадание", "Get a personal Daoist reading", "Recibe una lectura taoísta personal", "ПОДАРОК · БЕСПЛАТНО", "FREE GIFT", "REGALO · GRATIS"]) {
     assert.ok(ui.includes(text), "missing localized offer: " + text);
@@ -176,6 +177,9 @@ test("Ideas sequences three full-width aphorisms, Dao, then offers in preview an
     '<DaoOfferCards locale={locale}',
   ]), "educational preview must follow the same order");
   assert.match(css, /\.relatedAphorisms \.aphorisms \{ grid-template-columns:minmax\(0,1fr\); overflow:visible; \}/);
+  assert.match(css, /\.root \.results\{padding:2px;border-radius:12px\}/);
+  assert.match(css, /\.root \.relatedAphorisms\{padding:4px;border-radius:12px\}/);
+  assert.match(css, /\.root \.aphorisms li\{width:100%;padding:10px 9px\}/);
   assert.match(css, /\.relatedAphorisms \+ \.daoQuick/);
   assert.match(ui, /data-ideas-order-button="reading"/);
   assert.match(ui, /data-ideas-order-button="gift"/);
@@ -209,12 +213,16 @@ test("Ideas has one compact photographic question banner and two choices immedia
   const css = read("components/ideas-discovery.module.css");
   const catalog = read("data/assessments/catalog.js");
   assert.match(ui, /<div className=\{styles\.hero\} data-ideas-hero>[\s\S]*?<div className=\{styles\.heading\}>[\s\S]*?<form id="ideas-question-form" className=\{styles\.question\} onSubmit=\{submitQuestion\}>/);
-  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions role="group" aria-label=\{t\.choose\}>/);
+  assert.match(ui, /<div className=\{styles\.heroActions\} data-ideas-hero-actions role="group" aria-label=\{isHolistic \? holisticIntro\[locale\]\.choose : t\.choose\}>/);
   assert.match(ui, /<Link href=\{coachingHref\} prefetch=\{false\} className=\{styles\.submit\}/);
   assert.ok(ui.includes("data-ideas-free-coaching"));
   assert.ok(ui.includes("data-ideas-free-test"));
   assert.match(ui, /aria-expanded=\{showSuggestedTests\} aria-controls="ideas-filtered-tests"/);
-  assert.match(ui, /onClick=\{openFreeTests\}/);
+  assert.match(ui, /onPointerUp=\{event => \{ if \(event\.pointerType === "touch"\) openFreeTestsOnTouch\(\); \}\}/);
+  assert.match(ui, /onClick=\{event => openFreeTestsOnClick\(event\.detail\)\}/);
+  assert.match(ui, /detail > 0 && performance\.now\(\) - lastTouchFreeTestRef\.current < 650/);
+  assert.match(css, /scroll-margin-block-end:calc\(116px \+ env\(safe-area-inset-bottom,0px\)\)/);
+  assert.match(css, /touch-action:manipulation/);
   assert.match(ui, /data-ideas-test-start=\{key\}/);
   assert.match(ui, /client\?startTests=hh-current-state/);
   assert.match(catalog, /key: 'hh-current-state',[\s\S]*?startable: true,[\s\S]*?rightsStatus: 'cleared',[\s\S]*?guestEligible: true/);

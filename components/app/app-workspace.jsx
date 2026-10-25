@@ -38,6 +38,7 @@ import { buildInsightsSummary } from '@/lib/assessments/insights-summary'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { PortraitRecommendations } from '@/components/app/portrait-recommendations'
 import { PortraitAnalyses } from '@/components/app/portrait-analyses'
+import { UnifiedProfileLayers } from '@/components/app/unified-profile-layers'
 import { MONITORING_CATALOG, monitoringCatalogItem } from '@/data/assessments/catalog'
 import { assessmentMethodology } from '@/lib/assessments/assessment-methodology'
 import {
@@ -251,7 +252,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       const proPanel = page === 'practice' ? searchParams.get('panel') : null
       const proStarter = searchParams.get('starter')
       const proCreate = searchParams.get('create') === '1'
-      const proIntent = proPanel === 'services' && proCreate && ['session','intro','workshop'].includes(proStarter)
+      const proIntent = proPanel === 'services' && proCreate && ['session','intro','workshop','diagnostic','energy','personal'].includes(proStarter)
         ? proStarter
         : proPanel === 'materials' && searchParams.get('materialTab') === 'courses' && proCreate
           ? 'course'
@@ -2311,7 +2312,7 @@ function PortfolioPage({ data, locale }) {
     <section className="hh-insights-page"
       aria-labelledby={activeTab === 'values' ? 'hh-insights-title' : 'hh-test-dynamics-title'}
       data-testid="completed-test-insights">
-      {/* Put the same saved-result portrait at the start of Insights, open by default. */}
+      {/* Reports opens with the large saved-score portrait, before other profile tools. */}
       <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
         <summary className="hh-insights-portrait-toggle">
           <Brain size={20} aria-hidden="true" />
@@ -2339,8 +2340,9 @@ function PortfolioPage({ data, locale }) {
             </div>
           </>} />
       </details>
-      {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
+      {/* Programme follows the portrait; deeper four-layer records stay available below. */}
       <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
+      <UnifiedProfileLayers data={data} locale={locale} />
       <nav className="hh-insights-view-tabs" role="tablist"
         aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
         {[
@@ -2831,6 +2833,7 @@ function Portrait({ data, locale }) {
         <p className="hh-fine">{c.private}</p>
       </div>
 
+      <UnifiedProfileLayers data={data} locale={locale} />
       <details className="hh-domain-psych-details" data-profile-deep-dive>
         <summary>{locale === 'ru' ? 'Подробные шкалы, непройденные тесты и инструменты' : 'Detailed scales, pending tests and profile tools'}<ChevronDown size={17} aria-hidden="true" /></summary>
       <ProfileAssessmentOverview data={data} locale={locale} onBeginTest={beginSelectedTest} showPortrait={false}>
@@ -3770,6 +3773,11 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
                    completed:locale==='ru'?'Выполнено':'Completed',
                    cancelled:locale==='ru'?'Отменено':'Cancelled'})[request.status] || request.status)
               : (c[request.status] || request.status)}</span>
+            {Number(request.newMessageCount)>0&&
+              <span className="hh-badge" role="status">
+                {locale==='ru'?'Новых сообщений: ':locale==='es'?'Mensajes nuevos: ':'New messages: '}
+                {request.newMessageCount}
+              </span>}
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
@@ -3807,10 +3815,10 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             {request.remoteBooking && request.status==='completed' &&
               <ServiceReviews serviceId={request.serviceId} locale={locale} verifiedOnly />}
             <PracticeRequestConversation key={request.id} requestId={request.id}
-              autoOpen={requestedMessageId === request.id}
+              autoOpen={requestedMessageId === request.id || Number(request.newMessageCount)>0}
               accountId={data.account.id} locale={locale}
               initialMessage={typeof request.message==='string'?request.message:''}
-              createdAt={request.createdAt}/>
+              createdAt={request.createdAt} onViewed={reload} onSaved={reload}/>
             {request.sharedExcerpt && (
               <>
                 <p>{c.sharingNote}</p>

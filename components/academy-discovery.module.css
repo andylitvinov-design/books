@@ -82,6 +82,33 @@
   border: 1px dashed #cadbe3; border-radius: 15px;
   color: #526a7b; background: #fff; font: 500 14px/1.5 system-ui, sans-serif;
 }
+
+/* Photo-led coaching offer is deliberately outside Academy course categories. */
+.coachingSpotlight{box-sizing:border-box;display:grid;grid-template-columns:146px minmax(0,1fr) auto;gap:16px;align-items:center;min-width:0;
+ margin:0 0 25px;padding:11px;border:1px solid #d4c3b0;border-radius:19px;background:linear-gradient(115deg,#f6eee3 0%,#fffaf2 95%);box-shadow:0 7px 20px rgb(60 44 29 / 8%)}
+.coachingSpotlightPhoto{position:relative;display:block;min-width:0;min-height:160px;height:100%;border-radius:13px;overflow:hidden;background:#e6d8c8}
+.coachingSpotlightPhoto img{object-fit:cover;object-position:center}
+.coachingSpotlightBody{min-width:0;padding:6px 0}
+.coachingSpotlightLabel{display:block;margin-bottom:4px;color:#936044;font:800 10px/1.4 system-ui,sans-serif;letter-spacing:.07em}
+.coachingSpotlightBody h3{margin:0 0 6px;color:#443125;font:760 clamp(19px,2vw,23px)/1.2 system-ui,sans-serif}
+.coachingSpotlightBody p{max-width:650px;margin:0 0 6px;color:#60574e;font:450 12px/1.45 system-ui,sans-serif;overflow-wrap:anywhere}
+.coachingSpotlightBody .coachingSpotlightMethods{color:#78503f;font-weight:700}
+.coachingSpotlightBody small{display:block;color:#776f64;font:500 10px/1.4 system-ui,sans-serif}
+.coachingSpotlightCTA{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;
+ padding:10px 14px;border-radius:11px;background:#136e78;color:#fff;text-decoration:none;white-space:nowrap;font:800 13px/1.25 system-ui,sans-serif}
+.coachingSpotlightCTA:hover{background:#09515c}
+.coachingSpotlight :is(a):focus-visible{outline:3px solid #8a3b56;outline-offset:3px}
+@media(max-width:620px){
+ .coachingSpotlight{grid-template-columns:94px minmax(0,1fr);gap:10px;margin-bottom:20px;padding:10px}
+ .coachingSpotlightPhoto{min-height:148px;border-radius:10px}
+ .coachingSpotlightBody{padding:0}
+ .coachingSpotlightBody h3{font-size:18px}
+ .coachingSpotlightBody p{font-size:11px}
+ .coachingSpotlightLabel{font-size:9px}
+ .coachingSpotlightCTA { grid-column: 1 / -1;box-sizing:border-box;width:100%;min-height:44px}
+}
+@media(max-width:350px){.coachingSpotlight{grid-template-columns:80px minmax(0,1fr)}.coachingSpotlightPhoto{min-height:148px}}
+
 .note { max-width: 800px; margin: 13px 3px 0; color: #687c89; font: 450 11px/1.55 system-ui, sans-serif; }
 .videoArchive, .back a {
   display: inline-flex; align-items: center; gap: 6px;
@@ -332,25 +359,10 @@
   .quickPaths a,.eventDetailsButton svg { transition: none; }
 }
 
-/* PsiMaster heritage courses: compact native-page buttons, not duplicated enrollment cards. */
-.legacyGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-.legacyLink {
-  box-sizing: border-box; display: flex; align-items: center; gap: 10px;
-  min-width: 0; min-height: 68px; padding: 12px 13px;
-  border: 1px solid #d7e5e5; border-radius: 14px;
-  background: #fffefa; color: #1c4357;
-  text-decoration: none; box-shadow: 0 3px 11px rgb(24 56 70 / 4%);
-  transition: border-color .15s ease, background .15s ease;
-}
-.legacyLink:hover { background: #f0faf9; border-color: #87bbc2; }
-.legacyLink > svg:first-child { flex: none; color: #168a99; }
-.legacyLink > svg:last-child { flex: none; margin-left: auto; color: #247b91; }
-.legacyLinkCopy { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
-.legacyLinkCopy strong { font: 700 13px/1.32 system-ui, sans-serif; overflow-wrap: anywhere; }
-.legacyLinkCopy small { color: #677e89; font: 550 10px/1.3 system-ui, sans-serif; }
+/* Russian-language archives reuse the same photo-left course cards above. */
 .legacyToggle {
   display: flex; align-items: center; justify-content: center; gap: 9px;
-  min-height: 42px; width: 100%; margin-top: 10px;
+  min-height: 44px; width: 100%; margin-top: 10px;
   border: 1px solid #a6cfd1; border-radius: 12px; background: #edf7f5;
   color: #236677; font: 750 12px/1.3 system-ui, sans-serif; cursor: pointer;
 }
@@ -362,9 +374,6 @@
 .legacyVideos p { margin: 4px 0 12px; color: #647f8d; font: 500 12px/1.45 system-ui, sans-serif; }
 @media (max-width: 620px) {
   .quickPaths { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .legacyGrid { grid-template-columns: minmax(0, 1fr); gap: 7px; }
-  .legacyLink { min-height: 60px; padding: 10px 12px; }
-  .legacyLinkCopy strong { font-size: 12px; }
   .legacyVideos h4 { font-size: 20px; }
 }
-@media (prefers-reduced-motion: reduce) { .legacyLink,.legacyToggle svg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .legacyToggle svg { transition: none; } }

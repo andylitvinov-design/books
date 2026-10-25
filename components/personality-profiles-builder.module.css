@@ -86,21 +86,33 @@
 .panel h2 { margin: 0; font-family: Georgia, serif; font-weight: 600; font-size: clamp(22px, 3vw, 30px); color: var(--forest); line-height: 1.2; }
 .templateLabel { margin: 0 0 7px; color: #7b4e48; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 800; }
 .help { margin: 8px 0 18px; max-width: 72ch; font-size: 13px; line-height: 1.5; color: #607367; }
-.templateGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.templateGrid { display: grid; grid-template-columns: 1fr; gap: 9px; }
 .templateCard {
-  display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: start; gap: 12px;
-  min-width: 0; min-height: 125px; padding: 17px;
+  display: grid; grid-template-columns: 42px minmax(0, 1fr) 24px; align-items: center; gap: 12px;
+  min-width: 0; min-height: 80px; padding: 12px 15px;
   border: 1px solid #d0dfd2; border-radius: 16px; background: #f8faf6;
   color: var(--ink); text-align: left; cursor: pointer;
   transition: border-color .15s, transform .15s, box-shadow .15s;
 }
 .templateCard:hover { transform: translateY(-1px); border-color: #709e85; box-shadow: 0 8px 18px #204b3220; }
 .templateCard:active { background: #edf5ee; }
+.templateCard[aria-pressed="true"] { background: #eef6ef; border-color: #477c68; box-shadow: inset 0 0 0 1px #477c68; }
+.focusCheck { display: grid; place-items: center; width: 21px; height: 21px; border: 1px solid #adc5b6; border-radius: 50%; color: transparent; }
+.templateCard[aria-pressed="true"] .focusCheck { background: #315f52; border-color: #315f52; color: #fff; }
 .templateIcon { width: 42px; height: 42px; display: grid; place-items: center; color: #7c4054; background: #f2e9e4; border-radius: 13px; }
 .templateBody { display: flex; flex-direction: column; min-width: 0; }
 .templateBody strong { font-size: 17px; line-height: 1.26; color: var(--forest); }
-.templateBody > span { margin-top: 5px; color: #526b5c; font-size: 12px; line-height: 1.45; }
-.templateSelect { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 11px; font-size: 12px; color: var(--wine); font-weight: 800; }
+.templateBody > span { margin-top: 4px; color: #526b5c; font-size: 12px; line-height: 1.4; }
+.templateSelect { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 4px; font-size: 11px; color: var(--wine); font-weight: 800; }
+.layerDetails { margin-top: 12px; padding: 0 13px; border: 1px solid #d6e4d7; border-radius: 13px; background: #f8faf6; }
+.layerDetails summary { display: flex; align-items: center; justify-content: space-between; gap: 9px; min-height: 43px; list-style: none; color: #315f52; cursor: pointer; font-size: 12px; font-weight: 750; }
+.layerDetails summary::-webkit-details-marker { display: none; }
+.layerDetails[open] summary svg { transform: rotate(180deg); }
+.layerDetails > p { margin: 0 0 9px; font-size: 12px; color: #587264; line-height: 1.5; }
+.layerDetails ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 0 0 12px; padding: 0; }
+.layerDetails li { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 10px; border-radius: 10px; background: #fff; }
+.layerDetails li strong { font-size: 12px; color: #315f52; }
+.layerDetails li span { font-size: 11px; color: #567064; line-height: 1.45; }
 .areaGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .areaCard {
   min-width: 0; min-height: 93px; display: flex; align-items: flex-start; gap: 9px;
@@ -145,6 +157,7 @@
 .swotGrid strong { font-size: 12px; color: #315f52; }
 .swotGrid p, .swotNote { margin: 4px 0; font-size: 11px; line-height: 1.45; color: #65786a; }
 .actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 19px; }
+.actions > :only-child { margin-left: auto; }
 .actions button, .actions a { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 46px; border-radius: 24px; padding: 10px 17px; text-decoration: none; font-weight: 750; font-size: 13px; cursor: pointer; }
 .back { background: #fff; border: 1px solid #b7d1c2; color: #426b59; }
 .primary { background: var(--wine); border: 1px solid var(--wine); color: #fff; text-align: center; }
@@ -172,6 +185,14 @@
 .reviewTestText strong { color: #315e50; font-size: 15px; font-weight: 750; line-height: 1.28; overflow-wrap: anywhere; }
 .reviewTestText small { font-size: 12px; color: #637b6c; line-height: 1.35; }
 .reviewCheck { justify-self: end; color: #4b8469; }
+.accountOffer { display:flex;align-items:flex-start;gap:11px;margin:14px auto 0;padding:13px;max-width:720px;border:1px solid #c9dcca;border-radius:14px;background:#f0f7ef; }
+.accountOffer>svg { flex:none;color:#315f52;margin-top:8px; }
+.accountOfferBody { display:grid;gap:7px;min-width:0;flex:1; }
+.googleButton { min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:10px 14px;border:1px solid #315f52;border-radius:12px;background:#315f52;color:#fff;font-size:13px;font-weight:780;cursor:pointer; }
+.googleButton:disabled { opacity:.5;cursor:not-allowed; }
+.accountOffer p { margin:0;color:#526e60;font-size:11.5px;line-height:1.48; }
+.accountOffer small { color:#725b5a;font-size:11px;line-height:1.45; }
+.accountOffer .accountError { padding:9px;border-radius:8px;background:#fff1e7;color:#783b30; }
 .reviewFoot { display: flex; align-items: flex-start; gap: 10px; margin: 18px auto 3px; padding: 12px 14px; max-width: 720px; border-radius: 12px; background: #f6f1e8; color: #69604f; font-size: 12px; line-height: 1.5; }
 .reviewFoot svg { flex: none; margin-top: 1px; }
 
@@ -202,10 +223,11 @@
   .panel h2 { font-size: clamp(21px, 5.5vw, 26px); }
   .help { font-size: 12px; margin: 7px 0 13px; }
   .templateGrid { grid-template-columns: 1fr; gap: 8px; }
-  .templateCard { min-height: 92px; padding: 12px; gap: 11px; grid-template-columns: 36px minmax(0, 1fr); }
+  .templateCard { min-height: 74px; padding: 10px 11px; gap: 10px; grid-template-columns: 36px minmax(0, 1fr) 21px; }
   .templateBody strong { font-size: 15px; }
   .templateBody > span { font-size: 12px; }
-  .templateSelect { margin-top: 7px; font-size: 11px; }
+  .templateSelect { margin-top: 4px; font-size: 11px; }
+  .layerDetails ol { grid-template-columns: 1fr; }
   .templateIcon { width: 36px; height: 36px; border-radius: 10px; }
   .templateIcon svg { width: 19px; height: 19px; }
   .areaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
@@ -223,6 +245,8 @@
   .reviewTestText strong { font-size: 13px; }
   .reviewTestText small { font-size: 11px; }
   .reviewFoot { font-size: 11px; padding: 11px; }
+  .accountOffer { padding:10px;gap:8px; }
+  .googleButton { min-height:46px;padding:9px;font-size:12px; }
   .reviewIntro .help { font-size: 12px; }
   .actions { gap: 8px; }
   .actions button, .actions a { min-height: 45px; padding: 8px 12px; font-size: 12px; }
@@ -230,7 +254,7 @@
 @media (max-width: 350px) {
   .shell { padding-inline: 7px; }
   .progress button { font-size: 9px; letter-spacing: -.02em; }
-  .templateCard { min-height: 91px; padding: 10px 9px; }
+  .templateCard { min-height: 70px; padding: 9px 8px; }
   .templateBody strong { font-size: 14px; }
   .roadmap { padding-inline: 12px; }
   .areaCard { min-height: 94px; gap: 5px; }

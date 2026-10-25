@@ -20,6 +20,23 @@ const phrases = {
 const widths = [320, 375, 390, 430];
 const evidence = [];
 const closeEnough = (a, b) => Math.abs(a - b) <= 2;
+// All elements are measured in one JS task, in document coordinates. Measuring
+// separate Playwright bounding boxes lets iOS scrollIntoView/hydration shift
+// the viewport *between awaits* and falsely report reversed card order.
+async function measureOrderedLayout(scope, middleSelector, afterSelector) {
+  return scope.evaluate((root, names) => {
+    const measure = el => {
+      if (!el) return null;
+      const bounds = el.getBoundingClientRect();
+      return { top: bounds.top + window.scrollY, left: bounds.left, width: bounds.width, height: bounds.height };
+    };
+    return {
+      rows: [...root.querySelectorAll("[data-ideas-aphorisms] ol li")].slice(0, 3).map(measure),
+      middle: measure(root.querySelector(names.middle)),
+      after: measure(root.querySelector(names.after)),
+    };
+  }, { middle: middleSelector, after: afterSelector });
+}
 
 async function verify(browserType, locale, width) {
   const browser = await browserType.launch();
@@ -101,8 +118,18 @@ async function verify(browserType, locale, width) {
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
     await hub.locator("#ideas-question").fill(
       locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
-    // WebKit may dispatch a tap before React finishes the preceding text event.
-    // Keep the real tap and assert the on-page panel rather than masking navigation.
+    // Instrument the actual touch path: no synthetic clicks, no hidden retry.
+    // A lost iPhone tap must remain a failure with actionable event evidence.
+    await testAction.evaluate(el => {
+      window.__ideasTouchDiag = { events: [] };
+      const sample = (event, source) => window.__ideasTouchDiag.events.push({
+        event: event.type, source, target: event.target?.tagName,
+        time: Math.round(performance.now()),
+      });
+      for (const kind of ["touchstart", "touchend", "pointerdown", "pointerup", "click"])
+        el.addEventListener(kind, event => sample(event, "button"), { capture: true });
+      document.addEventListener("click", event => sample(event, "document"), { capture: true });
+    });
     await page.waitForTimeout(120);
     await testAction.tap();
     const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
@@ -112,8 +139,17 @@ async function verify(browserType, locale, width) {
       const current = page.url();
       const input = await hub.locator("#ideas-question").inputValue().catch(() => "(unavailable)");
       const expanded = await testAction.getAttribute("aria-expanded").catch(() => "(unavailable)");
+      const diagnostics = await testAction.evaluate(el => {
+        const box = el.getBoundingClientRect();
+        const point = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return { events: window.__ideasTouchDiag?.events || [], active: document.activeElement?.tagName,
+          viewport: [innerWidth, innerHeight], scrollY, html: el.outerHTML.slice(0, 450),
+          hit: point?.outerHTML.slice(0, 220) };
+      }).catch(error => ({ error: String(error) }));
+      await page.screenshot({ path: output + "/ideas-free-test-tap-failure-" + label.replace(/:/g, "-") + ".png", fullPage: false }).catch(() => {});
       throw new Error(label + ": free test chooser did not open; url=" + current +
-        "; inputLength=" + input.length + "; ariaExpanded=" + expanded, { cause });
+        "; inputLength=" + input.length + "; ariaExpanded=" + expanded +
+        "; diagnostics=" + JSON.stringify(diagnostics), { cause });
     }
     assert.equal(await testAction.getAttribute("aria-expanded"), "true");
     assert.equal(await filtered.locator("[data-ideas-test-start]").count(), 3, label + ": real filtered tests");
@@ -142,15 +178,21 @@ async function verify(browserType, locale, width) {
       assert.equal(new Set(after).size, 3, label + ": unique after reload");
       assert.ok(after.every(id => !before.includes(id)), label + ": all three change on page reopen");
     }
-    const previewRects = await Promise.all([0, 1, 2].map(i => previewAphorisms.nth(i).boundingBox()));
-    assert.ok(previewRects.every(Boolean), label + ": all three quote rows visible in DOM");
-    assert.ok(previewRects[0].y < previewRects[1].y && previewRects[1].y < previewRects[2].y,
-      label + ": aphorisms display as rows, not narrow columns or a swipe rail");
-    assert.ok(previewRects.every(rect => rect.width >= width * .72), label + ": each quote gets full line width");
-    const previewDao = await hub.locator("[data-ideas-preview] [data-ideas-dao-card]").boundingBox();
-    const previewOffers = await hub.locator("[data-ideas-preview] [data-ideas-dao-promos]").boundingBox();
-    assert.ok(previewDao.y > previewRects[2].y && previewOffers.y > previewDao.y,
-      label + ": aphorisms before Dao before offers");
+    const previewLayout = await measureOrderedLayout(hub.locator("[data-ideas-preview]"),
+      "[data-ideas-dao-card]", "[data-ideas-dao-promos]");
+    const previewRects = previewLayout.rows;
+    assert.equal(previewRects.length, 3, label + ": exactly three preview quote rows");
+    assert.ok(previewRects.every(rect => rect && rect.width > 0), label + ": three rows have layout");
+    if (!(previewRects[0].top < previewRects[1].top && previewRects[1].top < previewRects[2].top &&
+      previewLayout.middle?.top > previewRects[2].top && previewLayout.after?.top > previewLayout.middle.top)) {
+      await page.screenshot({ path: output + "/aphorism-preview-order-" + label.replace(/:/g, "-") + ".png", fullPage: false });
+      throw new Error(label + ": preview must show three rows, Dao, offers; layout=" + JSON.stringify(previewLayout));
+    }
+    if (!previewRects.every(rect => rect.width >= width * .72)) {
+      await page.screenshot({ path: output + "/aphorism-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
+      throw new Error(label + ": each quote gets full line width; measured=" +
+        JSON.stringify(previewRects.map(rect => ({ width: rect.width, x: rect.left }))) + ", viewport=" + width);
+    }
     assert.equal(await hub.locator("[data-ideas-preview] details").first().evaluate(node => node.open), true,
       label + ": full visual example is initially expanded");
 
@@ -198,14 +240,21 @@ async function verify(browserType, locale, width) {
       label + ": glyph and full reading hidden before expanding");
     const compactSize = await daoResult.locator("[data-ideas-dao]").boundingBox();
     assert.ok(compactSize && compactSize.height < 320, label + ": compact Dao paragraph and expand control");
-    const responseRows = daoResult.locator("[data-ideas-aphorisms] ol li");
-    const responseRects = await Promise.all([0, 1, 2].map(i => responseRows.nth(i).boundingBox()));
-    const daoRect = await daoResult.locator("[data-ideas-dao]").boundingBox();
-    const offersRect = await daoResult.locator("[data-ideas-dao-promos]").boundingBox();
-    assert.ok(responseRects.every(Boolean) && responseRects[0].y < responseRects[1].y && responseRects[1].y < responseRects[2].y &&
-      daoRect.y > responseRects[2].y && offersRect.y > daoRect.y,
-      label + ": real answer order is three full-width rows, Dao and two offer cards");
-    assert.ok(responseRects.every(rect => rect.width >= width * .72), label + ": real quote rows are readable");
+    const responseLayout = await measureOrderedLayout(daoResult,
+      "[data-ideas-dao]", "[data-ideas-dao-promos]");
+    const responseRects = responseLayout.rows;
+    if (!(responseRects.length === 3 && responseRects.every(rect => rect && rect.width > 0) &&
+      responseRects[0].top < responseRects[1].top && responseRects[1].top < responseRects[2].top &&
+      responseLayout.middle?.top > responseRects[2].top && responseLayout.after?.top > responseLayout.middle.top)) {
+      await page.screenshot({ path: output + "/aphorism-real-order-" + label.replace(/:/g, "-") + ".png", fullPage: false });
+      throw new Error(label + ": real answer order is three full-width rows, Dao and two offers; layout=" +
+        JSON.stringify(responseLayout));
+    }
+    if (!responseRects.every(rect => rect.width >= width * .72)) {
+      await page.screenshot({ path: output + "/aphorism-real-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
+      throw new Error(label + ": real quote rows are readable; measured=" +
+        JSON.stringify(responseRects.map(rect => ({ width: rect?.width, x: rect?.left }))) + ", viewport=" + width);
+    }
     const readingOrder = daoResult.locator('[data-ideas-order-button="reading"]');
     const giftOrder = daoResult.locator('[data-ideas-order-button="gift"]');
     await readingOrder.tap();

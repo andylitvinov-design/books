@@ -58,7 +58,7 @@ function publicPage(tree, locale) {
     assert.equal(selector, '[data-sitewide-personal-review-banner]'); return locator(locale === 'es' ? [] : [jsx('aside', {})])
   } }
 }
-for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact My Profile and coaching destinations with active My Profile', async () => {
+for (const locale of ['en', 'ru', 'es']) test(locale + ' actual public mobile nav has exact My Profile and Psychic Alchemy destinations with active My Profile', async () => {
   for (const path of ['/client', '/client/tests']) await assertPublicDiscoveryChrome(publicPage(mobile(locale, '/' + locale + path), locale), expect, locale)
   for (const path of ['/client/session', '/client/personal-selector', '/client/tests/hidden']) assert.equal(mobile(locale, '/' + locale + path), null)
   if (locale !== 'es') assert.equal(mobile(locale, '/' + locale + '/app/portrait'), null)

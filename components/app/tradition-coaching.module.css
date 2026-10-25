@@ -120,3 +120,213 @@
 .gentleGuide p{font-size:12px;line-height:1.45;margin:0}
 .legacyChoice{font-size:12px;line-height:1.4;color:#496b70;margin:4px 0 10px}
 @media(max-width:380px){.gentleGuide{padding:8px 10px;margin-bottom:8px}}
+
+/* Optional per-session voice controls remain compact below Listen / Dictate. */
+.voiceSettingsToggle{
+  align-self:flex-start;min-height:44px;border:0;background:transparent;
+  padding:2px 0;font:inherit;font-size:12px;font-weight:700;color:#236c67;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer
+}
+.voiceSettingsToggle:focus-visible,.voiceSettingsPanel select:focus-visible{
+  outline:3px solid #00afb1;outline-offset:3px
+}
+.voiceSettingsPanel{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  background:#eff6f2;border:1px solid #c1dcd4;border-radius:10px;padding:10px;
+  max-width:100%
+}
+.voiceSettingsPanel label{
+  display:flex;flex-direction:column;gap:4px;min-width:0;
+  color:#315e5c;font-weight:700;font-size:12px
+}
+.voiceSettingsPanel select{
+  width:100%;min-height:44px;max-width:100%;border:1px solid #adcbc4;
+  border-radius:9px;background:#fff;color:#274754;padding:7px;
+  font:inherit;font-size:13px
+}
+.voiceSettingsPanel small{grid-column:1/-1}
+@media(max-width:360px){.voiceSettingsPanel{grid-template-columns:minmax(0,1fr)}}
+
+/* A compact chat composer inside the existing scrollable lesson shell. */
+.chatComposer{margin-top:auto;border:1px solid #d5e2dc;border-radius:16px;padding:11px 12px 10px;
+  background:#fff;box-shadow:0 3px 15px #2642370a;min-width:0}
+.chatComposer .note{min-height:67px;max-height:25dvh;background:#fcfdfb;border-color:#d0dfd8}
+.chatComposer .noteTip{margin-top:6px}
+@media(max-width:430px){.chatComposer{padding:8px 9px;border-radius:13px}
+  .chatComposer .note{min-height:57px}}
+
+/* Original ancient-planning courses: historically photographed objects stand for
+   symbolic levels. Shared session/answer/voice behaviors are not changed. */
+.stageCard,.roadmapCard{
+  display:grid;grid-template-columns:116px minmax(0,1fr);gap:12px;align-items:stretch;
+  margin:7px 0 9px;padding:9px;border:1px solid #cfb48d;border-radius:14px;
+  background:linear-gradient(135deg,#fff9ea,#f7e8ca);color:#473721;
+  box-shadow:0 5px 20px #38271312;max-width:100%;min-width:0
+}
+.stagePhoto{position:relative;min-height:112px;min-width:0;overflow:hidden;border-radius:9px;
+  background:linear-gradient(140deg,#8c734d,#d9bc81);isolation:isolate}
+.stagePhoto img{display:block;width:100%;height:100%;max-height:158px;min-height:112px;
+  object-fit:cover;object-position:center;filter:saturate(.78);position:relative;z-index:1}
+.stagePhoto img[hidden]{display:none}
+.stageGlyph{position:absolute;bottom:4px;left:5px;z-index:2;
+  background:#312518b8;border:1px solid #e0bb75a6;border-radius:6px;
+  color:#fff2ce;padding:2px 6px;font-family:Georgia,serif;font-size:18px;line-height:1.25}
+.stageCopy{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.stageCopy strong{font-family:Georgia,'Times New Roman',serif;font-weight:700;
+  line-height:1.16;font-size:clamp(16px,2.2vw,20px);color:#513820}
+.stageCopy p{color:#675340!important;line-height:1.4!important;font-size:13px!important;margin:0!important}
+.stageCopy small{font-size:11.5px;line-height:1.35;color:#705b46}
+.photoCredit{align-self:flex-start;color:#775333!important;font-size:10px!important;
+  line-height:1.25;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.stagePrompt{margin:0 0 2px!important;font-size:11px!important;
+  font-weight:650;color:#866343!important;line-height:1.4}
+.roadmap{display:flex;flex-direction:column;width:100%;min-width:0;gap:7px;
+  align-items:stretch;min-height:0}
+.roadmap h1{font-family:Georgia,'Times New Roman',serif!important;
+  font-size:clamp(25px,4.5vw,35px)!important;line-height:1.12!important;
+  color:#4b3827!important;outline:none}
+.roadmap>p{color:#6c5845;line-height:1.45;font-size:13px;margin:0 0 2px}
+.roadmapList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+  min-height:0;max-height:min(53dvh,510px);overflow-y:auto;overscroll-behavior:contain;
+  padding:2px 3px 8px;scrollbar-width:thin}
+.roadmapCard{grid-template-columns:78px minmax(0,1fr);gap:9px;margin:0;padding:7px;
+  border-radius:11px;box-shadow:none}
+.roadmapCard .stagePhoto{min-height:100px}
+.roadmapCard .stagePhoto img{min-height:100px;max-height:140px}
+.roadmapCard .stageCopy{gap:3px}
+.roadmapCard .stageCopy strong{font-size:14px}
+.roadmapCard .stageCopy p{font-size:11.5px!important;line-height:1.32!important}
+.roadmapCard .stageCopy small{font-size:10.5px}
+.roadmapCard .photoCredit{font-size:9px!important}
+.courseIntro[data-tradition-coaching-onboarding] .introActions{
+  flex:none;position:sticky;bottom:0;z-index:4;margin-top:auto;
+  padding:8px 2px;background:#fffaf3;box-shadow:0 -7px 18px #fffaf3dd
+}
+[data-tradition-coaching="egyptian"] .courseSheet{background:#f8ebd0}
+[data-tradition-coaching="egyptian"] .courseScroll{
+  background-image:repeating-linear-gradient(90deg,#bc99570a 0,#bc99570a 1px,transparent 1px,transparent 16px)}
+[data-tradition-coaching="egyptian"] .stageCard,[data-tradition-coaching="egyptian"] .roadmapCard{
+  border-color:#be995e;background:linear-gradient(120deg,#fff6df,#ecd6aa)}
+[data-tradition-coaching="egyptian"] .stage{color:#806038}
+[data-tradition-coaching="egyptian"] .choice,[data-tradition-coaching="egyptian"] .chosen{
+  border-color:#c8ac78;background:#fff8e9;color:#4b3524}
+[data-tradition-coaching="egyptian"] .chosen{background:#e5d1a3;border-color:#89632f}
+[data-tradition-coaching="greek"] .courseSheet{background:#f5f4ed}
+[data-tradition-coaching="greek"] .stageCard,[data-tradition-coaching="greek"] .roadmapCard{
+  background:linear-gradient(120deg,#fffdfa,#e8eeed);border-color:#aab6bd}
+[data-tradition-coaching="greek"] .stageCopy strong{color:#314960}
+[data-tradition-coaching="greek"] .photoCredit{color:#375570!important}
+[data-tradition-coaching="greek"] .stage{color:#435f78}
+[data-tradition-coaching="greek"] .choice,[data-tradition-coaching="greek"] .chosen{
+  border-color:#a5b9ca;background:#f4f9fb;color:#2b4960}
+[data-tradition-coaching="greek"] .chosen{background:#dbe9f1;border-color:#51758e}
+@media(max-width:600px){
+ .stageCard{grid-template-columns:100px minmax(0,1fr);gap:9px;margin:4px 0 6px;padding:7px}
+ .stagePhoto{min-height:105px}
+ .stagePhoto img{min-height:105px;max-height:134px}
+ .stageCopy strong{font-size:15px}
+ .stageCopy p{font-size:12px!important;line-height:1.31!important}
+ .stageCopy .photoCredit{font-size:9px!important}
+ .roadmapList{grid-template-columns:minmax(0,1fr);max-height:51dvh}
+ .roadmapCard{grid-template-columns:76px minmax(0,1fr)}
+ .roadmapCard .stageCopy p{font-size:11.5px!important}
+ .courseIntro[data-tradition-coaching-onboarding] .introActions{padding:6px 2px}
+}
+@media(max-width:380px){
+ .stageCard{grid-template-columns:86px minmax(0,1fr);gap:7px;padding:6px}
+ .stagePhoto,.stagePhoto img{min-height:96px}
+ .stagePhoto img{max-height:122px}
+ .stageCopy strong{font-size:14px}
+ .stageCopy p{font-size:11.5px!important;line-height:1.29!important}
+ .stageCopy .photoCredit{font-size:8.5px!important}
+ .stageGlyph{font-size:15px}
+ .roadmapList{max-height:48dvh}
+ .roadmapCard{grid-template-columns:70px minmax(0,1fr)}
+}
+@media(max-height:650px){
+ .roadmapList{max-height:44dvh}
+ .stageCard{margin:3px 0 5px}
+ .stagePhoto img{max-height:114px}
+}
+@media(prefers-reduced-motion:reduce){
+ .stageCard,.roadmapCard{scroll-behavior:auto;transition:none}
+}
+
+/* Compact icon tools in the real chat's sticky message composer. The complete
+   warning and accessible labels stay available to assistive technology. */
+.voiceCompact{display:flex;flex-direction:column;gap:3px;margin:0;min-width:0}
+.voiceCompact .voiceActions{flex-wrap:nowrap;gap:6px}
+.voiceCompact .voiceActions button{width:44px;height:44px;min-height:44px;min-width:44px;
+  padding:0;border-radius:14px;background:#ecf5ef;color:#2a615b}
+.voiceCompact .voiceSettingsToggle{min-height:44px;min-width:39px;padding:0 7px;
+  text-decoration:none;font-size:19px;border:1px solid #d7e6db;border-radius:13px}
+.voiceCompact .voiceSettingsPanel{width:min(320px,calc(100vw - 50px));max-width:100%}
+.voiceCompact .voiceVisuallyHidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.voiceCompact .voiceInterim,.voiceCompact .voiceError{font-size:11px}
+@media(max-width:380px){.voiceCompact .voiceActions button{width:42px;min-width:42px;height:44px}}
+
+/* Egyptian and Greek visual lessons keep their symbolic image while answers
+   now flow like a chat and remain reachable above iPhone keyboard. */
+.courseSession .courseScroll .choices{
+  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;
+  max-width:650px;align-self:flex-end;margin:3px 0 9px 36px
+}
+.courseSession .courseScroll .choice,.courseSession .courseScroll .chosen{
+  width:auto;min-height:44px;max-width:100%;padding:8px 13px;
+  border:1px solid #bfcfc2;border-radius:18px 18px 5px 18px;
+  background:#fffdf9;box-shadow:0 3px 9px #473b2610;
+  font-size:13px;color:#31594c;line-height:1.3
+}
+.courseSession .courseScroll .chosen{
+  background:#dce9da;border-color:#5f977a;box-shadow:inset 0 0 0 1px #5f977a
+}
+.courseSession .courseScroll .hint{
+  text-align:right;align-self:flex-end;max-width:590px;
+  font-size:11px;margin:3px 0 7px;color:#6f8174
+}
+.courseSession .courseScroll .questionHeader h1{margin:5px 0 2px!important}
+.courseSession .courseScroll .stagePrompt{margin-bottom:6px!important}
+.courseSession footer[data-coaching-messenger-footer]{
+  background:#fffbf4;box-shadow:0 -6px 18px #48372216
+}
+.courseSession footer[data-coaching-messenger-footer] .chatComposer{
+  margin:0 0 6px;padding:8px 10px;
+  background:#f3f5ee;border:1px solid #d8dfd2;border-radius:17px 17px 5px 17px;
+  box-shadow:none
+}
+.courseSession footer[data-coaching-messenger-footer] .chatComposer .note{
+  min-height:45px;max-height:13dvh;padding:8px 11px;background:#fff;
+  border:1px solid #d0d9c9;font-size:16px
+}
+.courseSession footer[data-coaching-messenger-footer] .chatComposer .noteTip{
+  display:block;font-size:11px;color:#5e7468;margin:4px 0
+}
+@media(max-width:430px){
+  .courseSession .courseScroll .choices{margin-left:28px;gap:6px}
+  .courseSession .courseScroll .choice,.courseSession .courseScroll .chosen{
+    padding:7px 10px;font-size:12px;min-height:44px
+  }
+  .courseSession footer[data-coaching-messenger-footer] .chatComposer{
+    padding:6px 8px;margin-bottom:5px
+  }
+  .courseSession footer[data-coaching-messenger-footer] .chatComposer .note{
+    min-height:43px;max-height:12dvh
+  }
+}
+@media(max-height:600px){
+  .courseSession .courseScroll .stageCard{margin:3px 0 5px;padding:6px}
+  .courseSession footer[data-coaching-messenger-footer] .chatComposer{padding:5px 8px}
+}
+
+/* Optional per-language sample avoids playing a private coaching prompt during voice setup. */
+.voiceSettingsPanel .voiceSample{
+  grid-column:1/-1;min-height:44px;border-radius:10px;
+  background:#fff9ed;border:1px solid #cfbca4;color:#67533b;
+  padding:9px 13px;font:inherit;font-size:13px;font-weight:750;
+  cursor:pointer;text-align:center
+}
+.voiceSettingsPanel .voiceSample:focus-visible{
+  outline:3px solid #00afb1;outline-offset:3px
+}
+.voiceSettingsPanel .voiceSample:disabled{opacity:.55;cursor:wait}

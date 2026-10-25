@@ -2,34 +2,39 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, ChevronDown, ClipboardList, Compass, LockKeyhole, Sparkles, Sun, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, HeartHandshake, HeartPulse, LockKeyhole, Sparkles } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
 import { recommendProfileBattery } from "@/lib/profile/profile-battery";
+import { appFetch } from "@/lib/app/client-fetch";
+import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 
 type Locale = "en" | "ru" | "es";
-type Template = "personal" | "business" | "wellbeing" | "comprehensive";
-type Area = "body" | "energy" | "business" | "money" | "health" | "growth";
+type Focus = "wellbeing" | "relationships" | "work" | "identity";
+type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning";
 type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null; questions: number | null };
 type Props = { locale: Locale; tests: PublicTest[] };
 
+// Topics map to questionnaire dimensions, not diagnoses or financial outcomes.
 const areaAxes: Record<Area, readonly string[]> = {
-  body: ["embodiment", "sleep", "stress"],
-  energy: ["energy", "resource", "self_support"],
-  business: ["clarity", "focus", "functioning"],
-  // Money is an area of reflection about decisions and capacity, NOT a test of
-  // income, financial health, entrepreneurship aptitude, or financial success.
-  money: ["functioning", "meaning", "self_support"],
-  // Wellbeing topics are educational self-reports, not medical assessments.
-  health: ["sleep", "stress", "mood", "energy"],
-  growth: ["meaning", "personality", "emotional_regulation", "relationships"],
+  traits: ["personality"],
+  support: ["resource", "self_support"],
+  emotions: ["stress", "mood", "emotional_regulation"],
+  recovery: ["sleep", "energy"],
+  body: ["embodiment"],
+  connection: ["relationships"],
+  work: ["clarity", "focus", "functioning"],
+  money: ["functioning", "meaning", "self_support"], // money choices, never a score of income/success
+  meaning: ["meaning"],
+};
+// Four life directions select existing measurable topics; meaning remains in personal growth.
+const focusAreas: Record<Focus, Area[]> = {
+  wellbeing: ["emotions", "recovery", "body"],
+  relationships: ["connection"],
+  work: ["work", "money"],
+  identity: ["traits", "support", "meaning"],
 };
 const allAreas = Object.keys(areaAxes) as Area[];
-const defaultAreas: Record<Template, Area[]> = {
-  personal: ["body", "energy", "growth"],
-  business: ["business", "money", "energy"],
-  wellbeing: ["body", "energy", "health"],
-  comprehensive: [...allAreas],
-};
+const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
 const allAxesFor = (areas: Area[]) => [...new Set(areas.flatMap(area => areaAxes[area]))];
 
 const axesCopy: Record<string, Record<Locale, string>> = {
@@ -59,33 +64,44 @@ const copy = {
     browseTests: "Or browse free tests without creating a profile",
     journeyTitle: "How it works",
     journey: [
-      ["Choose your focus", "Personal life, work, wellbeing or the bigger picture. You decide which topics matter."],
+      ["Choose your focus", "Body and energy, relationships, work and money, or personal growth. You decide which matter."],
       ["Take free tests", "Review the suggested questionnaires and choose which ones to complete."],
       ["Explore results & next steps", "Read your test feedback, reflect on your strengths and save development goals in My Space."],
     ],
     entryNote: "You can explore without an account. Sign in only when you want to save results privately.",
-    returnIntro: "How it works", wizardKicker: "Your free profile", selectTemplate: "Choose this",
-    stages: ["Profile", "Topics", "Scales", "Tests", "Ready"],
-    profileTitle: "What would you like to explore first?",
-    profileHelp: "Choose the starting point closest to your goal. You can adjust the topics, scales and tests before you begin.",
-    templates: {
-      personal: ["Personal profile", "Personality, relationships, resources and growth."],
-      business: ["Business profile", "Focus, work capacity and money-related choices."],
-      wellbeing: ["Wellbeing profile", "Body, energy, rest and everyday balance."],
-      comprehensive: ["Comprehensive profile", "A wider view across all six life areas."],
+    returnIntro: "How it works", wizardKicker: "Your free profile", selectTemplate: "Select this",
+    stages: ["Focus", "Topics", "Scales", "Tests", "Ready"],
+    profileTitle: "What would you like to understand or improve?",
+    profileHelp: "Choose one or several interests. Each adds to the same personal profile; you can explore the rest later.",
+    focusAdd: "Select this", focusSelected: "Selected",
+    unifiedNote: "ONE PERSONAL PROFILE · GROWING OVER TIME",
+    layerTitle: "How your profile grows · four distinct layers",
+    layerNote: "One private profile, not a diagnosis or overall health/success score. Sections fill only when you choose and have suitable evidence.",
+    layers: [["My foundation","Personality patterns, personal strengths and values."],["My state","Recent energy, stress and recovery, with dates."],["My life","Work, relationships and your life context."],["My growth","Goals and practices you choose yourself."]],
+    focuses: {
+      wellbeing: ["Body, health & energy", "Physical wellbeing, stress, recovery and energy balance."],
+      relationships: ["Relationships & connection", "Love, family, communication, trust and personal boundaries."],
+      work: ["Work, business & money", "Career, entrepreneurship, professional growth and financial habits."],
+      identity: ["Personality & personal growth", "Traits, strengths, values, life goals and self-actualization."],
     },
-    topicTitle: "Which areas matter to you right now?",
-    topicHelp: "Select one or several areas. These are topics for reflection, not diagnoses or financial ratings.",
+    topicTitle: "Choose the specific topics that matter",
+    topicHelp: "We've suggested topics from your interests. Refine them before choosing actual measured scales.",
     areas: {
-      body: ["Body", "Awareness · rest · stress"], energy: ["Energy", "Vitality · resources · support"],
-      business: ["Business", "Focus · clarity · functioning"], money: ["Money", "Decisions · priorities · support"],
-      health: ["Health & wellbeing", "Sleep · mood · stress"], growth: ["Development", "Meaning · emotions · relationships"],
+      traits: ["Personality traits", "Patterns · strengths"],
+      support: ["Resources & self-support", "Support · self-kindness"],
+      emotions: ["Emotions & stress", "Mood · regulation"],
+      recovery: ["Energy & rest", "Recovery · sleep"],
+      body: ["Body awareness", "Awareness · comfort"],
+      connection: ["Relationships", "Connection · communication"],
+      work: ["Work & focus", "Clarity · daily actions"],
+      money: ["Money decisions", "Choices · habits, not income"],
+      meaning: ["Purpose & values", "Meaning · direction"],
     },
     scaleTitle: "Choose the scales for your profile",
-    scaleHelp: "Keep all suggested scales or select only what interests you. Each test measures only the scales declared in its source.",
+    scaleHelp: "Only real source-declared dimensions can be measured. Keep the suggestions or select what you want to explore.",
     selectAll: "Select all", clearAll: "Clear all", selected: "selected",
     testTitle: "Your recommended free test selection",
-    testHelp: "We matched your chosen scales to existing, startable questionnaires. Adjust the selection before beginning.",
+    testHelp: "These are existing, eligible free questionnaires matched to your topics. Edit the set before confirming.",
     testCount: "tests", minutes: "min", questions: "questions",
     more: "See more matching tests", less: "Show fewer",
     chosen: "Your selection", unmeasured: "Some selected topics may not have a suitable free questionnaire yet. No score will be invented.",
@@ -101,6 +117,13 @@ const copy = {
     review: "Review my test path", readyKicker: "YOUR PERSONAL TEST PATH",
     readyTitle: "Ready to build your profile?",
     readyHelp: "To create your profile, take the following free tests in order. You can review this list before starting.",
+    saveToCabinet: "Save my selected tests in my Cabinet",
+    saveToCabinetHelp: "Continue with Google to keep this selected test plan in My Tests. Guest answers or earlier guest results are never imported automatically.",
+    saveToCabinetBusy: "Preparing your Cabinet…",
+    saveToCabinetError: "Google sign-in could not start. Try again or continue as a guest.",
+    saveToCabinetCheckError: "Could not verify your account. You can still start these tests as a guest.",
+    saveToCabinetStorageError: "Browser storage is unavailable. Allow site storage to keep your selection through Google sign-in, or continue as a guest.",
+    guestChoice: "Or start these tests as a guest with the button below.",
     readyFoot: "One test at a time. You will see your progress at the top, and you can choose to save results privately in your Cabinet.",
     noTests: "No eligible free test measures this selection. Go back and choose other scales.",
     private: "Results can be saved in your protected account. Build your profile and set voluntary development goals there, after the tests.",
@@ -116,33 +139,44 @@ const copy = {
     browseTests: "Или пройти бесплатные тесты без создания профиля",
     journeyTitle: "Как это работает",
     journey: [
-      ["Выберите свою задачу", "Личность, бизнес, самочувствие или несколько сфер сразу. Вы решаете, что важно."],
+      ["Выберите направление", "Здоровье и энергия, отношения, дело и деньги или личное развитие — можно несколько сразу."],
       ["Пройдите бесплатные тесты", "Мы предложим подходящие опросники, а вы сможете изменить их набор."],
       ["Получите результаты и рекомендации", "Изучите отчёты, определите сильные стороны и сохраните цели развития в личном кабинете."],
     ],
     entryNote: "Выбирать темы можно без регистрации. Для приватного сохранения результатов понадобится вход в кабинет.",
     returnIntro: "Как это работает", wizardKicker: "Ваш бесплатный профиль", selectTemplate: "Выбрать",
-    stages: ["Профиль", "Темы", "Шкалы", "Тесты", "Начало"],
-    profileTitle: "Что вы хотите изучить в первую очередь?",
-    profileHelp: "Начните с самой важной задачи. На следующих шагах можно изменить темы, шкалы и набор тестов.",
-    templates: {
-      personal: ["Личностный профиль", "Личность, отношения, ресурсы, развитие."],
-      business: ["Бизнес-профиль", "Концентрация, работа и решения о деньгах."],
-      wellbeing: ["Профиль благополучия", "Тело, энергия, отдых и устойчивость."],
-      comprehensive: ["Комплексный профиль", "Все шесть направлений жизни."],
+    stages: ["Запрос", "Темы", "Шкалы", "Тесты", "Начало"],
+    profileTitle: "Что вы хотите понять или улучшить?",
+    profileHelp: "Выберите одно или несколько направлений. Всё войдёт в один личный профиль — остальное можно изучить позже.",
+    focusAdd: "Выбрать", focusSelected: "Выбрано",
+    unifiedNote: "ОДИН ЛИЧНЫЙ ПРОФИЛЬ · ПОПОЛНЯЕТСЯ СО ВРЕМЕНЕМ",
+    layerTitle: "Как формируется профиль · четыре разных слоя",
+    layerNote: "Один приватный профиль, а не диагноз или единый процент здоровья и успешности. Разделы заполняются при наличии подходящих данных и по вашему выбору.",
+    layers: [["Моя основа","Особенности личности, сильные стороны и ценности."],["Моё состояние","Самочувствие, энергия и стресс с указанием даты."],["Моя жизнь","Работа, отношения и личные обстоятельства."],["Моё развитие","Цели и практики, которые вы выбираете сами."]],
+    focuses: {
+      wellbeing: ["Тело, здоровье и энергия", "Самочувствие, стресс, восстановление и жизненные силы."],
+      relationships: ["Отношения и близость", "Любовь, семья, общение, доверие и личные границы."],
+      work: ["Дело, бизнес и деньги", "Карьера, предпринимательство, профессиональная реализация и финансы."],
+      identity: ["Личность и развитие", "Характер, способности, ценности, смысл жизни и самореализация."],
     },
-    topicTitle: "Какие сферы вам сейчас важны?",
-    topicHelp: "Отметьте одну или несколько сфер. Это темы самопознания, а не диагнозы или оценка финансов.",
+    topicTitle: "Уточните важные для вас темы",
+    topicHelp: "Мы предложили темы на основе вашего выбора. Измените их перед выбором измеряемых шкал.",
     areas: {
-      body: ["Тело", "Ощущения · отдых · напряжение"], energy: ["Энергия", "Ресурсы · восстановление · опора"],
-      business: ["Бизнес", "Фокус · ясность · действия"], money: ["Деньги", "Решения · приоритеты · поддержка"],
-      health: ["Здоровье и самочувствие", "Сон · эмоции · стресс"], growth: ["Развитие", "Смысл · эмоции · отношения"],
+      traits: ["Особенности личности", "Качества · сильные стороны"],
+      support: ["Ресурсы и поддержка", "Опора · бережность к себе"],
+      emotions: ["Эмоции и стресс", "Настроение · регуляция"],
+      recovery: ["Энергия и отдых", "Восстановление · сон"],
+      body: ["Контакт с телом", "Осознанность · комфорт"],
+      connection: ["Отношения", "Связь · общение"],
+      work: ["Работа и фокус", "Ясность · действия"],
+      money: ["Решения о деньгах", "Привычки, не уровень дохода"],
+      meaning: ["Ценности и смысл", "Цели · направление"],
     },
     scaleTitle: "Выберите шкалы своего профиля",
-    scaleHelp: "Можно выбрать все предложенные шкалы или оставить только нужные. Тест измеряет лишь те шкалы, которые заявлены для него.",
+    scaleHelp: "Можно выбрать лишь реальные шкалы, указанные в источниках тестов. Оставьте предложенные или выберите свои.",
     selectAll: "Выбрать все", clearAll: "Снять все", selected: "выбрано",
     testTitle: "Предложенный набор бесплатных тестов",
-    testHelp: "Мы сопоставили выбранные шкалы с существующими доступными тестами. Перед началом можно изменить набор.",
+    testHelp: "Здесь существующие доступные бесплатные тесты по вашим темам. Измените набор до подтверждения.",
     testCount: "тестов", minutes: "мин", questions: "вопросов",
     more: "Показать больше подходящих тестов", less: "Показать меньше",
     chosen: "Ваш выбор", unmeasured: "Для части тем может не оказаться подходящего бесплатного теста. Баллы не придумываются.",
@@ -158,6 +192,13 @@ const copy = {
     review: "Проверить план тестов", readyKicker: "ВАШ ПУТЬ К ЛИЧНОМУ ПРОФИЛЮ",
     readyTitle: "Всё готово для создания профиля",
     readyHelp: "Для создания профиля предлагаем пройти следующие бесплатные тесты по порядку. Подтвердите список перед началом.",
+    saveToCabinet: "Сохранить выбранные тесты в кабинете",
+    saveToCabinetHelp: "Войдите через Google, чтобы сохранить набор в «Моих тестах». Гостевые ответы и прошлые гостевые результаты автоматически не переносятся.",
+    saveToCabinetBusy: "Открываем ваш кабинет…",
+    saveToCabinetError: "Не удалось начать вход через Google. Повторите попытку или продолжите без кабинета.",
+    saveToCabinetCheckError: "Не удалось проверить вход. Тесты всё равно можно пройти как гость.",
+    saveToCabinetStorageError: "Хранение данных сайта недоступно. Разрешите его для сохранения подборки через Google или продолжите как гость.",
+    guestChoice: "Или начните тесты без регистрации кнопкой ниже.",
     readyFoot: "Тесты идут один за другим. Сверху будет виден общий прогресс, а результаты можно сохранить в защищённом кабинете по вашему желанию.",
     noTests: "Для выбранных шкал пока нет подходящего бесплатного теста. Вернитесь к выбору шкал.",
     private: "Результаты можно сохранить в защищённом кабинете. Там доступен личный профиль и цели программы развития.",
@@ -173,33 +214,44 @@ const copy = {
     browseTests: "O hacer pruebas gratuitas sin crear un perfil",
     journeyTitle: "Cómo funciona",
     journey: [
-      ["Elige tu objetivo", "Vida personal, trabajo, bienestar o una visión más amplia. Tú decides qué explorar."],
+      ["Elige tu enfoque", "Salud y energía, relaciones, trabajo y dinero o crecimiento personal. Puedes elegir varios."],
       ["Realiza pruebas gratuitas", "Revisa los cuestionarios sugeridos y elige cuáles quieres completar."],
       ["Explora resultados y próximos pasos", "Lee los informes, identifica fortalezas y guarda tus metas de desarrollo en Mi espacio."],
     ],
     entryNote: "Puedes explorar sin cuenta. Inicia sesión solo si quieres guardar los resultados de forma privada.",
     returnIntro: "Cómo funciona", wizardKicker: "Tu perfil gratuito", selectTemplate: "Elegir",
-    stages: ["Perfil", "Temas", "Escalas", "Pruebas", "Inicio"],
-    profileTitle: "¿Qué te gustaría explorar primero?",
-    profileHelp: "Empieza por tu objetivo más importante. Podrás ajustar áreas, escalas y pruebas antes de comenzar.",
-    templates: {
-      personal: ["Perfil personal", "Personalidad, relaciones, recursos y desarrollo."],
-      business: ["Perfil empresarial", "Concentración, trabajo y decisiones económicas."],
-      wellbeing: ["Perfil de bienestar", "Cuerpo, energía, descanso y equilibrio."],
-      comprehensive: ["Perfil integral", "Una visión de las seis áreas."],
+    stages: ["Interés", "Temas", "Escalas", "Pruebas", "Inicio"],
+    profileTitle: "¿Qué quieres comprender o mejorar?",
+    profileHelp: "Elige uno o varios temas. Todos forman parte de un único perfil personal que puedes ampliar después.",
+    focusAdd: "Elegir", focusSelected: "Elegido",
+    unifiedNote: "UN PERFIL PERSONAL · CRECE CONTIGO",
+    layerTitle: "Cómo crece tu perfil · cuatro capas distintas",
+    layerNote: "Un perfil privado, no un diagnóstico ni una puntuación global de salud o éxito. Cada sección requiere datos adecuados y tu elección.",
+    layers: [["Mi base","Rasgos de personalidad, fortalezas y valores."],["Mi estado","Energía, estrés y descanso reciente con fecha."],["Mi vida","Trabajo, relaciones y contexto personal."],["Mi desarrollo","Objetivos y prácticas que tú eliges."]],
+    focuses: {
+      wellbeing: ["Cuerpo, salud y energía", "Bienestar físico, estrés, descanso y energía."],
+      relationships: ["Relaciones y cercanía", "Amor, familia, comunicación, confianza y límites personales."],
+      work: ["Trabajo, negocios y dinero", "Carrera, emprendimiento, desarrollo profesional y hábitos financieros."],
+      identity: ["Personalidad y crecimiento", "Rasgos, fortalezas, valores, propósito y autorrealización."],
     },
-    topicTitle: "¿Qué áreas te importan ahora?",
-    topicHelp: "Elige una o varias áreas para reflexionar, no como diagnóstico ni puntuación financiera.",
+    topicTitle: "Elige los temas específicos para explorar",
+    topicHelp: "Sugerimos temas según tus intereses. Ajústalos antes de seleccionar escalas medibles.",
     areas: {
-      body: ["Cuerpo", "Conciencia · descanso · estrés"], energy: ["Energía", "Vitalidad · recursos · apoyo"],
-      business: ["Negocios", "Concentración · claridad · acción"], money: ["Dinero", "Decisiones · prioridades · apoyo"],
-      health: ["Salud y bienestar", "Sueño · emociones · estrés"], growth: ["Desarrollo", "Sentido · emociones · relaciones"],
+      traits: ["Rasgos personales", "Patrones · fortalezas"],
+      support: ["Recursos y apoyo", "Apoyo · autocompasión"],
+      emotions: ["Emociones y estrés", "Ánimo · regulación"],
+      recovery: ["Energía y descanso", "Recuperación · sueño"],
+      body: ["Conciencia corporal", "Sensaciones · comodidad"],
+      connection: ["Relaciones", "Conexión · comunicación"],
+      work: ["Trabajo y enfoque", "Claridad · acciones"],
+      money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
+      meaning: ["Sentido y valores", "Metas · dirección"],
     },
     scaleTitle: "Selecciona las escalas de tu perfil",
-    scaleHelp: "Elige todas las escalas o solo las que te interesan. Cada prueba mide únicamente sus escalas declaradas.",
+    scaleHelp: "Solo medimos las dimensiones declaradas en los cuestionarios. Puedes cambiar las sugerencias.",
     selectAll: "Seleccionar todas", clearAll: "Desmarcar", selected: "seleccionadas",
     testTitle: "Tus pruebas gratuitas recomendadas",
-    testHelp: "Relacionamos tus escalas con cuestionarios reales y disponibles. Puedes ajustar la selección.",
+    testHelp: "Pruebas gratuitas existentes y aptas para tus temas. Revisa y edita la lista antes de confirmar.",
     testCount: "pruebas", minutes: "min", questions: "preguntas",
     more: "Ver más pruebas compatibles", less: "Ver menos",
     chosen: "Tu selección", unmeasured: "Es posible que algunas áreas no tengan una prueba gratuita adecuada. No se inventan puntuaciones.",
@@ -215,6 +267,13 @@ const copy = {
     review: "Revisar mi plan de pruebas", readyKicker: "TU RUTA DE PRUEBAS PERSONALES",
     readyTitle: "Tu perfil empieza aquí",
     readyHelp: "Para crear tu perfil, realiza estas pruebas gratuitas en orden. Confirma la lista antes de empezar.",
+    saveToCabinet: "Guardar las pruebas elegidas en mi espacio",
+    saveToCabinetHelp: "Accede con Google para guardar tu selección en Mis pruebas. Tus respuestas y resultados de invitado no se importarán automáticamente.",
+    saveToCabinetBusy: "Abriendo tu espacio…",
+    saveToCabinetError: "No se pudo iniciar sesión con Google. Inténtalo de nuevo o continúa sin entrar.",
+    saveToCabinetCheckError: "No pudimos verificar tu cuenta. Puedes hacer estas pruebas como invitado.",
+    saveToCabinetStorageError: "No se puede guardar la selección en este navegador. Habilita el almacenamiento o continúa como invitado.",
+    guestChoice: "O empieza como invitado con el botón de abajo.",
     readyFoot: "Avanza prueba por prueba. Verás el progreso total arriba y podrás guardar los resultados de forma privada si lo deseas.",
     noTests: "No hay una prueba gratuita adecuada para estas escalas. Regresa y cambia tu elección.",
     private: "Guarda tus resultados en tu cuenta protegida y define tus propias metas de desarrollo.",
@@ -236,11 +295,13 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       block: "start",
     });
   }, [started, step]);
-  const [template, setTemplate] = useState<Template>("personal");
-  const [areas, setAreas] = useState<Area[]>(defaultAreas.personal);
-  const [selectedAxes, setSelectedAxes] = useState<string[]>(allAxesFor(defaultAreas.personal));
+  const [focuses, setFocuses] = useState<Focus[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [selectedAxes, setSelectedAxes] = useState<string[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountError, setAccountError] = useState("");
   const accountLocale = locale === "es" ? "en" : locale;
 
   const availableAxes = allAxesFor(areas);
@@ -255,14 +316,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const coverage = new Set(chosenTests.flatMap(test => test.matches));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
 
-  function chooseTemplate(next: Template) {
-    setTemplate(next);
-    const suggested = defaultAreas[next];
-    setAreas([...suggested]);
-    setSelectedAxes(allAxesFor(suggested));
-    setSelectedKeys([]);
-    setShowMore(false);
-    setStep(1);
+  function toggleFocus(focus: Focus) {
+    setFocuses(previous => previous.includes(focus)
+      ? previous.filter(item => item !== focus) : [...previous, focus]);
   }
 
   function toggleArea(area: Area) {
@@ -273,6 +329,14 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }
 
   function goForward() {
+    if (step === 0 && focuses.length) {
+      const suggested = areasFor(focuses);
+      setAreas(suggested);
+      setSelectedAxes(allAxesFor(suggested));
+      setSelectedKeys([]);
+      setShowMore(false);
+      setStep(1);
+    }
     if (step === 1 && areas.length) setStep(2);
     if (step === 2 && selectedAxes.length) {
       setSelectedKeys([...recommendProfileBattery(matches, selectedAxes)]);
@@ -284,6 +348,50 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
 
   const base = "/" + accountLocale;
   const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","));
+
+  async function saveSelectionWithGoogle() {
+    if (accountBusy || selectedKeys.length === 0) return;
+    setAccountError("");
+    // The only cross-navigation state is a TTL-limited whitelist of eligible
+    // questionnaire keys, not the user interests, answers or health results.
+    try {
+      window.sessionStorage.setItem(
+        PENDING_TEST_SELECTION_KEY,
+        makeTestSelectionIntent(selectedKeys),
+      );
+    } catch {
+      setAccountError(t.saveToCabinetStorageError);
+      return;
+    }
+    setAccountBusy(true);
+    try {
+      try {
+        await appFetch("auth/contact-profile");
+        // No duplicate Google flow for a currently authenticated visitor.
+        window.location.assign(base + "/app/tests?selection=pending");
+        return;
+      } catch (cause) {
+        if ((cause as { status?: number })?.status !== 401) {
+          setAccountError(t.saveToCabinetCheckError);
+          return;
+        }
+      }
+      // This is the existing whitelisted OAuth continuation; My Tests
+      // rechecks eligibility and saves the account-owned plan only on success.
+      const response = await appFetch("auth/start", {
+        locale: accountLocale, continueTo: "tests",
+      });
+      if (typeof response?.redirectUrl !== "string" ||
+          !/^https:\/\//.test(response.redirectUrl)) {
+        throw new Error("AUTH_START_UNAVAILABLE");
+      }
+      window.location.assign(response.redirectUrl);
+    } catch {
+      setAccountError(t.saveToCabinetError);
+    } finally {
+      setAccountBusy(false);
+    }
+  }
 
   return <div className={styles.shell} data-personality-profile-builder>
     {!started ? <>
@@ -332,25 +440,31 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       {step === 0 && <section aria-labelledby="profile-builder-step-title">
         <h2 id="profile-builder-step-title">{t.profileTitle}</h2>
         <p className={styles.help}>{t.profileHelp}</p>
-        <div className={styles.templateGrid}>
-          {(Object.keys(t.templates) as Template[]).map(key =>
-            <button type="button" key={key} className={styles.templateCard} onClick={() => chooseTemplate(key)}
-              data-profile-kind={key}>
+        <div className={styles.templateGrid} data-profile-focus-selection>
+          {(Object.keys(t.focuses) as Focus[]).map(key =>
+            <button type="button" key={key} className={styles.templateCard}
+              aria-pressed={focuses.includes(key)} onClick={() => toggleFocus(key)} data-profile-focus={key}>
               <span className={styles.templateIcon} aria-hidden="true">
-                {key === "personal" ? <UserRound size={21} /> : key === "business" ? <BriefcaseBusiness size={21} />
-                  : key === "wellbeing" ? <Sun size={21} /> : <Compass size={21} />}
+                {key === "wellbeing" ? <HeartPulse size={21} /> : key === "relationships" ? <HeartHandshake size={21} />
+                  : key === "work" ? <BriefcaseBusiness size={21} /> : <Brain size={21} />}
               </span>
               <span className={styles.templateBody}>
-                <strong>{t.templates[key][0]}</strong>
-                <span>{t.templates[key][1]}</span>
-                <small className={styles.templateSelect}>{t.selectTemplate}<ArrowRight size={15} aria-hidden="true" /></small>
+                <strong>{t.focuses[key][0]}</strong>
+                <span>{t.focuses[key][1]}</span>
+                <small className={styles.templateSelect}>{focuses.includes(key) ? t.focusSelected : t.focusAdd}</small>
               </span>
+              <span className={styles.focusCheck} aria-hidden="true">{focuses.includes(key) && <Check size={16} />}</span>
             </button>)}
         </div>
+        <details className={styles.layerDetails} data-profile-four-layers>
+          <summary>{t.layerTitle}<ChevronDown size={16} aria-hidden="true" /></summary>
+          <p>{t.layerNote}</p>
+          <ol>{t.layers.map(layer => <li key={layer[0]}><strong>{layer[0]}</strong><span>{layer[1]}</span></li>)}</ol>
+        </details>
       </section>}
 
       {step === 1 && <section aria-labelledby="profile-builder-step-title">
-        <p className={styles.templateLabel}>{t.templates[template][0]}</p>
+        <p className={styles.templateLabel}>{t.unifiedNote}</p>
         <h2 id="profile-builder-step-title">{t.topicTitle}</h2>
         <p className={styles.help}>{t.topicHelp}</p>
         <div className={styles.areaGrid}>
@@ -447,22 +561,38 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               <Check size={18} className={styles.reviewCheck} aria-hidden="true" />
             </li>)}
         </ol>
+        <div className={styles.accountOffer} data-profile-google-cabinet-offer>
+          <LockKeyhole size={20} aria-hidden="true" />
+          <div className={styles.accountOfferBody}>
+            <button type="button" className={styles.googleButton}
+              onClick={saveSelectionWithGoogle} disabled={accountBusy || selectedKeys.length === 0}
+              data-profile-google-signin>
+              {accountBusy ? t.saveToCabinetBusy : t.saveToCabinet}<ArrowRight size={16} aria-hidden="true" />
+            </button>
+            <p>{t.saveToCabinetHelp}</p>
+            <small>{t.guestChoice}</small>
+            {accountError && <p role="alert" className={styles.accountError}>{accountError}</p>}
+          </div>
+        </div>
         <p className={styles.reviewFoot}><LockKeyhole size={16} aria-hidden="true" />{t.readyFoot}</p>
       </section>}
 
-      {step > 0 && <div className={styles.actions}>
-        <button type="button" className={styles.back} onClick={() => setStep(step - 1)}><ArrowLeft size={17} />{t.back}</button>
-        {step < 3
-          ? <button type="button" className={styles.primary} disabled={step === 1 ? areas.length === 0 : selectedAxes.length === 0}
-              onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
-          : step === 3
-            ? <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
-                onClick={goForward} data-profile-review-tests>{t.review}<ArrowRight size={17} /></button>
-            : selectedKeys.length > 0
-              ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
-                  {t.start}<ArrowRight size={17} /></Link>
-              : <button type="button" disabled className={styles.primary}>{t.start}</button>}
-      </div>}
+      <div className={styles.actions}>
+        {step > 0 && <button type="button" className={styles.back} onClick={() => setStep(step - 1)}><ArrowLeft size={17} />{t.back}</button>}
+        {step === 0
+          ? <button type="button" className={styles.primary} disabled={focuses.length === 0}
+              onClick={goForward} data-profile-confirm-focus>{t.next}<ArrowRight size={17} /></button>
+          : step < 3
+            ? <button type="button" className={styles.primary} disabled={step === 1 ? areas.length === 0 : selectedAxes.length === 0}
+                onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
+            : step === 3
+              ? <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
+                  onClick={goForward} data-profile-review-tests>{t.review}<ArrowRight size={17} /></button>
+              : selectedKeys.length > 0
+                ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
+                    {t.start}<ArrowRight size={17} /></Link>
+                : <button type="button" disabled className={styles.primary}>{t.start}</button>}
+      </div>
     </div>
 
     <aside className={styles.privateInfo}>

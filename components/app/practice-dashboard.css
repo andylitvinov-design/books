@@ -1329,3 +1329,21 @@
 .hh-practice-monthly-support-link{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;max-width:100%;padding:12px 15px;margin:10px 0;border:1px solid #d7c3a9;background:#fff8ed;border-radius:13px;color:#624530;font-size:13px;font-weight:800;text-decoration:none}
 .hh-practice-monthly-support-link:hover{background:#fff1dc}
 .hh-practice-monthly-support-link:focus-visible{outline:3px solid #b48756;outline-offset:3px}
+
+/* Mobile service editor: the primary panel is the frame. Avoid nested
+   containers consuming usable width on 320–430px iPhones. */
+@media(max-width:650px){
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor]){
+    width:100%;max-width:none;margin:0;padding:0;
+    background:transparent;border:0;border-radius:0;box-shadow:none;
+  }
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor])>.hh-practice-form-heading{
+    padding:2px 2px 0;margin-bottom:5px;
+  }
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor])>.hh-practice-form-heading h2{
+    font-size:21px;line-height:1.15;
+  }
+  .hh-app .hh-practice-dashboard[data-practice-active] [data-practice-detail-panel="services"]:has([data-service-slide-editor]) .hh-practice-close{
+    min-height:40px;padding:7px 11px;
+  }
+}

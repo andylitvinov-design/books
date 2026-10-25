@@ -7,6 +7,7 @@ import PractitionerCourseBuilder from './practitioner-course-builder'
 import PracticeReportMaterials from './practice-report-materials'
 import dynamic from 'next/dynamic'
 import {normalizeVideoPresentation} from '@/lib/practitioners/presentation-contract.js'
+import {TRADITION_COURSES} from '@/lib/personal-coaching/traditions.js'
 import styles from './practice-materials.module.css'
 
 const CompactVideoComposer=dynamic(()=>import('./compact-video-composer'),{ssr:false})
@@ -18,7 +19,39 @@ const canonicalVideoUrl=value=>{
  try{return normalizeVideoPresentation({kind:'external',url:String(value||'').trim()})?.url||''}
  catch{return ''}
 }
-export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,quickCreateCourse=false,shortcut=null,onTabChange}){
+
+function CoachingAudioFolders({courses,locale,busy,onOpen}) {
+ const lang=['ru','es'].includes(locale)?locale:'en',ru=lang==='ru',es=lang==='es'
+ return <section className={styles.coachingAudioGroup} data-practice-coaching-audio-folders>
+   <div className={styles.coachingAudioHeading}>
+    <span><FolderOpen size={18} aria-hidden="true"/><strong>{ru?'Коучинг':es?'Coaching':'Coaching'}</strong></span>
+    <button type="button" disabled={busy||typeof onOpen!=='function'}
+      onClick={()=>onOpen?.()} data-coaching-audio-open-root>
+      {ru?'Все папки':es?'Todas las carpetas':'All folders'} <ChevronRight size={16} aria-hidden="true"/>
+    </button>
+   </div>
+   <div className={styles.mediaRows}>{courses.map(course=>
+    <button type="button" className={styles.mediaRow} key={course.template}
+      disabled={busy||typeof onOpen!=='function'}
+      onClick={()=>onOpen?.(course.slug)}
+      data-practice-coaching-audio-folder={course.slug}>
+      <span className={styles.materialArtwork}><Headphones size={23} aria-hidden="true"/></span>
+      <span className={styles.mediaRowCopy}>
+       <strong>{course.name[lang]||course.name.en}</strong>
+       <small>{course.totalScreens} {ru?'вопросов':es?'preguntas':'questions'} · RU / EN / ES · MP3 / M4A / WAV</small>
+      </span>
+      <ChevronRight size={19} aria-hidden="true"/>
+    </button>
+   )}</div>
+   <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>
+     {ru?'Исходники приватны. В курсе звучит только запись, которую вы назначили.':
+      es?'Los originales son privados. Solo se escucha el audio que has aprobado.':
+      'Originals stay private. Only your approved recording plays in each lesson.'}
+   </p>
+ </section>
+}
+
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenCoachingAudio,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,quickCreateCourse=false,shortcut=null,onTabChange}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -109,6 +142,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
  const locked=busy||saving
  const visibleVideos=videos.filter(v=>!query||[v.title,v.description,v.locale].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
  const visibleServices=services.filter(v=>!query||[v.localizedCopy?.[locale]?.title,v.copy?.title,v.localizedCopy?.en?.title,v.draftCopy?.copy?.[locale]?.title].join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+ const coachingAudioCourses=isOwner?TRADITION_COURSES.filter(course=>!query||
+   [course.slug,...Object.values(course.name),...Object.values(course.description)]
+     .join(' ').toLocaleLowerCase().includes(query.toLocaleLowerCase())):[]
  const lessonEntries=[
   {id:'flight',ru:'Полёт к Солнцу',en:'Flight to the Sun'},
   {id:'tantra',ru:'Тантра Рейки',en:'Tantra Reiki'},
@@ -197,7 +233,9 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
        <span className={styles.materialArtwork+' '+styles.reikiArtwork}><BookOpen size={24} aria-hidden="true"/></span>
        <span className={styles.mediaRowCopy}><strong>{ru?'Практик Рейки':es?'Practicante de Reiki':'Reiki Practitioner'}</strong><small>{ru?'5 уроков · RU / EN · аудио медитации':es?'5 lecciones · RU / EN · audio':'5 lessons · RU / EN · guided audio'}</small><span className={styles.courseAccess}>{ru?'Открыть уроки':es?'Abrir lecciones':'Open lessons'} <ChevronRight size={13} aria-hidden="true"/></span></span>
        <ChevronRight size={20} aria-hidden="true"/>
-      </button>:<p className={styles.empty}>{ru?'Курс не найден.':es?'Curso no encontrado.':'No matching course.'}</p>}
+      </button>:coachingAudioCourses.length===0?<p className={styles.empty}>{ru?'Курс не найден.':es?'Curso no encontrado.':'No matching course.'}</p>:null}
+     {coachingAudioCourses.length>0&&<CoachingAudioFolders courses={coachingAudioCourses} locale={locale}
+       busy={busy} onOpen={onOpenCoachingAudio}/>}
      <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Аудиозаписи закрыты до вашей публикации.':es?'El audio permanece privado hasta publicarlo.':'Audio stays private until you publish it.'}</p>
     </div>}
     <div className={styles.courseComposer}>
@@ -205,7 +243,10 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     </div>
    </section>:
    tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>
-    <p className={styles.sectionCount}>{audioAction==='record'?(ru?'Выберите урок для записи аудио.':es?'Elige una lección para grabar.':'Choose a lesson to record audio.') :audioAction==='upload'?(ru?'Выберите урок для загрузки.':es?'Elige una lección para subir.':'Choose a lesson to upload.'):(ru?'5 уроков · RU / EN':es?'5 lecciones · RU / EN':'5 lessons · RU / EN')}</p>
+    <p className={styles.sectionCount}>{audioAction==='record'?(ru?'Выберите урок для записи аудио.':es?'Elige una lección para grabar.':'Choose a lesson to record audio.') :audioAction==='upload'?(ru?'Выберите урок для загрузки.':es?'Elige una lección para subir.':'Choose a lesson to upload.'):(ru?'Коучинг и Рейки · аудио по урокам':es?'Coaching y Reiki · audio por lección':'Coaching and Reiki · lesson audio')}</p>
+    {coachingAudioCourses.length>0&&<CoachingAudioFolders courses={coachingAudioCourses} locale={locale}
+       busy={busy} onOpen={onOpenCoachingAudio}/>}
+    <h4 className={styles.reikiAudioHeading}>Reiki Practitioner · {ru?'5 уроков':es?'5 lecciones':'5 lessons'}</h4>
     <div className={styles.mediaRows}>
      {lessonEntries.filter(lesson=>!query||[lesson.en,lesson.ru].join(' ').toLowerCase().includes(query.toLowerCase())).slice(0,showAll||query?5:2).map((lesson,i)=>
       <button key={lesson.id} type="button" className={styles.mediaRow} disabled={busy||typeof onOpenReikiCourse!=='function'} onClick={()=>onOpenReikiCourse?.(lesson.id,audioAction)} data-reiki-audio-shortcut={lesson.id}>

@@ -163,7 +163,7 @@ test('UI reuses authenticated encrypted storage, keeps one question and offers e
   assert.match(ui,/coachingAdaptivePrompt\(/)
   assert.match(ui,/data-coaching-adaptive-prompt/)
   assert.match(ui,/setUseStandardPrompt\(value=>!value\)/)
-  assert.match(ui,/text=\{visiblePrompt\} locale=\{lang\}/)
+  assert.match(ui,/text=\{\[conversationTurn\?\.speech,visiblePrompt\]\.filter\(Boolean\)\.join\(' '\)\} locale=\{lang\}/)
   assert.match(ui,/data-coaching-evidence-recap/)
   assert.match(ui,/data-coaching-recap-key=\{row\.key\}/)
   assert.match(ui,/clipboard\.writeText\(coachingRecapClipboardText/)

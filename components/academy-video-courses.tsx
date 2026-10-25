@@ -247,7 +247,8 @@ function russianPrograms(locale: PublicLocale): AcademyVideoProgram[] {
 export function AcademyVideoCourses({ locale }: { locale: PublicLocale }) {
   const groups: AcademyVideoGroup[] = [
     { language: "en", intro: labels[locale].englishIntro, programs: englishPrograms(locale) },
-    { language: "ru", intro: labels[locale].russianIntro, programs: russianPrograms(locale) },
   ];
+  // Audio language is not changed by a translated title or description.
+  if (locale === "ru") groups.push({ language: "ru", intro: labels[locale].russianIntro, programs: russianPrograms(locale) });
   return <AcademyVideoLibraryClient locale={locale} groups={groups} />;
 }

@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {coachingGentleGuide,coachingQuickChoicesAllowed} from '../lib/personal-coaching/gentle-dialogue.js'
+import {coachingGentleGuide,coachingQuickChoicesAllowed,coachingConversationTurn} from '../lib/personal-coaching/gentle-dialogue.js'
+import ts from 'typescript'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const stages=['goal','outcome','reality','obstacle','scaling','knowhow','resources',
@@ -47,4 +48,203 @@ test('the existing personal and two symbolic runners share the same written-firs
   assert.match(publicUi,/speechConsent=\{speechConsent\}/)
   assert.match(publicUi,/onListeningChange=\{setDictating\}/)
   assert.doesNotMatch(ui+symbolic,/localStorage|sessionStorage|sendBeacon|MediaRecorder/)
+})
+
+
+test('answer-aware coach replies vary by actual choice, words, score, uncertainty and skipped step',()=>{
+  const first={id:'goal',stepKey:'goal',choices:[{id:'clarity',label:{en:'More clarity',ru:'Больше ясности',es:'Más claridad'}},{id:'not_sure',label:{en:'Not sure yet',ru:'Пока не знаю',es:'Aún no lo sé'}}]}
+  const next={id:'reality',stepKey:'reality'}
+  for(const [lang,choice,selected] of [
+    ['en','More clarity','You chose:'],['ru','Больше ясности','Вы выбрали:'],
+    ['es','Más claridad','Elegiste:'],
+  ]){
+    const turn=coachingConversationTurn({question:next,previousQuestion:first,
+      previousAnswer:'choice:clarity',index:1,total:4,locale:lang})
+    assert.equal(turn.quote,choice)
+    assert.equal(turn.response,selected)
+    assert.ok(turn.bridge.length>30)
+    assert.doesNotMatch(turn.speech,new RegExp(choice),'never send the private answer to device TTS')
+    assert.ok(!turn.speech.includes('choice:'))
+  }
+  const uncertain=coachingConversationTurn({question:next,previousQuestion:first,
+    previousAnswer:'choice:not_sure',index:1,total:4,locale:'ru'})
+  assert.match(uncertain.response,/Необязательно/)
+  assert.equal(uncertain.quote,'')
+  const skipped=coachingConversationTurn({question:next,previousQuestion:first,
+    previousAnswer:null,index:1,total:4,locale:'en'})
+  assert.match(skipped.response,/leave that question open/)
+  assert.equal(skipped.quote,'')
+  const opening=coachingConversationTurn({question:first,index:0,total:4,locale:'en'})
+  assert.match(opening.speech,/no perfect answer/i)
+  assert.equal(opening.quote,'')
+  const scale=coachingConversationTurn({question:next,previousQuestion:{type:'scale_0_10'},
+    previousAnswer:'choice:4',index:3,total:5,locale:'en'})
+  assert.equal(scale.quote,'4/10')
+  const forged=coachingConversationTurn({question:next,previousQuestion:first,
+    previousAnswer:'choice:unrecognized',index:1,total:5,locale:'en'})
+  assert.equal(forged.quote,'')
+})
+
+test('spoken coaching reply uses only redacted, bounded user words; reflections override chips',()=>{
+  const now={id:'action',stepKey:'will'}
+  const prior={choices:[{id:'a',label:{en:'Option A'}}]}
+  const written=coachingConversationTurn({question:now,previousQuestion:prior,
+    previousAnswer:'choice:a',previousReflection:'I want a small experiment on Tuesday',
+    index:3,total:4,locale:'en'})
+  assert.equal(written.quote,'I want a small experiment on Tuesday')
+  assert.match(written.response,/put it this way/)
+  const long='Talk to person@example.com on https://example.com about '+('specific words '.repeat(20))+' +1 416 555 3310'
+  const safe=coachingConversationTurn({question:now,previousAnswer:long,index:3,total:4,locale:'en'})
+  assert.ok(safe.quote.length<=97)
+  assert.ok(!safe.speech.includes('person@example.com'))
+  assert.ok(!safe.speech.includes('https://'))
+  assert.ok(!safe.speech.includes('specific words'))
+  const symbolic=coachingConversationTurn({question:now,previousQuestion:prior,
+    previousAnswer:{choiceId:'a',note:'I could ask for feedback'},index:3,total:4,locale:'en'})
+  assert.equal(symbolic.quote,'I could ask for feedback')
+  const urgent=coachingConversationTurn({question:now,previousAnswer:'I might kill myself',
+    index:2,total:4,locale:'en'})
+  assert.equal(urgent.quote,'')
+  assert.match(urgent.response,/urgent local help/)
+  assert.ok(!urgent.speech.includes('kill myself'))
+  const followup=coachingConversationTurn({question:prior,previousQuestion:prior,
+    previousAnswer:'choice:a',index:0,total:5,locale:'en',followup:true})
+  assert.equal(followup.quote,'Option A')
+  assert.match(followup.bridge,/Before we move on/)
+})
+
+test('guest, signed-in and Egyptian/Greek runners share contextual visibly spoken turns',()=>{
+  const guest=source('components/public-coaching-discovery.jsx')
+  const signed=source('components/app/personal-coaching.jsx')
+  const symbolic=source('components/app/tradition-coaching.jsx')
+  const component=source('components/coaching-dialogue-turn.jsx')
+  const css=source('components/coaching-dialogue-turn.module.css')
+  for(const [name,ui] of [['guest',guest],['personal',signed],['tradition',symbolic]]){
+    assert.match(ui,/coachingConversationTurn\(\{/,'context derived in '+name)
+    assert.match(ui,/<CoachingChatThread turn=\{conversationTurn\}/,'chat-shaped reviewed reply in '+name)
+    assert.match(ui,/data-coaching-composer/,'editable messenger-style composer: '+name)
+    assert.match(ui,/conversationTurn\?\.speech/,'same reply read aloud in '+name)
+    assert.match(ui,/previousAnswer:/,'previous answer from session in '+name)
+    assert.doesNotMatch(ui,/dangerouslySetInnerHTML/,'no raw HTML echo in '+name)
+    const file=name==='guest'?'components/public-coaching-discovery.jsx':
+      name==='personal'?'components/app/personal-coaching.jsx':'components/app/tradition-coaching.jsx'
+    const parsed=ts.createSourceFile(file,ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+    assert.equal(parsed.parseDiagnostics.length,0,name+' JSX syntax')
+  }
+  for(const ui of [guest,signed]){
+    assert.match(ui,/<CoachingChatThread turn=\{followupTurn\}/)
+    assert.match(ui,/followupTurn\?\.speech/)
+  }
+  assert.match(component,/data-coaching-conversational-turn/)
+  assert.match(component,/<q className=\{styles\.quote\}>/)
+  assert.doesNotMatch(component,/dangerouslySetInnerHTML/)
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.match(css,/overflow-wrap:anywhere/)
+  const parsed=ts.createSourceFile('components/coaching-dialogue-turn.jsx',component,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0)
+})
+
+
+test('explicit mixed desire/concern gets a correctable coaching reflection in three locales',()=>{
+  const next={id:'reality',stepKey:'reality'}
+  const cases=[
+    ['en','I want to change jobs but I am worried about leaving the team','It sounds like'],
+    ['ru','Я хочу сменить работу, но боюсь подвести свою команду','Похоже, здесь'],
+    ['es','Quiero cambiar de trabajo pero me preocupa dejar el equipo','Parece que'],
+  ]
+  for(const [lang,answer,phrase] of cases){
+    const turn=coachingConversationTurn({question:next,previousAnswer:answer,index:2,total:6,locale:lang})
+    assert.ok(turn.coachReply.includes(phrase),lang)
+    assert.ok(turn.quote.length<=97)
+    assert.ok(!turn.speech.includes(answer),'no raw user words in TTS')
+    assert.doesNotMatch(turn.coachReply,/[?!]$/,'not a second question')
+  }
+  const neutral=coachingConversationTurn({question:next,previousAnswer:'I am unsure which lunch to order',index:1,total:4})
+  assert.doesNotMatch(neutral.coachReply,/wish for change/)
+  const vague=coachingConversationTurn({question:next,previousAnswer:'Не знаю, что сказать',index:1,total:4,locale:'ru'})
+  assert.equal(vague.quote,'')
+  assert.match(vague.coachReply,/Необязательно знать/)
+  const safety=coachingConversationTurn({question:next,previousAnswer:'Я хочу сменить работу и боюсь покончить с собой',index:2,total:6,locale:'ru'})
+  assert.equal(safety.quote,'')
+  assert.doesNotMatch(safety.coachReply,/желание перемен/)
+})
+
+test('the new dialogue layout separates bounded user excerpts from the coach reply',()=>{
+  const component=source('components/coaching-dialogue-turn.jsx')
+  const css=source('components/coaching-dialogue-turn.module.css')
+  const helper=source('lib/personal-coaching/gentle-dialogue.js')
+  assert.match(component,/data-coaching-client-bubble/)
+  assert.match(component,/data-coaching-reply-bubble/)
+  assert.match(component,/turn\.coachReply\|\|turn\.response/)
+  assert.match(component,/<q className=\{styles\.quote\}>/)
+  assert.match(css,/max-width:89%/)
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.doesNotMatch(helper+component,/fetch\(|sendBeacon|dangerouslySetInnerHTML/)
+  const parsed=ts.createSourceFile('components/coaching-dialogue-turn.jsx',component,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0)
+})
+
+
+test('all runners use one accessible, localized coach portrait chat and only reviewed excerpts',()=>{
+  const thread=source('components/coaching-chat-thread.jsx')
+  const css=source('components/coaching-chat-thread.module.css')
+  assert.match(thread,/data-coaching-chat-thread/)
+  assert.match(thread,/data-coaching-chat-user-turn/)
+  assert.match(thread,/data-coaching-chat-coach-turn/)
+  assert.match(thread,/portrait-static\/andy-96-b9d7800d1448\.webp/)
+  assert.match(thread,/typeof turn\?\.quote==='string'/,'never echo unsanitized user input')
+  assert.doesNotMatch(thread,/previousReply|sessionStorage|localStorage|fetch\(|sendBeacon|dangerouslySetInnerHTML/)
+  assert.match(thread,/turn\.coachReply\|\|turn\.response/,'retain latest QA editorial coach reply')
+  for(const language of ['Self-guided session · not a live chat',
+    'Самостоятельная сессия · не живой чат',
+    'Sesión autoguiada · no es un chat en vivo'])
+    assert.ok(thread.includes(language))
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.match(css,/@media\(max-width:350px\)/)
+  assert.match(css,/overflow-wrap:anywhere/)
+  const parsed=ts.createSourceFile('components/coaching-chat-thread.jsx',thread,
+    ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  assert.equal(parsed.parseDiagnostics.length,0)
+})
+
+test('real messenger layout docks message editing below the timeline across all coaching modes',()=>{
+  const guest=source('components/public-coaching-discovery.jsx')
+  const personal=source('components/app/personal-coaching.jsx')
+  const tradition=source('components/app/tradition-coaching.jsx')
+  const thread=source('components/coaching-chat-thread.jsx')
+  const voice=source('components/app/coaching-question-voice.jsx')
+  const guestCss=source('components/public-coaching-discovery.module.css')
+  const personalCss=source('components/app/personal-coaching.module.css')
+  const symbolicCss=source('components/app/tradition-coaching.module.css')
+
+  for(const [kind,ui] of [['guest',guest],['personal',personal],['symbolic',tradition]]){
+    assert.match(ui,/data-coaching-messenger-footer/,kind+' has anchored reply footer')
+    assert.match(ui,/data-coaching-composer/,kind+' has editable reply composer')
+    assert.match(ui,/<CoachingQuestionVoice[^>]*compact/,kind+' has compact voice controls')
+    const chatIndex=ui.indexOf('<CoachingChatThread turn={conversationTurn}')
+    const composerIndex=ui.lastIndexOf('data-coaching-composer')
+    assert.ok(chatIndex>=0&&composerIndex>chatIndex,kind+' question is in timeline above composer')
+    const parse=ts.createSourceFile(kind+'.jsx',ui,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+    assert.equal(parse.parseDiagnostics.length,0,kind+' valid JSX')
+  }
+  assert.match(guest,/data-coaching-quick-replies/)
+  assert.match(guest,/data-public-coaching-open-reflection/)
+  assert.match(guest,/public-coaching-followup-report-note/)
+  assert.match(guest,/public-coaching-report-note/)
+  assert.match(personal,/data-coaching-authored-followup/)
+  assert.match(personal,/data-coaching-one-question/)
+  assert.match(tradition,/data-tradition-open-reflection/)
+  assert.match(thread,/data-coaching-chat-draft/)
+  assert.match(thread,/data-coaching-chat-user-turn/)
+  assert.match(thread,/data-coaching-chat-coach-turn/)
+  assert.match(thread,/Portrait of Andrey/)
+  assert.match(voice,/data-coaching-voice-compact/)
+  assert.match(voice,/aria-label={t.voiceSettings}/)
+
+  for(const css of [guestCss,personalCss,symbolicCss]){
+    assert.match(css,/data-coaching-messenger-footer/)
+    assert.match(css,/safe-area-inset-bottom|footer/)
+    assert.match(css,/@media\(max-width:430px\)/)
+  }
+  assert.doesNotMatch(guest+personal+tradition+thread,/dangerouslySetInnerHTML|sendBeacon|localStorage|sessionStorage/)
 })

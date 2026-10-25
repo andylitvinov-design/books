@@ -144,3 +144,52 @@ test('real immersive start retains owner/course guards and paused-capacity disab
     paused.unmount()
   }
 })
+
+
+for (const locale of ['en', 'ru', 'es']) {
+  test(`saved ${locale} Anti-Stress progress resumes directly into the existing alternating 14-day quest path`, async () => {
+    const data = snapshot('course-a', 'cycle-a', {
+      cycle: { ...dailyView().cycle, day: 2 },
+      progress: { practiceCount: 1, days: [{ day: 1 }] },
+      roadmap: [
+        { day: 1, title: 'Saved practice', status: 'completed' },
+        { day: 2, title: 'Next practice', status: 'today' },
+        { day: 3, title: 'Upcoming practice', status: 'upcoming' },
+      ],
+    })
+    const h = mount('course-today', {
+      props: { locale, accountId: 'owner-a', courseId: 'course-a' },
+      fetcher: () => data,
+    })
+    try {
+      await h.settle()
+      assert.equal(h.tree.props['data-course-view'], 'path')
+      assert.ok(findPart(h.tree, 'CourseQuestMap'))
+      assert.equal(nodes(h.tree).some(node => node.props['data-course-scenic-hero'] !== undefined), false)
+      assert.equal(primary(h), undefined)
+      const today = nodes(h.tree).find(node => node.type === 'button' && node.props['aria-pressed'] === false &&
+        textOf(node).trim() === (locale === 'ru' ? 'Сегодня' : 'Today'))
+      assert.ok(today, 'Today remains an available tab')
+      today.props.onClick()
+      await h.settle()
+      assert.equal(h.tree.props['data-course-view'], 'today')
+      assert.ok(nodes(h.tree).some(node => node.props['data-course-scenic-hero'] !== undefined))
+      assert.equal(h.calls.filter(call => call.body).length, 0, 'navigation must not save a lesson')
+    } finally { h.unmount() }
+  })
+}
+
+test('Anti-Stress continuation with an elapsed day but no saved lesson still begins on the path', async () => {
+  const h = mount('course-today', {
+    props: { locale: 'en', accountId: 'owner-a', courseId: 'course-a' },
+    fetcher: () => snapshot('course-a', 'cycle-a', {
+      cycle: { ...dailyView().cycle, day: 2 },
+      progress: { practiceCount: 0, days: [] },
+    }),
+  })
+  try {
+    await h.settle()
+    assert.equal(h.tree.props['data-course-view'], 'path')
+    assert.ok(findPart(h.tree, 'CourseQuestMap'))
+  } finally { h.unmount() }
+})

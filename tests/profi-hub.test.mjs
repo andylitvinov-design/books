@@ -31,6 +31,28 @@ test('Pro TSX parses with no syntax diagnostics in all three locales',()=>{
 })
 const css = read('components/profi-hub.module.css')
 
+test('Pro cards keep photos left, inline pills, and accessible 320px actions',()=>{
+  const cardCss=css.slice(css.indexOf('/* 2026-10-25: same photo-left'))
+  assert.ok(cardCss.length>1500,'current photo-left Pro skin should be present')
+  assert.match(cardCss,/\.offerGrid\{\s*display:grid;grid-template-columns:1fr/)
+  assert.match(cardCss,/\.offerOptionHeader\{display:contents\}/)
+  assert.match(cardCss,/\.offerOptionHeader \.offerThumb\{\s*grid-column:1;grid-row:1\/span 2/)
+  assert.match(cardCss,/\.offerActions\{\s*grid-column:2;grid-row:2;display:grid/)
+  assert.match(cardCss,/\.offerExpanded\{\s*grid-column:1\/-1;grid-row:3/)
+  assert.match(cardCss,/border-radius:999px/)
+  assert.match(cardCss,/@media\(max-width:600px\)/)
+  assert.match(cardCss,/@media\(max-width:359px\)/)
+  assert.match(cardCss,/min-height:44px/)
+  for(const locale of ['en','ru','es']){
+    const view=mount(locale).render()
+    for(const key of ['diagnostic','energy','meditation','personal']){
+      const card=find(view,'data-profi-offer',key)
+      assert.equal(find(card,'data-profi-offer-details',key).props['aria-expanded'],false)
+      assert.ok(find(card,'data-profi-selected-offer',key).props.href.includes('/app/practice?'))
+    }
+  }
+})
+
 test('every Pro card has existing locally-hosted photography and a real action',()=>{
   const photographs=[...hub.matchAll(/"(\/images\/holistic-house\/[^"]+\.(?:webp|avif))"/g)].map(match=>match[1])
   assert.ok(photographs.length>=10)
@@ -49,14 +71,19 @@ test('every Pro card has existing locally-hosted photography and a real action',
     }
     assert.ok(find(view,'data-profi-action','start-course-overview'),'direct course CTA above the fold')
     assert.equal(find(view,'data-profi-path','practice').props.href,'#profi-practice')
-    for(const key of ['session','intro','workshop','course']){
+    for(const key of ['diagnostic','energy','meditation','personal']){
       const offer=find(view,'data-profi-offer',key)
       assert.ok(nodes(offer).some(node=>node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')),'offer image at left: '+key)
     }
-    const preview=find(view,'data-profi-preview','session')
-    assert.ok(nodes(preview).some(node=>node.type==='img' && String(node.props?.src||'').startsWith('/images/holistic-house/')))
-    assert.equal(nodes(preview).filter(node=>node.props?.className==='fakeButton').length,0)
-    assert.equal(find(view,'data-profi-action','create-service').props.prefetch,false)
+    assert.equal(nodes(view).filter(node=>node.props?.['data-profi-preview']!==undefined).length,0)
+    for(const key of ['diagnostic','energy','meditation','personal']){
+      const option=find(view,'data-profi-offer',key)
+      const details=find(option,'data-profi-offer-details',key)
+      const create=find(option,'data-profi-selected-offer',key)
+      assert.equal(details.props['aria-expanded'],false)
+      assert.equal(create.props.prefetch,false)
+      assert.equal(create.type,'a')
+    }
   }
   assert.match(css,/\.profileEntryPhoto/)
   assert.match(css,/\.lessonThumb/)
@@ -126,19 +153,21 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
   assert.match(hub,/locale === "es" \? "en" : locale/)
 })
 
-test('bottom bar and hamburger replace Tests with Pro while keeping six usable links',()=>{
-  const expected=['home','profile','coaching','insights','support','pro']
+test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
+  const expected=['home','analysis','courses','profile','coaching','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
-    assert.equal(nav.at(-1).href,'/'+locale+'/pro')
+    assert.equal(nav.at(-2).href,'/'+locale+'/pro')
+    assert.equal(nav.at(-1).href,'/'+locale+'/holistic-support')
     assert.equal(getSiteNavigation(locale).find(x=>x.id==='pro')?.href,'/'+locale+'/pro')
     assert.equal(activeCompactNavigationId('/'+locale+'/pro'),'pro')
   }
   assert.match(read('components/compact-navigation-icons.ts'),/pro: GraduationCap/)
+  assert.match(read('components/compact-navigation-icons.ts'),/temple: Landmark/)
   assert.match(read('components/mobile-bottom-navigation.tsx'),/getCompactNavigation\(locale\)/)
-  assert.match(read('app/ia-v2.css'),/repeat\(6,minmax\(0,1fr\)\)/)
-  assert.match(read('app/holistic-house-home.css'),/repeat\(6, minmax\(0,1fr\)\)/)
+  assert.match(read('app/ia-v2.css'),/repeat\(7,minmax\(0,1fr\)\)/)
+  assert.match(read('app/holistic-house-home.css'),/repeat\(7, minmax\(0,1fr\)\)/)
 })
 
 
@@ -183,6 +212,20 @@ test('Pro keeps learning, practitioner offers and profiles visible in one scroll
   }
 })
 
+test('Pro does not show the redundant Learn / Develop / Share roadmap in EN, RU or ES',()=>{
+  assert.doesNotMatch(hub,/profi-after-learning|styles\.nextStage|t\.afterTitle|t\.after\.map|data-profi-action="advanced-reiki"/)
+  for(const text of ['How to move from learning to practice','Как перейти от учёбы к практике','De aprender a ejercer']){
+    assert.ok(!hub.includes(text),'obsolete roadmap copy: '+text)
+  }
+  for(const locale of ['en','ru','es']){
+    const tree=mount(locale).render()
+    assert.equal(nodes(tree).filter(node=>node.props?.id==='profi-after-learning').length,0,locale)
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-learning')),locale+': learning path retained')
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-practice')),locale+': practitioner offers retained')
+    assert.equal(nodes(tree).filter(node=>node.props?.['data-profi-paid-program']!==undefined).length,3,locale+': advanced training remains available')
+  }
+})
+
 test('actual interactive learner track explores five steps but launches only existing training',()=>{
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
@@ -199,37 +242,70 @@ test('actual interactive learner track explores five steps but launches only exi
   }
 })
 
-test('offer studio really switches all four starter destinations, not fake publish forms',()=>{
+test('all four Pro offers link directly to the right existing editor; Details expands in place',()=>{
   const choices=[
-    ['session','?panel=services&create=1&starter=session','create-service'],
-    ['intro','?panel=services&create=1&starter=intro','create-service'],
-    ['workshop','?panel=services&create=1&starter=workshop','create-service'],
-    ['course','?panel=materials&materialTab=courses&create=1','create-course'],
+    ['diagnostic','?panel=services&create=1&starter=diagnostic','create-service'],
+    ['energy','?panel=services&create=1&starter=energy','create-service'],
+    ['meditation','?panel=materials&materialTab=courses&create=1','create-course'],
+    ['personal','?panel=services&create=1&starter=personal','create-service'],
   ]
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
-    assert.ok(nodes(widget.render()).some(x=>Object.hasOwn(x.props||{},'data-profi-practice')))
+    const root='/'+(locale==='es'?'en':locale)+'/app/practice'
     for(const [kind,url,action] of choices){
       let tree=widget.render()
-      find(tree,'data-profi-offer',kind).props.onClick()
+      let card=find(tree,'data-profi-offer',kind)
+      let details=find(card,'data-profi-offer-details',kind)
+      const create=find(card,'data-profi-selected-offer',kind)
+      assert.equal(create.props.href,root+url)
+      assert.equal(create.props['data-profi-action'],action)
+      assert.equal(create.props.prefetch,false)
+      assert.equal(details.props['aria-expanded'],false)
+      assert.equal(find(card,'data-profi-offer-expanded',kind).props.hidden,true)
+      details.props.onClick()
       tree=widget.render()
-      const preview=find(tree,'data-profi-preview',kind)
-      assert.ok(preview,'offer preview is selected: '+kind)
-      const link=find(tree,'data-profi-action',action)
-      assert.ok(link)
-      assert.equal(link.props.href,'/'+(locale==='es'?'en':locale)+'/app/practice'+url)
-      assert.equal(link.props['data-profi-selected-offer'],kind)
-      assert.equal(nodes(tree).filter(x=>x.props && Object.hasOwn(x.props,'data-profi-step')).length,4)
-      assert.ok(nodes(tree).some(x=>x.props?.['data-profi-money-model']!==undefined))
+      card=find(tree,'data-profi-offer',kind)
+      details=find(card,'data-profi-offer-details',kind)
+      assert.equal(details.props['aria-expanded'],true)
+      assert.equal(find(card,'data-profi-offer-expanded',kind).props.hidden,false)
+      assert.equal(nodes(tree).filter(x=>x.props?.['data-profi-preview']!==undefined).length,0)
+      assert.equal(nodes(tree).filter(x=>x.props?.['data-profi-step']!==undefined).length,0)
+      details.props.onClick()
     }
+    assert.ok(nodes(widget.render()).some(x=>x.props?.['data-profi-money-model']!==undefined))
   }
+})
+
+test('Master offer choices are localized, non-medical, and backed by approved service types',()=>{
+  const labels={
+    en:['Personal diagnostics','Energy support','Create a meditation course','Personal service'],
+    ru:['Персональная диагностика','Энергетическая поддержка','Создать онлайн-курс медитации','Персональная услуга'],
+    es:['Diagnóstico personal','Apoyo energético','Crear un curso de meditación','Servicio personal'],
+  }
+  const keys=['diagnostic','energy','meditation','personal']
+  for(const locale of ['en','ru','es']){
+    const view=mount(locale).render()
+    keys.forEach((key,index)=>{
+      const option=find(view,'data-profi-offer',key)
+      assert.ok(JSON.stringify(option).includes(labels[locale][index]),locale+': '+key)
+      assert.equal(option.type,'article')
+      assert.equal(find(option,'data-profi-offer-details',key).props.type,'button')
+      assert.equal(find(option,'data-profi-selected-offer',key).type,'a')
+    })
+  }
+  assert.match(editor,/diagnostic: \{ areaKey:'personal_development', offeringType:'assessment'/)
+  assert.match(editor,/energy: \{ areaKey:'energy_spiritual', offeringType:'session'/)
+  assert.match(editor,/personal: \{ areaKey:'personal_development', offeringType:'session'/)
+  assert.match(hub,/not a medical diagnosis or treatment/)
+  assert.match(hub,/Это не медицинский диагноз или лечение/)
+  assert.match(hub,/No es un diagnóstico ni un tratamiento médico/)
 })
 
 test('safe Google OAuth continuation validates and maps only categorical Pro intents',()=>{
   assert.match(app,/page === 'practice' \? \{ continueTo: 'my-practice'/)
   assert.match(app,/proPanel === 'services' && proCreate/)
   assert.match(auth,/onlyKeys\(body, \[[^\]]*'profi'[^\]]*\]\)/)
-  assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'course', 'profile', 'requests'\]/g)||[]).length,2)
+  assert.equal((auth.match(/continueTo !== 'my-practice' \|\| !\['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'\]/g)||[]).length,2)
   assert.match(auth,/profi === 'course' \? '\?panel=materials&materialTab=courses&create=1'/)
   assert.match(auth,/profi === 'profile' \? '\?panel=profile'/)
   assert.match(auth,/profi === 'requests' \? '\?panel=requests'/)
@@ -240,10 +316,10 @@ test('safe Google OAuth continuation validates and maps only categorical Pro int
 test('actual protected editors open the requested draft without saving before user confirmation',()=>{
   assert.match(practice,/params\.get\('create'\)==='1'/)
   assert.match(practice,/setNewServiceRequest\(current=>current\+1\)/)
-  assert.match(practice,/setProStarter\(\['session','intro','workshop'\]\.includes/)
+  assert.match(practice,/setProStarter\(\['session','intro','workshop','diagnostic','energy','personal'\]\.includes/)
   assert.match(practice,/quickCreateCourse=\{proCourseStart\}/)
   assert.match(practice,/starter=\{item\?null:starter\}/)
-  for(const kind of ['session','intro','workshop']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
+  for(const kind of ['diagnostic','energy','personal']) assert.match(editor,new RegExp('  '+kind+': \\{ areaKey:'))
   assert.match(editor,/!item && Object\.hasOwn\(PRO_STARTERS,starter\)/)
   assert.match(editor,/onSaveAndSubmit\(item\?\.id\|\|null,makePayload\(\),item\?\.revision\)/)
   assert.match(materials,/setCourseComposerOpen\(true\)/)
@@ -263,10 +339,10 @@ test('earning promise stays honest; mobile and accessibility are deliberate',()=
     assert.ok(hub.toLowerCase().includes(phrase.toLowerCase()) || phrase==='Checkout' && hub.includes('checkout'),
       phrase)
   }
-  assert.match(hub,/не даёт профессиональной квалификации/)
+  assert.match(hub,/Pricing, qualifications and legal eligibility are your responsibility/)
   assert.match(hub,/<nav className=\{styles.pathControls\} aria-label=\{t.choose\}/)
   assert.match(hub,/href="#profi-practice"/)
-  assert.match(hub,/aria-pressed=\{offer === key\}/)
+  assert.match(hub,/aria-expanded=\{isExpanded\}/)
   assert.match(css,/@media\(max-width:359px\)/)
   assert.match(css,/@media\(max-width:600px\)/)
   assert.match(css,/prefers-reduced-motion/)
@@ -300,14 +376,14 @@ test('Pro starts with three localized, accessible paths, including real mentor d
   const masters = read('app/[locale]/masters/page.tsx')
   const switcher = read('components/mentor-community-switch.tsx')
   assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
-  assert.match(switcher,/initialView \?\? \(hasArticles \? "articles" : "mentors"\)/)
+  assert.match(switcher,/initialView \?\? \(hasArticles \|\| hasServices \? "articles" : "mentors"\)/)
   assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.finderPhoto\{/)
   for(const locale of ['en','ru','es']){
     const tree=mount(locale).render()
     const paths=nodes(tree).filter(x=>x.props?.['data-profi-path']!==undefined)
     assert.deepEqual(paths.map(x=>x.props['data-profi-path']),['find','learn','practice'])
-    assert.equal(paths[0].props.href,'/'+locale+'/masters?view=mentors')
+    assert.equal(paths[0].props.href,'#profi-find-master')
     assert.equal(paths[0].props.prefetch,false)
     assert.equal(paths[1].props.href,'#profi-learning')
     assert.equal(paths[2].props.href,'#profi-practice')
@@ -316,6 +392,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     assert.ok(nodes(tree).some(x=>Object.hasOwn(x.props||{},'data-profi-finder')))
     assert.ok(paths.every(x=>x.type==='a' || typeof x.type==='function'))
   }
+  assert.match(hub,/data-profi-master-directory/)
   assert.match(hub,/findChoice: "Найти мастера"/)
   assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
   assert.match(hub,/proChoice: "Я уже мастер — предложить услуги"/)

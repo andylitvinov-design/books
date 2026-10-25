@@ -1,0 +1,7 @@
+.player{display:grid;gap:7px;margin:8px 0 10px;padding:10px 12px;
+ background:linear-gradient(120deg,#fcf8ef,#e9f5f1);border:1px solid #e1d7c3;border-radius:12px;color:#574636}
+.player strong{display:flex;align-items:center;gap:7px;font-size:12px}.player strong svg{color:#147a74}
+.player audio{width:100%;min-height:45px}.player span{font-size:12px}
+.player button{justify-self:start;min-height:42px;border:1px solid #75a7a0;color:#075d59;background:#fff;
+ border-radius:8px;padding:8px 12px;display:inline-flex;align-items:center;gap:7px}
+.player button:focus-visible{outline:3px solid #08766f;outline-offset:2px}

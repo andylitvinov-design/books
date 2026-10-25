@@ -449,7 +449,7 @@ try {
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-          assert.equal(panelHeights.length, 9, "Nine compact Alchemy chapters including featured video");
+          assert.equal(panelHeights.length, 8, "Eight compact Alchemy panels");
           if (panelHeights.some(p => p.height > p.max)) {
             try {
               await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
@@ -528,7 +528,8 @@ try {
     }
   }
 
-  // The three free paths now share a photo-led landing and an actual independent entry.
+  // Read-only EN/RU/ES acceptance for the CURRENT three free entry routes.
+  // Never submit a visitor form: a clicked CTA is neither a CRM lead nor a booking.
   for (const locale of ["en", "ru", "es"]) {
     for (const [kind, slug, captureId] of [
       ["tests", "tests", "start-free"],
@@ -537,84 +538,88 @@ try {
     ]) {
       for (const width of [320, 360, 390, 1188]) {
         const page = await createPage(width);
-        await page.goto(origin + "/" + locale + "/" + slug, { waitUntil: "networkidle" });
+        await page.goto(origin + "/" + locale + "/" + slug, { waitUntil: "domcontentloaded" });
         const main = page.locator('main[data-free-entry-landing="' + kind + '"]');
-        await visible(main.locator('h1'));
+        await visible(main.locator("h1"));
         await assertNoDevIssueOverlay(page, locale + "/" + slug + "/" + width);
         await assertViewport(page, locale + "/" + slug + "/" + width);
-
         const hero = main.locator('section[aria-labelledby="free-entry-title"]');
-        await visible(hero.locator('img'));
-        await visible(main.locator('#what-you-get'));
-        await visible(main.locator('#how-it-works'));
-        const capture = main.locator('#' + captureId);
-        await visible(capture);
-        assert.ok((await hero.innerText()).length > 150, "First screen must explain value before an enquiry");
-        assert.ok(!(await hero.innerText()).includes("€100"), "A free hero must not be a paid consultation upsell");
-
-        if (width <= 390) {
-          const panelHeights = await page.evaluate(() => {
-            const names = {
-              hero: 'section[aria-labelledby="free-entry-title"]',
-              outcomes: '#what-you-get',
-              process: '#how-it-works',
-            };
-            return Object.entries(names).map(([name, selector]) => {
-              const el = document.querySelector(selector);
-              return { name, height: Math.ceil(el?.getBoundingClientRect().height ?? 9999),
-                max: window.innerHeight - 66 };
-            });
-          });
-          assert.deepEqual(panelHeights.filter((item) => item.height > item.max), [],
-            "Each photo-led mobile section should fit within one screen: " + JSON.stringify(panelHeights));
-        }
+        assert.ok((await hero.locator("h1").innerText()).trim().length > 15, "Heading must name a real offer");
+        assert.ok(!(await hero.innerText()).includes("€100"), "No misleading paid upsell in the free hero");
 
         if (kind === "tests") {
+          await visible(hero.locator("img"));
+          await visible(main.locator("#what-you-get"));
+          await visible(main.locator("#how-it-works"));
           await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
-          assert.equal(await main.locator('[data-free-resource-enquiry]').count(), 0,
-            "Tests begin in the existing private test explorer, not a fake contact form");
+          const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
+          await visible(capture);
+          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false);
+        } else if (kind === "dao") {
+          await visible(hero.locator("img"));
+          await visible(main.locator("#what-you-get"));
+          assert.equal(await main.locator("#how-it-works").count(), 0,
+            "The compact Wu Xing journey does not repeat an unused process slide");
+          const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
+          await visible(capture);
+          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(), false,
+            "Consent must remain an explicit, unchecked action");
         } else {
-          const form = main.locator('[data-free-resource-enquiry="' + kind + '"]');
-          await visible(form);
-          assert.equal(await form.locator('select').count(), 1);
-          assert.equal(await form.locator('input[type="text"]').count(), 1);
-          assert.equal(await form.locator('textarea').count(), 1);
-          const markerA = "Synthetic name marker - " + locale + "/" + kind;
-          const markerB = "Synthetic private context marker - " + locale + "/" + kind;
-          await form.locator('input[type="text"]').fill(markerA);
-          await form.locator('textarea').fill(markerB);
-          await visible(form.getByRole('button', {name: locale === "ru" ? "Скопировать мой запрос" : locale === "es" ? "Copiar mis detalles" : "Copy my details"}));
-          const chooser = await openRegisteredContactChannelChooser(form, expect, page);
-          const { whatsappUrl, telegramUrl } = await assertPreparedContactChannels(chooser, expect);
-          assert.ok((whatsappUrl.searchParams.get("text") || "").length > 40);
-          for (const marker of [markerA, markerB]) {
-            assert.ok(!whatsappUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in WhatsApp URL");
-            assert.ok(!telegramUrl.searchParams.get("text")?.includes(marker), "Private note must not leak in Telegram URL");
-            assert.ok(!decodeURIComponent(page.url()).includes(marker), "Private note must not leak in page URL");
-          }
-          if (kind === "situation") {
-            const detailedForm = main.locator('[data-free-drawing-intake]');
-            await detailedForm.waitFor({ state: "hidden" });
-            const details = main.locator('details').filter({ has: detailedForm });
-            assert.equal(await details.evaluate((element) => element.open), false,
-              "The real hand-drawn situation questionnaire is available but initially compact");
-            if (width === 390) {
-              await details.locator(':scope > summary').click();
-              await visible(detailedForm);
-              await detailedForm.locator('textarea').nth(0).fill(markerA);
-              await detailedForm.locator('textarea').nth(1).fill(markerB);
-              await detailedForm.locator('form button[type="submit"]').click();
-              const ready = detailedForm.locator('[role="region"]');
-              await visible(ready);
-              const intakeChannels = await openRegisteredContactChannelChooser(ready, expect, page);
-              const prepared = await assertPreparedContactChannels(intakeChannels, expect);
-              for (const marker of [markerA, markerB]) {
-                assert.ok(!prepared.whatsappUrl.searchParams.get("text")?.includes(marker));
-                assert.ok(!prepared.telegramUrl.searchParams.get("text")?.includes(marker));
-              }
-            }
+          const featured = main.locator("[data-featured-constellations-video]");
+          await visible(featured);
+          assert.equal(await featured.locator("iframe").count(), 0,
+            "Approved YouTube recording never autoplays before opt-in");
+          const offers = main.locator("[data-diagnosis-offer]");
+          assert.equal(await offers.count(), 3,
+            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
+          assert.equal(await offers.locator("img").count(), 3,
+            "Each diagnosis option has its own real photograph");
+          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
+          await visible(chooser);
+          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
+            "Free situation option reuses the existing coaching questionnaire funnel");
+          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
+            "No duplicate lead is created before the questionnaire is sent");
+
+          const details = offers.nth(1).locator("details");
+          await details.locator("summary").click();
+          assert.equal(await details.evaluate(el => el.open), true,
+            "Details disclose the Wu Xing offer inline");
+          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
+          await visible(chooser.locator("[data-service-lead-capture]"));
+          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
+          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
+          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
+            "An offer click does not create a CRM lead, booking or payment");
+
+          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
+          await visible(chooser.locator("[data-free-diagnostic-start]"));
+          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
+            "Switching back to the written review restores the single secure funnel");
+
+          const writtenIntake = main.locator("[data-optional-written-review]");
+          assert.equal(await writtenIntake.evaluate(el => el.open), false);
+          if (width === 390) {
+            await writtenIntake.locator(":scope > summary").click();
+            const preview = writtenIntake.locator("[data-free-drawing-intake]");
+            await visible(preview);
+            await visible(preview.locator('a[href="/' + locale + '/coaching/intake?topic=personal"]'));
+            assert.equal(await preview.locator("form,textarea").count(), 0,
+              "The private answers are entered only in the protected questionnaire");
+            assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
+              "Expanded information must fit the phone width");
+
+            const hub = await page.context().newPage();
+            await hub.setViewportSize({width, height: 844});
+            await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
+            assert.equal(await hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]").count(), 3,
+              "The free consultation hub reuses the same three offers");
+            assert.equal(await hub.locator("[data-free-consultation-hub] [data-free-diagnostic-start]").count(), 1,
+              "The hub offers the secure free questionnaire without a second CRM form");
+            await hub.close();
           }
         }
+        await assertViewport(page, locale + "/" + slug + "/" + width + "/after-actions");
         if (width === 390 || width === 1188) {
           await page.screenshot({path: output + "/free-" + kind + "-" + locale + "-hero-" + width + ".png", fullPage: false});
         }

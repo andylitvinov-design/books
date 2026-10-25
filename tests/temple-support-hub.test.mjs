@@ -6,7 +6,7 @@ import { safePublicWhatsAppPath } from "../lib/whatsapp-enquiry.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Temple Support is the seventh public tab and preserves separate Temple Insights", () => {
+test("Holistic Support is the seventh public tab and preserves separate Temple Insights", () => {
   const bar = read("components/mobile-bottom-navigation.tsx");
   const icons = read("components/compact-navigation-icons.ts");
   const css = read("app/ia-v2.css");
@@ -18,7 +18,7 @@ test("Temple Support is the seventh public tab and preserves separate Temple Ins
     assert.equal(links[1].href, "/" + locale + "/services/free-situation-review");
     assert.equal(links[2].href, "/" + locale + "/academy");
     assert.equal(links[6].href, "/" + locale + "/holistic-support");
-    assert.equal(links[6].label, {en:"Temple Support",ru:"Храмовая поддержка",es:"Apoyo del templo"}[locale]);
+    assert.equal(links[6].label, {en:"Holistic Support",ru:"Холистическая поддержка",es:"Apoyo holístico"}[locale]);
     assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "temple");
     assert.equal(activeCompactNavigationId("/" + locale + "/temple-insights"), "temple");
     assert.ok(getSiteNavigation(locale).some(x => x.id === "temple" && x.label === links[6].label));
@@ -28,76 +28,152 @@ test("Temple Support is the seventh public tab and preserves separate Temple Ins
   assert.match(icons, /analysis: Sparkles/);
   assert.match(icons, /courses: BookOpen/);
   assert.match(icons, /temple: Landmark/);
-  assert.match(bar, /temple: 'Temple Support'/);
+  assert.match(bar, /temple: 'Holistic Support'/);
+  for (const label of ["Holistic Support", "Поддержка", "Apoyo holístico"])
+    assert.ok(bar.includes("temple: '" + label + "'"), "missing mobile tab label " + label);
   assert.match(bar, /aria-label=\{item\.ariaLabel\}/);
   assert.match(css, /repeat\(7,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
 });
 
-test("Holistic Support provides two main areas and six concrete choices", () => {
+test("Holistic Support puts an interactive scenic goal-or-situation card first in EN/RU/ES", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
+  const ideas = read("components/ideas-discovery.tsx");
+  const scenic = read("components/ideas-discovery.module.css");
   const styles = read("app/[locale]/holistic-support/holistic-support.module.css");
   const old = read("app/[locale]/temple-support/page.tsx");
   const locales = read("lib/public-locales.ts");
   const home = read("components/home-explore-sections.tsx");
   const sitemap = read("app/sitemap.ts");
+
   for (const locale of ["en", "ru", "es"]) {
-    assert.ok(page.includes(locale + ": {"), locale + " page translation");
+    assert.ok(page.includes(locale + ": {"), locale + " locale");
     assert.ok(page.includes(locale + ': "/' + locale + '/holistic-support"'));
-    assert.match(old, /permanentRedirect\("\/" \+ locale \+ "\/holistic-support"\)/);
   }
-  assert.match(page, /data-holistic-support/);
-  assert.match(page, /data-holistic-insights/);
-  assert.match(page, /data-holistic-healing/);
-  assert.match(page, /<nav className=\{styles.primaryNav\}/);
-  for (const id of ["ai", "express", "master", "energy", "alchemy", "practitioner"])
-    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
-  assert.doesNotMatch(page, /data-holistic-tradition|styles\.methods|methodOptions|methodPaths/);
-  assert.doesNotMatch(styles, /\.methods\{/);
-  assert.match(page, /\/services\/free-situation-review/);
-  assert.match(page, /\/services\/remote-energy-support/);
-  assert.match(page, /\/services\/alchemy-of-soul/);
-  assert.match(page, /data-holistic-practitioner-cta/);
-  assert.match(page, /\/pro#profi-practice/);
-  assert.match(read("components/profi-hub.tsx"), /id="profi-practice"/);
-  for (const label of ["I'm a Master — Offer My Services", "Я мастер — предложить свои услуги", "Soy profesional — ofrecer mis servicios"])
-    assert.ok(page.includes(label), "missing practitioner offer: " + label);
-  assert.match(styles, /\.option\[data-holistic-offer="practitioner"\]\{grid-column:1\/-1/);
-  assert.match(page, /Listings appear only after approval/);
-  assert.match(page, /MarketplaceMasterFinder practitioners=\{energyPractitioners\}/);
-  assert.match(page, /service.status === "published"/);
-  assert.match(page, /\/masters/);
-  assert.match(page, /<IdeasDiscovery locale=\{locale\} variant="temple" \/>/);
-  assert.match(locales, /holistic-support/);
-  assert.match(home, /path: "\/holistic-support"/);
-  assert.match(sitemap, /locale \+ '\/holistic-support'/);
-  assert.doesNotMatch(sitemap, /locale \+ '\/temple-support'/);
-  assert.match(styles, /@media\(max-width:350px\)/);
-  for (const image of ["hero-olive-incense.webp", "andy-about.png", "reiki-approved-sunrise-v3.webp", "ideas-zen-landscape.svg"])
-    assert.ok(existsSync(new URL("../public/images/holistic-house/" + image, import.meta.url)), "missing media " + image);
+  assert.ok(old.includes('permanentRedirect("/" + locale + "/holistic-support")'));
+  assert.ok(page.includes("data-holistic-support"));
+  assert.ok(page.includes("data-holistic-first-screen"));
+  assert.ok(page.includes('<IdeasDiscovery locale={locale} variant="holistic" />'));
+  assert.equal((page.match(/<IdeasDiscovery /g) || []).length, 1, "only one symbolic-engine form");
+  assert.ok(page.indexOf("data-holistic-first-screen") < page.indexOf("data-holistic-healing"));
+  assert.ok(!page.includes("<FreeDiagnosticStart") && !page.includes("<CompactLeadCapture"),
+    "the personal coaching form moves to Coaching");
+  assert.ok(!page.includes("styles.hero"), "the big coaching hero was removed");
+  assert.ok(ideas.includes('variant?: "ideas" | "temple" | "holistic"'));
+  assert.ok(ideas.includes("data-holistic-entry"));
+  for(const label of [
+    "Holistic Support", "Холистическая поддержка", "Apoyo holístico",
+    "Get a free symbolic insight", "Получить бесплатную подсказку", "Recibir una reflexión gratuita",
+    "Request energy support", "Получить энергетическую поддержку", "Solicitar apoyo energético",
+  ]) assert.ok(ideas.includes(label), "missing localized first-screen text: " + label);
+  assert.ok(ideas.includes('href={"/" + locale + "/services/remote-energy-support"}'));
+  assert.ok(ideas.includes("onClick={() => stageRemoteSupportLandingIntention(question)}"));
+  assert.ok(ideas.includes("drawRandomHexagram()"));
+  assert.ok(scenic.includes('ideas-pine-sharp.avif'));
+  assert.ok(scenic.includes('@media (max-width: 360px)'));
+  assert.ok(styles.includes(".primaryEntry"));
+  assert.ok(styles.includes(".coachingAside"));
+  assert.ok(styles.includes("@media(max-width:350px)"));
+  assert.ok(locales.includes("holistic-support"));
+  assert.ok(home.includes('path: "/holistic-support"'));
+  assert.ok(sitemap.includes("locale + '/holistic-support'"));
+  assert.ok(!sitemap.includes("locale + '/temple-support'"));
+  assert.ok(existsSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)));
 });
 
-test("AI Insight is honest about its non-LLM source; master enquiry is CAD 50 for 20 minutes and consented", () => {
+test("energy support reuses the published practitioner, privacy and request journeys", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
+  const remote = read("components/remote-energy-support-booking.tsx");
+  const bridge = read("lib/practitioners/remote-energy-support.js");
+  assert.ok(page.includes("data-holistic-healing"));
+  for (const id of ["energy", "alchemy", "practitioner"]) {
+    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing offer " + id);
+  }
+  for (const link of ["/services/remote-energy-support", "/services/alchemy-of-soul",
+    "/pro#profi-practice"]) assert.ok(page.includes(link), "missing link "+link);
+  assert.ok(page.includes("data-holistic-practitioner-cta"));
+  assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
+  assert.match(read("app/[locale]/pro/page.tsx"), /MarketplaceMasterFinder practitioners=\{practitioners\}/);
+  assert.ok(page.includes("data-holistic-coaching-followup"));
+  assert.ok(page.includes('href={"/" + locale + "/coaching"}'));
+  assert.ok(page.includes("€50 / 30"));
+  assert.match(page, /Homeopathy lacks reliable evidence|homeopatía carece|у гомеопатии нет/);
+  assert.ok(remote.includes("takeRemoteSupportLandingIntention()"));
+  assert.ok(remote.includes("if (stagedIntention) setIntention(stagedIntention)"));
+  assert.ok(bridge.includes("stageRemoteSupportLandingIntention"));
+  assert.ok(bridge.includes("takeRemoteSupportLandingIntention"));
+  assert.doesNotMatch(bridge.slice(bridge.indexOf("// One-use, same-tab handoff")),
+    /sessionStorage\.setItem|localStorage\.setItem|fetch\(/);
+  assert.doesNotMatch(page, /checkout|charge\(/);
+});
+
+test("independent Temple Insights keeps its own diagnostic CTA and natural scenic layout", () => {
   const ideas = read("components/ideas-discovery.tsx");
+  const scenic = read("components/ideas-discovery.module.css");
+  assert.ok(ideas.includes('variant === "temple" ? <Link'));
+  assert.ok(ideas.includes('href={"/" + locale + "/coaching#free-diagnostic-start"}'));
+  assert.ok(ideas.includes("data-ideas-personal-diagnostic"));
+  assert.ok(ideas.includes("data-ideas-free-test"));
+  assert.ok(ideas.includes('const HeadingTag = variant === "temple" ? "h2" : "h1"'));
+  assert.ok(scenic.includes('data-temple-mode="true"'));
+  assert.ok(scenic.includes('.templeScenic::before'));
+});
+
+test("Coaching Lounge owns the former scenic first screen and exactly three distinct pathways in EN/RU/ES", () => {
+  const entry = read("components/coaching-lounge-entry.tsx");
+  const layout = read("components/coaching-lounge-entry.module.css");
+  const lounge = read("components/public-coaching-discovery.jsx");
+  const ideas = read("components/ideas-discovery.tsx");
+  assert.match(lounge, /<CoachingLoungeEntry locale=\{lang\} selected=\{coachingChoice\} onSelect=\{setCoachingChoice\} \/>/);
+  assert.doesNotMatch(lounge, /<CoachingLiveSessionCapture/);
+  assert.match(lounge, /data-coaching-human-to-intake/);
+  assert.match(lounge, /onClick=\{\(\)=>setCoachingChoice\("session"\)\}/);
+  assert.match(entry, /onSelect\(offer\.id as Choice\)/);
+  assert.match(entry, /data-coaching-first-screen/);
+  assert.match(entry, /hero-olive-incense\.webp/);
+  assert.match(entry, /data-coaching-three-paths/);
+  assert.match(entry, /data-coaching-hero-choice="free"/);
+  assert.match(entry, /data-coaching-hero-choice="session"/);
+  assert.match(entry, /data-coaching-hero-choice="deep"/);
+  assert.match(entry, /data-coaching-offer=\{offer\.id\}/);
+  assert.match(entry, /services\/imagery-therapy#request-session/);
+  assert.match(entry, /data-coaching-select=\{offer\.id\}/);
+  for (const label of ["Free situation diagnosis","Бесплатная диагностика ситуации","Diagnóstico gratuito de la situación",
+    "Personal coaching session","Личная коучинг-сессия","Sesión personal de coaching",
+    "Depth-oriented personal work","Глубинная терапия","Trabajo personal profundo"])
+    assert.ok(entry.includes(label), "missing locale offer " + label);
+  assert.match(entry, /<FreeDiagnosticStart locale=\{locale\} \/>/);
+  assert.match(entry, /<CompactLeadCapture locale=\{locale\} variant="inline"/);
+  assert.equal((entry.match(/<CompactLeadCapture/g) || []).length, 1);
+  assert.match(entry, /sourcePath=\{"\/" \+ locale \+ "\/coaching"\}/);
+  assert.match(entry, /formatOptions=\{t\.formats\}/);
+  assert.match(entry, /30 min · €50/);
+  assert.match(entry, /60 min · €100/);
+  assert.match(ideas, /coaching#free-diagnostic-start/);
+  assert.match(layout, /@media\(max-width:600px\)/);
+  assert.match(layout, /@media\(max-width:350px\)/);
+  assert.match(layout, /min-height:44px/);
+  assert.match(layout, /:focus-visible/);
+  for (const photo of ["hero-olive-incense.webp","andy-about.png","video-posters/hypnotherapy-en-v1.webp"])
+    assert.ok(existsSync(new URL("../public/images/holistic-house/" + photo, import.meta.url)));
+});
+
+test("Coaching Lounge source path is permitted for real, consented CRM intake but private paths remain blocked", () => {
+  const entry = read("components/coaching-lounge-entry.tsx");
   const capture = read("components/compact-lead-capture.tsx");
-  const alchemy = read("app/[locale]/services/alchemy-of-soul/page.tsx");
-  assert.match(page, /AI Insight/);
-  assert.match(page, /generative AI model is not connected/);
-  assert.match(page, /50 CAD \/ 20 мин/);
-  assert.match(page, /CAD 50 \/ 20 min/);
-  assert.match(page, /sourcePath=\{"\/" \+ locale \+ "\/holistic-support"\}/);
-  assert.doesNotMatch(page, /formatOptions=|formatLabel=/);
-  assert.match(page, /serviceTitle=\{"Personal Temple Insights with Andrey · CAD 50 \/ 20 min"\}/);
-  assert.match(page, /<CompactLeadCapture/);
-  assert.match(page, /data-holistic-master/);
+  const backend = read("lib/practitioners/public-service-enquiry-input.mjs");
+  for (const locale of ["en","ru","es"]) {
+    assert.equal(safePublicWhatsAppPath("/" + locale + "/coaching"), "/" + locale + "/coaching");
+    assert.equal(safePublicWhatsAppPath("/" + locale + "/coaching/intake"), "/" + locale + "/coaching/intake");
+  }
+  for (const source of ["/en/coaching/secret","/en/coaching?token=private","/en/app/clients","/ru/client/report"])
+    if(source.includes("?")) assert.equal(safePublicWhatsAppPath(source), "/en/coaching");
+    else assert.equal(safePublicWhatsAppPath(source), "");
+  assert.match(entry, /data-coaching-intake/);
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
   assert.match(capture, /contactConsent: true/);
-  assert.match(page, /Homeopathy lacks reliable evidence|homeopatía carece|у гомеопатии нет/);
-  assert.match(ideas, /const isTemple = variant === "temple"/);
-  assert.match(ideas, /drawRandomHexagram\(\)/);
-  assert.match(alchemy, /isPublicLocale\(locale\)/);
-  assert.match(alchemy, /locale: "es"/);
-  assert.doesNotMatch(page, /fetch\(|checkout|charge\(/);
+  assert.match(backend, /normalizePublicServiceEnquiry/);
+  assert.doesNotMatch(entry, /fetch\(|gtag\(|payment_received|payment_captured/);
+  assert.doesNotMatch(read("app/[locale]/holistic-support/page.tsx"), /fetch\(|checkout|charge\(/);
 });

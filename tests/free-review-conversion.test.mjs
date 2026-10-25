@@ -43,7 +43,7 @@ test("free landings explain benefits before closing with one short capture", () 
   const final = landing.lastIndexOf("<CompactLeadCapture");
   assert.ok(hero > 0 && hero < video && video < outcome && outcome < process && process < final,
     "The selected recording belongs in the first scene");
-  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene/,
+  assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /data-featured-constellations-video/);
   assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
@@ -66,7 +66,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "See your situation from a fresh perspective", "Взгляните на свою ситуацию", "Mira tu situación",
+    "Free diagnosis: 3 ways", "Бесплатная диагностика: 3 варианта", "Diagnóstico gratis: 3 opciones",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -75,28 +75,23 @@ test("all three locales explain real service advantages without health claims or
     "Условный пример — не ваш персональный профиль.",
     "diagnose or treat health conditions", "не диагностируют и не лечат заболевания",
   ]) assert.ok(landing.includes(phrase), "Missing benefit/safety: " + phrase);
-  for (const phrase of ["Free Situation Review", "Бесплатный письменный разбор",
-    "Revisión escrita gratuita", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
+  for (const phrase of ["Free Diagnosis", "Бесплатная диагностика",
+    "Diagnóstico gratis", "Five Elements", "Пять элементов", "Cinco Elementos"]) {
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
-  assert.doesNotMatch(landing + capture, /€50|€100/, "The free offering must not be upsold before being explained");
+  assert.match(landing, /€50/, "The paid 30-minute option must have its real price");
+  assert.doesNotMatch(landing + capture, /€100/, "Do not invent a second paid option here");
 });
 
-test("the real free drawing questionnaire remains reachable and keeps answers local until deliberate copy", () => {
+test("free drawing entry reuses private intake without duplicate collection or messenger export", () => {
   assert.match(landing, /<FreeSituationReviewForm locale=\{locale\} \/>/);
-  assert.match(landing, /<details className=\{styles\.fullQuestionnaire\} data-optional-written-review>/);
   assert.match(form, /<FreeDrawingIntake locale=\{locale\}/);
-  for (const field of ["problem", "goal", "obstacle", "tried"]) assert.ok(intake.includes("set" + field[0].toUpperCase() + field.slice(1)), field);
-  assert.match(intake, /<form onSubmit=/);
-  assert.match(intake, /<textarea required/);
-  assert.match(intake, /navigator\.clipboard\.writeText\(answers\)/);
-  assert.match(intake, /setPrepared\(true\)/);
-  assert.match(intake, /Nothing has been sent/);
-  assert.match(intake, /aria-live="polite"/);
-  assert.match(intake, /<ContactChannelChooser/);
-  assert.doesNotMatch(intake, /encodeURIComponent\((?:answers|problem|goal|obstacle|tried)\)/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|indexedDB|fetch\(|sendBeacon|\/api\/app\/|FileReader/);
+  assert.match(intake, /\/coaching\/intake\?topic=/);
+  assert.match(intake, /Sign in to save an encrypted private draft/);
+  assert.match(intake, /Saving does not send it to a coach/);
+  assert.match(intake, /Keep the photo on your device/);
+  assert.doesNotMatch(intake, /<form|<textarea|navigator\.clipboard|ContactChannelChooser|whatsappEnquiryUrl|localStorage|sessionStorage|fetch\(|sendBeacon/);
   assert.match(intakeCss, /@media\(max-width:767px\)/);
 });
 
@@ -134,5 +129,6 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/andy-about\.png"/);
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
-  assert.match(landing, /<PersonalTestimonials locale=\{locale === "es" \? "en" : locale\} variant="all" \/>/);
+  assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\}>/);
 });

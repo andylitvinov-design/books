@@ -434,7 +434,8 @@ export default function CrmManager({ locale = 'en', accountId }) {
       <CrmMarketingPanel key={accountId+'-marketing'} accountId={accountId} contacts={data.contacts||[]} locale={language} />
       </>}
       {activeSection==='leads'&&<CrmLeadTriage key={accountId+'-'+language}
-         accountId={accountId} locale={language} busy={busy} onAction={save} onOpenContact={focusContact}/>}
+         accountId={accountId} locale={language} busy={busy} onAction={save} onOpenContact={focusContact}
+         onAutoPlanned={()=>{const session=sessionRef.current;if(session?.accountId===accountId)void load(session).catch(()=>{})}}/>}
        {activeSection==='tasks'&&<>
          <CrmWorkflowOverview mode="tasks" locale={language} overview={data.overview}
            followups={data.followups||[]} busy={busy} onAction={save} onOpenContact={focusContact}

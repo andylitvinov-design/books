@@ -9,6 +9,7 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
+import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
 import { createGrowthCourseRepository } from '@/lib/app/growth-course'
@@ -17,8 +18,10 @@ import {createNativePushRepository} from '@/lib/app/native-push-repository'
 import {registerLiveActivity,stopLiveActivity,updateLiveActivities} from '@/lib/app/native-live-activity'
 import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
+import { readReikiInitiationPhoto, saveReikiInitiationPhoto, REIKI_INITIATION_PHOTO_MAX_BYTES } from '@/lib/academy/reiki-initiation-photo'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
 import {createPractitionerClientMessages} from '@/lib/practitioners/client-messages'
+import {sendBookingMasterEmail} from '@/lib/practitioners/booking-master-email'
 import {dispatchClientMessagePush,dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
 import {dispatchNativeClientMessagePush} from '@/lib/app/native-push-dispatch'
 import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
@@ -79,29 +82,47 @@ export const runtime = 'nodejs'
 export const preferredRegion = 'yul1'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-const notifyBookingParticipants=(config,actor,requestId,recipient)=>{
-  // A DB-confirmed status change is the only source of this neutral event.
-  // Reuse opt-in private notifications, never expose goal/photo/health in push.
+const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update',revision=null,practitionerId=null,messageId=null}={})=>{
+  // A committed booking status change is the source of truth. Notifications
+  // contain only neutral text; private goals, photos and contacts stay in Cabinet.
   after(async()=>{
     try{
-      const result=await createPractitionerClientMessages(config).send(actor,{
+      const result=messageId?{id:messageId,duplicate:false}:await createPractitionerClientMessages(config).send(actor,{
         requestId,operationId:randomUUID(),visibility:'participants',
         text:recipient==='client'
           ? 'Your Holistic House booking has an update. Open your secure Cabinet for details.'
-          : 'A Holistic House booking request changed. Open My Practice for details.',
+          : event==='new'
+            ? 'You received a new Holistic House booking request. Open My Practice to respond.'
+            : 'A Holistic House booking request changed. Open My Practice for details.',
       })
-      if(result.duplicate!==false)return
-      const messageId=result.id
-      if(recipient==='client')await Promise.allSettled([
-        dispatchClientMessagePush(config,messageId),
-        dispatchNativeClientMessagePush(config,messageId),
-        dispatchClientTelegramNotification(config,messageId),
-      ])
-      else await Promise.allSettled([
-        dispatchPractitionerMessagePush(config,messageId),
-        dispatchClientTelegramNotification(config,messageId),
-      ])
-    }catch{ /* The booking transaction remains committed; no secret logs. */ }
+      if(result.duplicate===false){
+        const messageId=result.id
+        const outcomes=await Promise.allSettled(recipient==='client'?[
+          dispatchClientMessagePush(config,messageId),
+          dispatchNativeClientMessagePush(config,messageId),
+          dispatchClientTelegramNotification(config,messageId),
+        ]:[
+          dispatchPractitionerMessagePush(config,messageId),
+          dispatchClientTelegramNotification(config,messageId),
+        ])
+        if(outcomes.some(outcome=>outcome.status==='rejected'||
+          (outcome.value?.attempted>0&&outcome.value?.accepted<outcome.value.attempted)||
+          (outcome.value?.claimed>0&&outcome.value?.accepted<outcome.value.claimed)))
+          console.error('HH_BOOKING_EXTERNAL_NOTIFICATION_UNCONFIRMED')
+      }
+    }catch{
+      // A neutral error code for operations, never a sensitive request payload.
+      console.error('HH_BOOKING_IN_APP_NOTIFICATION_FAILED')
+    }
+    // This is an independent, optional transactional channel. A failed email
+    // must not block an already accepted booking or its in-app notification.
+    if(recipient==='master'&&Number.isSafeInteger(revision)){
+      try{
+        await sendBookingMasterEmail({requestId,revision,practitionerId,event})
+      }catch{
+        console.error('HH_BOOKING_EMAIL_DELIVERY_UNCONFIRMED')
+      }
+    }
   })
 }
 async function handle(request, { params }) {
@@ -135,7 +156,7 @@ async function handle(request, { params }) {
         !['cabinet','my-practice','my-tests','my-courses','reports','practitioner-growth','practitioner-seo','practitioner-acquisition','practitioner-tools','energywork','practitioner'].includes(continueTo)) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
       if (intentId !== null) requireUUID(intentId)
       if (serviceId !== null) requireUUID(serviceId)
@@ -180,7 +201,7 @@ async function handle(request, { params }) {
         coachingLang = url.searchParams.get('coachingLang')
       if (coachingMode !== null && (continueTo !== 'coaching' || !['egyptian','greek'].includes(coachingMode))) throw new AppError('INVALID_CONTINUATION', 400)
       if (coachingLang !== null && (continueTo !== 'coaching' || coachingLang !== 'es' || coachingMode === null)) throw new AppError('INVALID_CONTINUATION', 400)
-      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
+      if (profi !== null && (continueTo !== 'my-practice' || !['session', 'intro', 'workshop', 'diagnostic', 'energy', 'personal', 'course', 'profile', 'requests'].includes(profi))) throw new AppError('INVALID_CONTINUATION', 400)
       if ((continueTo === 'enquiry' && !safeEnquiryReturnPath(returnPath, locale)) ||
           (continueTo !== 'enquiry' && returnPath !== null)) throw new AppError('INVALID_CONTINUATION', 400)
       if (program !== null && (continueTo !== 'course' || !['stress', 'confidence', 'focus'].includes(program))) throw new AppError('INVALID_CONTINUATION', 400)
@@ -226,7 +247,7 @@ async function handle(request, { params }) {
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
-                  ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
+                  ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop','diagnostic','energy','personal'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
                 : continueTo === 'my-tests'
                   ? `${origin}/${locale}/app/tests`
                   : continueTo === 'my-courses'
@@ -556,6 +577,22 @@ async function handle(request, { params }) {
       }
       throw new AppError('NOT_FOUND', 404)
     }
+    if (joined === 'academy-energywork/photo') {
+      if (request.headers.get('x-hh-account-id') && request.headers.get('x-hh-account-id') !== actor.id)
+        throw new AppError('ACCOUNT_CHANGED',409)
+      if (method === 'GET') return json(await readReikiInitiationPhoto(config, actor))
+      if (method === 'POST') {
+        await consumeRate(config, {op:'reiki-photo-upload',actor:actor.id}, 6, 3600)
+        const claimedBytes = Number(request.headers.get('content-length') || 0)
+        if (claimedBytes > REIKI_INITIATION_PHOTO_MAX_BYTES + 8192)
+          throw new AppError('INVALID_INITIATION_PHOTO', 413)
+        const form = await request.formData()
+        if (form.getAll('photo').length !== 1 || [...form.keys()].some(key => key !== 'photo'))
+          throw new AppError('INVALID_INITIATION_PHOTO', 400)
+        return json(await saveReikiInitiationPhoto(config, actor, form.get('photo')))
+      }
+      throw new AppError('NOT_FOUND', 404)
+    }
     if (joined === 'academy-energywork') {
       if (request.headers.get('x-hh-account-id') && request.headers.get('x-hh-account-id') !== actor.id)
         throw new AppError('ACCOUNT_CHANGED',409)
@@ -651,6 +688,13 @@ async function handle(request, { params }) {
       if (method === 'POST') return json(await saveTraditionCoaching(config, actor, template, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
     }
+    if (joined === 'tradition-coaching-audio') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method !== 'GET') throw new AppError('NOT_FOUND', 404)
+      const params = new URL(request.url).searchParams
+      return json(await learnerCoachingAudio(config,
+        params.get('template'), params.get('question'), params.get('locale')))
+    }
     if (joined === 'business-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method === 'GET') return json(await readBusinessCoaching(config, actor))
@@ -736,7 +780,7 @@ async function handle(request, { params }) {
         if (!await store.findClientById(body.clientId)) throw new AppError('NOT_FOUND', 404)
       }
       const response = json({ redirectUrl: destination })
-      if (!issueTrustedAdminSession(response, { secure: !config.test }))
+      if (!await issueTrustedAdminSession(response, { actor, secure: !config.test }))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return response
     }
@@ -885,10 +929,23 @@ async function handle(request, { params }) {
       if (path[2] === 'submit') return json(await repo.submitRun(actor, path[1], body))
       if (path[2] === 'discard') return json(await repo.discardRun(actor, path[1], body))
     }
-    if (joined === 'requests') return json(await repo.createRequest(actor, body), 201)
+    if (joined === 'requests') {
+      const result=await repo.createRequest(actor,body)
+      if(result.bookingNotice===true)
+        notifyBookingParticipants(config,actor,result.id,'master',{
+          event:'new',revision:result.revision,practitionerId:result.practitionerId,
+          messageId:result.bookingMessageId,
+        })
+      delete result.bookingNotice
+      delete result.bookingMessageId
+      return json(result,201)
+    }
     if (path[0] === 'requests' && path.length === 2) {
       const result=await repo.updateRequest(actor,path[1],body)
-      if(result.bookingNotice===true)notifyBookingParticipants(config,actor,path[1],'master')
+      if(result.bookingNotice===true)
+        notifyBookingParticipants(config,actor,path[1],'master',{
+          event:'update',revision:result.revision,practitionerId:result.practitionerId,
+        })
       delete result.bookingNotice
       return json(result)
     }

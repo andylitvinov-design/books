@@ -9,7 +9,6 @@ import { canStartCheckout, PURCHASABLE_PLAN_KEYS } from '@/lib/billing/public-pl
 import { useSubscription } from './subscription-access'
 import { COURSE_PRESETS, getCoursePreset } from '@/lib/inner-growth/course-presets'
 import CabinetFreeCourseBanners from './cabinet-free-course-banners'
-import { appFetch } from '@/lib/app/client-fetch'
 import styles from './my-courses-dashboard.module.css'
 
 const copy={
@@ -121,17 +120,6 @@ export default function MyCoursesDashboard({
   const [openHistory,setOpenHistory]=useState(false)
   const [closing,setClosing]=useState(null)
   const closeRef=useRef(null),closeId=useId()
-  const [traditionProgress,setTraditionProgress]=useState(null)
-  useEffect(()=>{
-    if(!accountId){setTraditionProgress(null);return}
-    let live=true
-    const controller=new AbortController()
-    setTraditionProgress(null)
-    appFetch('tradition-coaching-summary',undefined,'GET',{accountId,signal:controller.signal})
-      .then(value=>{if(live)setTraditionProgress(value.courses||[])})
-      .catch(()=>{if(live)setTraditionProgress(null)})
-    return ()=>{live=false;controller.abort()}
-  },[accountId])
   useEffect(()=>{
     if(closing)closeRef.current?.showModal()
     else closeRef.current?.close()
@@ -160,7 +148,7 @@ export default function MyCoursesDashboard({
     <Link href={'/' + (locale==='ru'?'ru':'en') + '/coaching'} prefetch={false}
       className={styles.businessTrack} data-personal-coaching-course-link>
       <span className={styles.businessTrackPhoto} aria-hidden="true">
-        <img src="/images/holistic-house/books-library.webp" alt=""
+        <img src="/images/holistic-house/report-lighthouse-coast.avif" alt=""
           width={240} height={220} loading="lazy" decoding="async" />
       </span>
       <span className={styles.businessTrackBody}>
@@ -174,41 +162,6 @@ export default function MyCoursesDashboard({
         </span>
       </span>
     </Link>
-    <div className={styles.traditionLinks} data-ancient-coaching-courses>
-      {[
-        {id:'egyptian',title:locale==='ru'?'Египетский коучинг':'Egyptian Goal Planning',
-          description:locale==='ru'?'11 коротких экранов · Ка, Ба, Иб и другие уровни. Желание, ценности, действия и ресурсы.':'11 short screens · Ka, Ba, Ib and other levels. Desire, values, actions and support.',
-          photo:'/academy/reiki-yggdrasil/source/temple-studies.png'},
-        {id:'greek',title:locale==='ru'?'Греческий коучинг':'Greek Goal Planning',
-          description:locale==='ru'?'10 экранов · Эпитемия, Тюмос, Логос, Эйдос и Телос. От желания к своему шагу.':'10 screens · Epithymia, Thymos, Logos, Eidos and Telos. From desire to one next step.',
-          photo:'/academy/reiki-yggdrasil/source/temple-studies.png'},
-      ].map(item=>{
-        const progress=traditionProgress?.find(row=>row.template==='hh-'+item.id+'-goal-planning-v1')
-        const started=progress?.status==='active',finished=progress?.status==='completed'
-        const done=Number.isInteger(progress?.completed)?progress.completed:0
-        return <Link key={item.id} href={started || finished ? '/'+(locale==='ru'?'ru':'en')+'/app/coaching/'+item.id : '/'+(locale==='ru'?'ru':'en')+'/coaching#coaching-tradition-'+item.id}
-          prefetch={false} className={styles.businessTrack} data-tradition-course-card={item.id}>
-          <span className={styles.businessTrackPhoto} aria-hidden="true">
-            <img src={item.photo} alt="" width={240} height={220} loading="lazy" decoding="async"/>
-          </span>
-          <span className={styles.businessTrackBody}>
-            <span className={styles.businessTrackEyebrow}>{locale==='ru'?'КОУЧИНГ-КУРС · С СОХРАНЕНИЕМ':'COACHING COURSE · SAVED PRIVATELY'}</span>
-            <strong className={styles.businessTrackTitle}>{item.title}</strong>
-            <span className={styles.businessTrackDescription}>{item.description}</span>
-            {(started||finished)&&<span className={styles.traditionProgress} role="status">
-              {finished?(locale==='ru'?'Завершён':'Completed'):
-                (locale==='ru'?'Пройдено ':'Completed ')+done+' / '+progress.total}
-            </span>}
-            <span className={styles.businessTrackAction}>
-              {finished?(locale==='ru'?'Мои результаты':'Review results'):
-                started?(locale==='ru'?'Продолжить курс':'Resume course'):
-                (locale==='ru'?'Начать курс':'Start course')}
-              <ArrowRight size={16} aria-hidden="true"/>
-            </span>
-          </span>
-        </Link>
-      })}
-    </div>
     {main&&<section className={styles.startedCourses} aria-label={t.started} data-started-courses>
       <h3>{t.started}</h3>
       <CourseTile course={main} locale={locale} t={t} hero onOpen={onOpen} onClose={setClosing}

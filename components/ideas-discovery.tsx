@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, Quote, X, Sparkles, Sprout, Sun } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Compass, Flower2, Gift, Paperclip, ClipboardCheck, HeartHandshake, Quote, X, Sparkles, Sprout, Sun } from "lucide-react";
 import { DaoHexagramGlyph } from "@/components/dao-hexagram-glyph";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { daoAuthorHexagramNumbers, getHexagram, hexagramEssence, hexagramTitle } from "@/data/dao-hexagrams.mjs";
@@ -11,6 +11,7 @@ import { drawRandomHexagram } from "@/lib/dao-divination.mjs";
 import { detectIdeasQuestionLocale, getIdeasAphorismMatches, getIdeasFreeRecommendations, getIdeasTestSuggestions, matchIdeasTopic } from "@/lib/ideas-guidance.mjs";
 import { rotateIdeasPreviewAphorisms } from "@/lib/ideas-preview-rotation.mjs";
 import { stageIdeasCoachingQuestion } from "@/lib/ideas-coaching-handoff";
+import { stageRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import type { IdeasTopic } from "@/lib/ideas-guidance.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./ideas-discovery.module.css";
@@ -281,9 +282,48 @@ const copy = {
 
 // Reuse the real local-only symbolic engine inside Temple Support without duplicating its privacy model.
 const templeIntro = {
-  en: { eyebrow: "TEMPLE SUPPORT · SYMBOLIC REFLECTION", title: "Temple Insights", lead: "Share one question and reflect on an I Ching symbol and related aphorisms. Free, private and not a prediction.", ask: "Receive a free symbolic insight", diagnostic: "Request Free Personal Diagnostic" },
-  ru: { eyebrow: "TEMPLE SUPPORT · СИМВОЛИЧЕСКИЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте один вопрос и получите символ И-Цзин с афоризмами для размышления. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку", diagnostic: "Запросить бесплатную личную диагностику" },
-  es: { eyebrow: "TEMPLE SUPPORT · REFLEXIÓN SIMBÓLICA", title: "Reflexiones del templo", lead: "Haz una pregunta y explora un símbolo del I Ching con aforismos. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis", diagnostic: "Solicitar diagnóstico personal gratuito" },
+  en: { eyebrow: "TEMPLE & PSYCHIC INSIGHTS", title: "Temple Insights", lead: "Ask a question, find inspiration and receive a symbolic I Ching reflection. Free, private and not a prediction.", ask: "Receive a free symbolic insight", diagnostic: "Request Free Personal Diagnostic" },
+  ru: { eyebrow: "ХРАМОВЫЕ И ИНТУИТИВНЫЕ ПОДСКАЗКИ", title: "Храмовые подсказки", lead: "Задайте вопрос, найдите вдохновение и получите символическую подсказку И-Цзин. Бесплатно и без предсказаний.", ask: "Получить бесплатную храмовую подсказку", diagnostic: "Запросить бесплатную личную диагностику" },
+  es: { eyebrow: "REFLEXIONES DEL TEMPLO", title: "Reflexiones del templo", lead: "Haz una pregunta, encuentra inspiración y explora un símbolo del I Ching. Gratis, privado y sin predicciones.", ask: "Recibir una reflexión simbólica gratis", diagnostic: "Solicitar diagnóstico personal gratuito" },
+} as const;
+
+const holisticIntro = {
+  en: {
+    eyebrow: "HOLISTIC HOUSE · GUIDANCE FOR YOUR GOALS",
+    title: "Holistic Support",
+    lead: "Describe a goal or situation. Choose a free symbolic insight or request energy support from a practitioner.",
+    question: "Your goal or situation",
+    placeholder: "Your goal, question or situation…",
+    choose: "Choose how to get support",
+    ask: "Get a free symbolic insight",
+    energy: "Request energy support",
+    privacyShort: "Private in this browser · How it works",
+    privacy: "Your words stay in this tab. For energy support they pass only to the next page in temporary memory, not in a URL, cookie or analytics. You review any request before choosing to send it.",
+  },
+  ru: {
+    eyebrow: "HOLISTIC HOUSE · ПОДСКАЗКИ ДЛЯ ЦЕЛЕЙ",
+    title: "Холистическая поддержка",
+    lead: "Опишите цель или ситуацию. Получите бесплатную символическую подсказку или запросите поддержку мастера.",
+    question: "Ваша цель или ситуация",
+    placeholder: "Какая у вас цель, ситуация или вопрос?",
+    choose: "Выберите вид поддержки",
+    ask: "Получить бесплатную подсказку",
+    energy: "Получить энергетическую поддержку",
+    privacyShort: "Приватно в браузере · Как это работает",
+    privacy: "Ваши слова остаются в этой вкладке. При выборе энергетической поддержки они передаются только на следующую страницу во временной памяти, без URL, cookies и аналитики. Заявка отправляется только после вашего согласия.",
+  },
+  es: {
+    eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN PARA TUS OBJETIVOS",
+    title: "Apoyo holístico",
+    lead: "Describe tu objetivo o situación. Recibe una reflexión simbólica gratuita o solicita apoyo energético.",
+    question: "Tu objetivo o situación",
+    placeholder: "Tu objetivo, situación o pregunta…",
+    choose: "Elige tu tipo de apoyo",
+    ask: "Recibir una reflexión gratuita",
+    energy: "Solicitar apoyo energético",
+    privacyShort: "Privado en este navegador · Cómo funciona",
+    privacy: "Tus palabras permanecen en esta pestaña. Si eliges apoyo energético se transfieren a la página siguiente solo en memoria temporal, nunca en la URL, cookies ni analítica. Revisarás la solicitud antes de enviarla.",
+  },
 } as const;
 
 // Start a real, rights-cleared guest questionnaire, not a generic catalog.
@@ -405,7 +445,7 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
             <>
               <CompactLeadCapture locale={locale} variant="inline" serviceTitle={t.daoPromoReading.title}
                 title={t.requestTitle} lead={t.requestLead} />
-              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-consultation#intro-request"} prefetch={false}>
+              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-consultation#free-diagnosis-options"} prefetch={false}>
                 {t.fullService}<ArrowRight size={15} aria-hidden="true" />
               </Link>
             </>
@@ -439,11 +479,12 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
   );
 }
 
-export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLocale; variant?: "ideas" | "temple" }) {
+export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLocale; variant?: "ideas" | "temple" | "holistic" }) {
   const t = copy[locale];
-  const isTemple = variant === "temple";
-  const intro = isTemple ? templeIntro[locale] : t;
-  const HeadingTag = isTemple ? "h2" : "h1";
+  const isHolistic = variant === "holistic";
+  const isTemple = variant !== "ideas";
+  const intro = isHolistic ? holisticIntro[locale] : isTemple ? templeIntro[locale] : t;
+  const HeadingTag = variant === "temple" ? "h2" : "h1";
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [testPickerOpen, setTestPickerOpen] = useState(false);
@@ -462,6 +503,10 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
   const [daoReadingError, setDaoReadingError] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // WebKit may retarget the synthetic click to the fixed bottom navigation
+  // after an iPhone touch scrolls a focused textarea. Handle the real touch
+  // release while deduplicating the subsequent click, if WebKit emits one.
+  const lastTouchFreeTestRef = useRef(-Infinity);
 
   useEffect(() => {
     // Only public quote IDs are retained; the visitor's question never leaves React memory.
@@ -555,6 +600,16 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
     }
     setTestPickerOpen(open => !open);
   }
+  function openFreeTestsOnTouch() {
+    lastTouchFreeTestRef.current = performance.now();
+    openFreeTests();
+  }
+  function openFreeTestsOnClick(detail: number) {
+    // Pointer-up already handled this physical touch. Preserve mouse click,
+    // keyboard Enter/Space (detail=0), and screen-reader activation.
+    if (detail > 0 && performance.now() - lastTouchFreeTestRef.current < 650) return;
+    openFreeTests();
+  }
   const aphorismMatches = result && (result.mode === "aphorisms" || result.mode === "dao") ? getIdeasAphorismMatches(question, answerLocale, result.topic) : [];
   useEffect(() => {
     if (!result) return;
@@ -570,7 +625,9 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
     document.getElementById("ideas-filtered-tests")?.scrollIntoView({ block: "nearest" });
   }, [showSuggestedTests]);
   const templeContent = (<>
-
+      {/* The shared Ideas controls remain unchanged. Only Temple groups its header,
+          question, actions and privacy within the approved scenic surface. */}
+      <div className={isTemple ? styles.templeScenic : styles.heroLayout}>
       <div className={styles.hero} data-ideas-hero>
         <div className={styles.heading}>
           <div>
@@ -582,12 +639,12 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
         </div>
 
         <form id="ideas-question-form" className={styles.question} onSubmit={submitQuestion}>
-        <label htmlFor="ideas-question">{t.question}</label>
+        <label htmlFor="ideas-question">{isHolistic ? holisticIntro[locale].question : t.question}</label>
         <div className={styles.questionFields}>
           <Sparkles className={styles.inputSparkle} size={21} aria-hidden="true" />
           <textarea
             id="ideas-question" ref={textareaRef} maxLength={500} rows={1} autoComplete="off"
-            placeholder={t.placeholder} value={question} aria-invalid={error || attachmentError}
+            placeholder={isHolistic ? holisticIntro[locale].placeholder : t.placeholder} value={question} aria-invalid={error || attachmentError}
             aria-describedby={error || attachmentError ? "ideas-question-error ideas-question-privacy" : "ideas-question-privacy"}
             onChange={(event) => { setQuestion(event.target.value); setError(false); setAttachmentError(false); setResult(null); setVisibleAphorisms(3); setOpenOffer(null); }}
           />
@@ -615,7 +672,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
         </div>
        </form>
       </div>
-      <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={t.choose}>
+      <div className={styles.heroActions} data-ideas-hero-actions role="group" aria-label={isHolistic ? holisticIntro[locale].choose : t.choose}>
         {!isTemple ? <Link href={coachingHref} prefetch={false} className={styles.submit}
           onClick={() => stageIdeasCoachingQuestion(question)}
           data-ideas-free-coaching aria-label={t.testAria}>
@@ -633,14 +690,25 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
             <strong>{intro.ask}</strong>
           </span>
         </button>
-        {isTemple ? <Link
-          href={freeOfferHref(locale, "review")}
+        {variant === "temple" ? <Link
+          href={"/" + locale + "/coaching#free-diagnostic-start"}
           className={styles.diagnosticAction}
           data-ideas-personal-diagnostic
           prefetch={false}
         >
           <ClipboardCheck size={19} aria-hidden="true" />
           <span>{templeIntro[locale].diagnostic}</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </Link> : null}
+        {isHolistic ? <Link
+          href={"/" + locale + "/services/remote-energy-support"}
+          className={styles.diagnosticAction}
+          data-ideas-energy-support
+          prefetch={false}
+          onClick={() => stageRemoteSupportLandingIntention(question)}
+        >
+          <HeartHandshake size={19} aria-hidden="true" />
+          <span>{holisticIntro[locale].energy}</span>
           <ArrowRight size={18} aria-hidden="true" />
         </Link> : null}
       </div>
@@ -668,13 +736,22 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
         {error || attachmentError ? <p className={styles.error} role="alert" id="ideas-question-error">{attachmentError ? t.attachError : t.error}</p> : null}
         <div className={styles.utilityLinks}>
           <details className={styles.privacyDisclosure}>
-            <summary id="ideas-question-privacy">{t.privacyShort}</summary>
-            <p className={styles.privacy}>{t.privacy}</p>
+            <summary id="ideas-question-privacy">{isHolistic ? holisticIntro[locale].privacyShort : t.privacyShort}</summary>
+            <p className={styles.privacy}>{isHolistic ? holisticIntro[locale].privacy : t.privacy}</p>
           </details>
-          {!isTemple ? <button type="button" className={styles.freeTestLink} data-ideas-free-test
-            aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
-            onClick={openFreeTests}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button> : null}
+          {isTemple ? (
+            <Link href={freeOfferHref(locale, "tests")} prefetch={false}
+              className={styles.freeTestLink} data-ideas-free-test data-temple-test-catalog>
+              {t.testLink}<ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          ) : (
+            <button type="button" className={styles.freeTestLink} data-ideas-free-test
+              aria-expanded={showSuggestedTests} aria-controls="ideas-filtered-tests"
+              onPointerUp={event => { if (event.pointerType === "touch") openFreeTestsOnTouch(); }}
+              onClick={event => openFreeTestsOnClick(event.detail)}>{t.testLink}<ArrowRight size={15} aria-hidden="true" /></button>
+          )}
         </div>
+      </div>
       </div>
       <section className={styles.testPicker} id="ideas-filtered-tests" data-ideas-filtered-tests
         hidden={!showSuggestedTests} aria-label={t.testsTitle}>
@@ -859,7 +936,7 @@ export function IdeasDiscovery({ locale, variant = "ideas" }: { locale: PublicLo
       ) : null}
       </>);
   return (
-    <section className={styles.root} aria-labelledby={isTemple ? "ideas-title" : "tests-coaching-title"} data-ideas-discovery data-temple-mode={isTemple ? "true" : undefined} lang={locale}>
+    <section className={styles.root} aria-labelledby={isTemple ? "ideas-title" : "tests-coaching-title"} data-ideas-discovery data-temple-mode={isTemple ? "true" : undefined} data-holistic-entry={isHolistic ? "true" : undefined} lang={locale}>
       {isTemple ? templeContent : <TestsCoachingSwitchboard locale={locale} templeContent={templeContent} />}
     </section>
   );

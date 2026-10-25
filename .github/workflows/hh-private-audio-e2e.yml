@@ -18,7 +18,29 @@ on:
       - 'tests/client-session-audio-synthetic-e2e.test.mjs'
       - 'tests/client-session-photos.test.mjs'
       - 'tests/client-session-owner-photo-upload.test.mjs'
+      - 'tests/client-session-owner-audio-upload.test.mjs'
+      - 'tests/client-session-external-video.test.mjs'
+      - 'tests/session-delivery-security.test.mjs'
+      - 'tests/session-media-sdk.test.mjs'
+      - 'tests/fixture-module-body.test.mjs'
+      - 'tests/helpers/fixture-module-body.mjs'
       - 'tests/fixtures/synthetic-440hz-voice.m4a.base64'
+      - 'lib/prescriptions/admin*.js'
+      - 'lib/prescriptions/store.js'
+      - 'lib/app/admin-auth-refresh.js'
+      - 'lib/app/session.js'
+      - 'lib/app/config.js'
+      - 'lib/app/repository.js'
+      - 'middleware.ts'
+      - 'app/api/app/**'
+      - 'app/admin/api/recorder-auth/**'
+      - 'tests/admin-*.test.mjs'
+      - 'tests/practitioner-bridge.test.mjs'
+      - 'tests/client-session-recorder-auth.test.mjs'
+      - 'tests/cabinet-v2-ux.test.mjs'
+      - 'tests/prescription-access.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
   push:
     branches: ['codex/public-book-library']
@@ -38,14 +60,36 @@ on:
       - 'tests/client-session-audio-synthetic-e2e.test.mjs'
       - 'tests/client-session-photos.test.mjs'
       - 'tests/client-session-owner-photo-upload.test.mjs'
+      - 'tests/client-session-owner-audio-upload.test.mjs'
+      - 'tests/client-session-external-video.test.mjs'
+      - 'tests/session-delivery-security.test.mjs'
+      - 'tests/session-media-sdk.test.mjs'
+      - 'tests/fixture-module-body.test.mjs'
+      - 'tests/helpers/fixture-module-body.mjs'
       - 'tests/fixtures/synthetic-440hz-voice.m4a.base64'
+      - 'lib/prescriptions/admin*.js'
+      - 'lib/prescriptions/store.js'
+      - 'lib/app/admin-auth-refresh.js'
+      - 'lib/app/session.js'
+      - 'lib/app/config.js'
+      - 'lib/app/repository.js'
+      - 'middleware.ts'
+      - 'app/api/app/**'
+      - 'app/admin/api/recorder-auth/**'
+      - 'tests/admin-*.test.mjs'
+      - 'tests/practitioner-bridge.test.mjs'
+      - 'tests/client-session-recorder-auth.test.mjs'
+      - 'tests/cabinet-v2-ux.test.mjs'
+      - 'tests/prescription-access.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
 permissions:
   contents: read
 jobs:
   private-audio:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,6 +98,10 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci --no-audit --no-fund
+      - name: Expiring admin sessions and pinned SDK refresh regressions
+        run: node --conditions=react-server --test tests/admin-session-lifecycle.test.mjs tests/admin-auth-refresh.test.mjs tests/admin-login-security.test.mjs tests/practitioner-bridge.test.mjs tests/client-session-recorder-auth.test.mjs tests/cabinet-v2-ux.test.mjs tests/prescription-access.test.mjs
+      - name: Lint admin authorization and refresh boundaries
+        run: npx --no-install eslint middleware.ts lib/app/admin-auth-refresh.js lib/prescriptions/admin.js lib/prescriptions/admin-session.js 'app/api/app/[...path]/route.js' app/admin/api/recorder-auth/route.js tests/admin-session-lifecycle.test.mjs tests/admin-auth-refresh.test.mjs tests/admin-login-security.test.mjs tests/client-session-recorder-auth.test.mjs
       - name: Actual synthetic AAC bytes through owner intent/upload/finalization/guest Range playback and privacy
         run: |
           node --test tests/client-session-take-selection.test.mjs \
@@ -70,3 +118,14 @@ jobs:
         run: |
           node --check tests/client-session-audio-synthetic-e2e.test.mjs
           node --check tests/client-session-owner-photo-upload.test.mjs
+
+      - name: ESM fixture boundaries and private media provider regressions
+        run: node --test tests/fixture-module-body.test.mjs tests/session-media-sdk.test.mjs tests/client-session-external-video.test.mjs
+      - name: Fixture lint and TypeScript
+        run: |
+          npx --no-install eslint tests/helpers/fixture-module-body.mjs tests/fixture-module-body.test.mjs tests/session-delivery-security.test.mjs tests/client-session-external-video.test.mjs tests/client-session-owner-photo-upload.test.mjs tests/session-media-sdk.test.mjs tests/client-session-owner-audio-upload.test.mjs
+          npx --no-install tsc --noEmit --incremental false
+      - name: Production build with app flags absent
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

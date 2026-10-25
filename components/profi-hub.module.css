@@ -511,3 +511,123 @@
 @media(prefers-reduced-motion:reduce){.masterChevron{transition:none}}
 
 @media(max-width:430px){.freeBlurb{font-size:11px;line-height:1.37}}
+
+/* 2026-10-25: same photo-left, in-card pills as Home's situation cards.
+   Keep the real Details accordion and direct authenticated Create link. */
+.offerStudio{display:block;max-width:940px;margin-inline:auto}
+.offerChoices{
+ min-height:0;width:100%;padding:clamp(14px,2.7vw,25px);
+ border:1px solid #efd8e0;border-radius:22px;background:#fffdfa;box-shadow:none;
+}
+.offerChoices h3{color:#713c50;font:400 clamp(27px,3.3vw,38px)/1.14 Georgia,"Times New Roman",serif}
+.offerChoices>.micro{color:#84756e;font-size:12px;line-height:1.5}
+.offerGrid{
+ display:grid;grid-template-columns:1fr;align-items:stretch;
+ gap:12px;margin-top:16px;
+}
+.offerOption{
+ display:grid;grid-template-columns:clamp(120px,20%,164px) minmax(0,1fr);
+ grid-template-rows:minmax(0,1fr) auto;column-gap:16px;align-items:stretch;
+ min-width:0;padding:12px;border:1px solid #efd7df;border-radius:20px;
+ background:#fffefa;box-shadow:0 3px 14px rgba(102,51,72,.025);
+}
+/* Header is only a grouping wrapper: its image and copy occupy the
+   same two-column card grid, so actions stay BESIDE the photo. */
+.offerOptionHeader{display:contents}
+.offerOptionHeader .offerThumb{
+ grid-column:1;grid-row:1/span 2;align-self:stretch;
+ width:100%;height:100%;min-height:146px;border-radius:15px;
+}
+.offerOptionHeader .offerText{
+ grid-column:2;grid-row:1;align-self:center;justify-content:center;
+ min-width:0;gap:6px;padding:6px 0;
+}
+.offerOption .offerText strong{
+ color:#80455b;font-size:clamp(17px,2.1vw,22px);font-weight:750;
+ line-height:1.22;overflow-wrap:anywhere;
+}
+.offerOption .offerText small{
+ color:#567067;font-size:13px;line-height:1.4;overflow-wrap:anywhere;
+}
+.offerActions{
+ grid-column:2;grid-row:2;display:grid;
+ grid-template-columns:minmax(90px,.72fr) minmax(110px,1.55fr);
+ align-self:end;gap:9px;min-width:0;max-width:520px;
+ margin-top:10px;
+}
+.offerGrid .offerDetailsButton,.offerGrid .offerCreateButton{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ width:100%;min-width:0;min-height:46px;padding:8px 12px;
+ border-radius:999px;text-decoration:none;text-align:center;
+ font:750 13px/1.25 Arial,Helvetica,sans-serif;white-space:normal;
+}
+.offerGrid .offerDetailsButton{
+ border:1px solid #b9d0c7;background:#fffdfa;color:#7f4558;cursor:pointer;
+}
+.offerGrid .offerDetailsButton:hover,.offerGrid .offerDetailsButton[aria-expanded="true"]{
+ border-color:#8faf9f;background:#f2f7f3;
+}
+.offerGrid .offerDetailsButton svg{flex:0 0 16px;transform:rotate(90deg);transition:transform .18s}
+.offerGrid .offerDetailsButton[aria-expanded="true"] svg{transform:rotate(-90deg)}
+.offerGrid .offerCreateButton{
+ border:1px solid #7c304c;background:#7c304c;color:#fffaf6;
+ box-shadow:0 3px 10px rgba(108,39,65,.10);
+}
+.offerGrid .offerCreateButton:hover{background:#69283f;border-color:#69283f}
+.offerGrid .offerCreateButton svg{flex:0 0 16px}
+.offerGrid .offerDetailsButton:focus-visible,.offerGrid .offerCreateButton:focus-visible{
+ outline:3px solid #a77d5d;outline-offset:3px;
+}
+.offerExpanded{
+ grid-column:1/-1;grid-row:3;min-width:0;
+ margin-top:12px;padding:13px 8px 3px;border-top:1px solid #ead8de;color:#66534d;
+}
+.offerExpanded[hidden]{display:none}
+.offerExpanded>p{margin:0 0 10px;font-size:12px;line-height:1.55}
+.offerExpanded dl{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:0}
+.offerExpanded dt{color:#865365;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.offerExpanded dd{margin:4px 0 0;font-size:11.5px;line-height:1.45}
+.offerChoices>.authNote{margin:13px 3px 0;font-size:11px;line-height:1.48}
+@media(max-width:600px){
+ .offerChoices{display:block;min-height:0;padding:14px 12px;margin-bottom:0;border-radius:19px}
+ .offerChoices h3{font-size:clamp(27px,7.4vw,34px)}
+ .offerGrid{gap:9px;margin-top:13px}
+ .offerOption{
+   grid-template-columns:clamp(91px,25vw,110px) minmax(0,1fr);
+   column-gap:10px;min-height:142px;padding:9px;border-radius:17px;
+ }
+ .offerOptionHeader .offerThumb{min-height:122px;border-radius:13px}
+ .offerOptionHeader .offerText{gap:4px;padding:2px 0}
+ .offerOption .offerText strong{font-size:clamp(13px,3.7vw,16px);line-height:1.25}
+ .offerOption .offerText small{font-size:clamp(10.5px,2.95vw,12px);line-height:1.32}
+ .offerActions{
+   grid-template-columns:minmax(0,1.05fr) minmax(0,1.42fr);
+   gap:6px;margin-top:8px;
+ }
+ .offerGrid .offerDetailsButton,.offerGrid .offerCreateButton{
+   min-height:44px;padding:7px 7px;gap:4px;font-size:11.5px;
+ }
+ .offerExpanded dl{grid-template-columns:1fr 1fr}
+ .offerChoices>.authNote{font-size:10.5px}
+}
+@media(max-width:359px){
+ .offerChoices{padding:13px 8px}
+ .offerOption{grid-template-columns:75px minmax(0,1fr);column-gap:8px;padding:7px;min-height:136px}
+ .offerOptionHeader .offerThumb{min-height:120px}
+ .offerOption .offerText strong{font-size:12px}
+ .offerOption .offerText small{font-size:10px}
+ .offerActions{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:4px}
+ .offerGrid .offerDetailsButton,.offerGrid .offerCreateButton{
+   min-height:44px;padding:6px 3px;gap:2px;font-size:10px;
+ }
+ .offerExpanded dl{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .offerGrid .offerDetailsButton svg{transition:none}
+}
+
+/* Search lives in one Pro area rather than inside nested support cards. */
+.finderSection{min-width:0;scroll-margin-top:calc(86px + env(safe-area-inset-top))}
+.masterDirectory{min-width:0;margin-top:10px;padding:clamp(10px,1.8vw,20px);border:1px solid #e6d6c4;border-radius:21px;background:#fffaf4}
+.directoryError{margin:10px 0;padding:17px;border:1px solid #e3d1c0;border-radius:15px;color:#705447;background:#fffaf4;font-size:13px;line-height:1.5}
+@media(max-width:600px){.masterDirectory{padding:8px;border-radius:16px;margin-top:8px}}
