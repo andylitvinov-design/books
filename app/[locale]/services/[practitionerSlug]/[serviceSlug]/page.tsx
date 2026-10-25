@@ -73,6 +73,11 @@ export default async function ServiceDetail({params}:PageProps){
         <p className="homeopathy-kicker">{ru?"Услуга":es?"Servicio":"Service"}</p>
         <h1>{service.copy.title}</h1>
         <p className={styles.lead}>{service.copy.shortDescription}</p>
+        {(service.serviceIntroductions?.length||service.videoPresentation)&&<PractitionerPresentationVideo service locale={locale}
+          video={service.videoPresentation} playbackUrl={service.videoPresentation?publicPresentationUrl(service.videoPresentation,getAppConfig().supabaseUrl):''}
+          introductions={(service.serviceIntroductions||[]).map(item=>({
+            ...item,playbackUrl:publicPresentationUrl(item.media,getAppConfig().supabaseUrl,item.type)
+          }))}/>}
         <div className={styles.quickFacts} aria-label={ru?"Условия":es?"Detalles del servicio":"Service details"}>
           <strong>{price}</strong>
           {service.durationMinutes && service.durationMinutes>0 ? <span>{service.durationMinutes} min</span> : null}
@@ -88,7 +93,6 @@ export default async function ServiceDetail({params}:PageProps){
       </div>
     </section>
     {(service.photos||[]).length>0&&<section className={mediaStyles.gallery} aria-label={ru?"Фотографии услуги":es?"Fotos del servicio":"Service photos"}>{(service.photos||[]).map((src,i)=><img key={src} src={src} alt={service.copy.title+" — "+(i+1)} loading="lazy" />)}</section>}
-    {service.videoPresentation&&<PractitionerPresentationVideo service locale={locale} video={service.videoPresentation} playbackUrl={publicPresentationUrl(service.videoPresentation,getAppConfig().supabaseUrl)}/>}
     <section className={`services-studio-approach ${styles.approach}`}>
       <div><p className="homeopathy-kicker">{ru?"Практик":es?"Profesional":"Practitioner"}</p><h2>{service.practitionerName}</h2><p>{service.professionalTitle}</p>{verified&&<p className="hh-badge">{ru?"Credentials проверены":es?"Credenciales verificadas":"Credentials verified"}</p>}{practitioner.isPartner&&<p className="hh-badge">{es?"Colaborador de Holistic House":"Holistic House Partner"}</p>}</div>
       <div><p>{service.copy.description||service.copy.shortDescription}</p>

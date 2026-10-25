@@ -951,7 +951,7 @@ async function handle(request, { params }) {
     }
     // Keep onboarding and own profile/service drafts available during signup.
     // All other master tools require a submitted profile and first offering.
-    if (path[0] === 'practice' && !['onboarding','profile','services'].includes(path[1]))
+    if (path[0] === 'practice' && !['onboarding','profile','services','video-upload'].includes(path[1]))
       await practiceRepo.requireActivated(actor)
     if (joined === 'practice/video-upload/intent') return json(await createPresentationUploadIntent(config, actor, body), 201)
     if (joined === 'practice/video-upload/complete') return json(await completePresentationUpload(config, actor, body))
