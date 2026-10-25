@@ -80,3 +80,8 @@
   .compactThread .coachBubble{padding:7px 10px}
   .compactThread .userBubble{padding:3px 8px}
 }
+
+/* Preserve a single-line, non-overflowing previous-answer chip. */
+.compactThread .userBubble{display:flex;align-items:center;gap:3px;overflow:hidden;max-width:100%;min-width:0}
+.compactThread .userLabel{flex:none;white-space:nowrap}
+.compactThread .userBubble p{flex:1;display:block;min-width:0;max-width:none}
