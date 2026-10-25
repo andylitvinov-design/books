@@ -508,8 +508,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 onClick={()=>selectTopicGroup(group.id)}>
                 <span aria-hidden="true" className={styles.topicGroupIcon}>{group.icon}</span>
                 <span className={styles.topicGroupName}>{tr(group.label,lang)}</span>
-                <span className={styles.topicGroupCount} aria-label={t.groupCount}>
-                  {coachingTopicSchemeCount(schemes.filter(s=>coachingSchemeMatchesSessionMode(s,sessionMode)),group.id)}</span>
+                {sessionMode!=='imagery'&&<span className={styles.topicGroupCount} aria-label={t.groupCount}>
+                  {coachingTopicSchemeCount(schemes.filter(s=>coachingSchemeMatchesSessionMode(s,sessionMode)),group.id)}</span>}
               </button>)}
             </div>
           </fieldset>
