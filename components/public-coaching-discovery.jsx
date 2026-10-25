@@ -7,9 +7,9 @@ import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
-import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
+import CoachingChatThread from '@/components/coaching-chat-thread'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -349,7 +349,6 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
   const quickChoices=coachingQuickChoicesAllowed(current,index)
-  const gentleGuide=coachingGentleGuide(current,index,session?.questions?.length||1,lang)
   const previousQuestion=session?.questions?.[index-1]
   const conversationTurn=coachingConversationTurn({
     question:current,previousQuestion,previousAnswer:answers?.[previousQuestion?.id],
@@ -670,8 +669,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <CoachingDialogueTurn turn={followupTurn}/>
-            <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            <CoachingChatThread turn={followupTurn} locale={lang}>
+              <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            </CoachingChatThread>
             <CoachingQuestionVoice key={'guest-followup-'+pendingFollowup.key+'-'+pendingFollowup.questionId+'-'+lang}
               text={[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
@@ -679,14 +679,19 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               onTranscript={words=>{setReflectionDraft(previous=>appendSpokenAnswer(previous,words,500));setError('')}}/>
             {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             <p className={styles.hint}>{t.clarifyWhy}</p>
-            <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
             <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
               maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+            </div>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
-            {gentleGuide&&<div data-public-coaching-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
-            <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+            <div data-public-coaching-gentle-guide>
+              <CoachingChatThread turn={conversationTurn} locale={lang}>
+                <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+              </CoachingChatThread>
+            </div>
             <CoachingQuestionVoice key={'guest-question-'+current.id+'-'+lang}
               text={[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
@@ -698,6 +703,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               }}/>
             {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
+            <div className={styles.chatComposer} data-coaching-composer>
             {quickChoices&&options.length>0&&!needsCustomPlan&&<>
               <p className={styles.questionLabel}>{t.choices}</p>
               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
@@ -718,6 +724,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                   data-public-coaching-open-reflection={!quickChoices?'true':undefined}
                   placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
                   onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
+            </div>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>}
         </div>
