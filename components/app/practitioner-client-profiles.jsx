@@ -322,7 +322,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                         accountId={accountId} locale={lang} onChanged={()=>onRefresh?.()}/>
                       <PracticeRequestConversation key={request.id} requestId={request.id}
                         accountId={accountId} locale={lang} initialMessage={typeof request.message==='string'?request.message:''}
-                        createdAt={request.createdAt} autoOpen={request.id===focusRequestId}
+                        createdAt={request.createdAt} autoOpen={request.id===focusRequestId || request.newMessageCount>0}
                         onSaved={()=>onRefresh?.()} onViewed={()=>onRefresh?.()}/>
                     </>}
               </article>
