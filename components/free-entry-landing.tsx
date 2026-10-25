@@ -413,7 +413,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
                 <a className={styles.primary} href={kind === "situation" ? "#free-diagnosis-options" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
-              <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
+              <a className={styles.secondary} href={kind === "situation" ? "#free-diagnosis-options" : "#what-you-get"}>{kind === "dao" ? t.secondary : common.details}</a>
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
           </div>
