@@ -16,6 +16,7 @@ import SimpleServiceEditor from './simple-service-editor'
 import RemoteGoalPhoto from './remote-goal-photo'
 import PracticePhotoUpload from './practice-photo-upload'
 import PracticeVideoField from './practice-video-field'
+import PracticePublicAlias from './practice-public-alias'
 import { getHobbyServiceQuota } from '@/lib/practitioners/service-quota.js'
 import { getPublicServiceDetailHref } from '@/lib/practitioners/public-service-links.js'
 import './practice-dashboard.css'
@@ -410,7 +411,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const readySteps=setupSteps.filter(step=>step.done).length
   async function shareProfile(){
     if(!profileLive){choosePanel('profile');return}
-    const url=window.location.origin+'/'+locale+'/masters/'+p.slug
+    const publicPath=p.publicAlias
+      ? (locale==='en'?'/m/':'/'+locale+'/m/')+p.publicAlias
+      : '/'+locale+'/masters/'+p.slug
+    const url='https://holistichouse.vercel.app'+publicPath
     setShareNotice('')
     try{
       if(navigator.share){await navigator.share({title:'Holistic House',url});setShareNotice(ru?'Открыто меню отправки.':'Sharing menu opened.');return}
@@ -470,6 +474,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
       </div>}
       <p className="hh-practice-first-actions-note"><CheckCircle2 aria-hidden="true"/>{creationCopy.safety}</p>
     </section>}
+    {p&&!activePanel&&<PracticePublicAlias practitioner={p} locale={locale}
+      profileLive={profileLive} onSaved={load} />}
 
     {!needsOnboarding&&<section id="hh-practice-workspace-top" className="hh-practice-v4-launch" aria-label={ru?'Основные инструменты мастера':locale==='es'?'Herramientas del profesional':'Practitioner essentials'} data-practitioner-v4-dashboard>
       <div className="hh-practice-v4-grid">
@@ -541,7 +547,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     </div>}
     {!needsOnboarding&&!activePanel&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics"><PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} /></div>}
     {!needsOnboarding&&!activePanel&&p?.slug&&p.status==='approved'&&<p className="hh-practice-public-link">
-      <Link href={'/'+locale+'/masters/'+p.slug} prefetch={false}>
+      <Link href={p.publicAlias?(locale==='en'?'/m/':'/'+locale+'/m/')+p.publicAlias:'/'+locale+'/masters/'+p.slug} prefetch={false}>
         {ru?'Посмотреть мою публичную страницу':'View my public profile'} <span aria-hidden="true">↗</span>
       </Link>
       <button type="button" onClick={shareProfile}><Share2 aria-hidden="true" />{ru?'Поделиться':'Share'}</button>
