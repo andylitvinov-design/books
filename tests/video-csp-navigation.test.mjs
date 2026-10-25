@@ -71,7 +71,7 @@ test("private Yggdrasil recording stays listed without a playable provider id", 
 
 test("client CSP classification exactly follows middleware including encoded and root paths", async () => {
   const [middleware, boundary] = await Promise.all([source("middleware.ts"), source("components/csp-navigation-boundary.tsx")]);
-  const serverPrivate = middleware.slice(middleware.indexOf("function privatePath("), middleware.indexOf("export function middleware"));
+  const serverPrivate = middleware.slice(middleware.indexOf("function privatePath("), middleware.indexOf("export async function middleware"));
   const clientPrivate = boundary.slice(boundary.indexOf("function privatePath("), boundary.indexOf("function cspClassForPath("));
   assert.equal(clientPrivate.trim(), serverPrivate.trim(), "Private-path rules must stay identical; never widen private CSP");
   const classifySource = boundary.slice(boundary.indexOf("function privatePath("), boundary.indexOf("/**")).replaceAll(": string", "");

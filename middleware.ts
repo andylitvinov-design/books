@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { canonicalRedirectTarget, privateMigrationBridge } from './lib/canonical-redirect'
+import { refreshAdminAuth } from './lib/app/admin-auth-refresh'
 function privatePath(pathname: string) {
   const decoded = (() => { try { return decodeURIComponent(pathname) } catch { return pathname } })().replace(/\/+/g, '/')
   return /^\/(en|ru|es)\/client(?:\/|$)/.test(decoded)
@@ -15,7 +16,7 @@ function privatePath(pathname: string) {
     || /^\/admin(?:\/|$)/.test(decoded)
     || decoded.startsWith('/document-preview/')
 }
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const redirectTarget = canonicalRedirectTarget(request.url, request.method)
   if (redirectTarget) return NextResponse.redirect(redirectTarget, 308)
   // Legacy book URLs are 301, preserving the former ?lang= selection.
@@ -37,6 +38,7 @@ export function middleware(request: NextRequest) {
     'Content-Security-Policy': `default-src 'none'; script-src 'nonce-${bridgeNonce}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
     'X-Content-Type-Options': 'nosniff',
   } })
+  const authCookieChanges = await refreshAdminAuth(request)
   const requestHeaders = new Headers(request.headers)
   // Derive the public document language only from the URL. Private locale gates
   // and all security headers below remain unchanged.
@@ -189,8 +191,9 @@ export function middleware(request: NextRequest) {
   requestHeaders.set('x-csp-class', cspClass)
   requestHeaders.set('Content-Security-Policy', csp)
   const response = NextResponse.next({ request: { headers: requestHeaders } })
+  for (const { name, value, options } of authCookieChanges) response.cookies.set(name, value, options)
   response.headers.set('Content-Security-Policy', csp)
-  if (privatePath(request.nextUrl.pathname)) {
+  if (privatePath(request.nextUrl.pathname) || authCookieChanges.length) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
     response.headers.set('Content-Security-Policy', csp)
