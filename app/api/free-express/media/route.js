@@ -33,8 +33,10 @@ async function handle(request) {
       result = await freeExpressMediaStatus(config, row)
     } else if (request.method === 'DELETE') {
       const body = await readBody(request, 250)
-      if (!body || Object.keys(body).some(key => key !== 'kind'))
+      if (!body || Object.keys(body).some(key => !['kind','referenceCode'].includes(key)))
         throw new AppError('INVALID_MEDIA_KIND', 400)
+      if (body.referenceCode !== row.reference_code)
+        throw new AppError('ENQUIRY_CONTINUATION_MISMATCH', 409)
       result = await deleteFreeExpressMedia(config, row, body.kind)
     } else {
       if (!request.headers.get('content-type')?.startsWith('multipart/form-data'))
@@ -43,8 +45,10 @@ async function handle(request) {
       if (length > FREE_EXPRESS_MAX_PHOTO_BYTES + 40000)
         throw new AppError('PHOTO_TOO_LARGE', 413)
       const form = await request.formData()
-      if ([...form.keys()].some(key => !['photo','kind','consent'].includes(key)))
+      if ([...form.keys()].some(key => !['photo','kind','consent','referenceCode'].includes(key)))
         throw new AppError('INVALID_IMAGE', 400)
+      if (form.get('referenceCode') !== row.reference_code)
+        throw new AppError('ENQUIRY_CONTINUATION_MISMATCH', 409)
       result = await uploadFreeExpressMedia(config, row, form.get('kind'),
         form.get('photo'), form.get('consent') === 'yes')
     }
