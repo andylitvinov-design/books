@@ -76,8 +76,8 @@ export default function PracticePublicAlias({practitioner,locale='en',profileLiv
   const url=alias?PUBLIC_ORIGIN+shortPath(locale,alias):''
   function change(value){setDraft(value.toLowerCase());setNotice('');setTone('')}
   function localValidation(){
-    if(!PROFILE_ALIAS_PATTERN.test(candidate)||candidate.includes('--'))return t.invalid
     if(PROFILE_ALIAS_RESERVED.has(candidate))return t.reserved
+    if(!PROFILE_ALIAS_PATTERN.test(candidate)||candidate.includes('--'))return t.invalid
     return null
   }
   async function check(){
