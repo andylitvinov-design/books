@@ -14,7 +14,10 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
-  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PublicConsultationCta locale='));
+  // Conversion-first Services intentionally presents the booking action in the first screen.
+  // Genuine customer stories follow the offers + intro media rather than delaying the booking CTA.
+  assert.ok(services.indexOf('<PublicConsultationCta locale=') < services.indexOf('<ServicesStudioOffers'));
+  assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
   assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
   assert.match(testimonials, /<HomeTestimonialMore/);
   const lazy = read("components", "home-testimonial-more.tsx");
