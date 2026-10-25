@@ -5,21 +5,24 @@ import ts from "typescript";
 import { WHATSAPP_NUMBER, whatsappEnquiryUrl } from "../lib/whatsapp-enquiry.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
-const source = read("components/tantra-initiation-form.tsx");
+const serverSource = read("components/tantra-initiation-form.tsx");
+const clientSource = read("components/tantra-initiation-choice.tsx");
 const chooser = read("components/contact-channel-chooser.tsx");
-const compiled = ts.transpileModule(source, {
-  compilerOptions: {
-    target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.CommonJS,
-    jsx: ts.JsxEmit.ReactJSX,
-    esModuleInterop: true,
-  },
-}).outputText;
+function compile(source) {
+  return ts.transpileModule(source, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.ReactJSX,
+      esModuleInterop: true,
+    },
+  }).outputText;
+}
 
-// Render the one client-side selection using an inert JSX runtime. The stub
-// does not run effects or network calls; all messenger drafts are read-only.
+// Render both real components with inert JSX; no effects, network or private data.
 const jsx = (type, props) => ({ type, props });
 let currentChoice = "free";
+let ClientChoice;
 const dependencies = (name) => {
   if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "fragment" };
   if (name === "react") return {
@@ -29,15 +32,38 @@ const dependencies = (name) => {
   if (name === "lucide-react") return new Proxy({}, { get: (_, key) => key });
   if (name === "@/lib/whatsapp-enquiry") return { whatsappEnquiryUrl };
   if (name === "@/components/contact-channel-chooser") return { ContactChannelChooser: "contact-channel-chooser" };
+  if (name === "@/components/tantra-initiation-choice") return { TantraInitiationChoice: ClientChoice };
   if (name.endsWith(".module.css")) return { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) };
   throw new Error("Unexpected import: " + name);
 };
+const instantiate = source => {
+  const module = { exports: {} };
+  new Function("require", "module", "exports", compile(source))(
+    dependencies, module, module.exports,
+  );
+  return module.exports;
+};
+ClientChoice = instantiate(clientSource).TantraInitiationChoice;
+const { TantraInitiationForm, tantraInitiationWhatsAppUrl } = instantiate(serverSource);
 
-const compiledModule = { exports: {} };
-new Function("require", "module", "exports", compiled)(
-  dependencies, compiledModule, compiledModule.exports,
-);
-const { TantraInitiationForm, tantraInitiationWhatsAppUrl } = compiledModule.exports;
+function flatten(node) {
+  if (!node || typeof node !== "object") return [];
+  if (Array.isArray(node)) return node.flatMap(flatten);
+  return [node, ...flatten(node.props?.children)];
+}
+function render(locale, choice = "free") {
+  currentChoice = choice;
+  const wrapper = TantraInitiationForm({ locale });
+  assert.equal(wrapper.type, ClientChoice);
+  const nodes = flatten(ClientChoice(wrapper.props));
+  return {
+    nodes,
+    links: nodes.filter(node => node.type === "contact-channel-chooser"),
+    selects: nodes.filter(node => node.type === "select"),
+    options: nodes.filter(node => node.type === "option"),
+    anchors: nodes.filter(node => node.type === "span" && /^apply-/.test(node.props?.id || "")),
+  };
+}
 const intents = ["free", "personal", "session", "answers", "feedback"];
 
 function flatten(node) {
@@ -115,13 +141,13 @@ test("all five localized drafts retain original service, pricing and feedback in
 });
 
 test("personal and feedback deep links select the appropriate option on load/hash change", () => {
-  assert.match(source, /window\.location\.hash === "#apply-" \+ value/);
-  assert.match(source, /selectFromHash\(\)/);
-  assert.match(source, /window\.addEventListener\("hashchange", selectFromHash\)/);
-  assert.match(source, /window\.removeEventListener\("hashchange", selectFromHash\)/);
-  assert.ok(!source.includes("localStorage"));
-  assert.ok(!source.includes('type="email"'));
-  assert.ok(!source.includes("<textarea"));
+  assert.match(clientSource, /window\.location\.hash === "#apply-" \+ option\.intent/);
+  assert.match(clientSource, /selectFromHash\(\)/);
+  assert.match(clientSource, /window\.addEventListener\("hashchange", selectFromHash\)/);
+  assert.match(clientSource, /window\.removeEventListener\("hashchange", selectFromHash\)/);
+  assert.ok(!clientSource.includes("localStorage"));
+  assert.ok(!clientSource.includes('type="email"'));
+  assert.ok(!clientSource.includes("<textarea"));
 });
 
 test("the phone is saved only after explicit consent and never attached to a messenger URL", () => {
