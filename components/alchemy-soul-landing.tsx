@@ -375,6 +375,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           </div>
           <div className={styles.heroOrder}>
             <ContactChannelChooser locale={locale} whatsappUrl={heroWhatsApp} label={t.cta}
+              compactPhone compactTrigger stayAfterSave
               className={styles.heroOrderButton} event="service_request_start"
               attributes={{ "data-alchemy-booking": "hero" }} />
           </div>
