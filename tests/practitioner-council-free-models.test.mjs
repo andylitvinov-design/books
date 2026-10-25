@@ -399,3 +399,88 @@ test('Gemini daily audit uses bounded free-first output and no retry on timeout'
   assert.equal(reply.status,'ok')
   assert.equal(count,1)
 })
+
+test('Studio GET 429 safely checks OpenRouter for independently verified $0 Mistral',async()=>{
+  const direct='https://api.mistral.ai/v1/models'
+  const router='https://openrouter.ai/api/v1/'
+  const free='mistralai/mistral-nemo:free'
+  const seen=[]
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-studio-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router-key'
+  }
+  const reply=await reviewMistral(report,env,async(url,options)=>{
+    seen.push(String(url))
+    if(url===direct){
+      assert.equal(options.method,'GET')
+      return json({},429)
+    }
+    if(url===router+'models'){
+      assert.equal(options.method,'GET')
+      return json({data:[
+        {id:'mistralai/mistral-small-2603',pricing:{prompt:'0.0000001',completion:'0.0000002'}},
+        {id:free,pricing:{prompt:'0',completion:'0',request:'0',image:'0'}}
+      ]})
+    }
+    assert.equal(url,router+'chat/completions')
+    const payload=JSON.parse(options.body)
+    assert.equal(payload.model,free)
+    assert.equal(payload.provider.allow_fallbacks,false)
+    assert.deepEqual(payload.provider.max_price,{prompt:0,completion:0,request:0,image:0})
+    return json({model:free,usage:{cost:0},
+      choices:[{finish_reason:'stop',message:{content:long}}]})
+  })
+  assert.equal(reply.status,'ok')
+  assert.equal(reply.model,free)
+  assert.deepEqual(seen,[direct,router+'models',router+'chat/completions'])
+})
+
+test('Studio GET 429 with no zero-price Mistral reports rejection, never pays or fabricates',async()=>{
+  const seen=[]
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-studio-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router-key'
+  }
+  const result=await reviewMistral(report,env,async(url,options)=>{
+    seen.push([String(url),options.method])
+    if(String(url)==='https://api.mistral.ai/v1/models')return json({},429)
+    assert.equal(String(url),'https://openrouter.ai/api/v1/models')
+    return json({data:[
+      {id:'mistralai/mistral-small-2603',pricing:{prompt:'0.0000001',completion:'0.0000002'}},
+      {id:'mistralai/mistral-nemo:free',pricing:{prompt:'0',completion:'0.000001'}}
+    ]})
+  })
+  assert.equal(result.status,'error')
+  assert.equal(result.reason,'HTTP 429')
+  assert.equal(result.phase,'preflight')
+  assert.equal(result.text,'')
+  assert.deepEqual(seen,[
+    ['https://api.mistral.ai/v1/models','GET'],
+    ['https://openrouter.ai/api/v1/models','GET']
+  ])
+})
+
+test('Studio POST 429 cannot trigger fallback or a second provider inference',async()=>{
+  const seen=[]
+  const env={
+    HH_COUNCIL_MISTRAL_API_KEY:'synthetic-studio-key',
+    HH_COUNCIL_MISTRAL_FREE_MODE_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router-key'
+  }
+  const result=await reviewMistral(report,env,async(url,options)=>{
+    seen.push([String(url),options.method])
+    if(String(url)==='https://api.mistral.ai/v1/models')
+      return json({data:[{id:MISTRAL_DIRECT_MODEL}]})
+    assert.equal(String(url),'https://api.mistral.ai/v1/chat/completions')
+    return json({},429)
+  })
+  assert.equal(result.status,'error')
+  assert.equal(result.reason,'HTTP 429')
+  assert.notEqual(result.phase,'preflight')
+  assert.deepEqual(seen,[
+    ['https://api.mistral.ai/v1/models','GET'],
+    ['https://api.mistral.ai/v1/chat/completions','POST']
+  ])
+})
