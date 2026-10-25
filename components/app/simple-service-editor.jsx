@@ -182,14 +182,15 @@ function initialDraft(item,locale,starter='') {
         methods:item.methods||[], benefits:item.benefits||[], faq:item.faq||[],
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
-  const serviceIntroductions=Array.isArray(raw.serviceIntroductions)&&raw.serviceIntroductions.length
+  const serviceIntroductions=Array.isArray(raw.serviceIntroductions)
     ? raw.serviceIntroductions
     : raw.videoPresentation?[{language:(raw.languages||[]).find(code=>['en','ru','es'].includes(code))||locale,
         type:'video',media:raw.videoPresentation}]:[]
   return {
     ...BASE, languages:[locale==='ru'?'ru':locale==='es'?'es':'en'],
     ...(!item && Object.hasOwn(PRO_STARTERS,starter) ? PRO_STARTERS[starter] : {}), ...raw,
-    serviceIntroductions,
+    // Re-home legacy video inside the new language-based field, avoiding duplicate playback.
+    videoPresentation:null,serviceIntroductions,
     copy:Object.fromEntries(['en','ru','es'].map(lang=>[lang,{...BASE.copy[lang],...(raw.copy?.[lang]||{})}])),
   }
 }
