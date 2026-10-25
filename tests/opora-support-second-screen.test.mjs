@@ -39,7 +39,7 @@ test('support is authored for 14 days in EN/RU/ES, with no homework or performan
       assert.ok(copy.title.length<=54&&copy.body.length<=225,'One-screen reading budget '+locale+':'+day)
       assert.match(copy.body,today[locale],'Missing explicit daily purpose '+locale+':'+day)
       assert.match(copy.body,skillHint[locale][day-1],'Second screen does not explain actual skill '+locale+':'+day)
-      assert.doesNotMatch(copy.title+' '+copy.body,/\?|\b(how did that go|i tried it|you should|you must|your task|tarea|задание|оцените|сделайте|попробуйте)\b/iu)
+      assert.doesNotMatch(copy.title+' '+copy.body,/\?|\b(how did that go|i tried it|you should|you must|your task|haz la tarea|задание|оцените|сделайте|попробуйте)\b/iu)
     }
   }
   for(const invalid of [0,15,-1,1.5,null,undefined,'2']){
