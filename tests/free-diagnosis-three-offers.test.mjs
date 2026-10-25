@@ -12,12 +12,17 @@ const diagnostic = source("components/free-diagnostic-start.tsx");
 const phoneCss = source("components/free-diagnostic-start.module.css");
 const chooser = source("components/contact-channel-chooser.tsx");
 
-test("both free diagnosis routes reuse the same three localized full-screen offers", () => {
-  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\}>/);
+test("free review uses compact offers, consultation hub preserves full-screen offers", () => {
+  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} compact intro=\{/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-featured-constellations-video/);
+  assert.match(offers, /\{intro\}/);
+  assert.match(offers, /data-free-diagnosis-layout=\{compact \? "compact" : "full"\}/);
+  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scenes/);
+  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scene\{display:grid/);
+  assert.match(css, /\.expandedInfo/);
 });
 
 test("each of the three options is a full-screen photo scene with the explanation already visible", () => {
@@ -56,6 +61,8 @@ test("Request opens one localized phone and messenger sheet; no legacy step-one 
   assert.match(offers, /setSelected\(id\)/);
   assert.match(offers, /setRequestOpen\(true\)/);
   assert.match(offers, /data-diagnosis-order-form/);
+  assert.match(offers, /id="request-free-review" data-diagnosis-placement="top"/);
+  assert.match(offers, /id="free-diagnosis-request-dialog"/);
   assert.match(offers, /data-diagnosis-placement="top"/);
   assert.match(offers, /data-diagnosis-placement="bottom"/);
   assert.match(offers, /id="free-diagnosis-top"/);
