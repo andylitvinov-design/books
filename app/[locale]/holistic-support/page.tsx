@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { IdeasDiscovery } from "@/components/ideas-discovery";
+import { HolisticSupportChoices } from "@/components/holistic-support-choices";
 import { SupportTalismanGallery } from "@/components/support-talisman-gallery";
 import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
@@ -276,9 +276,9 @@ export default async function HolisticSupportPage({ params }: Props) {
     <main className={styles.page} data-holistic-support lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.shell}>
-        <div id="temple-psychic-insights" className={styles.primaryEntry} data-holistic-first-screen data-holistic-insights>
+        <div id="temple-psychic-insights" className={styles.primaryEntry}>
           <span id="symbolic-reflection" aria-hidden="true" />
-          <IdeasDiscovery locale={locale} variant="holistic" />
+          <HolisticSupportChoices locale={locale} />
         </div>
 
         <HolisticSupportTopicFilter locale={locale} />
