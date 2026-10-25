@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, Compass, HeartHandshake, HeartPulse, LockKeyhole, Sparkles } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
 import { recommendProfileBattery } from "@/lib/profile/profile-battery";
+import { appFetch } from "@/lib/app/client-fetch";
+import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "identity" | "wellbeing" | "relationships" | "work" | "purpose";
@@ -116,6 +118,13 @@ const copy = {
     review: "Review my test path", readyKicker: "YOUR PERSONAL TEST PATH",
     readyTitle: "Ready to build your profile?",
     readyHelp: "To create your profile, take the following free tests in order. You can review this list before starting.",
+    saveToCabinet: "Save my selected tests in my Cabinet",
+    saveToCabinetHelp: "Continue with Google to keep this selected test plan in My Tests. Guest answers or earlier guest results are never imported automatically.",
+    saveToCabinetBusy: "Preparing your Cabinet…",
+    saveToCabinetError: "Google sign-in could not start. Try again or continue as a guest.",
+    saveToCabinetCheckError: "Could not verify your account. You can still start these tests as a guest.",
+    saveToCabinetStorageError: "Browser storage is unavailable. Allow site storage to keep your selection through Google sign-in, or continue as a guest.",
+    guestChoice: "Or start these tests as a guest with the button below.",
     readyFoot: "One test at a time. You will see your progress at the top, and you can choose to save results privately in your Cabinet.",
     noTests: "No eligible free test measures this selection. Go back and choose other scales.",
     private: "Results can be saved in your protected account. Build your profile and set voluntary development goals there, after the tests.",
@@ -185,6 +194,13 @@ const copy = {
     review: "Проверить план тестов", readyKicker: "ВАШ ПУТЬ К ЛИЧНОМУ ПРОФИЛЮ",
     readyTitle: "Всё готово для создания профиля",
     readyHelp: "Для создания профиля предлагаем пройти следующие бесплатные тесты по порядку. Подтвердите список перед началом.",
+    saveToCabinet: "Сохранить выбранные тесты в кабинете",
+    saveToCabinetHelp: "Войдите через Google, чтобы сохранить набор в «Моих тестах». Гостевые ответы и прошлые гостевые результаты автоматически не переносятся.",
+    saveToCabinetBusy: "Открываем ваш кабинет…",
+    saveToCabinetError: "Не удалось начать вход через Google. Повторите попытку или продолжите без кабинета.",
+    saveToCabinetCheckError: "Не удалось проверить вход. Тесты всё равно можно пройти как гость.",
+    saveToCabinetStorageError: "Хранение данных сайта недоступно. Разрешите его для сохранения подборки через Google или продолжите как гость.",
+    guestChoice: "Или начните тесты без регистрации кнопкой ниже.",
     readyFoot: "Тесты идут один за другим. Сверху будет виден общий прогресс, а результаты можно сохранить в защищённом кабинете по вашему желанию.",
     noTests: "Для выбранных шкал пока нет подходящего бесплатного теста. Вернитесь к выбору шкал.",
     private: "Результаты можно сохранить в защищённом кабинете. Там доступен личный профиль и цели программы развития.",
@@ -254,6 +270,13 @@ const copy = {
     review: "Revisar mi plan de pruebas", readyKicker: "TU RUTA DE PRUEBAS PERSONALES",
     readyTitle: "Tu perfil empieza aquí",
     readyHelp: "Para crear tu perfil, realiza estas pruebas gratuitas en orden. Confirma la lista antes de empezar.",
+    saveToCabinet: "Guardar las pruebas elegidas en mi espacio",
+    saveToCabinetHelp: "Accede con Google para guardar tu selección en Mis pruebas. Tus respuestas y resultados de invitado no se importarán automáticamente.",
+    saveToCabinetBusy: "Abriendo tu espacio…",
+    saveToCabinetError: "No se pudo iniciar sesión con Google. Inténtalo de nuevo o continúa sin entrar.",
+    saveToCabinetCheckError: "No pudimos verificar tu cuenta. Puedes hacer estas pruebas como invitado.",
+    saveToCabinetStorageError: "No se puede guardar la selección en este navegador. Habilita el almacenamiento o continúa como invitado.",
+    guestChoice: "O empieza como invitado con el botón de abajo.",
     readyFoot: "Avanza prueba por prueba. Verás el progreso total arriba y podrás guardar los resultados de forma privada si lo deseas.",
     noTests: "No hay una prueba gratuita adecuada para estas escalas. Regresa y cambia tu elección.",
     private: "Guarda tus resultados en tu cuenta protegida y define tus propias metas de desarrollo.",
@@ -280,6 +303,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [selectedAxes, setSelectedAxes] = useState<string[]>(allAxesFor(areasFor(["identity"])));
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountError, setAccountError] = useState("");
   const accountLocale = locale === "es" ? "en" : locale;
 
   const availableAxes = allAxesFor(areas);
@@ -326,6 +351,50 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
 
   const base = "/" + accountLocale;
   const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","));
+
+  async function saveSelectionWithGoogle() {
+    if (accountBusy || selectedKeys.length === 0) return;
+    setAccountError("");
+    // The only cross-navigation state is a TTL-limited whitelist of eligible
+    // questionnaire keys, not the user interests, answers or health results.
+    try {
+      window.sessionStorage.setItem(
+        PENDING_TEST_SELECTION_KEY,
+        makeTestSelectionIntent(selectedKeys),
+      );
+    } catch {
+      setAccountError(t.saveToCabinetStorageError);
+      return;
+    }
+    setAccountBusy(true);
+    try {
+      try {
+        await appFetch("auth/contact-profile");
+        // No duplicate Google flow for a currently authenticated visitor.
+        window.location.assign(base + "/app/tests?selection=pending");
+        return;
+      } catch (cause) {
+        if ((cause as { status?: number })?.status !== 401) {
+          setAccountError(t.saveToCabinetCheckError);
+          return;
+        }
+      }
+      // This is the existing whitelisted OAuth continuation; My Tests
+      // rechecks eligibility and saves the account-owned plan only on success.
+      const response = await appFetch("auth/start", {
+        locale: accountLocale, continueTo: "tests",
+      });
+      if (typeof response?.redirectUrl !== "string" ||
+          !/^https:\/\//.test(response.redirectUrl)) {
+        throw new Error("AUTH_START_UNAVAILABLE");
+      }
+      window.location.assign(response.redirectUrl);
+    } catch {
+      setAccountError(t.saveToCabinetError);
+    } finally {
+      setAccountBusy(false);
+    }
+  }
 
   return <div className={styles.shell} data-personality-profile-builder>
     {!started ? <>
@@ -495,6 +564,19 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               <Check size={18} className={styles.reviewCheck} aria-hidden="true" />
             </li>)}
         </ol>
+        <div className={styles.accountOffer} data-profile-google-cabinet-offer>
+          <LockKeyhole size={20} aria-hidden="true" />
+          <div className={styles.accountOfferBody}>
+            <button type="button" className={styles.googleButton}
+              onClick={saveSelectionWithGoogle} disabled={accountBusy || selectedKeys.length === 0}
+              data-profile-google-signin>
+              {accountBusy ? t.saveToCabinetBusy : t.saveToCabinet}<ArrowRight size={16} aria-hidden="true" />
+            </button>
+            <p>{t.saveToCabinetHelp}</p>
+            <small>{t.guestChoice}</small>
+            {accountError && <p role="alert" className={styles.accountError}>{accountError}</p>}
+          </div>
+        </div>
         <p className={styles.reviewFoot}><LockKeyhole size={16} aria-hidden="true" />{t.readyFoot}</p>
       </section>}
 

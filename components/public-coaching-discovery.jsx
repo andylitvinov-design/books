@@ -4,11 +4,12 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, Download, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingChatThread from '@/components/coaching-chat-thread'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -16,6 +17,7 @@ import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coachin
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, coachingSchemeArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
+import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
 import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
@@ -59,6 +61,8 @@ const copy={
     completed:'Session complete',summary:'Your reflection',nextStep:'Your last step',copy:'Copy my summary',
     copied:'Copied',copyFallback:'Select and copy your notes below.',
     restart:'Choose another model',memory:'This free session stays in this tab only. Nothing is saved to an account or sent to a coach.',
+    reportNotice:'In this guest session, answers stay only in this tab. At the end you can download a dated PDF with all your questions and answers; download it before leaving.',
+    pdf:'Download PDF report',pdfError:'The PDF could not be created. Your answers are still visible in this tab.',date:'Session date',
     discard:'Leave this session? Your unsaved answers will be lost.',noAnswer:'Skipped',
     otherWays:'More ways to work with your question',
     otherWaysNote:'Author-created programmes and a longer questionnaire. These are separate experiences; guest answers do not transfer automatically.',
@@ -105,6 +109,8 @@ const copy={
     completed:'Сессия завершена',summary:'Ваши ответы',nextStep:'Ваш последний шаг',copy:'Скопировать результат',
     copied:'Скопировано',copyFallback:'Выделите и скопируйте текст ниже.',
     restart:'Выбрать другую модель',memory:'Бесплатная сессия хранится только в открытой вкладке. В личный кабинет или коучу ничего не отправляется.',
+    reportNotice:'В гостевой сессии ответы не сохраняются в кабинете. В конце вы сможете скачать PDF с датой, вопросами и ответами. Скачайте его до закрытия вкладки.',
+    pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы пока доступны в этой вкладке.',date:'Дата сессии',
     discard:'Выйти из сессии? Несохранённые ответы будут потеряны.',noAnswer:'Пропущено',
     otherWays:'Другие способы разобраться в своём вопросе',
     otherWaysNote:'Авторские программы и отдельная подробная анкета. Гостевые ответы не переносятся в кабинет автоматически.',
@@ -151,6 +157,8 @@ const copy={
     completed:'Sesión terminada',summary:'Tu reflexión',nextStep:'Tu último paso',copy:'Copiar resumen',
     copied:'Copiado',copyFallback:'Selecciona y copia tu texto abajo.',
     restart:'Elegir otro modelo',memory:'Esta sesión gratis solo vive en esta pestaña. No se guarda ni se envía al coach.',
+    reportNotice:'En esta sesión de invitado, las respuestas solo están en esta pestaña. Al terminar podrás descargar un PDF con fecha, preguntas y respuestas. Guárdalo antes de salir.',
+    pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen en esta pestaña.',date:'Fecha de la sesión',
     discard:'¿Salir? Se perderán tus respuestas.',noAnswer:'Omitido',
     otherWays:'Otras formas de explorar tu pregunta',
     otherWaysNote:'Programas de autor y cuestionario detallado. Las respuestas de invitado no se transfieren a tu cuenta automáticamente.',
@@ -263,6 +271,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
   const [entryStep,setEntryStep]=useState('intro')
+  const [checkin,setCheckin]=useState('')
   const [sessionTopic,setSessionTopic]=useState('')
   const [adultAcknowledged,setAdultAcknowledged]=useState(false)
   const [index,setIndex]=useState(0)
@@ -271,6 +280,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [dictating,setDictating]=useState(false)
   const [speechConsent,setSpeechConsent]=useState(false)
   const [finished,setFinished]=useState(false)
+  const [finishedAt,setFinishedAt]=useState(null)
+  const [pdfError,setPdfError]=useState('')
   const [pendingFollowup,setPendingFollowup]=useState(null)
   const [reflectionDraft,setReflectionDraft]=useState('')
   const [reflections,setReflections]=useState({})
@@ -330,8 +341,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     const selected=schemes.find(item=>item.schemeKey===schemeKey)
     if(selected){
       setAdultAcknowledged(false)
-      setSession(selected);setEntryStep('intro');setSessionTopic('');setIndex(0);setAnswers({});setDraft('')
-      setFinished(false);setError('');setCopied(false)
+      setSession(selected);setEntryStep('intro');setCheckin('');setSessionTopic('');setIndex(0);setAnswers({});setDraft('')
+      setFinished(false);setFinishedAt(null);setPdfError('');setError('');setCopied(false)
     }
   },[schemes])
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
@@ -348,7 +359,16 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
   const quickChoices=coachingQuickChoicesAllowed(current,index)
-  const gentleGuide=coachingGentleGuide(current,index,session?.questions?.length||1,lang)
+  const previousQuestion=session?.questions?.[index-1]
+  const conversationTurn=coachingConversationTurn({
+    question:current,previousQuestion,previousAnswer:answers?.[previousQuestion?.id],
+    previousReflection:reflections?.[previousQuestion?.id]?.text,
+    index,total:session?.questions?.length||1,locale:lang,
+  })
+  const followupTurn=pendingFollowup?coachingConversationTurn({
+    question:current,previousQuestion:current,previousAnswer:answers?.[current?.id],
+    index,total:session?.questions?.length||1,locale:lang,followup:true,
+  }):null
   const needsCustomPlan=Boolean(session?.requiredCustomPlan&&index===session.questions.length-1)
   const requiresAdult=Boolean(session&&(coachingSchemeRequiresAdultConsent(session)||sessionTopic==='sexuality'))
   const progressPosition=entryStep==='intro'?1:entryStep==='topic'?2:index+3
@@ -365,13 +385,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     if(recommendation.blocked)return
     setDictating(false)
     setAdultAcknowledged(false)
-    setSession(scheme);setEntryStep('intro');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
+    setSession(scheme);setEntryStep('intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(dictating){setError(t.stopMic);return}
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
-    setSession(null);setEntryStep('intro');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
+    setSession(null);setEntryStep('intro');setCheckin('');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
@@ -406,7 +426,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       setReflections(nextReflections)
     }
     setAnswers(nextAnswers);setError('')
-    if(index===session.questions.length-1){setFinished(true);return}
+    if(index===session.questions.length-1){setFinishedAt(new Date().toISOString());setFinished(true);return}
     const followup=authoredFollowupFor(current,value,nextReflections)
     if(followup){setPendingFollowup(followup);setReflectionDraft('');return}
     const next=index+1;setIndex(next);setDraft(nextAnswers[session.questions[next].id]||'')
@@ -433,6 +453,27 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         approvedPlan.goal,approvedPlan.obstacle,approvedPlan.when,
         approvedPlan.confidence===null?'':'Confidence /10: '+approvedPlan.confidence]:[])
       ].filter(Boolean).join('\n\n')
+  }
+  function downloadReport(){
+    if(!session||!finished)return
+    try{
+      downloadCoachingSessionPdf({
+        locale:lang,title:coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang)),
+        slug:session.schemeKey||'guest-coaching',sessionDate:finishedAt,
+        topic:sessionTopic?coachingRequestTopicLabel(sessionTopic,lang):'',
+        clientQuestion:question.trim(),
+        entries:session.questions.map(item=>({
+          question:tr(item.prompt,lang),
+          answer:answerText(answers[item.id],item,lang,t),
+          reflection:reflections[item.id]?.text||'',
+        })),
+        actionPlan:approvedPlan?.actionText?[
+          approvedPlan.goal,approvedPlan.obstacle,approvedPlan.actionText,approvedPlan.when,
+          Number.isInteger(approvedPlan.confidence)?String(approvedPlan.confidence)+'/10':'',
+        ].filter(Boolean).join('\n'):'',
+      })
+      setPdfError('')
+    }catch{setPdfError(t.pdfError)}
   }
   async function copySummary(){
     try{await navigator.clipboard.writeText(summaryText());setCopied(true);setCopyError(false)}
@@ -627,8 +668,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             name={coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} modelName={tr(models.get(session.modelKey)?.name,lang)}
             minutes={session.minutes} questionCount={session.questions.length} style={session.style}
             approach={tr(models.get(session.modelKey)?.focus,lang)} outcome={tr(session.result,lang)}
-            imageSrc={cardArtworkUrl(coachingSchemeArt[session.schemeKey]||coachingArt[session.modelKey]||coachingArt.grow_v1)} headingRef={titleRef}/>
-          :entryStep==='topic'?<CoachingSessionTopic locale={lang} value={sessionTopic}
+            imageSrc={cardArtworkUrl(coachingSchemeArt[session.schemeKey]||coachingArt[session.modelKey]||coachingArt.grow_v1)} headingRef={titleRef}
+             checkin={checkin} onCheckinChange={setCheckin}/>
+          :entryStep==='topic'?<CoachingSessionTopic locale={lang} checkin={checkin} value={sessionTopic}
             onChange={value=>{setSessionTopic(value);setAdultAcknowledged(false)}} headingRef={titleRef}/>
           :requiresAdult&&!adultAcknowledged?
             <div className={styles.adultGate} data-coaching-age-confirm>
@@ -642,6 +684,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           :finished?<div className={styles.finish} data-public-coaching-complete>
             <span className={styles.completed}><Check size={16}/>{t.completed}</span>
             <h1>{t.summary}</h1>
+            <p className={styles.hint}>{t.date}: {coachingReportDate(finishedAt,lang)}</p>
             <div className={styles.summary}>
               {sessionTopic&&<p><strong>{t.yourTopic}:</strong> {coachingRequestTopicLabel(sessionTopic,lang)}</p>}
               {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
@@ -652,6 +695,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <CoachingActionPlan key={session.schemeKey||session.modelKey} locale={lang}
               initial={draftCoachingActionPlan(session.questions,answers,question,lang)}
               onSave={value=>{setApprovedPlan(value);return true}}/>
+            <button type="button" className={styles.primary} data-coaching-download-pdf onClick={downloadReport}><Download size={17}/>{t.pdf}</button>
+            {pdfError&&<p className={styles.alert} role="alert">{pdfError}</p>}
             <button type="button" className={styles.primary} onClick={copySummary}><ClipboardCopy size={17}/>{copied?t.copied:t.copy}</button>
             {copyError&&<><p className={styles.alert} role="alert">{t.copyFallback}</p>
               <textarea className={styles.copyFallback} readOnly value={summaryText()} rows={7}/></>}
@@ -659,23 +704,31 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            <CoachingChatThread turn={followupTurn} locale={lang}>
+              <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
+            </CoachingChatThread>
             <CoachingQuestionVoice key={'guest-followup-'+pendingFollowup.key+'-'+pendingFollowup.questionId+'-'+lang}
-              text={tr(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
+              text={[followupTurn?.speech,tr(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={setDictating}
               onTranscript={words=>{setReflectionDraft(previous=>appendSpokenAnswer(previous,words,500));setError('')}}/>
             {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             <p className={styles.hint}>{t.clarifyWhy}</p>
-            <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.questionLabel} htmlFor="public-coaching-reflection">{t.clarifyAnswer}</label>
             <textarea id="public-coaching-reflection" className={styles.questionInput} rows={3}
               maxLength={500} value={reflectionDraft} onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+            </div>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
-            <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+            <div data-public-coaching-gentle-guide>
+              <CoachingChatThread turn={conversationTurn} locale={lang}>
+                <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
+              </CoachingChatThread>
+            </div>
             <CoachingQuestionVoice key={'guest-question-'+current.id+'-'+lang}
-              text={tr(current.prompt,lang)} locale={lang} mode="answer"
+              text={[conversationTurn?.speech,tr(current.prompt,lang)].filter(Boolean).join(' ')} locale={lang} mode="answer"
               speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
               onListeningChange={active=>{setDictating(active);if(active&&customAnswerRef.current)customAnswerRef.current.open=true}}
               onTranscript={words=>{
@@ -685,9 +738,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               }}/>
             {dictating&&<p className={styles.hint} role="status">{t.stopMic}</p>}
             {question.trim()&&<p className={styles.context}><strong>{t.yourQuestion}:</strong> {question}</p>}
-            {gentleGuide&&<div className={styles.gentleGuide} data-public-coaching-gentle-guide>
-              <strong>{gentleGuide.label}</strong><p>{gentleGuide.hint}</p>
-            </div>}
+            <div className={styles.chatComposer} data-coaching-composer>
             {quickChoices&&options.length>0&&!needsCustomPlan&&<>
               <p className={styles.questionLabel}>{t.choices}</p>
               <div className={styles.choices} data-scale={current.type==='scale_0_10'?'true':undefined}>
@@ -708,6 +759,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                   data-public-coaching-open-reflection={!quickChoices?'true':undefined}
                   placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
                   onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
+            </div>
+            <p className={styles.hint} data-coaching-save-report-notice>{t.reportNotice}</p>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>}
         </div>

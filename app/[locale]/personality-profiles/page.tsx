@@ -11,15 +11,15 @@ type Props = { params: Promise<{ locale: string }> };
 const meta = {
   en: {
     title: "Personality Profiles · free tests, SWOT & development | Holistic House",
-    description: "Design a personal, business, wellbeing or comprehensive profile. Choose your themes and scales, adjust a free test selection and explore your private development path.",
+    description: "Build one evolving personal profile. Explore personality, wellbeing, relationships, career and purpose with eligible free tests and your private development path.",
   },
   ru: {
     title: "Профили личности · тесты, SWOT и программа развития | Holistic House",
-    description: "Создайте личностный, бизнес-, ресурсный или комплексный профиль. Выберите сферы и шкалы, настройте подбор бесплатных тестов и личную программу развития.",
+    description: "Создайте единый развивающийся личный профиль. Выберите личность, самочувствие, отношения, карьеру и смыслы, пройдите подходящие тесты и сохраните цели.",
   },
   es: {
     title: "Perfiles personales · pruebas, DAFO y desarrollo | Holistic House",
-    description: "Diseña un perfil personal, empresarial, de bienestar o integral. Elige áreas y escalas, ajusta pruebas gratuitas y explora tu plan privado de desarrollo.",
+    description: "Crea un único perfil personal que crece contigo. Explora personalidad, bienestar, relaciones, trabajo y propósito con pruebas gratuitas aptas.",
   },
 } as const;
 

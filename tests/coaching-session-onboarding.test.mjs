@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import {
   COACHING_REQUEST_TOPICS, coachingRequestTopicLabel, isCoachingRequestTopic,
+  COACHING_CHECKIN_OPTIONS, coachingCheckinReply,
 } from '../lib/coaching/session-onboarding.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -122,3 +123,28 @@ test('all changed onboarding JSX parses; CSS classes and screen actions exist',(
   const used=[...client.matchAll(/styles\.([A-Za-z_][A-Za-z_0-9]*)/g)].map(match=>match[1])
   assert.deepEqual(used.filter(item=>!actual.has(item)),[])
 })
+
+test('optional warm check-in replies to an actual mood selection and preserves source-of-truth model start',()=>{
+ assert.deepEqual(COACHING_CHECKIN_OPTIONS.map(choice=>choice.id),['good','mixed','hard','skip'])
+ for(const locale of ['en','ru','es']){
+  for(const choice of COACHING_CHECKIN_OPTIONS){
+   assert.ok(choice.label[locale]?.length>=5)
+   assert.ok(coachingCheckinReply(choice.id,locale).length>25)
+  }
+ }
+ for(const invalid of ['',null,'secret content','<script>'])
+  assert.equal(coachingCheckinReply(invalid,'ru'),'')
+ assert.match(client,/data-coaching-warm-checkin/)
+ assert.match(client,/data-coaching-checkin-choice=\{option\.id\}/)
+ assert.match(client,/aria-pressed=\{checkin===option\.id\}/)
+ assert.match(client,/data-coaching-checkin-reply/)
+ assert.match(client,/coachingCheckinReply\(checkin,locale\)/)
+ assert.match(client,/CoachingChatThread/)
+ assert.match(guest,/checkin=\{checkin\} onCheckinChange=\{setCheckin\}/)
+ assert.match(privateClient,/checkin=\{entry\.checkin\}/)
+ assert.match(tradition,/checkin=\{checkin\} onCheckinChange=\{setCheckin\}/)
+ const css=read('components/coaching-session-onboarding.module.css')
+ assert.match(css,/\.checkinChoice\{[^}]*min-height:44px/)
+ assert.match(css,/@media\(max-width:350px\)/)
+ assert.doesNotMatch(guest+privateClient+tradition,/checkin,clientTopic|clientTopic,checkin/)
+});
