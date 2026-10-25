@@ -158,7 +158,7 @@ export function PersonalExpressEnquiry({
               : "First we register your request; you may then add answers and a drawing privately.")
             : t.step}</p>
           {enableWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
-            onSaved={() => setFocusLocked(true)} /> : <ContactChannelChooser key={focus} locale={locale}
+            onSaved={() => setFocusLocked(true)} onRestoredFocus={value => setFocus(value)} /> : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
             publicTopic={"Express review focus: " + t.areas[focus].tag} />}
           <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
