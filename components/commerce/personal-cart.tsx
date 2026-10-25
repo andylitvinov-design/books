@@ -91,6 +91,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   const [squareError, setSquareError] = useState<string | null>(null);
   const [squareStatus, setSquareStatus] = useState<"paid" | "payment_review" | "pending" | "checkout_ready" | "failed" | null>(null);
   const squareOperation = useRef<{key: string; id: string} | null>(null);
+  const squareStatusGeneration = useRef(0);
 
   useEffect(() => {
     let stored: string[] = [];
@@ -107,10 +108,12 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     const orderId = new URLSearchParams(window.location.search).get("squareOrder");
     if (squareApiEnabled && orderId && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(orderId)) {
       setSquareOrderId(orderId);
+      const requestVersion = squareStatusGeneration.current;
       fetch("/api/payments/square/status?orderId=" + encodeURIComponent(orderId) + "&refresh=1", {
         credentials: "same-origin", cache: "no-store",
       }).then(async response => {
         const data = await response.json();
+        if (squareStatusGeneration.current !== requestVersion) return;
         if (response.ok && data?.order?.status) {
           setSquareStatus(data.order.status);
           // Recover the server-owned items when Square returns in another tab
@@ -119,7 +122,9 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
             setSelected(restoreServiceCart(JSON.stringify(data.order.items)));
           if (data.order.status === "paid" || data.order.status === "payment_review") setMethod("square");
         } else setSquareError(data?.error || "SQUARE_ORDER_UNAVAILABLE");
-      }).catch(() => setSquareError("SQUARE_ORDER_UNAVAILABLE"));
+      }).catch(() => {
+        if (squareStatusGeneration.current === requestVersion) setSquareError("SQUARE_ORDER_UNAVAILABLE");
+      });
     }
   }, [squareApiEnabled]);
 
@@ -151,6 +156,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
 
   async function refreshSquareStatus() {
     if (!squareOrderId || squareBusy) return;
+    const requestVersion = squareStatusGeneration.current;
     setSquareBusy(true);
     setSquareError(null);
     try {
@@ -158,10 +164,12 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
         credentials: "same-origin", cache: "no-store",
       });
       const result = await response.json();
+      if (squareStatusGeneration.current !== requestVersion) return;
       if (!response.ok || !result?.order?.status) throw new Error(result?.error || "SQUARE_ORDER_UNAVAILABLE");
       setSquareStatus(result.order.status);
     } catch (error) {
-      setSquareError(error instanceof Error ? error.message : "SQUARE_ORDER_UNAVAILABLE");
+      if (squareStatusGeneration.current === requestVersion)
+        setSquareError(error instanceof Error ? error.message : "SQUARE_ORDER_UNAVAILABLE");
     } finally { setSquareBusy(false); }
   }
 
@@ -199,6 +207,15 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   }
 
   function remove(id: string) {
+    if (squareBusy) return;
+    // A previous Square receipt is not proof of payment for a changed basket.
+    // This clears only browser state; it never cancels/refunds the actual order.
+    squareStatusGeneration.current += 1;
+    squareOperation.current = null;
+    setSquareOrderId(null);
+    setSquareStatus(null);
+    setSquareRepeatOf(null);
+    setSquareError(null);
     const next = selected.filter(item => item !== id);
     setSelected(next);
     try { window.sessionStorage.setItem(SERVICE_CART_STORAGE_KEY, JSON.stringify(next)); }
@@ -223,7 +240,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           {chosen.map(product => <li key={product.id}>
             <div><strong>{product.title}</strong><span>{product.durationMinutes} {t.minute}</span></div>
             <b>{formatServiceAmount(product.amountMinor, locale)}</b>
-            <button type="button" onClick={() => remove(product.id)} aria-label={`${t.remove}: ${product.title}`} title={t.remove}>
+            <button type="button" onClick={() => remove(product.id)} disabled={squareBusy} aria-label={`${t.remove}: ${product.title}`} title={t.remove}>
               <Trash2 size={17} aria-hidden="true" />
             </button>
           </li>)}

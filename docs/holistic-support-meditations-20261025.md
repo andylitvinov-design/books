@@ -46,3 +46,11 @@ This supersedes **“Explicit Sun Flight video in RU”** above and PR #2011's E
 - An executable playlist selector regression test now checks the actual source model for EN/ES one English ID versus RU seven Russian IDs and no duplicate/wrong-language links.
 
 The previous RU-English-video section is historical, not current behavior. Do not claim full E2E before Vercel exact SHA/alias READY and browser video playback verification.
+
+## Scenic one-screen redesign · 25 October 2026
+
+- Meditation is now **two separate equal viewport-size photographic cards**: a video stage and a native ambient audio stage, not one section with an unlimited seven-item vertical list.
+- On 320–430px mobiles the existing PsiMaster playlist uses single-recording previous/next controls; on desktop compact numbered selectors, preserving no-autoplay lazy embed and direct YouTube fallback. The active iframe unmounts on change.
+- One card has `height: calc(100svh - …)` accounting for header and bottom navigation. Oversized accessibility text scrolls **inside** the card; no controls or source disclosure is clipped. No horizontal overflow or silently hidden original material.
+- Existing English one-video vs Russian seven-video separation and source-backed 96s instrumental audio are preserved. No private My Materials or fabricated soundtrack.
+- Gates: focused meditation/first-screen/hub test; TypeScript lint/build; WebKit/Chromium 320/375/390/430 and real playable YouTube, Vercel READY SHA + canonical alias. Treat these as pending until evidence is collected.
