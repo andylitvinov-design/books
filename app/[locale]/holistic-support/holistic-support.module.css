@@ -86,15 +86,15 @@
   .section[data-holistic-insights] { padding: 7px 5px 12px; }
 }
 
-/* The old photographic diagnosis hero lives in the Coaching Lounge now.
-   Keep Holistic Support compact and focused on symbolic/energy paths. */
-.compactIntro{margin:0 0 14px;padding:clamp(20px,3vw,32px);border-radius:19px;
-  background:linear-gradient(120deg,#2f5043,#294039);color:#fffaf2}
-.compactIntro .eyebrow{color:#efddbd}
-.compactIntro h1{margin:7px 0 9px;font:400 clamp(31px,4.3vw,49px)/1.08 Georgia,serif;letter-spacing:-.035em}
-.compactIntro>p:not(.eyebrow){max-width:780px;margin:0 0 15px;font:14px/1.5 Arial,sans-serif;color:#eee7da}
-.compactIntro a{display:inline-flex;align-items:center;gap:9px;max-width:100%;min-height:46px;
-  padding:10px 14px;border-radius:11px;background:#f4e7d3;color:#6c4830;
-  font:800 12px/1.35 Arial,sans-serif;text-decoration:none}
-@media(max-width:650px){.compactIntro{padding:17px 15px}.compactIntro h1{font-size:32px}
-  .compactIntro>p:not(.eyebrow){font-size:12px}}
+/* Scenic goal/situation question is the first screen; coaching remains a secondary link. */
+.primaryEntry{min-width:0;margin:0 0 14px}
+.primaryEntry [data-holistic-entry]{margin:0}
+.coachingAside{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:15px 0 0;padding:18px 20px;border:1px solid #decdb9;border-radius:19px;background:#f6eee3}
+.coachingAside>div{min-width:0}
+.coachingAside h2{margin:0;font:400 clamp(24px,2.7vw,31px)/1.15 Georgia,"Times New Roman",serif;color:#49392d}
+.coachingAside p{max-width:660px;margin:6px 0 0;color:#64564b;font:13px/1.52 Arial,Helvetica,sans-serif}
+.coachingAsideAction{display:inline-flex;align-items:center;justify-content:center;gap:11px;flex:0 0 auto;min-height:48px;max-width:100%;padding:10px 15px;border:1px solid #9c745b;border-radius:12px;background:#fffdfa;color:#704731;text-decoration:none;text-align:center;font:750 12.5px/1.4 Arial,Helvetica,sans-serif}
+.coachingAsideAction:hover{background:#ede0d0}
+.coachingAsideAction:focus-visible{outline:3px solid #3f837d;outline-offset:3px}
+@media(max-width:650px){.primaryEntry{margin-bottom:10px}.coachingAside{flex-direction:column;align-items:stretch;gap:12px;padding:15px 13px;border-radius:16px}.coachingAside h2{font-size:25px}.coachingAside p{font-size:12.3px}.coachingAsideAction{width:100%;min-height:48px}}
+@media(max-width:350px){.coachingAside{padding:12px 10px}.coachingAsideAction{font-size:12px;overflow-wrap:anywhere}}
