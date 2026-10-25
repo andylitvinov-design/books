@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { Archive, ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, PlayCircle, Search, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, BookOpen, CalendarDays, ChevronDown, GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
 
 import { AcademyCourseCardList, type AcademyCourseItem } from "@/components/academy-course-card-list";
 import { AcademyMyCourses } from "@/components/academy-my-courses";
@@ -13,7 +13,7 @@ import type { PublicEvent } from "@/data/public-events";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./academy-discovery.module.css";
 
-export type AcademyArchiveButton = { id: string; title: string; href: string; archived?: boolean };
+export type AcademyArchiveButton = AcademyCourseItem & { archived?: boolean };
 const LEGACY_PREVIEW_COUNT = 8;
 
 const COPY = {
@@ -301,7 +301,7 @@ export function AcademyDiscovery({
           <nav className={styles.quickPaths} aria-label={t.paths}>
             <a href="#academy-free-courses"><BookOpen size={16} aria-hidden="true" />{t.freeCourses}</a>
             <a href="#academy-study-programs"><GraduationCap size={16} aria-hidden="true" />{t.studyPrograms}</a>
-            <a href="#academy-psimaster-courses"><Archive size={16} aria-hidden="true" />{t.psimasterShort}</a>
+            {legacyCourses.length || legacyVideos.length ? <a href="#academy-psimaster-courses"><Archive size={16} aria-hidden="true" />{t.psimasterShort}</a> : null}
             <a href="#academy-live-events"><CalendarDays size={16} aria-hidden="true" />{t.liveEvents}</a>
           </nav>
         ) : null}
@@ -350,7 +350,7 @@ export function AcademyDiscovery({
             ) : isSearching ? <p className={styles.categoryEmpty}>{t.noMatchesInGroup}</p> : null}
           </section>
 
-          {(!isSearching || matchedLegacyCourses.length > 0 || matchedLegacyVideos.length > 0) ? (
+          {(matchedLegacyCourses.length > 0 || matchedLegacyVideos.length > 0) ? (
             <section className={styles.categoryGroup} id="academy-psimaster-courses" aria-labelledby="academy-psimaster-courses-title">
               <div className={styles.categoryHeading}>
                 <span className={styles.categoryNumber} aria-hidden="true">3</span>
@@ -362,19 +362,8 @@ export function AcademyDiscovery({
               </div>
               {matchedLegacyCourses.length > 0 ? (
                 <>
-                  <div className={styles.legacyGrid} id="academy-psimaster-course-grid" role="list">
-                    {visibleLegacyCourses.map((item) => (
-                      <div role="listitem" key={item.id}>
-                        <Link className={styles.legacyLink} href={item.href} prefetch={false} data-psimaster-course={item.id}>
-                          <BookOpen size={18} strokeWidth={1.7} aria-hidden="true" />
-                          <span className={styles.legacyLinkCopy}>
-                            <strong>{item.title}</strong>
-                            <small>{item.archived ? t.archiveOnly : t.historical}</small>
-                          </span>
-                          <ArrowRight size={17} aria-hidden="true" />
-                        </Link>
-                      </div>
-                    ))}
+                  <div id="academy-psimaster-course-grid">
+                    <AcademyCourseCardList locale={locale} items={visibleLegacyCourses} label={t.psimaster} />
                   </div>
                   {!isSearching && matchedLegacyCourses.length > LEGACY_PREVIEW_COUNT ? (
                     <button type="button" className={styles.legacyToggle}
@@ -390,17 +379,7 @@ export function AcademyDiscovery({
                 <div className={styles.legacyVideos}>
                   <h4>{t.psimasterVideos}</h4>
                   <p>{t.psimasterVideoDescription}</p>
-                  <div className={styles.legacyGrid} role="list">
-                    {matchedLegacyVideos.map((item) => (
-                      <div role="listitem" key={item.id}>
-                        <Link className={styles.legacyLink} href={item.href} prefetch={false} data-psimaster-video={item.id}>
-                          <PlayCircle size={18} strokeWidth={1.7} aria-hidden="true" />
-                          <span className={styles.legacyLinkCopy}><strong>{item.title}</strong><small>{t.videoLesson}</small></span>
-                          <ArrowRight size={17} aria-hidden="true" />
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
+                  <AcademyCourseCardList locale={locale} items={matchedLegacyVideos} label={t.psimasterVideos} />
                 </div>
               ) : null}
             </section>
@@ -408,7 +387,7 @@ export function AcademyDiscovery({
 
           <section className={styles.categoryGroup} id="academy-live-events" aria-labelledby="academy-live-events-title">
             <div className={styles.categoryHeading}>
-              <span className={styles.categoryNumber} aria-hidden="true">4</span>
+              <span className={styles.categoryNumber} aria-hidden="true">{matchedLegacyCourses.length || matchedLegacyVideos.length ? "4" : "3"}</span>
               <div className={styles.categoryHeadingCopy}>
                 <h3 id="academy-live-events-title">{t.liveEvents}</h3>
                 <p>{t.liveDescription}</p>

@@ -658,7 +658,7 @@ function compareAcademyRecords(a: AcademySourceRecord, b: AcademySourceRecord, l
 }
 export function preferredAcademyRecords(locale: PublicLocale, filter?: (record: AcademySourceRecord) => boolean) {
   const byId = new Map<string, AcademySourceRecord[]>();
-  for (const record of sourceRecords) { if (filter && !filter(record)) continue; const list = byId.get(record.logicalId) ?? []; list.push(record); byId.set(record.logicalId, list); }
+  for (const record of sourceRecords) { if (filter && !filter(record)) continue; if (locale !== "ru" && record.sourceLocale === "ru") continue; const list = byId.get(record.logicalId) ?? []; list.push(record); byId.set(record.logicalId, list); }
   return [...byId.values()].map((list) => [...list].sort((a, b) => compareAcademyRecords(a, b, locale))[0]).sort((a, b) => a.routeKey.localeCompare(b.routeKey));
 }
 export function recordsForDirection(direction: AcademyDirectionId, locale: PublicLocale) { return preferredAcademyRecords(locale, (record) => record.direction === direction); }
