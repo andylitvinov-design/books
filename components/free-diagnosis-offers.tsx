@@ -6,6 +6,7 @@ import { ArrowRight, ChevronDown, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
+import { FreeDiagnosticStart } from "@/components/free-diagnostic-start";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-diagnosis-offers.module.css";
 
@@ -190,13 +191,18 @@ export function FreeDiagnosisOffers({ locale }: { locale: PublicLocale }) {
           </article>
         ))}
       </div>
-      <div className={styles.formWrap}>
-        <CompactLeadCapture locale={locale} id="request-free-review"
-          serviceTitle={t.offers.find(offer => offer.id === selected)?.title || "Holistic House — diagnosis request"}
-          title={t.formTitle} lead={t.formLead} formatLabel={t.formLabel}
-          formatOptions={t.offers.map(offer => ({ value: offer.id, label: offer.title + " · " + offer.price }))}
-          selectedFormatValue={selected} onFormatChange={(value) => setSelected(value as OfferId)}
-          disclaimer={t.safety} />
+      <div className={styles.formWrap} id="request-free-review" data-diagnosis-order-form>
+        {selected === "situation-written-free" ? (
+          <FreeDiagnosticStart locale={locale} />
+        ) : (
+          <CompactLeadCapture locale={locale}
+            serviceTitle={t.offers.find(offer => offer.id === selected)?.title || "Holistic House — diagnosis request"}
+            title={t.formTitle} lead={t.formLead} formatLabel={t.formLabel}
+            formatOptions={t.offers.filter(offer => offer.id !== "situation-written-free")
+              .map(offer => ({ value: offer.id, label: offer.title + " · " + offer.price }))}
+            selectedFormatValue={selected} onFormatChange={(value) => setSelected(value as OfferId)}
+            disclaimer={t.safety} />
+        )}
       </div>
       <p className={styles.safety}><ShieldCheck size={16} aria-hidden="true" />{t.safety}</p>
     </section>
