@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf
 const landing = read("components/tantra-free-initiation.tsx");
 const style = read("components/tantra-free-initiation.module.css");
 const form = read("components/tantra-initiation-form.tsx");
+const formClient = read("components/tantra-initiation-choice.tsx");
 const routes = read("app/[locale]/academy/[[...slug]]/page.tsx");
 const course = read("components/academy-record-page.tsx");
 const media = read("data/academy/english-guided-meditations.ts");
@@ -71,23 +72,27 @@ test("Tantra Reiki price and source PDF remain available without a bottom PDF fo
   assert.doesNotMatch(form, /reiki-guide\?course=yggdrasil|Download PDF guide|Скачать PDF/);
 });
 
-test("bottom lead capture offers the same intents with an explicit messenger selection", () => {
+test("bottom capture has five server-generated drafts but one CRM-first phone handoff", () => {
   assert.match(form, /type Intent = "free" \| "personal" \| "session" \| "answers" \| "feedback"/);
   assert.match(form, /import \{ whatsappEnquiryUrl \} from "@\/lib\/whatsapp-enquiry"/);
   assert.match(form, /return whatsappEnquiryUrl\(\{/);
   assert.match(form, /request: t\.requests\[intent\]/);
   assert.match(form, /pagePath: "\/" \+ locale \+ "\/academy\/reiki\/tantra-reiki\/free-initiation"/);
-  for (const intent of ["free", "personal", "session", "answers"]) {
-    assert.ok(form.includes('id="apply-' + intent + '"'), intent);
-    assert.ok(form.includes('whatsappUrl={tantraInitiationWhatsAppUrl(locale, "' + intent + '")}'), intent);
-  }
-  assert.equal((form.match(/<ContactChannelChooser /g) || []).length, 5);
-  assert.match(form, /data-tantra-whatsapp-capture/);
+  assert.match(form, /<TantraInitiationChoice/);
+  assert.match(form, /whatsappUrl: tantraInitiationWhatsAppUrl\(locale, intent\)/);
+  assert.match(formClient, /"use client"/);
+  assert.match(formClient, /options\.map\(option => <span id=\{"apply-" \+ option\.intent\}/);
+  assert.match(formClient, /window\.addEventListener\("hashchange", selectFromHash\)/);
+  assert.match(formClient, /<select[\s\S]*?value=\{intent\}/);
+  assert.match(formClient, /<ContactChannelChooser[\s\S]*?compactPhone[\s\S]*?stayAfterSave/);
+  assert.match(formClient, /whatsappUrl=\{selected\.whatsappUrl\}/);
+  assert.match(formClient, /publicTopic=\{service \+ " · " \+ selected\.label\}/);
+  assert.equal((formClient.match(/<ContactChannelChooser/g) || []).length, 1);
+  assert.match(formClient, /data-tantra-whatsapp-capture/);
   assert.match(form, /Я напишу или вставлю ответы на вопросы 1–7 в выбранном мессенджере/);
   assert.match(landing, /whatsappUrl=\{tantraInitiationWhatsAppUrl\(locale, "answers"\)\}/);
   assert.match(landing, /whatsappUrl=\{tantraInitiationWhatsAppUrl\(locale, "personal"\)\}/);
-  assert.doesNotMatch(form, /<form\b|<input\b|<textarea\b|<select\b|<button\b|<label\b/);
-  assert.doesNotMatch(form, /navigator\.|window\.|fetch\(|localStorage|FormData|onSubmit/);
+  assert.doesNotMatch(formClient, /<input\b|<textarea\b|type="email"|startGoogle|FormData/);
 });
 
 test("new visual system stays isolated to its page and works on mobile", () => {
@@ -121,18 +126,17 @@ test("five steps put the flow review after video and optional distance initiatio
   assert.match(style, /\.howCard\[data-personal="true"\]\s*\{/);
 });
 
-test("WhatsApp capture is compact, responsive and requests no name or email", () => {
-  assert.match(style, /\.whatsappActions \{ display: grid; grid-template-columns: repeat\(2/);
+test("one-screen application stays warm, compact and requires no email/account", () => {
   assert.match(style, /\.whatsappCapture \{/);
-  assert.match(style, /\.hero \{[\s\S]*?min-height: 440px/);
-  assert.match(style, /\.choiceFree, \.choicePersonal, \.choiceCombined \{[\s\S]*?min-height: 252px/);
-  assert.match(style, /\.howCard \{[\s\S]*?min-height: 138px/);
-  assert.match(style, /\.questionGrid li \{[\s\S]*?min-height: 76px/);
-  assert.match(style, /@media \(max-width: 760px\)[\s\S]*?\.whatsappActions \{ grid-template-columns: 1fr/);
-  assert.match(form, /Никаких анкет, имени, email или регистрации/);
-  assert.doesNotMatch(form, /<input[^>]*required|autoComplete=|type="email"|type="text"/);
+  assert.match(style, /\.whatsappSelectWrap select \{/);
+  assert.match(style, /\.whatsappCapture :global\(\[data-reiki-phone-enquiry\]\)/);
+  assert.match(style, /\.whatsappCapture :global\(\[data-contact-channel-submit="whatsapp"\]\)/);
+  assert.match(style, /\.whatsappCapture :global\(\[data-contact-channel-submit="telegram"\]\)/);
+  assert.match(style, /\.application \{[\s\S]*?background: #f6f1eb/);
+  assert.match(style, /@media \(max-width: 760px\)[\s\S]*?\.whatsappCapture \{ padding: 17px 15px/);
+  assert.match(form, /Выберите запрос, укажите телефон и удобный мессенджер/);
+  assert.doesNotMatch(formClient, /<input[^>]*required|autoComplete=|type="email"|type="text"/);
 });
-
 
 test("approved three-choice Tantra design includes a genuine €100 personal session in EN/RU/ES", () => {
   assert.match(landing, /choiceTitle: "Choose your Level 1 path"/);
