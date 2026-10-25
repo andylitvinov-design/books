@@ -16,3 +16,12 @@ The source manifest `data/academy/psimaster-media.generated.json` and `data/acad
 - [ ] Build and production deploy after PR review to **codex/public-book-library** only
 - [ ] Vercel READY with SHA/alias exact match on `holistichouse.vercel.app`
 - [ ] Real video clicks and 320/390/430px WebKit/Chromium checks; original standalone MP3 playback remains blocked until sources exist.
+
+## Locale discovery boundary · 2026-10-25 correction
+The 2026-10-24 PsiMaster catalogue policy requires **RU-only original recordings to be omitted from EN/ES public discovery**. The first proposed variant incorrectly offered the Russian playlist on EN/ES (even though it labeled the original speech). Corrected this before accepting release:
+- RU: original seven source-backed PsiMaster practices as a free curated playlist.
+- EN/ES: **one separately confirmed original English practice** `Flight to the Sun`, whose ID is read from the existing `english-guided-meditations.ts` source, plus a clearly labeled link to the RU archive.
+- No English or Spanish dub/translation of the Russian practice is claimed or generated. All locales retain a clearly separate instrumental-only WAV and truthful missing standalone MP3 disclosure.
+
+This is a corrective follow-up to PR #2003 and must receive a separate READY + canonical live readback before calling the user request deployed.
+\n## Build fix for Vercel `dpl_FPYpPCYU1XHbtfJthuP6zMR7WTqZ`\nThe first merge (#2003) failed on CSS Modules strict-scoping: `[data-holistic-meditations]{...}` was not a pure selector. Changed to `.section[data-holistic-meditations]{...}` (existing local class) and aligned the test. Do not call #2003 READY.\n
