@@ -99,6 +99,31 @@ async function verify(engine, locale, width) {
       label + ": private same-tab goal preserved for the user's review");
     assert.equal(await nextScreen.locator("[data-lead-saved]").count(), 0,
       label + ": navigating to a request form never creates a CRM lead");
+
+    const focusChoices = nextScreen.locator("[data-remote-focus-chip]");
+    const findOptions = nextScreen.locator("[data-remote-find-options]");
+    const offers = nextScreen.locator("#remote-results");
+    assert.equal(await focusChoices.count(), 5, label + ": only five usable focus sectors");
+    assert.equal(await offers.isVisible(), false, label + ": practitioner options wait for Find options");
+    assert.equal(await findOptions.isVisible(), true, label + ": find CTA is visible");
+    const firstChipBox = await focusChoices.first().boundingBox();
+    const noteBox = await handoff.boundingBox();
+    assert.ok(firstChipBox && noteBox && firstChipBox.y < noteBox.y,
+      label + ": focus chips precede optional wishes");
+    const findBox = await findOptions.boundingBox();
+    const bottomNav = await page.locator(".mobile-bottom-navigation").first().boundingBox();
+    assert.ok(findBox && bottomNav && findBox.y + findBox.height <= bottomNav.y + 2,
+      label + ": complete finder CTA is above fixed mobile navigation at " + width + "px");
+    await focusChoices.first().tap();
+    assert.equal(await focusChoices.first().getAttribute("aria-pressed"), "true",
+      label + ": sector selection is interactive");
+    await findOptions.tap();
+    await offers.waitFor({state: "visible", timeout: 10000});
+    assert.equal(await findOptions.getAttribute("aria-expanded"), "true",
+      label + ": Find options reveals the practitioner stage");
+    assert.ok(await offers.locator("[data-remote-support-specialist]").count() > 0 ||
+      await offers.locator('[role="status"]').count() > 0,
+      label + ": only published practitioners or an honest empty state appear");
     await page.reload({waitUntil:"domcontentloaded"});
     await nextScreen.waitFor({state:"visible"});
     assert.equal(await handoff.inputValue(), "",
