@@ -30,7 +30,7 @@ test('canonical My Materials courses and audio tabs both show the same real coac
  assert.match(css,/\.coachingAudioGroup\{/)
  assert.match(css,/\.coachingAudioHeading button\{[^}]*min-height:44px/)
  assert.match(css,/@media\(max-width:430px\)/)
- for(const text of ['Все папки','Todas las carpetas','All folders','Запись','record','Grabar'])
+ for(const text of ['Все папки','Todas las carpetas','All folders','Записать','record','Grabar'])
    assert.ok(ui.includes(text),'missing locale label '+text)
 })
 
