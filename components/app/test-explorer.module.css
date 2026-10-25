@@ -1340,8 +1340,8 @@
 /* Reports portrait: make the source-backed diagram the first-screen focus.
    Keep the public test explorer, desktop layout and scoring unchanged.
    The large photo and SVG resize as one 360:390 composition. */
-.portraitSectorShort{display:none}
-.portraitSectorLong{display:block}
+.visual:not(.visualCompact) .portraitSectorChip > .portraitSectorShort{display:none}
+.visual:not(.visualCompact) .portraitSectorChip > .portraitSectorLong{display:block}
 @media(max-width:620px){
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact):has(.portraitRadar){
     padding:4px;
