@@ -18,6 +18,14 @@ function decode(link) {
   return u.searchParams.get("text") || "";
 }
 
+test("coaching lounge uses a safe public CRM and messenger source in all locales", () => {
+  for(const locale of ["en","ru","es"]){
+    assert.equal(safePublicWhatsAppPath("/"+locale+"/coaching"), "/"+locale+"/coaching");
+    assert.equal(safePublicWhatsAppPath("/"+locale+"/coaching/intake"), "/"+locale+"/coaching/intake");
+    assert.equal(safePublicWhatsAppPath("/"+locale+"/coaching/private"), "");
+  }
+});
+
 test("all locales encode a named service, exact action, selected option, topic and public source", () => {
   for (const [locale, words] of Object.entries(translations)) {
     for (const [service, request, topic, pagePath] of [

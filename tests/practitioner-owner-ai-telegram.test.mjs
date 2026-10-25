@@ -30,9 +30,9 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate({update_id:'not a number',message:base.message},now),null)
 })
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
-  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['ai','gemini','mistral','council','cancel'])
+  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['audio','materials','ai','gemini','mistral','council','cancel'])
   const buttons=ownerAiMenu().reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
-  assert.deepEqual(buttons,['hh-ai:both','hh-ai:gemini','hh-ai:mistral'])
+  assert.deepEqual(buttons,['hh-audio:help','hh-ai:both','hh-ai:gemini','hh-ai:mistral'])
   assert.equal(ownerAiPrompt('mistral').reply_markup.force_reply,true)
   const callback=parseOwnerAiUpdate({update_id:312,callback_query:{
     id:'cb-313',data:'hh-ai:mistral',

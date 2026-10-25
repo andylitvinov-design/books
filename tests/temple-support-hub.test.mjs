@@ -37,7 +37,6 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
   assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
 });
 
-
 test("Holistic Support puts an interactive scenic goal-or-situation card first in EN/RU/ES", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const ideas = read("components/ideas-discovery.tsx");
@@ -113,10 +112,65 @@ test("independent Temple Insights keeps its own diagnostic CTA and natural sceni
   const ideas = read("components/ideas-discovery.tsx");
   const scenic = read("components/ideas-discovery.module.css");
   assert.ok(ideas.includes('variant === "temple" ? <Link'));
-  assert.ok(ideas.includes('href={freeOfferHref(locale, "review")}'));
+  assert.ok(ideas.includes('href={"/" + locale + "/coaching#free-diagnostic-start"}'));
   assert.ok(ideas.includes("data-ideas-personal-diagnostic"));
   assert.ok(ideas.includes("data-ideas-free-test"));
   assert.ok(ideas.includes('const HeadingTag = variant === "temple" ? "h2" : "h1"'));
   assert.ok(scenic.includes('data-temple-mode="true"'));
   assert.ok(scenic.includes('.templeScenic::before'));
+});
+
+test("Coaching Lounge owns the former scenic first screen and exactly three distinct pathways in EN/RU/ES", () => {
+  const entry = read("components/coaching-lounge-entry.tsx");
+  const layout = read("components/coaching-lounge-entry.module.css");
+  const lounge = read("components/public-coaching-discovery.jsx");
+  const ideas = read("components/ideas-discovery.tsx");
+  assert.match(lounge, /<CoachingLoungeEntry locale=\{lang\} \/>/);
+  assert.doesNotMatch(lounge, /<CoachingLiveSessionCapture/);
+  assert.match(entry, /data-coaching-first-screen/);
+  assert.match(entry, /hero-olive-incense\.webp/);
+  assert.match(entry, /data-coaching-three-paths/);
+  assert.match(entry, /data-coaching-hero-choice="free"/);
+  assert.match(entry, /data-coaching-hero-choice="session"/);
+  assert.match(entry, /data-coaching-hero-choice="deep"/);
+  assert.match(entry, /data-coaching-offer=\{offer\.id\}/);
+  assert.match(entry, /services\/imagery-therapy#request-session/);
+  assert.match(entry, /data-coaching-select=\{offer\.id\}/);
+  for (const label of ["Free situation diagnosis","Бесплатная диагностика ситуации","Diagnóstico gratuito de la situación",
+    "Personal coaching session","Личная коучинг-сессия","Sesión personal de coaching",
+    "Depth-oriented personal work","Глубинная терапия","Trabajo personal profundo"])
+    assert.ok(entry.includes(label), "missing locale offer " + label);
+  assert.match(entry, /<FreeDiagnosticStart locale=\{locale\} \/>/);
+  assert.match(entry, /<CompactLeadCapture locale=\{locale\} variant="inline"/);
+  assert.equal((entry.match(/<CompactLeadCapture/g) || []).length, 1);
+  assert.match(entry, /sourcePath=\{"\/" \+ locale \+ "\/coaching"\}/);
+  assert.match(entry, /formatOptions=\{t\.formats\}/);
+  assert.match(entry, /30 min · €50/);
+  assert.match(entry, /60 min · €100/);
+  assert.match(ideas, /coaching#free-diagnostic-start/);
+  assert.match(layout, /@media\(max-width:600px\)/);
+  assert.match(layout, /@media\(max-width:350px\)/);
+  assert.match(layout, /min-height:44px/);
+  assert.match(layout, /:focus-visible/);
+  for (const photo of ["hero-olive-incense.webp","andy-about.png","video-posters/hypnotherapy-en-v1.webp"])
+    assert.ok(existsSync(new URL("../public/images/holistic-house/" + photo, import.meta.url)));
+});
+
+test("Coaching Lounge source path is permitted for real, consented CRM intake but private paths remain blocked", () => {
+  const entry = read("components/coaching-lounge-entry.tsx");
+  const capture = read("components/compact-lead-capture.tsx");
+  const backend = read("lib/practitioners/public-service-enquiry-input.mjs");
+  for (const locale of ["en","ru","es"]) {
+    assert.equal(safePublicWhatsAppPath("/" + locale + "/coaching"), "/" + locale + "/coaching");
+    assert.equal(safePublicWhatsAppPath("/" + locale + "/coaching/intake"), "/" + locale + "/coaching/intake");
+  }
+  for (const source of ["/en/coaching/secret","/en/coaching?token=private","/en/app/clients","/ru/client/report"])
+    if(source.includes("?")) assert.equal(safePublicWhatsAppPath(source), "/en/coaching");
+    else assert.equal(safePublicWhatsAppPath(source), "");
+  assert.match(entry, /data-coaching-intake/);
+  assert.match(capture, /fetch\("\/api\/service-enquiries"/);
+  assert.match(capture, /contactConsent: true/);
+  assert.match(backend, /normalizePublicServiceEnquiry/);
+  assert.doesNotMatch(entry, /fetch\(|gtag\(|payment_received|payment_captured/);
+  assert.doesNotMatch(read("app/[locale]/holistic-support/page.tsx"), /fetch\(|checkout|charge\(/);
 });

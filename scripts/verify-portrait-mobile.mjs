@@ -176,16 +176,19 @@ try {
             overflow: document.documentElement.scrollWidth - innerWidth,
           }
         })
-        assert.ok(frame.span <= 535,
-          `${locale} ${width}x${height}: portrait separates two menus by ${frame.span}px (max 535)`)
-        assert.ok(frame.pictureWidth > 262 && Math.abs(frame.pictureHeight / frame.pictureWidth - 390 / 360) < .025,
-          `${locale} ${width}x${height}: chart must be enlarged and retain its native aspect ratio`)
+        // Log the *actual* browser geometry before gating short/regular phones.
+        console.log('PORTRAIT_ONE_SCREEN', JSON.stringify({ engine:name, locale, width, height, ...frame }))
+        const shortViewport = height <= 630
+        const maxSpan = shortViewport ? 470 : 535
+        assert.ok(frame.span <= maxSpan,
+          `${locale} ${width}x${height}: portrait separates menus by ${frame.span}px (max ${maxSpan})`)
+        assert.ok(frame.pictureWidth >= (shortViewport ? 228 : 262) && Math.abs(frame.pictureHeight / frame.pictureWidth - 390 / 360) < .025,
+          `${locale} ${width}x${height}: image must fill available space while preserving its native aspect ratio`)
         assert.ok(frame.firstTop >= -2 && frame.lastBottom <= frame.viewportHeight - 70,
           `${locale} ${width}x${height}: both menu rows must be onscreen above bottom nav`)
         assert.ok(frame.minTopTap >= 44 && frame.minBottomTap >= 44,
           `${locale} ${width}x${height}: both menu rows need 44px touch targets`)
         assert.ok(frame.overflow <= 1, `${locale} ${width}x${height}: horizontal overflow`)
-        console.log('PORTRAIT_ONE_SCREEN', JSON.stringify({ engine:name, locale, width, height, ...frame }))
         if (width === 390 && height === 768) {
           await card().screenshot({
             path:`${output}/${name}-${locale}-390x768-both-menus.png`,
