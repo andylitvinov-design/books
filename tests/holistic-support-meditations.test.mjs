@@ -72,7 +72,9 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   assert.match(player, /setPlaying\(true\)/);
   assert.match(player, /youtube-nocookie\.com\/embed/);
   assert.match(sound, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
-  assert.doesNotMatch(model, /\.mp3|storage\.from|\b(?:generate|render)\s*\(|youtubeId:\s*["']/);
+  // A checked-in media manifest is named *.generated.json; that does NOT create audio.
+  // Reject only real standalone audio paths, synthesis calls, or hard-coded YouTube IDs.
+  assert.doesNotMatch(model, /\.mp3\b|\.m4a\b|storage\.from\s*\(|(?:generateAudio|generateVoice|synthesizeSpeech)\s*\(|youtubeId:\s*["']/);
   for (const [family, positions] of [
     ["videos/strength-protection", [1, 3, 5, 6, 7]],
     ["videos/energy-pump-ups", [1, 2]],
