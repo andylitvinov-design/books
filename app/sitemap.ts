@@ -46,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         || academyPublicBlocks(record, locale).filter((block) => block.type === "p" || block.type === "li").length >= 2
         || mediaForRecord(record).some((item) => Boolean(youtubeIdFromUrl(item.mediaUrl))))
       .map((record) => "/" + record.routeKey);
-    return [...new Set([...academyDirectoryPaths, ...academyRecordPaths])]
+    return [...new Set([...academyDirectoryPaths.filter((suffix) => locale === "ru" || suffix !== "/egyptian-priesthood"), ...academyRecordPaths])]
       .filter(suffix => suffix !== "/reiki/master-shamanic-healing") // permanently redirected to Yggdrasil Basic
       .map((suffix) => "/" + locale + "/academy" + suffix);
   });
