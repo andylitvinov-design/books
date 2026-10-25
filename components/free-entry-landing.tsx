@@ -94,7 +94,7 @@ const copy = {
       steps: [
         { title: "Tell me your situation", text: "Complete a short questionnaire about your question and goal." },
         { title: "Draw three elements", text: "Sketch ME, GOAL and PROBLEM on paper and photograph it." },
-        { title: "Private handoff", text: "Keep the drawing on your device until you agree a secure way to share it." },
+        { title: "Private handoff", text: "Do not send private answers or your drawing via messengers. Agree a secure handoff in your account." },
       ],
       startTitle: "Tell me what you would like to explore",
       startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
@@ -197,7 +197,7 @@ const copy = {
       steps: [
         { title: "Опишите ситуацию", text: "Ответьте на несколько вопросов о проблеме и цели." },
         { title: "Нарисуйте три элемента", text: "Изобразите на бумаге «Я», «ЦЕЛЬ» и «ПРОБЛЕМА»." },
-        { title: "Приватная передача", text: "Сохраните рисунок у себя до согласования защищённого способа отправки." },
+        { title: "Приватная передача", text: "Не отправляйте личные ответы и рисунок в мессенджерах. Согласуйте защищённую передачу в кабинете." },
       ],
       startTitle: "С чего хотите начать?",
       startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
@@ -300,7 +300,7 @@ const copy = {
       steps: [
         { title: "Describe tu situación", text: "Responde sobre el problema y tu objetivo." },
         { title: "Dibuja tres elementos", text: "Representa YO, META y PROBLEMA en papel." },
-        { title: "Entrega privada", text: "Guarda el dibujo contigo hasta acordar cómo compartirlo de forma segura." },
+        { title: "Entrega privada", text: "No envíes respuestas privadas ni dibujos por mensajería. Acuerda un envío seguro en tu cuenta." },
       ],
       startTitle: "¿Qué te gustaría explorar?",
       startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
