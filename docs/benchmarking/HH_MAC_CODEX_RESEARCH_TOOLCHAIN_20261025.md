@@ -14,6 +14,8 @@ Related: [program #2058](https://github.com/andylitvinov-design/books/issues/205
 
 Before touching tooling, ensure Desktop Commander appears **Online** at https://mcp.desktopcommander.app/ (macOS agent running, same account; an awake Mac alone does not connect a remote session). Remote-device verification is independent from GitHub permissions.
 
+The script exists on branch `chore/hh-mac-codex-research-toolchain-20261025` (PR #2066). It is **not** present in a normal production checkout until that PR is merged. To test before merge, use a separate clean worktree or explicitly check out that branch; do not overwrite an active local working tree.
+
 ```bash
 cd /Users/andriilitvinov/projects/books  # adjust if checkout moved
 bash scripts/benchmarking/mac-codex-research-tools.sh --check
