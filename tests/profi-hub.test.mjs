@@ -212,6 +212,20 @@ test('Pro keeps learning, practitioner offers and profiles visible in one scroll
   }
 })
 
+test('Pro does not show the redundant Learn / Develop / Share roadmap in EN, RU or ES',()=>{
+  assert.doesNotMatch(hub,/profi-after-learning|styles\.nextStage|t\.afterTitle|t\.after\.map|data-profi-action="advanced-reiki"/)
+  for(const text of ['How to move from learning to practice','Как перейти от учёбы к практике','De aprender a ejercer']){
+    assert.ok(!hub.includes(text),'obsolete roadmap copy: '+text)
+  }
+  for(const locale of ['en','ru','es']){
+    const tree=mount(locale).render()
+    assert.equal(nodes(tree).filter(node=>node.props?.id==='profi-after-learning').length,0,locale)
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-learning')),locale+': learning path retained')
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-practice')),locale+': practitioner offers retained')
+    assert.equal(nodes(tree).filter(node=>node.props?.['data-profi-paid-program']!==undefined).length,3,locale+': advanced training remains available')
+  }
+})
+
 test('actual interactive learner track explores five steps but launches only existing training',()=>{
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
@@ -325,7 +339,7 @@ test('earning promise stays honest; mobile and accessibility are deliberate',()=
     assert.ok(hub.toLowerCase().includes(phrase.toLowerCase()) || phrase==='Checkout' && hub.includes('checkout'),
       phrase)
   }
-  assert.match(hub,/не даёт профессиональной квалификации/)
+  assert.match(hub,/Pricing, qualifications and legal eligibility are your responsibility/)
   assert.match(hub,/<nav className=\{styles.pathControls\} aria-label=\{t.choose\}/)
   assert.match(hub,/href="#profi-practice"/)
   assert.match(hub,/aria-expanded=\{isExpanded\}/)

@@ -35,12 +35,6 @@ const PHOTOS = {
     meditation: "/images/holistic-house/hero-olive-incense.webp",
     personal: "/images/holistic-house/reiki-practitioner-sunrise.webp",
   },
-  stages: [
-    "/images/holistic-house/course-focus-mountain-boy.webp",
-    "/images/holistic-house/hero-olive-incense.webp",
-    "/images/holistic-house/books-library.webp",
-    "/images/holistic-house/reiki-approved-sunrise-v3.webp",
-  ],
 } as const;
 
 function Photo({ src, className, sizes = "100px" }: { src: string; className: string; sizes?: string }) {
@@ -87,15 +81,6 @@ const copy = {
     ],
     studyCta: "Begin the free 5-lesson course",
     studyNote: "The interactive course is presented in English and Russian. This link opens the English learning experience.",
-    afterTitle: "How to move from learning to practice",
-    after: [
-      { title: "Learn", detail: "Finish lessons and practice the exercises at your own pace." },
-      { title: "Develop", detail: "Continue studying, discuss boundaries and decide what additional training you need." },
-      { title: "Share", detail: "When you're ready, create a practitioner profile and an honest first offer." },
-    ],
-    learningDisclaimer: "The introductory course is educational. It does not automatically certify you, authorize regulated healthcare work or guarantee income. Initiation is arranged separately.",
-    advanced: "Explore advanced Reiki programmes",
-    ready: "I already practise—show me the Pro route",
     proEyebrow: "YOUR FIRST PUBLIC OFFER",
     proTitle: "Turn your experience into an offer.",
     proLead: "Offer personal diagnostics, energy support, guided meditation courses or your own individual service. Build a private draft before review.",
@@ -160,15 +145,6 @@ const copy = {
     ],
     studyCta: "Начать бесплатный курс из 5 уроков",
     studyNote: "",
-    afterTitle: "Как перейти от учёбы к практике",
-    after: [
-      { title: "Изучи", detail: "Пройди уроки и повторяй упражнения в своём темпе." },
-      { title: "Углубись", detail: "Продолжи обучение, разберись с границами практики и необходимой подготовкой." },
-      { title: "Предложи", detail: "Когда будешь готов, создай профиль и честно опиши свою первую услугу." },
-    ],
-    learningDisclaimer: "Вводный курс — образовательный, сам по себе не даёт профессиональной квалификации, права на регулируемую медицинскую деятельность или гарантии дохода. Посвящение согласовывается отдельно.",
-    advanced: "Другие программы обучения Рейки",
-    ready: "Я уже практикую — перейти к пути Профи",
     proEyebrow: "ТВОЁ ПЕРВОЕ ПРЕДЛОЖЕНИЕ",
     proTitle: "Преврати опыт в понятную услугу.",
     proLead: "Предложи персональную диагностику, энергетическую поддержку, онлайн-курс медитации или собственную индивидуальную услугу. Сначала создаётся черновик.",
@@ -233,15 +209,6 @@ const copy = {
     ],
     studyCta: "Empezar el curso gratuito de 5 lecciones",
     studyNote: "El curso interactivo completo está disponible actualmente en inglés y ruso. Este enlace abre la versión en inglés.",
-    afterTitle: "De aprender a ejercer",
-    after: [
-      { title: "Aprende", detail: "Completa lecciones y repite ejercicios a tu ritmo." },
-      { title: "Profundiza", detail: "Continúa estudiando y revisa límites y formación necesaria." },
-      { title: "Comparte", detail: "Cuando estés preparado, crea un perfil y una primera oferta honesta." },
-    ],
-    learningDisclaimer: "El curso introductorio es educativo; no proporciona acreditación profesional ni autorización sanitaria, y no garantiza ingresos. La iniciación se coordina por separado.",
-    advanced: "Explorar otros programas Reiki",
-    ready: "Ya practico—quiero publicar",
     proEyebrow: "TU PRIMERA OFERTA",
     proTitle: "Convierte tu experiencia en una oferta.",
     proLead: "Ofrece diagnóstico personal, apoyo energético, un curso de meditación o tu propio servicio individual. Primero crearás un borrador privado.",
@@ -432,30 +399,6 @@ export function ProfiHub({ locale, directory, directoryUnavailable = false }: {
                 </div>
               </section>
 
-              <section className={styles.nextStage} aria-labelledby="profi-after-learning">
-                <h3 id="profi-after-learning">{t.afterTitle}</h3>
-                <div className={styles.threeSteps}>
-                  {t.after.map((step, index) => (
-                    <article key={step.title}>
-                      <Photo src={PHOTOS.stages[index]} className={styles.stagePhoto} sizes="96px" />
-                      <div className={styles.stageText}>
-                        <span className={styles.roundIndex}>{index + 1}</span>
-                        <h4>{step.title}</h4>
-                        <p>{step.detail}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-                <p className={styles.disclaimer}><ShieldCheck size={17} aria-hidden="true" />{t.learningDisclaimer}</p>
-                <div className={styles.nextActions}>
-                  <Link href="#profi-masters" prefetch={false} className={styles.secondary} data-profi-action="advanced-reiki">
-                    {t.advanced}<ArrowRight size={16} aria-hidden="true" />
-                  </Link>
-                  <a href="#profi-practice" className={styles.textAction}>
-                    {t.ready}<ArrowRight size={17} aria-hidden="true" />
-                  </a>
-                </div>
-              </section>
             </section>
             <section id="profi-practice" className={styles.journey} aria-labelledby="profi-practice-title" data-profi-practice>
               <div className={styles.sectionIntro}>
