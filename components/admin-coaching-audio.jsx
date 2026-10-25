@@ -54,8 +54,11 @@ export default function AdminCoachingAudio({course,initialQuestion,initialLocale
  const recorder=useRef(null),stream=useRef(null),chunks=useRef([]),alive=useRef(true)
  const audio=useRef(null),input=useRef(null)
  const t=copy[locale]
- useEffect(()=>()=>{alive.current=false;if(recorder.current?.state==='recording')recorder.current.stop()
-   stream.current?.getTracks().forEach(track=>track.stop())},[])
+ useEffect(()=>{
+  alive.current=true
+  return ()=>{alive.current=false;if(recorder.current?.state==='recording')recorder.current.stop()
+   stream.current?.getTracks().forEach(track=>track.stop())}
+ },[])
  useEffect(()=>{
   let cancelled=false
   setLoading(true);setError('');setFiles([]);setActive(null)
