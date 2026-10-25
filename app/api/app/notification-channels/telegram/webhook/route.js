@@ -4,6 +4,7 @@ import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {verifyClientTelegramSecret} from '@/lib/app/client-telegram-policy'
 import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
+import {receiveOwnerTelegramAudioWebhook} from '@/lib/practitioners/owner-telegram-audio-service'
 
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
