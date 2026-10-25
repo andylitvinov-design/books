@@ -16,6 +16,7 @@ on:
       - 'components/admin-telegram-audio.*'
       - 'tests/owner-telegram-audio-inbox.test.mjs'
       - 'supabase/migrations/*telegram_owner_audio_inbox.sql'
+      - 'supabase/migrations/*telegram_owner_audio_destination.sql'
       - 'components/app/customer-telegram-bot-setup.jsx'
       - 'tests/practitioner-owner-ai-telegram.test.mjs'
       - 'lib/practitioners/owner-ai-bootstrap.mjs'
