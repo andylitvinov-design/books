@@ -85,6 +85,8 @@ insert into app_private.free_express_account_links(enquiry_id,account_id,referen
 do $$ begin
  if (select count(*) from app_private.free_express_account_links) <> 1
  then raise exception 'ACCOUNT OWNER SAVE FAILED'; end if;
+ if (select count(*) from app.public_service_enquiries) <> 1
+ then raise exception 'GOOGLE ACCOUNT CANNOT READ ITS OWN REQUEST'; end if;
 end $$;
 commit;
 begin;
@@ -92,6 +94,8 @@ select set_config('request.jwt.claims','{"sub":"33333333-3333-4333-8333-33333333
 do $$ begin
  if (select count(*) from app_private.free_express_account_links) <> 0
  then raise exception 'WRONG GOOGLE ACCOUNT CAN READ LINK'; end if;
+ if (select count(*) from app.public_service_enquiries) <> 0
+ then raise exception 'WRONG GOOGLE ACCOUNT CAN READ ENCRYPTED REQUEST'; end if;
 end $$;
 rollback;
 reset role;
