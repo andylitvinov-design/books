@@ -84,6 +84,51 @@ try {
         await assertTouchSize(articleTab, label + " article tab");
         await noHorizontalOverflow(page, label + " initial");
 
+        // Actual hydrated mentor filtering stays above the first card at every
+        // phone width (including the one-mentor layout from the owner's iPhone).
+        const articlesWereSelected = await articleTab.getAttribute("aria-selected") === "true";
+        await mentorTab.tap();
+        await mentorPanel.waitFor({ state: "visible" });
+        const menu = mentorPanel.locator("[data-mentor-filters]");
+        const offers = mentorPanel.locator("#mentor-filter-offering");
+        const learning = mentorPanel.locator("#mentor-filter-course");
+        const mentorCards = mentorPanel.locator("[data-mentor-cards] > article");
+        const searchMentors = mentorPanel.locator("#master-finder-query-masters");
+        await menu.waitFor({ state: "visible" });
+        assert.equal(await mentorPanel.locator("[data-mentor-primary-filters] select").count(), 4,
+          label + ": visible service/course/format/language menu");
+        await assertTouchSize(offers, label + " service type");
+        await assertTouchSize(learning, label + " course selector");
+        if (phase === "populated") {
+          assert.equal(await mentorCards.count(), 1, label + ": one real approved synthetic mentor");
+          const menuBox = await menu.boundingBox();
+          const cardBox = await mentorCards.first().boundingBox();
+          assert.ok(menuBox && cardBox && menuBox.y + menuBox.height <= cardBox.y + 1,
+            label + ": filters must come before the sole practitioner card");
+          assert.equal(await offers.locator('option[value="session"]').count(), 1,
+            label + ": actual session type available");
+          await offers.selectOption("session");
+          assert.equal(await mentorCards.count(), 1, label + ": session filter finds actual offering");
+          await offers.selectOption("");
+          await searchMentors.fill("NO_SYNTHETIC_MENTOR_MATCH_887");
+          await mentorPanel.getByText(/No matches yet|По этим параметрам|No hay resultados/).waitFor();
+          assert.equal(await mentorCards.count(), 0, label + ": unmatched term hides cards");
+          await searchMentors.fill("");
+          await mentorCards.first().waitFor();
+          assert.equal(await mentorCards.count(), 1, label + ": clearing search restores mentor");
+          if (width === 390) await menu.screenshot({
+            path: output + "/mentor-filters-" + engineName + "-" + locale + "-390.png",
+            animations: "disabled",
+          });
+        }
+        const moreMentorFilters = menu.locator("details summary").first();
+        await assertTouchSize(moreMentorFilters, label + " advanced filters");
+        await moreMentorFilters.tap();
+        assert.equal(await menu.locator("details[open]").count(), 1);
+        await noHorizontalOverflow(page, label + " expanded filters");
+        await moreMentorFilters.tap();
+        if (articlesWereSelected) await articleTab.tap();
+
         if (phase === "empty") {
           // The isolated application seed can contain approved public services
           // before any article is published. That is a valid services-only feed.
