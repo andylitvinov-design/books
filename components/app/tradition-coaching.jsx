@@ -7,6 +7,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
 import {coachingGentleGuide,coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
+import {useCoachingVisualViewport} from './use-coaching-visual-viewport'
 import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
 import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
 import {coachingRequestTopicLabel} from '@/lib/coaching/session-onboarding'
@@ -38,8 +39,10 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const [data,setData]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false)
  const [error,setError]=useState(''),[notice,setNotice]=useState('')
  const [index,setIndex]=useState(0),[choice,setChoice]=useState(''),[note,setNote]=useState('')
+ const [noteExpanded,setNoteExpanded]=useState(false)
  const [entryStep,setEntryStep]=useState('intro'),[clientTopic,setClientTopic]=useState(''),[topicAdultConfirmed,setTopicAdultConfirmed]=useState(false),[restartRequested,setRestartRequested]=useState(false)
- const busyRef=useRef(false),heading=useRef(null)
+ const busyRef=useRef(false),heading=useRef(null),viewportRef=useRef(null),questionScrollRef=useRef(null)
+ useCoachingVisualViewport(viewportRef)
  const course=data?.course,session=course?.current
  const questions=data?.questions||[]
  const question=questions[index]
@@ -58,7 +61,9 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const visit=useCallback((position,values,list)=>{
   const next=Math.max(0,Math.min(list.length-1,position))
   const saved=values?.[list[next]?.id]
-  setIndex(next);setChoice(saved?.choiceId||'');setNote(saved?.note||'');setError('');setNotice('')
+  setIndex(next);setChoice(saved?.choiceId||'');setNote(saved?.note||'')
+   setNoteExpanded(Boolean(saved?.note));setError('');setNotice('')
+   if(questionScrollRef.current)questionScrollRef.current.scrollTop=0
  },[])
  const reload=useCallback(async()=>{
   if(!accountId||!def)return
@@ -81,7 +86,12 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   }).catch(()=>{if(active)setError(t.loadError)}).finally(()=>{if(active)setLoading(false)})
   return ()=>{active=false}
  },[accountId,endpoint,visit,t.loadError,def])
- useEffect(()=>{if(!loading&&question&&!completed)heading.current?.focus({preventScroll:true})},[index,loading,completed,question])
+ useEffect(()=>{
+   if(!loading&&question&&!completed){
+     if(questionScrollRef.current)questionScrollRef.current.scrollTop=0
+     heading.current?.focus({preventScroll:true})
+   }
+ },[index,loading,completed,question])
  useEffect(()=>{if(!loading&&(!course||restartRequested))heading.current?.focus({preventScroll:true})},[entryStep,loading,course?.current?.id,restartRequested])
  useEffect(()=>{
   if(!dirty)return
@@ -156,7 +166,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   finally{busyRef.current=false;setBusy(false)}
  }
  if(!def)return null
- return <main className={base.root} data-tradition-coaching={def.slug} data-coaching-template={template} lang={lang}>
+ return <main ref={viewportRef} className={base.root} data-tradition-coaching={def.slug} data-coaching-template={template} lang={lang}>
   <div className={base.scenery} aria-hidden="true"/>
   <div className={base.layout}>
    <header className={base.header}>
@@ -224,7 +234,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
         aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={index+1}>
         <span style={{width:((index+1)/questions.length*100)+'%'}}/>
       </div>
-      <div className={base.questionArea+' '+extra.courseScroll}>
+      <div ref={questionScrollRef} className={base.questionArea+' '+extra.courseScroll}>
         <span className={base.stage}>{question.title?.[lang]||question.title?.en||question.stage}</span>
         {gentleGuide&&<div data-tradition-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
         <div className={extra.questionHeader}>
@@ -233,6 +243,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
         <CoachingQuestionVoice key={question.id} text={[conversationTurn?.speech,question.question?.[lang]||''].filter(Boolean).join(' ')}
            locale={lang} disabled={busy} onTranscript={value=>{
              setNote(old=>((old?old+' ':'')+value).slice(0,500))
+             setNoteExpanded(true)
              if(!quickChoices)setChoice('')
              setNotice('');setError('')
            }}/>
@@ -247,13 +258,20 @@ export default function TraditionCoaching({locale='en',accountId,template}){
             {option.label?.[lang]||option.label?.en}</button>)}
         </div>}
         {!quickChoices&&choice&&<p className={extra.legacyChoice}>{t.earlierChoice}: {selectedText(question,{choiceId:choice,note:''},lang,t.empty)}</p>}
-        <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
-        <textarea id="tradition-coaching-note" className={extra.note} value={note}
-          data-tradition-open-reflection={!quickChoices?'true':undefined}
-          disabled={busy} maxLength={500} rows={quickChoices?2:4}
-          placeholder={quickChoices?t.placeholder:t.openPlaceholder}
-          onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
-        <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
+        {quickChoices&&<button type="button" className={extra.noteToggle}
+          aria-controls="tradition-coaching-note-section" aria-expanded={noteExpanded}
+          disabled={busy} onClick={()=>setNoteExpanded(value=>!value)}>
+          {t.note}<span aria-hidden="true">{noteExpanded?'−':'+'}</span>
+        </button>}
+        {(!quickChoices||noteExpanded)&&<div id="tradition-coaching-note-section" className={extra.noteSection}>
+          <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
+          <textarea id="tradition-coaching-note" className={extra.note} value={note}
+            data-tradition-open-reflection={!quickChoices?'true':undefined}
+            disabled={busy} maxLength={500} rows={quickChoices?2:4}
+            placeholder={quickChoices?t.placeholder:t.openPlaceholder}
+            onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
+          <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
+        </div>}
         {notice&&<p role="status" className={base.notice}><Check size={15}/>{notice}</p>}
         {error&&<p role="alert" className={base.error}>{error}</p>}
       </div>
