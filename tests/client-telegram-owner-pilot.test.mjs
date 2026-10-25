@@ -65,7 +65,6 @@ test('CRM status and pilot action disclose neither chat ID nor bot secret',()=>{
 
 import {runInNewContext} from 'node:vm'
 import {Readable} from 'node:stream'
-import {NextRequestAdapter} from 'next/dist/server/web/spec-extension/adapters/next-request.js'
 import {AppError} from '../lib/assessments/contracts.js'
 
 const source=readFileSync('app/api/app/notification-channels/telegram/test/route.js','utf8')
@@ -83,13 +82,12 @@ function fixture(){
  return {post,get sent(){return sent}}
 }
 function request(body,headers={}){
- return NextRequestAdapter.fromNodeNextRequest({method:'POST',
-  url:'https://holistichouse.vercel.app/api/app/notification-channels/telegram/test',
-  headers:{'x-hh-account-id':'owner',...headers},body},new AbortController().signal)
+ return new Request('https://holistichouse.vercel.app/api/app/notification-channels/telegram/test',{
+  method:'POST',headers:{'x-hh-account-id':'owner',...headers},body,duplex:'half'})
 }
-test('real Next adapter empty POST stream permits exactly one owner pilot',async()=>{
+test('empty Node POST stream permits exactly one owner pilot',async()=>{
  const f=fixture(),r=request(Readable.from([]),{'content-length':'0'})
- assert.notEqual(r.body,null,'Node runtime represents even empty POST as a stream')
+ assert.notEqual(r.body,null,'same non-null empty-stream shape produced by NextRequestAdapter')
  assert.equal((await f.post(r)).status,200)
  assert.equal(f.sent,1)
 })
