@@ -80,7 +80,7 @@ test("all three locales explain real service advantages without health claims or
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
-  assert.match(landing, /€50/, "The paid 30-minute option must have its real price");
+  assert.match(read("components/free-diagnosis-offers.tsx"), /30 MIN · €50/, "The paid 30-minute option remains €50");
   assert.doesNotMatch(landing + capture, /€100/, "Do not invent a second paid option here");
 });
 
