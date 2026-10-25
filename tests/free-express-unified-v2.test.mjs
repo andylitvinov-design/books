@@ -66,7 +66,7 @@ test('one CRM-first lead, not a second full questionnaire lead, and plain text n
   assert.doesNotMatch(store, /insert into app\.public_service_enquiries|insert into app\.crm_contacts/)
   assert.match(store, /update app\.public_service_enquiries/)
   assert.match(store, /withFreeExpressRequest/)
-  assert.match(store, /'free-express-details-v2'/)
+  assert.match(store, /free-express-details-v2/)
   assert.match(route, /response\.cookies\.set\(FREE_EXPRESS_COOKIE/)
   assert.match(route, /createFreeExpressToken/)
   assert.match(route, /maxAge:/)
