@@ -697,7 +697,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           <CoachingLiveSessionCapture locale={lang} />
         </section>}
         
-      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>
+      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}
+        data-coaching-one-viewport={entryStep==='questions'&&!finished&&(!requiresAdult||adultAcknowledged)?'true':undefined}>
         <header className={styles.sessionHeader}>
           <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
@@ -752,7 +753,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <CoachingChatThread turn={followupTurn} locale={lang}>
+            <CoachingChatThread turn={followupTurn} locale={lang} compact>
               <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p className={styles.hint}>{t.clarifyWhy}</p>
@@ -760,8 +761,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <div data-public-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang}
-                 draftPreview={quickChoices&&draft.startsWith('choice:')?answerText(draft,current,lang,t):''}>
+              <CoachingChatThread turn={conversationTurn} locale={lang} compact>
                 <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
               </CoachingChatThread>
             </div>
