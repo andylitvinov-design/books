@@ -76,7 +76,7 @@ export default async function ServiceDetail({params}:PageProps){
         {(service.serviceIntroductions?.length||service.videoPresentation)&&<PractitionerPresentationVideo service locale={locale}
           video={service.videoPresentation} playbackUrl={service.videoPresentation?publicPresentationUrl(service.videoPresentation,getAppConfig().supabaseUrl):''}
           introductions={(service.serviceIntroductions||[]).map(item=>({
-            ...item,playbackUrl:publicPresentationUrl(item.media,getAppConfig().supabaseUrl,item.type)
+            ...item,playbackUrl:publicPresentationUrl(item.media,getAppConfig().supabaseUrl,item.type)||''
           }))}/>}
         <div className={styles.quickFacts} aria-label={ru?"Условия":es?"Detalles del servicio":"Service details"}>
           <strong>{price}</strong>
