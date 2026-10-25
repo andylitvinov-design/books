@@ -7,7 +7,7 @@ import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
 import {coachingGentleGuide,coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
-import CoachingDialogueTurn from '@/components/coaching-dialogue-turn'
+import CoachingChatThread from '@/components/coaching-chat-thread'
 import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
 import {coachingRequestTopicLabel} from '@/lib/coaching/session-onboarding'
 import base from './personal-coaching.module.css'
@@ -226,9 +226,14 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       </div>
       <div className={base.questionArea+' '+extra.courseScroll}>
         <span className={base.stage}>{question.title?.[lang]||question.title?.en||question.stage}</span>
-        {gentleGuide&&<div data-tradition-gentle-guide><CoachingDialogueTurn turn={conversationTurn}/></div>}
-        <div className={extra.questionHeader}>
-         <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
+        <div data-tradition-gentle-guide>
+          <CoachingChatThread turn={conversationTurn} locale={lang}
+            previousReply={previousQuestion&&session?.answers?.[previousQuestion.id]
+              ?selectedText(previousQuestion,session.answers[previousQuestion.id],lang,t.empty):''}>
+            <div className={extra.questionHeader}>
+              <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
+            </div>
+          </CoachingChatThread>
         </div>
         <CoachingQuestionVoice key={question.id} text={[conversationTurn?.speech,question.question?.[lang]||''].filter(Boolean).join(' ')}
            locale={lang} disabled={busy} onTranscript={value=>{
@@ -247,6 +252,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
             {option.label?.[lang]||option.label?.en}</button>)}
         </div>}
         {!quickChoices&&choice&&<p className={extra.legacyChoice}>{t.earlierChoice}: {selectedText(question,{choiceId:choice,note:''},lang,t.empty)}</p>}
+        <div className={extra.chatComposer} data-coaching-composer>
         <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
         <textarea id="tradition-coaching-note" className={extra.note} value={note}
           data-tradition-open-reflection={!quickChoices?'true':undefined}
@@ -254,6 +260,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
           placeholder={quickChoices?t.placeholder:t.openPlaceholder}
           onChange={e=>{setNote(e.target.value);if(!quickChoices)setChoice('');setError('');setNotice('')}}/>
         <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
+        </div>
         {notice&&<p role="status" className={base.notice}><Check size={15}/>{notice}</p>}
         {error&&<p role="alert" className={base.error}>{error}</p>}
       </div>
