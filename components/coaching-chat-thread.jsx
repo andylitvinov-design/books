@@ -17,7 +17,7 @@ const copy={
 export default function CoachingChatThread({locale='en',turn,children,draftPreview='',compact=false}){
   const t=copy[locale]||copy.en
   const detailRef=useRef(null)
-  const fullReply=[turn?.coachReply||turn?.response,turn?.bridge].filter(Boolean).join(' ')
+  const fullReply=[turn&&(turn.coachReply||turn.response),turn?.bridge].filter(Boolean).join(' ')
   // The semantic helper suppresses unsafe excerpts, and redacts URLs/contact
   // data; do not bypass its decision with the original answer value.
   const previous=typeof turn?.quote==='string'?turn.quote.trim():''
