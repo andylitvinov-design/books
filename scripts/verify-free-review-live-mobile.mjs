@@ -64,6 +64,35 @@ for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
             const budget=height-(geom.header?.height||0)-(geom.nav?.height||0)-8;
             assert.ok(scene.rect.height<=budget+2,scene.id+' slide taller than usable viewport: '+scene.rect.height+' > '+budget);
           }
+          const reviewFeed=page.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
+          await reviewFeed.waitFor({state:'attached',timeout:15000});
+          const reviewGeometry=await reviewFeed.evaluate(element=>{
+            const cards=[...element.querySelectorAll('[data-testimonial-video-id]')];
+            return {
+              direction:getComputedStyle(element).flexDirection,
+              overflowX:getComputedStyle(element).overflowX,
+              ids:cards.map(item=>item.getAttribute('data-testimonial-video-id')),
+              boxes:cards.map(item=>{const r=item.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};}),
+              iframes:element.querySelectorAll('iframe').length,
+            };
+          });
+          const expectedFirst=locale==='ru'?'m9RfDgK76PU':'Dk0LBmOivQo';
+          const expectedSeventh=locale==='ru'?'Dk0LBmOivQo':'m9RfDgK76PU';
+          assert.equal(reviewGeometry.ids.length,12,'all twelve original video testimonials present');
+          assert.equal(new Set(reviewGeometry.ids).size,12,'no duplicated review');
+          assert.equal(reviewGeometry.ids[0],expectedFirst,'matching-language audio first');
+          assert.equal(reviewGeometry.ids[6],expectedSeventh,'other original-language reviews follow');
+          assert.equal(reviewGeometry.direction,'column','vertical feed, not carousel');
+          assert.notEqual(reviewGeometry.overflowX,'auto','no horizontal scroll');
+          assert.notEqual(reviewGeometry.overflowX,'scroll','no horizontal scroll');
+          assert.ok(reviewGeometry.boxes.every((item,index)=>index===0 || item.top>=reviewGeometry.boxes[index-1].bottom-2),'cards must stack top to bottom');
+          assert.ok(reviewGeometry.boxes.every(item=>item.left>=-2&&item.right<=width+2),'cards must fit the phone viewport');
+          assert.equal(reviewGeometry.iframes,0,'no autoplay on the twelve testimonials');
+          record.testimonialFeed={count:reviewGeometry.ids.length,direction:reviewGeometry.direction,firstId:reviewGeometry.ids[0],lastId:reviewGeometry.ids.at(-1)};
+          if(width===390){
+            await reviewFeed.locator('[data-testimonial-video-id]').first().scrollIntoViewIfNeeded();
+            await page.screenshot({path:output+'/'+name+'-testimonials.png',animations:'disabled',timeout:20000});
+          }
           const capture=page.locator('#request-free-review[data-service-lead-capture]');
           const cards=page.locator('[data-diagnosis-offer]');
           assert.equal(await cards.count(),3,'three photo-led offers with one shared form');
