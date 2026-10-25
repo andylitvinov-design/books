@@ -5,6 +5,7 @@ on:
       - 'components/holistic-house-home.tsx'
       - 'components/home-section-carousel.tsx'
       - 'app/\[locale\]/services/page.tsx'
+      - 'app/es/services/page.tsx'
       - 'tests/stable-session-entry.test.mjs'
       - 'tests/home-section-carousel.test.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
@@ -32,6 +33,7 @@ on:
       - 'components/holistic-house-home.tsx'
       - 'components/home-section-carousel.tsx'
       - 'app/\[locale\]/services/page.tsx'
+      - 'app/es/services/page.tsx'
       - 'tests/stable-session-entry.test.mjs'
       - 'tests/home-section-carousel.test.mjs'
       - 'tests/home-carousel-first-screen-cta.test.mjs'
@@ -71,7 +73,7 @@ jobs:
       - name: Stable offer, manual carousel and early existing session selector
         run: |
           node --test tests/stable-session-entry.test.mjs tests/home-section-carousel.test.mjs tests/home-carousel-first-screen-cta.test.mjs
-          npx --no-install eslint components/home-section-carousel.tsx app/'[locale]'/services/page.tsx tests/stable-session-entry.test.mjs
+          npx --no-install eslint components/home-section-carousel.tsx app/'[locale]'/services/page.tsx app/es/services/page.tsx tests/stable-session-entry.test.mjs
       - name: Seven-step immersion, existing methods, privacy, typecheck and lint
         run: |
           node --test tests/home-featured-workspace.test.mjs tests/personality-profiles-builder.test.mjs tests/home-core-methods.test.mjs tests/home-master-path.test.mjs tests/home-rsc-on-demand.test.mjs

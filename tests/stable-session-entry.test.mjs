@@ -29,8 +29,8 @@ for(const locale of ['en','ru','es'])test(locale+': first offer stays stable unt
  nodes.filter(n=>n.type==='button').at(-1).props.onClick();nodes=render()
  assert.equal(nodes.find(n=>n.props['data-home-slide']).props['data-home-slide'],'academy','manual next still works')
 })
-test('one existing session selector precedes the long services catalogue',()=>{
- const page=read('app/[locale]/services/page.tsx')
+for(const route of ['app/[locale]/services/page.tsx','app/es/services/page.tsx'])test(route+': one existing session selector precedes the long services catalogue',()=>{
+ const page=read(route)
  assert.equal((page.match(/<PublicConsultationCta/g)||[]).length,1)
  assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<ServicesStudioOffers'))
  assert.match(page,/id="consultation" serviceBooking/)
