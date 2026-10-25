@@ -15,12 +15,11 @@ test("Tantra Reiki has one real hero heading and three distinct first-screen pat
   assert.match(page, /className="tantra-course-hero__cta"/);
   assert.match(page, /className="tantra-course-hero__cta" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
   assert.match(page, /className="tantra-course-hero__healing-cta"/);
-  assert.match(page, /className="tantra-course-hero__initiation-cta" href=\{\"\/\" \+ locale \+ \"\/academy\/reiki\/tantra-reiki\/free-initiation#apply-personal\"\}/);
-  assert.match(page, /className="tantra-course-hero__more"/);
-  assert.match(page, /<nav className="tantra-course-hero__secondary-links"/);
-  assert.match(page, /href="#tantra-level-1"/);
-  assert.match(page, /href="#tantra-next-levels"/);
-  assert.match(page, /className="tantra-course-hero__tests-cta"/);
+  assert.match(page, /className="tantra-course-hero__initiation-cta" href="#tantra-master-course"/);
+  assert.doesNotMatch(page, /className="tantra-course-hero__more"|Programme & extra resources/);
+  const capture = read("components/reiki-choice-capture.tsx");
+  assert.match(capture, /id="tantra-master-course"/);
+  assert.match(capture, /window\.location\.hash === "#tantra-master-course"\) setSelected\("personal"\)/);
   assert.match(page, /reiki-guide\?course=tantra&locale=/);
   for (const phrase of [
     "subject to Andrey's confirmation", "согласованию с Андреем", "confirmación de Andrey",

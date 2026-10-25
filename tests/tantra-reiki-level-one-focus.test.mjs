@@ -14,8 +14,8 @@ test("Tantra Reiki landing leads with the first initiation in all locales", asyn
     "Tantra Reiki Level 1: Spring of Life",
     "Tantra Reiki Nivel 1: Manantial de vida",
   ]) assert.ok(page.includes(phrase), phrase);
-  assert.match(page, /href="#tantra-level-1"/);
-  assert.match(page, /href="#tantra-next-levels"/);
+  assert.match(page, /href="#tantra-master-course"/);
+  assert.doesNotMatch(page, /Programme & extra resources|tantra-course-hero__more/);
   assert.match(page, /className="tantra-course-hero__cta" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
   for (const phrase of ["Тантра Рейки — 1-я ступень", "Tantra Reiki Level 1 — Spring of Life", "Tantra Reiki Nivel 1 — Manantial de vida"]) {
     assert.ok(metadata.includes(phrase), "SEO " + phrase);

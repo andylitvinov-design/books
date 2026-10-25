@@ -226,18 +226,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                       />
                     </div>
                   </details>
-                  <Link className="tantra-course-hero__initiation-cta" href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation#apply-personal"}>{locale === "ru" ? "Записаться на личную инициацию Тантра Рейки с мастером →" : locale === "es" ? "Inscribirme en una iniciación personal en vivo de Tantra Reiki →" : "Sign up for Live Personal Tantra Reiki Initiation →"}</Link>
+                  <a className="tantra-course-hero__initiation-cta" href="#tantra-master-course">{locale === "ru" ? "Записаться на личную инициацию Тантра Рейки с мастером →" : locale === "es" ? "Inscribirme en una iniciación personal en vivo de Tantra Reiki →" : "Sign up for Live Personal Tantra Reiki Initiation →"}</a>
                 </div>
-                <details className="tantra-course-hero__more">
-                  <summary>{locale === "ru" ? "Программа и дополнительные материалы" : locale === "es" ? "Programa y materiales adicionales" : "Programme & extra resources"} <span aria-hidden="true">⌄</span></summary>
-                  <Link className="tantra-course-hero__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{locale === "ru" ? "Пройти бесплатные тантрические тесты ↗" : locale === "es" ? "Hacer los tests tántricos gratuitos ↗" : "Take free Tantra self-reflection tests ↗"}</Link>
-                  <nav className="tantra-course-hero__secondary-links" aria-label={locale === "ru" ? "Разделы курса и ресурсы" : locale === "es" ? "Secciones y recursos del curso" : "Course sections and resources"}>
-                    <a href="#tantra-level-1">{locale === "ru" ? "Что изучим на 1-й ступени ↓" : locale === "es" ? "Qué aprenderás en Nivel 1 ↓" : "What you learn in Level 1 ↓"}</a>
-                    <a href="#tantra-next-levels">{locale === "ru" ? "Остальные ступени (2–9) ↓" : locale === "es" ? "Otros niveles (2–9) ↓" : "Other levels (2–9) ↓"}</a>
-                    <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{locale === "ru" ? "Как проходит вводная инициация ↗" : locale === "es" ? "Cómo se realiza la iniciación introductoria ↗" : "How the introductory initiation works ↗"}</Link>
-                    <a className="tantra-course-hero__guide" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Методичка PDF ↓" : locale === "es" ? "Guía PDF ↓" : "Mobile PDF ↓"}</a>
-                  </nav>
-                </details>
                 <p className="tantra-course-hero__note">{locale === "ru" ? "Подарок — вводная инициация 1-й ступени по согласованию с Андреем. Практики добровольны, тесты не предназначены для диагностики." : locale === "es" ? "El regalo es una iniciación de Nivel 1, sujeta a la confirmación de Andrey. Las prácticas son voluntarias; los tests no son diagnósticos." : "The gift is an introductory Level 1 initiation, subject to Andrey's confirmation. Practices are optional; tests are not diagnostic."}</p>
               </div>
               <figure className="tantra-course-hero__visual">
