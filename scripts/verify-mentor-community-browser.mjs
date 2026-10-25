@@ -144,9 +144,13 @@ try {
         const moreMentorFilters = menu.locator("details summary").first();
         await assertTouchSize(moreMentorFilters, label + " advanced filters");
         await moreMentorFilters.tap();
-        assert.equal(await menu.locator("details[open]").count(), 1);
+        // Native <details> toggles on the browser's default-action step; a
+        // same-microtask count() can observe the previous closed state.
+        const expandedMentorFilters = menu.locator("details[open]");
+        await expandedMentorFilters.waitFor({ state: "visible", timeout: 10000 });
         await noHorizontalOverflow(page, label + " expanded filters");
         await moreMentorFilters.tap();
+        await expandedMentorFilters.waitFor({ state: "hidden", timeout: 10000 });
         if (articlesWereSelected) await articleTab.tap();
 
         if (phase === "empty") {
