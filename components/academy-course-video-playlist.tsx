@@ -53,10 +53,12 @@ export function AcademyCourseVideoPlaylist({
   locale,
   courseTitle,
   lessons,
+  introText,
 }: {
   locale: PublicLocale;
   courseTitle: string;
   lessons: AcademyOrderedVideoLesson[];
+  introText?: string;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -91,7 +93,7 @@ export function AcademyCourseVideoPlaylist({
         <div className={styles.headingText}>
           <p className={styles.eyebrow}><ListVideo aria-hidden="true" size={16} />PsiMaster · {lessons.length} {t.total}</p>
           <h2>{t.heading}</h2>
-          <p className={styles.intro}>{t.intro}</p>
+          <p className={styles.intro}>{introText ?? t.intro}</p>
         </div>
       </header>
 

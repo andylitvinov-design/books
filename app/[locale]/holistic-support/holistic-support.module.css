@@ -98,3 +98,17 @@
 .coachingAsideAction:focus-visible{outline:3px solid #3f837d;outline-offset:3px}
 @media(max-width:650px){.primaryEntry{margin-bottom:10px}.coachingAside{flex-direction:column;align-items:stretch;gap:12px;padding:15px 13px;border-radius:16px}.coachingAside h2{font-size:25px}.coachingAside p{font-size:12.3px}.coachingAsideAction{width:100%;min-height:48px}}
 @media(max-width:350px){.coachingAside{padding:12px 10px}.coachingAsideAction{font-size:12px;overflow-wrap:anywhere}}
+
+
+/* Meditation is its own Holistic Support choice and scroll destination. */
+.option[data-holistic-offer="meditations"]{background:#f7f8f2;border-color:#d8d8c9}
+[data-holistic-meditations]{scroll-margin-top:88px}
+.meditationAudioRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,340px);align-items:center;gap:15px;min-width:0;padding:14px;border:1px solid #dfd3c0;border-radius:16px;background:linear-gradient(105deg,#eee9dd,#faf8f1)}
+.meditationAudioRow>div{min-width:0}
+.meditationAudioRow h3{margin:8px 0 5px;font:400 clamp(19px,2.3vw,25px)/1.2 Georgia,"Times New Roman",serif}
+.meditationAudioRow p{margin:0;color:#665d53;font:12.5px/1.55 Arial,Helvetica,sans-serif}
+.meditationAudioRow audio{display:block;width:100%;max-width:100%;min-width:0;min-height:54px}
+.meditationSourceNote{margin:12px 1px 3px;padding:10px 12px;border-left:3px solid #bc9b72;background:#faf7f1;color:#645c53;font:12px/1.53 Arial,Helvetica,sans-serif}
+[data-holistic-meditations] .libraryLink{margin-top:4px}
+@media(max-width:650px){.meditationAudioRow{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}.meditationAudioRow audio{max-width:100%}.meditationSourceNote{font-size:11.5px}}
+@media(max-width:350px){.meditationAudioRow{padding:9px}.meditationAudioRow h3{font-size:19px}}
