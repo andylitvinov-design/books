@@ -33,3 +33,16 @@ Owner follow-up requested the **specific** “Полёт к солнцу” vide
 - EN/ES still show just the original English Sun video. No new uploads, generated videos, translations, private sources or provider spending.
 - Video playlist is above the ambient audio on all locales; users explicitly press **Смотреть / Play**, with a direct YouTube fallback in the existing `AcademyVideoPlayer`.
 - Complete on actual Vercel READY + matching SHA/alias + real RU video-click/playback check. GitHub merge alone is insufficient for that last claim.
+ 
+
+## Owner clarification: no English video in Russian discovery · 2026-10-25
+
+This supersedes **“Explicit Sun Flight video in RU”** above and PR #2011's English-video-in-RU placement. The owner clarified the actual split:
+
+- **EN:** the previously confirmed original English video *Flight to the Sun / Sun Flight Meditation. Step 1* from `data/academy/english-guided-meditations.ts`, YouTube ID `HqfixazXqRY`. This is not a separate “Play Sunshine” upload.
+- **RU:** only the seven original Russian recordings linked by the verified historical PsiMaster manifest: three Sun lessons, Life Force, Circle Fire, and two Energy Pump-Ups. Do **not** insert the EN Sun Flight into this RU playlist.
+- **ES:** keeps its already existing one original English video, prominently marked as English audio, with a link to the original Russian archive. No Spanish dub is represented or generated.
+- Video-first user interface and no-autoplay poster + YouTube fallback remain. Existing local instrumental WAV remains explicitly identified as non-guided soundscape.
+- An executable playlist selector regression test now checks the actual source model for EN/ES one English ID versus RU seven Russian IDs and no duplicate/wrong-language links.
+
+The previous RU-English-video section is historical, not current behavior. Do not claim full E2E before Vercel exact SHA/alias READY and browser video playback verification.
