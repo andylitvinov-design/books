@@ -2,35 +2,18 @@
 import {useEffect,useState} from 'react'
 
 const COPY={
-  en:{media:'Private images',portrait:'View personal photo',drawing:'View ME–GOAL–PROBLEM drawing',noMedia:'No images uploaded yet',mediaError:'Could not check private attachments.',pending:'Waiting for the client to message you',hint:'After receiving the client’s own WhatsApp or Telegram message, record the contact shown there. The website cannot read private messenger contacts.',channel:'Messenger',address:'Contact from the conversation',whatsapp:'WhatsApp phone',telegram:'Telegram @username',save:'Save contact',manual:'Saved manually, not verified by a messaging provider',visitor:'Visitor registered with contact details (not independently verified)',reply:'Reply to this enquiry only · no marketing opt-in',reference:'Enquiry reference'},
-  ru:{media:'Закрытые фотографии',portrait:'Посмотреть фото клиента',drawing:'Посмотреть рисунок Я–Цель–Проблема',noMedia:'Файлы пока не загружены',mediaError:'Не удалось проверить вложения.',pending:'Ждём сообщения клиента в мессенджере',hint:'Когда клиент сам напишет в WhatsApp или Telegram, сохраните контакт из переписки. Сайт не считывает контакты личных чатов.',channel:'Мессенджер',address:'Контакт из переписки',whatsapp:'Телефон WhatsApp',telegram:'Telegram @username',save:'Сохранить контакт',manual:'Контакт записан вручную, без подтверждения через API',visitor:'Контакт оставлен клиентом при регистрации (пока не подтверждён)',reply:'Только ответ по заявке · без согласия на рассылки',reference:'Номер заявки'},
-  es:{media:'Imágenes privadas',portrait:'Ver foto personal',drawing:'Ver dibujo YO–META–PROBLEMA',noMedia:'Aún no hay fotos',mediaError:'No se pudieron consultar los archivos.',pending:'Esperando un mensaje del cliente',hint:'Cuando el cliente escriba por WhatsApp o Telegram, guarda aquí el contacto de la conversación. La web no puede leer sus datos automáticamente.',channel:'Mensajería',address:'Contacto de la conversación',whatsapp:'Teléfono de WhatsApp',telegram:'Usuario @ de Telegram',save:'Guardar contacto',manual:'Guardado manualmente, sin verificación del proveedor',visitor:'El visitante dejó datos de contacto (no verificados)',reply:'Solo respuesta a la solicitud · sin publicidad',reference:'Referencia'},
+  en:{pending:'Waiting for the client to message you',hint:'After receiving the client’s own WhatsApp or Telegram message, record the contact shown there. The website cannot read private messenger contacts.',channel:'Messenger',address:'Contact from the conversation',whatsapp:'WhatsApp phone',telegram:'Telegram @username',save:'Save contact',manual:'Saved manually, not verified by a messaging provider',visitor:'Visitor registered with contact details (not independently verified)',reply:'Reply to this enquiry only · no marketing opt-in',reference:'Enquiry reference'},
+  ru:{pending:'Ждём сообщения клиента в мессенджере',hint:'Когда клиент сам напишет в WhatsApp или Telegram, сохраните контакт из переписки. Сайт не считывает контакты личных чатов.',channel:'Мессенджер',address:'Контакт из переписки',whatsapp:'Телефон WhatsApp',telegram:'Telegram @username',save:'Сохранить контакт',manual:'Контакт записан вручную, без подтверждения через API',visitor:'Контакт оставлен клиентом при регистрации (пока не подтверждён)',reply:'Только ответ по заявке · без согласия на рассылки',reference:'Номер заявки'},
+  es:{pending:'Esperando un mensaje del cliente',hint:'Cuando el cliente escriba por WhatsApp o Telegram, guarda aquí el contacto de la conversación. La web no puede leer sus datos automáticamente.',channel:'Mensajería',address:'Contacto de la conversación',whatsapp:'Teléfono de WhatsApp',telegram:'Usuario @ de Telegram',save:'Guardar contacto',manual:'Guardado manualmente, sin verificación del proveedor',visitor:'El visitante dejó datos de contacto (no verificados)',reply:'Solo respuesta a la solicitud · sin publicidad',reference:'Referencia'},
 }
 export default function PublicEnquiryContact({request,locale='en',busy=false,onSave}){
   const t=COPY[locale]||COPY.en
   const isVisitor=request.contactProvenance==='visitor_submitted_unverified'
   const [channel,setChannel]=useState(request.contact?.channel||'whatsapp')
   const [address,setAddress]=useState(request.contact?.address||'')
-  const [media,setMedia]=useState(null)
-  const [mediaBusy,setMediaBusy]=useState(false)
-  const [mediaError,setMediaError]=useState('')
-  const isFreeExpress=/^\/(?:en|ru|es)\/services\/free-situation-review$/.test(request.sourcePath||'')
-  async function checkMedia(){
-    if(mediaBusy)return
-    setMediaBusy(true);setMediaError('')
-    try{
-      const res=await fetch('/api/app/practice/free-express/'+request.id+'/media',{
-        credentials:'same-origin',cache:'no-store'
-      })
-      if(!res.ok)throw new Error('NOT_AUTHORIZED')
-      const data=await res.json()
-      setMedia({portrait:data.portrait===true,drawing:data.drawing===true})
-    }catch{setMediaError(t.mediaError)}finally{setMediaBusy(false)}
-  }
   useEffect(()=>{
     setChannel(request.contact?.channel||'whatsapp')
     setAddress(request.contact?.address||'')
-    setMedia(null);setMediaError('')
   },[request.id,request.revision,request.contact])
   if(request.requestKind!=='public')return null
   return <div className="hh-public-lead-contact" data-public-lead-contact>
@@ -41,14 +24,7 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
       {request.contact?.phone&&<> · {request.contact.phone}</>}
       <small> · {t.reply}</small></p>}
     <p>{t.hint}</p>
-    {isFreeExpress&&<div className="hh-free-express-owner-media">
-      <button type="button" disabled={mediaBusy} onClick={()=>{void checkMedia()}}>{t.media}</button>
-      {mediaError&&<p role="alert">{mediaError}</p>}
-      {media&&<div>{!media.portrait&&!media.drawing?<p>{t.noMedia}</p>:<>
-        {media.portrait&&<a target="_blank" rel="noopener noreferrer" href={'/api/app/practice/free-express/'+request.id+'/media/portrait'}>{t.portrait}</a>}
-        {media.drawing&&<a target="_blank" rel="noopener noreferrer" href={'/api/app/practice/free-express/'+request.id+'/media/drawing'}>{t.drawing}</a>}
-      </>}</div>}
-    </div>}
+
     <form onSubmit={event=>{
       event.preventDefault()
       if(!address.trim()||busy)return
@@ -70,9 +46,6 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
       <button type="submit" disabled={busy||!address.trim()}>{t.save}</button>
     </form>
     <style jsx>{`
-      .hh-free-express-owner-media{display:grid;gap:8px;margin:8px 0 12px;border:1px solid #cadbd2;padding:9px;border-radius:9px;background:#f7fcf8}
-      .hh-free-express-owner-media>div{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-      .hh-free-express-owner-media a{display:inline-flex;align-items:center;min-height:44px;padding:10px;border:1px solid #bad4cb;border-radius:9px;color:#285c49;background:white;text-decoration:underline;font-weight:650}
       .hh-public-lead-contact{margin-top:11px;padding:12px;border:1px solid #bbd3d4;border-radius:12px;background:#f3f9f8;color:#24464e;font-size:12px;line-height:1.5}
       .hh-public-lead-contact p{margin:0 0 6px}
       .hh-public-lead-contact form{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
