@@ -57,10 +57,16 @@ export async function POST(request){
     if(!file||typeof file.arrayBuffer!=='function'||!ACCEPTED.has(file.type))
       throw new AppError('INVALID_IMAGE',400)
     if(file.size<128||file.size>MAX_INPUT)throw new AppError('TALISMAN_TOO_LARGE',413)
+    // Do not mask a missing native codec as a bad user image.
+    let sharp
+    try{
+      ({default:sharp}=await import('sharp'))
+    }catch(error){
+      console.error('[talismans] image codec unavailable',error instanceof Error?error.message:'unknown')
+      throw new AppError('TALISMAN_CODEC_UNAVAILABLE',503)
+    }
     let clean
     try{
-      // Load image codec only for verified upload requests, not the read-only gallery.
-      const {default:sharp}=await import('sharp')
       clean=await sharp(Buffer.from(await file.arrayBuffer()),{limitInputPixels:24_000_000,failOn:'error'})
         .rotate().resize({width:1200,height:1200,fit:'inside',withoutEnlargement:true})
         .flatten({background:'#ffffff'}).jpeg({quality:70,mozjpeg:true}).toBuffer()
