@@ -1,3 +1,4 @@
+import { assertPaidServiceCards } from './helpers/services-paid-contract.mjs';
 import { createPublicServicesPageManager } from './helpers/public-services-isolation.mjs';
 import { createFreeReviewViewportIsolation } from './helpers/free-review-viewport-isolation.mjs';
 import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs';
@@ -115,7 +116,7 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
-      // Free-first studio: three distinct no-payment paths, then five real
+      // Free-first studio: three distinct no-payment paths, then six real
       // personal offers. No secondary marketplace repeats on the landing.
       const freeCta = page.locator('[data-service-hero-cta="free"]');
       const paidCta = page.locator('[data-service-hero-cta="paid"]');
@@ -133,7 +134,7 @@ try {
       await visible(free.locator("h2#services-free-title"));
       await visible(paid.locator("h2#services-personal-title"));
       assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
-      assert.equal(await paid.locator('[data-services-studio-card]').count(), 5);
+      await assertPaidServiceCards(paid.locator('[data-services-studio-card]'), locale, locale + '/services/' + width);
       assert.equal(await page.locator("#find-your-service").count(), 0,
         "Detailed practitioner search belongs on the separate directory");
       const testAction = free.locator('[data-services-studio-action="tests"]');
@@ -143,14 +144,14 @@ try {
       await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
       assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
       assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#free-insights", "#solutions",
+        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
           "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "#consultation", "[data-services-directory-invitation]"];
+          "#method-videos", "[data-services-directory-invitation]"];
         const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
         if (sections.some(matches => matches.length !== 1)) return false;
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
+      }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
       await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
         { timeout: 15000 });
       // Method posters are visible, while third-party players stay opt-in.
@@ -208,7 +209,8 @@ try {
         if (await businessAction.isVisible()) await businessAction.click();
         else await showcase.locator('[data-services-kind="business"]').click();
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
-        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "Business filter retains both current personal-support and business offers", "business");
         await showcase.locator('[data-services-mode="toronto"]').click();
         await expect(page.locator("[data-services-studio-free]")).toBeHidden();
         await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
@@ -216,6 +218,8 @@ try {
         // Reiki is online-only, so choosing it intentionally resets Toronto.
         await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
         await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "Online Reiki filter", "reiki");
         // Explicitly switching back to Toronto must show the helpful empty state.
         await showcase.locator('[data-services-mode="toronto"]').click();
         await visible(showcase.locator("[data-services-empty]"));
@@ -223,11 +227,14 @@ try {
         await showcase.locator("[data-services-empty] button").click();
         await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
         await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "Online Reiki filter", "reiki");
         await showcase.locator('[data-services-kind="free"]').click();
         await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
         await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
         await showcase.locator('[data-services-kind="all"]').click();
-        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "All filter restores the canonical personal offers at " + width);
         await assertViewport(page, locale + "/services/slider-filter/" + width);
       }
       // Keep the advanced matching UX available on a separate, dedicated
@@ -314,7 +321,7 @@ try {
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
     await visible(page.locator('[data-services-studio-free]'));
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
-    assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]'), 'es', 'es/services/390');
     assert.equal(await page.locator("#find-your-service").count(), 0);
     // Verify the same service mode and topic filtering in Spanish.
     const esShowcase = page.locator("[data-services-showcase-hero]");
@@ -322,15 +329,24 @@ try {
     await esShowcase.locator('[data-services-slide-action="business"]').click();
     await expect(esShowcase.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "Spanish Business filter", "business");
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
     await esShowcase.locator('[data-services-kind="reiki"]').click();
-    await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
+    // Like EN/RU, choosing online-only Reiki naturally resets Toronto to Online.
+    // This existing sequence does not claim the separate explicit-Toronto empty-state case.
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "Spanish Reiki selection resets to Online", "reiki");
     await esShowcase.locator('[data-services-mode="online"]').click();
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "Spanish Online Reiki filter", "reiki");
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
-    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "All filter restores the canonical personal offers at es/390");
     await assertViewport(page, "es/services/slider-filter/390");
     await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");

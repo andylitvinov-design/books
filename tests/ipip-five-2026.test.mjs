@@ -1,3 +1,4 @@
+import { CURRENT_PROFESSIONAL_COUNT, EXPECTED_LOCAL_INTERPRETATION_COVERAGE, assertAdditionalDefinitionIdentities, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
 import {IPIP_VIA_R_COMPLETION_DEFINITIONS} from '../data/assessments/ipip-via-r-completion-2026.js'
 import test from 'node:test'
@@ -90,11 +91,11 @@ for(const [index,d] of added.entries()) {
   }
  })
 }
-test('five additive versions: 145 runnable, 72 source-backed, 73 HH after exact registration; exact registration payload',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,145)
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,72)
+test('five additive versions: prior instruments plus four IPIP additions remain runnable; exact registration payload',()=>{
+ assertCatalogAvailability(MONITORING_CATALOG)
+ assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,CURRENT_PROFESSIONAL_COUNT)
  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.key.startsWith('hh-')).length,73)
- assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:145,registered:145,uncovered:[],obsolete:[]})
+ assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),EXPECTED_LOCAL_INTERPRETATION_COVERAGE)
  assert.deepEqual(JSON.parse(readFileSync(new URL('../docs/assessments/ipip-five-registration.json',import.meta.url))),added)
  // Exclude only the six appended split-v2 IDs from this historical baseline.
  const splitV2Ids=new Set([
@@ -109,7 +110,8 @@ test('five additive versions: 145 runnable, 72 source-backed, 73 HH after exact 
  // The separately approved Bach pair is additive; no historical ID is excluded.
  const bachV2Ids=new Set(['181604ad-23ed-4c9b-952b-299519edcacf','25fe2fac-ccaf-4483-b213-cf78db40af0e'])
  assert.equal(ASSESSMENT_DEFINITIONS.filter(d=>bachV2Ids.has(d.id)&&d.version==='v2').length,2)
- const prior=ASSESSMENT_DEFINITIONS.filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key)).filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>!added.some(n=>n.id===d.id))
+ const canonicalAdditions=assertAdditionalDefinitionIdentities(ASSESSMENT_DEFINITIONS)
+ const prior=ASSESSMENT_DEFINITIONS.filter(d=>!canonicalAdditions.has(d.id)).filter(d=>!TANTRIC_REFLECTION_KEYS.includes(d.key)).filter(d=>!splitV2Ids.has(d.id)&&!bachV2Ids.has(d.id)).filter(d=>!['ipip-via-r-strengths-96','cfpb-financial-wellbeing-5'].includes(d.key)).filter(d=>!['pcl-5','itq-adult'].includes(d.key)).filter(d=>!(d.key==='gad-7'&&d.instrumentLocale==='ru')).filter(d=>!IPIP_VIA_R_COMPLETION_DEFINITIONS.some(v=>v.id===d.id)).filter(d=>!added.some(n=>n.id===d.id))
  assert.equal(createHash('sha256').update(canonicalJSON(prior)).digest('hex'),'fd0dc830f8414ae6ab5358a6623ff7584d2465a9e2b0eeb2d527ad5c6f8a2625')
 })
 

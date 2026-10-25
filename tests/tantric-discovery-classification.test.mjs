@@ -1,3 +1,4 @@
+import { CURRENT_ACTIVE_COUNT, CURRENT_PROFESSIONAL_COUNT, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { TANTRIC_REFLECTION_CATALOG, TANTRIC_REFLECTION_DEFINITIONS } from '../data/assessments/tantric-reflections-v1.js'
@@ -21,10 +22,11 @@ test('only the traditional symbolic Chakra construct is Hobby; five behavioral r
     assert.equal(definition.timeframe, 'past-30-days')
     assert.equal(definition.suggestedRepeatDays, 30)
   }
+  assertCatalogAvailability()
   for (const locale of ['en', 'ru']) {
     const active = buildExplorerEntries({ locale, audience: 'guest' }).filter(row => row.startable)
-    assert.equal(active.length, 145)
-    assert.deepEqual(['monitoring', 'professional', 'hobby'].map(kind => active.filter(row => row.testKind === kind).length), [67, 72, 6])
+    assert.equal(active.length, CURRENT_ACTIVE_COUNT)
+    assert.deepEqual(['monitoring', 'professional', 'hobby'].map(kind => active.filter(row => row.testKind === kind).length), [67, CURRENT_PROFESSIONAL_COUNT, 6])
     for (const [key, kind] of Object.entries(expected)) assert.equal(active.find(row => row.key === key).testKind, kind)
   }
 })

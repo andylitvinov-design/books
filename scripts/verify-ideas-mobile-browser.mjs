@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { ideasTapFailureState, withIdeasTapDiagnostics } from "./helpers/ideas-tap-diagnostics.mjs";
+import { measureIdeasOrderedLayout, ideasQuoteGeometryProblems } from "./helpers/ideas-quote-geometry.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -25,18 +26,7 @@ const closeEnough = (a, b) => Math.abs(a - b) <= 2;
 // separate Playwright bounding boxes lets iOS scrollIntoView/hydration shift
 // the viewport *between awaits* and falsely report reversed card order.
 async function measureOrderedLayout(scope, middleSelector, afterSelector) {
-  return scope.evaluate((root, names) => {
-    const measure = el => {
-      if (!el) return null;
-      const bounds = el.getBoundingClientRect();
-      return { top: bounds.top + window.scrollY, left: bounds.left, width: bounds.width, height: bounds.height };
-    };
-    return {
-      rows: [...root.querySelectorAll("[data-ideas-aphorisms] ol li")].slice(0, 3).map(measure),
-      middle: measure(root.querySelector(names.middle)),
-      after: measure(root.querySelector(names.after)),
-    };
-  }, { middle: middleSelector, after: afterSelector });
+  return scope.evaluate(measureIdeasOrderedLayout, { middle: middleSelector, after: afterSelector });
 }
 
 async function verify(browserType, locale, width) {
@@ -162,6 +152,8 @@ async function verify(browserType, locale, width) {
     }
     const previewLayout = await measureOrderedLayout(hub.locator("[data-ideas-preview]"),
       "[data-ideas-dao-card]", "[data-ideas-dao-promos]");
+    await writeFile(output + "/aphorism-preview-geometry-" + label.replace(/:/g, "-") + ".json",
+      JSON.stringify(previewLayout, null, 2));
     const previewRects = previewLayout.rows;
     assert.equal(previewRects.length, 3, label + ": exactly three preview quote rows");
     assert.ok(previewRects.every(rect => rect && rect.width > 0), label + ": three rows have layout");
@@ -170,10 +162,11 @@ async function verify(browserType, locale, width) {
       await page.screenshot({ path: output + "/aphorism-preview-order-" + label.replace(/:/g, "-") + ".png", fullPage: false });
       throw new Error(label + ": preview must show three rows, Dao, offers; layout=" + JSON.stringify(previewLayout));
     }
-    if (!previewRects.every(rect => rect.width >= width * .72)) {
+    const previewGeometryProblems = ideasQuoteGeometryProblems(previewLayout, { locale, width });
+    if (previewGeometryProblems.length) {
       await page.screenshot({ path: output + "/aphorism-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
-      throw new Error(label + ": each quote gets full line width; measured=" +
-        JSON.stringify(previewRects.map(rect => ({ width: rect.width, x: rect.left }))) + ", viewport=" + width);
+      throw new Error(label + ": each quote fills its intended content width without horizontal clipping; violations=" +
+        JSON.stringify(previewGeometryProblems) + "; geometry=" + JSON.stringify(previewLayout));
     }
     assert.equal(await hub.locator("[data-ideas-preview] details").first().evaluate(node => node.open), true,
       label + ": full visual example is initially expanded");
@@ -224,6 +217,8 @@ async function verify(browserType, locale, width) {
     assert.ok(compactSize && compactSize.height < 320, label + ": compact Dao paragraph and expand control");
     const responseLayout = await measureOrderedLayout(daoResult,
       "[data-ideas-dao]", "[data-ideas-dao-promos]");
+    await writeFile(output + "/aphorism-result-geometry-" + label.replace(/:/g, "-") + ".json",
+      JSON.stringify(responseLayout, null, 2));
     const responseRects = responseLayout.rows;
     if (!(responseRects.length === 3 && responseRects.every(rect => rect && rect.width > 0) &&
       responseRects[0].top < responseRects[1].top && responseRects[1].top < responseRects[2].top &&
@@ -232,10 +227,11 @@ async function verify(browserType, locale, width) {
       throw new Error(label + ": real answer order is three full-width rows, Dao and two offers; layout=" +
         JSON.stringify(responseLayout));
     }
-    if (!responseRects.every(rect => rect.width >= width * .72)) {
+    const responseGeometryProblems = ideasQuoteGeometryProblems(responseLayout, { locale, width });
+    if (responseGeometryProblems.length) {
       await page.screenshot({ path: output + "/aphorism-real-narrow-" + label.replace(/:/g, "-") + ".png", fullPage: false });
-      throw new Error(label + ": real quote rows are readable; measured=" +
-        JSON.stringify(responseRects.map(rect => ({ width: rect?.width, x: rect?.left }))) + ", viewport=" + width);
+      throw new Error(label + ": real quote rows fill their intended content width without horizontal clipping; violations=" +
+        JSON.stringify(responseGeometryProblems) + "; geometry=" + JSON.stringify(responseLayout));
     }
     const readingOrder = daoResult.locator('[data-ideas-order-button="reading"]');
     const giftOrder = daoResult.locator('[data-ideas-order-button="gift"]');

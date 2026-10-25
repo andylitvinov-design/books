@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {runInNewContext} from 'node:vm';
 import {createFreeReviewViewportIsolation,permittedFreeReviewViewportRead,expectedFreeReviewProviderRead} from '../scripts/helpers/free-review-viewport-isolation.mjs';
 const origin='http://127.0.0.1:3100',path='/en/services/free-situation-review';
@@ -70,6 +71,7 @@ for(const origin of ['https://foreign.example.invalid','https://holistichouse.ve
  const f=fixture();await assert.rejects(createFreeReviewViewportIsolation(f.browser,{...options,origin}));assert.deepEqual(f.events,[])
 })
 function assertVerifierIsolation(source){
+ if(source.includes('// HH_DISCLOSURE_DIAGNOSTICS_BEGIN '))source=stripDisclosureDiagnosticBlocks(source);
  assert.match(source,/import \{createFreeReviewViewportIsolation\} from '\.\/helpers\/free-review-viewport-isolation\.mjs'/)
  assert.match(source,/const isolation=await createFreeReviewViewportIsolation\(browser,\{origin,locale,viewport:\{width,height\}\}\);\s*const \{page\}=isolation;/)
  assert.doesNotMatch(source,/browser\.newContext|browser\.newPage|context\.newPage|page\.route\(|\.continue\(|\.fill\(/)
@@ -260,4 +262,142 @@ test('actual unscrolled first-screen guard keeps prior CTA−1 and hero+1 naviga
  const {assertFirstScreenGeometry:check}=actualActionGeometryFunctions(source,{},{});
  const valid={hero:{bottom:789},cta:{bottom:787},nav:{top:788},viewport:{height:844}};check(valid);
  for(const changed of [{hero:{bottom:790}},{cta:{bottom:788}},{nav:null},{hero:{bottom:NaN}},{viewport:{height:700}}])assert.throws(()=>check({...valid,...changed}),error=>error?.code==='ERR_ASSERTION');
+});
+
+
+const DISCLOSURE_PRE_DIAGNOSTIC_SHA256='729516db4abfa9e9a07f1e2a5eac4baab80775e9d0265649e1021e10d9dc364e';
+function stripDisclosureDiagnosticBlocks(source) {
+ const lines=source.split(/(?<=\n)/),kept=[],ids=new Set();let active=null;
+ for(const line of lines){
+  const begin=line.match(/^\s*\/\/ HH_DISCLOSURE_DIAGNOSTICS_BEGIN ([a-zA-Z0-9_-]+)\s*$/);
+  const end=line.match(/^\s*\/\/ HH_DISCLOSURE_DIAGNOSTICS_END ([a-zA-Z0-9_-]+)\s*$/);
+  if(begin){assert.equal(active,null,'No nested diagnostic blocks');assert.equal(ids.has(begin[1]),false,'Each block ID is unique');ids.add(begin[1]);active=begin[1];continue}
+  if(end){assert.equal(end[1],active,'Paired diagnostic block IDs');active=null;continue}
+  if(active===null)kept.push(line);
+ }
+ assert.equal(active,null,'Every diagnostic block is closed');assert.deepEqual([...ids],['installer','install','export'],'Only the three approved diagnostic chunks are inserted');
+ return kept.join('');
+}
+test('passive diagnostics leave original native actions, awaited sequence, timeouts and verdict byte-identical',()=>{
+ const source=readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8');
+ const stripped=stripDisclosureDiagnosticBlocks(source);
+ assert.equal(createHash('sha256').update(stripped).digest('hex'),DISCLOSURE_PRE_DIAGNOSTIC_SHA256,
+  'Only explicitly marked diagnostic insertions may differ from the exact original runner');
+ for(const [before,after] of [
+  ['          await reveal.click();','          await reveal.dblclick();'],
+  ['"local CTA unfolds again"','"retry accepted"'],
+  ['await mainCta.click();','await mainCta.click({force:true});'],
+  ['timeout: 15000','timeout: 30000'],
+ ]){assert.ok(source.includes(before));assert.notEqual(createHash('sha256').update(stripDisclosureDiagnosticBlocks(source.replace(before,after))).digest('hex'),DISCLOSURE_PRE_DIAGNOSTIC_SHA256)}
+});
+
+function disclosureInstallerSource(source) {
+ const begin='// HH_DISCLOSURE_DIAGNOSTICS_BEGIN installer',end='// HH_DISCLOSURE_DIAGNOSTICS_END installer';
+ assert.equal(source.split(begin).length-1,1);assert.equal(source.split(end).length-1,1);
+ return source.slice(source.indexOf(begin)+begin.length,source.indexOf(end));
+}
+function disclosureDiagnosticFixture(installer) {
+ const secret='SYNTHETIC_PRIVATE_PHONE_TEXT_URL_TOKEN',privateReads=[],sideEffects=[],registrations=[],observers=[];let observing=false;
+ const observed=run=>{const prior=observing;observing=true;try{return run()}finally{observing=prior}};
+ const selectors={
+  '[data-express-reveal]':'reveal','[data-express-inline-disclosure]':'panel','[data-personal-express-enquiry]':'enquiry',
+  'section[aria-labelledby="free-entry-title"] a[href="#request-free-review"]':'hero-anchor','a[href="#request-free-review"]':'hero-anchor',
+  'input[name="express-review-focus"]':'focus-radio','[data-personal-express-enquiry] input[type="tel"]':'phone',
+  '[data-personal-express-enquiry] input[type="checkbox"]':'consent','.mobile-bottom-navigation':'nav','header.house-header':'header',
+ };
+ class Element {
+  constructor(role,parent=null){this.role=role;this.parent=parent;this._hidden=role==='panel';this.attributes={'aria-expanded':'false','data-expanded':'false'};this.failGeometry=false;this.box={left:10,right:110,top:100,bottom:148,width:100,height:48};}
+  get hidden(){return this._hidden;} set hidden(value){if(observing)sideEffects.push('hidden write');this._hidden=value;}
+  focus(){sideEffects.push('focus');} click(){sideEffects.push('click');} scrollIntoView(){sideEffects.push('scroll');} scroll(){sideEffects.push('scroll');} scrollTo(){sideEffects.push('scroll');} requestSubmit(){sideEffects.push('submit');}
+  setAttribute(){sideEffects.push('attribute write');} removeAttribute(){sideEffects.push('attribute removal');} dispatchEvent(){sideEffects.push('dispatch');}
+  matches(selector){return selectors[selector]===this.role;}
+  closest(selector){return this.matches(selector)?this:this.parent?.closest(selector)||null;}
+  getAttribute(name){if(!['aria-expanded','data-expanded'].includes(name)){privateReads.push(name);throw Error(secret)}return this.attributes[name]??null;}
+  getBoundingClientRect(){if(this.failGeometry)throw Error(secret);return this.box;}
+ }
+ for(const property of ['textContent','innerText','innerHTML','outerHTML','value','href','src'])Object.defineProperty(Element.prototype,property,{get(){privateReads.push(property);throw Error(secret)},set(){sideEffects.push(property+' write')}});
+ const nodes={};for(const role of ['enquiry','panel','reveal','phone','consent','focus-radio','hero-anchor','nav','header','other'])nodes[role]=new Element(role);
+ nodes.panel.parent=nodes.enquiry;nodes.reveal.parent=nodes.enquiry;for(const role of ['phone','consent','focus-radio'])nodes[role].parent=nodes.panel;
+ nodes.revealChild=new Element('other',nodes.reveal);
+ const emitter=name=>({
+  addEventListener(type,callback,options){assert.equal(options.passive,true,'Observations must remain passive');registrations.push({name,type,callback,capture:options.capture,active:true});},
+  removeEventListener(type,callback,capture){const match=registrations.find(item=>item.active&&item.name===name&&item.type===type&&item.callback===callback&&item.capture===capture);assert.ok(match,'Cleanup removes exact listener');match.active=false;},
+ });
+ const window=emitter('window'),document={...emitter('document'),activeElement:nodes.phone,
+  querySelector(selector){return nodes[selectors[selector]]??null;},elementFromPoint(){return nodes.reveal;}};
+ class MutationObserver {
+  constructor(callback){this.callback=callback;this.active=true;this.disconnected=0;observers.push(this);}
+  observe(target,options){assert.equal(target,document);assert.equal(options.attributes,true);assert.equal(options.attributeOldValue,true);assert.deepEqual(structuredClone(options.attributeFilter).sort(),['aria-expanded','data-expanded','hidden']);assert.notEqual(options.childList,true);assert.notEqual(options.characterData,true);}
+  disconnect(){this.disconnected++;this.active=false;}
+ }
+ const location={hash:'#request-free-review'};Object.defineProperty(location,'href',{get(){privateReads.push('location.href');throw Error(secret)}});
+ const globals={window,document,Element,MutationObserver,location,performance:{now:()=>123.5},scrollX:0,scrollY:800,innerWidth:430,innerHeight:932};
+ observed(()=>runInNewContext(installer+'\ninstallDisclosureDiagnostics();',globals));
+ const event=(changes={})=>({target:nodes.revealChild,isTrusted:true,defaultPrevented:false,pointerType:'touch',clientX:60,clientY:124,timeStamp:15,detail:1,key:'Escape',preventDefault(){sideEffects.push('cancel')},stopPropagation(){sideEffects.push('stop propagation')},...changes});
+ const emit=(type,changes={},name='document')=>{const value=event(changes);for(const listener of registrations.filter(item=>item.active&&item.name===name&&item.type===type))observed(()=>listener.callback(value));};
+ return {secret,privateReads,sideEffects,registrations,observers,nodes,window,document,location,event,emit,
+  mutate(records){for(const observer of observers.filter(item=>item.active))observed(()=>observer.callback(records));},finish:()=>observed(()=>window.__hhDisclosureDiagnostics.finish())};
+}
+const currentDisclosureInstaller=()=>disclosureInstallerSource(readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8'));
+function assertDiagnosticPrivacy(snapshot,fixture) {
+ assert.deepEqual(fixture.privateReads,[],'No private DOM property was even read');
+ assert.deepEqual(fixture.sideEffects,[],'No cancellation, event dispatch, focus, scroll, click or DOM/input write occurred');
+ assert.doesNotMatch(JSON.stringify(snapshot),/SYNTHETIC_PRIVATE|https?:|phone=|token=/);
+ const walk=value=>{if(typeof value==='number')assert.ok(Number.isFinite(value)&&Math.abs(value)<=10000000,'Every numeric observation is finite and bounded');else if(value&&typeof value==='object')Object.values(value).forEach(walk)};walk(snapshot);
+}
+test('passive disclosure diagnostics record categorical event/commit/focus geometry, never private DOM content',()=>{
+ const f=disclosureDiagnosticFixture(currentDisclosureInstaller());
+ for(const kind of ['pointerdown','pointerup','mousedown','mouseup','click'])f.emit(kind);
+ f.emit('keydown',{key:f.secret});f.emit('keydown',{key:'Escape'});f.emit('focusin',{target:f.nodes.phone});
+ f.emit('hashchange',{target:null},'window');
+ f.nodes.reveal.attributes['aria-expanded']='true';f.nodes.enquiry.attributes['data-expanded']='true';f.nodes.panel.hidden=false;
+ f.mutate([{target:f.nodes.reveal,attributeName:'aria-expanded',oldValue:'false'},{target:f.nodes.panel,attributeName:'hidden',oldValue:''},{target:f.nodes.enquiry,attributeName:'data-expanded',oldValue:'false'},
+  {target:f.nodes.other,attributeName:'data-expanded',oldValue:f.secret},{target:f.nodes.phone,attributeName:'value',oldValue:f.secret}]);
+ const result=f.finish();assert.equal(result.version,1);assert.equal(result.limit,128);assert.equal(result.dropped,0);assert.equal(result.captureFailures,0);assert.equal(result.observations.length,17);
+ assert.deepEqual(Array.from(result.observations.filter(x=>x.kind==='click'),x=>x.phase),['capture','bubble']);
+ assert.equal(result.observations.filter(x=>x.kind==='keydown').length,2,'Only Escape capture+bubble is recorded');
+ const click=result.observations.find(x=>x.kind==='click');assert.equal(click.target,'reveal');assert.equal(click.hit,'reveal');assert.equal(click.state.focus,'phone');assert.equal(click.trusted,true);assert.equal(click.defaultPrevented,false);assert.equal(click.pointerType,'touch');assert.equal(click.state.atRequestHash,true);
+ assert.equal(result.observations.filter(x=>x.kind==='mutation').length,3,'Only exact three public state attributes are observed');
+ assert.equal(result.observations.at(-1).state.expanded,'true');assert.equal(result.observations.at(-1).state.hidden,false);assertDiagnosticPrivacy(result,f);
+});
+test('disclosure recorder keeps only the latest128 observations and reports exact bounded loss',()=>{
+ const f=disclosureDiagnosticFixture(currentDisclosureInstaller());for(let i=0;i<200;i++)f.emit('click');const result=f.finish();
+ assert.equal(result.observations.length,128);assert.equal(result.dropped,272);assert.equal(result.observations[0].sequence,273);assert.equal(result.observations.at(-1).sequence,400);assertDiagnosticPrivacy(result,f);
+});
+test('disclosure recorder sanitizes malformed coordinates/attribute values and reports capture failures categorically',()=>{
+ const f=disclosureDiagnosticFixture(currentDisclosureInstaller());f.emit('click',{clientX:Infinity,clientY:NaN,timeStamp:1e50,detail:-1e50,pointerType:f.secret});
+ f.nodes.reveal.attributes['aria-expanded']=f.secret;f.mutate([{target:f.nodes.reveal,attributeName:'aria-expanded',oldValue:f.secret}]);
+ f.nodes.panel.failGeometry=true;f.emit('click');const result=f.finish();assert.equal(result.captureFailures,2);assert.equal(result.observations.length,3);assert.equal(result.observations[0].point.x,null);assert.equal(result.observations[0].point.y,null);assert.equal(result.observations[0].pointerType,'none');assert.equal(result.observations.at(-1).oldState,'other');assert.equal(result.observations.at(-1).state.expanded,'other');assertDiagnosticPrivacy(result,f);
+});
+test('disclosure finish cleans exact listeners/observer idempotently and ignores late captured callbacks',()=>{
+ const f=disclosureDiagnosticFixture(currentDisclosureInstaller());f.emit('click');const retained=f.registrations.map(x=>x.callback),observer=f.observers[0];const first=f.finish(),before=JSON.stringify(first);
+ assert.equal(f.registrations.filter(x=>x.active).length,0);assert.equal(observer.disconnected,1);
+ for(const callback of retained)callback(f.event());observer.callback([{target:f.nodes.reveal,attributeName:'aria-expanded',oldValue:'false'}]);
+ assert.equal(JSON.stringify(f.finish()),before);assert.equal(observer.disconnected,1);assertDiagnosticPrivacy(first,f);
+});
+test('actual passive disclosure installer rejects privacy, buffer, listener, sanitization and cleanup mutations',()=>{
+ const source=currentDisclosureInstaller();
+ const controls=[
+  ['const limit = 128;','const limit = 129;',f=>{for(let i=0;i<200;i++)f.emit('click');assert.equal(f.finish().observations.length,128)}],
+  ['{capture,passive:true}','{capture,passive:false}',f=>f.finish()],
+  ['target.removeEventListener(type,callback,capture);','void 0;',f=>{f.finish();assert.equal(f.registrations.filter(x=>x.active).length,0)}],
+  ['observer.disconnect();','void 0;',f=>{f.finish();assert.equal(f.observers[0].disconnected,1)}],
+  ['target:category(event?.target)','target:event?.target?.textContent',f=>{f.emit('click');assertDiagnosticPrivacy(f.finish(),f)}],
+  ['Math.max(-10000000, Math.min(10000000, value))','value',f=>{f.emit('click',{timeStamp:1e50});assertDiagnosticPrivacy(f.finish(),f)}],
+  ["if (type === 'keydown' && event.key !== 'Escape') return;",'',f=>{f.emit('keydown',{key:f.secret});assert.equal(f.finish().observations.length,0)}],
+  ["append(type, capture ? 'capture' : 'bubble', event);","event.preventDefault(); event.target.focus(); append(type, capture ? 'capture' : 'bubble', event);",f=>{f.emit('click');assertDiagnosticPrivacy(f.finish(),f)}],
+ ];
+ for(const [before,after,check] of controls){assert.equal(source.split(before).length-1,1,'Mutation is exact and unique: '+before);assert.throws(()=>check(disclosureDiagnosticFixture(source.replace(before,after))),error=>error?.code==='ERR_ASSERTION',before)}
+});
+
+test('diagnostic chunks are observation-only and cannot add awaited work between native reveal actions',()=>{
+ const source=readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8'),installer=disclosureInstallerSource(source);
+ stripDisclosureDiagnosticBlocks(source);
+ const install=source.indexOf('// HH_DISCLOSURE_DIAGNOSTICS_BEGIN install\n'),capture=source.indexOf('// HH_DISCLOSURE_DIAGNOSTICS_BEGIN export\n');
+ assert.ok(install>=0&&install<source.indexOf('const response = await page.goto('),'Install occurs before original scenario');
+ assert.ok(capture>source.indexOf('record.error = String(error.stack || error.message)'),'Capture follows original failure recording');
+ assert.ok(capture<source.indexOf('try { await isolation.close(); }'),'Capture precedes final isolated context cleanup');
+ assert.doesNotMatch(installer,/fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage|indexedDB|console\.|preventDefault\(|stopPropagation\(|setAttribute\(|removeAttribute\(|dispatchEvent\(|scrollIntoView\(|scrollTo\(|requestSubmit\(|\.scroll\(|\.focus\(|\.click\(/,
+  'Passive installer cannot transport, persist, dispatch, cancel, focus, scroll, click or mutate DOM state');
+ assert.match(source,/try \{ await page\.addInitScript\(installDisclosureDiagnostics\); \}\s*catch \{ record\.disclosureDiagnostics = \{version:1,status:'INSTALL_UNAVAILABLE'\}; \}/);
 });

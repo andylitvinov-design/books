@@ -37,7 +37,7 @@ export const clone = value => structuredClone(value)
 const date = value => new Date(value).toISOString().slice(0, 10)
 const DAY = 86400000
 
-export function repositoryHarness({ presetId, storedCycle, freshPhase = false } = {}) {
+export function repositoryHarness({ presetId, storedCycle, freshPhase = false, sameRealm = false } = {}) {
   const now = Date.now(), clock = { now: now - 13 * DAY }
   class FixtureDate extends Date {
     constructor(...args) { super(...(args.length ? args : [clock.now])) }
@@ -128,7 +128,16 @@ export function repositoryHarness({ presetId, storedCycle, freshPhase = false } 
   const runtime = { exports: {}, Date: FixtureDate, Buffer, require(name) {
     assert.ok(Object.hasOwn(dependencies, name), 'Unmocked dependency: ' + name); return dependencies[name]
   } }
-  vm.runInNewContext(compiledDaily, runtime, { filename: resolve(appRoot, 'growth-daily.js') })
+  if (sameRealm) {
+    // Opt in when exercising repository-created objects passed to imported
+    // prototype-strict validators. Production modules share one JavaScript realm;
+    // cloning or relaxing the validator here would hide malformed-input bugs.
+    vm.compileFunction(compiledDaily, ['exports', 'Date', 'Buffer', 'require'], {
+      filename: resolve(appRoot, 'growth-daily.js'),
+    })(runtime.exports, runtime.Date, runtime.Buffer, runtime.require)
+  } else {
+    vm.runInNewContext(compiledDaily, runtime, { filename: resolve(appRoot, 'growth-daily.js') })
+  }
   const repo = runtime.exports.createDailyCourseRepository(config, { runTransaction(cfg, actor, fn) {
     assert.equal(cfg, config); assert.equal(actor.id, OWNER); return fn(db)
   } })

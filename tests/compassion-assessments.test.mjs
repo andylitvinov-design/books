@@ -1,3 +1,4 @@
+import { assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -105,7 +106,7 @@ for(const f of fixtures){
 }
 
 test('two distinct professional instruments are selectable once in both languages/audiences and correct filters',()=>{
- assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
+ assertCatalogAvailability(MONITORING_CATALOG)
  for(const locale of ['en','ru'])for(const audience of ['guest','account']){
   const entries=buildExplorerEntries({locale,audience})
   for(const f of fixtures){

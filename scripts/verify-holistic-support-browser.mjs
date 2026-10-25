@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createHolisticBrowserIsolation } from "./helpers/holistic-browser-isolation.mjs";
 import { privateRequestLeak, privateBrowserPersistence } from "./helpers/holistic-browser-privacy.mjs";
+import { holisticFirstScreenDiagnostics } from "./helpers/holistic-first-screen-diagnostics.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -58,6 +59,8 @@ async function check(browserType, locale, width, height) {
       assert.ok(bounds && bounds.width > 200 && bounds.height >= 80,
         label + ": readable full-width action card");
     }
+    const firstScreenGeometry = await holisticFirstScreenDiagnostics(page);
+    await writeFile(folder + "/first-screen-" + label + ".json", JSON.stringify(firstScreenGeometry, null, 2));
     const last = await dao.boundingBox();
     assert.ok(last && last.y + last.height < height - 40,
       label + ": last option must appear on the first mobile screen");

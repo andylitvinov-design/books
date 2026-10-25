@@ -4,6 +4,108 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import {createFreeReviewViewportIsolation} from './helpers/free-review-viewport-isolation.mjs';
+// HH_DISCLOSURE_DIAGNOSTICS_BEGIN installer
+// Bounded passive observation; never a repaired-behavior claim.
+function installDisclosureDiagnostics() {
+  const limit = 128;
+  const observations = [];
+  const listeners = [];
+  let dropped = 0, sequence = 0, captureFailures = 0, finished = false;
+  const number = value => typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(-10000000, Math.min(10000000, value)) : null;
+  const flag = value => value === 'true' ? 'true' : value === 'false' ? 'false' : value === null ? 'missing' : 'other';
+  const category = node => {
+    if (!(node instanceof Element)) return 'none';
+    for (const [selector, role] of [
+      ['[data-express-reveal]', 'reveal'],
+      ['section[aria-labelledby="free-entry-title"] a[href="#request-free-review"]', 'hero-anchor'],
+      ['a[href="#request-free-review"]', 'request-anchor'],
+      ['input[name="express-review-focus"]', 'focus-radio'],
+      ['[data-personal-express-enquiry] input[type="tel"]', 'phone'],
+      ['[data-personal-express-enquiry] input[type="checkbox"]', 'consent'],
+      ['[data-express-inline-disclosure]', 'panel'],
+      ['[data-personal-express-enquiry]', 'enquiry'],
+      ['.mobile-bottom-navigation', 'bottom-navigation'],
+      ['header.house-header', 'header'],
+    ]) if (node.closest(selector)) return role;
+    return 'other';
+  };
+  const rect = node => {
+    if (!node) return null;
+    const box = node.getBoundingClientRect();
+    return Object.fromEntries(['left','right','top','bottom','width','height'].map(key => [key, number(box[key])]));
+  };
+  const snapshot = () => {
+    const reveal = document.querySelector('[data-express-reveal]');
+    const panel = document.querySelector('[data-express-inline-disclosure]');
+    return {
+      expanded: flag(reveal?.getAttribute('aria-expanded') ?? null),
+      hidden: panel ? Boolean(panel.hidden) : null,
+      focus: category(document.activeElement),
+      atRequestHash: location.hash === '#request-free-review',
+      scroll: {x:number(scrollX),y:number(scrollY)},
+      viewport: {width:number(innerWidth),height:number(innerHeight)},
+      reveal: rect(reveal), panel: rect(panel),
+      nav: rect(document.querySelector('.mobile-bottom-navigation')),
+      header: rect(document.querySelector('header.house-header')),
+    };
+  };
+  const append = (kind, phase, event, attribute = null, oldState = null) => {
+    if (finished) return;
+    try {
+    const x = number(event?.clientX), y = number(event?.clientY);
+    const hit = x !== null && y !== null ? category(document.elementFromPoint(x, y)) : 'none';
+    sequence = Math.min(10000000, sequence + 1);
+    const entry = {sequence,kind,phase,time:number(performance.now()),
+      eventTime:number(event?.timeStamp),trusted:event ? event.isTrusted === true : null,
+      defaultPrevented:event ? event.defaultPrevented === true : null,
+      pointerType:['mouse','pen','touch'].includes(event?.pointerType) ? event.pointerType : 'none',
+      target:category(event?.target),hit,point:{x,y},detail:number(event?.detail),
+      attribute,oldState,state:snapshot()};
+    if (observations.length === limit) { observations.shift(); dropped = Math.min(10000000, dropped + 1); }
+    observations.push(entry);
+    } catch { captureFailures = Math.min(10000000, captureFailures + 1); }
+  };
+  const listen = (target, type, callback, capture) => {
+    target.addEventListener(type, callback, {capture,passive:true});
+    listeners.push({target,type,callback,capture});
+  };
+  for (const type of ['pointerdown','pointerup','mousedown','mouseup','click','keydown']) {
+    for (const capture of [true,false]) {
+      listen(document, type, event => {
+        if (type === 'keydown' && event.key !== 'Escape') return;
+        append(type, capture ? 'capture' : 'bubble', event);
+      }, capture);
+    }
+  }
+  listen(document, 'focusin', event => append('focusin','capture',event), true);
+  listen(window, 'hashchange', event => append('hashchange','observe',event), false);
+  const observer = new MutationObserver(records => {
+    for (const record of records) {
+      if (!(record.target instanceof Element)) continue;
+      if (record.attributeName === 'aria-expanded' && record.target.matches('[data-express-reveal]')) {
+        append('mutation','observe',{target:record.target},'aria-expanded',flag(record.oldValue));
+      } else if (record.attributeName === 'hidden' && record.target.matches('[data-express-inline-disclosure]')) {
+        append('mutation','observe',{target:record.target},'hidden',record.oldValue !== null);
+      } else if (record.attributeName === 'data-expanded' && record.target.matches('[data-personal-express-enquiry]')) {
+        append('mutation','observe',{target:record.target},'data-expanded',flag(record.oldValue));
+      }
+    }
+  });
+  observer.observe(document,{subtree:true,attributes:true,attributeOldValue:true,
+    attributeFilter:['aria-expanded','hidden','data-expanded']});
+  window.__hhDisclosureDiagnostics = {
+    finish() {
+      if (!finished) {
+        finished = true;
+        for (const {target,type,callback,capture} of listeners) target.removeEventListener(type,callback,capture);
+        observer.disconnect();
+      }
+      return {version:1,limit,dropped,captureFailures,observations};
+    },
+  };
+}
+// HH_DISCLOSURE_DIAGNOSTICS_END installer
 // Check each actual action after positioning it in the current layout. The
 // expanded inline panel may exceed a screen; its reveal and hero CTA must not.
 function assertActionableGeometry(geometry, label) {
@@ -68,6 +170,10 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
         const errors=[];
         page.on('pageerror',()=>errors.push('PAGE_ERROR'));
         try {
+          // HH_DISCLOSURE_DIAGNOSTICS_BEGIN install
+          try { await page.addInitScript(installDisclosureDiagnostics); }
+          catch { record.disclosureDiagnostics = {version:1,status:'INSTALL_UNAVAILABLE'}; }
+          // HH_DISCLOSURE_DIAGNOSTICS_END install
           const response = await page.goto(origin + "/" + locale + "/services/free-situation-review",
             { waitUntil: "domcontentloaded", timeout: 65000 });
           assert.equal(response?.status(), 200, "localized page HTTP 200");
@@ -301,6 +407,15 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           await page.screenshot({ path: output + "/" + name + "-failed.png",
             fullPage: true, animations: "disabled", timeout: 15000 }).catch(() => {});
         } finally {
+          // HH_DISCLOSURE_DIAGNOSTICS_BEGIN export
+          // After the original verdict, never replacing its error.
+          try {
+            record.disclosureDiagnostics = await page.evaluate(() =>
+              window.__hhDisclosureDiagnostics?.finish() ?? {version:1,status:'UNAVAILABLE'});
+          } catch {
+            record.disclosureDiagnostics = {version:1,status:'UNAVAILABLE'};
+          }
+          // HH_DISCLOSURE_DIAGNOSTICS_END export
           try { await isolation.close(); } catch(error) {
             record.status='FAIL';record.boundaryError=String(error.message).slice(0,500);
           }

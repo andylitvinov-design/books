@@ -1,3 +1,4 @@
+import { assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -19,7 +20,7 @@ const keys = ['cdc-hrqol-4','cdc-healthy-days-symptoms']
 test('CDC official modules are published, verified, immutable and original-English', () => {
   assert.equal(CDC_HEALTHY_DAYS_CATALOG.length,2)
   assert.equal(CDC_HEALTHY_DAYS_DEFINITIONS.length,2)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 150)
+  assertCatalogAvailability(MONITORING_CATALOG)
   assert.equal(MIND_BODY_MONITOR_REGISTRY.length,168)
   for (const key of keys) {
     const item=MONITORING_CATALOG.find(x=>x.key===key), d=get(key)

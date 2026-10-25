@@ -1,3 +1,4 @@
+import { assertPaidServiceCards } from './helpers/services-paid-contract.mjs'
 // Synthetic credentials + ephemeral CI Redis only. --live performs no login or
 // mutation on production. Run with the production application's locked build.
 import assert from 'node:assert/strict'
@@ -139,7 +140,7 @@ try {
         await expect(visibleGallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
       }
       const offers = page.locator('[data-services-studio-paid] [data-services-studio-card]')
-      await expect(offers).toHaveCount(5)
+      await assertPaidServiceCards(offers, locale, 'Services video placement')
       for (const [id, suffix] of [['alchemy', 'alchemy-of-soul'], ['hypnotherapy', 'hypnotherapy-course']]) {
         // The offer itself is the matching card, not an obsolete direct-video link.
         const hrefs = await page.locator('[data-services-studio-card="' + id + '"] a[href]')

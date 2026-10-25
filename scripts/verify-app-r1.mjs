@@ -464,8 +464,8 @@ async function verifyPublicServiceConversionJourneys(){
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assertAlchemyPanelOrder(measurements)
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     assert.deepEqual(measurements.filter(x=>x.name!=='reviews'&&x.height>x.max),[],
+      'Every collapsed Alchemy section except the twelve-video reviews feed must fit one phone screen: '+JSON.stringify(measurements))
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
@@ -482,16 +482,33 @@ async function verifyPublicServiceConversionJourneys(){
     if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
-     await expect(form.locator('select')).toHaveCount(2)
+     // The two editorial controls remain separate from the phone-country control.
+     await expect(form.locator('select')).toHaveCount(3)
+     const format=form.locator('select[id$="-format"]'),topic=form.locator('select[id$="-topic"]')
+     const countryCode=form.locator('[data-phone-country-input] select')
+     await expect(format).toHaveCount(1)
+     await expect(topic).toHaveCount(1)
+     await expect(countryCode).toHaveCount(1)
+     await expect(countryCode).toHaveAttribute('aria-label',locale==='ru'?'Код страны':'Country calling code')
      await expect(form.locator('[data-contact-order]')).toBeVisible()
-     await form.locator('select').first().selectOption('30')
-     await form.locator('select').nth(1).selectOption('business')
-     await expect(form.locator('select').first()).toHaveValue('30')
-     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(3)
+     await format.selectOption('30')
+     await topic.selectOption('business')
+     await expect(format).toHaveValue('30')
+     await expect(topic).toHaveValue('business')
+     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(12)
      const stack=servicePage.locator('[data-alchemy-review-stack]')
      const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
-       nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
-     assert.equal(boxes.length,3,'All three source-backed videos are visible')
+       nodes.map(node=>({id:node.getAttribute('data-testimonial-video-id'),audio:node.getAttribute('data-testimonial-original-audio'),
+         top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
+     assert.equal(boxes.length,12,'All twelve original-language source-backed videos are visible')
+     const originalReviewIds={
+      en:['Dk0LBmOivQo','aUJde6A-9p0','fE6sD1zr1Js','itjo2_z2NGk','4NrryHcEF1A','hYwRNMxIMjc'],
+      ru:['m9RfDgK76PU','MIVLm1GUTtM','ttQxUHopaUM','VABgpmn4ZYA','muOnIHllI7E','5oj0BIbLT4w'],
+     }
+     const reviewLanguages=locale==='ru'?['ru','en']:['en','ru']
+     assert.deepEqual(boxes.map(({id,audio})=>({id,audio})),
+       reviewLanguages.flatMap(audio=>originalReviewIds[audio].map(id=>({id,audio}))),
+       'All twelve approved recordings retain their locale-first order and truthful original-audio tags')
      assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
        'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
      assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),

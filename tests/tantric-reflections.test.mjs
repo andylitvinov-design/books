@@ -10,7 +10,7 @@ import { canonicalJSON } from '../lib/assessments/contracts.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 import { buildAssessmentResultReport } from '../lib/assessments/result-report.js'
 import { getTestScaleGuide } from '../lib/assessments/scale-guides.js'
-import { interpretationRegistryCoverage, interpretationDimensionPlan, interpretationBandModel } from '../lib/assessments/interpretation-registry.js'
+import { interpretationRegistryCoverage, interpretationPlan, interpretationDimensionPlan, interpretationBandModel } from '../lib/assessments/interpretation-registry.js'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
 
 const expected = new Map([
@@ -66,11 +66,29 @@ test('six original EN/RU tantra questionnaires include the full 64-question port
      }
    }
  }
+ // The approved ONS v1/en hold removes one launch, not its historical plan.
+ const held = MONITORING_CATALOG.filter(row => row.key === 'ons-personal-wellbeing-4')
+ assert.equal(held.length, 1)
+ const [ons] = held
+ assert.deepEqual([ons.version, ons.instrumentLocale, ons.startable, ons.availability, ons.registrationRequired],
+   ['v1', 'en', false, 'reference-only', true])
+ assert.equal(interpretationPlan(ons.key, ons.version)?.key, ons.key)
+ // Freeze all 150 previously runnable key/version/locale identities, not merely
+ // their count. Source: pre-hold catalog blob 485edcd5a6f5db7837209156c685432ac7960067.
+ // Only ONS may be retained as a non-startable reference; no other loss or swap.
+ const priorIdentities = MONITORING_CATALOG.filter(row => row.startable || row === ons)
+   .map(row => [row.key, row.version, row.instrumentLocale].join(':')).sort()
+ assert.equal(priorIdentities.length, 150)
+ assert.equal(new Set(priorIdentities).size, priorIdentities.length)
+ assert.equal(createHash('sha256').update(JSON.stringify(priorIdentities)).digest('hex'),
+   '880a2c547ffbf59e2932a68994cd351ed4ea0f4a17cf35c2356e6a1cb5c8488c',
+   'All prior instrument identities must remain; only exact ONS v1/en is held')
  const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
- assert.equal(coverage.total, 150)
+ assert.equal(coverage.total, priorIdentities.length - held.length)
+ // `registered` counts local interpretation plans, not database registrations.
  assert.equal(coverage.registered, 150)
  assert.deepEqual(coverage.uncovered, [])
- assert.deepEqual(coverage.obsolete, [])
+ assert.deepEqual(coverage.obsolete, ['ons-personal-wellbeing-4:v1'])
 })
 
 test('all dimensions have bilingual labels, optional steps, axes and stable versioned SQL definitions', async () => {

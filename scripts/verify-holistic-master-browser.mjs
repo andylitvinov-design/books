@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { privateRequestLeak, privateBrowserPersistence } from "./helpers/holistic-browser-privacy.mjs";
 import { createHolisticBrowserIsolation } from "./helpers/holistic-browser-isolation.mjs";
+import { remoteFinderGeometry, assertRemoteFinderGeometry } from "./helpers/remote-finder-geometry.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -202,14 +203,18 @@ async function verify(engine, locale, width) {
     await handoff.waitFor({state:"visible"});
     assert.equal(await handoff.inputValue(), "",
       label + ": current three-choice journey does not silently copy a Dao question to energy support");
+    const focusChoices = nextScreen.locator("[data-remote-focus-chip]");
+    const findOptions = nextScreen.locator("[data-remote-find-options]");
+    const offers = nextScreen.locator("#remote-results");
+    // Prove clearance before the existing fill: mobile navigation intentionally
+    // hides while editing. Never manufacture blur to obtain a convenient box.
+    const initialFinder = await remoteFinderGeometry(page);
+    assertRemoteFinderGeometry(initialFinder, {phase:"initial", label});
     await handoff.fill(copy[locale].intention);
     assert.equal(await handoff.inputValue(), copy[locale].intention,
       label + ": separate private goal remains editable for the user's review");
     assert.equal(await nextScreen.locator("[data-lead-saved]").count(), 0,
       label + ": navigating to a request form never creates a CRM lead");
-    const focusChoices = nextScreen.locator("[data-remote-focus-chip]");
-    const findOptions = nextScreen.locator("[data-remote-find-options]");
-    const offers = nextScreen.locator("#remote-results");
     assert.equal(await focusChoices.count(), 5, label + ": only five usable focus sectors");
     assert.equal(await offers.isVisible(), false, label + ": practitioner options wait for Find options");
     assert.equal(await findOptions.isVisible(), true, label + ": find CTA is visible");
@@ -217,13 +222,15 @@ async function verify(engine, locale, width) {
     const noteBox = await handoff.boundingBox();
     assert.ok(firstChipBox && noteBox && firstChipBox.y < noteBox.y,
       label + ": focus chips precede optional wishes");
-    const findBox = await findOptions.boundingBox();
-    const bottomNav = await page.locator(".mobile-bottom-navigation").first().boundingBox();
-    assert.ok(findBox && bottomNav && findBox.y + findBox.height <= bottomNav.y + 2,
-      label + ": complete finder CTA is above fixed mobile navigation at " + width + "px");
+    const editingFinder = await remoteFinderGeometry(page);
+    assertRemoteFinderGeometry(editingFinder, {phase:"editing", label, baseline:initialFinder});
     await focusChoices.first().tap();
     assert.equal(await focusChoices.first().getAttribute("aria-pressed"), "true",
       label + ": sector selection is interactive");
+    const restoredFinder = await remoteFinderGeometry(page);
+    assertRemoteFinderGeometry(restoredFinder, {phase:"restored", label});
+    await writeFile(output + "/finder-geometry-" + engine.name() + "-" + locale + "-" + width + ".json",
+      JSON.stringify({initialFinder, editingFinder, restoredFinder}, null, 2));
     await findOptions.tap();
     await offers.waitFor({state: "visible", timeout: 10000});
     assert.equal(await findOptions.getAttribute("aria-expanded"), "true",

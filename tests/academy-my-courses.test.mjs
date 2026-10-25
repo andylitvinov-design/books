@@ -66,7 +66,9 @@ function harness(handler, locale = 'en') {
     calls.push({ path, body, method, options })
     return handler(path, body, method, options, calls.length)
   }
-  const jsx = (type, props) => ({ type, props })
+  // Render the actual internal GrowthCard/ReikiCard bodies, not fabricated
+  // markers or links. Imported UI boundaries remain explicit string doubles.
+  const jsx = (type, props) => typeof type === 'function' ? type(props) : ({ type, props })
   const deps = {
     react: hooks,
     'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -212,4 +214,120 @@ test('responsive cards stay inside the screen, with 320px and 430px breakpoints'
   assert.match(css, /min-width: 0/)
   assert.match(css, /:focus-visible/)
   assert.match(css, /min-height: 44px/)
+})
+
+function deferred() {
+  let resolve
+  const promise = new Promise(done => { resolve = done })
+  return { promise, resolve }
+}
+
+test('pending identity never exposes prefilled course children or starts private reads', async () => {
+  const identity = deferred()
+  const h = harness(path => path === 'bootstrap' ? identity.promise : path === 'course' ? growth : reiki)
+  assert.equal(h.tree, null, 'No private child may appear before the first owner check')
+  await h.settle()
+  assert.equal(h.tree, null)
+  assert.deepEqual(h.calls.map(c => c.path), ['bootstrap'])
+  identity.resolve(bootstrap('owner-a'))
+  await h.settle()
+  assert.ok(nodes(h.tree).some(n => n.props?.['data-academy-owned-growth'] === 'owned-growth-course'))
+  h.unmount()
+})
+
+test('missing or inactive bootstrap owners never receive private reads or prefilled children', async () => {
+  for (const boot of [{ account: null }, bootstrap(null), {
+    ...bootstrap('owner-a'), account: { id: 'owner-a', onboardingState: 'pending' },
+  }]) {
+    // Saved fixture data is deliberately available if the component incorrectly
+    // asks for it. The test never manufactures an authorized parent snapshot.
+    const h = harness(path => path === 'bootstrap' ? boot : path === 'course' ? growth : reiki)
+    await h.settle()
+    assert.equal(h.tree, null)
+    assert.deepEqual(h.calls.map(c => c.path), ['bootstrap'])
+    h.unmount()
+  }
+})
+
+test('a busy owner recheck hides previously visible private course children', async () => {
+  let bootReads = 0
+  const recheck = deferred()
+  const h = harness(path => path === 'bootstrap'
+    ? ++bootReads <= 2 ? bootstrap('owner-a') : recheck.promise
+    : path === 'course' ? growth : reiki)
+  await h.settle()
+  assert.ok(nodes(h.tree).some(n => n.props?.['data-academy-owned-growth'] === 'owned-growth-course'))
+  h.event('focus')
+  h.render()
+  await h.settle()
+  assert.equal(h.tree, null, 'Previously loaded children must not survive a pending identity refresh')
+  recheck.resolve({ account: null })
+  await h.settle()
+  assert.equal(h.tree, null)
+  assert.equal(h.calls.filter(c => c.path === 'course' || c.path === 'academy-energywork').length, 2)
+  h.unmount()
+})
+
+test('a newer owner wins over late private responses from the previous owner', async () => {
+  let bootReads = 0
+  const oldGrowth = deferred(), oldReiki = deferred()
+  const nextGrowth = { courses: [{ ...growth.courses[0], id: 'second-owner-course', title: 'Second synthetic course' }] }
+  const h = harness((path, _, method, options) => {
+    assert.equal(method, 'GET')
+    if (path === 'bootstrap') return bootstrap(options.accountId || (++bootReads === 1 ? 'owner-a' : 'owner-b'))
+    if (options.accountId === 'owner-a') return path === 'course' ? oldGrowth.promise : oldReiki.promise
+    assert.equal(options.accountId, 'owner-b')
+    return path === 'course' ? nextGrowth : { enrolled: false }
+  })
+  await h.settle()
+  assert.equal(h.tree, null)
+  h.event('focus')
+  h.render()
+  await h.settle()
+  assert.ok(nodes(h.tree).some(n => n.props?.['data-academy-owned-growth'] === 'second-owner-course'))
+  assert.ok(h.calls.filter(c => c.options?.accountId === 'owner-a').every(c => c.options.signal.aborted))
+  oldGrowth.resolve(growth)
+  oldReiki.resolve(reiki)
+  await h.settle()
+  const items = nodes(h.tree)
+  assert.ok(items.some(n => n.props?.['data-academy-owned-growth'] === 'second-owner-course'))
+  assert.ok(!items.some(n => n.props?.['data-academy-owned-growth'] === 'owned-growth-course'))
+  assert.ok(!items.some(n => n.props?.['data-academy-owned-reiki'] !== undefined))
+  assert.ok(!items.some(n => n.props?.href === '/en/app/course?courseId=owned-growth-course'))
+  assert.ok(!items.some(n => n.props?.href?.includes('/academy/principles-of-energywork/learn')))
+  h.unmount()
+})
+
+test('sign-out rejects late private results before either owned child can render', async () => {
+  const savedGrowth = deferred(), savedReiki = deferred()
+  const h = harness(path => path === 'bootstrap' ? bootstrap('owner-a')
+    : path === 'course' ? savedGrowth.promise : savedReiki.promise)
+  await h.settle()
+  assert.equal(h.tree, null)
+  assert.deepEqual(h.calls.map(c => c.path), ['bootstrap', 'course', 'academy-energywork'])
+  h.signedOut()
+  h.render()
+  assert.equal(h.tree, null)
+  savedGrowth.resolve(growth)
+  savedReiki.resolve(reiki)
+  await h.settle()
+  assert.equal(h.tree, null)
+  assert.deepEqual(h.calls.map(c => c.path), ['bootstrap', 'course', 'academy-energywork'])
+  h.unmount()
+})
+
+test('a Reiki backend outage preserves only independently authorized growth children', async () => {
+  const h = harness(path => {
+    if (path === 'bootstrap') return bootstrap('owner-a')
+    if (path === 'academy-energywork') throw Error('TEMPORARY_OUTAGE')
+    return growth
+  })
+  await h.settle()
+  const items = nodes(h.tree)
+  assert.ok(items.some(n => n.props?.['data-academy-owned-growth'] === 'owned-growth-course'))
+  assert.ok(!items.some(n => n.props?.['data-academy-owned-reiki'] !== undefined))
+  assert.ok(!items.some(n => n.props?.href?.includes('/academy/principles-of-energywork/learn')))
+  assert.match(words(h.tree), /Some course progress is temporarily unavailable/)
+  assert.ok(!words(h.tree).includes('You have not started a course yet'))
+  h.unmount()
 })

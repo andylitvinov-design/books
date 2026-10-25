@@ -1,3 +1,4 @@
+import { CURRENT_ACTIVE_COUNT, EXPECTED_LOCAL_INTERPRETATION_COVERAGE, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -98,11 +99,12 @@ test('BFAS and VIA-R use complete official positive/negative keyed forms; no cli
   }
 })
 
-test('all runnable 145 now have exact-version score interpretation plans and per-scale guidance',()=>{
+test('all runnable instruments have exact-version plans while the held ONS historical plan remains',()=>{
+  assertCatalogAvailability(MONITORING_CATALOG)
   const c=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual({total:c.total,registered:c.registered,uncovered:c.uncovered,obsolete:c.obsolete},
-    {total:145,registered:145,uncovered:[],obsolete:[]})
-  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,145)
+    EXPECTED_LOCAL_INTERPRETATION_COVERAGE)
+  assert.equal(new Set(MONITORING_CATALOG.filter(c=>c.startable).map(c=>c.key)).size,CURRENT_ACTIVE_COUNT)
   for(const def of professional){
     const guideEN=getTestScaleGuide(def.key,'en')
     const guideRU=getTestScaleGuide(def.key,'ru')

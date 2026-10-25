@@ -1,3 +1,4 @@
+import { assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { ASSESSMENT_DEFINITIONS, getAssessmentDefinition } from '../lib/assessments/definitions.js'
@@ -17,8 +18,13 @@ const score = (definition, profile = 'min') => scoreAssessment(definition, answe
 const numericOnly = value => /^.*: [\d.]+ \([\d.]+–[\d.]+\)\.$/.test(value)
 
 test('all runnable compact reports provide semantic summaries rather than numeric-only introductions', () => {
-  let checked = 0
-  for (const definition of runnable) for (const profile of ['min', 'max', 'mixed']) {
+  assertCatalogAvailability(MONITORING_CATALOG)
+  const historicalOns = getAssessmentDefinition('ons-personal-wellbeing-4', 'v1', 'en')
+  assert.equal(historicalOns.id, '78e257f3-7d2d-5feb-a317-d39f8c2a8e19')
+  assert.equal(historicalOns.contentHash, 'sha256:8597bc30247ea6505a7521df9f0dd4d51c13cb86776a5abc6d493fc170df6689')
+  assert.equal(runnable.some(def => def.key === historicalOns.key), false)
+  let checked = 0, historicalChecked = 0
+  for (const definition of [...runnable, historicalOns]) for (const profile of ['min', 'max', 'mixed']) {
     const result = score(definition, profile)
     for (const locale of ['en', 'ru']) {
       const report = buildAssessmentResultReport(result, locale)
@@ -32,13 +38,16 @@ test('all runnable compact reports provide semantic summaries rather than numeri
         if (definition.key.startsWith('hh-')) assert.ok(section.limitations.some(note => locale === 'ru'
           ? /авторский опросник Holistic House/.test(note) && /валидированной клинической/.test(note)
           : /original Holistic House/.test(note) && /validated clinical/.test(note)))
-        checked++
+        if (definition === historicalOns) historicalChecked++
+        else checked++
       }
     }
   }
-  // Four new one-scale IPIP forms and a four-scale ONS form extend the old
-  // 2574 source/language/response-case checks by 8×2×3 without changing them.
-  assert.equal(checked, 2574 + (4 + 4) * 2 * 3)
+  // Four new one-scale IPIP forms remain runnable. Held ONS retains all 24
+  // historical semantic checks, without being admitted to the runnable catalog.
+  assert.equal(checked, 2574 + 4 * 2 * 3)
+  assert.equal(historicalChecked, 4 * 2 * 3)
+  assert.equal(checked + historicalChecked, 2574 + (4 + 4) * 2 * 3)
 })
 
 test('semantic descriptions preserve independent construct detail for decimal means', () => {

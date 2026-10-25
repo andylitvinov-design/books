@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mountHolistic, nodes, text, readHolistic, assertClosedHolisticChoices} from './helpers/holistic-current-source-fixture.mjs';
 import {containsPrivateText, privateRequestLeak, privateBrowserPersistence} from '../scripts/helpers/holistic-browser-privacy.mjs';
+import {remoteFinderGeometry, assertRemoteFinderGeometry} from '../scripts/helpers/remote-finder-geometry.mjs';
 
 const copy = {
   en:{title:'Holistic Support',question:'How can I find clarity this week?',changed:'I want calm before an important decision.',reset:'New question'},
@@ -136,20 +137,29 @@ const finderStart = finderSource.indexOf('    const focusChoices = nextScreen.lo
 const finderEnd = finderSource.indexOf('    assert.equal(await privateBrowserPersistence',finderStart);
 assert.ok(finderStart>=0 && finderEnd>finderStart);
 const runFinderBlock = new (Object.getPrototypeOf(async function(){}).constructor)(
- 'nextScreen','handoff','page','assert','label','width',finderSource.slice(finderStart,finderEnd));
-async function syntheticFinder({count=5, premature=false, findVisible=true, chipY=10, findY=600, pressed='true', expanded='true', specialists=1, emptyStatus=0}={}) {
- const trace=[];let found=false;
- const chip={boundingBox:async()=>({y:chipY}),tap:async()=>trace.push('select-focus'),getAttribute:async name=>{assert.equal(name,'aria-pressed');return pressed}};
+ 'nextScreen','handoff','page','assert','label','width','remoteFinderGeometry','assertRemoteFinderGeometry',
+ 'copy','locale','writeFile','output','engine',finderSource.slice(finderStart,finderEnd));
+async function syntheticFinder({count=5, premature=false, findVisible=true, chipY=10, findY=600, pressed='true', expanded='true', specialists=1, emptyStatus=0, savedLead=0, restoredHidden=false, lostReserve=false, noFocus=false}={}) {
+ const trace=[];let found=false,editing=false,value='',samples=0;
+ const chip={boundingBox:async()=>({y:chipY}),tap:async()=>{trace.push('select-focus');editing=false},getAttribute:async name=>{assert.equal(name,'aria-pressed');return pressed}};
  const chips={count:async()=>count,first:()=>chip};
- const find={isVisible:async()=>findVisible,boundingBox:async()=>({y:findY,height:40}),tap:async()=>{assert.deepEqual(trace,['select-focus']);trace.push('find-options');found=true},getAttribute:async name=>{assert.equal(name,'aria-expanded');return expanded}};
+ const find={isVisible:async()=>findVisible,tap:async()=>{trace.push('find-options');found=true},getAttribute:async name=>{assert.equal(name,'aria-expanded');return expanded}};
  const offers={isVisible:async()=>premature,waitFor:async options=>{assert.equal(options.state,'visible');assert.equal(found,true);trace.push('results-visible')},locator:selector=>({count:async()=>selector==='[data-remote-support-specialist]'?specialists:selector==='[role="status"]'?emptyStatus:assert.fail(selector)})};
- const nextScreen={locator:selector=>({'[data-remote-focus-chip]':chips,'[data-remote-find-options]':find,'#remote-results':offers}[selector]??assert.fail(selector))};
- const page={locator:selector=>{assert.equal(selector,'.mobile-bottom-navigation');return {first:()=>({boundingBox:async()=>({y:700})})}}};
- await runFinderBlock(nextScreen,{boundingBox:async()=>({y:100})},page,assert,'synthetic only',390);
- assert.deepEqual(trace,['select-focus','find-options','results-visible']);
+ const nextScreen={locator:selector=>({'[data-remote-focus-chip]':chips,'[data-remote-find-options]':find,'#remote-results':offers,'[data-lead-saved]':{count:async()=>savedLead}}[selector]??assert.fail(selector))};
+ const page={evaluate:async()=>{
+   samples++; trace.push('sample-'+samples);
+   const hidden=editing||(samples===3&&restoredHidden);
+   return {navCount:1,nav:{x:0,y:hidden?0:700,width:hidden?0:390,height:hidden?0:70},navDisplay:hidden?'none':'grid',navVisible:!hidden,finderVisible:true,
+     finder:{x:10,y:findY,width:370,height:40},editorFocused:editing&&!noFocus,paddingBottom:lostReserve?0:70,
+     viewport:{x:0,y:0,width:390,height:844}};
+ }};
+ const handoff={boundingBox:async()=>({y:100}),fill:async text=>{value=text;editing=true;trace.push('fill')},inputValue:async()=>value};
+ await runFinderBlock(nextScreen,handoff,page,assert,'synthetic only',390,remoteFinderGeometry,assertRemoteFinderGeometry,
+   {en:{intention:'synthetic intent'}},'en',async()=>trace.push('save-geometry'),'synthetic-unused',{name:()=> 'synthetic'});
+ assert.deepEqual(trace,['sample-1','fill','sample-2','select-focus','sample-3','save-geometry','find-options','results-visible']);
 }
-test('actual finder verifier requires five focus chips, explicit Find and published results or honest empty state', async()=>{
+test('actual finder verifier requires five focus chips, explicit Find, published results and all three natural geometry states', async()=>{
  await syntheticFinder();await syntheticFinder({specialists:0,emptyStatus:1});
- for(const options of [{count:4},{count:6},{premature:true},{findVisible:false},{chipY:120},{findY:700},{pressed:'false'},{expanded:'false'},{specialists:0,emptyStatus:0}])
+ for(const options of [{count:4},{count:6},{premature:true},{findVisible:false},{chipY:120},{findY:700},{pressed:'false'},{expanded:'false'},{specialists:0,emptyStatus:0},{savedLead:1},{restoredHidden:true},{lostReserve:true},{noFocus:true}])
   await assert.rejects(()=>syntheticFinder(options),{code:'ERR_ASSERTION'});
 });

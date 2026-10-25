@@ -1,3 +1,4 @@
+import { CURRENT_REVIEWED_COUNT, assertReviewedCatalogInventory } from './helpers/catalog-availability-contract.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { getProfessionalScaleResource, PROFESSIONAL_SCALE_RESOURCES } from '../data/assessments/professional-scale-resources-2026.js'
@@ -65,8 +66,8 @@ test('gated guide entries are visible in PDF filter but cannot enter the test ba
   assert.equal(getProfessionalScaleResource('ras-7').downloadType, 'educational_scale_guide_only')
   for (const audience of ['guest', 'account']) {
     const entries = buildExplorerEntries({ locale: 'en', audience })
-    assert.equal(entries.length, 290)
-    assert.equal(new Set(entries.map(row => row.key)).size, 290)
+    assertReviewedCatalogInventory(entries)
+    assert.equal(new Set(entries.map(row => row.key)).size, CURRENT_REVIEWED_COUNT)
     const ras = entries.filter(row => row.key === 'ras-7')
     assert.equal(ras.length, 1)
     assert.equal(ras[0].selectable, false)

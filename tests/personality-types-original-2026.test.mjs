@@ -1,3 +1,4 @@
+import { assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { TANTRIC_REFLECTION_KEYS } from '../data/assessments/tantric-reflections-v1.js'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { ADDITIONAL_PROFESSIONAL_DEFINITIONS } from '../data/assessments/professional-additions-2026.js'
@@ -37,7 +38,7 @@ test('four original EN/RU questionnaires are unique, content-hashed and genuinel
   assert.equal(PERSONALITY_TYPE_DEFINITIONS.length,8)
   assert.equal(PERSONALITY_TYPE_CATALOG.length,4)
   assert.equal(new Set(PERSONALITY_TYPE_DEFINITIONS.map(d=>d.id)).size,8)
-  assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length,150)
+  assertCatalogAvailability(MONITORING_CATALOG)
   for(const [key,,questionCount,scaleCount] of CASES){
     const item=MONITORING_CATALOG.find(c=>c.key===key)
     assert.ok(item?.startable && item.rightsStatus==='cleared' && item.guestEligible)

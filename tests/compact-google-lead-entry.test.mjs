@@ -71,19 +71,36 @@ function assertContactPayload(src = source('components/contact-channel-chooser.t
   const saves = descendants(ast).filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'saveEnquiry');
   assert.equal(saves.length, 1, 'Exactly one real submit implementation');
   const declarations = descendants(saves[0].body).filter(node => ts.isVariableDeclaration(node));
+  const components = descendants(ast).filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'ContactChannelChooser');
+  assert.equal(components.length, 1, 'Exactly one actual chooser component');
+  const modeDeclarations = components[0].body.statements.filter(ts.isVariableStatement)
+    .flatMap(statement => [...statement.declarationList.declarations])
+    .filter(node => node.name.getText(ast) === 'expressReview');
+  assert.equal(modeDeclarations.length, 1, 'One actual component-scope expressReview declaration');
+  const actualMode = 'const ' + modeDeclarations[0].getText(ast) + ';';
   const actual = ['cleanedPhone', 'usePhone', 'payload'].map(name => {
     const matches = declarations.filter(node => node.name.getText(ast) === name);
     assert.equal(matches.length, 1, 'One actual ' + name + ' declaration');
     return 'const ' + matches[0].getText(ast) + ';';
   }).join('\n');
-  for (const compactPhone of [false, true]) for (const method of ['email', 'phone']) {
+  const privateCases = [
+    { publicTopic: '', description: '', express: false, normal: '', compact: '' },
+    { publicTopic: '  General service  ', description: '', express: false, normal: '', compact: 'General service' },
+    { publicTopic: 'General service', description: '  Synthetic private question  ', express: false, normal: 'Synthetic private question', compact: 'Synthetic private question' },
+    { publicTopic: 'Express review focus: clarity', description: '', express: true, normal: '', compact: 'Express review focus: clarity' },
+    { publicTopic: 'Express review focus: clarity', description: '  Synthetic private question  ', express: true, normal: 'Synthetic private question', compact: 'Express review focus: clarity\nInitial question: Synthetic private question' },
+    { publicTopic: 'Express review focus:clarity', description: '', express: false, normal: '', compact: 'Express review focus:clarity' },
+  ];
+  for (const compactPhone of [false, true]) for (const method of ['email', 'phone']) for (const fixture of privateCases) {
     const usePhone = compactPhone || method === 'phone';
-    const { payload } = sourceModule(actual + '\nexport { payload };', 'contact-payload.tsx', {}, {
+    const { payload, expressReview } = sourceModule(actualMode + '\n' + actual + '\nexport { payload, expressReview };', 'contact-payload.tsx', {}, {
       compactPhone, method, phone: '+1 (416) 555-0123', email: ' synthetic@example.test ', displayName: '',
       crypto: { randomUUID: () => base.operationId }, serviceTitle: base.serviceTitle,
-      description: '', quick: false, publicTopic: '', pathname: '/en/services', locale: 'en', consent: true, website: '',
+      description: fixture.description, quick: false, publicTopic: fixture.publicTopic, pathname: '/en/services', locale: 'en', consent: true, website: '',
     });
+    assert.equal(expressReview, compactPhone && fixture.express, 'Actual component mode respects compact scope and exact topic prefix');
     const sent = JSON.parse(JSON.stringify(payload));
+    assert.equal(sent.description, compactPhone ? fixture.compact : fixture.normal, 'Actual private payload preserves the optional note only under its intended mode');
     assert.equal(sent.contact.email, usePhone ? '' : 'synthetic@example.test', 'Only selected email mode may send email');
     assert.equal(sent.contact.phone, usePhone ? '+14165550123' : '', 'Compact or selected phone mode sends normalized phone only');
     assert.equal(sent.contactConsent, true);
@@ -99,6 +116,10 @@ test('contact payload contract rejects losing the compact-phone override or send
     ['const usePhone = compactPhone || method === "phone";', 'const usePhone = method === "phone";'],
     ['email: usePhone ? "" : email.trim()', 'email: email.trim()'],
     ['phone: usePhone ? cleanedPhone : ""', 'phone: cleanedPhone'],
+    ['const expressReview = compactPhone && publicTopic?.startsWith("Express review focus: ");', 'const expressReview = false;'],
+    ['const expressReview = compactPhone && publicTopic?.startsWith("Express review focus: ");', 'const expressReview = publicTopic?.startsWith("Express review focus: ");'],
+    ['publicTopic?.startsWith("Express review focus: ")', 'publicTopic?.includes("Express review")'],
+    ['["Initial question: " + description.trim()]', '[]'],
   ]) {
     assert.equal(src.split(before).length, 2, 'Mutation targets actual contact payload exactly once');
     assert.throws(() => assertContactPayload(src.replace(before, after)), error => error.code === 'ERR_ASSERTION');

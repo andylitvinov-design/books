@@ -128,3 +128,57 @@ for(const invalid of ['phone','consent','trusted-url','private-path','oversized-
 test('full legacy form retains email, explicit consent, same-body retry and receipt redirect without a popup',async()=>{
   const h=mount({props:{compactPhone:false,quick:false}});await h.settle();const field=type=>h.one(n=>n.type==='input'&&n.props.type===type);field('email').props.onChange({target:{value:'synthetic@example.test'}});h.consent().props.onChange({target:{checked:true}});await h.settle();h.queue.push(()=>{throw Error('lost');});h.one(n=>n.type==='form').props.onSubmit({preventDefault(){}});await h.settle();assert.equal(field('email').props.disabled,true);h.queue.push(saved);h.one(n=>n.type==='form').props.onSubmit({preventDefault(){}});await h.settle();assert.equal(h.calls[0].body,h.calls[1].body);assert.equal(h.windows.length,0);assert.deepEqual(h.navigations,['/en/thank-you']);assert.equal(h.links().length,2);h.unmount();
 });
+
+// Canonical optional express note must join the frozen private payload, never
+// the public messenger draft; unknown outcomes keep the original retry body.
+for (const locale of ['en', 'ru', 'es']) for (const note of ['', 'Synthetic private note 484']) test(`${locale}: optional express note ${note ? 'present' : 'empty'} preserves consent, privacy and exact retry`, async () => {
+  const topic = 'Express review focus: situation';
+  const h = mount({ locale, props: { publicTopic: topic } });
+  await h.settle();
+  const field = () => h.one(n => n.type === 'textarea');
+  assert.ok(field());
+  assert.equal(field().props.maxLength, 300);
+  assert.notEqual(field().props.required, true);
+  assert.equal(field().props.disabled, false);
+  assert.equal(h.consent().props.checked, false);
+  const order = h.nodes();
+  assert.ok(order.indexOf(h.phone()) < order.indexOf(field()));
+  assert.ok(order.indexOf(field()) < order.indexOf(h.consent()));
+  field().props.onChange({ target: { value: note } });
+  await h.settle();
+  assert.equal(field().props.value, note);
+  assert.equal(h.calls.length, 0);
+  h.tap(); await h.settle();
+  assert.equal(h.calls.length, 0, 'Neither note nor messenger click replaces explicit valid contact/consent');
+  assert.equal(h.windows.length, 0);
+  await h.fill();
+  h.queue.push(() => { throw Error('Synthetic uncertain response'); });
+  h.tap(); await h.settle();
+  assert.equal(h.calls.length, 1);
+  assert.equal(field().props.disabled, true, 'Unknown write outcome freezes the note like contact and consent');
+  const first = JSON.parse(h.calls[0].body);
+  assert.equal(first.description, topic + (note ? '\nInitial question: ' + note : ''));
+  assert.equal(first.contactConsent, true);
+  assert.equal(h.receipts.length, 0);
+  h.queue.push(saved); h.tap('telegram'); await h.settle();
+  assert.equal(h.calls.length, 2);
+  assert.equal(h.calls[1].body, h.calls[0].body, 'Retry uses the exact original UUID and private payload');
+  assert.ok(h.receipt());
+  for (const href of [h.windows[1].destination, ...h.links().map(n => n.props.href)]) {
+    assert.ok(href);
+    const publicText = new URL(href).searchParams.get('text');
+    assert.ok(publicText.includes(referenceCode));
+    assert.ok(!publicText.includes(topic));
+    assert.ok(!publicText.includes('Synthetic private note 484'));
+    assert.ok(!publicText.includes(first.contact.phone));
+  }
+  assert.ok(!JSON.stringify(h.receipts).includes('Synthetic private note 484'));
+  assert.ok(!JSON.stringify(h.analytics).includes('Synthetic private note 484'));
+  h.unmount();
+});
+
+test('other compact services retain their existing no-question form', async () => {
+  const h = mount(); await h.settle();
+  assert.equal(h.one(n => n.type === 'textarea'), undefined);
+  h.unmount();
+});

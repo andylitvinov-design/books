@@ -1,3 +1,4 @@
+import { assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -12,7 +13,7 @@ import {MIND_BODY_MONITOR_REGISTRY} from '../data/assessments/mind-body-monitor-
 
 test('six new source-backed measures have intact definitions',()=>{
  assert.equal(definitions.length,2)
- assert.equal(MONITORING_CATALOG.filter(item=>item.startable).length, 145)
+ assertCatalogAvailability(MONITORING_CATALOG)
  for(const d of definitions){
   const {contentHash,...body}=d
   assert.equal(contentHash,'sha256:'+createHash('sha256').update(canonicalJSON(body)).digest('hex'))

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import {runInNewContext} from 'node:vm'
+import ts from 'typescript'
 import {hypnotherapyOrigin, hypnotherapyService, assertHypnotherapyBody, permittedHypnotherapyRead, hypnotherapyRequestGate, syntheticHypnotherapyReceipt, installHypnotherapyPopupSpy, withHypnotherapyIsolation, assertHypnotherapyLink, HYPNOTHERAPY_CONTACT, HYPNOTHERAPY_REFERENCE, HYPNOTHERAPY_RECEIPT_KEY} from '../scripts/helpers/hypnotherapy-enquiry-journey-verifier.mjs'
 const origin = 'http://127.0.0.1:3100'
 const body = (locale='en', channel='whatsapp') => JSON.stringify({operationId:'27d6bba7-fede-49b3-90d8-c655b72202fd', serviceTitle:hypnotherapyService(locale), description:'Preferred reply channel: ' + (channel === 'whatsapp' ? 'WhatsApp' : 'Telegram'), sourcePath:`/${locale}/services/hypnotherapy-course`, locale, contact:{displayName:'', email:HYPNOTHERAPY_CONTACT, phone:''}, contactConsent:true, website:''})
@@ -135,10 +136,8 @@ test('integration preserves other journeys/media/locales/widths and uses actual 
   assert.match(source,/verifyHypnotherapyEnquiryJourney\(servicePage,expect,locale,\{channel:'telegram',denyReceiptStorage:true\}\)/)
   assert.match(source,/main\[data-core-service-detail="hypnotherapy"\] > section:last-child > details/)
   assert.match(source,/Free review alternative starts collapsed/)
-  assert.match(source,/All three source-backed videos are visible/)
-  assert.match(source,/verifyFreeReviewJourney\(publicPage,expect,locale,\{kind:'compact'\}\)/)
-  assert.match(source,/verifyFreeReviewJourney\(publicPage,expect,locale,\{kind:'drawing'\}\)/)
-  assert.match(source,/verifyFreeReviewJourney\(publicPage,expect,locale,\{kind:'drawing',denyReceiptStorage:true,output\}\)/)
+  assert.match(source,/All twelve original-language source-backed videos are visible/)
+  await assertCurrentFreeReviewWiring(source)
   const helper=await readFile(new URL('../scripts/helpers/hypnotherapy-enquiry-journey-verifier.mjs',import.meta.url),'utf8')
   assert.match(helper,/newContext\(\{serviceWorkers:'block'/)
   assert.match(helper,/routeWebSocket\('\*\*\/\*', socket => socket.close\(\)\)/)
@@ -183,4 +182,68 @@ test('synthetic write rejects unexpected content type and never forwards', async
   const req=request(origin+'/api/service-enquiries','POST');req.headers=() => ({'content-type':'text/plain'})
   const r=route(req);await hypnotherapyRequestGate(origin,'en',x => receipt.accept(x),failures,[])(r)
   assert.equal(receipt.count,0);assert.equal(failures.length,1);assert.deepEqual(r.log,['abort'])
+})
+
+// Run the actual direct public-review loop with inert boundaries. This verifies
+// calls/routes/locales/variants, not comments or a permissive call-name regex.
+// Actual component and privacy behavior remain covered by the retained
+// free-review-component-contract and free-review-journey-verifier suites.
+async function assertCurrentFreeReviewWiring(source) {
+  const file=ts.createSourceFile('verify-app-r1.mjs',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS)
+  assert.equal(file.parseDiagnostics.length,0,'The real verifier must parse')
+  const functions=file.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='verifyPublicServiceConversionJourneys')
+  assert.equal(functions.length,1,'One actual public conversion function')
+  const loops=functions[0].body.statements.filter(ts.isForOfStatement)
+  assert.equal(loops.length,2,'Service and free-review journeys remain direct locale loops')
+  const loop=loops[1].getText(file)
+  const expected=()=>{},pages=[],calls=[],output='synthetic-artifact-directory',publicErrors=[]
+  const publicContext={newPage:async()=>{
+    const page={events:[],visits:[],viewports:[],screenshots:[],landings:[],fits:[],closed:false,
+      on(event,handler){assert.equal(event,'pageerror');assert.equal(typeof handler,'function');this.events.push(event)},
+      async setViewportSize(size){this.viewports.push(structuredClone(size))},
+      async goto(url,options){this.visits.push({url,options:structuredClone(options)})},
+      async screenshot(options){this.screenshots.push(structuredClone(options))},
+      async close(){this.closed=true},
+    };pages.push(page);return page
+  }}
+  const assertFreeReviewLanding=async(page,expect,locale)=>{assert.equal(expect,expected);assert.ok(pages.includes(page));page.landings.push(locale)}
+  const assertPublicViewportFits=async(page,label)=>{assert.ok(pages.includes(page));page.fits.push(label)}
+  const verifyFreeReviewJourney=async(page,expect,locale,options)=>{
+    assert.ok(pages.includes(page),'Journey uses the actual public page')
+    assert.equal(expect,expected,'Journey retains the real assertion boundary')
+    assert.deepEqual(page.viewports.at(-1),{width:390,height:844},'Journey runs at the intended mobile viewport')
+    calls.push({page:pages.indexOf(page),locale,options:structuredClone(options)})
+  }
+  await new Function('publicContext','publicErrors','origin','output','expect','assertFreeReviewLanding','assertPublicViewportFits','verifyFreeReviewJourney',
+    'return (async()=>{'+loop+'})()')(publicContext,publicErrors,origin,output,expected,assertFreeReviewLanding,assertPublicViewportFits,verifyFreeReviewJourney)
+  assert.equal(pages.length,2,'One independent public page per EN/RU locale')
+  const expectedCalls=[]
+  for(const [index,locale]of ['en','ru'].entries()){
+    const page=pages[index],widths=[320,360,390,1280]
+    assert.deepEqual(page.events,['pageerror'])
+    assert.deepEqual(page.viewports,[...widths,390].map(width=>({width,height:844})))
+    assert.deepEqual(page.visits,widths.map(()=>({url:origin+'/'+locale+'/services/free-situation-review',options:{waitUntil:'networkidle'}})))
+    assert.deepEqual(page.landings,widths.map(()=>locale))
+    assert.deepEqual(page.fits,widths.map(width=>locale+'/free-review/'+width))
+    assert.deepEqual(page.screenshots,[390,1280].map(width=>({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})))
+    assert.equal(page.closed,true,'The public page always closes after its journeys')
+    for(const options of [{kind:'compact'},{kind:'compact',channel:'telegram',denyReceiptStorage:true},{kind:'private-entry'},{kind:'private-entry',denyReceiptStorage:true,output}])
+      expectedCalls.push({page:index,locale,options})
+  }
+  assert.deepEqual(calls,expectedCalls,'Keep exact compact and private-entry variants in both locales; never restore retired public drawing submission')
+  assert.deepEqual(publicErrors,[])
+}
+const currentMain=await readFile(new URL('../scripts/verify-app-r1.mjs',import.meta.url),'utf8')
+for(const [name,before,after]of [
+  ['removed private entry',"  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'private-entry'})",''],
+  ['retired public drawing call',"kind:'private-entry'","kind:'drawing'"],
+  ['wrong locale',"verifyFreeReviewJourney(publicPage,expect,locale,{kind:'private-entry'})","verifyFreeReviewJourney(publicPage,expect,'en',{kind:'private-entry'})"],
+  ['wrong page',"verifyFreeReviewJourney(publicPage,expect,locale,{kind:'private-entry'})","verifyFreeReviewJourney({},expect,locale,{kind:'private-entry'})"],
+  ['missing denied-storage mode',"{kind:'private-entry',denyReceiptStorage:true,output}","{kind:'private-entry',output}"],
+  ['wrong compact channel',"{kind:'compact',channel:'telegram',denyReceiptStorage:true}","{kind:'compact',channel:'whatsapp',denyReceiptStorage:true}"],
+  ['wrong public entry route',"publicPage.goto(origin+'/'+locale+'/services/free-situation-review'","publicPage.goto(origin+'/'+locale+'/coaching/intake'"],
+  ['lost screenshot evidence',"{kind:'private-entry',denyReceiptStorage:true,output}","{kind:'private-entry',denyReceiptStorage:true}"],
+]) test('actual free-review wiring rejects '+name,async()=>{
+  assert.ok(currentMain.includes(before),'The mutant targets current executable source')
+  await assert.rejects(assertCurrentFreeReviewWiring(currentMain.replace(before,after)),error=>error.code==='ERR_ASSERTION')
 })

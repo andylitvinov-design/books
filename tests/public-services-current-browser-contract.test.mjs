@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
+import {measureIdeasOrderedLayout,ideasQuoteGeometryProblems} from '../scripts/helpers/ideas-quote-geometry.mjs'
 import {createElement} from 'react'
 import * as jsxRuntime from 'react/jsx-runtime'
 import {renderToStaticMarkup} from 'react-dom/server'
@@ -159,13 +161,76 @@ test('Spanish browser checks exact ordered panels and retains every mobile geome
   assert.match(browser,/await assertAlchemyPaymentsExpanded\(main, expect, width\)/)
 })
 
-test('320px Ideas correction stays scoped to the nested Temple result card without weakening readability',()=>{
+test('320px Ideas correction stays scoped to the nested Temple result card without weakening readability',async()=>{
   const css=read('components/ideas-discovery.module.css')
   assert.match(css,/@media \(max-width: 360px\) \{\s*\.root \[data-tests-coaching-temple\] > \.results \{ margin-inline: -6px; \}\s*\}/)
   assert.match(read('components/tests-coaching-switchboard.tsx'),/path === "temple" \? <div data-tests-coaching-temple>/)
   const browser=read('scripts/verify-ideas-mobile-browser.mjs')
-  assert.match(browser,/previewRects\.every\(rect => rect\.width >= width \* \.72\)/)
-  assert.match(browser,/each quote gets full line width/)
+  assert.match(browser,/import \{ measureIdeasOrderedLayout, ideasQuoteGeometryProblems \} from "\.\/helpers\/ideas-quote-geometry\.mjs";/)
+  // Independent source/native-backed ES geometry, not an expected value derived
+  // from the production predicate: the actual375px screenshot has259px rows.
+  const tables={
+    320:[[0,320,20,0,0],[20,280,5,1,0],[26,268,0,0,0],[26,268,14,1,0],[41,238,0,0,0],[35,250,2,1,-6],[38,244,4,1,0],[43,234,0,0,0]],
+    375:[[0,375,20,0,0],[20,335,7,1,0],[28,319,0,0,0],[28,319,14,1,0],[43,289,0,0,0],[43,289,7,1,0],[51,273,6,1,0],[58,259,0,0,0]],
+  }
+  const layerNames=['shell','ideas','hub','detail','temple','result','section','list']
+  const box=(left,width,padding=0,border=0,margin=0,top=400,height=500)=>({left,right:left+width,width,top,bottom:top+height,height,
+    paddingLeft:padding,paddingRight:padding,borderLeft:border,borderRight:border,marginLeft:margin,marginRight:margin,
+    clientWidth:width-2*border,scrollWidth:width-2*border,untransformed:true,blockMetrics:true})
+  function putRows(layout,left,width) {
+    const padding=layout.quotes.viewport===320?9:10
+    layout.quotes.rows=Array.from({length:3},(_,i)=>({box:box(left,width,padding,1,0,500+i*110,100),
+      text:[{box:box(left+padding+1,width-2*(padding+1),0,0,0,510+i*110,70),lines:[{left:left+padding+3,right:left+width-padding-3}]}]}))
+    layout.rows=layout.quotes.rows.map(({box})=>({...box}))
+  }
+  function fixture(width,stage) {
+    const layers=Object.fromEntries(layerNames.map((name,i)=>[name,box(...tables[width][i])]))
+    const layout={middle:box(50,200,0,0,0,830,100),after:box(50,200,0,0,0,940,100),quotes:{hierarchy:true,stage,shellKind:'spanish',count:3,viewport:width,layers}}
+    putRows(layout,layers.list.left,layers.list.width)
+    return layout
+  }
+  const measureStart=browser.indexOf('async function measureOrderedLayout(')
+  const measureEnd=browser.indexOf('\nasync function verify(',measureStart)
+  assert.ok(measureStart>=0&&measureEnd>measureStart,'actual atomic wrapper exists')
+  const measure=runInNewContext('('+browser.slice(measureStart,measureEnd)+')',{measureIdeasOrderedLayout})
+  const fragments={
+    preview:['    const previewLayout = await measureOrderedLayout(', '    assert.equal(await hub.locator("[data-ideas-preview] details")'],
+    result:['    const responseLayout = await measureOrderedLayout(', '    const readingOrder = daoResult.locator('],
+  }
+  async function execute(layout,stage,width) {
+    const [start,end]=fragments[stage];assert.equal(browser.split(start).length,2);assert.equal(browser.split(end).length,2)
+    const body=browser.slice(browser.indexOf(start),browser.indexOf(end,browser.indexOf(start)))
+    let measurements=0,writes=0,screenshots=0
+    const scope={async evaluate(reader,names){
+      assert.equal(reader,measureIdeasOrderedLayout,'actual atomic DOM reader, not a replacement')
+      assert.deepEqual({...names},{middle:stage==='preview'?'[data-ideas-dao-card]':'[data-ideas-dao]',after:'[data-ideas-dao-promos]'})
+      measurements++;return structuredClone(layout)
+    }}
+    await runInNewContext('(async()=>{'+body+'})()',{
+      assert,measureOrderedLayout:measure,ideasQuoteGeometryProblems,locale:'es',width,label:'synthetic-es-'+width,output:'synthetic-only',
+      hub:{locator(selector){assert.equal(selector,'[data-ideas-preview]');return scope}},daoResult:scope,
+      async writeFile(path,body){assert.match(path,stage==='preview'?/aphorism-preview-geometry/:/aphorism-result-geometry/);assert.deepEqual(JSON.parse(body),layout);writes++},
+      page:{async screenshot(){screenshots++}},
+    })
+    assert.equal(measurements,1);assert.equal(writes,1);assert.equal(screenshots,0,'valid geometry never invokes failure screenshots')
+  }
+  for(const stage of ['preview','result'])for(const width of [320,375]){
+    const valid=fixture(width,stage)
+    assert.equal(valid.rows[0].width,width===320?234:259)
+    await execute(valid,stage,width)
+    const row=structuredClone(valid);row.quotes.rows[1].box.right-=20;row.quotes.rows[1].box.width-=20
+    await assert.rejects(execute(row,stage,width),/row-content-width/,'narrowed quote must fail actual caller')
+    const list=structuredClone(valid);list.quotes.layers.list.right-=20;list.quotes.layers.list.width-=20
+    putRows(list,list.quotes.layers.list.left,list.quotes.layers.list.width)
+    await assert.rejects(execute(list,stage,width),/list-content-width/,'narrowed parent cannot define its own success')
+    const inset=structuredClone(valid);const section=inset.quotes.layers.section
+    section.paddingLeft=section.paddingRight=20
+    const left=section.left+section.borderLeft+20,right=section.right-section.borderRight-20
+    inset.quotes.layers.list=box(left,right-left);putRows(inset,left,right-left)
+    await assert.rejects(execute(inset,stage,width),/section-inset-budget/,'fully reflowed oversized inset remains independently bounded')
+    const overflow=structuredClone(valid);overflow.quotes.rows[0].text[0].lines[0].right+=100
+    await assert.rejects(execute(overflow,stage,width),/text-line-overflow/,'actual text readability guard remains fatal')
+  }
 })
 
 test('Home acceptance follows current six direct routes and the deferred guide, retaining paid first-fold checks',()=>{
