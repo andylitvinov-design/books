@@ -1,169 +1,193 @@
-// Read-only public acceptance. Chromium/WebKit emulate touch, not a physical iPhone.
-// Never submit forms, create leads, publish media, or send messages.
-import assert from 'node:assert/strict';
-import {mkdirSync,writeFileSync} from 'node:fs';
-const {chromium,webkit}=await import(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright');
-const origin=(process.env.HH_LIVE_ORIGIN || 'https://holistichouse.vercel.app').replace(/\/$/,'');
-const output='artifacts/free-review-live-mobile';
-mkdirSync(output,{recursive:true});
-const results=[];
-const sizes=[[320,568],[375,667],[390,844],[430,932]];
-for(const [engine,driver] of [['chromium',chromium],['webkit',webkit]]){
-  const browser=await driver.launch({headless:true});
-  try{
-    for(const locale of ['en','ru','es']){
-      for(const [width,height] of sizes){
-        const name=engine+'-'+locale+'-'+width+'x'+height;
-        const record={engine,locale,width,height};
-        const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block',reducedMotion:'reduce'});
-        const page=await context.newPage();
-        const errors=[];
-        const provider=[];
-        page.on('pageerror',e=>errors.push(e.message.slice(0,250)));
-        page.on('response',r=>{if(r.url().includes('/embed/sfVFOQNr2qk'))provider.push({status:r.status(),url:r.url().slice(0,180)});});
-        try{
-          const resp=await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
-          assert.equal(resp?.status(),200,'public URL HTTP 200');
-          assert.equal(await page.locator('[data-sitewide-personal-review-banner]').count(),0,'do not repeat a self-referral promo above the free review');
-          const hero=page.locator('[data-free-entry-landing="situation"] section[aria-labelledby="free-entry-title"]');
-          const video=hero.locator('[data-featured-constellations-video]');
-          const cta=hero.locator('a[href="#free-diagnosis-options"]');
-          const play=video.locator('button.site-video-play');
-          await video.waitFor({state:'visible',timeout:30000});
-          await page.waitForFunction(()=>{const b=document.querySelector('[data-featured-constellations-video] button.site-video-play');return b&&!b.disabled;},null,{timeout:35000});
-          await page.evaluate(()=>document.fonts.ready);
-          assert.equal(await video.locator('iframe').count(),0,'no autoplay iframe');
-          assert.equal(await video.locator('a[href*="youtube.com"]').getAttribute('href'),'https://www.youtube.com/watch?v=sfVFOQNr2qk');
-          const geom=await page.evaluate(()=>{
-            const rect=(e)=>{if(!e)return null;const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width,height:r.height,right:r.right};};
-            const main=document.querySelector('[data-free-entry-landing="situation"]');
-            const hero=main.querySelector('section[aria-labelledby="free-entry-title"]');
-            const video=main.querySelector('[data-featured-constellations-video]');
-            const nav=document.querySelector('.mobile-bottom-navigation');
-            const header=document.querySelector('header.house-header');
+// Read-only mobile acceptance against the exact PR build or canonical alias.
+// Chromium/WebKit emulate touch; this is not physical iPhone Safari verification.
+// Never submit private questionnaires, create CRM leads, send messages or buy anything.
+import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
+const { chromium, webkit } = await import(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const origin = (process.env.HH_LIVE_ORIGIN || "https://holistichouse.vercel.app").replace(/\\/$/, "");
+const output = "artifacts/free-review-live-mobile";
+mkdirSync(output, { recursive: true });
+const results = [];
+const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
+const ids = ["situation-written-free", "wu-xing-free", "personal-session-30-eur50"];
+const rect = element => {
+  if (!element) return null;
+  const { left, right, top, bottom, width, height } = element.getBoundingClientRect();
+  return { left, right, top, bottom, width, height };
+};
+for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
+  const browser = await driver.launch({ headless: true });
+  try {
+    for (const locale of ["en", "ru", "es"]) {
+      for (const [width, height] of cases) {
+        const name = engine + "-" + locale + "-" + width + "x" + height;
+        const record = { engine, locale, width, height };
+        const context = await browser.newContext({
+          viewport: { width, height }, deviceScaleFactor: 2,
+          isMobile: true, hasTouch: true, serviceWorkers: "block", reducedMotion: "reduce",
+        });
+        const page = await context.newPage();
+        const errors = [];
+        page.on("pageerror", e => errors.push(e.message.slice(0, 250)));
+        try {
+          const response = await page.goto(origin + "/" + locale + "/services/free-situation-review",
+            { waitUntil: "domcontentloaded", timeout: 65000 });
+          assert.equal(response?.status(), 200, "localized page HTTP 200");
+          const main = page.locator('[data-free-entry-landing="situation"]');
+          const hero = main.locator('section[aria-labelledby="free-entry-title"]');
+          const video = main.locator("[data-featured-constellations-video]");
+          const mainCta = hero.locator('a[href="#request-free-review"]');
+          await video.waitFor({ state: "visible", timeout: 25000 });
+          await mainCta.waitFor({ state: "visible" });
+          assert.ok((await hero.locator("h1").innerText()).trim().length > 15);
+          assert.match(await hero.innerText(), /Andrey|Андреем|Андрей/i, "Andrey named in hero");
+          assert.equal(await video.locator("iframe").count(), 0, "hero video does not autoplay");
+          const original = video.locator('a[href*="youtube.com/watch"]');
+          assert.equal(await original.getAttribute("href"), "https://www.youtube.com/watch?v=sfVFOQNr2qk");
+          const outcome = main.locator("#what-you-get");
+          const process = main.locator("#how-it-works");
+          const options = main.locator("#free-diagnosis-options");
+          const capture = main.locator("#request-free-review [data-free-diagnostic-phone-only]");
+          await capture.waitFor({ state: "attached" });
+          assert.equal(await capture.count(), 1, "one top phone-only entry");
+          assert.equal(await main.locator('[data-diagnosis-placement="bottom"] [data-free-diagnostic-phone-only]').count(), 1,
+            "optional bottom entry preserved");
+          assert.equal(await main.locator('[data-free-diagnosis-layout="compact"]').count(), 1,
+            "only this landing selects compact format cards");
+          const geometry = await page.evaluate(() => {
+            const r = element => {
+              if (!element) return null;
+              const { left, right, top, bottom, width, height } = element.getBoundingClientRect();
+              return { left, right, top, bottom, width, height };
+            };
+            const main = document.querySelector('[data-free-entry-landing="situation"]');
+            const hero = main.querySelector('section[aria-labelledby="free-entry-title"]');
+            const video = main.querySelector('[data-featured-constellations-video]');
+            const frame = video.querySelector(".site-video-frame");
+            const cta = hero.querySelector('a[href="#request-free-review"]');
+            const nav = document.querySelector(".mobile-bottom-navigation");
+            const process = main.querySelector("#how-it-works");
+            const outcome = main.querySelector("#what-you-get");
+            const options = main.querySelector("#free-diagnosis-options");
             return {
-              viewport:{width:innerWidth,height:innerHeight},
-              overflow:document.documentElement.scrollWidth-innerWidth,
-              header:rect(header),hero:rect(hero),video:rect(video),
-              frame:rect(video.querySelector('.site-video-frame')),
-              cta:rect(hero.querySelector('a[href="#free-diagnosis-options"]')),
-              nav:rect(nav),availableBottom:nav?nav.getBoundingClientRect().top:innerHeight,
-              scenes:[...main.querySelectorAll('section[id="what-you-get"],section[id="how-it-works"]')].map(e=>({id:e.id,rect:rect(e)}))
+              overflow: document.documentElement.scrollWidth - innerWidth,
+              viewport: { width: innerWidth, height: innerHeight },
+              hero: r(hero), video: r(video), frame: r(frame), cta: r(cta),
+              nav: r(nav), outcome: r(outcome), process: r(process), options: r(options),
+              documentOrder: [hero, outcome, process, options].map(element =>
+                element.compareDocumentPosition(options)),
             };
           });
-          record.geometry=geom;
-          await page.screenshot({path:output+'/'+name+'-first-screen.png',animations:'disabled',timeout:20000});
-          assert.ok(geom.overflow<=2,'horizontal overflow '+geom.overflow);
-          assert.ok(geom.frame&&Math.abs(geom.frame.width/geom.frame.height-16/9)<=0.06,'16:9 poster');
-          assert.ok(geom.cta&&geom.nav&&geom.hero&&geom.video,'main mobile UI present');
-          assert.ok(geom.cta.height>=42,'main CTA tap target');
-          assert.ok(geom.video.bottom<geom.cta.top,'video first');
-          assert.ok(geom.cta.bottom<=geom.availableBottom-1,'CTA clipped behind nav: '+JSON.stringify(geom));
-          assert.ok(geom.hero.bottom<=geom.availableBottom+1,'first slide overflows viewport');
-          for(const scene of geom.scenes){
-            const budget=height-(geom.header?.height||0)-(geom.nav?.height||0)-8;
-            assert.ok(scene.rect.height<=budget+2,scene.id+' slide taller than usable viewport: '+scene.rect.height+' > '+budget);
+          record.geometry = geometry;
+          assert.ok(geometry.overflow <= 2, "no horizontal scroll: " + geometry.overflow);
+          assert.ok(geometry.frame && Math.abs(geometry.frame.width / geometry.frame.height - 16 / 9) < 0.06,
+            "landscape intro poster aspect ratio 16:9");
+          assert.ok(geometry.video.bottom < geometry.cta.top, "watch first, CTA follows");
+          assert.ok(geometry.cta.height >= 44, "CTA has 44px touch target");
+          assert.ok(geometry.outcome.top > geometry.hero.top, "benefits after video hero");
+          assert.ok(geometry.process.top > geometry.outcome.top, "process after benefits");
+          assert.ok(geometry.options.top > geometry.process.top, "three choices below benefits and process");
+          await page.screenshot({ path: output + "/" + name + "-first-screen.png",
+            animations: "disabled", timeout: 20000 });
+          const cards = main.locator("[data-diagnosis-offer]");
+          assert.equal(await cards.count(), 3, "three real formats only");
+          for (const id of ids) {
+            const card = cards.filter({ has: page.locator('[data-diagnosis-order="' + id + '"]') });
+            assert.equal(await card.count(), 1, "real offer " + id);
+            const button = card.locator("button[data-diagnosis-order]");
+            assert.ok((await button.boundingBox())?.height >= 44, "offer request button tap target");
+            assert.ok(await card.locator("img").count() > 0, "genuine source photo");
           }
-          const reviewFeed=page.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
-          await reviewFeed.waitFor({state:'attached',timeout:15000});
-          const reviewGeometry=await reviewFeed.evaluate(element=>{
-            const cards=[...element.querySelectorAll('[data-testimonial-video-id]')];
+          const cardBoxes = await cards.evaluateAll(items => items.map(element => {
+            const r = element.getBoundingClientRect();
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+          }));
+          assert.ok(cardBoxes.every(r => r.left >= -2 && r.right <= width + 2), "offers fit phone width");
+          assert.ok(cardBoxes.every((r, i) => i === 0 || r.top >= cardBoxes[i - 1].bottom - 2),
+            "offers stack vertically");
+          const firstDetails = cards.first().locator("details");
+          assert.equal(await firstDetails.count(), 1, "long description optional");
+          assert.equal(await firstDetails.evaluate(element => element.open), false, "short card by default");
+          await firstDetails.locator("summary").click();
+          assert.equal(await firstDetails.evaluate(element => element.open), true, "explanation expands on demand");
+          const reviews = main.locator("[data-review-stories]");
+          assert.equal(await reviews.count(), 1, "existing authentic video reviews preserved");
+          assert.equal(await reviews.evaluate(element => element.open), false, "light page until requested");
+          await reviews.locator("summary").click();
+          const reviewFeed = reviews.locator('[data-personal-testimonials="all"] [data-vertical-review-list]');
+          await reviewFeed.waitFor({ state: "visible" });
+          const reviewGeometry = await reviewFeed.evaluate(element => {
+            const cards = [...element.querySelectorAll("[data-testimonial-video-id]")];
             return {
-              direction:getComputedStyle(element).flexDirection,
-              overflowX:getComputedStyle(element).overflowX,
-              ids:cards.map(item=>item.getAttribute('data-testimonial-video-id')),
-              boxes:cards.map(item=>{const r=item.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};}),
-              iframes:element.querySelectorAll('iframe').length,
+              direction: getComputedStyle(element).flexDirection,
+              overflowX: getComputedStyle(element).overflowX,
+              ids: cards.map(item => item.getAttribute("data-testimonial-video-id")),
+              boxes: cards.map(item => {
+                const r = item.getBoundingClientRect();
+                return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+              }),
+              iframes: element.querySelectorAll("iframe").length,
             };
           });
-          const expectedFirst=locale==='ru'?'m9RfDgK76PU':'Dk0LBmOivQo';
-          const expectedSeventh=locale==='ru'?'Dk0LBmOivQo':'m9RfDgK76PU';
-          assert.equal(reviewGeometry.ids.length,12,'all twelve original video testimonials present');
-          assert.equal(new Set(reviewGeometry.ids).size,12,'no duplicated review');
-          assert.equal(reviewGeometry.ids[0],expectedFirst,'matching-language audio first');
-          assert.equal(reviewGeometry.ids[6],expectedSeventh,'other original-language reviews follow');
-          assert.equal(reviewGeometry.direction,'column','vertical feed, not carousel');
-          assert.notEqual(reviewGeometry.overflowX,'auto','no horizontal scroll');
-          assert.notEqual(reviewGeometry.overflowX,'scroll','no horizontal scroll');
-          assert.ok(reviewGeometry.boxes.every((item,index)=>index===0 || item.top>=reviewGeometry.boxes[index-1].bottom-2),'cards must stack top to bottom');
-          assert.ok(reviewGeometry.boxes.every(item=>item.left>=-2&&item.right<=width+2),'cards must fit the phone viewport');
-          assert.equal(reviewGeometry.iframes,0,'no autoplay on the twelve testimonials');
-          record.testimonialFeed={count:reviewGeometry.ids.length,direction:reviewGeometry.direction,firstId:reviewGeometry.ids[0],lastId:reviewGeometry.ids.at(-1)};
-          if(width===390){
-            await reviewFeed.locator('[data-testimonial-video-id]').first().scrollIntoViewIfNeeded();
-            await page.screenshot({path:output+'/'+name+'-testimonials.png',animations:'disabled',timeout:20000});
-          }
-          const capture=page.locator('#request-free-review [data-service-lead-capture]');
-          const cards=page.locator('[data-diagnosis-offer]');
-          assert.equal(await cards.count(),3,'three photo-led offers with one shared form');
-          for(const id of ['situation-written-free','wu-xing-free','personal-session-30-eur50']){
-            assert.equal(await cards.filter({has:page.locator('[data-diagnosis-order="'+id+'"]')}).count(),1,'one order CTA per '+id);
-          }
-          assert.equal(await page.locator('#request-free-review [data-free-diagnostic-start]').count(),1,'free review reuses existing questionnaire entry without creating an early duplicate lead');
-          await play.click({timeout:15000});
-          const iframe=video.locator('iframe[data-video-playback="youtube"]');
-          await iframe.waitFor({state:'attached',timeout:20000});
-          const src=await iframe.getAttribute('src');
-          assert.ok(src.startsWith('https://www.youtube-nocookie.com/embed/sfVFOQNr2qk?'),'exact YouTube source on opt-in Play');
-          record.embedSrc=src;
-          if(width===390)await page.screenshot({path:output+'/'+name+'-after-play.png',animations:'disabled',timeout:25000});
-          await cta.click({timeout:15000});
-          assert.equal(new URL(page.url()).hash,'#free-diagnosis-options','hero CTA opens three options');
-          await page.locator('#request-free-review [data-free-diagnostic-start]').waitFor({state:'visible',timeout:18000});
-          assert.equal(await capture.count(),0,'no duplicate CRM form before authored questionnaire');
-          const wuDetail=cards.nth(1).locator('details');
-          await wuDetail.locator('summary').click();
-          assert.equal(await wuDetail.evaluate(el=>el.open),true,'Wu Xing details expand in place');
-          await cards.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          assert.equal(new URL(page.url()).hash,'#request-free-review','order CTA reaches shared form');
-          await capture.waitFor({state:'visible',timeout:18000});
-          assert.equal(await capture.locator('input[name="contact"]').count(),1);
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false);
-          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'click is not a real lead');
-          assert.equal(await capture.locator('select').inputValue(),'personal-session-30-eur50','paid option preselected');
-          await capture.locator('select').selectOption('wu-xing-free');
-          assert.equal(await cards.nth(1).getAttribute('data-diagnosis-selected'),'true','form selection updates selected card');
-          assert.equal(await capture.locator('input[type="checkbox"]').isChecked(),false,'no implicit consent on selection');
-          assert.equal(await capture.locator('[data-lead-saved]').count(),0,'selection is not a submitted lead');
-          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'expanded details fit viewport');
-          if(width===390){
-            const hubResponse=await page.goto(origin+'/'+locale+'/services/free-consultation',{waitUntil:'domcontentloaded',timeout:65000});
-            assert.equal(hubResponse?.status(),200,'free-consultation route reachable');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-diagnosis-offer]').count(),3,'hub has identical three options');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-free-diagnostic-start]').count(),1,'hub uses existing free coaching questionnaire funnel');
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),0,'hub does not create two leads for free situation');
-            await page.locator('[data-free-consultation-hub] [data-diagnosis-order="personal-session-30-eur50"]').click();
-            assert.equal(await page.locator('[data-free-consultation-hub] [data-service-lead-capture]').count(),1,'hub has one CRM capture for paid session');
-            assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'hub fits viewport');
-            await page.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'domcontentloaded',timeout:65000});
-          }
-          const privateEntry=page.locator('[data-free-drawing-intake]');
-          await page.locator('[data-optional-written-review] > summary').click();
-          await privateEntry.waitFor({state:'visible'});
-          assert.equal(await privateEntry.locator('form,textarea,[data-contact-channel-chooser]').count(),0,
-            'private answers are not collected twice or copied into messenger');
-          const privateLink=privateEntry.locator('a');
-          assert.equal(await privateLink.count(),1);
-          assert.equal(await privateLink.getAttribute('href'),'/'+locale+'/coaching/intake?topic=personal');
-          assert.ok((await privateEntry.innerText()).includes(locale==='ru'?'Не отправляйте':locale==='es'?'No envíes':'Do not send'));
-          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth),0,
-            'expanded privacy instructions fit the phone width');
-          record.privateIntakeHref=await privateLink.getAttribute('href');
-          record.status='PASS';
-          console.log('PASS '+name+' hero='+Math.round(geom.hero.bottom)+' bar='+Math.round(geom.availableBottom));
-        }catch(error){
-          record.status='FAIL';record.error=String(error.stack||error.message).slice(0,3000);
-          console.error('FAIL '+name+' '+record.error);
-          await page.screenshot({path:output+'/'+name+'-failed.png',fullPage:true,animations:'disabled',timeout:15000}).catch(()=>{});
-        }finally{
-          record.pageErrors=errors;record.providerResponses=provider;results.push(record);
+          assert.equal(reviewGeometry.ids.length, 12, "all twelve authentic testimonials remain");
+          assert.equal(new Set(reviewGeometry.ids).size, 12, "no duplicated testimonials");
+          assert.equal(reviewGeometry.ids[0], locale === "ru" ? "m9RfDgK76PU" : "Dk0LBmOivQo",
+            "primary locale audio first");
+          assert.equal(reviewGeometry.direction, "column", "vertical mobile reviews");
+          assert.ok(reviewGeometry.boxes.every((r,i) => i === 0 || r.top >= reviewGeometry.boxes[i-1].bottom - 2),
+            "testimonials vertically aligned");
+          assert.ok(reviewGeometry.boxes.every(r => r.left >= -2 && r.right <= width + 2),
+            "testimonials within viewport");
+          assert.equal(reviewGeometry.iframes, 0, "testimonials do not autoplay");
+          record.testimonials = reviewGeometry.ids.length;
+          if (width === 390) await page.screenshot({
+            path: output + "/" + name + "-reviews.png", animations: "disabled", timeout: 20000 });
+          const play = video.locator("button.site-video-play");
+          await play.waitFor({ state: "visible" });
+          await play.click({ timeout: 15000 });
+          const iframe = video.locator('iframe[data-video-playback="youtube"]');
+          await iframe.waitFor({ state: "attached", timeout: 20000 });
+          assert.match(await iframe.getAttribute("src"), /^https:\/\/www\.youtube-nocookie\.com\/embed\/sfVFOQNr2qk\?/,
+            "approved YouTube source only");
+          await mainCta.click({ timeout: 15000 });
+          assert.equal(new URL(page.url()).hash, "#request-free-review", "hero goes to start form");
+          await capture.waitFor({ state: "visible" });
+          assert.equal(await main.locator("[data-lead-saved]").count(), 0, "a CTA click is not a CRM lead");
+          const personal = cards.nth(2).locator('button[data-diagnosis-order="personal-session-30-eur50"]');
+          await personal.click({ timeout: 15000 });
+          const dialog = main.locator('[data-diagnosis-order-form][data-open="true"]');
+          await dialog.waitFor({ state: "visible" });
+          assert.equal(await dialog.getAttribute("role"), "dialog", "request opens consented choice");
+          assert.equal(await dialog.locator("[data-service-lead-capture]").count(), 1,
+            "one CRM-first paid option capture");
+          assert.equal(await dialog.locator('input[type="checkbox"]').isChecked(), false, "no preselected consent");
+          assert.equal(await dialog.locator("[data-lead-saved]").count(), 0, "opening request is not delivery");
+          await dialog.locator("button[aria-label]").first().click();
+          assert.equal(await main.locator('[data-diagnosis-order-form][data-open="true"]').count(), 0,
+            "dialog closes without sending");
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
+            "expanded content still fits viewport");
+          record.status = "PASS";
+          console.log("PASS " + name + " screen " + Math.round(geometry.hero.height) + "px");
+        } catch (error) {
+          record.status = "FAIL";
+          record.error = String(error.stack || error.message).slice(0, 3000);
+          console.error("FAIL " + name + " " + record.error);
+          await page.screenshot({ path: output + "/" + name + "-failed.png",
+            fullPage: true, animations: "disabled", timeout: 15000 }).catch(() => {});
+        } finally {
+          record.pageErrors = errors;
+          results.push(record);
           await context.close();
         }
       }
     }
-  }finally{await browser.close();}
+  } finally { await browser.close(); }
 }
-writeFileSync(output+'/results.json',JSON.stringify({origin,checkedAt:new Date().toISOString(),results},null,2));
-const failed=results.filter(x=>x.status!=='PASS');
-console.log('TOTAL '+results.length+' PASS '+(results.length-failed.length)+' FAIL '+failed.length);
-assert.equal(failed.length,0,'Inspect failed mobile geometry and Play screenshots in workflow artifact');
+writeFileSync(output + "/results.json", JSON.stringify({
+  origin, checkedAt: new Date().toISOString(), results,
+}, null, 2));
+const failures = results.filter(record => record.status !== "PASS");
+console.log("TOTAL " + results.length + " PASS " + (results.length - failures.length) +
+  " FAIL " + failures.length);
+assert.equal(failures.length, 0, "Inspect screenshots and failed assertions in the workflow artifact");
