@@ -125,8 +125,11 @@ test("Coaching Lounge owns the former scenic first screen and exactly three dist
   const layout = read("components/coaching-lounge-entry.module.css");
   const lounge = read("components/public-coaching-discovery.jsx");
   const ideas = read("components/ideas-discovery.tsx");
-  assert.match(lounge, /<CoachingLoungeEntry locale=\{lang\} \/>/);
+  assert.match(lounge, /<CoachingLoungeEntry locale=\{lang\} selected=\{coachingChoice\} onSelect=\{setCoachingChoice\} \/>/);
   assert.doesNotMatch(lounge, /<CoachingLiveSessionCapture/);
+  assert.match(lounge, /data-coaching-human-to-intake/);
+  assert.match(lounge, /onClick=\{\(\)=>setCoachingChoice\("session"\)\}/);
+  assert.match(entry, /onSelect\(offer\.id as Choice\)/);
   assert.match(entry, /data-coaching-first-screen/);
   assert.match(entry, /hero-olive-incense\.webp/);
   assert.match(entry, /data-coaching-three-paths/);
