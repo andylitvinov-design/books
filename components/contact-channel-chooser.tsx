@@ -132,6 +132,8 @@ type Props = {
   quick?: boolean;
   /** One-step phone + WhatsApp / Telegram handoff; never show the sign-up/Google panel. */
   compactPhone?: boolean;
+  /** Keep the original request button but reveal the compact phone-only form. */
+  compactTrigger?: boolean;
   /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
   stayAfterSave?: boolean;
   resetKey?: string;
@@ -141,7 +143,7 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, compactPhone = false, stayAfterSave = false, resetKey, publicTopic,
+  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -219,6 +221,13 @@ export function ContactChannelChooser({
       : panelRef.current;
     target?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
   }, [open, saved, quick, compactPhone]);
+
+  // An opened short form must remain reachable above the iPhone bottom bar.
+  useEffect(() => {
+    if (!compactPhone || !compactTrigger || !open) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    panelRef.current?.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+  }, [compactPhone, compactTrigger, open, saved]);
 
   const referredWhatsappUrl = withPaidAdReferral(
     withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
@@ -399,8 +408,20 @@ export function ContactChannelChooser({
 
   if (compactPhone) {
     return (
-      <div className={styles.compactPhone} data-contact-channel-chooser data-reiki-phone-enquiry>
-        {!saved ? (
+      <div className={[styles.compactPhone, compactTrigger ? styles.compactPhoneToggle : ""].filter(Boolean).join(" ")}
+        data-contact-channel-chooser data-reiki-phone-enquiry data-compact-phone-trigger={compactTrigger ? "true" : undefined}>
+        {compactTrigger ? (
+          <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
+            aria-expanded={open} aria-controls={panelId} data-contact-order
+            onClick={() => setOpen((value) => !value)}>
+            <MessageCircle size={20} aria-hidden="true" />
+            <span>{label || c.order}</span>
+            <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
+          </button>
+        ) : null}
+        <div ref={panelRef} id={panelId} className={compactTrigger ? styles.compactTogglePanel : undefined}
+          hidden={compactTrigger && !open}>
+          {!saved ? (
           <form className={styles.compactPhoneForm} onSubmit={event => event.preventDefault()}>
             <div className={styles.compactPhoneField}>
               <label htmlFor={panelId + "-phone"}>{c.compactPhoneLabel}</label>
@@ -454,6 +475,7 @@ export function ContactChannelChooser({
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
           </div>
         )}
+        </div>
       </div>
     );
   }
