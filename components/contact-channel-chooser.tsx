@@ -50,6 +50,8 @@ const copy = {
     compactPhoneLabel: "Phone number", compactPhoneError: "Enter your international phone number.",
     compactSaved: "Request saved. Review the message and tap Send in your chat.",
     compactHandoff: "Chat did not open automatically. Use a button below.",
+    expressQuestion: "What would you like to explore? (optional)",
+    expressHint: "One or two sentences. Please avoid medical records, symptoms, or test results.",
   },
   ru: {
     order: "Оставить заявку",
@@ -83,6 +85,8 @@ const copy = {
     compactPhoneLabel: "Номер телефона", compactPhoneError: "Введите номер телефона с кодом страны.",
     compactSaved: "Заявка сохранена. Проверьте сообщение и нажмите «Отправить» в чате.",
     compactHandoff: "Чат не открылся автоматически. Нажмите кнопку ниже.",
+    expressQuestion: "В чём суть вашего вопроса? (необязательно)",
+    expressHint: "Одно-два предложения. Не указывайте симптомы, анализы и результаты тестов.",
   },
   es: {
     order: "Solicitar plaza",
@@ -116,6 +120,8 @@ const copy = {
     compactPhoneLabel: "Número de teléfono", compactPhoneError: "Introduce tu teléfono con prefijo internacional.",
     compactSaved: "Solicitud guardada. Revisa el mensaje y pulsa Enviar en el chat.",
     compactHandoff: "El chat no se abrió. Usa un botón de abajo.",
+    expressQuestion: "¿Cuál es tu consulta? (opcional)",
+    expressHint: "Una o dos frases. Evita síntomas, informes médicos y resultados de pruebas.",
   },
 } as const;
 
@@ -234,6 +240,9 @@ export function ContactChannelChooser({
     publicAdSearch, pathname, locale,
   );
   const originalMessage = new URL(referredWhatsappUrl).searchParams.get("text") || "";
+  // Only the one personal express review gets a brief note in compact phone
+  // capture. Other compact forms keep their approved layout and contract.
+  const expressReview = compactPhone && publicTopic?.startsWith("Express review focus: ");
   const serviceTitle = originalMessage.split("\n")
     .find(line => /^(?:Service|Услуга|Servicio):\s*/i.test(line))
     ?.replace(/^[^:]+:\s*/, "").trim() || "Holistic House service";
@@ -349,7 +358,9 @@ export function ContactChannelChooser({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           operationId: nextId, serviceTitle,
-          description: description.trim() || ((quick || compactPhone) ? publicTopic?.trim() || "" : ""),
+          description: expressReview
+            ? [publicTopic?.trim() || "", ...(description.trim() ? ["Initial question: " + description.trim()] : [])].join("\n")
+            : description.trim() || ((quick || compactPhone) ? publicTopic?.trim() || "" : ""),
           sourcePath: pathname, locale,
           contact: { displayName: displayName.trim(), email: usePhone ? "" : email.trim(), phone: usePhone ? cleanedPhone : "" },
           contactConsent: consent, website,
@@ -430,6 +441,13 @@ export function ContactChannelChooser({
                   setPhone(value); setError(""); operationId.current = null;
                 }} />
             </div>
+            {expressReview && <label className={styles.compactQuestion}>
+              <span>{c.expressQuestion}</span>
+              <textarea rows={2} maxLength={300} value={description} disabled={busy}
+                placeholder={c.expressHint}
+                onChange={event => { setDescription(event.target.value); setError(""); operationId.current = null; }} />
+              <small>{c.expressHint}</small>
+            </label>}
             <label className={styles.compactConsent}>
               <input type="checkbox" checked={consent} required disabled={busy}
                 onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
