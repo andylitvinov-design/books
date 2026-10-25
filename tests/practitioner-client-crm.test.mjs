@@ -275,5 +275,11 @@ test('viewed UI is explicit, scoped to visible messages, not a fake provider rea
   assert.match(master,/newMessagesCount=groups\.reduce/)
   assert.match(master,/group\.newMessages>0/)
   assert.match(master,/onViewed=\{\(\)=>onRefresh\?\.\(\)\}/)
-  assert.doesNotMatch(ui,/webpush|sendOneMessengerMessage|setInterval\(/i)
+  // A single open conversation may refresh every 60s while visible and online;
+  // this is not a provider receipt or a background/global directory poll.
+  assert.doesNotMatch(ui,/webpush|sendOneMessengerMessage/i)
+  assert.match(ui,/window\.setInterval\(\(\)=>\{/)
+  assert.match(ui,/document\.visibilityState==='visible'&&navigator\.onLine!==false/)
+  assert.match(ui,/},60000\)/)
+  assert.match(ui,/window\.clearInterval\(timer\)/)
 })
