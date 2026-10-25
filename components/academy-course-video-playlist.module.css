@@ -122,7 +122,7 @@
 .compact .playerPane :global(.academy-video-choice){max-width:100%;min-width:0}
 .compact .playerPane :global(.academy-video-poster),
 .compact .playerPane :global(.academy-video-frame){aspect-ratio:16/9;max-width:100%}
-.compact .playerPane :global(.academy-video-direct-link){display:inline-flex;align-items:center;min-height:25px;font-size:11px}
+.compact .playerPane :global(.academy-video-direct-link){position:absolute;top:7px;right:8px;z-index:2;display:inline-flex;align-items:center;min-height:30px;margin:0;padding:5px 8px;border-radius:8px;background:#fffaf3eb;box-shadow:0 3px 14px #35231625;font-size:11px}
 @media(max-width:720px){
   .compact .layout{gap:0}
   .compact .sequence{display:none}
