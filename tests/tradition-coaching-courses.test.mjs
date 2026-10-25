@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {TRADITION_COURSES,traditionCourse,traditionBySlug,traditionEndcaps} from '../lib/personal-coaching/traditions.js'
+import {TRADITION_STAGE_KEYS,traditionStages,traditionStageGuide,traditionStageImage,traditionStageSource} from '../lib/personal-coaching/tradition-visuals.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 test('two course templates do not alias GROW or each other and have 11/10 screens',()=>{
   assert.deepEqual(TRADITION_COURSES.map(item=>item.slug),['egyptian','greek'])
@@ -122,4 +123,54 @@ test('lesson footer stays visible on 320–430px phones while the question scrol
  const base=source('components/app/personal-coaching.module.css')
  assert.match(base,/\.footer\{position:sticky/)
  assert.match(base,/safe-area-inset-bottom/)
+})
+
+
+test('author source level guides cover all eight Egyptian bodies and eight Greek principles with distinct historic photographs',()=>{
+ const expected={
+  egyptian:['ka','ba','ib','sah','haibit','hu','ren','sekhem'],
+  greek:['epithymia','thymos','logos','nous','eidos','idea','daimon','telos']
+ }
+ for(const [slug,levels] of Object.entries(expected)){
+   assert.deepEqual(TRADITION_STAGE_KEYS[slug],levels)
+   const stages=traditionStages(slug)
+   assert.equal(stages.length,8)
+   assert.equal(new Set(stages.map(x=>x.photo.file)).size,8)
+   assert.equal(traditionStageGuide(slug,'start').id,levels[0])
+   assert.equal(traditionStageGuide(slug,'finish').id,levels[7])
+   assert.equal(traditionStageGuide(slug,'unrecognized'),null)
+   for(const stage of stages){
+     assert.equal(traditionStageGuide(slug,stage.id),stage)
+     assert.match(traditionStageImage(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//)
+     assert.match(traditionStageSource(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/)
+     assert.ok(stage.photo.file.endsWith('.jpg')||stage.photo.file.endsWith('.JPG')||stage.photo.file.endsWith('.png'))
+     assert.ok(stage.photo.credit.length>=4)
+     assert.ok(stage.photo.license.length>=3)
+     for(const locale of ['en','ru','es']){
+       assert.ok(stage.title[locale].length>=7,slug+' '+stage.id+' '+locale+' title')
+       assert.ok(stage.description[locale].length>=65,slug+' '+stage.id+' '+locale+' context')
+       assert.ok(stage.focus[locale].length>=15,slug+' '+stage.id+' '+locale+' author question')
+     }
+   }
+ }
+})
+test('stages are illustrated before the question and shown in a pre-course map without changing persistence',()=>{
+ const component=source('components/app/tradition-coaching.jsx')
+ const css=source('components/app/tradition-coaching.module.css')
+ const guide=source('lib/personal-coaching/tradition-visuals.js')
+ assert.match(component,/data-tradition-stage-overview/)
+ assert.match(component,/traditionStages\(def\.slug\)\.map/)
+ assert.match(component,/entryStep==='roadmap'/)
+ assert.match(component,/TraditionStageArt stage=\{stageGuide\}/)
+ assert.ok(component.indexOf('TraditionStageArt stage={stageGuide}')<component.indexOf('question.question?.[lang]</h1>'))
+ assert.match(component,/referrerPolicy="no-referrer"/)
+ assert.match(component,/loading="lazy"/)
+ assert.match(component,/rel="noopener noreferrer"/)
+ assert.match(css,/\.roadmapList\{[^}]*overflow-y:auto/)
+ assert.match(css,/\.stageCard/)
+ assert.match(css,/@media\(max-width:380px\)/)
+ assert.match(css,/\[data-tradition-coaching="egyptian"\]/)
+ assert.match(css,/\[data-tradition-coaching="greek"\]/)
+ assert.doesNotMatch(component,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+ assert.doesNotMatch(guide,/fetch\(|sessionStorage|localStorage|account_id|payload_ciphertext/)
 })
