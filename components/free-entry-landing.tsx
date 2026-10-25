@@ -435,7 +435,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         </section>
 
         {kind === "situation" ? (
-          <FreeDiagnosisOffers locale={locale} intro={
+          <FreeDiagnosisOffers locale={locale} compact intro={
             <>
               <section className={styles.reviewOutcome} id="what-you-get" aria-labelledby="free-outcomes-title">
                 <div className={styles.reviewOutcomePhoto}><Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 720px) 100vw, 40vw" /></div>
