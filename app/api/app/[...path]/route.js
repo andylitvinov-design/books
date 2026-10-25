@@ -82,12 +82,12 @@ export const runtime = 'nodejs'
 export const preferredRegion = 'yul1'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update',revision=null,practitionerId=null}={})=>{
+const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update',revision=null,practitionerId=null,messageId=null}={})=>{
   // A committed booking status change is the source of truth. Notifications
   // contain only neutral text; private goals, photos and contacts stay in Cabinet.
   after(async()=>{
     try{
-      const result=await createPractitionerClientMessages(config).send(actor,{
+      const result=messageId?{id:messageId,duplicate:false}:await createPractitionerClientMessages(config).send(actor,{
         requestId,operationId:randomUUID(),visibility:'participants',
         text:recipient==='client'
           ? 'Your Holistic House booking has an update. Open your secure Cabinet for details.'
@@ -97,15 +97,18 @@ const notifyBookingParticipants=(config,actor,requestId,recipient,{event='update
       })
       if(result.duplicate===false){
         const messageId=result.id
-        if(recipient==='client')await Promise.allSettled([
+        const outcomes=await Promise.allSettled(recipient==='client'?[
           dispatchClientMessagePush(config,messageId),
           dispatchNativeClientMessagePush(config,messageId),
           dispatchClientTelegramNotification(config,messageId),
-        ])
-        else await Promise.allSettled([
+        ]:[
           dispatchPractitionerMessagePush(config,messageId),
           dispatchClientTelegramNotification(config,messageId),
         ])
+        if(outcomes.some(outcome=>outcome.status==='rejected'||
+          (outcome.value?.attempted>0&&outcome.value?.accepted<outcome.value.attempted)||
+          (outcome.value?.claimed>0&&outcome.value?.accepted<outcome.value.claimed)))
+          console.error('HH_BOOKING_EXTERNAL_NOTIFICATION_UNCONFIRMED')
       }
     }catch{
       // A neutral error code for operations, never a sensitive request payload.
@@ -931,8 +934,10 @@ async function handle(request, { params }) {
       if(result.bookingNotice===true)
         notifyBookingParticipants(config,actor,result.id,'master',{
           event:'new',revision:result.revision,practitionerId:result.practitionerId,
+          messageId:result.bookingMessageId,
         })
       delete result.bookingNotice
+      delete result.bookingMessageId
       return json(result,201)
     }
     if (path[0] === 'requests' && path.length === 2) {

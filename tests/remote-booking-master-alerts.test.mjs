@@ -8,9 +8,11 @@ test('first remote booking creates exactly one master arrival event; idempotent 
   const repo = read('lib/app/repository.js')
   const route = read('app/api/app/[...path]/route.js')
   assert.match(repo, /if \(prior\) \{[\s\S]*?return requestView\(prior, config\)/)
-  assert.match(repo, /return \{ \.\.\.requestView\(row, config\), \.\.\.\(remoteBooking \? \{ bookingNotice: true \} : \{\}\) \}/)
+  assert.match(repo, /bookingNotice: true, bookingMessageId: id/)
   assert.match(route, /if \(joined === 'requests'\) \{[\s\S]*?repo\.createRequest\(actor,body\)[\s\S]*?notifyBookingParticipants\(config,actor,result\.id,'master',\{[\s\S]*?event:'new'/)
   assert.match(route, /delete result\.bookingNotice/)
+  assert.match(route, /messageId:result\.bookingMessageId/)
+  assert.match(route, /delete result\.bookingMessageId/)
 })
 
 test('master and client updates create only neutral in-app notices, with opt-in push or Telegram', () => {
