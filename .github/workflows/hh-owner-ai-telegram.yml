@@ -10,6 +10,12 @@ on:
       - 'lib/practitioners/council-free-models.mjs'
       - 'lib/app/client-telegram-transport.js'
       - 'app/api/app/notification-channels/telegram/**'
+      - 'app/api/admin/materials/telegram/**'
+      - 'app/admin/materials/telegram/**'
+      - 'lib/practitioners/owner-telegram-audio-*'
+      - 'components/admin-telegram-audio.*'
+      - 'tests/owner-telegram-audio-inbox.test.mjs'
+      - 'supabase/migrations/*telegram_owner_audio_inbox.sql'
       - 'components/app/customer-telegram-bot-setup.jsx'
       - 'tests/practitioner-owner-ai-telegram.test.mjs'
       - 'lib/practitioners/owner-ai-bootstrap.mjs'
@@ -45,6 +51,9 @@ jobs:
           node --check app/api/internal/practice-telegram-digest/route.js
           node --check lib/practitioners/owner-ai-telegram.mjs
           node --check lib/practitioners/owner-ai-telegram-service.js
+          node --check lib/practitioners/owner-telegram-audio-model.mjs
+          node --check lib/practitioners/owner-telegram-audio-service.js
+          node --check app/api/admin/materials/telegram/route.js
           node --check lib/practitioners/owner-ai-provider-settings.js
           node --check lib/practitioners/council-free-models.mjs
           node --check lib/app/client-telegram-transport.js
@@ -52,4 +61,5 @@ jobs:
           node --check app/api/app/notification-channels/telegram/setup/route.js
       - name: Owner-only chat, free-cost model verification and customer pairing regressions
         run: |
+          node --test tests/owner-telegram-audio-inbox.test.mjs
           node --test tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-provider-readiness.test.mjs tests/practitioner-owner-ai-bootstrap.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/practitioner-council-free-models.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/practitioner-telegram-hub.test.mjs
