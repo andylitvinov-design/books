@@ -1,9 +1,10 @@
-import {NextResponse} from 'next/server'
+import {NextResponse,after} from 'next/server'
 import {getAppConfig} from '@/lib/app/config'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {verifyClientTelegramSecret} from '@/lib/app/client-telegram-policy'
 import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
+import {parseOwnerAiUpdate} from '@/lib/practitioners/owner-ai-telegram.mjs'
 import {receiveOwnerTelegramAudioWebhook} from '@/lib/practitioners/owner-telegram-audio-service'
 
 export const runtime='nodejs'
@@ -28,6 +29,22 @@ export async function POST(request){
   const audio=await receiveOwnerTelegramAudioWebhook(config,update)
   if(audio.handled){
     if(audio.retry)return NextResponse.json({ok:false},{status:503,headers:PRIVATE_HEADERS})
+    return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+  }
+  // Do not keep Telegram waiting for several independent provider replies
+  // and one real synthesis. The signed, owner-private update is already
+  // authenticated by this webhook; numeric owner pairing is rechecked inside.
+  // Next.js after() keeps work alive up to maxDuration after the quick 200.
+  if(parseOwnerAiUpdate(update)){
+    after(async()=>{
+      try{
+        const result=await receiveOwnerAiTelegramWebhook(config,update)
+        if(!result.handled)await receiveClientTelegramWebhook(config,update)
+      }catch{
+        // No secrets, update text, client data or chat ID in logs.
+        console.error('HH_OWNER_AI_AFTER_DELIVERY_FAILED')
+      }
+    })
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }
   const owner=await receiveOwnerAiTelegramWebhook(config,update)
