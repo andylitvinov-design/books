@@ -197,7 +197,8 @@ export default function PersonalCoaching({locale='en',accountId}){
     setIndex(next)
     const saved=values?.[items[next]?.id]
     setDraft(typeof saved==='string'?saved:'')
-    setShowOwnWords(typeof saved==='string'&&saved.length>0&&!saved.startsWith('choice:'))
+    setShowOwnWords(typeof saved==='string'&&saved.length>0&&!saved.startsWith('choice:')&&
+      !(items[next]?.examples?.[lang]||[]).includes(saved))
     if(questionScrollRef.current)questionScrollRef.current.scrollTop=0
     setDictating(false)
     setPendingFollowup(null);setReflectionDraft('')
@@ -234,7 +235,8 @@ export default function PersonalCoaching({locale='en',accountId}){
       setIndex(next)
       const answer=value.course?.current?.answers?.[list[next]?.id]
       setDraft(typeof answer==='string'?answer:'')
-      setShowOwnWords(typeof answer==='string'&&answer.length>0&&!answer.startsWith('choice:'))
+      setShowOwnWords(typeof answer==='string'&&answer.length>0&&!answer.startsWith('choice:')&&
+        !(list[next]?.examples?.[lang]||[]).includes(answer))
       setError('')
     }).catch(()=>{if(live)setError(t.loadError)})
       .finally(()=>{if(live)setLoading(false)})
@@ -552,20 +554,20 @@ export default function PersonalCoaching({locale='en',accountId}){
             {quickChoices&&!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
               {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy||dictating}
                 className={draft.trim()===option?styles.chosen:undefined} aria-pressed={draft.trim()===option}
-                onClick={()=>{setDraft(option);setError('');setNotice('')}}>{option}</button>)}
+                onClick={()=>{setDraft(option);setShowOwnWords(false);setError('');setNotice('')}}>{option}</button>)}
             </div>}
             {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
             {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
-            {quickChoices&&question.type&&<button type="button" className={styles.ownWordsToggle}
+            {quickChoices&&<button type="button" className={styles.ownWordsToggle}
               aria-controls="hh-personal-coach-own-words" aria-expanded={showOwnWords}
               onClick={()=>setShowOwnWords(value=>!value)} disabled={busy||dictating}>
               {langCopy.orWrite}<span aria-hidden="true">{showOwnWords?'−':'+'}</span>
             </button>}
-            <div id="hh-personal-coach-own-words" hidden={quickChoices&&Boolean(question.type)&&!showOwnWords}>
+            <div id="hh-personal-coach-own-words" hidden={quickChoices&&!showOwnWords}>
               <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-                {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
+                {quickChoices?langCopy.orWrite:t.hint}</label>
               <textarea id="hh-personal-coach-answer" className={styles.textarea}
                 data-coaching-open-reflection={!quickChoices?'true':undefined}
                 value={draft.startsWith('choice:')?'':draft}
