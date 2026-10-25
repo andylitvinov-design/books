@@ -243,3 +243,9 @@
   .compactPhoneToggle .compactTogglePanel { padding:11px; margin-top:7px; }
   .compactPhoneToggle .compactChannels :is(button,a) { min-height:46px; }
 }
+
+/* The existing compact consent form exposes only a short optional review note. */
+.compactQuestion { display:grid;gap:5px;min-width:0;font:700 12px/1.4 Arial,Helvetica,sans-serif;color:#315668; }
+.compactQuestion textarea { display:block;box-sizing:border-box;width:100%;min-height:70px;max-height:160px;padding:10px 11px;resize:vertical;border:1px solid #b9ccd6;border-radius:10px;background:#fff;color:#2c4250;font:400 16px/1.45 Arial,Helvetica,sans-serif;overflow-wrap:break-word; }
+.compactQuestion small { font:500 11px/1.4 Arial,Helvetica,sans-serif;color:#677e8b; }
+.compactQuestion textarea:focus-visible { outline:3px solid #2169bd;outline-offset:2px; }
