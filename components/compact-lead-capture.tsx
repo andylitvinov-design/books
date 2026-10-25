@@ -109,15 +109,18 @@ export function CompactLeadCapture({
   const [busy, setBusy] = useState<Channel | null>(null);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
+  const [submittedFormat, setSubmittedFormat] = useState<string | null>(null);
   const operationId = useRef<string | null>(null);
 
   function channelUrl(referenceCode: string, channel: Channel) {
+    // Keep the messenger receipt aligned with the format already committed to CRM.
+    const receiptFormat = submittedFormat ?? selectedFormat;
     // Never put visitor contact, private answers, or health details in the messenger draft.
     const whatsapp = whatsappEnquiryUrl({
       locale,
       service: serviceTitle,
       request: t.message + " " + t.reference + ": " + referenceCode,
-      option: formatOptions?.length && selectedFormat ? selectedFormat : undefined,
+      option: formatOptions?.length && receiptFormat ? receiptFormat : undefined,
       pagePath: sourcePath || pathname || "/" + locale + "/services",
     });
     return channel === "whatsapp" ? whatsapp : telegramEnquiryUrlFromWhatsApp(whatsapp);
@@ -164,6 +167,7 @@ export function CompactLeadCapture({
         throw new Error("ENQUIRY_NOT_SAVED");
       }
       committedReference = result.referenceCode;
+      setSubmittedFormat(selectedFormat);
       setReference(committedReference);
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
