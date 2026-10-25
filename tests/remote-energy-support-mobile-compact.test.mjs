@@ -67,7 +67,7 @@ test("one-screen EN/RU/ES finder has five approved categories, an optional note 
   const jsx = read("components/remote-energy-support-booking.tsx");
   const css = read("components/remote-energy-support-booking.module.css");
   const options = jsx.slice(jsx.indexOf("const FOCUSES = ["), jsx.indexOf("] as const;", jsx.indexOf("const FOCUSES = [")));
-  assert.equal((options.match(/\\b id:/g) || []).length, 5, "exactly five selectable sectors");
+  assert.equal((options.match(/\bid:/g) || []).length, 5, "exactly five selectable sectors");
   for (const approved of ["Inner balance and calm", "Grounding and body awareness",
     "Connection and relationships", "Energy and resources", "Work and money"]) {
     assert.ok(options.includes(approved), "missing approved sector: " + approved);
@@ -78,13 +78,13 @@ test("one-screen EN/RU/ES finder has five approved categories, an optional note 
     assert.ok(jsx.includes(localized), "missing localized copy: " + localized);
   }
   assert.match(jsx, /data-remote-find-options/);
-  assert.match(jsx, /aria-controls="remote-results" aria-expanded=\\{showResults\\}/);
-  assert.match(jsx, /hidden=\\{!showResults\\}/);
-  assert.match(jsx, /onClick=\\{findOptions\\}/);
-  assert.match(jsx, /document\\.getElementById\\("remote-practitioners-title"\\)/);
-  assert.match(jsx, /if \\(!goal\\) \\{/);
-  assert.match(css, /\\.focusChips\\{display:grid;grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
-  assert.match(css, /\\.focusChips button\\{[^}]*min-height:44px/);
-  assert.match(css, /\\.findButton\\{[^}]*min-height:48px/);
-  assert.match(css, /\\.results\\[hidden\\]\\{display:none\\}/);
+  assert.match(jsx, /aria-controls="remote-results" aria-expanded=\{showResults\}/);
+  assert.match(jsx, /hidden=\{!showResults\}/);
+  assert.match(jsx, /onClick=\{findOptions\}/);
+  assert.match(jsx, /document\.getElementById\("remote-practitioners-title"\)/);
+  assert.match(jsx, /if \(!goal\) \{/);
+  assert.match(css, /\.focusChips\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.focusChips button\{[^}]*min-height:44px/);
+  assert.match(css, /\.findButton\{[^}]*min-height:48px/);
+  assert.match(css, /\.results\[hidden\]\{display:none\}/);
 });
