@@ -20,6 +20,7 @@ import { createDailyCourseRepository } from '@/lib/app/growth-daily'
 import { createEnergyworkCourseRepository } from '@/lib/academy/energywork-course-repository'
 import { readReikiInitiationPhoto, saveReikiInitiationPhoto, REIKI_INITIATION_PHOTO_MAX_BYTES } from '@/lib/academy/reiki-initiation-photo'
 import { createPractitionerRepository } from '@/lib/practitioners/repository'
+import { createExpressReportRepository } from '@/lib/practitioners/express-report-repository'
 import {createPractitionerClientMessages} from '@/lib/practitioners/client-messages'
 import {sendBookingMasterEmail} from '@/lib/practitioners/booking-master-email'
 import {dispatchClientMessagePush,dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
@@ -803,6 +804,12 @@ async function handle(request, { params }) {
         status:streamed.status,headers:streamed.headers,
       }))
     }
+    if (joined === 'express-reports' && method === 'GET')
+      return json(await createExpressReportRepository(config).listForClient(actor))
+    if (joined === 'practice/express-reports' && method === 'GET') {
+      await practiceRepo.requireActivated(actor)
+      return json(await createExpressReportRepository(config).listForPractitioner(actor))
+    }
     if (joined === 'practice' && method === 'GET') {
       const workspace = await practiceRepo.getMyPractice(actor)
       let newServices = null
@@ -953,6 +960,18 @@ async function handle(request, { params }) {
     // All other master tools require a submitted profile and first offering.
     if (path[0] === 'practice' && !['onboarding','profile','services'].includes(path[1]))
       await practiceRepo.requireActivated(actor)
+    if (path[0] === 'practice' && path[1] === 'express-reports') {
+      await consumeRate(config,{op:'express-report-write',actor:actor.id},18,3600)
+      const reports = createExpressReportRepository(config)
+      if (path.length === 2) return json(await reports.create(actor,body),201)
+      if (path.length === 3) {
+        requireUUID(path[2])
+        if (body.action === 'publish' || body.action === 'revoke')
+          return json(await reports.changeStatus(actor,path[2],body))
+        return json(await reports.edit(actor,path[2],body))
+      }
+      throw new AppError('NOT_FOUND',404)
+    }
     if (joined === 'practice/video-upload/intent') return json(await createPresentationUploadIntent(config, actor, body), 201)
     if (joined === 'practice/video-upload/complete') return json(await completePresentationUpload(config, actor, body))
     if (joined === 'practice/onboarding') return json(await practiceRepo.onboarding(actor, body))
