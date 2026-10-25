@@ -761,7 +761,7 @@ async function handle(request, { params }) {
         if (!await store.findClientById(body.clientId)) throw new AppError('NOT_FOUND', 404)
       }
       const response = json({ redirectUrl: destination })
-      if (!issueTrustedAdminSession(response, { secure: !config.test }))
+      if (!await issueTrustedAdminSession(response, { actor, secure: !config.test }))
         throw new AppError('PRACTITIONER_UNAVAILABLE', 503)
       return response
     }
