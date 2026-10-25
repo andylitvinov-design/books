@@ -113,7 +113,7 @@ test("free offer corner markers cover all seven sections without mislabeling pai
   assert.match(component, /data-home-offer-free=\{isFree \? "true" : undefined\}/);
   assert.match(component, /\{isFree && <span className=\{styles\.offerFreeBadge\}>\{freeBadgeLabels\[locale\]\}<\/span>\}/);
   assert.match(css, /\.offerFreeBadge\s*\{[\s\S]*?position: absolute;[\s\S]*?top: 0;[\s\S]*?right: 0;/);
-  assert.match(css, /\.offer\[data-home-offer-free="true"\] \.offerBody/);
+  assert.match(css, /\.offer\[data-home-offer-free="true"\] \.offerMeta/);
   assert.match(css, /@media \(max-width: 640px\)[\s\S]*?\.offerFreeBadge/);
   assert.match(css, /background: #be2940/);
   assert.match(css, /color: #fff/);
@@ -147,10 +147,10 @@ test("mobile actions are inline, compact, and accessible for EN/RU/ES at 320–4
   assert.doesNotMatch(mobile, /\.offerControls \{[^}]*flex-direction: column/);
   assert.ok(mobile.includes(".offerSecondary { align-self: stretch; min-width: 0; min-height: 44px;"));
   assert.ok(mobile.includes(".offerPrimary { align-self: stretch; width: 100%; min-width: 0; min-height: 44px;"));
-  assert.ok(mobile.includes("min-height: 158px;"));
-  assert.ok(mobile.includes(".photo { align-self: stretch; height: auto; min-height: 144px;"));
-  assert.ok(narrow.includes("min-height: 142px;"));
-  assert.ok(narrow.includes(".photo { min-height: 130px; }"));
+  assert.ok(mobile.includes("min-height: 150px;"));
+  assert.ok(mobile.includes(".photo { align-self: stretch; height: auto; min-height: 148px;"));
+  assert.ok(narrow.includes("min-height: 138px;"));
+  assert.ok(narrow.includes(".photo { min-height: 136px; }"));
   assert.ok(narrow.includes(".offerControls { gap: 4px; }"));
   assert.ok(component.includes("aria-label={expanded ? detailLabels[locale].close : detailLabels[locale].open}"));
   assert.ok(component.includes("detailLabels[locale].mobileClose"));
@@ -194,3 +194,29 @@ test("full-height photo stays left and Details → Request stays right at 320–
   assert.match(css, /\.offer\[data-expanded="true"\]/);
   assert.doesNotMatch(css, /\.offerAction/);
 })
+
+test("all home cards use the approved compact Tests photo-card visual on EN/RU/ES", () => {
+  const eyebrows = catalog("cardEyebrows");
+  for (const locale of ["en", "ru", "es"]) {
+    for (const stage of expected) {
+      for (const offer of copy[locale].modules[stage].offers) {
+        assert.ok(eyebrows[locale][offer.id], locale + " missing a card category for " + offer.id);
+      }
+    }
+  }
+  assert.match(component, /className=\{styles\.offerMeta\}/);
+  assert.match(css, /\.offer \{[\s\S]*?grid-template-areas: "photo content";[\s\S]*?padding: 0;/);
+  assert.match(css, /\.photo \{[\s\S]*?border-radius: 17px 0 0 17px;/);
+  const secondary = css.split(".offerSecondary {")[1].split("}")[0];
+  const primary = css.split(".offerPrimary {")[1].split("}")[0];
+  assert.match(secondary, /border: 0;/);
+  assert.match(secondary, /background: transparent;/);
+  assert.match(secondary, /text-decoration: underline;/);
+  assert.doesNotMatch(secondary, /border: 1px/);
+  assert.match(primary, /background: linear-gradient\(108deg, #07899c 0%, #305a93 100%\)/);
+  assert.match(primary, /border: 1px solid #187c9f/);
+  assert.match(css, /\.offer\[data-expanded="true"\] \{ grid-template-areas: "photo content" "more more"/);
+  assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(css, /@media \(max-width: 350px\)/);
+  assert.match(css, /\.offerControls \{ display: grid; grid-template-columns: max-content minmax\(0, 1fr\);/);
+});
