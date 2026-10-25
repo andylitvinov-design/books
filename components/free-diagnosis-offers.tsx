@@ -4,9 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
-import { FreeDiagnosticStart } from "@/components/free-diagnostic-start";
+import { FreeDiagnosisShortForm } from "@/components/free-diagnosis-short-form";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-diagnosis-offers.module.css";
 
@@ -40,8 +41,8 @@ const copy: Record<PublicLocale, {
     heading: "Three ways to get clarity",
     lead: "The first two options are free written reflections. The third is a 30-minute personal session for €50.",
     details: "Details", order: "Request",
-    formTitle: "Request your diagnosis or session",
-    formLead: "Select one option, leave a contact and choose WhatsApp or Telegram. Your request is saved for Andrey to reply; it is not a confirmed appointment or payment.",
+    formTitle: "Request your review or session",
+    formLead: "Enter your phone and choose WhatsApp or Telegram. This is not a confirmed appointment or payment.",
     formLabel: "Which option would you like?",
     safety: "Wu Xing is a traditional symbolic Five Elements framework for reflection, not a medical diagnosis or treatment. A request is not a booking; the €50 personal session is arranged and paid for separately.",
     offers: [
@@ -75,8 +76,8 @@ const copy: Record<PublicLocale, {
     heading: "Три способа разобраться в ситуации",
     lead: "Первые два варианта — бесплатные письменные разборы. Третий — личная консультация 30 минут за €50.",
     details: "Детали", order: "Заказать",
-    formTitle: "Заказать диагностику или консультацию",
-    formLead: "Выберите вариант, оставьте контакт и нажмите WhatsApp или Telegram. Заявка сохранится для ответа Андрея. Это ещё не запись и не оплата.",
+    formTitle: "Заказать разбор или консультацию",
+    formLead: "Укажите телефон и выберите WhatsApp или Telegram. Это ещё не запись и не оплата.",
     formLabel: "Какой вариант вам нужен?",
     safety: "У-Син (Пять стихий) — традиционная символическая модель для самоисследования, а не медицинская диагностика или лечение. Запрос не подтверждает запись; консультация за €50 согласовывается и оплачивается отдельно.",
     offers: [
@@ -111,7 +112,7 @@ const copy: Record<PublicLocale, {
     lead: "Las dos primeras son revisiones escritas gratuitas. La tercera es una consulta personal de 30 minutos por €50.",
     details: "Detalles", order: "Solicitar",
     formTitle: "Solicita tu revisión o consulta",
-    formLead: "Elige un formato, deja tu contacto y utiliza WhatsApp o Telegram. Tu solicitud se guarda para la respuesta de Andrey; no es una reserva ni un pago confirmado.",
+    formLead: "Deja tu teléfono y elige WhatsApp o Telegram. No es una reserva ni un pago confirmado.",
     formLabel: "¿Qué formato prefieres?",
     safety: "Wu Xing (Cinco Elementos) es un marco simbólico tradicional de reflexión, no un diagnóstico o tratamiento médico. La sesión de €50 requiere una confirmación y un pago por separado.",
     offers: [
@@ -142,13 +143,37 @@ const copy: Record<PublicLocale, {
   },
 };
 
-export function FreeDiagnosisOffers({ locale }: { locale: PublicLocale }) {
+export function FreeDiagnosisOffers({ locale, children }: { locale: PublicLocale; children?: ReactNode }) {
   const t = copy[locale];
   const [selected, setSelected] = useState<OfferId>("situation-written-free");
+  const [phone, setPhone] = useState("");
+
+  // Top and bottom placements share the selected service and phone number.
+  function renderCapture(position: "top" | "bottom") {
+    return (
+      <div className={styles.formWrap} id={position === "bottom" ? "request-free-review" : "start-free-diagnosis"}
+        data-diagnosis-order-form data-diagnosis-placement={position}>
+        {selected === "situation-written-free" ? (
+          <FreeDiagnosisShortForm locale={locale} phone={phone} onPhoneChange={setPhone} />
+        ) : (
+          <CompactLeadCapture locale={locale}
+            serviceTitle={t.offers.find(offer => offer.id === selected)?.title || "Holistic House — diagnosis request"}
+            title={t.formTitle} lead={t.formLead}
+            formatLabel={t.formLabel}
+            formatOptions={t.offers.filter(offer => offer.id !== "situation-written-free")
+              .map(offer => ({ value: offer.id, label: offer.title + " · " + offer.price }))}
+            selectedFormatValue={selected} onFormatChange={(value) => setSelected(value as OfferId)}
+            phoneOnly variant="diagnosis" contactValue={phone} onContactChange={setPhone}
+            disclaimer={t.safety} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <section className={styles.wrap} id="free-diagnosis-options" data-free-diagnosis-options lang={locale}
       aria-labelledby="free-diagnosis-options-title">
+      {renderCapture("top")}
       <header className={styles.heading}>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
         <h2 id="free-diagnosis-options-title">{t.heading}</h2>
@@ -191,19 +216,8 @@ export function FreeDiagnosisOffers({ locale }: { locale: PublicLocale }) {
           </article>
         ))}
       </div>
-      <div className={styles.formWrap} id="request-free-review" data-diagnosis-order-form>
-        {selected === "situation-written-free" ? (
-          <FreeDiagnosticStart locale={locale} />
-        ) : (
-          <CompactLeadCapture locale={locale}
-            serviceTitle={t.offers.find(offer => offer.id === selected)?.title || "Holistic House — diagnosis request"}
-            title={t.formTitle} lead={t.formLead} formatLabel={t.formLabel}
-            formatOptions={t.offers.filter(offer => offer.id !== "situation-written-free")
-              .map(offer => ({ value: offer.id, label: offer.title + " · " + offer.price }))}
-            selectedFormatValue={selected} onFormatChange={(value) => setSelected(value as OfferId)}
-            disclaimer={t.safety} />
-        )}
-      </div>
+      {children}
+      {renderCapture("bottom")}
       <p className={styles.safety}><ShieldCheck size={16} aria-hidden="true" />{t.safety}</p>
     </section>
   );

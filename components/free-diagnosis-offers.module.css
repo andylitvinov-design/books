@@ -29,7 +29,9 @@
 .expanded ul{margin:0 0 8px;padding-left:18px}
 .expanded li+li{margin-top:5px}
 .expanded a{display:inline-flex;align-items:center;gap:6px;color:#8d4158;font-weight:800;text-underline-offset:3px}
-.formWrap{margin:18px 0 0;scroll-margin-top:90px}
+.formWrap{margin:17px 0 0;scroll-margin-top:90px}
+.formWrap[data-diagnosis-placement="top"]{margin:0 0 18px}
+.formWrap[data-diagnosis-placement="bottom"]{margin:19px 0 0}
 .formWrap :global([data-service-lead-capture]){margin:0}
 .safety{display:flex;gap:8px;align-items:flex-start;margin:11px 5px 0;color:#766e66;font-size:11px;line-height:1.55}
 .safety svg{flex:none;margin-top:2px;color:#916b54}

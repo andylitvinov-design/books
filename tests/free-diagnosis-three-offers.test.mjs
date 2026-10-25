@@ -10,7 +10,7 @@ const hub = source("app/[locale]/services/free-consultation/page.tsx");
 const capture = source("components/compact-lead-capture.tsx");
 
 test("both free-diagnosis entry routes reuse one localized three-offer selector, not separate incompatible carts", () => {
-  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} \/>/);
+  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\}>/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /kind !== "situation" \? <CompactLeadCapture/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
@@ -48,12 +48,17 @@ test("three photo-backed horizontal cards expose the correct free and €50 offe
 test("all three offer CTAs select a controlled option in the one consented CRM enquiry form", () => {
   assert.equal((offers.match(/<CompactLeadCapture/g) || []).length, 1);
   assert.match(offers, /selected === "situation-written-free" \? \(/);
-  assert.match(offers, /<FreeDiagnosticStart locale=\{locale\} \/>/);
+  assert.match(offers, /<FreeDiagnosisShortForm locale=\{locale\} phone=\{phone\} onPhoneChange=\{setPhone\} \/>/);
   assert.match(offers, /data-diagnosis-order-form/);
-  const diagnostic = source("components/free-diagnostic-start.tsx");
+  assert.match(offers, /renderCapture\("top"\)/);
+  assert.match(offers, /renderCapture\("bottom"\)/);
+  assert.match(offers, /\{children\}/);
+  assert.match(diagnostic, /type="tel" name="phone"/);
+  assert.doesNotMatch(diagnostic, /<textarea|<select|name="email"|name="topic"/);
+  const diagnostic = source("components/free-diagnosis-short-form.tsx");
   assert.match(diagnostic, /sessionStorage\.setItem\(DIAGNOSTIC_START_KEY/);
   assert.match(diagnostic, /window\.location\.assign\("\/" \+ locale \+ "\/coaching\/intake"\)/);
-  assert.match(diagnostic, /until you explicitly send your completed questionnaire/);
+  assert.match(diagnostic, /until you choose to send your questionnaire/);
   assert.match(offers, /selectedFormatValue=\{selected\}/);
   assert.match(offers, /serviceTitle=\{t\.offers\.find\(offer => offer\.id === selected\)\?\.title/);
   assert.match(offers, /onFormatChange=\{\(value\) => setSelected\(value as OfferId\)\}/);
