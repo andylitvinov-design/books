@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const SOUND_PREFERENCE_KEY = "holistic-house.practice-ocean-sound.v1";
-const OCEAN_LOOP = "/audio/holistic-house-soft-melody-gentle-waves-96s.wav";
+const OCEAN_LOOP = "/audio/holistic-house-soft-melody-gentle-waves-20s.wav";
 
 export type OceanPlaybackStatus = "idle" | "loading" | "playing" | "paused" | "blocked" | "unsupported";
 
@@ -18,8 +18,9 @@ type OceanSoundscape = {
 // AudioContext oscillator. In particular, iPhone silent-mode / embedded Safari
 // can mute WebAudio even while the UI says "Waves on". HTML media playback is
 // more reliable, and play() rejects when the browser blocks it.
-// A 96-second original composition (12 harmonic sections and 48 changing notes) plays during practices;
-// only longer exercises loop after the complete 96-second piece, never a 15/20-second segment.
+// Use the checked-in 20-second original melody/wave loop. It is the actual
+// asset in public/audio; the previous 96-second URL was missing (404).
+// The 2-minute guided exercise loops the track, and playback is optional.
 function createOceanSoundscape(onStatus: (next: OceanPlaybackStatus) => void): OceanSoundscape | null {
   if (typeof window === "undefined" || typeof window.Audio !== "function") return null;
 
