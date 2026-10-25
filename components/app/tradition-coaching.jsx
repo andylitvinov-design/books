@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {ArrowRight,Check,ChevronLeft,LockKeyhole,Trash2,X} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
 import {traditionCourse} from '@/lib/personal-coaching/traditions'
-import {coachingGentleGuide,coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
+import {coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
@@ -44,7 +44,6 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const questions=data?.questions||[]
  const question=questions[index]
  const quickChoices=coachingQuickChoicesAllowed(question,index)
- const gentleGuide=coachingGentleGuide(question,index,questions.length,lang)
  const previousQuestion=questions[index-1]
  const conversationTurn=coachingConversationTurn({
   question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
