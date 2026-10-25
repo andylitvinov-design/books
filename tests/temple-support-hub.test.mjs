@@ -6,7 +6,7 @@ import { safePublicWhatsAppPath } from "../lib/whatsapp-enquiry.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("Temple Support is the seventh public tab and preserves separate Temple Insights", () => {
+test("Holistic Support is the seventh public tab and preserves separate Temple Insights", () => {
   const bar = read("components/mobile-bottom-navigation.tsx");
   const icons = read("components/compact-navigation-icons.ts");
   const css = read("app/ia-v2.css");
@@ -18,7 +18,7 @@ test("Temple Support is the seventh public tab and preserves separate Temple Ins
     assert.equal(links[1].href, "/" + locale + "/services/free-situation-review");
     assert.equal(links[2].href, "/" + locale + "/academy");
     assert.equal(links[6].href, "/" + locale + "/holistic-support");
-    assert.equal(links[6].label, {en:"Temple Support",ru:"Храмовая поддержка",es:"Apoyo del templo"}[locale]);
+    assert.equal(links[6].label, {en:"Holistic Support",ru:"Холистическая поддержка",es:"Apoyo holístico"}[locale]);
     assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "temple");
     assert.equal(activeCompactNavigationId("/" + locale + "/temple-insights"), "temple");
     assert.ok(getSiteNavigation(locale).some(x => x.id === "temple" && x.label === links[6].label));
@@ -28,7 +28,9 @@ test("Temple Support is the seventh public tab and preserves separate Temple Ins
   assert.match(icons, /analysis: Sparkles/);
   assert.match(icons, /courses: BookOpen/);
   assert.match(icons, /temple: Landmark/);
-  assert.match(bar, /temple: 'Temple Support'/);
+  assert.match(bar, /temple: 'Holistic Support'/);
+  for (const label of ["Holistic Support", "Поддержка", "Apoyo holístico"])
+    assert.ok(bar.includes("temple: '" + label + "'"), "missing mobile tab label " + label);
   assert.match(bar, /aria-label=\{item\.ariaLabel\}/);
   assert.match(css, /repeat\(7,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width: 600px\)/);
@@ -50,7 +52,15 @@ test("Holistic Support provides two main areas and six concrete choices", () => 
   assert.match(page, /data-holistic-support/);
   assert.match(page, /data-holistic-insights/);
   assert.match(page, /data-holistic-healing/);
-  assert.match(page, /<nav className=\{styles.primaryNav\}/);
+  assert.match(page, /<section className=\{styles.hero\} data-holistic-first-screen aria-labelledby="holistic-support-title">/);
+  assert.match(page, /<nav className=\{styles.pathControls\} aria-label=\{t.choose\}>/);
+  assert.match(page, /href="#temple-psychic-insights" data-holistic-path="insights"/);
+  assert.match(page, /href="#holistic-healing-support" data-holistic-path="healing"/);
+  assert.equal((page.match(/data-holistic-path=/g) || []).length, 2, "exactly two hero journeys");
+  assert.doesNotMatch(page, /styles\.primaryNav/);
+  assert.match(styles, /\.hero\{[^}]*min-height:clamp\(440px/);
+  assert.match(styles, /\.pathControls a\{[^}]*min-height:62px/);
+  assert.match(styles, /@media\(max-width:650px\)\{[\s\S]*?\.pathControls\{grid-template-columns:1fr/);
   for (const id of ["ai", "express", "master", "energy", "alchemy", "practitioner"])
     assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing " + id);
   assert.doesNotMatch(page, /data-holistic-tradition|styles\.methods|methodOptions|methodPaths/);
