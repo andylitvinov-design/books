@@ -52,12 +52,12 @@ test('Every type of teaching screen uses existing glass typography and safe cont
 })
 
 test('Welcome retains the approved scenic illustration, three compact learning benefits, and teacher option', () => {
-  assert.match(learner, /t\\.fiveLessons/)
-  assert.match(learner, /t\\.welcomeTeacher/)
-  assert.match(learner, /styles\\.welcomeReward/)
-  assert.match(learner, /t\\.shortLessons/)
-  assert.match(learner, /t\\.practicalTasks/)
-  assert.match(learner, /t\\.privateProgress/)
+  assert.match(learner, /t\.fiveLessons/)
+  assert.match(learner, /welcomeTeacher:/)
+  assert.match(learner, /styles\.welcomeReward/)
+  assert.match(learner, /t\.shortLessons/)
+  assert.match(learner, /t\.practicalTasks/)
+  assert.match(learner, /t\.privateProgress/)
   assert.match(learner, /startFree: "Start free program"/)
   assert.match(learner, /startFree: "Начать бесплатный курс"/)
 })
