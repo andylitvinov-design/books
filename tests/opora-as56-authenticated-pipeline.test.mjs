@@ -6,11 +6,12 @@ import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-ski
 import { OPORA_EXPERIENCE_PRE_SAVE_KEYS, OPORA_DAY_ONE_RESTORED_KEYS } from '../lib/inner-growth/course-slide-sequence.js'
 import { oporaExperienceTransferChoices } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
+import {oporaEndingCopy} from '../lib/inner-growth/opora-lesson-outro.js'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const labels = {
-  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Need to think', save: 'Save my practice', receipt: 'Your moment is saved' },
-  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Нужно подумать', save: 'Сохранить мою практику', receipt: 'Ваш момент сохранён' },
+  en: { next: 'Continue', tried: 'I tried it', same: 'About the same', vote: 'Need to think', save: 'Save my practice' },
+  ru: { next: 'Продолжить', tried: 'Я попробовал(а)', same: 'Примерно так же', vote: 'Нужно подумать', save: 'Сохранить мою практику' },
 }
 async function click(player, label) {
   const button = findButton(player.tree, label)
@@ -18,6 +19,16 @@ async function click(player, label) {
   assert.ok(!button.props.disabled)
   await button.props.onClick()
   await player.settle()
+}
+
+function assertReceipt(player, locale, day) {
+  const ending = oporaEndingCopy(locale)
+  const receipt = nodes(player.tree).find(n => n.props?.['data-opora-current-screen'] === 'receipt')
+  assert.ok(receipt, 'Only a confirmed save opens the receipt')
+  assert.ok(nodes(player.tree).some(n => n.props?.['data-opora-lesson-outro'] === 'saved'))
+  assert.equal(textOf(nodes(receipt).find(n => n.type === 'h2')),
+    day === 14 ? ending.congratsFinal : ending.congratsTitle.replace('{day}', String(day)))
+  assert.equal(nodes(player.tree).filter(n => n.props?.role === 'alert').length, 0)
 }
 
 for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
@@ -71,7 +82,8 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       if(day===4){
         const field=nodes(player.tree).find(n=>n.type==='input'&&n.props?.['data-opora-transfer-feeling']==='true')
         assert.ok(field,'Day 4 emotion entry must exist')
-        field.props.onChange({target:{value:locale==='ru'?'спокойствие':'calm'}})
+        // Avoid matching the unrelated welcomeFocus='calm_regulation' in the plaintext check.
+        field.props.onChange({target:{value:locale==='ru'?'спокойствие':'a quieter feeling'}})
         await player.settle()
       }else await click(player,locale==='ru'?'Попробую позже':'I might try this')
       await advanceOporaTo(player,'recapFeedback',t.next)
@@ -80,7 +92,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       await click(player, t.save)
       assert.equal(requests, 1)
       assert.ok(receipt)
-      assert.ok(textOf(player.tree).includes(t.receipt))
+      assertReceipt(player, locale, day)
       const saved = owner.sessions.at(-1)
       assert.equal(saved.lesson_id, data.lesson.id)
       assert.equal(saved.content_version, COURSE_ANTISTRESS_SKILLS_V7)
@@ -106,7 +118,7 @@ for (const locale of ['en', 'ru']) for (let day = 1; day <= 14; day++) {
       assert.equal(saved.signals.opora54.answers.transferPlanVersion,'one-v1')
       assert.equal(saved.signals.opora54.answers.experienceEdition,'as-5.9-seven-skills-v1')
       if(day===4){
-        const answer=locale==='ru'?'спокойствие':'calm'
+        const answer=locale==='ru'?'спокойствие':'a quieter feeling'
         assert.deepEqual(payload.practiceEmotion,{customText:answer})
         assert.equal(saved.signals.practiceEmotion?.customText,undefined)
         assert.ok(saved.signals.practiceEmotion?.customTextCiphertext?.length>30)
@@ -152,7 +164,7 @@ for (const locale of ['en', 'ru']) test(`AS-5.6 ${locale} can save without inven
     assert.equal(saved.feedback, 'skip')
     assert.equal(saved.before_now, null)
     assert.equal(saved.after_now, null)
-    assert.ok(textOf(player.tree).includes(t.receipt))
+    assertReceipt(player, locale, 1)
   } finally { player.unmount() }
 })
 
@@ -258,3 +270,129 @@ test('Day 1 rejects malformed, oversize or mismatched custom answers before writ
     assert.equal(owner.writes.length,before)
   }
 })
+
+function assertUnconfirmed(player, locale) {
+  const tree = nodes(player.tree)
+  assert.ok(tree.some(n => n.props?.['data-opora-current-screen'] === 'recapFeedback'))
+  assert.ok(!tree.some(n => n.props?.['data-opora-current-screen'] === 'receipt' ||
+    n.props?.['data-opora-lesson-outro'] === 'saved' || n.props?.['data-opora-course-map'] ||
+    n.props?.['data-opora-first-lesson-habit-invitation'] ||
+    n.props?.['data-opora-first-lesson-habit-setup'] || n.props?.['data-opora-tomorrow-links']),
+  'No congratulations, map, setup or onward links before acknowledgement')
+  assert.equal(findButton(player.tree, locale === 'ru' ? 'Посмотреть, что дальше' : "See what's next"), undefined)
+}
+
+for (const locale of ['en', 'ru']) for (const day of [1, 14]) {
+  test(`AS-5.6 ${locale} day ${day}: pending owner save cannot show a receipt or submit again`, async () => {
+    const owner = repositoryHarness({ freshPhase: true })
+    await owner.create('AS2')
+    owner.seedDay(day)
+    const data = await owner.read(locale), writes = owner.writes.length, t = labels[locale]
+    let release, pending, requests = 0, finished = 0
+    const gate = new Promise(resolve => { release = resolve })
+    const player = mount('opora-experience-player', { locale, data, onClose() {},
+      onFinish() { finished++ },
+      async onSession(input) {
+        requests++
+        await gate
+        await owner.command(structuredClone(input), locale)
+        return true
+      },
+    })
+    try {
+      await advanceOporaTo(player, 'recapFeedback', t.next)
+      await click(player, t.save)
+      assert.equal(requests, 0, 'The required recap response cannot be bypassed')
+      assert.equal(textOf(nodes(player.tree).find(n => n.props?.role === 'alert')),
+        oporaEndingCopy(locale).required)
+      assertUnconfirmed(player, locale)
+      await click(player, oporaEndingCopy(locale).choices.find(([key]) => key === 'explored')[1])
+      pending = findButton(player.tree, t.save).props.onClick()
+      await player.settle()
+      assert.equal(requests, 1)
+      assert.equal(owner.writes.length, writes)
+      assert.equal(owner.sessions.length, day - 1)
+      assertUnconfirmed(player, locale)
+      const saving = findButton(player.tree, locale === 'ru' ? 'Сохраняем…' : 'Saving…')
+      assert.ok(saving)
+      assert.ok(nodes(player.tree).filter(n => n.type === 'button').every(n => n.props.disabled),
+        'Save and navigation stay locked while acknowledgement is pending')
+      await saving.props.onClick()
+      await player.settle()
+      assert.equal(requests, 1, 'The current saving handler also rejects repeated submission')
+      assert.equal(finished, 0)
+      release()
+      await pending
+      await player.settle()
+      assertReceipt(player, locale, day)
+      assert.equal(owner.sessions.length, day)
+      assert.equal(owner.writes.length, writes + (day === 14 ? 3 : 1),
+        'One session write; only Day 14 also completes its cycle and course')
+      assert.equal(owner.sessions.at(-1).signals.practiceAttempt, null)
+      assert.equal(owner.sessions.at(-1).feedback, 'skip')
+      assert.equal(requests, 1)
+      assert.equal(finished, 0)
+    } finally {
+      release()
+      await pending
+      player.unmount()
+    }
+  })
+}
+
+for (const locale of ['en', 'ru']) for (const outcome of ['false', 'undefined', 'rejected', 'repository-rejected', 'lost-ack']) {
+  test(`AS-5.6 ${locale}: ${outcome} save remains unconfirmed and retries the same operation`, async () => {
+    const owner = repositoryHarness({ freshPhase: true })
+    await owner.create('AS2')
+    owner.seedDay(1)
+    const data = await owner.read(locale), original = structuredClone(data)
+    const writes = owner.writes.length, payloads = [], t = labels[locale]
+    let rejection, finished = 0
+    const player = mount('opora-experience-player', { locale, data, onClose() {},
+      onFinish() { finished++ },
+      async onSession(input) {
+        const payload = structuredClone(input)
+        payloads.push(payload)
+        if (payloads.length === 1) {
+          if (outcome === 'false') return false
+          if (outcome === 'undefined') return undefined
+          if (outcome === 'rejected') throw Error('Synthetic save rejection')
+          if (outcome === 'repository-rejected') {
+            try {
+              return await owner.command({ ...payload, visitedSlideKeys: [...payload.visitedSlideKeys].reverse() }, locale)
+            } catch (error) { rejection = error; throw error }
+          }
+          await owner.command(payload, locale)
+          return undefined // The write succeeded, but its acknowledgement was lost.
+        }
+        await owner.command(payload, locale)
+        return true
+      },
+    })
+    try {
+      await advanceOporaTo(player, 'recapFeedback', t.next)
+      await click(player, oporaEndingCopy(locale).choices.find(([key]) => key === 'explored')[1])
+      await click(player, t.save)
+      assert.equal(payloads.length, 1)
+      assertUnconfirmed(player, locale)
+      assert.equal(textOf(nodes(player.tree).find(n => n.props?.role === 'alert')), locale === 'ru'
+        ? 'Сохранение не подтверждено. Проверьте соединение и повторите.'
+        : 'Saving was not confirmed. Check the connection and try again.')
+      assert.equal(owner.sessions.length, outcome === 'lost-ack' ? 1 : 0)
+      assert.equal(owner.writes.length, writes + (outcome === 'lost-ack' ? 1 : 0))
+      if (outcome === 'repository-rejected') assert.match(String(rejection), /COURSE_SLIDES_INCOMPLETE/)
+      assert.equal(findButton(player.tree, t.save).props.disabled, false, 'An unconfirmed save remains retryable')
+      assert.equal(finished, 0)
+      await click(player, t.save)
+      assert.equal(payloads.length, 2)
+      assert.match(payloads[0].operationId, /^[0-9a-f-]{36}$/)
+      assert.deepEqual(payloads[1], payloads[0], 'Retries preserve the operation ID and every submitted observation')
+      assertReceipt(player, locale, 1)
+      assert.equal(owner.sessions.length, 1)
+      assert.equal(owner.writes.length, writes + 1, 'Even a lost acknowledgement must not duplicate the session write')
+      // The repository executes in a VM; compare values, not cross-realm prototypes.
+      assert.deepEqual(structuredClone(data), original, 'Receipt navigation must not rewrite the owner read model')
+      assert.equal(finished, 0)
+    } finally { player.unmount() }
+  })
+}

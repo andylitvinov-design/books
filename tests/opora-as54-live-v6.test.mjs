@@ -8,6 +8,7 @@ import {
 } from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {repositoryHarness,mount,findButton} from './helpers/route-pipeline-harness.mjs'
+import {mount as mountCourse,nodes as courseNodes,findButton as courseButton,findPart,dailyView} from './helpers/course-ui-harness.mjs'
 import {COURSE_ANTISTRESS_SKILLS_V5,OPORA_SKILL_SLIDE_MODEL} from '../lib/inner-growth/anti-stress-skills-v5.js'
 import {oporaCompactDay,oporaCompactPassportValid} from '../lib/inner-growth/opora-compact-copy-v6.js'
 import {oporaNoticeActivity,oporaNoticeCatalogValid} from '../lib/inner-growth/opora-v6-exercise-cards.js'
@@ -133,10 +134,7 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  const player=read('components/app/opora-v6-slide-player.jsx')
  const legacy=read('components/app/course-slide-player.jsx')
  const css=read('components/app/opora-v6-slide-player.module.css')
- const entry=read('components/app/course-today.jsx')
- assert.match(entry,/data\?\.lesson\?\.antiStress\?\.slideModel===OPORA54_SLIDE_MODEL/)
- assert.match(entry,/<OporaV6SlidePlayer key=/)
- assert.match(entry,/:<CourseSlidePlayer key=/)
+ // Player selection and review bindings are exercised below through CourseToday.
  assert.match(legacy,/export default function CourseSlidePlayer/)
  assert.match(player,/ROLE_OPTIONS=\{/)
  assert.match(player,/choiceField=role==='notice'/)
@@ -162,6 +160,63 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
    assert.deepEqual(parsed.parseDiagnostics.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[],file+' syntax')
  }
 })
+
+
+for(const [version,expected,programme='stress',slideModel] of [
+ [COURSE_ANTISTRESS_OUTCOME_V3,'CourseSlidePlayer'],
+ [COURSE_ANTISTRESS_SKILLS_V5,'CourseSlidePlayer'],
+ [COURSE_ANTISTRESS_SKILLS_V6,'OporaV6SlidePlayer'],
+ [COURSE_ANTISTRESS_SKILLS_V7,'OporaExperiencePlayer'],
+ [COURSE_ANTISTRESS_SKILLS_V7,'CourseSlidePlayer','other'],
+ [COURSE_ANTISTRESS_SKILLS_V7,'CourseSlidePlayer','stress','unsupported-model'],
+])for(const replay of [false,true]){
+ test(`actual CourseToday routes ${version}/${programme}/${slideModel||'pinned'} ${replay?'review':'active'} without rewriting history`,async()=>{
+  const selected=structuredClone(lessonFor('calm_regulation',1,'en','standard',version))
+  if(slideModel)selected.antiStress.slideModel=slideModel
+  // Deliberately disagree with the live model: replay must route by playerData,
+  // not the currently scheduled lesson, and never submit a historical session.
+  const live=lessonFor('calm_regulation',2,'en','standard',version===COURSE_ANTISTRESS_SKILLS_V7
+    ?COURSE_ANTISTRESS_SKILLS_V6:COURSE_ANTISTRESS_SKILLS_V7)
+  const session={completedAt:'2026-10-17T12:00:00Z',lessonId:selected.id,signals:{pinned:'history'}}
+  const data=dailyView('course-a','cycle-a',{
+    cycle:{...dailyView().cycle,day:replay?2:1},
+    programme:{id:programme,day:{day:2}},lesson:replay?live:selected,
+    currentCheckin:{severity:4},roadmap:[{day:1,status:'completed',programmeDay:{day:1}}],
+  })
+  const original=structuredClone(data)
+  const h=mountCourse('course-today',{props:{locale:'en',accountId:'owner-a',courseId:'course-a'},
+    fetcher:path=>path.includes('reviewDay=1')?{...data,review:{day:1,lesson:selected,session}}:data})
+  try{
+   await h.settle()
+   const players=['CourseSlidePlayer','OporaV6SlidePlayer','OporaExperiencePlayer']
+   assert.ok(players.every(name=>!findPart(h.tree,name)),'A player must not open without an action')
+   if(replay){
+    const path=courseButton(h.tree,programme==='stress'?'See all 14 days':'14-day path')
+    assert.ok(path);path.props.onClick();await h.settle()
+    const map=findPart(h.tree,'CourseQuestMap');assert.ok(map)
+    map.props.onPlay(1);await h.settle()
+   }else{
+    const start=courseNodes(h.tree).find(n=>n.type==='button'&&n.props['data-course-today-primary']!==undefined)
+    assert.ok(start);assert.equal(start.props.disabled,false);start.props.onClick();await h.settle()
+   }
+   const player=findPart(h.tree,expected);assert.ok(player,expected)
+   for(const other of players.filter(name=>name!==expected))assert.equal(findPart(h.tree,other),undefined)
+   assert.equal(player.props.data.lesson,selected)
+   assert.equal(player.props.data.cycle.day,1)
+   assert.equal(player.props.reviewOnly,replay)
+   if(replay){
+    assert.equal(player.props.data.currentSession,session)
+    assert.equal(player.props.data.currentCheckin,null)
+    assert.equal(player.props.data.programme.day,data.roadmap[0].programmeDay)
+    assert.equal(await player.props.onSession({day:1,lessonId:selected.id}),null)
+   }
+   assert.equal(h.calls.filter(call=>call.body).length,0,'Opening or replaying never writes')
+   player.props.onClose();await h.settle()
+   assert.ok(players.every(name=>!findPart(h.tree,name)),'Close clears every player')
+   assert.deepEqual(data,original,'Routing must preserve the stored version and source data')
+  }finally{h.unmount()}
+ })
+}
 
 
 for(const version of [COURSE_ANTISTRESS_SKILLS_V6,COURSE_ANTISTRESS_SKILLS_V7]){

@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
+import {lessonFor} from '../lib/inner-growth/lesson-library.js'
+import {COURSE_ANTISTRESS_SKILLS_V6} from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {mount,nodes,findPart,textOf} from './helpers/route-pipeline-harness.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -30,7 +32,7 @@ test('Day 1 preparation is photo-led with three gentle choices, not a five-card 
   assert.doesNotMatch(textOf(x.h.tree),/STEP 06|How I begin|Today we will notice how we are/)
   const opts=x.buttons?.tree&&nodes(x.buttons.tree).filter(n=>n.type==='button')||[]
   assert.equal(opts.length,3)
-  assert.deepEqual(opts.map(n=>textOf(n)),['Look around','Use the picture','Just read for now'])
+  assert.deepEqual(opts.map(n=>textOf(n).trim()),['Look around','Use the picture','Just read for now'])
   assert.ok(nodes(x.h.tree).some(n=>n.type==='img'&&n.props?.src?.includes('course-focus-mountain-boy')))
   opts[0].props.onClick()
   assert.deepEqual(x.recorded,[{field:'preparation',value:'look'}])
@@ -42,7 +44,7 @@ test('Day 1 notice directs attention outward; inner checking is optional and not
   assert.match(textOf(x.h.tree),/Notice one ordinary detail/)
   assert.doesNotMatch(textOf(x.h.tree),/STEP 07|What do you notice inside right now/)
   const opts=x.buttons?.tree&&nodes(x.buttons.tree).filter(n=>n.type==='button')||[]
-  assert.deepEqual(opts.map(n=>textOf(n)),['Colour','Shape','Object'])
+  assert.deepEqual(opts.map(n=>textOf(n).trim()),['Colour','Shape','Object'])
   assert.ok(nodes(x.h.tree).some(n=>n.type==='details'))
   opts[1].props.onClick()
   assert.deepEqual(x.recorded,[{field:'noticed',value:'shape'}])
@@ -78,7 +80,21 @@ test('shorter footer and calm photo protect the iPhone viewport without clipping
 
 test('the current V6 retains full scenic photographs and an accessible mobile scrolling fallback',()=>{
   assert.match(v6,/data-opora-lesson-photo/)
-  assert.match(v6,/className=\\{styles\\.scenicBackdrop\\}/)
+  const lesson=lessonFor('calm_regulation',1,'en','standard',COURSE_ANTISTRESS_SKILLS_V6)
+  const h=mount('opora-v6-slide-player',{locale:'en',data:{lesson,programme:{id:'stress'},
+    cycle:{id:'synthetic-scenic',day:1,durationDays:14,preferences:{}}},onClose(){},
+    onSession(){assert.fail('Viewing the photograph must not save')}})
+  try{
+    const backdrop=nodes(h.tree).find(n=>n.props?.['data-opora-lesson-photo']!==undefined)
+    assert.ok(backdrop,'The actual player renders its scenic background')
+    assert.equal(backdrop.props.className,'scenicBackdrop')
+    assert.equal(backdrop.props['aria-hidden'],'true')
+    const photo=nodes(backdrop).find(n=>n.type==='img')
+    assert.ok(photo,'The actual player renders a scenic photograph')
+    assert.equal(photo.props.className,'scenicPhoto')
+    assert.equal(photo.props.src,'/images/holistic-house/report-lighthouse-coast.webp')
+    assert.equal(photo.props.alt,'')
+  }finally{h.unmount()}
   assert.match(v6,/data-scene-role=/)
   assert.match(v6Css,/OPORA scenic lesson system/)
   assert.match(v6Css,/scenicBackdrop/)

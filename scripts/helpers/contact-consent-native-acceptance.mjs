@@ -2,6 +2,28 @@ import assert from 'node:assert/strict'
 import {ALCHEMY_CONTACT, alchemyOrigin, alchemyRequestGate, syntheticAlchemyReceipt} from './alchemy-enquiry-journey-verifier.mjs'
 
 
+// Diagnostic output is a closed vocabulary, never an error, URL, locale, DOM
+// value or contact. Keep the first failing phase even if teardown also fails.
+const diagnosticModes=['startup','keyboard','label','canceled-pointer']
+const diagnosticPhases=[
+  'none','origin','context','bootstrap-route','bootstrap-socket','bootstrap-binding',
+  'bootstrap-pages','bootstrap-init','page','navigation','initial-drain','format',
+  'open','contact-fill','initial-state','keyboard-focus','keyboard-tab',
+  'keyboard-visible','keyboard-space-on','keyboard-space-off','keyboard-shift-tab',
+  'label-on','label-off','canceled-geometry','canceled-down','canceled-drag',
+  'canceled-up','canceled-state','terminal-submit','terminal-links','terminal-receipt',
+  'terminal-popup','terminal-boundary','terminal-page-errors','late-page-errors',
+  'late-boundary','cleanup-stop','cleanup-drain-before-close','cleanup-close',
+  'cleanup-drain-after-close','cleanup-terminal','complete',
+]
+const diagnosticBoundaries=['none','popup','async-route','socket-close','popup-close']
+function checkpoint(diagnostic,phase) { if(diagnostic) diagnostic.phase=phase }
+function failed(diagnostic) { if(diagnostic) diagnostic.failedPhase ??= diagnostic.phase }
+function diagnosticFields(diagnostic) {
+  const fixed=(value,values)=>values.includes(value)?value:'unknown'
+  return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(diagnostic.failedPhase ?? diagnostic.phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}`
+}
+
 // Only the exact initial public document supplements the existing typed static
 // allowlist. This wrapper is installed before any page/navigation exists.
 export function consentInitialGate(origin, locale, failures, blocked) {
@@ -47,7 +69,7 @@ export function installConsentPopupGuard() {
 // Retain the bootstrap guard through close, and drain its admitted reads first.
 // The same consent-only guard remains installed for initial load and interactions.
 // Popup counters live in Node and are checked after close and draining.
-export async function withConsentBootstrap(context, gate, run) {
+export async function withConsentBootstrap(context, gate, run, diagnostic) {
   const active=new Set(), errors=[]
   let primary=false,result,popupAttempts=0,pageCount=0
   const tracked=route=>{
@@ -57,13 +79,17 @@ export async function withConsentBootstrap(context, gate, run) {
   }
   const drain=async()=>{while(active.size) await Promise.allSettled([...active])}
   try {
+    checkpoint(diagnostic,'bootstrap-route')
     await context.route('**/*',tracked)
+    checkpoint(diagnostic,'bootstrap-socket')
     await context.routeWebSocket('**/*',socket=>{
       const pending=Promise.resolve().then(()=>socket.close()).catch(()=>{throw new Error('CONSENT_SOCKET_CLOSE_FAILED')});active.add(pending)
       pending.then(()=>active.delete(pending),()=>{errors.push('CONSENT_SOCKET_CLOSE_FAILED');active.delete(pending)})
       return pending
     })
+    checkpoint(diagnostic,'bootstrap-binding')
     await context.exposeBinding('__consentReportPopup',()=>{popupAttempts++})
+    checkpoint(diagnostic,'bootstrap-pages')
     context.on('page',page=>{
       pageCount++
       if(pageCount>1) {
@@ -72,51 +98,76 @@ export async function withConsentBootstrap(context, gate, run) {
         pending.then(()=>active.delete(pending),()=>{errors.push('CONSENT_POPUP_CLOSE_FAILED');active.delete(pending)})
       }
     })
+    checkpoint(diagnostic,'bootstrap-init')
     await context.addInitScript(installConsentPopupGuard)
     result=await run(drain)
-  } catch {primary=true}
+  } catch {primary=true;failed(diagnostic)}
   finally {
-    for(const cleanup of [()=>gate.beginTeardown(),drain,()=>context.close(),drain]) {
-      try {await cleanup()} catch {errors.push('CONSENT_CLEANUP_FAILED')}
+    for(const [phase,cleanup] of [
+      ['cleanup-stop',()=>gate.beginTeardown()],['cleanup-drain-before-close',drain],
+      ['cleanup-close',()=>context.close()],['cleanup-drain-after-close',drain],
+    ]) {
+      checkpoint(diagnostic,phase)
+      try {await cleanup()} catch {
+        errors.push('CONSENT_CLEANUP_FAILED')
+        if(diagnostic && diagnostic.cleanup==='none') diagnostic.cleanup=phase
+        failed(diagnostic)
+      }
     }
   }
-  if(popupAttempts) throw new Error('CONSENT_POPUP_ATTEMPTED')
+  checkpoint(diagnostic,'cleanup-terminal')
+  if(diagnostic) diagnostic.boundary=popupAttempts?(errors.includes('CONSENT_POPUP_CLOSE_FAILED')?'popup-close':'popup'):({
+    CONSENT_ASYNC_FAILED:'async-route',CONSENT_SOCKET_CLOSE_FAILED:'socket-close',
+    CONSENT_POPUP_CLOSE_FAILED:'popup-close',
+  }[errors.find(code=>code!=='CONSENT_CLEANUP_FAILED')] || 'none')
+  if(popupAttempts) {failed(diagnostic);throw new Error('CONSENT_POPUP_ATTEMPTED')}
   if(primary) throw new Error('CONSENT_NATIVE_RUN_FAILED')
-  if(errors.length) throw new Error('CONSENT_CLEANUP_FAILED')
+  if(errors.length) {failed(diagnostic);throw new Error('CONSENT_CLEANUP_FAILED')}
   return result
 }
 
 // Additional isolated acceptance only. The existing pointer check() journey is
 // unchanged and must pass independently; none of these scenarios pre-focus it.
-async function verifyNative(sourcePage, expect, locale) {
+async function verifyNative(sourcePage, expect, locale, diagnostic) {
   const origin = alchemyOrigin(sourcePage.url(), locale)
   for (const mode of ['keyboard', 'label', 'canceled-pointer']) {
+    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none'})
     const context = await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
     const errors=[], failures=[], blocked=[]
     const initialGate=consentInitialGate(origin,locale,failures,blocked)
     await withConsentBootstrap(context,initialGate,async drainInitial=>{
+      checkpoint(diagnostic,'page')
       const page=await context.newPage()
       page.on('pageerror',()=>errors.push('CONSENT_PAGE_ERROR'))
+      checkpoint(diagnostic,'navigation')
       await page.goto(origin+`/${locale}/services/alchemy-of-soul`,{waitUntil:'networkidle'})
+      checkpoint(diagnostic,'initial-drain')
       initialGate.endInitialDocument()
       await drainInitial()
       const receipt=syntheticAlchemyReceipt(locale)
       {
         const pricing=page.locator('[data-alchemy-booking-formats]')
+        checkpoint(diagnostic,'format')
         await pricing.locator('[data-alchemy-format="30"]').click()
         const chooser=pricing.locator('[data-contact-channel-chooser]')
+        checkpoint(diagnostic,'open')
         await chooser.locator('[data-contact-order]').click()
         const contact=chooser.locator('input[type="email"]')
         const consent=chooser.locator('input[type="checkbox"]')
         const submit=chooser.locator('button[type="submit"]')
+        checkpoint(diagnostic,'contact-fill')
         await contact.fill(ALCHEMY_CONTACT)
+        checkpoint(diagnostic,'initial-state')
         await expect(consent).not.toBeChecked()
         await expect(submit).toBeDisabled()
         if (mode==='keyboard') {
           // Start at naturally focused email, then use real sequential navigation.
+          checkpoint(diagnostic,'keyboard-focus')
           await expect(contact).toBeFocused()
+          checkpoint(diagnostic,'keyboard-tab')
           for (let i=0;i<12 && !await consent.evaluate(node=>node===document.activeElement);i++) await page.keyboard.press('Tab')
           await expect(consent).toBeFocused()
+          checkpoint(diagnostic,'keyboard-visible')
           await expect(consent).toBeVisible()
           const visible=await consent.evaluate(node=>{
             const r=node.getBoundingClientRect(),style=getComputedStyle(node)
@@ -124,50 +175,76 @@ async function verifyNative(sourcePage, expect, locale) {
               outlined:style.outlineStyle!=='none'&&parseFloat(style.outlineWidth)>0}
           })
           assert.deepEqual(visible,{inside:true,outlined:true})
+          checkpoint(diagnostic,'keyboard-space-on')
           await page.keyboard.press('Space')
           await expect(consent).toBeChecked()
           await expect(submit).toBeEnabled()
+          checkpoint(diagnostic,'keyboard-space-off')
           await page.keyboard.press('Space')
           await expect(consent).not.toBeChecked()
+          checkpoint(diagnostic,'keyboard-shift-tab')
           await page.keyboard.press('Shift+Tab')
           await expect(consent).not.toBeFocused()
         } else if (mode==='label') {
+          checkpoint(diagnostic,'label-on')
           const text=consent.locator('..').locator('span')
           await text.click()
           await expect(consent).toBeChecked()
           await expect(submit).toBeEnabled()
+          checkpoint(diagnostic,'label-off')
           await text.click()
           await expect(consent).not.toBeChecked()
         } else {
           // A real press followed by release outside the entire label must not
           // activate consent. No synthetic dispatchEvent, focus or checked setter.
+          checkpoint(diagnostic,'canceled-geometry')
           await consent.scrollIntoViewIfNeeded()
           const r=await consent.boundingBox()
           assert.ok(r)
           const labelRect=await consent.locator('..').boundingBox()
           assert.ok(labelRect)
           assert.ok(1<labelRect.x || 1>labelRect.x+labelRect.width || 1<labelRect.y || 1>labelRect.y+labelRect.height)
+          checkpoint(diagnostic,'canceled-down')
           await page.mouse.move(r.x+r.width/2,r.y+r.height/2)
           await page.mouse.down()
+          checkpoint(diagnostic,'canceled-drag')
           await page.mouse.move(1,1)
+          checkpoint(diagnostic,'canceled-up')
           await page.mouse.up()
+          checkpoint(diagnostic,'canceled-state')
           await expect(consent).not.toBeChecked()
         }
+        checkpoint(diagnostic,'terminal-submit')
         await expect(submit).toBeDisabled()
+        checkpoint(diagnostic,'terminal-links')
         await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0)
+        checkpoint(diagnostic,'terminal-receipt')
         assert.equal(receipt.count,0)
+        checkpoint(diagnostic,'terminal-popup')
         assert.equal(await page.evaluate(()=>window.__consentPopupAttempts),0)
+        checkpoint(diagnostic,'terminal-boundary')
         assert.deepEqual(failures,[])
       }
+      checkpoint(diagnostic,'terminal-page-errors')
       assert.deepEqual(errors,[])
+      checkpoint(diagnostic,'terminal-boundary')
       assert.deepEqual(failures,[])
-    })
+    },diagnostic)
+    checkpoint(diagnostic,'late-page-errors')
     assert.deepEqual(errors,[])
+    checkpoint(diagnostic,'late-boundary')
     assert.deepEqual(failures,[])
+    checkpoint(diagnostic,'complete')
+    // Diagnostics must not turn a completed native mode into a failure.
+    try {console.info(`CONSENT_NATIVE_ACCEPTANCE_COMPLETED ${diagnosticFields(diagnostic)}`)} catch {}
   }
 }
 
 export async function verifyContactConsentNativeAcceptance(sourcePage, expect, locale) {
-  try { await verifyNative(sourcePage,expect,locale) }
-  catch { throw new Error('CONSENT_NATIVE_ACCEPTANCE_FAILED') }
+  const diagnostic={mode:'startup',phase:'origin',failedPhase:null,cleanup:'none',boundary:'none'}
+  try { await verifyNative(sourcePage,expect,locale,diagnostic) }
+  catch {
+    failed(diagnostic)
+    throw new Error(`CONSENT_NATIVE_ACCEPTANCE_FAILED ${diagnosticFields(diagnostic)}`)
+  }
 }

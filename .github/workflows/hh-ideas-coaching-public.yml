@@ -23,6 +23,8 @@ on:
       - 'tests/ideas-guidance.test.mjs'
       - 'tests/tests-coaching-switchboard.test.mjs'
       - 'scripts/verify-ideas-mobile-browser.mjs'
+      - 'scripts/helpers/ideas-tap-diagnostics.mjs'
+      - 'tests/ideas-tap-diagnostics.test.mjs'
       - 'tests/ideas-mobile-ui.test.mjs'
       - 'tests/public-coaching-discovery.test.mjs'
   workflow_dispatch:
@@ -51,7 +53,7 @@ jobs:
           node --check lib/app/personal-coaching-catalog.js
           node --check lib/coaching/public-coaching-catalog.js
           node --check lib/coaching/public-session-art.js
-          node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs
+          node --test tests/public-coaching-discovery.test.mjs tests/ideas-tap-diagnostics.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs
       - name: Lint modified application components
         run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts
       - name: TypeScript noEmit

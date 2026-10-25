@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { ideasTapFailureState, withIdeasTapDiagnostics } from "./helpers/ideas-tap-diagnostics.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -99,22 +100,22 @@ async function verify(browserType, locale, width) {
     assert.ok(primary && primary.height >= 44, label + ": Dao CTA is finger sized");
     const testAction = hub.locator("[data-ideas-free-test]");
     assert.equal(await testAction.getAttribute("aria-expanded"), "false");
-    await hub.locator("#ideas-question").fill(
-      locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
-    // WebKit may dispatch a tap before React finishes the preceding text event.
-    // Keep the real tap and assert the on-page panel rather than masking navigation.
-    await page.waitForTimeout(120);
-    await testAction.tap();
-    const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
-    try {
-      await filtered.waitFor({ state: "visible", timeout: 12000 });
-    } catch (cause) {
-      const current = page.url();
-      const input = await hub.locator("#ideas-question").inputValue().catch(() => "(unavailable)");
-      const expanded = await testAction.getAttribute("aria-expanded").catch(() => "(unavailable)");
-      throw new Error(label + ": free test chooser did not open; url=" + current +
-        "; inputLength=" + input.length + "; ariaExpanded=" + expanded, { cause });
-    }
+    const filtered = await withIdeasTapDiagnostics(page, { origin, locale, width, browser: browserType.name() }, async () => {
+      await hub.locator("#ideas-question").fill(
+        locale === "ru" ? "Меня тревожит стресс" : locale === "es" ? "Tengo ansiedad" : "I feel anxious and stressed");
+      // WebKit may dispatch a tap before React finishes the preceding text event.
+      // Keep the real tap and assert the on-page panel rather than masking navigation.
+      await page.waitForTimeout(120);
+      await testAction.tap();
+      const filtered = hub.locator('[data-ideas-filtered-tests]:visible');
+      try {
+        await filtered.waitFor({ state: "visible", timeout: 12000 });
+      } catch {
+        const failure = await ideasTapFailureState(page, { origin, locale });
+        throw new Error(label + ": free test chooser did not open; " + JSON.stringify(failure));
+      }
+      return filtered;
+    });
     assert.equal(await testAction.getAttribute("aria-expanded"), "true");
     assert.equal(await filtered.locator("[data-ideas-test-start]").count(), 3, label + ": real filtered tests");
     assert.equal(await filtered.locator("[data-ideas-test-start]").first().getAttribute("href"),
