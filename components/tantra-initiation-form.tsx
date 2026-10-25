@@ -1,14 +1,8 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { TantraInitiationChoice } from "@/components/tantra-initiation-choice";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
-import styles from "./tantra-free-initiation.module.css";
 
 type Intent = "free" | "personal" | "session" | "answers" | "feedback";
-const intents: Intent[] = ["free", "personal", "session", "answers", "feedback"];
 
 // One compact client-side choice, using the existing CRM-first phone and messenger handoff.
 // Answers and feedback are composed by the visitor in their own chat, not stored in URLs.
@@ -94,56 +88,23 @@ export function tantraInitiationWhatsAppUrl(locale: PublicLocale, intent: Intent
 
 export function TantraInitiationForm({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
-  const [intent, setIntent] = useState<Intent>("free");
-
-  // All five existing deep links remain valid. Entering from a personal,
-  // answer or feedback CTA preselects the corresponding single form choice.
-  useEffect(() => {
-    const selectFromHash = () => {
-      const next = intents.find(value => window.location.hash === "#apply-" + value);
-      if (next) setIntent(next);
-    };
-    selectFromHash();
-    window.addEventListener("hashchange", selectFromHash);
-    return () => window.removeEventListener("hashchange", selectFromHash);
-  }, []);
-
+  const options: { intent: Intent; label: string; whatsappUrl: string }[] = (
+    ["free", "personal", "session", "answers", "feedback"] as Intent[]
+  ).map(intent => ({
+    intent,
+    label: t[intent],
+    whatsappUrl: tantraInitiationWhatsAppUrl(locale, intent),
+  }));
   return (
-    <div className={styles.whatsappCapture} data-tantra-whatsapp-capture>
-      <div className={styles.whatsappIntro}>
-        <p className={styles.whatsappTagline}>{t.tagline}</p>
-        <h3 className={styles.whatsappTitle}>{t.heading}</h3>
-        <p className={styles.whatsappLead}>{t.lead}</p>
-      </div>
-      <div className={styles.whatsappAnchors} aria-hidden="true">
-        {intents.map(value => <span id={"apply-" + value} key={value} />)}
-      </div>
-      <div className={styles.whatsappField}>
-        <label htmlFor={"tantra-request-" + locale}>{t.choose}</label>
-        <span className={styles.whatsappSelectWrap}>
-          <select
-            id={"tantra-request-" + locale}
-            value={intent}
-            onChange={event => {
-              const next = event.target.value;
-              if (intents.some(value => value === next)) setIntent(next as Intent);
-            }}
-          >
-            {intents.map(value => <option key={value} value={value}>{t[value]}</option>)}
-          </select>
-          <ChevronDown size={19} aria-hidden="true" />
-        </span>
-      </div>
-      <ContactChannelChooser
-        key={intent}
-        compactPhone
-        stayAfterSave
-        locale={locale}
-        resetKey={"tantra-initiation-" + locale + "-" + intent}
-        whatsappUrl={tantraInitiationWhatsAppUrl(locale, intent)}
-        publicTopic={t.service + " · " + t[intent]}
-      />
-      <p className={styles.whatsappNote}>{t.note}</p>
-    </div>
+    <TantraInitiationChoice
+      locale={locale}
+      service={t.service}
+      heading={t.heading}
+      tagline={t.tagline}
+      lead={t.lead}
+      choose={t.choose}
+      note={t.note}
+      options={options}
+    />
   );
 }
