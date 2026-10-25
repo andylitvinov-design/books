@@ -29,7 +29,7 @@ function withCanvas(callback){
     }:anchor},
     body:{appendChild(){}},
   }
-  Object.defineProperty(globalThis,'URL',{configurable:true,value:{
+  Object.defineProperty(globalThis,'URL',{configurable:true,writable:true,value:{
     createObjectURL(blob){assert.equal(blob.type,'application/pdf');return 'blob:private-coaching-pdf'},
     revokeObjectURL() {},
   }})
