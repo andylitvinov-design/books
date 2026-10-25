@@ -135,6 +135,12 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.locator('[data-opora-micro-experiment="5"]')).toBeVisible()
+      // Verify the fifth authored channel while active, before exercising safety neutrality.
+      await click(t.next)
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
+      await expect(page.locator('[data-opora-experience-channel="ritual"]')).toContainText(journey.ritual.text)
+      await click(t.previous)
+      await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
       assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
       assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)
@@ -165,7 +171,8 @@ try {
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
       await click(t.next) // Practice -> ritual; optional guidance must close.
       await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
-      await expect(page.locator('[data-opora-experience-channel="ritual"]')).toContainText(journey.ritual.text)
+      // After choosing the neutral safety path, sensitive channel content must stay hidden.
+      await expect(page.locator('[data-opora-experience-channel="ritual"]')).toHaveCount(0)
       await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.pause); await click(t.neutral)
       await click(t.previous) // Ritual -> practice must not resurrect day-five guidance.
