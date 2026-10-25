@@ -218,3 +218,29 @@
  .priceFields{grid-template-columns:minmax(0,1fr) 85px}
 }
 @media(prefers-reduced-motion:reduce){.stageTabs button,.formatTiles button{transition:none}}
+
+/* Warm, compact first step: diagnostics, energy correction, talismans. */
+.kindPicker{display:grid;gap:13px;min-width:0;padding:clamp(12px,2vw,20px);border:1px solid #e2d3c2;border-radius:15px;background:linear-gradient(145deg,#fffcf7,#f5eadc)}
+.kindHeading h4{margin:0 0 5px;color:#3e3028;font:400 clamp(1.17rem,2.8vw,1.53rem)/1.25 Georgia,serif}
+.kindHeading p{margin:0;color:#79675a;font:500 .76rem/1.48 system-ui,sans-serif}
+.kindCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
+.kindCard{min-width:0;overflow:hidden;border:1px solid #ddcbbb;border-radius:14px;background:#fffcf7}
+.kindMain{display:flex;align-items:flex-start;gap:11px;width:100%;min-width:0;min-height:124px;padding:14px 12px;background:transparent;border:0;text-align:left;color:#4f382c;cursor:pointer}
+.kindMain:hover:not(:disabled),.kindMain[aria-expanded=true]{background:#f9eee3}
+.kindMain:disabled{opacity:.6;cursor:wait}
+.kindMain>svg:last-child{flex:none;align-self:center;color:#856b59}
+.kindIcon{display:grid;place-items:center;flex:none;width:41px;height:41px;border-radius:12px;background:#e8e9dd;color:#287669}
+.kindText{display:grid;gap:6px;flex:1;min-width:0}
+.kindText strong{font:760 .88rem/1.3 system-ui,sans-serif;overflow-wrap:anywhere}
+.kindText small{font:500 .7rem/1.43 system-ui,sans-serif;color:#79685b;overflow-wrap:anywhere}
+.diagnosticChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 11px 12px}
+.diagnosticChoices button{display:grid;align-content:start;gap:5px;min-width:0;min-height:83px;padding:10px;border:1px solid #c4ddcf;border-radius:11px;background:#ecf7ef;color:#236459;text-align:left;cursor:pointer}
+.diagnosticChoices button:nth-child(2){border-color:#dcc9b6;background:#fdf4e8;color:#714c33}
+.diagnosticChoices button strong{font:750 .75rem/1.3 system-ui,sans-serif}
+.diagnosticChoices button small{font:500 .66rem/1.37 system-ui,sans-serif}
+.kindBar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:7px;padding:8px 11px;border:1px solid #cddfd5;border-radius:10px;background:#eef7f0;color:#22675a}
+.kindBar span{font:750 .73rem/1.3 system-ui,sans-serif}
+.kindBar button{min-height:40px;border:0;background:transparent;color:#266a60;text-decoration:underline;padding:7px;font:700 .71rem/1.3 system-ui,sans-serif;cursor:pointer}
+@media(max-width:850px){.kindCards{grid-template-columns:1fr}.kindMain{min-height:80px;align-items:center;padding:12px}.kindPicker{padding:12px}.kindIcon{width:38px;height:38px}}
+@media(max-width:650px){.quickForm .actions{position:static;box-shadow:none;padding:8px}}
+@media(max-width:355px){.diagnosticChoices{grid-template-columns:1fr}.kindMain{gap:8px;padding:11px 9px}}
