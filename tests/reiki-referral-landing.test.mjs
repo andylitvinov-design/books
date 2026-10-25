@@ -78,7 +78,8 @@ test("short referral flow is discoverable from both legacy Tantra pages without 
   assert.match(tantra, /className=\{styles\.freeCourseBridge\}/);
   assert.match(tantra, /freeCourseBridge\} href=\{REIKI_FREE_COURSE_PATH\}/);
   assert.match(program, /Start the 5 free lessons/);
-  assert.match(program, /academy\/reiki\/tantra-reiki\/free-initiation/);
+  assert.match(program, /className="tantra-course-hero__cta" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
+  assert.match(routes, /if \(key === "reiki\/tantra-reiki\/free-initiation"\) return <TantraFreeInitiation/);
   assert.match(routes, /reiki-approved-sunrise-v3\.webp/);
   assert.match(routes, /Free Reiki course and introductory initiation — Holistic House/);
 });

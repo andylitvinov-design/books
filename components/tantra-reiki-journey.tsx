@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Link from "next/link";
 import { Fragment } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -623,7 +624,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
           </details>
           {n === 1 ? (
             <div className="tantra-journey__first-cta">
-              <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
+              <Link href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{focus.request} <span aria-hidden="true">↗</span></Link>
               <Link className="tantra-journey__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{focus.tests} <span aria-hidden="true">↗</span></Link>
               <p>{focus.note}</p>
             </div>
