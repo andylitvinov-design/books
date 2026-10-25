@@ -231,7 +231,8 @@ export default async function HolisticSupportPage({ params }: Props) {
     <main className={styles.page} data-holistic-support lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.shell}>
-        <div className={styles.primaryEntry} data-holistic-first-screen>
+        <div id="temple-psychic-insights" className={styles.primaryEntry} data-holistic-first-screen data-holistic-insights>
+          <span id="symbolic-reflection" aria-hidden="true" />
           <IdeasDiscovery locale={locale} variant="holistic" />
         </div>
 
