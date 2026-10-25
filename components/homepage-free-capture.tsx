@@ -4,6 +4,8 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Brain, Check, FileText, GraduationCap, HeartHandshake, Send, ShieldCheck } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
+import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import type { Locale } from "@/data/remedies";
 import styles from "./consultation-choice-capture.module.css";
 
@@ -32,7 +34,7 @@ const copy = {
         compactTitle: "Free personal analysis",
         description: "Complete a short questionnaire and send your Me / Goal / Problem drawing for a personal written review.",
         action: "Get my free personal analysis",
-        note: "Next: fill in the form and send your drawing. You will receive a personal written review, not a free live consultation.",
+        note: "Next: leave your phone number and choose WhatsApp or Telegram. Andrey will explain how to send your questionnaire and drawing for a free written review, not a live consultation.",
       },
       reiki: {
         title: "Free Reiki Practitioner Program",
@@ -66,7 +68,7 @@ const copy = {
         compactTitle: "Личный разбор",
         description: "Заполните небольшую анкету и пришлите рисунок «Я / Цель / Проблема» для письменного разбора.",
         action: "Получить бесплатный личный разбор",
-        note: "Далее: заполните анкету и отправьте рисунок. Вы получите персональный письменный разбор, а не бесплатную онлайн-консультацию.",
+        note: "Далее: оставьте номер телефона и выберите WhatsApp или Telegram. Андрей объяснит, как отправить анкету и рисунок для бесплатного письменного разбора, а не онлайн-консультации.",
       },
       reiki: {
         title: "Бесплатная программа «Практик Рейки»",
@@ -91,8 +93,15 @@ export function HomepageFreeCapture({ locale }: { locale: Locale }) {
   const active = t.offers[selected];
   const ActiveIcon = offerIcons[selected];
   const href = selected === "selfTest" ? `/${locale}/client/tests`
-    : selected === "analysis" ? `/${locale}/services/free-situation-review`
-      : `/${locale}/academy/principles-of-energywork/learn`;
+    : `/${locale}/academy/principles-of-energywork/learn`;
+  const analysisWhatsAppUrl = whatsappEnquiryUrl({
+    locale,
+    service: locale === "ru" ? "Бесплатный личный разбор ситуации" : "Free personal situation review",
+    request: locale === "ru"
+      ? "Пожалуйста, пришлите инструкцию к бесплатному письменному разбору, анкету и задание с рисунком «Я / Цель / Проблема»."
+      : "Please send instructions for my free written situation review, including the questionnaire and Me / Goal / Problem drawing.",
+    pagePath: locale === "ru" ? "/ru" : "/",
+  });
 
   return (
     <section
@@ -132,18 +141,31 @@ export function HomepageFreeCapture({ locale }: { locale: Locale }) {
           );
         })}
       </div>
-      <AcquisitionEventLink
-        prefetch={false}
-        className={styles.action}
-        href={href}
-        event={selected === "selfTest" ? "self_check_start" : selected === "analysis" ? "service_request_start" : "service_view"}
-        analyticsEvent={selected === "analysis" ? "free_situation_assessment_click" : undefined}
-        attributes={{ "data-home-free-action": selected }}
-      >
-        <ActiveIcon size={19} aria-hidden="true" />
-        <span>{active.action}</span>
-        <ArrowUpRight size={20} aria-hidden="true" />
-      </AcquisitionEventLink>
+      {selected === "analysis" ? (
+        <ContactChannelChooser
+          locale={locale}
+          whatsappUrl={analysisWhatsAppUrl}
+          label={active.action}
+          className={styles.action}
+          compactPhone compactTrigger stayAfterSave
+          publicTopic={locale === "ru" ? "Бесплатный письменный разбор: запрос инструкции к анкете и рисунку." : "Free written review: request for questionnaire and drawing instructions."}
+          event="service_request_start"
+          analyticsEvent="free_situation_assessment_click"
+          attributes={{ "data-home-free-action": "analysis" }}
+        />
+      ) : (
+        <AcquisitionEventLink
+          prefetch={false}
+          className={styles.action}
+          href={href}
+          event={selected === "selfTest" ? "self_check_start" : "service_view"}
+          attributes={{ "data-home-free-action": selected }}
+        >
+          <ActiveIcon size={19} aria-hidden="true" />
+          <span>{active.action}</span>
+          <ArrowUpRight size={20} aria-hidden="true" />
+        </AcquisitionEventLink>
+      )}
       <p className={styles.note}>{active.note}</p>
       <div className={styles.footer}>
         <div className={styles.assurances}>
