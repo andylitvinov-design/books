@@ -7,7 +7,6 @@ const read = (file) => readFileSync(new URL("../" + file, import.meta.url), "utf
 test("Holistic Support thematic navigation reuses existing public routes and practices", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const filter = read("components/holistic-support-topic-filter.tsx");
-  const academy = read("data/academy/catalog.ts");
   const meditations = read("data/academy/holistic-support-meditations.ts");
   const support = read("app/[locale]/services/remote-energy-support/page.tsx");
 
@@ -28,8 +27,8 @@ test("Holistic Support thematic navigation reuses existing public routes and pra
   assert.match(filter, /"#meditation-practices"/);
   assert.match(page, /id="meditation-practices"/);
   assert.match(meditations, /freeMeditationVideos\(locale: PublicLocale\)/);
-  assert.match(filter, /academy\/symbolic\/artifacts-talismans/);
-  assert.match(academy, /"symbolic\/artifacts-talismans"/);
+  assert.match(filter, /if \(offer === "talisman"\) return "#talismans"/);
+  assert.match(page, /id="talismans"/);
   assert.match(filter, /services\/remote-energy-support/);
   assert.match(support, /RemoteEnergySupport/);
 });
@@ -45,9 +44,10 @@ test("thematic cards include distinct EN/RU/ES copy without medical claims or fa
     "Symbols for love", "Символы внутренней опоры", "Símbolos de intención",
     "Energy support for work", "Поддержка в теме отношений", "Apoyo complementario",
   ]) assert.ok(filter.includes(label), "missing topic label: " + label);
-  assert.match(filter, /historical Academy learning material/);
-  assert.match(filter, /не к действующему магазину/);
-  assert.match(filter, /no diagnostica, trata ni sustituye/);
+  assert.match(filter, /historical Academy learning materials remain available separately/);
+  assert.match(filter, /Ваши загруженные талисманы остаются приватными/);
+  assert.match(filter, /Los talismanes que subas son privados/);
+  assert.match(filter, /no diagnostica, trata ni sustituye/i);
   assert.doesNotMatch(filter, /fetch\(|localStorage|sessionStorage|window\.location|[?&](?:condition|health|question)=/);
   assert.doesNotMatch(filter, /checkout|payment_received|orderConfirmed|<form/);
   assert.match(page, /Homeopathy lacks reliable evidence/);
