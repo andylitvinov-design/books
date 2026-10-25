@@ -1,4 +1,5 @@
 import psimasterMedia from "./psimaster-media.generated.json";
+import { englishGuidedMeditations } from "./english-guided-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 
 // Curated viewing order only; every recording ID comes from the original
@@ -17,6 +18,18 @@ const selection = [
 const validYoutubeId = /^[A-Za-z0-9_-]{11}$/;
 
 export function freeMeditationVideos(locale: PublicLocale) {
+  // The original PsiMaster archive is Russian-only. The EN/ES public discovery
+  // presents the teacher-supplied, originally English Sun video instead.
+  if (locale !== "ru") {
+    const englishSun = englishGuidedMeditations.find(
+      item => item.key === "flight-to-sun" && item.youtubeId && validYoutubeId.test(item.youtubeId),
+    );
+    return englishSun?.youtubeId ? [{
+      id: englishSun.youtubeId,
+      title: englishSun.title + (locale === "es" ? " · audio original en inglés" : " · original English audio"),
+      order: 1,
+    }] : [];
+  }
   const seen = new Set<string>();
   return selection.flatMap(([logicalId, order]) => {
     const recording = psimasterMedia.find(

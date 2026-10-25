@@ -58,19 +58,20 @@ const copy = {
     energyBody: "Request distant energy support when you need it. Choose the practitioner, format and preferred time; the master confirms availability and fees.",
     energyAction: "Request distant energy support",
     meditationTitle: "Meditation · Audio & Video",
-    meditationBody: "Listen to a gentle soundscape and explore the free PsiMaster Sun and energy-practice recordings.",
+    meditationBody: "Listen to a calming soundscape or Andrey’s original English Sun meditation. The PsiMaster archive is preserved in Russian.",
     meditationAction: "Open free practices",
     meditationEyebrow: "03 · MEDITATION PRACTICES",
     meditationSectionTitle: "Meditation · Free Energy Pump-Ups",
-    meditationSectionLead: "Start with three Sun meditations, then choose other original PsiMaster practice recordings. Pick a lesson and press Play when you are ready.",
+    meditationSectionLead: "Begin with an original English-guided Sun practice. The historical free PsiMaster Energy Pump-Ups series is accessible in Russian on the RU page.",
     meditationAudioTitle: "Audio · Gentle waves & melody",
     meditationAudioBody: "A 96-second instrumental soundscape for quiet attention. It is not an original PsiMaster guided recording.",
     meditationAudioLabel: "Play gentle waves and soft music",
     meditationAudioMissing: "The original standalone MP3/M4A recordings of Andrey's PsiMaster pump-ups have not been located. The course below currently contains the source-linked videos with their original sound; no audio has been extracted or invented.",
-    meditationVideoIntro: "Free curated selections from the PsiMaster video archive, beginning with the three Sun sessions. The original recordings are in Russian. Source-linked YouTube playback may depend on availability.",
-    meditationVideoTitle: "Free Sun & Energy Practices · PsiMaster",
+    meditationVideoIntro: "An original English-language Flight to the Sun practice. The PsiMaster Sun and Energy Pump-Ups archive is in Russian, not translated as English content.",
+    meditationVideoTitle: "Flight to the Sun · Original English video",
     meditationVideoUnavailable: "The original PsiMaster practice recordings are not available in the catalogue.",
     meditationMore: "Explore more Academy meditations",
+    meditationRussianArchive: "Open the original PsiMaster series in Russian",
     meditationAudioFallback: "Your browser does not support audio playback.",
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Situation analysis, constellation-informed reflection and optional homeopathic discussion as a symbolic or complementary approach — not medical treatment.",
@@ -140,6 +141,7 @@ const copy = {
     meditationVideoTitle: "Бесплатные практики Солнца · PsiMaster",
     meditationVideoUnavailable: "Оригинальные материалы PsiMaster пока недоступны в каталоге.",
     meditationMore: "Другие медитации в Академии",
+    meditationRussianArchive: "Оригинальный архив PsiMaster (RU)",
     meditationAudioFallback: "Ваш браузер не поддерживает воспроизведение аудио.",
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Разбор ситуации, символическая расстановочная работа и при желании обсуждение гомеопатии как дополнительного подхода — не лечение.",
@@ -196,19 +198,20 @@ const copy = {
     energyBody: "Solicita apoyo energético a distancia cuando lo necesites. Elige profesional, formato y horario preferido; disponibilidad y precio se confirman por separado.",
     energyAction: "Solicitar apoyo a distancia",
     meditationTitle: "Meditación · Audio y vídeo",
-    meditationBody: "Escucha un ambiente sonoro suave y descubre las prácticas gratuitas del Sol y el archivo PsiMaster.",
+    meditationBody: "Escucha música suave o una meditación original del Sol en inglés. El archivo histórico de PsiMaster se mantiene en ruso.",
     meditationAction: "Abrir prácticas gratuitas",
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
     meditationSectionTitle: "Meditación · Prácticas energéticas gratuitas",
-    meditationSectionLead: "Empieza por tres meditaciones del Sol y continúa con las grabaciones originales de PsiMaster. Elige una lección y pulsa Reproducir.",
+    meditationSectionLead: "Empieza con un vídeo original del Sol en inglés. La serie histórica gratuita PsiMaster está disponible en su idioma original: ruso.",
     meditationAudioTitle: "Audio · Olas y melodía suave",
     meditationAudioBody: "Música instrumental de 96 segundos para una pausa tranquila. No es una grabación guiada original de PsiMaster.",
     meditationAudioLabel: "Reproducir olas y melodía suave",
     meditationAudioMissing: "No se han localizado los audios MP3/M4A originales de las prácticas de PsiMaster. Abajo están los vídeos de archivo con su sonido original; no se ha extraído ni inventado ninguna pista de audio.",
-    meditationVideoIntro: "Selección gratuita del archivo de PsiMaster: primero tres prácticas del Sol, después otras meditaciones y material del maratón. Las grabaciones originales están en ruso. La reproducción depende de YouTube.",
-    meditationVideoTitle: "Prácticas gratuitas del Sol · PsiMaster",
+    meditationVideoIntro: "Práctica original Flight to the Sun con audio en inglés. El archivo de PsiMaster es ruso y no se presenta como un curso traducido al español.",
+    meditationVideoTitle: "Flight to the Sun · Vídeo original en inglés",
     meditationVideoUnavailable: "Las grabaciones originales de PsiMaster no están disponibles en el catálogo.",
     meditationMore: "Más meditaciones en la Academia",
+    meditationRussianArchive: "Abrir la serie original de PsiMaster en ruso",
     meditationAudioFallback: "Tu navegador no permite reproducir audio.",
     alchemyTitle: "Psychic Alchemy",
     alchemyBody: "Análisis simbólico de situaciones, constelaciones y reflexión homeopática opcional como práctica complementaria; no es tratamiento médico.",
@@ -342,6 +345,11 @@ export default async function HolisticSupportPage({ params }: Props) {
               introText={t.meditationVideoIntro}
             />
           ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
+          {locale !== "ru" ? (
+            <Link href="/ru/holistic-support#meditation-practices" className={styles.libraryLink} prefetch={false} data-holistic-russian-archive>
+              {t.meditationRussianArchive}<span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
           <Link href={"/" + locale + "/academy"} className={styles.libraryLink} prefetch={false}>
             {t.meditationMore}<span aria-hidden="true">→</span>
           </Link>

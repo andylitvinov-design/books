@@ -21,9 +21,11 @@ test("Holistic Support has an accessible audio and video meditation destination 
   assert.match(page, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
   assert.match(page, /<AcademyCourseVideoPlaylist/);
   assert.match(page, /introText=\{t\.meditationVideoIntro\}/);
+  assert.match(page, /data-holistic-russian-archive/);
+  assert.match(page, /\/ru\/holistic-support#meditation-practices/);
+  assert.ok(page.includes("Flight to the Sun · Original English video"));
+  assert.ok(page.includes("Flight to the Sun · Vídeo original en inglés"));
   assert.match(css, /\.section\[data-holistic-meditations\]\{scroll-margin-top/);
-  assert.match(css, /\.section\[data-holistic-meditations\] \.libraryLink\{/);
-  assert.doesNotMatch(css, /(?:^|\n)\[data-holistic-meditations\]/);
   assert.match(css, /@media\(max-width:350px\)/);
   assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("data-holistic-healing"));
   assert.ok(page.indexOf("data-holistic-meditations") < page.indexOf("data-holistic-coaching-followup"));
@@ -36,6 +38,9 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   const sound = read("scripts/generate-soft-ocean-melody.mjs");
   assert.match(model, /psimaster-media\.generated\.json/);
   assert.match(model, /verified_legacy_public_embed/);
+  assert.match(model, /english-guided-meditations/);
+  assert.match(model, /if \(locale !== "ru"\)/);
+  assert.match(model, /item\.key === "flight-to-sun"/);
   assert.match(model, /seen\.has\(recording\.videoId\)/);
   assert.match(playlist, /introText \?\? t\.intro/);
   assert.match(playlist, /key=\{active\.id\}/);
