@@ -21,7 +21,7 @@ test("Tantra Reiki landing leads with the first initiation in all locales", asyn
     assert.ok(metadata.includes(phrase), "SEO " + phrase);
   }
   const firstLesson = page.indexOf('<TantraReikiJourney locale={locale} />');
-  const guide = page.indexOf('className="tantra-mobile-guide tantra-mobile-guide--combined"');
+  const guide = page.indexOf('className="tantra-mobile-guide tantra-mobile-guide--combined');
   const festival = page.indexOf('<TantraReikiFestivalMoments locale={locale} />');
   const reviews = page.indexOf('<TantraReikiTestimonials locale={locale} />');
   assert.ok(firstLesson > 0 && firstLesson < guide && guide < festival && festival < reviews);
