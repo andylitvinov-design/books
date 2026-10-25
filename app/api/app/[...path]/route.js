@@ -821,6 +821,10 @@ async function handle(request, { params }) {
       }
       return json({ ...workspace, newServices })
     }
+    if (joined === 'practice/alias' && method === 'GET') {
+      await consumeRate(config,{op:'practitioner-alias-check',account:actor.id},30,3600)
+      return json(await practiceRepo.checkPublicAlias(actor,new URL(request.url).searchParams.get('alias')))
+    }
     if (joined === 'practice/articles' && method === 'GET') {
       await practiceRepo.requireActivated(actor)
       return json(await articleRepo.library(actor))
@@ -926,6 +930,10 @@ async function handle(request, { params }) {
     if (joined === 'test-ratings') {
       await consumeRate(config, { op: 'account-test-rating', account: actor.id }, 20, 3600)
       return json(await saveAccountTestRating(config, actor, body))
+    }
+    if (joined === 'practice/alias') {
+      await consumeRate(config,{op:'practitioner-alias-save',account:actor.id},5,3600)
+      return json(await practiceRepo.savePublicAlias(actor,body))
     }
     if (joined === 'onboarding') return json(await repo.onboarding(actor, body))
     if (joined === 'preferences') return json(await repo.preferences(actor, body))
