@@ -511,3 +511,54 @@
 @media(prefers-reduced-motion:reduce){.masterChevron{transition:none}}
 
 @media(max-width:430px){.freeBlurb{font-size:11px;line-height:1.37}}
+
+/* 2026-10-24: direct editor actions, accessible inline Details; no separate preview screen. */
+.offerStudio{display:block;max-width:940px;margin-inline:auto}
+.offerChoices{min-height:0;width:100%;padding:clamp(16px,3vw,25px)}
+.offerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px;margin-top:16px}
+.offerOption{min-width:0;overflow:hidden;padding:9px;background:#f8f2ea;border:1px solid #e4cfba;border-radius:17px}
+.offerOptionHeader{display:grid;grid-template-columns:94px minmax(0,1fr);align-items:center;gap:13px;min-height:92px}
+.offerOptionHeader .offerThumb{width:94px;min-height:0;height:88px;border-radius:12px}
+.offerOption .offerText strong{font-size:15px;line-height:1.24}
+.offerOption .offerText small{font-size:12px;line-height:1.36}
+.offerActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.offerGrid .offerDetailsButton,.offerGrid .offerCreateButton{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:44px;min-width:0;padding:8px 11px;
+ border-radius:11px;text-decoration:none;font:750 13px/1.2 Arial,Helvetica,sans-serif;
+}
+.offerGrid .offerDetailsButton{border:1px solid #d9bea8;background:#fffdfa;color:#614334;cursor:pointer}
+.offerGrid .offerDetailsButton[aria-expanded="true"]{background:#eddfd0;border-color:#9e7357}
+.offerGrid .offerDetailsButton[aria-expanded="true"] svg{transform:rotate(90deg)}
+.offerGrid .offerCreateButton{border:1px solid #87314d;background:#87314d;color:#fffaf6}
+.offerGrid .offerCreateButton:hover{background:#6f2940;border-color:#6f2940}
+.offerGrid .offerDetailsButton:focus-visible,.offerGrid .offerCreateButton:focus-visible{
+ outline:3px solid #a77d5d;outline-offset:3px
+}
+.offerExpanded{margin-top:10px;padding:11px 10px 5px;border-top:1px solid #e0c6b1;color:#675044}
+.offerExpanded[hidden]{display:none}
+.offerExpanded>p{margin:0 0 10px;font-size:12px;line-height:1.52}
+.offerExpanded dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+.offerExpanded dt{color:#895b47;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.offerExpanded dd{margin:4px 0 0;font-size:11.5px;line-height:1.42}
+.offerChoices>.authNote{margin:13px 3px 0;font-size:11px;line-height:1.48}
+@media(max-width:800px){.offerGrid{grid-template-columns:1fr;gap:9px}}
+@media(max-width:600px){
+ .offerChoices{display:block;min-height:0;padding:17px 13px;margin-bottom:0}
+ .offerGrid{grid-template-columns:1fr;margin-top:12px;gap:8px}
+ .offerOption{padding:7px 8px}
+ .offerOptionHeader{grid-template-columns:80px minmax(0,1fr);gap:12px;min-height:72px}
+ .offerOptionHeader .offerThumb{width:80px;height:70px;min-height:0}
+ .offerOption .offerText strong{font-size:13.5px}
+ .offerOption .offerText small{font-size:11px}
+ .offerActions{margin-top:6px;gap:8px}
+ .offerGrid .offerDetailsButton,.offerGrid .offerCreateButton{min-height:39px;font-size:12px}
+ .offerExpanded dl{grid-template-columns:1fr 1fr}
+ .offerChoices>.authNote{font-size:10.5px}
+}
+@media(max-width:359px){
+ .offerOptionHeader{grid-template-columns:72px minmax(0,1fr);gap:8px}
+ .offerOptionHeader .offerThumb{width:72px}
+ .offerExpanded dl{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){.offerGrid .offerDetailsButton svg{transition:none}}

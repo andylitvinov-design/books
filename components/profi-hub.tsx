@@ -100,35 +100,15 @@ const copy = {
     proTitle: "Turn your experience into an offer.",
     proLead: "Offer personal diagnostics, energy support, guided meditation courses or your own individual service. Build a private draft before review.",
     pickerTitle: "What would you like to offer?",
-    pickerHint: "Choose one. We'll take you to the right existing editor—not create a listing just by tapping.",
+    pickerHint: "Tap Details to learn more, or Create to open the right editor.",
+    detailsAction: "Details", createAction: "Create", formatLabel: "Format", termsLabel: "Terms",
     offers: {
       diagnostic: { title: "Personal diagnostics", subtitle: "Explore a client's situation", preview: "Personal diagnostic consultation", format: "1:1 conversation · online or in person", pricing: "Set your own duration and fee", tip: "Explain your assessment method and what the client receives. This is not a medical diagnosis or treatment." },
       energy: { title: "Energy support", subtitle: "Individual energy practice", preview: "Personal energy support", format: "Individual session · online or in person", pricing: "You choose the duration and price", tip: "Describe your approach, session format, boundaries and realistic expectations without health guarantees." },
       meditation: { title: "Create a meditation course", subtitle: "Your own guided online course", preview: "Online meditation course", format: "Lessons · guided audio/video · practices", pricing: "Publication requires review; site checkout is not active", tip: "Build a sequence of lessons with your own guided audio or video, practical exercises and reflection questions." },
       personal: { title: "Personal service", subtitle: "Your own 1:1 offering", preview: "Individual personal service", format: "Your method · online or in person", pricing: "You set the format and price", tip: "Explain your service, suitable audience, languages, session boundaries and what clients can expect." },
     },
-    previewLabel: "EXAMPLE OF YOUR FUTURE CARD · NOT PUBLISHED",
-    previewClient: "What a visitor could understand",
-    previewAction: "Request service",
-    previewCourseAction: "View course",
-    previewNote: "The real public request action appears only after approval. This example is not an active listing.",
-    previewCourseNote: "An approved practitioner profile and your explicit course publication are required. This is not an active course.",
-    createService: "Create my service in My Practice",
-    createCourse: "Create my course in My Practice",
     googleNote: "Sign in with Google to save a private draft. New practitioners first complete a moderated profile; your selected editor remains available after that step. Nothing is saved by choosing an offer.",
-    stepsTitle: "From idea to first client enquiry",
-    steps: [
-      { title: "Present yourself", detail: "Add a real name, practice description, languages and relevant background.", action: "My profile" },
-      { title: "Build your offer", detail: "Explain the outcome, format, duration and price. Save a draft and submit it.", action: "Open the editor" },
-      { title: "Pass review & get discovered", detail: "Approved profiles and offers can appear in the practitioner directory. Publication is not automatic.", action: "See the directory" },
-      { title: "Handle a real enquiry", detail: "Check your private requests, reply with consent and agree on session and payment terms.", action: "My enquiries" },
-    ],
-    courseSteps: [
-      { title: "Set up your profile", detail: "An approved practitioner profile is required before a course can go public.", action: "My profile" },
-      { title: "Build the lessons", detail: "Name your course, add screens, media and exercises. Save private drafts.", action: "Course editor" },
-      { title: "Confirm publication", detail: "After your profile is approved, review your materials and explicitly publish the course.", action: "View the Academy" },
-      { title: "Share and improve", detail: "Share the public course link, respond to feedback and update your lessons. Paid checkout is not active.", action: "Manage my course" },
-    ],
     freeTitle: "Free to start",
     freeBody: "Your basic practitioner profile and up to 10 saved Hobby services have no mandatory subscription. Public listings require approval.",
     discoverTitle: "Your own public page",
@@ -193,35 +173,15 @@ const copy = {
     proTitle: "Преврати опыт в понятную услугу.",
     proLead: "Предложи персональную диагностику, энергетическую поддержку, онлайн-курс медитации или собственную индивидуальную услугу. Сначала создаётся черновик.",
     pickerTitle: "Что хочешь предложить?",
-    pickerHint: "Выбери формат. Он откроется в существующем редакторе — выбор здесь ничего не публикует.",
+    pickerHint: "Нажми «Детали», чтобы узнать больше, или «Создать», чтобы сразу перейти в редактор.",
+    detailsAction: "Детали", createAction: "Создать", formatLabel: "Формат", termsLabel: "Условия",
     offers: {
       diagnostic: { title: "Персональная диагностика", subtitle: "Индивидуальный разбор запроса", preview: "Персональная диагностика и разбор", format: "Один на один · онлайн или лично", pricing: "Стоимость и длительность определяешь ты", tip: "Опиши метод разбора и то, что получит клиент. Это не медицинский диагноз или лечение." },
       energy: { title: "Энергетическая поддержка", subtitle: "Индивидуальная энергетическая практика", preview: "Персональная энергетическая поддержка", format: "Индивидуально · дистанционно или лично", pricing: "Стоимость и условия задаёшь ты", tip: "Расскажи о практике, формате, границах и реалистичных ожиданиях без обещаний исцеления." },
       meditation: { title: "Создать онлайн-курс медитации", subtitle: "Обучение медитации по твоей методике", preview: "Авторский онлайн-курс медитации", format: "Уроки · аудио/видео · упражнения", pricing: "Публикация после проверки; оплата на сайте пока не работает", tip: "Составь последовательность уроков, добавь собственные аудио/видео, практики и вопросы для размышления." },
       personal: { title: "Персональная услуга", subtitle: "Твоя индивидуальная работа", preview: "Авторская персональная услуга", format: "Онлайн или лично · по твоей методике", pricing: "Формат и цену выбираешь ты", tip: "Опиши метод, для кого подходит услуга, языки проведения, границы и ожидаемый формат работы." },
     },
-    previewLabel: "ПРИМЕР БУДУЩЕЙ КАРТОЧКИ · НЕ ОПУБЛИКОВАНО",
-    previewClient: "Что сможет понять клиент",
-    previewAction: "Запросить услугу",
-    previewCourseAction: "Открыть курс",
-    previewNote: "Настоящая кнопка обращения станет доступна только после одобрения. Это демонстрация, а не действующая услуга.",
-    previewCourseNote: "Для публикации курса нужен одобренный профиль и твоё отдельное подтверждение. Пока это только пример.",
-    createService: "Создать услугу в «Моей практике»",
-    createCourse: "Создать курс в «Моей практике»",
     googleNote: "Для черновика войди через Google. Если ты новый мастер, сначала заполни профиль для модерации; выбранный редактор останется доступен после этого шага. Сам выбор ничего не сохраняет.",
-    stepsTitle: "От идеи до первого обращения",
-    steps: [
-      { title: "Расскажи о себе", detail: "Укажи настоящее имя, подход, языки и подтверждаемый опыт.", action: "Мой профиль" },
-      { title: "Подготовь услугу", detail: "Объясни пользу, формат, длительность и стоимость. Сохрани черновик и отправь на проверку.", action: "Редактор предложения" },
-      { title: "Пройди модерацию", detail: "После одобрения профиль и услугу можно будет найти в каталоге. Публикация не автоматическая.", action: "Посмотреть каталог" },
-      { title: "Обработай заявку", detail: "Увидь обращение в «Моей практике», ответь с согласия клиента, договорись о сессии и оплате.", action: "Мои заявки" },
-    ],
-    courseSteps: [
-      { title: "Создай профиль", detail: "Для публичного курса сначала должен быть одобрен профиль мастера.", action: "Мой профиль" },
-      { title: "Собери уроки", detail: "Придумай название, добавь экраны, упражнения и материалы. Сохраняй закрытые черновики.", action: "Редактор курса" },
-      { title: "Подтверди публикацию", detail: "После одобрения профиля проверь материалы и отдельно подтверди публикацию курса.", action: "Открыть Академию" },
-      { title: "Делись и улучшай", detail: "Отправляй ссылку на опубликованный курс, дополняй уроки. Оплата курсов на сайте пока не работает.", action: "Управлять курсом" },
-    ],
     freeTitle: "Бесплатный старт",
     freeBody: "Профиль мастера и до 10 сохранённых услуг Hobby без обязательной подписки. Публикация после проверки.",
     discoverTitle: "Своя публичная страница",
@@ -286,35 +246,15 @@ const copy = {
     proTitle: "Convierte tu experiencia en una oferta.",
     proLead: "Ofrece diagnóstico personal, apoyo energético, un curso de meditación o tu propio servicio individual. Primero crearás un borrador privado.",
     pickerTitle: "¿Qué te gustaría ofrecer?",
-    pickerHint: "Elige una opción. Se abrirá el editor existente; tocar aquí no publica nada.",
+    pickerHint: "Pulsa Detalles para saber más o Crear para abrir el editor directamente.",
+    detailsAction: "Detalles", createAction: "Crear", formatLabel: "Formato", termsLabel: "Condiciones",
     offers: {
       diagnostic: { title: "Diagnóstico personal", subtitle: "Explora la situación del cliente", preview: "Evaluación y orientación personal", format: "Sesión individual · online o presencial", pricing: "Tú eliges la duración y el precio", tip: "Explica tu método y lo que recibirá el cliente. No es un diagnóstico ni un tratamiento médico." },
       energy: { title: "Apoyo energético", subtitle: "Práctica energética individual", preview: "Apoyo energético personal", format: "Sesión individual · a distancia o presencial", pricing: "Tú decides duración y precio", tip: "Describe el enfoque, el formato y los límites sin prometer resultados sanitarios." },
       meditation: { title: "Crear un curso de meditación", subtitle: "Curso online con prácticas guiadas", preview: "Curso online de meditación", format: "Lecciones · audio/vídeo · prácticas", pricing: "Requiere revisión antes de publicar; el pago web no está activo", tip: "Crea lecciones con tus propios audios o vídeos guiados, ejercicios y preguntas de reflexión." },
       personal: { title: "Servicio personal", subtitle: "Tu propia propuesta individual", preview: "Servicio personal individual", format: "Tu método · online o presencial", pricing: "Tú decides el formato y el precio", tip: "Describe tu servicio, para quién es, los idiomas disponibles y los límites de la práctica." },
     },
-    previewLabel: "EJEMPLO · AÚN NO PUBLICADO",
-    previewClient: "Lo que verá el visitante",
-    previewAction: "Solicitar servicio",
-    previewCourseAction: "Ver curso",
-    previewNote: "La solicitud real solo estará disponible después de la aprobación. Es una demostración.",
-    previewCourseNote: "Se necesita un perfil aprobado y tu publicación explícita. Por ahora es solo un ejemplo.",
-    createService: "Crear mi servicio en My Practice",
-    createCourse: "Crear mi curso en My Practice",
     googleNote: "Entra con Google para guardar borradores. Si eres nuevo, primero completa el perfil sujeto a revisión; después podrás usar el editor elegido. La selección no guarda nada.",
-    stepsTitle: "De la idea a la primera consulta",
-    steps: [
-      { title: "Preséntate", detail: "Añade nombre real, experiencia, idiomas y descripción de tu práctica.", action: "Mi perfil" },
-      { title: "Diseña la oferta", detail: "Explica beneficios posibles, formato, duración y precio. Guarda el borrador y envíalo.", action: "Abrir editor" },
-      { title: "Revisión y visibilidad", detail: "El perfil y servicio aprobados pueden aparecer en el catálogo. No se publica al instante.", action: "Ver catálogo" },
-      { title: "Atiende las consultas", detail: "Revisa solicitudes privadas, responde con consentimiento y acuerda sesión y pago.", action: "Mis consultas" },
-    ],
-    courseSteps: [
-      { title: "Crea tu perfil", detail: "Necesitas un perfil profesional aprobado antes de publicar un curso.", action: "Mi perfil" },
-      { title: "Construye lecciones", detail: "Añade pantallas, prácticas y materiales. Guarda borradores privados.", action: "Editor del curso" },
-      { title: "Confirma publicación", detail: "Una vez aprobado tu perfil, revisa y publica expresamente el curso.", action: "Ver Academia" },
-      { title: "Comparte y mejora", detail: "Comparte el enlace público y actualiza lecciones. No hay checkout de pago.", action: "Gestionar curso" },
-    ],
     freeTitle: "Comienza gratis",
     freeBody: "Perfil y hasta 10 servicios guardados con Hobby, sin suscripción obligatoria. La publicación requiere revisión.",
     discoverTitle: "Tu página pública",
@@ -335,18 +275,16 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
   const t = copy[locale];
   const masterT = masterReikiUi[locale];
   const [lessonIndex, setLessonIndex] = useState(0);
-  const [offer, setOffer] = useState<OfferKey>("diagnostic");
+  const [expandedOffer, setExpandedOffer] = useState<OfferKey | null>(null);
   const appLocale = locale === "es" ? "en" : locale;
   const practiceRoot = "/" + appLocale + "/app/practice";
   const publicRoot = "/" + locale;
   const mastersHref = publicRoot + "/masters?view=mentors";
   const trainingHref = "/" + (locale === "es" ? "en" : locale) + "/academy/principles-of-energywork/learn";
   const profileHref = practiceRoot + "?panel=profile";
-  const requestsHref = practiceRoot + "?panel=requests";
-  const offerHref = offer === "meditation"
+  const editorHref = (key: OfferKey) => key === "meditation"
     ? practiceRoot + "?panel=materials&materialTab=courses&create=1"
-    : practiceRoot + "?panel=services&create=1&starter=" + offer;
-  const chosen = t.offers[offer];
+    : practiceRoot + "?panel=services&create=1&starter=" + key;
 
   return (
     <main className={"house-home house-home--services " + styles.page} lang={locale} data-profi-page={locale}>
@@ -519,59 +457,48 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 <div className={styles.offerChoices}>
                   <h3>{t.pickerTitle}</h3>
                   <p className={styles.micro}>{t.pickerHint}</p>
-                  <div className={styles.offerGrid} role="group" aria-label={t.pickerTitle}>
-                    {OFFER_KEYS.map((key) => (
-                      <button type="button" key={key} className={offer === key ? styles.offerSelected : ""}
-                        aria-pressed={offer === key} onClick={() => setOffer(key)} data-profi-offer={key}>
-                        <Photo src={PHOTOS.offers[key]} className={styles.offerThumb} sizes="95px" />
-                        <span className={styles.offerText}><strong>{t.offers[key].title}</strong><small>{t.offers[key].subtitle}</small></span>
-                        <ChevronRight size={16} aria-hidden="true" />
-                      </button>
-                    ))}
+                  <div className={styles.offerGrid} aria-label={t.pickerTitle}>
+                    {OFFER_KEYS.map((key) => {
+                      const isExpanded = expandedOffer === key;
+                      return (
+                        <article key={key} className={styles.offerOption} data-profi-offer={key}>
+                          <div className={styles.offerOptionHeader}>
+                            <Photo src={PHOTOS.offers[key]} className={styles.offerThumb} sizes="(max-width: 600px) 80px, 94px" />
+                            <span className={styles.offerText}>
+                              <strong>{t.offers[key].title}</strong>
+                              <small>{t.offers[key].subtitle}</small>
+                            </span>
+                          </div>
+                          <div className={styles.offerActions}>
+                            <button type="button" className={styles.offerDetailsButton}
+                              aria-expanded={isExpanded} aria-controls={`profi-offer-details-${key}`}
+                              onClick={() => setExpandedOffer(current => current === key ? null : key)}
+                              data-profi-offer-details={key}>
+                              {t.detailsAction}<ChevronRight size={16} aria-hidden="true" />
+                            </button>
+                            <Link href={editorHref(key)} prefetch={false} className={styles.offerCreateButton}
+                              data-profi-action={key === "meditation" ? "create-course" : "create-service"}
+                              data-profi-selected-offer={key}>
+                              {t.createAction}<ArrowRight size={16} aria-hidden="true" />
+                            </Link>
+                          </div>
+                          <div id={`profi-offer-details-${key}`} className={styles.offerExpanded}
+                            hidden={!isExpanded} role="region" aria-label={t.offers[key].title}
+                            data-profi-offer-expanded={key}>
+                            <p>{t.offers[key].tip}</p>
+                            <dl>
+                              <div><dt>{t.formatLabel}</dt><dd>{t.offers[key].format}</dd></div>
+                              <div><dt>{t.termsLabel}</dt><dd>{t.offers[key].pricing}</dd></div>
+                            </dl>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
-                </div>
-                <div className={styles.offerPreview} data-profi-preview={offer}>
-                  <p className={styles.previewEyebrow}><LockKeyhole size={14} aria-hidden="true" />{t.previewLabel}</p>
-                  <div className={styles.previewCard}>
-                    <Photo src={PHOTOS.offers[offer]} className={styles.previewPhoto} sizes="(max-width: 600px) 36vw, 220px" />
-                    <p className={styles.sectionKicker}>{t.previewClient}</p>
-                    <h3>{chosen.preview}</h3>
-                    <p>{chosen.format}</p>
-                    <strong className={styles.priceNote}>{chosen.pricing}</strong>
-                    
-                  </div>
-                  <p className={styles.micro}>{chosen.tip}</p>
-                  <p className={styles.micro}>{offer === "meditation" ? t.previewCourseNote : t.previewNote}</p>
-                  <Link href={offerHref} className={styles.primary} prefetch={false}
-                    data-profi-action={offer === "meditation" ? "create-course" : "create-service"}
-                    data-profi-selected-offer={offer}>
-                    {offer === "meditation" ? t.createCourse : t.createService}<ArrowRight size={18} aria-hidden="true" />
-                  </Link>
-                  <p className={styles.authNote}><LockKeyhole size={14} aria-hidden="true" />{t.googleNote}</p>
+                  <p className={styles.authNote}><LockKeyhole size={15} aria-hidden="true" />{t.googleNote}</p>
                 </div>
               </div>
 
-              <section className={styles.publishJourney} aria-labelledby="profi-publishing-steps">
-                <h3 id="profi-publishing-steps">{t.stepsTitle}</h3>
-                <ol>
-                  {(offer === "meditation" ? t.courseSteps : t.steps).map((step, index) => (
-                    <li key={step.title}>
-                      <span className={styles.publishPhoto}>
-                        <Image src={PHOTOS.stages[index]} alt="" fill unoptimized sizes="100px" />
-                        <span className={styles.photoNumber}>{String(index + 1).padStart(2, "0")}</span>
-                      </span>
-                      <div><h4>{step.title}</h4><p>{step.detail}</p></div>
-                      <Link href={index === 0 ? profileHref : index === 1 ? offerHref :
-                        index === 2 ? offer === "meditation" ? publicRoot + "/academy" : publicRoot + "/masters" :
-                        offer === "meditation" ? offerHref : requestsHref}
-                        prefetch={false} className={styles.stepLink}
-                        data-profi-step={index + 1}>
-                        {step.action}<ArrowRight size={15} aria-hidden="true" />
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </section>
               <p className={styles.paymentStatus}><ShieldCheck size={17} aria-hidden="true" />{t.paymentStatus}</p>
               <div className={styles.benefitGrid}>
                 <article><Photo src={PHOTOS.personal} className={styles.benefitPhoto} /><div><h3><CircleDollarSign size={19} aria-hidden="true" />{t.freeTitle}</h3><p>{t.freeBody}</p></div></article>
