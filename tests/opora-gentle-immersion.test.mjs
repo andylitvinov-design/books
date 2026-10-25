@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {oporaExperienceDepth,oporaExperienceDepthValid,oporaExperienceDay} from '../lib/inner-growth/opora-as56-experience-guides.js'
-import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
+import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '../lib/inner-growth/opora-gentle-journey.js'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS,OPORA_DAY_ONE_RESTORED_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -57,7 +57,7 @@ test('14 days × 3 languages reuse distinct reviewed guidance with optional non-
 })
 
 for(const lang of ['en','ru','es'])test('Day 4 '+lang+' puts the goal ahead of practice and keeps three honest recap stages',async()=>{
-  const f=fixture(lang,4),h=f.h,t=labels[lang],content=oporaAs59Day(4,lang)
+  const f=fixture(lang,4),h=f.h,t=labels[lang],content=oporaAs60Day(4,lang)
   try{
     for(const [stage,source] of [
       ['why',content.purpose],['story',content.scenario],
@@ -68,19 +68,19 @@ for(const lang of ['en','ru','es'])test('Day 4 '+lang+' puts the goal ahead of p
       assert.equal(f.writes,0)
     }
     await advanceOporaTo(h,'recapPractice',t.next)
-    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs59Day(4,lang).practice))
+    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs60Day(4,lang).practice))
     assert.ok(textOf(screen(h,'recapPractice')).includes(content.purpose),
       'Clear purpose must be readable before trying the activity')
     assert.ok(nodes(screen(h,'recapPractice')).some(node=>
       node.props?.['data-opora-practice-overview']===4))
     await advanceOporaTo(h,'practice',t.next)
-    assert.ok(textOf(screen(h,'practice')).includes(oporaAs59Day(4,lang).practice))
+    assert.ok(textOf(screen(h,'practice')).includes(oporaAs60Day(4,lang).practice))
     assert.equal(nodes(h.tree).filter(n=>n.type==='details'&&
       n.props?.['data-opora-inline-practice-audio']==='true').length,0,
       'Meditation moved to one visible Day 14 screen, never behind an accordion')
     await advanceOporaTo(h,'recap',t.next)
     assert.equal(nodes(screen(h,'recap')).filter(n=>n.props?.className?.includes?.('summaryItem')).length,1)
-    assert.ok(!textOf(screen(h,'recap')).includes(oporaAs59Day(4,lang).practice))
+    assert.ok(!textOf(screen(h,'recap')).includes(oporaAs60Day(4,lang).practice))
     await advanceOporaTo(h,'recapNext',t.next)
     assert.ok(!screen(h,'recapPractice'),'Introduction must not reappear in the recap')
     assert.ok(textOf(screen(h,'recapNext')).includes(content.transfer),
@@ -106,7 +106,7 @@ for (const lang of ['en','ru','es']) test('Day 1 '+lang+' explains the first gro
   try {
     await advanceOporaTo(h,'recapPractice',labels[lang].next)
     assert.ok(textOf(screen(h,'recapPractice')).includes(oporaGentleCopy(lang).dayOnePurpose))
-    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs59Day(1,lang).practice))
+    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs60Day(1,lang).practice))
     assert.ok(nodes(screen(h,'recapPractice')).some(node=>node.props?.['data-opora-practice-overview']===1))
     assert.equal(f.writes,0)
     await advanceOporaTo(h,'practice',labels[lang].next)
