@@ -65,18 +65,11 @@ body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,0
     text-wrap: balance;
     overflow: hidden;
   }
-  body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,76px) !important; }
-  body:has(.ia222-bottom-navigation) :is(input,textarea,button,a) { scroll-margin-bottom: calc(var(--ia222-bottom-height,76px) + 24px); }
+  body:has(.ia222-bottom-navigation) { padding-bottom: var(--ia222-bottom-height,calc(76px + env(safe-area-inset-bottom, 0px))) !important; }
+  body:has(.ia222-bottom-navigation) :is(input,textarea,button,a) { scroll-margin-bottom: calc(var(--ia222-bottom-height,calc(76px + env(safe-area-inset-bottom, 0px))) + 24px); }
   /* iOS Safari lifts position:fixed bars when the software keyboard opens.
-     Hide the bar while editing, then restore it at bottom:0 after focus ends. */
-  body:has(:is(
-    textarea,
-    select,
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),
-    [contenteditable="true"]
-  ):focus) {
-    --ia222-bottom-height: 0px !important;
-  }
+     Hide the bar while editing without collapsing its reserved page space.
+     Restore it at bottom:0 after focus ends; retain the safe-area fallback. */
   body:has(:is(
     textarea,
     select,

@@ -12,7 +12,8 @@ const css = readFileSync('app/ia-v2.css', 'utf8');
 test('mobile navigation hides while a text field or editor is focused', () => {
   assert.match(css, /@media \(max-width: 767px\) \{/);
   assert.match(css, /body:has\(:is\([\s\S]*?textarea,[\s\S]*?select,[\s\S]*?input:not\(\[type="checkbox"\]\)[\s\S]*?\[contenteditable="true"\][\s\S]*?\):focus\) \.ia222-bottom-navigation \{\s*display: none !important;/);
-  assert.match(css, /body:has\(:is\([\s\S]*?\):focus\) \{\s*--ia222-bottom-height: 0px !important;/);
+  assert.doesNotMatch(css, /--ia222-bottom-height:\s*0px/);
+  assert.ok(css.includes('var(--ia222-bottom-height,calc(76px + env(safe-area-inset-bottom, 0px)))'), 'keep the reserved height and safe-area fallback while the bar is hidden');
   for (const type of ['checkbox','radio','range','button','submit','reset','hidden']) {
     assert.ok(css.includes(':not([type="' + type + '"])'), 'do not hide the bar when a non-editing ' + type + ' control is focused');
   }

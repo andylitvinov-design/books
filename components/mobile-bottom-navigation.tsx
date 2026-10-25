@@ -38,8 +38,22 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
     const viewport = window.visualViewport;
     let frame: number | null = null;
     let correction = 0;
+    let reservedHeight: number | null = null;
     const measureHeight = () => {
-      document.body.style.setProperty('--ia222-bottom-height', `${element.getBoundingClientRect().height}px`);
+      // A hidden mobile bar can report zero during focusout before Safari has
+      // restored its layout. Keep its last real height across that transition.
+      if (!element.isConnected || !window.matchMedia('(max-width: 767px)').matches) {
+        reservedHeight = null;
+        document.body.style.removeProperty('--ia222-bottom-height');
+        return;
+      }
+      const height = element.getBoundingClientRect().height;
+      if (Number.isFinite(height) && height > 0) reservedHeight = height;
+      if (reservedHeight !== null) {
+        document.body.style.setProperty('--ia222-bottom-height', `${reservedHeight}px`);
+      } else {
+        document.body.style.removeProperty('--ia222-bottom-height');
+      }
     };
     const dockToViewport = () => {
       if (frame !== null) return;
