@@ -435,7 +435,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
 
         {kind === "situation" ? <FreeDiagnosisOffers locale={locale} /> : null}
 
-        {kind !== "situation" ? <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : "", kind === "situation" ? styles.situationScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
+        {kind !== "situation" ? <section className={[styles.scene, styles.outcomeScene, kind === "dao" ? styles.daoOutcomeScene : ""].filter(Boolean).join(" ")} id="what-you-get" aria-labelledby="free-outcomes-title">
           <div className={styles.sceneImage}>
             <Image src={images.outcome} alt={t.outcomeAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
@@ -451,7 +451,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </div>
         </section> : null}
 
-        {kind === "tests" ? <section className={[styles.scene, styles.processScene, kind === "situation" ? styles.situationScene : ""].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
+        {kind === "tests" ? <section className={[styles.scene, styles.processScene].join(" ")} id="how-it-works" aria-labelledby="free-process-title">
           <div className={styles.sceneText}>
             <p className={styles.sectionLabel}>02 / {common.process}</p>
             <h2 id="free-process-title">{t.processTitle}</h2>
