@@ -3,8 +3,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { CompactLeadCapture } from "@/components/compact-lead-capture";
-import { FreeDiagnosticStart } from "@/components/free-diagnostic-start";
 import { IdeasDiscovery } from "@/components/ideas-discovery";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -13,7 +11,6 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
-import { ArrowRight, HeartHandshake, Sparkles } from "lucide-react";
 import styles from "./holistic-support.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -22,9 +19,9 @@ export const revalidate = 0;
 
 const copy = {
   en: {
-    eyebrow: "HOLISTIC HOUSE · FREE DIAGNOSTIC & PERSONAL SESSIONS",
-    title: "Free Diagnosis & Personal Coaching",
-    lead: "Start with a free written coaching diagnostic or request a personal session with Andrey: €50 / 30 minutes or €100 / 60 minutes.",
+    eyebrow: "HOLISTIC HOUSE · INSIGHT & ENERGY SUPPORT",
+    title: "Holistic Support",
+    lead: "Describe a goal or situation. Receive a free symbolic insight or request a personal energy support session.",
     heroHeadline: "Understand your situation. Choose the next step.",
     heroLead: "Free written coaching review after your questionnaire, or personal support in a 30- or 60-minute session.",
     choose: "Choose your direction",
@@ -73,12 +70,15 @@ const copy = {
     allPractitioners: "Find all practitioners",
     libraryAction: "Explore Temple Studies",
     disclaimer: "Symbolic insights, tarot, runes and constellations are exploratory traditions, not reliable predictions, clinical diagnostics, medical advice or emergency services. Homeopathy lacks reliable evidence for treating health conditions.",
+    coachingAsideTitle: "Looking for personal coaching?",
+    coachingAsideBody: "The free written situation review and individual €50 / 30-minute or €100 / 60-minute sessions are in the Coaching Lounge.",
+    coachingAsideAction: "Explore free diagnostics and coaching",
     privacy: "Free questions stay in your browser. A CRM contact is created only when you explicitly consent to a personal enquiry. Booking and payment are separate confirmations.",
   },
   ru: {
-    eyebrow: "HOLISTIC HOUSE · БЕСПЛАТНЫЙ РАЗБОР И ЛИЧНЫЕ СЕССИИ",
-    title: "Бесплатная диагностика и коучинг",
-    lead: "Бесплатная письменная экспресс-диагностика или личная сессия с Андреем: €50 / 30 минут и €100 / 60 минут.",
+    eyebrow: "HOLISTIC HOUSE · ПОДСКАЗКИ И ЭНЕРГЕТИЧЕСКАЯ ПОДДЕРЖКА",
+    title: "Холистическая поддержка",
+    lead: "Опишите цель или ситуацию. Получите бесплатную символическую подсказку или запросите энергетическую поддержку.",
     heroHeadline: "Разберитесь в ситуации и выберите следующий шаг.",
     heroLead: "Письменный разбор по коучинговой анкете — бесплатно. Личная сессия — 30 или 60 минут.",
     choose: "Выберите направление",
@@ -127,12 +127,15 @@ const copy = {
     allPractitioners: "Все специалисты",
     libraryAction: "Храмовые традиции",
     disclaimer: "И-Цзин, Руны, Таро и расстановки — символические практики, а не надёжные предсказания, медицинские диагнозы или экстренная помощь. Для лечения заболеваний у гомеопатии нет убедительной доказательной базы.",
+    coachingAsideTitle: "Нужен личный коучинг?",
+    coachingAsideBody: "Бесплатная письменная диагностика ситуации и личные сессии €50 / 30 минут или €100 / 60 минут находятся в гостиной коучинга.",
+    coachingAsideAction: "Бесплатная диагностика и коучинг",
     privacy: "Бесплатный вопрос остаётся в браузере. Контакт попадает в CRM только после вашего согласия и отправки заявки. Запись и оплата подтверждаются отдельно.",
   },
   es: {
-    eyebrow: "HOLISTIC HOUSE · EVALUACIÓN GRATUITA Y SESIONES",
-    title: "Evaluación gratuita y coaching",
-    lead: "Evaluación escrita gratuita o sesión personal con Andrey: €50 / 30 minutos o €100 / 60 minutos.",
+    eyebrow: "HOLISTIC HOUSE · ORIENTACIÓN Y APOYO ENERGÉTICO",
+    title: "Apoyo holístico",
+    lead: "Describe tu objetivo o situación. Recibe una reflexión simbólica gratuita o solicita apoyo energético personal.",
     heroHeadline: "Aclara tu situación y decide el siguiente paso.",
     heroLead: "Revisión escrita con un cuestionario de coaching gratis, o una sesión personal de 30 o 60 minutos.",
     choose: "Elige tu camino",
@@ -181,6 +184,9 @@ const copy = {
     allPractitioners: "Todos los profesionales",
     libraryAction: "Explorar estudios del templo",
     disclaimer: "El I Ching, tarot, runas y constelaciones son tradiciones de reflexión, no predicciones fiables, diagnósticos clínicos ni ayuda urgente. La homeopatía carece de pruebas fiables para tratar enfermedades.",
+    coachingAsideTitle: "¿Buscas coaching personal?",
+    coachingAsideBody: "La evaluación escrita gratuita y las sesiones personales de €50 / 30 minutos o €100 / 60 minutos están en el espacio de coaching.",
+    coachingAsideAction: "Explorar diagnóstico gratuito y coaching",
     privacy: "Las preguntas gratuitas permanecen en el navegador. Tu contacto llega al CRM solo después del consentimiento y envío explícito. Reservas y pagos requieren confirmación aparte.",
   },
 } as const;
@@ -191,7 +197,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = copy[locale];
   return {
     metadataBase: metadataBaseFor(),
-    title: t.title + " · " + t.insightsTitle + " | Holistic House",
+    title: t.title + " | Holistic House",
     description: t.lead,
     alternates: {
       canonical: "/" + locale + "/holistic-support",
@@ -225,100 +231,9 @@ export default async function HolisticSupportPage({ params }: Props) {
     <main className={styles.page} data-holistic-support lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.shell}>
-        <section className={styles.hero} data-holistic-first-screen aria-labelledby="holistic-support-title">
-          <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority className={styles.heroImage}
-            sizes="(max-width: 650px) 100vw, 1190px" />
-          <div className={styles.heroOverlay} aria-hidden="true" />
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>{t.eyebrow}</p>
-            <h1 id="holistic-support-title">{t.title}</h1>
-            <p className={styles.heroHeadline}>{t.heroHeadline}</p>
-            <p className={styles.heroLead}>{t.heroLead}</p>
-            <nav className={styles.pathControls} aria-label={t.choose}>
-              <a href="#free-diagnostic-start" data-holistic-path="insights">
-                <Sparkles size={21} aria-hidden="true" />
-                <span>{t.insightsNav}</span>
-                <ArrowRight size={18} aria-hidden="true" />
-              </a>
-              <a href="#personal-insights-master" data-holistic-path="healing">
-                <HeartHandshake size={21} aria-hidden="true" />
-                <span>{t.healingNav}</span>
-                <ArrowRight size={18} aria-hidden="true" />
-              </a>
-            </nav>
-          </div>
-        </section>
-
-        <section id="temple-psychic-insights" className={styles.section} data-holistic-insights aria-labelledby="holistic-insights-title">
-          <div className={styles.sectionHeading}>
-            <p className={styles.kicker}>{t.insightsEyebrow}</p>
-            <h2 id="holistic-insights-title">{t.insightsTitle}</h2>
-            <p>{t.insightsIntro}</p>
-          </div>
-          <div className={styles.options}>
-            <article className={styles.option} data-holistic-offer="express">
-              <div className={styles.optionPhoto}>
-                <Image src="/images/holistic-house/video-posters/constellations-en-v1.webp" alt="" fill sizes="(max-width:700px) 100px, 155px" />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.freeTag}>{t.free}</span>
-                <h3>{t.expressTitle}</h3>
-                <p>{t.expressBody}</p>
-                <a href="#free-diagnostic-start" className={styles.primaryAction}>
-                  {t.expressAction}<span aria-hidden="true">→</span>
-                </a>
-              </div>
-            </article>
-            <article className={styles.option} data-holistic-offer="master">
-              <div className={styles.optionPhoto}>
-                <Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:700px) 100px, 155px" />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.priceTag}>{t.masterPrice}</span>
-                <h3>{t.masterTitle}</h3>
-                <p>{t.masterBody}</p>
-                <a href="#personal-insights-master" className={styles.primaryAction}>
-                  {t.masterAction}<span aria-hidden="true">→</span>
-                </a>
-              </div>
-            </article>
-            <article className={styles.option} data-holistic-offer="ai">
-              <div className={styles.optionPhoto}>
-                <Image src="/images/holistic-house/ideas-zen-landscape.svg" alt="" fill unoptimized sizes="(max-width:700px) 100px, 155px" />
-              </div>
-              <div className={styles.optionContent}>
-                <span className={styles.freeTag}>{t.free}</span>
-                <h3>{t.aiTitle}</h3>
-                <p>{t.aiBody}</p>
-                <small className={styles.note}>{t.aiCaveat}</small>
-                <a href="#symbolic-reflection" className={styles.secondaryAction}>{t.aiAction}<span aria-hidden="true">→</span></a>
-              </div>
-            </article>
-          </div>
-          <FreeDiagnosticStart locale={locale} />
-          <div className={styles.freePanel} id="symbolic-reflection" data-holistic-free-insight>
-            <div className={styles.innerHeading}>
-              <h3>{t.freeEngineTitle}</h3><p>{t.freeEngineLead}</p>
-            </div>
-            <details className={styles.symbolicDetails}>
-              <summary>{t.symbolicSummary}</summary>
-              <IdeasDiscovery locale={locale} variant="temple" />
-            </details>
-          </div>
-          <div className={styles.masterPanel} id="personal-insights-master" data-holistic-master>
-            <CompactLeadCapture
-              locale={locale}
-              variant="inline"
-              sourcePath={"/" + locale + "/holistic-support"}
-              serviceTitle={"Personal Coaching Session with Andrey"}
-              title={t.masterFormTitle}
-              lead={t.masterFormLead}
-              disclaimer={t.masterDisclaimer}
-              formatOptions={t.paidFormats}
-              formatLabel={t.paidFormatLabel}
-            />
-          </div>
-        </section>
+        <div className={styles.primaryEntry} data-holistic-first-screen>
+          <IdeasDiscovery locale={locale} variant="holistic" />
+        </div>
 
         <section id="holistic-healing-support" className={styles.section} data-holistic-healing aria-labelledby="holistic-healing-title">
           <div className={styles.sectionHeading}>
@@ -373,6 +288,16 @@ export default async function HolisticSupportPage({ params }: Props) {
             </Link>
           </div>
         </section>
+
+        <aside className={styles.coachingAside} data-holistic-coaching-followup aria-labelledby="holistic-coaching-followup-title">
+          <div>
+            <h2 id="holistic-coaching-followup-title">{t.coachingAsideTitle}</h2>
+            <p>{t.coachingAsideBody}</p>
+          </div>
+          <Link href={"/" + locale + "/coaching"} prefetch={false} className={styles.coachingAsideAction}>
+            {t.coachingAsideAction}<span aria-hidden="true">→</span>
+          </Link>
+        </aside>
 
         <footer className={styles.privacy} data-holistic-disclaimer>
           <p>{t.disclaimer}</p>
