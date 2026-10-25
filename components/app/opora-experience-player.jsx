@@ -14,7 +14,7 @@ import {oporaAs60Journey,OPORA_EXPERIENCE_SCENES} from '@/lib/inner-growth/opora
 import OporaOceanOutro from './opora-ocean-outro'
 import {oporaEndingCopy} from '@/lib/inner-growth/opora-lesson-outro'
 import {oporaGentleCopy,OPORA_GENTLE_INTRO,OPORA_GENTLE_RECAP} from '@/lib/inner-growth/opora-gentle-journey'
-import {oporaAs60VariedDay,oporaAs60VariedJourney,oporaAs60DailyInsight,OPORA_VARIETY_REVISION,OPORA_VARIETY_COPY} from '@/lib/inner-growth/opora-as60-varied-content'
+import {oporaAs60VariedDay,oporaAs60VariedJourney,oporaAs60DailyInsight,oporaAs60SettlingCue,OPORA_VARIETY_REVISION,OPORA_VARIETY_COPY} from '@/lib/inner-growth/opora-as60-varied-content'
 import {needsOporaFirstExerciseConsent,canAdvanceOporaFirstExercise} from '@/lib/inner-growth/opora-first-exercise-consent'
 import styles from './opora-experience-player.module.css'
 
@@ -904,7 +904,7 @@ export default function OporaExperiencePlayer({locale='en',data,busy=false,onClo
             <p className={styles.gentleVariant}>{depth?.alternative}</p>
           </>}
           {moment==='settle'&&!neutralSupport&&<>
-            <p className={styles.lead}>{j.settleLead}</p>
+            <p className={styles.lead}>{showVariety?oporaAs60SettlingCue(cycle.day,lang):j.settleLead}</p>
             <p className={styles.soft}>{j.settleNote}</p>
           </>}
           {channelCard&&!neutralSupport&&
