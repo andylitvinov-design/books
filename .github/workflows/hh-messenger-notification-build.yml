@@ -24,6 +24,10 @@ on:
       - 'app/api/app/notification-channels/telegram/test/**'
       - 'lib/app/client-telegram-*.js'
       - 'app/api/app/practitioner-client-messages/route.js'
+      - 'app/api/service-enquiries/route.js'
+      - 'lib/app/public-enquiry-telegram.js'
+      - 'tests/owner-telegram-*.test.mjs'
+      - 'supabase/migrations/*owner_telegram_*pilot*'
       - 'supabase/migrations/*messenger_pending_contacts*'
       - '.github/workflows/hh-messenger-notification-build.yml'
   workflow_dispatch:
@@ -44,6 +48,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Messenger policy, privacy and Settings smoke tests
         run: node --test tests/messenger-notification-subscriptions.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/notification-stack-integration.test.mjs tests/holistic-house-post-signup-install.test.mjs
+      - name: Owner-only real-enquiry and private-message Telegram pilot contracts
+        run: |
+          node --test tests/owner-telegram-enquiry-pilot.test.mjs tests/owner-telegram-message-pilot.test.mjs
+          npx --no-install eslint lib/app/public-enquiry-telegram.js app/api/service-enquiries/route.js tests/owner-telegram-enquiry-pilot.test.mjs tests/owner-telegram-message-pilot.test.mjs
       - name: Atomic booking arrival, replay, ownership and neutral email adapter
         run: node --conditions=react-server --test tests/booking-arrival-transaction.test.mjs tests/booking-master-email-behavior.test.mjs tests/booking-notification-route-behavior.test.mjs tests/remote-booking-master-alerts.test.mjs tests/remote-energy-support-booking.test.mjs tests/remote-support-privacy-contract.test.mjs
       - name: Booking lint and TypeScript
