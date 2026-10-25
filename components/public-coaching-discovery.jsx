@@ -4,7 +4,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, Download, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import { coachingGentleGuide, coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
@@ -17,6 +17,7 @@ import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coachin
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, coachingSchemeArt, humanCoachingArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
+import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
 import { stageIdeasCoachingQuestion, takeIdeasCoachingQuestion } from '@/lib/ideas-coaching-handoff'
 import styles from './public-coaching-discovery.module.css'
@@ -60,6 +61,8 @@ const copy={
     completed:'Session complete',summary:'Your reflection',nextStep:'Your last step',copy:'Copy my summary',
     copied:'Copied',copyFallback:'Select and copy your notes below.',
     restart:'Choose another model',memory:'This free session stays in this tab only. Nothing is saved to an account or sent to a coach.',
+    reportNotice:'In this guest session, answers stay only in this tab. At the end you can download a dated PDF with all your questions and answers; download it before leaving.',
+    pdf:'Download PDF report',pdfError:'The PDF could not be created. Your answers are still visible in this tab.',date:'Session date',
     discard:'Leave this session? Your unsaved answers will be lost.',noAnswer:'Skipped',
     otherWays:'More ways to work with your question',
     otherWaysNote:'Author-created programmes and a longer questionnaire. These are separate experiences; guest answers do not transfer automatically.',
@@ -106,6 +109,8 @@ const copy={
     completed:'Сессия завершена',summary:'Ваши ответы',nextStep:'Ваш последний шаг',copy:'Скопировать результат',
     copied:'Скопировано',copyFallback:'Выделите и скопируйте текст ниже.',
     restart:'Выбрать другую модель',memory:'Бесплатная сессия хранится только в открытой вкладке. В личный кабинет или коучу ничего не отправляется.',
+    reportNotice:'В гостевой сессии ответы не сохраняются в кабинете. В конце вы сможете скачать PDF с датой, вопросами и ответами. Скачайте его до закрытия вкладки.',
+    pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы пока доступны в этой вкладке.',date:'Дата сессии',
     discard:'Выйти из сессии? Несохранённые ответы будут потеряны.',noAnswer:'Пропущено',
     otherWays:'Другие способы разобраться в своём вопросе',
     otherWaysNote:'Авторские программы и отдельная подробная анкета. Гостевые ответы не переносятся в кабинет автоматически.',
@@ -152,6 +157,8 @@ const copy={
     completed:'Sesión terminada',summary:'Tu reflexión',nextStep:'Tu último paso',copy:'Copiar resumen',
     copied:'Copiado',copyFallback:'Selecciona y copia tu texto abajo.',
     restart:'Elegir otro modelo',memory:'Esta sesión gratis solo vive en esta pestaña. No se guarda ni se envía al coach.',
+    reportNotice:'En esta sesión de invitado, las respuestas solo están en esta pestaña. Al terminar podrás descargar un PDF con fecha, preguntas y respuestas. Guárdalo antes de salir.',
+    pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen en esta pestaña.',date:'Fecha de la sesión',
     discard:'¿Salir? Se perderán tus respuestas.',noAnswer:'Omitido',
     otherWays:'Otras formas de explorar tu pregunta',
     otherWaysNote:'Programas de autor y cuestionario detallado. Las respuestas de invitado no se transfieren a tu cuenta automáticamente.',
@@ -272,6 +279,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [dictating,setDictating]=useState(false)
   const [speechConsent,setSpeechConsent]=useState(false)
   const [finished,setFinished]=useState(false)
+  const [finishedAt,setFinishedAt]=useState(null)
+  const [pdfError,setPdfError]=useState('')
   const [pendingFollowup,setPendingFollowup]=useState(null)
   const [reflectionDraft,setReflectionDraft]=useState('')
   const [reflections,setReflections]=useState({})
@@ -332,7 +341,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     if(selected){
       setAdultAcknowledged(false)
       setSession(selected);setEntryStep('intro');setSessionTopic('');setIndex(0);setAnswers({});setDraft('')
-      setFinished(false);setError('');setCopied(false)
+      setFinished(false);setFinishedAt(null);setPdfError('');setError('');setCopied(false)
     }
   },[schemes])
   const recommendation=useMemo(()=>recommendCoachingForQuestion(question,catalog||{models:[],schemes:[],signals:[]},{minutes:duration||30,style}),[question,catalog,duration,style])
@@ -376,13 +385,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     if(recommendation.blocked)return
     setDictating(false)
     setAdultAcknowledged(false)
-    setSession(scheme);setEntryStep('intro');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setCopied(false);setCopyError(false);setError('')
+    setSession(scheme);setEntryStep('intro');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(dictating){setError(t.stopMic);return}
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
-    setSession(null);setEntryStep('intro');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setError('')
+    setSession(null);setEntryStep('intro');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
@@ -417,7 +426,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       setReflections(nextReflections)
     }
     setAnswers(nextAnswers);setError('')
-    if(index===session.questions.length-1){setFinished(true);return}
+    if(index===session.questions.length-1){setFinishedAt(new Date().toISOString());setFinished(true);return}
     const followup=authoredFollowupFor(current,value,nextReflections)
     if(followup){setPendingFollowup(followup);setReflectionDraft('');return}
     const next=index+1;setIndex(next);setDraft(nextAnswers[session.questions[next].id]||'')
@@ -444,6 +453,27 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
         approvedPlan.goal,approvedPlan.obstacle,approvedPlan.when,
         approvedPlan.confidence===null?'':'Confidence /10: '+approvedPlan.confidence]:[])
       ].filter(Boolean).join('\n\n')
+  }
+  function downloadReport(){
+    if(!session||!finished)return
+    try{
+      downloadCoachingSessionPdf({
+        locale:lang,title:coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang)),
+        slug:session.schemeKey||'guest-coaching',sessionDate:finishedAt,
+        topic:sessionTopic?coachingRequestTopicLabel(sessionTopic,lang):'',
+        clientQuestion:question.trim(),
+        entries:session.questions.map(item=>({
+          question:tr(item.prompt,lang),
+          answer:answerText(answers[item.id],item,lang,t),
+          reflection:reflections[item.id]?.text||'',
+        })),
+        actionPlan:approvedPlan?.actionText?[
+          approvedPlan.goal,approvedPlan.obstacle,approvedPlan.actionText,approvedPlan.when,
+          Number.isInteger(approvedPlan.confidence)?String(approvedPlan.confidence)+'/10':'',
+        ].filter(Boolean).join('\n'):'',
+      })
+      setPdfError('')
+    }catch{setPdfError(t.pdfError)}
   }
   async function copySummary(){
     try{await navigator.clipboard.writeText(summaryText());setCopied(true);setCopyError(false)}
@@ -653,6 +683,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           :finished?<div className={styles.finish} data-public-coaching-complete>
             <span className={styles.completed}><Check size={16}/>{t.completed}</span>
             <h1>{t.summary}</h1>
+            <p className={styles.hint}>{t.date}: {coachingReportDate(finishedAt,lang)}</p>
             <div className={styles.summary}>
               {sessionTopic&&<p><strong>{t.yourTopic}:</strong> {coachingRequestTopicLabel(sessionTopic,lang)}</p>}
               {question.trim()&&<p><strong>{t.yourQuestion}:</strong> {question}</p>}
@@ -663,6 +694,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <CoachingActionPlan key={session.schemeKey||session.modelKey} locale={lang}
               initial={draftCoachingActionPlan(session.questions,answers,question,lang)}
               onSave={value=>{setApprovedPlan(value);return true}}/>
+            <button type="button" className={styles.primary} data-coaching-download-pdf onClick={downloadReport}><Download size={17}/>{t.pdf}</button>
+            {pdfError&&<p className={styles.alert} role="alert">{pdfError}</p>}
             <button type="button" className={styles.primary} onClick={copySummary}><ClipboardCopy size={17}/>{copied?t.copied:t.copy}</button>
             {copyError&&<><p className={styles.alert} role="alert">{t.copyFallback}</p>
               <textarea className={styles.copyFallback} readOnly value={summaryText()} rows={7}/></>}
@@ -718,6 +751,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                   data-public-coaching-open-reflection={!quickChoices?'true':undefined}
                   placeholder={t.answerPlaceholder} value={draft.startsWith('choice:')?'':draft}
                   onChange={e=>{setDraft(e.target.value);setError('')}}/></>}
+            <p className={styles.hint} data-coaching-save-report-notice>{t.reportNotice}</p>
             {error&&<p className={styles.alert} role="alert">{error}</p>}
           </div>}
         </div>

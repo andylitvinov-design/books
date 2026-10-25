@@ -363,7 +363,7 @@
   }
   .session .questionArea .textarea{min-height:91px;max-height:25dvh;padding:10px 11px;line-height:1.35}
   .session .questionArea .counter{margin-top:3px}
-  .session .questionArea>p.subtle{display:none}
+  .session .questionArea>p.subtle:not([data-coaching-save-report-notice]){display:none}
   .session .footer{padding:7px 10px calc(6px + env(safe-area-inset-bottom))}
   .session .footer .primary,.session .footer .back{min-height:44px}
 }
@@ -408,3 +408,5 @@
     overflow-wrap:anywhere;
   }
 }
+
+@media(max-width:600px){.session .questionArea>p[data-coaching-save-report-notice]{font-size:11px;line-height:1.25;margin:5px 0 0}}
