@@ -43,7 +43,7 @@ test("free landings explain benefits before closing with one short capture", () 
   const final = landing.lastIndexOf("<CompactLeadCapture");
   assert.ok(hero > 0 && hero < video && video < outcome && outcome < process && process < final,
     "The selected recording belongs in the first scene");
-  assert.match(landing, /kind !== "dao" \? <section className=\{\[styles\.scene, styles\.processScene/,
+  assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
   assert.match(landing, /data-featured-constellations-video/);
   assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
@@ -66,7 +66,7 @@ test("free landings explain benefits before closing with one short capture", () 
 test("all three locales explain real service advantages without health claims or invented diagnoses", () => {
   for (const phrase of [
     "Understand your starting point", "Лучше поймите себя", "Conoce mejor tu punto de partida",
-    "See your situation from a fresh perspective", "Взгляните на свою ситуацию", "Mira tu situación",
+    "Free diagnosis or a personal session", "Бесплатная диагностика или личная консультация", "Diagnóstico gratuito o consulta personal",
     "Discover what gives you strength.", "Узнайте, что даёт вам внутреннюю опору.",
     "Descubre qué te da fuerza.", "A symbolic guide for reflection — not a medical test.",
     "Символическая модель для самоисследования, а не медицинский тест.",
@@ -80,7 +80,8 @@ test("all three locales explain real service advantages without health claims or
     assert.ok(landing.includes(phrase) || situationPage.includes(phrase) || daoPage.includes(phrase), phrase);
   }
   assert.doesNotMatch(landing + capture, /guaranteed cure|лечим все|100% success|medical diagnosis provided/i);
-  assert.doesNotMatch(landing + capture, /€50|€100/, "The free offering must not be upsold before being explained");
+  assert.match(landing, /€50/, "The paid 30-minute option must have its real price");
+  assert.doesNotMatch(landing + capture, /€100/, "Do not invent a second paid option here");
 });
 
 test("free drawing entry reuses private intake without duplicate collection or messenger export", () => {
@@ -129,4 +130,5 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
   assert.match(landing, /"\/images\/holistic-house\/course-start-heron\.webp"/);
   assert.match(landing, /"\/academy\/reiki-yggdrasil\/source\/eastern-tradition\.png"/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale === "es" \? "en" : locale\} variant="all" \/>/);
+  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} \/>/);
 });
