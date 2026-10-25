@@ -167,3 +167,24 @@
 .journeyChoiceText small{font-size:10.8px}
 }
 @media(prefers-reduced-motion:reduce){.journeyChoice{transition:none}.journeyChoice:hover{transform:none}}
+
+/* Short iPhones still show the complete three-choice entry without burying the last action. */
+@media(max-width:700px) and (max-height:700px){
+.journeyHero{min-height:0}
+.journeyContent{padding-top:12px;padding-bottom:12px}
+.journeyEyebrow{margin-bottom:5px}
+.journeyLead{margin-top:6px;margin-bottom:9px;line-height:1.28}
+.journeyPrompt{margin-bottom:6px}
+.journeyChoices{gap:5px}
+.journeyChoice{min-height:85px}
+.journeyChoicePhoto{height:78px}
+.journeyChoiceText{gap:2px}
+}
+@media(max-width:350px) and (max-height:700px){
+.journeyContent{padding:10px 8px}
+.journeyContent h1{font-size:31px}
+.journeyChoice{grid-template-columns:74px minmax(0,1fr) 16px;min-height:83px}
+.journeyChoicePhoto{width:74px;height:76px}
+.journeyChoiceText strong{font-size:17px}
+.journeyChoiceText small{font-size:10px}
+}
