@@ -111,7 +111,13 @@ try {
             label + ": actual session type available");
           await offers.selectOption("session");
           assert.equal(await syntheticCard.count(), 1, label + ": session filter finds actual offering");
-          const courseChoice = learning.locator('option[value^="service:"]').first();
+          const syntheticCourseTitle = {
+            en: "Synthetic reflection course",
+            ru: "Тестовый курс рефлексии",
+            es: "Curso de reflexión sintético",
+          }[locale];
+          const courseChoice = learning.locator('option[value^="service:"]',
+            { hasText: syntheticCourseTitle });
           assert.equal(await courseChoice.count(), 1,
             label + ": approved training is a real course selection");
           const courseKey = await courseChoice.getAttribute("value");
