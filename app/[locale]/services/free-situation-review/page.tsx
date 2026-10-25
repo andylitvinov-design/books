@@ -6,9 +6,9 @@ import { metadataBaseFor } from "@/data/site-metadata";
 
 type Props = { params: Promise<{ locale: string }> };
 const copy = {
-  en: { title: "Free Diagnosis — Situation, Wu Xing & Personal Session | Holistic House", description: "Choose a free written situation review, a free symbolic Wu Xing Five Elements resource reflection, or a personal 30-minute consultation with Andrey Litvinov for €50." },
-  ru: { title: "Бесплатная диагностика — ситуация, У-Син и консультация | Holistic House", description: "Выберите бесплатный письменный разбор ситуации, символический разбор ресурсов по системе У-Син (Пять стихий) или личную консультацию с Андреем Литвиновым — 30 минут за €50." },
-  es: { title: "Diagnóstico gratis — Situación, Wu Xing y Consulta | Holistic House", description: "Elige una revisión escrita gratuita de tu situación, una reflexión simbólica Wu Xing (Cinco Elementos) gratis o una consulta personal de 30 minutos con Andrey Litvinov por €50." },
+  en: { title: "Free Personal Situation Review with Andrey | Holistic House", description: "Get a free personal written perspective from Andrey Litvinov. Explore your question, your resources and a practical next step. Optional Wu Xing review or €50/30-minute consultation." },
+  ru: { title: "Бесплатный разбор ситуации с Андреем | Holistic House", description: "Получите бесплатный письменный разбор вашей ситуации с Андреем Литвиновым: главный вопрос, ресурсы и возможный следующий шаг. У-Син и личная консультация €50/30 мин — по желанию." },
+  es: { title: "Revisión personal gratuita con Andrey | Holistic House", description: "Recibe una revisión personal escrita gratuita de Andrey Litvinov: tu pregunta, tus recursos y un posible siguiente paso. Wu Xing o consulta de €50/30 minutos opcionales." },
 } as const;
 export function generateStaticParams() { return [{ locale: "en" }, { locale: "ru" }, { locale: "es" }]; }
 

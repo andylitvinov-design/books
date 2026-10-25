@@ -1347,3 +1347,132 @@
     min-height:40px;padding:7px 11px;
   }
 }
+
+
+/* My Practice · creation first. Keep the advanced eight-way switcher for
+   returning practitioners, but make the first task unmistakable on phones. */
+.hh-app .hh-practice-dashboard > .hh-practice-first-actions{order:2}
+.hh-app .hh-practice-first-actions{
+  min-width:0;display:grid;gap:11px;padding:clamp(13px,2.4vw,18px);
+  border:1px solid #ddc7b3;border-radius:21px;
+  background:linear-gradient(120deg,#fffdf9 0%,#f9f0e5 100%);
+  box-shadow:0 5px 23px #553b2511
+}
+.hh-app .hh-practice-first-actions-heading{display:grid;gap:4px}
+.hh-app .hh-practice-first-actions-heading > span{
+  color:#8f6050;font:800 10px/1.25 system-ui,sans-serif;
+  letter-spacing:.14em
+}
+.hh-app .hh-practice-first-actions-heading h2{
+  margin:0;color:#3e3028;font:400 clamp(22px,3.1vw,29px)/1.14 Georgia,serif;
+  letter-spacing:-.025em
+}
+.hh-app .hh-practice-first-actions-heading p{
+  margin:0;color:#78665a;font:500 12px/1.45 system-ui,sans-serif
+}
+.hh-app .hh-practice-first-actions-grid{
+  min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px
+}
+.hh-app .hh-practice-first-action{
+  display:flex;align-items:center;gap:12px;min-width:0;width:100%;
+  min-height:104px;padding:15px 13px;cursor:pointer;text-align:left;
+  border:1px solid #dbc5b2;border-radius:17px;
+  transition:box-shadow .2s ease,transform .2s ease,border-color .2s ease;
+  box-shadow:0 4px 12px #24170b13
+}
+.hh-app .hh-practice-first-action.is-service{
+  color:#fffdf8;border-color:#874b60;
+  background:linear-gradient(100deg,#772d4a 0%,#78374f 65%,#67434e 100%)
+}
+.hh-app .hh-practice-first-action.is-meditation{
+  color:#fffdf7;border-color:#58766d;
+  background:linear-gradient(90deg,#274b47f7 0%,#2d554fcf 61%,#2e4a4099 100%),
+  url('/images/holistic-house/reiki-practitioner-sunrise.webp') center/cover
+}
+.hh-app .hh-practice-first-action-icon{
+  flex:none;display:grid;place-items:center;width:42px;height:42px;
+  border-radius:13px;background:#ffffff25
+}
+.hh-app .hh-practice-first-action-icon svg{width:25px;height:25px}
+.hh-app .hh-practice-first-action-copy{
+  flex:1;display:grid;gap:5px;min-width:0
+}
+.hh-app .hh-practice-first-action-copy strong{
+  font:750 clamp(14px,1.55vw,17px)/1.22 system-ui,sans-serif;
+  overflow-wrap:anywhere
+}
+.hh-app .hh-practice-first-action-copy small{
+  color:#fff9eddb;font:500 11px/1.35 system-ui,sans-serif;
+  overflow-wrap:anywhere
+}
+.hh-app .hh-practice-first-action-arrow{width:17px;height:17px;flex:none}
+.hh-app .hh-practice-first-action[aria-expanded="true"] .hh-practice-first-action-arrow{transform:rotate(90deg)}
+.hh-app .hh-practice-first-action:hover:not(:disabled){
+  transform:translateY(-2px);box-shadow:0 7px 17px #24170b26
+}
+.hh-app .hh-practice-first-action:disabled{opacity:.57;cursor:not-allowed}
+.hh-app .hh-practice-first-actions :is(button):focus-visible{
+  outline:3px solid #c79542;outline-offset:3px
+}
+.hh-app .hh-practice-meditation-picker{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  padding:9px;border:1px solid #d7cabb;border-radius:15px;background:#fffdf8
+}
+.hh-app .hh-practice-meditation-picker button{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:60px;
+  padding:10px 11px;background:#f6eee2;border:1px solid #e3d7c8;
+  border-radius:12px;text-align:left;color:#46372a;cursor:pointer
+}
+.hh-app .hh-practice-meditation-picker button:hover{background:#e9f2eb;border-color:#95bdb0}
+.hh-app .hh-practice-meditation-picker button > svg:first-child{
+  width:24px;height:24px;flex:none;color:#0d7975
+}
+.hh-app .hh-practice-meditation-picker button > svg:last-child{
+  width:14px;height:14px;flex:none;color:#846f59
+}
+.hh-app .hh-practice-meditation-picker button span{flex:1;display:grid;min-width:0;gap:2px}
+.hh-app .hh-practice-meditation-picker button strong{
+  font:750 12px/1.25 system-ui,sans-serif;overflow-wrap:anywhere
+}
+.hh-app .hh-practice-meditation-picker button small{
+  color:#716355;font:500 10px/1.35 system-ui,sans-serif
+}
+.hh-app .hh-practice-first-actions-note{
+  display:flex;align-items:center;gap:7px;margin:0;
+  color:#77665b;font:500 11px/1.4 system-ui,sans-serif
+}
+.hh-app .hh-practice-first-actions-note svg{
+  width:15px;height:15px;flex:none;color:#127467
+}
+.hh-app .hh-practice-registration-intent{
+  margin:0 0 12px;padding:12px 14px;border:1px solid #c3dacf;
+  border-radius:13px;background:#edf7ef;color:#286254;
+  font:650 12px/1.45 system-ui,sans-serif
+}
+@media(max-width:640px){
+  .hh-app .hh-practice-first-actions{
+    gap:8px;padding:11px;border-radius:15px
+  }
+  .hh-app .hh-practice-first-actions-heading{gap:3px}
+  .hh-app .hh-practice-first-actions-heading h2{font-size:23px}
+  .hh-app .hh-practice-first-actions-heading p{font-size:11px}
+  .hh-app .hh-practice-first-actions-grid{grid-template-columns:minmax(0,1fr);gap:7px}
+  .hh-app .hh-practice-first-action{
+    min-height:73px;padding:11px 12px;gap:10px;border-radius:13px
+  }
+  .hh-app .hh-practice-first-action-icon{height:39px;width:39px;border-radius:10px}
+  .hh-app .hh-practice-first-action-icon svg{height:23px;width:23px}
+  .hh-app .hh-practice-first-action-copy{gap:3px}
+  .hh-app .hh-practice-first-action-copy strong{font-size:15px}
+  .hh-app .hh-practice-first-action-copy small{font-size:10px}
+  .hh-app .hh-practice-first-actions-note{font-size:10px}
+}
+@media(max-width:360px){
+  .hh-app .hh-practice-meditation-picker{grid-template-columns:minmax(0,1fr)}
+  .hh-app .hh-practice-first-actions-heading h2{font-size:21px}
+  .hh-app .hh-practice-first-action-copy strong{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hh-app .hh-practice-first-action{transition:none}
+  .hh-app .hh-practice-first-action:hover:not(:disabled){transform:none}
+}

@@ -40,7 +40,8 @@ test("energy CTA transfers only in memory to the existing private intent field",
   assert.ok(booking.includes("if (stagedIntention) setIntention(stagedIntention)"));
   const landing = bridge.slice(bridge.indexOf("// One-use, same-tab handoff"));
   assert.doesNotMatch(landing, /setItem\(|getItem\(|navigator\.sendBeacon|fetch\(|URLSearchParams\(/);
-  assert.ok(screen.includes('variant="holistic"'));
+  assert.ok(screen.includes('<HolisticSupportChoices locale={locale} />'));
+  assert.match(read("components/holistic-support-choices.tsx"), /data-holistic-choose="energy"/);
   assert.ok(!screen.includes("<FreeDiagnosticStart") && !screen.includes("<CompactLeadCapture"));
 });
 

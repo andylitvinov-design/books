@@ -406,7 +406,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             <span><strong>{t.entryButton}</strong><small>{t.entryHint}</small></span>
             <ArrowRight size={24} aria-hidden="true" />
           </button>
-          <Link className={styles.browseTests} href={'/' + locale + '/tests'} prefetch={false} data-profile-direct-tests>
+          <Link className={styles.browseTests} href={'/' + locale + '/client/tests'} prefetch={false} data-profile-direct-tests>
             {t.browseTests}<ArrowRight size={15} aria-hidden="true" />
           </Link>
         </div>

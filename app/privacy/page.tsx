@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { AnalyticsPreferences } from '@/components/analytics-consent'
+import { AnalyticsPreferences, FirstPartyStatsPreferences } from '@/components/analytics-consent'
 
 export const metadata: Metadata = {
   title: 'Privacy — Holistic House',
@@ -25,6 +25,7 @@ export default function PrivacyPage() {
       <h2>Optional website analytics</h2>
       <p>We do not show a consent popup. Public website analytics stay off unless you enable them below. You can switch them off again at any time, without affecting access to the site or your account.</p>
       <AnalyticsPreferences />
+      <FirstPartyStatsPreferences />
       <h2>Important scope</h2>
       <p>Holistic House content and assessments are for reflection and education. They are not medical advice, diagnosis, treatment, or emergency support.</p>
       <p><Link href="/terms">Read the Terms of Use</Link></p>

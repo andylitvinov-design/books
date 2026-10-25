@@ -8,6 +8,7 @@ import {
 import type { Locale } from "@/data/remedies";
 type AlchemyLocale = Locale | "es";
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { testimonialVideos, locallyArchivedVideoPosterIds } from "@/components/personal-testimonials";
 import { AlchemySoulFormatSelector, AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
@@ -272,7 +273,7 @@ const copy = {
 
     requestKicker: "TU PRIMER PASO",
     requestTitle: "Empecemos por tu pregunta",
-    requestIntro: "Elige el formato y el tema; después selecciona WhatsApp o Telegram para solicitar tu sesión.",
+    requestIntro: "Elige formato y tema. Solicita tu sesión por WhatsApp o Telegram.",
     safety: "Esta es una consulta reflexiva y simbólica de autor, no un sustituto de la atención médica o psiquiátrica. La homeopatía no tiene pruebas fiables de eficacia para tratar problemas de salud. No cambies tratamientos prescritos sin orientación médica. No se garantizan resultados.",
   },
 } as const;
@@ -323,26 +324,8 @@ const stageLabels = {
   es: ["01 · Aclarar", "02 · Vínculos", "03 · Imágenes", "04 · Apoyo*"],
 } as const;
 
-// These original public testimonial video IDs and poster files were provenance-checked
-// in design PR #498. Do not replace them with fabricated quotes or new avatar renders.
-const testimonials = {
-  ru: [
-    { id: "MIVLm1GUTtM", title: "Юрий Гончаренко — отзыв клиента", poster: "/images/holistic-house/testimonial-posters/MIVLm1GUTtM.webp" },
-    { id: "ttQxUHopaUM", title: "Бизнес-расстановки — отзыв", poster: "/images/holistic-house/testimonial-posters/ttQxUHopaUM.webp" },
-    { id: "VABgpmn4ZYA", title: "Татьяна Разумовская — отзыв о консультации", poster: "/images/holistic-house/testimonial-posters/VABgpmn4ZYA.webp" },
-  ],
-  en: [
-    { id: "Dk0LBmOivQo", title: "Business constellation — client testimonial", poster: "/images/holistic-house/testimonial-posters/Dk0LBmOivQo.webp" },
-    { id: "aUJde6A-9p0", title: "Business consulting — client testimonial", poster: "/images/holistic-house/testimonial-posters/aUJde6A-9p0.webp" },
-    { id: "4NrryHcEF1A", title: "Psychic Alchemy — client testimonial", poster: "/images/holistic-house/testimonial-posters/4NrryHcEF1A.webp" },
-  ],
-  es: [
-    { id: "Dk0LBmOivQo", title: "Constelación empresarial — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/Dk0LBmOivQo.webp" },
-    { id: "aUJde6A-9p0", title: "Consultoría empresarial — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/aUJde6A-9p0.webp" },
-    { id: "4NrryHcEF1A", title: "Alquimia psíquica — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/4NrryHcEF1A.webp" },
-  ],
-} as const;
-
+// Use the existing consent-led public testimonial archive, retaining real audio languages.
+// Each locale starts with its own originals, then shows all originals in the other language.
 // Owner-supplied public presentation (23 October 2026). Keep the exact video ID;
  // a YouTube Live link is played through the existing privacy-first poster player.
 const featuredIntroVideoEn = {
@@ -365,7 +348,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   // Both service routes resolve here. Only /ru uses the Russian video; EN/ES keep the approved English master.
   const featuredIntroVideo = locale === "ru" ? featuredIntroVideoRu : featuredIntroVideoEn;
   const video = getServiceVideoMedia("alchemy", locale);
-  const reviews = testimonials[locale];
+  const reviews = [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]];
   const freeReview = "/" + locale + "/services/free-situation-review";
   const heroWhatsApp = whatsappEnquiryUrl({
     locale,
@@ -530,40 +513,36 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
             <p>{t.reviewsIntro}</p>
           </header>
-          <div className={styles.reviewStack} data-alchemy-review-stack>
-            {reviews.slice(0, 1).map((review) => (
-              <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
+          <div className={styles.reviewStack} data-alchemy-review-stack data-vertical-review-list>
+            {reviews.map((review) => (
+              <article className={styles.reviewCard} key={review.id}
+                data-testimonial-video-id={review.id} data-testimonial-original-audio={review.language}>
                 <div className={styles.reviewVideo}>
-                  <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale === "es" ? "en" : locale }}
-                    locale={locale} compact minimal fallbackPoster={review.poster} />
+                  <SiteVideoPlayer
+                    video={{ youtubeId: review.id, title: review.title, language: review.language }}
+                    locale={locale} compact minimal
+                    fallbackPoster={locallyArchivedVideoPosterIds.has(review.id)
+                      ? "/images/holistic-house/testimonial-posters/" + review.id + ".webp"
+                      : undefined}
+                  />
                 </div>
                 <div className={styles.reviewInfo}>
+                  <span className={styles.reviewLanguage}>
+                    {review.language === "ru"
+                      ? locale === "ru" ? "Оригинал · русский RU" : locale === "es" ? "Audio original · ruso RU" : "Original audio · Russian RU"
+                      : locale === "ru" ? "Оригинал · английский EN" : locale === "es" ? "Audio original · inglés EN" : "Original audio · English EN"}
+                  </span>
                   <h3>{review.title}</h3>
-                  <a href={"https://www.youtube.com/watch?v=" + review.id} target="_blank"
-                    rel="noopener noreferrer">{locale === "ru" ? "Смотреть отзыв" : locale === "es" ? "Ver testimonio (en inglés)" : "Watch testimonial"}<ArrowUpRight size={15} aria-hidden="true" /></a>
+                  <a href={"https://www.youtube.com/watch?v=" + review.id}
+                    target="_blank" rel="noopener noreferrer">
+                    {locale === "ru" ? "Смотреть отзыв" : locale === "es" ? "Ver testimonio" : "Watch testimonial"}
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                  </a>
                 </div>
               </article>
             ))}
           </div>
-          <details className={styles.chapterMore}>
-            <summary>{locale === "ru" ? "Другие отзывы" : locale === "es" ? "Más testimonios" : "More client stories"}</summary>
-            <div className={styles.reviewStack}>
-              {reviews.slice(1).map((review) => (
-                <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
-                  <div className={styles.reviewVideo}>
-                    <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale === "es" ? "en" : locale }}
-                      locale={locale} compact minimal fallbackPoster={review.poster}/>
-                  </div>
-                  <div className={styles.reviewInfo}><h3>{review.title}</h3>
-                    <a href={"https://www.youtube.com/watch?v=" + review.id} target="_blank" rel="noopener noreferrer">
-                      {locale === "ru" ? "Смотреть отзыв" : locale === "es" ? "Ver testimonio (en inglés)" : "Watch testimonial"}
-                      <ArrowUpRight size={15} aria-hidden="true"/></a>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </details>
-          <p className={styles.reviewNote}>{t.reviewsNote}</p>
+          <p className={styles.reviewNote} data-alchemy-review-note>{t.reviewsNote}</p>
         </section>
 
         <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" data-alchemy-visual="photo" aria-labelledby="alchemy-options-title">

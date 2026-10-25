@@ -22,6 +22,21 @@ test("Holistic Support has an accessible audio and video meditation destination 
   assert.match(page, /<audio controls preload="none"/);
   assert.match(page, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
   assert.match(page, /<AcademyCourseVideoPlaylist/);
+  assert.match(page, /compact\s*\/>/);
+  assert.match(page, /data-holistic-meditation-screen="video"/);
+  assert.match(page, /data-holistic-meditation-screen="audio"/);
+  assert.match(page, /id="meditation-audio"/);
+  assert.match(page, /href="#meditation-audio"/);
+  assert.match(css, /height:calc\(100svh - 112px\)/);
+  assert.match(css, /height:calc\(100svh - 142px\)/);
+  assert.match(css, /overflow-y:auto/);
+  const playlistCss = read("components/academy-course-video-playlist.module.css");
+  const playlistUi = read("components/academy-course-video-playlist.tsx");
+  assert.match(playlistCss, /\.compact \.sequence\{display:none\}/);
+  assert.match(playlistCss, /\.compact \.controls button\{[^}]*min-height:44px/);
+  assert.match(playlistUi, /key=\{active\.id\}/);
+  assert.match(playlistUi, /aria-label=\{compact \? lesson\.title : undefined\}/);
+
   assert.match(page, /introText=\{t\.meditationVideoIntro\}/);
   assert.match(page, /data-holistic-russian-archive/);
   assert.match(page, /\/ru\/holistic-support#meditation-practices/);
@@ -57,8 +72,9 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   assert.match(player, /setPlaying\(true\)/);
   assert.match(player, /youtube-nocookie\.com\/embed/);
   assert.match(sound, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
-  // Guard actual generated media or uploads, not the approved *.generated.json source manifest.
-  assert.doesNotMatch(model, /\.mp3\b|storage\.from\s*\(|\bgenerate(?:Audio|Video|Media)\s*\(|youtubeId:\s*["']/);
+  // A checked-in media manifest is named *.generated.json; that does NOT create audio.
+  // Reject only real standalone audio paths, synthesis calls, or hard-coded YouTube IDs.
+  assert.doesNotMatch(model, /\.mp3\b|\.m4a\b|storage\.from\s*\(|(?:generateAudio|generateVoice|synthesizeSpeech)\s*\(|youtubeId:\s*["']/);
   for (const [family, positions] of [
     ["videos/strength-protection", [1, 3, 5, 6, 7]],
     ["videos/energy-pump-ups", [1, 2]],

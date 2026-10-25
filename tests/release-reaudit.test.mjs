@@ -45,6 +45,8 @@ function navigationHarness() {
   const listeners = new Map();
   const context = {
     Node,
+    pathname: "/en", activeLocale: "en",
+    previousNavigation: { current: { pathname: "/en", locale: "en" } },
     languageRef: { current: menus[0] }, siteMenuRef: { current: menus[1] },
     document: {
       addEventListener: (type, listener) => {
@@ -111,6 +113,11 @@ test('Escape closes both open disclosures and unmount removes every registered l
 });
 test('route or active-locale changes close both disclosures without stealing focus', () => {
   const { menus, context, cleanup } = navigationHarness();
+  context.pathname = '/en/services';
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => !menu.open));
+  menus.forEach(menu => { menu.open = true; });
+  context.activeLocale = 'ru';
   navigationEffect(['pathname', 'activeLocale'], context);
   assert.ok(menus.every(menu => !menu.open));
   assert.ok(menus.every(menu => menu.focusCount === 0));
@@ -234,4 +241,13 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /assert\.deepEqual\(cspErrors, \[\]/);
   assert.match(verifier, /decodedPlaybackClaimed: false/);
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
+});
+
+test('initial navigation effect and identical replay preserve preopened native menus', () => {
+  const { menus, context, cleanup } = navigationHarness();
+  navigationEffect(['pathname', 'activeLocale'], context);
+  navigationEffect(['pathname', 'activeLocale'], context);
+  assert.ok(menus.every(menu => menu.open));
+  assert.ok(menus.every(menu => menu.focusCount === 0));
+  cleanup();
 });

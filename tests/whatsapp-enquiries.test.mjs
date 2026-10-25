@@ -18,6 +18,14 @@ function decode(link) {
   return u.searchParams.get("text") || "";
 }
 
+test("consented homepage requests use safe public CRM paths without exposing private pages", () => {
+  for (const path of ["/", "/en", "/ru", "/es"]) {
+    assert.equal(safePublicWhatsAppPath(path), path);
+    assert.equal(safePublicWhatsAppPath(path + "?phone=do-not-send"), path);
+  }
+  assert.equal(safePublicWhatsAppPath("/en/client/reports"), "");
+});
+
 test("coaching lounge uses a safe public CRM and messenger source in all locales", () => {
   for(const locale of ["en","ru","es"]){
     assert.equal(safePublicWhatsAppPath("/"+locale+"/coaching"), "/"+locale+"/coaching");

@@ -11,15 +11,24 @@
 .sectionHeading h2{margin:0;color:#1b515b;font:400 clamp(23px,3vw,31px)/1.14 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
 .sectionHeading p{margin:5px 0 0;color:#5c7375;font:12px/1.5 system-ui,sans-serif}
 .intentLabel,.topicLabel,.field label,.formatGroup legend,.durationGroup legend{display:block;margin:0 0 6px;padding:0;color:#155964;font:800 12px/1.3 system-ui,sans-serif}
-.intentionInput{display:block;width:100%;min-height:85px;resize:vertical;border:1px solid #bcd6cf;border-radius:13px;background:#fff;color:#243f4b;padding:11px 13px;font:400 16px/1.45 system-ui,sans-serif}
+.intentionInput{display:block;width:100%;min-height:60px;resize:vertical;border:1px solid #bcd6cf;border-radius:13px;background:#fff;color:#243f4b;padding:11px 13px;font:400 16px/1.45 system-ui,sans-serif}
 .intentionInput::placeholder{color:#8c9f9d}
-.privacyHint{margin:7px 1px 14px;color:#778985;font:11px/1.5 system-ui,sans-serif}
+.privacyHint{margin:6px 0 0;color:#778985;font:11px/1.5 system-ui,sans-serif}
 .topicLabel{margin-bottom:8px}
 .focusChips{display:flex;flex-wrap:wrap;gap:7px}
 .focusChips button{min-height:42px;border:1px solid #d0e2da;border-radius:999px;padding:8px 12px;background:#f6f9f6;color:#2c5c62;cursor:pointer;font:700 11px/1.25 system-ui,sans-serif}
 .focusChips button:hover{background:#e9f5ef}
 .focusChips button.focusActive{border-color:#088d84;background:#e0f4ed;color:#005d60;box-shadow:inset 0 0 0 1px #088d84}
-.results{margin-top:23px}
+.intentPanel .intentLabel{margin-top:14px}
+.privacyDetails{margin:7px 2px 0;color:#617c79;font:11px/1.5 system-ui,sans-serif}
+.privacyDetails summary{width:fit-content;max-width:100%;cursor:pointer;text-underline-offset:3px}
+.privacyDetails summary:hover{text-decoration:underline}
+.findButton{display:flex;align-items:center;justify-content:center;gap:13px;width:100%;min-height:52px;margin-top:14px;border:0;border-radius:13px;padding:10px 18px;background:#8e3652;color:#fff;cursor:pointer;font:800 15px/1.2 system-ui,sans-serif;box-shadow:0 5px 13px rgba(109,41,67,.13)}
+.findButton span{font-size:21px;line-height:1}
+.findButton:hover{background:#762842}
+.findButton:active{transform:translateY(1px)}
+.results[hidden]{display:none}
+.results{margin-top:23px;scroll-margin-top:105px}
 .results .sectionHeading{margin-bottom:13px}
 .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;align-items:start}
 .masterOffer{min-width:0;overflow:visible;border:1px solid #d1e1d9;border-radius:18px;background:#fff;box-shadow:0 9px 22px rgba(17,69,78,.065)}
@@ -83,20 +92,26 @@
  .masterCard{grid-template-columns:clamp(135px,28%,190px) minmax(0,1fr)}
 }
 @media(max-width:650px){
- .page{width:calc(100% - 20px);margin:9px auto 24px}
- .intro{margin-bottom:10px;padding:15px 18px;border-radius:18px;box-shadow:none}
- .intro h1{font-size:clamp(26px,7.2vw,34px)}
- .intro>p:not(.eyebrow):not(.steps){margin-top:6px;font-size:11px;line-height:1.35}
- .steps{margin-top:5px;font-size:10px}
- .intentPanel{padding:14px;margin-bottom:18px;border-radius:17px;box-shadow:none}
- .sectionHeading{gap:9px;margin-bottom:11px}
- .stepNumber{flex-basis:30px;width:30px;height:30px;border-radius:9px}
- .sectionHeading h2{font-size:clamp(21px,5.6vw,25px)}
- .sectionHeading p{font-size:11px;line-height:1.4}
- .intentionInput{min-height:76px;padding:10px 11px}
- .privacyHint{font-size:10px;margin:6px 0 11px}
- .focusChips{gap:6px}
- .focusChips button{min-height:42px;font-size:11px;padding:7px 10px}
+ .page{width:calc(100% - 20px);margin:6px auto 24px}
+ .intro{margin-bottom:8px;padding:10px 14px;border-radius:17px;box-shadow:none}
+ .eyebrow{margin-bottom:4px;font-size:9px}
+ .intro h1{font-size:clamp(23px,6.7vw,30px);line-height:1.08}
+ .intro>p:not(.eyebrow):not(.steps){margin-top:5px;font-size:10.5px;line-height:1.35}
+ .steps{display:none}
+ .intentPanel{padding:12px 13px;margin-bottom:14px;border-radius:17px;box-shadow:none}
+ .sectionHeading{gap:8px;margin-bottom:10px;align-items:center}
+ .stepNumber{flex-basis:26px;width:26px;height:26px;border-radius:8px}
+ .sectionHeading h2{font-size:clamp(20px,5.35vw,24px)}
+ .sectionHeading p{display:none}
+ .focusChips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .focusChips button{min-width:0;min-height:44px;padding:6px 8px;border-radius:12px;font-size:11.5px;line-height:1.2;text-wrap:balance}
+ .focusChips button:last-child{grid-column:1/-1}
+ .intentPanel .intentLabel{margin:10px 0 5px;font-size:11px}
+ .intentionInput{min-height:48px;max-height:120px;padding:8px 10px;line-height:1.3}
+ .privacyDetails{margin-top:5px;font-size:10px}
+ .privacyHint{font-size:10px;margin:5px 0 0}
+ .findButton{min-height:48px;margin-top:10px;font-size:15px}
+ .results{scroll-margin-top:88px}
  .results{margin-top:17px}
  .cards{gap:10px}
  .masterCard{grid-template-columns:110px minmax(0,1fr);gap:11px;padding:10px}
@@ -122,9 +137,12 @@
 }
 @media(max-width:365px){
  .page{width:calc(100% - 12px)}
- .intro{padding:12px 14px}
- .intentPanel{padding:11px}
- .focusChips button{padding:7px 8px;font-size:10px}
+ .intro{padding:9px 11px}
+ .intro h1{font-size:23px}
+ .intentPanel{padding:10px}
+ .focusChips button{padding:6px 6px;font-size:10.5px}
+ .intentPanel .intentLabel{margin-top:8px}
+ .findButton{margin-top:8px}
  .masterCard{grid-template-columns:87px minmax(0,1fr);gap:8px;padding:8px}
  .masterPhoto{min-height:145px}
  .serviceType{font-size:8px}

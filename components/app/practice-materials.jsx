@@ -51,7 +51,7 @@ function CoachingAudioFolders({courses,locale,busy,onOpen}) {
  </section>
 }
 
-export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenCoachingAudio,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,quickCreateCourse=false,shortcut=null,onTabChange}){
+export default function PracticeMaterials({practitioner,services=[],locale='en',accountId=null,busy=false,isOwner=false,onOpenReikiCourse,onOpenCoachingAudio,onOpenYoutube,onOpenServices,onAddService,onSaveVideos,onSubmitVideos,onSaveSitePresentation,quickCreateCourse=false,meditationType='',shortcut=null,onTabChange}){
  const ru=locale==='ru',es=locale==='es'
  const t=ru?{
   videos:'Видео',articles:'Статьи',add:'+ Добавить видео',new:'Новое видео',edit:'Редактировать видео',
@@ -101,7 +101,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
    if(!['articles','services','courses','audio','videos'].includes(shortcut.tab))return
    setTab(shortcut.tab)
    setQuery('');setEditing(null);setError('')
-   setSearchOpen(false);setShowAll(false);setAudioAction('');setCourseComposerOpen(false)
+   setSearchOpen(false);setShowAll(false);setAudioAction('');setCourseComposerOpen(shortcut.tab==='courses'&&Boolean(quickCreateCourse))
  },[shortcut?.nonce,shortcut?.tab,isOwner])
  function chooseTab(next){
    if(!activeTabs.includes(next))return
@@ -239,7 +239,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
      <p className={styles.privacyNote}><LockKeyhole size={14} aria-hidden="true"/>{ru?'Аудиозаписи закрыты до вашей публикации.':es?'El audio permanece privado hasta publicarlo.':'Audio stays private until you publish it.'}</p>
     </div>}
     <div className={styles.courseComposer}>
-     {courseComposerOpen&&<div className={styles.composerPanel}><PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} startCreate={quickCreateCourse} onOpenYoutube={isOwner?onOpenYoutube:null}/></div>}
+     {courseComposerOpen&&<div className={styles.composerPanel}><PractitionerCourseBuilder locale={locale} accountId={accountId} searchQuery={query} startCreate={quickCreateCourse} meditationType={meditationType} onOpenYoutube={isOwner?onOpenYoutube:null}/></div>}
     </div>
    </section>:
    tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>

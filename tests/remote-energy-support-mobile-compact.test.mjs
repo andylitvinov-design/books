@@ -4,11 +4,13 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("intent-first: brief personal request before real photo-left specialist cards", () => {
+test("focus-first: compact choice and optional preferences before published specialist cards", () => {
   const jsx = read("components/remote-energy-support-booking.tsx");
   const css = read("components/remote-energy-support-booking.module.css");
   const route = read("app/[locale]/services/remote-energy-support/page.tsx");
-  assert.ok(jsx.indexOf('id="remote-intention"') < jsx.indexOf("masters.map((master) => {"));
+  assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf('id="remote-intention"'));
+  assert.ok(jsx.indexOf('id="remote-intention"') < jsx.indexOf('data-remote-find-options'));
+  assert.ok(jsx.indexOf('data-remote-find-options') < jsx.indexOf("masters.map((master) => {"));
   assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf("masters.map((master) => {"));
   assert.ok(jsx.indexOf('className={styles.results}') < jsx.indexOf("masters.map((master) => {"));
   assert.match(jsx, /maxLength=\{1000\} rows=\{2\}/);
@@ -75,4 +77,30 @@ test("expanded phone session compactness preserves truthful price and disclosure
   assert.match(jsx,/aria-label=\{t\.async\}/);
   assert.match(jsx,/aria-label=\{t\.live\}/);
   assert.doesNotMatch(jsx,/checkoutSession|createPaymentIntent/);
+});
+
+test("one-screen EN/RU/ES finder has five approved categories, an optional note and functional reveal", () => {
+  const jsx = read("components/remote-energy-support-booking.tsx");
+  const css = read("components/remote-energy-support-booking.module.css");
+  const options = jsx.slice(jsx.indexOf("const FOCUSES = ["), jsx.indexOf("] as const;", jsx.indexOf("const FOCUSES = [")));
+  assert.equal((options.match(/\bid:/g) || []).length, 5, "exactly five selectable sectors");
+  for (const approved of ["Inner balance and calm", "Grounding and body awareness",
+    "Connection and relationships", "Energy and resources", "Work and money"]) {
+    assert.ok(options.includes(approved), "missing approved sector: " + approved);
+  }
+  assert.doesNotMatch(options, /Clarity and life direction|Personal intention/);
+  for (const localized of ["Find options", "Найти варианты", "Buscar opciones",
+    "Any preferences? (optional)", "Ваши пожелания (необязательно)", "¿Alguna preferencia? (opcional)"]) {
+    assert.ok(jsx.includes(localized), "missing localized copy: " + localized);
+  }
+  assert.match(jsx, /data-remote-find-options/);
+  assert.match(jsx, /aria-controls="remote-results" aria-expanded=\{showResults\}/);
+  assert.match(jsx, /hidden=\{!showResults\}/);
+  assert.match(jsx, /onClick=\{findOptions\}/);
+  assert.match(jsx, /document\.getElementById\("remote-practitioners-title"\)/);
+  assert.match(jsx, /if \(!goal\) \{/);
+  assert.match(css, /\.focusChips\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.focusChips button\{[^}]*min-height:44px/);
+  assert.match(css, /\.findButton\{[^}]*min-height:48px/);
+  assert.match(css, /\.results\[hidden\]\{display:none\}/);
 });

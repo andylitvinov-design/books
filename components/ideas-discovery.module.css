@@ -1548,3 +1548,361 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 [data-holistic-entry="true"] .holisticQuickLink:hover,[data-holistic-entry="true"] .holisticQuickLink:focus-visible{border-color:#926a4e;background:#f2e5d4}
 [data-holistic-entry="true"] .holisticQuickLink span:first-child{font-size:20px;line-height:1}
 @media(max-width:350px){[data-holistic-entry="true"] .holisticQuickLink{padding:7px 5px;font-size:10.5px;gap:4px}}
+
+
+/* Holistic Support · image-led first-screen polish (25 Oct 2026).
+   Scope strictly to the Holistic variant: Temple Insights and Coaching keep
+   their existing layout and their independent browser-only insight engines. */
+.root[data-holistic-entry="true"]{
+  margin:0 0 18px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.root[data-holistic-entry="true"] .templeScenic{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  gap:clamp(11px,1.7vw,19px);
+  padding:clamp(18px,2.8vw,33px);
+  border:1px solid #dfcbb8;
+  border-radius:23px;
+  background:#f7eee2;
+  color:#352920;
+  box-shadow:0 10px 30px rgba(94,69,47,.09);
+}
+.root[data-holistic-entry="true"] .templeScenic::before{
+  background-image:url("/images/holistic-house/ideas-pine-sharp.avif");
+  background-position:73% 46%;
+  background-size:cover;
+  filter:saturate(.88);
+}
+.root[data-holistic-entry="true"] .templeScenic::after{
+  background:
+    linear-gradient(0deg,rgba(250,242,231,.9) 0%,rgba(250,242,231,.12) 55%,rgba(250,242,231,.08) 100%),
+    linear-gradient(90deg,rgba(255,251,244,.96) 0%,rgba(255,251,244,.87) 38%,rgba(255,250,241,.36) 74%,rgba(255,250,241,.08) 100%);
+}
+.root[data-holistic-entry="true"] .hero{
+  flex:1 1 auto;
+  justify-content:space-between;
+  gap:22px;
+  min-height:clamp(280px,29vw,385px);
+  margin:0;
+  padding:0;
+}
+.root[data-holistic-entry="true"] .hero .heading :is(h1,h2){
+  max-width:490px;
+  margin:12px 0 0;
+  color:#2e221d;
+  font-size:clamp(44px,5.3vw,74px);
+  line-height:1.02;
+  letter-spacing:-.05em;
+  text-wrap:balance;
+}
+.root[data-holistic-entry="true"] .hero .heading .eyebrow{
+  color:#8b6347;
+  font-size:11px;
+  letter-spacing:.12em;
+}
+.root[data-holistic-entry="true"] .hero .heading .lead{
+  max-width:410px;
+  margin-top:15px;
+  color:#584a3e;
+  font-size:clamp(15px,1.45vw,18px);
+  line-height:1.48;
+  text-wrap:pretty;
+}
+.root[data-holistic-entry="true"] .hero .question{
+  width:100%;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+.root[data-holistic-entry="true"] .hero .question textarea{
+  min-height:62px;
+  max-height:150px;
+  padding-block:18px;
+  border:1px solid #cbb9a7;
+  border-radius:17px;
+  background:rgba(255,254,252,.96);
+  color:#382b23;
+  box-shadow:0 7px 20px rgba(80,57,38,.11);
+}
+.root[data-holistic-entry="true"] .hero .question textarea:focus-visible{
+  border-color:#8c6346;
+  box-shadow:0 0 0 3px rgba(147,109,74,.18);
+}
+.root[data-holistic-entry="true"] .heroActions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:10px;
+  width:100%;
+  margin:0;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton{
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 20px;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  min-height:67px;
+  padding:12px clamp(14px,2vw,24px);
+  border:1px solid #875d42;
+  border-radius:16px;
+  background:linear-gradient(110deg,#987052,#795039);
+  color:#fffaf4;
+  box-shadow:0 7px 19px rgba(92,55,30,.14);
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .testButtonText{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  min-width:0;
+  text-align:center;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .testButtonKicker{
+  color:#fff4e9;
+  font-size:11px;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .testButtonText strong{
+  color:#fffdf9;
+  font-size:clamp(14px,1.5vw,18px);
+  line-height:1.25;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .modeYin{color:#fffaf4;font-size:29px}
+.root[data-holistic-entry="true"] .heroActions .testButton>svg{width:19px;height:19px;color:#fffaf4}
+.root[data-holistic-entry="true"] .heroActions .diagnosticAction{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  min-height:57px;
+  padding:12px clamp(14px,2vw,23px);
+  border:1.5px solid #79533c;
+  border-radius:16px;
+  background:rgba(255,252,247,.95);
+  color:#674532;
+  font-size:clamp(13px,1.35vw,17px);
+  box-shadow:0 5px 13px rgba(94,61,40,.06);
+}
+.root[data-holistic-entry="true"] .heroActions .diagnosticAction span{flex:1;text-align:center}
+.root[data-holistic-entry="true"] .heroActions .diagnosticAction:hover{background:#fffdf9;border-color:#603c28}
+
+/* Two photographic navigation cards — never additional forms or duplicate flows. */
+.holisticQuickCards{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  min-width:0;
+  margin:14px 0 0;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink{
+  position:relative;
+  isolation:isolate;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:7px;
+  min-width:0;
+  min-height:182px;
+  padding:clamp(16px,1.9vw,23px);
+  overflow:hidden;
+  border:1px solid #e2d0be;
+  border-radius:21px;
+  background:#f9f0e4;
+  color:#493126;
+  text-align:left;
+  text-decoration:none;
+  box-shadow:0 5px 16px rgba(84,57,37,.045);
+  transition:border-color .18s,transform .18s,box-shadow .18s;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink::before,
+.root[data-holistic-entry="true"] .holisticQuickLink::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink::before{
+  background:url("/images/holistic-house/reiki-practitioner-sunrise.webp") center / cover no-repeat;
+  opacity:.78;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink:nth-child(2)::before{
+  background-image:url("/academy/reiki-yggdrasil/source/advanced-runes.png");
+  background-position:70% center;
+  opacity:.55;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink::after{
+  z-index:-1;
+  background:linear-gradient(90deg,rgba(255,250,240,.97) 0%,rgba(255,249,237,.83) 50%,rgba(255,249,237,.14) 100%);
+}
+.root[data-holistic-entry="true"] .holisticQuickLink:hover{
+  transform:translateY(-2px);
+  border-color:#b9906e;
+  box-shadow:0 9px 20px rgba(84,57,37,.10);
+}
+.holisticCardIcon{display:inline-flex;align-items:center;justify-content:center;min-height:28px;color:#a96d37;font-size:30px;line-height:1}
+.root[data-holistic-entry="true"] .holisticQuickLink:nth-child(2) .holisticCardIcon{color:#835a45}
+.root[data-holistic-entry="true"] .holisticQuickLink strong{
+  max-width:75%;
+  color:#493126;
+  font:400 clamp(19px,2.3vw,27px)/1.14 Georgia,"Times New Roman",serif;
+  letter-spacing:-.02em;
+  text-wrap:balance;
+  overflow-wrap:anywhere;
+}
+.holisticCardDescription{
+  display:block;
+  max-width:74%;
+  color:#685b51;
+  font:12.5px/1.42 Arial,Helvetica,sans-serif;
+  text-wrap:pretty;
+}
+.holisticCardArrow{
+  position:absolute;
+  right:13px;
+  bottom:12px;
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  border:1px solid #e9d8c6;
+  border-radius:50%;
+  background:rgba(255,251,244,.94);
+  color:#6b4934;
+}
+/* Privacy and the free-test action have their own calm strip under both cards. */
+.root[data-holistic-entry="true"] .heroUtility{max-width:none;margin:12px 0 0}
+.root[data-holistic-entry="true"] .utilityLinks{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+}
+.root[data-holistic-entry="true"] .heroUtility .privacyDisclosure{
+  flex:none;
+  width:100%;
+  margin:0;
+  color:#685c52;
+  font-size:12px;
+  text-align:center;
+}
+.root[data-holistic-entry="true"] .heroUtility .privacyDisclosure summary{
+  display:inline-flex;
+  justify-content:center;
+  min-height:36px;
+  margin:0 auto;
+  color:#65584e;
+}
+.root[data-holistic-entry="true"] .heroUtility .freeTestLink{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  width:100%;
+  min-height:53px;
+  margin:0;
+  padding:12px 17px;
+  border:1px solid #dcc7b0;
+  border-radius:16px;
+  background:#fffaf3;
+  color:#765038;
+  font-size:14px;
+  font-weight:750;
+  text-decoration:none;
+  box-shadow:0 4px 13px rgba(99,72,44,.04);
+}
+.root[data-holistic-entry="true"] .heroUtility .freeTestLink:hover{background:#f7ede0}
+
+@media(max-width:600px){
+  .root[data-holistic-entry="true"] .templeScenic{
+    min-height:0;
+    gap:10px;
+    padding:16px 14px 15px;
+    border-radius:20px;
+  }
+  .root[data-holistic-entry="true"] .templeScenic::before{background-position:73% 46%}
+  .root[data-holistic-entry="true"] .templeScenic::after{
+    background:
+      linear-gradient(0deg,rgba(251,244,234,.94),rgba(251,244,234,.07) 70%),
+      linear-gradient(90deg,rgba(255,251,244,.97) 0%,rgba(255,251,244,.80) 48%,rgba(255,251,244,.16) 100%);
+  }
+  .root[data-holistic-entry="true"] .hero{
+    min-height:clamp(282px,78vw,352px);
+    gap:18px;
+  }
+  .root[data-holistic-entry="true"] .hero .heading :is(h1,h2){
+    max-width:88%;
+    margin-top:9px;
+    font-size:clamp(35px,8.9vw,48px);
+    line-height:1.03;
+  }
+  .root[data-holistic-entry="true"] .hero .heading .eyebrow{
+    font-size:9.5px;
+    letter-spacing:.09em;
+  }
+  .root[data-holistic-entry="true"] .hero .heading .lead{
+    max-width:85%;
+    margin-top:9px;
+    font-size:clamp(12.5px,3.4vw,14px);
+    line-height:1.43;
+  }
+  .root[data-holistic-entry="true"] .hero .question textarea{
+    min-height:56px;
+    max-height:120px;
+    padding-block:15px;
+    border-radius:15px;
+  }
+  .root[data-holistic-entry="true"] .heroActions{gap:8px}
+  .root[data-holistic-entry="true"] .heroActions .testButton{
+    min-height:62px;
+    padding:9px 13px;
+    gap:8px;
+    border-radius:14px;
+  }
+  .root[data-holistic-entry="true"] .heroActions .testButton .testButtonKicker{font-size:10px}
+  .root[data-holistic-entry="true"] .heroActions .testButton .testButtonText strong{font-size:14px}
+  .root[data-holistic-entry="true"] .heroActions .diagnosticAction{
+    min-height:52px;
+    padding:10px 13px;
+    border-radius:14px;
+    font-size:13px;
+  }
+  .holisticQuickCards{gap:8px;margin-top:10px}
+  .root[data-holistic-entry="true"] .holisticQuickLink{
+    min-height:166px;
+    gap:5px;
+    padding:13px 12px 43px;
+    border-radius:16px;
+  }
+  .root[data-holistic-entry="true"] .holisticQuickLink strong{
+    max-width:100%;
+    font-size:clamp(17px,4.5vw,22px);
+  }
+  .holisticCardDescription{max-width:100%;font-size:11.3px;line-height:1.35}
+  .holisticCardArrow{right:9px;bottom:8px;width:31px;height:31px}
+  .root[data-holistic-entry="true"] .heroUtility{margin-top:8px}
+  .root[data-holistic-entry="true"] .heroUtility .freeTestLink{min-height:49px;font-size:12.5px}
+}
+@media(max-width:350px){
+  .root[data-holistic-entry="true"] .templeScenic{padding:13px 11px 12px}
+  .root[data-holistic-entry="true"] .hero{min-height:297px;gap:15px}
+  .root[data-holistic-entry="true"] .hero .heading :is(h1,h2){max-width:100%;font-size:34px}
+  .root[data-holistic-entry="true"] .hero .heading .lead{max-width:91%;font-size:12.3px}
+  .root[data-holistic-entry="true"] .heroActions .testButton{grid-template-columns:23px minmax(0,1fr) 17px;padding:9px}
+  .root[data-holistic-entry="true"] .heroActions .testButton .testButtonText strong{font-size:12.7px}
+  .root[data-holistic-entry="true"] .heroActions .diagnosticAction{gap:7px;padding:9px;font-size:12px}
+  .root[data-holistic-entry="true"] .holisticQuickLink{padding:11px 9px 40px;min-height:162px}
+  .root[data-holistic-entry="true"] .holisticQuickLink strong{font-size:16.5px}
+  .holisticCardDescription{font-size:10.7px}
+}
+@media(prefers-reduced-motion:reduce){
+  .root[data-holistic-entry="true"] .holisticQuickLink{transition:none}
+  .root[data-holistic-entry="true"] .holisticQuickLink:hover{transform:none}
+}
