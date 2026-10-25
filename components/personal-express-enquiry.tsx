@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
-import { CheckCircle2, HeartPulse, MessageCircle, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -17,6 +17,7 @@ const copy = {
     title: "Ask Andrey for your free express review",
     lead: "One personal written review. Choose what your question is about; the service stays the same.",
     legend: "What is your request about?",
+    reveal: "Request my free review", close: "Close request form",
     areas: {
       situation: { title: "My situation", hint: "A decision, relationship, work or something that feels stuck.", tag: "Situation" },
       energy: { title: "Energy & health", hint: "Your energy, wellbeing and everyday resources — not a medical diagnosis.", tag: "Energy and wellbeing" },
@@ -33,6 +34,7 @@ const copy = {
     title: "Запросить бесплатную экспресс-диагностику",
     lead: "Один личный письменный разбор. Выберите тему обращения — это не разные услуги.",
     legend: "С чем связан ваш запрос?",
+    reveal: "Заказать бесплатную диагностику", close: "Свернуть форму",
     areas: {
       situation: { title: "По ситуации", hint: "Решение, отношения, работа или вопрос, в котором вы застряли.", tag: "Ситуация" },
       energy: { title: "По энергии и здоровью", hint: "Самочувствие, энергия и ресурсы — без медицинской диагностики.", tag: "Энергия и самочувствие" },
@@ -49,6 +51,7 @@ const copy = {
     title: "Solicita tu revisión personal exprés gratuita",
     lead: "Una sola revisión personal escrita. Elige el tema de tu pregunta, no un servicio diferente.",
     legend: "¿Sobre qué es tu consulta?",
+    reveal: "Solicitar mi revisión gratuita", close: "Cerrar formulario",
     areas: {
       situation: { title: "Mi situación", hint: "Decisiones, relaciones, trabajo o algo que te bloquea.", tag: "Situación" },
       energy: { title: "Energía y salud", hint: "Bienestar y recursos personales, sin diagnóstico médico.", tag: "Energía y bienestar" },
@@ -71,6 +74,40 @@ export function PersonalExpressEnquiry({
   const t = copy[locale];
   const pathname = usePathname();
   const [focus, setFocus] = useState<Focus>("situation");
+  const [expanded, setExpanded] = useState(false);
+  const revealRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // The hero and benefit links retain their normal anchor/scroll behavior.
+  // They also open this in-flow section, including repeated clicks on the same hash.
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === "#request-free-review") setExpanded(true);
+    };
+    const openFromAnchor = (event: MouseEvent) => {
+      if (event.target instanceof Element
+        && event.target.closest('a[href="#request-free-review"]')) setExpanded(true);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    document.addEventListener("click", openFromAnchor);
+    return () => {
+      window.removeEventListener("hashchange", openFromHash);
+      document.removeEventListener("click", openFromAnchor);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && panelRef.current?.contains(document.activeElement)) {
+        setExpanded(false);
+        revealRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onEscape);
+    return () => document.removeEventListener("keydown", onEscape);
+  }, [expanded]);
   const whatsappUrl = whatsappEnquiryUrl({
     locale, service: t.service, request: t.request, pagePath: pathname,
     // Deliberately omit the selected focus and all health/personal information
@@ -81,7 +118,7 @@ export function PersonalExpressEnquiry({
     <div className={styles.wrapper} data-personal-express-review>
       {intro}
       <section className={styles.capture} id="request-free-review" data-personal-express-enquiry
-        lang={locale} aria-labelledby="express-enquiry-title">
+        data-expanded={expanded ? "true" : "false"} lang={locale} aria-labelledby="express-enquiry-title">
         <div className={styles.photo}>
           <Image src="/images/holistic-house/andy-about.png" alt={t.alt}
             fill sizes="(max-width: 720px) 90px, 38vw" />
@@ -91,6 +128,16 @@ export function PersonalExpressEnquiry({
           <p className={styles.eyebrow}><MessageCircle size={15} aria-hidden="true" />{t.label}</p>
           <h2 id="express-enquiry-title">{t.title}</h2>
           <p className={styles.lead}>{t.lead}</p>
+          <button ref={revealRef} type="button" className={styles.reveal}
+            data-express-reveal aria-expanded={expanded} aria-controls="express-request-form"
+            onClick={() => setExpanded(open => !open)}>
+            <MessageCircle size={20} aria-hidden="true" />
+            <span>{expanded ? t.close : t.reveal}</span>
+            <ChevronDown className={styles.revealChevron} size={19} aria-hidden="true" />
+          </button>
+          <div ref={panelRef} className={styles.disclosure} id="express-request-form"
+            data-express-inline-disclosure hidden={!expanded} tabIndex={-1}
+            role="region" aria-label={t.title}>
           <fieldset className={styles.choices} data-express-focus-group>
             <legend>{t.legend}</legend>
             {(["situation", "energy"] as const).map((area) => (
@@ -109,6 +156,7 @@ export function PersonalExpressEnquiry({
             publicTopic={"Express review focus: " + t.areas[focus].tag} />
           <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
           <p className={styles.note}>{t.note}</p>
+          </div>
         </div>
       </section>
       {focus === "situation" ? children : null}
