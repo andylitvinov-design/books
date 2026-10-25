@@ -192,7 +192,7 @@ export function FreeDiagnosisOffers({ locale }: { locale: PublicLocale }) {
       </div>
       <div className={styles.formWrap}>
         <CompactLeadCapture locale={locale} id="request-free-review"
-          serviceTitle="Holistic House — diagnosis and personal session enquiry"
+          serviceTitle={t.offers.find(offer => offer.id === selected)?.title || "Holistic House — diagnosis request"}
           title={t.formTitle} lead={t.formLead} formatLabel={t.formLabel}
           formatOptions={t.offers.map(offer => ({ value: offer.id, label: offer.title + " · " + offer.price }))}
           selectedFormatValue={selected} onFormatChange={(value) => setSelected(value as OfferId)}
