@@ -214,7 +214,11 @@ test("Ideas has one compact photographic question banner and two choices immedia
   assert.ok(ui.includes("data-ideas-free-coaching"));
   assert.ok(ui.includes("data-ideas-free-test"));
   assert.match(ui, /aria-expanded=\{showSuggestedTests\} aria-controls="ideas-filtered-tests"/);
-  assert.match(ui, /onClick=\{openFreeTests\}/);
+  assert.match(ui, /onPointerUp=\{event => \{ if \(event\.pointerType === "touch"\) openFreeTestsOnTouch\(\); \}\}/);
+  assert.match(ui, /onClick=\{event => openFreeTestsOnClick\(event\.detail\)\}/);
+  assert.match(ui, /detail > 0 && performance\.now\(\) - lastTouchFreeTestRef\.current < 650/);
+  assert.match(css, /scroll-margin-block-end:calc\(116px \+ env\(safe-area-inset-bottom,0px\)\)/);
+  assert.match(css, /touch-action:manipulation/);
   assert.match(ui, /data-ideas-test-start=\{key\}/);
   assert.match(ui, /client\?startTests=hh-current-state/);
   assert.match(catalog, /key: 'hh-current-state',[\s\S]*?startable: true,[\s\S]*?rightsStatus: 'cleared',[\s\S]*?guestEligible: true/);
