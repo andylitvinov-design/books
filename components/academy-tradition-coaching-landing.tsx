@@ -79,7 +79,7 @@ export function AcademyTraditionCoachingLanding({locale,slug}:{locale:PublicLoca
           <Link href={courseHref(locale,slug)} className={styles.primary} prefetch={false}>{t.take}<ArrowRight size={19}/></Link>
         </div>
         <div className={styles.visual}>
-          <img src={course.art} alt="" width={850} height={620} loading="eager" decoding="async"/>
+          <img src={course.art} alt="" width={850} height={620} loading="eager" decoding="async" referrerPolicy="no-referrer"/>
         </div>
       </section>
       <section className={styles.stages} aria-labelledby="coaching-stages">

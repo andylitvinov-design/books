@@ -44,7 +44,7 @@ test("EN RU ES course search includes Personal Coaching Session and existing des
   assert.match(hub, /courseHref: REIKI_FREE_COURSE_PATH/);
   assert.match(hub, /courseHref: "\/" \+ \(locale === "es" \? "en" : locale\) \+ "\/app\/course\?program=stress"/);
   assert.match(hub, /tantra-reiki-yin-yang-cover\.svg/);
-  assert.equal((hub.match(/free: true/g) || []).length, 8);
+  assert.equal((hub.match(/free: true/g) || []).length, 6);
   assert.match(discovery, /useMemo\(\(\) => items\.filter/);
   assert.match(discovery, /matchesTerms/);
   assert.match(discovery, /role="search"/);
@@ -93,7 +93,7 @@ test("Every Academy course expands a distinct EN/RU/ES explanation and the Reiki
   const metadata = read("app/[locale]/academy/[[...slug]]/page.tsx");
   const discovery = read("components/academy-discovery.tsx");
   const keys = ["opora", "practitioner", "tantraIntro", "yggdrasilIntro", "yggdrasilFull", "tantraFull", "kundaliniFull", "temple"];
-  assert.equal((hub.match(/detailsHint:/g) || []).length, 12, "Every course needs a specific explanation");
+  assert.equal((hub.match(/detailsHint:/g) || []).length, 10, "All remaining Academy offers need a specific explanation");
   for (const key of keys) assert.ok(hub.includes("detailsHint: hints." + key), "Missing course-specific help: " + key);
   for (const example of [
     "Fourteen gentle daily practices", "14 дней коротких практик", "Catorce prácticas breves",
@@ -184,4 +184,23 @@ test("Live academy cards show only confirmed future events with real registratio
   assert.match(source, /setExpandedEvent\(expanded \? null : event\.id\)/);
   assert.ok(source.includes('href={"/" + locale + "/events"}'));
   assert.doesNotMatch(source, /fetch\(|localStorage\.|sessionStorage\./);
+});
+
+test("Personal Coaching is a distinct photo-led Academy spotlight; Egyptian and Greek only in Coaching", () => {
+ const hub=read("components/academy-hub.tsx");
+ const discovery=read("components/academy-discovery.tsx");
+ const css=read("components/academy-discovery.module.css");
+ const lounge=read("components/public-coaching-discovery.jsx");
+ const art=read("lib/coaching/public-session-art.js");
+ assert.ok(hub.includes("const coachingItem: AcademyCourseItem = "));
+ assert.ok(hub.includes("coachingItem={coachingItem}"));
+ assert.ok(discovery.includes("data-academy-coaching-session"));
+ assert.ok(discovery.includes("coachingSpotlightPhoto"));
+ assert.ok(discovery.includes("const freeItems = matchedItems.filter"));
+ assert.doesNotMatch(hub,/academy-free-egyptian-goal-planning|academy-free-greek-goal-planning/);
+ assert.match(css,/coachingSpotlightCTA/);
+ for(const word of ["PERSONAL COACHING","ЛИЧНАЯ КОУЧ-СЕССИЯ","COACHING PERSONAL"])assert.ok(discovery.includes(word));
+ for(const slug of ["egyptian","greek"])assert.ok(lounge.includes("traditionCoachingArt."+slug));
+ assert.match(art,/Egypt_bookofthedead.jpg/);
+ assert.match(art,/Marble_statue_of_Athena/);
 });
