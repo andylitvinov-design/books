@@ -78,7 +78,7 @@ const copy = {
     },
     situation: {
       eyebrow: "FREE PERSONAL REVIEW · WITH ANDREY",
-      title: "See your situation from a new perspective. Free.",
+      title: "Free situation review — personally with Andrey.",
       lead: "Tell me what feels stuck. I will help you look at your question, possible obstacles and the next practical step — in a free personal written review.",
       value: "Personal written reflections · no call · no payment.",
       bullets: ["Clarify what you want to change or understand.", "Explore the roles, tensions and resources in your situation.", "Receive personal written observations to reflect on."],
@@ -181,7 +181,7 @@ const copy = {
     },
     situation: {
       eyebrow: "БЕСПЛАТНЫЙ ЛИЧНЫЙ РАЗБОР · С АНДРЕЕМ",
-      title: "Взгляните на свою ситуацию по-новому. Бесплатно.",
+      title: "Бесплатный разбор вашей ситуации с Андреем.",
       lead: "Расскажите, что вас беспокоит. Я помогу увидеть главный вопрос, возможные препятствия и следующий практический шаг — в бесплатном письменном разборе.",
       value: "Личный письменный ответ · без звонка · без оплаты.",
       bullets: ["Проясните, что хотите понять или изменить.", "Исследуйте роли, напряжения и ресурсы ситуации.", "Получите письменные наблюдения для размышления."],
@@ -284,7 +284,7 @@ const copy = {
     },
     situation: {
       eyebrow: "REVISIÓN PERSONAL GRATUITA · CON ANDREY",
-      title: "Mira tu situación desde otra perspectiva. Gratis.",
+      title: "Revisión gratuita de tu situación con Andrey.",
       lead: "Cuéntame qué te preocupa. Te ayudaré a mirar tu pregunta, posibles obstáculos y el siguiente paso en una revisión personal escrita gratuita.",
       value: "Respuesta personal escrita · sin llamada · sin pago.",
       bullets: ["Aclara lo que quieres comprender o cambiar.", "Explora roles, tensiones y recursos de la situación.", "Recibe observaciones personales por escrito."],
