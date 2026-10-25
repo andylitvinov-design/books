@@ -1,9 +1,28 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { load } from 'js-yaml'
 import { isolatedRedisCommand, isolatedRedisContainer } from './helpers/isolated-redis-container.mjs'
 const id = 'a'.repeat(64)
 const context = { CI: 'true', GITHUB_ACTIONS: 'true', HH_TEST_REDIS_ISOLATED: 'true', HH_TEST_REDIS_CONTAINER: id }
+
+function unitWorkflow() {
+  const source = readFileSync(new URL('../.github/workflows/ia-v2.yml', import.meta.url), 'utf8')
+  const workflow = load(source)
+  const steps = workflow.jobs.verify.steps
+  assert.ok(Array.isArray(steps), 'Actual verify steps')
+  const matching = steps.filter(step => step.id === 'ia_unit_tests')
+  assert.equal(matching.length, 1, 'One actual unit capture step, not a comment or lookalike')
+  const unit = matching[0]
+  assert.equal(typeof unit.run, 'string')
+  assert.equal(Object.hasOwn(unit, 'continue-on-error'), false, 'Unit failure is not advisory')
+  assert.equal(Object.hasOwn(unit, 'if'), false, 'Unit check is not conditionally skipped')
+  return { source, workflow, steps, unit }
+}
+
 
 test('dedicated voice default and explicit isolated GitHub service ID are preserved', () => {
   assert.equal(isolatedRedisContainer({}), 'andrey-voice-redis-ci')
@@ -58,21 +77,30 @@ test('invalid command shape cannot execute Docker', () => {
   assert.equal(calls, 0)
 })
 test('IA injects only the existing Redis service at the unchanged unit command', () => {
-  const workflow = readFileSync(new URL('../.github/workflows/ia-v2.yml', import.meta.url), 'utf8')
-  const step = workflow.split('      - run: npm run test:unit\n')[1].split('      - name: Source-content validators')[0]
-  assert.match(step, /HH_TEST_REDIS_CONTAINER: \$\{\{ job\.services\.redis\.id \}\}/)
-  assert.match(step, /HH_TEST_REDIS_ISOLATED: 'true'/)
-  assert.equal((workflow.match(/HH_TEST_REDIS_CONTAINER:/g) || []).length, 1)
-  assert.equal((workflow.match(/image: redis:7-alpine/g) || []).length, 1)
-  assert.doesNotMatch(workflow, /docker run|redis:\/\//)
+  const { source, workflow, unit } = unitWorkflow()
+  assert.deepEqual(unit.env, {
+    HH_TEST_REDIS_CONTAINER: '${{ job.services.redis.id }}',
+    HH_TEST_REDIS_ISOLATED: 'true',
+  }, 'Exact isolated service ID environment belongs to the actual unit step')
+  assert.equal(workflow.jobs.verify.services.redis.image, 'redis:7-alpine')
+  assert.deepEqual(workflow.jobs.verify.services.redis.ports, ['6379:6379'])
+  assert.equal(workflow.jobs.verify.services.redis.options,
+    '--health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5')
+  assert.equal((source.match(/HH_TEST_REDIS_CONTAINER:/g) || []).length, 1)
+  assert.equal((source.match(/image: redis:7-alpine/g) || []).length, 1)
+  assert.doesNotMatch(source, /docker run|redis:\/\//)
 })
 
 test('IA generates pinned local artwork before unit tests without changing prebuild', () => {
-  const workflow = readFileSync(new URL('../.github/workflows/ia-v2.yml', import.meta.url), 'utf8')
-  const install = workflow.indexOf('- run: npm ci --no-audit --no-fund')
-  const artwork = workflow.indexOf('run: npm run build:static-artwork')
-  const unit = workflow.indexOf('- run: npm run test:unit')
-  assert.ok(install >= 0 && artwork > install && unit > artwork)
+  const { steps, unit } = unitWorkflow()
+  const installs = steps.filter(step => step.run === 'npm ci --no-audit --no-fund')
+  const artworks = steps.filter(step => step.run === 'npm run build:static-artwork')
+  assert.equal(installs.length, 1, 'One real install step')
+  assert.equal(artworks.length, 1, 'One real pinned artwork step')
+  const install = steps.indexOf(installs[0]), artwork = steps.indexOf(artworks[0])
+  const validators = steps.filter(step => step.run === 'npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images')
+  assert.equal(validators.length, 1, 'One real source-content validator step')
+  assert.ok(install >= 0 && artwork > install && steps.indexOf(unit) > artwork && steps.indexOf(validators[0]) > steps.indexOf(unit))
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   assert.equal(pkg.scripts['build:static-artwork'], 'node scripts/build-public-card-artwork.mjs')
   assert.ok(pkg.scripts.prebuild.includes('node scripts/build-public-card-artwork.mjs'))
@@ -101,4 +129,31 @@ test('hostile inherited Docker endpoint, context, TLS and config cannot reach th
   })
   assert.equal(calls, 1)
   assert.deepEqual(hostile, before, 'parent environment must not be modified')
+})
+
+
+test('actual unit capture runs npm exactly once and preserves its fatal status before downstream work', () => {
+  const { unit } = unitWorkflow()
+  const root = mkdtempSync(join(tmpdir(), 'hh-redis-workflow-unit-'))
+  try {
+    const bin = join(root, 'bin'); mkdirSync(bin)
+    const wrapper = join(root, 'wrapper.sh'); writeFileSync(wrapper, unit.run)
+    const npm = join(bin, 'npm')
+    writeFileSync(npm, '#!/bin/bash\n[[ "$#" = 2 && "$1" = run && "$2" = test:unit ]] || exit 97\nprintf "called\\n" >> "$RUNNER_TEMP/admissions"\nprintf "synthetic-unit-output\\n"\nexit "$SYNTHETIC_NPM_EXIT"\n', { mode: 0o755 })
+    for (const code of [0, 42, 143]) {
+      writeFileSync(join(root, 'admissions'), '')
+      const env = { PATH: `${bin}:/usr/bin:/bin`, RUNNER_TEMP: root, SYNTHETIC_NPM_EXIT: String(code) }
+      const result = spawnSync('/bin/bash', ['--noprofile', '--norc', '-c',
+        '/bin/bash --noprofile --norc -eo pipefail "$1" && printf "synthetic-downstream\\n"', 'probe', wrapper],
+        { env, encoding: 'utf8', timeout: 5000, maxBuffer: 120000 })
+      assert.ifError(result.error)
+      assert.equal(result.signal, null)
+      assert.equal(result.status, code, `Actual npm exit ${code} is the gate`)
+      assert.equal(readFileSync(join(root, 'admissions'), 'utf8'), 'called\n', 'Exactly one real synthetic npm admission; no early exit/comment substitute')
+      assert.equal(result.stdout, 'synthetic-unit-output\n' + (code === 0 ? 'synthetic-downstream\n' : ''))
+      assert.equal(result.stderr, '')
+      assert.equal(readFileSync(join(root, 'ia222-unit.log'), 'utf8'), 'synthetic-unit-output\n')
+      assert.deepEqual(JSON.parse(readFileSync(join(root, 'ia222-unit-status.json'), 'utf8')), { npmExit: code, teeExit: 0 })
+    }
+  } finally { rmSync(root, { recursive: true, force: true }) }
 })

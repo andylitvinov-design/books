@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProfiHub } from "@/components/profi-hub";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { getAppConfig } from "@/lib/app/config";
+import { AppError } from "@/lib/assessments/contracts";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
 import type { PublicMentorCourse, PublicPractitioner } from "@/lib/practitioners/public-types";
@@ -50,7 +51,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProfiPage({ params }: Props) {
   const { locale } = await params;
   if (!supported(locale)) notFound();
-  const config = getAppConfig();
+  let config: ReturnType<typeof getAppConfig>;
+  try {
+    config = getAppConfig();
+  } catch (error) {
+    // The public guide remains usable when its optional directory is unavailable.
+    // Private app configuration and authentication still fail closed unchanged.
+    if (!(error instanceof AppError) || error.code !== "APP_UNAVAILABLE") throw error;
+    return <ProfiHub locale={locale} directory={null} directoryUnavailable />;
+  }
   const [mastersResult, coursesResult] = await Promise.allSettled([
     createPractitionerRepository(config).listPublicPractitioners(locale),
     createPractitionerCourseRepository(config).catalog(),

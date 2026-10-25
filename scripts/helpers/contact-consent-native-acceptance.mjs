@@ -45,7 +45,13 @@ function diagnosticFields(diagnostic) {
   const keyboard=diagnostic.mode==='keyboard'&&phase==='keyboard-visible'?` keyboard=${keyboardDiagnostic(diagnostic)}`:''
   let tail=''
   try {if(diagnostic.keyboardTail!==undefined) tail=` keyboardTail=${keyboardTailDiagnostic(diagnostic.keyboardTail)}`} catch { /* A malformed optional tail cannot replace the original diagnostic. */ }
+// BEGIN KEYBOARD START DIAGNOSTIC format
+  try {
+    const start=keyboardStartDiagnostic(diagnostic.keyboardTail?.keyboardStart)
+    if(start!==undefined) tail+=` keyboardStart=${start}`
+  } catch { /* Optional observation never replaces the first failed verdict. */ }
   return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}${keyboard}${tail}`
+// END KEYBOARD START DIAGNOSTIC format
 }
 
 function keyboardTailDiagnostic(tail) {
@@ -61,7 +67,112 @@ function keyboardTailDiagnostic(tail) {
     samples:Array.isArray(tail?.samples)?tail.samples.slice(0,4).map(sample):[]})
 }
 
+// BEGIN KEYBOARD START DIAGNOSTIC observer
+// A passive, bounded history only: installation can perturb timing. It neither
+// establishes a start precondition nor changes the original acceptance verdict.
+// No values, DOM text/identifiers, URLs or raw keys enter the observation.
+export function installKeyboardStartObserver() {
+  const installed=[]
+  try {
+    const records=[],start=performance.now()
+    let bytes=0,discarded=0,readErrors=0,tabCount=0,lastTab='null'
+    const count=value=>Math.min(1000000,value+1)
+    const number=value=>typeof value==='number'&&Number.isFinite(value)
+      ?Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100:0
+    const sample=node=>{
+      try {
+        if(!node) throw 0
+        const r=node.getBoundingClientRect(),raw=[r.left,r.top,r.right,r.bottom]
+        const sampled=raw.every(value=>typeof value==='number'&&Number.isFinite(value))
+        return {sampled,rect:raw.map(number),focused:node===document.activeElement,
+          focusVisible:node.matches(':focus-visible')===true,
+          inside:sampled&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth}
+      } catch { return {sampled:false,rect:[0,0,0,0],focused:false,focusVisible:false,inside:false} }
+    }
+    const record=(kind,event)=>{
+      try {
+        const chooser=document.querySelector('[data-alchemy-booking-formats] [data-contact-channel-chooser]')
+        if(!chooser) return
+        const phone=chooser.querySelector('[data-phone-country-input] input[type="tel"]')
+        const consent=chooser.querySelector('input[type="checkbox"]')
+        if(!phone||!consent) return
+        const viewport=window.visualViewport
+        const target=event?.target
+        const entry={kind,ms:number(performance.now()-start),
+          target:target===phone?'phone':target===consent?'consent':target===document?'document':'other',
+          prevented:event?.defaultPrevented===true,shift:kind==='tab'&&event?.shiftKey===true,
+          phone:sample(phone),consent:sample(consent),
+          scroll:[number(scrollX),number(scrollY)],viewport:[number(innerWidth),number(innerHeight)],
+          visualViewportPresent:Boolean(viewport),
+          visualViewport:viewport?[number(viewport.width),number(viewport.height),number(viewport.offsetLeft),number(viewport.offsetTop)]:[0,0,0,0],
+          errorPresent:Boolean(chooser.querySelector('[role="alert"]'))}
+        const encoded=JSON.stringify(entry)
+        // ASCII-only fixed strings and bounded numbers make lengths byte counts.
+        if(encoded.length>2048) {discarded=count(discarded);return}
+        if(kind==='tab') {lastTab=encoded;tabCount=count(tabCount)}
+        while(records.length>=64||bytes+encoded.length>24576) {
+          bytes-=records.shift().length;discarded=count(discarded)
+        }
+        records.push(encoded);bytes+=encoded.length
+      } catch {readErrors=count(readErrors)}
+    }
+    const listeners=[
+      ['focusin',event=>record('focusin',event)],
+      ['focusout',event=>record('focusout',event)],
+      ['input',event=>record('input',event)],
+      ['keydown',event=>{try {if(event.key==='Tab') record('tab',event)} catch {readErrors=count(readErrors)}}],
+      ['scroll',event=>record('scroll',event)],
+      ['scrollend',event=>record('scrollend',event)],
+    ]
+    for(const [name,listener] of listeners) {
+      document.addEventListener(name,listener,{capture:true,passive:true})
+      installed.push([name,listener])
+    }
+    Object.defineProperty(window,'__consentKeyboardStartRead',{configurable:true,value:()=>{
+      try {
+        const result=`{"version":1,"discarded":${discarded},"readErrors":${readErrors},"tabCount":${tabCount},"events":[${records.join(',')}],"tab":${lastTab}}`
+        return result.length<=32768?result:undefined
+      } catch {return undefined}
+    }})
+  } catch {
+    // Partial setup failure remains local and cannot become a pageerror.
+    for(const [name,listener] of installed) {
+      try {document.removeEventListener(name,listener,true)} catch {}
+    }
+  }
+}
+
+// Revalidate the browser's bounded string before it can enter a diagnostic.
+// Never copy arbitrary fields or invoke object coercion/toJSON from page data.
+export function keyboardStartDiagnostic(raw) {
+  if(typeof raw!=='string'||raw.length>32768) return undefined
+  const data=JSON.parse(raw)
+  if(data?.version!==1) return undefined
+  const number=value=>typeof value==='number'&&Number.isFinite(value)
+    ?Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100:0
+  const count=value=>Math.max(0,Math.trunc(number(value)))
+  const vector=(value,length)=>Array.from({length},(_,i)=>number(Array.isArray(value)?value[i]:undefined))
+  const node=value=>({sampled:value?.sampled===true,rect:vector(value?.rect,4),
+    focused:value?.focused===true,focusVisible:value?.focusVisible===true,inside:value?.inside===true})
+  const event=value=>{
+    if(!['focusin','focusout','input','tab','scroll','scrollend'].includes(value?.kind)) return null
+    return {kind:value.kind,ms:number(value.ms),
+      target:['phone','consent','document','other'].includes(value.target)?value.target:'other',
+      prevented:value.prevented===true,shift:value.kind==='tab'&&value.shift===true,
+      phone:node(value.phone),consent:node(value.consent),scroll:vector(value.scroll,2),viewport:vector(value.viewport,2),
+      visualViewportPresent:value.visualViewportPresent===true,visualViewport:vector(value.visualViewport,4),
+      errorPresent:value.errorPresent===true}
+  }
+  const safe={version:1,discarded:count(data.discarded),readErrors:count(data.readErrors),tabCount:count(data.tabCount),
+    events:Array.isArray(data.events)?data.events.slice(0,64).map(event).filter(Boolean):[],
+    tab:data.tab?.kind==='tab'?event(data.tab):null}
+  let result=JSON.stringify(safe)
+  while(result.length>32768&&safe.events.length) {safe.events.shift();safe.discarded=Math.min(1000000,safe.discarded+1);result=JSON.stringify(safe)}
+  return result.length<=32768?result:undefined
+}
+
 // Called ONLY after the original exact keyboard verdict has already failed.
+// END KEYBOARD START DIAGNOSTIC observer
 // Observe, never scroll/focus/check or retry. Fixed 500ms evidence window is not
 // an acceptance timeout: even an in-view final sample cannot change failure.
 export async function collectKeyboardFailureTail(node) {
@@ -87,7 +198,17 @@ export async function collectKeyboardFailureTail(node) {
       await new Promise(resolve=>setTimeout(resolve,delay))
       sample()
     }
-    return {finished:true,timedOut:false,scrollEndSupported,scrollEvents,scrollEnds,samples}
+// BEGIN KEYBOARD START DIAGNOSTIC tail-read
+    const result={finished:true,timedOut:false,scrollEndSupported,scrollEvents,scrollEnds,samples}
+    // Reuse the existing post-verdict tail evaluation and its existing deadline;
+    // no added evaluation, wait, retry, or delay before the original sample.
+    try {
+      const read=window.__consentKeyboardStartRead
+      const raw=typeof read==='function'?read():undefined
+      if(typeof raw==='string'&&raw.length<=32768) result.keyboardStart=raw
+    } catch { /* Missing/failed observation leaves the original tail untouched. */ }
+    return result
+// END KEYBOARD START DIAGNOSTIC tail-read
   } finally {
     document.removeEventListener('scroll',onScroll,true)
     document.removeEventListener('scrollend',onScrollEnd,true)
@@ -185,7 +306,12 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
     })
     checkpoint(diagnostic,'bootstrap-init')
     await context.addInitScript(installConsentPopupGuard)
+// BEGIN KEYBOARD START DIAGNOSTIC install
+    if(diagnostic?.mode==='keyboard') {
+      try {await context.addInitScript(installKeyboardStartObserver)} catch { /* Diagnostic installation is optional. */ }
+    }
     result=await run(drain)
+// END KEYBOARD START DIAGNOSTIC install
   } catch {
     primary=true;failed(diagnostic)
     await captureKeyboardFailureTail(diagnostic)

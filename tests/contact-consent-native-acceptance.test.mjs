@@ -3,7 +3,10 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import vm from 'node:vm'
 import {consentInitialGate,withConsentBootstrap,installConsentPopupGuard,verifyContactConsentNativeAcceptance,collectKeyboardFailureTail} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
+// BEGIN KEYBOARD START DIAGNOSTIC TEST imports
+import {installKeyboardStartObserver,keyboardStartDiagnostic} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
 const origin='http://127.0.0.1:3000', initial=origin+'/en/services/alchemy-of-soul'
+// END KEYBOARD START DIAGNOSTIC TEST imports
 function route(url=initial,method='GET',type='document',responseOptions={}) {
   const calls=[]
   return {calls,request:()=>({url:()=>url,method:()=>method,resourceType:()=>type}),
@@ -94,7 +97,9 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
   }
   const context={route:async(_,fn)=>{record('route');state.routes.push(fn);if(post&&state.routes.length===1)await fn(route(origin+'/api/service-enquiries','POST','fetch'))},
     routeWebSocket:async(_,fn)=>{record('socket');state.socket=true;state.socketHandler=fn;let closed=false;await fn({close:()=>{closed=true}});assert.ok(closed)},
-    addInitScript:async fn=>{record('init');assert.equal(fn,installConsentPopupGuard);state.init=true},
+// BEGIN KEYBOARD START DIAGNOSTIC TEST init-harness
+    addInitScript:async fn=>{if(fn===installKeyboardStartObserver){record('observer-init');state.observer=fn;return}record('init');assert.equal(fn,installConsentPopupGuard);state.init=true},
+// END KEYBOARD START DIAGNOSTIC TEST init-harness
     exposeBinding:async(name,fn)=>{record('binding');state.binding=fn},on:(name,fn)=>{record('pages');state.pageHandler=fn},newPage:async()=>{record('newPage');state.pageHandler(page);return page},close:async()=>{record('close');if(latePopup)state.binding();if(latePage||latePageCloseError)state.pageHandler({close:async()=>{if(latePageCloseError)throw new Error(marker)}});if(latePost)await state.routes[0](route(origin+'/api/service-enquiries','POST','fetch'));if(lateRouteError)void state.routes[0]({request:()=>{throw new Error(marker)}});if(lateSocketError)void state.socketHandler({close:async()=>{throw new Error(marker)}});if(latePageError)state.pageError(new Error('PRIVATE_MARKER'));state.closed=true}}
   return context
  }}
@@ -437,7 +442,9 @@ function tailFixture({settles=true,readFails=false,listenFails=false}={}) {
   removeEventListener:(name,callback,capture)=>{calls.push(['remove',name,capture]);if(listeners.get(name)===callback)listeners.delete(name)}}
  const sandbox={node:checkbox,document,innerWidth:390,innerHeight:844,scrollX:0,scrollY:4166,performance:{now:()=>now},
   setTimeout:(callback,delay)=>{calls.push(['timer',delay]);Promise.resolve().then(()=>{now+=delay;listeners.get('scroll')?.();if(now===250)listeners.get('scrollend')?.();callback()})}}
- return {calls,listeners,read:async fn=>JSON.parse(JSON.stringify(await vm.runInNewContext(`(${fn.toString()})(node)`,sandbox)))}
+// BEGIN KEYBOARD START DIAGNOSTIC TEST tail-fixture
+ return {calls,listeners,sandbox,read:async fn=>JSON.parse(JSON.stringify(await vm.runInNewContext(`(${fn.toString()})(node)`,sandbox)))}
+// END KEYBOARD START DIAGNOSTIC TEST tail-fixture
 }
 async function captureTailFailure(t,{readKeyboardTail,latePopup=false,failAt}={}) {
  const messages=captureDiagnostics(t),fixture=keyboardFixture({rect:{left:41,top:1022.61,right:60,bottom:1041.61}})
@@ -509,3 +516,215 @@ test('throwing optional tail getters cannot replace or leak through the original
  const result=await captureTailFailure(t,{readKeyboardTail:()=>raw});assert.equal(result.tail,undefined)
 })
 
+// BEGIN KEYBOARD START DIAGNOSTIC TEST cases
+// These fixtures execute the actual installer, formatter and tail source. They
+// prove bounded passive diagnostics, not browser timing/scroll accessibility.
+function startObserverFixture({listenFails,defineFails=false,selectorFails=false}={}) {
+ const listeners=new Map(),calls=[],privateReads=[],activeCalls=[]
+ const state={now:0,present:true,phonePresent:true,error:false,rectError:false,
+  phoneRect:{left:37,top:-65,right:353,bottom:-20},consentRect:{left:37,top:-12.78,right:55,bottom:5.22}}
+ const trap=(object,keys,bucket)=>{for(const key of keys)Object.defineProperty(object,key,{configurable:true,get(){bucket.push(key);throw Error(marker)}})}
+ const makeNode=kind=>{
+  const node={getBoundingClientRect:()=>{calls.push(['rect',kind]);if(state.rectError)throw Error(marker);return state[kind+'Rect']},
+   matches:selector=>{calls.push(['matches',selector]);assert.equal(selector,':focus-visible');return true}}
+  trap(node,['value','textContent','innerText','innerHTML','outerHTML','id','name','href','src','dataset','attributes','getAttribute','toJSON'],privateReads)
+  trap(node,['focus','blur','click','check','scrollIntoView','dispatchEvent','setAttribute'],activeCalls)
+  return node
+ }
+ const phone=makeNode('phone'),consent=makeNode('consent')
+ const chooser={querySelector:selector=>{
+  calls.push(['chooser-query',selector])
+  if(selector==='[data-phone-country-input] input[type="tel"]')return state.phonePresent?phone:null
+  if(selector==='input[type="checkbox"]')return consent
+  if(selector==='[role="alert"]')return state.error?{}:null
+  assert.fail('Unowned selector')
+ }}
+ trap(chooser,['textContent','innerHTML','outerHTML','id','name','getAttribute'],privateReads)
+ const document={activeElement:phone,
+  querySelector:selector=>{calls.push(['document-query',selector]);if(selectorFails)throw Error(marker);assert.equal(selector,'[data-alchemy-booking-formats] [data-contact-channel-chooser]');return state.present?chooser:null},
+  addEventListener:(name,fn,options)=>{calls.push(['listen',name,options]);if(name===listenFails)throw Error(marker);listeners.set(name,fn)},
+  removeEventListener:(name,fn,capture)=>{calls.push(['remove',name,capture]);if(listeners.get(name)===fn)listeners.delete(name)}}
+ trap(document,['URL','location','cookie','title','body','documentElement','textContent','getElementById'],privateReads)
+ const window={visualViewport:{width:390,height:844,offsetLeft:0,offsetTop:0}}
+ trap(window,['location','localStorage','sessionStorage'],privateReads)
+ trap(window,['fetch','open','scrollTo','scrollBy','requestAnimationFrame','setTimeout'],activeCalls)
+ if(defineFails)Object.preventExtensions(window)
+ const sandbox={window,document,performance:{now:()=>state.now},scrollX:0,scrollY:9797,innerWidth:390,innerHeight:844}
+ trap(sandbox,['fetch','console','setTimeout','requestAnimationFrame','MutationObserver'],activeCalls)
+ vm.runInNewContext(`(${installKeyboardStartObserver.toString()})()`,sandbox)
+ const dispatch=(name,options={},afterDefault)=>{
+  const event={target:phone,defaultPrevented:false,shiftKey:false,...options}
+  trap(event,['data','inputType','code','keyCode','keyIdentifier','which','textContent'],privateReads)
+  trap(event,['preventDefault','stopPropagation','stopImmediatePropagation'],activeCalls)
+  listeners.get(name)?.(event)
+  afterDefault?.()
+ }
+ const raw=()=>window.__consentKeyboardStartRead?.()
+ const read=()=>{const value=raw();return value===undefined?undefined:JSON.parse(value)}
+ const noPrivateOrActive=()=>{assert.deepEqual(privateReads,[]);assert.deepEqual(activeCalls,[])}
+ return {listeners,calls,privateReads,activeCalls,state,phone,consent,document,window,sandbox,dispatch,raw,read,noPrivateOrActive}
+}
+function assertStartSchema(result) {
+ assert.deepEqual(Object.keys(result).sort(),['version','discarded','readErrors','tabCount','events','tab'].sort())
+ assert.equal(result.version,1);assert.ok(result.events.length<=64)
+ assert.ok(Buffer.byteLength(JSON.stringify(result))<=32768)
+ const inspect=value=>{
+  if(value===null)return
+  if(Array.isArray(value)){for(const child of value)inspect(child);return}
+  if(typeof value==='object'){for(const child of Object.values(value))inspect(child);return}
+  if(typeof value==='string')assert.ok(['focusin','focusout','input','tab','scroll','scrollend','phone','consent','document','other'].includes(value))
+  else assert.ok(typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value)&&Math.abs(value)<=1000000)
+ }
+ inspect(result)
+}
+test('start observer installs only fixed passive capture listeners and reads no document on install',()=>{
+ const f=startObserverFixture()
+ assert.deepEqual([...f.listeners.keys()],['focusin','focusout','input','keydown','scroll','scrollend'])
+ for(const call of f.calls){assert.equal(call[0],'listen');assert.equal(call[2].capture,true);assert.equal(call[2].passive,true)}
+ assertStartSchema(f.read());assert.deepEqual(f.read().events,[]);assert.equal(f.read().tab,null)
+ f.noPrivateOrActive()
+})
+test('actual Tab capture snapshots focused phone before default focus and scroll action',()=>{
+ const f=startObserverFixture();f.state.error=true;f.state.now=25
+ f.dispatch('focusin');f.dispatch('input');f.state.now=35
+ f.dispatch('keydown',{key:'Tab'},()=>{f.document.activeElement=f.consent;f.sandbox.scrollY=9418;f.state.consentRect={left:37,top:366.22,right:55,bottom:384.22}})
+ f.state.now=40;f.dispatch('focusout');f.dispatch('focusin',{target:f.consent});f.dispatch('scroll',{target:f.document});f.dispatch('scrollend',{target:f.document})
+ const data=f.read();assertStartSchema(data)
+ assert.deepEqual(data.events.map(event=>event.kind),['focusin','input','tab','focusout','focusin','scroll','scrollend'])
+ assert.equal(data.tabCount,1);assert.equal(data.tab.ms,35);assert.equal(data.tab.phone.focused,true);assert.equal(data.tab.consent.focused,false)
+ assert.deepEqual(data.tab.consent.rect,[37,-12.78,55,5.22]);assert.equal(data.tab.consent.inside,false)
+ assert.deepEqual(data.tab.scroll,[0,9797]);assert.equal(data.tab.errorPresent,true)
+ assert.equal(data.events[4].consent.focused,true);assert.deepEqual(data.events[4].scroll,[0,9418])
+ assert.equal(data.events[4].target,'consent');assert.equal(data.events[5].target,'document')
+ f.noPrivateOrActive()
+})
+test('input records error presence but never input data, values, text, raw keys or identifiers',()=>{
+ const f=startObserverFixture();f.state.error=true
+ f.dispatch('input');f.state.error=false;f.dispatch('input')
+ for(const key of ['PRIVATE_MARKER','Enter',' ', 'https://example.invalid', '4165550123'])f.dispatch('keydown',{key})
+ f.dispatch('keydown',{key:'Tab',shiftKey:true});f.dispatch('focusin',{target:{id:marker,name:marker}})
+ const data=f.read();assertStartSchema(data)
+ assert.deepEqual(data.events.map(event=>event.kind),['input','input','tab','focusin'])
+ assert.deepEqual(data.events.slice(0,2).map(event=>event.errorPresent),[true,false]);assert.equal(data.tab.shift,true)
+ assert.equal(data.events.at(-1).target,'other');assert.ok(!f.raw().includes('PRIVATE_MARKER'));assert.ok(!f.raw().includes('4165550123'))
+ f.noPrivateOrActive()
+})
+test('actual history cap retains recent records and a dedicated last Tab after scroll flooding',()=>{
+ const f=startObserverFixture();f.dispatch('keydown',{key:'Tab'});const tab=f.read().tab
+ assert.ok(tab);assert.equal(tab.kind,'tab')
+ for(let i=1;i<=400;i++){f.state.now=i;f.dispatch('scroll',{target:f.document})}
+ const data=f.read();assertStartSchema(data)
+ assert.ok(data.discarded>0);assert.ok(data.events.length>0);assert.ok(data.events.every(event=>event.kind==='scroll'))
+ assert.equal(data.events.at(-1).ms,400);assert.deepEqual(data.tab,tab);assert.equal(data.tabCount,1)
+ assert.ok(Buffer.byteLength(f.raw())<=32768);assert.ok(data.events.reduce((bytes,event)=>bytes+Buffer.byteLength(JSON.stringify(event)),0)<=24576)
+ f.noPrivateOrActive()
+})
+test('actual numeric capture bounds and redacts malformed geometry and viewport values',()=>{
+ const f=startObserverFixture();f.state.now=1e20;f.sandbox.scrollX=Infinity;f.sandbox.scrollY=-1e20;f.sandbox.innerWidth=NaN
+ f.window.visualViewport={width:marker,height:1e20,offsetLeft:-Infinity,offsetTop:1.23456}
+ f.state.phoneRect={left:NaN,top:marker,right:1e20,bottom:-Infinity}
+ f.dispatch('input');const data=f.read();assertStartSchema(data);const event=data.events[0]
+ assert.equal(event.phone.sampled,false);assert.deepEqual(event.phone.rect,[0,0,1000000,0]);assert.equal(event.phone.inside,false)
+ assert.deepEqual(event.scroll,[0,-1000000]);assert.deepEqual(event.viewport,[0,844]);assert.deepEqual(event.visualViewport,[0,1000000,0,1.23]);assert.equal(event.ms,1000000)
+ assert.ok(!f.raw().includes('PRIVATE_MARKER'));f.noPrivateOrActive()
+})
+test('observer converts focus-visible reads to strict booleans before any browser serialization',()=>{
+ const f=startObserverFixture();f.phone.matches=()=>marker;f.dispatch('input');const data=f.read();assertStartSchema(data)
+ assert.equal(data.events[0].phone.focusVisible,false);assert.ok(!f.raw().includes('PRIVATE_MARKER'));f.noPrivateOrActive()
+})
+test('absent chooser or phone and unrelated keyboard events add no fabricated record',()=>{
+ const f=startObserverFixture();f.state.present=false;f.dispatch('input');f.state.present=true;f.state.phonePresent=false;f.dispatch('scroll')
+ f.state.phonePresent=true;f.dispatch('keydown',{key:'Enter'});assert.deepEqual(f.read().events,[]);f.noPrivateOrActive()
+})
+for(const options of [{listenFails:'focusin'},{listenFails:'input'},{defineFails:true}])test('observer partial install failure is contained and removes listeners '+JSON.stringify(options),()=>{
+ const f=startObserverFixture(options);assert.equal(f.listeners.size,0);assert.equal(f.raw(),undefined);f.noPrivateOrActive()
+})
+test('observer event and geometry failures remain bounded diagnostic failures only',()=>{
+ const broken=startObserverFixture({selectorFails:true});broken.dispatch('input');assert.equal(broken.read().readErrors,1);assert.deepEqual(broken.read().events,[]);broken.noPrivateOrActive()
+ const f=startObserverFixture();f.state.rectError=true;f.dispatch('focusin');assert.equal(f.read().events[0].phone.sampled,false);assert.equal(f.read().events[0].consent.sampled,false);f.noPrivateOrActive()
+})
+test('formatter revalidates actual observer output and never retains unknown fields or categories',()=>{
+ const f=startObserverFixture();f.dispatch('keydown',{key:'Tab'});const raw=f.read()
+ raw.private=marker;raw.events[0].value=marker;raw.events[0].target=marker;raw.events[0].phone.focused=marker;raw.events[0].phone.rect=[marker,null,1e20,-1e20]
+ raw.events.push({kind:marker,textContent:marker});raw.discarded=-99;raw.readErrors=1e20
+ const result=keyboardStartDiagnostic(JSON.stringify(raw)),data=JSON.parse(result);assertStartSchema(data)
+ assert.equal(data.events.length,1);assert.equal(data.events[0].target,'other');assert.equal(data.events[0].phone.focused,false)
+ assert.deepEqual(data.events[0].phone.rect,[0,0,1000000,-1000000]);assert.equal(data.discarded,0);assert.equal(data.readErrors,1000000)
+ assert.ok(!result.includes('PRIVATE_MARKER'));assert.equal(keyboardStartDiagnostic('x'.repeat(32769)),undefined)
+ assert.equal(keyboardStartDiagnostic({toJSON:()=>assert.fail('coercion')}),undefined);assert.equal(keyboardStartDiagnostic('{"version":2}'),undefined)
+ f.noPrivateOrActive()
+})
+test('formatter independently enforces output record and byte caps on compact hostile input',()=>{
+ const raw=JSON.stringify({version:1,events:Array.from({length:200},()=>({kind:'scroll'})),tab:{kind:'input',value:marker}})
+ assert.ok(raw.length<32768);const data=JSON.parse(keyboardStartDiagnostic(raw));assertStartSchema(data)
+ assert.ok(data.events.length<=64);assert.equal(data.tab,null)
+})
+test('formatter byte cap trims worst-case finite records while preserving dedicated Tab',()=>{
+ const vector=length=>Array(length).fill(-999999.99),node={rect:vector(4)}
+ const event={kind:'scrollend',ms:-999999.99,target:'document',phone:node,consent:node,scroll:vector(2),viewport:vector(2),visualViewport:vector(4)}
+ const raw=JSON.stringify({version:1,events:Array(64).fill(event),tab:{...event,kind:'tab'}})
+ assert.ok(raw.length<32768);const data=JSON.parse(keyboardStartDiagnostic(raw));assertStartSchema(data)
+ assert.ok(data.discarded>0);assert.ok(data.events.length<64);assert.equal(data.tab.kind,'tab');assert.deepEqual(data.tab.phone.rect,vector(4))
+})
+test('keyboard observer init is before page and navigation, once, with all original interactions intact',async t=>{
+ const messages=captureDiagnostics(t),h=harness();await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ const observer=h.events.filter(event=>event[1]==='observer-init');assert.equal(observer.length,1);assert.equal(observer[0][0],0)
+ assert.ok(h.events.indexOf(observer[0])<h.events.findIndex(event=>event[1]==='newPage'))
+ assert.ok(h.events.indexOf(observer[0])<h.events.findIndex(event=>event[1]==='goto'))
+ assert.deepEqual(h.events.filter(event=>event[0]===0&&['click','fill','select','key'].includes(event[1])).map(event=>event.slice(1)),[
+  ['click','format'],['click','open'],['select','country','CA'],['fill','phone','4165550123'],['click','whatsapp'],['click','telegram'],['fill','phone','4165550123'],
+  ['key','Tab'],['key','Space'],['key','Space'],['key','Shift+Tab'],['click','whatsapp'],['click','telegram'],
+ ])
+ assert.deepEqual(messages,modes.map(mode=>[completed(mode)]));assert.equal(h.events.filter(event=>event[1]==='tail').length,0)
+})
+test('observer init API rejection cannot turn native acceptance success into failure',async t=>{
+ const messages=captureDiagnostics(t),h=harness({failAt:'observer-init'});await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ assert.deepEqual(messages,modes.map(mode=>[completed(mode)]));assert.ok(h.contexts.every(context=>context.closed))
+})
+test('actual observer state piggybacks only after unchanged four tail samples with no new timer',async()=>{
+ const f=startObserverFixture();f.dispatch('keydown',{key:'Tab'});const tail=tailFixture();let reads=0
+ tail.sandbox.window={__consentKeyboardStartRead:()=>{reads++;assert.equal(tail.calls.filter(call=>call==='rect').length,4);return f.raw()}}
+ const result=await tail.read(collectKeyboardFailureTail)
+ assert.equal(reads,1);assert.deepEqual(result.samples.map(sample=>sample.ms),[0,100,250,500])
+ assert.deepEqual(tail.calls.filter(call=>Array.isArray(call)&&call[0]==='timer'),[['timer',100],['timer',150],['timer',250]])
+ assert.deepEqual(JSON.parse(result.keyboardStart),f.read());assert.equal(tail.listeners.size,0);f.noPrivateOrActive()
+})
+for(const kind of ['throw','oversize','non-string'])test('failed optional tail observer read preserves exact original tail '+kind,async()=>{
+ const tail=tailFixture();tail.sandbox.window={__consentKeyboardStartRead:()=>{if(kind==='throw')throw Error(marker);return kind==='oversize'?'x'.repeat(32769):{textContent:marker}}}
+ const result=await tail.read(collectKeyboardFailureTail)
+ assert.equal(result.keyboardStart,undefined);assert.equal(result.finished,true);assert.equal(result.timedOut,false);assert.equal(result.samples.length,4);assert.equal(tail.listeners.size,0)
+})
+async function observerFailure(t,raw,{failAt,latePopup=false}={}) {
+ const messages=captureDiagnostics(t),fixture=keyboardFixture({rect:{left:37,top:-12.78,right:55,bottom:5.22}}),tail=tailFixture()
+ tail.sandbox.window={__consentKeyboardStartRead:()=>raw}
+ const h=harness({readVisibility:fixture.evaluate,readKeyboardTail:tail.read,failAt,latePopup});let error
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),value=>{error=value;return true})
+ assert.match(error.message,/^CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-visible /)
+ assertPrivateDataExcluded(error,messages);assert.deepEqual(messages,[]);assert.ok(h.contexts.every((_,id)=>h.events.some(event=>event[0]===id&&event[1]==='close')))
+ const keyboard=JSON.parse(error.message.split(' keyboard=')[1].split(' keyboardTail=')[0]);assert.equal(keyboard.inside,false)
+ assert.ok(h.events.findIndex(event=>event[1]==='evaluate'&&event[3]==='visibility')<h.events.findIndex(event=>event[1]==='tail'))
+ assert.equal(h.events.filter(event=>event[1]==='tail').length,1);assert.deepEqual(h.events.filter(event=>event[1]==='key').map(event=>event[2]),['Tab'])
+ return {error,h,tail}
+}
+test('complete actual helper emits bounded pre-Tab observation without accepting later visible tail',async t=>{
+ const f=startObserverFixture();f.dispatch('input');f.dispatch('keydown',{key:'Tab'})
+ const {error}=await observerFailure(t,f.raw());const data=JSON.parse(error.message.split(' keyboardStart=')[1]);assertStartSchema(data)
+ assert.deepEqual(data,f.read());assert.ok(error.message.length<35000)
+ const tail=JSON.parse(error.message.split(' keyboardTail=')[1].split(' keyboardStart=')[0]);assert.equal(tail.samples.at(-1).inside,true)
+ f.noPrivateOrActive()
+})
+for(const raw of ['PRIVATE_MARKER','{"version":1,"events":[{"kind":"PRIVATE_MARKER","value":"PRIVATE_MARKER"}]}','{"version":2}'])test('malformed/untrusted observer data cannot replace or leak through original failure '+raw.length,async t=>{
+ const {error}=await observerFailure(t,raw);assert.ok(!error.message.includes('PRIVATE_MARKER'))
+})
+test('observer diagnostics preserve original cleanup failure and late popup boundary',async t=>{
+ const f=startObserverFixture();f.dispatch('keydown',{key:'Tab'})
+ const cleanup=await observerFailure(t,f.raw(),{failAt:'close'});assert.match(cleanup.error.message,/cleanup=cleanup-close /)
+ const popup=await observerFailure(t,f.raw(),{latePopup:true});assert.match(popup.error.message,/boundary=popup /)
+})
+test('actual new observer source has no active APIs, storage, scheduling, console or DOM-content reads',()=>{
+ const source=installKeyboardStartObserver.toString()
+ assert.doesNotMatch(source,/\.value\b|\.textContent\b|\.innerText\b|\.innerHTML\b|\.outerHTML\b|\.id\b|\.name\b|\.href\b|\.src\b|\.dataset\b|\.attributes\b|\.getAttribute\(|\.location\b|localStorage|sessionStorage|\.preventDefault\(|\.stopPropagation\(|\.focus\(|\.click\(|scrollIntoView|scrollTo\(|fetch\(|setTimeout\(|requestAnimationFrame\(|new Promise|console\./)
+ assert.equal((source.match(/event\.key/g)||[]).length,1);assert.match(source,/if\(event\.key==='Tab'\) record\('tab',event\)/)
+ assert.match(source,/capture:true,passive:true/)
+})
+// END KEYBOARD START DIAGNOSTIC TEST cases

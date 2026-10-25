@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import postcss from 'postcss'
 
 test('locale counterpart paths preserve the current localized route', async () => {
   const { localePath, readUiLocale } = await import('../lib/ui-locale.js')
@@ -108,7 +109,7 @@ test('mobile navigation keeps seven usable shared destinations and reserves spac
   assert.match(bottomRules, /grid-template-columns:\s*repeat\(7,\s*minmax\(0,1fr\)\)/)
   assert.doesNotMatch(bottomRules, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,1fr\)\)/)
   assert.match(styles, /white-space: normal; overflow-wrap: normal/)
-  assert.match(styles, /--ia222-bottom-height,76px/)
+  assertMobileNavigationReservation(styles)
   assert.match(styles, /safe-area-inset-bottom/)
   assert.match(styles, /scroll-margin-bottom/)
 
@@ -296,6 +297,49 @@ test('top site header opens Cabinet while mobile bottom bar promotes Books', asy
   assert.match(styles, /\.house-header--services \.site-cabinet-entry__compact/)
   assert.match(styles, /@media \(max-width: 374px\)/)
 })
+
+// The measured border-box height already includes the dock's safe-area padding.
+// Before measurement, and while keyboard focus hides the dock, both consumers
+// must retain the safe-area-aware fallback introduced in 6b33784ccf50.
+// This validates source declarations; native viewport behavior is tested separately.
+function assertMobileNavigationReservation(styles) {
+  const ast = postcss.parse(styles)
+  const unique = (nodes, type, key, expected) => {
+    const found = nodes.filter(node => node.type === type && node[key] === expected)
+    assert.equal(found.length, 1, `Exactly one ${type} for ${expected}`)
+    return found[0]
+  }
+  const declaration = (rule, property, expected, important = false) => {
+    const actual = unique(rule.nodes, 'decl', 'prop', property)
+    assert.equal(actual.value, expected, `${rule.selector} ${property} preserves the reservation chain`)
+    assert.equal(Boolean(actual.important), important, `${rule.selector} ${property} priority`)
+  }
+  const body = 'body:has(.ia222-bottom-navigation)'
+  const desktop = unique(ast.nodes, 'rule', 'selector', body)
+  declaration(desktop, 'padding-bottom', 'var(--ia222-bottom-height,0px)', true)
+  const mobile = unique(ast.nodes, 'atrule', 'params', '(max-width: 767px)')
+  assert.equal(mobile.name, 'media')
+  const padding = unique(mobile.nodes, 'rule', 'selector', body)
+  const scroll = unique(mobile.nodes, 'rule', 'selector', `${body} :is(input,textarea,button,a)`)
+  const reserve = 'var(--ia222-bottom-height,calc(76px + env(safe-area-inset-bottom, 0px)))'
+  declaration(padding, 'padding-bottom', reserve, true)
+  declaration(scroll, 'scroll-margin-bottom', `calc(${reserve} + 24px)`)
+  const dock = unique(mobile.nodes, 'rule', 'selector', '.ia222-bottom-navigation')
+  declaration(dock, 'padding', '5px max(4px, env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left))')
+  const editingSelector = 'body:has(:is(textarea,select,input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]),[contenteditable="true"]):focus).ia222-bottom-navigation'
+  const focus = mobile.nodes.filter(node => node.type === 'rule' && node.selector.replace(/\s+/g, '') === editingSelector)
+  assert.equal(focus.length, 1, 'Hide only the dock while editing; retain the page reservation')
+  declaration(focus[0], 'display', 'none', true)
+  ast.walkDecls('--ia222-bottom-height', () => assert.fail('CSS must not override the measured height or collapse the focus-time reservation'))
+  ast.walkRules(rule => {
+    if (![body, `${body} :is(input,textarea,button,a)`].includes(rule.selector)) return
+    for (const value of rule.nodes.filter(node => node.type === 'decl' && ['padding', 'padding-bottom', 'scroll-margin-bottom'].includes(node.prop))) {
+      const printReset = rule.parent.type === 'atrule' && rule.parent.name === 'media' && rule.parent.params === 'print'
+        && value.prop === 'padding-bottom' && value.value === '0' && value.important
+      assert.ok([desktop, padding, scroll].includes(rule) || printReset, 'No later state/media rule may bypass the mobile reservation')
+    }
+  })
+}
 
 function assertAdminHeaderInitialLocale(source) {
   const defaultLocale = source.match(/export function PrescriptionAdminHeader\(\{[^}]*initialLocale = ('[^']+')/)

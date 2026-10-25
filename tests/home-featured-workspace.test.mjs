@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
+import { assertReadableHomeOfferCta } from "./helpers/home-cta-contrast.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const component = read("components/home-featured-workspace.tsx");
@@ -213,7 +214,11 @@ test("all home cards use the approved compact Tests photo-card visual on EN/RU/E
   assert.match(secondary, /background: transparent;/);
   assert.match(secondary, /text-decoration: underline;/);
   assert.doesNotMatch(secondary, /border: 1px/);
-  assert.match(primary, /background: linear-gradient\(108deg, #07899c 0%, #305a93 100%\)/);
+  // Bind approved colors to their actual normal/hover rules and white labels;
+  // validate unrounded normal-text contrast and the existing action affordances.
+  assertReadableHomeOfferCta(css);
+  assert.match(primary, /background: linear-gradient\(108deg, #078293 0%, #305a93 100%\)/);
+  assert.match(css, /\.offerPrimary:hover\s*\{\s*background: linear-gradient\(108deg, #097285 0%, #254676 100%\)/);
   assert.match(primary, /border: 1px solid #187c9f/);
   assert.match(css, /\.offer\[data-expanded="true"\] \{ grid-template-areas: "photo content" "more more"/);
   assert.match(css, /@media \(max-width: 640px\)/);

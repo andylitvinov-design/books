@@ -64,6 +64,42 @@ async function check(browserType, locale, width, height) {
     const last = await dao.boundingBox();
     assert.ok(last && last.y + last.height < height - 40,
       label + ": last option must appear on the first mobile screen");
+    // Approved short/narrow scope only. The old 40px fold allowance is not a
+    // substitute for clearing the actual taller fixed navigation.
+    if (width <= 350 && height <= 600) {
+      const clearance = await page.evaluate(() => {
+        const lastChoices = document.querySelectorAll('[data-holistic-choose="dao"]');
+        const navigations = document.querySelectorAll('.mobile-bottom-navigation');
+        const snapshot = node => {
+          if (!node) return null;
+          const r = node.getBoundingClientRect(), s = getComputedStyle(node);
+          return {x:r.x,y:r.y,width:r.width,height:r.height,
+            visible:s.display !== 'none' && !['hidden','collapse'].includes(s.visibility) && Number(s.opacity) > 0};
+        };
+        const viewport = window.visualViewport;
+        return {lastCount:lastChoices.length,navCount:navigations.length,
+          last:snapshot(lastChoices[0]),nav:snapshot(navigations[0]),
+          viewport:{x:viewport?.offsetLeft ?? 0,y:viewport?.offsetTop ?? 0,
+            width:viewport?.width ?? innerWidth,height:viewport?.height ?? innerHeight}};
+      });
+      await writeFile(folder + "/short-clearance-" + label + ".json", JSON.stringify(clearance, null, 2));
+      assert.equal(clearance.lastCount, 1, label + ": one actual final choice in compact mode");
+      assert.equal(clearance.navCount, 1, label + ": one actual fixed navigation in compact mode");
+      const valid = box => box && [box.x,box.y,box.width,box.height].every(Number.isFinite) && box.width > 0 && box.height > 0;
+      assert.ok(valid(clearance.viewport) && valid(clearance.last) && valid(clearance.nav),
+        label + ": complete finite compact-mode geometry, no missing-nav fallback");
+      assert.equal(clearance.last.visible, true, label + ": final choice remains visually present");
+      assert.equal(clearance.nav.visible, true, label + ": fixed navigation is actually visible");
+      assert.ok(clearance.last.height >= 80 && clearance.nav.height >= 44,
+        label + ": compact choice and navigation retain touch-sized height");
+      assert.ok(clearance.nav.x >= clearance.viewport.x &&
+        clearance.nav.x + clearance.nav.width <= clearance.viewport.x + clearance.viewport.width &&
+        clearance.nav.y >= clearance.viewport.y &&
+        clearance.nav.y + clearance.nav.height <= clearance.viewport.y + clearance.viewport.height,
+        label + ": actual navigation fits the visible viewport");
+      assert.ok(clearance.last.y + clearance.last.height <= clearance.nav.y,
+        label + ": entire final choice must clear actual fixed navigation without overlap");
+    }
     const before = await page.evaluate(() => ({
       content: document.documentElement.scrollWidth, viewport: window.innerWidth,
     }));

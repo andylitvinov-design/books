@@ -11,6 +11,11 @@ function installDisclosureDiagnostics() {
   const observations = [];
   const listeners = [];
   let dropped = 0, sequence = 0, captureFailures = 0, finished = false;
+  // HH_SCROLL_DIAGNOSTICS_BEGIN storage
+  // Separate stream: scroll noise must never evict the original interaction ring.
+  const scrollLimit = 64, scrollObservations = [];
+  let scrollDropped = 0, scrollSequence = 0, scrollCaptureFailures = 0;
+  // HH_SCROLL_DIAGNOSTICS_END storage
   const number = value => typeof value === 'number' && Number.isFinite(value)
     ? Math.max(-10000000, Math.min(10000000, value)) : null;
   const flag = value => value === 'true' ? 'true' : value === 'false' ? 'false' : value === null ? 'missing' : 'other';
@@ -35,10 +40,48 @@ function installDisclosureDiagnostics() {
     const box = node.getBoundingClientRect();
     return Object.fromEntries(['left','right','top','bottom','width','height'].map(key => [key, number(box[key])]));
   };
+  // HH_SCROLL_DIAGNOSTICS_BEGIN sampler
+  const scrollFailure = () => { scrollCaptureFailures = Math.min(10000000, scrollCaptureFailures + 1); };
+  const scrollSample = () => {
+    try {
+      const root = document.scrollingElement, viewport = window.visualViewport;
+      const behavior = document.documentElement
+        ? getComputedStyle(document.documentElement).scrollBehavior : null;
+      return {
+        scroll: {x:number(scrollX),y:number(scrollY)},
+        rootScroll: root ? {x:number(root.scrollLeft),y:number(root.scrollTop)} : null,
+        visualViewport: viewport ? Object.fromEntries(
+          ['offsetLeft','offsetTop','pageLeft','pageTop','width','height','scale']
+            .map(key => [key,number(viewport[key])])) : null,
+        rootScrollBehavior: behavior === 'auto' || behavior === 'smooth' ? behavior
+          : behavior == null ? 'missing' : 'other',
+      };
+    } catch { scrollFailure(); return null; }
+  };
+  const appendScroll = (kind, source, event) => {
+    if (finished) return;
+    try {
+      const entry = {sequence:Math.min(10000000, scrollSequence + 1),kind,source,
+        time:number(performance.now()),eventTime:number(event?.timeStamp),
+        trusted:event?.isTrusted === true,sample:scrollSample(),
+        reveal:rect(document.querySelector('[data-express-reveal]'))};
+      scrollSequence = entry.sequence;
+      if (scrollObservations.length === scrollLimit) {
+        scrollObservations.shift(); scrollDropped = Math.min(10000000, scrollDropped + 1);
+      }
+      scrollObservations.push(entry);
+    } catch { scrollFailure(); }
+  };
+  // HH_SCROLL_DIAGNOSTICS_END sampler
   const snapshot = () => {
     const reveal = document.querySelector('[data-express-reveal]');
     const panel = document.querySelector('[data-express-inline-disclosure]');
     return {
+      // HH_SCROLL_DIAGNOSTICS_BEGIN context
+      // The previous delivered scroll event is retained even after stream rollover.
+      // This and all geometry reads can perturb timing; they are not a fix claim.
+      scrollContext: {current:scrollSample(),previous:scrollObservations.at(-1) ?? null},
+      // HH_SCROLL_DIAGNOSTICS_END context
       expanded: flag(reveal?.getAttribute('aria-expanded') ?? null),
       hidden: panel ? Boolean(panel.hidden) : null,
       focus: category(document.activeElement),
@@ -80,6 +123,19 @@ function installDisclosureDiagnostics() {
   }
   listen(document, 'focusin', event => append('focusin','capture',event), true);
   listen(window, 'hashchange', event => append('hashchange','observe',event), false);
+  // HH_SCROLL_DIAGNOSTICS_BEGIN listeners
+  for (const type of ['scroll','scrollend']) {
+    try { listen(window,type,event => appendScroll(type,'window',event),false); }
+    catch { scrollFailure(); }
+  }
+  try {
+    const viewport = window.visualViewport;
+    if (viewport) for (const type of ['scroll','scrollend']) {
+      try { listen(viewport,type,event => appendScroll(type,'visual-viewport',event),false); }
+      catch { scrollFailure(); }
+    }
+  } catch { scrollFailure(); }
+  // HH_SCROLL_DIAGNOSTICS_END listeners
   const observer = new MutationObserver(records => {
     for (const record of records) {
       if (!(record.target instanceof Element)) continue;
@@ -104,6 +160,14 @@ function installDisclosureDiagnostics() {
       return {version:1,limit,dropped,captureFailures,observations};
     },
   };
+  // HH_SCROLL_DIAGNOSTICS_BEGIN export
+  const finishInteractions = window.__hhDisclosureDiagnostics.finish;
+  window.__hhDisclosureDiagnostics.finish = () => ({
+    ...finishInteractions(),
+    scrollDiagnostics: {version:1,limit:scrollLimit,dropped:scrollDropped,
+      captureFailures:scrollCaptureFailures,observations:scrollObservations},
+  });
+  // HH_SCROLL_DIAGNOSTICS_END export
 }
 // HH_DISCLOSURE_DIAGNOSTICS_END installer
 // Check each actual action after positioning it in the current layout. The

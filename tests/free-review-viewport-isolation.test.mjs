@@ -296,7 +296,7 @@ function disclosureInstallerSource(source) {
  assert.equal(source.split(begin).length-1,1);assert.equal(source.split(end).length-1,1);
  return source.slice(source.indexOf(begin)+begin.length,source.indexOf(end));
 }
-function disclosureDiagnosticFixture(installer) {
+function disclosureDiagnosticFixture(installer, {noVisualViewport=false,failScrollRegistration=false}={}) {
  const secret='SYNTHETIC_PRIVATE_PHONE_TEXT_URL_TOKEN',privateReads=[],sideEffects=[],registrations=[],observers=[];let observing=false;
  const observed=run=>{const prior=observing;observing=true;try{return run()}finally{observing=prior}};
  const selectors={
@@ -315,15 +315,17 @@ function disclosureDiagnosticFixture(installer) {
   getAttribute(name){if(!['aria-expanded','data-expanded'].includes(name)){privateReads.push(name);throw Error(secret)}return this.attributes[name]??null;}
   getBoundingClientRect(){if(this.failGeometry)throw Error(secret);return this.box;}
  }
- for(const property of ['textContent','innerText','innerHTML','outerHTML','value','href','src'])Object.defineProperty(Element.prototype,property,{get(){privateReads.push(property);throw Error(secret)},set(){sideEffects.push(property+' write')}});
+ for(const property of ['textContent','innerText','innerHTML','outerHTML','value','href','src','id'])Object.defineProperty(Element.prototype,property,{get(){privateReads.push(property);throw Error(secret)},set(){sideEffects.push(property+' write')}});
  const nodes={};for(const role of ['enquiry','panel','reveal','phone','consent','focus-radio','hero-anchor','nav','header','other'])nodes[role]=new Element(role);
  nodes.panel.parent=nodes.enquiry;nodes.reveal.parent=nodes.enquiry;for(const role of ['phone','consent','focus-radio'])nodes[role].parent=nodes.panel;
  nodes.revealChild=new Element('other',nodes.reveal);
  const emitter=name=>({
-  addEventListener(type,callback,options){assert.equal(options.passive,true,'Observations must remain passive');registrations.push({name,type,callback,capture:options.capture,active:true});},
+  addEventListener(type,callback,options){assert.equal(options.passive,true,'Observations must remain passive');if(failScrollRegistration&&['scroll','scrollend'].includes(type))throw Error(secret);registrations.push({name,type,callback,capture:options.capture,active:true});},
   removeEventListener(type,callback,capture){const match=registrations.find(item=>item.active&&item.name===name&&item.type===type&&item.callback===callback&&item.capture===capture);assert.ok(match,'Cleanup removes exact listener');match.active=false;},
  });
- const window=emitter('window'),document={...emitter('document'),activeElement:nodes.phone,
+ const viewport={...emitter('visual-viewport'),offsetLeft:0,offsetTop:0,pageLeft:0,pageTop:800,width:430,height:932,scale:1};
+ const rootScroll={scrollLeft:0,scrollTop:800},motion={time:123.5,behavior:'auto',failStyle:false};
+ const window={...emitter('window'),visualViewport:noVisualViewport?null:viewport},document={...emitter('document'),activeElement:nodes.phone,documentElement:nodes.other,scrollingElement:rootScroll,
   querySelector(selector){return nodes[selectors[selector]]??null;},elementFromPoint(){return nodes.reveal;}};
  class MutationObserver {
   constructor(callback){this.callback=callback;this.active=true;this.disconnected=0;observers.push(this);}
@@ -331,11 +333,11 @@ function disclosureDiagnosticFixture(installer) {
   disconnect(){this.disconnected++;this.active=false;}
  }
  const location={hash:'#request-free-review'};Object.defineProperty(location,'href',{get(){privateReads.push('location.href');throw Error(secret)}});
- const globals={window,document,Element,MutationObserver,location,performance:{now:()=>123.5},scrollX:0,scrollY:800,innerWidth:430,innerHeight:932};
+ const globals={window,document,Element,MutationObserver,location,performance:{now:()=>motion.time},scrollX:0,scrollY:800,innerWidth:430,innerHeight:932,getComputedStyle(element){assert.equal(element,document.documentElement);if(motion.failStyle)throw Error(secret);return {scrollBehavior:motion.behavior}}};
  observed(()=>runInNewContext(installer+'\ninstallDisclosureDiagnostics();',globals));
  const event=(changes={})=>({target:nodes.revealChild,isTrusted:true,defaultPrevented:false,pointerType:'touch',clientX:60,clientY:124,timeStamp:15,detail:1,key:'Escape',preventDefault(){sideEffects.push('cancel')},stopPropagation(){sideEffects.push('stop propagation')},...changes});
  const emit=(type,changes={},name='document')=>{const value=event(changes);for(const listener of registrations.filter(item=>item.active&&item.name===name&&item.type===type))observed(()=>listener.callback(value));};
- return {secret,privateReads,sideEffects,registrations,observers,nodes,window,document,location,event,emit,
+ return {secret,privateReads,sideEffects,registrations,observers,nodes,window,document,location,event,emit,viewport,rootScroll,motion,globals,
   mutate(records){for(const observer of observers.filter(item=>item.active))observed(()=>observer.callback(records));},finish:()=>observed(()=>window.__hhDisclosureDiagnostics.finish())};
 }
 const currentDisclosureInstaller=()=>disclosureInstallerSource(readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8'));
@@ -399,5 +401,96 @@ test('diagnostic chunks are observation-only and cannot add awaited work between
  assert.ok(capture<source.indexOf('try { await isolation.close(); }'),'Capture precedes final isolated context cleanup');
  assert.doesNotMatch(installer,/fetch\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage|indexedDB|console\.|preventDefault\(|stopPropagation\(|setAttribute\(|removeAttribute\(|dispatchEvent\(|scrollIntoView\(|scrollTo\(|requestSubmit\(|\.scroll\(|\.focus\(|\.click\(/,
   'Passive installer cannot transport, persist, dispatch, cancel, focus, scroll, click or mutate DOM state');
+ assert.doesNotMatch(installer,/requestAnimationFrame|setTimeout|setInterval|new Promise|\bawait\b/,'Passive recorder adds no scheduler, wait or awaited action work');
  assert.match(source,/try \{ await page\.addInitScript\(installDisclosureDiagnostics\); \}\s*catch \{ record\.disclosureDiagnostics = \{version:1,status:'INSTALL_UNAVAILABLE'\}; \}/);
+});
+
+
+// Separate passive scroll stream: synthetic execution of the actual installer only.
+const DISCLOSURE_PRE_SCROLL_SHA256='3e84e2937792844e12c84974ef14c5bf1da8fd1037e5e371888a9d4b3925aa29';
+function stripScrollDiagnosticBlocks(source) {
+ const kept=[],ids=[];let active=null;
+ for(const line of source.split(/(?<=\n)/)){
+  const begin=line.match(/^\s*\/\/ HH_SCROLL_DIAGNOSTICS_BEGIN ([a-z-]+)\s*$/),end=line.match(/^\s*\/\/ HH_SCROLL_DIAGNOSTICS_END ([a-z-]+)\s*$/);
+  if(begin){assert.equal(active,null);assert.ok(!ids.includes(begin[1]));ids.push(begin[1]);active=begin[1];continue}
+  if(end){assert.equal(end[1],active);active=null;continue}
+  if(active===null)kept.push(line);
+ }
+ assert.equal(active,null);assert.deepEqual(ids,['storage','sampler','context','listeners','export']);return kept.join('');
+}
+test('removing only marked scroll additions restores exact published recorder and native runner bytes',()=>{
+ const source=readFileSync(new URL('../scripts/verify-free-review-live-mobile.mjs',import.meta.url),'utf8');
+ assert.equal(createHash('sha256').update(stripScrollDiagnosticBlocks(source)).digest('hex'),DISCLOSURE_PRE_SCROLL_SHA256);
+ assert.equal(createHash('sha256').update(stripDisclosureDiagnosticBlocks(source)).digest('hex'),DISCLOSURE_PRE_DIAGNOSTIC_SHA256);
+});
+function assertScrollCapture(installer=currentDisclosureInstaller()) {
+ const f=disclosureDiagnosticFixture(installer);
+ f.motion.time=100;f.globals.scrollY=790;f.rootScroll.scrollTop=790;f.viewport.pageTop=790;
+ f.nodes.reveal.box={left:10,right:110,top:110,bottom:158,width:100,height:48};
+ f.emit('scroll',{target:f.nodes.other,timeStamp:99},'window');
+ f.motion.time=102;f.emit('pointerdown',{target:f.nodes.reveal});
+ f.motion.time=103;f.globals.scrollY=780;f.rootScroll.scrollTop=780;f.viewport.pageTop=780;
+ f.nodes.reveal.box={left:10,right:110,top:120,bottom:168,width:100,height:48};
+ f.emit('scroll',{target:f.nodes.other,timeStamp:102.5},'visual-viewport');
+ f.motion.time=104;f.emit('pointerup',{target:f.nodes.enquiry});
+ f.motion.time=105;f.emit('scrollend',{target:f.nodes.other,timeStamp:104.5},'window');
+ f.emit('scrollend',{target:f.nodes.other,timeStamp:104.5},'visual-viewport');
+ const result=f.finish(),stream=result.scrollDiagnostics;
+ assert.equal(stream.version,1);assert.equal(stream.limit,64);assert.equal(stream.dropped,0);assert.equal(stream.captureFailures,0);
+ assert.deepEqual(Array.from(stream.observations,x=>[x.kind,x.source]),[['scroll','window'],['scroll','visual-viewport'],['scrollend','window'],['scrollend','visual-viewport']]);
+ const down=result.observations[0],up=result.observations[2];
+ assert.equal(down.time,102);assert.equal(down.state.scrollContext.previous.time,100);assert.equal(down.state.scrollContext.previous.sample.scroll.y,790);
+ assert.equal(down.state.scrollContext.current.rootScroll.y,790);assert.equal(down.state.scrollContext.current.visualViewport.pageTop,790);assert.equal(down.state.scrollContext.current.rootScrollBehavior,'auto');
+ assert.equal(up.state.scrollContext.previous.time,103);assert.equal(up.state.scrollContext.current.scroll.y,780);
+ assert.equal(down.state.reveal.top+down.state.scroll.y,900);assert.equal(up.state.reveal.top+up.state.scroll.y,900);
+ assertDiagnosticPrivacy(result,f);return result;
+}
+test('actual scroll recorder separates delivered pre-down motion from later motion without attributing a scroll initiator',()=>assertScrollCapture());
+function assertScrollFlood(installer=currentDisclosureInstaller()) {
+ const f=disclosureDiagnosticFixture(installer);f.emit('scroll',{target:f.nodes.other},'window');
+ f.emit('click',{target:f.nodes['hero-anchor']});f.emit('pointerdown');f.emit('pointerup');f.emit('click');
+ const before=f.registrations.filter(x=>x.type==='scroll').length;
+ for(let i=0;i<200;i++){f.motion.time=200+i;f.emit('scroll',{target:f.nodes.other},'window')}
+ const result=f.finish();assert.equal(before,2);assert.equal(result.observations.length,8);assert.equal(result.dropped,0);
+ assert.deepEqual(Array.from(result.observations,x=>x.kind),['click','click','pointerdown','pointerdown','pointerup','pointerup','click','click']);
+ assert.equal(result.scrollDiagnostics.observations.length,64);assert.equal(result.scrollDiagnostics.dropped,137);
+ assert.equal(result.scrollDiagnostics.observations[0].sequence,138);assert.equal(result.scrollDiagnostics.observations.at(-1).sequence,201);
+ assert.equal(result.observations[0].state.scrollContext.previous?.sequence,1,'Original anchor retains previous scroll sample even after stream rollover');
+ assert.equal(result.observations.at(-1).state.scrollContext.previous?.sequence,1,'Critical last reveal click cannot be evicted by later scroll noise');
+ assertDiagnosticPrivacy(result,f);return result;
+}
+test('scroll flood caps separate stream without evicting original anchor/reveal input evidence or its previous-scroll snapshot',()=>assertScrollFlood());
+test('new motion samples redact root style strings and sanitize every numeric field including nonfinite visualViewport data',()=>{
+ const f=disclosureDiagnosticFixture(currentDisclosureInstaller());f.motion.behavior=f.secret;
+ f.rootScroll.scrollLeft=Infinity;f.rootScroll.scrollTop=NaN;f.viewport.offsetLeft=f.secret;f.viewport.offsetTop=Infinity;f.viewport.pageLeft=NaN;f.viewport.pageTop=1e50;f.viewport.width=-1e50;f.viewport.height=null;f.viewport.scale=f.secret;
+ f.globals.scrollX=NaN;f.globals.scrollY=Infinity;f.motion.time=Infinity;
+ f.emit('scroll',{target:f.nodes.phone,timeStamp:NaN,detail:f.secret,key:f.secret},'window');f.emit('pointerdown');
+ const result=f.finish(),sample=result.scrollDiagnostics.observations[0].sample;
+ assert.equal(sample.rootScrollBehavior,'other');assert.deepEqual(structuredClone(sample.rootScroll),{x:null,y:null});
+ assert.deepEqual(structuredClone(sample.visualViewport),{offsetLeft:null,offsetTop:null,pageLeft:null,pageTop:10000000,width:-10000000,height:null,scale:null});
+ assert.equal(result.scrollDiagnostics.observations[0].time,null);assert.equal(result.scrollDiagnostics.observations[0].eventTime,null);assertDiagnosticPrivacy(result,f);
+});
+test('missing optional viewport and throwing scroll samplers/listener setup remain best-effort and keep original interaction evidence',()=>{
+ for(const options of [{noVisualViewport:true},{failScrollRegistration:true}]){
+  const f=disclosureDiagnosticFixture(currentDisclosureInstaller(),options);f.emit('click');const result=f.finish();assert.equal(result.observations.length,2);assert.equal(result.captureFailures,0);
+  if(options.noVisualViewport){assert.equal(result.observations[0].state.scrollContext.current.visualViewport,null);assert.equal(result.scrollDiagnostics.captureFailures,0)}
+  else assert.equal(result.scrollDiagnostics.captureFailures,4);
+  assertDiagnosticPrivacy(result,f);
+ }
+ const f=disclosureDiagnosticFixture(currentDisclosureInstaller());f.motion.failStyle=true;f.emit('click');f.emit('scroll',{},'window');
+ const result=f.finish();assert.equal(result.observations.length,2);assert.equal(result.captureFailures,0);assert.equal(result.scrollDiagnostics.captureFailures,3);assert.equal(result.scrollDiagnostics.observations.length,1);
+ assert.equal(result.observations[0].state.scrollContext.current,null);assertDiagnosticPrivacy(result,f);
+});
+test('actual scroll-source mutation negatives reject missing capture, shared-ring eviction, privacy leakage, unbounded samples and nonpassive effects',()=>{
+ const source=currentDisclosureInstaller(),controls=[
+  ["appendScroll(type,'window',event)","void event",s=>assertScrollCapture(s)],
+  ['const scrollLimit = 64,','const scrollLimit = 65,',s=>assertScrollFlood(s)],
+  ['scrollObservations.push(entry);','observations.push(entry);',s=>assertScrollFlood(s)],
+  ["previous:scrollObservations.at(-1) ?? null","previous:null",s=>assertScrollFlood(s)],
+  ["rootScrollBehavior: behavior === 'auto' || behavior === 'smooth' ? behavior\n          : behavior == null ? 'missing' : 'other'","rootScrollBehavior: behavior",s=>{const f=disclosureDiagnosticFixture(s);f.motion.behavior=f.secret;f.emit('scroll',{},'window');assertDiagnosticPrivacy(f.finish(),f)}],
+  ['[key,number(viewport[key])]','[key,viewport[key]]',s=>{const f=disclosureDiagnosticFixture(s);f.viewport.pageTop=Infinity;f.emit('scroll',{},'window');assertDiagnosticPrivacy(f.finish(),f)}],
+  ["trusted:event?.isTrusted === true,sample:scrollSample(),","trusted:event?.isTrusted === true,privateValue:event.target.textContent,sample:scrollSample(),",s=>{const f=disclosureDiagnosticFixture(s);f.emit('scroll',{},'window');assertDiagnosticPrivacy(f.finish(),f)}],
+  ["try { listen(window,type,event => appendScroll(type,'window',event),false); }","try { listen(window,type,event => {event.preventDefault();appendScroll(type,'window',event)},false); }",s=>assertScrollCapture(s)],
+ ];
+ for(const [before,after,check] of controls){assert.equal(source.split(before).length-1,1,'Exact unique actual-source scroll negative: '+before);assert.throws(()=>check(source.replace(before,after)),error=>error?.code==='ERR_ASSERTION',before)}
 });

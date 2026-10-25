@@ -6,6 +6,7 @@ import {jsx,sourceModule,parse,descendants,nodes,text as rawText,denied,returned
 const read=path=>readFileSync(new URL('../../'+path,import.meta.url),'utf8')
 export const practiceMarketplaceSource=read
 const WORKSPACE='components/app/practice-workspace.jsx'
+const EXPRESS='components/app/practice-express-reports.jsx'
 const DASHBOARD='components/app/my-services-dashboard.jsx'
 const REPOSITORY='lib/practitioners/repository.js'
 const CONTRACTS='lib/practitioners/contracts.js'
@@ -57,7 +58,7 @@ function declaration(source,name){
 function harness(load){
   let current
   const hooks={
-    useEffect:fn=>current.effects.push(fn),useMemo:fn=>fn(),
+    useEffect:fn=>current.effects.push(fn),useMemo:fn=>fn(),useRef:value=>({current:value}),
     useState:initial=>{
       const frame=current,key=frame.keys[frame.index++]
       assert.ok(key,'Every hook is bound to an actual component declaration')
@@ -69,15 +70,24 @@ function harness(load){
     const file=parse(source),owner=one(file.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name?.text===name),'Actual hook owner '+name)
     return descendants(owner.body).filter(node=>ts.isVariableDeclaration(node)&&ts.isArrayBindingPattern(node.name)&&ts.isCallExpression(node.initializer)&&node.initializer.expression.getText(file)==='useState').map(node=>node.name.elements[0].name.text)
   }
-  const icons=Object.fromEntries('Plus FileText Film IdCard UsersRound Leaf ReceiptText BarChart3 ChevronRight ClipboardList Share2 CheckCircle2 CalendarDays Megaphone BookOpen Headphones ArrowLeft ArrowUpRight ChevronDown Search SlidersHorizontal'.split(' ').map(name=>[name,'icon-'+name]))
+  const icons=Object.fromEntries('Plus FileText Film IdCard UsersRound Leaf ReceiptText BarChart3 ChevronRight ClipboardList Share2 CheckCircle2 CalendarDays Megaphone BookOpen Headphones ArrowLeft ArrowUpRight ChevronDown Search SlidersHorizontal Save Send ShieldCheck'.split(' ').map(name=>[name,'icon-'+name]))
   const basic={'react/jsx-runtime':jsx,'react':hooks,'next/link':{default:'a'},'next/image':{default:'img'},'lucide-react':icons}
   const quota=sourceModule(load(QUOTA),QUOTA),links=sourceModule(load(LINKS),LINKS)
   const navigation=[]
   const window={location:{href:'https://fixture.invalid/en/app/practice?keep=1'},history:{state:null,replaceState:(_state,_unused,href)=>{navigation.push(href);window.location.href=new URL(href,window.location.href).href}}}
   const imported=Object.fromEntries(['crm-manager','practitioner-client-profiles','practice-materials','practice-events','practice-service-statistics','practice-requests-overview','public-enquiry-contact','my-services-dashboard','simple-service-editor','remote-goal-photo','practice-photo-upload','practice-video-field'].map(name=>['./'+name,{default:name}]))
+  // Execute the actual report child only with synthetic state and denied transport.
+  // Its effects and API handlers are never invoked by this marketplace fixture.
+  const express=sourceModule(load(EXPRESS),EXPRESS,{...basic,'./practice-express-reports.module.css':{default:new Proxy({}, {get:(_,name)=>String(name)})}})
+  imported['./practice-express-reports']=express
+  const aliasPath='components/app/practice-public-alias.jsx'
+  imported['./practice-public-alias']=sourceModule(load(aliasPath),aliasPath,{...basic,
+    '@/lib/practitioners/profile-alias-contract.mjs':sourceModule(load('lib/practitioners/profile-alias-contract.mjs'),'profile-alias-contract.ts',{'../assessments/contracts.js':sourceModule(load('lib/assessments/contracts.js'),'contracts.js')}),
+    './practice-public-alias.module.css':{default:new Proxy({}, {get:(_,name)=>String(name)})},
+  })
   const workspace=sourceModule(load(WORKSPACE)+'\nexport {ShowcaseCover, Services};',WORKSPACE,{...basic,...imported,'@/lib/practitioners/service-quota.js':quota,'@/lib/practitioners/public-service-links.js':links,'./practice-dashboard.css':{}},{URL,window})
   const dashboard=sourceModule(load(DASHBOARD),DASHBOARD,{...basic,'@/lib/practitioners/filter-owned-services.mjs':sourceModule(load(FILTER),FILTER+'.ts'),'./my-services-dashboard.module.css':{default:new Proxy({}, {get:(_,name)=>String(name)})}},{window:{confirm:denied}})
-  const hookKeys=new Map([[workspace.default,keys(load(WORKSPACE),'PracticeWorkspace')],[workspace.ShowcaseCover,keys(load(WORKSPACE),'ShowcaseCover')],[workspace.Services,[]],[dashboard.default,keys(load(DASHBOARD),'MyServicesDashboard')]])
+  const hookKeys=new Map([[workspace.default,keys(load(WORKSPACE),'PracticeWorkspace')],[workspace.ShowcaseCover,keys(load(WORKSPACE),'ShowcaseCover')],[workspace.Services,[]],[express.default,keys(load(EXPRESS),'PracticeExpressReports')],[dashboard.default,keys(load(DASHBOARD),'MyServicesDashboard')]])
   const render=(component,props,values={},effects=false)=>{
     current={keys:hookKeys.get(component),index:0,values,effects:[]}
     assert.ok(current.keys,'Only actual approved components are invoked')
@@ -86,7 +96,7 @@ function harness(load){
     if(effects)current.effects.forEach(fn=>fn())
     return result
   }
-  return {workspace,dashboard,quota,links,render,navigation,window}
+  return {workspace,dashboard,express,quota,links,render,navigation,window}
 }
 function publicItem(slug,extra={}){
   return {slug,practitionerSlug:'fictional-'+slug,practitionerName:'Fictional public '+slug,imagePath:'/images/fictional-public-'+slug+'.webp',areaKey:'relationships',pricingMode:'free',confirmedPrice:null,currency:'',displayLocales:['en','ru','es'],titles:{en:'Public EN '+slug,ru:'Публичная RU '+slug,es:'Público ES '+slug},shortDescriptions:{en:'Summary EN '+slug,ru:'Описание RU '+slug,es:'Resumen ES '+slug},...extra}
@@ -244,7 +254,7 @@ export async function assertCurrentPracticeMarketplace({overrides={}}={}){
     const editor=one(nodes(editing).filter(node=>node.type==='simple-service-editor'),'Existing editor remains available at quota')
     assert.equal(editor.props.item,forced.services[0],'Editing stays scoped to the selected existing offering')
   }
-  for(const activePanel of [null,'services','materials','clients','crm','requests','profile','analytics','events','more','marketing'])for(const owner of [false,true])for(const activated of [false,true]){
+  for(const activePanel of [null,'services','materials','clients','crm','requests','profile','analytics','events','more','marketing','express-reports'])for(const owner of [false,true])for(const activated of [false,true]){
     const data=fixture();data.practiceActivated=activated
     const tree=render(workspace.default,{locale:'en',ownerTools:owner?'SYNTHETIC_OWNER_TOOLS':null,accountId:'fictional-account'},{data,activePanel})
     const show=activated&&!activePanel
@@ -255,6 +265,22 @@ export async function assertCurrentPracticeMarketplace({overrides={}}={}){
     assert.equal(workbenches.length,Number(activated&&Boolean(activePanel)),'Only the selected workbench is mounted after activation')
     if(workbenches.length)assert.equal(workbenches[0].props['data-practice-detail-panel'],activePanel)
     assert.equal(nodes(tree).filter(node=>node.type==='crm-manager').length,Number(activated&&owner&&activePanel==='crm'),'CRM remains owner-only and selected-panel-only')
+    const reports=nodes(tree).filter(node=>node.type===h.express.default)
+    assert.equal(reports.length,Number(activated&&activePanel==='express-reports'),'Exactly the selected activated report workbench mounts the real child')
+    if(reports.length){
+      const mount=reports[0]
+      assert.equal(mount.props.accountId,'fictional-account','Report child receives the current authenticated workspace account')
+      assert.equal(mount.props.requests,data.requests,'Report child receives only the current workspace requests')
+      assert.equal(mount.props.owner,owner,'Report owner boundary is forwarded unchanged')
+      assert.equal(mount.props.locale,'en','Report language is forwarded unchanged')
+      const reportTree=render(h.express.default,mount.props,{loading:false,issuedOn:'2026-10-01'})
+      assert.equal(reportTree.props['data-practitioner-express-reports'],true,'The real report workbench is rendered')
+      assert.equal(byClass(reportTree,'owner').length,Number(owner),'Clinical-owner notice never leaks to another practitioner')
+      assert.equal(nodes(reportTree).filter(node=>node.type==='form').length,0,'Guest enquiries cannot open private report creation')
+      assert.equal(nodes(reportTree).filter(node=>node.props['data-express-report-id']).length,0,'No report data is fetched or invented')
+      assert.doesNotMatch(rawText(reportTree),/SYNTHETIC_PRIVATE/,'Marketplace private sentinels never become report content')
+    }
+
     assert.equal(byClass(tree,'hh-practice-marketing').length,Number(activated&&owner&&activePanel==='marketing'),'Marketing remains owner-only and selected-panel-only')
     assert.equal(byClass(tree,'hh-master-clinical-tools').length,Number(owner&&!activePanel),'Owner tool content never leaks to non-owners or another active panel')
   }
