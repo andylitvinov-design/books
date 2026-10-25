@@ -5,7 +5,9 @@ on:
     paths:
       - 'components/mentor-community-switch.*'
       - 'components/community-service-highlights.*'
+      - 'components/master-network-explorer.tsx'
       - 'components/master-network-explorer.module.css'
+      - 'tests/mentor-master-filters.test.mjs'
       - 'components/practitioner-article-directory.tsx'
       - 'components/practitioner-articles-public.module.css'
       - 'app/[locale]/masters/page.tsx'
@@ -64,7 +66,7 @@ jobs:
         run: node --test tests/mentor-community-v1.test.mjs tests/practitioner-articles-v4.test.mjs tests/master-network-v3.test.mjs
       - name: Focused linter and TypeScript check
         run: |
-          npx --no-install eslint components/mentor-community-switch.tsx components/community-service-highlights.tsx app/'[locale]'/articles/page.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
+          npx --no-install eslint components/master-network-explorer.tsx components/mentor-community-switch.tsx components/community-service-highlights.tsx app/'[locale]'/articles/page.tsx app/'[locale]'/masters/page.tsx components/practitioner-article-directory.tsx scripts/verify-mentor-community-browser.mjs tests/helpers/seed-mentor-community-browser.mjs
           npx --no-install tsc --noEmit
       - name: Chromium and WebKit for actual hydrated page verification
         run: |

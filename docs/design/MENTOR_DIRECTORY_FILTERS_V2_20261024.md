@@ -25,3 +25,15 @@ Improve **the existing** `/{locale}/masters` directory inside "Find a mentor", n
 - Separate production manual gates: actual iPhone tap/scroll, approved master/course/public profile readback, authenticated service request/CRM persistence. Neither a green build nor an HTTP 200 proves those end-to-end flows.
 
 Issue: [#1721](https://github.com/andylitvinov-design/books/issues/1721). Related main master network [#715](https://github.com/andylitvinov-design/books/issues/715).
+
+## Follow-up 2026-10-24 · visible-first and coherent matching
+
+Real production readback of `/en/masters`, `/ru/masters` and `/es/masters` showed four top selectors, one approved master and six public services. A separate check of the published approved offering facets confirmed sessions, assessments and introductions, but **zero** published course snapshots or course-type service offerings.
+
+- Open `/{locale}/masters` on **Find a mentor** by default, so the service/course filters appear immediately. `?view=articles` opens the editorial tab when intentionally requested; navigation and keyboard tab affordances stay unchanged. Keep published services in the existing Articles & services tab, with honest unreviewed-article state.
+- Intersect selected type, named course, specialism, delivery format, language and price against the **same actual approved offering**. Formerly a broad practitioner profile could make an unrelated service appear to satisfy a course-specific combination. Separate published courses carry only locale/name (no invented format, subject or tuition).
+- Display the relevant matched service in the master card, instead of always previewing the first unrelated offering. Suppress the default energy-support CTA when a filter is selecting something else. Keep canonical service details/request URLs.
+- Only genuine practitioner city is offered under Location; do not show mixed delivery captions such as "Toronto / Online" as city options.
+- Browser acceptance covers untouched first-load tab, 320/375/390/430 Chromium plus 390 WebKit in EN/RU/ES, conflicting online-course/in-person filters, selected-course card preview, clear/reset, touch disclosure, explicit `?view=articles`, private article isolation, article/profile/service navigations. CI uses synthetic local database; it does not create a real production lead, booking or payment.
+
+**Release gates remain** exact head SHA, safe merge to Vercel's actual production branch, successful full build/CI, READY deployment+alias, public page readback and separate consented live CRM enquiry E2E.
