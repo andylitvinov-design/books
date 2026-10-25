@@ -63,8 +63,8 @@ jobs:
       - name: Install browser once for real responsive check
         run: |
           npm install --prefix /tmp/hh-alchemy-qa --no-audit --no-fund playwright@1.63.0
-          /tmp/hh-alchemy-qa/node_modules/.bin/playwright install --with-deps chromium
-      - name: Build production-mode Next and measure 16 viewports
+          /tmp/hh-alchemy-qa/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Build production-mode Next and measure 16 viewports in Chromium and WebKit
         run: |
           set -euo pipefail
           mkdir -p artifacts/public-services-production
@@ -82,11 +82,12 @@ jobs:
           done
           if [ "$ready" != 1 ]; then tail -n 80 /tmp/hh-alchemy-qa-next.log; exit 1; fi
           node scripts/verify-alchemy-one-screen.mjs
+          HH_ALCHEMY_BROWSER=webkit node scripts/verify-alchemy-one-screen.mjs
       - name: Upload non-private mobile geometry summary
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: alchemy-mobile-geometry
-          path: artifacts/public-services-production/alchemy-one-screen-geometry.json
+          path: artifacts/public-services-production/alchemy-one-screen-geometry*.json
           if-no-files-found: warn
           retention-days: 7
