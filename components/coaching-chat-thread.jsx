@@ -1,3 +1,6 @@
+'use client'
+
+import {useRef} from 'react'
 import Image from 'next/image'
 import styles from './coaching-chat-thread.module.css'
 
@@ -5,14 +8,16 @@ import styles from './coaching-chat-thread.module.css'
 // Only its reviewed/redacted excerpt is shown; never echo raw private answers.
 const copy={
   en:{you:'You',guide:'Andrey · Holistic House',disclosure:'Self-guided session · not a live chat',
-    history:'Coaching conversation',portrait:'Portrait of Andrey',pending:'Ready to send'},
+    history:'Coaching conversation',portrait:'Portrait of Andrey',pending:'Ready to send',fullNote:'Read the full coach note',closeNote:'Close'},
   ru:{you:'Вы',guide:'Андрей · Holistic House',disclosure:'Самостоятельная сессия · не живой чат',
-    history:'Диалог коучинг-сессии',portrait:'Портрет Андрея',pending:'Пока не отправлено'},
+    history:'Диалог коучинг-сессии',portrait:'Портрет Андрея',pending:'Пока не отправлено',fullNote:'Прочитать пояснение полностью',closeNote:'Закрыть'},
   es:{you:'Tú',guide:'Andrey · Holistic House',disclosure:'Sesión autoguiada · no es un chat en vivo',
-    history:'Conversación de coaching',portrait:'Retrato de Andrey',pending:'Listo para enviar'},
+    history:'Conversación de coaching',portrait:'Retrato de Andrey',pending:'Listo para enviar',fullNote:'Leer toda la explicación',closeNote:'Cerrar'},
 }
-export default function CoachingChatThread({locale='en',turn,children,draftPreview=''}){
+export default function CoachingChatThread({locale='en',turn,children,draftPreview='',compact=false}){
   const t=copy[locale]||copy.en
+  const detailRef=useRef(null)
+  const fullReply=[turn&&(turn.coachReply||turn.response),turn?.bridge].filter(Boolean).join(' ')
   // The semantic helper suppresses unsafe excerpts, and redacts URLs/contact
   // data; do not bypass its decision with the original answer value.
   const previous=typeof turn?.quote==='string'?turn.quote.trim():''
@@ -20,7 +25,7 @@ export default function CoachingChatThread({locale='en',turn,children,draftPrevi
   // Draft previews contain only the user's currently selected, authored choice.
   // They are never represented as sent or saved messages.
   const preview=typeof draftPreview==='string'?Array.from(draftPreview.trim()).slice(0,170).join(''):''
-  return <section className={styles.thread} data-coaching-chat-thread aria-label={t.history}>
+  return <section className={styles.thread+(compact?' '+styles.compactThread:'')} data-coaching-chat-thread aria-label={t.history}>
     {previous&&<div className={styles.userRow} data-coaching-chat-user-turn>
       <div className={styles.userBubble}>
         <span className={styles.userLabel}>{t.you}</span>
@@ -36,15 +41,24 @@ export default function CoachingChatThread({locale='en',turn,children,draftPrevi
           <strong>{t.guide}</strong>
           <span>{t.disclosure}</span>
         </div>
-        {turn&&<p className={styles.reply}>{turn.coachReply||turn.response} {turn.bridge}</p>}
+        {turn&&<div className={styles.replyRow}>
+          <p className={styles.reply}>{fullReply}</p>
+          {compact&&fullReply&&<button type="button" className={styles.moreReply} aria-label={t.fullNote}
+            onClick={()=>detailRef.current?.showModal()}>…</button>}
+        </div>}
         <div className={styles.question}>{children}</div>
       </div>
     </div>
-    {preview&&<div className={styles.userRow} data-coaching-chat-draft>
+    {!compact&&preview&&<div className={styles.userRow} data-coaching-chat-draft>
       <div className={styles.draftBubble}>
         <span className={styles.draftLabel}>{t.you} · {t.pending}</span>
         <p>{preview}</p>
       </div>
     </div>}
+    {compact&&fullReply&&<dialog ref={detailRef} className={styles.replyDialog}
+      aria-label={t.fullNote} onClick={event=>{if(event.target===detailRef.current)detailRef.current?.close()}}>
+      <strong>{t.guide}</strong><p>{fullReply}</p>
+      <button type="button" onClick={()=>detailRef.current?.close()}>{t.closeNote}</button>
+    </dialog>}
   </section>
 }

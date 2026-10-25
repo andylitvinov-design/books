@@ -26,10 +26,14 @@ const visualWords={
  ru:{overview:'Восемь уровней твоей цели',overviewText:'Сначала изучи символические тела или принципы. Затем на каждом экране увидишь историческое изображение, пояснение и вопрос к ОДНОЙ выбранной цели. Изображения — визуальные ассоциации, а не буквальные фотографии души.',overviewStep:'Вопрос для размышления',photo:'Изображение и автор',introStep:'Познакомиться с 8 уровнями',nextStep:'Выбрать цель',reflect:'Сначала почувствуй смысл уровня, затем ответь'},
  es:{overview:'Los ocho niveles de tu meta',overviewText:'Primero conoce cada cuerpo simbólico o principio. Cada pantalla mostrará una obra histórica, su significado y una pregunta sobre la MISMA meta. Las imágenes son asociaciones, no fotografías literales del alma.',overviewStep:'La pregunta para reflexionar',photo:'Obra y fotógrafo',introStep:'Conocer los ocho niveles',nextStep:'Elegir mi objetivo',reflect:'Comprende este nivel antes de responder'}
 }
-function TraditionStageArt({stage,lang,compact=false}){
+function TraditionStageArt({stage,lang,compact=false,oneScreen=false}){
+ const detailsRef=useRef(null)
  if(!stage)return null
  const v=visualWords[lang]
- return <figure className={compact?extra.roadmapCard:extra.stageCard} data-tradition-stage={stage.id}>
+ const showDetails=compact||oneScreen
+ const infoLabel={en:'About this level',ru:'О смысле уровня',es:'Sobre este nivel'}[lang]
+ const closeLabel={en:'Close',ru:'Закрыть',es:'Cerrar'}[lang]
+ return <figure className={(compact?extra.roadmapCard:extra.stageCard)+(oneScreen?' '+extra.compactStageCard:'')} data-tradition-stage={stage.id}>
    <div className={extra.stagePhoto}>
      {/* Intentional ordinary img: Commons thumbnail, no paid Vercel optimization; no answer or referrer is shared. */}
      {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -42,9 +46,22 @@ function TraditionStageArt({stage,lang,compact=false}){
      <strong>{stage.title?.[lang]||stage.title?.en}</strong>
      <p>{stage.description?.[lang]||stage.description?.en}</p>
      {compact&&<small><b>{v.overviewStep}:</b> {stage.focus?.[lang]||stage.focus?.en}</small>}
-     <a className={extra.photoCredit} href={traditionStageSource(stage)} target="_blank" rel="noopener noreferrer"
-       referrerPolicy="no-referrer" title={v.photo}>{stage.photo?.credit} · {stage.photo?.license}</a>
+     {!showDetails&&<a className={extra.photoCredit} href={traditionStageSource(stage)} target="_blank" rel="noopener noreferrer"
+       referrerPolicy="no-referrer" title={v.photo}>{stage.photo?.credit} · {stage.photo?.license}</a>}
+     {showDetails&&<button type="button" className={extra.stageInfo} onClick={()=>detailsRef.current?.showModal()}>
+       {infoLabel}
+     </button>}
    </figcaption>
+   {showDetails&&<dialog ref={detailsRef} className={extra.stageDialog} aria-label={stage.title?.[lang]||stage.title?.en}
+     onClick={event=>{if(event.target===detailsRef.current)detailsRef.current?.close()}}>
+     <strong>{stage.title?.[lang]||stage.title?.en}</strong>
+     <p>{stage.description?.[lang]||stage.description?.en}</p>
+     <p>{stage.focus?.[lang]||stage.focus?.en}</p>
+     <a href={traditionStageSource(stage)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
+       {stage.photo?.credit} · {stage.photo?.license}
+     </a>
+     <button type="button" onClick={()=>detailsRef.current?.close()}>{closeLabel}</button>
+   </dialog>}
  </figure>
 }
 function nextIndex(questions,answers){
@@ -273,7 +290,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       <button type="button" className={base.delete} disabled={busy} onClick={erase}><Trash2 size={16}/>{t.delete}</button>
       <small className={base.disclaimer}>{t.introNote}</small>
     </div>
-    :question?<div className={base.session+' '+extra.courseSession} data-tradition-one-question data-tradition-question={question.id}>
+    :question?<div className={base.session+' '+extra.courseSession} data-tradition-one-question data-coaching-one-viewport data-tradition-question={question.id}>
       <div className={base.progressHeader}>
         <span className={base.eyebrow}>{def.name[lang]}</span>
         <strong>{t.question} {index+1} {t.of} {questions.length}</strong>
@@ -284,11 +301,9 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       </div>
       <div className={base.questionArea+' '+extra.courseScroll}>
         <span className={base.stage}>{question.title?.[lang]||question.title?.en||question.stage}</span>
-        <TraditionStageArt stage={stageGuide} lang={lang}/>
-        <p className={extra.stagePrompt}>{v.reflect}</p>
+        <TraditionStageArt stage={stageGuide} lang={lang} oneScreen/>
         <div data-tradition-gentle-guide>
-          <CoachingChatThread turn={conversationTurn} locale={lang}
-             draftPreview={quickChoices&&choice?selectedText(question,{choiceId:choice,note:''},lang,t.empty):''}>
+          <CoachingChatThread turn={conversationTurn} locale={lang} compact>
             <div className={extra.questionHeader}>
               <h1 ref={heading} tabIndex={-1}>{question.question?.[lang]}</h1>
             </div>
@@ -306,10 +321,10 @@ export default function TraditionCoaching({locale='en',accountId,template}){
             {option.label?.[lang]||option.label?.en}</button>)}
         </div>}
         {!quickChoices&&choice&&<p className={extra.legacyChoice}>{t.earlierChoice}: {selectedText(question,{choiceId:choice,note:''},lang,t.empty)}</p>}
-        {notice&&<p role="status" className={base.notice}><Check size={15}/>{notice}</p>}
-        {error&&<p role="alert" className={base.error}>{error}</p>}
       </div>
       <footer className={base.footer} data-coaching-messenger-footer>
+        {notice&&<p role="status" className={base.footerMessage}><Check size={15}/>{notice}</p>}
+        {error&&<p role="alert" className={base.footerMessage}>{error}</p>}
          <div className={base.chatComposer+' '+extra.chatComposer} data-coaching-composer>
            <label className={base.answerLabel} htmlFor="tradition-coaching-note">{quickChoices?t.note:t.ownAnswer}</label>
            <textarea id="tradition-coaching-note" className={base.textarea+' '+extra.note}
@@ -329,8 +344,10 @@ export default function TraditionCoaching({locale='en',accountId,template}){
            </div>
            <details className={base.reportDetails}>
              <summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
-             <small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
+             <div className={base.reportPop}>
+<small className={extra.noteTip}>{quickChoices?t.noteHelp:t.freeHelp}</small>
              <small className={extra.noteTip} id="tradition-coaching-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+             </div>
            </details>
          </div>
         <div className={base.footerActions}>
