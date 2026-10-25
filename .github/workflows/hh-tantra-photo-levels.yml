@@ -4,9 +4,12 @@ on:
     branches: ['codex/public-book-library']
     paths:
       - 'components/tantra-reiki-journey.tsx'
+      - 'components/tantra-reiki-story.tsx'
+      - 'components/academy-record-page.tsx'
       - 'app/academy.css'
       - 'tests/tantra-reiki-compact-fullwidth.test.mjs'
       - 'tests/tantra-reiki-photo-levels.browser.mjs'
+      - 'tests/tantra-reiki-teacher-compact.test.mjs'
       - '.github/workflows/hh-tantra-photo-levels.yml'
 permissions:
   contents: read
@@ -35,6 +38,7 @@ jobs:
           tests/tantra-reiki-photographic-landing.test.mjs
           tests/tantra-reiki-level-one-focus.test.mjs
           tests/tantra-reiki-mobile-chapters.test.mjs
+          tests/tantra-reiki-teacher-compact.test.mjs
       - name: ESLint the affected authoring component
         run: npx --no-install eslint components/tantra-reiki-journey.tsx
       - name: Compile Next.js production pages without unrelated repository-wide prebuild fixture checks
