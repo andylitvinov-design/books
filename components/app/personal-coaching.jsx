@@ -505,8 +505,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             <CoachingChatThread turn={followupTurn} locale={lang}>
               <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
-            <p>{followupCopy[lang].why}</p>
-            <p className={styles.messageTip}>{followupCopy[lang].why}</p>
+                        <p className={styles.messageTip}>{followupCopy[lang].why}</p>
              {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
