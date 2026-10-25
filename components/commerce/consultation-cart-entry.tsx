@@ -16,7 +16,7 @@ const copy = {
     added: "In cart",
     remove: "Remove from cart",
     free: "Free drawing review + written report",
-    note: "We agree on a session time personally. No payment is taken when you add to cart.",
+    note: "Prices are in EUR (€). Adding to cart does not charge or reserve a time. Before paying, confirm the time, total amount including any taxes or fees, cancellation, rescheduling and refund terms in writing.",
     minute: "min",
   },
   ru: {
@@ -27,7 +27,7 @@ const copy = {
     added: "В корзине",
     remove: "Убрать из корзины",
     free: "Бесплатный разбор рисунка + письменный отчёт",
-    note: "Время согласуем лично. Добавление в корзину ничего не списывает.",
+    note: "Цены указаны в EUR (€). Корзина не списывает деньги и не бронирует время. До оплаты письменно подтвердите время, полную сумму с возможными налогами и комиссиями, условия отмены, переноса и возврата.",
     minute: "мин",
   },
   es: {
@@ -38,7 +38,7 @@ const copy = {
     added: "En el carrito",
     remove: "Quitar del carrito",
     free: "Evaluación gratuita por dibujo + informe escrito",
-    note: "Acordaremos el horario personalmente. Añadir al carrito no realiza ningún cobro.",
+    note: "Los precios están en EUR (€). El carrito no cobra ni reserva horario. Antes de pagar, confirma por escrito el horario, el total con los posibles impuestos o comisiones y las condiciones de cancelación, cambio y reembolso.",
     minute: "min",
   },
 } as const;

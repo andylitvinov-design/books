@@ -1,12 +1,14 @@
 import { StaticPortrait } from "@/components/static-portrait";
+import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowLeft, ArrowRight, ArrowUpRight, BriefcaseBusiness, Check,
-  Compass, Heart, Layers3, PlayCircle, ShieldCheck, Sparkles, Waves,
+  ArrowLeft, ArrowRight, ArrowUpRight, Check,
+  Heart, Layers3, PlayCircle, ShieldCheck, Sparkles,
 } from "lucide-react";
 import type { Locale } from "@/data/remedies";
 type AlchemyLocale = Locale | "es";
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { testimonialVideos, locallyArchivedVideoPosterIds } from "@/components/personal-testimonials";
 import { AlchemySoulFormatSelector, AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
@@ -27,9 +29,9 @@ const copy = {
     kicker: "ЛИЧНАЯ РАБОТА · АНДРЕЙ ЛИТВИНОВ",
     title: "Алхимия души",
     titleDetail: "Psychic Alchemy · Психогомеопатия",
-    headline: "Начинаем с вашего вопроса. Исследуем глубинные связи. Ищем следующий шаг.",
+    headline: "Понять свой сценарий, найти ресурс и выбрать следующий шаг.",
     intro: "Сначала исследуем ситуацию через расстановку, затем через образную гипнотерапию — возможный внутренний корень. Дополнительные ресурсы подбираем индивидуально.",
-    chips: ["Расстановка", "Гипнотерапия", "Ресурсная поддержка"],
+    chips: ["Карта ситуации", "Личный ресурс", "План действий"],
     cta: "Запросить сеанс",
     freeStart: "Начать с бесплатного письменного разбора",
     practitioner: "С Андреем Литвиновым",
@@ -47,13 +49,13 @@ const copy = {
     painEnd: "Работаем с вашим реальным запросом, а не с готовым шаблоном.",
 
     methodKicker: "МОЙ АВТОРСКИЙ ПОДХОД",
-    methodTitle: "Четыре шага одной работы",
-    methodIntro: "Сначала понять систему. Затем исследовать внутренний механизм и подобрать поддержку.",
+    methodTitle: "Как я работаю: четыре этапа",
+    methodIntro: "Разбираем вопрос → исследуем связи → находим ресурс → при желании обсуждаем дополнительную практику.",
     steps: [
-      { title: "Расстановка — карта ситуации", text: "Исследуем цель, отношения, роли и возможные скрытые связи в символической форме." },
-      { title: "Гипнотерапия — глубинный уровень", text: "Через образы и символдраму исследуем эмоциональные реакции и внутренние части." },
-      { title: "Психогомеопатия — подбор ресурса", text: "По желанию обсуждаем гомеопатический препарат как дополнительную, не доказанную лечебную практику." },
-      { title: "Интеграция — реальный шаг", text: "Даосские ресурсы У-Син, архетипы и другие практики по ситуации; наблюдаем изменения." },
+      { title: "Диагностика ситуации", text: "Уточняем ваш запрос, цель и возможные причины затруднения. Это разбор жизненной ситуации, а не медицинский диагноз." },
+      { title: "Системная расстановка", text: "В символической модели исследуем роли, отношения и повторяющийся сценарий. Это гипотезы для размышления, не скрытые факты." },
+      { title: "Образная гипнотерапия", text: "Через бережную работу с образами исследуем переживания и ищем субъективные ресурсы и новые варианты действий." },
+      { title: "Психогомеопатия — по желанию", text: "Могу обсудить гомеопатическое средство как личную символическую практику. Доказательств ускорения психотерапии или лечения нет." },
     ],
     methodNote: "Не все инструменты обязательны: глубину работы и методы согласуем вместе. Образы не считаются доказательством скрытых событий.",
 
@@ -111,9 +113,9 @@ const copy = {
     kicker: "PERSONAL WORK · ANDREY LITVINOV",
     title: "Alchemy of the Soul",
     titleDetail: "Psychic Alchemy · Psycho-homeopathy",
-    headline: "Begin with your question. Explore deeper patterns. Find a next step.",
+    headline: "Understand the pattern. Find a resource. Choose your next step.",
     intro: "We first map the situation through a constellation, then explore the possible inner root through guided-imagery hypnotherapy. Additional resources are chosen individually.",
-    chips: ["Constellations", "Hypnotherapy", "Personal resources"],
+    chips: ["Situation map", "Personal resource", "Action plan"],
     cta: "Request a session",
     freeStart: "Start with a free written situation review",
     practitioner: "With Andrey Litvinov",
@@ -131,13 +133,13 @@ const copy = {
     painEnd: "We begin with your question, not a one-size-fits-all protocol.",
 
     methodKicker: "MY INTEGRATED APPROACH",
-    methodTitle: "Four stages, one coherent process",
-    methodIntro: "Map the situation, explore the inner pattern and choose a suitable next step.",
+    methodTitle: "My four-step approach",
+    methodIntro: "Clarify your question → map relationships → explore inner resources → consider an optional practice.",
     steps: [
-      { title: "Constellation — map the situation", text: "Explore your goal, relationships and roles through a symbolic systemic exercise." },
-      { title: "Hypnotherapy — explore deeper", text: "Guided imagery and inner dialogue help explore emotional reactions and inner parts." },
-      { title: "Psycho-homeopathy — optional support", text: "If you wish, consider a homeopathic remedy as a complementary practice, not proven medical treatment." },
-      { title: "Integration — practical action", text: "When useful, draw on Wu Xing, archetypes and other practices; review real-life changes." },
+      { title: "Situation diagnosis", text: "Clarify your question, desired outcome and possible obstacles. This is a life-situation review, not a medical diagnosis." },
+      { title: "Systemic constellation", text: "Use a symbolic map of roles and relationships to explore recurring patterns. These are hypotheses, not hidden facts." },
+      { title: "Guided-imagery hypnotherapy", text: "Use consent-led imagery to explore feelings, personal resources and possible new responses." },
+      { title: "Optional psycho-homeopathy", text: "A homeopathic remedy can be discussed as a personal symbolic practice only. It has no reliable evidence for accelerating therapy or treating illness." },
     ],
     methodNote: "Every method is optional and agreed with you. Imagery is not evidence of hidden events or recovered factual memories.",
 
@@ -195,9 +197,9 @@ const copy = {
     kicker: "TRABAJO PERSONAL · ANDREY LITVINOV",
     title: "Alquimia del Alma",
     titleDetail: "Psychic Alchemy · Psicohomeopatía",
-    headline: "Partimos de tu pregunta, exploramos patrones profundos y buscamos el siguiente paso.",
+    headline: "Comprende el patrón, encuentra un recurso y elige tu siguiente paso.",
     intro: "Primero observamos la situación mediante una constelación y después exploramos posibles patrones internos con hipnoterapia de imágenes guiadas. Elegimos los recursos complementarios de forma individual.",
-    chips: ["Constelaciones", "Hipnoterapia", "Recursos personales"],
+    chips: ["Mapa de situación", "Recurso personal", "Plan de acción"],
     cta: "Solicitar una sesión",
     freeStart: "Empezar con una revisión escrita gratuita",
     practitioner: "Con Andrey Litvinov",
@@ -215,13 +217,13 @@ const copy = {
     painEnd: "Partimos de tu pregunta, no de un método único para todo el mundo.",
 
     methodKicker: "MI ENFOQUE INTEGRADO",
-    methodTitle: "Cuatro etapas de un mismo proceso",
-    methodIntro: "Comprender la situación, explorar el patrón interno y elegir el siguiente paso.",
+    methodTitle: "Mi proceso en cuatro etapas",
+    methodIntro: "Aclarar la pregunta → explorar vínculos → encontrar recursos → valorar una práctica opcional.",
     steps: [
-      { title: "Constelación — mapa de la situación", text: "Exploramos tu objetivo, tus relaciones y tus roles mediante un ejercicio sistémico simbólico." },
-      { title: "Hipnoterapia — explorar en profundidad", text: "Las imágenes guiadas y el diálogo interior ayudan a observar reacciones emocionales y partes internas." },
-      { title: "Psicohomeopatía — apoyo opcional", text: "Si lo deseas, podemos considerar un remedio homeopático como práctica complementaria, no como tratamiento médico probado." },
-      { title: "Integración — acciones concretas", text: "Cuando resulte útil, recurrimos a Wu Xing, arquetipos u otras prácticas y observamos los cambios en la vida cotidiana." },
+      { title: "Diagnóstico de la situación", text: "Aclaramos tu pregunta, el objetivo y posibles obstáculos. Es una revisión personal, no un diagnóstico médico." },
+      { title: "Constelación sistémica", text: "Exploramos roles, vínculos y patrones en un mapa simbólico: son hipótesis, no hechos ocultos." },
+      { title: "Hipnoterapia con imágenes", text: "Con imágenes guiadas y tu consentimiento buscamos recursos personales y nuevas respuestas posibles." },
+      { title: "Psicohomeopatía opcional", text: "El remedio homeopático es una práctica simbólica opcional sin pruebas fiables de que acelere la psicoterapia o trate enfermedades." },
     ],
     methodNote: "Cada método es opcional y se acuerda contigo. Las imágenes no demuestran hechos ocultos ni recuperan recuerdos verificables.",
 
@@ -271,31 +273,59 @@ const copy = {
 
     requestKicker: "TU PRIMER PASO",
     requestTitle: "Empecemos por tu pregunta",
-    requestIntro: "Elige el formato y el tema; después selecciona WhatsApp o Telegram para solicitar tu sesión.",
+    requestIntro: "Elige formato y tema. Solicita tu sesión por WhatsApp o Telegram.",
     safety: "Esta es una consulta reflexiva y simbólica de autor, no un sustituto de la atención médica o psiquiátrica. La homeopatía no tiene pruebas fiables de eficacia para tratar problemas de salud. No cambies tratamientos prescritos sin orientación médica. No se garantizan resultados.",
   },
 } as const;
 
-// These original public testimonial video IDs and poster files were provenance-checked
-// in design PR #498. Do not replace them with fabricated quotes or new avatar renders.
-const testimonials = {
-  ru: [
-    { id: "MIVLm1GUTtM", title: "Юрий Гончаренко — отзыв клиента", poster: "/images/holistic-house/testimonial-posters/MIVLm1GUTtM.webp" },
-    { id: "ttQxUHopaUM", title: "Бизнес-расстановки — отзыв", poster: "/images/holistic-house/testimonial-posters/ttQxUHopaUM.webp" },
-    { id: "VABgpmn4ZYA", title: "Татьяна Разумовская — отзыв о консультации", poster: "/images/holistic-house/testimonial-posters/VABgpmn4ZYA.webp" },
-  ],
-  en: [
-    { id: "Dk0LBmOivQo", title: "Business constellation — client testimonial", poster: "/images/holistic-house/testimonial-posters/Dk0LBmOivQo.webp" },
-    { id: "aUJde6A-9p0", title: "Business consulting — client testimonial", poster: "/images/holistic-house/testimonial-posters/aUJde6A-9p0.webp" },
-    { id: "4NrryHcEF1A", title: "Psychic Alchemy — client testimonial", poster: "/images/holistic-house/testimonial-posters/4NrryHcEF1A.webp" },
-  ],
-  es: [
-    { id: "Dk0LBmOivQo", title: "Constelación empresarial — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/Dk0LBmOivQo.webp" },
-    { id: "aUJde6A-9p0", title: "Consultoría empresarial — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/aUJde6A-9p0.webp" },
-    { id: "4NrryHcEF1A", title: "Alquimia psíquica — testimonio (en inglés)", poster: "/images/holistic-house/testimonial-posters/4NrryHcEF1A.webp" },
-  ],
+
+/** Public-only example: never render a real client's private report here. */
+const reportCopy = {
+  ru: {
+    kicker: "ЧТО ВЫ ПОЛУЧАЕТЕ", title: "От понимания к реальному действию",
+    intro: "После работы остаются карта ситуации, найденный ресурс и конкретный следующий шаг. Возможность письменного резюме согласуем отдельно.",
+    label: "ПРИМЕР · ВЫМЫШЛЕННАЯ СИТУАЦИЯ",
+    rows: [
+      { key: "Запрос", value: "Трудно сказать о своём решении вслух." },
+      { key: "Новый взгляд", value: "Отделить свой выбор от ожиданий других." },
+      { key: "Шаг на неделю", value: "Подготовить одну спокойную фразу и попробовать её." },
+    ],
+    action: "Посмотреть пример отчёта",
+    note: "Демонстрационный образец без данных клиентов. Не диагноз и не гарантия результата.",
+  },
+  en: {
+    kicker: "WHAT YOU TAKE AWAY", title: "Turn an insight into action",
+    intro: "Leave with a clearer situation map, a resource to try, and a practical next step. A written recap can be agreed separately.",
+    label: "EXAMPLE · FICTIONAL SITUATION",
+    rows: [
+      { key: "Question", value: "I struggle to say my decision aloud." },
+      { key: "Perspective", value: "Separate my own choice from others’ expectations." },
+      { key: "This week", value: "Prepare one calm sentence and practise saying it." },
+    ],
+    action: "View example report",
+    note: "Fictional example, not client data, a diagnosis or a promised result.",
+  },
+  es: {
+    kicker: "LO QUE TE LLEVAS", title: "De la reflexión a la acción",
+    intro: "Una visión más clara de la situación, un recurso personal y un siguiente paso. El resumen escrito se acuerda por separado.",
+    label: "EJEMPLO · SITUACIÓN FICTICIA",
+    rows: [
+      { key: "Pregunta", value: "Me cuesta expresar mi decisión." },
+      { key: "Perspectiva", value: "Separar mi decisión de lo que esperan los demás." },
+      { key: "Esta semana", value: "Preparar una frase clara y practicarla." },
+    ],
+    action: "Ver un informe de ejemplo",
+    note: "Ejemplo ficticio: sin datos de clientes, diagnóstico ni promesa de resultados.",
+  },
+} as const;
+const stageLabels = {
+  ru: ["01 · Разбор", "02 · Расстановка", "03 · Образы", "04 · Ресурс*"],
+  en: ["01 · Diagnose", "02 · Map roles", "03 · Imagery", "04 · Support*"],
+  es: ["01 · Aclarar", "02 · Vínculos", "03 · Imágenes", "04 · Apoyo*"],
 } as const;
 
+// Use the existing consent-led public testimonial archive, retaining real audio languages.
+// Each locale starts with its own originals, then shows all originals in the other language.
 // Owner-supplied public presentation (23 October 2026). Keep the exact video ID;
  // a YouTube Live link is played through the existing privacy-first poster player.
 const featuredIntroVideoEn = {
@@ -314,10 +344,11 @@ const featuredIntroVideoRu = {
 
 export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   const t = copy[locale];
+  const report = reportCopy[locale];
   // Both service routes resolve here. Only /ru uses the Russian video; EN/ES keep the approved English master.
   const featuredIntroVideo = locale === "ru" ? featuredIntroVideoRu : featuredIntroVideoEn;
   const video = getServiceVideoMedia("alchemy", locale);
-  const reviews = testimonials[locale];
+  const reviews = [...testimonialVideos[locale], ...testimonialVideos[locale === "ru" ? "en" : "ru"]];
   const freeReview = "/" + locale + "/services/free-situation-review";
   const heroWhatsApp = whatsappEnquiryUrl({
     locale,
@@ -330,7 +361,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
   });
 
   return (
-    <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-one-screen-v2">
+    <main className={styles.page} lang={locale} data-core-service-detail="alchemy" data-alchemy-soul-landing="teal-media-story-v4">
       <div className={styles.shell}>
         <nav className={styles.breadcrumb} aria-label={locale === "ru" ? "Навигация" : locale === "es" ? "Ruta de navegación" : "Breadcrumb"}>
           <Link href={"/" + locale + "/services"}><ArrowLeft size={15} aria-hidden="true" />{t.back}</Link>
@@ -339,7 +370,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
 
 
         <section className={[styles.panel, styles.featuredVideoSection].join(" ")}
-          data-alchemy-panel="featured-video" aria-labelledby="alchemy-featured-video-title">
+          data-alchemy-panel="featured-video" data-alchemy-visual="video" aria-labelledby="alchemy-featured-video-title">
           <div className={styles.featuredVideoText}>
             <span className={styles.eyebrow}><PlayCircle size={15} aria-hidden="true" />{t.featuredKicker}</span>
             <h2 id="alchemy-featured-video-title">{t.featuredTitle}</h2>
@@ -355,7 +386,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <p className={styles.featuredVideoNote}>{t.featuredVideoNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.hero].join(" ")} data-alchemy-panel="hero" aria-labelledby="alchemy-title">
+        <section className={[styles.panel, styles.hero].join(" ")} data-alchemy-panel="hero" data-alchemy-visual="photo" aria-labelledby="alchemy-title">
           <p className={styles.heroEyebrow}><Sparkles size={14} aria-hidden="true" />{t.kicker}</p>
           <div className={styles.heroGrid}>
             <div className={styles.heroMain}>
@@ -367,14 +398,14 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
               <StaticPortrait src="/images/holistic-house/andy-about.png" alt={t.practitioner} fill priority sizes="(max-width: 680px) 140px, 340px" />
             </div>
           </div>
-          <p className={styles.heroLead}>{t.intro}</p>
-          <div className={styles.chips}>{t.chips.map((chip) => <span key={chip}><Check size={13} aria-hidden="true" />{chip}</span>)}</div>
+
           <div className={styles.heroPricing}>
             <span>{locale === "ru" ? "Экспресс · 30 мин · €50" : locale === "es" ? "Exprés · 30 min · €50" : "Express · 30 min · €50"}</span>
             <span>{locale === "ru" ? "Личная сессия · 60 мин · €100" : locale === "es" ? "Sesión personal · 60 min · €100" : "Personal session · 60 min · €100"}</span>
           </div>
           <div className={styles.heroOrder}>
             <ContactChannelChooser locale={locale} whatsappUrl={heroWhatsApp} label={t.cta}
+              compactPhone compactTrigger stayAfterSave
               className={styles.heroOrderButton} event="service_request_start"
               attributes={{ "data-alchemy-booking": "hero" }} />
           </div>
@@ -383,43 +414,88 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <a href="#alchemy-options-title">{locale === "ru" ? "Сравнить форматы" : locale === "es" ? "Comparar formatos" : "Compare formats"}<ArrowRight size={14} aria-hidden="true" /></a>
           </div>
           <div className={styles.heroBottom}><span>{t.place}</span><Link href={freeReview}>{t.freeStart}<ArrowUpRight size={14} aria-hidden="true" /></Link></div>
+          <details className={styles.heroMore} data-alchemy-details="introduction">
+            <summary>{locale === "ru" ? "Как проходит работа" : locale === "es" ? "Cómo trabajamos" : "How the approach works"}</summary>
+            <div className={styles.heroMoreContent}>
+              <p className={styles.heroLead}>{t.intro}</p>
+              <div className={styles.chips}>{t.chips.map((chip) => <span key={chip}><Check size={13} aria-hidden="true" />{chip}</span>)}</div>
+            </div>
+          </details>
         </section>
 
-        <section className={[styles.panel, styles.painSection].join(" ")} data-alchemy-panel="situations" aria-labelledby="alchemy-situations-title">
+        <section className={[styles.panel, styles.painSection].join(" ")} data-alchemy-panel="situations" data-alchemy-visual="photo" aria-labelledby="alchemy-situations-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}><Heart size={14} aria-hidden="true" />{t.painKicker}</span>
             <h2 id="alchemy-situations-title">{t.painTitle}</h2>
             <p>{t.painIntro}</p>
           </header>
           <div className={styles.painGrid}>
-            {t.pains.map((item, index) => (
-              <article className={styles.painCard} key={item.title}>
-                <span className={styles.iconCircle} aria-hidden="true">{index === 0 ? <Heart size={20} /> : index === 1 ? <Waves size={20} /> : index === 2 ? <BriefcaseBusiness size={20} /> : <Compass size={20} />}</span>
-                <h3>{item.title}</h3><p>{item.text}</p>
-              </article>
-            ))}
+            <article className={styles.painCard}>
+              <span className={styles.iconCircle} aria-hidden="true"><Heart size={20} /></span>
+              <h3>{t.pains[0].title}</h3><p>{t.pains[0].text}</p>
+            </article>
           </div>
-          <p className={styles.sectionClosing}>{t.painEnd}</p>
+          <Link className={styles.chapterAction} href="#alchemy-options-title">{t.cta}<ArrowRight size={17} aria-hidden="true" /></Link>
+          <details className={styles.chapterMore}>
+            <summary>{locale === "ru" ? "Другие запросы" : locale === "es" ? "Otros motivos" : "Other situations"}</summary>
+            <div className={styles.moreGrid}>
+              {t.pains.slice(1).map((item) => <article className={styles.painCard} key={item.title}><h3>{item.title}</h3><p>{item.text}</p></article>)}
+            </div>
+            <p className={styles.sectionClosing}>{t.painEnd}</p>
+          </details>
         </section>
 
-        <section className={[styles.panel, styles.methodSection].join(" ")} data-alchemy-panel="method" aria-labelledby="alchemy-method-title">
+        <section className={[styles.panel, styles.methodSection].join(" ")} data-alchemy-panel="method" data-alchemy-visual="photo" aria-labelledby="alchemy-method-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/report-lighthouse-coast.webp" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}><Layers3 size={14} aria-hidden="true" />{t.methodKicker}</span>
             <h2 id="alchemy-method-title">{t.methodTitle}</h2>
             <p>{t.methodIntro}</p>
           </header>
-          <div className={styles.methodSteps}>
+          <ol className={styles.methodJourney} data-alchemy-method-sequence aria-label={t.methodTitle}>
             {t.steps.map((item, index) => (
-              <article className={styles.methodStep} key={item.title}>
-                <span className={styles.methodNumber}>{"0" + (index + 1)}</span>
-                <div><h3>{item.title}</h3><p>{item.text}</p></div>
-              </article>
+              <li key={item.title} title={item.title}>
+                <span>{stageLabels[locale][index]}</span>
+              </li>
             ))}
-          </div>
-          <p className={styles.methodNote}><ShieldCheck size={17} aria-hidden="true" />{t.methodNote}</p>
+          </ol>
+          <Link className={styles.chapterAction} href="#alchemy-options-title">{t.cta}<ArrowRight size={17} aria-hidden="true"/></Link>
+          <details className={styles.chapterMore}>
+            <summary>{locale === "ru" ? "Остальные этапы" : locale === "es" ? "Otras etapas" : "Explore the next steps"}</summary>
+            <div className={styles.moreGrid}>
+              {t.steps.map((item, index) => (
+                <article className={styles.methodStep} key={item.title}>
+                  <span className={styles.methodNumber}>{"0" + (index + 1)}</span>
+                  <div><h3>{item.title}</h3><p>{item.text}</p></div>
+                </article>
+              ))}
+            </div>
+            <p className={styles.methodNote}><ShieldCheck size={17} aria-hidden="true" />{t.methodNote}</p>
+          </details>
         </section>
 
-        <section className={[styles.panel, styles.videoSection].join(" ")} id="service-video" data-alchemy-panel="video" aria-labelledby="alchemy-video-title">
+
+        <section className={[styles.panel, styles.reportSection].join(" ")} data-alchemy-panel="report" data-alchemy-visual="photo" aria-labelledby="alchemy-report-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/report-lighthouse-coast.avif" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
+          <header className={styles.sectionHeading}>
+            <span className={styles.eyebrow}><ShieldCheck size={14} aria-hidden="true" />{report.kicker}</span>
+            <h2 id="alchemy-report-title">{report.title}</h2>
+            <p>{report.intro}</p>
+          </header>
+          <div className={styles.reportPreview} data-alchemy-report-example>
+            <span className={styles.reportLabel}>{report.label}</span>
+            {report.rows.map(row => (
+              <div className={styles.reportRow} key={row.key}><strong>{row.key}</strong><span>{row.value}</span></div>
+            ))}
+          </div>
+          <Link className={styles.chapterAction} href={"/" + locale + "/services/alchemy-of-soul/example-report"}>
+            {report.action}<ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+          <p className={styles.reportNote}>{report.note}</p>
+        </section>
+
+        <section className={[styles.panel, styles.videoSection].join(" ")} id="service-video" data-alchemy-panel="video" data-alchemy-visual="video" aria-labelledby="alchemy-video-title">
           <div className={styles.videoText}>
             <span className={styles.eyebrow}><PlayCircle size={15} aria-hidden="true" />{t.videoKicker}</span>
             <h2 id="alchemy-video-title">{t.videoTitle}</h2>
@@ -431,31 +507,46 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <p className={styles.videoNote}>{t.videoNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.reviewSection].join(" ")} id="reviews" data-alchemy-panel="reviews" aria-labelledby="alchemy-reviews-title">
+        <section className={[styles.panel, styles.reviewSection].join(" ")} id="reviews" data-alchemy-panel="reviews" data-alchemy-visual="video" aria-labelledby="alchemy-reviews-title">
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.reviewsKicker}</span>
             <h2 id="alchemy-reviews-title">{t.reviewsTitle}</h2>
             <p>{t.reviewsIntro}</p>
           </header>
-          <div className={styles.reviewStack} data-alchemy-review-stack>
+          <div className={styles.reviewStack} data-alchemy-review-stack data-vertical-review-list>
             {reviews.map((review) => (
-              <article className={styles.reviewCard} key={review.id} data-testimonial-video-id={review.id}>
+              <article className={styles.reviewCard} key={review.id}
+                data-testimonial-video-id={review.id} data-testimonial-original-audio={review.language}>
                 <div className={styles.reviewVideo}>
-                  <SiteVideoPlayer video={{ youtubeId: review.id, title: review.title, language: locale === "es" ? "en" : locale }}
-                    locale={locale} compact minimal fallbackPoster={review.poster} />
+                  <SiteVideoPlayer
+                    video={{ youtubeId: review.id, title: review.title, language: review.language }}
+                    locale={locale} compact minimal
+                    fallbackPoster={locallyArchivedVideoPosterIds.has(review.id)
+                      ? "/images/holistic-house/testimonial-posters/" + review.id + ".webp"
+                      : undefined}
+                  />
                 </div>
                 <div className={styles.reviewInfo}>
+                  <span className={styles.reviewLanguage}>
+                    {review.language === "ru"
+                      ? locale === "ru" ? "Оригинал · русский RU" : locale === "es" ? "Audio original · ruso RU" : "Original audio · Russian RU"
+                      : locale === "ru" ? "Оригинал · английский EN" : locale === "es" ? "Audio original · inglés EN" : "Original audio · English EN"}
+                  </span>
                   <h3>{review.title}</h3>
-                  <a href={"https://www.youtube.com/watch?v=" + review.id} target="_blank"
-                    rel="noopener noreferrer">{locale === "ru" ? "Смотреть отзыв" : locale === "es" ? "Ver testimonio (en inglés)" : "Watch testimonial"}<ArrowUpRight size={15} aria-hidden="true" /></a>
+                  <a href={"https://www.youtube.com/watch?v=" + review.id}
+                    target="_blank" rel="noopener noreferrer">
+                    {locale === "ru" ? "Смотреть отзыв" : locale === "es" ? "Ver testimonio" : "Watch testimonial"}
+                    <ArrowUpRight size={15} aria-hidden="true" />
+                  </a>
                 </div>
               </article>
             ))}
           </div>
-          <p className={styles.reviewNote}>{t.reviewsNote}</p>
+          <p className={styles.reviewNote} data-alchemy-review-note>{t.reviewsNote}</p>
         </section>
 
-        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" aria-labelledby="alchemy-options-title">
+        <section className={[styles.panel, styles.optionsSection].join(" ")} data-alchemy-panel="formats" data-alchemy-visual="photo" aria-labelledby="alchemy-options-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.optionsKicker}</span>
             <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
@@ -463,7 +554,8 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         </section>
 
-        <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" aria-labelledby="alchemy-faq-title">
+        <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" data-alchemy-visual="photo" aria-labelledby="alchemy-faq-title">
+          <div className={styles.panelPhoto}><Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
           <header className={styles.sectionHeading}>
             <span className={styles.eyebrow}>{t.faqKicker}</span>
             <h2 id="alchemy-faq-title">{t.faqTitle}</h2>
@@ -473,8 +565,9 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           </div>
         </section>
 
-        <section className={[styles.panel, styles.requestSection].join(" ")} id="alchemy-request" data-alchemy-panel="request" aria-labelledby="alchemy-request-title">
+        <section className={[styles.panel, styles.requestSection].join(" ")} id="alchemy-request" data-alchemy-panel="request" data-alchemy-visual="photo" aria-labelledby="alchemy-request-title">
           <div className={styles.requestText}>
+            <div className={styles.panelPhoto}><Image src="/images/holistic-house/andy-about.png" alt="" fill sizes="(max-width:680px) 100vw, 540px" /></div>
             <span className={styles.eyebrow}><Sparkles size={14} aria-hidden="true" />{t.requestKicker}</span>
             <h2 id="alchemy-request-title">{t.requestTitle}</h2>
             <p>{t.requestIntro}</p>

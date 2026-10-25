@@ -152,7 +152,7 @@ const BASE = {
   copy: { en: {title:'', shortDescription:'', description:''}, ru: {title:'', shortDescription:'', description:''}, es: {title:'', shortDescription:'', description:''} },
   areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', locationLabel:'',
   pricingMode:'contact', confirmedPrice:'', currency:'CAD', durationMinutes:'', priceOptions:[],
-  imagePath:'', photos:[], videoPresentation:null, goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
+  imagePath:'', photos:[], videoPresentation:null, serviceIntroductions:[], goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
 }
 
 const commas = value => String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
@@ -178,13 +178,19 @@ function initialDraft(item,locale,starter='') {
         copy:item.localizedCopy||{}, areaKey:item.areaKey, offeringType:item.offeringType,
         deliveryFormat:item.deliveryFormat, locationLabel:item.locationLabel, languages:item.languages,
         pricingMode:item.pricingMode, confirmedPrice:item.confirmedPrice??'', currency:item.currency||'CAD',
-        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, goals:item.goals||[],
+        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, serviceIntroductions:item.serviceIntroductions?.length?item.serviceIntroductions:undefined, goals:item.goals||[],
         methods:item.methods||[], benefits:item.benefits||[], faq:item.faq||[],
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
+  const serviceIntroductions=Array.isArray(raw.serviceIntroductions)
+    ? raw.serviceIntroductions
+    : raw.videoPresentation?[{language:(raw.languages||[]).find(code=>['en','ru','es'].includes(code))||locale,
+        type:'video',media:raw.videoPresentation}]:[]
   return {
     ...BASE, languages:[locale==='ru'?'ru':locale==='es'?'es':'en'],
     ...(!item && Object.hasOwn(PRO_STARTERS,starter) ? PRO_STARTERS[starter] : {}), ...raw,
+    // Re-home legacy video inside the new language-based field, avoiding duplicate playback.
+    videoPresentation:null,serviceIntroductions,
     copy:Object.fromEntries(['en','ru','es'].map(lang=>[lang,{...BASE.copy[lang],...(raw.copy?.[lang]||{})}])),
   }
 }
@@ -254,7 +260,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
   const areaTitle=area[lang==='ru'?1:lang==='es'?2:0]
   const formatLabel=draft.deliveryFormat==='in_person'?c.inPerson:draft.deliveryFormat==='hybrid'?c.hybrid:c.online
   const priceSummary=servicePreviewPrice(draft,c)
-  return <form noValidate className={styles.quickForm} onSubmit={submit} data-service-slide-editor>
+  return <form noValidate className={styles.quickForm} onSubmit={submit} data-service-slide-editor data-service-stage={stage}>
     <div className={styles.header}>
       <div className={styles.headerCopy}>
         <span className={styles.eyebrow}>Holistic House · Practice</span>
@@ -271,7 +277,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
     </div>
     {item?.reviewNote&&<p role="status" className={styles.reviewNote}>{item.reviewNote}</p>}
     <div className={styles.stageTabs} role="group" aria-label={c.stages} data-service-stage-nav>
-      {stageLabels.map((label,index)=><button key={label} type="button" aria-current={stage===index?'step':undefined}
+      {stageLabels.map((label,index)=><button key={label} type="button" aria-label={label} aria-current={stage===index?'step':undefined}
         aria-pressed={stage===index} className={stage===index?styles.activeStage:''}
         onClick={()=>{if(!locked){setStage(index);setFormIssue('')}}} disabled={locked}>
         <span>{index+1}</span><strong>{label.slice(label.indexOf('·')+1).trim()}</strong>
@@ -397,7 +403,8 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       <div className={styles.panelHead}><strong><Leaf size={17}/>{c.detailsHeading}</strong><span>03 / 03</span></div>
       <p className={styles.stageTip}>{c.detailsTip}</p>
       <div className={styles.mediaCard}>
-        <PracticeVideoField locale={locale} value={draft.videoPresentation} onChange={value=>set('videoPresentation',value)}
+        <PracticeVideoField locale={locale} introductions={draft.serviceIntroductions||[]}
+          onIntroductionsChange={value=>set('serviceIntroductions',value)}
           onBusyChange={value=>{setVideoBusy(value);onMediaBusyChange?.(value)}}/>
       </div>
       <details className={styles.advanced} data-service-advanced-details>
@@ -445,8 +452,9 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       </details>
     </section>}
     {formIssue&&<p role="alert" className={styles.formIssue}>{formIssue}</p>}
+    <div className={styles.footerControls} data-service-editor-footer>
     <div className={styles.stepNavigation} data-service-step-controls>
-      <button type="button" onClick={()=>setStage(n=>Math.max(0,n-1))} disabled={locked||stage===0}><ArrowLeft size={17}/>{c.previous}</button>
+      <button type="button" onClick={()=>setStage(n=>Math.max(0,n-1))} disabled={locked||stage===0}><ArrowLeft size={17}/><span className={styles.previousLabel}>{c.previous}</span></button>
       <span>{c.stepCount} {stage+1} {c.of} 3</span>
       {stage<2?<button type="button" onClick={()=>{setStage(n=>Math.min(2,n+1));setFormIssue('')}} disabled={locked}>
         {c.next}<ArrowRight size={17}/></button>:<span className={styles.readyNote}>{c.submitHint}</span>}
@@ -460,6 +468,7 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       </button>}
       {item&&['published','submitted','changes_requested'].includes(item.status)&&stage===2&&
         <button className={styles.pause} type="button" disabled={locked} onClick={()=>onPause(item)}>{c.pause}</button>}
+    </div>
     </div>
     <p className={styles.fine}>{touched?c.draftUnsaved+' · ':''}{c.review}</p>
   </form>

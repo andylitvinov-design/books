@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, Compass, HeartHandshake, HeartPulse, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, HeartHandshake, HeartPulse, LockKeyhole, Sparkles } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
 import { recommendProfileBattery } from "@/lib/profile/profile-battery";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 
 type Locale = "en" | "ru" | "es";
-type Focus = "identity" | "wellbeing" | "relationships" | "work" | "purpose";
+type Focus = "wellbeing" | "relationships" | "work" | "identity";
 type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning";
 type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null; questions: number | null };
 type Props = { locale: Locale; tests: PublicTest[] };
@@ -26,12 +26,12 @@ const areaAxes: Record<Area, readonly string[]> = {
   money: ["functioning", "meaning", "self_support"], // money choices, never a score of income/success
   meaning: ["meaning"],
 };
+// Four life directions select existing measurable topics; meaning remains in personal growth.
 const focusAreas: Record<Focus, Area[]> = {
-  identity: ["traits", "support"],
   wellbeing: ["emotions", "recovery", "body"],
   relationships: ["connection"],
   work: ["work", "money"],
-  purpose: ["meaning"],
+  identity: ["traits", "support", "meaning"],
 };
 const allAreas = Object.keys(areaAxes) as Area[];
 const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
@@ -64,7 +64,7 @@ const copy = {
     browseTests: "Or browse free tests without creating a profile",
     journeyTitle: "How it works",
     journey: [
-      ["Choose your focus", "Personal life, work, wellbeing or the bigger picture. You decide which topics matter."],
+      ["Choose your focus", "Body and energy, relationships, work and money, or personal growth. You decide which matter."],
       ["Take free tests", "Review the suggested questionnaires and choose which ones to complete."],
       ["Explore results & next steps", "Read your test feedback, reflect on your strengths and save development goals in My Space."],
     ],
@@ -76,14 +76,13 @@ const copy = {
     focusAdd: "Select this", focusSelected: "Selected",
     unifiedNote: "ONE PERSONAL PROFILE · GROWING OVER TIME",
     layerTitle: "How your profile grows · four distinct layers",
-    layerNote: "One private profile, not five diagnoses or one overall health/success score. Sections fill only when you choose and have suitable evidence.",
+    layerNote: "One private profile, not a diagnosis or overall health/success score. Sections fill only when you choose and have suitable evidence.",
     layers: [["My foundation","Personality patterns, personal strengths and values."],["My state","Recent energy, stress and recovery, with dates."],["My life","Work, relationships and your life context."],["My growth","Goals and practices you choose yourself."]],
     focuses: {
-      identity: ["Personality & potential", "Traits, values, strengths and personal resources."],
-      wellbeing: ["Emotional wellbeing", "Stress, energy, rest and emotional balance."],
-      relationships: ["Relationships & closeness", "Connection, communication and personal boundaries."],
-      work: ["Career & money", "Focus, career choices and financial habits."],
-      purpose: ["Meaning & direction", "Values, goals and a sense of purpose."],
+      wellbeing: ["Body, health & energy", "Physical wellbeing, stress, recovery and energy balance."],
+      relationships: ["Relationships & connection", "Love, family, communication, trust and personal boundaries."],
+      work: ["Work, business & money", "Career, entrepreneurship, professional growth and financial habits."],
+      identity: ["Personality & personal growth", "Traits, strengths, values, life goals and self-actualization."],
     },
     topicTitle: "Choose the specific topics that matter",
     topicHelp: "We've suggested topics from your interests. Refine them before choosing actual measured scales.",
@@ -140,7 +139,7 @@ const copy = {
     browseTests: "Или пройти бесплатные тесты без создания профиля",
     journeyTitle: "Как это работает",
     journey: [
-      ["Выберите свою задачу", "Личность, бизнес, самочувствие или несколько сфер сразу. Вы решаете, что важно."],
+      ["Выберите направление", "Здоровье и энергия, отношения, дело и деньги или личное развитие — можно несколько сразу."],
       ["Пройдите бесплатные тесты", "Мы предложим подходящие опросники, а вы сможете изменить их набор."],
       ["Получите результаты и рекомендации", "Изучите отчёты, определите сильные стороны и сохраните цели развития в личном кабинете."],
     ],
@@ -152,14 +151,13 @@ const copy = {
     focusAdd: "Выбрать", focusSelected: "Выбрано",
     unifiedNote: "ОДИН ЛИЧНЫЙ ПРОФИЛЬ · ПОПОЛНЯЕТСЯ СО ВРЕМЕНЕМ",
     layerTitle: "Как формируется профиль · четыре разных слоя",
-    layerNote: "Один приватный профиль, а не пять диагнозов или единый процент здоровья и успешности. Разделы заполняются при наличии подходящих данных и по вашему выбору.",
+    layerNote: "Один приватный профиль, а не диагноз или единый процент здоровья и успешности. Разделы заполняются при наличии подходящих данных и по вашему выбору.",
     layers: [["Моя основа","Особенности личности, сильные стороны и ценности."],["Моё состояние","Самочувствие, энергия и стресс с указанием даты."],["Моя жизнь","Работа, отношения и личные обстоятельства."],["Моё развитие","Цели и практики, которые вы выбираете сами."]],
     focuses: {
-      identity: ["Личность и потенциал", "Особенности, ценности, сильные стороны и ресурсы."],
-      wellbeing: ["Самочувствие и ресурсы", "Стресс, энергия, отдых и эмоциональная устойчивость."],
-      relationships: ["Отношения и близость", "Доверие, общение и личные границы."],
-      work: ["Карьера и деньги", "Фокус, профессиональные решения и финансовые привычки."],
-      purpose: ["Смыслы и направление", "Ценности, цели и ощущение смысла жизни."],
+      wellbeing: ["Тело, здоровье и энергия", "Самочувствие, стресс, восстановление и жизненные силы."],
+      relationships: ["Отношения и близость", "Любовь, семья, общение, доверие и личные границы."],
+      work: ["Дело, бизнес и деньги", "Карьера, предпринимательство, профессиональная реализация и финансы."],
+      identity: ["Личность и развитие", "Характер, способности, ценности, смысл жизни и самореализация."],
     },
     topicTitle: "Уточните важные для вас темы",
     topicHelp: "Мы предложили темы на основе вашего выбора. Измените их перед выбором измеряемых шкал.",
@@ -216,7 +214,7 @@ const copy = {
     browseTests: "O hacer pruebas gratuitas sin crear un perfil",
     journeyTitle: "Cómo funciona",
     journey: [
-      ["Elige tu objetivo", "Vida personal, trabajo, bienestar o una visión más amplia. Tú decides qué explorar."],
+      ["Elige tu enfoque", "Salud y energía, relaciones, trabajo y dinero o crecimiento personal. Puedes elegir varios."],
       ["Realiza pruebas gratuitas", "Revisa los cuestionarios sugeridos y elige cuáles quieres completar."],
       ["Explora resultados y próximos pasos", "Lee los informes, identifica fortalezas y guarda tus metas de desarrollo en Mi espacio."],
     ],
@@ -228,14 +226,13 @@ const copy = {
     focusAdd: "Elegir", focusSelected: "Elegido",
     unifiedNote: "UN PERFIL PERSONAL · CRECE CONTIGO",
     layerTitle: "Cómo crece tu perfil · cuatro capas distintas",
-    layerNote: "Un perfil privado, no cinco diagnósticos ni una puntuación global de salud o éxito. Cada sección requiere datos adecuados y tu elección.",
+    layerNote: "Un perfil privado, no un diagnóstico ni una puntuación global de salud o éxito. Cada sección requiere datos adecuados y tu elección.",
     layers: [["Mi base","Rasgos de personalidad, fortalezas y valores."],["Mi estado","Energía, estrés y descanso reciente con fecha."],["Mi vida","Trabajo, relaciones y contexto personal."],["Mi desarrollo","Objetivos y prácticas que tú eliges."]],
     focuses: {
-      identity: ["Personalidad y potencial", "Rasgos, valores, fortalezas y recursos."],
-      wellbeing: ["Bienestar emocional", "Estrés, energía, descanso y equilibrio emocional."],
-      relationships: ["Relaciones y cercanía", "Conexión, comunicación y límites personales."],
-      work: ["Carrera y dinero", "Concentración, decisiones laborales y hábitos financieros."],
-      purpose: ["Sentido y dirección", "Valores, objetivos y propósito personal."],
+      wellbeing: ["Cuerpo, salud y energía", "Bienestar físico, estrés, descanso y energía."],
+      relationships: ["Relaciones y cercanía", "Amor, familia, comunicación, confianza y límites personales."],
+      work: ["Trabajo, negocios y dinero", "Carrera, emprendimiento, desarrollo profesional y hábitos financieros."],
+      identity: ["Personalidad y crecimiento", "Rasgos, fortalezas, valores, propósito y autorrealización."],
     },
     topicTitle: "Elige los temas específicos para explorar",
     topicHelp: "Sugerimos temas según tus intereses. Ajústalos antes de seleccionar escalas medibles.",
@@ -298,9 +295,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       block: "start",
     });
   }, [started, step]);
-  const [focuses, setFocuses] = useState<Focus[]>(["identity"]);
-  const [areas, setAreas] = useState<Area[]>(areasFor(["identity"]));
-  const [selectedAxes, setSelectedAxes] = useState<string[]>(allAxesFor(areasFor(["identity"])));
+  const [focuses, setFocuses] = useState<Focus[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [selectedAxes, setSelectedAxes] = useState<string[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
   const [accountBusy, setAccountBusy] = useState(false);
@@ -409,7 +406,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             <span><strong>{t.entryButton}</strong><small>{t.entryHint}</small></span>
             <ArrowRight size={24} aria-hidden="true" />
           </button>
-          <Link className={styles.browseTests} href={'/' + locale + '/tests'} prefetch={false} data-profile-direct-tests>
+          <Link className={styles.browseTests} href={'/' + locale + '/client/tests'} prefetch={false} data-profile-direct-tests>
             {t.browseTests}<ArrowRight size={15} aria-hidden="true" />
           </Link>
         </div>
@@ -448,8 +445,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             <button type="button" key={key} className={styles.templateCard}
               aria-pressed={focuses.includes(key)} onClick={() => toggleFocus(key)} data-profile-focus={key}>
               <span className={styles.templateIcon} aria-hidden="true">
-                {key === "identity" ? <Brain size={21} /> : key === "wellbeing" ? <HeartPulse size={21} />
-                  : key === "relationships" ? <HeartHandshake size={21} /> : key === "work" ? <BriefcaseBusiness size={21} /> : <Compass size={21} />}
+                {key === "wellbeing" ? <HeartPulse size={21} /> : key === "relationships" ? <HeartHandshake size={21} />
+                  : key === "work" ? <BriefcaseBusiness size={21} /> : <Brain size={21} />}
               </span>
               <span className={styles.templateBody}>
                 <strong>{t.focuses[key][0]}</strong>

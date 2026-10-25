@@ -315,3 +315,39 @@
   .moreVideos{padding:0 10px}
   .moreVideos>summary{font-size:12px}
 }
+
+/* Only Free Situation Review displays all 12 authentic testimonials as a vertical feed.
+   Other service/home/about galleries preserve their own layout and controls. */
+.section[data-personal-testimonials="all"] .videoGrid {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 0;
+  gap: clamp(16px, 2vw, 23px);
+  overflow: visible;
+  scroll-snap-type: none;
+  overscroll-behavior-x: auto;
+}
+.section[data-personal-testimonials="all"] .videoItem {
+  flex: none;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  scroll-snap-align: none;
+}
+@media (max-width: 767px) {
+  .section[data-personal-testimonials="all"] .videoGrid {
+    width: 100%;
+    gap: 16px;
+    padding: 0;
+  }
+  .section[data-personal-testimonials="all"] .videoItem {
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
+  .section[data-personal-testimonials="all"] .videoItem :global(.site-video-title) {
+    font-size: 17px;
+  }
+}

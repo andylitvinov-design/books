@@ -1,0 +1,42 @@
+name: Holistic House clean-room benchmark program
+
+on:
+  pull_request:
+    branches:
+      - codex/public-book-library
+    paths:
+      - ".github/workflows/hh-benchmark-program.yml"
+      - "docs/benchmarking/**"
+      - "data/benchmarking/**"
+      - "lib/benchmarking/**"
+      - "scripts/benchmarking/**"
+      - "tests/benchmark-reference-matrix.test.mjs"
+  push:
+    branches:
+      - codex/public-book-library
+    paths:
+      - ".github/workflows/hh-benchmark-program.yml"
+      - "data/benchmarking/**"
+      - "lib/benchmarking/**"
+      - "scripts/benchmarking/**"
+      - "tests/benchmark-reference-matrix.test.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark-contract:
+    name: Offline matrix & privacy gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate source-only competitor evidence, privacy and test contracts
+        run: node --test tests/benchmark-reference-matrix.test.mjs
+      - name: Verify no-network human-readable benchmark plan
+        run: node scripts/benchmarking/plan.mjs
+      - name: Verify machine-readable export
+        run: node scripts/benchmarking/plan.mjs --json > /dev/null

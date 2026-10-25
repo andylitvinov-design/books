@@ -91,3 +91,57 @@ export function AnalyticsPreferences() {
     </section>
   );
 }
+
+/** Separate, explicit consent for anonymous first-party counters.
+ * The Google/Meta safety hold above is never lifted by this preference. */
+export function FirstPartyStatsPreferences() {
+  const [allowed, setAllowed] = useState(false);
+  const [excluded, setExcluded] = useState(false);
+
+  useEffect(() => {
+    const cookie = (name: string) => document.cookie.split("; ")
+      .find(part => part.startsWith(name + "="))?.split("=")[1];
+    setAllowed(cookie("hh_public_stats_consent") === "v1");
+    setExcluded(cookie("hh_public_stats_skip") === "1");
+  }, []);
+
+  function decide(allow: boolean) {
+    document.cookie = `hh_public_stats_consent=${allow ? "v1" : ""}; Path=/; Max-Age=${allow ? 31536000 : 0}; SameSite=Lax; Secure`;
+    setAllowed(allow);
+  }
+  function exclude(skip: boolean) {
+    document.cookie = `hh_public_stats_skip=${skip ? "1" : ""}; Path=/; Max-Age=${skip ? 31536000 : 0}; SameSite=Lax; Secure`;
+    setExcluded(skip);
+  }
+
+  return (
+    <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4" aria-label="Anonymous website statistics">
+      <p className="m-0 text-sm text-stone-800">
+        Optional first-party website statistics record public page entrances, page views,
+        button/link clicks and coarse traffic sources (such as Google, Instagram or direct).
+        We never store visitor IDs, IP addresses, full referring URLs, search queries,
+        private account pages, health answers or message texts in these statistics.
+        Aggregated counts are deleted after 90 days. Google and Meta tracking remain off.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Anonymous website statistics consent">
+        <button type="button" onClick={() => decide(true)} aria-pressed={allowed}
+          className="min-h-11 rounded-full border border-amber-800 bg-white px-4 py-2 text-sm text-amber-950">
+          Allow anonymous page counts
+        </button>
+        <button type="button" onClick={() => decide(false)} aria-pressed={!allowed}
+          className="min-h-11 rounded-full border border-stone-500 bg-white px-4 py-2 text-sm text-stone-800">
+          Do not count my visit
+        </button>
+      </div>
+      <label className="mt-3 flex items-center gap-3 text-sm text-stone-900">
+        <input type="checkbox" checked={excluded} onChange={event => exclude(event.target.checked)}
+          className="h-5 w-5" />
+        Exclude visits and clicks from this browser, even after signing out
+      </label>
+      <p className="mb-0 mt-2 text-xs text-stone-700" aria-live="polite">
+        Anonymous counts: {allowed ? "allowed" : "off"} · This browser: {excluded ? "excluded" : "not excluded"}.
+        Signed-in website owner visits are always excluded.
+      </p>
+    </section>
+  );
+}

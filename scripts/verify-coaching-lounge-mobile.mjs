@@ -34,12 +34,42 @@ async function verify(browserType, locale, width) {
     assert.equal(response?.status(), 200, label + ": public route");
     const root = page.locator("[data-public-coaching]");
     await root.waitFor({ state: "visible", timeout: 30000 });
+    // A 200 from /images is NOT an iPhone image-rendering test. Verify actual
+    // browser-decoded pixels plus a visible CSS fallback on both ancient cards.
+    const culturalCards = root.locator('[data-coaching-tradition="egyptian"],[data-coaching-tradition="greek"]');
+    assert.equal(await culturalCards.count(),2,label+": both authored photos offered");
+    for (const slug of ["egyptian","greek"]) {
+      const card = root.locator('[data-coaching-tradition="'+slug+'"]');
+      await card.scrollIntoViewIfNeeded();
+      const visual=card.locator("a[class*='loungePhoto']");
+      const picture=visual.locator("img");
+      await picture.waitFor({state:"visible"});
+      await picture.evaluate(image=>image.decode());
+      const photo=await visual.evaluate(node=>{
+        const image=node.querySelector("img"),style=getComputedStyle(node),rect=node.getBoundingClientRect();
+        return {loaded:image.complete&&image.naturalWidth>0,
+          eager:image.loading==='eager',width:rect.width,height:rect.height,
+          url:image.currentSrc,background:style.backgroundImage}
+      });
+      assert.ok(photo.loaded, label+": "+slug+" image.complete&&image.naturalWidth>0");
+      assert.ok(photo.eager,label+": "+slug+" must not defer offscreen load");
+      assert.ok(photo.width>=85&&photo.height>=110,label+": "+slug+" has a painted rectangle "+JSON.stringify(photo));
+      assert.ok(photo.url.endsWith("/coaching-ancient/"+slug+"-cover.jpg"),label+": "+slug+" original");
+      assert.ok(photo.background.includes("/coaching-ancient/"+slug+"-cover.jpg"),label+": "+slug+" CSS fallback");
+      if (width===390)await card.screenshot({
+        path:output+"/ancient-"+slug+"-"+browserType.name()+"-"+locale+".png",
+      });
+    }
     const topics = root.locator("[data-coaching-topic-first]");
     const outcomes = root.locator("[data-coaching-outcome-first]");
     const formats = root.locator("fieldset").filter({
       has: root.locator("button[aria-pressed]").filter({ hasText: /Andrey|Андреем|Andrey/i }),
     });
     await topics.waitFor({ state: "visible" });
+    // Outcome preferences are intentionally collapsed on the compact mobile UI.
+    // Open their native details control before asserting button visibility.
+    const advanced = root.locator("[data-coaching-advanced-preferences]");
+    await advanced.locator("summary").tap();
     await outcomes.waitFor({ state: "visible" });
     assert.equal(await outcomes.locator("[data-coaching-outcome]").count(), 5, label + ": five client outcomes");
     assert.equal(await topics.locator("[data-coaching-topic-group]").count(), 7, label + ": all topics");
@@ -62,21 +92,55 @@ async function verify(browserType, locale, width) {
     const note = root.locator(".ignore-nothing");
     assert.equal(await root.locator('[role="status"]').filter({ hasText: /suggestion|рекомендац|sugerencia|opciones/i }).count() > 0
       || await root.locator("[data-public-coaching-models]").count() === 0, true, label + ": transparent matching");
-    const paid = root.locator("[data-coaching-paid-sessions]");
-    const human = root.locator("button").filter({ hasText: /With Andrey|С Андреем|Con Andrey/ }).first();
-    await human.tap();
-    assert.equal(await human.getAttribute("aria-pressed"), "true", label + ": human selection");
+    // The current Coaching Lounge has three visible, photo-led choices.
+    // A previous test looked for the removed CoachingLiveSessionCapture, so it
+    // could not verify the real session request or the €50/€100 selector.
+    const offers = root.locator("[data-coaching-three-paths] [data-coaching-offer]");
+    assert.deepEqual(await offers.evaluateAll(nodes => nodes.map(node => node.getAttribute("data-coaching-offer"))),
+      ["free", "session", "deep"], label + ": exactly three genuine entry choices");
+    assert.match(await offers.nth(0).innerText(), /FREE|БЕСПЛАТНО|GRATIS/,
+      label + ": free diagnosis is explicitly written and free");
+    assert.match(await offers.nth(1).innerText(), /€50/,
+      label + ": 30-minute session has an honest quoted price");
+    assert.match(await offers.nth(1).innerText(), /€100/,
+      label + ": 60-minute session has an honest quoted price");
+    const deep = root.locator('[data-coaching-select="deep"]');
+    assert.equal(await deep.getAttribute("href"), "/" + locale + "/services/imagery-therapy#request-session",
+      label + ": depth work has a real dedicated service route");
+    const paid = root.locator("[data-coaching-session-capture]");
+    const humanChoice = advanced.locator("button").filter({ hasText: /With Andrey|С Андреем|Con Andrey/i }).first();
+    await humanChoice.tap();
+    assert.equal(await humanChoice.getAttribute("aria-pressed"), "true", label + ": human selection");
     await paid.waitFor({ state: "visible" });
-    assert.equal(await paid.locator("[data-coaching-item]").count(), 2, label + ": both actual prices, independent of free preferences");
-    const paidTexts = await paid.innerText();
-    assert.ok(paidTexts.includes("€50") && paidTexts.includes("€100"), label + ": confirmed published prices not booked");
+    // The lower "Request" CTA MUST select the paid form, not open the default
+    // free written diagnostic. Never submit a contact or hit the CRM in CI.
+    await paid.locator("[data-coaching-human-to-intake]").tap();
+    const capture = root.locator("[data-coaching-session-request] [data-service-lead-capture]");
+    await capture.waitFor({ state: "visible" });
+    const sessionLength = capture.locator("select").first();
+    assert.equal(await sessionLength.locator("option").count(), 2,
+      label + ": two reviewed and displayed lengths");
+    assert.match(await sessionLength.locator("option").nth(0).innerText(), /€50/,
+      label + ": 30-minute session is €50");
+    assert.match(await sessionLength.locator("option").nth(1).innerText(), /€100/,
+      label + ": 60-minute session is €100");
+    await sessionLength.selectOption({index: 1});
+    assert.match(await sessionLength.inputValue(), /€100/,
+      label + ": 60-minute request can be selected");
+    assert.equal(await capture.locator('input[type="checkbox"]').first().isChecked(), false,
+      label + ": contact consent is never pre-checked");
+    assert.equal(await root.locator("[data-free-diagnostic-start]").count(), 0,
+      label + ": paid request never falls back to the free form");
     assert.equal(await root.locator("[data-coaching-practitioner-checklist]").isVisible(), true,
       label + ": visible trust/training and availability checks");
+    await root.locator('[data-coaching-select="free"]').tap();
+    await root.locator("[data-free-diagnostic-start]").waitFor({state:"visible"});
+    assert.equal(await root.locator("[data-coaching-session-request]").count(), 0,
+      label + ": choosing free genuinely switches the capture back");
     const free = root.locator("button").filter({ hasText: /Try it free|Самостоятельно|Por mi cuenta/ }).first();
     await free.tap();
     assert.equal(await free.getAttribute("aria-pressed"), "true", label + ": free mode tap");
-    const advanced = root.locator("[data-coaching-advanced-preferences]");
-    await advanced.locator("summary").tap();
+    if (!(await advanced.evaluate(node => node.open))) await advanced.locator("summary").tap();
     assert.equal(await advanced.evaluate(node => node.open), true, label + ": visible inline preferences, never a modal");
     assert.equal(await advanced.locator('[data-coaching-filter="duration"] button').count(), 5,
       label + ": five optional time choices");

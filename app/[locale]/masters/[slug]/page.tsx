@@ -7,6 +7,8 @@ import { metadataBaseFor } from "@/data/site-metadata";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createArticleRepository } from "@/lib/practitioners/article-repository";
+import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
+import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
@@ -15,6 +17,22 @@ import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract
 import styles from "./profile.module.css";
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
+type PublishedMeditation = {
+  slug: string;
+  practitionerSlug: string;
+  course: {
+    title: string;
+    description?: string;
+    locale: "en" | "ru" | "es";
+    contentType?: "course" | "audio_meditation" | "video_meditation";
+  };
+};
+type PublishedArticle = {
+  id: string;
+  slug: string;
+  publishedAt?: string | null;
+  published: { title: string; excerpt: string; locale: string; coverPath?: string };
+};
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -78,17 +96,54 @@ export default async function MasterProfile({ params }: PageProps) {
     (item) => item.public && item.verificationStatus === "verified" &&
       (!item.expiresOn || item.expiresOn >= new Date().toISOString().slice(0, 10))
   );
-  let articles: { id: string; slug: string; published: { title: string; excerpt: string; locale: string } }[] = [];
-  try {
-    articles = await createArticleRepository(getAppConfig()).publicByPractitioner(practitioner.slug);
-  } catch {
-    // The profile remains useful when article listing is unavailable.
+  const config = getAppConfig();
+  let articles: PublishedArticle[] = [];
+  let publishedMeditations: PublishedMeditation[] = [];
+  // Both repositories return *only* approved public snapshots. No drafts, client data or media URLs.
+  const [articleResult, courseResult] = await Promise.allSettled([
+    createArticleRepository(config).publicByPractitioner(practitioner.slug),
+    createPractitionerCourseRepository(config).catalog(),
+  ]);
+  if (articleResult.status === "fulfilled") {
+    articles = (articleResult.value as PublishedArticle[])
+      .sort((a, b) => Number(b.published.locale === locale) - Number(a.published.locale === locale))
+      .slice(0, 12);
   }
+  if (courseResult.status === "fulfilled") {
+    publishedMeditations = (courseResult.value as PublishedMeditation[])
+      .filter(item => item.practitionerSlug === practitioner.slug &&
+        (item.course?.contentType === "audio_meditation" || item.course?.contentType === "video_meditation") &&
+        ["en", "ru", "es"].includes(item.course.locale) && Boolean(item.course.title))
+      .slice(0, 12);
+  }
+  // Reuse verified original media only for its actual author. Never invent translations or audio files.
+  const originalVideos = practitioner.slug === "andy-litvinov"
+    ? freeMeditationVideos(ru ? "ru" : es ? "es" : "en").map(item => ({
+      title: item.title,
+      description: ru ? "Оригинальная русскоязычная видеомедитация" :
+        es ? "Vídeo original con audio en inglés" : "Original English-language guided video",
+      locale: ru ? "ru" as const : "en" as const,
+      url: "https://www.youtube.com/watch?v=" + item.id,
+    }))
+    : [];
+  const seenPublicVideos = new Set<string>();
+  const videos = [...(profile.videoMaterials || []), ...originalVideos].filter(item => {
+    if (seenPublicVideos.has(item.url)) return false;
+    seenPublicVideos.add(item.url);
+    return true;
+  });
 
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
       <div className={styles.layout}>
+        <div className={styles.breadcrumbs}>
+          <Link href={"/" + locale + "/masters"}>
+            ← {ru ? "Все мастера" : es ? "Todos los profesionales" : "All masters"}
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span>{name}</span>
+        </div>
         <section className={styles.hero} aria-labelledby="practitioner-name">
           <div className={styles.identity}>
             {profile.photoPath ? (
@@ -105,7 +160,12 @@ export default async function MasterProfile({ params }: PageProps) {
               </p>
               <h1 id="practitioner-name">{name}</h1>
               {profile.professionalTitle && <p className={styles.professionalTitle}>{profile.professionalTitle}</p>}
-              {location && <p className={styles.location}>{location}</p>}
+              <div className={styles.heroFacts}>
+                {location && <span className={styles.location}>⌖ {location}</span>}
+                {Boolean(profile.languages?.length) && (
+                  <span className={styles.location}>◉ {profile.languages?.join(" · ").toUpperCase()}</span>
+                )}
+              </div>
               {(practitioner.isPartner || hasVerifiedCredential) && (
                 <div className={styles.badges}>
                   {practitioner.isPartner && (
@@ -119,6 +179,11 @@ export default async function MasterProfile({ params }: PageProps) {
             </div>
           </div>
           {(shortBio || fullBio) && <p className={styles.heroBio}>{shortBio || fullBio}</p>}
+          <p className={styles.heroHint}>
+            {ru ? "Знакомьтесь с подходом, выбирайте услуги и открывайте авторские материалы." :
+              es ? "Conoce su enfoque, descubre servicios y explora sus materiales originales." :
+                "Explore this practitioner's approach, services and original materials."}
+          </p>
           <div className={styles.heroActions}>
             <Link className={styles.primary} href="#practitioner-services">
               {ru ? "Выбрать услугу" : es ? "Elegir un servicio" : "Choose a service"}
@@ -133,12 +198,29 @@ export default async function MasterProfile({ params }: PageProps) {
           </div>
         </section>
 
+        <nav className={styles.sectionNav} aria-label={ru ? "Разделы профиля" : es ? "Secciones del perfil" : "Profile sections"}>
+          <a href="#practitioner-services">{ru ? "Услуги" : es ? "Servicios" : "Services"}</a>
+          <a href="#practitioner-meditations">{ru ? "Медитации" : es ? "Meditaciones" : "Meditations"}</a>
+          <a href="#practitioner-articles">{ru ? "Статьи" : es ? "Artículos" : "Articles"}</a>
+          <a href="#practitioner-about">{ru ? "О мастере" : es ? "Acerca de" : "About"}</a>
+        </nav>
+
+        {profile.videoPresentation && (
+          <div className={styles.welcomeVideo}>
+            <PractitionerPresentationVideo
+              locale={locale}
+              video={profile.videoPresentation}
+              playbackUrl={publicPresentationUrl(profile.videoPresentation, config.supabaseUrl)}
+            />
+          </div>
+        )}
+
         <section className={styles.services} id="practitioner-services" aria-labelledby="practitioner-services-heading">
           <header className={styles.sectionHeading}>
             <div>
               <p className={styles.kicker}>{ru ? "УСЛУГИ" : es ? "SERVICIOS" : "SERVICES"}</p>
               <h2 id="practitioner-services-heading">
-                {ru ? "Выберите формат" : es ? "Elige tu sesión" : "Choose your session"}
+                {ru ? "Мои услуги" : es ? "Mis servicios" : "My services"}
               </h2>
             </div>
             <span className={styles.count}>
@@ -154,7 +236,59 @@ export default async function MasterProfile({ params }: PageProps) {
           )}
         </section>
 
-        <section className={styles.about} aria-labelledby="practitioner-about-heading">
+
+        <section id="practitioner-meditations" className={styles.meditations} aria-labelledby="practitioner-meditations-heading">
+          <header className={styles.sectionHeading}>
+            <div>
+              <p className={styles.kicker}>{ru ? "ПРАКТИКИ" : es ? "PRÁCTICAS" : "GUIDED PRACTICES"}</p>
+              <h2 id="practitioner-meditations-heading">
+                {ru ? "Медитации · аудио и видео" : es ? "Meditaciones · audio y vídeo" : "Meditations · audio & video"}
+              </h2>
+            </div>
+            <span className={styles.count}>{publishedMeditations.length + videos.length}</span>
+          </header>
+          <p className={styles.sectionLead}>
+            {ru ? "Авторские записи и опубликованные практики. Выберите запись для прослушивания или просмотра." :
+              es ? "Grabaciones originales y prácticas publicadas. El idioma del material se indica por separado." :
+                "Original recordings and published practices. Each item shows its original language."}
+          </p>
+          {publishedMeditations.length > 0 && (
+            <div className={styles.meditationGrid}>
+              {publishedMeditations.map(item => (
+                <Link key={item.slug} className={styles.meditationCard}
+                  href={"/" + item.course.locale + "/courses/masters/" + item.slug} prefetch={false}>
+                  <span className={styles.meditationArtwork} aria-hidden="true">
+                    {item.course.contentType === "audio_meditation" ? "♫" : "▶"}
+                  </span>
+                  <span className={styles.meditationCopy}>
+                    <small>
+                      {item.course.contentType === "audio_meditation" ?
+                        (ru ? "Аудиомедитация" : es ? "Meditación en audio" : "Audio meditation") :
+                        (ru ? "Видеомедитация" : es ? "Meditación en vídeo" : "Video meditation")}
+                      {" · "}{item.course.locale.toUpperCase()}
+                    </small>
+                    <strong>{item.course.title}</strong>
+                    {item.course.description && <span>{item.course.description}</span>}
+                    <em>{ru ? "Открыть практику" : es ? "Abrir práctica" : "Open practice"} →</em>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+          {videos.length > 0 && (
+            <div className={styles.approvedVideoGallery}>
+              <PractitionerVideoGallery videos={videos} locale={locale} />
+            </div>
+          )}
+          {!publishedMeditations.length && !videos.length && (
+            <p className={styles.emptyServices}>
+              {ru ? "Опубликованных аудио- и видеоматериалов пока нет." :
+                es ? "Todavía no hay grabaciones públicas." : "No published recordings yet."}
+            </p>
+          )}
+        </section>
+
+        <section id="practitioner-about" className={styles.about} aria-labelledby="practitioner-about-heading">
           <div>
             <p className={styles.kicker}>{ru ? "ПОДХОД" : es ? "ENFOQUE" : "APPROACH"}</p>
             <h2 id="practitioner-about-heading">{ru ? "О специалисте" : es ? "Sobre mí" : "About"}</h2>
@@ -184,14 +318,6 @@ export default async function MasterProfile({ params }: PageProps) {
           </div>
         </section>
 
-        {profile.videoPresentation && (
-          <PractitionerPresentationVideo
-            locale={locale}
-            video={profile.videoPresentation}
-            playbackUrl={publicPresentationUrl(profile.videoPresentation, getAppConfig().supabaseUrl)}
-          />
-        )}
-
         {practitioner.credentials.length > 0 && (
           <details className={styles.credentials}>
             <summary>
@@ -214,26 +340,59 @@ export default async function MasterProfile({ params }: PageProps) {
           </details>
         )}
 
-        {Boolean(profile.videoMaterials?.length) && (
-          <PractitionerVideoGallery videos={profile.videoMaterials || []} locale={locale} />
-        )}
-        {articles.length > 0 && (
-          <section id="practitioner-articles" className={styles.articles}>
-            <h2>{ru ? "Статьи автора" : es ? "Artículos" : "Articles by this practitioner"}</h2>
+        <section id="practitioner-articles" className={styles.articles} aria-labelledby="practitioner-articles-heading">
+          <header className={styles.sectionHeading}>
+            <div>
+              <p className={styles.kicker}>{ru ? "ПУБЛИКАЦИИ" : es ? "PUBLICACIONES" : "PUBLICATIONS"}</p>
+              <h2 id="practitioner-articles-heading">
+                {ru ? "Мои статьи" : es ? "Mis artículos" : "My articles"}
+              </h2>
+            </div>
+            <span className={styles.count}>{articles.length}</span>
+          </header>
+          <p className={styles.sectionLead}>
+            {ru ? "Статьи и идеи мастера — только после проверки и публикации." :
+              es ? "Ideas y artículos del profesional, tras su publicación." :
+                "Articles and insights shared by this practitioner after publication."}
+          </p>
+          {articles.length > 0 ? (
             <div className={styles.articleGrid}>
-              {articles.map((article) => (
-                <article key={article.id}>
-                  <small>{article.published.locale.toUpperCase()}</small>
-                  <h3>{article.published.title}</h3>
-                  <p>{article.published.excerpt}</p>
-                  <Link href={"/" + article.published.locale + "/articles/" + article.slug}>
-                    {ru ? "Читать" : es ? "Leer" : "Read"} →
-                  </Link>
+              {articles.map(article => (
+                <article className={styles.articleCard} key={article.id}>
+                  {article.published.coverPath ? (
+                    <img className={styles.articleCover} src={article.published.coverPath} alt=""
+                      width={400} height={192} loading="lazy" />
+                  ) : <div className={styles.articleCoverPlaceholder} aria-hidden="true">✦</div>}
+                  <div className={styles.articleCopy}>
+                    <small>{article.published.locale.toUpperCase()}</small>
+                    <h3>{article.published.title}</h3>
+                    <p>{article.published.excerpt}</p>
+                    <Link href={"/" + article.published.locale + "/articles/" + article.slug}>
+                      {ru ? "Читать статью" : es ? "Leer artículo" : "Read article"} →
+                    </Link>
+                  </div>
                 </article>
               ))}
             </div>
-          </section>
-        )}
+          ) : (
+            <p className={styles.emptyServices}>
+              {ru ? "Опубликованных статей пока нет." :
+                es ? "Todavía no hay artículos publicados." : "No published articles yet."}
+            </p>
+          )}
+        </section>
+        <section className={styles.finalCta}>
+          <div>
+            <p className={styles.kicker}>{ru ? "СДЕЛАЙТЕ ПЕРВЫЙ ШАГ" : es ? "DA EL PRIMER PASO" : "YOUR NEXT STEP"}</p>
+            <h2>{ru ? "Хотите поработать вместе?" : es ? "¿Trabajamos juntos?" : "Ready to explore working together?"}</h2>
+            <p>{ru ? "Посмотрите опубликованные услуги и отправьте запрос мастеру." :
+              es ? "Explora los servicios disponibles y envía una solicitud al profesional." :
+                "Choose a published service and send a request to this practitioner."}</p>
+          </div>
+          <Link className={styles.primary} href="#practitioner-services">
+            {ru ? "Посмотреть услуги" : es ? "Ver servicios" : "Explore services"} <span aria-hidden="true">→</span>
+          </Link>
+        </section>
       </div>
     </main>
   );

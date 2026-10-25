@@ -55,9 +55,9 @@ async function go(page, path) {
 function expectedMobileNavigation(locale) { return getCompactNavigation(locale) }
 function visibleMobileLabel(locale, id) {
   const names = {
-    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',coaching:'Coaching',pro:'Pro',temple:'Temple Support'},
-    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',coaching:'Коучинг',pro:'Pro',temple:'Храм'},
-    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',coaching:'Coaching',pro:'Pro',temple:'Templo'},
+    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',alchemy:'Psychic Alchemy',pro:'Pro',temple:'Holistic Support'},
+    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',temple:'Поддержка'},
+    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',temple:'Apoyo holístico'},
   }
   return names[locale][id]
 }
@@ -72,8 +72,9 @@ async function assertPublicBottomNavigation(bottom, { locale, surface, label }) 
     await expect(links.nth(index)).toHaveText(visibleMobileLabel(locale, expected[index].id))
     if (visible) await expect(links.nth(index)).toHaveAccessibleName(expected[index].ariaLabel)
   }
-  const active = ({home:'home',analysis:'analysis',courses:'courses',academy:'courses',pro:'pro',profile:'profile',coaching:'coaching',temple:'temple',
+  const active = ({home:'home',analysis:'analysis',courses:'courses',academy:'courses',pro:'pro',profile:'profile',alchemy:'alchemy',temple:'temple',
     'temple-support':'temple','services/free-situation-review':'analysis',
+    'services/alchemy-of-soul':'alchemy','services/psychohomeopathy':'alchemy',
     'client':'profile','client/tests':'profile','personality-profiles':'profile','temple-insights':'temple','holistic-support':'temple'})[surface]
   await expect(bottom.locator('[aria-current="page"]')).toHaveCount(active ? 1 : 0)
   if (active) await expect(bottom.locator('[data-nav-item="' + active + '"]')).toHaveAttribute('aria-current', 'page')
@@ -279,6 +280,20 @@ async function verifyPublicDiscoveryNavigation(page, engine) {
       }
     }
   }
+    // Real mobile click into the canonical existing service, once per language.
+    // A working link is not evidence of booking or payment.
+    for (const locale of ['en', 'ru', 'es']) {
+      await resizePublicViewport(page, { width: 390, height: 900 })
+      const from = '/' + locale + '/services/free-situation-review'
+      assert.equal((await go(page, from)).status(), 200, locale + ': free-review entry')
+      const alchemy = page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')
+      await expect(alchemy).toBeVisible()
+      await expect(alchemy).toHaveAttribute('href', '/' + locale + '/services/alchemy-of-soul')
+      await alchemy.click()
+      await expect(page).toHaveURL(origin + '/' + locale + '/services/alchemy-of-soul')
+      await expect(page.locator('[data-alchemy-soul-landing]')).toHaveCount(1)
+      await expect(page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')).toHaveAttribute('aria-current', 'page')
+    }
   await resizePublicViewport(page, originalViewport)
   pass(engine + ': public client and client/tests discovery retain six-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in EN/RU/ES')
 }

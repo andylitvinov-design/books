@@ -32,12 +32,18 @@ test('keeps every private or administrative request network-only', () => {
 })
 
 test('ships an installable PsiAlchemy manifest and a worker that rejects private caching', () => {
-  assert.equal(existsSync('app/manifest.ts'), true)
+  // The legacy PsiAlchemy manifest URL stays valid for existing installs,
+  // but must not be auto-injected into the main Holistic House site.
+  assert.equal(existsSync('app/manifest.ts'), false)
+  assert.equal(existsSync('public/manifest.webmanifest'), true)
   assert.equal(existsSync('public/sw.js'), true)
-  const manifest = readFileSync('app/manifest.ts', 'utf8')
+  const manifest = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'))
+  const library = readFileSync('app/[locale]/homeopathy/layout.tsx', 'utf8')
   const worker = readFileSync('public/sw.js', 'utf8')
-  assert.match(manifest, /PsiAlchemy/)
-  assert.match(manifest, /standalone/)
+  assert.equal(manifest.name, 'PsiAlchemy')
+  assert.equal(manifest.display, 'standalone')
+  assert.equal(manifest.start_url, '/ru/homeopathy')
+  assert.match(library, /manifest: "\/manifest.webmanifest"/)
   assert.match(worker, /network-only/)
   assert.match(worker, /CACHE_PUBLIC_REMEDY/)
   const middleware = readFileSync('middleware.ts', 'utf8')

@@ -426,3 +426,14 @@ test('Messenger owner console shows connected state and official setup without c
   assert.doesNotMatch(ui,/HH_CRM_MSG_TELEGRAM_TOKEN\s*=/)
   assert.doesNotMatch(ui,/HH_CRM_MSG_META_APP_SECRET\s*=/)
 })
+
+test('CRM connections put verified owner bot first and explain optional CRM Inbox accurately',()=>{
+ const diag=source('components/app/crm-integration-diagnostics.jsx')
+ const manager=source('components/app/crm-manager.jsx')
+ assert.match(diag,/Telegram CRM Inbox \(separate\)/)
+ assert.match(diag,/CRM Telegram \(отдельный канал\)/)
+ assert.match(diag,/app\/settings#hh-telegram-connect/)
+ assert.match(diag,/Never reuse the same bot token with a different webhook/)
+ assert.ok(manager.indexOf('<CustomerTelegramBotSetup ') < manager.indexOf('<CrmIntegrationDiagnostics '),
+  'first show the reusable existing verified practice bot, then optional integrations')
+})

@@ -24,9 +24,9 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
   const links = bar.locator(':scope > a')
   await expect(links).toHaveCount(7)
   const visibleLabels = {
-    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',coaching:'Coaching',pro:'Pro',temple:'Temple Support'},
-    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',coaching:'Коучинг',pro:'Pro',temple:'Храм'},
-    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',coaching:'Coaching',pro:'Pro',temple:'Templo'},
+    en: {home:'Home',analysis:'Free Analysis',courses:'Courses',profile:'My Profile',alchemy:'Psychic Alchemy',pro:'Pro',temple:'Holistic Support'},
+    ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',temple:'Поддержка'},
+    es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',temple:'Apoyo holístico'},
   }
   assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim() }))), destinations.map(({ id, href }) => ({ id, href, label: visibleLabels[locale][id] })))
   await expect(bar.locator('a[aria-current="page"]')).toHaveCount(1)

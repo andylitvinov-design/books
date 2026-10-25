@@ -18,7 +18,7 @@ import { TantraReikiFestivalMoments, TantraReikiTeacher } from "@/components/tan
 import { TantraReikiProgrammeModules } from "@/components/tantra-reiki-programme-modules";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { TantraReikiSideNavigation, YggdrasilSideNavigation } from "@/components/reiki-course-side-nav";
-import { TantraReikiJourney, TantraReikiOverviewLinks } from "@/components/tantra-reiki-journey";
+import { TantraReikiJourney } from "@/components/tantra-reiki-journey";
 import { TantraReikiTestimonials } from "@/components/tantra-reiki-testimonials";
 import { academyCopy, academyDisplayTitle, academyPublicBlocks, academyPublicOmittedCount, mediaForRecord, sourceLanguageNotice, youtubeIdFromUrl, type AcademyBlock, type AcademySourceRecord } from "@/data/academy/catalog";
 import tantraReikiFullArchive from "@/data/academy/tantra-reiki-full.generated.json";
@@ -226,18 +226,8 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                       />
                     </div>
                   </details>
-                  <Link className="tantra-course-hero__initiation-cta" href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation#apply-personal"}>{locale === "ru" ? "Записаться на личную инициацию Тантра Рейки с мастером →" : locale === "es" ? "Inscribirme en una iniciación personal en vivo de Tantra Reiki →" : "Sign up for Live Personal Tantra Reiki Initiation →"}</Link>
+                  <a className="tantra-course-hero__initiation-cta" href="#tantra-master-course">{locale === "ru" ? "Записаться на личную инициацию Тантра Рейки с мастером →" : locale === "es" ? "Inscribirme en una iniciación personal en vivo de Tantra Reiki →" : "Sign up for Live Personal Tantra Reiki Initiation →"}</a>
                 </div>
-                <details className="tantra-course-hero__more">
-                  <summary>{locale === "ru" ? "Программа и дополнительные материалы" : locale === "es" ? "Programa y materiales adicionales" : "Programme & extra resources"} <span aria-hidden="true">⌄</span></summary>
-                  <Link className="tantra-course-hero__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{locale === "ru" ? "Пройти бесплатные тантрические тесты ↗" : locale === "es" ? "Hacer los tests tántricos gratuitos ↗" : "Take free Tantra self-reflection tests ↗"}</Link>
-                  <nav className="tantra-course-hero__secondary-links" aria-label={locale === "ru" ? "Разделы курса и ресурсы" : locale === "es" ? "Secciones y recursos del curso" : "Course sections and resources"}>
-                    <a href="#tantra-level-1">{locale === "ru" ? "Что изучим на 1-й ступени ↓" : locale === "es" ? "Qué aprenderás en Nivel 1 ↓" : "What you learn in Level 1 ↓"}</a>
-                    <a href="#tantra-next-levels">{locale === "ru" ? "Остальные ступени (2–9) ↓" : locale === "es" ? "Otros niveles (2–9) ↓" : "Other levels (2–9) ↓"}</a>
-                    <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{locale === "ru" ? "Как проходит вводная инициация ↗" : locale === "es" ? "Cómo se realiza la iniciación introductoria ↗" : "How the introductory initiation works ↗"}</Link>
-                    <a className="tantra-course-hero__guide" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Методичка PDF ↓" : locale === "es" ? "Guía PDF ↓" : "Mobile PDF ↓"}</a>
-                  </nav>
-                </details>
                 <p className="tantra-course-hero__note">{locale === "ru" ? "Подарок — вводная инициация 1-й ступени по согласованию с Андреем. Практики добровольны, тесты не предназначены для диагностики." : locale === "es" ? "El regalo es una iniciación de Nivel 1, sujeta a la confirmación de Andrey. Las prácticas son voluntarias; los tests no son diagnósticos." : "The gift is an introductory Level 1 initiation, subject to Andrey's confirmation. Practices are optional; tests are not diagnostic."}</p>
               </div>
               <figure className="tantra-course-hero__visual">
@@ -247,7 +237,7 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
               </figure>
             </section>
             <section className="tantra-level-summary" aria-label={locale === "ru" ? "Первая ступень и остальные по желанию" : locale === "es" ? "Nivel 1 y niveles posteriores opcionales" : "Level 1 first; optional later levels"}><TantraReikiJourney locale={locale} /></section>
-            <section className="tantra-mobile-guide tantra-mobile-guide--combined reiki-screen reiki-screen--feature" id="tantra-levels" aria-labelledby="tantra-mobile-guide-heading">
+            <section className="tantra-mobile-guide tantra-mobile-guide--combined tantra-mobile-guide--promo reiki-screen reiki-screen--feature" id="tantra-levels" aria-labelledby="tantra-mobile-guide-heading">
               <div className="tantra-mobile-guide__cover" aria-hidden="true">
                 <span>HOLISTIC HOUSE</span>
                 <div className="tantra-mobile-guide__ornament"><span>✦</span></div>
@@ -255,14 +245,22 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
                 <small>{locale === "ru" ? "9 СТУПЕНЕЙ · ДЛЯ ТЕЛЕФОНА" : locale === "es" ? "9 ETAPAS · EDICIÓN MÓVIL" : "9 LEVELS · MOBILE EDITION"}</small>
               </div>
               <div className="tantra-mobile-guide__copy">
-                <p className="homeopathy-kicker">{locale === "ru" ? "9 СТУПЕНЕЙ · БЕСПЛАТНЫЙ PDF" : locale === "es" ? "9 ETAPAS · GUÍA PDF GRATIS" : "9 LEVELS · FREE MOBILE PDF"}</p>
+                <p className="homeopathy-kicker">{locale === "ru" ? "9 СТУПЕНЕЙ · БЕСПЛАТНАЯ МЕТОДИЧКА" : locale === "es" ? "9 ETAPAS · GUÍA GRATUITA" : "9 LEVELS · FREE STUDY GUIDE"}</p>
                 <h2 id="tantra-mobile-guide-heading">{locale === "ru" ? "Тантра Рейки: девять ступеней" : locale === "es" ? "Tantra Reiki: nueve etapas" : "Tantra Reiki: the nine levels"}</h2>
-                <p>{locale === "ru" ? "Настройки и упражнения каждой ступени. Скачайте бесплатную методичку с крупным шрифтом." : locale === "es" ? "Sintonizaciones y prácticas de cada etapa. Descarga gratis la guía con letra grande para el móvil." : "Explore attunements and practical exercises. Download the free large-print guide for your phone."}</p>
-                <a className="tantra-mobile-guide__download" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Скачать PDF бесплатно ↓" : locale === "es" ? "Descargar PDF gratis ↓" : "Download free PDF ↓"}</a>
-                <details className="tantra-mobile-guide__toc">
-                  <summary>{locale === "ru" ? "Посмотреть карту всех девяти ступеней" : locale === "es" ? "Ver el mapa de las nueve etapas" : "Explore the 9-level study map"} <span aria-hidden="true">⌄</span></summary>
-                  <TantraReikiOverviewLinks locale={locale} />
-                </details>
+                <p>{locale === "ru" ? "Настройки и упражнения каждой ступени — в удобной PDF-методичке для телефона." : locale === "es" ? "Sintonizaciones y ejercicios de cada etapa en una guía PDF cómoda para el móvil." : "A phone-friendly PDF with the attunements and exercises for all nine levels."}</p>
+                <div className="tantra-mobile-guide__course-promo">
+                  <p className="tantra-mobile-guide__course-eyebrow">{locale === "ru" ? "БЕСПЛАТНЫЙ ОНЛАЙН-КУРС · 5 ДНЕЙ" : locale === "es" ? "CURSO ONLINE GRATIS · 5 DÍAS" : "FREE ONLINE COURSE · 5 DAYS"}</p>
+                  <h3>{locale === "ru" ? "Практик Рейки: обучение и инициация" : locale === "es" ? "Reiki Practitioner: estudio e iniciación" : "Reiki Practitioner: Study & Initiation"}</h3>
+                  <p>{locale === "ru" ? "Пять коротких уроков, медитации и практика Тантра, Кундалини и Иггдрасиль Рейки. После обучения можно запросить вводную инициацию у Андрея." : locale === "es" ? "Cinco lecciones, meditaciones y prácticas de Tantra, Kundalini y Yggdrasil Reiki. Al terminar, puedes solicitar una iniciación introductoria con Andrey." : "Five guided lessons with meditations and Tantra, Kundalini & Yggdrasil Reiki. After the course, you can request an introductory initiation with Andrey."}</p>
+                  <Link className="tantra-mobile-guide__course-link" href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{locale === "ru" ? "Начать бесплатный курс →" : locale === "es" ? "Empezar el curso gratis →" : "Start free Reiki Practitioner course →"}</Link>
+                </div>
+                <div className="tantra-mobile-guide__pdf-row">
+                  <div className="tantra-mobile-guide__pdf-meta">
+                    <strong>{locale === "ru" ? "Методичка: 9 ступеней" : locale === "es" ? "Guía: nueve etapas" : "Your 9-level guide"}</strong>
+                    <span>{locale === "ru" ? "PDF · крупный шрифт · для телефона" : locale === "es" ? "PDF · letra grande · para móvil" : "PDF · large print · mobile-friendly"}</span>
+                  </div>
+                  <a className="tantra-mobile-guide__download" href={"/api/academy/reiki-guide?course=tantra&locale=" + locale}>{locale === "ru" ? "Скачать PDF бесплатно ↓" : locale === "es" ? "Descargar PDF gratis ↓" : "Download free PDF ↓"}</a>
+                </div>
               </div>
             </section>
             <div className="reiki-screen reiki-screen--social"><TantraReikiFestivalMoments locale={locale} /></div>

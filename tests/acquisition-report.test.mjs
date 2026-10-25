@@ -149,11 +149,12 @@ test('admin report remains discoverable, responsive and isolated from public/pri
 test('actual middleware gives the new private route no-store, noindex and isolated CSP', async () => {
   const source = read('middleware.ts')
     .replace("from 'next/server'", `from ${JSON.stringify(moduleUrl('next/server.js'))}`)
+    .replace("from './lib/app/admin-auth-refresh'", `from ${JSON.stringify(sourceUrl('lib/app/admin-auth-refresh.js'))}`)
     .replace("from './lib/canonical-redirect'", `from ${JSON.stringify(sourceUrl('lib/canonical-redirect.js'))}`)
   const { middleware } = await import(compiledModule(source))
   const { NextRequest } = await import('next/server.js')
   for (const query of ['', '?lang=ru&days=30', '?lang=es&days=1']) {
-    const response = middleware(new NextRequest('https://holistichouse.vercel.app/admin/acquisition' + query))
+    const response = await middleware(new NextRequest('https://holistichouse.vercel.app/admin/acquisition' + query))
     assert.equal(response.headers.get('Cache-Control'), 'private, no-store, max-age=0, must-revalidate')
     assert.equal(response.headers.get('X-Robots-Tag'), 'noindex, nofollow, noarchive')
     assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer')

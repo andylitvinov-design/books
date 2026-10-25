@@ -79,6 +79,7 @@ const AccountTestBattery = dynamic(() => import('@/components/app/account-test-b
 const ProfileDomains = dynamic(() => import('@/components/app/profile-domains').then(module => module.ProfileDomains))
 const CabinetJourney = dynamic(() => import('@/components/app/cabinet-journey'))
 const DevelopmentProgram = dynamic(() => import('@/components/app/development-program'), { ssr: false })
+const ClientExpressReports = dynamic(() => import('@/components/app/practice-express-reports').then(module => module.ClientExpressReports))
 const LabResults = dynamic(() => import('@/components/app/lab-results'), { ssr: false })
 const MyCourse = dynamic(() => import('@/components/app/my-course'))
 const BusinessCoaching = dynamic(() => import('@/components/app/business-coaching'), { ssr: false })
@@ -634,7 +635,7 @@ export default function AppWorkspace({ locale, path = [] }) {
               <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
               <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
               <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
-                reportsContent={<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />} />
+                reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
             </>
           )}
           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
@@ -739,7 +740,7 @@ export default function AppWorkspace({ locale, path = [] }) {
             recordId ? (
               <SavedReportPage key={recordId} id={recordId} locale={locale} reload={load} />
             ) : (
-              <ReportsIndex data={data} locale={locale} />
+              <><ReportsIndex data={data} locale={locale} /><ClientExpressReports locale={locale} accountId={data.account.id}/></>
             )
           )}
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
@@ -747,6 +748,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'settings' && (
             <>
               <Preferences data={data} locale={locale} onDone={load} />
+              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <SubscriptionSettings />
               <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
               <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
@@ -754,7 +756,6 @@ export default function AppWorkspace({ locale, path = [] }) {
               {nativeApp
                 ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
                 : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
-              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
               <Privacy
                 locale={locale}
                 logout={logout}
@@ -2312,9 +2313,7 @@ function PortfolioPage({ data, locale }) {
     <section className="hh-insights-page"
       aria-labelledby={activeTab === 'values' ? 'hh-insights-title' : 'hh-test-dynamics-title'}
       data-testid="completed-test-insights">
-      {/* One source-grounded private profile, matching My Profile without duplicating records. */}
-      <UnifiedProfileLayers data={data} locale={locale} />
-      {/* Put the same saved-result portrait at the start of Insights, open by default. */}
+      {/* Reports opens with the large saved-score portrait, before other profile tools. */}
       <details className="hh-insights-portrait" open data-testid="insights-psychological-portrait">
         <summary className="hh-insights-portrait-toggle">
           <Brain size={20} aria-hidden="true" />
@@ -2342,8 +2341,9 @@ function PortfolioPage({ data, locale }) {
             </div>
           </>} />
       </details>
-      {/* Programme is part of Reports, independently available in either Values or Dynamics. */}
+      {/* Programme follows the portrait; deeper four-layer records stay available below. */}
       <DevelopmentProgram accountId={accountId} locale={locale} results={data.results || []} />
+      <UnifiedProfileLayers data={data} locale={locale} />
       <nav className="hh-insights-view-tabs" role="tablist"
         aria-label={ru ? 'Представление результатов' : 'Results view'} data-results-view-tabs>
         {[
@@ -3774,6 +3774,11 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
                    completed:locale==='ru'?'Выполнено':'Completed',
                    cancelled:locale==='ru'?'Отменено':'Cancelled'})[request.status] || request.status)
               : (c[request.status] || request.status)}</span>
+            {Number(request.newMessageCount)>0&&
+              <span className="hh-badge" role="status">
+                {locale==='ru'?'Новых сообщений: ':locale==='es'?'Mensajes nuevos: ':'New messages: '}
+                {request.newMessageCount}
+              </span>}
             <h3>
               {(data.services || []).find((s) => s.id === request.serviceId)?.copy?.[locale]?.title ||
                 c.request}
@@ -3811,10 +3816,10 @@ function Consultations({ data, locale, reload, initialServiceId = '', source = '
             {request.remoteBooking && request.status==='completed' &&
               <ServiceReviews serviceId={request.serviceId} locale={locale} verifiedOnly />}
             <PracticeRequestConversation key={request.id} requestId={request.id}
-              autoOpen={requestedMessageId === request.id}
+              autoOpen={requestedMessageId === request.id || Number(request.newMessageCount)>0}
               accountId={data.account.id} locale={locale}
               initialMessage={typeof request.message==='string'?request.message:''}
-              createdAt={request.createdAt}/>
+              createdAt={request.createdAt} onViewed={reload} onSaved={reload}/>
             {request.sharedExcerpt && (
               <>
                 <p>{c.sharingNote}</p>

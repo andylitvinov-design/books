@@ -31,6 +31,28 @@ test('Pro TSX parses with no syntax diagnostics in all three locales',()=>{
 })
 const css = read('components/profi-hub.module.css')
 
+test('Pro cards keep photos left, inline pills, and accessible 320px actions',()=>{
+  const cardCss=css.slice(css.indexOf('/* 2026-10-25: same photo-left'))
+  assert.ok(cardCss.length>1500,'current photo-left Pro skin should be present')
+  assert.match(cardCss,/\.offerGrid\{\s*display:grid;grid-template-columns:1fr/)
+  assert.match(cardCss,/\.offerOptionHeader\{display:contents\}/)
+  assert.match(cardCss,/\.offerOptionHeader \.offerThumb\{\s*grid-column:1;grid-row:1\/span 2/)
+  assert.match(cardCss,/\.offerActions\{\s*grid-column:2;grid-row:2;display:grid/)
+  assert.match(cardCss,/\.offerExpanded\{\s*grid-column:1\/-1;grid-row:3/)
+  assert.match(cardCss,/border-radius:999px/)
+  assert.match(cardCss,/@media\(max-width:600px\)/)
+  assert.match(cardCss,/@media\(max-width:359px\)/)
+  assert.match(cardCss,/min-height:44px/)
+  for(const locale of ['en','ru','es']){
+    const view=mount(locale).render()
+    for(const key of ['diagnostic','energy','meditation','personal']){
+      const card=find(view,'data-profi-offer',key)
+      assert.equal(find(card,'data-profi-offer-details',key).props['aria-expanded'],false)
+      assert.ok(find(card,'data-profi-selected-offer',key).props.href.includes('/app/practice?'))
+    }
+  }
+})
+
 test('every Pro card has existing locally-hosted photography and a real action',()=>{
   const photographs=[...hub.matchAll(/"(\/images\/holistic-house\/[^"]+\.(?:webp|avif))"/g)].map(match=>match[1])
   assert.ok(photographs.length>=10)
@@ -190,6 +212,20 @@ test('Pro keeps learning, practitioner offers and profiles visible in one scroll
   }
 })
 
+test('Pro does not show the redundant Learn / Develop / Share roadmap in EN, RU or ES',()=>{
+  assert.doesNotMatch(hub,/profi-after-learning|styles\.nextStage|t\.afterTitle|t\.after\.map|data-profi-action="advanced-reiki"/)
+  for(const text of ['How to move from learning to practice','Как перейти от учёбы к практике','De aprender a ejercer']){
+    assert.ok(!hub.includes(text),'obsolete roadmap copy: '+text)
+  }
+  for(const locale of ['en','ru','es']){
+    const tree=mount(locale).render()
+    assert.equal(nodes(tree).filter(node=>node.props?.id==='profi-after-learning').length,0,locale)
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-learning')),locale+': learning path retained')
+    assert.ok(nodes(tree).some(node=>Object.hasOwn(node.props||{},'data-profi-practice')),locale+': practitioner offers retained')
+    assert.equal(nodes(tree).filter(node=>node.props?.['data-profi-paid-program']!==undefined).length,3,locale+': advanced training remains available')
+  }
+})
+
 test('actual interactive learner track explores five steps but launches only existing training',()=>{
   for(const locale of ['en','ru','es']){
     const widget=mount(locale)
@@ -303,7 +339,7 @@ test('earning promise stays honest; mobile and accessibility are deliberate',()=
     assert.ok(hub.toLowerCase().includes(phrase.toLowerCase()) || phrase==='Checkout' && hub.includes('checkout'),
       phrase)
   }
-  assert.match(hub,/не даёт профессиональной квалификации/)
+  assert.match(hub,/Pricing, qualifications and legal eligibility are your responsibility/)
   assert.match(hub,/<nav className=\{styles.pathControls\} aria-label=\{t.choose\}/)
   assert.match(hub,/href="#profi-practice"/)
   assert.match(hub,/aria-expanded=\{isExpanded\}/)
@@ -347,7 +383,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     const tree=mount(locale).render()
     const paths=nodes(tree).filter(x=>x.props?.['data-profi-path']!==undefined)
     assert.deepEqual(paths.map(x=>x.props['data-profi-path']),['find','learn','practice'])
-    assert.equal(paths[0].props.href,'/'+locale+'/masters?view=mentors')
+    assert.equal(paths[0].props.href,'#profi-find-master')
     assert.equal(paths[0].props.prefetch,false)
     assert.equal(paths[1].props.href,'#profi-learning')
     assert.equal(paths[2].props.href,'#profi-practice')
@@ -356,6 +392,7 @@ test('Pro starts with three localized, accessible paths, including real mentor d
     assert.ok(nodes(tree).some(x=>Object.hasOwn(x.props||{},'data-profi-finder')))
     assert.ok(paths.every(x=>x.type==='a' || typeof x.type==='function'))
   }
+  assert.match(hub,/data-profi-master-directory/)
   assert.match(hub,/findChoice: "Найти мастера"/)
   assert.match(hub,/learnChoice: "Обучиться и стать мастером"/)
   assert.match(hub,/proChoice: "Я уже мастер — предложить услуги"/)

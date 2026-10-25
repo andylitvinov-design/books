@@ -29,7 +29,7 @@ export const ENERGYWORK_BRANCH = Object.freeze({
   kundalini: ['kun-01','kun-intro-video','kun-02','kun-03','kun-voices','kun-04','kun-05','kun-study-v2-01','kun-study-v2-02','kun-study-v2-03','kun-study-v2-04','kun-study-v2-05','kun-study-v2-06','kun-study-v2-07','kun-study-v2-08','kun-study-v2-09','kun-done'],
 })
 export const ENERGYWORK_INITIATION = Object.freeze(['init-02'])
-export const ENERGYWORK_FINISH = Object.freeze(['end-01','end-02'])
+export const ENERGYWORK_FINISH = Object.freeze(['end-01','init-photo-01','end-02'])
 export const ENERGYWORK_LESSON_STARTS = Object.freeze(['flight-01','tan-01','kun-01','ygg-01','paths-01'])
 export const ENERGYWORK_REPORT_IDS = Object.freeze(['flight-04','tan-04','kun-04','ygg-04','end-01'])
 // These four reviews gate the next teaching screen; the final journal remains optional during learning.
@@ -130,7 +130,7 @@ export function energyworkSequence(_legacyPath = null) {
       'paths-03',
       ...ENERGYWORK_INITIATION,
       'end-01','intention-04','end-02',
-    ], ['intention-04'], 'end-02'),
+    ], ['intention-04'], 'end-02').flatMap(id => id === 'end-02' ? ['init-photo-01', id] : [id]).filter((id,index,all) => all.indexOf(id) === index),
   ]
 }
 // Old bookmarks on the teacher video may predate the introductory question.

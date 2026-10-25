@@ -9,9 +9,9 @@ import { useNavigationLocale } from './use-navigation-locale';
 
 // Compact two-line visual labels. Full translated names remain on aria-label.
 const mobileBarLabels = {
-  en: { home: 'Home', analysis: 'Free Analysis', courses: 'Courses', profile: 'My Profile', coaching: 'Coaching', pro: 'Pro', temple: 'Holistic Support' },
-  ru: { home: 'Домой', analysis: 'Разбор', courses: 'Курсы', profile: 'Профиль', coaching: 'Коучинг', pro: 'Pro', temple: 'Поддержка' },
-  es: { home: 'Inicio', analysis: 'Análisis', courses: 'Cursos', profile: 'Mi perfil', coaching: 'Coaching', pro: 'Pro', temple: 'Apoyo holístico' },
+  en: { home: 'Home', analysis: 'Free Analysis', courses: 'Courses', profile: 'My Profile', alchemy: 'Psychic Alchemy', pro: 'Pro', temple: 'Holistic Support' },
+  ru: { home: 'Домой', analysis: 'Разбор', courses: 'Курсы', profile: 'Профиль', alchemy: 'Алхимия души', pro: 'Pro', temple: 'Поддержка' },
+  es: { home: 'Inicio', analysis: 'Análisis', courses: 'Cursos', profile: 'Mi perfil', alchemy: 'Alquimia del Alma', pro: 'Pro', temple: 'Apoyo holístico' },
 } as const;
 
 export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale?: PublicLocale }) {

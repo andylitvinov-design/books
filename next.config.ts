@@ -129,9 +129,15 @@ const nextConfig: NextConfig = {
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
-    // Preserve the source-backed nine-level public course PDF on traced
-    // serverless deployments. The guide reads these immutable JSON archives
-    // at runtime; do not rely on their presence via unrelated page bundles.
+    // Sharp 0.35 loads libvips from an optional native package. Next tracing
+    // otherwise bundles the .node file without libvips-cpp.so into the Function.
+    // Include only for this small private upload route, never all routes.
+    "/api/holistic-support/talismans": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // The nine-stage Tantra Reiki guide loads immutable author archives server-side.
+    // Scope these to the PDF API route instead of copying them into all Functions.
     "/api/academy/reiki-guide": [
       "./data/academy/tantra-reiki-full.generated.json",
       "./data/academy/tantra-reiki-ru-en.generated.json",

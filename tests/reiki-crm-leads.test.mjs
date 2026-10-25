@@ -73,15 +73,15 @@ test('After five lessons, the student explicitly submits an initiation-choice ap
   assert.match(learner,/onClick=\{applyForInitiation\}/)
 })
 
-test('All 60 steps, private meditation reports and course progress remain intact',()=>{
+test('All 64 steps, private meditation reports and course progress remain intact',()=>{
   const slides=[...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
   // Tantra Reiki now has five question screens; historical retired IDs remain private.
-  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,60)
+  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,64)
   assert.match(repo,/energyworkMeditationFeedbackComplete/)
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)
   assert.match(repo,/deleteReikiLeads/)
-  assert.match(learner,/disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing \|\| tantraStudyMissing \|\| otherStudyMissing\}/)
+  assert.match(learner,/disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable" \|\|/)
   assert.doesNotMatch(leads,/insert into app\.crm_contacts/i)
   assert.doesNotMatch(leads,/select \* from app_private\.academy_course_progress/i)
 })

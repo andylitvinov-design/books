@@ -296,7 +296,11 @@ test('a slow billing-triggered read cannot roll back a course mutation that has 
 test('lifecycle actions stay disabled until the server enables multi-course storage', async () => {
   const h = mount('my-courses-dashboard', { props: { courses: [courseA, courseB], membership: { occupiedCount: 2, maxActiveCourses: 5 }, canManageCourses: false } })
   await h.settle()
-  assert.ok(tiles(h.tree).every(tile => findButton(tile, 'Close course').props.disabled))
+  const cards=tiles(h.tree)
+  assert.equal(cards.length,2)
+  assert.ok(cards.every(tile => nodes(tile).some(button =>
+    button.type==='button' && button.props['aria-label']?.startsWith('Close course: ') && button.props.disabled)),
+    'each course has a disabled accessible close action until permitted')
   assert.equal(findButton(tiles(h.tree)[1], 'Make main').props.disabled, true)
   h.unmount()
 })
