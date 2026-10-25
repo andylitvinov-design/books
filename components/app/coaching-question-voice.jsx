@@ -16,7 +16,7 @@ const copy={
     device:'System-generated voice, not an Andrey recording.',unavailable:'Read the question above — audio playback is not available on this device.',
     voiceSettings:'Voice & pace',voiceLabel:'Voice',voiceAuto:'Automatic · device voice',paceLabel:'Reading style',
     paceCalm:'Warm & natural',paceUnhurried:'Slower & gentle',paceClear:'Clear & normal',noVoiceChoices:'No alternative local voices exposed by this browser.',
-    tryVoice:'Hear this voice',stopSample:'Stop sample',previewPlaying:'Playing a short sample of your selected voice.'
+    tryVoice:'Hear this voice',stopSample:'Stop sample',previewPlaying:'Playing a short sample of your selected voice.',
     voiceLimit:'Voice quality depends on your device. iPhone Safari may not expose enhanced voices.',audioError:'Could not play this question. Please read the text above.',
   },
   ru:{
@@ -28,7 +28,7 @@ const copy={
     device:'Системный голос устройства, не запись Андрея.',unavailable:'Вопрос можно прочитать выше — озвучка на этом устройстве недоступна.',
     voiceSettings:'Голос и темп',voiceLabel:'Голос',voiceAuto:'Автоматически · голос устройства',paceLabel:'Манера речи',
     paceCalm:'Тепло и естественно',paceUnhurried:'Медленнее и мягче',paceClear:'Чётко и обычно',noVoiceChoices:'Другие локальные голоса браузер не показывает.',
-    tryVoice:'Послушать голос',stopSample:'Остановить пример',previewPlaying:'Звучит короткий пример выбранного голоса.'
+    tryVoice:'Послушать голос',stopSample:'Остановить пример',previewPlaying:'Звучит короткий пример выбранного голоса.',
     voiceLimit:'Качество зависит от устройства. Safari на iPhone может не показывать улучшенные голоса.',audioError:'Не удалось озвучить вопрос. Прочитайте его на экране.',
   },
   es:{
@@ -40,7 +40,7 @@ const copy={
     device:'Voz generada por el sistema, no grabación de Andrey.',unavailable:'Puedes leer la pregunta arriba; no hay reproducción de voz disponible.',
     voiceSettings:'Voz y ritmo',voiceLabel:'Voz',voiceAuto:'Automática · voz del dispositivo',paceLabel:'Estilo de lectura',
     paceCalm:'Cálido y natural',paceUnhurried:'Más despacio y suave',paceClear:'Claro y normal',noVoiceChoices:'Este navegador no muestra otras voces locales.',
-    tryVoice:'Escuchar esta voz',stopSample:'Detener ejemplo',previewPlaying:'Reproduciendo un ejemplo breve de la voz elegida.'
+    tryVoice:'Escuchar esta voz',stopSample:'Detener ejemplo',previewPlaying:'Reproduciendo un ejemplo breve de la voz elegida.',
     voiceLimit:'La calidad depende del dispositivo. Safari en iPhone puede ocultar las voces mejoradas.',audioError:'No se pudo reproducir la pregunta. Lee el texto de arriba.',
   },
 }
