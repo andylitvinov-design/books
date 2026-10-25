@@ -1,0 +1,33 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const source = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+const holistic = source("app/[locale]/holistic-support/page.tsx");
+const pro = source("app/[locale]/pro/page.tsx");
+const hub = source("components/profi-hub.tsx");
+const finder = source("components/master-network-explorer.tsx");
+const css = source("components/master-network-explorer.module.css");
+test("Approved practitioners are searchable directly in Pro, not Holistic Support", () => {
+  assert.doesNotMatch(holistic, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
+  assert.match(holistic, /data-holistic-offer="energy"/);
+  assert.match(holistic, /data-holistic-offer="alchemy"/);
+  assert.match(pro, /listPublicPractitioners\(locale\)/);
+  assert.match(pro, /createPractitionerCourseRepository\(config\)\.catalog\(\)/);
+  assert.match(pro, /approvedSlugs\.has\(row\.practitionerSlug\)/);
+  assert.match(pro, /<MarketplaceMasterFinder practitioners=\{practitioners\} courses=\{courses\}/);
+  assert.match(hub, /data-profi-master-directory/);
+  assert.match(hub, /href="#profi-find-master" prefetch=\{false\} data-profi-path="find"/);
+  assert.match(hub, /directoryUnavailable/);
+});
+test("Compact Pro finder retains filters, public links and 320-430px CSS", () => {
+  assert.match(finder, /embedded\?: boolean/);
+  assert.match(finder, /embedded=\{embedded\}/);
+  assert.match(finder, /data-mentor-embedded=/);
+  assert.match(finder, /data-mentor-primary-filters/);
+  assert.match(finder, /data-mentor-cards/);
+  assert.match(finder, /getPublicServiceDetailHref\(/);
+  assert.match(css, /\.embeddedExplorer \.masterQuickBar\{display:flex;grid-template-columns:none;overflow-x:auto/);
+  assert.match(css, /@media\(max-width:430px\)/);
+  assert.match(css, /@media\(max-width:355px\)/);
+  assert.match(css, /min-height:44px/);
+});

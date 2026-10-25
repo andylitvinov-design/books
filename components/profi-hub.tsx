@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowRight, BookOpen, CheckCircle2, ChevronRight, CircleDollarSign,
   ClipboardList, GraduationCap, HeartHandshake, LockKeyhole, Search,
@@ -271,7 +271,11 @@ const copy = {
   },
 } as const;
 
-export function ProfiHub({ locale }: { locale: PublicLocale }) {
+export function ProfiHub({ locale, directory, directoryUnavailable = false }: {
+  locale: PublicLocale;
+  directory?: ReactNode;
+  directoryUnavailable?: boolean;
+}) {
   const t = copy[locale];
   const masterT = masterReikiUi[locale];
   const [lessonIndex, setLessonIndex] = useState(0);
@@ -300,7 +304,7 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
             <p className={styles.heroHeadline}>{t.headline}</p>
             <p className={styles.heroLead}>{t.lead}</p>
             <nav className={styles.pathControls} aria-label={t.choose}>
-              <Link href={mastersHref} prefetch={false} data-profi-path="find">
+              <Link href="#profi-find-master" prefetch={false} data-profi-path="find">
                 <Search size={19} aria-hidden="true" /><span>{t.findChoice}</span><ArrowRight size={16} aria-hidden="true" />
               </Link>
               <a href="#profi-learning" data-profi-path="learn">
@@ -318,7 +322,8 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
         </div>
 
         <div className={styles.pathContent} data-profi-single-page>
-            <section id="profi-find-master" className={styles.finder} aria-labelledby="profi-finder-title" data-profi-finder>
+            <section id="profi-find-master" className={styles.finderSection} aria-labelledby="profi-finder-title" data-profi-finder>
+              <div className={styles.finder}>
               <Photo src={PHOTOS.professional} className={styles.finderPhoto} sizes="(max-width: 600px) 100vw, 430px" />
               <div className={styles.finderCopy}>
                 <p className={styles.sectionKicker}><HeartHandshake size={16} aria-hidden="true" />{t.findEyebrow}</p>
@@ -329,6 +334,13 @@ export function ProfiHub({ locale }: { locale: PublicLocale }) {
                 </Link>
                 <p className={styles.micro}>{t.findNote}</p>
               </div>
+              </div>
+              {directory ? <div className={styles.masterDirectory} data-profi-master-directory>{directory}</div> : null}
+              {directoryUnavailable ? <p className={styles.directoryError} role="status">{
+                locale === "ru" ? "Каталог временно недоступен. Попробуйте открыть полный список мастеров."
+                  : locale === "es" ? "El catálogo no está disponible ahora. Prueba el directorio completo."
+                    : "The directory is temporarily unavailable. Please try the full directory."
+              }</p> : null}
             </section>
             <section id="profi-learning" className={styles.journey} aria-labelledby="profi-learning-title" data-profi-learning>
               <div className={styles.sectionIntro}>

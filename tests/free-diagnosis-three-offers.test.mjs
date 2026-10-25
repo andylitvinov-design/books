@@ -12,7 +12,7 @@ const diagnostic = source("components/free-diagnostic-start.tsx");
 const phoneCss = source("components/free-diagnostic-start.module.css");
 
 test("both free diagnosis routes reuse the same three localized full-screen offers", () => {
-  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} \/>/);
+  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\}>/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
@@ -50,16 +50,25 @@ test("each of the three options is a full-screen photo scene with the explanatio
   assert.match(css, /:focus-visible/);
 });
 
-test("Request opens a bottom sheet while retaining one inline form and CRM delivery", () => {
+test("Request opens a bottom sheet, while two compact inline phone forms remain on the page", () => {
   assert.match(offers, /onClick=\{\(\) => requestOffer\(offer\.id\)\}/);
   assert.match(offers, /setSelected\(id\)/);
   assert.match(offers, /setRequestOpen\(true\)/);
   assert.match(offers, /data-diagnosis-order-form/);
+  assert.match(offers, /data-diagnosis-placement="top"/);
+  assert.match(offers, /data-diagnosis-placement="bottom"/);
+  assert.match(offers, /id="free-diagnosis-top"/);
+  assert.match(offers, /id="free-diagnosis-bottom"/);
+  assert.match(offers, /const \[phone, setPhone\] = useState\(""\)/);
+  assert.match(offers, /contactValue=\{phone\} onContactChange=\{setPhone\}/);
+  assert.match(offers, /\{children\}/);
+  assert.match(css, /\.formWrap\[data-open="false"\]\{display:none\}/);
   assert.match(offers, /data-open=\{requestOpen \? "true" : "false"\}/);
   assert.match(offers, /role=\{requestOpen \? "dialog" : undefined\}/);
   assert.match(offers, /aria-modal=\{requestOpen \|\| undefined\}/);
   assert.match(offers, /<FreeDiagnosticStart locale=\{locale\} compact \/>/);
   assert.match(offers, /<CompactLeadCapture key=\{selected\} locale=\{locale\}/);
+  assert.match(offers, /phoneOnly variant="diagnosis"/);
   assert.match(offers, /serviceTitle=\{activeOffer\.title\}/);
   assert.match(css, /position:fixed;z-index:111;bottom:0/);
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
