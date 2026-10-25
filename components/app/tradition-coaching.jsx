@@ -67,6 +67,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const [error,setError]=useState(''),[notice,setNotice]=useState('')
  const [index,setIndex]=useState(0),[choice,setChoice]=useState(''),[note,setNote]=useState('')
  const [entryStep,setEntryStep]=useState('intro'),[clientTopic,setClientTopic]=useState(''),[topicAdultConfirmed,setTopicAdultConfirmed]=useState(false),[restartRequested,setRestartRequested]=useState(false)
+ const [checkin,setCheckin]=useState('')
  const busyRef=useRef(false),heading=useRef(null)
  const course=data?.course,session=course?.current
  const questions=data?.questions||[]
@@ -213,7 +214,8 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       {entryStep==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={heading}
         name={def.name[lang]} modelName={def.name[lang]} minutes={def.totalScreens*2}
         questionCount={def.totalScreens} style="reflective" imageSrc={def.art}
-        approach={def.description[lang]} outcome={def.note[lang]}/>
+        approach={def.description[lang]} outcome={def.note[lang]}
+         checkin={checkin} onCheckinChange={setCheckin}/>
       :entryStep==='roadmap'?<div className={extra.roadmap} data-tradition-stage-overview>
         <span className={base.eyebrow}>{def.name[lang]}</span>
         <h1 ref={heading} tabIndex={-1}>{v.overview}</h1>
@@ -222,7 +224,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
          {traditionStages(def.slug).map(stage=><TraditionStageArt key={stage.id} stage={stage} lang={lang} compact/>)}
         </div>
       </div>
-      :<CoachingSessionTopic locale={lang} headingRef={heading} value={clientTopic}
+      :<CoachingSessionTopic locale={lang} checkin={checkin} headingRef={heading} value={clientTopic}
         onChange={value=>{setClientTopic(value);setTopicAdultConfirmed(false)}}
         ageConfirmed={topicAdultConfirmed} onAgeConfirm={setTopicAdultConfirmed}/>}
       {error&&<p role="alert" className={base.error}>{error}</p>}
@@ -264,7 +266,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
       <p className={base.privacyNote}>{t.privacy}</p>
       <button type="button" className={base.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
       {error&&<p role="alert" className={base.error}>{error}</p>}
-      <button type="button" className={base.primary} disabled={busy} onClick={()=>{setEntryStep('intro');setClientTopic('');setTopicAdultConfirmed(false);setRestartRequested(true)}}>{t.again}<ArrowRight size={18}/></button>
+      <button type="button" className={base.primary} disabled={busy} onClick={()=>{setEntryStep('intro');setCheckin('');setClientTopic('');setTopicAdultConfirmed(false);setRestartRequested(true)}}>{t.again}<ArrowRight size={18}/></button>
       <Link className={base.secondary} href={home}>{t.home}</Link>
       <button type="button" className={base.delete} disabled={busy} onClick={erase}><Trash2 size={16}/>{t.delete}</button>
       <small className={base.disclaimer}>{t.introNote}</small>

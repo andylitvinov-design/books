@@ -271,6 +271,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
   const [style,setStyle]=useState('all')
   const [session,setSession]=useState(null)
   const [entryStep,setEntryStep]=useState('intro')
+  const [checkin,setCheckin]=useState('')
   const [sessionTopic,setSessionTopic]=useState('')
   const [adultAcknowledged,setAdultAcknowledged]=useState(false)
   const [index,setIndex]=useState(0)
@@ -340,7 +341,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     const selected=schemes.find(item=>item.schemeKey===schemeKey)
     if(selected){
       setAdultAcknowledged(false)
-      setSession(selected);setEntryStep('intro');setSessionTopic('');setIndex(0);setAnswers({});setDraft('')
+      setSession(selected);setEntryStep('intro');setCheckin('');setSessionTopic('');setIndex(0);setAnswers({});setDraft('')
       setFinished(false);setFinishedAt(null);setPdfError('');setError('');setCopied(false)
     }
   },[schemes])
@@ -384,13 +385,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
     if(recommendation.blocked)return
     setDictating(false)
     setAdultAcknowledged(false)
-    setSession(scheme);setEntryStep('intro');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
+    setSession(scheme);setEntryStep('intro');setCheckin('');setSessionTopic(isCoachingRequestTopic(topicGroup)?topicGroup:'');setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setCopied(false);setCopyError(false);setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function backToModels(){
     if(dictating){setError(t.stopMic);return}
     if(!finished&&(Object.keys(answers).length>0||draft.trim())&&!window.confirm(t.discard))return
-    setSession(null);setEntryStep('intro');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setError('')
+    setSession(null);setEntryStep('intro');setCheckin('');setSessionTopic('');setAdultAcknowledged(false);setIndex(0);setAnswers({});setDraft('');setFinished(false);setFinishedAt(null);setPdfError('');setError('')
     setPendingFollowup(null);setReflectionDraft('');setReflections({});setApprovedPlan(null)
   }
   function moveBack(){
@@ -667,8 +668,9 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             name={coachingSessionTitle(session.schemeKey,lang,tr(session.name,lang))} modelName={tr(models.get(session.modelKey)?.name,lang)}
             minutes={session.minutes} questionCount={session.questions.length} style={session.style}
             approach={tr(models.get(session.modelKey)?.focus,lang)} outcome={tr(session.result,lang)}
-            imageSrc={cardArtworkUrl(coachingSchemeArt[session.schemeKey]||coachingArt[session.modelKey]||coachingArt.grow_v1)} headingRef={titleRef}/>
-          :entryStep==='topic'?<CoachingSessionTopic locale={lang} value={sessionTopic}
+            imageSrc={cardArtworkUrl(coachingSchemeArt[session.schemeKey]||coachingArt[session.modelKey]||coachingArt.grow_v1)} headingRef={titleRef}
+             checkin={checkin} onCheckinChange={setCheckin}/>
+          :entryStep==='topic'?<CoachingSessionTopic locale={lang} checkin={checkin} value={sessionTopic}
             onChange={value=>{setSessionTopic(value);setAdultAcknowledged(false)}} headingRef={titleRef}/>
           :requiresAdult&&!adultAcknowledged?
             <div className={styles.adultGate} data-coaching-age-confirm>

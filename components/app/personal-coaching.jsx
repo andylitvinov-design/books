@@ -267,7 +267,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     // The picker only prepares a choice. No private record is created until
     // the visitor has seen the session briefing and selected a request topic.
     setEntry({choice,clientQuestion,adultConfirmed:adultConfirmed===true,
-      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',step:'intro'})
+      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',checkin:'',step:'intro'})
     setError('')
   }
   async function begin(){
@@ -415,8 +415,9 @@ export default function PersonalCoaching({locale='en',accountId}){
               modelName={translated(entryModel?.name,lang)} minutes={entry.choice.scheme?.minutes||20}
               questionCount={entry.choice.scheme?.questions?.length} style={entry.choice.scheme?.style}
               approach={translated(entryModel?.focus,lang)} outcome={translated(entry.choice.scheme?.result,lang)}
-              imageSrc={cardArtworkUrl(coachingArt[entry.choice.modelKey]||coachingArt.grow_v1)}/>
-            :<CoachingSessionTopic locale={lang} value={entry.clientTopic} headingRef={titleRef}
+              imageSrc={cardArtworkUrl(coachingArt[entry.choice.modelKey]||coachingArt.grow_v1)}
+               checkin={entry.checkin} onCheckinChange={checkin=>setEntry(previous=>({...previous,checkin}))}/>
+            :<CoachingSessionTopic locale={lang} checkin={entry.checkin} value={entry.clientTopic} headingRef={titleRef}
               onChange={clientTopic=>setEntry(previous=>({...previous,clientTopic,topicAdultConfirmed:previous.adultConfirmed}))}
               ageConfirmed={entry.topicAdultConfirmed}
               onAgeConfirm={value=>setEntry(previous=>({...previous,topicAdultConfirmed:value}))}/>}

@@ -67,3 +67,11 @@ Preserves the improved contextual semantics, redacted excerpt and full-source QA
 Applied to existing public guest / private account / Egyptian and Greek coaching screens and authored followups, EN/RU/ES. Voice permission, explicitly saving, editing, skip/back, guest in-memory-only and account AES-GCM/RLS remain unchanged. No real-time generative coach, external delivery, new data model, notifications, additional HeyGen renders or billing.
 
 CI acceptance: run focused public + private regression, lint, typecheck, build; test desktop and mobile WebKit/Chromium; verify new production READY SHA and canonical route. Real signed-in Safari Google-save/logout/relogin and microphone recognition are still separate physical-device acceptance gates.
+
+## V1.1 · Optional reciprocal check-in on existing messenger (24 October 2026)
+
+Complements **already merged** #1891 photo messenger, #1892 authored response engine, #1895 PDF exports and #1884 calm voice. No duplicate chat renderer: existing `CoachingChatThread` is reused on both onboarding steps. The opening now greets the client ("Hello, how are you?" / "Здравствуйте! Как вы сегодня?" / "¿Cómo estás hoy?") and offers four **optional** choices (good, mixed, difficult, rather not say); on the next slide the person's selected chip is shown as a right-aligned message, followed by a reviewed neutral coach acknowledgement and "What would you like to explore today?" in the existing left coach bubble. The nine existing topic IDs are unchanged.
+
+The choice is **never sent** to an API, database, CRM, analytics, URL, OS speech, or external AI. It is reset on session exit/restart. No assumptions about hidden emotions, diagnoses or guaranteed outcomes. Course information is still available behind an accessible native disclosure. Existing personal encryption, signed-in permissions, public-only state, voice, authored follow-ups and PDF reports remain.
+
+Acceptance: `npm run test:coaching:release`, public coaching tests, lint, typecheck, Next build, exact canonical READY SHA, EN/RU/ES route/tap checks. Real physical iPhone Safari microphone/Google save-and-reload/cross-account authorization remain separate E2E tasks.
