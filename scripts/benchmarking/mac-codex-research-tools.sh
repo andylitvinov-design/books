@@ -87,11 +87,19 @@ install_remaster() {
     exit 2
   fi
 
+  # Fail closed unless an independent supply-chain review provides an immutable SRI.
+  # Never fill this variable automatically using npm view in the same command.
+  approved_sri="${HH_REMASTER_APPROVED_SHA512:-}"
+  if [[ ! "$approved_sri" =~ ^sha512-[A-Za-z0-9+/]{86}==$ ]]; then
+    printf 'BLOCKED: set HH_REMASTER_APPROVED_SHA512 to the independently reviewed npm tarball SHA-512 (SRI); do not copy it blindly from current registry metadata.\\n' >&2
+    exit 2
+  fi
+
   # Metadata check does not execute package code. Version MUST be literal/pinned.
   # Avoid install scripts of ALL dependencies, including future transitive additions.
   printf 'Checking pinned npm registry metadata (%s)...\n' "$REMASTER_PKG"
   meta="$(npm view "$REMASTER_PKG" --json)" || { printf 'BLOCKED: npm registry unavailable\n' >&2; exit 2; }
-  printf '%s' "$meta" | node -e '
+  printf '%s' "$meta" | HH_REMASTER_APPROVED_SHA512="$approved_sri" node -e '
     let raw=""; process.stdin.setEncoding("utf8");process.stdin.on("data",x=>raw+=x);
     process.stdin.on("end",()=>{
       let p;try{p=JSON.parse(raw)}catch{process.exit(2)}
@@ -99,10 +107,10 @@ install_remaster() {
       const lifecycle=["preinstall","install","postinstall","prepare","prepublish","prepublishOnly"];
       const scripts=p.scripts||{};
       const safe=p.name==="@thenavidm/remaster" && p.version==="0.2.1" && p.license==="Apache-2.0" &&
-        repo.includes("github.com/thenavidm/remaster") && /^sha512-/.test(p.dist?.integrity||"") &&
+        repo.includes("github.com/thenavidm/remaster") && p.dist?.integrity===process.env.HH_REMASTER_APPROVED_SHA512 &&
         !lifecycle.some(k=>Boolean(scripts[k])) && Object.keys(p.dependencies||{}).length===0;
-      if(!safe){console.error("BLOCKED: release metadata/dependencies/install scripts require human security review");process.exit(2)}
-      console.log("PASS: pinned publisher metadata, Apache-2.0, zero dependencies, no npm lifecycle scripts, integrity present");
+      if(!safe){console.error("BLOCKED: release identity/SRI/dependencies/install scripts differ from independent security approval");process.exit(2)}
+      console.log("PASS: exact approved SRI, pinned publisher metadata, Apache-2.0, zero dependencies, no lifecycle scripts");
       console.log("Registry integrity: "+p.dist.integrity);
     });'
 
