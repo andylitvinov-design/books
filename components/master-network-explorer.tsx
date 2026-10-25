@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
+import type { PublicMentorCourse, PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
 import { serviceMatchesGoal } from "@/lib/practitioners/discovery-intent.js";
 import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
@@ -32,6 +32,17 @@ const COPY = {
   en: {
     search: "Search services, topics or practitioners",
     mastersSearch: "Name, methods, services or city",
+    offering: "Service type",
+    anyOffering: "Any type",
+    courseTitle: "Course / training",
+    anyCourse: "Any published course",
+    noCourse: "No published courses yet",
+    courseUnavailable: "Course list unavailable",
+    method: "Method",
+    anyMethod: "Any method",
+    location: "Location",
+    anyLocation: "Anywhere",
+    publishedCourse: "Published course",
     filterTitle: "Find what fits you",
     all: "All areas",
     format: "Format",
@@ -70,6 +81,17 @@ const COPY = {
   ru: {
     search: "Название услуги, тема или имя мастера",
     mastersSearch: "Имя, метод, услуга или город",
+    offering: "Тип услуги",
+    anyOffering: "Все типы",
+    courseTitle: "Курсы / обучение",
+    anyCourse: "Все опубликованные курсы",
+    noCourse: "Пока нет опубликованных курсов",
+    courseUnavailable: "Список курсов недоступен",
+    method: "Метод",
+    anyMethod: "Любой метод",
+    location: "Местоположение",
+    anyLocation: "Любой город",
+    publishedCourse: "Опубликованный курс",
     filterTitle: "Подберите подходящую услугу",
     all: "Все направления",
     format: "Формат",
@@ -108,6 +130,17 @@ const COPY = {
   es: {
     search: "Servicio, tema o profesional",
     mastersSearch: "Nombre, método, servicio o ciudad",
+    offering: "Tipo de servicio",
+    anyOffering: "Todos los tipos",
+    courseTitle: "Curso / formación",
+    anyCourse: "Todos los cursos publicados",
+    noCourse: "No hay cursos publicados",
+    courseUnavailable: "Lista de cursos no disponible",
+    method: "Método",
+    anyMethod: "Cualquier método",
+    location: "Ubicación",
+    anyLocation: "Cualquier lugar",
+    publishedCourse: "Curso publicado",
     filterTitle: "Encuentra tu servicio",
     all: "Todas las áreas",
     format: "Modalidad",
@@ -146,10 +179,24 @@ const COPY = {
 };
 
 type Locale = keyof typeof COPY;
+const OFFERING_TYPES = ["session", "assessment", "package", "group", "workshop", "course", "event", "intro"] as const;
+const OFFERING_NAMES: Record<string, Record<Locale, string>> = {
+  session: { en: "1:1 sessions", ru: "Личные сессии", es: "Sesiones individuales" },
+  assessment: { en: "Assessments", ru: "Диагностика", es: "Evaluaciones" },
+  package: { en: "Programmes", ru: "Программы", es: "Programas" },
+  group: { en: "Group sessions", ru: "Групповые сессии", es: "Sesiones grupales" },
+  workshop: { en: "Workshops", ru: "Мастер-классы", es: "Talleres" },
+  course: { en: "Courses", ru: "Курсы", es: "Cursos" },
+  event: { en: "Events", ru: "Мероприятия", es: "Eventos" },
+  intro: { en: "Introductions", ru: "Знакомство", es: "Introducciones" },
+};
 type PriceChoice = "all" | "free" | "paid" | "contact";
 type FilterState = {
   query: string;
   area: string;
+  offeringType: string;
+  courseKey: string;
+  location: string;
   format: string;
   language: string;
   pricing: PriceChoice;
@@ -160,7 +207,7 @@ type FilterState = {
   sort: string;
 };
 
-const INITIAL: FilterState = { query: "", area: "", format: "", language: "", pricing: "all", goal: "", method: "", maxPrice: "", currency: "EUR", sort: "default" };
+const INITIAL: FilterState = { query: "", area: "", offeringType: "", courseKey: "", location: "", format: "", language: "", pricing: "all", goal: "", method: "", maxPrice: "", currency: "EUR", sort: "default" };
 
 const localized = (locale: string): Locale => (locale === "ru" || locale === "es" ? locale : "en");
 const isFree = (service: PublicService) =>
