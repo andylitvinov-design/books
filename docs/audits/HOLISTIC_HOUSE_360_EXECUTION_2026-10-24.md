@@ -1,29 +1,74 @@
-# Holistic House 360 execution ledger
+# Holistic House 360 — execution and evidence ledger
 
-Goal: deliver verified production corrections from `HOLISTIC_HOUSE_360_AUDIT_2026-10-24.md`, TOP-20 and E2E matrix. User authorized implementation, small PRs, safe green merges and live readback; no paid APIs, bulk messages or real payment.
+Updated 2026-10-25. Source: [full audit, TOP-20 and E2E matrix](HOLISTIC_HOUSE_360_AUDIT_2026-10-24.md), read before implementation. This is the single current ledger; historical checkpoints are superseded by the statuses below.
 
-## Baseline and scope contract
+## Production provenance and boundaries
 
-Verified 2026-10-25 UTC: GitHub production ref `codex/public-book-library` and Vercel canonical `https://holistichouse.vercel.app` both point to `d7aa83c2bf2304fd953d47788523984a48ddd29b`. Deployment `dpl_8moe5c2cXvPEaTQu9N8PZVN5HqJv`, READY, production, project `prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b`, team super10. Default GitHub branch and the dirty local main checkout are not production. The local `.vercel` link points to another project; never deploy using it. Isolated clone used, original work preserved. No production commits since audit at initial reconciliation.
+Actual repository: `andylitvinov-design/books`; production branch `codex/public-book-library`; canonical [production](https://holistichouse.vercel.app). Vercel project `prj_4jAwcx6lrKyUKZ3R9vgC5xwwyC0b`, team `super10`. Original dirty checkout and unrelated `.vercel` project link were preserved; all implementation used isolated clones/worktrees. No production database migration, credential change, paid API, bulk send, synthetic production lead or real payment was performed.
 
-Included now: A–E, then S1–S6. Keep CI, session security, privacy and sales changes in separate PRs. Reuse #1919; do not create a second notification subsystem. Reuse encrypted prescription session storage, current app auth, account/RLS checks, CRM and commerce ledgers. No credential/config changes, production schema pushes, real payments, unrelated course changes or provider purchases. External delivery requires provider acceptance AND intended recipient receipt; unit/mock/preview evidence stays separate. High-risk session change requires expiry, revoke, owner/role/session-loss negatives and independent review before release.
+Audit baseline was `d7aa83c2bf2304fd953d47788523984a48ddd29b`, READY `dpl_8moe5c2cXvPEaTQu9N8PZVN5HqJv`. Parallel Temple/Reiki changes were preserved. Latest confirmed application deployment: **ad25ecf9217a116e66180767aea27cc10f330f52**, **READY**, **dpl_5qgryCuTuz6cdLS1q7pDKcW6fQd7**, [immutable deployment](https://codex-public-book-library-h47jw654q-super10.vercel.app). Later merges are not called deployed until alias/SHA readback below.
 
-## Task manifest / source reconciliation
+## Reconciliation and delivered changes
 
-| ID | Requirement / audit source | Existing issue / PR / module | Status | Acceptance / evidence |
+| Scope | Existing owner/module | State and implementation | PR / merge SHA | Verification |
 |---|---|---|---|---|
-| PREP | Full audit, TOP-20, E2E; baseline and duplicate check | Audit sections 0–P; this ledger | IN_PROGRESS | Baseline above; reconcile issue states and relevant changed files before each PR |
-| A | Server admin expiry/revoke/owner binding, F01 / TOP1 | #55; prescriptions/admin-session.js, admin.js, app API bridge | IN_PROGRESS | Random per-session bearer, server deadline, independent revoke/logout, current verified owner and active auth session; page/API negatives; no static-cookie fallback |
-| B | Saved request → master alert + CRM, F04 / TOP2 | #1919 OPEN d3204b89; #980/#985/#1302; existing repository/dispatch | IN_PROGRESS | Review existing diff, commit-before-alert, idempotency, assigned owner, neutral payload, visible failure; hosted/provider receipt separate |
-| C | Restore two workflows, F02 / TOP3 | #1419 OPEN; existing workflow-next-route-filters.test.mjs | IN_PROGRESS | GitHub run 40152701062 has jobs=[]; expand existing escaped-route contract; preserve jobs/checks and verify jobs actually run |
-| D | Private materials stay in cabinet, F03 / TOP4 | #990/#1050; free-entry-landing, free-drawing-intake, consultation-choice-capture | PENDING | EN/RU/ES neutral messenger copy; no answers/drawing/deep-link export; authorized existing private intake |
-| E | Commercial transition matrix, F05–06 / TOP5–6 | #990/#988/#1050/#1380; CRM/commerce ledgers | PENDING | Each transition PASS/FAIL/BLOCKED with timestamp, environment and evidence; no mock-as-delivery or payment without permission |
-| S1 | Request status + reply expectation / TOP6 | #990; existing enquiry capture/status UI | PENDING | Persisted reference and status; truthful response window from confirmed policy, no invented SLA |
-| S2 | Currency, cancellation/refund clarity, F14 / TOP9 | #1716/#990; support, cart, Terms | PENDING | Existing confirmed policy before payment; any unconfirmed policy blocks payment/claims, no invented legal promise |
-| S3 | Stable main offer and CTA, F11 / TOP7 | #990; HomeSectionCarousel | PENDING | Stable first choice, keyboard/touch/reduced-motion; EN/RU/ES, 320/375/390/430px |
-| S4 | Compact 30/60min selector before catalogue, F12 / TOP8 | #990; Services existing selector | PENDING | Move existing section, no duplicate UI/state; mobile and cart SKU/amount checks |
-| S5 | Remove duplicate forms | #990; existing consultation/contact capture | PENDING | Trace forms first; consolidate repeated capture without breaking receipts or consent |
-| S6 | €200 scope/economics, F13 / TOP10 | #1716 OPEN; personal-support | PENDING | 2×€100=€200 before extra work; confirmed workload limits; time diary/net receipts unknown until recorded |
+| Preparation | Audit; existing issues below | DONE: full audit/TOP-20/E2E read; default branch distinguished from production; existing fixes reviewed/reused | [plan #1928](https://github.com/andylitvinov-design/books/pull/1928) | Canonical Vercel/source SHA checks repeated before releases |
+| A admin sessions | #55; prescription session storage, existing app auth | DEPLOYED; random persisted v2 tokens, fixed 12h server expiry, owner/account/auth-session checks, credential rotation invalidation, logout revocation, legacy cookie rejection; recorder recovery cannot extend lifetime; SSR refresh propagates existing auth cookies without extending admin expiry | [#1934](https://github.com/andylitvinov-design/books/pull/1934), `7a5c22f54a33a52e69b9aa04c318eade5d807255` | 60 auth + 58 middleware/CSP + 106 media tests; lint/typecheck; two local builds; independent spec/security review; [exact-head CI/build PASS](https://github.com/andylitvinov-design/books/actions/runs/40196167553/job/121177342345) |
+| B request notifications | #980/#985/#1302; EXISTING PR1919, current request repository/CRM/dispatcher | DEPLOYED CODE; request plus neutral inbox event atomically persisted, rollback on inbox failure, idempotent retry; current assigned-master CRM reused; external message excludes sensitive material, neutral failure codes | [#1919 reused](https://github.com/andylitvinov-design/books/pull/1919), `ad25ecf9217a116e66180767aea27cc10f330f52` | 27 booking + 35 existing notification cases; lint/typecheck; [exact-head CI/build PASS](https://github.com/andylitvinov-design/books/actions/runs/40195463504/job/121175230957); actual production policy metadata supports participant message insert/select. External receipt BLOCKED |
+| C jobless workflows | #1419; existing Cabinet and Mobile workflows | DEPLOYED; literal Next route brackets escaped in workflow filters; jobs/checks retained | [#1930](https://github.com/andylitvinov-design/books/pull/1930), `4e518a8e71efb2db6841b906c19a42d56211bd9c` | 33 tests; lint/typecheck/build; actual [Cabinet jobs PASS](https://github.com/andylitvinov-design/books/actions/runs/40156858581/job/121059975414), [Mobile jobs PASS](https://github.com/andylitvinov-design/books/actions/runs/40156858614/job/121059975639) |
+| D private materials / S5 duplicate form | #990/#1050; existing private intake | DEPLOYED; duplicate public four-answer drawing form and automatic messenger clipboard removed; EN/RU/ES direct to existing authenticated encrypted intake; only public topic crosses URL; saved draft remains unsent, drawing remains on-device until agreed secure handoff | [#1957](https://github.com/andylitvinov-design/books/pull/1957), `85fbc10ff6d9cf0c1a902e78b6b8d9ce9c2d000e` | 40 tests; lint/typecheck/build (705 pages); independent review; [24 Chromium/WebKit × EN/RU/ES × 320/375/390/430 states PASS](https://github.com/andylitvinov-design/books/actions/runs/40195266498/job/121174632608); live three-locale links/copy PASS |
+| CI fixture prerequisite | #1419; five existing media fixture loaders | DEPLOYED; replaced regex boundary stripping with AST helper, preserving all executable assertions | [#1958](https://github.com/andylitvinov-design/books/pull/1958), `62ebb537ca6c0912f65cfafcb64ffb8f87c0dfc7` | 56 targeted and 106 full media cases PASS; lint/typecheck/[CI build PASS](https://github.com/andylitvinov-design/books/actions/runs/40195528490/job/121175424968); removed known 28 unit/32 IA harness failures |
+| Browser prerequisite | Existing PR1949 | DEPLOYED; current 7 modules/14 cards verified, original DOM/image/video/navigation assertions retained | [#1949 reused](https://github.com/andylitvinov-design/books/pull/1949), `c7b22d1e3798afd557e9f00f31b1cd70903dcca6` | [Both core-methods and first-click PASS](https://github.com/andylitvinov-design/books/actions/runs/40191918678) |
+| Mentor assertion prerequisite | Existing PR1946 | DEPLOYED; existing test follows filtered service fallback and rejects unfiltered mentor service | [#1946 reused](https://github.com/andylitvinov-design/books/pull/1946), `1e696be48d541fca2878d1a5cd9454671d81371e` | Independently rerun exact existing test: 4/4 PASS; no production source modification |
+| S1/S2/S6 request/price/scope clarity | #990/#1716; existing capture/cart/support components | DEPLOYED; saved reference explicitly awaiting reply, no appointment/SLA fabricated; EUR and pre-payment written total/cancel/reschedule/refund confirmation; bounded follow-up/report scope and no auto renewal | [#1965](https://github.com/andylitvinov-design/books/pull/1965), `d9a64b278b33dab7ae61fe7a87a46d1ac6871a78` | 45 focused tests, lint/typecheck; independent review; [exact-head full build PASS](https://github.com/andylitvinov-design/books/actions/runs/40197372030/job/121181026316). Actual policy/economics remain owner-blocked |
+| S3/S4 stable offer and early session choice | #990; current carousel and PublicConsultationCta | IN VERIFICATION; autoplay removed, manual arrows/dots/swipe preserved; single existing session selector moved above long catalogue, no second form/SKU/state | [#1961](https://github.com/andylitvinov-design/books/pull/1961), head `8542389b0aafcfe52c04485cd4b7b8138eb48c5f` | 38 home cases, lint/typecheck, independent review; earlier head full browser/build PASS; expanded browser run found 84–89.875px photos at 320/375; existing CSS minima corrected to90px, same unchanged browser assertions rerunning on latest head; 24 local focused cases PASS |
+
+No tests were skipped to merge these changes, no branch protections disabled, and no admin merge override used. General CI is **not green**: pre-existing course/player/source-contract, billing fixture and broader browser failures remain under [#1419](https://github.com/andylitvinov-design/books/issues/1419). Booking exact-head failure names added only the already-repaired 28 media-loader failures against its old base; no extra unit regression outside that group. Existing Square fixture repair [#1915](https://github.com/andylitvinov-design/books/pull/1915) was not duplicated. Dedicated gates above passed; this is not a claim that the whole repository passed.
+
+## Actual production readbacks
+
+At security deployment `7a5c22f5`, READY `dpl_DTzUhU6fcYibhKxwuXHKVo5Si8uo`: [admin clients](https://holistichouse.vercel.app/admin/clients) redirects 307 to login; [admin materials API](https://holistichouse.vercel.app/api/admin/materials) returns neutral 404 for anonymous and unknown valid-format v2 token; recorder-auth POST returns 401 ADMIN_SIGN_IN_REQUIRED; [private intake API](https://holistichouse.vercel.app/api/app/coaching-intake) returns 401. Private/no-store/noindex verified. This proves anonymous/invalid-token boundaries, not real owner login/logout/server-expiry in production.
+
+At `ad25ecf9`, READY `dpl_5qgryCuTuz6cdLS1q7pDKcW6fQd7`: [EN](https://holistichouse.vercel.app/en/services/free-situation-review), [RU](https://holistichouse.vercel.app/ru/services/free-situation-review), [ES](https://holistichouse.vercel.app/es/services/free-situation-review) all 200, new private-material instructions and correct locale-specific `/coaching/intake?topic=personal` link present. Commerce reports `available:false`, `SERVICE_CHECKOUT_UNAVAILABLE`. No form submit, private record read, provider message or payment attempted.
+
+Supplemental local Chromium was blocked by macOS sandbox MachPortRendezvous SIGTRAP; no system permission changed. Phone layout evidence comes from actual Linux CI Chromium/WebKit above, not a claimed local screenshot. Local Next build and HTTP smoke passed.
+
+## Commercial E2E matrix
+
+PASS applies only to the named segment/environment. Source tests and DB/transport doubles are not real provider delivery or a sale.
+
+| Transition | Production status | Evidence / remaining condition |
+|---|---|---|
+| Visitor → form | PASS public segment | Canonical three-locale pages, actual CI phone states, consent initially unchecked; no submit |
+| Form → request in DB | BLOCKED hosted | Atomic commit/rollback/idempotency pass in code/CI. Controlled authenticated client plus actual persisted receipt needed |
+| DB request → assigned-master CRM | BLOCKED hosted | Existing CRM derives consultation_requests, no duplicate marketing ingestion; need same real request/reference and authorized master readback |
+| Request/CRM → durable master inbox | BLOCKED hosted | Atomic neutral message tested; production policy metadata compatible; controlled two-identity live request still needed |
+| Request → external master notification | BLOCKED | No opted-in verified owner recipient; no provider acceptance or actual recipient receipt claimed |
+| Master → agreement → client message | BLOCKED | Two controlled identities, saved terms revision, authorized client receipt needed |
+| Client → confirmed order | BLOCKED | Both parties must confirm same time/format/total/currency; no synthetic order generated |
+| Confirmed order → payment | BLOCKED | Checkout unavailable; real payment not authorized or performed |
+| Payment → service/access | BLOCKED | Need independently verified receipt/order linkage and actual fulfilment; no sale/revenue invented |
+
+## Concrete owner actions / remaining policy
+
+1. In [existing cabinet settings](https://holistichouse.vercel.app/en/app/settings), connect the existing Telegram bot and explicitly enable message alerts; alternatively configure approved verified transactional email. Metadata-only join returned one owner practitioner, zero verified Telegram links, zero enabled alert preferences. Shared-bot flags/webhook-secret variables exist but values/identity were not assumed; all six HH_BOOKING email enable/approval/key/from/domain/verification variables are absent. Existing bot/webhook preserved; no getUpdates/new bot/forced consent.
+2. Provide separate controlled client/master sessions after recipient consent, then verify committed request + CRM + inbox event + provider acceptance + intended recipient receipt. Owner-session production lifecycle also needs owner authentication. No customer data is needed for these checks.
+3. Confirm actual reply window, cancellation/rescheduling/refund terms, follow-up cap and report/video scope before taking payment. Existing Terms contain general educational/use/privacy/availability text, no numeric response SLA or commercial refund policy. Copy now says explicitly that these terms must be agreed, not that an unverified policy exists.
+4. Record actual €200 package net receipts, taxes/provider fees and time spent on preparation, 2×60-minute sessions, messages and report/video work. Gross base arithmetic is €200/2h=€100/h before all extra work/cost; at 150/180 total minutes it is €80/€66.67 per hour, illustrative arithmetic only. Profit, workload limit and capacity are unknown. Price and two-session scope were not changed.
+5. Restore and verify checkout in an authorized sandbox first. No paid API or real payment without separate permission.
+
+## Next three highest-value tasks
+
+1. Enable an owner-consented existing notification destination and perform a controlled live request/CRM/provider/recipient check.
+2. Verify full owner session lifecycle in production and remediate remaining CI baseline under #1419, reusing #1915 where correct.
+3. Approve operational reply/refund/workload limits, measure package labour/net receipts, then complete sandbox order-to-service chain before any real payment.
+
+## Deferred audit register
+
+The following original audit items are preserved, not silently reported completed. This delivery implements first queue and bounded sales corrections above, not the entire deferred audit backlog.
+
+| ID | Requirement | Existing owner | State | Remaining acceptance |
+|---|---|---|---|---|
 | F07 | Migration uniqueness / TOP19 | #1109 | DEFERRED | Reconcile file/hash/applied ledger; no blind rename or production db push |
 | F08 | Optional Osiris reflection / TOP12 | Existing Egyptian learner | DEFERRED | Empty/skip/back runtime acceptance |
 | F09 | Course saving disclosure / TOP14 | Existing learner/academy progress | DEFERRED | Preserve browser-only privacy; account persistence only with consent |
@@ -38,34 +83,8 @@ Included now: A–E, then S1–S6. Keep CI, session security, privacy and sales 
 | F21 | Password protection | Supabase Auth | BLOCKED | Confirm password use/plan; no paid setting change |
 | PILOT | Learning/value pilot / TOP20 | #1223, existing OPORA roadmaps | BLOCKED | Consented participants and operational data, no fabricated outcomes |
 
-## Execution steps and release gates
+## Additional confirmed release — 2026-10-25 13:31 UTC
 
-For each bounded code task: (1) reproduce failure on pinned baseline; (2) add the regression to the existing relevant suite and observe failure; (3) minimal change to the existing module; (4) focused tests, ESLint, TypeScript and build; (5) spec then quality review and repair, maximum four iterations before reassessing; (6) small PR against freshly resolved production ref; (7) inspect all CI, fix failures without loosening tests; (8) merge only when relevant gates pass; (9) confirm Vercel READY and deployed SHA, canonical URL and actual scenario. Mark code, CI, merge, deployment and live acceptance separately.
+PR #1965 is deployed at `d9a64b278b33dab7ae61fe7a87a46d1ac6871a78`, READY `dpl_CzrQDcQ3UT19gqc8zfMAtaQBVJ3a`, [immutable deployment](https://codex-public-book-library-je3yylt7z-super10.vercel.app). Canonical alias matched this deployment; EN/RU/ES personal-support pages returned200 with EUR and written pre-payment terms. Success receipt wording is code/CI verified, not a new production submit.
 
-A: modify `lib/prescriptions/admin-session.js`, `lib/prescriptions/admin.js`, `app/api/app/[...path]/route.js`; test session lifecycle against existing memory/KV storage, then current login/bridge/admin suites. Reject old deterministic cookies. Recheck current Supabase identity and repository owner/session on every protected request. Logout revokes server record before clearing cookies.
-
-C: update the two existing workflow files and `tests/workflow-next-route-filters.test.mjs`; escape literal Next brackets in path filters only, retain test/lint/typecheck/build/HTTP steps. Confirm GitHub parser annotations and new nonempty jobs, not merely local YAML parsing.
-
-B: inspect #1919 diff and failures before any rewrite; reuse its commit/dedup/neutral dispatch. Confirm production environment variable presence without exposing values. No transactional email enablement or provider configuration without owner prerequisites.
-
-D: existing copy and intake routes only; test absence of private-material transport and authenticated account ownership. Preserve contact-only channel choice; no private answers in URLs/clipboard/provider payloads.
-
-## Commercial E2E evidence matrix
-
-PASS applies only to the named environment/segment. Local synthetic tests never establish real delivery or payment.
-
-| Transition | Status | Evidence / remaining gate |
-|---|---|---|
-| Visitor → form | PENDING | Recheck canonical EN/RU/ES and mobile |
-| Form → DB request | BLOCKED | Need approved synthetic identity/contact and committed request receipt; existing source tests separate |
-| DB request → CRM | BLOCKED | Readback same request/CRM reference and correct owner without reading unrelated clients |
-| CRM/request → master notification | FAIL / BLOCKED delivery | Initial event missing on production; #1919 pending, provider+recipient receipt absent |
-| Master → proposed agreement | BLOCKED | Two controlled identities and saved revision |
-| Agreement → client message | BLOCKED | Neutral real provider acceptance + client receipt; cabinet authorization |
-| Client → confirmed order | BLOCKED | Both parties accept same time/format/price/currency |
-| Order → verified payment | BLOCKED | Automatic provider unavailable at audit; no real payment authorized |
-| Verified payment → service/access | BLOCKED | Independent receipt/order linkage and actual fulfilment, no fabricated completion |
-
-## Stage reports
-
-No production correction claimed yet. Every completed stage records PR/head/merge SHA, CI URLs/results, deployment id/SHA and exact canonical routes, real E2E, unknowns, and next three useful actions. Provider/owner blockers do not stop independent implementation.
+The first post-merge privacy browser run #40196889975 started before Vercel published the change and correctly failed on the old five public fields (24failures). The same unmodified read-only browser job was rerun after READY; its result is recorded separately when complete. No assertion was relaxed.
