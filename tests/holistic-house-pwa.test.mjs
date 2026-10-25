@@ -67,6 +67,7 @@ test('iOS Home Screen icon never invokes dynamic font download for unsupported s
 
 test('public Holistic House pages default to the correct Home Screen app without relabelling PsiAlchemy',()=>{
   const root=readFileSync('app/layout.tsx','utf8')
+  const localeLayout=readFileSync('app/[locale]/layout.tsx','utf8')
   const psiLayout=readFileSync('app/[locale]/homeopathy/layout.tsx','utf8')
   const psiSpanish=readFileSync('app/es/homeopathy/layout.tsx','utf8')
   const psi=JSON.parse(readFileSync('public/manifest.webmanifest','utf8'))
