@@ -363,6 +363,21 @@ const finalCopy = {
   },
 } as const;
 
+const freeTestDirectCopy = {
+  en: {
+    title: "Ready to explore? Start a free test now.",
+    lead: "The test explorer is open without a contact request. Only leave a contact below if you want Andrey's personal help choosing a next step.",
+  },
+  ru: {
+    title: "Готовы попробовать? Откройте бесплатный тест.",
+    lead: "Каталог тестов доступен без заявки. Оставьте контакт ниже, только если хотите личную подсказку Андрея по следующему шагу.",
+  },
+  es: {
+    title: "¿Listo para empezar? Haz una prueba gratuita.",
+    lead: "Puedes entrar al catálogo sin dejar tus datos. Deja tu contacto abajo solo si quieres ayuda personal de Andrey para elegir el siguiente paso.",
+  },
+} as const;
+
 const situationFirstScreen = {
   en: { lead: "Your question · a fresh perspective · a next step.", source: "Watch on YouTube", videoBadge: "Andrey · EN audio", reviews: "See real client stories · 12 videos" },
   ru: { lead: "Ваш вопрос · новый взгляд · следующий шаг.", source: "Смотреть на YouTube", videoBadge: "Андрей · EN аудио", reviews: "Настоящие отзывы клиентов · 12 видео" },
@@ -566,6 +581,18 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <Image src={images.process} alt={t.processAlt} fill sizes="(max-width: 800px) 100vw, 44vw" />
           </div>
         </section> : null}
+
+        {kind === "tests" ? (
+          <section className={styles.testDirect} data-benchmark-free-test-next-step aria-labelledby="free-tests-direct-title">
+            <div className={styles.testDirectCopy}>
+              <p className={styles.testDirectKicker}>{common.free}</p>
+              <h2 id="free-tests-direct-title">{freeTestDirectCopy[locale].title}</h2>
+              <p>{freeTestDirectCopy[locale].lead}</p>
+            </div>
+            <Link className={styles.primary} href={testsHref} prefetch={false}
+              data-benchmark-free-test-open>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link>
+          </section>
+        ) : null}
 
         {kind !== "situation" ? <CompactLeadCapture
           locale={locale}
