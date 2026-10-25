@@ -32,7 +32,8 @@ function TraditionStageArt({stage,lang,compact=false}){
    <div className={extra.stagePhoto}>
      {/* Intentional ordinary img: Commons thumbnail, no paid Vercel optimization; no answer or referrer is shared. */}
      {/* eslint-disable-next-line @next/next/no-img-element */}
-     <img src={traditionStageImage(stage)} loading="lazy" decoding="async" referrerPolicy="no-referrer"
+     <img src={traditionStageImage(stage)} loading={compact?'lazy':'eager'} decoding="async" referrerPolicy="no-referrer"
+       onError={event=>{event.currentTarget.hidden=true}}
        alt={stage.title?.[lang]||stage.title?.en} width="120" height="150"/>
      <span aria-hidden="true" className={extra.stageGlyph}>{stage.symbol}</span>
    </div>
