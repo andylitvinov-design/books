@@ -78,7 +78,7 @@ const copy = {
     },
     situation: {
       eyebrow: "TWO FREE REVIEWS + PERSONAL SESSION",
-      title: "Free diagnosis or a personal session — choose your format.",
+      title: "Free diagnosis: 3 ways to begin.",
       lead: "Explore a free written situation review or a symbolic Wu Xing Five Elements profile. Prefer to talk with Andrey? Request a 30-minute personal consultation for €50.",
       value: "A thoughtful outside perspective on your question, obstacles and possible next steps.",
       bullets: ["Clarify what you want to change or understand.", "Explore the roles, tensions and resources in your situation.", "Receive personal written observations to reflect on."],
@@ -98,7 +98,7 @@ const copy = {
       ],
       startTitle: "Tell me what you would like to explore",
       startLead: "Leave one contact to receive instructions. The full questionnaire remains optional below.",
-      cta: "Request my free review", secondary: "See how it works",
+      cta: "Choose my format", secondary: "See how it works",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Lighthouse on the coast", processAlt: "Calm, sunlit room",
       faq: [
         ["What is included for free?", "A personal written review of your coaching questionnaire and handwritten drawing. It does not include a video call or live consultation."],
@@ -181,7 +181,7 @@ const copy = {
     },
     situation: {
       eyebrow: "ДВА БЕСПЛАТНЫХ РАЗБОРА + ЛИЧНАЯ СЕССИЯ",
-      title: "Бесплатная диагностика или личная консультация — выберите формат.",
+      title: "Бесплатная диагностика: 3 варианта.",
       lead: "Разбор жизненной ситуации и символическая диагностика ресурсов У-Син бесплатны. Для личного разговора с Андреем можно запросить консультацию на 30 минут за €50.",
       value: "Свежий взгляд на вопрос, препятствия и возможные следующие шаги.",
       bullets: ["Проясните, что хотите понять или изменить.", "Исследуйте роли, напряжения и ресурсы ситуации.", "Получите письменные наблюдения для размышления."],
@@ -201,7 +201,7 @@ const copy = {
       ],
       startTitle: "С чего хотите начать?",
       startLead: "Оставьте один контакт для инструкций. Полная анкета — по желанию ниже.",
-      cta: "Запросить бесплатный разбор", secondary: "Как проходит разбор",
+      cta: "Выбрать формат", secondary: "Как проходит разбор",
       photoAlt: "Андрей Литвинов", outcomeAlt: "Маяк на побережье", processAlt: "Спокойная комната с утренним светом",
       faq: [
         ["Что именно бесплатно?", "Личный письменный разбор по коучинг-анкете и рисунку. Он не включает видеозвонок или живую консультацию."],
@@ -284,7 +284,7 @@ const copy = {
     },
     situation: {
       eyebrow: "DOS REVISIONES GRATUITAS + CONSULTA PERSONAL",
-      title: "Diagnóstico gratuito o consulta personal: elige tu formato.",
+      title: "Diagnóstico gratis: 3 opciones.",
       lead: "Elige una revisión escrita de tu situación o un perfil simbólico Wu Xing, ambos gratuitos. También puedes solicitar una consulta personal de 30 minutos por €50.",
       value: "Una perspectiva externa sobre tu pregunta, tus obstáculos y posibles pasos.",
       bullets: ["Aclara lo que quieres comprender o cambiar.", "Explora roles, tensiones y recursos de la situación.", "Recibe observaciones personales por escrito."],
@@ -304,7 +304,7 @@ const copy = {
       ],
       startTitle: "¿Qué te gustaría explorar?",
       startLead: "Deja un contacto para recibir las instrucciones. El cuestionario completo es opcional.",
-      cta: "Solicitar revisión gratis", secondary: "Cómo funciona",
+      cta: "Elegir formato", secondary: "Cómo funciona",
       photoAlt: "Andrey Litvinov", outcomeAlt: "Faro en la costa", processAlt: "Espacio tranquilo con luz matinal",
       faq: [
         ["¿Qué incluye la oferta gratuita?", "Una revisión personal por escrito del cuestionario y un dibujo a mano. No incluye videollamada ni consulta en directo."],
@@ -412,7 +412,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </>}
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
-                <a className={styles.primary} href={"#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
+                <a className={styles.primary} href={kind === "situation" ? "#free-diagnosis-options" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
               <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
