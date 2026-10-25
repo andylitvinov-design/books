@@ -155,3 +155,22 @@
 .dashboard:has([data-service-composer-focus]) .actions>a{display:none!important}
 .dashboard:has([data-service-composer-focus]) .actions>button{min-height:44px!important;background:#fffdf8!important;border-color:#d8c8b8!important;color:#456f64!important}
 .dashboard:has([data-service-composer-focus]) .actions>button:hover{background:#edf5ef!important}
+
+/* Keep only one frame when the practitioner edits an offer on a phone. */
+@media(max-width:650px){
+  .dashboard:has([data-service-composer-focus]){
+    width:100%;max-width:none;border:0;border-radius:0;
+    background:transparent;box-shadow:none;
+  }
+  .dashboard:has([data-service-composer-focus]) .inner{padding:0;gap:6px}
+  .dashboard:has([data-service-composer-focus])>.inner>.actions{
+    display:flex;justify-content:flex-start;align-items:center;margin:0;
+  }
+  .dashboard:has([data-service-composer-focus])>.inner>.actions>button{
+    width:auto;min-height:34px!important;padding:5px 4px!important;
+    background:transparent!important;border:0!important;border-radius:6px!important;
+    color:#2c7368!important;box-shadow:none!important;font-size:.72rem!important;
+  }
+  .dashboard:has([data-service-composer-focus])>.inner>.actions>button:hover{background:#eaf3ed!important}
+  .editor[data-service-composer-focus]{width:100%;max-width:none;padding:0;border:0}
+}
