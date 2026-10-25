@@ -152,7 +152,7 @@ const BASE = {
   copy: { en: {title:'', shortDescription:'', description:''}, ru: {title:'', shortDescription:'', description:''}, es: {title:'', shortDescription:'', description:''} },
   areaKey:'personal_development', offeringType:'session', deliveryFormat:'online', locationLabel:'',
   pricingMode:'contact', confirmedPrice:'', currency:'CAD', durationMinutes:'', priceOptions:[],
-  imagePath:'', photos:[], videoPresentation:null, goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
+  imagePath:'', photos:[], videoPresentation:null, serviceIntroductions:[], goals:[], methods:[], benefits:[], faq:[], whatsapp:'', telegram:'', displayLocales:['en','ru'],
 }
 
 const commas = value => String(value||'').split(',').map(x=>x.trim()).filter(Boolean)
@@ -178,13 +178,18 @@ function initialDraft(item,locale,starter='') {
         copy:item.localizedCopy||{}, areaKey:item.areaKey, offeringType:item.offeringType,
         deliveryFormat:item.deliveryFormat, locationLabel:item.locationLabel, languages:item.languages,
         pricingMode:item.pricingMode, confirmedPrice:item.confirmedPrice??'', currency:item.currency||'CAD',
-        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, goals:item.goals||[],
+        durationMinutes:item.durationMinutes??'', priceOptions:item.priceOptions||[], imagePath:item.imagePath||'', photos:item.photos||[], videoPresentation:item.videoPresentation||null, serviceIntroductions:item.serviceIntroductions||[], goals:item.goals||[],
         methods:item.methods||[], benefits:item.benefits||[], faq:item.faq||[],
         displayLocales:item.displayLocales||['en','ru'], whatsapp:item.whatsapp||'', telegram:item.telegram||'',
       } : {}
+  const serviceIntroductions=Array.isArray(raw.serviceIntroductions)&&raw.serviceIntroductions.length
+    ? raw.serviceIntroductions
+    : raw.videoPresentation?[{language:(raw.languages||[]).find(code=>['en','ru','es'].includes(code))||locale,
+        type:'video',media:raw.videoPresentation}]:[]
   return {
     ...BASE, languages:[locale==='ru'?'ru':locale==='es'?'es':'en'],
     ...(!item && Object.hasOwn(PRO_STARTERS,starter) ? PRO_STARTERS[starter] : {}), ...raw,
+    serviceIntroductions,
     copy:Object.fromEntries(['en','ru','es'].map(lang=>[lang,{...BASE.copy[lang],...(raw.copy?.[lang]||{})}])),
   }
 }
@@ -397,7 +402,8 @@ export default function SimpleServiceEditor({item,starter='',locale='en',busy=fa
       <div className={styles.panelHead}><strong><Leaf size={17}/>{c.detailsHeading}</strong><span>03 / 03</span></div>
       <p className={styles.stageTip}>{c.detailsTip}</p>
       <div className={styles.mediaCard}>
-        <PracticeVideoField locale={locale} value={draft.videoPresentation} onChange={value=>set('videoPresentation',value)}
+        <PracticeVideoField locale={locale} introductions={draft.serviceIntroductions||[]}
+          onIntroductionsChange={value=>set('serviceIntroductions',value)}
           onBusyChange={value=>{setVideoBusy(value);onMediaBusyChange?.(value)}}/>
       </div>
       <details className={styles.advanced} data-service-advanced-details>
