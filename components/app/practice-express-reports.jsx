@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FileText, Plus, Save, Send, ShieldCheck } from 'lucide-react'
 import styles from './practice-express-reports.module.css'
 
@@ -149,6 +149,7 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
   const [error,setError] = useState('')
   const [notice,setNotice] = useState('')
   const [selectedId,setSelectedId] = useState('')
+  const pendingOperation = useRef(null) // Stable across network retries: never double-create a report.
   const [requestId,setRequestId] = useState('')
   const [language,setLanguage] = useState(['ru','es'].includes(locale) ? locale : 'en')
   const [issuedOn,setIssuedOn] = useState(() => new Date().toISOString().slice(0,10))
@@ -176,6 +177,7 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
   },[eligible,requestId])
 
   function startNew() {
+    pendingOperation.current = null
     setSelectedId('')
     setLanguage(['ru','es'].includes(locale) ? locale : 'en')
     setIssuedOn(new Date().toISOString().slice(0,10))
@@ -184,6 +186,7 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
     setNotice('')
   }
   function open(item) {
+    pendingOperation.current = null
     setSelectedId(item.id)
     setRequestId(item.requestId)
     setLanguage(item.language)
@@ -204,7 +207,7 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
         const shared = {language,issuedOn,content}
         result = current
           ? await api('/api/app/practice/express-reports/'+current.id,accountId,{expectedRevision:current.revision,...shared})
-          : await api('/api/app/practice/express-reports',accountId,{operationId:crypto.randomUUID(),requestId,...shared})
+          : await api('/api/app/practice/express-reports',accountId,{operationId:(pendingOperation.current ||= crypto.randomUUID()),requestId,...shared})
       } else {
         if (!current) return
         result = await api('/api/app/practice/express-reports/'+current.id,accountId,
