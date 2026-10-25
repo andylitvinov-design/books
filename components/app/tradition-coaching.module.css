@@ -194,3 +194,6 @@
  .courseSession .choices{gap:5px}
  .voice{margin-bottom:4px}
 }
+
+/* A permanently mounted controlled textarea is only visibly expanded on request. */
+.noteSection[hidden]{display:none}
