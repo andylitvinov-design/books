@@ -33,7 +33,9 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(capture, /"guide", "express", "personal"/);
   assert.match(capture, /data-reiki-choice-capture=\{course\}/);
   assert.match(capture, /aria-pressed=\{selected === choice\}/);
-  assert.match(capture, /id="reiki-free-consultation"/);
+  assert.match(capture, /compactPhone/);
+  assert.match(capture, /publicTopic=\{t\.common\.options\[selected\]\}/);
+  assert.doesNotMatch(capture, /<div className=\{styles\.footer\}>/);
   assert.match(capture, /"yggdrasil-top-capture"/);
   assert.match(capture, /: course === "tantra" \? "tantra-next-steps" : "reiki-free-level-one"/);
   assert.match(capture, /const isTop = placement === "top"/);
@@ -50,7 +52,7 @@ test("Reiki Yggdrasil now uses the compact three-choice blue capture", async () 
   assert.match(capture, /reiki-guide/);
   assert.match(capture, /formatReikiLevelPrice\(course, locale\)/);
   assert.match(capture, /data-reiki-initiation-price=\{course\}/);
-  assert.match(capture, /t\.me\/AndyTherapist/);
+  assert.doesNotMatch(capture, /href="https:\/\/t\.me\/AndyTherapist"/);
   assert.match(capture, /href=\{guideUrl\}/);
   for (const tag of ["<form", "<input", "<textarea", "<select", "new FormData"]) {
     assert.ok(!capture.includes(tag), "Unexpected long lead form: " + tag);
@@ -113,7 +115,8 @@ test("Tantra Reiki ends with the shared selector, without a long Master applicat
   assert.match(chooser, /"tantra-master-course"/);
   assert.match(chooser, /Request free express Level 1 initiation/);
   assert.match(chooser, /Request full personal Level 1 initiation/);
-  assert.match(chooser, /Choose WhatsApp or Telegram below/);
+  assert.match(chooser, /compactPhone/);
+  assert.doesNotMatch(chooser, /data-reiki-choice-action="guide-secondary"/);
   assert.doesNotMatch(wrapper, /<form|<input|<select|<textarea/);
   assert.match(page, /!isCanonicalYggdrasil && !isVerbatimTantraArchive \? <PublicConsultationCta/);
 });
