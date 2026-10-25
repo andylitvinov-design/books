@@ -176,6 +176,9 @@ test("Ideas sequences three full-width aphorisms, Dao, then offers in preview an
     '<DaoOfferCards locale={locale}',
   ]), "educational preview must follow the same order");
   assert.match(css, /\.relatedAphorisms \.aphorisms \{ grid-template-columns:minmax\(0,1fr\); overflow:visible; \}/);
+  assert.match(css, /\.root \.results\{padding:2px;border-radius:12px\}/);
+  assert.match(css, /\.root \.relatedAphorisms\{padding:4px;border-radius:12px\}/);
+  assert.match(css, /\.root \.aphorisms li\{width:100%;padding:10px 9px\}/);
   assert.match(css, /\.relatedAphorisms \+ \.daoQuick/);
   assert.match(ui, /data-ideas-order-button="reading"/);
   assert.match(ui, /data-ideas-order-button="gift"/);
