@@ -11,12 +11,20 @@ const capture = source("components/compact-lead-capture.tsx");
 const diagnostic = source("components/free-diagnostic-start.tsx");
 const phoneCss = source("components/free-diagnostic-start.module.css");
 
-test("both free diagnosis routes reuse the same three localized full-screen offers", () => {
-  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\}>/);
+test("free review opts into compact choices, while the shared consultation route keeps its full-screen offers", () => {
+  assert.match(landing, /<FreeDiagnosisOffers locale=\{locale\} compact intro=\{/);
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
   assert.match(landing, /data-featured-constellations-video/);
+  assert.match(landing, /id="what-you-get"/);
+  assert.match(landing, /id="how-it-works"/);
+  assert.ok(landing.indexOf('id="how-it-works"') < landing.indexOf('id="free-diagnosis-options"') || !landing.includes('id="free-diagnosis-options"'), "benefits and process are passed as intro before the offers");
+  assert.match(offers, /\{intro\}/);
+  assert.match(offers, /data-free-diagnosis-layout=\{compact \? "compact" : "full"\}/);
+  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scenes\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.wrap\[data-diagnosis-layout="compact"\] \.scene\{display:grid;grid-template-columns:minmax\(96px,34%\)/);
+  assert.match(css, /\.expandedInfo/);
 });
 
 test("each of the three options is a full-screen photo scene with the explanation already visible", () => {
@@ -55,6 +63,8 @@ test("Request opens a bottom sheet, while two compact inline phone forms remain 
   assert.match(offers, /setSelected\(id\)/);
   assert.match(offers, /setRequestOpen\(true\)/);
   assert.match(offers, /data-diagnosis-order-form/);
+  assert.match(offers, /id="request-free-review" data-diagnosis-placement="top"/);
+  assert.match(offers, /id="free-diagnosis-request-dialog"/);
   assert.match(offers, /data-diagnosis-placement="top"/);
   assert.match(offers, /data-diagnosis-placement="bottom"/);
   assert.match(offers, /id="free-diagnosis-top"/);
