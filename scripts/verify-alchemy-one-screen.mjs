@@ -71,6 +71,22 @@ try {
         issues.push("report placeholder unexpectedly found");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("example report route link missing");
+      // Read-only interaction: the hero CTA reveals the approved one-field,
+      // opt-in phone capture. Do not submit any contact or open a messenger.
+      if (width === 390 && height === 844) {
+        const hero = root.locator('[data-alchemy-panel="hero"]');
+        const trigger = hero.locator('[data-compact-phone-trigger="true"] [data-contact-order]');
+        await trigger.waitFor({state:"visible"});
+        await trigger.click();
+        await hero.locator('[data-contact-channel-submit="whatsapp"]').waitFor({state:"visible"});
+        if (await hero.locator('[data-contact-channel-submit="telegram"]').count() !== 1)
+          issues.push("compact Telegram option missing");
+        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]').count() !== 1)
+          issues.push("compact opt-in consent missing");
+        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="email"]').count() !== 0)
+          issues.push("long email capture incorrectly expanded from the hero");
+        await trigger.click();
+      }
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
         failures.push(key+": "+issues.join("; "));

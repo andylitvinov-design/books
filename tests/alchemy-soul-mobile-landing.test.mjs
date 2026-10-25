@@ -20,6 +20,7 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.match(form, /whatsappEnquiryUrl/);
   assert.doesNotMatch(form, /window\.location\.assign/);
   assert.match(landing, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{heroWhatsApp\}/);
+  assert.match(landing, /compactPhone compactTrigger stayAfterSave/);
   assert.doesNotMatch(form, /fetch\(|localStorage|sessionStorage|sendBeacon/);
   assert.match(form, /no automatic charge/);
   assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
