@@ -95,6 +95,7 @@ test('cabinet exposes an immediate one-link Telegram opt-in with verified return
  assert.match(screen,/window\.location\.assign\(next\.linkUrl\)/)
  assert.match(screen,/document\.addEventListener\('visibilitychange',check\)/)
  assert.match(screen,/window\.addEventListener\('focus',check\)/)
+ assert.match(screen,/scrollIntoView\(\{block:'start'\}\)/)
  assert.match(screen,/isTelegram&&ready\?/)
  assert.match(screen,/\(!isTelegram\|\|!ready\)&&<label className=\{styles.consent\}>/)
  assert.match(policy,/news:false/)

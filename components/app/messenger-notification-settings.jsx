@@ -113,6 +113,12 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
    if(sessionRef.current===session)sessionRef.current=null
   }
  },[accountId,t.error])
+ // The cabinet data loads after the browser first sees the #hash URL.
+ // Scroll once the signed-in section exists, including in the installed PWA.
+ useEffect(()=>{
+  if(accountId&&window.location.hash==='#hh-telegram-connect')
+   document.getElementById('hh-telegram-connect')?.scrollIntoView({block:'start'})
+ },[accountId])
  // Telegram opens outside the PWA. Recheck the verified status when the user
  // returns; a deep link or a pressed Start button alone is never proof.
  useEffect(()=>{
