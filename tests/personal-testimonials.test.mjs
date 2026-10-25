@@ -14,7 +14,7 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
-  assert.ok(services.indexOf("PersonalTestimonials locale") < services.indexOf('<PublicConsultationCta locale='));
+  assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<PublicConsultationCta locale='), "conversion CTA appears before testimonials on Services");
   assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
   assert.match(testimonials, /<HomeTestimonialMore/);
   const lazy = read("components", "home-testimonial-more.tsx");
