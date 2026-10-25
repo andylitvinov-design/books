@@ -283,14 +283,14 @@ export function AcademyRecordPage({ locale, record }: { locale: PublicLocale; re
         ) : null}
         <section className="academy-resource-links" aria-label={text.reading}><Link href={"/" + locale + "/library"}>{text.reading}<span aria-hidden="true">→</span></Link><Link href={"/" + locale + "/services"}>{text.services}<span aria-hidden="true">→</span></Link></section>
         {isCanonicalYggdrasil ? <YggdrasilLeadForms locale={locale} placement="bottom" /> : null}
-        {!isCanonicalYggdrasil ? (
+        {!isCanonicalYggdrasil && !isVerbatimTantraArchive ? (
           <footer className="academy-source-footer">
             {!isVerbatimTantraArchive && (record.skippedRiskyBlocks || publicOmittedCount) ? <p>{text.filtered}</p> : null}
             <a href={record.sourceUrl} rel="noreferrer" target="_blank">{text.source}<span aria-hidden="true">↗</span></a>
             {record.contentHash ? <code>{record.hashAlgorithm ?? "hash"} {record.contentHash}</code> : null}
           </footer>
         ) : null}
-        {isVerbatimTantraArchive ? <TantraReikiTeacher locale={locale} /> : null}
+        {isVerbatimTantraArchive ? <TantraReikiTeacher locale={locale} sourceUrl={record.sourceUrl} /> : null}
         {isVerbatimTantraArchive ? <TantraReikiLeadForms locale={locale} /> : null}
         </article>
       </div>

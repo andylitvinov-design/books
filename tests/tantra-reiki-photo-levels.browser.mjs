@@ -13,7 +13,7 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
     for (const locale of locales) {
       for (const width of widths) {
         const page = await browser.newPage({
-          viewport: { width, height: 844 },
+          viewport: { width, height: width === 320 ? 568 : width === 390 ? 740 : 800 },
           deviceScaleFactor: 2,
           isMobile: true,
           hasTouch: true,
@@ -69,6 +69,31 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
             await page.keyboard.press("Enter");
             assert.equal(await first.getAttribute("open"), "", "Enter opens disclosure");
           }
+          const guide = page.locator("#tantra-teacher");
+          assert.equal(await guide.count(), 1, "single Meet Andy block");
+          const compact = await guide.evaluate((section) => {
+            const r = section.getBoundingClientRect();
+            const image = section.querySelector(".tantra-teacher__photo img")?.getBoundingClientRect();
+            return {
+              height: r.height, width: r.width, left: r.left, right: r.right,
+              imageHeight: image?.height || 0,
+              archiveCount: section.querySelectorAll("details").length,
+              archiveOpen: section.querySelector("details")?.open,
+            };
+          });
+          const viewportHeight = width === 320 ? 568 : width === 390 ? 740 : 800;
+          const whereGuide = engineName + "/" + locale + "/" + width + " guide";
+          assert.ok(compact.height <= viewportHeight - 32, whereGuide + ": full collapsed teacher block fits one phone viewport (height " + compact.height + " vs " + viewportHeight + ")");
+          assert.ok(compact.imageHeight >= 130 && compact.imageHeight <= 170, whereGuide + ": photo is visible without consuming most of the screen");
+          assert.ok(compact.left >= -2 && compact.right <= width + 2, whereGuide + ": block fits phone width");
+          assert.equal(compact.archiveCount, 1, whereGuide + ": one compact archive row, no duplicate disclosure");
+          assert.equal(compact.archiveOpen, false, whereGuide + ": long historical materials start closed");
+          assert.equal(await guide.locator(".tantra-teacher__copy > a").getAttribute("href"), "/" + locale + "/about");
+          await guide.locator(".tantra-teacher__history > summary").click();
+          assert.ok(await guide.locator("#tantra-original-academy-history h3").isVisible(), whereGuide + ": Academy source retained");
+          assert.ok(await guide.locator("#tantra-original-author-biography h3").isVisible(), whereGuide + ": biography source retained");
+          assert.equal(await guide.locator(".tantra-teacher__history-body > a").count(), 1, whereGuide + ": source link remains inside archive");
+          await guide.locator(".tantra-teacher__history > summary").click();
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
           assert.ok(overflow <= 2, engineName + "/" + locale + "/" + width + ": no document horizontal overflow (" + overflow + "px)");
           console.log("PASS", engineName, locale, width, "photo-left cards, full-width, disclosure and no overflow");

@@ -4903,3 +4903,123 @@
     height: 25px;
   }
 }
+
+/* Tantra Reiki teacher: one short, photo-led phone screen; source preserved on demand. */
+.academy-reading-shell--tantra .tantra-teacher__history {
+  margin-top: 12px;
+  width: 100%;
+}
+.academy-reading-shell--tantra .tantra-teacher__history > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.academy-reading-shell--tantra .tantra-teacher__history > summary::-webkit-details-marker { display: none; }
+.academy-reading-shell--tantra .tantra-teacher__history-chevron {
+  flex: none;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform .18s ease;
+}
+.academy-reading-shell--tantra .tantra-teacher__history[open] .tantra-teacher__history-chevron {
+  transform: rotate(180deg);
+}
+.academy-reading-shell--tantra .tantra-teacher__history-body > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  color: #315347;
+  font-size: 13px;
+  font-weight: 700;
+}
+.academy-reading-shell--tantra .tantra-teacher__history-body > a:focus-visible {
+  outline: 3px solid #af8059;
+  outline-offset: 3px;
+}
+.academy-reading-shell--tantra .tantra-teacher__history-section + .tantra-teacher__history-section {
+  border-top: 1px solid #e6d7c6;
+  padding-top: 14px;
+  margin-top: 18px;
+}
+.academy-reading-shell--tantra .tantra-teacher__history-section h3 {
+  margin: 8px 0;
+  font: 600 18px/1.3 var(--font-serif), Georgia, serif;
+  color: #503a2d;
+}
+@media (max-width: 620px) {
+  .academy-reading-shell--tantra .tantra-teacher {
+    grid-template-columns: minmax(0, 1fr);
+    margin-block: 10px;
+    border-radius: 17px;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__photo {
+    height: clamp(136px, 38vw, 164px);
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    object-fit: cover;
+    object-position: center 33%;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__copy {
+    padding: 13px 14px 14px;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__copy > .homeopathy-kicker {
+    margin: 0 0 4px;
+    font-size: 10px;
+    line-height: 1.25;
+    letter-spacing: .10em;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__copy h2 {
+    font-size: clamp(24px, 6.1vw, 29px);
+    line-height: 1.1;
+    letter-spacing: -.025em;
+    margin: 0 0 7px;
+    text-wrap: balance;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__copy > p:not(.homeopathy-kicker) {
+    font-size: 13px;
+    line-height: 1.38;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__facts {
+    gap: 5px;
+    margin: 9px 0 10px;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__facts span {
+    padding-left: 9px;
+    border-left-width: 2px;
+    font-size: 12px;
+    line-height: 1.32;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__copy > a {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 11px;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__history {
+    margin-top: 8px;
+    border-radius: 11px;
+  }
+  .academy-reading-shell--tantra .tantra-teacher__history > summary {
+    min-height: 43px;
+    padding: 9px 11px;
+    font-size: 12px;
+    line-height: 1.24;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .academy-reading-shell--tantra .tantra-teacher__history-chevron { transition: none; }
+}
