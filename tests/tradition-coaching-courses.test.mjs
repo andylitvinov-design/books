@@ -93,18 +93,20 @@ test('Reiki-style one question screen, choices, optional dictation and await bef
  assert.match(voice,/window\.speechSynthesis\.cancel\(\)/)
  assert.doesNotMatch(voice,/MediaRecorder|audio\.src|fetch\(/)
 })
-test('both Academy and My Courses contain independent entry and resume links',()=>{
+test('ancient planning methods are separate choices in Coaching only',()=>{
  const academy=source('components/academy-hub.tsx')
+ const lounge=source('components/public-coaching-discovery.jsx')
  const courses=source('components/app/my-courses-dashboard.jsx')
+ const art=source('lib/coaching/public-session-art.js')
+ assert.ok(academy.includes('const coachingItem: AcademyCourseItem = '))
  for(const slug of ['egyptian','greek']){
-   assert.match(academy,new RegExp('academy-free-'+slug+'-goal-planning'))
-   assert.match(academy,new RegExp('coaching#coaching-tradition-'+slug))
-   assert.match(courses,new RegExp("id:'"+slug+"'"))
-   assert.match(courses,new RegExp('data-tradition-course-card'))
+  assert.ok(!academy.includes('academy-free-'+slug+'-goal-planning'))
+  assert.ok(lounge.includes('id="'+slug+'" traditionKey="'+slug+'"'))
+  assert.ok(lounge.includes("primaryHref={traditionHref('"+slug+"')}"))
+  assert.ok(art.includes(slug+':'))
  }
- assert.doesNotMatch(academy,/\?lang=es/)
+ assert.doesNotMatch(courses,/data-ancient-coaching-courses|data-tradition-course-card/)
  assert.match(courses,/data-personal-coaching-course-link/)
- assert.match(courses,/data-ancient-coaching-courses/)
 })
 
 test('lesson footer stays visible on 320–430px phones while the question scrolls inside the slide',()=>{
