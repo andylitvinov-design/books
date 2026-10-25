@@ -563,7 +563,7 @@ export default function PersonalCoaching({locale='en',accountId}){
               onClick={()=>setShowOwnWords(value=>!value)} disabled={busy||dictating}>
               {langCopy.orWrite}<span aria-hidden="true">{showOwnWords?'−':'+'}</span>
             </button>}
-            {(!quickChoices||!question.type||showOwnWords)&&<div id="hh-personal-coach-own-words">
+            <div id="hh-personal-coach-own-words" hidden={quickChoices&&Boolean(question.type)&&!showOwnWords}>
               <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
                 {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
               <textarea id="hh-personal-coach-answer" className={styles.textarea}
@@ -572,7 +572,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 maxLength={800} rows={quickChoices?2:4} placeholder={t.placeholder} disabled={busy}
                 onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
               <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
-            </div>}
+            </div>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
