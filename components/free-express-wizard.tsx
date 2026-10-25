@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2, ImagePlus, LockKeyhole, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, ImagePlus, ShieldCheck } from "lucide-react";
 import { PhoneCountryInput } from "@/components/phone-country-input";
 import { COACHING_FIELDS, COACHING_GROUPS } from "@/lib/coaching/intake-model";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
@@ -326,7 +326,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved }: {
       <h3>{t.contact}</h3><p>{t.intro}</p>
       <label>{t.name}<input autoComplete="name" value={name} maxLength={120} disabled={busy || !!pending.current}
         onChange={event => setName(event.target.value)} /></label>
-      <div className={styles.phone}><label>{t.phone}</label>
+      <div className={styles.phone}><span>{t.phone}</span>
         <PhoneCountryInput locale={locale} value={phone} disabled={busy || !!pending.current} required
           onChange={value => { setPhone(value); setError(""); }} /></div>
       <label>{t.question}<textarea rows={3} maxLength={400} value={question}
