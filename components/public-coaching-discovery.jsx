@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardCopy, Compass, LockKeyhole, Sparkles, UserRound } from 'lucide-react'
 import { recommendCoachingForQuestion } from '@/lib/personal-coaching/model-matcher'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
-import { coachingGentleGuide, coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
+import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import CoachingQuestionVoice from '@/components/app/coaching-question-voice'
@@ -335,7 +335,6 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
       .map(([id])=>id):[]),[question,recommendation])
   const current=session?.questions?.[index]
   const quickChoices=coachingQuickChoicesAllowed(current,index)
-  const gentleGuide=coachingGentleGuide(current,index,session?.questions?.length||1,lang)
   const previousQuestion=session?.questions?.[index-1]
   const conversationTurn=coachingConversationTurn({
     question:current,previousQuestion,previousAnswer:answers?.[previousQuestion?.id],
