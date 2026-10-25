@@ -96,3 +96,52 @@
 .inlineCapture :global([data-free-diagnostic-phone-only]){margin:0;background:#f8efe4;border-color:#d7c0ac}
 .formWrap[data-open="false"]{display:none}
 @media(max-width:720px){.inlineCapture{width:100%;margin-bottom:14px}.inlineCapture[data-diagnosis-placement="bottom"]{margin-top:18px}}
+
+
+/* Benefits-first review landing 2026-10-25: only this route opts into compact choice cards. */
+.wrap[data-diagnosis-layout="compact"]{width:min(1120px,100%);margin:25px auto 22px}
+.wrap[data-diagnosis-layout="compact"] .heading{max-width:100%;padding:0 8px 9px;margin-bottom:12px}
+.wrap[data-diagnosis-layout="compact"] .heading h2{font-size:clamp(30px,3vw,43px)}
+.wrap[data-diagnosis-layout="compact"] .heading>p:last-child{font-size:15px}
+.wrap[data-diagnosis-layout="compact"] .scenes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:14px}
+.wrap[data-diagnosis-layout="compact"] .scene{display:flex;flex-direction:column;min-height:0;height:auto;border-radius:18px}
+.wrap[data-diagnosis-layout="compact"] .photo{flex:none;width:100%;height:clamp(150px,16vw,200px);min-height:0}
+.wrap[data-diagnosis-layout="compact"] .photoIndex{top:10px;left:10px}
+.wrap[data-diagnosis-layout="compact"] .content{flex:1;display:flex;justify-content:flex-start;gap:10px;padding:19px}
+.wrap[data-diagnosis-layout="compact"] .scene h3{font-size:clamp(24px,2.2vw,32px);line-height:1.12}
+.wrap[data-diagnosis-layout="compact"] .summary{font-size:14px;line-height:1.42;font-weight:500}
+.wrap[data-diagnosis-layout="compact"] .order{align-self:stretch;justify-content:center;width:100%;min-width:0;min-height:48px;margin-top:auto;font-size:14px}
+.wrap[data-diagnosis-layout="compact"] .topline{font-size:10px}
+.wrap[data-diagnosis-layout="compact"] .topline strong{font-size:13px}
+.expandedInfo{font-family:Arial,Helvetica,sans-serif;margin:0;padding:0;color:#695a4f}
+.expandedInfo>summary{cursor:pointer;width:fit-content;min-height:35px;padding:8px 0;color:#874f47;font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.expandedInfo>summary:focus-visible{outline:3px solid #b97847;outline-offset:3px}
+.expandedInfo .detail{padding:4px 0 9px;font-size:13px;line-height:1.48}
+.expandedInfo ol{padding:0 0 0 18px;margin:0 0 8px;display:grid;gap:7px;font-size:12px;line-height:1.45}
+.wrap[data-diagnosis-layout="compact"] .inlineCapture[data-diagnosis-placement="top"]{margin:15px auto 25px;width:min(780px,100%)}
+.wrap[data-diagnosis-layout="compact"] .inlineCapture[data-diagnosis-placement="bottom"]{margin:20px auto 0;width:min(780px,100%)}
+@media(max-width:720px){
+ .wrap[data-diagnosis-layout="compact"]{margin:14px auto 17px}
+ .wrap[data-diagnosis-layout="compact"] .scenes{grid-template-columns:minmax(0,1fr);gap:11px}
+ .wrap[data-diagnosis-layout="compact"] .scene{display:grid;grid-template-columns:minmax(96px,34%) minmax(0,1fr);min-height:0;border-radius:15px;overflow:hidden}
+ .wrap[data-diagnosis-layout="compact"] .photo{width:100%;height:100%;min-height:190px;border-radius:0}
+ .wrap[data-diagnosis-layout="compact"] .photoIndex{top:9px;left:7px;font-size:9px;padding:5px 7px}
+ .wrap[data-diagnosis-layout="compact"] .content{padding:13px;gap:7px;min-height:0}
+ .wrap[data-diagnosis-layout="compact"] .scene h3{font-size:clamp(20px,5.3vw,26px);line-height:1.11}
+ .wrap[data-diagnosis-layout="compact"] .summary{font-size:12.5px;line-height:1.4}
+ .wrap[data-diagnosis-layout="compact"] .topline{font-size:9.5px}
+ .wrap[data-diagnosis-layout="compact"] .topline strong{font-size:11px;padding:4px 7px}
+ .wrap[data-diagnosis-layout="compact"] .order{min-height:44px;padding:10px;font-size:13px}
+ .wrap[data-diagnosis-layout="compact"] .heading{padding:0 6px 8px;margin-bottom:8px}
+ .wrap[data-diagnosis-layout="compact"] .heading h2{font-size:clamp(28px,7.5vw,34px)}
+ .wrap[data-diagnosis-layout="compact"] .heading>p:last-child{font-size:13px}
+ .wrap[data-diagnosis-layout="compact"] .inlineCapture[data-diagnosis-placement="top"]{margin:12px auto 20px}
+}
+@media(max-width:360px){
+ .wrap[data-diagnosis-layout="compact"] .scene{grid-template-columns:96px minmax(0,1fr)}
+ .wrap[data-diagnosis-layout="compact"] .content{padding:11px 10px;gap:6px}
+ .wrap[data-diagnosis-layout="compact"] .scene h3{font-size:19px}
+ .wrap[data-diagnosis-layout="compact"] .summary{font-size:12px}
+ .wrap[data-diagnosis-layout="compact"] .photo{min-height:178px}
+}
+
