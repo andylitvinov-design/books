@@ -4,6 +4,13 @@ import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
+function assertDaoDetailsTarget(ui, intro, offers) {
+  assert.match(ui, /href=\{"\/" \+ locale \+ "\/services\/free-consultation#free-diagnosis-options"\} prefetch=\{false\}/);
+  assert.doesNotMatch(ui, /\/services\/free-consultation#intro-request/);
+  assert.match(intro, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
+  assert.match(offers, /<section[^>]*id="free-diagnosis-options"[^>]*lang=\{locale\}/);
+}
+
 test("Tests & Coaching first screen offers four paths, with original private Dao panel preserved on demand", () => {
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
@@ -108,14 +115,14 @@ test("Dao insight offers two localized cards with in-place consented enquiries a
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
   const intro = read("app/[locale]/services/free-consultation/page.tsx");
+  const offers = read("components/free-diagnosis-offers.tsx");
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
   assert.match(ui, /data-ideas-dao-promos/);
   assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?<DaoOfferCards locale=\{answerLocale\}[\s\S]*?result\.mode === "aphorisms"/);
   assert.match(ui, /t\.daoPromoReading\.title/);
   assert.match(ui, /t\.daoPromoGift\.title/);
-  assert.match(ui, /\/services\/free-consultation#intro-request/);
+  assertDaoDetailsTarget(ui, intro, offers);
   assert.match(ui, /\/services\/free-situation-review#request-free-review/);
-  assert.match(intro, /id="intro-request"/);
   assert.match(free, /FreeEntryLanding locale=\{locale\} kind="situation"/);
   for (const text of ["Получите персональное даосское гадание", "Get a personal Daoist reading", "Recibe una lectura taoísta personal", "ПОДАРОК · БЕСПЛАТНО", "FREE GIFT", "REGALO · GRATIS"]) {
     assert.ok(ui.includes(text), "missing localized offer: " + text);
@@ -123,6 +130,24 @@ test("Dao insight offers two localized cards with in-place consented enquiries a
   assert.match(css, /\.daoPromos \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.daoPromos \{ grid-template-columns: 1fr/);
   assert.match(css, /\.daoPromoAction \{[^}]*min-height: 44px/);
+});
+
+test("Dao details navigation rejects stale fragments, missing targets and detached offers", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const intro = read("app/[locale]/services/free-consultation/page.tsx");
+  const offers = read("components/free-diagnosis-offers.tsx");
+  assertDaoDetailsTarget(ui, intro, offers);
+  for (const fragment of ["intro-request", "missing-offer"]) {
+    const broken = ui.replace("/services/free-consultation#free-diagnosis-options", "/services/free-consultation#" + fragment);
+    assert.notEqual(broken, ui);
+    assert.throws(() => assertDaoDetailsTarget(broken, intro, offers), assert.AssertionError);
+  }
+  const missingTarget = offers.replace('id="free-diagnosis-options"', 'id="missing-offer"');
+  assert.notEqual(missingTarget, offers);
+  assert.throws(() => assertDaoDetailsTarget(ui, intro, missingTarget), assert.AssertionError);
+  const detached = intro.replace("<FreeDiagnosisOffers locale={lang} />", "");
+  assert.notEqual(detached, intro);
+  assert.throws(() => assertDaoDetailsTarget(ui, detached, offers), assert.AssertionError);
 });
 
 test("approved image-based reference renders Dao, expandable meaning and three readable horizontal aphorism rows", () => {

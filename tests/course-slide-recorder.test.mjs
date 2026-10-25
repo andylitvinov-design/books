@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import { courseMediaCspFixture, syntheticMediaOrigin } from './helpers/course-media-csp-fixture.mjs'
 import {
  COURSE_RECORD_LIMITS,selectCourseRecordingMime,normalizeCourseRecordingMime,formatCourseRecordingTime,
 } from '../lib/practitioners/course-recorder.js'
@@ -56,7 +57,7 @@ test('Direct course recording has no autoplay, previews before owner-only signed
  assert.match(builder,/disabled=\{busy\|\|uploading\|\|recording\}/)
 })
 
-test('Private original video can be manually downloaded for YouTube only by its course owner',()=>{
+test('Private original video can be manually downloaded for YouTube only by its course owner',async()=>{
  const mediaRoute=read('app/api/practitioner-course-media/[id]/route.js')
  const repo=read('lib/practitioners/course-repository.js')
  const builder=read('components/app/practitioner-course-builder.jsx')
@@ -77,6 +78,35 @@ test('Private original video can be manually downloaded for YouTube only by its 
  assert.match(builder,/do not send private client videos/i)
  assert.match(materials,/onOpenYoutube=\{isOwner\?onOpenYoutube:null\}/)
  assert.match(practice,/onOpenYoutube=\{\(\)=>openOwner\('youtube'\)\}/)
- assert.match(middleware,/reikiIntroAudioManager\|\|practitionerCourseEditor\) \? ' blob:'/)
+ await assertCourseRecorderPolicy(middleware)
  assert.doesNotMatch(builder,/uploadToYoutube\(|publishYoutubeVideo\(/)
+})
+
+async function assertCourseRecorderPolicy(source) {
+ const policy=courseMediaCspFixture(source)
+ for(const locale of ['en','ru','es']) {
+  const editor=await policy(`/${locale}/app/practice`)
+  assert.ok(editor['media-src'].includes('blob:'),'course editor needs a local recording preview')
+  for(const directive of ['media-src','connect-src']) assert.ok(editor[directive].includes(syntheticMediaOrigin),directive+' must permit signed course media')
+  const withoutStorage=await policy(`/${locale}/app/practice`,'')
+  assert.ok(withoutStorage['media-src'].includes('blob:'),'local preview must not depend on private Storage configuration')
+  const reader=await policy(`/${locale}/courses/masters/synthetic-course`)
+  assert.ok(reader['media-src'].includes(syntheticMediaOrigin),'published course must retain signed-media playback')
+  assert.ok(!reader['media-src'].includes('blob:'),'published reader must not inherit owner recorder privileges')
+ }
+ for(const path of ['/','/en/client','/ru/app/account','/admin','/api/app/course','/en/app/practice/unrelated']) {
+  const csp=await policy(path)
+  assert.ok(!csp['media-src'].includes('blob:'),path+' must not inherit course recorder preview')
+  for(const directive of ['media-src','connect-src']) assert.ok(!csp[directive].includes(syntheticMediaOrigin),path+' must not inherit signed course media origin')
+ }
+}
+
+test('course recording CSP contract rejects removed or globally broadened recorder grants',async()=>{
+ const source=read('middleware.ts')
+ const missing=source.replace('||practitionerCourseEditor)',')')
+ const broadened=source.replace(/const practitionerCourseEditor = [^\n]+/,'const practitionerCourseEditor = true')
+ assert.notEqual(missing,source)
+ assert.notEqual(broadened,source)
+ await assert.rejects(assertCourseRecorderPolicy(missing),/course editor needs a local recording preview/)
+ await assert.rejects(assertCourseRecorderPolicy(broadened),/published reader must not inherit owner recorder privileges/)
 })

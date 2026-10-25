@@ -17,7 +17,10 @@ test('only private Reports enlarges the coupled original photo and 360:390 SVG',
   assert.match(mobile, /aspect-ratio:360 \/ 390/)
   assert.match(mobile, /height:220%!important/)
   assert.match(mobile, /transform:translate\(-80%,-50%\)/)
-  assert.ok(!mobile.includes('31.38svh'))
+  // Reject the removed CSS rule, not historical values mentioned in a comment.
+  assert.ok(!mobile.includes('width:min(100%,clamp(229px,31.38svh,262px))'))
+  assert.ok(mobile.includes('@media(max-width:620px) and (max-height:630px)'))
+  assert.ok(mobile.includes('width:min(100%,clamp(230px,42svh,275px))'))
   assert.ok(!mobile.includes('data-summary-test-score'))
 })
 
@@ -49,9 +52,14 @@ test('mobile portrait is the dominant image with tappable top filters and lower 
   assert.match(action, /flex-direction:row/)
   for (const width of [320,390,430]) {
     for (const height of [550,768,844,932]) {
-      const stageWidth = Math.min(width - 24, Math.max(290, Math.min(390, .43 * height)))
+      const shortViewport = height <= 630
+      const responsiveWidth = shortViewport
+        ? Math.max(230, Math.min(275, .42 * height))
+        : Math.max(290, Math.min(390, .43 * height))
+      const stageWidth = Math.min(width - 24, responsiveWidth)
       const stageHeight = stageWidth * 390 / 360
-      assert.ok(stageWidth > 262, `${width}x${height}: must exceed previous shrunken image`)
+      assert.ok(stageWidth >= (shortViewport ? 228 : 262),
+        `${width}x${height}: picture should be readable without covering the bottom navigation`)
       const menusAndImage = 52 + stageHeight + 52 + 18
       assert.ok(menusAndImage < Math.max(510, height - 100), `${width}x${height}: chart/menus too tall`)
     }

@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const source = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -59,7 +63,6 @@ test("all three offer CTAs select a controlled option in the one consented CRM e
   assert.match(offers, /onFormatChange=\{\(value\) => setSelected\(value as OfferId\)\}/);
   assert.match(offers, /formatOptions=\{t\.offers\.filter\(offer => offer\.id !== "situation-written-free"\)/);
   assert.match(capture, /const selectedFormat = selectedFormatValue \?\? internalFormat/);
-  assert.match(capture, /const receiptServiceTitle = submittedServiceTitle \?\? serviceTitle/);
   assert.match(capture, /onFormatChange\?\.\(event\.target\.value\)/);
   assert.match(capture, /fetch\("\/api\/service-enquiries"/);
   assert.match(capture, /contactConsent: true/);
@@ -68,4 +71,60 @@ test("all three offer CTAs select a controlled option in the one consented CRM e
   assert.doesNotMatch(offers, /fetch\(|gtag\(|dataLayer|autoplay|payment_received|payment_captured/);
   assert.match(offers, /not a confirmed appointment or payment/);
   assert.match(offers, /символическая модель/);
+});
+
+// Exercise the real controlled cards and CompactLeadCapture implementation,
+// rather than requiring the obsolete receiptServiceTitle state variable.
+const receiptCases = [
+  "controlled confirmed receipt remains pinned to submitted service and format after external offer change",
+  ...["en", "ru", "es"].map(locale => locale + ": actual FreeDiagnosisOffers card and dropdown use one controlled service/format through confirmed receipt"),
+];
+const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+function runReceiptCases(sourceRoot = repositoryRoot) {
+  const env = { ...process.env, COMPACT_SOURCE_ROOT: sourceRoot };
+  // A nested node:test runner must not inherit the parent's worker context.
+  delete env.NODE_TEST_CONTEXT;
+  const result = spawnSync(process.execPath, [
+    "--test", "--test-reporter=tap", "--test-name-pattern=^(" + receiptCases.join("|") + ")$",
+    "tests/compact-enquiry-lifecycle.test.mjs",
+  ], { cwd: repositoryRoot, env, encoding: "utf8", timeout: 60000 });
+  assert.ifError(result.error);
+  assert.equal(result.signal, null, "Receipt checks must finish, not time out or be cancelled");
+  return result;
+}
+function receiptResultNames(output, status) {
+  return output.split("\n").filter(line => line.startsWith(status + " ") && !/ # (?:SKIP|TODO)/.test(line))
+    .map(line => line.replace(/^(?:not ok|ok) \d+ - /, ""));
+}
+test("confirmed three-offer receipt keeps the submitted service and format in both messenger links", () => {
+  const result = runReceiptCases();
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.deepEqual(receiptResultNames(result.stdout, "ok"), receiptCases,
+    "All four named behavioral checks must actually execute; an empty/stale pattern cannot pass");
+  assert.match(result.stdout, /^# pass 4$/m);
+  for (const outcome of ["fail", "cancelled", "todo"]) assert.match(result.stdout, new RegExp("^# " + outcome + " 0$", "m"));
+});
+
+test("receipt checks reject links rebuilt from a later offer instead of the saved snapshot", () => {
+  const before = "base = savedWhatsapp || currentWhatsappUrl()";
+  assert.equal(capture.split(before).length, 2, "Mutation targets the actual receipt URL source exactly once");
+  const root = mkdtempSync(join(tmpdir(), "hh-receipt-contract-"));
+  try {
+    mkdirSync(join(root, "components"));
+    const mutated = capture.replace(before, "base = currentWhatsappUrl()");
+    writeFileSync(join(root, "components/compact-lead-capture.tsx"), mutated);
+    writeFileSync(join(root, "components/free-diagnosis-offers.tsx"), offers);
+    assert.equal(readFileSync(join(root, "components/compact-lead-capture.tsx"), "utf8"), mutated);
+    const result = runReceiptCases(root);
+    assert.equal(result.status, 1, "A real receipt regression must fail, not use baseline source: " + result.stdout + result.stderr);
+    assert.deepEqual(receiptResultNames(result.stdout, "not ok"), receiptCases,
+      "Every selected service/format snapshot behavior must detect the regression");
+    assert.match(result.stdout, /^# pass 0$/m);
+    assert.match(result.stdout, /^# fail 4$/m);
+    for (const outcome of ["cancelled", "todo"]) assert.match(result.stdout, new RegExp("^# " + outcome + " 0$", "m"));
+    assert.match(result.stdout, /ERR_ASSERTION/, "Failure must come from behavior, not a missing dependency");
+    assert.doesNotMatch(result.stdout + result.stderr, /ERR_MODULE_NOT_FOUND|Cannot find module|unapproved import/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

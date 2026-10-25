@@ -199,7 +199,7 @@ export async function assertCurrentHomeDiscovery({locale='en',overrides={}}={}){
     assert.equal(link.props['aria-label']??exposedText(link).trim(),originalTitles[locale][id],'Original '+id+' offer keeps its identifiable localized title')
     const badges=visibleNodes(card).filter(node=>node.props.className==='freeBadge')
     assert.equal(badges.length,isFree?1:0,'Original '+id+' free/paid scope is honest')
-    if(isFree)assert.equal(exposedText(badges[0]),'FREE','Original no-cost badge states FREE, not merely a freeBadge class')
+    if(isFree)assert.equal(exposedText(badges[0]),{en:'FREE',ru:'БЕСПЛАТНО',es:'GRATIS'}[locale],'Original no-cost badge keeps exact localized label')
     if(!isFree)assert.ok(exposedText(card).includes('€50 / 30 min · €100 / 60 min'),'Original paid offer retains prices')
   }
   const invitation=one(visibleNodes(serviceTree).filter(node=>node.type==='directory-invitation'),'Real services page mounts the catalogue invitation')

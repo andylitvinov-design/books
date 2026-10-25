@@ -405,7 +405,7 @@ function DaoOfferCards({ locale, openOffer, onToggle }: {
             <>
               <CompactLeadCapture locale={locale} variant="inline" serviceTitle={t.daoPromoReading.title}
                 title={t.requestTitle} lead={t.requestLead} />
-              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-consultation#intro-request"} prefetch={false}>
+              <Link className={styles.daoPromoMore} href={"/" + locale + "/services/free-consultation#free-diagnosis-options"} prefetch={false}>
                 {t.fullService}<ArrowRight size={15} aria-hidden="true" />
               </Link>
             </>

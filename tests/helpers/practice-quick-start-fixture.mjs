@@ -5,6 +5,7 @@ import vm from 'node:vm'
 import { randomUUID } from 'node:crypto'
 import ts from 'typescript'
 import { normalizeVideoPresentation } from '../../lib/practitioners/presentation-contract.js'
+import { TRADITION_COURSES } from '../../lib/personal-coaching/traditions.js'
 
 const element=(type,props)=>{assert.ok(typeof type==='string'||typeof type==='function','Undefined or unsupported JSX component');return {type,props:props||{}}}
 const blocked=()=>{throw new Error('External operation is not allowed in this fixture')}
@@ -28,6 +29,7 @@ export function mountPractice(source,props={},respond=async()=>({ok:true,status:
    assert.equal(options.ssr,false);return 'video-composer'
   }},
   '@/lib/practitioners/presentation-contract.js':{normalizeVideoPresentation},
+  '@/lib/personal-coaching/traditions.js':{TRADITION_COURSES},
   './practitioner-course-builder.module.css':{default:{}},'./practice-materials.module.css':{default:{}},
  }
  const moduleValue={exports:{}}

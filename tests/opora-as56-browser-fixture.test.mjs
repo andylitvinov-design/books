@@ -16,6 +16,7 @@ import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { mount, findButton, nodes, textOf } from './helpers/route-pipeline-harness.mjs'
 import { advanceOporaTo } from './helpers/opora-gentle-navigation.mjs'
+import { verifyOporaTakeaway } from '../scripts/helpers/opora-takeaway-acceptance.mjs'
 
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
 test('OPORA browser fixture accepts only supported synthetic locales and no saved data', () => {
@@ -245,3 +246,89 @@ test('fresh AS6.0 Day5 shows one exact experiment step at a time, with optional 
     } finally { skip.unmount() }
   }
 })
+
+function takeawayFixture(moment='recap',mutate=()=>{}) {
+  const element=(tag,attrs={},children=[],text='')=>({tag,attrs,children,text,visible:true})
+  const heading=element('strong',{},[],'A synthetic idea'),detail=element('small',{},[],'One synthetic detail')
+  const copy=element('div',{},[heading,detail]),idea=element('div',{class:'opora_summaryItem_hash123'},[element('span',{'aria-hidden':'true'},[],'*'),copy])
+  const summary=element('div',moment==='recap'?{'data-opora-lesson-recap':'true'}:{'data-opora-daily-homework':'5'},[idea])
+  const panel=element('section',{'data-opora-current-screen':moment},[summary])
+  const root=element('main',{},[panel])
+  mutate({root,panel,summary,idea,copy,heading,detail,element})
+  const all=node=>[node,...node.children.flatMap(all)]
+  const match=(node,selector)=>{
+    const attribute=selector.match(/^\[([^=]+)="([^"]+)"\]$/)
+    return attribute?node.attrs[attribute[1]]===attribute[2]:selector==='*'||node.tag===selector
+  }
+  const locator=values=>({values,count:async()=>values.length,
+    locator:selector=>locator(values.flatMap(node=>selector.startsWith(':scope > ')
+      ?node.children.filter(child=>match(child,selector.slice(9)))
+      :node.children.flatMap(all).filter(child=>match(child,selector)))),
+    innerText:async()=>{assert.equal(values.length,1);return all(values[0]).map(node=>node.text).join('')},
+  })
+  const page={locator:selector=>locator(all(root).filter(node=>match(node,selector)))}
+  const visible=node=>node.visible&&(!node.parent||visible(node.parent))
+  const bind=node=>{for(const child of node.children){child.parent=node;bind(child)}};bind(root)
+  const expect=target=>({toBeVisible:async()=>{assert.equal(target.values.length,1);assert.ok(visible(target.values[0]),'visible idea field')}})
+  return {page,expect}
+}
+for(const moment of ['recap','recapNext'])test('hashed CSS takeaway uses exact semantic '+moment+' scope',async()=>{
+  const f=takeawayFixture(moment);await verifyOporaTakeaway(f.page,f.expect,moment)
+})
+for(const [name,mutate] of [
+  ['missing panel',f=>{f.root.children=[]}],
+  ['duplicate panel',f=>{f.root.children.push(f.panel)}],
+  ['missing semantic container',f=>{f.panel.children=[]}],
+  ['wrong semantic marker',f=>{f.summary.attrs={'data-opora-daily-homework':'4'}}],
+  ['duplicate semantic container',f=>{f.panel.children.push(f.summary)}],
+  ['missing idea',f=>{f.summary.children=[]}],
+  ['duplicate idea',f=>{f.summary.children.push(f.idea)}],
+  ['hidden idea',f=>{f.idea.visible=false}],
+  ['hidden parent',f=>{f.summary.visible=false}],
+  ['missing copy group',f=>{f.idea.children=[]}],
+  ['duplicate copy group',f=>{f.idea.children.push(f.copy)}],
+  ['extra copy child',f=>{f.copy.children.push(f.element('p',{},[],'Unexpected'))}],
+  ['missing heading',f=>{f.copy.children=[f.detail]}],
+  ['missing detail',f=>{f.copy.children=[f.heading]}],
+  ['duplicate heading',f=>{f.copy.children=[f.heading,f.heading]}],
+  ['duplicate detail',f=>{f.copy.children=[f.detail,f.detail]}],
+  ['nested duplicate heading',f=>{f.detail.children.push(f.element('strong',{},[],'Duplicate'))}],
+  ['nested duplicate detail',f=>{f.heading.children.push(f.element('small',{},[],'Duplicate'))}],
+  ['hidden heading',f=>{f.heading.visible=false}],
+  ['hidden detail',f=>{f.detail.visible=false}],
+  ['empty heading',f=>{f.heading.text='  '}],
+  ['empty detail',f=>{f.detail.text='  '}],
+])for(const moment of ['recap','recapNext'])test('semantic '+moment+' takeaway rejects '+name,async()=>{
+  const f=takeawayFixture(moment,mutate);await assert.rejects(verifyOporaTakeaway(f.page,f.expect,moment))
+})
+test('takeaway verifier rejects an unrelated screen without querying the page',async()=>{
+  await assert.rejects(verifyOporaTakeaway({locator:()=>assert.fail('unexpected query')},()=>{},'practice'))
+})
+test('browser takeaway repair retains original geometry, no-save and exact current markers',async()=>{
+  const browser=await read('scripts/verify-opora-as56-browser.mjs')
+  const component=await read('components/app/opora-experience-player.jsx')
+  assert.match(browser,/await verifyOporaTakeaway\(recapPage, expect, moment\)/)
+  assert.doesNotMatch(browser,/\.summaryItem/)
+  for(const fragment of ['size.panelScroll <= size.panelClient + 2','size.mainScroll <= size.mainClient + 2',
+    'size.screenWidth <= width + 1',"assert.equal(recapSaves,0,'Viewing recap cannot write a private practice')",
+    'assert.equal(state.saves, 0','assert.deepEqual(unexpectedRequests, []','assert.deepEqual(errors, []'])assert.ok(browser.includes(fragment),fragment)
+  assert.match(component,/moment==='recap'&&<div className=\{styles\.recapSummary\} data-opora-lesson-recap="true"/)
+  assert.match(component,/moment==='recapNext'&&<div className=\{styles\.recapSummary\}\s+data-opora-daily-homework=\{cycle\.day\}/)
+  assert.match(component,/<div className=\{styles\.summaryItem\}><span aria-hidden="true">/)
+})
+for(const locale of ['ru','en','es'])for(const moment of ['recap','recapNext'])test('actual fresh Day5 '+locale+' '+moment+' retains one nonempty heading/detail without save',async()=>{
+  let saves=0
+  const data={cycle:{id:'00000000-0000-4000-8000-000000001056',day:5,durationDays:14},programme:{id:'stress'},currentSession:null,
+    lesson:lessonFor('calm_regulation',5,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)}
+  const original=structuredClone(data),h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},onSession:async()=>{saves++;return false}})
+  try {
+    await advanceOporaTo(h,moment,{ru:'Продолжить',en:'Continue',es:'Continuar'}[locale])
+    const panel=nodes(h.tree).find(node=>node.props?.['data-opora-current-screen']===moment)
+    assert.ok(panel)
+    const summaries=nodes(panel).filter(node=>moment==='recap'?node.props?.['data-opora-lesson-recap']==='true':node.props?.['data-opora-daily-homework']===5)
+    assert.equal(summaries.length,1)
+    for(const tag of ['strong','small']){const fields=nodes(summaries[0]).filter(node=>node.type===tag);assert.equal(fields.length,1);assert.ok(textOf(fields[0]).trim().length>0)}
+    assert.equal(saves,0);assert.deepEqual(data,original)
+  }finally{h.unmount()}
+})
+

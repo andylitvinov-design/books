@@ -1411,3 +1411,11 @@
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter{margin:4px 2px 0}
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .visualFooter p{font-size:10.5px;line-height:1.32}
 }
+
+/* Very short landscape/legacy iPhone viewports need their own height budget.
+   Ordinary iPhones retain the larger 43svh portrait; controls keep 52px taps. */
+@media(max-width:620px) and (max-height:630px){
+  :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
+    width:min(100%,clamp(230px,42svh,275px));
+  }
+}

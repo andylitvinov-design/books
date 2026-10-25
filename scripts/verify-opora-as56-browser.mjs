@@ -5,6 +5,7 @@ import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
 import { oporaExperienceGuide, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
 import { OPORA_BROWSER_FRESH_EDITION, OPORA_BROWSER_DAY5_COPY } from './fixtures/opora-as60-day5-copy.mjs'
+import { verifyOporaTakeaway } from './helpers/opora-takeaway-acceptance.mjs'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -231,8 +232,7 @@ try {
             assert.ok(size.screenWidth <= width + 1,
               locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
             if (moment !== 'recapFeedback') {
-              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
-                'Each takeaway has exactly one visible idea')
+              await verifyOporaTakeaway(recapPage, expect, moment)
               await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
               await recapPage.getByRole('button', { name: t.next, exact: true }).click()
             } else {

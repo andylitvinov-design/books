@@ -43,7 +43,70 @@ function diagnosticFields(diagnostic) {
   const fixed=(value,values)=>values.includes(value)?value:'unknown'
   const phase=diagnostic.failedPhase ?? diagnostic.phase
   const keyboard=diagnostic.mode==='keyboard'&&phase==='keyboard-visible'?` keyboard=${keyboardDiagnostic(diagnostic)}`:''
-  return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}${keyboard}`
+  let tail=''
+  try {if(diagnostic.keyboardTail!==undefined) tail=` keyboardTail=${keyboardTailDiagnostic(diagnostic.keyboardTail)}`} catch { /* A malformed optional tail cannot replace the original diagnostic. */ }
+  return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}${keyboard}${tail}`
+}
+
+function keyboardTailDiagnostic(tail) {
+  const number=value=>typeof value==='number'&&Number.isFinite(value)
+    ?Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100:0
+  const vector=(value,length)=>Array.from({length},(_,i)=>number(Array.isArray(value)?value[i]:undefined))
+  const sample=value=>({sampled:value?.sampled===true,ms:number(value?.ms),
+    inside:value?.inside===true,focused:value?.focused===true,focusVisible:value?.focusVisible===true,
+    rect:vector(value?.rect,4),viewport:vector(value?.viewport,2),scroll:vector(value?.scroll,2)})
+  return JSON.stringify({finished:tail?.finished===true,timedOut:tail?.timedOut===true,
+    scrollEndSupported:tail?.scrollEndSupported===true,
+    scrollEvents:number(tail?.scrollEvents),scrollEnds:number(tail?.scrollEnds),
+    samples:Array.isArray(tail?.samples)?tail.samples.slice(0,4).map(sample):[]})
+}
+
+// Called ONLY after the original exact keyboard verdict has already failed.
+// Observe, never scroll/focus/check or retry. Fixed 500ms evidence window is not
+// an acceptance timeout: even an in-view final sample cannot change failure.
+export async function collectKeyboardFailureTail(node) {
+  const start=performance.now(),samples=[]
+  let scrollEvents=0,scrollEnds=0
+  const onScroll=()=>{scrollEvents=Math.min(scrollEvents+1,1000)}
+  const onScrollEnd=()=>{scrollEnds=Math.min(scrollEnds+1,1000)}
+  const sample=()=>{
+    try {
+      const r=node.getBoundingClientRect()
+      samples.push({sampled:true,ms:performance.now()-start,
+        inside:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,
+        focused:node===document.activeElement,focusVisible:node.matches(':focus-visible'),
+        rect:[r.left,r.top,r.right,r.bottom],viewport:[innerWidth,innerHeight],scroll:[scrollX,scrollY]})
+    } catch {samples.push({sampled:false,ms:performance.now()-start})}
+  }
+  const scrollEndSupported='onscrollend' in document
+  try {
+    document.addEventListener('scroll',onScroll,{capture:true,passive:true})
+    document.addEventListener('scrollend',onScrollEnd,{capture:true,passive:true})
+    sample()
+    for(const delay of [100,150,250]) {
+      await new Promise(resolve=>setTimeout(resolve,delay))
+      sample()
+    }
+    return {finished:true,timedOut:false,scrollEndSupported,scrollEvents,scrollEnds,samples}
+  } finally {
+    document.removeEventListener('scroll',onScroll,true)
+    document.removeEventListener('scrollend',onScrollEnd,true)
+  }
+}
+
+async function captureKeyboardFailureTail(diagnostic) {
+  // Unsampled geometry/visibility failures have no matching original verdict
+  // to compare; other modes/phases and successful keyboard runs are untouched.
+  if(diagnostic?.mode!=='keyboard'||diagnostic.failedPhase!=='keyboard-visible'||
+    diagnostic.keyboard?.sampled!==true||typeof diagnostic.readKeyboardTail!=='function') return
+  let timer
+  try {
+    diagnostic.keyboardTail=await Promise.race([
+      Promise.resolve().then(diagnostic.readKeyboardTail),
+      new Promise(resolve=>{timer=setTimeout(()=>resolve({timedOut:true}),750)}),
+    ])
+  } catch { /* Optional failed-state reads never replace the original error. */ }
+  finally {clearTimeout(timer)}
 }
 
 // Only the exact initial public document supplements the existing typed static
@@ -123,7 +186,10 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
     checkpoint(diagnostic,'bootstrap-init')
     await context.addInitScript(installConsentPopupGuard)
     result=await run(drain)
-  } catch {primary=true;failed(diagnostic)}
+  } catch {
+    primary=true;failed(diagnostic)
+    await captureKeyboardFailureTail(diagnostic)
+  }
   finally {
     for(const [phase,cleanup] of [
       ['cleanup-stop',()=>gate.beginTeardown()],['cleanup-drain-before-close',drain],
@@ -153,7 +219,7 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
 async function verifyNative(sourcePage, expect, locale, diagnostic) {
   const origin = alchemyOrigin(sourcePage.url(), locale)
   for (const mode of ['keyboard', 'label', 'canceled-pointer']) {
-    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null})
+    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null,keyboardTail:undefined,readKeyboardTail:undefined})
     const context = await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
     const errors=[], failures=[], blocked=[]
     const initialGate=consentInitialGate(origin,locale,failures,blocked)
@@ -177,6 +243,7 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
         const contact=chooser.locator('input[type="email"]')
         const consent=chooser.locator('input[type="checkbox"]')
         const submit=chooser.locator('button[type="submit"]')
+        diagnostic.readKeyboardTail=()=>consent.evaluate(collectKeyboardFailureTail)
         checkpoint(diagnostic,'contact-fill')
         await contact.fill(ALCHEMY_CONTACT)
         checkpoint(diagnostic,'initial-state')
@@ -284,3 +351,4 @@ export async function verifyContactConsentNativeAcceptance(sourcePage, expect, l
     throw new Error(`CONSENT_NATIVE_ACCEPTANCE_FAILED ${diagnosticFields(diagnostic)}`)
   }
 }
+

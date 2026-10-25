@@ -6,6 +6,7 @@ import ts from 'typescript'
 import {antiStressBlueprint} from '../lib/inner-growth/anti-stress-blueprint.js'
 import {antiStressPublicSkillsV5} from '../lib/inner-growth/anti-stress-day-scheme.js'
 import {oporaAs59Day,oporaAs59Skills} from '../lib/inner-growth/opora-as59-seven-skills.js'
+import {oporaAs60Day,oporaAs60Skills} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {oporaRecoveryStages} from '../lib/inner-growth/antistress-recovery-pathway.js'
 
 // This directly parses production JSX without requiring a Vercel deployment,
@@ -40,12 +41,17 @@ test('a practice phrase closes before the guided exercise and controls remain op
   assert.match(player,/data-antistress-skill-probe/)
 })
 
-test('public blueprint retains nonempty canonical descriptions without rewriting legacy skills',()=>{
+test('public blueprint retains nonempty AS6.0 descriptions without rewriting AS5.9 or legacy skills',()=>{
   for(const locale of ['ru','en','es']){
     const legacy=antiStressPublicSkillsV5(locale)
     const before=structuredClone(legacy)
+    const historical=oporaAs59Skills(locale)
+    const historicalBefore=structuredClone(historical)
+    const historicalDays=Array.from({length:14},(_,index)=>oporaAs59Day(index+1,locale))
+    const historicalDaysBefore=structuredClone(historicalDays)
     const programme=antiStressBlueprint(locale)
-    const canonical=oporaAs59Skills(locale)
+    // The public blueprint uses AS6.0; AS5.9 stays a separate historical edition.
+    const canonical=oporaAs60Skills(locale)
     assert.equal(programme.locale,locale)
     assert.equal(programme.skills.length,7)
     assert.equal(legacy.length,7)
@@ -53,8 +59,12 @@ test('public blueprint retains nonempty canonical descriptions without rewriting
       assert.deepEqual(skill,{...canonical[index],measureIds:legacy[index].measureIds})
       assert.equal(typeof skill.description,'string')
       assert.ok(skill.description.trim().length>0,`${locale} ${skill.id} description`)
-      assert.equal(skill.description,oporaAs59Day(index+1,locale).purpose)
-      assert.equal(skill.description,oporaAs59Day(index+8,locale).purpose)
+      assert.equal(skill.description,oporaAs60Day(index+1,locale).purpose)
+      assert.equal(skill.description,oporaAs60Day(index+8,locale).purpose)
+      assert.equal(skill.id,'S'+(index+1))
+      assert.deepEqual(skill.days,[index+1,index+8])
+      assert.equal(historical[index].description,historicalDays[index].purpose)
+      assert.equal(historical[index].description,historicalDays[index+7].purpose)
       assert.equal(legacy[index].id,'S'+(index+1))
       assert.deepEqual(legacy[index].days,[index+1,index+8])
       assert.equal(typeof legacy[index].description,'string')
@@ -64,6 +74,12 @@ test('public blueprint retains nonempty canonical descriptions without rewriting
     }
     assert.deepEqual(legacy,before)
     assert.deepEqual(antiStressPublicSkillsV5(locale),before)
+    assert.deepEqual(historical,historicalBefore)
+    assert.deepEqual(oporaAs59Skills(locale),historicalBefore)
+    assert.deepEqual(historicalDays,historicalDaysBefore)
+    assert.deepEqual(Array.from({length:14},(_,index)=>oporaAs59Day(index+1,locale)),historicalDaysBefore)
+    assert.notEqual(programme.skills[0].title,historical[0].title)
+    assert.notEqual(programme.skills[0].description,historical[0].description)
   }
   assert.deepEqual(antiStressBlueprint('unsupported'),antiStressBlueprint('en'))
 })

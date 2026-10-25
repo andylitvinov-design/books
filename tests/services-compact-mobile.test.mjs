@@ -7,6 +7,7 @@ import {assertCurrentHomeDiscovery,currentHomeSource} from "./helpers/current-ho
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const serviceConsultation = '<PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />';
+const originalFreeBadge = '<span className={styles.freeBadge}>{locale === "ru" ? "БЕСПЛАТНО" : locale === "es" ? "GRATIS" : "FREE"}</span>';
 
 test("Services landing has free-first cards and preserves original personal paths", () => {
   const page = read("app/[locale]/services/page.tsx");
@@ -78,7 +79,13 @@ test("homepage mounts current topic and offer discovery while preserving origina
     ["wrong featured service destination","components/home-featured-workspace.tsx",'alchemy: "/" + locale + "/services/alchemy-of-soul"','alchemy: "/" + locale + "/services/wrong"',/Featured offer preserves exact alchemy destination/],
     ["concealed limitations","components/home-featured-workspace.tsx",'{note && <p>{note}</p>}','{note && <details><summary>Details</summary><p>{note}</p></details>}',/preserves written-review and non-medical/],
     ["wrong featured free label","components/home-featured-workspace.tsx",'en: "FREE", ru: "БЕСПЛАТНО"','en: "PAID", ru: "БЕСПЛАТНО"',/Featured no-cost badge keeps exact localized label/],
-    ["wrong original free label","components/services-studio-offers.tsx",'<span className={styles.freeBadge}>FREE</span>','<span className={styles.freeBadge}>PAID</span>',/Original no-cost badge states FREE/],
+    ...["en", "ru", "es"].flatMap(locale => [
+      ["wrong original free label in " + locale,"components/services-studio-offers.tsx",originalFreeBadge,'<span className={styles.freeBadge}>PAID</span>',/Original no-cost badge keeps exact localized label/,locale],
+      ["other-locale original free label in " + locale,"components/services-studio-offers.tsx",originalFreeBadge,'<span className={styles.freeBadge}>' + (locale === "en" ? "GRATIS" : "FREE") + '</span>',/Original no-cost badge keeps exact localized label/,locale],
+      ["missing original free badge in " + locale,"components/services-studio-offers.tsx",originalFreeBadge,'null',/Original situation free\/paid scope is honest/,locale],
+      ["hidden original free badge in " + locale,"components/services-studio-offers.tsx",originalFreeBadge,originalFreeBadge.replace('<span ', '<span hidden '),/Original situation free\/paid scope is honest/,locale],
+      ["original free badge on paid service in " + locale,"components/services-studio-offers.tsx",'{offer.isFree ? ' + originalFreeBadge,'{(offer.isFree || offer.id === "alchemy") ? ' + originalFreeBadge,/Original alchemy free\/paid scope is honest/,locale],
+    ]),
     ["missing written-review limitation","components/home-featured-workspace.tsx",'The free express option is a written review, not a live appointment. A request does not confirm booking.','Free live appointment.',/preserves written-review and non-medical/],
     ["missing non-medical limitation","components/home-featured-workspace.tsx",'Self-tests support reflection; they are not medical diagnoses. Private results require sign-in.','Tests diagnose health conditions.',/preserves written-review and non-medical/],
     ["missing original offers composition","app/[locale]/services/page.tsx",'<ServicesStudioOffers locale={locale as Locale} />','<div />',/services route exposes original situation/],

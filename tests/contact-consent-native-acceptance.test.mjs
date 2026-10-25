@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import vm from 'node:vm'
-import {consentInitialGate,withConsentBootstrap,installConsentPopupGuard,verifyContactConsentNativeAcceptance} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
+import {consentInitialGate,withConsentBootstrap,installConsentPopupGuard,verifyContactConsentNativeAcceptance,collectKeyboardFailureTail} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
 const origin='http://127.0.0.1:3000', initial=origin+'/en/services/alchemy-of-soul'
 function route(url=initial,method='GET',type='document',responseOptions={}) {
   const calls=[]
@@ -56,7 +56,7 @@ test('bootstrap drains active reads before closing and retains asynchronous fail
  await assert.rejects(withConsentBootstrap(context,gate,async()=>{void tracked({})}),/CONSENT_CLEANUP_FAILED/)
  assert.equal(closed,true)
 })
-function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,latePage=false,latePageError=false,latePost=false,lateRouteError=false,lateSocketError=false,latePageCloseError=false,createError=false,stuckTab=false,visible={inside:true,outlined:true},keyboard={sampled:false},readVisibility}={}) {
+function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,latePage=false,latePageError=false,latePost=false,lateRouteError=false,lateSocketError=false,latePageCloseError=false,createError=false,stuckTab=false,visible={inside:true,outlined:true},keyboard={sampled:false},readVisibility,readKeyboardTail}={}) {
  const events=[],contexts=[]
  const browser={newContext:async options=>{
   if(createError)throw new Error(marker)
@@ -72,6 +72,7 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
    click:async()=>{record('click',name);if(name==='label')state.checked=!state.checked},
    fill:async value=>{record('fill',name,value);state.focus='email'},
    evaluate:async fn=>{
+    if(fn===collectKeyboardFailureTail){record('tail',name);return readKeyboardTail?.(fn)}
     record('evaluate',name,String(fn).includes('getBoundingClientRect')?'visibility':'focus')
     if(String(fn).includes('getBoundingClientRect'))return readVisibility?readVisibility(fn):{visible,keyboard}
     return state.focus===name
@@ -424,3 +425,85 @@ test('source retains exact native geometry verdict without waits, retries or for
  assert.equal((sample.match(/await /g)||[]).length,2)
  assert.doesNotMatch(sample,/setTimeout|requestAnimationFrame|waitFor|\.poll\(|scrollIntoView|scrollTo\(|focus\(|force:|dispatchEvent|addEventListener|new Promise|console\./)
 })
+
+function tailFixture({settles=true,readFails=false,listenFails=false}={}) {
+ const calls=[],listeners=new Map();let now=0
+ const checkbox={getBoundingClientRect:()=>{calls.push('rect');if(readFails)throw Error(marker);return {left:41,right:60,top:settles&&now>=250?655:1022.61,bottom:settles&&now>=250?674:1041.61}},matches:selector=>{assert.equal(selector,':focus-visible');return true}}
+ for(const key of ['value','textContent','innerHTML','outerHTML','id','name','href','focus','click','check','scrollIntoView','dispatchEvent','setAttribute'])Object.defineProperty(checkbox,key,{get(){assert.fail('private read or active operation: '+key)}})
+ const document={activeElement:checkbox,onscrollend:null,
+  addEventListener:(name,callback,options)=>{calls.push(['listen',name,options]);if(listenFails&&name==='scrollend')throw Error(marker);listeners.set(name,callback)},
+  removeEventListener:(name,callback,capture)=>{calls.push(['remove',name,capture]);if(listeners.get(name)===callback)listeners.delete(name)}}
+ const sandbox={node:checkbox,document,innerWidth:390,innerHeight:844,scrollX:0,scrollY:4166,performance:{now:()=>now},
+  setTimeout:(callback,delay)=>{calls.push(['timer',delay]);Promise.resolve().then(()=>{now+=delay;listeners.get('scroll')?.();if(now===250)listeners.get('scrollend')?.();callback()})}}
+ return {calls,listeners,read:async fn=>JSON.parse(JSON.stringify(await vm.runInNewContext(`(${fn.toString()})(node)`,sandbox)))}
+}
+async function captureTailFailure(t,{readKeyboardTail,latePopup=false,failAt}={}) {
+ const messages=captureDiagnostics(t),fixture=keyboardFixture({rect:{left:41,top:1022.61,right:60,bottom:1041.61}})
+ const h=harness({readVisibility:fixture.evaluate,readKeyboardTail,latePopup,failAt})
+ let result
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
+  assert.match(error.message,/^CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-visible /)
+  const parts=error.message.split(' keyboard=')[1].split(' keyboardTail=')
+  result={message:error.message,keyboard:JSON.parse(parts[0]),tail:parts[1]===undefined?undefined:JSON.parse(parts[1])}
+  assertPrivateDataExcluded(error,messages);assert.ok(error.message.length<2200);return true
+ })
+ assert.deepEqual(messages,[])
+ assert.equal(h.contexts.length,1)
+ assert.ok(h.events.some(event=>event[1]==='close'))
+ assert.deepEqual(h.events.filter(event=>event[1]==='key').map(event=>event[2]),['Tab'])
+ assert.ok(!h.events.some(event=>['scroll','move','down','up'].includes(event[1])))
+ assert.equal(h.events.filter(event=>event[1]==='tail').length,1)
+ assert.equal(result.keyboard.inside,false)
+ return {...result,h}
+}
+for(const settles of [false,true])test('post-failure passive tail distinguishes '+(settles?'settled in-view':'persistently offscreen')+' without accepting either',async t=>{
+ const fixture=tailFixture({settles}),result=await captureTailFailure(t,{readKeyboardTail:fixture.read})
+ assert.deepEqual(result.tail.samples.map(sample=>sample.inside),[false,false,settles,settles])
+ assert.deepEqual(result.tail.samples.map(sample=>sample.ms),[0,100,250,500])
+ assert.equal(result.tail.finished,true);assert.equal(result.tail.timedOut,false)
+ assert.equal(result.tail.scrollEndSupported,true);assert.equal(result.tail.scrollEvents,3);assert.equal(result.tail.scrollEnds,1)
+ assert.equal(fixture.listeners.size,0)
+ assert.deepEqual(fixture.calls.filter(call=>Array.isArray(call)&&call[0]==='timer'),[['timer',100],['timer',150],['timer',250]])
+ assert.ok(result.h.events.findIndex(event=>event[1]==='tail')<result.h.events.findIndex(event=>event[1]==='close'))
+})
+test('tail samples redact read errors and remove both passive listeners',async t=>{
+ const fixture=tailFixture({readFails:true}),result=await captureTailFailure(t,{readKeyboardTail:fixture.read})
+ assert.ok(result.tail.samples.every(sample=>!sample.sampled))
+ assert.equal(fixture.listeners.size,0)
+})
+test('tail setup failure removes any installed listener and preserves original error',async t=>{
+ const fixture=tailFixture({listenFails:true}),result=await captureTailFailure(t,{readKeyboardTail:fixture.read})
+ assert.equal(result.tail,undefined);assert.equal(fixture.listeners.size,0)
+})
+test('rejected post-failure evaluation cannot replace original verdict or cleanup',async t=>{
+ const result=await captureTailFailure(t,{readKeyboardTail:()=>{throw new AggregateError([Error(marker)],marker)}})
+ assert.equal(result.tail,undefined)
+})
+test('unresponsive post-failure evaluation is bounded and still closes the context',async t=>{
+ const result=await captureTailFailure(t,{readKeyboardTail:()=>new Promise(()=>{})})
+ assert.deepEqual(result.tail,{finished:false,timedOut:true,scrollEndSupported:false,scrollEvents:0,scrollEnds:0,samples:[]})
+})
+test('late popup during post-failure observation still records the bootstrap boundary',async t=>{
+ const fixture=tailFixture(),result=await captureTailFailure(t,{readKeyboardTail:fixture.read,latePopup:true})
+ assert.match(result.message,/boundary=popup /);assert.equal(result.keyboard.inside,false)
+})
+test('cleanup failure after passive tail still reports the original failure phase',async t=>{
+ const fixture=tailFixture(),result=await captureTailFailure(t,{readKeyboardTail:fixture.read,failAt:'close'})
+ assert.match(result.message,/phase=keyboard-visible cleanup=cleanup-close /)
+})
+test('tail serializer allowlists only bounded numeric and boolean fields and four samples',async t=>{
+ const sample={sampled:marker,ms:Infinity,inside:marker,focused:marker,focusVisible:marker,rect:[NaN,-Infinity,1e20,-1e20],viewport:[marker,390],scroll:[1.23456,-1.23456],textContent:marker,toJSON:()=>{throw Error(marker)}}
+ const raw={finished:marker,timedOut:marker,scrollEndSupported:marker,scrollEvents:Infinity,scrollEnds:1e20,samples:Array(30).fill(sample),url:marker,toJSON:()=>{throw Error(marker)}}
+ const result=await captureTailFailure(t,{readKeyboardTail:()=>raw})
+ assert.deepEqual(result.tail,{finished:false,timedOut:false,scrollEndSupported:false,scrollEvents:0,scrollEnds:1000000,samples:Array(4).fill({sampled:false,ms:0,inside:false,focused:false,focusVisible:false,rect:[0,0,1000000,-1000000],viewport:[0,390],scroll:[1.23,-1.23]})})
+})
+test('successful native actions never invoke or wait for the passive failure tail',async t=>{
+ const messages=captureDiagnostics(t),h=harness({readKeyboardTail:()=>assert.fail('tail on success')})
+ await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ assert.deepEqual(messages,modes.map(mode=>[completed(mode)]));assert.equal(h.events.filter(event=>event[1]==='tail').length,0)
+})
+test('throwing optional tail getters cannot replace or leak through the original failure',async t=>{
+ const raw={};Object.defineProperty(raw,'finished',{get(){throw Error(marker)}})
+ const result=await captureTailFailure(t,{readKeyboardTail:()=>raw});assert.equal(result.tail,undefined)
+})
+
