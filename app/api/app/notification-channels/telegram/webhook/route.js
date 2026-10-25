@@ -9,7 +9,8 @@ import {receiveOwnerTelegramAudioWebhook} from '@/lib/practitioners/owner-telegr
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
-export const maxDuration=60
+// Independent free-model calls plus one real synthesis run within a bounded webhook.
+export const maxDuration=120
 
 export async function POST(request){
  if(!verifyClientTelegramSecret(request.headers.get('x-telegram-bot-api-secret-token')))
