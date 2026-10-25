@@ -50,7 +50,7 @@ const copy: Record<PublicLocale, {
         price: "FREE", detail: "A written personal reflection on one question about relationships, work or a life decision — no live call.",
         steps: ["Clarify your question and desired outcome.", "Fill in the short coaching questionnaire and draw ME — GOAL — PROBLEM.", "Agree how to share your materials securely and receive a personal written reflection."],
         imageAlt: "Warm, quiet coaching setting",
-        moreHref: "/services/free-situation-review", moreLabel: "Read about the written review",
+        moreHref: "/coaching/intake?topic=personal", moreLabel: "Read about the written review",
       },
       {
         id: "wu-xing-free", label: "02 · FIVE ELEMENTS", title: "Free energy & wellbeing review — Wu Xing (Five Elements)",
@@ -85,7 +85,7 @@ const copy: Record<PublicLocale, {
         price: "БЕСПЛАТНО", detail: "Личный письменный разбор одного вопроса: отношения, работа, решение или жизненная ситуация. Без видеозвонка.",
         steps: ["Опишите сложность и желаемый результат.", "Ответьте на коучинговые вопросы и нарисуйте «Я — ЦЕЛЬ — ПРОБЛЕМА».", "Согласуйте безопасную передачу материалов и получите личный письменный ответ."],
         imageAlt: "Уютное пространство для коучингового разбора",
-        moreHref: "/services/free-situation-review", moreLabel: "Как проходит письменный разбор",
+        moreHref: "/coaching/intake?topic=personal", moreLabel: "Как проходит письменный разбор",
       },
       {
         id: "wu-xing-free", label: "02 · ПЯТЬ СТИХИЙ", title: "Диагностика энергии и здоровья по У-Син (Пять стихий)",
@@ -120,7 +120,7 @@ const copy: Record<PublicLocale, {
         price: "GRATIS", detail: "Reflexión personal por escrito sobre una pregunta de relaciones, trabajo o decisiones; sin videollamada.",
         steps: ["Aclara tu situación y tu objetivo.", "Completa el cuestionario de coaching y dibuja YO — META — PROBLEMA.", "Acuerda cómo compartir los materiales de forma segura y recibe una reflexión escrita."],
         imageAlt: "Espacio cálido y tranquilo para coaching",
-        moreHref: "/services/free-situation-review", moreLabel: "Cómo funciona la revisión escrita",
+        moreHref: "/coaching/intake?topic=personal", moreLabel: "Cómo funciona la revisión escrita",
       },
       {
         id: "wu-xing-free", label: "02 · CINCO ELEMENTOS", title: "Revisión de energía y bienestar Wu Xing (Cinco Elementos)",
