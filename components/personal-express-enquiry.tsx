@@ -91,6 +91,16 @@ export function PersonalExpressEnquiry({
         && event.target.closest('a[href="#request-free-review"]')) setExpanded(true);
     };
     openFromHash();
+    // Google returns to the original landing without an anchor. Reopen only
+    // this same tab's opted-in wizard; the server still authenticates the
+    // stored receipt before showing private content or claiming the account.
+    if (enableWizard && new URLSearchParams(window.location.search).get("hh_enquiry") === "google") {
+      try {
+        const pending = JSON.parse(window.sessionStorage.getItem("hh-free-express-wizard-resume-v2") || "null");
+        if (pending?.locale === locale && /^HH-[A-F0-9]{12}$/.test(pending.referenceCode || ""))
+          setExpanded(true);
+      } catch { /* A malformed marker has no effect. */ }
+    }
     window.addEventListener("hashchange", openFromHash);
     document.addEventListener("click", openFromAnchor);
     return () => {
