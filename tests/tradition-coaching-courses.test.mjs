@@ -169,7 +169,7 @@ test('optional first-slide notes collapse but remain editable and available on d
  assert.match(tradition,/setNoteExpanded\(Boolean\(saved\?\.note\)\)/)
  assert.match(tradition,/maxLength=\{500\}/)
  assert.match(personal,/aria-expanded=\{showOwnWords\}/)
- assert.match(personal,/hidden=\{quickChoices&&Boolean\(question\.type\)&&!showOwnWords\}/)
+ assert.match(personal,/hidden=\{quickChoices&&!showOwnWords\}/)
  assert.match(personal,/setShowOwnWords\(true\)/)
  assert.match(personal,/maxLength=\{800\}/)
  assert.match(personal,/<details className=\{styles\.adaptivePanel\} data-coaching-adaptive-prompt>/)
