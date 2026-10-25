@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
+const engine = process.env.HH_ALCHEMY_BROWSER === "webkit" ? "webkit" : "chromium";
 
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Alchemy QA requires an isolated loopback server");
@@ -19,7 +20,7 @@ const cases = [
 ];
 const report = [];
 const failures = [];
-const browser = await chromium.launch();
+const browser = await (engine === "webkit" ? webkit : chromium).launch();
 try {
   for (const {locale,width,height} of cases) {
     const page = await browser.newPage({viewport:{width,height}});
@@ -71,12 +72,28 @@ try {
         issues.push("report placeholder unexpectedly found");
       const reportLink = await root.locator('a[href="/' + locale + '/services/alchemy-of-soul/example-report"]').count();
       if (reportLink !== 1) issues.push("example report route link missing");
+      // Read-only interaction: the hero CTA reveals the approved one-field,
+      // opt-in phone capture. Do not submit any contact or open a messenger.
+      if (width === 390 && height === 844) {
+        const hero = root.locator('[data-alchemy-panel="hero"]');
+        const trigger = hero.locator('[data-compact-phone-trigger="true"] [data-contact-order]');
+        await trigger.waitFor({state:"visible"});
+        await trigger.click();
+        await hero.locator('[data-contact-channel-submit="whatsapp"]').waitFor({state:"visible"});
+        if (await hero.locator('[data-contact-channel-submit="telegram"]').count() !== 1)
+          issues.push("compact Telegram option missing");
+        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]').count() !== 1)
+          issues.push("compact opt-in consent missing");
+        if (await hero.locator('[data-compact-phone-trigger="true"] input[type="email"]').count() !== 0)
+          issues.push("long email capture incorrectly expanded from the hero");
+        await trigger.click();
+      }
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
         failures.push(key+": "+issues.join("; "));
         console.error("ALCHEMY_GEOMETRY_FAIL "+key+" "+issues.join("; "));
       } else {
-        console.log("PASS Alchemy "+key+" ten photographed/video chapters fit with no overflowing controls");
+        console.log("PASS Alchemy "+engine+" "+key+" ten photographed/video chapters fit with no overflowing controls");
       }
       const sampleResponse = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul/example-report", {waitUntil:"domcontentloaded",timeout:45000});
       assert.equal(sampleResponse?.status(),200,key+": sample report");
@@ -89,5 +106,5 @@ try {
 } finally { await browser.close(); }
 const destination="artifacts/public-services-production";
 await mkdir(destination,{recursive:true});
-await writeFile(destination+"/alchemy-one-screen-geometry.json", JSON.stringify({cases:report,failures},null,2)+"\n");
+await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,failures},null,2)+"\n");
 assert.deepEqual(failures, [], "Alchemy viewport acceptance: "+failures.join(" | "));

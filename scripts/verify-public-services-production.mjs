@@ -1,5 +1,5 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -449,7 +449,7 @@ try {
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
             nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-          assert.equal(panelHeights.length, 8, "Eight compact Alchemy panels");
+          assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
           if (panelHeights.some(p => p.height > p.max)) {
             try {
               await captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights });
@@ -480,7 +480,16 @@ try {
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
               nodes.map(node => ({top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom})));
-            assert.equal(positions.length, 3, "Exactly three original testimonials");
+            assert.equal(positions.length, 1, "One featured testimonial per mobile screen");
+            const moreReviews = main.locator('[data-alchemy-panel="reviews"] details');
+            await expect(moreReviews).toHaveCount(1);
+            assert.equal(await moreReviews.locator('[data-testimonial-video-id]').count(), 2,
+              "The remaining two approved testimonial videos are available on expansion");
+            assert.equal(await moreReviews.evaluate(node => node.open), false,
+              "Extra testimonials start collapsed to preserve one-screen mobile layout");
+            await moreReviews.locator('summary').click();
+            await expect(moreReviews.locator('[data-testimonial-video-id]')).toHaveCount(2);
+            await moreReviews.locator('summary').click();
             assert.ok(positions.every((pos, index) => index === 0 || pos.top >= positions[index-1].bottom),
               "All testimonial videos must stack vertically");
             assert.ok(await reviewStack.evaluate(node => node.scrollWidth <= node.clientWidth + 1),
@@ -503,7 +512,7 @@ try {
               "Unpriced monthly support must never expose one-time transfer amounts");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredContactChannelChooser(pricing, expect, page);
+            const channels = await openRegisteredCompactPhoneChooser(pricing, expect, page);
             const prepared = await assertPreparedContactChannels(channels, expect);
             assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
               "Selected express session must appear in prepared order draft");
