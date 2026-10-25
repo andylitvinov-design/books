@@ -60,3 +60,19 @@ test("private intention is not in URLs, browser storage, analytics or public boo
   assert.match(cabinet, /await appFetch\('requests', body\)/);
   assert.match(jsx, /window\.sessionStorage\.setItem\(REMOTE_SUPPORT_DRAFT_KEY, JSON\.stringify\(draft\)\)/);
 });
+
+test("expanded phone session compactness preserves truthful price and disclosure", () => {
+  const jsx = read("components/remote-energy-support-booking.tsx");
+  const css = read("components/remote-energy-support-booking.module.css");
+  assert.match(jsx,/data-booking-open=\{isOpen \? "true" : undefined\}/);
+  assert.match(css,/\.masterOffer\[data-booking-open="true"\] \.masterCard\{grid-template-columns:78px/);
+  assert.match(css,/\.bookingForm\{grid-template-columns:minmax\(0,1fr\);gap:7px;padding:10px 11px/);
+  assert.match(css,/\.bookingForm \.durationGroup label:has\(input:disabled\)\{display:none\}/);
+  assert.match(jsx,/<details className=\{styles\.requestSummary\}>/);
+  assert.match(jsx,/<summary className=\{styles\.requestSummaryToggle\}>/);
+  assert.match(jsx,/<p>\{t\.noSlots\} \{t\.price\}<\/p>/);
+  for(const label of ["Distance · no call","Дистанционно","Sin llamada"]){assert.ok(jsx.includes(label));}
+  assert.match(jsx,/aria-label=\{t\.async\}/);
+  assert.match(jsx,/aria-label=\{t\.live\}/);
+  assert.doesNotMatch(jsx,/checkoutSession|createPaymentIntent/);
+});
