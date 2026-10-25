@@ -5,7 +5,7 @@ import test from "node:test";
 test("Reiki Yggdrasil restores a guide-first hero capture and a final capture after the video archive and resource links", async () => {
   const hub = await readFile("components/yggdrasil-program-landing.tsx", "utf8");
   const record = await readFile("components/academy-record-page.tsx", "utf8");
-  const hero = hub.indexOf('<section className="yggdrasil-program-hero">');
+  const hero = hub.indexOf('<section className="yggdrasil-program-hero reiki-screen reiki-screen--hero">');
   const top = hub.indexOf('<YggdrasilLeadForms locale={locale} placement="top" />');
   const modules = hub.indexOf('id="system-modules"');
   const meditation = hub.indexOf("<YggdrasilMeditationFeature");
