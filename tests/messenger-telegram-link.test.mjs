@@ -145,6 +145,6 @@ test('Telegram /start URL always uses the verified bot mode, including shared pr
  assert.throws(()=>telegramClientStartLink('bad',env))
  assert.throws(()=>telegramClientStartLink(token,{...env,HH_CLIENT_TG_BOT_USERNAME:'OtherNoticeBot'}))
  const repository=read('lib/app/messenger-notification-repository.js')
- assert.match(repository,/telegramClientStartLink\\(token\\)/)
- assert.doesNotMatch(repository,/process\\.env\\.HH_CLIENT_TG_BOT_USERNAME\\+'\\?start='/)
+ assert.match(repository,/telegramClientStartLink\(token\)/)
+ assert.doesNotMatch(repository,/process\.env\.HH_CLIENT_TG_BOT_USERNAME\+'\?start='/)
 })
