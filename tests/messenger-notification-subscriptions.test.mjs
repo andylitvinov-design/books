@@ -100,6 +100,6 @@ test('cabinet exposes an immediate one-link Telegram opt-in with verified return
  assert.match(screen,/\(!isTelegram\|\|!ready\)&&<label className=\{styles.consent\}>/)
  assert.match(policy,/news:false/)
  assert.match(source,/telegramClientStartLink\(token\)/)
- assert.match(source,/expires_at.*interval '15 minutes'/)
+ assert.match(source,/now\(\)\+interval '15 minutes'/)
  assert.ok(app.indexOf('<MessengerNotificationSettings ') < app.indexOf('<SubscriptionSettings />'))
 })
