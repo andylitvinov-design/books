@@ -173,7 +173,8 @@ test('cart, endpoints and SQL contain strict order ownership, no fake paid on re
   assert.match(service,/squareApiRequest\(settings, 'GET', '\/v2\/payments\/'/)
   assert.match(service,/square_order_id=\$1 and environment=\$2/)
   assert.equal(sql.split("as $$").length - 1, 2, "Both PL/pgSQL guards must have literal $$ delimiters");
-  assert.equal(sql.split("end $$;").length - 1, 2, "Both PL/pgSQL guards must close literal $$ delimiters");
+  assert.equal(sql.split("end; " + String.fromCharCode(36).repeat(2) + ";").length - 1, 2, "Both PL/pgSQL guards must terminate END; before a doubled dollar delimiter");
+  assert.doesNotMatch(sql, /end\s+\$\$;/i, "Invalid PL/pgSQL END without a semicolon must not return");
   assert.match(sql,/force row level security/i)
   assert.match(sql,/square_orders_account_read/)
   assert.match(sql,/square_orders_verified_webhook_read/)
