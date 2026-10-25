@@ -73,6 +73,8 @@ test('public Holistic House pages default to the correct Home Screen app without
   const psi=JSON.parse(readFileSync('public/manifest.webmanifest','utf8'))
   assert.match(root,/manifest: "\/holistic-house-app.webmanifest"/)
   assert.match(root,/applicationName: "Holistic House"/)
+  assert.match(localeLayout,/manifest: locale === "ru"/)
+  assert.match(localeLayout,/holistic-house-app-ru.webmanifest/)
   assert.match(root,/appleWebApp: \{ capable: true, title: "Holistic House"/)
   assert.match(psiLayout,/manifest: "\/manifest.webmanifest"/)
   assert.match(psiSpanish,/manifest: "\/manifest.webmanifest"/)
