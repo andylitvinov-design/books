@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
 import { speechResultSegments } from '@/lib/personal-coaching/speech-text'
-import { chooseCoachingVoice, coachingLocalVoices, coachingSpeechProfile } from '@/lib/personal-coaching/voice-quality'
+import { chooseCoachingVoice, coachingLocalVoices, coachingSpeechProfile, coachingVoiceSample } from '@/lib/personal-coaching/voice-quality'
 import styles from './tradition-coaching.module.css'
 
 const copy={
@@ -15,7 +15,8 @@ const copy={
     hearing:'Listening… tap Stop when finished.',interim:'Recognizing (not saved yet)',
     device:'System-generated voice, not an Andrey recording.',unavailable:'Read the question above — audio playback is not available on this device.',
     voiceSettings:'Voice & pace',voiceLabel:'Voice',voiceAuto:'Automatic · device voice',paceLabel:'Reading style',
-    paceCalm:'Gentle & unhurried',paceClear:'Clear & normal',noVoiceChoices:'No alternative local voices exposed by this browser.',
+    paceCalm:'Warm & natural',paceUnhurried:'Slower & gentle',paceClear:'Clear & normal',noVoiceChoices:'No alternative local voices exposed by this browser.',
+    tryVoice:'Hear this voice',stopSample:'Stop sample',previewPlaying:'Playing a short sample of your selected voice.'
     voiceLimit:'Voice quality depends on your device. iPhone Safari may not expose enhanced voices.',audioError:'Could not play this question. Please read the text above.',
   },
   ru:{
@@ -26,7 +27,8 @@ const copy={
     hearing:'Слушаю… нажмите «Остановить», когда закончите.',interim:'Распознаём (пока не сохранено)',
     device:'Системный голос устройства, не запись Андрея.',unavailable:'Вопрос можно прочитать выше — озвучка на этом устройстве недоступна.',
     voiceSettings:'Голос и темп',voiceLabel:'Голос',voiceAuto:'Автоматически · голос устройства',paceLabel:'Манера речи',
-    paceCalm:'Мягко и неспешно',paceClear:'Чётко и обычно',noVoiceChoices:'Другие локальные голоса браузер не показывает.',
+    paceCalm:'Тепло и естественно',paceUnhurried:'Медленнее и мягче',paceClear:'Чётко и обычно',noVoiceChoices:'Другие локальные голоса браузер не показывает.',
+    tryVoice:'Послушать голос',stopSample:'Остановить пример',previewPlaying:'Звучит короткий пример выбранного голоса.'
     voiceLimit:'Качество зависит от устройства. Safari на iPhone может не показывать улучшенные голоса.',audioError:'Не удалось озвучить вопрос. Прочитайте его на экране.',
   },
   es:{
@@ -37,7 +39,8 @@ const copy={
     hearing:'Escuchando… toca Detener cuando termines.',interim:'Reconociendo (aún sin guardar)',
     device:'Voz generada por el sistema, no grabación de Andrey.',unavailable:'Puedes leer la pregunta arriba; no hay reproducción de voz disponible.',
     voiceSettings:'Voz y ritmo',voiceLabel:'Voz',voiceAuto:'Automática · voz del dispositivo',paceLabel:'Estilo de lectura',
-    paceCalm:'Suave y pausado',paceClear:'Claro y normal',noVoiceChoices:'Este navegador no muestra otras voces locales.',
+    paceCalm:'Cálido y natural',paceUnhurried:'Más despacio y suave',paceClear:'Claro y normal',noVoiceChoices:'Este navegador no muestra otras voces locales.',
+    tryVoice:'Escuchar esta voz',stopSample:'Detener ejemplo',previewPlaying:'Reproduciendo un ejemplo breve de la voz elegida.'
     voiceLimit:'La calidad depende del dispositivo. Safari en iPhone puede ocultar las voces mejoradas.',audioError:'No se pudo reproducir la pregunta. Lee el texto de arriba.',
   },
 }
@@ -53,6 +56,7 @@ export default function CoachingQuestionVoice({
   const t=copy[lang]
   const spoken=lang==='ru'?'ru-RU':lang==='es'?'es-ES':'en-US'
   const [speaking,setSpeaking]=useState(false)
+  const [previewing,setPreviewing]=useState(false)
   const [listening,setListening]=useState(false)
   const [support,setSupport]=useState({tts:false,stt:false})
   const [error,setError]=useState('')
@@ -86,7 +90,7 @@ export default function CoachingQuestionVoice({
       recognition.current=null
       try{capture?.abort()}catch{/* permission prompt may already have ended */}
       utterance.current=null
-      setSpeaking(false);setListening(false);setInterim('')
+      setSpeaking(false);setPreviewing(false);setListening(false);setInterim('')
       interimCallback.current?.('')
       listeningCallback.current?.(false)
     }
@@ -125,7 +129,7 @@ export default function CoachingQuestionVoice({
     recognition.current=null
     capture?.abort()
     utterance.current=null
-    setSpeaking(false);setListening(false);setError('');setInterim('')
+    setSpeaking(false);setPreviewing(false);setListening(false);setError('');setInterim('')
     interimCallback.current?.('')
     listeningCallback.current?.(false)
   },[text,spoken])
@@ -138,47 +142,66 @@ export default function CoachingQuestionVoice({
     recognition.current=null
     capture?.abort()
     utterance.current=null
-    setSpeaking(false);setListening(false);setInterim('')
+    setSpeaking(false);setPreviewing(false);setListening(false);setInterim('')
     interimCallback.current?.('')
     listeningCallback.current?.(false)
   },[disabled])
 
-  function toggleVoice(){
-    if(!support.tts||disabled)return
-    if(speaking){
-      window.speechSynthesis.cancel()
-      utterance.current=null
-      setSpeaking(false)
-      return
-    }
+  // Both buttons use exactly the same engine so the sample reflects real playback.
+  // Sample text is fixed, localized and never contains a client's response.
+  function playSpeech(value,preview=false){
+    if(!support.tts||disabled||listening)return
     try{
       const synth=window.speechSynthesis
       synth.cancel()
-      const item=new window.SpeechSynthesisUtterance(String(text||'').trim())
+      const item=new window.SpeechSynthesisUtterance(String(value||'').trim())
       item.lang=spoken
       Object.assign(item,coachingSpeechProfile(voicePace))
       const available=synth.getVoices?.()||[]
       const selected=chooseCoachingVoice(available.length?available:voices,spoken,voiceChoice)
       if(selected)item.voice=selected
       setError('')
-      item.onend=()=>{if(utterance.current===item){utterance.current=null;setSpeaking(false)}}
-      item.onerror=()=>{if(utterance.current===item){utterance.current=null;setSpeaking(false);setError(t.audioError)}}
+      item.onend=()=>{
+        if(utterance.current!==item)return
+        utterance.current=null
+        setSpeaking(false);setPreviewing(false)
+      }
+      item.onerror=()=>{
+        if(utterance.current!==item)return
+        utterance.current=null
+        setSpeaking(false);setPreviewing(false);setError(t.audioError)
+      }
       utterance.current=item
-      setSpeaking(true)
+      setSpeaking(!preview);setPreviewing(preview)
       synth.speak(item)
     }catch{
       utterance.current=null
-      setSpeaking(false)
+      setSpeaking(false);setPreviewing(false);setError(t.audioError)
     }
+  }
+
+  function stopAudio(){
+    // Keep the established coaching stop contract while guarding old browsers.
+    if(window.speechSynthesis)window.speechSynthesis.cancel()
+    utterance.current=null
+    setSpeaking(false);setPreviewing(false)
+  }
+
+  function toggleVoice(){
+    if(speaking){stopAudio();return}
+    playSpeech(text)
+  }
+
+  function previewVoice(){
+    if(previewing){stopAudio();return}
+    playSpeech(coachingVoiceSample(lang),true)
   }
 
   function updateSound(key,value){
     voicePreferences[lang]={...(voicePreferences[lang]||{voice:'auto',pace:'calm'}),[key]:value}
     if(key==='voice')setVoiceChoice(value)
     else setVoicePace(value)
-    window.speechSynthesis?.cancel()
-    utterance.current=null
-    setSpeaking(false)
+    stopAudio()
   }
 
   function toggleMic(){
@@ -194,9 +217,7 @@ export default function CoachingQuestionVoice({
       consentCallback.current?.()
     }
     try{
-      window.speechSynthesis?.cancel()
-      utterance.current=null
-      setSpeaking(false)
+      stopAudio()
       const Constructor=window.SpeechRecognition||window.webkitSpeechRecognition
       const capture=new Constructor()
       capture.lang=spoken
@@ -243,7 +264,7 @@ export default function CoachingQuestionVoice({
 
   return <div className={styles.voice+(compact?' '+styles.voiceCompact:'')} data-tradition-voice data-coaching-question-voice data-coaching-voice-compact={compact?'true':undefined}>
     <div className={styles.voiceActions}>
-      {support.tts?<button type="button" disabled={disabled} onClick={toggleVoice}
+      {support.tts?<button type="button" disabled={disabled||listening} onClick={toggleVoice}
         aria-label={speaking?t.stop:t.listen} title={speaking?t.stop:t.listen} aria-pressed={speaking}>
         {speaking?<VolumeX size={18}/>:<Volume2 size={18}/>} {!compact&&(speaking?t.stop:t.listen)}
       </button>:<small>{t.unavailable}</small>}
@@ -260,7 +281,7 @@ export default function CoachingQuestionVoice({
       {voicePanel&&<div id={soundPanelId} className={styles.voiceSettingsPanel}>
         <label>{t.voiceLabel}
           <select value={voiceChoice} onChange={event=>updateSound('voice',event.target.value)}>
-            <option value="auto">{t.voiceAuto}</option>
+            <option value="auto">{t.voiceAuto}{chooseCoachingVoice(voices,spoken)?.name?' · '+chooseCoachingVoice(voices,spoken).name:''}</option>
             {coachingLocalVoices(voices,spoken).map((voice,index)=><option
               key={(voice.voiceURI||voice.name)+index} value={voice.voiceURI||'name:'+voice.name}>
               {voice.name} ({voice.lang})
@@ -270,10 +291,16 @@ export default function CoachingQuestionVoice({
         <label>{t.paceLabel}
           <select value={voicePace} onChange={event=>updateSound('pace',event.target.value)}>
             <option value="calm">{t.paceCalm}</option>
+            <option value="unhurried">{t.paceUnhurried}</option>
             <option value="clear">{t.paceClear}</option>
           </select>
         </label>
-        <small>{coachingLocalVoices(voices,spoken).length?t.voiceLimit:t.noVoiceChoices}</small>
+        <button type="button" className={styles.voiceSample} disabled={disabled||listening}
+          aria-pressed={previewing} onClick={previewVoice}>
+          {previewing?t.stopSample:t.tryVoice}
+        </button>
+        <small role="status" aria-live="polite">{previewing?t.previewPlaying:
+          coachingLocalVoices(voices,spoken).length?t.voiceLimit:t.noVoiceChoices}</small>
       </div>}
     </>}
     <small role="status" aria-live="polite" className={compact&&!listening?styles.voiceVisuallyHidden:undefined}>{listening?t.hearing:!support.stt?t.unsupported:t.device}</small>
