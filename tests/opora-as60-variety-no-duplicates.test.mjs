@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {oporaAs60Day} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {oporaAs60Journey} from '../lib/inner-growth/opora-as60-integrated-journey.js'
 import {validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
-import {OPORA_VARIETY_REVISION,oporaAs60DailyInsight,oporaAs60VariedDay,
+import {OPORA_VARIETY_REVISION,oporaAs60DailyInsight,oporaAs60SettlingCue,oporaAs60VariedDay,
   oporaAs60VariedJourney,oporaAs60VariedValid} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
@@ -27,6 +27,7 @@ test('all fourteen lessons have distinct purposes and insights in EN/RU/ES',()=>
   for(let day=1;day<=14;day++){
    const item=oporaAs60VariedDay(day,locale),insight=oporaAs60DailyInsight(day,locale)
    goals.add(item.purpose);insights.add(insight)
+   assert.ok(oporaAs60SettlingCue(day,locale))
    assert.notEqual(insight,item.purpose)
   }
   assert.equal(goals.size,14);assert.equal(insights.size,14)
@@ -55,6 +56,8 @@ test('new Day 2 UI teaches three different ideas and saves no fabricated attempt
    await advanceOporaTo(h,'why',label)
    assert.ok(textOf(screen(h,'why')).includes(oporaAs60DailyInsight(2,locale)))
    assert.ok(!textOf(screen(h,'why')).includes(day.purpose))
+   await advanceOporaTo(h,'settle',label)
+   assert.ok(textOf(screen(h,'settle')).includes(oporaAs60SettlingCue(2,locale)))
    await advanceOporaTo(h,'recapPractice',label)
    assert.ok(textOf(screen(h,'recapPractice')).includes(day.result))
    assert.ok(!textOf(screen(h,'recapPractice')).includes(day.purpose))
