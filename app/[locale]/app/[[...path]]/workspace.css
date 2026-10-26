@@ -1681,7 +1681,7 @@
 
 /* All six Cabinet areas plus Home fit on one mobile row, including 320px iPhones. */
 @media(max-width:760px){
-  .hh-app .hh-mobile-app-nav { grid-template-columns:repeat(7,minmax(0,1fr)); }
+  .hh-app .hh-mobile-app-nav { grid-template-columns:repeat(6,minmax(0,1fr)); }
   .hh-app .hh-mobile-app-nav a { font-size:10px; padding-inline:0; min-width:0; }
   .hh-app .hh-mobile-app-nav a svg { width:19px;height:19px; }
 }
@@ -1690,7 +1690,7 @@
 @media(max-width:760px){
   .hh-app .hh-mobile-app-nav{
     display:grid;
-    grid-template-columns:repeat(7,minmax(0,1fr))!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
   }
   .hh-app .hh-mobile-app-nav a{min-width:0;font-size:clamp(9px,2.4vw,11px);gap:3px}
   .hh-app .hh-mobile-app-nav a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
