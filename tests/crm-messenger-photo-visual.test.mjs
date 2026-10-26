@@ -41,22 +41,22 @@ test('Photos are resolved only in authenticated owner CRM thread and have retrie
   assert.doesNotMatch(ui,/api\.telegram\.org|file_id|telegramPhotoFileId/)
 })
 
-test('Chat bubbles show client photo without exposing workflow markers',()=>{
+test('Private photos remain linked to the new one-screen customer messenger',()=>{
   const chat=read('components/app/crm-messenger.jsx')
   const css=read('components/app/crm-messenger.module.css')
+  const inbox=read('components/app/messages-simple-inbox.jsx')
   assert.match(chat,/photoOnlyMessage=/)
   for(const marker of ['Voluntary photo attached for private review',
     'Client portrait photo, shared voluntarily for private review',
-    'ME-GOAL-OBSTACLE drawing, shared voluntarily for private review']){
+    'ME-GOAL-OBSTACLE drawing, shared voluntarily for private review'])
     assert.ok(chat.includes(marker),marker)
-  }
   assert.match(chat,/!m\.photo\|\|!photoOnlyMessage\.test\(String\(m\.text\|\|''\)\.trim\(\)\)/)
   assert.match(chat,/m\.photo&&selected\.channel==='telegram'&&<CrmTelegramPhoto/)
   assert.match(chat,/purpose=\{m\.photoPurpose==='drawing'\?'drawing':'portrait'\}/)
-  assert.match(chat,/compact\?\(lang==='ru'\?'Написать сообщение…'/)
-  assert.match(chat,/className=\{styles\.chatAvatar\}/)
-  assert.match(chat,/className=\{styles\.chatRefreshButton\}/)
-  assert.match(css,/\.compose \.repliesToggle\{grid-row:1/)
-  assert.match(css,/\.compose textarea\{grid-row:2/)
-  assert.match(css,/\.messages p\{margin:0 0 6px/)
+  assert.match(chat,/placeholder=\{conversationOnly\|\|compact\?/)
+  assert.match(inbox,/function PrivateAvatar\(/)
+  assert.match(inbox,/portrait=\{selected\.kind==='crm'/)
+  assert.match(inbox,/conversationOnly onThreadsLoaded=\{onCrmThreads\}/)
+  assert.match(css,/\.detailConversation \.compose textarea\{grid-column:1/)
+  assert.match(css,/\.detailConversation \.compose>button\{grid-column:2/)
 })
