@@ -52,6 +52,8 @@ const copy = {
     compactHandoff: "Chat did not open automatically. Use a button below.",
     expressQuestion: "What would you like to explore? (optional)",
     expressHint: "One or two sentences. Please avoid medical records, symptoms, or test results.",
+    expressAddDetails: "Add a few words (optional)",
+    compactConsentRequired: "Please agree to one personal reply before continuing.",
   },
   ru: {
     order: "Оставить заявку",
@@ -87,6 +89,8 @@ const copy = {
     compactHandoff: "Чат не открылся автоматически. Нажмите кнопку ниже.",
     expressQuestion: "В чём суть вашего вопроса? (необязательно)",
     expressHint: "Одно-два предложения. Не указывайте симптомы, анализы и результаты тестов.",
+    expressAddDetails: "Уточнить вопрос (по желанию)",
+    compactConsentRequired: "Для отправки подтвердите согласие на один личный ответ.",
   },
   es: {
     order: "Solicitar plaza",
@@ -122,6 +126,8 @@ const copy = {
     compactHandoff: "El chat no se abrió. Usa un botón de abajo.",
     expressQuestion: "¿Cuál es tu consulta? (opcional)",
     expressHint: "Una o dos frases. Evita síntomas, informes médicos y resultados de pruebas.",
+    expressAddDetails: "Añadir detalles (opcional)",
+    compactConsentRequired: "Acepta una respuesta personal antes de continuar.",
   },
 } as const;
 
@@ -334,8 +340,12 @@ export function ContactChannelChooser({
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
     const usePhone = compactPhone || method === "phone";
     if ((!usePhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
-      (usePhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone)) || !consent) {
+      (usePhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone))) {
       setError(compactPhone ? c.compactPhoneError : c.contactError);
+      return;
+    }
+    if (!consent) {
+      setError(compactPhone ? c.compactConsentRequired : c.quickConsent);
       return;
     }
     // Open synchronously during the messenger tap: iPhone Safari blocks a new
@@ -441,13 +451,15 @@ export function ContactChannelChooser({
                   setPhone(value); setError(""); operationId.current = null;
                 }} />
             </div>
-            {expressReview && <label className={styles.compactQuestion}>
-              <span>{c.expressQuestion}</span>
-              <textarea rows={2} maxLength={300} value={description} disabled={busy}
-                placeholder={c.expressHint}
-                onChange={event => { setDescription(event.target.value); setError(""); operationId.current = null; }} />
-              <small>{c.expressHint}</small>
-            </label>}
+            {expressReview && <details className={styles.compactQuestionReveal}>
+              <summary>{c.expressAddDetails}</summary>
+              <label className={styles.compactQuestion}>
+                <span>{c.expressQuestion}</span>
+                <textarea rows={2} maxLength={300} value={description} disabled={busy}
+                  placeholder={c.expressHint}
+                  onChange={event => { setDescription(event.target.value); setError(""); operationId.current = null; }} />
+              </label>
+            </details>}
             <label className={styles.compactConsent}>
               <input type="checkbox" checked={consent} required disabled={busy}
                 onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
