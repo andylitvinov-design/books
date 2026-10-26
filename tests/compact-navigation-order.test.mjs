@@ -3,16 +3,17 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { activeCompactNavigationId, compactNavigationIds, getCompactNavigation, getSiteNavigation, navigationCopy } from '../lib/site-navigation-model.js'
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
-const order = ['home','analysis','courses','profile','alchemy','pro','temple']
+const order = ['profile','courses','home','analysis','alchemy','pro','temple']
 test('seven accessible public tabs lead to distinct routes in EN/RU/ES', () => {
   assert.deepEqual(compactNavigationIds, order)
-  const routes = {analysis:'services/free-situation-review',courses:'academy',profile:'personality-profiles',alchemy:'services/alchemy-of-soul',pro:'pro',temple:'holistic-support'}
+  const routes = {analysis:'services/free-situation-review',courses:'academy',alchemy:'services/alchemy-of-soul',pro:'pro',temple:'holistic-support'}
   for (const locale of ['en','ru','es']) {
     const items = getCompactNavigation(locale)
     assert.deepEqual(items.map(x=>x.id), order)
     assert.equal(new Set(items.map(x=>x.href)).size,7)
-    assert.equal(items[0].href, locale==='en'?'/':'/'+locale)
-    for (const item of items.slice(1)) assert.equal(item.href, '/'+locale+'/'+routes[item.id])
+    assert.equal(items[0].href, '/' + (locale === 'es' ? 'en' : locale) + '/app/portrait')
+    for (const item of items.slice(1)) assert.equal(item.href,
+      item.id === 'home' ? (locale === 'en' ? '/' : '/' + locale) : '/' + locale + '/' + routes[item.id])
     for (const item of items) {
       assert.equal(item.label, navigationCopy[locale][item.id])
       assert.equal(item.ariaLabel,item.label)
