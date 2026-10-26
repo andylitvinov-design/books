@@ -59,6 +59,8 @@ export async function POST(request,{params}){
           }
           continue
         }
+        // Diagnostic buttons must never fall through to ordinary CRM ingestion.
+        if(event.callbackId)continue
       }
       await ingestMessengerUpdate(provider,event,config)
     }

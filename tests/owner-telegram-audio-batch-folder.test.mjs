@@ -47,6 +47,8 @@ test('no premature finish button; finish appears after two saved clips',()=>{
   }
   const ready=ownerAudioCombineKeyboard(ID,'reiki',2)
   assert.ok(ready.inline_keyboard.flat().some(b=>b.text.includes('Готово')))
+  assert.ok(ownerAudioCombineKeyboard(ID,'reiki',12).inline_keyboard.flat().some(b=>b.text.includes('12 аудио')))
+  assert.ok(ownerAudioCombineKeyboard(ID,'reiki',13).inline_keyboard.flat().some(b=>b.text.includes('12 аудио')))
 })
 test('batch-specific folder/finish/cancel callbacks validate owner, bot and batch ID',()=>{
   const folder=parseOwnerAudioCallback(callback('hh-audio:bf:'+ID+':reiki'))
@@ -55,6 +57,9 @@ test('batch-specific folder/finish/cancel callbacks validate owner, bot and batc
   assert.equal(folder.folder,'reiki')
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:done:'+ID)).action,'done')
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:cancel:'+ID)).action,'cancel')
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:resend:'+ID)).action,'resend')
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:resend:'+ID)).batchId,ID)
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:resend:'+ID+':reiki')),null)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:bf:'+OLD+':greek')).batchId,OLD)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:bf:'+ID+':private-client')),null)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:bf:not-an-id:reiki')),null)
@@ -92,7 +97,9 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(service,/combineImportReply\(combine,ready\.id\)/)
   assert.ok(service.indexOf("const ready=await markAudio(config,row.id,'ready'")<
     service.indexOf("const combine=await appendAudioCombine(config,event,row.id)"))
-  assert.match(service,/chooseFolderButtons\(saved\.id\)/)
+  assert.match(service,/combinedDeliveryKeyboard\(saved\.id\)/)
+  assert.match(service,/if\(batch\.state==='ready'\)return resendSavedCombined/)
+  assert.match(service,/if\(event\.action==='resend'\)return resendSavedCombined/)
   assert.match(service,/\[button\('inbox'\)\]/)
   assert.match(service,/upsert:false/)
   assert.match(service,/event\.chatId!==credentials\.chat\|\|event\.userId!==credentials\.chat/)
@@ -104,4 +111,5 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(ui,/join:'Объединить аудио'/)
   assert.match(ui,/join:'Combine audio'/)
   assert.match(ui,/join:'Unir audios'/)
+  assert.equal((ui.match(/2–12/g)||[]).length,3)
 })

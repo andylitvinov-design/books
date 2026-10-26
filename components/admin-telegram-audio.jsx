@@ -1,7 +1,7 @@
 'use client'
 
 import {useCallback,useEffect,useRef,useState} from 'react'
-import {AudioLines,FolderInput,Pencil,Plus,RefreshCw,ShieldCheck} from 'lucide-react'
+import {AudioLines,ChevronUp,FolderInput,MoreHorizontal,Pencil,Play,Plus,RefreshCw,ShieldCheck} from 'lucide-react'
 import {OWNER_AUDIO_FOLDERS} from '@/lib/practitioners/owner-telegram-audio-model.mjs'
 import styles from './admin-telegram-audio.module.css'
 
@@ -19,7 +19,7 @@ const LABELS={
     moved:'Аудио перемещено в выбранную папку.',saved:'Название сохранено.',
     failed:'Не удалось сохранить. Повторите попытку.',loadFailed:'Не удалось загрузить записи. Проверьте вход и соединение.',
     listen:'Прослушать',renew:'Обновить аудио',renewing:'Обновляем…',
-    playbackError:'Ссылка для воспроизведения недоступна или истекла. Обновите аудио.',
+    playbackError:'Не удалось воспроизвести запись. Повторите попытку.',actions:'Действия',retry:'Повторить',
     private:'Приватно · не опубликовано',
     limit:'Отображаются последние 60 записей. Более старые сохранены в хранилище.',
     guideTitle:'Как отправить запись в библиотеку',
@@ -28,7 +28,7 @@ const LABELS={
       'Зажмите голосовое сообщение в Telegram → «Переслать» → Dot → «Отправить».',
       'Дождитесь ответа ✅ о сохранении. После этого запись появится в списке.'
     ],
-    combine:'Объединить: нажмите «Объединить аудио» → выберите папку для готового файла → перешлите 2–8 голосовых OGG/Opus → после подтверждений нажмите «Готово · объединить». Один файл придёт в Dot и будет сохранён в выбранной папке. Папку можно изменить и здесь. До 20 МБ суммарно, /cancel для отмены.',
+    combine:'Объединить: нажмите «Объединить аудио» → выберите папку для готового файла → перешлите 2–12 голосовых OGG/Opus → после подтверждений нажмите «Готово · объединить» (или /done). Один файл придёт в Dot и будет сохранён в выбранной папке. Папку можно изменить и здесь. До 20 МБ суммарно, /cancel для отмены.',
     connection:'Подключение Telegram Dot',checkBot:'Проверить',repairBot:'Восстановить webhook',
     connectionLoading:'Проверяем сервер Telegram…',
     connectionReady:'Webhook зарегистрирован. Ответ на /audio нужно подтвердить настоящим сообщением.',
@@ -53,7 +53,7 @@ const LABELS={
     moved:'Recording moved to the selected folder.',saved:'Title saved.',
     failed:'Could not save. Please try again.',loadFailed:'Could not load recordings. Check your sign-in and connection.',
     listen:'Play recording',renew:'Refresh audio',renewing:'Refreshing…',
-    playbackError:'The playback link expired or is unavailable. Refresh the audio.',
+    playbackError:'Recording could not be played. Please try again.',actions:'Actions',retry:'Retry',
     private:'Private · not published',
     limit:'Showing the newest 60 recordings. Older files remain in storage.',
     guideTitle:'How to send a recording to your library',
@@ -62,7 +62,7 @@ const LABELS={
       'Hold a Telegram voice message → Forward → Dot → Send.',
       'Wait for the ✅ saved confirmation. The recording will then appear here.'
     ],
-    combine:'To combine: tap Combine audio → select the destination folder for the merged file → forward 2–8 OGG/Opus voice notes → wait for ✅ per clip → tap Done · Combine. One file will arrive in Dot and be saved in your chosen folder. You can move it here later. Maximum 20 MB; /cancel to stop.',
+    combine:'To combine: tap Combine audio → select the destination folder for the merged file → forward 2–12 OGG/Opus voice notes → wait for ✅ per clip → tap Done · Combine (or /done). One file will arrive in Dot and be saved in your chosen folder. You can move it here later. Maximum 20 MB; /cancel to stop.',
     connection:'Dot Telegram connection',checkBot:'Check',repairBot:'Repair webhook',
     connectionLoading:'Checking Telegram provider…',
     connectionReady:'Webhook is registered. A real /audio response is still needed to prove delivery.',
@@ -87,7 +87,7 @@ const LABELS={
     moved:'Grabación movida a la carpeta elegida.',saved:'Título guardado.',
     failed:'No se pudo guardar. Inténtalo de nuevo.',loadFailed:'No se pudo cargar. Comprueba tu sesión y conexión.',
     listen:'Escuchar grabación',renew:'Renovar audio',renewing:'Renovando…',
-    playbackError:'El enlace de audio caducó o no está disponible. Renueva el audio.',
+    playbackError:'No se pudo reproducir el audio. Inténtalo de nuevo.',actions:'Acciones',retry:'Reintentar',
     private:'Privado · sin publicar',
     limit:'Se muestran los 60 audios más recientes. Los anteriores se conservan.',
     guideTitle:'Cómo enviar una grabación a la biblioteca',
@@ -96,7 +96,7 @@ const LABELS={
       'Mantén pulsado un audio en Telegram → Reenviar → Dot → Enviar.',
       'Espera el mensaje ✅ de confirmación. Entonces aparecerá aquí.'
     ],
-    combine:'Para unir: pulsa Unir audios → elige la carpeta del archivo final → reenvía 2–8 voces OGG/Opus → espera ✅ por clip → pulsa Listo · Unir. El archivo llegará a Dot y se guardará en la carpeta elegida. Puedes moverlo aquí después. Máximo 20 MB; /cancel para cancelar.',
+    combine:'Para unir: pulsa Unir audios → elige la carpeta del archivo final → reenvía 2–12 voces OGG/Opus → espera ✅ por clip → pulsa Listo · Unir (o /done). El archivo llegará a Dot y se guardará en la carpeta elegida. Puedes moverlo aquí después. Máximo 20 MB; /cancel para cancelar.',
     connection:'Conexión Telegram de Dot',checkBot:'Verificar',repairBot:'Reparar webhook',
     connectionLoading:'Comprobando el proveedor Telegram…',
     connectionReady:'Webhook registrado. Hay que comprobar la respuesta real a /audio.',
@@ -109,11 +109,16 @@ const LABELS={
     autoSave:'La carpeta elegida en Dot se usa para una grabación en los siguientes 30 minutos. Aquí puedes moverla.'
   }
 }
-const duration=value=>{
+const duration=(value,lang)=>{
   const seconds=Math.max(0,Math.floor(Number(value)||0))
+  if(!seconds)return {ru:'<1 с',en:'<1 s',es:'<1 s'}[lang]
   return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0')
 }
-const size=value=>(Math.max(0,Number(value)||0)/1048576).toFixed(1)+' MB'
+const size=(value,lang)=>{
+  const bytes=Math.max(0,Number(value)||0)
+  if(bytes<1048576)return (bytes/1024).toFixed(1)+' '+({ru:'КБ',en:'KB',es:'kB'}[lang])
+  return (bytes/1048576).toFixed(1)+' MB'
+}
 const dateLabel=(value,locale)=>{
   const time=new Date(value)
   return Number.isFinite(time.getTime())
@@ -131,9 +136,10 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
   const [pendingFolders,setPendingFolders]=useState({})
   const [busy,setBusy]=useState(true)
   const [notice,setNotice]=useState(''),[error,setError]=useState('')
-  const [audioUrls,setAudioUrls]=useState({})
+  const [openAudio,setOpenAudio]=useState('')
+  const [openActions,setOpenActions]=useState('')
   const [audioErrors,setAudioErrors]=useState({})
-  const [renewing,setRenewing]=useState('')
+  const [replayKeys,setReplayKeys]=useState({})
   const focused=useRef(false)
   const [connection,setConnection]=useState(null)
   const [connectionBusy,setConnectionBusy]=useState(false)
@@ -150,7 +156,7 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
       if(!Array.isArray(data.files))throw Error('load')
       setFiles(data.files)
       setTitles(Object.fromEntries(data.files.map(item=>[item.id,item.title])))
-      setAudioUrls({})
+      setOpenAudio('')
       setAudioErrors({})
     }catch{setError(t.loadFailed)}
     finally{setBusy(false)}
@@ -238,32 +244,22 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
     if(moving)return
     if(await persist(item,titles[item.id],item.folder,t.saved))setEditing('')
   }
-  async function renewAudio(item){
-    if(renewing)return
-    setRenewing(item.id);setError('')
-    try{
-      const response=await fetch('/api/admin/materials/telegram?preview='+encodeURIComponent(item.id),{
-        credentials:'same-origin',cache:'no-store'})
-      if(!response.ok)throw Error('preview')
-      const data=await response.json()
-      if(typeof data.previewUrl!=='string'||!data.previewUrl.startsWith('https://'))
-        throw Error('preview')
-      setAudioUrls(current=>({...current,[item.id]:data.previewUrl}))
-      setAudioErrors(current=>({...current,[item.id]:false}))
-    }catch{setAudioErrors(current=>({...current,[item.id]:true}));setError(t.playbackError)}
-    finally{setRenewing('')}
+  function retryAudio(id){
+    setAudioErrors(current=>({...current,[id]:false}))
+    setReplayKeys(current=>({...current,[id]:(current[id]||0)+1}))
   }
 
   const visible=files.filter(item=>folder==='all'||item.folder===folder)
   return <section className={styles.wrapper} data-telegram-audio-inbox>
     <div className={styles.heading}>
       <div className={styles.headingText}>
-        <h2>{t.heading}</h2><p>{t.intro}</p>
+        <h2 id="telegram-recent-heading">{t.heading}</h2>
+        <p>{files.length} {t.total} · {t.intro}</p>
       </div>
       <div className={styles.headingActions}>
         <a href="https://t.me/Andydotbot?start=audio" target="_blank"
           rel="noopener noreferrer" className={styles.telegramCta}>
-          <Plus size={17} aria-hidden="true"/>{t.add}
+          <Plus size={16} aria-hidden="true"/>{t.add}
         </a>
         <a href="https://t.me/Andydotbot?start=combine" target="_blank"
           rel="noopener noreferrer" className={[styles.telegramCta,styles.combineCta].join(' ')}
@@ -272,16 +268,11 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
         </a>
         <button type="button" className={styles.secondary} onClick={load}
           disabled={busy||!!moving} aria-label={t.refresh}>
-          <RefreshCw size={18} aria-hidden="true"/><span>{t.refresh}</span>
+          <RefreshCw size={17} aria-hidden="true"/><span>{t.refresh}</span>
         </button>
       </div>
     </div>
-
     <div className={styles.tools}>
-      <div className={styles.toolsTitle}>
-        <h3 id="telegram-recent-heading">{t.recent}</h3>
-        <p>{t.newest}</p>
-      </div>
       <label className={styles.filter}>
         <span>{t.filter}</span>
         <select value={folder} onChange={event=>setFolder(event.target.value)}>
@@ -289,14 +280,14 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
           {OWNER_AUDIO_FOLDERS.map(item=><option key={item.id} value={item.id}>{item[lang]}</option>)}
         </select>
       </label>
-      <span className={styles.count}>{visible.length} / {files.length} {t.total}</span>
+      <span className={styles.count}>{visible.length} / {files.length}</span>
     </div>
 
     {busy&&<p role="status" className={styles.loading}>{t.loading}</p>}
     {notice&&<p role="status" className={styles.notice}>{notice}</p>}
     {error&&<p role="alert" className={styles.error}>{error}</p>}
     {!busy&&!visible.length&&<div className={styles.empty} data-owner-telegram-audio-empty>
-      <AudioLines size={32} aria-hidden="true"/>
+      <AudioLines size={28} aria-hidden="true"/>
       <h3>{t.noneTitle}</h3>
       <p>{folder==='all'?t.none:t.noneTitle}</p>
       {folder==='all'&&<p className={styles.emptyHint}>{t.emptyHint}</p>}
@@ -308,31 +299,44 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
       {visible.map(item=>{
         const currentFolder=pendingFolders[item.id]||item.folder
         const isMoving=moving===item.id
-        const preview=audioUrls[item.id]||item.previewUrl
+        const isAudioOpen=openAudio===item.id
+        const isActionsOpen=openActions===item.id
+        const folderName=OWNER_AUDIO_FOLDERS.find(option=>option.id===item.folder)?.[lang]||''
         return <article key={item.id} id={'tg-audio-'+item.id}
           data-owner-telegram-audio-card
           className={[styles.card,item.id===initialItem?styles.focused:''].join(' ')}>
           <div className={styles.cardTop}>
-            <div className={styles.audioIcon}><AudioLines size={22} aria-hidden="true"/></div>
+            <div className={styles.audioIcon}><AudioLines size={19} aria-hidden="true"/></div>
             <div className={styles.cardTitle}>
-              <h4>{item.title}</h4>
-              <p>{dateLabel(item.received_at,lang)} <span aria-hidden="true">·</span> {duration(item.duration_seconds)} <span aria-hidden="true">·</span> {size(item.bytes)}</p>
+              <h4 title={item.title}>{item.title}</h4>
+              <p title={folderName}>{dateLabel(item.received_at,lang)} · {duration(item.duration_seconds,lang)} · {size(item.bytes,lang)} · {folderName}</p>
             </div>
-            <span className={styles.folderBadge}>{OWNER_AUDIO_FOLDERS.find(option=>option.id===item.folder)?.[lang]}</span>
-          </div>
-          <div className={styles.player}>
-            {preview&&!audioErrors[item.id]
-              ?<audio controls preload="none" src={preview}
-                aria-label={t.listen+': '+item.title}
-                onError={()=>setAudioErrors(current=>({...current,[item.id]:true}))}/>
-              :<p role="status" className={styles.playerError}>{t.playbackError}</p>}
-            <button type="button" className={styles.renew}
-              onClick={()=>renewAudio(item)} disabled={renewing===item.id}>
-              <RefreshCw size={14} aria-hidden="true"/>
-              {renewing===item.id?t.renewing:t.renew}
+            <button type="button" className={styles.playToggle}
+              aria-label={t.listen+': '+item.title}
+              aria-expanded={isAudioOpen} aria-controls={'tg-player-'+item.id}
+              onClick={()=>setOpenAudio(current=>current===item.id?'':item.id)}>
+              {isAudioOpen?<ChevronUp size={17} aria-hidden="true"/>:<Play size={17} aria-hidden="true"/>}
+              <span>{t.listen}</span>
+            </button>
+            <button type="button" className={styles.actionsToggle}
+              aria-expanded={isActionsOpen} aria-controls={'tg-actions-'+item.id}
+              aria-label={t.actions} title={t.actions}
+              onClick={()=>setOpenActions(current=>current===item.id?'':item.id)}>
+              <MoreHorizontal size={22} aria-hidden="true"/>
             </button>
           </div>
-          <div className={styles.cardActions}>
+          {isAudioOpen&&<div id={'tg-player-'+item.id} className={styles.player}>
+            {item.previewUrl&&!audioErrors[item.id]
+              ?<audio controls preload="none" key={item.id+'-'+(replayKeys[item.id]||0)}
+                src={item.previewUrl}
+                aria-label={t.listen+': '+item.title}
+                onError={()=>setAudioErrors(current=>({...current,[item.id]:true}))}/>
+              :<div role="alert" className={styles.playerError}>
+                {t.playbackError}
+                <button type="button" onClick={()=>retryAudio(item.id)}>{t.retry}</button>
+              </div>}
+          </div>}
+          {isActionsOpen&&<div id={'tg-actions-'+item.id} className={styles.cardActions}>
             <label className={styles.moveLabel}>
               <span><FolderInput size={15} aria-hidden="true"/>{t.move}</span>
               <select data-owner-telegram-move value={currentFolder}
@@ -346,8 +350,8 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
               <Pencil size={15} aria-hidden="true"/>{t.rename}
             </button>
             <span className={styles.privacy}><ShieldCheck size={14} aria-hidden="true"/>{isMoving?t.moving:t.private}</span>
-          </div>
-          {editing===item.id&&<form className={styles.renameForm}
+          </div>}
+          {isActionsOpen&&editing===item.id&&<form className={styles.renameForm}
             onSubmit={event=>void rename(event,item)}>
             <label htmlFor={'tg-audio-title-'+item.id}>{t.title}</label>
             <input id={'tg-audio-title-'+item.id} value={titles[item.id]??item.title}
