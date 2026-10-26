@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import {useEffect,useMemo,useRef,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
+import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
 import PractitionerRequestTasks from './practitioner-request-tasks'
 import {torontoToday} from '@/lib/practitioners/task-policy'
 import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
@@ -81,7 +82,7 @@ const remoteMessageStatus=(status,locale)=>{
  }
  return (labels[locale]||labels.en)[status]||status
 }
-export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
+export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null,freeExpressV2Enabled=false}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
@@ -318,14 +319,16 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                   {request.needsReply?' · '+t.awaiting:''}
                   {request.newMessageCount>0?' · '+t.newMessages+': '+request.newMessageCount:''}</small>
                 </div>
-                {request.message&&<p className={styles.original}>{request.message}</p>}
+                {!(isOwner&&freeExpressV2Enabled&&isOwnerFreeExpressRequest(request))&&request.message&&<p className={styles.original}>{request.message}</p>}
                 {['requested','contacted'].includes(request.status)&&<div className={styles.actions}>
                   {request.status==='requested'&&<button type="button" disabled={busy}
                     onClick={()=>onStatus?.(request,'contacted')}>{t.markContacted}</button>}
                   <button type="button" disabled={busy} onClick={()=>onStatus?.(request,'closed')}>{t.markClosed}</button>
                 </div>}
                 {request.requestKind==='public'
-                  ? <p className={styles.hint}>{t.awaitPortal}</p>
+                  ? isOwner&&freeExpressV2Enabled&&isOwnerFreeExpressRequest(request)
+                    ? <FreeExpressOwnerCase request={request} locale={lang} accountId={accountId}/>
+                    : <p className={styles.hint}>{t.awaitPortal}</p>
                   : <>
                       <PractitionerRequestTasks key={'tasks:'+request.id} requestId={request.id}
                         focusTaskId={taskFocus?.requestId===request.id?taskFocus.taskId:''}

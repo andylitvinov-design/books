@@ -11,7 +11,7 @@ import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
 import PublicEnquiryContact from './public-enquiry-contact'
-import FreeExpressOwnerMedia from './free-express-owner-media'
+import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
 import MyServicesDashboard from './my-services-dashboard'
 import SimpleServiceEditor from './simple-service-editor'
 import RemoteGoalPhoto from './remote-goal-photo'
@@ -695,6 +695,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             practitionerTasks={data.practitionerTasks||[]}
             practitionerTaskSummary={data.practitionerTaskSummary}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
+            freeExpressV2Enabled={data.freeExpressV2Enabled === true}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onRefresh={()=>load()}
             focusRequestId={focusRequestId}
@@ -718,7 +719,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
             <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
           </div>
-          <Requests items={requests} t={t} locale={locale} busy={busy} enabled={data.freeExpressV2Enabled === true}
+          <Requests items={requests} t={t} locale={locale} busy={busy} enabled={data.freeExpressV2Enabled === true} isOwner={isOwner} accountId={accountId}
             onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
@@ -900,7 +901,7 @@ function Services({items,locale,busy,quota,createRequest=0,starter='',onSave,onS
         onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause} onDirtyChange={onDirtyChange} onMediaBusyChange={onMediaBusyChange}/>} />
   </>
 }
-function Requests({items,t,locale,busy,onStatus,onSaveContact,enabled=false}){
+function Requests({items,t,locale,busy,onStatus,onSaveContact,enabled=false,isOwner=false,accountId}){
   const [proposals,setProposals]=useState({})
   const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status))?'open':'all')
   const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status):item.status===status))
@@ -922,13 +923,15 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact,enabled=false}){
     </label>
   </div><p className="hh-fine" role="status">{visible.length} / {items.length}</p>
     {!visible.length&&<p>{t.none}</p>}
-    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{x.message&&<p>{x.message}</p>}
+    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{enabled&&isOwner&&isOwnerFreeExpressRequest(x)
+        ?<FreeExpressOwnerCase request={x} locale={locale} accountId={accountId}/>
+        :x.message&&<p>{x.message}</p>}
       {x.remoteBooking&&<p className="hh-fine"><strong>{locale==='ru'?'Дистанционная поддержка цели':'Goal support'}</strong>
         {' · '}{x.remoteBooking.duration} min · {x.remoteBooking.date} {x.remoteBooking.time} ({x.remoteBooking.timezone})
         {' · '}{x.remoteBooking.price} {x.remoteBooking.currency}
         {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.remoteBooking&&x.remoteBooking.photoPath&&
         <RemoteGoalPhoto key={x.id} requestId={x.id} role="master"
-          hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {enabled&&x.requestKind==='public'&&/^\/(en|ru|es)\/services\/free-situation-review$/.test(x.sourcePath||'')&&<FreeExpressOwnerMedia request={x} locale={locale}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
+          hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>}  {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
       {x.remoteBooking&&x.remoteBooking.proposed&&<p className="hh-fine">
         {locale==='ru'?'Предложено новое время':'Alternative time offered'}:
         {' '}{x.remoteBooking.proposed.date} {x.remoteBooking.proposed.time}
