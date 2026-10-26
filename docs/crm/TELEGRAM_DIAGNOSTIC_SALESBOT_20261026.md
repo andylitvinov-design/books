@@ -39,7 +39,7 @@ Vercel server-only settings (never paste tokens into GitHub issues or chat):
 - HH_CRM_TG_DIAGNOSTIC_ENABLED=true
 - HH_CRM_MSG_PRODUCTION_APPROVED and HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED: KEEP DISABLED UNTIL E2E.
 
-1. Review and apply 20261026152000_hh_crm_telegram_diagnostic_intake.sql ONLY to Holistic House Supabase; check restricted grants and RLS.
+1. Review and apply 20261026143713_hh_crm_telegram_diagnostic_intake_20261026.sql ONLY to Holistic House Supabase; check restricted grants and RLS.
 2. Redeploy production branch, confirm Vercel READY and SHA. Owner signs in to https://holistichouse.vercel.app/ru/app/practice?panel=clients → CRM → Messages and connects dedicated Telegram. Provider getMe and getWebhookInfo must confirm correct bot and callback; do NOT replace other app's webhook.
 3. From allowlisted owner chat, run /start hhreview_ru, /agree, /situation, short note, photo, /skip, private photo opening in CRM, manual owner answer, second unauthorized chat refusal, /stop and duplicate-update tests. Confirm client Telegram RECEIVED reply (provider accepted != delivered). Repeat mobile EN/RU/ES.
 4. Only AFTER owner approval and E2E evidence, enable HH_CRM_MSG_PRODUCTION_APPROVED=true and HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED=true and redeploy. This reveals public CTA. No activation of WhatsApp/Meta, automation marketing or bulk sends.

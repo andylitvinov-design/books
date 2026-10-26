@@ -129,7 +129,7 @@ test('/stop before consent makes no lead; after consent suppresses future custom
 test('signed Telegram transport, single transactional CRM save, update-id dedup and explicit public gate',()=>{
   const hook=source('lib/crm/messenger-webhook.js')
   const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
-  const db=source('supabase/migrations/20261026152000_hh_crm_telegram_diagnostic_intake.sql')
+  const db=source('supabase/migrations/20261026143713_hh_crm_telegram_diagnostic_intake_20261026.sql')
   const publicApi=source('app/api/public/telegram-diagnostic/route.js')
   assert.ok(route.indexOf('verifyMessengerWebhook(provider,raw,request.headers)')<
     route.indexOf('processTelegramDiagnostic(event,config)'))
