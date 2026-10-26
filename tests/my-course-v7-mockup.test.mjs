@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
+import {lessonFor} from '../lib/inner-growth/lesson-library.js'
+import {COURSE_ANTISTRESS_SKILLS_V6} from '../lib/inner-growth/anti-stress-skills-v6.js'
+import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const today=read('components/app/course-today.jsx')
@@ -72,7 +76,9 @@ test('first mission slide welcomes the learner, with thematic feeling choices an
   assert.match(player,/if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(player,/compareLessonMoments/)
   assert.match(player,/onFinish\|\|onClose/)
-  assert.match(today,/onFinish=\{\(\)=>\{setQuestOpen\(false\);setView\('path'\)\}\}/)
+  assert.equal((today.match(/onFinish=\{finishLessonPlayer\}/g)||[]).length,3)
+  assert.match(today,/const finishLessonPlayer=returnToCourseMap/)
+  assert.match(today,/const returnToCourseMap=\(\)=>\{closeLessonPlayer\(\);setView\('path'\)\}/)
 })
 
 test('EN/RU mobile course stays keyboard accessible with a visible bottom action',()=>{
@@ -213,4 +219,107 @@ test('Today story, illustration, CTA and progress have separate non-overlapping 
   assert.match(todayCss,/\.todayVisual \.heroPerson\{[^}]*position:absolute!important/s)
   assert.match(todayCss,/\.shell\[data-course-view=today\] button\.todayPrimary\{[^}]*margin:0!important/s)
   assert.match(todayCss,/@media\(max-width:360px\)/)
+})
+
+const presenterCases=[
+ ['CourseSlidePlayer',null,'course-slide-player'],
+ ['OporaV6SlidePlayer',COURSE_ANTISTRESS_SKILLS_V6,'opora-v6-slide-player'],
+ ['OporaExperiencePlayer',COURSE_ANTISTRESS_SKILLS_V7,'opora-experience-player'],
+]
+
+test('each presenter separates X close, first-slide Back and Finish without writes or rewards',async()=>{
+ for(const locale of ['en','ru'])for(const [name,version] of presenterCases)
+  for(const view of ['today','path'])for(const reviewing of [false,true])for(const exit of ['onClose','onBackToMap','onFinish']){
+   const dismissals=[],notify=[],day=reviewing?2:1
+   const data=dailyView('course-a','cycle-a',{
+    cycle:{...dailyView().cycle,day},
+    lesson:version?lessonFor('calm_regulation',day,locale,'standard',version):fixture().lesson,
+    ...(version?{programme:{id:'stress',title:'Synthetic course'}}:{}),
+    currentSession:reviewing?{completedAt:'2026-10-20T12:00:00Z',signals:{}}:null,
+    progress:{days:[],practiceCount:reviewing?1:0},
+    roadmap:[{day,status:reviewing?'completed':'today'}],
+   })
+   const before=JSON.stringify(data),token='cycle-a:'+day+':'+data.lesson.id
+   const dismiss=()=>dismissals.push(token)
+   const h=mount('course-today',{props:{locale,accountId:'owner-a',courseId:'course-a'},fetcher:()=>data,extraModules:{
+    './use-course-promotion':{useCoursePromotion:()=>({show:true,checkoutReady:false,dismiss})},
+    './subscription-access':{useLessonCompletionOffer:()=>completion=>notify.push(completion)},
+   }})
+   try{
+    await h.settle()
+    if(h.tree.props['data-course-view']!==view){
+     const labels=view==='today'?[locale==='ru'?'Сегодня':'Today']:
+      [locale==='ru'?'Все 14 дней':'See all 14 days',locale==='ru'?'Путь · 14 дней':'14-day path']
+     const control=labels.map(label=>findButton(h.tree,label)).find(Boolean)
+     assert.ok(control,'real backing-view control exists');control.props.onClick();await h.settle()
+    }
+    assert.equal(h.tree.props['data-course-view'],view)
+    if(view==='path')findPart(h.tree,'CourseQuestMap').props.onPlay(day)
+    else nodes(h.tree).find(node=>node.type==='button'&&node.props['data-course-today-primary']!==undefined).props.onClick()
+    await h.settle()
+    const presenter=findPart(h.tree,name);assert.ok(presenter,name)
+    assert.equal(presenter.props.reviewOnly,reviewing)
+    if(reviewing)assert.equal(presenter.props.onSession({operationId:'synthetic-replay'}),null)
+    assert.equal(typeof presenter.props[exit],'function',name+' '+exit)
+    presenter.props[exit]();await h.settle()
+    assert.equal(findPart(h.tree,name),undefined)
+    assert.equal(h.tree.props['data-course-view'],exit==='onClose'?view:'path',name+' '+exit+' from '+view)
+    assert.deepEqual(dismissals,[token],'release exactly the mounted presenter token')
+    assert.equal(notify.length,0,'navigation cannot earn a saved-lesson offer')
+    assert.equal(h.calls.filter(call=>call.body).length,0,'navigation and review cannot write')
+    assert.equal(JSON.stringify(data),before,'saved lesson and progress remain unchanged')
+   }finally{h.unmount()}
+  }
+})
+
+test('actual presenter first-Back and X button expressions keep separate callbacks and compatible fallback',()=>{
+ for(const [name,,path] of presenterCases){
+  const source=read('components/app/'+path+'.jsx')
+  const state=path==='course-slide-player'?'index':'step'
+  const first=source.match(new RegExp('onClick=\\{('+(path==='opora-v6-slide-player'?'afterSave\\?[^}\\n]+':state+'===0\\?[^}\\n]+')+')\\}'))
+  assert.ok(first,name+' first Back expression')
+  const closeClass=path==='course-slide-player'?'close':path==='opora-v6-slide-player'?'controlIcon':'iconButton'
+  const close=source.match(new RegExp('className=\\{styles\\.'+closeClass+'\\} onClick=\\{([^}]+)\\}[\\s\\S]*?<X'))
+  assert.ok(close,name+' X button expression')
+  const fallback=source.match(/onBackToMap\s*=\s*(onClose)(?:,|\s*,)/)
+  assert.ok(fallback,name+' optional callback keeps legacy standalone callers usable')
+  for(const position of [0,1]){
+   const events=[],context={index:position,step:position,afterSave:false,
+    onClose:()=>events.push('close'),onBackToMap:()=>events.push('map'),
+    goBack:()=>events.push('previous'),back:()=>events.push('previous')}
+   runInNewContext('('+first[1]+')',context)()
+   assert.deepEqual(events,[position===0?'map':'previous'])
+   events.length=0;runInNewContext('('+close[1]+')',context)();assert.deepEqual(events,['close'])
+   events.length=0;runInNewContext(fallback[1],context)();assert.deepEqual(events,['close'])
+  }
+ }
+})
+
+test('ordinary player Escape still uses close, restores focus and refuses exit while busy',async()=>{
+ for(const busy of [false,true]){
+  let trap=null,closed=0,back=0,prevented=0,focused=0
+  const document={activeElement:{isConnected:true,focus(){focused++}},body:{style:{overflow:'auto'}},
+   addEventListener(type,listener){if(type==='keydown')trap=listener},
+   removeEventListener(type){if(type==='keydown')trap=null}}
+  const h=mount('course-slide-player',{props:{locale:'en',data:fixture(),busy,onClose(){closed++},onBackToMap(){back++}},globals:{document}})
+  await h.settle();assert.equal(typeof trap,'function')
+  trap({key:'Escape',preventDefault(){prevented++}})
+  assert.equal(closed,busy?0:1);assert.equal(back,0);assert.equal(prevented,1)
+  h.unmount();assert.equal(trap,null);assert.equal(document.body.style.overflow,'auto');assert.equal(focused,1)
+ }
+})
+
+test('closing clears the selected replay without switching views; the separate map action closes before navigation',()=>{
+ const close=today.match(/const closeLessonPlayer=(\(\)=>\{[^\n]+\})/)
+ const map=today.match(/const returnToCourseMap=(\(\)=>\{[^\n]+\})/)
+ assert.ok(close&&map)
+ const events=[]
+ const closeLessonPlayer=runInNewContext('('+close[1]+')',{
+  setQuestOpen:value=>events.push(['open',value]),setReviewLesson:value=>events.push(['review',value]),
+  setView:value=>events.push(['view',value]),
+ })
+ closeLessonPlayer();assert.deepEqual(events,[['open',false],['review',null]])
+ events.length=0
+ runInNewContext('('+map[1]+')',{closeLessonPlayer,setView:value=>events.push(['view',value])})()
+ assert.deepEqual(events,[['open',false],['review',null],['view','path']])
 })
