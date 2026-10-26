@@ -292,6 +292,7 @@ const additionalCopy = {
   en: {
     notMeasured: "No eligible free questionnaire yet",
     additionalTitle: "Other tests", additionalHint: "Optional. Add tests without replacing your recommended set.",
+    profile: "1. Choose one profile", scales: "2. Choose its scales", scaleHelp: "Select any number. With none checked, all scales in this profile apply.", chooseAll: "Select all", clearScales: "Clear all", chooseFirst: "Choose a profile to see matching additional tests.",
     search: "Search tests", searchPlaceholder: "Test name or scale",
     kind: "Type", allKinds: "All types", topic: "Topic", matching: "My topics", allTopics: "All topics",
     time: "Duration", anyTime: "Any length", two: "Up to 2 min", five: "Up to 5 min", ten: "Up to 10 min",
@@ -304,6 +305,7 @@ const additionalCopy = {
   ru: {
     notMeasured: "Пока нет доступного бесплатного теста",
     additionalTitle: "Другие тесты", additionalHint: "По желанию: добавьте тесты к рекомендованному набору.",
+    profile: "1. Выберите один профиль", scales: "2. Отметьте шкалы профиля", scaleHelp: "Можно отметить любое количество шкал. Без галочек учитываются все шкалы выбранного профиля.", chooseAll: "Выбрать все", clearScales: "Снять все", chooseFirst: "Выберите профиль, чтобы открыть дополнительные тесты.",
     search: "Поиск теста", searchPlaceholder: "Название теста или шкалы",
     kind: "Тип", allKinds: "Все типы", topic: "Тема", matching: "Мои темы", allTopics: "Все темы",
     time: "Длительность", anyTime: "Любая", two: "До 2 мин", five: "До 5 мин", ten: "До 10 мин",
@@ -316,6 +318,7 @@ const additionalCopy = {
   es: {
     notMeasured: "Aún no hay prueba gratuita disponible",
     additionalTitle: "Otras pruebas", additionalHint: "Opcional: añade pruebas sin sustituir las recomendadas.",
+    profile: "1. Elige un perfil", scales: "2. Elige sus escalas", scaleHelp: "Selecciona cuantas escalas quieras. Sin selección se incluyen todas las del perfil.", chooseAll: "Seleccionar todas", clearScales: "Quitar todas", chooseFirst: "Elige un perfil para ver las pruebas adicionales.",
     search: "Buscar pruebas", searchPlaceholder: "Nombre o escala",
     kind: "Tipo", allKinds: "Todos los tipos", topic: "Tema", matching: "Mis temas", allTopics: "Todos los temas",
     time: "Duración", anyTime: "Cualquiera", two: "Hasta 2 min", five: "Hasta 5 min", ten: "Hasta 10 min",
@@ -344,7 +347,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
   const [kindFilter, setKindFilter] = useState("all");
-  const [topicFilter, setTopicFilter] = useState("matching");
+  const [extraProfile, setExtraProfile] = useState<Focus | null>(null);
+  const [extraScales, setExtraScales] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [sortFilter, setSortFilter] = useState("relevant");
   const [search, setSearch] = useState("");
@@ -367,14 +371,15 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const chosenTests = selectedKeys.flatMap(key => tests.filter(test => test.key === key));
   const coverage = new Set(chosenTests.flatMap(test => test.axes.filter(axis => selectedAxes.includes(axis))));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
-  const axesForFilters = [...measurableAxes].sort((a, b) =>
-    (axesCopy[a]?.[locale] || a).localeCompare(axesCopy[b]?.[locale] || b, locale));
+  const axesForExtraProfile = extraProfile
+    ? allAxesFor(focusAreas[extraProfile]).filter(axis => measurableAxes.has(axis))
+      .sort((a, b) => (axesCopy[a]?.[locale] || a).localeCompare(axesCopy[b]?.[locale] || b, locale))
+    : [];
+  const effectiveExtraScales = extraScales.length ? extraScales : axesForExtraProfile;
   const extraMatches = tests
     .filter(test => !selectedKeys.includes(test.key))
     .filter(test => kindFilter === "all" || test.testKind === kindFilter)
-    .filter(test => topicFilter === "all" || (topicFilter === "matching"
-      ? test.axes.some(axis => selectedAxes.includes(axis))
-      : test.axes.includes(topicFilter)))
+    .filter(test => extraProfile !== null && test.axes.some(axis => effectiveExtraScales.includes(axis)))
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
       [test.title, ...test.axes.map(axis => axesCopy[axis]?.[locale] || axis)]
@@ -383,8 +388,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
       : sortFilter === "alphabetical"
         ? a.title.localeCompare(b.title, locale)
-        : b.axes.filter(axis => selectedAxes.includes(axis)).length -
-          a.axes.filter(axis => selectedAxes.includes(axis)).length ||
+        : b.axes.filter(axis => effectiveExtraScales.includes(axis)).length -
+          a.axes.filter(axis => effectiveExtraScales.includes(axis)).length ||
           (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
   const displayTests = showMore ? extraMatches : extraMatches.slice(0, 6);
 
@@ -611,6 +616,36 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               {extra.full}<ArrowRight size={14} aria-hidden="true" />
             </Link>
           </div>
+          <div className={styles.extraProfileSelector} data-profile-extra-profile-filter>
+            <strong>{extra.profile}</strong>
+            <div className={styles.extraProfileChoices} role="group" aria-label={extra.profile}>
+              {(["wellbeing", "relationships", "work", "identity"] as const).map(key =>
+                <button type="button" key={key} data-profile-extra-profile={key}
+                  aria-pressed={extraProfile === key}
+                  onClick={() => { setExtraProfile(key); setExtraScales([]); setSearch(""); setShowMore(false); }}>
+                  {extraProfile === key ? "✓ " : ""}{t.focuses[key][0]}
+                </button>)}
+            </div>
+          </div>
+          {extraProfile && <div className={styles.extraScaleSelector} data-profile-extra-scales>
+            <strong>{extra.scales}</strong>
+            <p>{extra.scaleHelp}</p>
+            <div className={styles.extraScaleChoices} role="group" aria-label={extra.scales}>
+              {axesForExtraProfile.map(axis => <button key={axis} type="button" data-profile-extra-scale={axis}
+                aria-pressed={extraScales.includes(axis)} onClick={() => {
+                  setExtraScales(previous => previous.includes(axis)
+                    ? previous.filter(item => item !== axis) : [...previous, axis]);
+                  setShowMore(false);
+                }}>
+                {extraScales.includes(axis) ? "✓ " : "+ "}{axesCopy[axis]?.[locale] || axis}
+              </button>)}
+            </div>
+            <div className={styles.extraScaleActions}>
+              <span role="status">{extraScales.length} / {axesForExtraProfile.length}</span>
+              <button type="button" onClick={() => { setExtraScales([...axesForExtraProfile]); setShowMore(false); }}>{extra.chooseAll}</button>
+              <button type="button" onClick={() => { setExtraScales([]); setShowMore(false); }}>{extra.clearScales}</button>
+            </div>
+          </div>}
           <div className={styles.extraFilters}>
             <label className={styles.extraSearch}><span>{extra.search}</span>
               <input type="search" value={search} placeholder={extra.searchPlaceholder}
@@ -620,13 +655,6 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               <select value={kindFilter} onChange={event => { setKindFilter(event.currentTarget.value); setShowMore(false); }}>
                 <option value="all">{extra.allKinds}</option>
                 {TEST_KINDS.map(kind => <option key={kind.key} value={kind.key}>{kind.label[locale]}</option>)}
-              </select>
-            </label>
-            <label><span>{extra.topic}</span>
-              <select value={topicFilter} onChange={event => { setTopicFilter(event.currentTarget.value); setShowMore(false); }}>
-                <option value="matching">{extra.matching}</option>
-                <option value="all">{extra.allTopics}</option>
-                {axesForFilters.map(axis => <option key={axis} value={axis}>{axesCopy[axis]?.[locale] || axis}</option>)}
               </select>
             </label>
             <label><span>{extra.time}</span>
@@ -645,7 +673,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               </select>
             </label>
           </div>
-          <p className={styles.extraResultCount} role="status">{extraMatches.length} {extra.results}</p>
+          <p className={styles.extraResultCount} role="status">{extraProfile ? extraMatches.length + " " + extra.results : extra.chooseFirst}</p>
           {displayTests.length ? <div className={styles.testList}>
             {displayTests.map(test => <label key={test.key} className={styles.testRow}>
               <input type="checkbox" checked={false} disabled={selectedKeys.length >= 12}
