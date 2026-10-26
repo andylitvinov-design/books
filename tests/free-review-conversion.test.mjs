@@ -151,3 +151,24 @@ test("express review WebKit reveal stays immediately below its button throughout
   assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
     "Visual translateY moves an expanded in-flow region above its reveal button in WebKit before animation settles");
 });
+
+
+test("mobile browser acceptance taps the entire focus card and validates the native radio and unchanged consent", () => {
+  const script = read("scripts/verify-free-review-live-mobile.mjs");
+  const widget = read("components/personal-express-enquiry.tsx");
+  const css = read("components/personal-express-enquiry.module.css");
+  assert.match(widget, /<label className=\{styles\.choice\} data-express-focus=\{area\}/);
+  assert.match(widget, /type="radio" name="express-review-focus" value=\{area\}/);
+  assert.match(widget, /checked=\{focus === area\} onChange=\{\(\) => setFocus\(area\)\}/);
+  for (const focus of ["energy", "situation"]) {
+    assert.ok(script.includes("await enquiry.locator('[data-express-focus=\""+focus+"\"]').click()"),
+      "A mobile user taps the wide label card: " + focus);
+    assert.ok(script.includes("await enquiry.locator('input[value=\""+focus+"\"]').isChecked()"),
+      "The selected radio itself must be checked: " + focus);
+  }
+  assert.doesNotMatch(script, /locator\('input\[value="(?:energy|situation)"\]'\)\.check\(\)/,
+    "Do not emulate tapping a moving 19px radio dot on WebKit");
+  assert.match(script, /"changing the focus cannot silently opt the user in"/);
+  assert.match(script, /"changing focus is not a lead or booking"/);
+  assert.match(css, /\.choice\{[^}]*min-height:94px/);
+});

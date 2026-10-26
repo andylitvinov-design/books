@@ -44,14 +44,17 @@ test("the requested psychotherapy YouTube video is limited to RU service media",
 
 test("the Services video gallery is expanded by default after booking and testimonials", () => {
   const page = read("app/[locale]/services/page.tsx");
-  const begin = page.indexOf('id="method-videos" open');
+  const extras = read("components/services-studio-extras.tsx");
+  const begin = page.indexOf('<ServicesMethodVideos locale={locale as Locale}');
+  assert.match(extras, /<details\b[^>]*id="method-videos"[^>]*\bopen(?:\s|>)/);
   const testimonials = page.indexOf('<PersonalTestimonials locale={locale as Locale} variant="services"');
   assert.ok(testimonials > page.indexOf("<PublicConsultationCta") && begin > testimonials, "Owner #996 keeps visible method videos after booking and testimonials");
-  assert.match(page, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
-  assert.match(page, /<PageVideo slot="method-hypnotherapy" locale="en" \/>/);
-  assert.match(page, /<PageVideo slot="method-constellations" locale="en" \/>/);
-  assert.match(page, /id="service-video-hypnotherapy"/);
-  assert.match(page, /id="service-video-alchemy"/);
+  assert.match(page, /<ServicesIntroMedia locale=\{locale as Locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="services-intro" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-hypnotherapy" locale=\{locale\} \/>/);
+  assert.match(extras, /<PageVideo slot="method-constellations" locale=\{locale\} \/>/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="hypnotherapy" id="es-service-video-hypnotherapy"/);
+  assert.match(extras, /<ServiceVideoShowcase locale="es" topic="constellations" id="es-service-video-constellations"/);
   assert.match(page, /<PublicConsultationCta/);
   const browser = read("scripts/verify-site-video-browser.mjs");
   assert.match(browser, /getAttribute\('open'\) === null/);
