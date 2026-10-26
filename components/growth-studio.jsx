@@ -237,7 +237,11 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     setNotice('')
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       const target=document.getElementById(nextTab==='compose'?'growth-studio-compose':'growth-studio-posts')
-      target?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})
+      if(target){
+        // Move keyboard/VoiceOver focus into the revealed workspace as well as scrolling.
+        target.focus({preventScroll:true})
+        target.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})
+      }
     }))
   }
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
@@ -399,7 +403,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       </div>
     </div>
     {notice&&<p className={styles.notice} role="status" aria-live="polite">{notice}</p>}
-    {tab==='compose'&&<div id="growth-studio-compose" className={styles.columns}>
+    {tab==='compose'&&<div id="growth-studio-compose" tabIndex={-1} role="region" aria-label={t.compose} className={styles.columns}>
       <div className={styles.editor}>
         <div className={styles.sectionHead}><h3>{isEditing?t.selected:t.newDraft}</h3>
           <button type="button" onClick={reset}><Plus size={15}/>{t.new}</button></div>
@@ -535,7 +539,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           ?reused?'Пакет повторов уже сохранён, дубли не созданы.':'Повторные черновики созданы. Проверьте и одобрите каждый отдельно.'
           :reused?'Repeat batch already exists — no duplicates.':'Repeat drafts created. Review and approve each separately.')
       }}/>} 
-    {tab==='posts'&&<div id="growth-studio-posts" className={styles.postList}>
+    {tab==='posts'&&<div id="growth-studio-posts" tabIndex={-1} role="region" aria-label={t.pending} className={styles.postList}>
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
