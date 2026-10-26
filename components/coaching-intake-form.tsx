@@ -250,7 +250,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     // Opaque token lives in memory only, not history, analytics or storage.
     const url = new URL(window.location.href);
     const handoff = url.searchParams.get('handoff');
-    if(handoff && /^h1\\.[A-Za-z0-9_-]{120,1100}$/.test(handoff))setTelegramHandoff(handoff);
+    if(handoff && /^h1\.[A-Za-z0-9_-]{120,1100}$/.test(handoff))setTelegramHandoff(handoff);
     if(handoff){
       url.searchParams.delete('handoff');
       window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);
