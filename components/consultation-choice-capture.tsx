@@ -275,6 +275,9 @@ export function ConsultationChoiceCapture({
       </div>
       {isPaidRequest ? (
         <ContactChannelChooser
+          // Remount on tariff switch: never reuse a consent, draft or saved receipt
+          // from the previous paid offer, including while a response is pending.
+          key={serviceChoice}
           locale={locale}
           whatsappUrl={whatsappUrl}
           label={cta}
