@@ -102,7 +102,8 @@ export async function middleware(request: NextRequest) {
     } catch { return '' }
   })()
   const academyVideoPage = /^\/(en|ru|es)\/academy(?:\/|$)/.test(pathname)
-  // Browser Blob photos are allowed only in the private Messages / Practice surfaces.
+  // The authenticated owner inbox fetches client photos as private Blob URLs.
+  // Do not enable blob images site-wide or on public / client report routes.
   const ownerMessengerImages = /^\/(en|ru|es)\/app\/(?:messages|practice)\/?$/.test(pathname)
   const privateDocument = privatePath(pathname)
   const publicDocument = !privateDocument && !pathname.startsWith('/api/')
