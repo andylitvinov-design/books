@@ -52,5 +52,6 @@ test('mobile 320–430 captures use an open-state-only compact layout without re
  assert.match(formCss, /\.compactQuestionReveal > summary/)
  assert.match(form, /<input type="checkbox" checked=\{consent\} required/)
  assert.match(form, /if \(!consent\)/)
- for (const topic of ['situation','energy']) assert.match(landing,new RegExp('data-express-focus="'+topic+'"').source ? /data-express-focus=\{area\}/ : /./)
+ assert.match(landing, /data-express-focus=\{area\}/)
+ assert.match(landing, /\{t\.areas\[area\]\.short\}/)
 });
