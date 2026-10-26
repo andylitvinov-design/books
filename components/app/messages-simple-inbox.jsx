@@ -202,7 +202,7 @@ export default function MessagesSimpleInbox({
         </div>
         <div className={styles.chatHolder} hidden={selected?.kind!=='direct'}>
           <DirectMessageInbox key={accountId+':direct:'+refreshNonce} locale={locale}
-            simpleDetail initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}/>
+            simpleDetail expectedAccountId={accountId} initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}/>
         </div>
         {selected?.kind==='request'&&<div className={styles.requestPane}>
           <div className={styles.requestBubble}>
