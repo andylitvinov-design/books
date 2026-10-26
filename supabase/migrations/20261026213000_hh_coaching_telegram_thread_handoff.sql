@@ -15,6 +15,17 @@ create unique index if not exists public_service_telegram_handoff_once
 create index if not exists public_service_telegram_thread
   on app.public_service_enquiries(telegram_thread_id)
   where telegram_thread_id is not null;
+-- Signed webhook can resolve only the already consented thread matching its
+-- own resolved owner, business account and hashed Telegram sender. Never read
+-- other threads, messages or private content from the guest backend.
+grant select (id,owner_id,account_id,user_hash)
+  on app.crm_msg_threads to hh_app_inbox;
+create policy crm_msg_telegram_handoff_lookup on app.crm_msg_threads
+  for select to hh_app_inbox using (
+    owner_id::text=current_setting('hh.telegram_handoff_owner',true)
+    and account_id::text=current_setting('hh.telegram_handoff_account',true)
+    and user_hash=current_setting('hh.telegram_handoff_user',true)
+  );
 grant select (business_hash,user_hash,stage,consent_at)
   on app_private.crm_tg_diagnostic_sessions to hh_app_backend;
 create policy crm_tg_diagnostic_coaching_handoff_read
