@@ -61,7 +61,7 @@ test('mobile-first landing has 2 direct routes; private responses never go to me
   assert.match(entry,/sessionStorage\.setItem\(DIAGNOSTIC_START_KEY/)
   assert.match(intake,/data-coaching-enquiry-saved/)
   assert.match(intake, /offerChoice === "free" \? t\.sendTitle : t\.sendPaidTitle/)
-  for (const heading of ["Request a personal coaching session", "Записаться на личную коучинговую сессию", "Solicitar una sesión personal de coaching"]) assert.ok(intake.includes(heading))
+  for (const heading of ["Request a personal coaching session", "Запросить личную коучинговую сессию", "Solicitar una sesión personal de coaching"]) assert.ok(intake.includes(heading))
   assert.match(intake,/contactConsent: true/)
   assert.match(intake,/sendDisclosure/)
   assert.match(intake,/requestDisclosure/)
