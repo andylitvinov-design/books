@@ -96,6 +96,8 @@ const messageStatuses={
   unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
 }
 const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
+// Photo-only Telegram events carry a private attachment, not display text.
+const photoOnlyMessage=/^\[(?:Voluntary photo attached for private review|Additional voluntary photo|Client portrait photo, shared voluntarily for private review|ME-GOAL-OBSTACLE drawing, shared voluntarily for private review|Additional voluntary drawing\/photo)\]$/
 function mergeThreadPages(older=[],fresh=[]){
   const index=new Map(older.map(thread=>[thread.id,thread]))
   for(const thread of fresh)index.set(thread.id,thread)
@@ -647,7 +649,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
-              <p>{m.text}</p>
+              {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
               {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
@@ -716,7 +718,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
-              }} placeholder={conversationOnly?t.reply:t.manual}/>
+              }} placeholder={conversationOnly||compact?(lang==='ru'?'Написать сообщение…':lang==='es'?'Escribe un mensaje…':'Write a message…'):t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
               {compact&&!conversationOnly?<Send size={18} aria-hidden="true"/>:t.send}
