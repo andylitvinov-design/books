@@ -21,6 +21,7 @@ const COPY={
     contacted:'Mark contacted',closed:'Close request',full:'Open in My Practice',
     failed:'Could not update this request. Please retry.',business:'Business consulting enquiries',
     businessHint:'Owner-only enquiries from the business form, with their existing CRM status and reply options.',
+    siteUnavailable:'Website enquiries are temporarily unavailable. Existing Telegram CRM conversations remain accessible here.',
     onboarding:'Publish a practitioner service to receive client enquiries.',
     start:'Open My Practice',unavailable:'Some owner CRM enquiries could not be loaded. Review them in My Practice.',
     crmLeads:'Telegram & messenger enquiries',crmHint:'Only existing consented CRM conversations. Private message text is not shown in this list.',
@@ -37,6 +38,7 @@ const COPY={
     contacted:'Связались',closed:'Закрыть заявку',full:'Открыть в Моей практике',
     failed:'Не удалось обновить заявку. Повторите попытку.',business:'Заявки на бизнес-консалтинг',
     businessHint:'Личные заявки владельца с существующими статусами и способами ответа в CRM.',
+    siteUnavailable:'Заявки сайта временно недоступны. Сохранённые обращения Telegram доступны здесь.',
     onboarding:'Разместите свою услугу, чтобы получать обращения клиентов.',
     start:'Открыть Мою практику',unavailable:'Часть заявок CRM недоступна. Проверьте их в Моей практике.',
     crmLeads:'Обращения Telegram и мессенджеров',crmHint:'Только существующие диалоги CRM. Личный текст сообщений не показывается в списке.',
@@ -52,6 +54,7 @@ const COPY={
     contacted:'Contactado',closed:'Cerrar',full:'Abrir en Mi práctica',
     failed:'No se pudo actualizar la solicitud.',business:'Consultas de negocio',
     businessHint:'Consultas privadas del propietario y opciones actuales del CRM.',
+    siteUnavailable:'Las solicitudes web no están disponibles temporalmente. Los mensajes CRM de Telegram siguen aquí.',
     onboarding:'Publica un servicio para recibir consultas.',start:'Abrir Mi práctica',
     unavailable:'Algunas consultas del CRM no están disponibles.',
     crmLeads:'Solicitudes de Telegram y mensajería',crmHint:'Solo conversaciones CRM existentes. No se muestra el texto privado.',
@@ -89,7 +92,7 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
   const requests=useMemo(()=>[...(data.requests||[])].sort(incomingSort),[data.requests])
   const business=data.businessEnquiries||[]
   const crmLeads=crmState.threads.filter(item=>item.lifecycle==='lead')
-  const visibleCrm=crmLeads.filter(item=>filter==='all'||(filter==='new'?item.unreadCount>0:item.needsReply))
+  const visibleCrm=crmLeads.filter(item=>filter==='all'||(filter==='new'?item.unreadCount>0:item.needsReply||item.unreadCount>0))
   const openCount=requests.filter(r=>OPEN.has(r.status)).length+
     business.filter(r=>['new','contacted'].includes(r.status)).length+crmLeads.filter(r=>r.needsReply).length
   const total=requests.length+business.length+crmLeads.length
@@ -132,12 +135,39 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
         <button type="button" key={id} aria-pressed={filter===id}
           onClick={()=>{setFilter(id);setSelectedId('')}}>{label} <span>{count}</span></button>)}
     </div>
+    {data.websiteUnavailable&&<p role="alert" className={styles.alert}>{t.siteUnavailable}</p>}
+    {data.ownerMessenger&&<section className={styles.crmLeads} aria-label={t.crmLeads}>
+      <div className={styles.crmLeadsHead}>
+        <div><h3>{t.crmLeads} <small>({crmLeads.length})</small></h3><p>{t.crmHint}</p></div>
+        <MessageCircle size={20} aria-hidden="true"/>
+      </div>
+      {crmState.loading&&<p className={styles.note} role="status">{t.crmLoading}</p>}
+      {crmState.error&&<p className={styles.note} role="alert">{t.crmError}</p>}
+      {visibleCrm.length>0&&<ul className={styles.crmLeadList}>
+        {visibleCrm.map(thread=><li key={thread.id}>
+          <div className={styles.crmLeadPerson}>
+            <span className={styles.requestAvatar} aria-hidden="true">{String(thread.name||'?').slice(0,1).toUpperCase()}</span>
+            <div><strong>{thread.name||t.unnamed}</strong>
+              <small>{thread.channel==='telegram'?'Telegram':thread.channel==='whatsapp'?'WhatsApp':
+                thread.channel==='instagram'?'Instagram':'Messenger'}
+                {thread.lastMessageAt?' · '+dateOf(thread.lastMessageAt,locale):''}</small>
+              {thread.needsReply&&<small className={styles.replyDue}>{t.crmWaiting}</small>}
+            </div>
+          </div>
+          <button type="button" onClick={()=>onOpenCrmThread?.(thread.id)}>
+            {t.crmOpen} <ArrowRight size={15} aria-hidden="true"/>
+            {thread.unreadCount>0&&<span className={styles.count}>{thread.unreadCount}</span>}
+          </button>
+        </li>)}
+      </ul>}
+      {crmState.partial&&<p className={styles.note}>{t.crmRecent}</p>}
+    </section>}
     {error&&<p role="alert" className={styles.alert}>{error}</p>}
     {data.businessUnavailable&&<p role="alert" className={styles.alert}>{t.unavailable}</p>}
-    {!data.hasPractice&&total===0&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
+    {!data.websiteLoading&&!data.websiteUnavailable&&!data.hasPractice&&total===0&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
       <Inbox size={32} aria-hidden="true"/><h3>{t.empty}</h3><p>{t.onboarding}</p>
       <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.start} <ArrowRight size={16}/></Link>
-    </div>:!visible.length&&!visibleBusiness.length&&!visibleCrm.length&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
+    </div>:!data.websiteLoading&&!data.websiteUnavailable&&!visible.length&&!visibleBusiness.length&&!visibleCrm.length&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
       <CheckCircle2 size={32} aria-hidden="true"/><h3>{t.empty}</h3><p>{t.emptyInfo}</p>
     </div>:null}
     {visible.length>0&&<div className={styles.requestLayout}>
@@ -188,32 +218,6 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
         </div>}
       </article>}
     </div>}
-    {data.ownerMessenger&&<section className={styles.crmLeads} aria-label={t.crmLeads}>
-      <div className={styles.crmLeadsHead}>
-        <div><h3>{t.crmLeads} <small>({crmLeads.length})</small></h3><p>{t.crmHint}</p></div>
-        <MessageCircle size={20} aria-hidden="true"/>
-      </div>
-      {crmState.loading&&<p className={styles.note} role="status">{t.crmLoading}</p>}
-      {crmState.error&&<p className={styles.note} role="alert">{t.crmError}</p>}
-      {visibleCrm.length>0&&<ul className={styles.crmLeadList}>
-        {visibleCrm.map(thread=><li key={thread.id}>
-          <div className={styles.crmLeadPerson}>
-            <span className={styles.requestAvatar} aria-hidden="true">{String(thread.name||'?').slice(0,1).toUpperCase()}</span>
-            <div><strong>{thread.name||t.unnamed}</strong>
-              <small>{thread.channel==='telegram'?'Telegram':thread.channel==='whatsapp'?'WhatsApp':
-                thread.channel==='instagram'?'Instagram':'Messenger'}
-                {thread.lastMessageAt?' · '+dateOf(thread.lastMessageAt,locale):''}</small>
-              {thread.needsReply&&<small className={styles.replyDue}>{t.crmWaiting}</small>}
-            </div>
-          </div>
-          <button type="button" onClick={()=>onOpenCrmThread?.(thread.id)}>
-            {t.crmOpen} <ArrowRight size={15} aria-hidden="true"/>
-            {thread.unreadCount>0&&<span className={styles.count}>{thread.unreadCount}</span>}
-          </button>
-        </li>)}
-      </ul>}
-      {crmState.partial&&<p className={styles.note}>{t.crmRecent}</p>}
-    </section>}
     {visibleBusiness.length>0&&data.ownerMessenger&&<section className={styles.business}>
       <details open={!visible.length}>
         <summary><ClipboardList size={18} aria-hidden="true"/>{t.business}<span>{visibleBusiness.length}</span></summary>

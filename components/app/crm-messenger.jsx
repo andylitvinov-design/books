@@ -238,8 +238,18 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
     setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
+      if(ctrl.signal.aborted)return
       if(!activeRef.current)setData(result)
-      if(initialThreadId&&!ctrl.signal.aborted)void selectThread(initialThreadId)
+      // The owner should immediately SEE the existing customer message and
+      // reply composer, not an empty "select conversation" pane. Selection
+      // never sends to a provider or changes CRM consent.
+      if(initialThreadId){
+        if(activeRef.current!==initialThreadId)void selectThread(initialThreadId)
+      }else if(!activeRef.current){
+        const next=result.threads?.find(item=>item.needsReply||Number(item.unreadCount)>0)||
+          result.threads?.[0]
+        if(next?.id)void selectThread(next.id)
+      }
     }).catch(e=>{
       if(e.name!=='AbortError'&&!activeRef.current){
         setError('unavailable')
