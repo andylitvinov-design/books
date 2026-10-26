@@ -53,12 +53,14 @@ const fallbackPortrait=(name)=>Array.from((String(name||'?').trim()||'?'))[0]?.t
 // If no verified portrait exists, show the person's initial instead.
 function PrivateAvatar({accountId,name,portrait,small=false}){
   const [src,setSrc]=useState('')
+  const threadId=portrait?.threadId||''
+  const messageId=portrait?.messageId||''
   useEffect(()=>{
     setSrc('')
-    if(!accountId||!portrait?.threadId||!portrait?.messageId)return
+    if(!accountId||!threadId||!messageId)return
     const controller=new AbortController()
     let blobUrl=''
-    const params=new URLSearchParams(portrait)
+    const params=new URLSearchParams({threadId,messageId})
     fetch('/api/app/crm/messenger/photo?'+params.toString(),{
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
       headers:{'X-HH-Account-Id':accountId},
@@ -71,7 +73,7 @@ function PrivateAvatar({accountId,name,portrait,small=false}){
       setSrc(blobUrl)
     }).catch(()=>{})
     return()=>{controller.abort();if(blobUrl)URL.revokeObjectURL(blobUrl)}
-  },[accountId,portrait?.threadId,portrait?.messageId])
+  },[accountId,threadId,messageId])
   return <span className={small?styles.avatarSmall:styles.avatar} aria-hidden="true">
     {src?<img src={src} alt="" loading="lazy"/>:fallbackPortrait(name)}
   </span>
@@ -80,7 +82,7 @@ function PrivateAvatar({accountId,name,portrait,small=false}){
 // Presentation only: existing CRM, practitioner and private-message APIs retain their
 // independent authorization, storage, consent and actual send policies.
 export default function MessagesSimpleInbox({
-  locale='en',accountId,requests=[],businessEnquiries=[],services=[],
+  locale='en',accountId,requests=[],businessEnquiries=[],
   websiteLoading=false,websiteUnavailable=false,onReload,
 }){
   const t=COPY[locale]||COPY.en
