@@ -15,7 +15,7 @@ export async function GET(){
   const urls=available ? Object.fromEntries(['en','ru','es'].map(locale=>
     [locale,telegramDiagnosticPublicUrl(locale,env)])) : null
   return NextResponse.json(available&&urls?.en&&urls?.ru&&urls?.es
-    ? {available:true,urls}
+    ? {available:true,url:urls.en.split('?')[0],urls}
     : {available:false},
   {headers:{'Cache-Control':'no-store, max-age=0','Referrer-Policy':'no-referrer'}})
 }
