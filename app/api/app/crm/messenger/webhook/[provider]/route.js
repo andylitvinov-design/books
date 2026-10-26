@@ -36,7 +36,7 @@ export async function POST(request,{params}){
       if(video.handled){
         // The verified private owner command may be the first update needing
         // callback_query delivery for the one-time YouTube publish button.
-        if(body.message?.text?.trim().startsWith('/video'))
+        if(/^\/(?:video(?:_done|_retry|_cancel)?(?:@[A-Za-z0-9_]+)?|start(?:@[A-Za-z0-9_]+)?\s+video)$/i.test(String(body.message?.text||'').trim()))
           await ensureTelegramInlineWebhookUpdates().catch(()=>{})
         if(video.background)after(async()=>{
           try{await video.background()}

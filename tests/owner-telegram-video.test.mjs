@@ -31,6 +31,7 @@ test('owner-only Telegram video deep link and explicit private preview resend co
    message_id:56,text:'/start video'}}
  assert.equal(parsed(update)?.action,'start')
  assert.equal(parsed({...update,message:{...update.message,text:'/video_retry'}})?.action,'retry')
+ assert.equal(parsed(callback('hh-video:retry'))?.action,'retry')
  assert.equal(parsed({...update,message:{...update.message,text:'/start@wrongbot video'}}),null)
  const group={...update,message:{...update.message,chat:{...privateBase,type:'group'}}}
  assert.equal(parsed(group),null)
@@ -124,6 +125,7 @@ test('Google fails closed on wrong channel, missing authorization and wrong visi
 test('backend only webhook and forced RLS migration; no cross-bot or automatic YouTube upload',()=>{
  const migration=readFileSync(new URL('../supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql',import.meta.url),'utf8')
  const crmWebhook=readFileSync(new URL('../app/api/app/crm/messenger/webhook/[provider]/route.js',import.meta.url),'utf8')
+ assert.match(crmWebhook,/start\(\?:@/)
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
  assert.match(migration,/force row level security/ig)
  assert.match(migration,/revoke all on app_private.telegram_owner_video_jobs from public, anon, authenticated, hh_app_inbox/)
