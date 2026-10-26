@@ -81,3 +81,21 @@
 .optionalName>summary{cursor:pointer;min-height:40px;padding:11px 13px;color:#735a4b;font-weight:650;font-size:12px}
 .optionalName>summary:focus-visible{outline:3px solid #1765c1;outline-offset:2px;border-radius:10px}
 .optionalName>label{display:grid;gap:5px;padding:0 11px 11px;min-width:0}
+
+/* The first step registers ONE consented lead; the multi-step questionnaire,
+   Google claim, and private images remain fully available AFTER confirmation.
+   Keep input fonts >=16px to prevent iPhone Safari zoom on focus. */
+@media(max-width:720px){
+ .root[data-free-express-step="0"]{gap:0;padding-bottom:0}
+ .root[data-free-express-step="0"] .progressWrap{display:none}
+ .root [data-free-express-lead]{padding:8px 9px;gap:6px;border-radius:13px}
+ .root [data-free-express-lead] > h3,
+ .root [data-free-express-lead] > p{display:none}
+ .root [data-free-express-lead] .optionalName{border:0;background:transparent}
+ .root [data-free-express-lead] .optionalName > summary{min-height:25px;padding:4px;font-size:11px}
+ .root [data-free-express-lead] .phone{gap:3px}
+ .root [data-free-express-lead] [data-phone-country-input] :is(input,select){min-height:42px;padding:6px;font-size:16px}
+ .root [data-free-express-lead] > label textarea{height:52px;min-height:52px;padding:7px;line-height:1.35;font-size:16px}
+ .root [data-free-express-lead] .consent{padding:6px;font-size:11px!important;line-height:1.25!important}
+ .root [data-free-express-lead] > button[type="submit"]{min-height:44px;padding:8px}
+}
