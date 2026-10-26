@@ -18,7 +18,7 @@ const LABELS = {
     title: 'Holistic SalesBot · Workflow studio', eyebrow: 'CRM AUTOMATIONS',
     lead: 'Build a guided conversation and safely test every branch before connecting a real channel.',
     safety: 'Preview only · No customers contacted · No CRM leads, bookings or payments created.',
-    explain: 'These drafts are stored only on this page, not in your database. Copy the JSON to keep a version.',
+    explain: 'Changes remain on this page until you explicitly save an encrypted owner draft above. JSON export is optional.'
     template: 'Scenario template', topic: 'Simulated visitor topic', flow: 'Conversation steps',
     editor: 'Edit step wording', choose: 'Select a step', language: 'Text language',
     next: 'Next', review: 'Owner handoff', offer: 'Verified page', answer: 'Question',
@@ -51,7 +51,7 @@ const LABELS = {
     title: 'Holistic SalesBot · Конструктор', eyebrow: 'АВТОМАТИЗАЦИИ CRM',
     lead: 'Настройте сценарий диалога и проверьте все ветки, прежде чем подключать реальный канал.',
     safety: 'Только предпросмотр · Никому не пишем · Не создаём лиды, записи и оплаты.',
-    explain: 'Черновик хранится только в открытой вкладке, а не в БД. Скопируйте JSON, чтобы сохранить.',
+    explain: 'Изменения остаются в этой вкладке, пока вы не сохраните зашифрованный черновик в CRM. JSON можно скопировать отдельно.'
     template: 'Шаблон сценария', topic: 'Тема тестового посетителя', flow: 'Шаги диалога',
     editor: 'Редактировать текст шага', choose: 'Выберите шаг', language: 'Язык текста',
     next: 'Далее', review: 'Передача мастеру', offer: 'Проверенная страница', answer: 'Вопрос',
@@ -84,7 +84,7 @@ const LABELS = {
     title: 'Holistic SalesBot · Constructor', eyebrow: 'AUTOMATIZACIONES CRM',
     lead: 'Diseña una conversación y prueba sus caminos antes de conectar un canal real.',
     safety: 'Solo vista previa · Sin mensajes ni contactos, reservas o pagos nuevos.',
-    explain: 'Este borrador vive únicamente en esta página. Copia el JSON para guardarlo.',
+    explain: 'Los cambios quedan en esta página hasta guardar el borrador cifrado en CRM. Copiar JSON es opcional.'
     template: 'Plantilla', topic: 'Tema simulado', flow: 'Pasos de la conversación',
     editor: 'Editar texto', choose: 'Seleccionar paso', language: 'Idioma del texto',
     next: 'Siguiente', review: 'Revisión humana', offer: 'Página verificada', answer: 'Pregunta',
