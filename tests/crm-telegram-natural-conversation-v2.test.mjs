@@ -21,7 +21,7 @@ test('new chats use natural first-person consent and no slash command buttons',(
   assert.equal(first.flowVersion,TELEGRAM_DIAGNOSTIC_V2_VERSION)
   assert.equal(first.stage,'consent')
   assert.equal(first.body,null)
-  assert.match(first.reply,/Приветствую! Спасибо за интерес/)
+  assert.match(first.reply,/Приветствую! Меня зовут Андрей\. Спасибо за интерес/)
   assert.match(first.reply,/в течение трёх дней/)
   assert.match(first.reply,/соглашаетесь/)
   assert.deepEqual(first.keyboard,[['Да, начинаем','Не сейчас']])
