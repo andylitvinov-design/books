@@ -19,10 +19,15 @@
 .toolbar button,.detailActions button{border:1px solid #c7d6c8;border-radius:11px;background:#eff8f1;color:#216456;font:700 12px/1.3 system-ui,sans-serif;min-height:42px;padding:9px 12px;cursor:pointer}
 .toolbar button{flex:none}
 .toolbar button:disabled,.detailActions button:disabled{opacity:.5;cursor:not-allowed}
-.crm{margin:14px 4px 2px;padding:12px;border:1px solid #e2d6ca;border-radius:15px;background:#fff}
-.crm>summary{display:flex;gap:10px;align-items:center;cursor:pointer;color:#62443f;font:700 14px system-ui,sans-serif}
-.crm>summary svg{flex:none;color:var(--mh-plum)}
-.crm>p{font:12px/1.55 system-ui,sans-serif;color:#76665a}
+.crm{min-width:0;margin:0 0 14px;padding:clamp(9px,1.4vw,15px);border:1px solid #ddcfc0;border-radius:17px;background:#fff}
+.crmTitle{display:flex;gap:9px;align-items:center;color:#62443f}
+.crmTitle svg{flex:none;color:var(--mh-plum)}
+.hub .crmTitle h2{font:750 16px/1.3 system-ui,sans-serif;margin:0}
+.crm>p{font:12px/1.55 system-ui,sans-serif;color:#76665a;margin:5px 0 8px}
+.direct{min-width:0;max-width:100%}
+.directTitle{font:700 14px/1.4 system-ui,sans-serif;color:#684c3f;margin:17px 0 6px;padding-top:14px;border-top:1px solid #e5d9cc}
+.crmShortcut{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;margin-bottom:12px;border:1px solid #d9e5dc;border-radius:12px;background:#f3f8f4;font:700 12px/1.4 system-ui,sans-serif;color:#315d52}
+.crmShortcut button{min-height:44px;border:1px solid #a1c2b4;border-radius:10px;background:#fff;color:#256654;padding:8px 12px;font:750 12px/1.3 system-ui,sans-serif;cursor:pointer}
 .note,.alert{padding:15px;border-radius:12px;background:#f8eee9;color:#72453b;font:13px/1.55 system-ui,sans-serif}
 .note a{color:var(--mh-forest);font-weight:700}
 .requests{width:100%;min-width:0}
