@@ -219,16 +219,29 @@
 .reviewTestText strong { color: #315e50; font-size: 15px; font-weight: 750; line-height: 1.28; overflow-wrap: anywhere; }
 .reviewTestText small { font-size: 12px; color: #637b6c; line-height: 1.35; }
 .reviewCheck { justify-self: end; color: #4b8469; }
-.accountOffer { display:flex;align-items:flex-start;gap:11px;margin:14px auto 0;padding:13px;max-width:720px;border:1px solid #c9dcca;border-radius:14px;background:#f0f7ef; }
-.accountOffer>svg { flex:none;color:#315f52;margin-top:8px; }
-.accountOfferBody { display:grid;gap:7px;min-width:0;flex:1; }
-.googleButton { min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:10px 14px;border:1px solid #315f52;border-radius:12px;background:#315f52;color:#fff;font-size:13px;font-weight:780;cursor:pointer; }
-.googleButton:disabled { opacity:.5;cursor:not-allowed; }
-.accountOffer p { margin:0;color:#526e60;font-size:11.5px;line-height:1.48; }
-.accountOffer small { color:#725b5a;font-size:11px;line-height:1.45; }
-.accountOffer .accountError { padding:9px;border-radius:8px;background:#fff1e7;color:#783b30; }
-.reviewFoot { display: flex; align-items: flex-start; gap: 10px; margin: 18px auto 3px; padding: 12px 14px; max-width: 720px; border-radius: 12px; background: #f6f1e8; color: #69604f; font-size: 12px; line-height: 1.5; }
-.reviewFoot svg { flex: none; margin-top: 1px; }
+.accountOffer {
+  display: grid; gap: 9px; max-width: 720px; margin: 14px auto 0; padding: 14px 16px;
+  border: 1px solid #c9dcca; border-radius: 15px; background: #f0f7ef;
+}
+.accountOfferHeading { display: flex; align-items: center; gap: 8px; color: #315f52; font-size: 14px; line-height: 1.35; }
+.accountOfferHeading svg { flex: none; }
+.accountOfferDescription { margin: 0; color: #526e60; font-size: 12px; line-height: 1.5; }
+.googleButton {
+  display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
+  min-height: 48px; padding: 10px 13px; border: 1px solid #315f52; border-radius: 12px;
+  background: #315f52; color: #fff; font-size: 13px; font-weight: 780; cursor: pointer;
+}
+.googleButton > span:nth-child(2) { min-width: 0; }
+.googleButton svg { flex: none; }
+.googleButton:hover:not(:disabled) { background: #254e42; }
+.googleButton:disabled { opacity: .55; cursor: not-allowed; }
+.googleMark {
+  display: grid; flex: none; place-items: center; width: 25px; height: 25px;
+  border-radius: 50%; background: #fff; color: #2761ad; font-size: 15px; font-weight: 800;
+}
+.accountPrivacy { display: flex; align-items: center; justify-content: center; gap: 6px; color: #526e60; font-size: 11px; line-height: 1.4; text-align: center; }
+.accountPrivacy svg { flex: none; }
+.accountError { margin: 0; padding: 9px 10px; border-radius: 8px; background: #fff1e7; color: #783b30; font-size: 12px; line-height: 1.4; }
 
 @media (max-width: 640px) {
   .shell { padding: 9px 11px 46px; }
