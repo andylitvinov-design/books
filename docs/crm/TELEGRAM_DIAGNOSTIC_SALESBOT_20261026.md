@@ -59,3 +59,42 @@ Emergency disable HH_CRM_MSG_TELEGRAM_ENABLED=false and redeploy. The feature-on
 ## Evidence still required
 
 Real BotFather credential and owner pilot, production DB migration, provider acceptance plus client receipt, mobile 320–430px live tests, exact deployed SHA. A green unit test or HTTP 200 alone does not prove E2E.
+
+
+## Second Telegram account · controlled owner pilot (26 October 2026)
+
+The first owner Telegram chat remains protected by the existing Sensitive
+`HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID`. A different Telegram chat does not get
+a response to its ordinary `/start` during this single-chat pilot; this is the
+expected fail-closed behavior, not evidence that Telegram rejected the message.
+
+To verify a second account **without public rollout**, the signed-in owner opens
+[CRM → Messages → Channels](https://holistichouse.vercel.app/ru/app/practice?panel=crm&crmTab=messages)
+and selects **Copy test invitation / Копировать приглашение**. The server returns
+an HMAC-bound 15-minute Telegram deep link for one additional tester. Send the
+link to the second Telegram account and press Start in that account. It starts
+the same explicit `/agree` → topic → question → optional photo flow.
+A chat that redeems the link is permitted for **24 hours** or until
+`/stop`; the bound identity is hashed, never exposed to browser URLs or logs.
+Only one additional active test account is accepted per CRM Telegram channel.
+Reusing the link with another account while that pilot is active is rejected.
+
+The owner can then reply to this verified test thread in existing CRM Messages;
+manual provider sending still requires an account-scoped committed thread,
+latest consent, enabled channel, no STOP and unexpired guest invitation.
+The second account must verify receipt on a real phone. No link creates a lead
+without `/agree`; no additional public CTA, broadcast, marketing, payments,
+SMS or unrelated provider is enabled.
+
+New additive migration:
+`20261026180532_hh_crm_telegram_second_pilot_20261026.sql`.
+It adds one timestamp column to existing private session state and allows
+**authenticated account-scoped, read-only** access to that state for CRM send
+eligibility. No second Contacts/Messages database or raw Telegram identity is
+stored. Verify FORCE RLS, authenticated-only owner role and wrong-owner denial
+before releasing.
+
+**Acceptance stays OPEN:** real second-account Start → consented CRM thread
+→ optional photo privately accessible to owner → manual owner reply accepted
+and physically received → /stop → blocked further sends. Only after real
+provider evidence and separate owner approval may public availability be enabled.
