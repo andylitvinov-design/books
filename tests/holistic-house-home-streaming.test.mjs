@@ -3,22 +3,22 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("EN and RU heroes stream public video without awaiting Redis", () => {
+test("EN/RU/ES homepage omits the unapproved HeyGen introduction without touching the video library", () => {
   const en = read("app/page.tsx"), ru = read("app/[locale]/page.tsx");
-  const section = read("components/home-intro-video-section.tsx");
+  const es = read("app/es/page.tsx");
   const home = read("components/holistic-house-home.tsx");
-  for (const page of [en, ru]) {
-    assert.match(page, /<Suspense fallback=\{null\}>/);
-    assert.match(page, /<HomeIntroVideoSection locale=/);
-    assert.doesNotMatch(page, /await getPublishedSiteVideos\(\)/);
+  for (const page of [en, ru, es]) {
+    assert.doesNotMatch(page, /HomeIntroVideoSection|introVideoContent|service-home-video|getPublishedSiteVideo/);
+    assert.match(page, /<HolisticHouseHome|<PersonalTestimonials/);
   }
-  assert.match(home, /introVideoContent\?: ReactNode/);
-  assert.match(home, /\{introVideoContent\}/);
-  assert.doesNotMatch(home, /<SiteVideoPlayer/);
-  assert.match(section, /await getPublishedSiteVideo\(videoKey\("home-intro", locale\)\)/);
-  assert.doesNotMatch(section, /getPublishedSiteVideos\(\)/);
-  assert.match(section, /<SiteVideoPlayer key=\{locale\} video=\{introVideo\}/);
-  assert.match(section, /data-video-slot="home-intro"/);
+  assert.doesNotMatch(home, /introVideoContent|HomeIntroVideoSection|SiteVideoPlayer/);
+  assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
+  // Archive / owner video manager entries remain available, but may not
+  // make an unapproved AI introduction reappear on the homepage.
+  const archived = read("components/home-intro-video-section.tsx");
+  assert.match(archived, /getPublishedSiteVideo\(videoKey\("home-intro", locale\)\)/);
+  assert.match(read("lib/site-videos/defaults.js"), /existingHomeIntroVideoEn/);
+  assert.match(read("lib/site-videos/defaults.js"), /existingHomeIntroVideoRu/);
 });
 
 test("EN/RU/ES first screen presents seven visible steps and genuine free/paid routes", () => {

@@ -49,7 +49,8 @@ test('owner-only commands and legitimate private callback buttons',()=>{
   for(const command of ['combine','done','cancel']){
     assert.equal(parseOwnerAudioCommand(message('/'+command),NOW)?.action,command)
     assert.equal(parseOwnerAudioCommand(message('/'+command+'@Andydotbot'),NOW)?.action,command)
-    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,command)
+    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,
+      command==='combine'?'combine':'legacy-batch-button')
   }
   const bad=message('/combine');bad.message.from.id=999
   assert.equal(parseOwnerAudioCommand(bad,NOW),null)
@@ -95,7 +96,7 @@ test('private PostgreSQL session, ordered storage and Telegram sender are wired 
   assert.match(file,/result_audio_id/)
   assert.match(file,/where practitioner_id=\$1 for update/)
   assert.match(file,/items\.sort\(\(a,b\)=>a\.updateId-b\.updateId\)/)
-  assert.match(file,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,fetcher\)/)
+  assert.match(file,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher\)/)
   assert.match(file,/form\.set\('document'/)
   assert.match(file,/event\.chatId!==credentials\.chat\|\|event\.userId!==credentials\.chat/)
   assert.match(schema,/force row level security/i)
