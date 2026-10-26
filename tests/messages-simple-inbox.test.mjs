@@ -12,7 +12,7 @@ test('owner sees one compact messenger rather than nested Requests + CRM + autom
   assert.match(hub,/ownerBootstrapPending&&!data/)
   assert.match(simple,/data-simple-messages/)
   assert.match(simple,/className=\{styles\.window\}/)
-  assert.match(simple,/className=\{styles\.personSelected:styles\.person\}/)
+  assert.match(simple,/className=\{selectedKey===row\.key\?styles\.personSelected:styles\.person\}/)
   assert.match(simple,/setSelectedKey\(item\.key\)/)
   assert.match(simple,/className=\{styles\.back\}/)
   assert.match(simple,/data-detail-open=\{openDetail\?'true':'false'\}/)
