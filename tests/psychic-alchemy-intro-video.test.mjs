@@ -27,5 +27,5 @@ test('EN and RU About intros are managed by their locale video slots; biography,
   assert.match(page, /videoKey\("about-intro", typedLocale\)/);
   assert.match(page, /typedLocale === "en" && aboutIntro.heygenId === existingAboutIntroVideo.heygenId/);
   assert.match(page, /<PsychicAlchemyIntroVideo video=\{aboutIntro\}/);
-  for (const text of ['current.intro.map', 'current.sections.map', 'videoTestimonials.map', 'PersonalConsultationForm locale', 'about-client-cabinet', 'testimonials-title', 'personal-consultation-title']) assert.ok(page.includes(text));
+  for (const text of ['current.intro.map', 'current.sections.map', '<PersonalTestimonials', 'PersonalConsultationForm locale', 'about-client-cabinet', 'testimonials-title', 'personal-consultation-title']) assert.ok(page.includes(text));
 });
