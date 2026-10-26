@@ -144,12 +144,14 @@ type Props = {
   stayAfterSave?: boolean;
   resetKey?: string;
   publicTopic?: string;
+  /** Explicit public offer label saved with the CRM enquiry; never private notes. */
+  publicServiceTitle?: string;
 };
 
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic,
+  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -243,7 +245,9 @@ export function ContactChannelChooser({
   // Only the one personal express review gets a brief note in compact phone
   // capture. Other compact forms keep their approved layout and contract.
   const expressReview = compactPhone && publicTopic?.startsWith("Express review focus: ");
-  const serviceTitle = originalMessage.split("\n")
+  // Preserve the selected public offer: the message heading is generic and
+  // must not collapse €50 / 30 min into the €100 / 60 min consultation.
+  const serviceTitle = publicServiceTitle?.trim() || originalMessage.split("\n")
     .find(line => /^(?:Service|Услуга|Servicio):\s*/i.test(line))
     ?.replace(/^[^:]+:\s*/, "").trim() || "Holistic House service";
 
