@@ -96,6 +96,7 @@ const PLANS = COURSE_PUBLIC_PLANS
 
 export default function CourseEntrySelector({ accountId, course, access, locale = 'en', onOpen, onAdd, onCloseCourse, closing = false }) {
   const t = COPY[locale] || COPY.en
+  const ru = locale === 'ru'
   const hasCourse = Boolean(course?.stage > 0 && !['closed','archived'].includes(course?.status))
   const [progressSnapshot, setProgressSnapshot] = useState(null)
   const scope = accountId + ':' + (course?.id || '')
