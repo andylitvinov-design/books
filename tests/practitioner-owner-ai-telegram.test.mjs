@@ -55,7 +55,8 @@ test('owner inline keyboard is bot-authored and a ForceReply selects the next mo
     ['🧠 Задать вопрос всем ИИ'])
   assert.ok(!tryFirst.reply_markup.inline_keyboard.flat()
     .some(x=>x.callback_data==='hh-ai:mistral'))
-  assert.match(tryFirst.text,/Mistral исключён/)
+  assert.doesNotMatch(tryFirst.text,/Mistral/)
+  assert.match(ownerAiPrompt('all').text,/Для глубокого разбора/)
   assert.deepEqual(ownerAiMenu().reply_markup.inline_keyboard.flat().map(x=>x.callback_data),['hh-ai:all','hh-ai:status'])
   assert.equal(ownerAiPrompt('mistral').reply_markup.force_reply,true)
   const callback=parseOwnerAiUpdate({update_id:312,callback_query:{
