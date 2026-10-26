@@ -85,7 +85,7 @@ test('multiple button choices are bounded at five; must preserve reachable paths
   assert.equal(flow.nodes.find(x => x.id === 'choice').options.length, 3)
   flow = removeSalesbotChoice(flow, 'choice', 'option_3')
   assert.equal(flow.nodes.find(x => x.id === 'choice').options.length, 2)
-  assert.throws(() => removeSalesbotChoice(flow, 'choice', 'option_4'),
+  assert.throws(() => removeSalesbotChoice(flow, 'choice', 'review'),
     /SALESBOT_EDITOR_MIN_CHOICES/)
   assert.throws(() => removeSalesbotChoice(flow, 'choice', '__proto__'),
     /INVALID_SALESBOT_EDITOR_CHOICE/)
