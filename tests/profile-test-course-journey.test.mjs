@@ -27,22 +27,22 @@ test('four-step profile launches guest tests directly; Ready has one optional Go
     't.accountTitle', 't.accountDescription', 't.accountPrivacy',
     'disabled={accountBusy || selectedKeys.length === 0}',
   ]) assert.ok(readyPanel.includes(term), term)
-  assert.equal((readyPanel.match(/<button\\b/g) || []).length, 1, 'only Google action on Ready')
-  assert.doesNotMatch(readyPanel, /data-profile-start-tests|t.guestChoice|t.readyFoot|reviewFoot|<Link\\b/)
-  assert.match(source, /step < 3 && <div className=\\{styles.actions\\}>/)
-  assert.match(source, /step < 3 && <aside className=\\{styles.privateInfo\\}>/)
+  assert.equal((readyPanel.match(/<button\b/g) || []).length, 1, 'only Google action on Ready')
+  assert.doesNotMatch(readyPanel, /data-profile-start-tests|t.guestChoice|t.readyFoot|reviewFoot|<Link\b/)
+  assert.match(source, /step < 3 && <div className=\{styles.actions\}>/)
+  assert.match(source, /step < 3 && <aside className=\{styles.privateInfo\}>/)
   assert.ok(source.includes('makeTestSelectionIntent(selectedKeys)'))
   assert.ok(source.includes('No guest answers or guest results are imported'))
-  assert.match(source, /encodeURIComponent\\(selectedKeys.join\\(","\\)\\)/)
+  assert.match(source, /encodeURIComponent\(selectedKeys.join\(","\)\)/)
   for (const cta of ['Take tests', 'Пройти тесты', 'Realizar pruebas',
     'Continue with Google — Free', 'Продолжить через Google — бесплатно', 'Continuar con Google — Gratis'])
     assert.ok(source.includes(cta), cta)
-  assert.match(css, /grid-template-columns: repeat\\(4, minmax\\(0, 1fr\\)\\)/)
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
   for (const sel of ['.reviewTests', '.reviewTest', '.reviewNumber', '.accountOfferHeading',
     '.accountPrivacy', '.googleButton', '.extraFilters'])
     assert.ok(css.includes(sel), sel)
-  assert.match(css, /@media \\(max-width: 640px\\)/)
-  assert.match(css, /@media \\(max-width: 350px\\)/)
+  assert.match(css, /@media \(max-width: 640px\)/)
+  assert.match(css, /@media \(max-width: 350px\)/)
   assert.match(css, /prefers-reduced-motion: reduce/)
 })
 
