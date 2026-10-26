@@ -250,8 +250,9 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
-  const filled = COACHING_FIELDS.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
-  const total = COACHING_FIELDS.length;
+  const visibleFields = COACHING_FIELDS.filter(field => showMore || field.required);
+  const filled = visibleFields.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
+  const total = visibleFields.length;
   const optionalCount = COACHING_FIELDS.filter(field => !field.required).length;
 
   useEffect(() => {
@@ -462,12 +463,12 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           {COACHING_TOPICS.map(topic => <option key={topic.id} value={topic.id}>{topic.label[locale]}</option>)}
         </select>
       </label>
-      <label>{t.yourName}
+      {showMore ? <label>{t.yourName}
         <input value={draft.name} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, name: event.target.value }))} maxLength={120} autoComplete="nickname" />
-      </label>
-      <label>{t.location}
+      </label> : null}
+      {showMore ? <label>{t.location}
         <input value={draft.city} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, city: event.target.value }))} maxLength={150} autoComplete="address-level2" />
-      </label>
+      </label> : null}
     </div>
 
     <p className={styles.requiredLegend}>{t.requiredLegend}</p>
