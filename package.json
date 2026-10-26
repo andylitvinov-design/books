@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test:unit": "node --test \"tests/**/*.test.mjs\"",
+    "test:agent-secrets": "node --test tests/agent-secret-bridge.test.mjs",
     "validate:remedy-inventory": "node scripts/validate-remedy-source-inventory.mjs",
     "generate:remedy-content": "node scripts/generate-phase-l-remedy-content.mjs",
     "audit:remedy-completeness": "node scripts/audit-remedy-source-completeness.mjs",
