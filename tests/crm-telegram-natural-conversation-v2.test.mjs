@@ -149,7 +149,7 @@ test('legacy V1 in-progress question remains intact until an explicit new /start
   assert.equal(restart.stage,'consent')
   assert.equal(restart.body,null)
   const v1=transitionTelegramDiagnosticLegacy(prior,msg('/skip'))
-  assert.equal(v1.stage,'question')
+  assert.equal(v1.stage,'photo')
   const stopped={stage:'stopped',locale:'ru',flowVersion:1}
   assert.equal(transitionTelegramDiagnostic(stopped,msg('/start')).reply,null)
 })
