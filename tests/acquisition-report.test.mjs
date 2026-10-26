@@ -135,7 +135,18 @@ test('campaign builder rejects arbitrary URLs, contact details, secrets and unsu
 })
 
 test('admin report remains discoverable, responsive and isolated from public/private analytics', () => {
-  assert.match(read('components/practitioner-cabinet.jsx'), /href:'\/admin\/acquisition'/)
+  // The owner acquisition report now lives under My Practice → Marketing, not legacy Tools.
+  // Assert every link in the actual owner-only handoff, rather than restoring a stale shortcut.
+  const legacyNavigation = read('components/practitioner-cabinet.jsx')
+  const marketingWorkspace = read('components/app/practice-workspace.jsx')
+  const ownerDestinations = read('lib/app/practitioner-access.js')
+  const ownerHandoff = read('app/api/app/[...path]/route.js')
+  assert.match(legacyNavigation, /app\/practice\?panel=marketing/)
+  assert.match(marketingWorkspace, /destination:'acquisition'/)
+  assert.match(marketingWorkspace, /activePanel==='marketing'&&isOwner/)
+  assert.match(marketingWorkspace, /onClick=\{\(\)=>openOwner\(destination\)\}/)
+  assert.match(ownerDestinations, /acquisition:\s*'\/admin\/acquisition'/)
+  assert.match(ownerHandoff, /if \(!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)\)/)
   assert.match(read('lib/public-analytics.ts'), /PUBLIC_ANALYTICS_AVAILABLE\s*=\s*false/)
   const page = read('app/admin/acquisition/page.jsx')
   for (const label of ['Not measured', 'Не измеряется', 'No medido', 'America/Toronto']) assert.ok((page + read('lib/acquisition/report.js')).includes(label))
