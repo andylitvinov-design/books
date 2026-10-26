@@ -36,7 +36,8 @@ test('same four original sector keys now express four life directions, with comp
       assert.ok(sector.radarLabel[locale])
     }
   }
-  assert.match(visual, /aria-label=\{sector\.label\[locale\] \|\| sector\.label\.en\}/)
+  assert.match(visual, /aria-label=\{\(sector\.label\[locale\] \|\| sector\.label\.en\) \+ ' · ' \+/)
+  assert.match(visual, /data-has-results=\{hasResults\}/)
   assert.match(visual, /PORTRAIT_PICKER_SECTORS = \['body','relationships','work','growth'\]/)
   assert.match(visual, /className=\{styles\.portraitSectorShort\} aria-hidden="true"/)
   assert.match(mobile, /\.portraitSectorShort\{display:block\}/)
