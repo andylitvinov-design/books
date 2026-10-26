@@ -4,7 +4,6 @@ import {cookies} from 'next/headers'
 import {ChevronRight} from 'lucide-react'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {uiLocaleCookie} from '@/lib/ui-locale'
-import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import AdminTelegramAudio from '@/components/admin-telegram-audio'
 import {ownerAudioFolder} from '@/lib/practitioners/owner-telegram-audio-model.mjs'
 import folders from '@/components/materials-audio-folders.module.css'
@@ -23,11 +22,6 @@ export default async function TelegramAudioMaterials({searchParams}){
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(query.item)
       ?query.item:''
   return <main className="prescription-admin-shell" data-owner-telegram-audio-page>
-    <PrescriptionAdminHeader title={{
-      en:'My Materials / Telegram audio',ru:'Мои материалы / Аудио из Telegram'}}
-      description={{
-        en:'Record or forward from Telegram; review privately and choose a folder.',
-        ru:'Перешлите голосовое сообщение боту, прослушайте и выберите папку.'}}/>
     <nav className={folders.breadcrumb} aria-label="Breadcrumb">
       <Link href="/admin/materials">{locale==='ru'?'Мои материалы':'My Materials'}</Link>
       <ChevronRight aria-hidden="true"/>
