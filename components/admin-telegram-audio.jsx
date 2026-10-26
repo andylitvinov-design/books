@@ -28,7 +28,7 @@ const LABELS={
       'Зажмите голосовое сообщение в Telegram → «Переслать» → Dot → «Отправить».',
       'Дождитесь ответа ✅ о сохранении. После этого запись появится в списке.'
     ],
-    combine:'Объединить: нажмите «Объединить аудио» → выберите папку для готового файла → перешлите 2–8 голосовых OGG/Opus → после подтверждений нажмите «Готово · объединить». Один файл придёт в Dot и будет сохранён в выбранной папке. Папку можно изменить и здесь. До 20 МБ суммарно, /cancel для отмены.',
+    combine:'Объединить: нажмите «Объединить аудио» → выберите папку для готового файла → перешлите 2–12 голосовых OGG/Opus → после подтверждений нажмите «Готово · объединить» (или /done). Один файл придёт в Dot и будет сохранён в выбранной папке. Папку можно изменить и здесь. До 20 МБ суммарно, /cancel для отмены.',
     connection:'Подключение Telegram Dot',checkBot:'Проверить',repairBot:'Восстановить webhook',
     connectionLoading:'Проверяем сервер Telegram…',
     connectionReady:'Webhook зарегистрирован. Ответ на /audio нужно подтвердить настоящим сообщением.',
@@ -62,7 +62,7 @@ const LABELS={
       'Hold a Telegram voice message → Forward → Dot → Send.',
       'Wait for the ✅ saved confirmation. The recording will then appear here.'
     ],
-    combine:'To combine: tap Combine audio → select the destination folder for the merged file → forward 2–8 OGG/Opus voice notes → wait for ✅ per clip → tap Done · Combine. One file will arrive in Dot and be saved in your chosen folder. You can move it here later. Maximum 20 MB; /cancel to stop.',
+    combine:'To combine: tap Combine audio → select the destination folder for the merged file → forward 2–12 OGG/Opus voice notes → wait for ✅ per clip → tap Done · Combine (or /done). One file will arrive in Dot and be saved in your chosen folder. You can move it here later. Maximum 20 MB; /cancel to stop.',
     connection:'Dot Telegram connection',checkBot:'Check',repairBot:'Repair webhook',
     connectionLoading:'Checking Telegram provider…',
     connectionReady:'Webhook is registered. A real /audio response is still needed to prove delivery.',
@@ -96,7 +96,7 @@ const LABELS={
       'Mantén pulsado un audio en Telegram → Reenviar → Dot → Enviar.',
       'Espera el mensaje ✅ de confirmación. Entonces aparecerá aquí.'
     ],
-    combine:'Para unir: pulsa Unir audios → elige la carpeta del archivo final → reenvía 2–8 voces OGG/Opus → espera ✅ por clip → pulsa Listo · Unir. El archivo llegará a Dot y se guardará en la carpeta elegida. Puedes moverlo aquí después. Máximo 20 MB; /cancel para cancelar.',
+    combine:'Para unir: pulsa Unir audios → elige la carpeta del archivo final → reenvía 2–12 voces OGG/Opus → espera ✅ por clip → pulsa Listo · Unir (o /done). El archivo llegará a Dot y se guardará en la carpeta elegida. Puedes moverlo aquí después. Máximo 20 MB; /cancel para cancelar.',
     connection:'Conexión Telegram de Dot',checkBot:'Verificar',repairBot:'Reparar webhook',
     connectionLoading:'Comprobando el proveedor Telegram…',
     connectionReady:'Webhook registrado. Hay que comprobar la respuesta real a /audio.',
