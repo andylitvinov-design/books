@@ -732,7 +732,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       </div>}
     </div>
 
-    {step < 3 &&     <aside className={styles.privateInfo}>
+    {step < 3 && <aside className={styles.privateInfo}>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{t.private}</p>
         <div className={styles.privateLinks}>
