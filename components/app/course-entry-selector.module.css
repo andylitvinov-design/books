@@ -627,3 +627,40 @@
   .startedTiles .current{grid-template-columns:88px minmax(0,1fr);gap:6px 9px;padding:8px}
   .startedTiles .current h2{font-size:18px}
 }
+
+/* Private learning first, public course discovery second. */
+.courseCatalogBridge {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin:13px 0 19px;
+  padding:14px 17px;
+  background:#f7f1e7;
+  border:1px solid #dfcbb6;
+  border-radius:16px;
+}
+.courseCatalogBridge > div { display:grid;gap:4px;min-width:0 }
+.courseCatalogBridge strong { color:#2c594d;font-size:15px }
+.courseCatalogBridge small { color:#746a5e;line-height:1.4;font-size:12px }
+.courseCatalogBridge a {
+  flex:none;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  justify-content:center;
+  min-height:44px;
+  padding:10px 15px;
+  border-radius:12px;
+  color:#fff;
+  background:#7c5138;
+  font-size:13px;
+  font-weight:750;
+  text-decoration:none;
+}
+.courseCatalogBridge a:hover { background:#69432d }
+.courseCatalogBridge a:focus-visible { outline:3px solid #267565;outline-offset:3px }
+@media(max-width:540px) {
+  .courseCatalogBridge {display:grid;gap:11px;padding:13px}
+  .courseCatalogBridge a {width:100%}
+}
