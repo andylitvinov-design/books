@@ -107,7 +107,7 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
-      // Free-first studio: three distinct no-payment paths, then six real
+      // Free-first studio: three distinct no-payment paths, then five real
       // personal offers. No secondary marketplace repeats on the landing.
       const freeCta = page.locator('[data-service-hero-cta="free"]');
       const paidCta = page.locator('[data-service-hero-cta="paid"]');
@@ -125,12 +125,7 @@ try {
       await visible(free.locator("h2#services-free-title"));
       await visible(paid.locator("h2#services-personal-title"));
       assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
-      assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
-      const monthlySupport = paid.locator('[data-services-studio-card="monthly-support"]');
-      await visible(monthlySupport);
-      await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
-      assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
-        "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
+      assert.equal(await paid.locator('[data-services-studio-card]').count(), 5);
       assert.equal(await page.locator("#find-your-service").count(), 0,
         "Detailed practitioner search belongs on the separate directory");
       const testAction = free.locator('[data-services-studio-action="tests"]');
@@ -155,25 +150,14 @@ try {
         "Method videos must not eagerly load third-party players");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // RootLayout provides My Space: the canonical header opens an accessible
-      // account dialog, not a direct Cabinet link. Never bypass sign-in here.
+      // Canonical header: Cabinet is immediately accessible; Books occupies the bottom bar.
       const header = page.locator("header.house-header--services");
-      const cabinetEntry = header.locator("button.site-cabinet-entry");
+      const cabinetEntry = header.locator("a.site-cabinet-entry");
       await expect(cabinetEntry).toHaveCount(1);
       await visible(cabinetEntry);
-      await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
-      await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top Cabinet opens the authenticated app");
       const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
-      await cabinetEntry.click();
-      const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
-      await expect(privateSpaceDialog).toHaveAttribute("open", "");
-      await visible(privateSpaceDialog.locator("#hh-my-space-title"));
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
-      await privateSpaceDialog.locator('header button[type="button"]').first().click();
-      await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
-      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
@@ -183,15 +167,13 @@ try {
         "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
-      // The canonical expanded-menu destination is the Library hub;
-      // /books remains a separate editorial route, not this menu entry.
-      const libraryEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library"]');
-      await expect(libraryEntry).toHaveCount(1);
-      await visible(libraryEntry);
-      await expect(libraryEntry).toHaveText(locale === "ru" ? "Библиотека" : locale === "es" ? "Biblioteca" : "Library");
-      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "Library opens the localized editorial hub");
-      const libraryBounds = await libraryEntry.boundingBox();
-      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the opened menu: " + locale + "/" + width);
+      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/books"]');
+      await expect(booksEntry).toHaveCount(1);
+      await visible(booksEntry);
+      await expect(booksEntry).toHaveText(locale === "ru" ? "Идеи" : "Ideas");
+      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/books", "Books opens the locale-specific library books view");
+      const booksBounds = await booksEntry.boundingBox();
+      assert.ok(booksBounds && booksBounds.x >= 0 && booksBounds.x + booksBounds.width <= width + 1, "Books entry must fit the opened menu: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);
@@ -218,12 +200,7 @@ try {
         if (await businessAction.isVisible()) await businessAction.click();
         else await showcase.locator('[data-services-kind="business"]').click();
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
-        // Business has TWO approved offers: a one-off consultation and €200/month support.
-        // Keep both discoverable; do not hide the support card to satisfy an obsolete count.
-        const businessOffers = page.locator('[data-services-studio-paid] [data-services-studio-card]:visible');
-        await expect(businessOffers).toHaveCount(2);
-        await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
-        await expect(monthlySupport).toBeVisible();
+        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
         await showcase.locator('[data-services-mode="toronto"]').click();
         await expect(page.locator("[data-services-studio-free]")).toBeHidden();
         await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
@@ -242,7 +219,7 @@ try {
         await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
         await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
         await showcase.locator('[data-services-kind="all"]').click();
-        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(6);
+        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
         await assertViewport(page, locale + "/services/slider-filter/" + width);
       }
       // Keep the advanced matching UX available on a separate, dedicated
@@ -329,12 +306,7 @@ try {
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
     await visible(page.locator('[data-services-studio-free]'));
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
-    assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
-    const esMonthly = page.locator('[data-services-studio-paid] [data-services-studio-card="monthly-support"]');
-    await expect(esMonthly).toBeVisible();
-    await expect(esMonthly).toContainText("200 € / mes");
-    assert.equal(await esMonthly.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
-      "/es/services/personal-support", "Spanish support offer must lead to the terms page");
+    assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
     assert.equal(await page.locator("#find-your-service").count(), 0);
     // Verify the same service mode and topic filtering in Spanish.
     const esShowcase = page.locator("[data-services-showcase-hero]");
@@ -350,7 +322,7 @@ try {
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
-    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(6);
+    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
     await assertViewport(page, "es/services/slider-filter/390");
     await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");

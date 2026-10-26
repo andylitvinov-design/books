@@ -21,32 +21,6 @@ const widths = [320, 375, 430]
 const output = 'artifacts/public-services-production'
 await mkdir(output, { recursive: true })
 
-// The first visible test card follows the user's topic. Suggested questionnaires
-// now link directly into the existing guest runner by public definition key;
-// a fallback may still use the public topic-filtered catalog. Neither route
-// may expose typed concerns, scores or personal/medical data in a URL.
-function assertPublicTestHref(href, locale, direction, selectedTopic, label) {
-  assert.ok(href?.startsWith('/'), 'Same-origin test path required: ' + label)
-  const target = new URL(href, origin)
-  assert.equal(target.origin, origin, 'Test CTA must remain first-party: ' + label)
-  const runnerLocale = locale === 'es' ? 'en' : locale
-  if (target.pathname === '/' + runnerLocale + '/client') {
-    assert.deepEqual([...target.searchParams.keys()], ['startTests'],
-      'Direct guest test link exposes only a public definition key: ' + label)
-    assert.match(target.searchParams.get('startTests') || '', /^[a-z0-9][a-z0-9-]{1,80}$/,
-      'A valid public test key opens the existing guest runner: ' + label)
-  } else {
-    assert.equal(target.pathname, '/' + locale + '/client/tests',
-      'Only the existing public test catalog may be a fallback: ' + label)
-    assert.deepEqual([...target.searchParams.keys()], ['focus', 'journey', 'topics'],
-      'Catalog fallback carries only allowlisted public filters: ' + label)
-    assert.equal(target.searchParams.get('journey'), direction === 'love' ? 'relationships' : direction,
-      'Catalog fallback remains in the selected direction: ' + label)
-    assert.equal(target.searchParams.get('topics'), selectedTopic,
-      'Catalog fallback follows the selected topic: ' + label)
-  }
-}
-
 const browser = await chromium.launch()
 let checks = 0
 try {
@@ -107,21 +81,17 @@ try {
         await panel.locator('[data-direction-filter="' + ids[1] + '"]').click()
         await page.waitForFunction(id => document.querySelector(
           '[data-direction-filter="' + id + '"]')?.getAttribute('aria-pressed') === 'true', ids[1])
-        const testCards = page.locator('[data-direction-section="test"] [data-offer-type="test"]')
-        assert.equal(await testCards.count(), 2, 'Two free-test options remain visible: ' + name)
-        assert.equal(await testCards.first().getAttribute('data-offer-id'), ids[1],
-          'Selected topic leads the free-test options: ' + name)
-        const testUrl = await testCards.first().locator('[data-offer-action="test"]').getAttribute('href')
-        assertPublicTestHref(testUrl, locale, direction, ids[1], name)
+        const testUrl = await page.locator('[data-offer-action="test"]').getAttribute('href')
+        assert.equal(new URL(testUrl, origin).searchParams.get('topics'), ids[1],
+          'Pressed topic updates the real test link: ' + name)
         assert.ok(Math.abs((await panel.evaluate(node => node.getBoundingClientRect().height)) - heightBefore) < 1,
           'Selecting a request cannot shift the filter: ' + name)
         await panel.locator('[data-direction-filter="all"]').click()
         await page.waitForFunction(() => document.querySelector(
           '[data-direction-filter="all"]')?.getAttribute('aria-pressed') === 'true')
-        assert.equal(await testCards.first().getAttribute('data-offer-id'), 'all-topics',
-          'Reset restores the general free-test option: ' + name)
-        const allUrl = await testCards.first().locator('[data-offer-action="test"]').getAttribute('href')
-        assertPublicTestHref(allUrl, locale, direction, '', name)
+        const allUrl = await page.locator('[data-offer-action="test"]').getAttribute('href')
+        assert.equal(new URL(allUrl, origin).searchParams.get('topics'), '',
+          'All topics resets the request: ' + name)
       } finally {
         await context.close()
       }

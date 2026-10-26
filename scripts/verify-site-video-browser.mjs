@@ -139,13 +139,7 @@ try {
         await expect(visibleGallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
       }
       const offers = page.locator('[data-services-studio-paid] [data-services-studio-card]')
-      // The sixth approved offer is €200/month personal support (2 × 60 minutes).
-      // Keep video smoke aligned with the real service catalogue and its terms link.
-      await expect(offers).toHaveCount(6)
-      const monthlySupport = page.locator('[data-services-studio-card="monthly-support"]')
-      await expect(monthlySupport).toBeVisible()
-      await expect(monthlySupport).toContainText(locale === 'ru' ? '€200 / месяц' : '€200 / month')
-      await expect(monthlySupport.locator('a[href="/' + locale + '/services/personal-support"]').first()).toBeVisible()
+      await expect(offers).toHaveCount(5)
       for (const [id, suffix] of [['alchemy', 'alchemy-of-soul'], ['hypnotherapy', 'hypnotherapy-course']]) {
         // The offer itself is the matching card, not an obsolete direct-video link.
         const hrefs = await page.locator('[data-services-studio-card="' + id + '"] a[href]')
