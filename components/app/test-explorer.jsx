@@ -555,23 +555,38 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
           <strong>{locale === 'ru' ? 'Что вас интересует?' : locale === 'es' ? '¿Qué te interesa?' : 'What would you like to explore?'}</strong>
           <span role="status" aria-live="polite"><b>{matchCount}</b> {c.matching}</span>
         </div>
-        <div className={styles.scaleFirst} data-scale-first-selection>
-          <strong>{locale === 'ru' ? 'Какие показатели хотите наблюдать или поддерживать?' : 'Which indicators would you like to track or support?'}</strong>
-          <p>{locale === 'ru' ? 'Выберите шкалы: первыми появятся тесты, которые их действительно измеряют. Это не диагноз.' : 'Choose scales: tests that actually measure them appear first. This is not a diagnosis.'}</p>
-          <div className={styles.scaleRail} role="group" aria-label={locale === 'ru' ? 'Шкалы для подбора тестов' : 'Scales for selecting tests'}>
-            {TEST_EXPLORER_AXES.map((key) => <button key={key} type="button" aria-pressed={axes.includes(key)} onClick={() => setAxes((value) => toggle(value,key))}>
-              {axes.includes(key) ? '✓ ' : ''}{TEST_EXPLORER_AXIS_LABELS[key]?.[locale === 'ru' ? 'ru' : 'en'] || key}
+        <div className={styles.lifeProfileFilter} data-test-profile-filter>
+          <strong>{locale === 'ru' ? '1. Выберите профиль' : locale === 'es' ? '1. Elige tu perfil' : '1. Choose your profile'}</strong>
+          <div className={styles.lifeProfileOptions} role="group" aria-label={locale === 'ru' ? 'Один профиль для подбора' : locale === 'es' ? 'Un perfil para elegir pruebas' : 'Choose one test profile'}>
+            {LIFE_TEST_PROFILES.map((item) => <button type="button" key={item.key} data-test-profile={item.key}
+              aria-pressed={profile === item.key} onClick={() => selectProfile(item.key)}>
+              <strong>{profile === item.key ? '✓ ' : ''}{item.label[locale] || item.label.en}</strong>
+              <small>{item.detail[locale] || item.detail.en}</small>
             </button>)}
           </div>
         </div>
-        <div className={styles.quickFilterChips} role="group" aria-label={c.themes}>
+        {activeProfile && <div className={styles.scaleFirst} data-profile-scale-filter>
+          <strong>{locale === 'ru' ? '2. Шкалы профиля' : locale === 'es' ? '2. Escalas del perfil' : '2. Profile scales'}</strong>
+          <p>{locale === 'ru' ? 'Отметьте любое количество шкал. Если не отмечена ни одна — покажем все тесты выбранного профиля.' : locale === 'es' ? 'Elige tantas escalas como quieras. Sin selección, se muestran todas las del perfil.' : 'Choose as many scales as you like. With none checked, all profile scales apply.'}</p>
+          <div className={styles.scaleRail} role="group" aria-label={locale === 'ru' ? 'Шкалы выбранного профиля' : locale === 'es' ? 'Escalas del perfil elegido' : 'Scales in the selected profile'}>
+            {activeProfile.axes.map((key) => <button key={key} type="button" aria-pressed={axes.includes(key)} onClick={() => toggleProfileScale(key)}>
+              {axes.includes(key) ? '✓ ' : ''}{TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key}
+            </button>)}
+          </div>
+          <div className={styles.lifeScaleActions}>
+            <button type="button" onClick={() => { setAxes([...activeProfile.axes]); setSelectedKeys([]); setSimpleSelectionChanged(false) }}>{locale === 'ru' ? 'Выбрать все' : locale === 'es' ? 'Seleccionar todas' : 'Select all'}</button>
+            <button type="button" onClick={() => { setAxes([]); setSelectedKeys([]); setSimpleSelectionChanged(false) }}>{locale === 'ru' ? 'Снять все' : locale === 'es' ? 'Quitar todas' : 'Clear all'}</button>
+            <span>{axes.length} / {activeProfile.axes.length}</span>
+          </div>
+        </div>}
+        {!activeProfile && <div className={styles.quickFilterChips} role="group" aria-label={c.themes}>
           {QUICK_FOCUS.map((key) => {
             const item = TEST_RECOMMENDATION_FOCUS.find((topic) => topic.key === key)
             if (!item) return null
             const checked = focus.includes(key)
             return <button key={key} type="button" aria-label={`${locale === 'ru' ? 'Быстрый фильтр' : locale === 'es' ? 'Filtro rápido' : 'Quick filter'}: ${item.label[locale] || item.label.en}`} aria-pressed={checked} onClick={() => setFocus((current) => toggle(current, key))}><span className={styles.quickChipIcon} aria-hidden="true">{checked ? '✓' : QUICK_ICONS[key]}</span><span>{item.label[locale] || item.label.en}</span></button>
           })}
-        </div>
+        </div>}
         <div className={styles.quickFilterExtras}>
           <button type="button" aria-pressed={maxMinutes === 5} onClick={() => setMaxMinutes((current) => current === 5 ? 0 : 5)}>{locale === 'ru' ? 'До 5 минут' : locale === 'es' ? 'Hasta 5 min' : 'Under 5 min'}</button>
           {(focus.length > 0 || appliedFilters > 0) && <button className={styles.quickFilterReset} type="button" onClick={resetFilters}>{locale === 'ru' ? 'Сбросить всё ×' : locale === 'es' ? 'Borrar todo ×' : 'Clear all ×'}</button>}
@@ -613,7 +628,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
               {activeFilterGroup === 'topics' && <Filter label={c.themes} items={TEST_RECOMMENDATION_FOCUS} selected={focus} onToggle={(key) => setFocus((current) => toggle(current, key))} locale={locale} />}
               {activeFilterGroup === 'concerns' && <Filter label={advanced.detail} items={TEST_EXPLORER_DETAIL_TOPICS.map((item) => ({ ...item, label: { ...item.label, [locale]: `${item.label[locale] || item.label.en} · ${detailCounts[item.key] || 0}` } }))} selected={details} onToggle={(key) => setDetails((value) => toggle(value, key))} locale={locale} />}
               {activeFilterGroup === 'areas' && <Filter label={c.area} items={MONITOR_AREAS.map((area) => ({ key: area.key, label: { en: `${area.en} · ${areaCounts[area.key] || 0}`, ru: `${area.ru} · ${areaCounts[area.key] || 0}`, es: `${area.en} · ${areaCounts[area.key] || 0}` } }))} selected={areas} onToggle={(key) => setAreas((value) => toggle(value, key))} locale={locale} />}
-              {activeFilterGroup === 'scales' && <Filter label={advanced.scales} items={TEST_EXPLORER_AXES.map((key) => ({ key, label: { ...TEST_EXPLORER_AXIS_LABELS[key], en: `${TEST_EXPLORER_AXIS_LABELS[key].en} · ${axisCounts[key] || 0}`, ru: `${TEST_EXPLORER_AXIS_LABELS[key].ru} · ${axisCounts[key] || 0}` } }))} selected={axes} onToggle={(key) => setAxes((value) => toggle(value, key))} locale={locale} />}
+              {activeFilterGroup === 'scales' && <Filter label={advanced.scales} items={(activeProfile?.axes || TEST_EXPLORER_AXES).map((key) => ({ key, label: { ...TEST_EXPLORER_AXIS_LABELS[key], en: `${TEST_EXPLORER_AXIS_LABELS[key].en} · ${axisCounts[key] || 0}`, ru: `${TEST_EXPLORER_AXIS_LABELS[key].ru} · ${axisCounts[key] || 0}` } }))} selected={axes} onToggle={toggleProfileScale} locale={locale} />}
               {activeFilterGroup === 'timing' && <div className={styles.guidedOptionStack}>
                 <Filter label={advanced.time} items={[{ key: '0', label: { en: advanced.any } }, { key: '2', label: { en: advanced.two } }, { key: '5', label: { en: advanced.five } }, { key: '10', label: { en: advanced.ten } }]} selected={[String(maxMinutes)]} onToggle={(key) => setMaxMinutes(Number(key))} locale={locale} single />
                 <Filter label={c.length} items={TEST_LENGTH_FILTERS} selected={lengths} onToggle={(key) => setLengths((value) => toggle(value, key))} locale={locale} />
@@ -704,7 +719,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
         <div className={styles.rowSelect}>{entry.selectable ? <input type="checkbox" checked={selectedKeys.includes(entry.key)} onChange={() => toggleSelected(entry.key)} aria-label={entry.title} /> : <span className={styles.status}>{entry.pdfResource ? 'PDF' : entry.source === 'research' ? c.metadata : entry.managedSafety ? 'Managed safety' : entry.rightsStatus}</span>}</div>
         <TestArtwork entry={entry} />
         <div className={styles.rowBody}><div className={styles.rowTitle}><span className={styles.area}>{availability === 'core' && entry.psychotherapyCoreCategory ? (PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.[locale] || PSYCHOTHERAPY_CORE_CATEGORIES[entry.psychotherapyCoreCategory]?.en || entry.area) : entry.area}</span><h2>{entry.title}</h2><TestKindBadge entry={entry} locale={locale} />{index === 0 && entry.selectable && (focus.length > 0 || appliedFilters > 0) && <b>{c.best}</b>}{entry.marginalCoverageGain >= .08 && selected.length > 0 && <b>{c.complements}</b>}</div><p>{availability === 'core' ? (entry.psychotherapyCoreSummary || entry.description || entry.category) : (entry.description || entry.category)}</p>{entry.methodology && entry.methodologyStatus !== 'original' && <p className={styles.methodology}>{entry.methodology}{entry.methodologySourceUrl && <a className={styles.sourceLink} href={entry.methodologySourceUrl} rel="noopener noreferrer" target="_blank">{locale === 'ru' ? 'Источник' : 'Source'}</a>}</p>}{entry.validity && <p className={styles.methodology} data-psychometric-evidence={entry.validity.status} data-psychometric-group={entry.validity.group} data-test-evidence-key={entry.validity.key}><strong>{(VALIDITY_COPY[locale] || VALIDITY_COPY.en).label}: </strong>{entry.validity.grade ? (VALIDITY_COPY[locale] || VALIDITY_COPY.en).graded + ' ' + entry.validity.grade : (VALIDITY_COPY[locale] || VALIDITY_COPY.en)[entry.validity.status]} · {ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.[locale] || ASSESSMENT_EVIDENCE_GROUPS.find(group=>group.key===entry.validity.group)?.label?.en || entry.validity.group} · {(VALIDITY_COPY[locale] || VALIDITY_COPY.en).locale}: {entry.validity.respondentLocale}</p>}
-        <TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={axes} onSelectAxis={(key) => setAxes((current) => toggle(current,key))} />
+        <TestScaleGuide guide={entry.scaleGuide} locale={locale} selectedAxes={profileScales} onSelectAxis={toggleProfileScale} />
         {!entry.selectable && entry.pdfResource && <div className={styles.pdfResource} data-professional-pdf={entry.key}>
           <div className={styles.pdfResourceActions}>
             <a className={styles.pdfResourcePrimary} href={`/api/assessments/scale-guide/${encodeURIComponent(entry.key)}`} download={`${entry.key}-scale-guide.pdf`}><FileDown size={17} aria-hidden="true" />{locale === 'ru' ? 'Скачать описание шкал (PDF)' : locale === 'es' ? 'Descargar guía de escalas (PDF)' : 'Download scale guide (PDF)'}</a>
