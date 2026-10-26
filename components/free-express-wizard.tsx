@@ -278,7 +278,15 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
     const required = mode === "short"
       ? ["request", "idealOutcome"]
       : COACHING_FIELDS.filter(field => field.required).map(field => field.id);
-    if (required.some(key => (answers[key] || "").trim().length < 4)) { setError(t.missing); return; }
+    const missing = required.find(key => (answers[key] || "").trim().length < 4);
+    if (missing) {
+      const field = COACHING_FIELDS.find(item => item.id === missing);
+      if (mode === "detailed" && field)
+        setGroupsOpen(previous => ({ ...previous, [field.group]: true }));
+      setError(t.missing);
+      requestAnimationFrame(() => document.getElementById("hh-express-field-" + missing)?.focus());
+      return;
+    }
     setBusy(true); setError("");
     try {
       const activeAnswers = Object.fromEntries(
@@ -372,7 +380,9 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
     <label key={field.id} className={styles.answer}>
       <span>{index + 1}. {field.label[locale]}
         {(mode === "detailed" ? field.required : field.id !== "priorityQuestion") ? " *" : ""}</span>
-      <textarea rows={2} maxLength={field.max} disabled={busy} value={answers[field.id] || ""}
+      <textarea id={"hh-express-field-" + field.id} rows={2} maxLength={field.max}
+        aria-required={mode === "detailed" ? field.required : field.id !== "priorityQuestion"}
+        disabled={busy} value={answers[field.id] || ""}
         onChange={event => setAnswers(current => ({ ...current, [field.id]: event.target.value }))} />
     </label>
   );
