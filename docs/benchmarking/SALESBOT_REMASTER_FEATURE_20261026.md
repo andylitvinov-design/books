@@ -7,12 +7,22 @@
 ## What is actually installed and executable
 
 - Audited **Remaster @thenavidm/remaster 0.2.1** is installed project-only in an isolated checkout on owner's Mac, discovered by a fresh Codex as `$clone` (PR #2066 and #2058). This did **not** globally install it in the production repository.
-- The Mac Desktop Commander is currently offline; local sandbox previously rejected Playwright browser launches even though Chromium/WebKit binaries were downloaded. Do not invent a successful macOS Salesbot visit.
+- **26 October update:** Desktop Commander 0.3.1 is now **Online** and authorized on the Mac. The earlier Codex sandbox could not launch browsers, but **current remote context successfully launched system Chrome headless** with Remaster/Playwright to measure two unauthenticated public pages. This does not imply access to the protected amoCRM workflow editor or Telegram chats.
 - **REA** is not installed. Its native/decompiler capabilities are unnecessary for functional product research and unauthorized proprietary extraction is out of scope.
 - A separate pinned **GitHub Actions runner** runs the audited Remaster CLI in `feature` mode against a four-source public-documentation ledger and an honest parity matrix. It uses no competitor login, tokens, private endpoint, code, cookies or screenshot assets.
 - The CI does not try to pass the Remaster `research` gate by inventing 30 reviews. It requires `sources` and `features` to pass, `reviews` / `pains` to remain incomplete, and the final parity verdict to be `not shippable` until must-haves are really done.
 
 **Run the scoped CI:** [.github/workflows/hh-salesbot-remaster-feature.yml](../../.github/workflows/hh-salesbot-remaster-feature.yml). It pins the previously audited SHA-512 SRI of version 0.2.1 and disables lifecycle scripts. Results are stored as short-lived anonymous JSON under GitHub Actions artifacts, not committed original-site data.
+
+## Verified Mac research and focused tests · 26 October 2026
+
+- In an isolated temporary project (not the dirty default checkout), verified the npm dist SHA-512 of `@thenavidm/remaster@0.2.1` against the previously audited SRI, used `remaster init ... --mode feature`, and successfully crawled **one** allowed public amoCRM Salesbot help page (robots/respectful delay). No competitor account or hidden request was used.
+- **Real headless Chrome observation, 390px, without cookies:** amoCRM Salesbot public help: page height **3771px**, **52** structural nodes and **77** text blocks. The protected original visual editor was not observed, so this is *docs-screen* evidence, not interactive editor parity.
+- **Real public ezohata.com homepage observation, 390px:** page height **8217px**, **307** nodes and **199** text blocks. Browser navigation confirmed public HTTP 200 on the diagnostics landing and two free-diagnostic offer pages. The precise “Заказать диагностику через Telegram” action and the downstream private Sales Bot chat did **not** appear in the tested visible links; the actual Telegram conversation remains unverified. No Telegram message was sent.
+- **Native Remaster `feature` parity:** `node scripts/benchmarking/salesbot-remaster-parity.mjs` executed with audited Remaster binary and yielded **40% weighted parity, 3 of 10 must-have functions complete; verdict `not shippable`**. Four public documentation sources are ledgered, but 0 genuine linked customer reviews, so Remaster research gate appropriately remains incomplete.
+- **Native Node checks on clean sparse worktree:** 17/17 graph/interpreter regressions PASS; after fixing the JSX syntax error seen in the GitHub build, **18/18 PASS** including a new TypeScript JSX parser guard for EN/RU/ES. `tests/crm-salesbot-jsx-syntax.test.mjs` now runs early in focused CRM CI.
+- **GitHub:** historical Remaster workflow [#40331882401](https://github.com/andylitvinov-design/books/actions/runs/40331882401) SUCCESS on prior PR head; same head's CRM build failed specifically because translated `explain` entries lacked trailing commas. All three corrected in a later commit, and the latest GitHub CI still needs independent completion before merging. Synthetic local tests do not equal signed-in owner E2E.
+- Research captures and screenshots stayed in an untracked, isolated temporary directory; never checked into the public repository. The owner's modified main worktree and ongoing Telegram SalesBot worktree were not changed.
 
 ## Public evidence — black-box functional contract
 
