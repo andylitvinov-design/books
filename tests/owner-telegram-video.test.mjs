@@ -96,7 +96,7 @@ test('Google RU ownership and Unlisted are checked before and after upload',asyn
     status:200,headers:{location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=abc'}})
   if(String(url).includes('/videos?'))return Response.json({items:[{
     id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID,title:'Тест'},
-    status:{privacyStatus:'unlisted'}
+    status:{privacyStatus:'unlisted',uploadStatus:'processed'}
   }]})
   throw Error('Unexpected URL')
  }
@@ -121,6 +121,43 @@ test('Google fails closed on wrong channel, missing authorization and wrong visi
   id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID,title:'X'},
   status:{privacyStatus:'private'}}]})
  await assert.rejects(()=>verifyUploadedRu('Yt123456abc','token'.repeat(9),privateVideo),/PRIVACY_HOLD/)
+})
+test('YouTube readback rejects failed, rejected, deleted and unconfirmed uploads',async()=>{
+ for(const uploadStatus of ['failed','rejected','deleted',undefined,'unknown']){
+  const fetcher=async()=>Response.json({items:[{
+   id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+   status:{privacyStatus:'unlisted',uploadStatus}
+  }]})
+  await assert.rejects(()=>verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher),
+   /VIDEO_YOUTUBE_UPLOAD_UNCONFIRMED/)
+ }
+ for(const uploadStatus of ['uploaded','processed']){
+  const fetcher=async()=>Response.json({items:[{
+   id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+   status:{privacyStatus:'unlisted',uploadStatus}
+  }]})
+  assert.equal((await verifyUploadedRu('Yt123456abc','token'.repeat(9),fetcher)).id,'Yt123456abc')
+ }
+})
+test('failed YouTube processing preserves the uploaded ID without another media request',async()=>{
+ let puts=0,inits=0;const saved=[]
+ const fetcher=async(url,opt={})=>{
+  if(String(url).includes('/channels?'))return Response.json({items:[{id:VIDEO_RU_CHANNEL_ID}]})
+  if(opt.method==='POST'){
+   inits++
+   return new Response('',{headers:{location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=abc'}})
+  }
+  if(opt.method==='PUT'){puts++;return Response.json({id:'Yt123456abc'})}
+  return Response.json({items:[{id:'Yt123456abc',snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+   status:{privacyStatus:'unlisted',uploadStatus:'failed'}}]})
+ }
+ const mp4=Buffer.alloc(2048);mp4.write('ftyp',4)
+ await assert.rejects(()=>uploadUnlistedRu(mp4,'token'.repeat(9),{
+  fetcher,onUploaded:id=>saved.push(id)
+ }),/VIDEO_YOUTUBE_UPLOAD_UNCONFIRMED/)
+ assert.deepEqual(saved,['Yt123456abc'])
+ assert.equal(puts,1)
+ assert.equal(inits,1)
 })
 test('backend only webhook and forced RLS migration; no cross-bot or automatic YouTube upload',()=>{
  const migration=readFileSync(new URL('../supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql',import.meta.url),'utf8')
