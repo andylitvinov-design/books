@@ -170,3 +170,48 @@ test('all Telegram replies fit existing transport and keyboards never include un
   assert.match(hook,/telegramPhotoPurpose/)
   assert.doesNotMatch(text,/sendMessage\(|setWebhook\(|fetch\(|process\.env/)
 })
+
+test('every V2 outgoing step obeys the Telegram 1200-char template limit and 2x3 keyboard',()=>{
+  const choices=new Set(TELEGRAM_DIAGNOSTIC_V2_BUTTONS)
+  const labelByLanguage={
+    ru:{yes:'Да, начинаем',business:'Деньги / работа',skipPhoto:'Пропустить фото',skipDrawing:'Пропустить рисунок'},
+    en:{yes:"Yes, let's begin",business:'Money / work',skipPhoto:'Skip photo',skipDrawing:'Skip drawing'},
+    es:{yes:'Sí, empezamos',business:'Dinero / trabajo',skipPhoto:'Omitir foto',skipDrawing:'Omitir dibujo'},
+  }
+  for(const [locale,label] of Object.entries(labelByLanguage)){
+    let item=transitionTelegramDiagnostic(null,msg('/start hhreview_'+locale))
+    const steps=[item]
+    item=transitionTelegramDiagnostic(state(item,false),msg(label.yes,{locale}));steps.push(item)
+    item=transitionTelegramDiagnostic(state(item),msg(label.business,{locale}));steps.push(item)
+    item=transitionTelegramDiagnostic(state(item),msg(label.skipPhoto,{locale}));steps.push(item)
+    item=transitionTelegramDiagnostic(state(item),msg('My goal is clear; I have difficulty choosing; extra: synthetic text.',{locale}));steps.push(item)
+    item=transitionTelegramDiagnostic(state(item),msg(label.skipDrawing,{locale}));steps.push(item)
+    assert.equal(item.stage,'done')
+    for(const step of steps){
+      assert.ok(step.reply&&step.reply.length<=1200,locale+' '+step.stage+': '+step.reply?.length)
+      assert.ok(step.keyboard.length<=2)
+      for(const row of step.keyboard){
+        assert.ok(row.length>=1&&row.length<=3)
+        for(const choice of row)assert.ok(choices.has(choice),locale+' '+choice)
+      }
+    }
+  }
+})
+test('V2 private stage schema is additive and first-party owner media stays encrypted',()=>{
+  const sql=read('supabase/migrations/20261026171737_hh_crm_telegram_dialogue_v2_20261026.sql')
+  const hook=read('lib/crm/messenger-webhook.js')
+  const store=read('lib/crm/messenger-store.js')
+  const ui=read('components/app/crm-messenger.jsx')
+  assert.match(sql,/add column if not exists flow_version/)
+  assert.match(sql,/add column if not exists topic/)
+  assert.match(sql,/default 1/)
+  assert.match(sql,/drawing/)
+  assert.doesNotMatch(sql,/drop table|truncate|grant.*anon|disable row level security/i)
+  assert.match(hook,/flow_version,topic/)
+  assert.match(hook,/next\.flowVersion===2\?2:1/)
+  assert.match(hook,/telegramPhotoPurpose/)
+  assert.match(store,/openSealed\(m\.body_ciphertext/)
+  assert.match(store,/photoPurpose/)
+  assert.match(ui,/m\.photoPurpose==='drawing'/)
+  assert.doesNotMatch(ui,/telegramPhotoFileId|HH_CRM_MSG_TELEGRAM_TOKEN/)
+})
