@@ -33,6 +33,7 @@ jobs:
           node --test tests/benchmark-rea-node-readiness.test.mjs
           node --check scripts/benchmarking/rea-node-readiness.mjs
           bash -n scripts/benchmarking/rea-sandbox-probe.sh
+          bash -n scripts/benchmarking/rea-mac-restore.sh
           bash scripts/benchmarking/rea-sandbox-probe.sh --check
       - name: Review pinned tarball and perform no-write REA CLI doctor
         timeout-minutes: 9
