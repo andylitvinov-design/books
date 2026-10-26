@@ -83,7 +83,7 @@ test('one initial first-party CRM write; sensitive follow-up never creates a sec
 })
 
 test('RLS is deny-by-default, signed guest token needed; private owner read is checked', () => {
-  const sql = read('supabase/migrations/20261025191500_hh_free_express_guest_continuation_rls.sql')
+  const sql = read('supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql')
   const owner = read('lib/practitioners/free-express-owner.js')
   const media = read('lib/practitioners/free-express-media.js')
   const guestRoute = read('app/api/free-express/media/route.js')

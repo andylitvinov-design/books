@@ -77,7 +77,7 @@ test('one CRM-first lead, not a second full questionnaire lead, and plain text n
 })
 
 test('backend RLS and account claims require verified scope and preserve existing roles', () => {
-  const sql = root('supabase/migrations/20261025191500_hh_free_express_guest_continuation_rls.sql')
+  const sql = root('supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql')
   assert.match(sql, /hh\.public_enquiry_continuation/)
   assert.match(sql, /created_at > now\(\) - interval '1 hour'/)
   assert.match(sql, /source_path ~/)

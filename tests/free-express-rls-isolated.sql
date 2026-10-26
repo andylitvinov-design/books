@@ -39,7 +39,7 @@ grant usage on schema app,app_private,auth to hh_app_backend;
 grant select,update on app.public_service_enquiries to hh_app_backend;
 grant select on app.accounts to hh_app_backend;
 -- Exercise the migration file, never a rewritten policy fixture.
-\i supabase/migrations/20261025191500_hh_free_express_guest_continuation_rls.sql
+\i supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql
 do $$ begin
  if has_table_privilege('anon','app_private.free_express_account_links','SELECT')
  or has_table_privilege('authenticated','app_private.free_express_account_links','INSERT')

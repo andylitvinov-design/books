@@ -15,7 +15,7 @@ on:
       - 'lib/practitioners/free-express-*'
       - 'lib/practitioners/free-express-photo-client.ts'
       - 'lib/practitioners/public-service-enquiry.js'
-      - 'supabase/migrations/20261025191500_hh_free_express_guest_continuation_rls.sql'
+      - 'supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql'
       - 'tests/free-express-wizard-v2.test.mjs'
       - 'tests/free-express-unified-v2.test.mjs'
       - 'tests/free-express-rls-isolated.sql'
