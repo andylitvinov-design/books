@@ -14,7 +14,8 @@ import { HOME_TEST_TOPICS } from '@/lib/assessments/insights-categories'
 import { TEST_RECOMMENDATION_FOCUS } from '@/lib/assessments/test-recommendations'
 import { TEST_KINDS, testKindCardLabel, testKindShortLabel } from '@/lib/assessments/test-kinds'
 import { groupViaRecommendations, resolveViaProfile, VIA_PROFILE_KEY } from '@/lib/assessments/via-family'
-import { searchPublicTestEntries } from '@/lib/assessments/test-explorer'
+import { searchPublicTestEntries, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
+import { LIFE_TEST_PROFILES, findLifeTestProfile } from '@/lib/profile/life-test-profiles'
 
 const TEXT = {
   en: {
@@ -177,6 +178,7 @@ function artworkFor(entry) {
 export function SimpleTestPicker({
   locale = 'en', authenticated = false, initialMode = 'tests',
   focus, onToggleFocus,
+  profile = null, onSelectProfile = null, selectedScales = [], onToggleScale = null, onSetScales = null,
   problems = [], onToggleProblem, onClearProblems,
   depth, onDepth,
   maxMinutes, onMaxMinutes,
@@ -192,6 +194,12 @@ export function SimpleTestPicker({
     es: { kicker: 'MIS PRUEBAS', finderTitle: 'Encuentra tus pruebas', finderHelp: 'Busca por nombre o elige un tema.', finderSearch: 'Buscar', finderPlaceholder: 'Estrés, sueño, relaciones…', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Iniciar prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
+  const currentProfile = findLifeTestProfile(profile)
+  const scaleCopy = {
+    en: { choose: '1. Choose a profile', chooseHint: 'Choose one direction to see its matching scales and tests.', title: '2. Choose profile scales', hint: 'Select as many scales as you like. If none are checked, all scales in this profile are included.', all: 'Select all', clear: 'Clear', selected: 'scales selected', extras: 'Additional topics (optional)' },
+    ru: { choose: '1. Выберите профиль', chooseHint: 'Одно направление — затем его шкалы и подходящие тесты.', title: '2. Выберите шкалы профиля', hint: 'Отметьте любое количество шкал. Без галочек будут показаны все шкалы выбранного профиля.', all: 'Выбрать все', clear: 'Снять все', selected: 'шкал выбрано', extras: 'Дополнительные темы (необязательно)' },
+    es: { choose: '1. Elige un perfil', chooseHint: 'Elige una dirección y verás sus escalas y pruebas.', title: '2. Elige las escalas del perfil', hint: 'Selecciona tantas escalas como quieras. Sin marcar ninguna, se incluyen todas las del perfil.', all: 'Seleccionar todas', clear: 'Quitar todas', selected: 'escalas elegidas', extras: 'Temas adicionales (opcionales)' },
+  }[locale] || { choose: 'Choose a profile', chooseHint: 'Select a direction', title: 'Profile scales', hint: 'Select any number', all: 'Select all', clear: 'Clear', selected: 'selected', extras: 'Additional topics' }
   const [visibleCount, setVisibleCount] = useState(5)
   const [collectionsOpen, setCollectionsOpen] = useState(false)
   const collections = availableTestCollections(catalogEntries, { focus, problems, kinds: testKinds, maxMinutes, depth })
@@ -298,6 +306,40 @@ export function SimpleTestPicker({
       </div>}
     </header>
 
+
+    <section className={styles.section} aria-labelledby="hh-life-profile-title" data-test-profile-filter>
+      <div className={styles.sectionHeader}>
+        <span className={styles.step} aria-hidden="true">1</span>
+        <div><h2 id="hh-life-profile-title">{scaleCopy.choose}</h2><p>{scaleCopy.chooseHint}</p></div>
+      </div>
+      <div className={styles.lifeProfileGrid} role="group" aria-label={scaleCopy.choose}>
+        {LIFE_TEST_PROFILES.map((item) => <button type="button" key={item.key} data-test-profile={item.key}
+          className={styles.lifeProfileCard} aria-pressed={profile === item.key} onClick={() => onSelectProfile?.(item.key)}>
+          <span><strong>{item.label[locale] || item.label.en}</strong><small>{item.detail[locale] || item.detail.en}</small></span>
+          <span className={styles.lifeProfileCheck} aria-hidden="true">{profile === item.key && <Check size={19}/>}</span>
+        </button>)}
+      </div>
+    </section>
+    {currentProfile && <section className={styles.section} aria-labelledby="hh-profile-scales-title" data-profile-scale-filter>
+      <div className={styles.sectionHeader}>
+        <span className={styles.step} aria-hidden="true">2</span>
+        <div><h2 id="hh-profile-scales-title">{scaleCopy.title}</h2><p>{scaleCopy.hint}</p></div>
+      </div>
+      <div className={styles.lifeScaleGrid} role="group" aria-label={scaleCopy.title}>
+        {currentProfile.axes.map((key) => <button type="button" key={key} data-profile-scale={key}
+          aria-pressed={selectedScales.includes(key)} className={styles.lifeScaleChip} onClick={() => onToggleScale?.(key)}>
+          <span aria-hidden="true">{selectedScales.includes(key) ? '✓' : '+'}</span>
+          {TEST_EXPLORER_AXIS_LABELS[key]?.[locale] || TEST_EXPLORER_AXIS_LABELS[key]?.en || key}
+        </button>)}
+      </div>
+      <div className={styles.lifeScaleActions}>
+        <span role="status" aria-live="polite">{selectedScales.length} / {currentProfile.axes.length} {scaleCopy.selected}</span>
+        <button type="button" onClick={() => onSetScales?.([...currentProfile.axes])}>{scaleCopy.all}</button>
+        <button type="button" onClick={() => onSetScales?.([])}>{scaleCopy.clear}</button>
+      </div>
+    </section>}
+    <details className={styles.lifeExtraTopics}>
+      <summary>{scaleCopy.extras} <ChevronDown size={16} aria-hidden="true"/></summary>
     <section className={styles.section} aria-labelledby="hh-simple-topic-title">
       <div className={styles.topicHeading}>
         <div className={styles.sectionHeader}>
@@ -329,11 +371,12 @@ export function SimpleTestPicker({
         </button>)}
       </div>}
     </section>
+    </details>
 
     <section className={styles.problemSection} aria-labelledby="hh-simple-problems-title" data-topic-problem-filter>
       <div className={styles.problemHeading}>
         <div className={styles.sectionHeader}>
-          <span className={styles.step} aria-hidden="true">2</span>
+          <span className={styles.step} aria-hidden="true">3</span>
           <div><h2 id="hh-simple-problems-title">{c.problemsTitle}</h2><p>{c.problemsHelp}</p></div>
         </div>
         <button type="button" className={styles.skipProblems}
@@ -465,7 +508,7 @@ export function SimpleTestPicker({
     <section className={styles.section} aria-labelledby="hh-simple-recommendations-title" id="hh-simple-recommendations" data-recommendation-mode={journeyMode}>
       {!authenticated && <p className={academyStyles.subnote} data-test-access-note>{c.heroFootnote}</p>}
       <div className={styles.sectionHeader}>
-        <span className={styles.step} aria-hidden="true">3</span>
+        <span className={styles.step} aria-hidden="true">4</span>
         <div><h2 id="hh-simple-recommendations-title">{c.recommended}</h2><p>{c.recommendedHelp}</p></div>
       </div>
       {activeCollection && <div className={styles.collectionHighlight} role="status" data-active-test-collection={activeCollection.id}>
