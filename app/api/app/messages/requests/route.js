@@ -22,12 +22,14 @@ export async function GET(request){
     const actor=await auth.verified()
     const workspace=await createPractitionerRepository(config).getMyPractice(actor)
     const ownerAuthorized=practitionerEmailAllowed(actor)
-    let businessEnquiries=[],ownerMessenger=false,businessUnavailable=false
-    if(crmEnabled()&&ownerAuthorized){
+    // The existing CRM messenger is a separate, owner-only inbox.
+    // A temporary business-enquiry query error must not conceal Telegram chats.
+    let businessEnquiries=[],businessUnavailable=false
+    const ownerMessenger=crmEnabled()&&ownerAuthorized
+    if(ownerMessenger){
       try{
         businessEnquiries=await createCrmRepository(config).withOwner(
           actor,store=>store.listBusinessEnquiries())
-        ownerMessenger=true
       }catch{
         // Do not mislabel an unavailable CRM as an empty business inbox.
         businessUnavailable=true
