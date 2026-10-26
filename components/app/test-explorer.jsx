@@ -15,6 +15,7 @@ import { TestExplorerVisual } from './test-explorer-visual'
 import { normalizeProblemsForTopics } from '@/lib/assessments/test-problems'
 import { TEST_TOPIC_COLLECTIONS } from '@/lib/assessments/test-collections'
 import { SimpleTestPicker } from './simple-test-picker'
+import { LIFE_TEST_PROFILES, findLifeTestProfile, profileAxisSelection, selectedLifeProfileAxes } from '@/lib/profile/life-test-profiles'
 import { TestScaleGuide } from './test-scale-guide'
 import { PriorityMethodsReview } from './priority-methods-review'
 import { ResearchDirectory } from './research-directory'
@@ -212,6 +213,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       recognizer.start()
     } catch { setListening(false); setSpeechError(locale === 'ru' ? 'Микрофон недоступен. Введите запрос текстом.' : 'Microphone unavailable. Please type instead.') }
   }
+  const [profile, setProfile] = useState(() => findLifeTestProfile(initialPreferences?.profile)?.key || null)
   const [focus, setFocus] = useState(() => initialPreferences?.focus ?? [])
   const [activeCollectionId, setActiveCollectionId] = useState(null)
   const activeCollection = TEST_TOPIC_COLLECTIONS.find((collection) => collection.id === activeCollectionId) || null
@@ -237,6 +239,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [areas, setAreas] = useState(() => initialPreferences?.areas ?? [])
   const [details, setDetails] = useState(() => initialPreferences?.details ?? [])
   const [axes, setAxes] = useState(() => simpleMode && !preserveScaleFilters ? [] : (initialPreferences?.axes ?? []))
+  const activeProfile = findLifeTestProfile(profile)
+  const profileScales = useMemo(() => activeProfile ? selectedLifeProfileAxes(profile, axes) : axes, [profile, axes])
   const [maxMinutes, setMaxMinutes] = useState(() => initialPreferences?.maxMinutes ?? 0)
   const [language, setLanguage] = useState(() => initialPreferences?.language ?? 'any')
   const [tracking, setTracking] = useState(() => initialPreferences?.tracking ?? 'any')
@@ -258,6 +262,20 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const [activeFilterGroup, setActiveFilterGroup] = useState(initialFilterGroup)
   const [showAll, setShowAll] = useState(false)
   const [showStandaloneVia, setShowStandaloneVia] = useState(false)
+  // Change only this unsaved chooser: existing account tests/results are untouched.
+  const selectProfile = (key) => {
+    const next = findLifeTestProfile(key)
+    if (!next || next.key === profile) return
+    setProfile(next.key); setAxes([]); setFocus([...next.focus]); setProblems([])
+    setDetails([]); setAreas([]); setActiveCollectionId(null); setSelectedKeys([])
+    setSimpleSelectionChanged(false); setAxisFilter(null); setAvailability('available')
+    setActionError(null)
+  }
+  const toggleProfileScale = (key) => {
+    if (activeProfile && !activeProfile.axes.includes(key)) return
+    setAxes((current) => toggle(activeProfile ? profileAxisSelection(profile, current) : current, key))
+    setSelectedKeys([]); setSimpleSelectionChanged(false); setAxisFilter(null)
+  }
   const [browseFull, setBrowseFull] = useState(Boolean(initialBrowseFull))
   const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)
   // Keep the Spanish UI metadata; English remains the safe fallback for source questionnaires.
@@ -299,8 +317,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   }, [entries])
   const facets = { availability, focus, problems, styles: stylesFilter, kinds,
     evidenceGroups:evidenceGroup==='all'?[]:[evidenceGroup],
-    lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, search: query }
-  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query])
+    lengths, areas, details, axes: profileScales, maxMinutes, language, tracking, freeOnly, search: query }
+  const matching = useMemo(() => filterExplorerEntries(entries, facets), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, profileScales, maxMinutes, language, tracking, freeOnly, query])
   // Facet counts reflect the whole eligible catalog and every *other* active
   // criterion. Exclude the facet's own current selection (multi-choice OR).
   const detailCandidates = useMemo(() => filterExplorerEntries(entries, { ...facets, details: [] }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, axes, maxMinutes, language, tracking, freeOnly, query])
@@ -311,7 +329,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const axisCounts = useMemo(() => Object.fromEntries(TEST_EXPLORER_AXES.map((key) => [key, axisCandidates.filter((entry) => entry.measurementAxes?.includes(key)).length])), [axisCandidates])
   // A selected test stays visible even if new filters no longer match it.
   const filtered = useMemo(() => filterExplorerEntries(entries, { ...facets, selectedKeys }), [entries, availability, focus, problems, stylesFilter, kinds, evidenceGroup, lengths, areas, details, axes, maxMinutes, language, tracking, freeOnly, query, selectedKeys])
-  const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, axes, depth, stylesFilter, lengths, selectedKeys])
+  const ranked = useMemo(() => rankExplorerEntries(filtered, { focus, details, axes: profileScales, depth, styles: stylesFilter, lengths, selectedKeys }), [filtered, focus, details, profileScales, depth, stylesFilter, lengths, selectedKeys])
   // Keep checked tests above the shortened discovery list. Re-ranking after
   // a checkbox change must never make that same checkbox disappear mid-click.
   const visible = useMemo(() => ranked.filter((entry) => !axisFilter || selectedKeys.includes(entry.key) || entry.measurementAxes?.includes(axisFilter)).sort((a, b) => {
@@ -341,18 +359,18 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // A collection is a soft ranking preference, never a replacement for choices.
   const simpleRecommendationPool = useMemo(() => filterExplorerEntries(entries, {
     availability: 'available', styles: stylesFilter, kinds, lengths, areas, details,
-    axes, maxMinutes, language, tracking, freeOnly,
+    axes: profileScales, maxMinutes, language, tracking, freeOnly,
   }).filter((entry) => entry.selectable), [
-    entries, stylesFilter, kinds, lengths, areas, details, axes,
+    entries, stylesFilter, kinds, lengths, areas, details, profileScales,
     maxMinutes, language, tracking, freeOnly,
   ])
   const simpleRecommendations = useMemo(() => rankPublicTestMatches(
     simpleRecommendationPool,
     { focus: selectionFocus, problems,
       collectionId: activeCollectionId, collectionFocus: activeCollection?.focus || [],
-      details, axes, depth, styles: stylesFilter, lengths, kinds },
+      details, axes: profileScales, depth, styles: stylesFilter, lengths, kinds },
   ), [simpleRecommendationPool, selectionFocus, problems, activeCollectionId,
-      activeCollection, details, axes, depth, stylesFilter, lengths, kinds])
+      activeCollection, details, profileScales, depth, stylesFilter, lengths, kinds])
   // Text searches use the same pool and relevance order as the visible cards.
   // Typing a query does not silently discard any earlier preference.
   const searchRecommendations = simpleRecommendations
@@ -362,15 +380,15 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   // Use only existing, rights-cleared, startable questionnaires.
   const autoBattery = useMemo(() => buildStarterBattery(
     matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)),
-    { focus, details, axes, depth, styles: stylesFilter, lengths },
-  ), [matching, axisFilter, focus, details, axes, depth, stylesFilter, lengths])
+    { focus, details, axes: profileScales, depth, styles: stylesFilter, lengths },
+  ), [matching, axisFilter, focus, details, profileScales, depth, stylesFilter, lengths])
   const activeBattery = explicitSelectionOnly
     ? selected // A course visitor must explicitly select tests; never fall back to an automatic set.
     : simpleMode
       ? (simpleSelectionChanged ? selected : simpleAuto)
       : (selected.length ? selected : autoBattery)
   const activeCoverage = selected.length ? coverage : coverageForSelection(entries, activeBattery.map((entry) => entry.key))
-  const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes }), [entries, focus, details, axes])
+  const topicCoverage = useMemo(() => coverageForFilters(entries, { focus, details, axes: profileScales }), [entries, focus, details, profileScales])
   const showingCoverage = selectedKeys.length > 0
   const displayedCoverage = showingCoverage ? coverage : topicCoverage
   const matchCount = matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)).length
@@ -393,9 +411,9 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       setSimpleSelectionChanged(true)
       return
     }
-    setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)), { focus, details, axes, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
+    setSelectedKeys(buildStarterBattery(matching.filter((entry) => !axisFilter || entry.measurementAxes?.includes(axisFilter)), { focus, details, axes: profileScales, depth, styles: stylesFilter, lengths }).map((entry) => entry.key))
   }
-  const resetFilters = () => { setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setEvidenceGroup('all'); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
+  const resetFilters = () => { setProfile(null); setAvailability('available'); setFocus([]); setProblems([]); setStylesFilter([]); setKinds([]); setEvidenceGroup('all'); setLengths([]); setDepth('balanced'); setAreas([]); setDetails([]); setAxes([]); setMaxMinutes(0); setLanguage('any'); setTracking('any'); setFreeOnly(false); setQuery(''); setSort('recommended'); setAxisFilter(null) }
   const toggleSelected = (key) => {
     if (simpleMode) setSimpleSelectionChanged(true)
     setSelectedKeys((current) => {
@@ -424,7 +442,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     if (!activeBattery.length || !onStart || starting) return
     setStarting(true); setActionError(null)
     try { await onStart(activeBattery, {
-      focus: selectionFocus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+      focus: selectionFocus, problems, details, axes: profileScales, areas, styles: stylesFilter, kinds, lengths,
       depth, maxMinutes, language, tracking, freeOnly,
     }) } catch (error) { setActionError(error) } finally { setStarting(false) }
   }
@@ -433,7 +451,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
     setStarting(true); setActionError(null)
     try {
       const preferences = {
-        focus: selectionFocus, problems, details, axes, areas, styles: stylesFilter, kinds, lengths,
+        focus: selectionFocus, problems, details, axes: profileScales, areas, styles: stylesFilter, kinds, lengths,
         depth, maxMinutes, language, tracking, freeOnly,
       }
       if (audience === 'account' && onStartSingle) {
@@ -448,6 +466,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale} authenticated={authenticated}
+      profile={profile} onSelectProfile={selectProfile} selectedScales={axes} onToggleScale={toggleProfileScale} onSetScales={(next) => { setAxes(profileAxisSelection(profile, next)); setSelectedKeys([]); setSimpleSelectionChanged(false) }}
       initialMode={initialMode}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
@@ -492,7 +511,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
       onBrowsePdf={() => {
         setBrowseFull(true); setAvailability('pdf')
         setQuery(''); setMaxMinutes(0); setFreeOnly(false); setLanguage('any'); setTracking('any')
-        setFocus([]); setProblems([]); setDetails([]); setAxes([]); setAreas([])
+        setProfile(null); setFocus([]); setProblems([]); setDetails([]); setAxes([]); setAreas([])
         setKinds([]); setStylesFilter([]); setLengths([]); setAxisFilter(null)
       }}
       onBrowseFull={() => {
