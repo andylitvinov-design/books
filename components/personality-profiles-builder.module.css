@@ -113,6 +113,8 @@
 .layerDetails li { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 10px; border-radius: 10px; background: #fff; }
 .layerDetails li strong { font-size: 12px; color: #315f52; }
 .layerDetails li span { font-size: 11px; color: #567064; line-height: 1.45; }
+.focusContext { display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; margin: 0 0 12px; padding: 8px 11px; border: 1px solid #d8e8d8; border-radius: 10px; background: #f1f6ee; color: #426655; font-size: 12px; line-height: 1.4; }
+.focusContext strong { color: #315f52; }
 .areaGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .areaCard {
   min-width: 0; min-height: 93px; display: flex; align-items: flex-start; gap: 9px;
@@ -230,10 +232,10 @@
   .layerDetails ol { grid-template-columns: 1fr; }
   .templateIcon { width: 36px; height: 36px; border-radius: 10px; }
   .templateIcon svg { width: 19px; height: 19px; }
-  .areaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-  .areaCard { min-height: 84px; padding: 10px 8px; gap: 7px; }
-  .areaCard strong { font-size: 13px; }
-  .areaCard small { font-size: 10px; }
+  .areaGrid { grid-template-columns: 1fr; gap: 7px; }
+  .areaCard { min-height: 64px; align-items: center; padding: 10px 12px; gap: 10px; }
+  .areaCard strong { font-size: 14px; }
+  .areaCard small { font-size: 11px; }
   .scaleList { gap: 6px; }
   .scaleChip { font-size: 12px; min-height: 42px; padding: 7px 10px; }
   .testRow { padding: 8px 10px; gap: 8px; }
@@ -257,7 +259,7 @@
   .templateCard { min-height: 70px; padding: 9px 8px; }
   .templateBody strong { font-size: 14px; }
   .roadmap { padding-inline: 12px; }
-  .areaCard { min-height: 94px; gap: 5px; }
+  .areaCard { min-height: 64px; gap: 9px; }
   .areaCard strong { font-size: 12px; }
   .swotGrid { grid-template-columns: 1fr; }
 }

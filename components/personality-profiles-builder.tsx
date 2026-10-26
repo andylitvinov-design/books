@@ -33,7 +33,6 @@ const focusAreas: Record<Focus, Area[]> = {
   work: ["work", "money"],
   identity: ["traits", "support", "meaning"],
 };
-const allAreas = Object.keys(areaAxes) as Area[];
 const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
 const allAxesFor = (areas: Area[]) => [...new Set(areas.flatMap(area => areaAxes[area]))];
 
@@ -86,6 +85,7 @@ const copy = {
     },
     topicTitle: "Choose the specific topics that matter",
     topicHelp: "We've suggested topics from your interests. Refine them before choosing actual measured scales.",
+    focusContext: "Selected interests",
     areas: {
       traits: ["Personality traits", "Patterns · strengths"],
       support: ["Resources & self-support", "Support · self-kindness"],
@@ -161,6 +161,7 @@ const copy = {
     },
     topicTitle: "Уточните важные для вас темы",
     topicHelp: "Мы предложили темы на основе вашего выбора. Измените их перед выбором измеряемых шкал.",
+    focusContext: "Выбранные направления",
     areas: {
       traits: ["Особенности личности", "Качества · сильные стороны"],
       support: ["Ресурсы и поддержка", "Опора · бережность к себе"],
@@ -236,6 +237,7 @@ const copy = {
     },
     topicTitle: "Elige los temas específicos para explorar",
     topicHelp: "Sugerimos temas según tus intereses. Ajústalos antes de seleccionar escalas medibles.",
+    focusContext: "Áreas elegidas",
     areas: {
       traits: ["Rasgos personales", "Patrones · fortalezas"],
       support: ["Recursos y apoyo", "Apoyo · autocompasión"],
@@ -304,7 +306,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [accountError, setAccountError] = useState("");
   const accountLocale = locale === "es" ? "en" : locale;
 
-  const availableAxes = allAxesFor(areas);
+  // Only topics selected on slide 1 may contribute axes or test suggestions.
+  const visibleAreas = areasFor(focuses);
+  const activeAreas = areas.filter(area => visibleAreas.includes(area));
+  const availableAxes = allAxesFor(activeAreas);
   const matches = useMemo(() => tests
     .map(test => ({ ...test, matches: test.axes.filter(axis => selectedAxes.includes(axis)) }))
     .filter(test => test.matches.length > 0)
@@ -319,9 +324,15 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   function toggleFocus(focus: Focus) {
     setFocuses(previous => previous.includes(focus)
       ? previous.filter(item => item !== focus) : [...previous, focus]);
+    // Never carry another direction’s topics, scales or tests into this choice.
+    setAreas([]);
+    setSelectedAxes([]);
+    setSelectedKeys([]);
+    setShowMore(false);
   }
 
   function toggleArea(area: Area) {
+    if (!visibleAreas.includes(area)) return;
     const next = areas.includes(area) ? areas.filter(item => item !== area) : [...areas, area];
     setAreas(next);
     setSelectedAxes(allAxesFor(next));
@@ -337,7 +348,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       setShowMore(false);
       setStep(1);
     }
-    if (step === 1 && areas.length) setStep(2);
+    if (step === 1 && activeAreas.length) setStep(2);
     if (step === 2 && selectedAxes.length) {
       setSelectedKeys([...recommendProfileBattery(matches, selectedAxes)]);
       setShowMore(false);
@@ -467,8 +478,11 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <p className={styles.templateLabel}>{t.unifiedNote}</p>
         <h2 id="profile-builder-step-title">{t.topicTitle}</h2>
         <p className={styles.help}>{t.topicHelp}</p>
-        <div className={styles.areaGrid}>
-          {allAreas.map(area =>
+        <p className={styles.focusContext} data-profile-selected-focus>
+          <strong>{t.focusContext}:</strong> {focuses.map(focus => t.focuses[focus][0]).join(" · ")}
+        </p>
+        <div className={styles.areaGrid} data-profile-topic-options>
+          {visibleAreas.map(area =>
             <button type="button" key={area} aria-pressed={areas.includes(area)}
               className={styles.areaCard} onClick={() => toggleArea(area)}>
               <span className={styles.selectDot}>{areas.includes(area) && <Check size={14} aria-hidden="true" />}</span>
@@ -583,7 +597,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           ? <button type="button" className={styles.primary} disabled={focuses.length === 0}
               onClick={goForward} data-profile-confirm-focus>{t.next}<ArrowRight size={17} /></button>
           : step < 3
-            ? <button type="button" className={styles.primary} disabled={step === 1 ? areas.length === 0 : selectedAxes.length === 0}
+            ? <button type="button" className={styles.primary} disabled={step === 1 ? activeAreas.length === 0 : selectedAxes.length === 0}
                 onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
             : step === 3
               ? <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
