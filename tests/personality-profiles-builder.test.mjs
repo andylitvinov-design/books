@@ -47,8 +47,16 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
   assert.match(component, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
-  assert.match(component, /startTests=/)
-  assert.match(component, /encodeURIComponent\(selectedKeys.join\(","\)\)/)
+  // On Ready the sole CTA hands the eligible selection to authenticated My Tests.
+  // Guest test exploration remains available only via its separate public catalogue.
+  assert.doesNotMatch(component, /startTests=|data-profile-start-tests/)
+  assert.match(component, /data-profile-google-signin/)
+  assert.match(component, /onClick={saveSelectionWithGoogle}/)
+  assert.match(component, /makeTestSelectionIntent\(selectedKeys\)/)
+  assert.match(component, /PENDING_TEST_SELECTION_KEY/)
+  assert.match(component, /continueTo: "tests"/)
+  assert.match(component, /app\/tests\?selection=pending/)
+  assert.match(component, /data-profile-direct-tests/)
   assert.match(component, /\[step, setStep\] = useState\(0\)/)
   assert.match(component, /<details className=\{styles.swot\}>/)
   assert.match(component, /data-personality-profile-builder/)
