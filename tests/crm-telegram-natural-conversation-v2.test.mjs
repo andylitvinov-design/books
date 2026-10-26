@@ -266,3 +266,10 @@ test('V2 private stage schema is additive and first-party owner media stays encr
   assert.match(ui,/m\.photoPurpose==='drawing'/)
   assert.doesNotMatch(ui,/telegramPhotoFileId|HH_CRM_MSG_TELEGRAM_TOKEN/)
 })
+
+test('expired-pilot STOP remains terminal even for legacy sessions',()=>{
+  const webhook=read('lib/crm/messenger-webhook.js')
+  assert.match(webhook,/rawText:isStop\?'\/stop':invite\?'\/start hhreview_'/)
+  assert.match(webhook,/if\(restricted&&!ownerChat&&!activeGuest&&!invite&&!isStop\)return \{handled:true\}/)
+  assert.match(webhook,/approvedPilotGuest:restricted&&!ownerChat/)
+})
