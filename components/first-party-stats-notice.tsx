@@ -33,6 +33,7 @@ const statsTranslations = {
 export function FirstPartyStatsNotice() {
   const pathname = usePathname();
   const [show, setShow] = useState(false);
+  const [expressFormOpen, setExpressFormOpen] = useState(false);
   const locale = pathname?.split("/")[1];
   const copy = locale === "ru" ? statsTranslations.ru :
     locale === "es" ? statsTranslations.es : statsTranslations.en;
@@ -43,12 +44,30 @@ export function FirstPartyStatsNotice() {
       firstPartyCookie("hh_public_stats_skip") !== "1");
   }, [pathname]);
 
+  // A visitor filling the privacy-sensitive free review should never have
+  // an analytics opt-in banner covering the phone, description or consent.
+  // The independent stats choice stays undecided and reappears when the
+  // visitor closes the form; opening the form never grants tracking consent.
+  useEffect(() => {
+    if (!/^\/(?:en|ru|es)\/services\/free-situation-review$/.test(pathname || "")) {
+      setExpressFormOpen(false);
+      return;
+    }
+    const panel = document.querySelector('[data-personal-express-enquiry]');
+    if (!panel) { setExpressFormOpen(false); return; }
+    const sync = () => setExpressFormOpen(panel.getAttribute('data-expanded') === 'true');
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(panel, { attributes: true, attributeFilter: ['data-expanded'] });
+    return () => observer.disconnect();
+  }, [pathname]);
+
   function choose(allow: boolean) {
     setFirstPartyConsent(allow);
     setShow(false);
   }
 
-  if(!show)return null;
+  if(!show || expressFormOpen)return null;
   return (
     <aside data-first-party-consent
       aria-label={copy.title}
