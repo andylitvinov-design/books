@@ -101,6 +101,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Isolated bootstrap safety and dependency-order contracts (no database connection)
+        run: node --test tests/app-db-fixture-policy.test.mjs tests/four-ipip-db-seed.test.mjs
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         run: npm run test:app:db
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback
