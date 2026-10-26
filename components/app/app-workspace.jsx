@@ -631,10 +631,10 @@ export default function AppWorkspace({ locale, path = [] }) {
           )}
           {page === 'portrait' && (
             <>
-              <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
-              <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
               <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
                 reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
+              <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
+              <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
             </>
           )}
           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
