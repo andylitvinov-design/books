@@ -98,7 +98,7 @@ jobs:
       - name: SalesBot strict flow simulator and owner API contract
         run: node --test tests/crm-salesbot-flow.test.mjs
       - name: SalesBot clean-room step editor unit and tamper checks
-        run: node --test tests/crm-salesbot-feature-editor.test.mjs
+        run: node --test tests/crm-salesbot-feature-editor.test.mjs tests/crm-salesbot-jsx-syntax.test.mjs
       - name: Lint SalesBot editor and strict import policy
         run: npx eslint lib/crm/salesbot-editor.mjs tests/crm-salesbot-feature-editor.test.mjs
       - name: Lint new SalesBot owner UI and deterministic runtime
