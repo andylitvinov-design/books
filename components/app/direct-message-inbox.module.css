@@ -126,12 +126,13 @@
 .shell[data-simple-detail="true"] .compose{flex:none;padding:10px 12px}
 .shell[data-simple-detail="true"] .placeholder{min-height:0}
 
-/* Private on-site messages use the same full-height mobile reply experience. */
+
+/* The shared one-window inbox also displays private on-site conversations. */
 @media(max-width:700px){
- .shell[data-simple-detail="true"] .compose{display:grid;gap:5px;padding:8px 10px}
- .shell[data-simple-detail="true"] .compose>label:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
- .shell[data-simple-detail="true"] .compose textarea{min-height:44px;height:44px;max-height:88px;resize:none;font-size:16px}
- .shell[data-simple-detail="true"] .compose .actions{min-height:42px}
- .shell[data-simple-detail="true"] .compose .send{min-height:42px}
- .shell[data-simple-detail="true"] .compose>.hint{margin:0;font-size:11px;line-height:1.3}
+  .shell[data-simple-detail="true"] .chat{min-height:0;overflow:hidden}
+  .shell[data-simple-detail="true"] .feed{flex:1 1 0%;min-height:0;max-height:none;overflow-y:auto}
+  .shell[data-simple-detail="true"] .compose{position:relative;z-index:2;margin-top:auto;flex:none;background:#fffdfb}
+  .shell[data-simple-detail="true"] .compose textarea{font:400 16px/1.4 system-ui,sans-serif;resize:none;max-height:110px}
+  .shell[data-simple-detail="true"] .actions{align-items:center}
+  .shell[data-simple-detail="true"] .send{min-height:44px;flex:none}
 }

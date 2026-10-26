@@ -68,16 +68,19 @@
 .shareLink span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:360px){.shareLink{max-width:97px;padding:7px 8px}.shareLink span{font-size:11px}}
 
-/* In the app the conversation consumes all remaining space, including when the
-   on-screen keyboard shrinks visualViewport. Keep the reply bar inside it. */
-@media(max-width:760px){
- .shell{display:flex;flex:1;flex-direction:column;min-height:0;height:100%;padding-bottom:0}
- .heading{flex:none}
- .window{flex:1;min-height:0;height:auto;max-height:none}
-}
+
+/* Mobile visual viewport: the keyboard is not included in CSS dvh on iOS.
+   JS updates --hh-mobile-window-height from visualViewport when it changes. */
 @media(max-width:700px){
- .shell[data-detail-open="true"] .heading{display:none}
- .window{border-radius:11px}
- .person,.personSelected{min-height:65px}
+  .window{
+    height:var(--hh-mobile-window-height,calc(100dvh - 152px));
+    min-height:0;
+    max-height:none;
+  }
+  .shell input[type="search"],.shell textarea{
+    font-size:16px!important; /* iOS Safari must not auto-zoom a focused input */
+  }
+  .detail,.chatHolder{min-height:0;overflow:hidden}
 }
+
 .offline{flex:none;margin:0 0 7px;padding:7px 10px;border:1px solid #e6d3b0;border-radius:9px;background:#fff7e9;color:#79572f;font-size:12px}

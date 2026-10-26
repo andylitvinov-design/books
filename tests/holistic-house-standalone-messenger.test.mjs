@@ -24,22 +24,21 @@ test('one existing Holistic House app opens Messages on iOS PWA, Android PWA, an
   assert.doesNotMatch(read('app/[locale]/app/layout.jsx'),/manifest:/)
 })
 
-test('full-height phone conversation keeps composer in visual viewport and hides dock only during input',()=>{
+test('messenger reuses the production iPhone keyboard-safe layout and five app destinations',()=>{
  const page=read('app/[locale]/app/messages/messages-page.css')
  const inbox=read('components/app/messages-simple-inbox.jsx')
  const css=read('components/app/messages-simple-inbox.module.css')
  const crm=read('components/app/crm-messenger.module.css')
  const direct=read('components/app/direct-message-inbox.module.css')
- assert.match(page,/height:var\(--hh-messages-viewport,100dvh\)/)
- assert.match(page,/:has\(textarea:focus, input\[type="search"\]:focus\)/)
- assert.match(inbox,/window\.visualViewport/)
- assert.match(inbox,/removeEventListener\('resize',updateHeight\)/)
- assert.match(css,/\.window\{flex:1;min-height:0;height:auto/)
- assert.match(css,/data-detail-open="true"\] \.heading\{display:none/)
- assert.match(crm,/\.detailConversation \.compose textarea\{grid-column:1;grid-row:1/)
- assert.match(crm,/\.detailConversation \.compose>button\{grid-column:2;grid-row:1/)
- assert.match(direct,/data-simple-detail="true"\] \.compose textarea/)
- assert.match(read('components/app/crm-messenger.jsx'),/conversationOnly\|\|compact\?<Send/)
+ assert.match(page,/:has\(input:focus,textarea:focus\) \.hh-mobile-app-nav/)
+ assert.match(page,/hh-messages-app-dock/)
+ assert.match(inbox,/availableInboxHeight\(\{/)
+ assert.match(inbox,/visual\?\.addEventListener\('resize',requestUpdate\)/)
+ assert.match(css,/--hh-mobile-window-height/)
+ assert.match(crm,/\.detailConversation \.compose\{[\s\S]*?margin-top:auto/)
+ assert.match(crm,/\.detailConversation \.compose>button:last-of-type\{[\s\S]*?grid-column:2;grid-row:1/)
+ assert.match(direct,/data-simple-detail="true"\] \.compose textarea\{font:400 16px/)
+ assert.match(read('components/app/crm-messenger.jsx'),/onClick=\{send\}/)
 })
 
 test('offline mode is explicit; protected conversations are not cached on device',()=>{
