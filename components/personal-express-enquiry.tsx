@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
 import { FreeExpressWizard } from "@/components/free-express-wizard";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
@@ -161,6 +162,7 @@ export function PersonalExpressEnquiry({
             <span>{expanded ? t.close : t.reveal}</span>
             <ChevronDown className={styles.revealChevron} size={19} aria-hidden="true" />
           </button>
+          <TelegramDiagnosticEntry locale={locale} />
           <div ref={panelRef} className={styles.disclosure} id="express-request-form"
             data-express-inline-disclosure hidden={!expanded} tabIndex={-1}
             role="region" aria-label={t.title}>

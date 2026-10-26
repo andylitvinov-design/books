@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './crm-messenger.module.css'
+import CrmTelegramPhoto from './crm-telegram-photo'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -528,6 +529,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
               <p>{m.text}</p>
+              {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
+                accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
             </div>)}
