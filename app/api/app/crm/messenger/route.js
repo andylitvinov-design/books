@@ -6,7 +6,7 @@ import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { AppError, onlyKeys } from '@/lib/assessments/contracts'
 import { createCrmRepository, crmEnabled } from '@/lib/crm/repository'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
-import { verifyMessengerBusiness, ensureTelegramWebhook, sendOneMessengerMessage } from '@/lib/crm/messenger-provider'
+import { verifyMessengerBusiness, ensureTelegramWebhook, sendOneMessengerMessage, inspectTelegramBotIdentity } from '@/lib/crm/messenger-provider'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -37,7 +37,13 @@ async function handle(request){
       onlyKeys(body,['action','payload'])
       const {action,payload}=body
       if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new AppError('INVALID_BODY',400)
-      if(action==='connect'){
+      if(action==='verify_telegram'){
+        // Read-only owner preflight; no pilot chat, webhook registration,
+        // customer message or new CRM row is required.
+        onlyKeys(payload,['channel'])
+        if(payload.channel!=='telegram')throw new AppError('INVALID_CHANNEL',400)
+        data=await inspectTelegramBotIdentity()
+      }else if(action==='connect'){
         onlyKeys(payload,['channel'])
         if(!MESSENGER_CHANNELS.includes(payload.channel))throw new AppError('INVALID_CHANNEL',400)
         const externalId=await verifyMessengerBusiness(payload.channel)
