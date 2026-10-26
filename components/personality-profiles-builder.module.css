@@ -319,3 +319,17 @@
   .templateCard, .begin { transition: none; }
   .templateCard:hover, .begin:hover { transform: none; }
 }
+
+/* Other tests: first choose one life direction, then any number of its real scales. */
+.extraProfileSelector,.extraScaleSelector{display:grid;gap:8px;margin:12px 0}
+.extraProfileSelector>strong,.extraScaleSelector>strong{font-size:13px;color:#335d50}
+.extraScaleSelector>p{margin:0;color:#667368;font-size:12px;line-height:1.4}
+.extraProfileChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.extraProfileChoices button,.extraScaleChoices button{min-height:44px;padding:9px 12px;text-align:left;border:1px solid #d5e1d4;border-radius:12px;background:#fffdf8;color:#3c5c4b;font-size:13px}
+.extraProfileChoices button[aria-pressed=true],.extraScaleChoices button[aria-pressed=true]{background:#e5f2e9;border-color:#41846c;box-shadow:inset 0 0 0 1px #41846c;color:#215843;font-weight:700}
+.extraScaleChoices{display:flex;gap:6px;flex-wrap:wrap}
+.extraScaleChoices button{border-radius:999px}
+.extraScaleActions{display:flex;align-items:center;gap:12px;margin:3px 0 9px}
+.extraScaleActions span{margin-right:auto;font-size:12px;color:#68766c}
+.extraScaleActions button{border:0;background:transparent;padding:8px 2px;color:#246951;text-decoration:underline;text-underline-offset:3px;font-size:12px;cursor:pointer}
+@media(max-width:450px){.extraProfileChoices{grid-template-columns:1fr}.extraProfileChoices button{min-height:44px}}
