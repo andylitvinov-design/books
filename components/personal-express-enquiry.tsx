@@ -195,7 +195,7 @@ export function PersonalExpressEnquiry({
             onSaved={() => setFocusLocked(true)} onRestoredFocus={setFocus} />
           : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
-            allowSecureExpressClaim
+            allowSecureExpressClaim publicServiceTitle={t.service}
             publicTopic={"Express review focus: " + t.areas[focus].tag} />}
           {!enableWizard && <>
             <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
