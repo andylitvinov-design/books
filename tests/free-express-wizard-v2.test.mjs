@@ -124,3 +124,15 @@ test('iPhone large photos are reduced locally before private server upload, with
   assert.match(css, /span small\{display:none\}/)
   assert.match(wizard, /aria-current=\{i === step \? "step" : undefined\}/)
 })
+
+test('Vercel bundles native Sharp libvips only inside protected free-express media handler', () => {
+  const config = read('next.config.ts')
+  const marker = '"/api/free-express/media": ['
+  const begin = config.indexOf(marker)
+  assert.ok(begin > 0, 'Private upload route must include traced native dependencies')
+  const end = config.indexOf('],', begin)
+  const scoped = config.slice(begin, end + 2)
+  assert.match(scoped, /@img\/sharp-linux-x64/)
+  assert.match(scoped, /@img\/sharp-libvips-linux-x64/)
+  assert.ok(scoped.length < 400, 'Do not package native media assets in all functions')
+})
