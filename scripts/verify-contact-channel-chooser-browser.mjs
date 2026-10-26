@@ -261,8 +261,82 @@ async function runEngine(name, engine) {
   }
 }
 
+
+// P0 consultation regression: same-origin hydrated user interaction on this PR
+// build, not the older Vercel alias. No sign-in, submitted leads or messages.
+const paidRequestLabels = {
+  en: ["Request 60-min session · €100", "Request 30-min consultation · €50"],
+  ru: ["Заявка на сессию · 60 мин · €100", "Заявка на консультацию · 30 мин · €50"],
+  es: ["Solicitar sesión · 60 min · €100", "Solicitar consulta · 30 min · €50"],
+};
+async function verifyPaidServiceChoices() {
+  for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]]) {
+    const browser = await engine.launch({ headless: true });
+    try {
+      for (const width of [320, 390, 430]) {
+        for (const locale of ["en", "ru", "es"]) {
+          const page = await browser.newPage({
+            viewport: { width, height: 844 },
+            reducedMotion: "reduce",
+            serviceWorkers: "block",
+          });
+          let postedLeads = 0;
+          page.on("request", request => {
+            if (request.method() === "POST" && request.url().includes("/api/service-enquiries")) postedLeads++;
+          });
+          const label = [engineName, locale, width, "paid-consultation"].join("-");
+          try {
+            const response = await page.goto(origin + "/" + locale + "/services/imagery-therapy",
+              { waitUntil: "domcontentloaded", timeout: 60000 });
+            assert.equal(response?.status(), 200, label + " landing response");
+            const capture = page.locator('[data-consultation-capture="service"]');
+            await capture.waitFor({ state: "visible", timeout: 30000 });
+            const choices = capture.locator('[data-choice-layout="service"] button');
+            assert.equal(await choices.count(), 3, label + " preserves two paid and one free choices");
+            const chooser = capture.locator("[data-contact-channel-chooser]");
+            const trigger = chooser.locator("button[data-contact-order]");
+            await trigger.waitFor({ state: "visible", timeout: 15000 });
+            const buttonText = async () => (await trigger.innerText()).replace(/\s+/g, " ").trim();
+            assert.equal(await buttonText(), paidRequestLabels[locale][0], label + " €100 request label");
+            assert.equal(await choices.nth(0).getAttribute("aria-pressed"), "true");
+            await choices.nth(1).click();
+            assert.equal(await choices.nth(1).getAttribute("aria-pressed"), "true");
+            assert.equal(await choices.nth(0).getAttribute("aria-pressed"), "false");
+            assert.equal(await buttonText(), paidRequestLabels[locale][1], label + " selected €50 CTA");
+            const rect = await trigger.boundingBox();
+            assert.ok(rect && rect.height >= 44 && rect.width >= 150, label + " usable mobile CTA");
+            await trigger.click({ trial: true }); // Actual hit-testing, without a link or external send.
+            assert.equal(await trigger.getAttribute("aria-expanded"), "false");
+            await trigger.click();
+            const form = chooser.locator("form");
+            await form.waitFor({ state: "visible", timeout: 10000 });
+            assert.equal(await form.locator('input[type="checkbox"]').isChecked(), false,
+              label + " consent must start unchecked");
+            assert.equal(await form.locator('button[type="submit"]').isDisabled(), true,
+              label + " no submission without contact and consent");
+            assert.equal(await chooser.locator('a[data-contact-channel="whatsapp"]').count(), 0,
+              label + " no external messenger before saved first-party enquiry");
+            assert.equal(postedLeads, 0, label + " no request sent during read-only QA");
+            const dims = await page.evaluate(() => ({
+              inner: window.innerWidth, scroll: document.documentElement.scrollWidth,
+            }));
+            assert.ok(dims.scroll <= dims.inner + 2, label + " no horizontal overflow " + JSON.stringify(dims));
+            results.push({ name: label, locale, viewportWidth: width,
+              paidChoiceSwitch: true, consentUnchecked: true, firstPartySubmission: false });
+          } finally {
+            await page.close();
+          }
+        }
+      }
+    } finally {
+      await browser.close();
+    }
+  }
+}
+
 let failure = null;
 try {
+  await verifyPaidServiceChoices();
   await runEngine("chromium",chromium);
   await runEngine("webkit",webkit);
   assert.deepEqual(errors,[],"Unexpected browser JS errors");
