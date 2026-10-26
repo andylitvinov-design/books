@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PUBLIC_ANALYTICS_AVAILABLE, isPublicAnalyticsPath } from "@/lib/public-analytics";
+import { safePublicPagePath } from "@/lib/analytics/public-page-traffic.mjs";
 
 const consentCookie = "holistic_house_analytics_consent";
 type ConsentChoice = "granted" | "denied";
@@ -134,11 +135,9 @@ export function FirstPartyStatsNotice() {
     locale === "es" ? statsTranslations.es : statsTranslations.en;
 
   useEffect(() => {
-    import("@/lib/analytics/public-page-traffic.mjs").then(({safePublicPagePath}) => {
-      setShow(Boolean(safePublicPagePath(pathname)) &&
-        !firstPartyCookie(publicStatsCookie) &&
-        firstPartyCookie("hh_public_stats_skip") !== "1");
-    }).catch(() => setShow(false));
+    setShow(Boolean(safePublicPagePath(pathname)) &&
+      !firstPartyCookie(publicStatsCookie) &&
+      firstPartyCookie("hh_public_stats_skip") !== "1");
   }, [pathname]);
 
   function choose(allow: boolean) {
