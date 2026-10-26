@@ -7,7 +7,7 @@
 ## Actual macOS evidence (26 October 2026)
 
 - Desktop Commander `MacBook-Air-Andrii-3.local` connected successfully. The original checkout `~/projects/books` had local changes; **untouched**.
-- Existing global Node `v22.22.3` remained unchanged. Official portable `node-v22.23.4-darwin-arm64.tar.xz` downloaded from nodejs.org and verified against the signed-release distribution SHA256 manifest and pinned digest `037650d0839f457747396f052073fb48333d31bf5abd3c98b74da20d89ebb1ad`. Extracted into an isolated private research folder; Node reported `v22.23.4`. Node readiness tests: **3/3 PASS**; `bash -n` PASS.
+- Existing global Node `v22.22.3` remained unchanged. Official portable `node-v22.23.4-darwin-arm64.tar.xz` downloaded from nodejs.org and verified against the official HTTPS SHA256 manifest and pinned digest (detached PGP signature verification was not performed) `037650d0839f457747396f052073fb48333d31bf5abd3c98b74da20d89ebb1ad`. Extracted into an isolated private research folder; Node reported `v22.23.4`. Node readiness tests: **3/3 PASS**; `bash -n` PASS.
 - The *actual npm tarball* for `rea-agents@6.8.0` independently matched the pinned SHA-512 SRI above. A private, zero-secret npm workspace installed 149 dependencies with `--ignore-scripts --omit=optional`; Frida and all provider engines were omitted. REA CLI v6.8.0 returned a structured result; Codex dry-run returned `status=planned`, with **no actual config write**.
 - In a separate experimental `CODEX_HOME`, an explicit REA MCP registration (not `~/.codex`) returned `setup status=ready`. `rea doctor --client codex --json` returned `healthy=true`, checks `node=PASS` and `registration:codex=PASS`; `codex mcp list --json` showed `rea` enabled. The production stdio adapter `rea mcp doctor --json` returned **HEALTHY**, **229/229 tools**, **6/6 prompts**, matching catalogue digest, and a target-free `binary_session` call **PASS**. This is a real MCP handshake and tool-discovery test; it is **not** a model-driven Codex tool call or an analysis of a private application.
 - The experimental Codex profile is *not* logged in; its ordinary Codex agent session therefore still requires the owner's separate sign-in. No credentials or existing `~/.codex` contents were copied.
@@ -35,7 +35,7 @@ REA is a materially different product from Remaster: MIT-licensed 6.8.0 is a ~49
 
 ## Mac procedure (when an authorized local shell is available)
 
-Use an existing, reputable version manager, if one is already present. Example with nvm, without changing the machine default Node:
+No nvm/fnm/Volta was found on the observed Mac. The actual successful run used a portable **official Node.js tarball** verified via HTTPS SHASUMS256 and extracted to the isolated folder. On another Mac, an existing reputable version manager is also suitable; the following nvm example must not be run unless nvm is already present:
 
 ```bash
 # In an isolated clean checkout of andylitvinov-design/books:
