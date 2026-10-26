@@ -436,3 +436,41 @@
   .hh-profile-domains .hh-domain-archive-empty-help a{flex:1 1 auto}
 }
 @media(prefers-reduced-motion:reduce){.hh-profile-domains .hh-domain-more-toggle svg{transition:none}}
+
+
+/* Life-area checklist is separate from the four practitioner report types. */
+.hh-profile-life-areas{
+  margin:8px 0 12px;padding:12px;border:1px solid #d8e4dc;border-radius:16px;
+  background:linear-gradient(135deg,#f6faf6,#fffaf2);
+}
+.hh-profile-life-areas-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;color:#235e54}
+.hh-profile-life-areas-head strong{font-size:15px}
+.hh-profile-life-areas-head > span{font-size:12px;color:#527067}
+.hh-profile-life-areas-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.hh-profile-life-area{
+  display:flex;align-items:center;gap:7px;min-width:0;min-height:56px;padding:9px 7px;
+  border:1px solid #bcd9cc;border-radius:12px;background:#eef6ef;color:#205f56;
+  text-decoration:none;transition:border-color .15s,background .15s;
+}
+.hh-profile-life-area[data-has-results="false"]{border-color:#e3dcd1;background:#fffdf8;color:#685b4f}
+.hh-profile-life-area:hover,.hh-profile-life-area:focus-visible{border-color:#438e7d;background:#e4f3ea}
+.hh-profile-life-area:focus-visible{outline:2px solid #225e54;outline-offset:2px}
+.hh-profile-life-area > svg{flex:none}
+.hh-profile-life-area > span{min-width:0}
+.hh-profile-life-area strong,.hh-profile-life-area small{display:block;overflow-wrap:anywhere}
+.hh-profile-life-area strong{font-size:12px;line-height:1.2}
+.hh-profile-life-area small{margin-top:3px;font-size:11px;line-height:1.15}
+.hh-profile-life-areas > p{margin:8px 0 0;font-size:11px;line-height:1.35;color:#66726c}
+@media(max-width:620px){
+  .hh-profile-life-areas{padding:10px;margin:7px 0 10px}
+  .hh-profile-life-areas-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .hh-profile-life-area{min-height:52px;padding:8px}
+}
+@media(max-width:340px){
+  .hh-profile-life-areas-head{gap:6px}
+  .hh-profile-life-areas-head strong{font-size:13px}
+  .hh-profile-life-areas-head > span{font-size:11px}
+  .hh-profile-life-area{gap:5px}
+  .hh-profile-life-area strong{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.hh-profile-life-area{transition:none}}

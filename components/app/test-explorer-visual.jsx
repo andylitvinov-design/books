@@ -3,11 +3,13 @@
 import { useId, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { CheckCircle2, PlusCircle } from 'lucide-react'
 import { TEST_EXPLORER_AXES, TEST_EXPLORER_AXIS_LABELS } from '@/lib/assessments/test-explorer'
 import { layoutPortraitRayLabels } from '@/lib/assessments/portrait-ray-labels'
 import {
   PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER,
   portraitAxesForSectors, portraitFullCircleAngleForAxis, portraitSectorReadouts, portraitSectorMidAngle,
+  portraitLifeAreaProgress,
 } from '@/lib/assessments/portrait-sectors'
 import styles from './test-explorer.module.css'
 
@@ -67,6 +69,8 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       value: project(108),
     }
   }) : []
+  const lifeAreas = portrait ? portraitLifeAreaProgress(portrait) : []
+  const startedLifeAreas = lifeAreas.filter(area => area.hasResults).length
   const overviewLabels = portrait && allSectors ? layoutPortraitRayLabels(overviewRays.map((ray) => ({
     axis: ray.key, label: ray.displayLabel, ideal: ray.ideal,
     end: null, measured: Boolean(ray.axis),
@@ -138,20 +142,36 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     </div>}
     {portrait && !compact && <div className={styles.portraitSectorPicker} data-portrait-sectors
       role="group" aria-label={ru ? 'Обзор и четыре категории портрета' : es ? 'Resumen y cuatro categorías del retrato' : 'Overview and four portrait categories'}>
+      <div className={styles.portraitAreaStatusLine}>
+        <span>{ru ? 'Есть результаты' : es ? 'Con resultados' : 'Areas with results'}: <strong>{startedLifeAreas}/4</strong></span>
+        <Link href={'/' + locale + '/personality-profiles'} prefetch={false} data-profile-add-area>
+          <PlusCircle size={14} aria-hidden="true" />
+          {ru ? (startedLifeAreas === 4 ? 'Дополнить профиль' : 'Создать профиль') :
+            es ? (startedLifeAreas === 4 ? 'Ampliar mi perfil' : 'Crear perfil') :
+              (startedLifeAreas === 4 ? 'Expand my profile' : 'Create a profile')}
+        </Link>
+      </div>
       <div className={styles.portraitSectorGrid}>
         <button type="button" className={[styles.portraitSectorChip, styles.portraitSectorAll].join(' ')}
           data-portrait-sector-all="true" data-selected={allSectors}
           aria-pressed={allSectors} onClick={() => setSelectedSector('all')}>
           <span>{ru ? 'Все' : es ? 'Todo' : 'All'}</span>
         </button>
-        {PORTRAIT_PICKER_SECTORS.map((sector) => <button type="button" key={sector.key}
-          className={styles.portraitSectorChip} data-portrait-sector={sector.key}
-          data-selected={selectedSector === sector.key}
-          aria-label={sector.label[locale] || sector.label.en}
-          aria-pressed={selectedSector === sector.key} onClick={() => setSelectedSector(sector.key)}>
-          <span className={styles.portraitSectorLong}>{sector.label[locale] || sector.label.en}</span>
-          <span className={styles.portraitSectorShort} aria-hidden="true">{sector.shortLabel[locale] || sector.shortLabel.en}</span>
-        </button>)}
+        {PORTRAIT_PICKER_SECTORS.map((sector) => {
+          const hasResults = lifeAreas.find(area => area.key === sector.key)?.hasResults || false
+          return <button type="button" key={sector.key}
+            className={styles.portraitSectorChip} data-portrait-sector={sector.key}
+            data-has-results={hasResults} data-selected={selectedSector === sector.key}
+            aria-label={(sector.label[locale] || sector.label.en) + ' · ' +
+              (hasResults ? (ru ? 'есть результаты' : es ? 'con resultados' : 'has results') :
+                (ru ? 'не исследовано' : es ? 'sin resultados' : 'not explored'))}
+            aria-pressed={selectedSector === sector.key} onClick={() => setSelectedSector(sector.key)}>
+            {hasResults ? <CheckCircle2 size={13} className={styles.portraitSectorFlag} aria-hidden="true" /> :
+              <PlusCircle size={13} className={styles.portraitSectorFlag} aria-hidden="true" />}
+            <span className={styles.portraitSectorLong}>{sector.label[locale] || sector.label.en}</span>
+            <span className={styles.portraitSectorShort} aria-hidden="true">{sector.shortLabel[locale] || sector.shortLabel.en}</span>
+          </button>
+        })}
       </div>
     </div>}
     <div className={styles.modelStage} tabIndex={portrait || compact ? -1 : 0} role={portrait || compact ? 'presentation' : 'application'} aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
