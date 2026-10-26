@@ -17,6 +17,7 @@ const next = '20261025191500_hh_free_express_guest_continuation_rls.sql'
 const practitionerId = '246aa1a3-a371-5a83-9f4b-cd23ff027a76'
 const actorA = '10000000-0000-4000-8000-000000000001'
 const actorB = '10000000-0000-4000-8000-000000000002'
+const practitionerOwner = '10000000-0000-4000-8000-000000000003'
 const enquiryId = '10000000-0000-4000-8000-000000000010'
 const operationId = '20000000-0000-4000-8000-000000000010'
 
@@ -27,7 +28,8 @@ if (!isolated) {
     const db = new pg.Client({connectionString:url})
     await db.connect()
     try {
-      await db.query('BEGIN')
+      // The migration owns BEGIN/COMMIT. Do not wrap it in a test BEGIN: its
+      // COMMIT would close the outer transaction and silently void SET LOCAL ROLE.
       await db.query(`
         create role anon nologin; create role authenticated nologin;
         create role hh_app_backend nologin; create role hh_app_inbox nologin;
@@ -39,9 +41,9 @@ if (!isolated) {
           active boolean not null, status text not null, public_profile jsonb not null
         );
         insert into app.accounts (id,status) values
-          ('${actorA}','active'),('${actorB}','active');
+          ('${actorA}','active'),('${actorB}','active'),('${practitionerOwner}','active');
         insert into app.practitioners values
-          ('${practitionerId}','${actorA}',true,'approved','{"title":"Synthetic"}');
+          ('${practitionerId}','${practitionerOwner}',true,'approved','{"title":"Synthetic"}');
         grant select on app.accounts,app.practitioners to hh_app_backend;
         create function auth.uid() returns uuid language sql stable
           as $$ select (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
@@ -51,6 +53,8 @@ if (!isolated) {
       `)
       await db.query(read(old))
       await db.query(read(next))
+      // A new rollback-only transaction starts AFTER the real migration COMMIT.
+      await db.query('BEGIN')
       const rls = await db.query("select relrowsecurity,relforcerowsecurity from pg_class where oid='app.public_service_enquiries'::regclass")
       assert.equal(rls.rows[0].relrowsecurity,true)
       assert.equal(rls.rows[0].relforcerowsecurity,true)
@@ -62,8 +66,32 @@ if (!isolated) {
            '/en/services/free-situation-review','en','HH-A1B2C3D4E5F6',
            repeat('Z',90),'contact encrypted', '${operationId}',repeat('b',64))
       `)
+      // Negative fixtures: an expired request and an unrelated service may
+      // never be reached through an otherwise well-formed operation UUID.
+      await db.query(`
+        insert into app.public_service_enquiries
+          (id,recipient_practitioner_id,service_title,source_path,locale,reference_code,
+           description_ciphertext,contact_ciphertext,operation_id,operation_hash,created_at)
+        values
+          ('10000000-0000-4000-8000-000000000020','${practitionerId}',
+           'Free personal express review','/en/services/free-situation-review','en','HH-A1B2C3D4E520',
+           repeat('Z',90),'contact encrypted','20000000-0000-4000-8000-000000000020',repeat('c',64),now()-interval '2 hours'),
+          ('10000000-0000-4000-8000-000000000030','${practitionerId}',
+           'Other review','/en/services/dao-health-profile','en','HH-A1B2C3D4E530',
+           repeat('Z',90),'contact encrypted','20000000-0000-4000-8000-000000000030',repeat('d',64),now())
+      `)
       await db.query('SET LOCAL ROLE hh_app_backend')
+      assert.equal((await db.query('select current_user as role')).rows[0].role,'hh_app_backend',
+        'RLS tests must not accidentally execute as the database superuser')
       assert.equal((await db.query('select count(*)::int as count from app.public_service_enquiries')).rows[0].count,0)
+      assert.equal((await db.query(
+        "update app.public_service_enquiries set revision=revision+1 where id=$1",[enquiryId])).rowCount,0)
+      for (const operation of ['20000000-0000-4000-8000-000000000020',
+        '20000000-0000-4000-8000-000000000030']) {
+        await db.query("select set_config('hh.public_enquiry_continuation',$1,true)",[operation])
+        assert.equal((await db.query('select count(*)::int as count from app.public_service_enquiries')).rows[0].count,0,
+          'No guest read for expired or other-service request')
+      }
       await db.query("select set_config('hh.public_enquiry_continuation',$1,true)",[operationId])
       assert.equal((await db.query('select count(*)::int as count from app.public_service_enquiries')).rows[0].count,1)
       assert.equal((await db.query(
@@ -81,8 +109,14 @@ if (!isolated) {
         values ($1,$2,'HH-A1B2C3D4E5F6','en')
       `,[enquiryId,actorA])
       assert.equal((await db.query('select count(*)::int as count from app_private.free_express_account_links')).rows[0].count,1)
+      // The cabinet's signed-in guest is not the recipient practitioner.
+      await db.query("select set_config('hh.public_enquiry_continuation',$1,true)",['20000000-0000-4000-8000-000000000099'])
+      assert.equal((await db.query('select count(*)::int as count from app.public_service_enquiries')).rows[0].count,1,
+        'Only the verified linked account can read its saved enquiry')
       await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:actorB})])
       assert.equal((await db.query('select count(*)::int as count from app_private.free_express_account_links')).rows[0].count,0)
+      assert.equal((await db.query('select count(*)::int as count from app.public_service_enquiries')).rows[0].count,0,
+        'Other authenticated accounts cannot read the saved enquiry')
       await db.query('SAVEPOINT wrong_account')
       await assert.rejects(db.query(`
         insert into app_private.free_express_account_links
