@@ -578,7 +578,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
               <p>{m.text}</p>
               {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
-                accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}/>}
+                accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
+                purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
             </div>)}

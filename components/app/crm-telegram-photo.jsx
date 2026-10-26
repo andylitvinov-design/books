@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 // Private per-owner media viewer: retrieve the bytes through the same CRM auth,
 // never give Telegram file IDs or Bot API URLs to the browser.
-export default function CrmTelegramPhoto({accountId,threadId,messageId,locale='en'}){
+export default function CrmTelegramPhoto({accountId,threadId,messageId,locale='en',purpose='portrait'}){
   const [src,setSrc]=useState('')
   const [state,setState]=useState('loading')
   useEffect(()=>{
@@ -30,7 +30,9 @@ export default function CrmTelegramPhoto({accountId,threadId,messageId,locale='e
       if(objectUrl)URL.revokeObjectURL(objectUrl)
     }
   },[accountId,threadId,messageId])
-  const label=locale==='ru'?'Фото заявки':locale==='es'?'Foto de la solicitud':'Enquiry photo'
+  const label=purpose==='drawing'
+    ?locale==='ru'?'Рисунок: я, цель, препятствие':locale==='es'?'Dibujo: yo, meta y obstáculo':'Drawing: me, goal and obstacle'
+    :locale==='ru'?'Фото участника':locale==='es'?'Foto del participante':'Participant photo'
   return <div>
     {state==='loading'&&<span role="status">{locale==='ru'?'Загружаем фото…':locale==='es'?'Cargando foto…':'Loading photo…'}</span>}
     {state==='error'&&<span role="status">{locale==='ru'?'Фото недоступно':locale==='es'?'Foto no disponible':'Photo unavailable'}</span>}

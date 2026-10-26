@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
   parseDiagnosticStart,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
-  transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
+  transitionTelegramDiagnosticLegacy as transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
 } from '../lib/crm/telegram-diagnostic.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
