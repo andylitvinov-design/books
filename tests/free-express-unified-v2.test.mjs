@@ -83,7 +83,7 @@ test('backend RLS and account claims require verified scope and preserve existin
   assert.match(sql, /source_path ~/)
   assert.match(sql, /enable row level security/)
   assert.match(sql, /force row level security/)
-  assert.match(sql, /revoke all on app_private\.free_express_account_links from public,anon,authenticated,hh_app_inbox/)
+  assert.match(sql, /revoke\s+all\s+on\s+app_private\.free_express_account_links\s+from\s+public\s*,\s*anon\s*,\s*authenticated\s*,\s*hh_app_inbox\s*;/i)
   assert.doesNotMatch(sql, /grant\s+(select|update).*\s+to\s+(anon|authenticated)/i)
   const guest = root('app/api/free-express/route.js')
   const media = root('app/api/free-express/media/route.js')
