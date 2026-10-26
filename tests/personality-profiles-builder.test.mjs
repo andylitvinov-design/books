@@ -218,5 +218,5 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
   assert.match(builder, /test\.minutes !== null && test\.minutes <= Number\(timeFilter\)/)
   assert.match(builder, /selectedKeys\.length >= 12/)
   assert.ok(!builder.includes('setSelectedAxes('))
-  assert.ok(!builder.includes('startTests="'), 'test launch uses only an encoded whitelist of test keys')
+  assert.ok(builder.includes('const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","))'), 'test launch encodes only catalogue keys')
 })
