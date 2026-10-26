@@ -100,7 +100,7 @@ test('private PostgreSQL session, ordered storage and Telegram sender are wired 
   const file=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
   const schema=readFileSync(new URL('../supabase/migrations/20261026131500_hh_telegram_owner_audio_combine.sql',import.meta.url),'utf8')
   const expansion=readFileSync(new URL('../supabase/migrations/20261026191612_hh_telegram_audio_combine_12_parts.sql',import.meta.url),'utf8')
-  assert.match(file,/appendAudioCombine\(config,event,claimed\.row\.id\)/)
+  assert.match(file,/appendAudioCombine\(config,\{\.\.\.event,batchId:claimed\.batch\.batchId\},claimed\.row\.id\)/)
   assert.match(file,/result_audio_id/)
   assert.match(file,/where practitioner_id=\$1 for update/)
   assert.match(file,/items\.sort\(\(a,b\)=>a\.updateId-b\.updateId\)/)

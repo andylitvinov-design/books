@@ -436,6 +436,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }
 
   const base = "/" + accountLocale;
+  // Only server-filtered, selectable test keys go into this guest URL; never answers.
   const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","));
 
   async function saveSelectionWithGoogle() {
