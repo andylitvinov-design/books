@@ -295,7 +295,9 @@ async function runEngine(name, engine) {
             await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
             await whatsapp.click();
             assert.equal(submissions.length,previous,"Contact alone cannot bypass Dao consent");
-            assert.equal(await daoForm.getByRole("alert").count(),1,"Missing opt-in has an accessible error");
+            const consentError = daoForm.getByRole("alert");
+            await consentError.waitFor({state:"visible",timeout:8000});
+            assert.equal(await consentError.count(),1,"Missing opt-in has an accessible error");
             await consent.check();
             await page.evaluate(() => {
               window.__hhQaHandoffs = [];
