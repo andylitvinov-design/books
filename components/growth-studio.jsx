@@ -417,7 +417,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <label>{t.caption}<textarea disabled={!ready||!storageVerified||busy} maxLength={3500} rows={5} value={form.caption}
             placeholder={locale==='ru'?'Напишите публичный текст...':'Write public post text...'} onChange={set('caption')}/></label>
         </div>
-        <details key={editing?.id||'new'} defaultOpen={isEditing} className={styles.composerOptions}>
+        <details key={editing?.id||'new'} open={isEditing} className={styles.composerOptions}>
           <summary>{t.moreOptions}{form.mediaUrl?' · 📷':''}{form.scheduledAt?' · 📅':''}</summary>
           <p className={styles.hint}>{t.advancedHint}</p>
           <div className={styles.pair}>

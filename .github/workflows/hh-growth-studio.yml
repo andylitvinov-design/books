@@ -37,6 +37,7 @@ on:
       - 'tests/growth-studio-storage-health.test.mjs'
       - 'tests/growth-studio-owner-setup.test.mjs'
       - 'tests/growth-studio-benchmark-quick-compose.test.mjs'
+      - 'tests/growth-studio-composer-details-render.test.mjs'
       - 'tests/growth-studio-content-radar.test.mjs'
       - 'tests/growth-studio-provider-readiness.test.mjs'
       - 'tests/growth-studio-manual-inbox.test.mjs'
@@ -96,5 +97,7 @@ jobs:
           cache: npm
       - name: Install exact dependency lock
         run: npm ci --include=dev
+      - name: Render native composer disclosure with locked React
+        run: node --test tests/growth-studio-composer-details-render.test.mjs
       - name: Next.js build
         run: npm run build

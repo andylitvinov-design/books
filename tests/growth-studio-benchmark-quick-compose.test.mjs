@@ -48,7 +48,7 @@ test('fast editor exposes only channel, title and caption before optional advanc
     assert.ok(studio.slice(advanced,advancedEnd).includes(field),'optional field: '+field)
     assert.ok(!basic.includes(field),'basic field should not contain '+field)
   }
-  assert.match(studio.slice(advanced,advancedEnd),/defaultOpen=\{isEditing\}/)
+  assert.match(studio.slice(advanced,advancedEnd),/open=\{isEditing\}/)
   assert.match(studio,/locale:initialLocale==='ru'\?'ru':'en'/)
   assert.match(studio,/previous\.title\|\|previous\.caption/)
   assert.match(studio,/onClick=\{\(\)=>execute\('save'\)\}/)
