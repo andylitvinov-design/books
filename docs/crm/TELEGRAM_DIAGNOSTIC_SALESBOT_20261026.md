@@ -28,6 +28,16 @@ At EzoHata the public diagnostic CTA opens @ezohata_diagnostics_bot and asks for
 
 ## Production rollout (fail closed)
 
+### Step A · Verify the existing @holistichouse_bot without a chat ID
+
+The bot's token, configured username and webhook secret live **only** in Vercel Sensitive Production variables. The numeric Bot ID is derived server-side from its signed BotFather token and independently checked against `getMe`; don't copy a numeric ID manually or reveal the token.
+
+1. Sign in as the verified owner and open [CRM → Messages](https://holistichouse.vercel.app/ru/app/practice?panel=crm&crmTab=messages). Expand **Channels**, find Telegram, press **Verify Telegram bot** / **Проверить Telegram-бота**.
+2. This guarded owner-only button calls Telegram `getMe` and `getWebhookInfo` using **GET only**. It confirms that the ID and username exactly match the stored values and reports webhook state `not_set/connected/in_use_elsewhere/unknown`. It never installs a webhook, creates a contact or sends a message. A foreign webhook must **not** be replaced.
+3. The separate **Connect** button remains disabled until the owner-only pilot is allowlisted: `HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=true` and `HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID` set to the owner's confirmed personal numeric Telegram chat ID. The latter is the *person's chat ID*, **not** the BotFather bot ID. Bot ID is derived automatically; chat ID is not.
+4. The only required owner step that cannot be replaced by a safe read-only API is to initiate the private conversation from [@holistichouse_bot](https://t.me/holistichouse_bot?start=hhreview_ru) and confirm their numeric personal Telegram chat ID from a trusted source. Never enable public sending before the pilot gives an actual client-received message and owner CRM/photo/STOP evidence.
+
+
 Vercel server-only settings (never paste tokens into GitHub issues or chat):
 - HH_CRM_MSG_TELEGRAM_TOKEN: BotFather secret from a NEW dedicated bot.
 - HH_CRM_MSG_TELEGRAM_BOT_ID: OPTIONAL. The numeric ID is derived server-side from the non-readable BotFather token prefix, then MUST match Telegram's official getMe response when owner connects. A supplied mismatched ID fails closed.
