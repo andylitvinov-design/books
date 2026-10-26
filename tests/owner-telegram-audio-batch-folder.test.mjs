@@ -93,8 +93,8 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(service,/title,batch\.folder/)
   assert.doesNotMatch(service,/title,batch\.parts\[0\]\.folder/)
   assert.match(service,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher\)/)
-  assert.match(service,/sendOwner\(credentials,'✅ Один файл из '/)
-  assert.match(service,/combineImportReply\(combine,ready\.id\)/)
+  assert.doesNotMatch(service,/sendOwner\(credentials,'✅ Один файл из '/)
+  assert.match(service,/updateAudioCombineProgress\(credentials,combine,fetcher\)/)
   assert.ok(service.indexOf("const ready=await markAudio(config,row.id,'ready'")<
     service.indexOf("const combine=await appendAudioCombine(config,event,row.id)"))
   assert.match(service,/combinedDeliveryKeyboard\(saved\.id\)/)
