@@ -154,7 +154,7 @@ test('signed Telegram transport, single transactional CRM save, update-id dedup 
   assert.match(hook,/last_update_id/)
   assert.match(hook,/pg_advisory_xact_lock/)
   assert.match(hook,/ingestMessengerEventInTransaction\(db,'telegram'/)
-  assert.match(hook,/select account_id from app_private.crm_msg_resolve/)
+  assert.match(hook,/select owner_id,account_id from app_private.crm_msg_resolve/)
   assert.match(hook,/transitionTelegramDiagnostic\(previous/)
   assert.match(db,/FORCE ROW LEVEL SECURITY/i)
   assert.match(db,/force row level security/i)
@@ -184,7 +184,8 @@ test('owner-only private photo, no public Telegram file ID or brokered medical d
 test('diagnostic webhook forwards committed reply as Bot API text, not a missing property',()=>{
   const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
   const provider=source('lib/crm/messenger-provider.js')
-  assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard\}\)/)
+  assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard,/)
+  assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
   assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\]\}/)
   assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
 })
