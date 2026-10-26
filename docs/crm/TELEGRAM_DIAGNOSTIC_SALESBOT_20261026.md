@@ -87,7 +87,7 @@ without `/agree`; no additional public CTA, broadcast, marketing, payments,
 SMS or unrelated provider is enabled.
 
 New additive migration:
-`20261026180532_hh_crm_telegram_second_pilot_20261026.sql`.
+`20261026173446_hh_crm_telegram_second_pilot_20261026.sql`.
 It adds one timestamp column to existing private session state and allows
 **authenticated account-scoped, read-only** access to that state for CRM send
 eligibility. No second Contacts/Messages database or raw Telegram identity is
