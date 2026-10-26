@@ -8,6 +8,7 @@ import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
 import { FreeExpressWizard } from "@/components/free-express-wizard";
+import {EXPRESS_GOOGLE_CLAIM_PENDING_KEY,validExpressGoogleClaimIntent} from "@/lib/practitioners/free-express-google-claim.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./personal-express-enquiry.module.css";
@@ -116,6 +117,13 @@ export function PersonalExpressEnquiry({
           setExpanded(true);
       } catch { /* Unknown browser state is never an authorization source. */ }
     }
+    if (!enableWizard) {
+      try {
+        const intent = JSON.parse(window.sessionStorage.getItem(EXPRESS_GOOGLE_CLAIM_PENDING_KEY) || "null");
+        if (validExpressGoogleClaimIntent(intent,locale,window.location.pathname))
+          setExpanded(true);
+      } catch { /* Untrusted browser state cannot link an account. */ }
+    }
     window.addEventListener("hashchange", openFromHash);
     document.addEventListener("click", openFromAnchor);
     return () => {
@@ -187,6 +195,7 @@ export function PersonalExpressEnquiry({
             onSaved={() => setFocusLocked(true)} onRestoredFocus={setFocus} />
           : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
+            allowSecureExpressClaim
             publicTopic={"Express review focus: " + t.areas[focus].tag} />}
           {!enableWizard && <>
             <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
