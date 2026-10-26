@@ -29,7 +29,7 @@ test('simple list retains correct source-specific identities and unread counts, 
   assert.match(simple,/key:'request:'\+item\.id/)
   assert.match(simple,/key:'business:'\+item\.id/)
   assert.match(simple,/thread\.name|item\.name/)
-  assert.match(simple,/row\.unread>0&&<span/)
+  assert.match(simple,/row\.unread>0(?:&&|\?)<span/)
   assert.match(simple,/String\(name\|\|'\?'\)/)
   assert.doesNotMatch(simple,/api\.telegram\.org|HH_CRM_MSG_TELEGRAM_TOKEN|telegramPhotoFileId|service_role|body_ciphertext/)
   assert.match(simple,/onCrmThreads=useCallback/)
