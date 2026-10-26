@@ -100,7 +100,7 @@ test('single encrypted enquiry and CRM lead target approved offering owner',()=>
 })
 
 test('RLS contact grant only on matching committed published service and owner',()=>{
- const policy=source('supabase/migrations/20261026222318_hh_telegram_any_practitioner_service_enquiries.sql')
+ const policy=source('supabase/migrations/20261026223912_hh_telegram_any_practitioner_service_enquiries_20261026.sql')
  assert.match(policy,/for insert to hh_app_backend/)
  assert.match(policy,/p\.trusted_auth_user_id\s*=\s*crm_contacts\.owner_id/)
  assert.match(policy,/e\.contact_ciphertext is not null/)
