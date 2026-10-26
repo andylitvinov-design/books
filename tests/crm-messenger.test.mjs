@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
-import {canReply,channelTransportReady,telegramPilotReady,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
+import {canReply,channelTransportReady,telegramPilotReady,telegramBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS} from '../lib/crm/messenger-policy.js'
 import {messengerCursor,parseMessengerCursor} from '../lib/crm/messenger-pagination.js'
 const root=new URL('..',import.meta.url)
 const source=path=>readFileSync(new URL(path,root),'utf8')
@@ -436,4 +436,33 @@ test('CRM connections put verified owner bot first and explain optional CRM Inbo
  assert.match(diag,/Never reuse the same bot token with a different webhook/)
  assert.ok(manager.indexOf('<CustomerTelegramBotSetup ') < manager.indexOf('<CrmIntegrationDiagnostics '),
   'first show the reusable existing verified practice bot, then optional integrations')
+})
+
+test('Telegram BotFather token safely derives bot ID without granting public send rights',()=>{
+  const token='12345678:'+('A'.repeat(35))
+  const common={
+    VERCEL_ENV:'production',
+    HH_CRM_MSG_TELEGRAM_TOKEN:token,
+    HH_CRM_MSG_TELEGRAM_ENABLED:'true',
+    HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TEST_SECRET',
+    HH_CRM_MSG_TELEGRAM_PILOT_ENABLED:'true',
+    HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID:'987654321',
+  }
+  assert.equal(telegramBusinessId(common),'12345678')
+  assert.equal(channelTransportReady('telegram',common),true)
+  assert.equal(messengerSetupStatus('telegram',common).missingKeys.includes('HH_CRM_MSG_TELEGRAM_BOT_ID'),false)
+  assert.equal(channelTransportReady('telegram',{...common,HH_CRM_MSG_TELEGRAM_PILOT_ENABLED:'false'}),false)
+  assert.equal(channelTransportReady('telegram',{...common,HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID:''}),false)
+  assert.equal(telegramBusinessId({...common,HH_CRM_MSG_TELEGRAM_BOT_ID:'87654321'}),'')
+  assert.equal(channelTransportReady('telegram',{...common,HH_CRM_MSG_TELEGRAM_BOT_ID:'87654321'}),false)
+  assert.equal(telegramBusinessId({...common,HH_CRM_MSG_TELEGRAM_BOT_ID:'12345678'}),'12345678')
+  assert.equal(telegramBusinessId({...common,HH_CRM_MSG_TELEGRAM_TOKEN:'not-a-token'}),'')
+  assert.equal(channelTransportReady('telegram',{...common,HH_CRM_MSG_TELEGRAM_TOKEN:'not-a-token'}),false)
+  const status=messengerSetupStatus('telegram',common)
+  assert.doesNotMatch(JSON.stringify(status),/12345678|987654321|SYNTHETIC/)
+  const provider=source('lib/crm/messenger-provider.js')
+  const webhook=source('lib/crm/messenger-webhook.js')
+  assert.match(provider,/String\(payload\.result\.id\)!==telegramBusinessId\(env\)/)
+  assert.match(provider,/payload\.result\.username/)
+  assert.match(webhook,/businessId=telegramBusinessId\(env\)/)
 })
