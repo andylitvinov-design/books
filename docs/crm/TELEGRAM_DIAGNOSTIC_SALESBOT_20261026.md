@@ -6,6 +6,21 @@
 
 At EzoHata the public diagnostic CTA opens @ezohata_diagnostics_bot and asks for a photo and a request. Its private SalesBot rules and proprietary CRM UI are not publicly accessible. This is a clean-room functional equivalent, not a code copy.
 
+## Owner-authored conversation V2 · 26 October 2026
+
+**New Telegram conversations use six natural, first-person stages from Andrey; no visible `/agree`, `/stop` or topic slash commands.** The old command-based V1 engine is retained exclusively for already-running consented V1 sessions (`flow_version=1`). An intentional new Telegram **Start** begins the V2 intro. The additive production migration `20261026171737_hh_crm_telegram_dialogue_v2_20261026.sql` adds an allowlisted `drawing` stage, version and broad topic, retaining existing encrypted CRM messages, contacts and RLS FORCE.
+
+1. **Greeting + explicit, narrow personal-response consent:** “Приветствую! Меня зовут Андрей…” with one visible button **Да, начинаем**, or **Не сейчас**. Consent mentions Telegram photo processing and no marketing; no CRM lead is written before affirmative choice. No implied health diagnosis.
+2. **One topic:** Деньги / работа, Энергия / самочувствие, Отношения, Другое. This is a simple broad category in the private session, not a clinical score.
+3. **Optional recent portrait:** a voluntary Telegram photo (≤5MB JPEG/PNG), or **Пропустить фото**. Telegram as third-party media processor is disclosed. Photo bytes are fetched **only** by an authorized owner through the existing secure image proxy; the Telegram file ID stays encrypted in a private CRM message.
+4. **Goal and difficulty:** one free-text message answering “цель / сложность / любые детали” (max 1200 chars), stored as one new incoming message in the existing owner CRM contact/thread. No symptoms, diagnoses, lab results or test scores should be submitted to Telegram.
+5. **Optional hand-drawn ME–GOAL–OBSTACLE diagram:** a separate second JPEG/PNG (≤5MB) or **Пропустить рисунок**. In CRM the two encrypted media messages carry **portrait** / **drawing** distinction and display different accessible labels; no new media table or public URL.
+6. **Personal acknowledgment + first-party coaching questionnaire:** link to the existing `/{en|ru|es}/coaching/intake?topic=<allowlisted category>` (verified route), with instructions to **explicitly submit** answers using the secure questionnaire. Saving a draft or opening the link does not send answers, create a new request, confirm a booking or prove a payment. The questionnaire is its own separately consented CRM intake: **do not claim an automatic link to the Telegram CRM thread**, and do not put contact/chat identifiers into its URL.
+
+All text and buttons are mirrored in EN/RU/ES. Server sends only the owner's preapproved text/keyboard, no paid AI, unsolicited outreach or arbitrary external URLs. Legacy Telegram `/agree`, `/skip`, `/stop` remain accepted as safety/backward-compatibility commands **but not shown as the primary user interface**; human-language “Стоп” / “Stop” / “Parar” still suppresses contact. No marketing opt-in is inferred. If no authorized delivery test has taken place, **status remains BLOCKED for external E2E**, even when CI and Vercel READY are green.
+
+**Technical acceptance gates:** versioned migration applied and reconciled with recorded schema version, active legacy sessions left at version 1; `node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs`; CRM focused CI, eslint, production Next build, WebKit/Chromium EN/RU/ES; guest/private authorization and per-owner RLS; Telegram signed webhook + pilot inbound photo/drawing + owner reply + STOP verified in Telegram itself. Public onboarding, campaigns and paid providers remain OFF until separate approval.
+
 ## Customer journey (EN / RU / ES)
 
 1. Visitor chooses the guided Telegram diagnostic on the free situation review page. This button is OFF until the dedicated Telegram CRM bot is connected and owner approves public rollout. The deep link contains only a static language code, no personal data.
