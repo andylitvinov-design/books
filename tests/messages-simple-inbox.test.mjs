@@ -79,3 +79,14 @@ test('website consultation remains accessible and manual WhatsApp/email are neve
   assert.match(portal,/!inline&&view\.canNote/)
   assert.doesNotMatch(simple,/action:'send'|POST \/api\/app\/crm|sendMessage\(/)
 })
+
+test('owner account change remounts one-screen inbox before old private conversation state can render',()=>{
+  const hub=read('components/app/messages-hub.jsx')
+  const simple=read('components/app/messages-simple-inbox.jsx')
+  assert.match(hub,/if\(ownerAccountId\)return <MessagesSimpleInbox key=\{ownerAccountId\}/)
+  assert.match(hub,/const sameAccount=!data\|\|!ownerInfo\|\|data\.accountId===ownerInfo\.accountId/)
+  assert.match(simple,/setSelectedKey\(''\);setOpenDetail\(false\)/)
+  assert.match(simple,/setDirectThreads\(\[\]\);setPortraits\(\{\}\)/)
+  assert.match(simple,/<CrmMessengerPanel key=\{accountId/)
+  assert.match(simple,/<DirectMessageInbox key=\{accountId/)
+})

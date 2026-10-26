@@ -116,7 +116,7 @@ export default function MessagesHub({locale='en'}){
   }
   // Owner-only single-pane messenger. Existing source-specific APIs, security,
   // and the previously released two-tab experience stay intact for members.
-  if(ownerAccountId)return <MessagesSimpleInbox locale={locale}
+  if(ownerAccountId)return <MessagesSimpleInbox key={ownerAccountId} locale={locale}
     accountId={ownerAccountId} requests={requestData?.requests||[]}
     businessEnquiries={requestData?.businessEnquiries||[]}
     websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
