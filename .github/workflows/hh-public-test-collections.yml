@@ -10,6 +10,7 @@ on:
       - 'components/app/test-explorer.module.css'
       - 'lib/profile/life-test-profiles.js'
       - 'tests/test-profile-scale-selector.test.mjs'
+      - 'tests/test-profile-scale-actions.test.mjs'
       - 'lib/assessments/test-collection-membership.js'
       - 'lib/assessments/test-collections.js'
       - 'lib/assessments/test-explorer.js'
@@ -57,6 +58,7 @@ jobs:
           node --conditions=react-server --test
           tests/public-test-topic-collections.test.mjs
           tests/test-profile-scale-selector.test.mjs
+          tests/test-profile-scale-actions.test.mjs
           tests/tantra-themed-collection-cards.test.mjs
           tests/public-test-match-paging.test.mjs
           tests/spanish-test-topic-collections.test.mjs
@@ -73,6 +75,7 @@ jobs:
           components/app/test-explorer.jsx
           lib/profile/life-test-profiles.js
           tests/test-profile-scale-selector.test.mjs
+          tests/test-profile-scale-actions.test.mjs
           lib/assessments/test-collection-membership.js
           lib/assessments/test-collections.js
           lib/assessments/test-explorer.js
