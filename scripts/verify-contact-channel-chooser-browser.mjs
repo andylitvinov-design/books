@@ -177,7 +177,7 @@ async function runEngine(name, engine) {
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
-            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:5},
+            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
@@ -194,6 +194,29 @@ async function runEngine(name, engine) {
             const indexes = count > 2 ? [0,count-1] : [0];
             for (const i of indexes) {
               await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
+            }
+            if (item.path.endsWith("/tantra-reiki/free-initiation")) {
+              // The five distinct requests use one selectable form, not five
+              // separate CRM/messenger choosers. Keep all original intents.
+              const capture = page.locator("[data-tantra-whatsapp-capture]");
+              assert.equal(count, 1, "Tantra requests reuse one consented chooser");
+              const selector = capture.locator("select");
+              const intents = await selector.locator("option").evaluateAll(options =>
+                options.map(option => option.value));
+              assert.deepEqual(intents, ["free", "personal", "session", "answers", "feedback"],
+                "Free and paid Tantra requests remain selectable");
+              // A fresh paid request must not inherit the previous free
+              // request's saved messenger handoff or expanded form.
+              for (const intent of ["personal", "session"]) {
+                await selector.selectOption(intent);
+                const fresh = capture.locator("[data-contact-channel-chooser]");
+                const trigger = fresh.locator("button[data-contact-order]");
+                await trigger.waitFor({ state: "visible", timeout: 10000 });
+                assert.equal(await trigger.getAttribute("aria-expanded"), "false",
+                  intent + " must begin with a closed capture");
+                assert.equal(await fresh.locator('a[data-contact-channel="whatsapp"]').count(), 0,
+                  intent + " must not reuse the prior contact handoff");
+              }
             }
             if (item.path.endsWith("/yggdrasil/free-initiation")) {
               const form = page.locator("[data-yggdrasil-form]");
