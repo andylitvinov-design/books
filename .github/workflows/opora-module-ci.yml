@@ -79,7 +79,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Validate the isolated AS5.6 fixture and safety regressions
-        run: node --test tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs tests/opora-current-edition-harness.test.mjs
+        run: node --test tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs tests/opora-current-edition-harness.test.mjs tests/opora-native-click-diagnostics.test.mjs
       - name: Install isolated browser tools
         run: |
           npm install --prefix /tmp/hh-opora-browser --no-audit --no-fund @playwright/test@1.63.0

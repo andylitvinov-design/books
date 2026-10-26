@@ -21,7 +21,7 @@ test('Four discovery tabs share one EN/RU/ES public destination model', () => {
   assert.match(read('components/public-growth-courses.tsx'), /<DiscoverySectionTabs locale=\{locale\} active="courses"/)
 })
 
-test('Business replaces Events in mobile navigation while Events remains public via the menu', () => {
+test('Seven compact journeys keep localized Library and Events discoverable in the public menu', async () => {
   const header = read('components/site-navigation.tsx')
   const locale = read('lib/public-locales.ts')
   const page = read('app/[locale]/events/page.tsx')
@@ -33,13 +33,68 @@ test('Business replaces Events in mobile navigation while Events remains public 
     assert.match(page, /alternates/)
   }
   assert.match(header, /getCompactNavigation\(activeLocale\)/)
-  assert.match(header, /item.id === 'library'/)
-  assert.match(header, /className="site-library-entry"/)
-  assert.match(header, /data-nav-item="library"/)
   assert.match(locale, /events/)
   assert.match(sitemap, /locale \+ '\/events'/)
-  assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'business', 'house'])
-  assert.match(header, /item.id === 'events'/)
+  const model = await import('../lib/site-navigation-model.js')
+  const { sourceFixture, link, icons, nodes, textContent, blocked } = await import('./helpers/current-navigation-fixture.mjs')
+  const { expectedPublicNavigation } = await import('./helpers/navigation-contract-expectations.mjs')
+  assert.deepEqual(compactNavigationIds, expectedPublicNavigation('en').map(item => item.id))
+  const labels = { en: ['Library', 'Events'], ru: ['Библиотека', 'События'], es: ['Biblioteca', 'Eventos'] }
+  for (const language of ['en', 'ru', 'es']) {
+    const expected = expectedPublicNavigation(language)
+    const editorial = ['library', 'events'].map((id, index) => ({ id, href: '/' + language + '/' + id, label: labels[language][index] }))
+    // Real header/model declarations; child services and all external effects stay inert.
+    // Omit the explicit locale prop so the persistence effect does not write storage.
+    for (const current of [...editorial, ...expected]) {
+      const fixture = sourceFixture()
+      const { SiteNavigation } = fixture.load(header, 'site-navigation.tsx', {
+        '@/data/remedies': fixture.forbiddenModule(['Locale']),
+        'next/link': link,
+        'next/navigation': { usePathname: () => current.href },
+        'lucide-react': icons('ArrowRight Menu Sparkles'),
+        '@/components/commerce/cart-nav-link': { CartNavLink: 'cart-boundary' },
+        '@/components/site-search': { SiteSearch: 'search-boundary' },
+        './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(expected.map(item => [item.id, 'icon-' + item.id])) },
+        '@/lib/ui-locale': { localePath: blocked, saveUiLocale: blocked },
+        '@/lib/public-locales': { PublicLocale: blocked, hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => '/' + locale, savePublicLocale: blocked },
+        '@/lib/site-navigation-model': model,
+        './use-navigation-locale': { useNavigationLocale: () => language },
+        './home-personal-space': { HomePersonalSpaceNavEntry: 'account-boundary' },
+      }, { exports: ['SiteNavigation'] })
+      const rendered = fixture.mount(SiteNavigation, {})
+      const menu = rendered.one(node => node.type === 'details' && node.props.className === 'site-main-menu')
+      const menuNodes = nodes(menu)
+      const more = menuNodes.filter(node => node.props.className === 'site-main-menu-more')
+      assert.equal(more.length, 1, 'one expanded editorial menu')
+      for (const item of editorial) {
+        const matches = menuNodes.filter(node => node.props['data-nav-item'] === item.id)
+        assert.equal(matches.length, 1, language + ': exactly one ' + item.id + ' menu link')
+        const entry = matches[0]
+        assert.ok(nodes(more[0]).includes(entry), 'editorial link remains in the expanded menu')
+        assert.equal(entry.type, 'a')
+        assert.equal(entry.props.href, item.href)
+        assert.equal(entry.props.prefetch, false)
+        assert.equal(textContent(entry), item.label)
+        assert.equal(entry.props['aria-current'], current.id === item.id ? 'page' : undefined)
+        assert.equal(activeNavigationId(item.href), item.id)
+        assert.equal(model.activeCompactNavigationId(item.href), undefined)
+      }
+      const grid = menuNodes.filter(node => node.props.className === 'site-main-menu-grid')
+      assert.equal(grid.length, 1, 'one compact menu')
+      const compact = nodes(grid[0]).filter(node => node.props['data-nav-item'])
+      assert.deepEqual(compact.map(node => node.props['data-nav-item']), expected.map(item => item.id))
+      for (const [index, entry] of compact.entries()) {
+        const item = expected[index]
+        assert.equal(entry.type, 'a')
+        assert.equal(entry.props.href, item.href)
+        assert.equal(entry.props.prefetch, false)
+        assert.equal(entry.props['aria-label'], item.ariaLabel)
+        assert.equal(textContent(entry), item.label)
+        assert.equal(entry.props['aria-current'], current.id === item.id ? 'page' : undefined)
+      }
+      fixture.assertNoExternalOperations()
+    }
+  }
 })
 
 test('Event page never invents upcoming dates or shows private unpublished entries', () => {

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { withOporaNativeClickDiagnostics } from './helpers/opora-native-click-diagnostics.mjs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
@@ -104,7 +105,7 @@ try {
       await expect(page.locator('[data-course-visual-theme]')).toHaveAttribute('data-course-visual-theme', OPORA_EXPERIENCE_DESIGN_VERSION)
       await expect(page.locator('[data-opora-experience-first]')).toHaveAttribute('data-opora-practical-skills-version', OPORA_BROWSER_FRESH_EDITION)
       await expect(page.locator('[data-opora-experience-first]')).toHaveAttribute('data-opora-content-revision', OPORA_BROWSER_FRESH_REVISION)
-      await click(t.next)
+      await withOporaNativeClickDiagnostics(page, { engine: engineName, locale, width, priorHelp }, () => click(t.next))
       await expect(page.locator('[data-opora-daily-support="5"]')).toHaveText(copy.purpose)
       await expect(page.getByRole('heading', { name: copy.supportTitle, exact: true })).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toHaveCount(0)

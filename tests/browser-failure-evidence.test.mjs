@@ -142,7 +142,9 @@ test('unsafe caller wiring changes only its import and top-level failure branch'
  const end=restored.indexOf('} finally {\n const outcome=await boundedBestEffort(()=>browser.close())',start)
  assert.ok(start>0&&end>start)
  const masked=restored.slice(0,start)+'/* CONSENT CALLER FAILURE REGION */\n'+restored.slice(end)
- assert.equal(createHash('sha256').update(masked).digest('hex'),'e3be422c67c8319298aa7817e6dc1112c580eca386a442e72675f0dfbe9801ea')
+ // QA-only OPORA compact guest contract: exact helper import + guest block update.
+ // Retain the same consent-only mask; all other App bytes stay digest-protected.
+ assert.equal(createHash('sha256').update(masked).digest('hex'),'2bd2834245d4f353b5dc727b7e625a748a2d662fa276f1b5e770fbd6a7c05a95')
  const journeys=source.slice(source.indexOf('async function verifyPublicServiceConversionJourneys(){'),source.indexOf('\ntry {\n await verifyPublicServiceConversionJourneys()'))
  assert.match(journeys,/await verifyContactConsentNativeAcceptance\(servicePage,expect,locale\)/)
  assert.doesNotMatch(journeys.slice(journeys.indexOf('await verifyContactConsentNativeAcceptance(servicePage,expect,locale)')),/\bcatch\s*\(|\bfinally\s*\{/)
