@@ -153,3 +153,27 @@ test('owner CRM inbox boots independently of slow/failed practitioner requests',
   assert.match(practiceNav,/app\/messages'\+\(isOwner\?'\?tab=requests'/)
   assert.doesNotMatch(route,/HH_CRM_MSG_TELEGRAM_TOKEN|HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET/)
 })
+
+test('owner reply composer opens unread CRM conversation without any automatic send',()=>{
+  const crm=read('components/app/crm-messenger.jsx')
+  const hub=read('components/app/messages-hub.jsx')
+  const requests=read('components/app/messages-client-requests.jsx')
+  assert.match(crm,/if\(ctrl\.signal\.aborted\)return/)
+  assert.match(crm,/if\(initialThreadId\)\{/)
+  assert.match(crm,/activeRef\.current!==initialThreadId\)void selectThread\(initialThreadId\)/)
+  assert.match(crm,/result\.threads\?\.find\(item=>item\.needsReply\|\|Number\(item\.unreadCount\)>0\)/)
+  assert.match(crm,/if\(next\?\.id\)void selectThread\(next\.id\)/)
+  assert.match(crm,/if\(!activeRef\.current\)/)
+  assert.ok(crm.indexOf("load('',ctrl.signal)") < crm.indexOf('if(next?.id)void selectThread(next.id)'))
+  assert.match(crm,/selected\.reply\.ok/)
+  assert.match(crm,/onClick=\{send\}/)
+  assert.doesNotMatch(crm,/sendOneMessengerMessage\(/,
+    'loading a customer conversation must never contact Telegram or send replies')
+  assert.match(requests,/item\.needsReply\|\|item\.unreadCount>0/,
+    'unread leads remain visible in the attention queue even if a prior reply exists')
+  assert.match(hub,/\(unauthenticated\|\|bootstrapSignInRequired\)&&!ownerAccountId&&!data/)
+  assert.match(hub,/role="alert"/)
+  assert.match(hub,/sessionRequired:/)
+  assert.match(hub,/response\.status===401/)
+  assert.match(read('components/app/messages-hub.module.css'),/\.authNotice\{/)
+})
