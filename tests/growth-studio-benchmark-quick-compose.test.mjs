@@ -101,3 +101,13 @@ test('mobile focus targets, touch affordance, and reduced-motion support are exp
   assert.match(studio,/\{workspaceOpen&&<>/)
   assert.match(studio,/<\/>\}/)
 })
+
+test('editing a saved post scrolls to the real editor, not to the page top above the launch card',()=>{
+  const start=studio.indexOf('const edit=post=>')
+  const end=studio.indexOf('async function refresh()',start)
+  assert.ok(start>0 && end>start)
+  const handlers=studio.slice(start,end)
+  assert.equal((handlers.match(/openWorkspace\('compose'\)/g)||[]).length,2)
+  assert.doesNotMatch(handlers,/window\.scrollTo\(/)
+  assert.match(studio,/id="growth-studio-compose"/)
+})
