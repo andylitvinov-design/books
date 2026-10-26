@@ -1,8 +1,20 @@
 # Holistic House — REA 6.8.0 isolated runtime remediation
 
-**Date:** 2026-10-26 · **Track:** G0 / BENCH-01 · **Status:** validation in progress, not a Mac REA installation.  
+**Date:** 2026-10-26 · **Track:** G0 / BENCH-01 · **Status:** CI PASS; local Mac experimental MCP validated, but binaries removed after critical disk exhaustion, so REA currently NOT LAUNCHABLE.  
 **Program:** https://github.com/andylitvinov-design/books/issues/2058  
 **Already delivered:** Remaster / Playwright PR #2066, merged SHA `e573c8b535fc8c44f4c935c0ea6c3fccaa3659b5`, targeted browser 24/24 PASS in GH Actions #40272500985.
+
+## Actual macOS evidence (26 October 2026)
+
+- Desktop Commander `MacBook-Air-Andrii-3.local` connected successfully. The original checkout `~/projects/books` had local changes; **untouched**.
+- Existing global Node `v22.22.3` remained unchanged. Official portable `node-v22.23.4-darwin-arm64.tar.xz` downloaded from nodejs.org and verified against the signed-release distribution SHA256 manifest and pinned digest `037650d0839f457747396f052073fb48333d31bf5abd3c98b74da20d89ebb1ad`. Extracted into an isolated private research folder; Node reported `v22.23.4`. Node readiness tests: **3/3 PASS**; `bash -n` PASS.
+- The *actual npm tarball* for `rea-agents@6.8.0` independently matched the pinned SHA-512 SRI above. A private, zero-secret npm workspace installed 149 dependencies with `--ignore-scripts --omit=optional`; Frida and all provider engines were omitted. REA CLI v6.8.0 returned a structured result; Codex dry-run returned `status=planned`, with **no actual config write**.
+- In a separate experimental `CODEX_HOME`, an explicit REA MCP registration (not `~/.codex`) returned `setup status=ready`. `rea doctor --client codex --json` returned `healthy=true`, checks `node=PASS` and `registration:codex=PASS`; `codex mcp list --json` showed `rea` enabled. The production stdio adapter `rea mcp doctor --json` returned **HEALTHY**, **229/229 tools**, **6/6 prompts**, matching catalogue digest, and a target-free `binary_session` call **PASS**. This is a real MCP handshake and tool-discovery test; it is **not** a model-driven Codex tool call or an analysis of a private application.
+- The experimental Codex profile is *not* logged in; its ordinary Codex agent session therefore still requires the owner's separate sign-in. No credentials or existing `~/.codex` contents were copied.
+- **Critical disk blocker:** other builds consumed nearly all Mac space: observed free space fell from ~8 GiB to 121 MiB, with multiple unrelated npm builds still running. To protect active user work, **only our own** portable Node runtime (187 MiB) and REA package installation (156 MiB) were deleted. The experimental profile's configuration, evidence JSON, and launcher metadata remain under `$HOME/.local/share/holistic-house-research/rea-6.8.0`, but cannot launch until the binaries are restored. Global Node and site files were unchanged. Final measured free space after cleanup ~513 MiB, which remains **critical**.
+- **GitHub Actions:** isolated REA workflow [run #40332102358](https://github.com/andylitvinov-design/books/actions/runs/40332102358) returned **SUCCESS**. The CI probe deliberately expects an unregistered temporary Codex profile; its `doctor` exit 1/registration `config_drift` is not a successful active MCP registration and must never be labelled healthy. Later Mac tests above performed separate registration and verified actual MCP readiness.
+
+**Restore gate:** free **at least 5 GiB** on Mac and let concurrent builds finish before restoring the disposable binaries. Do not delete arbitrary caches, other worktrees, user files, or alter the site's global Node just to enable REA. The preserved experimental config uses an absolute portable Node/REA path, and restoring the package at the same location should restore the verified MCP profile. Re-run `doctor`, MCP stdio `tools/list`, and Codex registration checks. No code from competitors was analyzed.
 
 ## Root cause and exact fix
 
@@ -50,8 +62,8 @@ If isolated doctor is healthy, next decision is whether **REA is required for a 
 | Pinned published tarball | Real downloaded bytes SHA-512 equal independently reviewed SRI |
 | Isolated REA CLI | `--version`/`doctor` return structured results, optional native providers may be unavailable |
 | Codex sandbox plan | `--dry-run`, no Codex config file created |
-| Local Mac doctor | **NOT VERIFIED** until independently performed on macOS |
-| Actual MCP | **DISABLED** until scoped registration and new-session tool discovery |
+| Local Mac doctor | **PASS BEFORE CLEANUP**, now temporarily **BLOCKED_DISK**; require doctor readback again after reinstall |
+| Actual MCP | Experimental profile registration **PASS before cleanup** (229/229 tools, 6/6 prompts); now **NOT LAUNCHABLE** until reinstated; normal Codex untouched |
 | Public competitor UX research | Use existing Remaster + Playwright clean-room process, **not** REA binary analysis |
 | Production | No app code/DB/API/payments/analytics changes; nothing to deploy or promote |
 
