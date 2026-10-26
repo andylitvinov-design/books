@@ -5,3 +5,13 @@
 .unseenBanner button{padding:10px 13px;min-height:44px;background:#fff;border:1px solid #ddbd7a;border-radius:10px;color:#775820;cursor:pointer;font:700 12px/1.3 system-ui,sans-serif}
 .unseenBanner button:disabled{opacity:.48;cursor:default}
 .unseenBanner button:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+
+
+/* A real participant conversation embedded in the small Messages window. */
+.chat[data-inline="true"]{margin:0;min-width:0;border:0;border-radius:0;padding:0;background:transparent}
+.chat[data-inline="true"] .tools{margin:0 0 5px}
+.chat[data-inline="true"] .timeline{max-height:260px;min-height:40px;overflow:auto}
+.chat[data-inline="true"] .compose{padding:9px 0 0;margin:0;background:#fff}
+.chat[data-inline="true"] .compose textarea{min-height:52px;max-height:120px;resize:none}
+.chat[data-inline="true"] .compose button{width:auto}
+@media(max-width:700px){.chat[data-inline="true"] .timeline{max-height:210px}}

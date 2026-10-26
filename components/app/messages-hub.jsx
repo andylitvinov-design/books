@@ -4,6 +4,7 @@ import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-r
 import DirectMessageInbox from './direct-message-inbox'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
+import MessagesSimpleInbox from './messages-simple-inbox'
 import styles from './messages-hub.module.css'
 
 const COPY={
@@ -30,6 +31,7 @@ export default function MessagesHub({locale='en'}){
   const [refreshKey,setRefreshKey]=useState(0)
   const [data,setData]=useState(null)
   const [ownerInfo,setOwnerInfo]=useState(null)
+  const [ownerBootstrapPending,setOwnerBootstrapPending]=useState(true)
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
   const [unauthenticated,setUnauthenticated]=useState(false)
@@ -49,7 +51,7 @@ export default function MessagesHub({locale='en'}){
   useEffect(()=>{
     const controller=new AbortController()
     // Verify owner access without waiting for practice/business requests.
-    setOwnerInfo(null);setBootstrapSignInRequired(false)
+    setOwnerInfo(null);setBootstrapSignInRequired(false);setOwnerBootstrapPending(true)
     fetch('/api/app/messages/requests?view=owner',{
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
     }).then(async response=>{
@@ -59,6 +61,7 @@ export default function MessagesHub({locale='en'}){
       return typeof value.accountId==='string'&&typeof value.ownerMessenger==='boolean'?value:null
     }).then(result=>{if(!controller.signal.aborted)setOwnerInfo(result)})
       .catch(()=>{if(!controller.signal.aborted)setOwnerInfo(null)})
+      .finally(()=>{if(!controller.signal.aborted)setOwnerBootstrapPending(false)})
     return()=>controller.abort()
   },[refreshKey])
   useEffect(()=>{
@@ -125,6 +128,15 @@ export default function MessagesHub({locale='en'}){
     setSource('crm')
     switchTab('chats')
   }
+  // Owner-only one-window inbox. Preserve the existing authenticated provider
+  // link check and member two-tab UI; no duplicate CRM or public send action.
+  if(ownerAccountId)return <MessagesSimpleInbox key={ownerAccountId} locale={locale}
+    accountId={ownerAccountId} requests={requestData?.requests||[]}
+    businessEnquiries={requestData?.businessEnquiries||[]}
+    telegramUrl={telegramUrl}
+    websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
+    onReload={()=>setRefreshKey(n=>n+1)}/>
+  if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
     <div className={styles.hero}>
