@@ -35,6 +35,14 @@ const synth={
       why:'Исключить ошибочный призыв повторно отправить форму',
       check:'Клиент видит подтверждение только после успешного ответа API'}
   ],
+  options:[
+    {approach:'Упростить первый экран',advantage:'Меньше действий до отправки',
+      limit:'Не гарантирует запись заявки в CRM'},
+    {approach:'Сначала проверить серверный путь',advantage:'Выявляет коренную причину потери лидов',
+      limit:'Не заменяет UX-проверку на телефоне'}
+  ],
+  risks:[{risk:'Показать успех без записанной заявки',
+    mitigation:'Отображать подтверждение только после серверного receipt'}],
   unknowns:['Есть ли текущие серверные delivery receipts']
 }
 const results={
@@ -115,6 +123,9 @@ test('synthesis prefers proven zero-priced free model, not a second flaky Gemini
   assert.equal(r.model,'thinkingmachines/inkling-small:free')
   assert.match(r.text,/🛠 Что конкретно сделать/)
   assert.match(r.text,/Проверить: В CRM появляется/)
+  assert.match(r.text,/Альтернативы и ограничения/)
+  assert.match(r.text,/Риски и защита/)
+  assert.match(r.text,/Отображать подтверждение только после серверного receipt/)
   assert.match(r.text,/Gemini \+ Free AI 1/)
   assert.doesNotMatch(r.text,/Mistral/)
 })
