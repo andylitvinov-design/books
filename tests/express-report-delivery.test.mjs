@@ -26,7 +26,7 @@ test('claimed guest report flow checks verified linkage, never contact similarit
   const repository=read('lib/practitioners/express-report-repository.js')
   const claim=read('app/api/free-express/claim/route.js')
   const practice=read('lib/practitioners/repository.js')
-  const migration=read('supabase/migrations/20261026162258_hh_express_report_claimed_enquiry_delivery.sql')
+  const migration=read('supabase/migrations/20261026165242_hh_express_report_claimed_enquiry_delivery.sql')
   assert.match(repository,/JOIN app_private\.free_express_account_links l ON l\.enquiry_id=e\.id/)
   assert.match(repository,/l\.recipient_practitioner_id=p\.id/)
   assert.match(repository,/record\.public_enquiry_id/)
