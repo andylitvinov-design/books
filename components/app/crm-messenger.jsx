@@ -38,7 +38,7 @@ const setupText={
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
     instructions:'Connect an account',missing:'Missing server settings',configured:'Credentials present — verify the provider first',
     disabled:'Channel activation is off',approval:'Public sending is off until the test is approved',
-    pilot:'Pilot mode: only the allowlisted Telegram chat can send or receive messages',
+    pilot:'Test mode: only the allowlisted conversation can send or receive messages',
     testHint:'Do one controlled test conversation before enabling live client replies.',
     channelKeys:'Server settings in Vercel Production',copyUrl:'Copy webhook URL',
     copied:'Webhook URL copied',copyError:'Copy failed; use the URL shown below.',
@@ -52,7 +52,7 @@ const setupText={
     intro:'Пока нет подключённых каналов. Подготовьте их здесь — сообщения клиентам не отправляются.',
     instructions:'Как подключить',missing:'Не хватает настроек сервера',configured:'Ключи добавлены — проверьте доступ провайдера',
     disabled:'Активация канала выключена',approval:'Отправка клиентам отключена до подтверждённого теста',
-    pilot:'Пилот: Telegram доступен только одному разрешённому тестовому аккаунту',
+    pilot:'Тест: переписка доступна только разрешённому аккаунту или номеру',
     testHint:'Сначала проведите одну тестовую переписку и проверьте получение ответа.',
     channelKeys:'Переменные в Vercel Production',copyUrl:'Копировать адрес webhook',
     copied:'Адрес webhook скопирован',copyError:'Не удалось скопировать. Адрес указан ниже.',
@@ -66,7 +66,7 @@ const setupText={
     intro:'Aún no hay canales conectados. Prepáralos aquí sin enviar mensajes a clientes.',
     instructions:'Cómo conectar',missing:'Falta configuración del servidor',configured:'Credenciales cargadas; verifica el proveedor',
     disabled:'La activación del canal está deshabilitada',approval:'El envío público está desactivado hasta completar la prueba',
-    pilot:'Piloto: solo una cuenta de prueba autorizada puede usar Telegram',
+    pilot:'Prueba: solo una conversación autorizada puede enviar o recibir',
     testHint:'Realiza una conversación de prueba controlada antes de activar respuestas reales.',
     channelKeys:'Variables del servidor en Vercel Production',copyUrl:'Copiar URL del webhook',
     copied:'URL copiada',copyError:'No se pudo copiar. Usa la URL mostrada.',
@@ -481,7 +481,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           const registered=data?.accounts?.find(a=>a.channel===channel.channel)
           const ok=registered?.connected===true
           const missing=channel.missingKeys||[]
-          const isPilot=channel.channel==='telegram'&&channel.pilot
+          const isPilot=channel.pilot===true
           const statusLabel=ok?t.connected:missing.length?guide.missing:isPilot?guide.pilot:
             !channel.enabled?guide.disabled:
             !channel.liveApproved?guide.approval:guide.configured
@@ -531,11 +531,18 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               <div className={styles.guideBody}>
                 <a href={officialPortal[channel.channel]} target="_blank" rel="noopener noreferrer">{guide.openPortal}</a>
                 {channel.channel==='telegram'&&<p>{guide.telegramCaution}</p>}
+                {channel.channel==='whatsapp'&&<p>{lang==='ru'?'Нужна официальная Meta WhatsApp Cloud API. До переноса проверьте возможность совместимости с существующим номером. Старые чаты не импортируются.':lang==='es'?'Se necesita WhatsApp Cloud API. Revisa la coexistencia del número antes de migrarlo. No se importan chats antiguos.':'Official WhatsApp Cloud API required. Check phone-number coexistence before migrating an existing number. Old chats are not imported.'}</p>}
                 <p>{guide.notVerified}</p>
                 <strong>{guide.channelKeys}</strong>
                 {missing.length?<ul>{missing.map(key=><li key={key}><code>{key}</code></li>)}</ul>:
                   <p>{guide.configured}</p>}
                 {!channel.enabled&&<code className={styles.settingKey}>{'HH_CRM_MSG_'+channel.channel.toUpperCase()+'_ENABLED=true'}</code>}
+                {channel.channel==='whatsapp'&&<div className={styles.pilotKeys}>
+                  <strong>{lang==='ru'?'Безопасный тест и шесть этапов заявки':'Safe pilot and six-step intake'}</strong>
+                  <code>HH_CRM_WA_DIAGNOSTIC_ENABLED=true</code>
+                  <code>HH_CRM_MSG_WHATSAPP_PILOT_ENABLED=true</code>
+                  <code>HH_CRM_MSG_WHATSAPP_PILOT_WA_ID</code>
+                </div>}
                 {channel.channel==='telegram'&&<div className={styles.pilotKeys}>
                   <strong>{guide.pilotKeys}</strong>
                   <code>HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=true</code>
@@ -643,7 +650,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
               <p>{m.text}</p>
-              {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
+              {m.photo&&['telegram','whatsapp'].includes(selected.channel)&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
