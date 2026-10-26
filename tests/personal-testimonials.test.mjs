@@ -160,3 +160,14 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
     assert.ok(!existsSync(path.join(process.cwd(), "public/images/holistic-house/testimonial-posters", `${id}.webp`)));
   }
 });
+
+test("Services browser acceptance pins all six released paid offers in order", () => {
+  const verifier = read("scripts", "verify-site-video-browser.mjs");
+  const expected = ['monthly-support', 'alchemy', 'hypnotherapy', 'constellations', 'business', 'remote-energy-support'];
+  const literal = verifier.match(/const expectedPaidOfferIds = (\[[^\n]+\])/);
+  assert.ok(literal, 'browser gate must identify every expected paid card');
+  assert.deepEqual(JSON.parse(literal[1]), expected);
+  assert.ok(verifier.includes('await expect(offers).toHaveCount(expectedPaidOfferIds.length)'));
+  assert.ok(verifier.includes("await offers.evaluateAll(cards => cards.map(card => card.getAttribute('data-services-studio-card')))"));
+  assert.ok(verifier.includes('assert.deepEqual(paidOfferIds, expectedPaidOfferIds'));
+});

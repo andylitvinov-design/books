@@ -249,3 +249,13 @@
 .compactQuestion textarea { display:block;box-sizing:border-box;width:100%;min-height:70px;max-height:160px;padding:10px 11px;resize:vertical;border:1px solid #b9ccd6;border-radius:10px;background:#fff;color:#2c4250;font:400 16px/1.45 Arial,Helvetica,sans-serif;overflow-wrap:break-word; }
 .compactQuestion small { font:500 11px/1.4 Arial,Helvetica,sans-serif;color:#677e8b; }
 .compactQuestion textarea:focus-visible { outline:3px solid #2169bd;outline-offset:2px; }
+
+/* Free express only: details are optional and closed on first render, keeping
+   the required phone, explicit consent, and channel buttons above the fold. */
+.compactQuestionReveal{min-width:0;margin:0}
+.compactQuestionReveal > summary{display:flex;align-items:center;gap:7px;min-height:33px;padding:4px 2px;color:#7c3f57;cursor:pointer;font:700 12px/1.35 Arial,Helvetica,sans-serif;list-style:none}
+.compactQuestionReveal > summary::-webkit-details-marker{display:none}
+.compactQuestionReveal > summary::before{content:"+";display:grid;place-items:center;width:17px;height:17px;border:1px solid currentColor;border-radius:50%;font:700 15px/1 Arial,Helvetica,sans-serif}
+.compactQuestionReveal[open] > summary::before{content:"−"}
+.compactQuestionReveal > summary:focus-visible{outline:3px solid #b87c44;outline-offset:2px}
+.compactQuestionReveal .compactQuestion{padding:4px 0 5px}
