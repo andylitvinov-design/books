@@ -38,7 +38,7 @@ const copy = {
     drawingHint: "On paper, draw three elements: Me, My Goal and My Problem. Circles or symbols are enough; there is no correct position. Photograph the whole sheet and upload it for symbolic reflection.",
     camera: "Take a photo", library: "Choose from photos", imageConsent: "I agree to share this image privately with Andrey for my written review. It will not be published.",
     upload: "Upload privately", uploadError: "Secure upload was not confirmed. Try again or skip. Do not send images in a messenger.",
-    uploaded: "Image saved privately", remove: "Remove image", mediaTooLarge: "Choose an image under 12 MB. Larger photos are resized privately on your device before upload.",
+    uploaded: "Image saved privately", remove: "Remove image", mediaTooLarge: "Choose an image under 12 MB. Larger photos are resized privately on your device before upload.", preparationError: "This photo could not be prepared on your device. Try a JPG or a different photo. Your request is still saved.",
     google: "Keep a private copy with Google", googleHint: "Your request is already in our CRM. Google sign-in is optional and lets you link the same request to your Holistic House account.",
     googleConsent: "I want to link this request to my verified Google account. It does not create a new request.",
     googleAction: "Sign in / Save to my account", googleSaved: "Saved to your private account",
@@ -69,7 +69,7 @@ const copy = {
     drawingHint: "На листе бумаги обозначьте три элемента: Я, Моя цель и Проблема. Подойдут круги или символы, правильного расположения нет. Сфотографируйте весь лист и загрузите его для символического разбора.",
     camera: "Сфотографировать", library: "Выбрать из галереи", imageConsent: "Согласен(на) передать это изображение только Андрею для письменного разбора. Публиковаться оно не будет.",
     upload: "Загрузить защищённо", uploadError: "Загрузка не подтверждена. Повторите или пропустите. Не отправляйте фото в мессенджер.",
-    uploaded: "Изображение сохранено приватно", remove: "Удалить фото", mediaTooLarge: "Выберите фото до 12 МБ. Большие фотографии уменьшаются прямо на вашем устройстве до отправки.",
+    uploaded: "Изображение сохранено приватно", remove: "Удалить фото", mediaTooLarge: "Выберите фото до 12 МБ. Большие фотографии уменьшаются прямо на вашем устройстве до отправки.", preparationError: "Не удалось обработать это фото на телефоне. Выберите JPG или другое фото. Заявка уже сохранена.",
     google: "Сохраните заявку в кабинете через Google", googleHint: "Заявка уже зарегистрирована в CRM. При желании войдите через Google и привяжите её к личному кабинету Holistic House.",
     googleConsent: "Хочу привязать заявку к подтверждённому Google-аккаунту. Новая заявка не создаётся.",
     googleAction: "Войти через Google / сохранить", googleSaved: "Сохранено в личном кабинете",
@@ -100,7 +100,7 @@ const copy = {
     drawingHint: "Dibuja tres elementos en papel: Yo, Mi Meta y Mi Problema. Sirven círculos y símbolos; no hay posiciones correctas. Haz una foto de la hoja completa y súbela para una reflexión simbólica.",
     camera: "Tomar foto", library: "Elegir foto", imageConsent: "Acepto compartir esta imagen en privado solo con Andrey para mi revisión escrita. No se publicará.",
     upload: "Subir de forma privada", uploadError: "No se confirmó la carga privada. Prueba de nuevo u omite el paso. No uses un mensajero.",
-    uploaded: "Imagen guardada en privado", remove: "Eliminar foto", mediaTooLarge: "Elige una imagen de menos de 12 MB. Las fotos grandes se reducen en tu dispositivo antes de subirlas.",
+    uploaded: "Imagen guardada en privado", remove: "Eliminar foto", mediaTooLarge: "Elige una imagen de menos de 12 MB. Las fotos grandes se reducen en tu dispositivo antes de subirlas.", preparationError: "No pudimos preparar esta foto en tu dispositivo. Prueba con una imagen JPG diferente. Tu solicitud está guardada.",
     google: "Guarda una copia con Google", googleHint: "Tu solicitud ya está registrada. Puedes vincularla a tu cuenta de Holistic House con Google.",
     googleConsent: "Quiero vincular esta solicitud a mi cuenta verificada de Google. No se creará otra solicitud.",
     googleAction: "Iniciar sesión / Guardar", googleSaved: "Guardado en tu cuenta privada",
@@ -274,7 +274,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
       setSelected(null); setImageConsent(false);
       setStep(kind === "portrait" ? 3 : 5);
     } catch (failure) {
-      setError(failure instanceof Error && failure.message.startsWith("PHOTO_") ? t.mediaTooLarge : t.uploadError);
+      setError(failure instanceof Error && failure.message.startsWith("PHOTO_") ? t.preparationError : t.uploadError);
     }
     finally { setBusy(false); }
   }
