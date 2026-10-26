@@ -163,3 +163,11 @@ test('owner-only private photo, no public Telegram file ID or brokered medical d
   assert.match(ui,/URL\.revokeObjectURL/)
   assert.doesNotMatch(ui,/file_id|telegramPhotoFileId|api\.telegram\.org/)
 })
+
+test('diagnostic webhook forwards committed reply as Bot API text, not a missing property',()=>{
+  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
+  const provider=source('lib/crm/messenger-provider.js')
+  assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard\}\)/)
+  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\]\}/)
+  assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
+})
