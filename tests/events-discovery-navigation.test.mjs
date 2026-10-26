@@ -38,7 +38,7 @@ test('Business replaces Events in mobile navigation while Events remains public 
   assert.match(header, /data-nav-item="library"/)
   assert.match(locale, /events/)
   assert.match(sitemap, /locale \+ '\/events'/)
-  assert.deepEqual(compactNavigationIds, ['home', 'tests', 'services', 'academy', 'business', 'house'])
+  assert.deepEqual(compactNavigationIds, ['profile', 'courses', 'home', 'analysis', 'alchemy', 'pro', 'temple'])
   assert.match(header, /item.id === 'events'/)
 })
 
