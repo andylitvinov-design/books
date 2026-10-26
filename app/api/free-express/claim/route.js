@@ -76,9 +76,9 @@ async function handle(request) {
         // The row may be claimed by one and only one verified account.
         await db.query(
           `insert into app_private.free_express_account_links
-             (enquiry_id,account_id,reference_code,locale)
-           values($1,$2,$3,$4) on conflict (enquiry_id) do nothing`,
-          [row.id, actor.id, row.reference_code, row.locale],
+             (enquiry_id,account_id,reference_code,locale,recipient_practitioner_id)
+           values($1,$2,$3,$4,$5) on conflict (enquiry_id) do nothing`,
+          [row.id, actor.id, row.reference_code, row.locale, row.recipient_practitioner_id],
         )
         return (await db.query(
           'select enquiry_id from app_private.free_express_account_links where enquiry_id=$1 and account_id=$2',

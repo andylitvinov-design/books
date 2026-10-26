@@ -81,7 +81,7 @@ const remoteMessageStatus=(status,locale)=>{
  }
  return (labels[locale]||labels.en)[status]||status
 }
-export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
+export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,onCreateReport,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
@@ -319,6 +319,12 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                   {request.newMessageCount>0?' · '+t.newMessages+': '+request.newMessageCount:''}</small>
                 </div>
                 {request.message&&<p className={styles.original}>{request.message}</p>}
+                {(request.accountRequest===true||request.reportEligible===true) &&
+                  <div className={styles.actions}>
+                    <button type="button" disabled={busy} onClick={()=>onCreateReport?.(request)}>
+                      {lang==='ru'?'Сформировать отчёт':lang==='es'?'Crear informe':'Create report'}
+                    </button>
+                  </div>}
                 {['requested','contacted'].includes(request.status)&&<div className={styles.actions}>
                   {request.status==='requested'&&<button type="button" disabled={busy}
                     onClick={()=>onStatus?.(request,'contacted')}>{t.markContacted}</button>}
