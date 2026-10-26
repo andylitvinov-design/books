@@ -196,6 +196,9 @@
 .panel[data-compact="true"] .compose textarea{grid-row:2;grid-column:1}
 .panel[data-compact="true"] .compose>button:last-of-type{grid-row:2;grid-column:2}
 
+.profileAction{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:40px;padding:8px 12px;border:1px solid #b9d9cc;border-radius:10px;background:#fff;color:#286452;cursor:pointer;font:700 12px/1.35 system-ui,sans-serif}
+.profileAction:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+@media(max-width:360px){.profileAction{padding:7px 9px}.contactActions{gap:6px}}
 /* iPhone composer: only the message history scrolls. The editor and Send are
    one fixed-height row at the bottom of the available conversation viewport. */
 .detailConversation{display:flex;flex-direction:column;min-height:0;max-height:none;overflow:hidden}
