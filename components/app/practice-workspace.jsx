@@ -491,7 +491,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
           <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
         </button>
-        <button type="button" onClick={()=>window.location.assign('/'+locale+'/app/messages')}>
+        <button type="button" onClick={()=>window.location.assign('/'+locale+'/app/messages'+(isOwner?'?tab=requests':''))}>
           <MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span>
           <small>{ru?'Личный инбокс':locale==='es'?'Bandeja privada':'Private inbox'}</small>
         </button>
