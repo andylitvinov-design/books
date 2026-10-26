@@ -213,7 +213,7 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
     'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true']) {
     assert.ok(route.includes(flag), flag)
   }
-  assert.match(builder, /test\.axes\.some\(axis => selectedAxes\.includes\(axis\)\)/)
+  assert.match(builder, /test\.axes\.filter\(axis => selectedAxes\.includes\(axis\)\)/)
   assert.match(builder, /kindFilter === "all" \|\| test\.testKind === kindFilter/)
   assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
   assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
