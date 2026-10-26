@@ -49,7 +49,8 @@ test('owner-only commands and legitimate private callback buttons',()=>{
   for(const command of ['combine','done','cancel']){
     assert.equal(parseOwnerAudioCommand(message('/'+command),NOW)?.action,command)
     assert.equal(parseOwnerAudioCommand(message('/'+command+'@Andydotbot'),NOW)?.action,command)
-    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,command)
+    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,
+      command==='combine'?'combine':'legacy-batch-button')
   }
   const bad=message('/combine');bad.message.from.id=999
   assert.equal(parseOwnerAudioCommand(bad,NOW),null)
