@@ -435,11 +435,14 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           : { ...intake, contact: { displayName: draft.name, email: replyContact.email.trim(), phone: replyContact.phone.trim() },
               contactConsent: true, website: "" }) };
       }
-      const response = await fetch(fromTelegram ? "/api/coaching-diagnostic/telegram" : "/api/coaching-diagnostic", {
-        method: "POST", credentials: "same-origin",
+      const submissionOptions = {
+        method: "POST", credentials: "same-origin" as const,
         headers: { "content-type": "application/json" },
         body: leadAttempt.current.body,
-      });
+      };
+      const response = fromTelegram
+        ? await fetch("/api/coaching-diagnostic/telegram", submissionOptions)
+        : await fetch("/api/coaching-diagnostic", submissionOptions);
       const result = await response.json().catch(() => null);
       if (!response.ok || result?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
         // A rejected payload was never saved, so edits must get a fresh idempotency key.
