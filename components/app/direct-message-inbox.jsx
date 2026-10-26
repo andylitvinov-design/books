@@ -12,7 +12,7 @@ const COPY={
     title:'Messages',hint:'Private conversations with Holistic House practitioners.',
     choose:'Choose a conversation',empty:'No conversations yet. Visit a practitioner page to start one.',ownerEmpty:'No private conversations yet. Telegram enquiries are in the CRM section above.',loading:'Loading conversations…',
     new:'Start a conversation',newWith:'Message',load:'Refresh',send:'Send message',
-    composer:'Write a message (optional with an attachment)',attach:'Photo or audio file',
+    composer:'Write a message (optional with an attachment)',attach:'Photo, PDF or audio',
     welcome:'Send photos and audio directly. Only you and the recipient can read these messages.',
     consent:'I permit this practitioner to republish this audio on their public profile.',
     warning:'Off by default. Do not send health records, private client files or another person’s recording.',
@@ -22,7 +22,7 @@ const COPY={
     published:'Published on profile',publish:'Add audio to my public profile',unpublish:'Remove from profile',
     revoke:'Revoke publication permission',titleLabel:'Public audio title',
     localeLabel:'Audio language',rights:'I confirm I have the right to publish this recording.',
-    apply:'Publish audio',view:'Listen',photo:'Photo',audio:'Audio',error:'Could not complete the action.',
+    apply:'Publish audio',view:'Listen',photo:'Photo',audio:'Audio',document:'Open PDF document',error:'Could not complete the action.',
     noPublish:'Audio is private unless its sender explicitly authorizes publication.',
     older:'Showing the latest 50 messages.',retry:'Try again',
   },
@@ -30,7 +30,7 @@ const COPY={
     title:'Сообщения',hint:'Личная переписка с мастерами Holistic House.',
     choose:'Выберите беседу',empty:'Переписок пока нет. Откройте страницу мастера, чтобы написать.',ownerEmpty:'Личных переписок пока нет. Заявки Telegram находятся в разделе CRM выше.',loading:'Загружаю переписки…',
     new:'Начать переписку',newWith:'Написать мастеру',load:'Обновить',send:'Отправить сообщение',
-    composer:'Сообщение (необязательно, если есть файл)',attach:'Фото или аудиофайл',
+    composer:'Сообщение (необязательно, если есть файл)',attach:'Фото, PDF или аудио',
     welcome:'Фото и аудио доступны только участникам диалога.',
     consent:'Разрешаю этому мастеру разместить моё аудио на своей публичной странице.',
     warning:'По умолчанию выключено. Не отправляйте медицинские документы, клиентские материалы и чужие записи.',
@@ -40,7 +40,7 @@ const COPY={
     published:'Опубликовано на странице',publish:'Прикрепить аудио к странице мастера',unpublish:'Снять с публикации',
     revoke:'Отозвать разрешение на публикацию',titleLabel:'Название аудио',
     localeLabel:'Язык аудио',rights:'Подтверждаю право публичного размещения этой записи.',
-    apply:'Опубликовать аудио',view:'Прослушать',photo:'Фото',audio:'Аудио',error:'Не удалось выполнить действие.',
+    apply:'Опубликовать аудио',view:'Прослушать',photo:'Фото',audio:'Аудио',document:'Открыть PDF документ',error:'Не удалось выполнить действие.',
     noPublish:'Аудио остаётся приватным без отдельного разрешения отправителя.',
     older:'Показаны последние 50 сообщений.',retry:'Повторить',
   },
@@ -48,7 +48,7 @@ const COPY={
     title:'Mensajes',hint:'Conversaciones privadas con profesionales de Holistic House.',
     choose:'Elige una conversación',empty:'Aún no hay conversaciones. Visita el perfil de un profesional.',ownerEmpty:'No hay mensajes privados. Las solicitudes de Telegram están en CRM arriba.',loading:'Cargando conversaciones…',
     new:'Iniciar conversación',newWith:'Enviar mensaje',load:'Actualizar',send:'Enviar mensaje',
-    composer:'Escribe un mensaje (opcional si adjuntas un archivo)',attach:'Foto o audio',
+    composer:'Escribe un mensaje (opcional si adjuntas un archivo)',attach:'Foto, PDF o audio',
     welcome:'Las fotos y los audios son privados entre los participantes.',
     consent:'Permito que este profesional publique este audio en su perfil público.',
     warning:'Desactivado por defecto. No envíes historiales médicos ni grabaciones ajenas.',
@@ -58,7 +58,7 @@ const COPY={
     published:'Publicado en el perfil',publish:'Añadir audio a mi perfil público',unpublish:'Retirar del perfil',
     revoke:'Revocar permiso para publicar',titleLabel:'Título del audio',
     localeLabel:'Idioma del audio',rights:'Confirmo que tengo derecho a publicar la grabación.',
-    apply:'Publicar audio',view:'Escuchar',photo:'Foto',audio:'Audio',error:'No se pudo completar la acción.',
+    apply:'Publicar audio',view:'Escuchar',photo:'Foto',audio:'Audio',document:'Abrir documento PDF',error:'No se pudo completar la acción.',
     noPublish:'El audio es privado sin autorización expresa del remitente.',
     older:'Se muestran los últimos 50 mensajes.',retry:'Reintentar',
   }
@@ -116,6 +116,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
   const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0)
   const [showNotices,setShowNotices]=useState(false)
+  const [requestedThread,setRequestedThread]=useState('')
   useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
   const getThreads=useCallback(async()=>{
     const data=await jsonGet()
@@ -128,8 +129,15 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     const parameters=new URLSearchParams(window.location.search)
     const slug=parameters.get('to')||''
     setDestination(/^[a-z0-9-]{2,90}$/.test(slug)?slug:'')
+    const thread=parameters.get('thread')||''
+    setRequestedThread(/^[0-9a-f-]{36}$/i.test(thread)?thread:'')
     getThreads().catch(e=>{setError(e.message);if(e.message==='SIGN_IN_REQUIRED')setSignedOut(true)})
   },[getThreads])
+  useEffect(()=>{
+    if(!requestedThread||!accountId||!threads.some(item=>item.id===requestedThread))return
+    void openThread(requestedThread)
+    setRequestedThread('')
+  },[requestedThread,accountId,threads])
   async function post(body){
     if(!accountId)throw new Error('SIGN_IN_REQUIRED')
     const response=await fetch(URL,{method:'POST',cache:'no-store',credentials:'same-origin',
@@ -272,7 +280,9 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
                 {m.attachment.kind==='image'
                   ?<a href={'/api/app/direct-messages/media/'+m.attachment.id} target="_blank" rel="noopener noreferrer">
                     <img src={'/api/app/direct-messages/media/'+m.attachment.id} alt={t.photo} loading="lazy"/></a>
-                  :<audio controls preload="none" aria-label={t.view} src={'/api/app/direct-messages/media/'+m.attachment.id}/>}
+                  :m.attachment.kind==='document'
+                    ?<a href={'/api/app/direct-messages/media/'+m.attachment.id} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{t.document}</a>
+                    :<audio controls preload="none" aria-label={t.view} src={'/api/app/direct-messages/media/'+m.attachment.id}/>}
                 {m.attachment.kind==='audio'&&current.isRecipient&&
                   <AudioPublication key={m.attachment.id} message={m} onAction={action} busy={busy} locale={locale} t={t}/>}
                 {m.attachment.kind==='audio'&&m.mine&&m.attachment.canPublish&&
@@ -292,7 +302,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
               placeholder={t.composer} disabled={busy}/>
             <div className={styles.actions}>
               <label className={styles.filePick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav"
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav,application/pdf,.pdf"
                   disabled={busy} onChange={e=>changeFile(e.target.files?.[0]||null)}/></label>
               <button className={styles.send} type="submit" disabled={busy||(!draft.trim()&&!file)}>
                 <Send size={17} aria-hidden="true"/>{t.send}</button>

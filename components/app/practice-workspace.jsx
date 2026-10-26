@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones, MessageCircle } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
+import MasterInviteManager from './master-invite-manager'
 import PracticeExpressReports from './practice-express-reports'
 import PracticeMaterials from './practice-materials'
 import PracticeEvents from './practice-events'
@@ -690,6 +691,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </div>}
         {activePanel==='events'&&<PracticeEvents locale={locale} accountId={accountId} />}
 
+        {activePanel==='clients'&&isOwner&&accountId&&
+          <MasterInviteManager locale={locale} accountId={accountId}/>}
         {activePanel==='clients'&&isOwner&&
           <Link href="/admin/personal-support" className="hh-practice-monthly-support-link" data-monthly-support-owner-link>
             {locale==='ru'?'Месячное сопровождение · €200 — клиенты и встречи':locale==='es'?'Acompañamiento mensual · 200 € — clientes y sesiones':'Monthly support · €200 — clients and sessions'}
