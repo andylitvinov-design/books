@@ -32,6 +32,7 @@ const copy = {
     lessQuestions: "Hide optional questions",
     phoneInstead: "Prefer to leave a phone number?",
     telegramLinked: "Connected to your Telegram request · no contact details needed.",
+    telegramSuccess: "Your answers were attached to the existing Telegram chat. Reference:",
     telegramUnavailable: "Telegram session could not be verified. Open this form using the button in the bot, or leave an email/phone.",
     telegramExpiry: "Telegram session expired. Please reopen the form from your bot or add your contact.",
     telegramConsent: "Sending will attach your answers to the existing private conversation with Andrey.",
@@ -94,6 +95,7 @@ const copy = {
     lessQuestions: "Скрыть дополнительные вопросы",
     phoneInstead: "Оставить телефон вместо email",
     telegramLinked: "Связано с заявкой в Telegram · контакты повторно не нужны.",
+    telegramSuccess: "Ответы добавлены в существующий диалог Telegram. Номер:",
     telegramUnavailable: "Не удалось подтвердить Telegram. Откройте форму кнопкой в боте или оставьте email/телефон.",
     telegramExpiry: "Сессия Telegram истекла. Откройте форму заново из бота или оставьте контакт.",
     telegramConsent: "После отправки ответы добавятся в вашу существующую переписку с Андреем.",
@@ -156,6 +158,7 @@ const copy = {
     lessQuestions: "Ocultar preguntas opcionales",
     phoneInstead: "¿Prefieres dejar tu teléfono?",
     telegramLinked: "Conectado con tu solicitud de Telegram. No necesitas dar tus datos otra vez.",
+    telegramSuccess: "Tus respuestas ya están en el chat de Telegram. Número:",
     telegramUnavailable: "No se pudo verificar Telegram. Abre este formulario con el botón del bot o deja email/teléfono.",
     telegramExpiry: "La sesión de Telegram caducó. Vuelve a abrir desde el bot o deja un contacto.",
     telegramConsent: "Al enviar, tus respuestas se añadirán al chat privado existente con Andrey.",
@@ -501,7 +504,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </div>
     </header>
 
-    {auth !== "guest" ? <div className={styles.authBar}>
+    {auth === "guest" && telegramStatus === "linked" ? null : auth !== "guest" ? <div className={styles.authBar}>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{auth === "signed" ? t.signedIn : auth === "guest" ? t.signedOut : auth === "checking" ? t.loading : t.unavailable}</p>
         {auth === "guest" ? <small>{t.temporary}</small> : null}
@@ -581,7 +584,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
             ? <p className={styles.telegramWarning} role="status">{t.telegramUnavailable}</p>
             : null}
         {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
-          <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
+          <Check size={18} aria-hidden="true" /><div><strong>{telegramStatus === "linked" ? t.telegramSuccess : t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
           {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
             {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
           </Link> : null}
@@ -618,6 +621,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           <p className={styles.requestFootnote}>{t.sendNext}</p>
         </>}
       </div>
+      {telegramStatus !== "linked" ? <>
       <p className={styles.requestEyebrow}>{t.saveOptional}</p>
       <div className={styles.saveStatus}><ShieldCheck size={19} aria-hidden="true" />{dirty ? t.dirty : saved?.intake ? t.upToDate : t.unsaved}</div>
       {auth === "signed" ? <label className={styles.consent}>
@@ -642,6 +646,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       <p className={styles.small}>{t.contactNote}</p>
       <p className={styles.small}>{t.privacy}</p>
       {saved?.intake && auth === "signed" ? <button className={styles.delete} type="button" disabled={busy || collision} onClick={() => void remove()}><Trash2 size={15} aria-hidden="true" />{t.delete}</button> : null}
+      </> : null}
     </section>
   </section>;
 }
