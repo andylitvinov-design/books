@@ -43,6 +43,7 @@ export default function MessagesHub({locale='en'}){
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
+    if(/^[a-z0-9-]{2,90}$/.test(params.get('to')||''))setSource('direct')
   },[])
   useEffect(()=>{
     const controller=new AbortController()
