@@ -1,3 +1,4 @@
+import { verifyAccountProfileOffers } from './helpers/profile-account-offers-verifier.mjs'
 import { assertOporaGuestFirstWeek } from './helpers/opora-guest-first-week-verifier.mjs'
 import { verifyHypnotherapyEnquiryJourney } from './helpers/hypnotherapy-enquiry-journey-verifier.mjs'
 import { verifyAlchemyEnquiryJourney } from './helpers/alchemy-enquiry-journey-verifier.mjs'
@@ -809,8 +810,8 @@ try {
    }
    await target.locator('#hh-domain-tab-psychology').click()
  }
- await verifyProfileServiceOffers(page)
- passed('every Google Cabinet profile has one working service-specific WhatsApp enquiry and matching landing link')
+ await verifyAccountProfileOffers(page,expect,{origin,browser})
+ passed('account Profile exposes current consultation options; isolated read-only href-follow verifies destination, not same-tab signed-in navigation')
  await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-initial.png',fullPage:false});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
