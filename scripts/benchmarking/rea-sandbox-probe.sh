@@ -87,6 +87,18 @@ try {
   process.exit(2);
 }
 const [version, plan, doctor] = data;
+const doctorExit = Number(process.argv[5]);
+const nodeCheck = doctor.scope_checks?.find(check => check.name === 'node');
+const registration = doctor.scope_checks?.find(check => check.name === 'registration:codex');
+const expectedNoRegistration = doctorExit === 1 &&
+  doctor.healthy === false &&
+  nodeCheck?.ok === true &&
+  registration?.ok === false &&
+  registration?.classification === 'config_drift';
+if (!expectedNoRegistration) {
+  console.error('FAIL: isolated doctor is not in the expected unregistered Codex state');
+  process.exit(2);
+}
 if (JSON.stringify(version).includes('"6.8.0"') === false) {
   console.error('FAIL: staged CLI did not identify as version 6.8.0');
   process.exit(2);
@@ -106,7 +118,10 @@ console.log(JSON.stringify({
   codex_setup_dry_run: 'PASS',
   codex_config_written: false,
   doctor_json: 'PARSED',
-  doctor_exit_code: Number(process.argv[5]),
-  interpretation: 'This proves isolated CLI/doctor readiness only. It is NOT Mac installation, actual Codex MCP registration, or analysis of a user program.',
+  doctor_status: 'EXPECTED_UNREGISTERED_CODEX_PROFILE',
+  doctor_healthy: false,
+  doctor_exit_code: doctorExit,
+  mcp_registration: 'NOT_PERFORMED',
+  interpretation: 'CLI and scoped no-write diagnostics only. No active MCP profile is installed by this probe. A separate authorized Codex profile requires its own setup, tool discovery and testing.',
 }, null, 2));
 NODE
