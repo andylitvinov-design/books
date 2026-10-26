@@ -30,7 +30,7 @@ At EzoHata the public diagnostic CTA opens @ezohata_diagnostics_bot and asks for
 
 Vercel server-only settings (never paste tokens into GitHub issues or chat):
 - HH_CRM_MSG_TELEGRAM_TOKEN: BotFather secret from a NEW dedicated bot.
-- HH_CRM_MSG_TELEGRAM_BOT_ID: numeric getMe ID.
+- HH_CRM_MSG_TELEGRAM_BOT_ID: optional numeric BotFather ID. When absent, the server derives it from the BotFather token prefix; if both exist they must match. The owner Connect action still verifies the real ID and configured username with Telegram getMe.
 - HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET: separate random secure webhook secret.
 - HH_CRM_MSG_TELEGRAM_USERNAME: verified BotFather username without @.
 - HH_CRM_MSG_TELEGRAM_ENABLED=true
@@ -48,4 +48,4 @@ Emergency disable HH_CRM_MSG_TELEGRAM_ENABLED=false and redeploy. The feature-on
 
 ## Evidence still required
 
-Real BotFather credential and owner pilot, production DB migration, provider acceptance plus client receipt, mobile 320–430px live tests, exact deployed SHA. A green unit test or HTTP 200 alone does not prove E2E.
+At the 26 October 2026 readiness inspection the BotFather token, username, webhook secret and feature switches existed in Vercel Production as sensitive settings; they have NOT been validated against Telegram. No pilot chat identity, production approval, provider receipt or signed-in owner E2E was confirmed. Database migration 20261026143713 is already applied and security-read back; do NOT apply twice. Need owner allowlisted pilot, real provider acceptance plus recipient receipt, mobile 320–430px live tests and latest exact deployed SHA. A green unit test or HTTP 200 alone does not prove E2E.
