@@ -16,15 +16,15 @@ test('Profile leads with authorized personal reports; category details are secon
   const support = profile.indexOf('<details className="hh-domain-support">')
   const discover = profile.indexOf('<Link className="hh-domain-services-link"')
   assert.ok(hero >= 0 && archive > hero && browse > archive && overview > browse)
-  const earlyActions = profile.indexOf('{!external && footerActions}')
+  const earlyActions = profile.indexOf('data-report-archive-always-open')
   const legacyActions = profile.indexOf('{external && footerActions}')
   assert.ok(tabs > overview && panel > tabs && support > panel)
   assert.ok(discover > -1 && earlyActions > archive && earlyActions < browse && legacyActions > support)
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
   assert.match(profile, /open=\{expanded\}/)
-  assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data.account.id\}/)
-  assert.match(workspace, /embedded \/>\} \/>/)
+  assert.match(workspace, /reportsContent=\{<><PersonalAnalysisPanel key=\{data.account.id\}/)
+  assert.match(workspace, /embedded \/><ClientExpressReports locale=\{locale\}/)
   assert.doesNotMatch(profile, /ProfileServiceCards|<FreeInsightsPaths/)
   assert.match(workspace, /data-insights-detailed-scales/)
   assert.doesNotMatch(profile, /Math\.random\(|mockProfileScore|syntheticScores/)
@@ -74,7 +74,7 @@ test('Measured psychological portrait is accessible in Insights, separate from P
   assert.match(style, /@media\(max-width:560px\)/)
 })
 
-test('five private Cabinet tabs share menus while mobile adds a sixth public Home shortcut', () => {
+test('six private Cabinet tabs share menus while mobile adds a seventh public Home shortcut', () => {
   const workspace = read('components/app/app-workspace.jsx')
   const css = read('app/[locale]/app/[[...path]]/workspace.css')
   const navStart = workspace.indexOf('const nav = [')
@@ -85,15 +85,16 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
     ['portrait', 'Profile', '/portrait'],
     ['tests', 'Tests', '/tests'],
     ['portfolio', 'Reports', '/portfolio'],
-    ['course', 'Courses', '/course'],
+    ['course', 'Courses', '/course?view=courses'],
     ['practice', 'Practice', '/practice'],
+    ['messages', 'Messages', '/messages'],
   ]) {
     assert.match(navModel, new RegExp("id: '" + id + "'"))
     assert.ok(navModel.includes("label: locale === 'ru'"), 'EN and RU navigation labels')
     assert.ok(navModel.includes("'" + title + "'"), title)
     assert.ok(navModel.includes("href: root + '" + route + "'"), route)
   }
-  assert.equal((navModel.match(/\{ id: '(portrait|tests|portfolio|course|practice)'/g)||[]).length,5)
+  assert.equal((navModel.match(/\{ id: '(portrait|tests|portfolio|course|practice|messages)'/g)||[]).length,6)
   assert.doesNotMatch(navModel, /\{ id: 'analysis'/)
   const mobileStart=workspace.indexOf('<nav className="hh-mobile-app-nav"')
   const mobile=workspace.slice(mobileStart,workspace.indexOf('</nav>}',mobileStart))
@@ -103,15 +104,16 @@ test('five private Cabinet tabs share menus while mobile adds a sixth public Hom
   assert.match(mobile,/aria-current=\{navIsActive\(id\) \? 'page'/)
   assert.match(mobile,/className="hh-mobile-app-nav-home"/)
   assert.match(mobile,/href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
-  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important;/)
+  assert.match(css,/\.hh-app \.hh-mobile-app-nav\s*\{[^}]*grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important;/)
   // Preserve the verifier branch's stricter exact bilingual ordering and Home contract.
   const entries=[...navModel.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)'/g)].map(([,id,ru,en,path])=>({id,ru,en,path}))
   assert.deepEqual(entries,[
     {id:'portrait',ru:'Профиль',en:'Profile',path:'/portrait'},
     {id:'tests',ru:'Тесты',en:'Tests',path:'/tests'},
     {id:'portfolio',ru:'Отчёты',en:'Reports',path:'/portfolio'},
-    {id:'course',ru:'Курсы',en:'Courses',path:'/course'},
+    {id:'course',ru:'Курсы',en:'Courses',path:'/course?view=courses'},
     {id:'practice',ru:'Практика',en:'Practice',path:'/practice'},
+    {id:'messages',ru:'Сообщения',en:'Messages',path:'/messages'},
   ])
   assert.doesNotMatch(mobile, />Analysis</)
   assert.equal(mobile.split('className="hh-mobile-app-nav-home"').length - 1, 1)
