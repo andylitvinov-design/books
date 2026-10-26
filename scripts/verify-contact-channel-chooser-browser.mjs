@@ -191,9 +191,14 @@ async function runEngine(name, engine) {
             await page.waitForLoadState("networkidle",{timeout:20000}).catch(()=>{});
             const count = await items.count();
             assert.ok(count >= item.min, "Missing chooser on "+item.path+", count="+count);
-            const indexes = count > 2 ? [0,count-1] : [0];
-            for (const i of indexes) {
-              await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
+            // Tantra uses the existing always-visible compact-phone CRM form,
+            // not the collapsible chooser that has button[data-contact-order].
+            // The generic test must run only on routes with that trigger.
+            if (!item.path.endsWith("/tantra-reiki/free-initiation")) {
+              const indexes = count > 2 ? [0,count-1] : [0];
+              for (const i of indexes) {
+                await verifyChooser(page,items.nth(i),locale,[name,locale,width,slug(item.path),i].join("-"),width===390,submissions);
+              }
             }
             if (item.path.endsWith("/tantra-reiki/free-initiation")) {
               // The five distinct requests use one selectable form, not five
@@ -205,18 +210,46 @@ async function runEngine(name, engine) {
                 options.map(option => option.value));
               assert.deepEqual(intents, ["free", "personal", "session", "answers", "feedback"],
                 "Free and paid Tantra requests remain selectable");
-              // A fresh paid request must not inherit the previous free
-              // request's saved messenger handoff or expanded form.
-              for (const intent of ["personal", "session"]) {
+              // This existing compactPhone form is deliberately inline.
+              // No order trigger, automatic chat, or external link exists before
+              // an acknowledged first-party save. Do not fake a lead here.
+              const initialPostCount = submissions.length;
+              const chooser = capture.locator("[data-contact-channel-chooser]");
+              assert.equal(await chooser.getAttribute("data-compact-phone-trigger"), null,
+                "Tantra compact phone intake is already visible");
+              assert.equal(await chooser.locator("button[data-contact-order]").count(), 0,
+                "Inline compact intake must not be tested as a collapsible chooser");
+              const form = chooser.locator("form");
+              const channels = form.locator("button[data-contact-channel-submit]");
+              assert.equal(await channels.count(), 2, "Two optional messenger handoff actions");
+              for (const intent of ["free", "personal", "session", "answers", "feedback"]) {
                 await selector.selectOption(intent);
-                const fresh = capture.locator("[data-contact-channel-chooser]");
-                const trigger = fresh.locator("button[data-contact-order]");
-                await trigger.waitFor({ state: "visible", timeout: 10000 });
-                assert.equal(await trigger.getAttribute("aria-expanded"), "false",
-                  intent + " must begin with a closed capture");
-                assert.equal(await fresh.locator('a[data-contact-channel="whatsapp"]').count(), 0,
-                  intent + " must not reuse the prior contact handoff");
+                await form.waitFor({state:"visible",timeout:10000});
+                assert.equal(await selector.inputValue(), intent);
+                const consent = form.locator('input[type="checkbox"][required]');
+                assert.equal(await consent.count(), 1, intent + " requires explicit consent");
+                assert.equal(await consent.isChecked(), false,
+                  intent + " must not inherit consent from another request");
+                assert.equal(await form.locator('input[type="tel"]').count(), 1,
+                  intent + " requires phone capture before CRM write");
+                assert.equal(await chooser.locator("a[data-contact-channel]").count(), 0,
+                  intent + " must not expose messenger links before a saved lead");
+                const box = await channels.first().boundingBox();
+                assert.ok(box && box.height >= 44 && box.width >= 90,
+                  intent + " compact-channel mobile touch target");
+                await channels.first().click({trial:true,timeout:8000});
+                // Checking consent alone is not a submission. Selecting the next
+                // offer remounts the existing chooser and must reset it.
+                await consent.check();
               }
+              await selector.selectOption("free");
+              assert.equal(await form.locator('input[type="checkbox"][required]').isChecked(),
+                false, "Returning to free initiation resets previously checked consent");
+              assert.equal(submissions.length,initialPostCount,
+                "Read-only Tantra intent checks never send a synthetic or real lead");
+              results.push({name:[name,locale,width,"tantra-compact"].join("-"),
+                locale,viewportWidth:width,channels:["WhatsApp","Telegram"],
+                consentReset:true,firstPartySubmission:false,nonNavigating:true});
             }
             if (item.path.endsWith("/yggdrasil/free-initiation")) {
               const form = page.locator("[data-yggdrasil-form]");
