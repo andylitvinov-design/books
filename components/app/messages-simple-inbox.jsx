@@ -2,8 +2,9 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Link2,MessageCircle,RefreshCw} from 'lucide-react'
+import {ArrowLeft,ArrowRight,IdCard,Link2,MessageCircle,RefreshCw} from 'lucide-react'
 import CrmMessengerPanel from './crm-messenger'
+import MessagesContactCard from './messages-contact-card'
 import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-simple-inbox.module.css'
@@ -11,7 +12,7 @@ import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
 
 const COPY={
   en:{title:'Messages',hint:'Conversations and requests',search:'Find a person',empty:'No messages or requests yet.',
-    choose:'Select a person to read the conversation',back:'Conversations',refresh:'Refresh',loading:'Loading conversations…',
+    choose:'Select a person to read the conversation',back:'Conversations',card:'Client card',refresh:'Refresh',loading:'Loading conversations…',
     telegram:'Telegram',website:'Website request',business:'Business request',direct:'Holistic House',
     waiting:'Waiting for your reply',received:'Received',details:'Request',contact:'Contact details',
     replyWebsite:'Reply in the protected client cabinet',openCase:'Full request',manual:'Open WhatsApp to reply',
@@ -19,7 +20,7 @@ const COPY={
     offline:'Offline — reconnect to read and send messages.',botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
     more:'More conversations',other:'Other requests',portal:'Private website conversations'},
   ru:{title:'Сообщения',hint:'Диалоги и заявки',search:'Найти человека',empty:'Пока нет сообщений и заявок.',
-    choose:'Выберите человека, чтобы открыть переписку',back:'К списку',refresh:'Обновить',loading:'Загружаем переписки…',
+    choose:'Выберите человека, чтобы открыть переписку',back:'К списку',card:'Карточка',refresh:'Обновить',loading:'Загружаем переписки…',
     telegram:'Telegram',website:'Заявка с сайта',business:'Бизнес-заявка',direct:'Holistic House',
     waiting:'Ждёт вашего ответа',received:'Получена',details:'Заявка',contact:'Контакты',
     replyWebsite:'Ответить в защищённом кабинете',openCase:'Вся заявка',manual:'Ответить через WhatsApp',
@@ -27,7 +28,7 @@ const COPY={
     offline:'Нет интернета — для загрузки и отправки сообщений требуется соединение.',botLink:'Копировать ссылку Telegram',botCopied:'Ссылка скопирована',updated:'Обновлено',noMessage:'Описание не указано',private:'Ответы на заявки сайта не отправляются в Telegram автоматически.',
     more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте'},
   es:{title:'Mensajes',hint:'Conversaciones y solicitudes',search:'Buscar persona',empty:'Aún no hay mensajes ni solicitudes.',
-    choose:'Elige una persona para abrir la conversación',back:'Volver',refresh:'Actualizar',loading:'Cargando conversaciones…',
+    choose:'Elige una persona para abrir la conversación',back:'Volver',card:'Ficha',refresh:'Actualizar',loading:'Cargando conversaciones…',
     telegram:'Telegram',website:'Solicitud web',business:'Solicitud de negocio',direct:'Holistic House',
     waiting:'Esperando tu respuesta',received:'Recibida',details:'Solicitud',contact:'Contacto',
     replyWebsite:'Responder en el portal privado',openCase:'Solicitud completa',manual:'Responder por WhatsApp',
@@ -95,6 +96,7 @@ export default function MessagesSimpleInbox({
   const [search,setSearch]=useState('')
   const [linkCopied,setLinkCopied]=useState(false)
   const [openDetail,setOpenDetail]=useState(false)
+  const [showCard,setShowCard]=useState(false)
   const inboxWindowRef=useRef(null)
   const [refreshNonce,setRefreshNonce]=useState(0)
   const [offline,setOffline]=useState(false)
@@ -118,7 +120,7 @@ export default function MessagesSimpleInbox({
     onRecipientConsumed?.()
   },[onRecipientConsumed])
   const closeDetail=useCallback(()=>{
-    consumeRecipient();setSelectedKey('');setOpenDetail(false)
+    consumeRecipient();setSelectedKey(key=>key.startsWith('direct:')?'':key);setOpenDetail(false);setShowCard(false)
   },[consumeRecipient])
   const isRecipientCurrent=useCallback((slug,ownerId)=>{
     const scope=recipientScope.current
@@ -127,7 +129,7 @@ export default function MessagesSimpleInbox({
   const onRecipientStarted=useCallback((threadId,slug,ownerId)=>{
     if(!isRecipientCurrent(slug,ownerId))return false
     consumeRecipient()
-    setSelectedKey('direct:'+threadId);setOpenDetail(true)
+    setSelectedKey('direct:'+threadId);setOpenDetail(true);setShowCard(false)
     return true
   },[isRecipientCurrent,consumeRecipient])
   const onCrmThreads=useCallback(result=>setCrmState(result),[])
@@ -137,13 +139,13 @@ export default function MessagesSimpleInbox({
   },[])
   const rows=useMemo(()=>{
     const crm=(crmState.threads||[]).map(item=>({
-      key:'crm:'+item.id,kind:'crm',id:item.id,name:item.name||t.choose,
+      key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,name:item.name||t.choose,
       source:channelNames[item.channel]||item.channel,unread:Number(item.unreadCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastMessageAt||item.lastInboundAt,
       preview:item.needsReply?t.waiting:channelNames[item.channel]||item.channel,
     }))
     const portal=directThreads.map(item=>({
-      key:'direct:'+item.id,kind:'direct',id:item.id,name:item.peerName||t.portal,
+      key:'direct:'+item.id,kind:'direct',id:item.id,peerMasterSlug:item.peerMasterSlug||'',name:item.peerName||t.portal,
       source:t.direct,unread:Number(item.unread)||0,needsReply:(Number(item.unread)||0)>0,
       at:item.updatedAt,preview:t.portal,
     }))
@@ -173,7 +175,7 @@ export default function MessagesSimpleInbox({
   const directThreadId=selected?.kind==='direct'?selected.id:''
 
   useEffect(()=>{
-    setSelectedKey('');setOpenDetail(false);setCrmState({loading:true,error:false,threads:[],partial:false})
+    setSelectedKey('');setOpenDetail(false);setShowCard(false);setCrmState({loading:true,error:false,threads:[],partial:false})
     setDirectThreads([]);setPortraits({})
   },[accountId])
   // Safari's keyboard shrinks the visual viewport but does NOT reliably update
@@ -230,12 +232,13 @@ export default function MessagesSimpleInbox({
     if(!recipient)return
     const scope={accountId,slug:recipient}
     recipientScope.current=scope
-    setSelectedKey('');setOpenDetail(true)
+    setSelectedKey('');setOpenDetail(true);setShowCard(false)
     return()=>{if(recipientScope.current===scope)recipientScope.current=null}
   },[accountId,recipient])
   const select=item=>{
     consumeRecipient()
     setSelectedKey(item.key)
+    setShowCard(false)
     setOpenDetail(true)
   }
   const publicBotUrl=typeof telegramUrl==='string'&&/^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(telegramUrl)?telegramUrl:''
@@ -301,22 +304,26 @@ export default function MessagesSimpleInbox({
             portrait={selected.kind==='crm'&&portraits[selected.id]?{threadId:selected.id,messageId:portraits[selected.id]}:null}/>}
           <span className={styles.personLabel}><strong>{selected?.name||recipient}</strong><small>{selected?.source||t.portal}</small></span>
           {selected?.unread>0&&<span className={styles.unread}>{selected.unread}</span>}
+          {selected&&<button type="button" className={styles.cardButton} aria-label={t.card} aria-pressed={showCard}
+            onClick={()=>setShowCard(value=>!value)}><IdCard size={17} aria-hidden="true"/><span>{t.card}</span></button>}
         </header>}
         {!selected&&!recipient&&<div className={styles.placeholder}>
           <MessageCircle size={34} aria-hidden="true"/>
           <p>{t.choose}</p>
         </div>}
-        <div className={styles.chatHolder} hidden={selected?.kind!=='crm'}>
+        {showCard&&selected&&<MessagesContactCard key={accountId+':'+selected.key}
+          item={selected} accountId={accountId} locale={locale} onBack={()=>setShowCard(false)}/>}
+        <div className={styles.chatHolder} hidden={showCard||selected?.kind!=='crm'}>
           <CrmMessengerPanel key={accountId+':'+refreshNonce} accountId={accountId}
             locale={locale} conversationOnly onThreadsLoaded={onCrmThreads} onPortraitFound={onPortraitFound}
             initialThreadId={crmThreadId}/>
         </div>
-        <div className={styles.chatHolder} hidden={selected?.kind!=='direct'&&!recipient}>
+        <div className={styles.chatHolder} hidden={showCard||(selected?.kind!=='direct'&&!recipient)}>
           <DirectMessageInbox key={accountId+':direct:'+refreshNonce} locale={locale}
             simpleDetail expectedAccountId={accountId} initialThreadId={directThreadId} onThreadsLoaded={onDirectThreads}
             recipientSlug={recipient} isRecipientCurrent={isRecipientCurrent} onRecipientStarted={onRecipientStarted} onBack={closeDetail}/>
         </div>
-        {selected?.kind==='request'&&<div className={styles.requestPane}>
+        {!showCard&&selected?.kind==='request'&&<div className={styles.requestPane}>
           <div className={styles.requestBubble}>
             <small>{t.details} · {fmtDate(selected.item.createdAt,locale)}</small>
             <p>{selected.item.message||t.noMessage}</p>
@@ -331,7 +338,7 @@ export default function MessagesSimpleInbox({
                 {t.openCase} <ArrowRight size={16} aria-hidden="true"/></Link>
             </div>}
         </div>}
-        {selected?.kind==='business'&&<div className={styles.requestPane}>
+        {!showCard&&selected?.kind==='business'&&<div className={styles.requestPane}>
           <div className={styles.requestBubble}>
             <small>{t.details} · {fmtDate(selected.item.createdAt,locale)}</small>
             <p>{selected.item.question||t.noMessage}</p>

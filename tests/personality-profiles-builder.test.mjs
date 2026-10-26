@@ -47,9 +47,10 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
   assert.match(component, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
-  // On Ready the sole CTA hands the eligible selection to authenticated My Tests.
-  // Guest test exploration remains available only via its separate public catalogue.
-  assert.doesNotMatch(component, /startTests=|data-profile-start-tests/)
+  // On Tests an explicit guest CTA launches only selected eligible test keys.
+  // Ready separately offers one opt-in Google save without a duplicate guest action.
+  assert.match(component, /const testHref = base \+ "\/client\?startTests=" \+ encodeURIComponent\(selectedKeys.join\(","\)\)/)
+  assert.match(component, /data-profile-start-tests/)
   assert.match(component, /data-profile-google-signin/)
   assert.match(component, /onClick={saveSelectionWithGoogle}/)
   assert.match(component, /makeTestSelectionIntent\(selectedKeys\)/)
@@ -179,4 +180,80 @@ test('browse free tests opens the real catalogue and positions the existing pers
     assert.ok(builder.includes('  ' + locale + ': {'), locale + ' profile localization')
     assert.ok(offers.includes('  ' + locale + ': {'), locale + ' review localization')
   }
+})
+
+test('Tests slide offers a direct start followed by discoverable filters for other questionnaires', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  const route = read('app/[locale]/personality-profiles/page.tsx')
+  const start = builder.indexOf('{step === 2 && <section')
+  const ready = builder.indexOf('{step === 3 && <section')
+  assert.ok(start > 0 && ready > start, 'Tests precedes optional Ready/save step')
+  const testsSlide = builder.slice(start, ready)
+  const recommendations = testsSlide.indexOf('data-profile-recommended-tests')
+  const directStart = testsSlide.indexOf('data-profile-start-tests')
+  const additional = testsSlide.indexOf('data-profile-additional-tests')
+  assert.ok(recommendations > 0 && directStart > recommendations && additional > directStart,
+    'suggested tests and Take tests button are above extra test filters')
+  for (const phrase of ['type="search"', 'value={kindFilter}', 'data-profile-extra-profile-filter', 'data-profile-extra-scales',
+    'aria-pressed={extraProfile === key}', 'aria-pressed={extraScales.includes(axis)}',
+    'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'TEST_KINDS.map',
+    "href={'/' + locale + '/client/tests'}"]) assert.ok(testsSlide.includes(phrase), phrase)
+  assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key\)\)/)
+  assert.match(builder, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
+  assert.match(builder, /previous\.length < 12/)
+  assert.match(builder, /if \(!tests\.some\(test => test\.key === key\)\) return/)
+  assert.match(route, /testKind: entry\.testKind/)
+  assert.match(css, /\.extraFilters \{/)
+  assert.match(css, /\.extraSearch \{ grid-column: 1 \/ -1; \}/)
+  assert.match(css, /\.startRow > \.primary \{ width: 100%; \}/)
+  assert.ok(builder.includes('start: "Пройти тесты"'))
+  assert.ok(builder.includes('start: "Take tests"'))
+  assert.ok(builder.includes('start: "Realizar pruebas"'))
+  assert.ok(builder.includes('data-profile-google-cabinet-offer'), 'private save remains optional')
+  assert.ok(!testsSlide.includes('data-profile-test-review-slide'), 'no forced intermediate confirmation to start')
+})
+
+test('additional test options inherit rights-filtered guest metadata; filters never create new scales or scores', () => {
+  const route = read('app/[locale]/personality-profiles/page.tsx')
+  const builder = read('components/personality-profiles-builder.tsx')
+  for (const flag of ['entry.selectable === true', 'entry.startable === true',
+    'entry.guestEligible === true', 'entry.free === true',
+    'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true']) {
+    assert.ok(route.includes(flag), flag)
+  }
+  assert.match(builder, /test\.axes\.filter\(axis => selectedAxes\.includes\(axis\)\)/)
+  assert.match(builder, /kindFilter === "all" \|\| test\.testKind === kindFilter/)
+  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
+  assert.match(builder, /setExtraScales\(previous => previous\.includes\(axis\)/)
+  assert.match(builder, /\[\.\.\.previous, axis\]/)
+  assert.match(builder, /allAxesFor\(focusAreas\[extraProfile\]\)\.filter\(axis => measurableAxes\.has\(axis\)\)/)
+  assert.match(builder, /test\.minutes !== null && test\.minutes <= Number\(timeFilter\)/)
+  assert.match(builder, /selectedKeys\.length >= 12/)
+  assert.ok(!builder.includes('setSelectedAxes('))
+  assert.ok(builder.includes('const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","))'), 'test launch encodes only catalogue keys')
+})
+
+test('additional test finder scopes a single life profile before opening multiple real scales', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  const slide = builder.slice(builder.indexOf('data-profile-additional-tests'), builder.indexOf('data-profile-test-review-slide'))
+  const profileAt = slide.indexOf('data-profile-extra-profile-filter')
+  const scalesAt = slide.indexOf('data-profile-extra-scales')
+  const testsAt = slide.indexOf('extraResultCount')
+  assert.ok(profileAt >= 0 && scalesAt > profileAt && testsAt > scalesAt)
+  assert.match(slide, /\(\["wellbeing", "relationships", "work", "identity"\] as const\)\.map/)
+  assert.match(slide, /extraProfile === key/)
+  assert.match(slide, /axesForExtraProfile\.map/)
+  assert.match(slide, /aria-pressed=\{extraScales\.includes\(axis\)\}/)
+  assert.match(slide, /setExtraScales\(\[\.\.\.axesForExtraProfile\]\)/)
+  assert.match(slide, /setExtraScales\(\[\]\)/)
+  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
+  for (const t of ['profile: "1. Выберите один профиль"', 'scales: "2. Отметьте шкалы профиля"',
+    'profile: "1. Choose one profile"', 'profile: "1. Elige un perfil"']) assert.ok(builder.includes(t))
+  assert.match(css, /\.extraProfileChoices\{display:grid/)
+  assert.match(css, /\.extraScaleChoices\{display:flex/)
+  assert.match(css, /@media\(max-width:450px\)\{\.extraProfileChoices\{grid-template-columns:1fr/)
 })

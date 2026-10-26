@@ -10,7 +10,7 @@ const SLUG='synthetic-practitioner'
 const row={id:T,peerName:'Synthetic direct person',updatedAt:'2026-10-26T00:00:00Z',unread:0}
 function fixture(options={}){
   const calls=[],violations=[];let account=options.account||A,list=options.threads||[],startCount=0
-  const sendQueue=[...(options.sendQueue||[])]
+  const sendQueue=[...(options.sendQueue||[])],requestQueue=[...(options.requestQueue||[])]
   const queued=new Map();for(const [key,value] of Object.entries(options.queue||{}))queued.set(key,[...value])
   const metadata=()=>({accountId:account,ownerMessenger:options.owner!==false,ownerAuthorized:options.owner!==false,requests:options.requests||[],businessEnquiries:options.business||[],services:[],hasPractice:true})
   const fetch=async(path,init={})=>{
@@ -18,6 +18,16 @@ function fixture(options={}){
     if(init.body)body=JSON.parse(init.body)
     calls.push({path,method,body,headers:init.headers})
     const key=method+' '+path
+    if(options.requestLifetime&&path.startsWith('/api/app/practitioner-client-messages')){
+      assert.equal(init.headers['X-HH-Account-Id'],account)
+      if(method==='GET'){
+        assert.equal(path,'/api/app/practitioner-client-messages?requestId='+R)
+        return response({requestId:R,messages:[],nextCursor:null,unseenCount:0,canReply:true,canNote:false})
+      }
+      assert.equal(method,'POST');assert.equal(path,'/api/app/practitioner-client-messages');assert.ok(options.allowRequestSend)
+      assert.equal(body.requestId,R);assert.equal(body.text,'Synthetic request reply');assert.equal(body.visibility,'participants');assert.match(body.operationId,/^60000000-0000-4000-8000-/)
+      assert.ok(requestQueue.length,'unapproved extra request send');const result=requestQueue.shift();return typeof result==='function'?result():result
+    }
     if(method==='GET'&&!['/api/app/messages/requests?view=owner','/api/app/messages/requests','/api/public/telegram-diagnostic','/api/app/direct-messages','/api/app/direct-messages?threadId='+T,'/api/app/direct-messages?threadId='+U].includes(path)){violations.push(key);throw Error('Forbidden network '+key)}
     if(method!=='GET'&&!(method==='POST'&&path==='/api/app/direct-messages'&&(body?.action==='start'||(options.allowSend&&body?.action==='send')))){violations.push(key+' '+body?.action);throw Error('Forbidden mutation '+key)}
     if(method==='POST'){
@@ -66,7 +76,8 @@ test('recipient-only detail is not a real row and mounts no private avatar or re
   assertOwnerIntent(f)
   assert.equal(f.nodes().filter(n=>n.type==='button'&&n.props.className?.includes('person')).length,0)
   assert.equal(f.nodes().filter(n=>n.component&&n.type.name==='PrivateAvatar').length,0)
-  assert.equal(f.nodes().filter(n=>n.type==='fixture-request-conversation').length,0)
+  assert.equal(f.nodes().filter(n=>n.component&&['PracticeRequestConversation','MessagesContactCard'].includes(n.type.name)).length,0)
+  assert.equal(f.nodes().filter(n=>n.type==='button'&&n.props.className?.includes(':cardButton')).length,0)
   assert.ok(f.calls.every(c=>c.method==='GET'&&!c.path.includes('photo')&&!c.path.includes('media')&&!c.path.includes('threadId=')))
 }))
 test('member retains URL-driven manual recipient path',()=>run({owner:false},f=>{assert.equal(f.shell(),undefined);assert.equal(f.visibleStarts().length,1);assert.equal(f.calls.filter(c=>c.method==='POST').length,0)}))
@@ -170,7 +181,7 @@ for(const phase of ['start','list','read'])test('late '+phase+' after selecting 
 })
 
 const replyText='Synthetic explicit reply'
-const draftLeaves=['back','internal-back','crm','request','business']
+const draftLeaves=['back','internal-back','crm','request','business','card']
 const replyOptions=extra=>({search:'',threads:[row],
   crm:[{id:C,name:'Synthetic CRM target',channel:'telegram',unreadCount:0}],
   requests:[{id:R,contact:{name:'Synthetic request target'},requestKind:'public',message:'Synthetic request'}],
@@ -180,6 +191,7 @@ const replyForm=f=>f.nodes().find(n=>n.type==='form'&&visible(n))
 async function typeReply(f){await f.click(f.person(row.peerName));const input=replyInput(f);assert.ok(input);input.props.onChange({target:{value:replyText}});await f.app.settle()}
 async function leaveReply(f,leave){
   if(leave==='back')await f.click(f.button('Conversations'))
+  else if(leave==='card')await f.click(f.button('Client card'))
   else if(leave==='internal-back')await f.click(f.button('All conversations'))
   else await f.click(f.person('Synthetic '+(leave==='crm'?'CRM':leave)+' target'))
 }
@@ -205,7 +217,7 @@ for(const leave of draftLeaves)test('uncertain Send operation survives temporary
   await submitReply(f);assert.equal(sendCalls(f).length,2)
   assert.equal(sendCalls(f)[1].body.operationId,operation,'retry must retain original operation identity')
 }))
-for(const leave of ['back','crm','request','business'])test('pending Send survives temporary '+leave+' until uncertain completion',async()=>{
+for(const leave of ['back','crm','request','business','card'])test('pending Send survives temporary '+leave+' until uncertain completion',async()=>{
   const pending=deferred(),f=fixture(replyOptions({allowSend:true,sendQueue:[pending.promise,response({ok:true})]}))
   try{
     await f.app.settle();await typeReply(f);await submitReply(f);assert.equal(sendCalls(f).length,1)
@@ -232,4 +244,49 @@ test('account remount clears direct draft/file and prior uncertain Send operatio
   assert.equal(replyInput(f)?.props.value,'');assert.ok(!f.nodes().some(n=>n.type==='p'&&n.props.className?.includes('fileName')))
   replyInput(f).props.onChange({target:{value:replyText}});await f.app.settle();await submitReply(f)
   assert.notEqual(sendCalls(f)[1].body.operationId,first);assert.equal(sendCalls(f)[1].headers['x-hh-account-id'],B)
+}))
+
+test('real direct Client card Back preserves the mounted draft and never sends media',()=>run(replyOptions(),async f=>{
+  await typeReply(f);const before=[...f.app.instances.values()].find(x=>x.type.name==='DirectMessageInbox')
+  await f.click(f.button('Client card'));assert.ok(f.nodes().some(n=>n.props&&Object.hasOwn(n.props,'data-messages-client-card')))
+  assert.equal(Boolean(replyInput(f)),false,'actual direct composer is hidden behind card')
+  assert.ok([...f.app.instances.values()].find(x=>x.type.name==='DirectMessageInbox')===before)
+  await f.click(f.button('Back to chat'));assert.equal(replyInput(f)?.props.value,replyText)
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.ok(!f.calls.some(c=>/photo|media/.test(c.path)))
+}))
+test('pending direct Send may reject while actual Client card stays open without losing retry identity',async()=>{
+  const pending=deferred(),f=fixture(replyOptions({allowSend:true,sendQueue:[pending.promise,response({ok:true})]}))
+  try{await f.app.settle();await typeReply(f);await submitReply(f);const operation=sendCalls(f)[0].body.operationId
+    await f.click(f.button('Client card'));pending.reject(Error('SYNTHETIC_UNCERTAIN_SEND'));await f.app.settle()
+    assert.ok(f.nodes().some(n=>n.props&&Object.hasOwn(n.props,'data-messages-client-card')))
+    await f.click(f.button('Back to chat'));assert.equal(replyInput(f)?.props.value,replyText)
+    await submitReply(f);assert.equal(sendCalls(f)[1].body.operationId,operation);f.assertClean()
+  }finally{f.close()}
+})
+const requestLifetimeOptions=extra=>({search:'',requestLifetime:true,requests:[{id:R,contact:{name:'Synthetic private request'},requestKind:'private',message:'Synthetic request'}],...extra})
+const requestInput=f=>f.nodes().find(n=>n.type==='textarea'&&n.props.id==='practice-chat-'+R&&visible(n))
+async function typeRequestReply(f){await f.click(f.person('Synthetic private request'));requestInput(f).props.onChange({target:{value:'Synthetic request reply'}});await f.app.settle()}
+async function sendRequestReply(f){await f.click(f.nodes().find(n=>n.type==='button'&&visible(n)&&n.props.onClick?.name==='send'))}
+const requestPosts=f=>f.calls.filter(c=>c.path==='/api/app/practitioner-client-messages'&&c.method==='POST')
+test('canonical private request outer Back keeps actual draft/session and selected row',()=>run(requestLifetimeOptions(),async f=>{
+  await typeRequestReply(f);const before=[...f.app.instances.values()].find(x=>x.type.name==='MessageConversation'),calls=f.calls.length
+  await f.click(f.button('Conversations'));assert.equal(f.shell().props['data-detail-open'],'false')
+  assert.equal(f.person('Synthetic private request').props['aria-pressed'],true)
+  assert.ok([...f.app.instances.values()].find(x=>x.type.name==='MessageConversation')===before)
+  await f.click(f.person('Synthetic private request'));assert.equal(requestInput(f)?.props.value,'Synthetic request reply')
+  assert.equal(f.calls.length,calls);assert.equal(f.app.intervalCount(),1);assert.equal(requestPosts(f).length,0)
+}))
+test('canonical private request pending/uncertain UUID survives outer Back and retry',async()=>{
+  const pending=deferred(),f=fixture(requestLifetimeOptions({allowRequestSend:true,requestQueue:[pending.promise,()=>Promise.reject(Error('SYNTHETIC_UNCERTAIN_RETRY'))]}))
+  try{await f.app.settle();await typeRequestReply(f);await sendRequestReply(f);const operation=requestPosts(f)[0].body.operationId
+    await f.click(f.button('Conversations'));assert.equal(f.person('Synthetic private request').props['aria-pressed'],true)
+    pending.reject(Error('SYNTHETIC_UNCERTAIN_SEND'));await f.app.settle();await f.click(f.person('Synthetic private request'))
+    assert.equal(requestInput(f)?.props.value,'Synthetic request reply');await sendRequestReply(f)
+    assert.equal(requestPosts(f).length,2);assert.equal(requestPosts(f)[1].body.operationId,operation);f.assertClean()
+  }finally{f.close()}
+})
+for(const kind of ['crm','business'])test('canonical '+kind+' selected row survives outer Back',()=>run(replyOptions(),async f=>{
+  const name='Synthetic '+(kind==='crm'?'CRM':kind)+' target'
+  await f.click(f.person(name));await f.click(f.button('Conversations'));assert.equal(f.shell().props['data-detail-open'],'false')
+  assert.equal(f.person(name).props['aria-pressed'],true);assert.equal(f.calls.filter(c=>c.method==='POST').length,0)
 }))

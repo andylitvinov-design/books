@@ -6,13 +6,19 @@ import test from 'node:test'
 const require = createRequire(import.meta.url)
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('fifth profile review slide offers exactly one Google continuation, not competing guest buttons', () => {
+test('four-step profile launches guest tests directly; Ready has one optional Google action', () => {
   const source = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  const start = source.indexOf('data-profile-test-review-slide')
-  const end = source.indexOf('      </section>}', start)
-  assert.ok(start > 0 && end > start)
-  const review = source.slice(start, end)
+  const testsStart = source.indexOf('{step === 2 && <section')
+  const readyStart = source.indexOf('{step === 3 && <section')
+  const readyEnd = source.indexOf('      </section>}', readyStart)
+  assert.ok(testsStart > 0 && readyStart > testsStart && readyEnd > readyStart)
+  const testsPanel = source.slice(testsStart, readyStart)
+  const readyPanel = source.slice(readyStart, readyEnd)
+  assert.ok(testsPanel.indexOf('data-profile-recommended-tests') <
+    testsPanel.indexOf('data-profile-start-tests'), 'guest action follows recommended tests')
+  assert.ok(testsPanel.indexOf('data-profile-start-tests') <
+    testsPanel.indexOf('data-profile-additional-tests'), 'extra filters remain below direct CTA')
   for (const term of [
     'data-profile-review-test={test.key}',
     'data-profile-google-cabinet-offer',
@@ -20,19 +26,20 @@ test('fifth profile review slide offers exactly one Google continuation, not com
     'onClick={saveSelectionWithGoogle}',
     't.accountTitle', 't.accountDescription', 't.accountPrivacy',
     'disabled={accountBusy || selectedKeys.length === 0}',
-  ]) assert.ok(review.includes(term), term)
-  assert.equal((review.match(/<button\b/g) || []).length, 1, 'one action only on the final screen')
-  assert.doesNotMatch(review, /data-profile-start-tests|t.guestChoice|t.readyFoot|reviewFoot|<Link\b/)
-  assert.match(source, /step === 3[\s\S]*?data-profile-review-tests/)
-  assert.match(source, /step < 4 && <div className={styles.actions}>/)
-  assert.match(source, /step < 4 && <aside className={styles.privateInfo}>/)
-  assert.doesNotMatch(source, /startTests=|data-profile-start-tests/)
-  for (const stage of ['"Ready"', '"Начало"', '"Inicio"'])
-    assert.ok(source.includes(stage), stage)
-  for (const cta of ['Continue with Google — Free', 'Продолжить через Google — бесплатно', 'Continuar con Google — Gratis'])
+  ]) assert.ok(readyPanel.includes(term), term)
+  assert.equal((readyPanel.match(/<button\b/g) || []).length, 1, 'only Google action on Ready')
+  assert.doesNotMatch(readyPanel, /data-profile-start-tests|t.guestChoice|t.readyFoot|reviewFoot|<Link\b/)
+  assert.match(source, /step < 3 && <div className=\{styles.actions\}>/)
+  assert.match(source, /step < 3 && <aside className=\{styles.privateInfo\}>/)
+  assert.ok(source.includes('makeTestSelectionIntent(selectedKeys)'))
+  assert.ok(source.includes('No guest answers or guest results are imported'))
+  assert.match(source, /encodeURIComponent\(selectedKeys.join\(","\)\)/)
+  for (const cta of ['Take tests', 'Пройти тесты', 'Realizar pruebas',
+    'Continue with Google — Free', 'Продолжить через Google — бесплатно', 'Continuar con Google — Gratis'])
     assert.ok(source.includes(cta), cta)
-  assert.match(css, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/)
-  for (const sel of ['.reviewTests', '.reviewTest', '.reviewNumber', '.accountOfferHeading', '.accountPrivacy', '.googleButton'])
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
+  for (const sel of ['.reviewTests', '.reviewTest', '.reviewNumber', '.accountOfferHeading',
+    '.accountPrivacy', '.googleButton', '.extraFilters'])
     assert.ok(css.includes(sel), sel)
   assert.match(css, /@media \(max-width: 640px\)/)
   assert.match(css, /@media \(max-width: 350px\)/)

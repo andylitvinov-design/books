@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {ArrowLeft, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
+import MessagesContactCard from './messages-contact-card'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -219,6 +220,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const [showFilters,setShowFilters]=useState(false)
   const [showTools,setShowTools]=useState(false)
   const [showQuickReplies,setShowQuickReplies]=useState(false)
+  const [showContactCard,setShowContactCard]=useState(false)
   useEffect(()=>{onOpenChange?.(Boolean(active))},[active,onOpenChange])
   useEffect(()=>{
     if(!showSettings)return
@@ -249,7 +251,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingFollowup.current=null
     activeRef.current=''
     setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('');setCopiedChannel('');setBotCheck(null)
-    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
+    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false);setShowContactCard(false)
     setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
       if(ctrl.signal.aborted)return
@@ -304,7 +306,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingNote.current=null
     pendingFollowup.current=null
     setActive(id);setText('');setNoteText('');setStatus('');setError('')
-    setShowTools(false);setShowQuickReplies(false)
+    setShowTools(false);setShowQuickReplies(false);setShowContactCard(false)
     setThreadLoading(true)
     // Never display messages belonging to the previous client while B is loading.
     setData(previous=>previous?{...previous,messages:[],followups:[],nextMessagesCursor:null}:previous)
@@ -611,7 +613,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         </button>}
       </div>}
       <div className={conversationOnly?styles.detailConversation:styles.conversation}>
-        {!selected?<p className={styles.empty}>{t.select}</p>:<>
+        {!selected?<p className={styles.empty}>{t.select}</p>:showContactCard&&!conversationOnly?
+          <MessagesContactCard key={accountId+':'+selected.id} accountId={accountId} locale={lang}
+            item={{key:'crm:'+selected.id,kind:'crm',id:selected.id,contactId:selected.contactId,
+              name:selected.name,source:names[selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
           {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
             {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
@@ -632,6 +637,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 <option value="archived">{w.archived}</option>
               </select>
             </label>
+            <button type="button" className={styles.profileAction} onClick={()=>setShowContactCard(true)}>
+              {lang==='ru'?'Карточка':lang==='es'?'Ficha':'Client card'}
+            </button>
             {compact&&<button type="button" className={styles.toolsButton}
               aria-expanded={showTools} aria-controls="hh-crm-conversation-tools"
               onClick={()=>setShowTools(value=>!value)}>

@@ -10,11 +10,11 @@ import ts from 'typescript'
 export const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject}}
 export const response=(value,status=200)=>({ok:status>=200&&status<300,status,json:async()=>value})
 export function compose({root,search='',locale='en',fetch,crmThreads=[]}){
-  const instances=new Map(),modules=new Map(),effects=[],trace=[]
+  const instances=new Map(),modules=new Map(),effects=[],trace=[],timers=new Map();let nextTimer=0
   let current=null,dirty=true,tree=null,active=true,nextOperation=0,networkOnline=true,url=new URL('https://synthetic.invalid/'+locale+'/app/messages'+search)
   const networkListeners=new Map()
   function networkListener(type,fn,remove=false){
-    if(!['online','offline'].includes(type))throw Error('Unexpected window event '+type)
+    if(!['online','offline','focus','document:visibilitychange'].includes(type))throw Error('Unexpected window event '+type)
     if(!networkListeners.has(type))networkListeners.set(type,new Set())
     if(remove)networkListeners.get(type).delete(fn);else networkListeners.get(type).add(fn)
   }
@@ -41,14 +41,14 @@ export function compose({root,search='',locale='en',fetch,crmThreads=[]}){
     '@/components/session-photo-uploader':{preparePhoto:()=>{throw Error('Forbidden photo operation')}},
     '@/lib/practitioners/direct-message-policy.mjs':{directMediaSpec:()=>{throw Error('Forbidden media operation')}},
   }
-  const actual=new Set(['messages-hub.jsx','messages-simple-inbox.jsx','direct-message-inbox.jsx'])
+  const actual=new Set(['messages-hub.jsx','messages-simple-inbox.jsx','direct-message-inbox.jsx','messages-contact-card.jsx','practice-request-conversation.jsx'])
   const boundary={
+    './crm-telegram-photo':{default:()=>{throw Error('Forbidden photo renderer')}},
     './crm-messenger':{default:CrmFixture},
     './messages-client-requests':{default:inert('client-requests')},
     './practice-express-reports':{ClientExpressReportNotices:inert('express-notices')},
     './message-avatar':{default:inert('avatar')},
     './messages-avatar':{default:inert('avatar')},
-    './practice-request-conversation':{default:inert('request-conversation')},
     './public-enquiry-contact':{default:inert('public-enquiry')},
     './crm-business-enquiries':{default:inert('business-enquiries')},
   }
@@ -59,12 +59,14 @@ export function compose({root,search='',locale='en',fetch,crmThreads=[]}){
     const context={exports,URL,URLSearchParams,AbortController,console,crypto:{randomUUID:()=> '60000000-0000-4000-8000-'+String(++nextOperation).padStart(12,'0')},
       setTimeout:()=>{throw Error('Unexpected timer')},clearTimeout:()=>{},
       window:{get location(){return url},history:{state:null,replaceState:(_state,_title,path)=>{url=new URL(path,url)}},
-        addEventListener:(type,fn)=>networkListener(type,fn),removeEventListener:(type,fn)=>networkListener(type,fn,true)},
-      document:{getElementById:()=>null},navigator:{get onLine(){return networkOnline},clipboard:{writeText:()=>{throw Error('Unexpected clipboard action')}}},
+        addEventListener:(type,fn)=>networkListener(type,fn),removeEventListener:(type,fn)=>networkListener(type,fn,true),
+        setInterval:(fn,ms)=>{assert.equal(ms,60000);const id=++nextTimer;timers.set(id,fn);return id},clearInterval:id=>timers.delete(id)},
+      document:{getElementById:()=>null,visibilityState:'visible',addEventListener:(type,fn)=>networkListener('document:'+type,fn),removeEventListener:(type,fn)=>networkListener('document:'+type,fn,true)},navigator:{get onLine(){return networkOnline},clipboard:{writeText:()=>{throw Error('Unexpected clipboard action')}}},
       fetch:(...args)=>{if(!active)trace.push('fetch-after-unmount');return fetch(...args)},
       require:key=>{
         // Use the exact pure upstream helper. Host refs remain null in this
         // logical renderer, so native viewport measurement is NOT simulated.
+        if(key==='@/lib/practitioners/conversation-state')return load(resolve(root,'lib/practitioners/conversation-state.js'))
         if(key==='@/lib/app/mobile-inbox-height.mjs')return load(resolve(root,'lib/app/mobile-inbox-height.mjs'))
         if(Object.hasOwn(externals,key))return externals[key]
         if(Object.hasOwn(boundary,key))return boundary[key]
@@ -103,6 +105,7 @@ export function compose({root,search='',locale='en',fetch,crmThreads=[]}){
   render()
   return {settle,get tree(){return tree},get url(){return url},trace,instances,
     setOnline(next){networkOnline=Boolean(next);for(const fn of networkListeners.get(networkOnline?'online':'offline')||[])fn()},
+    intervalCount(){return timers.size},
     networkListenerCount(){return [...networkListeners.values()].reduce((n,set)=>n+set.size,0)},
     rerender(){dirty=true},unmount(){active=false;for(const f of instances.values())cleanup(f);instances.clear()},
     nodes(){const walk=n=>n==null||typeof n!=='object'?[]:Array.isArray(n)?n.flatMap(walk):[n,...walk(n.children)];return walk(tree)},
