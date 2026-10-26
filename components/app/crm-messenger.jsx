@@ -192,7 +192,7 @@ function replyReason(reason,lang){
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId=''}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -221,8 +221,12 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     const result=await fetch(url,{cache:'no-store',credentials:'same-origin',
       headers:{'X-HH-Account-Id':accountId},signal})
     if(!result.ok)throw new Error('UNAVAILABLE')
-    return result.json()
-  },[accountId])
+    const page=await result.json()
+    if(!threadsBefore&&!messagesBefore&&Array.isArray(page.threads))
+      onThreadsLoaded?.({loading:false,error:false,threads:page.threads,
+        partial:Boolean(page.nextThreadsCursor)})
+    return page
+  },[accountId,onThreadsLoaded])
   useEffect(()=>{
     if(!accountId)return
     const ctrl=new AbortController()
@@ -235,9 +239,15 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
       if(!activeRef.current)setData(result)
-    }).catch(e=>{if(e.name!=='AbortError'&&!activeRef.current)setError('unavailable')})
+      if(initialThreadId&&!ctrl.signal.aborted)void selectThread(initialThreadId)
+    }).catch(e=>{
+      if(e.name!=='AbortError'&&!activeRef.current){
+        setError('unavailable')
+        onThreadsLoaded?.({loading:false,error:true,threads:[],partial:false})
+      }
+    })
     return ()=>ctrl.abort()
-  },[accountId,load])
+  },[accountId,load,initialThreadId,onThreadsLoaded])
   async function copyWebhook(channel){
     const url=data?.channels?.find(item=>item.channel===channel)?.callbackUrl
     if(!url)return

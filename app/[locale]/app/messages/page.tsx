@@ -2,6 +2,7 @@ import type {Metadata} from 'next'
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import MessagesHub from '@/components/app/messages-hub'
+import MessagesBottomNavigation from '@/components/app/messages-bottom-navigation'
 import '../[[...path]]/workspace.css'
 import './messages-page.css'
 export const metadata:Metadata={
@@ -21,5 +22,6 @@ export default async function MemberMessages({params}:{params:Promise<{locale:st
       </Link>
     </header>
     <MessagesHub locale={locale}/>
+    <MessagesBottomNavigation locale={locale}/>
   </main>
 }
