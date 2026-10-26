@@ -25,7 +25,7 @@ const COPY={
   en:{
     heading:'Content command center',sub:'Prepare public posts quickly, with a clear review before any manual or connected publishing.',
     quickTitle:'Create one post',quickGuide:'Choose a channel, write the title and caption, then save a draft. No social platform is contacted.',
-    quickStart:'Create draft',quickPosts:'Open saved posts',storagePending:'Checking protected draft storage. Create is disabled until the real Redis write/read check succeeds.',
+    quickStart:'Create draft',quickPosts:'Open saved posts',storagePending:'Draft storage not yet verified. If this persists, open Connections below and retry its Redis check.',refreshStore:'Reload stored drafts',
     storagePassed:'Protected draft storage verified',moreOptions:'Extra options · brand, language, media and calendar',
     advancedHint:'Optional public content only. Changes to an approved post require a fresh review.',
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',manual_done:'Manually marked done · unverified',
@@ -66,7 +66,7 @@ const COPY={
   ru:{
     heading:'Центр управления контентом',sub:'Создавайте публикации быстро и согласовывайте их перед размещением.',
     quickTitle:'Новая публикация',quickGuide:'Выберите площадку, напишите название и текст, затем сохраните черновик. Ничего не отправляется в соцсети.',
-    quickStart:'Создать черновик',quickPosts:'Открыть сохранённые',storagePending:'Проверяем защищённое сохранение. Кнопка активируется после реальной проверки Redis.',
+    quickStart:'Создать черновик',quickPosts:'Открыть сохранённые',storagePending:'Хранилище черновиков ещё не проверено. Если надпись не исчезает, откройте «Подключения» ниже и повторите проверку Redis.',refreshStore:'Обновить черновики',
     storagePassed:'Хранилище черновиков проверено',moreOptions:'Дополнительно · проект, язык, медиа и календарь',
     advancedHint:'Только публичные материалы. После изменения одобренного поста требуется новое согласование.',
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',manual_done:'Отмечено вручную · не проверено',
@@ -360,6 +360,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <div className={styles.quickLaunchActions}>
         <button type="button" className={styles.quickLaunchPrimary} disabled={!ready||!storageVerified||busy}
           onClick={()=>openWorkspace('compose')}><Plus size={17} aria-hidden="true"/>{t.quickStart}</button>
+        {!ready&&<button type="button" className={styles.quickLaunchSecondary}
+          onClick={refresh} disabled={busy}><RefreshCcw size={16} aria-hidden="true"/>{t.refreshStore}</button>}
         {records.length>0&&<button type="button" className={styles.quickLaunchSecondary}
           onClick={()=>openWorkspace('posts')}><FileText size={16} aria-hidden="true"/>{t.quickPosts} · {records.length}</button>}
       </div>
