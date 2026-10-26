@@ -60,6 +60,9 @@ export default async function Clients({ searchParams }) {
     <PrescriptionAdminHeader title={{ en: copy.en.title, ru: copy.ru.title }} description={{ en: copy.en.intro, ru: copy.ru.intro }} />
     {params?.removed === '1' && <p role="status" className="master-clients-success">{locale === 'ru' ? 'Клиент и его данные удалены.' : 'Client and their records were deleted.'}</p>}
     {!store && <p role="alert" className="master-clients-error">{t.storage}</p>}
+    <div className="master-clients-top"><Link className="master-clients-quick-consultation" href={'/'+locale+'/app/practice?panel=clients'} prefetch={false}>
+      {locale==='ru'?'＋ Добавить мастера · пригласить через Google':'＋ Add master · invite via Google'}
+    </Link></div>
     {store && <details className="master-client-create" id="create-client">
       <summary>
         <span className="client-workspace-symbol" aria-hidden="true">✦</span>

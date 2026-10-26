@@ -44,7 +44,8 @@ export default function MessagesHub({locale='en'}){
   const onCrmThreads=useCallback(summary=>setCrmSummary(summary),[])
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
-    setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
+    setTab(params.has('to')||params.has('thread')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
+    if(params.get('source')==='direct'||params.has('thread')||params.has('to'))setSource('direct')
   },[])
   useEffect(()=>{
     const controller=new AbortController()

@@ -68,6 +68,7 @@ import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTi
 
 import { appFetch } from '@/lib/app/client-fetch'
 import { REMOTE_SUPPORT_DRAFT_KEY, readRemoteSupportDraft, formatRemoteSupportDraft, takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
+import { MASTER_INVITE_PENDING_KEY,masterInviteContinuation } from '@/lib/practitioners/master-invite-contract.mjs'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -622,6 +623,13 @@ export default function AppWorkspace({ locale, path = [] }) {
           // unfinished onboarding, or a stale/different account.
           const fresh=await load()
           if(fresh?.account?.onboardingState==='active'&&fresh.account.id===data.account.id){
+            try {
+              const intent=JSON.parse(sessionStorage.getItem(MASTER_INVITE_PENDING_KEY)||'null')
+              if(intent&&masterInviteContinuation(intent,intent.locale)){
+                window.location.replace('/'+intent.locale+'/masters/invite/'+intent.token+'?ready=1')
+                return
+              }
+            } catch { /* Invalid same-tab hint: continue with regular onboarding. */ }
             if(page==='continue') pendingSaveInstallAccountId.current=fresh.account.id
             else setInstallOfferAccountId(fresh.account.id)
           }
