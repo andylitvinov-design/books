@@ -30,7 +30,7 @@ permissions:
   contents: read
 jobs:
   protected-wizard:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       CI: 'true'
@@ -70,7 +70,7 @@ jobs:
         timeout-minutes: 12
         run: |
           npm install --prefix /tmp/hh-free-express-playwright --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
-          /tmp/hh-free-express-playwright/node_modules/.bin/playwright install --with-deps chromium webkit
+          /tmp/hh-free-express-playwright/node_modules/.bin/playwright install chromium webkit
       - name: Synthetic no-provider mobile journey (EN/RU/ES Chromium/WebKit)
         timeout-minutes: 10
         run: |
@@ -89,7 +89,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
   guest-continuation-rls-postgres17:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     services:
       postgres:
