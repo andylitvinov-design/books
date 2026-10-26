@@ -9,7 +9,7 @@ import styles from './direct-message-inbox.module.css'
 const COPY={
   en:{
     title:'Messages',hint:'Private conversations with Holistic House practitioners.',
-    choose:'Choose a conversation',empty:'No conversations yet. Visit a practitioner page to start one.',
+    choose:'Choose a conversation',empty:'No private conversations yet. Telegram enquiries are in the CRM section above.',loading:'Loading conversations…',
     new:'Start a conversation',newWith:'Message',load:'Refresh',send:'Send message',
     composer:'Write a message (optional with an attachment)',attach:'Photo or audio file',
     welcome:'Send photos and audio directly. Only you and the recipient can read these messages.',
@@ -27,7 +27,7 @@ const COPY={
   },
   ru:{
     title:'Сообщения',hint:'Личная переписка с мастерами Holistic House.',
-    choose:'Выберите беседу',empty:'Переписок пока нет. Откройте страницу мастера, чтобы написать.',
+    choose:'Выберите беседу',empty:'Личных переписок пока нет. Заявки Telegram находятся в разделе CRM выше.',loading:'Загружаю переписки…',
     new:'Начать переписку',newWith:'Написать мастеру',load:'Обновить',send:'Отправить сообщение',
     composer:'Сообщение (необязательно, если есть файл)',attach:'Фото или аудиофайл',
     welcome:'Фото и аудио доступны только участникам диалога.',
@@ -45,7 +45,7 @@ const COPY={
   },
   es:{
     title:'Mensajes',hint:'Conversaciones privadas con profesionales de Holistic House.',
-    choose:'Elige una conversación',empty:'Aún no hay conversaciones. Visita el perfil de un profesional.',
+    choose:'Elige una conversación',empty:'Todavía no hay mensajes privados. Las solicitudes de Telegram están en CRM arriba.',loading:'Cargando conversaciones…',
     new:'Iniciar conversación',newWith:'Enviar mensaje',load:'Actualizar',send:'Enviar mensaje',
     composer:'Escribe un mensaje (opcional si adjuntas un archivo)',attach:'Foto o audio',
     welcome:'Las fotos y los audios son privados entre los participantes.',
@@ -220,7 +220,9 @@ export default function DirectMessageInbox({locale='en',embedded=false}){
       <ShieldCheck size={18} aria-hidden="true"/><p>{t.welcome}</p>
       <button type="button" disabled={busy||!accountId} onClick={start}>{t.newWith}: {destination}</button>
     </div>}
-    <div className={styles.layout}>
+    {!accountId&&!signedOut&&!error&&<p className={styles.emptySummary} role="status">{t.loading}</p>}
+    {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>{t.empty}</p>}
+    {accountId&&(threads.length>0||destination)&&<div className={styles.layout}>
       <aside className={styles.conversations} aria-label={t.back}>
         <h2>{t.back}</h2>
         {!threads.length&&<p className={styles.hint}>{t.empty}</p>}
@@ -287,6 +289,6 @@ export default function DirectMessageInbox({locale='en',embedded=false}){
           </form>}
         </>}
       </div>
-    </div>
+    </div>}
   </section>
 }
