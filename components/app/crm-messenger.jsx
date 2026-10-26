@@ -192,7 +192,7 @@ function replyReason(reason,lang){
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',conversationOnly=false}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',conversationOnly=false,onPortraitFound}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -297,6 +297,11 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     try{
       const result=await load(id)
       if(activeRef.current===id){
+        // Only a selected, owner-authorized Telegram portrait may appear as a
+        // sidebar avatar. The private proxy keeps provider file IDs secret.
+        const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+          onPortraitFound?.({threadId:id,messageId:portrait.id})
         setData(previous=>({
           ...result,
           threads:mergeThreadPages(previous?.threads,result.threads),
