@@ -8,10 +8,10 @@ const service=readFileSync(
 const sent=service.match(/async function sendCombinedDocument\([\s\S]*?\n}\nasync function resendSavedCombined/)
 assert.ok(sent,'exact real Telegram binary sender must exist')
 const source=sent[0].replace(/\nasync function resendSavedCombined$/,'')
-const sendCombinedDocument=new Function('TELEGRAM','folderLabel','failure',
+const sendCombinedDocument=new Function('TELEGRAM','folderLabel','failure','OWNER_AUDIO_MATERIALS_URL',
   source+'\nreturn sendCombinedDocument')(
     'https://api.telegram.org/bot',value=>value,
-    code=>{throw new Error(code)})
+    code=>{throw new Error(code)},'https://holistichouse.vercel.app/admin/materials/telegram')
 
 const BYTES=new Uint8Array([79,103,103,83,0,2,3,4,5,6,7,8,9])
 const credentials={token:'FAKE_TOKEN_FOR_LOCAL_TESTS',chat:'123456'}
@@ -31,12 +31,18 @@ test('actual OGG bytes are posted as a Telegram document, not as a URL',async()=
     assert.equal(options.method,'POST')
     assert.equal(options.redirect,'error')
     assert.equal(options.body.get('chat_id'),'123456')
-    assert.match(options.body.get('caption'),/Рейки/)
+    assert.match(options.body.get('caption'),/reiki|Рейки/)
     assert.equal(options.body.get('document').name,'combined-voice.ogg')
     assert.equal(options.body.get('document').type,'audio/ogg')
     const bytes=new Uint8Array(await options.body.get('document').arrayBuffer())
     assert.deepEqual(bytes,BYTES)
     assert.ok(!options.body.has('parse_mode'))
+    assert.deepEqual(JSON.parse(options.body.get('reply_markup')),{
+      inline_keyboard:[[{
+        text:'📁 Мои материалы',
+        url:'https://holistichouse.vercel.app/admin/materials/telegram',
+      }]],
+    })
     return valid()
   }
   const result=await sendCombinedDocument(credentials,BYTES,2,'reiki',fetcher)
@@ -163,7 +169,7 @@ test('finished file is resent from private Storage to Telegram with its selected
   assert.equal(events.binaries[0].parts,2)
   assert.equal(events.binaries[0].folder,'meditations')
   assert.equal(events.binaries[0].data.length,128)
-  assert.match(events.messages.at(-1).text,/отправлен в этот чат Telegram/)
+  assert.equal(events.messages.length,0,'successful binary delivery must be the sole final Telegram message')
 })
 test('stale batch button never downloads or transmits another saved audio',async()=>{
   const id='550e8400-e29b-41d4-a716-446655440000'
