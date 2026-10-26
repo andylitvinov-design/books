@@ -31,7 +31,7 @@ test('slide two shows only measured axes for its focus and clears stale test cho
   assert.match(builder, /const visibleAreas = areasFor\(focuses\);/)
   assert.match(builder, /const activeAreas = areas.filter\(area => visibleAreas.includes\(area\)\);/)
   assert.match(builder, /const selectedAxes = allAxesFor\(activeAreas\)\.filter\(axis => measurableAxes\.has\(axis\)\)/)
-  assert.match(builder, /if \(!visibleAreas.includes\(area\)\) return;/)
+  assert.match(builder, /if \(!visibleAreas.includes\(area\) \|\| !areaAxes\[area\]\.some\(axis => measurableAxes\.has\(axis\)\)\) return;/)
   const stepTwo = builder.split('{step === 1 && <section')[1]?.split('{step === 2 && <section')[0]
   assert.ok(stepTwo, 'topic slide must exist')
   assert.match(stepTwo, /\{visibleAreas\.map\(area =>/)
