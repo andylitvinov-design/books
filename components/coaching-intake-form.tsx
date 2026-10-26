@@ -31,6 +31,10 @@ const copy = {
     moreQuestions: "Add details · {n} optional questions",
     lessQuestions: "Hide optional questions",
     phoneInstead: "Prefer to leave a phone number?",
+    telegramLinked: "Connected to your Telegram request · no contact details needed.",
+    telegramUnavailable: "Telegram session could not be verified. Open this form using the button in the bot, or leave an email/phone.",
+    telegramExpiry: "Telegram session expired. Please reopen the form from your bot or add your contact.",
+    telegramConsent: "Sending will attach your answers to the existing private conversation with Andrey.",
     sendFree: "Free · €0",
     sendShort: "30 min · €50",
     sendFull: "60 min · €100",
@@ -89,6 +93,10 @@ const copy = {
     moreQuestions: "Добавить подробности · ещё {n} вопросов",
     lessQuestions: "Скрыть дополнительные вопросы",
     phoneInstead: "Оставить телефон вместо email",
+    telegramLinked: "Связано с заявкой в Telegram · контакты повторно не нужны.",
+    telegramUnavailable: "Не удалось подтвердить Telegram. Откройте форму кнопкой в боте или оставьте email/телефон.",
+    telegramExpiry: "Сессия Telegram истекла. Откройте форму заново из бота или оставьте контакт.",
+    telegramConsent: "После отправки ответы добавятся в вашу существующую переписку с Андреем.",
     sendFree: "Бесплатно · €0",
     sendShort: "30 мин · €50",
     sendFull: "60 мин · €100",
@@ -147,6 +155,10 @@ const copy = {
     moreQuestions: "Añadir detalles · {n} preguntas opcionales",
     lessQuestions: "Ocultar preguntas opcionales",
     phoneInstead: "¿Prefieres dejar tu teléfono?",
+    telegramLinked: "Conectado con tu solicitud de Telegram. No necesitas dar tus datos otra vez.",
+    telegramUnavailable: "No se pudo verificar Telegram. Abre este formulario con el botón del bot o deja email/teléfono.",
+    telegramExpiry: "La sesión de Telegram caducó. Vuelve a abrir desde el bot o deja un contacto.",
+    telegramConsent: "Al enviar, tus respuestas se añadirán al chat privado existente con Andrey.",
     sendFree: "Gratis · €0",
     sendShort: "30 min · €50",
     sendFull: "60 min · €100",
@@ -246,6 +258,8 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [leadBusy, setLeadBusy] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [leadReceipt, setLeadReceipt] = useState("");
+  const [telegramInitData, setTelegramInitData] = useState<string | null>(null);
+  const [telegramStatus, setTelegramStatus] = useState<"none" | "checking" | "linked" | "unavailable">("none");
   const leadAttempt = useRef<{ id: string; body: string } | null>(null);
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
@@ -288,6 +302,12 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     } catch {
       // The private account remains the source of truth if browser storage is blocked.
     }
+    // A Mini App identity must be verified by the server, never trusted from a URL.
+    // Do not load or overwrite the private Google questionnaire in that flow.
+    if (new URLSearchParams(window.location.hash.slice(1)).has("tgWebAppData")) {
+      setAuth("guest");
+      return () => { active = false; };
+    }
     appFetch("coaching-intake").then((result: Saved) => {
       if (!active) return;
       setSaved(result);
@@ -312,6 +332,31 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     let channel: BroadcastChannel | null = null;
     try { channel = new BroadcastChannel("hh-app-session"); channel.onmessage = onSignOut; } catch { /* unavailable */ }
     return () => { active = false; channel?.close(); };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const telegramData = new URLSearchParams(window.location.hash.slice(1)).get("tgWebAppData");
+    if (!telegramData) return;
+    // Keep the signed payload out of the address bar, history, previews and analytics.
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    setTelegramStatus("checking");
+    void fetch("/api/coaching-diagnostic/telegram", {
+      method: "POST", credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "context", initData: telegramData }),
+    }).then(async response => response.ok ? response.json() : null)
+      .then(result => {
+        if (!active) return;
+        if (result?.linked === true) {
+          setTelegramInitData(telegramData);
+          setTelegramStatus("linked");
+          if (COACHING_TOPICS.some(item => item.id === result.topic)) {
+            setDraft(previous => hasSomeAnswers(previous) ? previous : { ...previous, topic: result.topic });
+          }
+        } else setTelegramStatus("unavailable");
+      }).catch(() => { if (active) setTelegramStatus("unavailable"); });
+    return () => { active = false; };
   }, []);
 
   function edit(next: (draft: Draft) => Draft) {
@@ -372,22 +417,25 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   }
   async function submitDiagnostic() {
     if (leadBusy || leadReceipt || busy || collision) return;
-    if (missing || !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())) {
+    const fromTelegram = telegramStatus === "linked" && Boolean(telegramInitData);
+    if (missing || (!fromTelegram && (!sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())))) {
       setLeadError(t.sendError); return;
     }
     setLeadBusy(true); setLeadError("");
     try {
       if (!leadAttempt.current) {
         const id = window.crypto.randomUUID();
-        leadAttempt.current = { id, body: JSON.stringify({
+        const intake = {
           operationId: id, locale, offer: offerChoice,
           topic: draft.topic, name: draft.name, city: draft.city,
           answers: draft.answers, questions: draft.questions,
-          contact: { displayName: draft.name, email: replyContact.email.trim(), phone: replyContact.phone.trim() },
-          contactConsent: true, website: "",
-        }) };
+        };
+        leadAttempt.current = { id, body: JSON.stringify(fromTelegram
+          ? { action: "submit", initData: telegramInitData, questionnaire: { ...intake, confirmed: true } }
+          : { ...intake, contact: { displayName: draft.name, email: replyContact.email.trim(), phone: replyContact.phone.trim() },
+              contactConsent: true, website: "" }) };
       }
-      const response = await fetch("/api/coaching-diagnostic", {
+      const response = await fetch(fromTelegram ? "/api/coaching-diagnostic/telegram" : "/api/coaching-diagnostic", {
         method: "POST", credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: leadAttempt.current.body,
@@ -396,6 +444,12 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       if (!response.ok || result?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
         // A rejected payload was never saved, so edits must get a fresh idempotency key.
         if (response.status === 400) leadAttempt.current = null;
+        if (fromTelegram && (response.status === 401 || response.status === 404)) {
+          setTelegramInitData(null); setTelegramStatus("unavailable");
+          leadAttempt.current = null;
+          setLeadError(t.telegramExpiry);
+          return;
+        }
         throw new Error("COACHING_ENQUIRY_NOT_CONFIRMED");
       }
       setLeadReceipt(result.referenceCode);
@@ -517,7 +571,12 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       <div className={styles.requestBox} data-coaching-request>
         <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
         <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
-        <p className={styles.requestLead}>{t.sendLead}</p>
+        <p className={styles.requestLead}>{telegramStatus === "linked" ? t.telegramConsent : t.sendLead}</p>
+        {telegramStatus === "linked"
+          ? <p className={styles.telegramStatus} role="status"><Check size={15} aria-hidden="true" />{t.telegramLinked}</p>
+          : telegramStatus === "unavailable"
+            ? <p className={styles.telegramWarning} role="status">{t.telegramUnavailable}</p>
+            : null}
         {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
           <Check size={18} aria-hidden="true" /><div><strong>{t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
           {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
@@ -534,23 +593,23 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
               </label>)}
             </div>
           </fieldset>
-          <div className={styles.replyFields}>
+          {telegramStatus !== "linked" ? <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
               onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
             {(showPhone || replyContact.phone) ? <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
               disabled={leadBusy || busy || collision} value={replyContact.phone}
               onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label> : null}
-          </div>
-          {!showPhone && !replyContact.phone ? <button type="button" className={styles.phoneToggle} onClick={() => setShowPhone(true)}>{t.phoneInstead}</button> : null}
-          <label className={styles.sendConsent}>
+          </div> : null}
+          {telegramStatus !== "linked" && !showPhone && !replyContact.phone ? <button type="button" className={styles.phoneToggle} onClick={() => setShowPhone(true)}>{t.phoneInstead}</button> : null}
+          {telegramStatus !== "linked" ? <label className={styles.sendConsent}>
             <input type="checkbox" checked={sendConsent} disabled={leadBusy || busy || collision}
               onChange={event => setSendConsent(event.target.checked)} />
             <span>{t.sendConsent}</span>
-          </label>
+          </label> : null}
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
           <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
-            !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())} onClick={() => void submitDiagnostic()}>
+            (telegramStatus !== "linked" && (!sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())))} onClick={() => void submitDiagnostic()}>
             {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
           </button>
           <p className={styles.requestFootnote}>{t.sendNext}</p>
