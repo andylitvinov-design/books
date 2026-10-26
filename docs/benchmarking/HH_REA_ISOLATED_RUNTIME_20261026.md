@@ -14,7 +14,18 @@
 - **Critical disk blocker:** other builds consumed nearly all Mac space: observed free space fell from ~8 GiB to 121 MiB, with multiple unrelated npm builds still running. To protect active user work, **only our own** portable Node runtime (187 MiB) and REA package installation (156 MiB) were deleted. The experimental profile's configuration, evidence JSON, and launcher metadata remain under `$HOME/.local/share/holistic-house-research/rea-6.8.0`, but cannot launch until the binaries are restored. Global Node and site files were unchanged. Final measured free space after cleanup ~513 MiB, which remains **critical**.
 - **GitHub Actions:** isolated REA workflow [run #40332102358](https://github.com/andylitvinov-design/books/actions/runs/40332102358) returned **SUCCESS**. The CI probe deliberately expects an unregistered temporary Codex profile; its `doctor` exit 1/registration `config_drift` is not a successful active MCP registration and must never be labelled healthy. Later Mac tests above performed separate registration and verified actual MCP readiness.
 
-**Restore gate:** free **at least 5 GiB** on Mac and let concurrent builds finish before restoring the disposable binaries. Do not delete arbitrary caches, other worktrees, user files, or alter the site's global Node just to enable REA. The preserved experimental config uses an absolute portable Node/REA path, and restoring the package at the same location should restore the verified MCP profile. Re-run `doctor`, MCP stdio `tools/list`, and Codex registration checks. No code from competitors was analyzed.
+**Restore gate:** free **at least 5 GiB** on Mac and let concurrent builds finish before restoring the disposable binaries.
+
+**Restoration implementation:** `scripts/benchmarking/rea-mac-restore.sh` is a fail-closed one-shot Mac restore script (separate from the disposable CI probe). It demands the existing audited experimental Codex profile and exact absolute binary paths; macOS arm64, >=5 GiB free **and no active npm/Next/Turbo builds**, before any network access. It verifies official Node 22.23.4 arm64 SHA256 and REA 6.8.0 tarball SHA512, installs with `--ignore-scripts --omit=optional` only in its private staging directory, and rechecks disk/build processes before committing into the previously registered research profile. It **never** writes `~/.codex` or site dependencies and requires an actual healthy scoped REA doctor and stdio MCP catalogue (229/229 tools, 6/6 prompts) before announcing success. `--check` makes no changes; use `--restore` only after the space/build gate passes. On Mac a validated, project-independent copy of this script is under `$HOME/.local/share/holistic-house-research/rea-6.8.0/rea-mac-restore.sh` (do not confuse a ready script with restored REA binaries). The latest read-only Mac preflight reported ~3.1 GiB available and an unrelated `npm run build` active: **restore was not run**.
+
+To run in the authorized macOS terminal once disk and builds are safe:
+
+```bash
+"$HOME/.local/share/holistic-house-research/rea-6.8.0/rea-mac-restore.sh" --check
+"$HOME/.local/share/holistic-house-research/rea-6.8.0/rea-mac-restore.sh" --restore
+```
+
+The experimental Codex profile can then be launched through its separate `run-codex-with-rea.sh` wrapper. Model use requires a separate Codex login to that profile; authenticating is not automatically performed by the restore script. Do not delete arbitrary caches, other worktrees, user files, or alter the site's global Node just to enable REA. The preserved experimental config uses an absolute portable Node/REA path, and restoring the package at the same location should restore the verified MCP profile. Re-run `doctor`, MCP stdio `tools/list`, and Codex registration checks. No code from competitors was analyzed.
 
 ## Root cause and exact fix
 
