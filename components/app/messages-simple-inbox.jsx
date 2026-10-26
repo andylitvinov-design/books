@@ -113,14 +113,14 @@ export default function MessagesSimpleInbox({
     const incoming=requests.filter(item=>validId(item.id)).map(item=>({
       key:'request:'+item.id,kind:'request',id:item.id,item,
       name:nameOf(item.contact,t.website),source:t.website,
-      unread:Number(item.newMessageCount)|| (item.needsReply?1:0),
+      unread:Number(item.newMessageCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastConversationAt||item.createdAt,
       preview:(item.message||'').trim().slice(0,90)||t.website,
     }))
     const business=businessEnquiries.filter(item=>validId(item.id)).map(item=>({
       key:'business:'+item.id,kind:'business',id:item.id,item,
       name:item.name||t.business,source:t.business,
-      unread:item.status==='new'?1:0,needsReply:['new','contacted'].includes(item.status),
+      unread:0,needsReply:['new','contacted'].includes(item.status),
       at:item.createdAt,preview:(item.question||'').trim().slice(0,90)||t.business,
     }))
     return [...crm,...portal,...incoming,...business].sort((a,b)=>
@@ -178,7 +178,8 @@ export default function MessagesSimpleInbox({
               <span className={styles.preview}>{row.preview||row.source}</span>
               <small>{row.source}</small>
             </span>
-            {row.unread>0&&<span className={styles.unread} aria-label={String(row.unread)}>{row.unread}</span>}
+            {row.unread>0?<span className={styles.unread} aria-label={String(row.unread)}>{row.unread}</span>:
+              row.needsReply?<span className={styles.needsReplyDot} aria-label={t.waiting}/>:null}
           </button>)}
           {crmState.partial&&<a className={styles.history}
             href={'/'+locale+'/app/practice?panel=crm&crmTab=messages'}>{t.more}</a>}
