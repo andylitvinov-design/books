@@ -53,6 +53,7 @@ function mount(mode, locale) {
       profileServiceOffer: () => { throw new Error('Service rendering is outside this state regression') },
     },
     './profile-domains.css': {}, './profile-refresh.css': {},
+    './free-express-my-requests': { default: () => 'private-express-requests' },
   }
   const runtime = { exports: {}, require: key => {
     assert.ok(Object.hasOwn(modules, key), 'Unexpected import: ' + key)
