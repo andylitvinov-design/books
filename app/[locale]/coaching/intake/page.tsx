@@ -9,9 +9,10 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "../coaching-page.module.css";
 
-type Props = { params: Promise<{ locale: string }> };
+type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> };
 const copy = {
   en: {
+    invalidPrivateReturn: "This private-copy link is invalid. No questionnaire can be sent from this page.",
     title: "My coaching questionnaire — Holistic House",
     description: "A private, one-page coaching questionnaire to clarify your request, desired outcome and questions for a coach.",
     back: "All coaching sessions", intro: "PERSONAL COACHING · ONE PAGE", hero: "Begin with a question that matters to you.",
@@ -20,6 +21,7 @@ const copy = {
     privacy: "A draft is not a booking or a message to a coach.",
   },
   ru: {
+    invalidPrivateReturn: "Некорректная ссылка на приватную копию. Отправка анкеты с этой страницы недоступна.",
     title: "Моя коучинг-анкета — Holistic House",
     description: "Приватная коучинг-анкета на одной странице: ваш запрос, цель, ресурсы и вопросы коучу.",
     back: "Все коуч-сессии", intro: "ЛИЧНЫЙ КОУЧИНГ · ОДНА СТРАНИЦА", hero: "Начните с вопроса, который действительно важен.",
@@ -28,6 +30,7 @@ const copy = {
     privacy: "Черновик не является записью на сессию или сообщением коучу.",
   },
   es: {
+    invalidPrivateReturn: "Este enlace de copia privada no es válido. No se puede enviar un formulario desde esta página.",
     title: "Mi formulario de coaching — Holistic House",
     description: "Un formulario privado de coaching en una página para explorar tu consulta, tus metas y tus preguntas.",
     back: "Todas las sesiones", intro: "COACHING PERSONAL · UNA PÁGINA", hero: "Empieza con una pregunta importante para ti.",
@@ -57,10 +60,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     referrer: "no-referrer",
   };
 }
-export default async function CoachingPage({ params }: Props) {
+export default async function CoachingPage({ params, searchParams }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
+  const query = await searchParams;
+  const privateValue = query?.private;
+  const privateCopyMode = privateValue === "1";
+  // Repeated/unknown values fail closed, without reading identity from the URL.
+  const invalidPrivateReturn = privateValue !== undefined && !privateCopyMode;
   return <div className={styles.page} lang={locale}>
     <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
     <main className={styles.shell}>
@@ -78,7 +86,8 @@ export default async function CoachingPage({ params }: Props) {
           <Image src="/images/holistic-house/course-start-heron.webp" alt={t.artAlt} fill priority sizes="(max-width: 680px) 100vw, 35vw" />
         </div>
       </section>
-      <CoachingIntakeForm locale={locale} />
+      {invalidPrivateReturn ? <p role="alert" data-coaching-invalid-private-return>{t.invalidPrivateReturn}</p>
+        : <CoachingIntakeForm locale={locale} privateCopyMode={privateCopyMode} />}
     </main>
   </div>;
 }

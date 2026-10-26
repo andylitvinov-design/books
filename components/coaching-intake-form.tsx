@@ -23,6 +23,7 @@ const blank = (): Draft => ({ topic: "personal", name: "", city: "", answers: {}
 
 const copy = {
   en: {
+    privateCopyOnly: "Private copy only. This page does not send your questionnaire or confirm an earlier delivery.",
     sendEyebrow: "FINAL STEP · SEND YOUR REQUEST",
     sendTitle: "Send your questionnaire",
     sendPaidTitle: "Request a personal coaching session",
@@ -91,6 +92,7 @@ const copy = {
     privacy: "Your draft is visible only to you until you deliberately copy or share it. Do not include medical emergencies here; seek qualified urgent help instead.",
   },
   ru: {
+    privateCopyOnly: "Только приватная копия. Эта страница не отправляет анкету и не подтверждает предыдущую доставку.",
     sendEyebrow: "ЗАВЕРШЕНИЕ · ОТПРАВКА ЗАЯВКИ",
     sendTitle: "Отправить анкету",
     sendPaidTitle: "Записаться на личную коучинговую сессию",
@@ -159,6 +161,7 @@ const copy = {
     privacy: "Черновик видите только вы, пока сами не решите им поделиться. При неотложных состояниях обращайтесь за квалифицированной помощью.",
   },
   es: {
+    privateCopyOnly: "Solo una copia privada. Esta página no envía el formulario ni confirma una entrega anterior.",
     sendEyebrow: "ÚLTIMO PASO · ENVÍA TU SOLICITUD",
     sendTitle: "Enviar tu cuestionario",
     sendPaidTitle: "Solicitar una sesión personal de coaching",
@@ -256,8 +259,12 @@ function formatAnswers(draft: Draft, locale: PublicLocale) {
   return lines.join("\n");
 }
 
-export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
+export function CoachingIntakeForm({ locale, privateCopyMode = false }: { locale: PublicLocale; privateCopyMode?: boolean }) {
   const t = copy[locale];
+  // This return mode only restricts CRM sending; it is never proof of delivery or identity.
+  const privateCopyOnly = useRef(privateCopyMode);
+  privateCopyOnly.current = privateCopyOnly.current || privateCopyMode;
+  const privateOnly = privateCopyOnly.current;
   const [draft, setDraft] = useState<Draft>(blank);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [auth, setAuth] = useState<"checking" | "guest" | "signed" | "error">("checking");
@@ -287,9 +294,9 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const leadUncertain = useRef(false);
   const leadSending = useRef(false);
   const [leadLocked, setLeadLocked] = useState(false);
-  const requestFromTelegram = leadAttempt.current
+  const requestFromTelegram = !privateOnly && (leadAttempt.current
     ? leadAttempt.current.endpoint === "/api/coaching-diagnostic/telegram"
-    : telegramStatus === "linked";
+    : telegramStatus === "linked");
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
@@ -334,7 +341,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     }
     // A Mini App identity must be verified by the server, never trusted from a URL.
     // Do not load or overwrite the private Google questionnaire in that flow.
-    if (new URLSearchParams(window.location.hash.slice(1)).has("tgWebAppData")) {
+    if (!privateCopyOnly.current && new URLSearchParams(window.location.hash.slice(1)).has("tgWebAppData")) {
       setAuth("guest");
       return () => { active = false; };
     }
@@ -373,10 +380,13 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
 
   useEffect(() => {
     let active = true;
-    const telegramData = new URLSearchParams(window.location.hash.slice(1)).get("tgWebAppData");
-    if (!telegramData) return;
-    // Keep the signed payload out of the address bar, history, previews and analytics.
+    const telegramParams = new URLSearchParams(window.location.hash.slice(1));
+    if (!telegramParams.has("tgWebAppData")) return;
+    // Scrub signed data even when this page only permits a private copy.
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (privateCopyOnly.current) return;
+    const telegramData = telegramParams.get("tgWebAppData");
+    if (!telegramData) return;
     setTelegramStatus("checking");
     void fetch("/api/coaching-diagnostic/telegram", {
       method: "POST", credentials: "same-origin",
@@ -384,7 +394,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       body: JSON.stringify({ action: "context", initData: telegramData }),
     }).then(async response => response.ok ? response.json() : null)
       .then(result => {
-        if (!active) return;
+        if (!active || privateCopyOnly.current) return;
         if (result?.linked === true) {
           setTelegramInitData(telegramData);
           setTelegramStatus("linked");
@@ -392,7 +402,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
             setDraft(previous => hasSomeAnswers(previous) ? previous : { ...previous, topic: result.topic });
           }
         } else setTelegramStatus("unavailable");
-      }).catch(() => { if (active) setTelegramStatus("unavailable"); });
+      }).catch(() => { if (active && !privateCopyOnly.current) setTelegramStatus("unavailable"); });
     return () => { active = false; };
   }, []);
 
@@ -461,7 +471,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     } catch { if (!sessionChanged()) setError(t.deleteError); } finally { if (!sessionChanged()) setBusy(false); }
   }
   async function submitDiagnostic() {
-    if (sessionChanged() || leadBusy || leadSending.current || leadReceipt || busy || collision) return;
+    if (privateCopyOnly.current || sessionChanged() || leadBusy || leadSending.current || leadReceipt || busy || collision) return;
     if (!leadAttempt.current) {
       if (telegramStatus === "checking") { setLeadError(t.sendChecking); return; }
       const fromTelegram = telegramStatus === "linked" && Boolean(telegramInitData);
@@ -645,7 +655,8 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     </section>)}
 
     <section className={styles.finish} aria-label={locale === "ru" ? "Сохранение анкеты" : locale === "es" ? "Guardar formulario" : "Save questionnaire"}>
-      <div className={styles.requestBox} data-coaching-request>
+      {privateOnly ? <p className={styles.requestFootnote} data-coaching-private-copy role="status">{t.privateCopyOnly}</p>
+        : <div className={styles.requestBox} data-coaching-request>
         <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
         <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
         <p className={styles.requestLead}>{requestFromTelegram ? t.telegramConsent : t.sendLead}</p>
@@ -692,7 +703,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           </button>
           <p className={styles.requestFootnote}>{t.sendNext}</p>
         </>}
-      </div>
+      </div>}
       {!requestFromTelegram ? <>
       <p className={styles.requestEyebrow}>{t.saveOptional}</p>
       <div className={styles.saveStatus}><ShieldCheck size={19} aria-hidden="true" />{dirty ? t.dirty : saved?.intake ? t.upToDate : t.unsaved}</div>

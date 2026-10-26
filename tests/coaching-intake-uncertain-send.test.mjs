@@ -7,8 +7,9 @@ import ts from 'typescript'
 // Execute the actual component and its rendered callbacks, with a closed fake
 // hook/JSX runtime. Tests explicitly opt into the actual first mount effect,
 // using deferred in-memory account replies/storage/BroadcastChannel only.
-// No app, auth, provider or database module is loaded; second/context effect is
-// not executed. All requests and interactions remain synthetic fixtures.
+// No app, auth, provider or database module is loaded. A private-return case
+// also executes the actual context effect through its fragment-scrub/skip branch.
+// All requests and interactions remain synthetic fixtures.
 const source = readFileSync(new URL('../components/coaching-intake-form.tsx', import.meta.url), 'utf8')
 const ast = ts.createSourceFile('coaching-intake-form.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 assert.equal(ast.parseDiagnostics.length, 0)
@@ -57,7 +58,7 @@ const renderedText = node => Array.isArray(node) ? node.map(renderedText).join('
   : typeof node === 'string' || typeof node === 'number' ? String(node) : renderedText(node?.props?.children || [])
 function runtime(outcomes = [], initial = {}, config = {}) {
   const state = {}, ref = {}, requests = [], effects = [], forbidden = []
-  let stateIndex = 0, refIndex = 0, uuid = 0, locale = initial.locale || 'en'
+  let stateIndex = 0, refIndex = 0, uuid = 0, locale = initial.locale || 'en', privateCopyMode = config.privateCopyMode === true
   const hooks = {
     useState(value) { const name = states[stateIndex++]; if (!(name in state)) state[name] = typeof value === 'function' ? value() : value
       return [state[name], next => { state[name] = typeof next === 'function' ? next(state[name]) : next }] },
@@ -82,8 +83,9 @@ function runtime(outcomes = [], initial = {}, config = {}) {
   const context = { exports: {}, require: name => { assert.ok(name in modules, 'unexpected import ' + name); return modules[name] },
     window: { crypto: { randomUUID: () => '00000000-0000-4000-8000-' + String(++uuid).padStart(12, '0') },
       confirm: () => { if (config.confirm) return config.confirm(); forbidden.push('confirm'); throw Error('confirm must not execute') },
-      location: { hash: '', search: '', assign: () => { forbidden.push('navigate'); throw Error('navigation must not execute') } } },
-    sessionStorage: { removeItem: () => {}, getItem: () => null, setItem: (...args) => { forbidden.push(['storage', ...args]) } },
+      location: { pathname: '/en/coaching/intake', hash: config.hash || '', search: config.search || '', assign: url => { if (config.navigate) return config.navigate(url); forbidden.push('navigate'); throw Error('navigation must not execute') } },
+      history: { replaceState: (...args) => { forbidden.push(['history', ...args]) } } },
+    sessionStorage: config.storage || { removeItem: () => {}, getItem: () => null, setItem: (...args) => { forbidden.push(['storage', ...args]) } },
     navigator: { clipboard: { writeText: async value => { forbidden.push(['clipboard', value]) } } },
     URLSearchParams, BroadcastChannel: class { constructor() { config.channel = this } close() {} },
     fetch: async (url, options) => {
@@ -100,9 +102,10 @@ function runtime(outcomes = [], initial = {}, config = {}) {
   function render(change = {}) {
     Object.assign(state, change)
     if (change.locale) locale = change.locale
+    if ('privateCopyMode' in change) privateCopyMode = change.privateCopyMode
     const count = requests.length
     stateIndex = 0; refIndex = 0
-    const tree = context.exports.CoachingIntakeForm({ locale })
+    const tree = context.exports.CoachingIntakeForm({ locale, privateCopyMode })
     assert.equal(stateIndex, states.length); assert.equal(refIndex, refs.length)
     assert.equal(requests.length, count, 'render never auto-sends')
     return tree
@@ -456,4 +459,157 @@ test('confirmed receipt stays tied to the earlier session and is hidden after ac
     assert.strictEqual(r.ref.leadAttempt.current, attempt)
     assert.equal(r.requests.length, 1)
   }
+})
+
+const oauthKey = 'hh-coaching-intake-oauth-v1'
+function storageFixture(value, blocked = false) {
+  const entries = new Map(value === undefined ? [] : [[oauthKey, JSON.stringify(value)]])
+  return { entries, getItem(key) { if (blocked) throw Error('synthetic blocked storage'); return entries.get(key) || null },
+    removeItem(key) { if (blocked) throw Error('synthetic blocked storage'); entries.delete(key) },
+    setItem(key, value) { if (blocked) throw Error('synthetic blocked storage'); entries.set(key, value) } }
+}
+
+test('private return stays no-send with absent, blocked, expired or forged staging and across reload', async () => {
+  for (const locale of locales) for (const kind of ['absent', 'blocked', 'expired', 'forged']) {
+    const storage = storageFixture(kind === 'expired' || kind === 'forged' ? {
+      version: 'synthetic', expires: kind === 'expired' ? 1 : Date.now() + 60000, draft: draft(),
+      privateMode: false, receipt: 'HH-FFFFFFFFFFFF', operationId: 'forged-operation', endpoint: telegramPath,
+    } : undefined, kind === 'blocked')
+    for (let mount = 0; mount < 2; mount++) {
+      const config = { privateCopyMode: true, storage, appFetch: async () => { throw { status: 401 } } }
+      const r = runtime([], { locale, auth: 'checking', draft: { ...draft(), answers: {} },
+        replyContact: { email: '', phone: '' } }, config)
+      const beforeEffect = r.render()
+      assert.equal(byClass(beforeEffect, 'requestBox').length, 0, 'no initial send-box flash')
+      r.effects[0](); await settle()
+      const tree = r.render()
+      assert.equal(byClass(tree, 'sendButton').length, 0, kind + ' staging cannot reopen CRM')
+      assert.equal(r.state.leadReceipt, '', 'restored data is never server proof')
+      if (kind !== 'forged' || mount > 0) assert.equal(r.state.draft.answers.request || '', '', 'missing/expired/consumed staging restores no old draft')
+      assert.equal(r.state.auth, 'guest', 'URL/storage do not authenticate')
+      assert.equal(r.state.consent, false, 'URL/storage do not grant private-save consent')
+      assert.equal(r.ref.leadAttempt.current, null)
+      assert.equal(r.requests.length, 0)
+      assert.ok(!renderedText(tree).includes('HH-FFFFFFFFFFFF'))
+    }
+  }
+})
+
+test('private return blocks captured public callbacks and cannot reopen send within the same mount', async () => {
+  const r = runtime([reply()])
+  const captured = byClass(r.render(), 'sendButton')[0]
+  assert.ok(captured)
+  assert.equal(byClass(r.render({ privateCopyMode: true }), 'sendButton').length, 0)
+  captured.props.onClick(); await settle()
+  assert.equal(r.requests.length, 0, 'ref guards the previously captured public callback')
+  assert.equal(byClass(r.render({ privateCopyMode: false }), 'sendButton').length, 0, 'restriction is monotonic in this mount')
+  captured.props.onClick(); await settle()
+  assert.equal(r.requests.length, 0)
+  const freshPublicVisit = runtime([reply()])
+  await freshPublicVisit.click()
+  assert.equal(freshPublicVisit.requests.length, 1, 'a separate ordinary public visit is unchanged')
+})
+
+test('switching an uncertain mounted request to private mode keeps dedupe identity and blocks stale retry', async () => {
+  const r = runtime([lost, reply()])
+  await r.click()
+  const frozen = r.ref.leadAttempt.current
+  const retry = byClass(r.render(), 'sendButton')[0]
+  r.render({ privateCopyMode: true })
+  retry.props.onClick(); await settle()
+  assert.strictEqual(r.ref.leadAttempt.current, frozen)
+  assert.equal(r.requests.length, 1)
+  assert.equal(r.state.leadLocked, true)
+  assert.equal(byClass(r.render(), 'saveDraft')[0].props.disabled, true)
+})
+
+test('private-copy mode does not consume Telegram identity or run Telegram context requests', async () => {
+  const reads = []
+  const config = { privateCopyMode: true, hash: '#tgWebAppData=synthetic-not-a-session',
+    appFetch: async (...args) => { reads.push(args); throw { status: 401 } } }
+  const r = runtime([], { auth: 'checking' }, config)
+  r.render(); r.effects[0](); r.effects[1](); await settle()
+  assert.equal(reads.length, 1)
+  assert.equal(reads[0][0], 'coaching-intake', 'only existing authenticated private read is attempted')
+  assert.equal(r.state.auth, 'guest')
+  assert.equal(r.state.telegramStatus, 'none')
+  assert.equal(r.state.telegramInitData, null)
+  assert.equal(r.requests.length, 0)
+  assert.equal(r.forbidden.length, 1, 'only fragment scrubbing, not identity use')
+  assert.equal(r.forbidden[0][0], 'history')
+  assert.equal(r.forbidden[0][3], '/en/coaching/intake')
+})
+
+test('explicit guest private-copy return needs real account response and consent before private save', async () => {
+  const calls = []
+  const account = { accountId: 'synthetic-authorized-account', revision: 0, intake: null }
+  const config = { privateCopyMode: true,
+    storage: storageFixture({ version: 'synthetic', expires: Date.now() + 60000, draft: draft() }),
+    appFetch: async (...args) => { calls.push(args); return args[1] ? { ...account, revision: 1, intake: draft() } : account } }
+  const r = runtime([], { auth: 'checking' }, config)
+  r.render(); r.effects[0](); await settle()
+  assert.equal(r.state.auth, 'signed')
+  assert.equal(r.state.consent, false)
+  byClass(r.render(), 'saveDraft')[0].props.onClick(); await settle()
+  assert.equal(calls.length, 1, 'no implicit consent or autosave')
+  byClass(r.render({ consent: true }), 'saveDraft')[0].props.onClick(); await settle()
+  assert.equal(calls.length, 2)
+  assert.equal(calls[1][0], 'coaching-intake')
+  assert.equal(calls[1][1].consent, true)
+  assert.equal(calls[1][2], 'POST')
+  assert.equal(calls[1][3].accountId, account.accountId)
+  assert.equal(r.requests.length, 0, 'private copy never creates a CRM send')
+  assert.equal(r.state.leadReceipt, '')
+})
+
+test('private-copy return preserves existing saved-draft collision and signout isolation', async () => {
+  let finishSave
+  const account = { accountId: 'synthetic-account-a', revision: 4,
+    intake: { ...draft(), answers: { request: 'Synthetic saved account draft' } } }
+  const config = { privateCopyMode: true,
+    storage: storageFixture({ version: 'synthetic', expires: Date.now() + 60000, draft: draft() }),
+    appFetch: async (_path, input) => input ? new Promise(resolve => { finishSave = resolve }) : account }
+  const r = runtime([], { auth: 'checking' }, config)
+  r.render(); r.effects[0](); await settle()
+  assert.equal(r.state.collision, true, 'account draft is not silently overwritten')
+  const conflict = byClass(r.render(), 'conflict')[0]
+  nodes(conflict, node => node.type === 'button')[1].props.onClick()
+  assert.equal(r.state.collision, false)
+  byClass(r.render({ consent: true }), 'saveDraft')[0].props.onClick()
+  config.channel.onmessage({ data: 'signed-out' })
+  finishSave({ ...account, revision: 5, intake: draft() }); await settle()
+  assert.equal(r.state.auth, 'guest')
+  assert.equal(r.state.saved, null)
+  assert.equal(r.state.consent, false)
+  assert.equal(r.state.draft.answers.request || '', '')
+  assert.equal(byClass(r.render(), 'sendButton').length, 0)
+  assert.equal(r.requests.length, 0)
+})
+
+test('private login staging has no added receipt, operation ID, endpoint or send payload fields', async () => {
+  const storage = storageFixture(), navigations = [], calls = []
+  const config = { privateCopyMode: true, storage, navigate: url => navigations.push(url),
+    appFetch: async (...args) => { calls.push(args); return { redirectUrl: 'https://synthetic-auth.invalid/authorize' } } }
+  const r = runtime([], {}, config)
+  byClass(r.render(), 'saveDraft')[0].props.onClick(); await settle()
+  assert.equal(calls[0][0], 'auth/start')
+  assert.equal(calls[0][1].continueTo, 'coaching-intake')
+  const staged = JSON.parse(storage.entries.get(oauthKey))
+  assert.deepEqual(Object.keys(staged).sort(), ['draft', 'expires', 'version'])
+  assert.ok(staged.expires > Date.now() && staged.expires <= Date.now() + 15 * 60 * 1000)
+  assert.equal(navigations.length, 1, 'synthetic navigation only')
+  assert.equal(r.requests.length, 0)
+})
+
+
+test('private transition out of linked Telegram still permits deliberate private login', async () => {
+  const r = runtime([], linked)
+  r.render()
+  const tree = r.render({ privateCopyMode: true })
+  assert.equal(byClass(tree, 'sendButton').length, 0)
+  const login = byClass(tree, 'saveDraft')[0]
+  assert.ok(login)
+  login.props.onClick(); await settle()
+  assert.equal(r.forbidden[0][0], 'auth/start')
+  assert.equal(r.requests.length, 0)
 })

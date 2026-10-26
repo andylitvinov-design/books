@@ -245,7 +245,7 @@ async function handle(request, { params }) {
               : continueTo === 'coaching'
                 ? `${origin}/${locale}/app/coaching${coachingMode ? '/'+coachingMode : ''}${coachingLang==='es'?'?lang=es':''}`
               : continueTo === 'coaching-intake'
-                ? `${origin}/${locale}/coaching/intake`
+                ? `${origin}/${locale}/coaching/intake?private=1`
               : continueTo === 'cabinet'
                 ? `${origin}/${locale}/app/portrait`
                 : continueTo === 'my-practice'
