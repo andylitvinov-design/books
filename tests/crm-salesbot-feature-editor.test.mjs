@@ -107,8 +107,9 @@ test('delete only exact one-incoming linear step; never strip a shared target', 
   assert.throws(() => removeSalesbotLinearStep(added.flow, 'start'), /INVALID_SALESBOT_EDITOR_DELETE/)
   assert.throws(() => removeSalesbotLinearStep(SALESBOT_TEMPLATES[0], 'done'),
     /INVALID_SALESBOT_EDITOR_DELETE/)
-  assert.throws(() => removeSalesbotLinearStep(SALESBOT_TEMPLATES[0], 'welcome'),
-    /SALESBOT_EDITOR_SHARED_NODE|UNREACHABLE_SALESBOT_NODE/)
+  const removedWelcome = removeSalesbotLinearStep(SALESBOT_TEMPLATES[0], 'welcome')
+  assert.equal(removedWelcome.nodes.some(node => node.id === 'welcome'), false)
+  assert.equal(removedWelcome.nodes.find(node => node.id === 'start').next, 'choice')
 })
 
 test('invalid edge identifiers, capacity limit, and strict imports fail closed', () => {
