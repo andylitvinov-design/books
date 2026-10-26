@@ -21,11 +21,11 @@ test('the signed-in Cabinet opens Profile with five private tabs and a localized
   const entries = [...model.matchAll(/\{ id: '([^']+)', label: locale === 'ru' \? '([^']+)' : '([^']+)', href: root \+ '([^']+)', icon: (\w+) \}/g)]
     .map(([, id, ru, en, href, icon]) => ({ id, ru, en, href, icon }))
   assert.deepEqual(entries, [
-    { id: 'portrait', ru: 'Профиль', en: 'Profile', href: '/portrait', icon: 'UserRound' },
+    { id: 'portrait', ru: 'Мой профиль', en: 'My Profile', href: '/portrait', icon: 'UserRound' },
+    { id: 'course', ru: 'Курсы', en: 'Courses', href: '/course?view=courses', icon: 'BookOpen' },
     { id: 'tests', ru: 'Тесты', en: 'Tests', href: '/tests', icon: 'ClipboardList' },
-    { id: 'portfolio', ru: 'Отчёты', en: 'Reports', href: '/portfolio', icon: 'BarChart3' },
-    { id: 'course', ru: 'Курсы', en: 'Courses', href: '/course', icon: 'BookOpen' },
     { id: 'practice', ru: 'Практика', en: 'Practice', href: '/practice', icon: 'Users' },
+    { id: 'messages', ru: 'Сообщения', en: 'Messages', href: '/messages', icon: 'MessageCircle' },
   ])
 
   const menu = workspace.slice(workspace.indexOf('<details className="hh-account-menu">'), workspace.indexOf('</header>}'))
@@ -38,7 +38,7 @@ test('the signed-in Cabinet opens Profile with five private tabs and a localized
   assert.match(mobile, /href=\{locale === 'ru' \? '\/ru' : '\/'\}/)
   assert.match(mobile, /<House aria-hidden="true" size=\{22\}/)
   assert.match(mobile, /\{locale === 'ru' \? 'Главная' : 'Home'\}/)
-  assert.ok(mobile.indexOf('hh-mobile-app-nav-home') > mobile.indexOf('nav.map'), 'Home appears after Practice')
+  assert.ok(mobile.indexOf('hh-mobile-app-nav-home') > mobile.indexOf('nav.map'), 'Home appears after Messages')
   assert.match(styles, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/)
   assert.equal((workspace.match(/nav\.map\(/g) || []).length, 3)
   assert.match(menu, /hh-account-more/)
@@ -59,9 +59,9 @@ test('private report list is first, saved sessions follow and psychological meas
   ])
   const hero = profile.indexOf('<header className="hh-domain-hero">')
   const reportArchive = profile.indexOf('id="personal-reports"')
-  const categoryDisclosure = profile.indexOf('className="hh-domain-more"')
-  assert.ok(hero >= 0 && reportArchive > hero && categoryDisclosure > reportArchive)
-  assert.match(profile, /\{external && <details className="hh-domain-more"/, 'obsolete report-area disclosure is legacy-only')
+  const profileSwitcher = profile.indexOf('{!external && profileNavigation}')
+  assert.ok(hero >= 0 && profileSwitcher > hero && reportArchive > profileSwitcher, 'Four profiles appear before the private report archive')
+  assert.match(profile, /\{external && profileNavigation\}/, 'original private-link profile selector remains')
   assert.match(profile, /\{external && <p className="hh-domain-private"/, 'repeated privacy note is legacy-only')
   assert.doesNotMatch(profile, /\{!external && footerActions\}/, 'account Profile has no duplicate marketing CTAs')
   assert.match(workspace, /\{!documentReader && page !== 'portrait' && <footer className="hh-footer"/, 'obsolete shell footer is excluded from Profile')
