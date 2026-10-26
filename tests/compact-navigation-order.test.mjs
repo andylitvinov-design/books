@@ -62,7 +62,7 @@ test('My Profile guest tests and separate support journeys are all localized and
   assert.ok(builder.includes('data-personality-profile-builder'))
   assert.ok(builder.includes('data-profile-direct-tests'))
   assert.ok(builder.includes("locale + '/tests'"))
-  assert.ok(builder.includes('data-profile-start-tests'))
+  assert.ok(builder.includes('data-profile-google-signin'))
   assert.ok(builder.includes('/app/portfolio#hh-development-program'))
   for (const section of ['temple-insights','holistic-support']) {
     const page=read('app/[locale]/'+section+'/page.tsx')
