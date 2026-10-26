@@ -97,3 +97,11 @@ test('guest pilot never bypasses webhook secret, positive consent or manual owne
   assert.match(ui,/navigator\.clipboard\.writeText\(data\.guestInvites\[lang\]\.url\)/)
   assert.doesNotMatch(publicApi,/telegramSecondAccountInvite|guestInvites/)
 })
+
+test('Expired invited guest STOP stays effective',()=>{
+  const hook=read('lib/crm/messenger-webhook.js')
+  assert.ok(hook.includes('const isStop='))
+  assert.ok(hook.includes('!activeGuest&&!invite&&!isStop'))
+  assert.ok(hook.includes('isStop&&!previous&&restricted&&!ownerChat'))
+  assert.ok(hook.includes('crm_tg_suppress_existing'))
+})
