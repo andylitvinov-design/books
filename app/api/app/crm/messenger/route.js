@@ -89,7 +89,8 @@ async function handle(request){
           }else{
             let status='unknown',providerId=null
             try{
-              const accepted=await sendOneMessengerMessage({channel:reservation.channel,to:reservation.to,text:reservation.text})
+              const accepted=await sendOneMessengerMessage({channel:reservation.channel,to:reservation.to,text:reservation.text,
+                approvedPilotGuest:dispatch.approvedPilotGuest===true})
               status=accepted.status
               providerId=accepted.providerId
             }catch(e){if(e?.code==='PROVIDER_REJECTED')status='failed'}

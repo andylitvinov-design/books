@@ -86,3 +86,13 @@
   font:750 12px/1.4 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
 .pilotAction:hover{background:#18574f}
 .pilotAction:focus-visible{outline:3px solid #185ac9;outline-offset:3px}
+
+/* Authenticated owner only: short-lived link for one second Telegram test chat. */
+.guestPilot{width:100%;box-sizing:border-box;min-width:0;display:flex;flex-direction:column;
+  align-items:flex-start;gap:7px;margin:7px 0;padding:11px;border:1px solid #dac49a;
+  border-radius:12px;background:#fff9eb;overflow-wrap:anywhere}
+.guestPilot strong{font:700 13px/1.4 system-ui,sans-serif;color:#523c2a}
+.guestPilot p,.guestPilot small{margin:0;font:500 12px/1.5 system-ui,sans-serif;color:#685842}
+.guestPilotButton{min-height:44px;width:100%;border-radius:10px;background:#80613c!important;
+  color:#fff!important;padding:10px 12px;cursor:pointer;font:700 13px/1.4 system-ui,sans-serif}
+.guestPilotButton:focus-visible{outline:3px solid #185ac9;outline-offset:3px}
