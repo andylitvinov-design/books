@@ -107,7 +107,7 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
-      // Free-first studio: three distinct no-payment paths, then five real
+      // Free-first studio: three distinct no-payment paths, then six real
       // personal offers. No secondary marketplace repeats on the landing.
       const freeCta = page.locator('[data-service-hero-cta="free"]');
       const paidCta = page.locator('[data-service-hero-cta="paid"]');
@@ -125,7 +125,12 @@ try {
       await visible(free.locator("h2#services-free-title"));
       await visible(paid.locator("h2#services-personal-title"));
       assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
-      assert.equal(await paid.locator('[data-services-studio-card]').count(), 5);
+      assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
+      const monthlySupport = paid.locator('[data-services-studio-card="monthly-support"]');
+      await visible(monthlySupport);
+      await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : "€200 / month");
+      assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
+        "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
       assert.equal(await page.locator("#find-your-service").count(), 0,
         "Detailed practitioner search belongs on the separate directory");
       const testAction = free.locator('[data-services-studio-action="tests"]');
@@ -219,7 +224,7 @@ try {
         await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
         await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
         await showcase.locator('[data-services-kind="all"]').click();
-        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(6);
         await assertViewport(page, locale + "/services/slider-filter/" + width);
       }
       // Keep the advanced matching UX available on a separate, dedicated
