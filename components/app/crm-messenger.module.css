@@ -75,3 +75,15 @@
 .guideBody .copyButton{background:#ebf7f2;color:#1e6468;border:1px solid #9ccbc0;padding:10px 13px;min-height:44px}
 .channelGuide :focus-visible{outline:3px solid #185ac9;outline-offset:2px}
 @media(max-width:690px){.channelGrid{grid-template-columns:minmax(0,1fr)}.guideBody{padding-right:5px}}
+
+/* Owner-only Telegram first-message pilot: public sending is still disabled. */
+.telegramPilot{margin:12px 0 0;padding:13px 15px;display:grid;gap:9px;border:1px solid #d7c8b7;border-radius:13px;background:#faf5ee;color:#473d35;font:500 13px/1.45 system-ui,sans-serif;overflow-wrap:anywhere}
+.telegramPilot strong{font:750 14px/1.35 system-ui,sans-serif;color:#524034}
+.telegramPilot p{margin:0}
+.telegramPilot small{color:#776459;font:500 11px/1.5 system-ui,sans-serif}
+.pilotControls{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.pilotControls button,.pilotControls a{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;text-align:center;min-height:44px;max-width:100%;border:1px solid #966b4c;border-radius:10px;padding:9px 13px;background:#fffaf5;color:#624b38;font:750 12px/1.4 system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.pilotControls a{background:#744a35;color:#fff;border-color:#744a35}
+.pilotControls button:disabled{opacity:.5;cursor:wait}
+.pilotControls :focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+@media(max-width:385px){.pilotControls{flex-direction:column;align-items:stretch}.pilotControls button,.pilotControls a{width:100%}}
