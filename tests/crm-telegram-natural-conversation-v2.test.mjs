@@ -21,8 +21,8 @@ test('new chats use natural first-person consent and no slash command buttons',(
   assert.equal(first.flowVersion,TELEGRAM_DIAGNOSTIC_V2_VERSION)
   assert.equal(first.stage,'consent')
   assert.equal(first.body,null)
-  assert.match(first.reply,/Приветствую! Меня зовут Андрей\. Спасибо за интерес/)
-  assert.match(first.reply,/в течение трёх дней/)
+  assert.match(first.reply,/Приветствую! Спасибо за интерес к экспресс-диагностике/)
+  assert.match(first.reply,/в течение трех дней/)
   assert.match(first.reply,/соглашаетесь/)
   assert.deepEqual(first.keyboard,[['Да, начинаем','Не сейчас']])
   assert.equal(first.keyboard.flat().some(x=>x.startsWith('/')),false)
@@ -44,14 +44,14 @@ test('only explicit natural Yes or retained legacy /agree creates consent record
   assert.equal(accepted.consent,true)
   assert.match(accepted.body,/consent/)
   assert.deepEqual(accepted.keyboard,[
-    ['Деньги / работа','Энергия / самочувствие'],['Отношения','Другое'],
+    ['деньги/ работа','энергия/ здоровье'],['отношения','другое'],
   ])
   assert.equal(accepted.keyboard.flat().some(x=>x.startsWith('/')),false)
 })
 test('six-step journey captures the portrait, three-part goal and drawing separately in same CRM flow',()=>{
   let flow=transitionTelegramDiagnostic(null,msg('/start hhreview_ru'))
   flow=transitionTelegramDiagnostic(state(flow,false),msg('Да, начинаем'))
-  flow=transitionTelegramDiagnostic(state(flow),msg('Отношения'))
+  flow=transitionTelegramDiagnostic(state(flow),msg('отношения'))
   assert.equal(flow.topic,'relationships')
   assert.equal(flow.stage,'photo')
   assert.deepEqual(flow.keyboard,[['Пропустить фото']])
@@ -59,7 +59,7 @@ test('six-step journey captures the portrait, three-part goal and drawing separa
   assert.equal(flow.stage,'question')
   assert.equal(flow.photoFileId,PHOTO.photoFileId)
   assert.equal(flow.photoPurpose,'portrait')
-  assert.match(flow.reply,/фото принял/)
+  assert.match(flow.reply,/Фото принял/)
   flow=transitionTelegramDiagnostic(state(flow),msg('Цель: наладить отношения. Сложность: коммуникация. Подробнее: тестовая заявка.'))
   assert.equal(flow.stage,'drawing')
   assert.match(flow.reply,/Я/)
@@ -72,7 +72,7 @@ test('six-step journey captures the portrait, three-part goal and drawing separa
   assert.equal(flow.photoFileId,PHOTO.photoFileId)
   assert.equal(flow.topic,'relationships')
   assert.ok(flow.reply.includes('https://holistichouse.vercel.app/ru/coaching/intake?topic=relationships'))
-  assert.match(flow.reply,/Отправить анкету и заявку/)
+  assert.match(flow.reply,/нажми отправить/)
   assert.deepEqual(flow.keyboard,[])
   assert.equal(flow.consent,false)
   const final=transitionTelegramDiagnostic(state(flow),msg('Дополнительная информация для мастера'))
@@ -83,7 +83,7 @@ test('six-step journey captures the portrait, three-part goal and drawing separa
 test('photo and drawing are optional, oversized or unexpected uploads cannot be stored',()=>{
   let flow=transitionTelegramDiagnostic(null,msg('/start'))
   flow=transitionTelegramDiagnostic(state(flow,false),msg('Да, начинаем'))
-  flow=transitionTelegramDiagnostic(state(flow),msg('Деньги / работа'))
+  flow=transitionTelegramDiagnostic(state(flow),msg('деньги/ работа'))
   assert.equal(flow.topic,'business')
   const oversized=transitionTelegramDiagnostic(state(flow),msg('',{
     photoFileId:PHOTO.photoFileId,photoBytes:TELEGRAM_DIAGNOSTIC_V2_PHOTO_LIMIT+1,
@@ -92,7 +92,7 @@ test('photo and drawing are optional, oversized or unexpected uploads cannot be 
   assert.equal(oversized.photoFileId,null)
   flow=transitionTelegramDiagnostic(state(flow),msg('Пропустить фото'))
   assert.equal(flow.stage,'question')
-  assert.match(flow.reply,/Теперь напишите/)
+  assert.match(flow.reply,/Напиши, пожалуйста/)
   const invalid=transitionTelegramDiagnostic(state(flow),msg('',PHOTO))
   assert.equal(invalid.stage,'question')
   assert.equal(invalid.body,null)
@@ -174,7 +174,7 @@ test('all Telegram replies fit existing transport and keyboards never include un
 test('every V2 outgoing step obeys the Telegram 1200-char template limit and 2x3 keyboard',()=>{
   const choices=new Set(TELEGRAM_DIAGNOSTIC_V2_BUTTONS)
   const labelByLanguage={
-    ru:{yes:'Да, начинаем',business:'Деньги / работа',skipPhoto:'Пропустить фото',skipDrawing:'Пропустить рисунок'},
+    ru:{yes:'Да, начинаем',business:'деньги/ работа',skipPhoto:'Пропустить фото',skipDrawing:'Пропустить рисунок'},
     en:{yes:"Yes, let's begin",business:'Money / work',skipPhoto:'Skip photo',skipDrawing:'Skip drawing'},
     es:{yes:'Sí, empezamos',business:'Dinero / trabajo',skipPhoto:'Omitir foto',skipDrawing:'Omitir dibujo'},
   }
