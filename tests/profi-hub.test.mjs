@@ -154,7 +154,7 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
 })
 
 test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
-  const expected=['home','analysis','courses','profile','coaching','pro','temple']
+  const expected=['profile','courses','home','analysis','alchemy','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
