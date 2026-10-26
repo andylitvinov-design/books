@@ -199,3 +199,43 @@
 .profileAction{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:40px;padding:8px 12px;border:1px solid #b9d9cc;border-radius:10px;background:#fff;color:#286452;cursor:pointer;font:700 12px/1.35 system-ui,sans-serif}
 .profileAction:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
 @media(max-width:360px){.profileAction{padding:7px 9px}.contactActions{gap:6px}}
+/* iPhone composer: only the message history scrolls. The editor and Send are
+   one fixed-height row at the bottom of the available conversation viewport. */
+.detailConversation{display:flex;flex-direction:column;min-height:0;max-height:none;overflow:hidden}
+.detailConversation .messages{flex:1 1 0%;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.detailConversation .compose{
+  position:relative;z-index:2;margin-top:auto;flex:0 0 auto;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(76px,max-content);
+  align-items:center;column-gap:8px;row-gap:5px;
+  padding:9px 11px;background:#fffdfb;
+}
+.detailConversation .compose textarea{
+  grid-column:1;grid-row:1;min-width:0;width:100%;height:46px;min-height:46px;
+  max-height:110px;resize:none;padding:11px 12px;font:400 16px/1.35 system-ui,sans-serif;
+}
+.detailConversation .compose>button:last-of-type{
+  grid-column:2;grid-row:1;justify-self:stretch;align-self:stretch;
+  display:flex;align-items:center;justify-content:center;
+  min-height:46px;min-width:76px;padding:8px 12px;white-space:nowrap;
+}
+.detailConversation .compose small{grid-column:1/-1}
+.composeNotice{
+  position:absolute;z-index:4;bottom:calc(100% + 4px);left:8px;right:8px;
+  max-height:44px;overflow-y:auto;pointer-events:none;
+  margin:0;padding:6px 9px;border:1px solid #e7ddcc;border-radius:9px;
+  background:#fffaf0;color:#755d40;font:600 12px/1.35 system-ui,sans-serif;
+}
+/* The older compact CRM entry is still accessible from My Practice.
+   Keep its Send on the same row, and prevent 13px Safari auto-zoom there too. */
+.panel[data-compact="true"] .compose{margin-top:auto}
+.panel[data-compact="true"] .compose textarea{
+  min-width:0;resize:none;font:400 16px/1.3 system-ui,sans-serif;
+}
+@media(max-width:760px){
+  .panel[data-compact="true"] .compose .repliesToggle{display:none}
+}
+
+
+@media(max-width:760px){
+  .panel .compose textarea{font-size:16px;resize:none}
+}

@@ -71,3 +71,17 @@
 .cardButton{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:6px;min-height:38px;padding:6px 10px;border:1px solid #bdd9cc;background:#eef6f0;color:#286b5b;border-radius:10px;cursor:pointer;font:700 12px/1.25 system-ui,sans-serif;white-space:nowrap}
 .cardButton[aria-pressed="true"]{background:#dbece2}
 @media(max-width:360px){.cardButton{width:39px;padding:5px}.cardButton span{position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap}}
+
+/* Mobile visual viewport: the keyboard is not included in CSS dvh on iOS.
+   JS updates --hh-mobile-window-height from visualViewport when it changes. */
+@media(max-width:700px){
+  .window{
+    height:var(--hh-mobile-window-height,calc(100dvh - 152px));
+    min-height:0;
+    max-height:none;
+  }
+  .shell input[type="search"],.shell textarea{
+    font-size:16px!important; /* iOS Safari must not auto-zoom a focused input */
+  }
+  .detail,.chatHolder{min-height:0;overflow:hidden}
+}
