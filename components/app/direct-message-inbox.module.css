@@ -125,3 +125,14 @@
 .shell[data-simple-detail="true"] .feed{flex:1;min-height:0;max-height:none;overflow:auto;background:#fcfaf7}
 .shell[data-simple-detail="true"] .compose{flex:none;padding:10px 12px}
 .shell[data-simple-detail="true"] .placeholder{min-height:0}
+
+
+/* The shared one-window inbox also displays private on-site conversations. */
+@media(max-width:700px){
+  .shell[data-simple-detail="true"] .chat{min-height:0;overflow:hidden}
+  .shell[data-simple-detail="true"] .feed{flex:1 1 0%;min-height:0;max-height:none;overflow-y:auto}
+  .shell[data-simple-detail="true"] .compose{position:relative;z-index:2;margin-top:auto;flex:none;background:#fffdfb}
+  .shell[data-simple-detail="true"] .compose textarea{font:400 16px/1.4 system-ui,sans-serif;resize:none;max-height:110px}
+  .shell[data-simple-detail="true"] .actions{align-items:center}
+  .shell[data-simple-detail="true"] .send{min-height:44px;flex:none}
+}
