@@ -155,14 +155,25 @@ try {
         "Method videos must not eagerly load third-party players");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // Canonical header: Cabinet is immediately accessible; Books occupies the bottom bar.
+      // RootLayout provides My Space: the canonical header opens an accessible
+      // account dialog, not a direct Cabinet link. Never bypass sign-in here.
       const header = page.locator("header.house-header--services");
-      const cabinetEntry = header.locator("a.site-cabinet-entry");
+      const cabinetEntry = header.locator("button.site-cabinet-entry");
       await expect(cabinetEntry).toHaveCount(1);
       await visible(cabinetEntry);
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top Cabinet opens the authenticated app");
+      await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
+      await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
+      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
       const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
+      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
+      await cabinetEntry.click();
+      const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
+      await expect(privateSpaceDialog).toHaveAttribute("open", "");
+      await visible(privateSpaceDialog.locator("#hh-my-space-title"));
+      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
+      await privateSpaceDialog.locator('header button[type="button"]').first().click();
+      await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
+      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
