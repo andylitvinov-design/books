@@ -39,9 +39,20 @@ test('owner inline keyboard is bot-authored and a ForceReply selects the next mo
   assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['audio','materials','ai','verify','all','status','gemini','free','free2','council','cancel'])
   const live=ownerAiMenu({gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
-  assert.deepEqual(buttons,['hh-audio:help','hh-ai:all','hh-ai:gemini','hh-ai:free','hh-ai:verify','hh-ai:status'])
+  assert.deepEqual(buttons,['hh-audio:help','hh-ai:all','hh-ai:free','hh-ai:gemini','hh-ai:verify','hh-ai:status'])
   assert.doesNotMatch(buttons.join(' '),/hh-ai:mistral|hh-ai:both/)
   assert.match(live.text,/Mistral/)
+  const tryFirst=ownerAiMenu({
+    free:{candidate:true,ready:false,model:'nvidia/nemotron-3-ultra-550b-a55b:free'},
+    free2:{candidate:true,ready:false,model:'google/gemma-4-31b-it:free'}
+  })
+  assert.match(tryFirst.text,/Реально ответили за последние 36 часов: 0/)
+  assert.deepEqual(tryFirst.reply_markup.inline_keyboard.flat()
+    .filter(x=>x.callback_data==='hh-ai:all').map(x=>x.text),
+    ['🧠 Спросить всех · первая проверка'])
+  assert.ok(!tryFirst.reply_markup.inline_keyboard.flat()
+    .some(x=>x.callback_data==='hh-ai:mistral'))
+  assert.match(tryFirst.text,/Mistral исключён/)
   assert.deepEqual(ownerAiMenu().reply_markup.inline_keyboard.flat().map(x=>x.callback_data),['hh-audio:help','hh-ai:verify','hh-ai:status'])
   assert.equal(ownerAiPrompt('mistral').reply_markup.force_reply,true)
   const callback=parseOwnerAiUpdate({update_id:312,callback_query:{
