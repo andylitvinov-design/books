@@ -73,12 +73,12 @@ export default async function ServicesPage({ params, searchParams }: PageProps) 
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <ServicesExplorerProvider>
         <ServicesConversionHero locale={locale as Locale} />
-        <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
         <ServicesStudioOffers locale={locale as Locale} />
       </ServicesExplorerProvider>
       <ServicesIntroMedia locale={locale as Locale} />
       <PersonalTestimonials locale={locale as Locale} variant="services" />
       <ServicesMethodVideos locale={locale as Locale} />
+      <PublicConsultationCta locale={locale as Locale} id="consultation" serviceBooking wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
       <ServicesDirectoryInvitation locale={locale as Locale} />
       <p className="remedy-disclaimer services-disclaimer">{current.note}</p>
       <CompactLeadCapture locale={locale as Locale} serviceTitle="Personal service selection with Andrey" title={current.footerTitle} lead={current.footerLead} />

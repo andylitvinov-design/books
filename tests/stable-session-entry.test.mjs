@@ -29,9 +29,20 @@ for(const locale of ['en','ru','es'])test(locale+': first offer stays stable unt
  nodes.filter(n=>n.type==='button').at(-1).props.onClick();nodes=render()
  assert.equal(nodes.find(n=>n.props['data-home-slide']).props['data-home-slide'],'academy','manual next still works')
 })
-for(const route of ['app/[locale]/services/page.tsx','app/es/services/page.tsx'])test(route+': one existing session selector precedes the long services catalogue',()=>{
+for(const route of ['app/[locale]/services/page.tsx','app/es/services/page.tsx'])test(route+': one session selector preserves the approved locale-specific services journey',()=>{
  const page=read(route)
+ const consultation=page.indexOf('<PublicConsultationCta')
+ const offers=page.indexOf('<ServicesStudioOffers')
  assert.equal((page.match(/<PublicConsultationCta/g)||[]).length,1)
- assert.ok(page.indexOf('<PublicConsultationCta')<page.indexOf('<ServicesStudioOffers'))
+ assert.ok(consultation>=0 && offers>=0)
+ if(route==='app/es/services/page.tsx'){
+  // The independent Spanish route retains its existing initial booking selector.
+  assert.ok(consultation<offers)
+ }else{
+  // EN/RU: three free paths and paid offers, then proof and one booking action.
+  assert.ok(offers<page.indexOf('<ServicesIntroMedia'))
+  assert.ok(page.indexOf('<ServicesMethodVideos')<consultation)
+  assert.ok(consultation<page.indexOf('<ServicesDirectoryInvitation'))
+ }
  assert.match(page,/id="consultation" serviceBooking/)
 })
