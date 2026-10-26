@@ -170,10 +170,8 @@ export function FirstPartyStatsPreferences() {
   const [excluded, setExcluded] = useState(false);
 
   useEffect(() => {
-    const cookie = (name: string) => document.cookie.split("; ")
-      .find(part => part.startsWith(name + "="))?.split("=")[1];
-    setAllowed(cookie("hh_public_stats_consent") === "v1");
-    setExcluded(cookie("hh_public_stats_skip") === "1");
+    setAllowed(firstPartyCookie(publicStatsCookie) === "v1");
+    setExcluded(firstPartyCookie("hh_public_stats_skip") === "1");
   }, []);
 
   function decide(allow: boolean) {
@@ -182,7 +180,8 @@ export function FirstPartyStatsPreferences() {
   }
   function exclude(skip: boolean) {
     document.cookie = `hh_public_stats_skip=${skip ? "1" : ""}; Path=/; Max-Age=${skip ? 31536000 : 0}; SameSite=Lax; Secure`;
-    setExcluded(skip);\n    window.dispatchEvent(new Event(publicStatsChoiceEvent));
+    setExcluded(skip);
+    window.dispatchEvent(new Event(publicStatsChoiceEvent));
   }
 
   return (
