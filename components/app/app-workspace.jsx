@@ -555,17 +555,15 @@ export default function AppWorkspace({ locale, path = [] }) {
   // Shared private navigation for desktop, mobile and the Account dropdown.
 // Reports reuses the existing Insights/portfolio screen; Practice is the master cabinet.
   const nav = [
-    { id: 'portrait', label: locale === 'ru' ? 'Профиль' : 'Profile', href: root + '/portrait', icon: UserRound },
-    { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
-    { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
+    { id: 'portrait', label: locale === 'ru' ? 'Мой профиль' : 'My Profile', href: root + '/portrait', icon: UserRound },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
+    { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
   const navIsActive = (id) => page === id ||
-    (id === 'portrait' && page === 'labs') ||
-    (id === 'course' && ['business','coaching'].includes(page)) ||
-    (id === 'portfolio' && ['reports', 'history', 'monitoring', 'results'].includes(page))
+    (id === 'portrait' && ['labs', 'portfolio', 'reports', 'history', 'monitoring', 'results'].includes(page)) ||
+    (id === 'course' && ['business','coaching'].includes(page))
   const documentReader = Boolean(recordId) &&
     data.account.onboardingState === 'active' &&
     page === 'reports'
