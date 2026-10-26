@@ -1,7 +1,7 @@
 // Run audited Remaster v0.2.1 in a disposable feature-mode workspace.
 // Public official docs metadata only; no competitor code extraction, cookies,
 // browser login, providers, data mutation, or production project changes.
-import { existsSync, mkdirSync, mkdtempSync, copyFileSync, writeFileSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, copyFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
