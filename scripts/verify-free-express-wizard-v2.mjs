@@ -21,7 +21,7 @@ for (const [engine, driver] of [['chromium', chromium], ['webkit', webkit]]) {
         })
         const page = await ctx.newPage()
         const errors = []
-        let submits = 0, details = 0, uploads = 0
+        let submits = 0, details = 0, uploads = 0, claims = 0
         page.on('pageerror', error => errors.push(error.message))
         await page.route('**/api/service-enquiries', async route => {
           submits += 1
@@ -44,9 +44,23 @@ for (const [engine, driver] of [['chromium', chromium], ['webkit', webkit]]) {
             body: JSON.stringify({ saved: true, contextSaved: true, referenceCode: HH }) })
         })
         await page.route('**/api/free-express/media', async route => {
-          if (route.request().method() === 'POST') uploads += 1
+          if (route.request().method() === 'POST') {
+            uploads += 1
+            assert.match(route.request().headers()['content-type'] || '', /multipart\/form-data/)
+          }
           await route.fulfill({ status: 200, contentType: 'application/json',
-            body: JSON.stringify({ portrait: false, drawing: false }) })
+            body: JSON.stringify(route.request().method() === 'POST'
+              ? { uploaded: true } : { portrait: false, drawing: false }) })
+        })
+        await page.route('**/api/free-express/claim', async route => {
+          if (route.request().method() === 'POST') {
+            claims += 1
+            const data = route.request().postDataJSON()
+            assert.equal(data.consent, true)
+            assert.equal(data.referenceCode, HH)
+          }
+          await route.fulfill({ status: 200, contentType: 'application/json',
+            body: JSON.stringify({ saved: true, referenceCode: HH }) })
         })
         try {
           const res = await page.goto(origin + '/' + locale + '/services/free-situation-review',
@@ -123,15 +137,45 @@ for (const [engine, driver] of [['chromium', chromium], ['webkit', webkit]]) {
             await questionnaire.locator('button[type=submit]').click()
             await wizard.locator('[data-free-express-media=portrait]').waitFor({ state: 'visible' })
             assert.equal(details, 1, 'Only one encrypted detail update')
-            await wizard.locator('[data-free-express-media=portrait] button').last().click()
+            const mediaCase = engine === 'webkit' && locale === 'en' && width === 430
+            const sampleImage = mediaCase ? Buffer.from((await page.evaluate(() => {
+              const canvas = document.createElement('canvas')
+              canvas.width = 240; canvas.height = 150
+              const ctx = canvas.getContext('2d')
+              ctx.fillStyle = '#edddca'; ctx.fillRect(0, 0, 240, 150)
+              ctx.fillStyle = '#854457'; ctx.fillRect(50, 30, 70, 65)
+              ctx.font = '20px Arial'; ctx.fillText('ME', 135, 70)
+              return canvas.toDataURL('image/png').split(',')[1]
+            })), 'base64') : null
+            if (mediaCase) {
+              const portrait = wizard.locator('[data-free-express-media=portrait]')
+              await portrait.locator('input[type=file]').last().setInputFiles({
+                name:'synthetic-portrait.png', mimeType:'image/png', buffer:sampleImage,
+              })
+              assert.equal(uploads, 0, 'Choosing a file does not upload without separate consent')
+              await portrait.locator('input[type=checkbox]').check()
+              await portrait.getByRole('button',{name:'Upload privately'}).click()
+            } else await wizard.locator('[data-free-express-media=portrait] button').last().click()
             await wizard.locator('[data-free-express-google]').waitFor({ state: 'visible' })
             assert.equal(await wizard.locator('[data-free-express-google] input[type=checkbox]:checked').count(), 0)
-            await wizard.locator('[data-free-express-google] button').last().click()
+            if (mediaCase) {
+              const save = wizard.locator('[data-free-express-google]')
+              await save.locator('input[type=checkbox]').check()
+              await save.getByRole('button',{name:'Sign in / Save to my account'}).click()
+            } else await wizard.locator('[data-free-express-google] button').last().click()
             await wizard.locator('[data-free-express-media=drawing]').waitFor({ state: 'visible' })
-            await wizard.locator('[data-free-express-media=drawing] button').last().click()
+            if (mediaCase) {
+              const drawing = wizard.locator('[data-free-express-media=drawing]')
+              await drawing.locator('input[type=file]').last().setInputFiles({
+                name:'synthetic-drawing.png', mimeType:'image/png', buffer:sampleImage,
+              })
+              await drawing.locator('input[type=checkbox]').check()
+              await drawing.getByRole('button',{name:'Upload privately'}).click()
+            } else await wizard.locator('[data-free-express-media=drawing] button').last().click()
             await wizard.locator('[data-free-express-complete]').waitFor({ state: 'visible' })
             assert.equal(submits, 1, 'Optional stages never duplicate a CRM lead')
-            assert.equal(uploads, 0, 'No image upload without explicit selection and consent')
+            assert.equal(uploads, mediaCase ? 2 : 0, 'Private image uploads occur only on explicit consent')
+            assert.equal(claims, mediaCase ? 1 : 0, 'Google claim is separate, never an extra CRM lead')
           }
           const finalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
           assert.ok(finalOverflow <= 2, 'Completed journey must not overflow narrow phones: ' + finalOverflow)
