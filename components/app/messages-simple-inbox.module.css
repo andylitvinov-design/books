@@ -82,3 +82,5 @@
   }
   .detail,.chatHolder{min-height:0;overflow:hidden}
 }
+
+.offline{flex:none;margin:0 0 7px;padding:7px 10px;border:1px solid #e6d3b0;border-radius:9px;background:#fff7e9;color:#79572f;font-size:12px}
