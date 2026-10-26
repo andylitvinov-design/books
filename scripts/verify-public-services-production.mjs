@@ -329,7 +329,12 @@ try {
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
     await visible(page.locator('[data-services-studio-free]'));
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
-    assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
+    assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 6);
+    const esMonthly = page.locator('[data-services-studio-paid] [data-services-studio-card="monthly-support"]');
+    await expect(esMonthly).toBeVisible();
+    await expect(esMonthly).toContainText("200 € / mes");
+    assert.equal(await esMonthly.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
+      "/es/services/personal-support", "Spanish support offer must lead to the terms page");
     assert.equal(await page.locator("#find-your-service").count(), 0);
     // Verify the same service mode and topic filtering in Spanish.
     const esShowcase = page.locator("[data-services-showcase-hero]");
@@ -345,7 +350,7 @@ try {
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
-    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(6);
     await assertViewport(page, "es/services/slider-filter/390");
     await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
