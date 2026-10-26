@@ -72,6 +72,6 @@ test('the responsive scale controls stay tappable on narrow phones', () => {
   const fullCss = source('components/app/test-explorer.module.css')
   assert.match(css, /\.lifeProfileGrid\{display:grid/)
   assert.match(css, /@media\(max-width:560px\)\{\.lifeProfileGrid\{grid-template-columns:1fr/)
-  assert.match(css, /\.lifeScaleChip\{[^}]*min-height:43px/)
+  assert.match(css, /\.lifeScaleChip\{[^}]*min-height:44px/)
   assert.match(fullCss, /@media\(max-width:560px\)\{\.lifeProfileOptions\{grid-template-columns:1fr/)
 })
