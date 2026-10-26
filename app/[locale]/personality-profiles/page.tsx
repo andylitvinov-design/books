@@ -74,6 +74,7 @@ export default async function PersonalityProfilesPage({ params }: Props) {
         .filter((axis): axis is string => typeof axis === "string" && axis.length > 0))],
       minutes: entry.durationMinutes || null,
       questions: entry.questionCount || null,
+      testKind: entry.testKind,
     }));
 
   return (
