@@ -23,13 +23,27 @@ test('new chats use natural first-person consent and no slash command buttons',(
   assert.equal(first.body,null)
   assert.match(first.reply,/Приветствую! Спасибо за интерес к экспресс-диагностике/)
   assert.match(first.reply,/в течение трех дней/)
-  assert.match(first.reply,/соглашаетесь/)
+  assert.match(first.reply,/Подходит, начинаем\?$/)
+  assert.doesNotMatch(first.reply,/Нажимая «Да, начинаем»/)
   assert.deepEqual(first.keyboard,[['Да, начинаем','Не сейчас']])
   assert.equal(first.keyboard.flat().some(x=>x.startsWith('/')),false)
   const random=transitionTelegramDiagnostic(null,msg('some personal story'))
   assert.equal(random.body,null,'no unsolicited personal text can enter CRM')
   assert.equal(random.stage,'consent')
   assert.equal(random.consent,false)
+})
+test('localized intros end with the question and no long consent paragraph',()=>{
+  for (const [locale,end,removed] of [
+    ['ru','Подходит, начинаем?','Нажимая «Да, начинаем»'],
+    ['en','Shall we begin?','By choosing'],
+    ['es','¿Empezamos?','Al elegir «Sí, empezamos»'],
+  ]) {
+    const first=transitionTelegramDiagnostic(null,{rawText:'/start hhreview_'+locale,locale})
+    assert.equal(first.stage,'consent')
+    assert.ok(first.reply.endsWith(end),locale+' ends with the question')
+    assert.equal(first.reply.includes(removed),false,locale+' has no added footer')
+    assert.equal(first.consent,false,locale+' does not record consent without a click')
+  }
 })
 test('six exact owner-authored RU messages are sent in order; photo and drawing remain separate',()=>{
   const steps=[]
@@ -40,7 +54,7 @@ test('six exact owner-authored RU messages are sent in order; photo and drawing 
   r=transitionTelegramDiagnostic(state(r),msg('Цель: деньги, сложность: выбор, подробности: тестовая цель.'));steps.push(r)
   r=transitionTelegramDiagnostic(state(r),msg('',PHOTO));steps.push(r)
   const expected=[
-    "Приветствую! Спасибо за интерес к экспресс-диагностике.\n\nБуду рад помочь.\n\nМы можем провести блиц диагностику текущей ситуации.\nЭто могут быть деньги, работа, отношения, переезд и тп.\n\nВ блиц-формате я могу дать обратную связь:\n- что сейчас происходит\n- в чем причина (где внутренний ступор)\n- что можно сделать с этим.\n\nЧерез этот бот я задам пару вопросов и потом в течение трех дней сделаю личный разбор.\n\nПодходит, начинаем?\n\nНажимая «Да, начинаем», вы соглашаетесь прислать ответы и фото для одного личного разбора без рекламы. Не отправляйте сюда медицинские документы и результаты тестов. В любой момент можно написать «Стоп».",
+    "Приветствую! Спасибо за интерес к экспресс-диагностике.\n\nБуду рад помочь.\n\nМы можем провести блиц диагностику текущей ситуации.\nЭто могут быть деньги, работа, отношения, переезд и тп.\n\nВ блиц-формате я могу дать обратную связь:\n- что сейчас происходит\n- в чем причина (где внутренний ступор)\n- что можно сделать с этим.\n\nЧерез этот бот я задам пару вопросов и потом в течение трех дней сделаю личный разбор.\n\nПодходит, начинаем?",
     "Выбери, пожалуйста, с какой темой сейчас хотелось бы поработать:\n- деньги/ работа\n- энергия/ здоровье\n- отношения\n- другое.",
     "Вышли, пожалуйста, свое фото (лучше недавнее, за последний год, чтобы четко было видно лицо, в полный рост - ну или любое которое есть).",
     "Спасибо. Фото принял.\n\nНапиши, пожалуйста,\n1) в чем ключевая задача (цель)\n2) в чем сложность\n3) любые подробности, которые стоило бы добавить.",
