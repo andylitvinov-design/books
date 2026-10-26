@@ -25,7 +25,7 @@ test('private consented Telegram handoff is encrypted, time-bound and tamper-pro
   assert.match(valid.digest,/^[a-f0-9]{64}$/)
   assert.equal(verifyTelegramCoachingHandoff(token,config,now+3600001),null)
   assert.equal(verifyTelegramCoachingHandoff(token,{encryptionKey:randomBytes(32)},now),null)
-  const altered=token.slice(0,-1)+(token.at(-1)==='A'?'B':'A')
+  const altered=token.slice(0,45)+(token[45]==='A'?'B':'A')+token.slice(46)
   assert.equal(verifyTelegramCoachingHandoff(altered,config,now),null)
   assert.notEqual(issueTelegramCoachingHandoff(scope,config,now),token)
 })
