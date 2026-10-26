@@ -1,0 +1,118 @@
+name: Holistic House Free Express v2 protected rollout
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-free-express-wizard-v2.yml'
+      - 'components/free-express-wizard.tsx'
+      - 'components/free-express-wizard.module.css'
+      - 'components/personal-express-enquiry.tsx'
+      - 'components/free-entry-landing.tsx'
+      - 'components/app/public-enquiry-contact.jsx'
+      - 'app/api/service-enquiries/route.js'
+      - 'app/api/free-express/**'
+      - 'app/api/app/practice/free-express/**'
+      - 'lib/practitioners/free-express-*'
+      - 'lib/practitioners/free-express-photo-client.ts'
+      - 'next.config.ts'
+      - 'lib/practitioners/public-service-enquiry.js'
+      - 'supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql'
+      - 'tests/free-express-wizard-v2.test.mjs'
+      - 'tests/free-express-unified-v2.test.mjs'
+      - 'tests/free-express-rls-isolated.sql'
+      - 'tests/free-express-rls-isolated.integration.mjs'
+      - 'components/app/practice-workspace.jsx'
+      - 'components/app/profile-domains.jsx'
+      - 'components/app/free-express-owner-media.jsx'
+      - 'components/app/free-express-my-requests.jsx'
+      - 'scripts/verify-free-express-wizard-v2.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-free-express-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  protected-wizard:
+    runs-on: ubuntu-24.04
+    # Official Playwright image has matching Chromium/WebKit dependencies.
+    # Pinned image digest prevents surprises from mutable tags and avoids
+    # unreliable, slow Ubuntu apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      HH_FREE_EXPRESS_V2_ENABLED: 'true'
+      HH_PLAYWRIGHT_PACKAGE: /tmp/hh-free-express-playwright/node_modules/playwright/index.mjs
+      HH_LIVE_ORIGIN: http://127.0.0.1:3101
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate privacy, token and one-lead contracts
+        run: |
+          npm ci --include=dev --no-audit --no-fund
+          node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs
+          npx eslint lib/practitioners/free-express-photo-client.ts components/free-express-wizard.tsx components/personal-express-enquiry.tsx components/free-entry-landing.tsx components/app/public-enquiry-contact.jsx components/app/free-express-owner-media.jsx components/app/free-express-my-requests.jsx app/api/free-express/route.js app/api/free-express/media/route.js app/api/free-express/claim/route.js lib/practitioners/free-express-enquiry.js lib/practitioners/free-express-media.js lib/practitioners/free-express-owner.js
+          npx tsc --noEmit
+      - name: Build real preview with v2 visible (never production flag)
+        timeout-minutes: 12
+        run: |
+          npm run build > /tmp/hh-express-v2-build.log 2>&1 || { tail -n 160 /tmp/hh-express-v2-build.log; exit 1; }
+      - name: Load matching Playwright client (browsers preinstalled in image)
+        timeout-minutes: 4
+        run: |
+          npm install --prefix /tmp/hh-free-express-playwright --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
+          test -x /ms-playwright/chromium-*/chrome-linux/chrome || test -d /ms-playwright
+      - name: Synthetic no-provider mobile journey (EN/RU/ES Chromium/WebKit)
+        timeout-minutes: 10
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3101 > /tmp/hh-express-v2-server.log 2>&1 & SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 100); do
+            if curl -sf http://127.0.0.1:3101/en/services/free-situation-review > /dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-free-express-wizard-v2.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hh-free-express-v2-browser-evidence
+          path: artifacts/free-express-wizard-v2/
+          retention-days: 7
+          if-no-files-found: warn
+  guest-continuation-rls-postgres17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      HH_APP_TEST_RUNTIME: isolated
+      HH_FREE_EXPRESS_TEST_APPLY_PROPOSALS: synthetic-only
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --include=dev --no-audit --no-fund
+      - name: Real PG17 SQL syntax, private RLS and anonymous/account crossover negative checks
+        run: node --test tests/free-express-rls-isolated.integration.mjs

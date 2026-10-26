@@ -136,6 +136,13 @@ const nextConfig: NextConfig = {
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",
     ],
+    // This route also re-encodes personal drawings/photos with Sharp. Vercel's
+    // file tracer may omit native libvips from a dynamically imported module.
+    // Scope native assets to this PRIVATE upload Function, not all app routes.
+    "/api/free-express/media": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
     // The nine-stage Tantra Reiki guide loads immutable author archives server-side.
     // Scope these to the PDF API route instead of copying them into all Functions.
     "/api/academy/reiki-guide": [

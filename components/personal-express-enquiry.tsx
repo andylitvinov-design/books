@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronDown, HeartPulse, MessageCircle, ShieldCheck, X } from "lucide-react";
 
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
+import { FreeExpressWizard } from "@/components/free-express-wizard";
 import type { PublicLocale } from "@/lib/public-locales";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./personal-express-enquiry.module.css";
@@ -73,13 +74,14 @@ const copy = {
 
 /** The two focuses are intake categories, not a choice between separate services. */
 export function PersonalExpressEnquiry({
-  locale, intro, children,
+  locale, intro, children, enableWizard = false,
 }: {
-  locale: PublicLocale; intro?: ReactNode; children?: ReactNode;
+  locale: PublicLocale; intro?: ReactNode; children?: ReactNode; enableWizard?: boolean;
 }) {
   const t = copy[locale];
   const pathname = usePathname();
   const [focus, setFocus] = useState<Focus>("situation");
+  const [focusLocked, setFocusLocked] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const revealRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -104,13 +106,22 @@ export function PersonalExpressEnquiry({
         && event.target.closest('a[href="#request-free-review"]')) setExpanded(true);
     };
     openFromHash();
+    // Google OAuth uses the existing allowlisted landing route, but must not
+    // reopen an unrelated visitor's form based on the URL alone.
+    if (enableWizard && new URLSearchParams(window.location.search).get("hh_enquiry") === "google") {
+      try {
+        const prior = JSON.parse(window.sessionStorage.getItem("hh-free-express-wizard-resume-v2") || "null");
+        if (prior?.locale === locale && /^HH-[A-F0-9]{12}$/.test(prior.referenceCode || ""))
+          setExpanded(true);
+      } catch { /* Unknown browser state is never an authorization source. */ }
+    }
     window.addEventListener("hashchange", openFromHash);
     document.addEventListener("click", openFromAnchor);
     return () => {
       window.removeEventListener("hashchange", openFromHash);
       document.removeEventListener("click", openFromAnchor);
     };
-  }, []);
+  }, [enableWizard, locale]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -153,7 +164,7 @@ export function PersonalExpressEnquiry({
           <div ref={panelRef} className={styles.disclosure} id="express-request-form"
             data-express-inline-disclosure hidden={!expanded} tabIndex={-1}
             role="region" aria-label={t.title}>
-          <fieldset className={styles.choices} data-express-focus-group>
+          <fieldset className={styles.choices} data-express-focus-group disabled={focusLocked}>
             <legend>{t.legend}</legend>
             {(["situation", "energy"] as const).map((area) => (
               <label className={styles.choice} data-express-focus={area} key={area}
@@ -165,20 +176,28 @@ export function PersonalExpressEnquiry({
               </label>
             ))}
           </fieldset>
-          <p className={styles.step}>{t.step}</p>
-          <ContactChannelChooser key={focus} locale={locale}
+          <p className={styles.step}>{enableWizard
+            ? (locale === "ru" ? "Сначала зарегистрируем заявку, затем можно уточнить вопрос и приватно добавить фото или рисунок."
+              : locale === "es" ? "Primero registramos tu solicitud; después puedes añadir tus respuestas e imágenes de forma privada."
+              : "First register your request, then optionally add answers and private images.")
+            : t.step}</p>
+          {enableWizard ? <FreeExpressWizard locale={locale} focus={focus} serviceTitle={t.service}
+            onSaved={() => setFocusLocked(true)} onRestoredFocus={setFocus} />
+          : <ContactChannelChooser key={focus} locale={locale}
             whatsappUrl={whatsappUrl} compactPhone stayAfterSave resetKey={focus}
-            publicTopic={"Express review focus: " + t.areas[focus].tag} />
-          <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
-          <p className={styles.note}>{t.note}</p>
-          <details className={styles.safetyDetails}>
-            <summary><ShieldCheck size={14} aria-hidden="true" />{t.safety}</summary>
-            <p>{t.privacy} {t.note}</p>
-          </details>
+            publicTopic={"Express review focus: " + t.areas[focus].tag} />}
+          {!enableWizard && <>
+            <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
+            <p className={styles.note}>{t.note}</p>
+            <details className={styles.safetyDetails}>
+              <summary><ShieldCheck size={14} aria-hidden="true" />{t.safety}</summary>
+              <p>{t.privacy} {t.note}</p>
+            </details>
+          </>}
           </div>
         </div>
       </section>
-      {focus === "situation" ? children : null}
+      {!enableWizard && focus === "situation" ? children : null}
     </div>
   );
 }
