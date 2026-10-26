@@ -18,8 +18,8 @@ begin
    where a.channel = 'telegram' and a.enabled and a.external_hash = p_business_hash
      and t.user_hash = p_user_hash and not t.suppressed and not c.suppressed
      and c.lifecycle <> 'archived'
-   for share of t
-   limit 1;
+   limit 1
+   for share of t;
   return coalesce(v_found, false);
 end;
 $fn$;
