@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { PUBLIC_ANALYTICS_AVAILABLE, isPublicAnalyticsPath } from "@/lib/public-analytics";
 import { safePublicPagePath } from "@/lib/analytics/public-page-traffic.mjs";
 
@@ -157,7 +158,7 @@ export function FirstPartyStatsNotice() {
           className="min-h-11 rounded-full bg-amber-900 px-4 py-2 text-sm font-medium text-white">{copy.allow}</button>
         <button type="button" onClick={() => choose(false)}
           className="min-h-11 rounded-full border border-stone-400 bg-white px-3 py-2 text-sm">{copy.deny}</button>
-        <a href="/privacy" className="text-xs underline underline-offset-2">{copy.details}</a>
+        <Link href="/privacy" className="text-xs underline underline-offset-2">{copy.details}</Link>
       </div>
     </aside>
   );
