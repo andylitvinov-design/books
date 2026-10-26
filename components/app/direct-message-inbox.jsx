@@ -107,28 +107,49 @@ function AudioPublication({message,onAction,busy,locale,t}){
     </div>
   </details>
 }
-export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,compact=false,onOpenChange}){
+export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,compact=false,onOpenChange,simpleDetail=false,initialThreadId='',onThreadsLoaded,expectedAccountId=null,recipientSlug,isRecipientCurrent,onRecipientStarted,onBack}){
   const t=COPY[locale]||COPY.en
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
     [busy,setBusy]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState(''),
     [signedOut,setSignedOut]=useState(false),[destination,setDestination]=useState('')
-  const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0)
+  const uploadRef=useRef(null),operationRef=useRef(null),readGeneration=useRef(0),openThreadRef=useRef(null)
+  const lifetime=useRef(0),startPending=useRef(false)
   const [showNotices,setShowNotices]=useState(false)
+  useEffect(()=>{
+    const life=lifetime,reads=readGeneration
+    const generation=++life.current
+    setDraft('');setFile(null);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null
+    return()=>{if(life.current===generation)life.current++;reads.current++}
+  },[expectedAccountId])
   useEffect(()=>{onOpenChange?.(Boolean(activeId&&current))},[activeId,current,onOpenChange])
-  const getThreads=useCallback(async()=>{
+  const getThreads=useCallback(async(isCurrent=()=>true)=>{
+    const generation=lifetime.current
     const data=await jsonGet()
+    if(generation!==lifetime.current||!isCurrent())return null
+    if(expectedAccountId&&data.accountId!==expectedAccountId){
+      readGeneration.current++;setAccountId('');setCurrent(null);setActiveId('');setThreads([])
+      setDraft('');setFile(null);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null
+      onThreadsLoaded?.([])
+      throw new Error('ACCOUNT_CHANGED')
+    }
     setAccountId(data.accountId)
     setSignedOut(false)
     setThreads(data.threads||[])
+    onThreadsLoaded?.(data.threads||[])
     return data
-  },[])
+  },[onThreadsLoaded,expectedAccountId])
   useEffect(()=>{
     const parameters=new URLSearchParams(window.location.search)
-    const slug=parameters.get('to')||''
+    // Owners supply a consumed/bound intent; members retain the URL contract.
+    const slug=recipientSlug===undefined?parameters.get('to')||'':recipientSlug
     setDestination(/^[a-z0-9-]{2,90}$/.test(slug)?slug:'')
-    getThreads().catch(e=>{setError(e.message);if(e.message==='SIGN_IN_REQUIRED')setSignedOut(true)})
+  },[recipientSlug])
+  useEffect(()=>{
+    let active=true
+    getThreads().catch(e=>{if(active){setError(e.message);if(e.message==='SIGN_IN_REQUIRED')setSignedOut(true)}})
+    return()=>{active=false}
   },[getThreads])
   async function post(body){
     if(!accountId)throw new Error('SIGN_IN_REQUIRED')
@@ -146,7 +167,10 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
       const data=await jsonGet(URL+'?threadId='+encodeURIComponent(id))
       if(generation!==readGeneration.current)return
       if(data.threadId!==id)throw new Error('INBOX_UNAVAILABLE')
-      if(data.accountId!==accountId){setAccountId(data.accountId);await getThreads();return}
+      if(data.accountId!==accountId){
+        if(expectedAccountId){setCurrent(null);await getThreads();return}
+        setAccountId(data.accountId);await getThreads();return
+      }
       setCurrent(data)
       if(data.messages.some(m=>!m.mine)){
         await post({action:'read',threadId:id})
@@ -156,6 +180,19 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
       if(generation===readGeneration.current){setError(e.message);setCurrent(null)}
     }
   }
+  openThreadRef.current=openThread
+  useEffect(()=>{
+    const reads=readGeneration
+    if(simpleDetail){
+      // Temporary pane navigation cancels reads, not drafts or Send retries.
+      reads.current++;setCurrent(null);setActiveId('')
+    }
+    return()=>{reads.current++}
+  },[simpleDetail,initialThreadId,recipientSlug,expectedAccountId])
+  useEffect(()=>{
+    if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
+      void openThreadRef.current?.(initialThreadId)
+  },[simpleDetail,accountId,initialThreadId,activeId])
   async function action(body){
     setBusy(true);setError('')
     try {
@@ -167,14 +204,29 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     finally{setBusy(false)}
   }
   async function start(){
+    if(busy||startPending.current||!destination||!accountId)return
+    const slug=destination,ownerId=accountId,generation=lifetime.current
+    const controlled=recipientSlug!==undefined
+    const isCurrent=()=>generation===lifetime.current&&(!controlled||
+      (expectedAccountId===ownerId&&isRecipientCurrent?.(slug,ownerId)===true))
+    if(!isCurrent())return
+    startPending.current=true
     setBusy(true);setError('')
     try {
-      const {threadId}=await post({action:'start',slug:destination})
-      setDestination('')
-      await getThreads()
-      await openThread(threadId)
-    }catch(e){setError(e.message)}
-    finally{setBusy(false)}
+      const {threadId}=await post({action:'start',slug})
+      if(!isCurrent())return
+      const data=await getThreads(isCurrent)
+      if(!data||!isCurrent())return
+      if(controlled){
+        if(!threadId||!data.threads?.some(item=>item.id===threadId))throw new Error('INBOX_UNAVAILABLE')
+        // The parent selects a real authorized row; it owns detail navigation.
+        onRecipientStarted?.(threadId,slug,ownerId)
+      }else{
+        setDestination('')
+        await openThread(threadId)
+      }
+    }catch(e){if(isCurrent())setError(e.message)}
+    finally{startPending.current=false;if(generation===lifetime.current)setBusy(false)}
   }
   async function send(event){
     event.preventDefault()
@@ -216,8 +268,8 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
   const audioSelected=file&&AUDIO_MIMES.has(mediaMime(file))
   return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}
-    data-compact={compact||undefined}>
-    <header className={styles.head}>
+    data-compact={compact||undefined} data-simple-detail={simpleDetail||undefined}>
+    {!simpleDetail&&<header className={styles.head}>
       {!compact&&<div>{embedded?<h2><MessageCircle aria-hidden="true"/>{t.title}</h2>:<h1><MessageCircle aria-hidden="true"/>{t.title}</h1>}<p>{t.hint}</p></div>}
       <div className={styles.headActions}>
         {compact&&accountId&&<button type="button" className={styles.refresh}
@@ -229,9 +281,9 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
           try{await getThreads();if(activeId)await openThread(activeId)}catch(e){setError(e.message)}
         }}><RefreshCw size={17} aria-hidden="true"/>{!compact&&t.load}</button>
       </div>
-    </header>
+    </header>}
     {signedOut?<p role="alert" className={styles.notice}><a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>:null}
-    {accountId&&!signedOut&&(!compact||showNotices)&&<div className={styles.noticesPane}>
+    {!simpleDetail&&accountId&&!signedOut&&(!compact||showNotices)&&<div className={styles.noticesPane}>
       <ClientExpressReportNotices locale={locale} accountId={accountId}/>
     </div>}
     {error&&<p role="alert" className={styles.error}>{t.error} <code>{error}</code></p>}
@@ -242,7 +294,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     {!accountId&&!signedOut&&!error&&<p className={styles.emptySummary} role="status">{t.loading}</p>}
     {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>{ownerCrmAvailable?t.ownerEmpty:t.empty}</p>}
     {accountId&&(threads.length>0||destination)&&<div className={styles.layout} data-chat-open={Boolean(current)}>
-      <aside className={styles.conversations} aria-label={t.back}>
+      {!simpleDetail&&<aside className={styles.conversations} aria-label={t.back}>
         <h2>{t.back}</h2>
         {!threads.length&&<p className={styles.hint}>{t.empty}</p>}
         {threads.map(item=><button type="button" key={item.id} className={item.id===activeId?styles.selected:styles.thread}
@@ -252,12 +304,12 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
             <small>{new Date(item.updatedAt).toLocaleDateString(locale)}</small></span>
           {item.unread>0&&<span className={styles.unread} aria-label={String(item.unread)}>{item.unread}</span>}
         </button>)}
-      </aside>
+      </aside>}
       <div className={styles.chat}>
         {!current?<div className={styles.placeholder}><Headphones size={28} aria-hidden="true"/>
           <p>{t.choose}</p></div>:<>
           <div className={styles.chatHeader}>
-            <button type="button" className={styles.back} onClick={()=>{readGeneration.current++;setCurrent(null);setActiveId('')}}><ArrowLeft size={16}/>{t.back}</button>
+            <button type="button" className={styles.back} onClick={()=>{readGeneration.current++;setCurrent(null);setActiveId('');onBack?.()}}><ArrowLeft size={16}/>{t.back}</button>
             <strong>{current.peerName}</strong>
             {current.isRecipient&&<button type="button" disabled={busy}
               onClick={()=>action({action:current.blocked?'unblock':'block',threadId:current.threadId})}>

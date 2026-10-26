@@ -108,15 +108,16 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages stays connected to the seven-item mobile Cabinet navigation including Home',()=>{
+test('Messages has five focused app destinations without public site navigation',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const nav=read('components/app/messages-bottom-navigation.jsx')
   const css=read('app/[locale]/app/messages/messages-page.css')
   assert.ok(page.includes('<MessagesBottomNavigation locale={locale}/>'))
-  assert.ok(nav.includes('className="hh-mobile-app-nav"'))
-  assert.ok(nav.includes('className="hh-mobile-app-nav-home"'))
-  assert.equal((nav.match(/\{path:'/g)||[]).length,6)
+  assert.ok(nav.includes('className="hh-mobile-app-nav hh-messages-app-dock"'))
+  assert.doesNotMatch(nav,/hh-mobile-app-nav-home/)
+  assert.equal((nav.match(/\{path:'/g)||[]).length,5)
   assert.ok(nav.includes("locale==='es'?'en':locale"))
+  assert.match(css,/hh-messages-app-dock/)
   assert.ok(css.includes('padding-bottom:calc(110px + env(safe-area-inset-bottom))'))
 })
 

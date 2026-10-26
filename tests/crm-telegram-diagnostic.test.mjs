@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
-  parseDiagnosticStart,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
+  parseDiagnosticStart,telegramPublicStartRequested,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
   transitionTelegramDiagnosticLegacy as transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
 } from '../lib/crm/telegram-diagnostic.mjs'
 
@@ -16,6 +16,8 @@ const env={
   HH_CRM_MSG_PRODUCTION_APPROVED:'true',
   HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED:'true',
   HH_CRM_MSG_TELEGRAM_USERNAME:'HolisticHouseBot',
+  HH_CRM_MSG_TELEGRAM_TOKEN:'12345678:SYNTHETIC_BOT_TOKEN_ONLY_123456789',
+  HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET:'SYNTHETIC_TEST_SECRET',
 }
 test('deep-link parser supports exactly three static localized starters, no client PII',()=>{
   for(const lang of ['en','ru','es']){
@@ -26,11 +28,11 @@ test('deep-link parser supports exactly three static localized starters, no clie
     assert.equal(parseDiagnosticStart(s),null)
   }
 })
-test('public CTA stays absent without connected dedicated bot, explicit rollout and owner approval',()=>{
+test('permanent public CTA requires scoped release and valid dedicated BotFather credentials',()=>{
   assert.equal(telegramDiagnosticReady({}),false)
   assert.equal(telegramDiagnosticPublicUrl('ru',{}),null)
-  for(const key of ['HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED','HH_CRM_MSG_PRODUCTION_APPROVED',
-    'HH_CRM_MSG_TELEGRAM_USERNAME','HH_CRM_TG_DIAGNOSTIC_ENABLED']){
+  for(const key of ['HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED','HH_CRM_MSG_TELEGRAM_TOKEN',
+    'HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET','HH_CRM_MSG_TELEGRAM_USERNAME','HH_CRM_TG_DIAGNOSTIC_ENABLED']){
     const missing={...env}
     delete missing[key]
     assert.equal(telegramDiagnosticPublicUrl('ru',missing),null,key)
@@ -41,6 +43,14 @@ test('public CTA stays absent without connected dedicated bot, explicit rollout 
   assert.equal(telegramDiagnosticPublicUrl('es',env),
     'https://t.me/HolisticHouseBot?start=hhreview_es')
   assert.equal(telegramDiagnosticPublicUrl('en',{...env,VERCEL_ENV:'preview'}),null)
+  assert.equal(telegramDiagnosticPublicUrl('ru',{...env,HH_CRM_MSG_PRODUCTION_APPROVED:'false'}),
+    'https://t.me/HolisticHouseBot?start=hhreview_ru',
+    'permanent link works WITHOUT enabling global outbound messaging')
+  for(const cmd of ['/start','/start hhreview_ru','/start hhreview_en','/start@HolisticHouseBot'])
+    assert.equal(telegramPublicStartRequested(cmd),true)
+  for(const cmd of ['hi','/start invite-secret','/start hhreview_ru extra','/agree',
+    '/stop','/situation','/start?token=abc',''])
+    assert.equal(telegramPublicStartRequested(cmd),false)
 })
 test('new Telegram chats only enter consent stage; /start cannot create CRM lead',()=>{
   const unsolicited=transitionTelegramDiagnostic(null,message('Hi'))
@@ -186,6 +196,6 @@ test('diagnostic webhook forwards committed reply as Bot API text, not a missing
   const provider=source('lib/crm/messenger-provider.js')
   assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard,/)
   assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
-  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false\}/)
+  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en'\}/)
   assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
 })

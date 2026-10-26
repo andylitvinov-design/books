@@ -6,6 +6,44 @@
 
 At EzoHata the public diagnostic CTA opens @ezohata_diagnostics_bot and asks for a photo and a request. Its private SalesBot rules and proprietary CRM UI are not publicly accessible. This is a clean-room functional equivalent, not a code copy.
 
+## Telegram buttons shown ABOVE the input · 26 October 2026
+
+For @holistichouse_bot the previous Telegram **ReplyKeyboardMarkup** was
+displayed under the message composer. New messages with choices now use
+**InlineKeyboardMarkup** (buttons attached immediately below the latest bot
+message, in the chat area and above the text input), as requested by the owner.
+Buttons include **Да, начинаем / Не сейчас**, the exact four topics, and
+**Пропустить фото / Пропустить рисунок**, mirrored in EN/RU/ES. V1 technical
+buttons are localized as ordinary human labels, while legacy command text
+remains accepted only for backward compatibility; command syntax is not shown
+in buttons.
+
+- Use only Telegram's static **callback_data** action IDs, no URLs, scripts,
+  chat IDs or sensitive client fields.
+- After verifying the official Telegram webhook secret, accept
+  `callback_query` only for a bot-authored message in a private chat with
+  matching human sender and recipient; enforce stage and locale, ignore stale
+  button presses before any CRM mutation, preserve update ID idempotency,
+  opt-in, STOP, RLS, per-chat rate limits and encrypted media handoff.
+- Acknowledge each valid button tap via `answerCallbackQuery`; remove
+  stale inline controls via `editMessageReplyMarkup` after its committed
+  state transition. These are official Telegram Bot API methods, not new
+  marketing or scheduled sends. A tap is NOT a verified delivery receipt.
+- Existing webhook configured with `allowed_updates=['message']` is upgraded
+  **on the next signed inbound message** to also accept `callback_query`,
+  after verifying that the current callback URL is exactly the first-party
+  Holistic House URL. Never hijack a foreign webhook or drop pending updates.
+  Future explicit owner Connect also subscribes to both types.
+- Old Telegram clients can cache an older reply keyboard from messages
+  sent before rollout; only fresh bot messages use the inline-button UI.
+  No existing chat, signed invitation, portrait/drawing, or pending request
+  is deleted for this change.
+- Acceptance: deterministic real Bot API mocks, client/foreign-message
+  rejection, signed owner pilot callback flow, V1 compatibility,
+  `node --conditions=react-server --test tests/crm-telegram-inline-buttons.test.mjs`,
+  CRM lint/build, READY production SHA, and separate real iPhone Telegram
+  end-to-end before declaring external delivery complete.
+
 ## Owner-authored conversation V2 · 26 October 2026
 
 **New Telegram conversations use exactly six owner-authored replies from Andrey. The Russian messages follow the owner's supplied wording without paraphrase; no visible `/agree`, `/stop` or topic slash commands.** The old command-based V1 engine is retained exclusively for already-running consented V1 sessions (`flow_version=1`). An intentional new Telegram **Start** begins the V2 intro. The additive production migration `20261026171737_hh_crm_telegram_dialogue_v2_20261026.sql` adds an allowlisted `drawing` stage, version and broad topic, retaining existing encrypted CRM messages, contacts and RLS FORCE.
@@ -26,6 +64,8 @@ All text and buttons are mirrored in EN/RU/ES. Server sends only the owner's pre
 4. `Спасибо. Фото принял. Напиши, пожалуйста, 1) в чем ключевая задача (цель) 2) в чем сложность 3) любые подробности, которые стоило бы добавить.` (skip-photo fallback omits the claim that a photo arrived)
 5. `Спасибо за ответ. Теперь самое важное чтобы я мог разобрать ситуацию ...` → the three shapes `я / цель / сложность/ препятствие`, then separate photo of drawing
 6. `Спасибо. Задача принята в работу. И последнее. ...` → real `/{lang}/coaching/intake?topic=business|wellbeing|relationships|other` route, explicit send action
+
+**Restarting an existing pilot naturally:** Send **«Начать заново»** (RU), **“Start again”** (EN) or **“Empezar de nuevo”** (ES) in the same existing Telegram chat to explicitly restart the six owner-written messages. No new public client message, database migration, lead or marketing consent is created by the restart itself. No automated message is sent without this inbound. The STOP boundary remains terminal and cannot be bypassed by the phrase. This avoids requiring users to type a visible technical `/start` command.
 
 The previously consented owner chat may have already reached **10/10 daily replies** in legacy V1. An explicit `/start` V1→V2 transition therefore resets the reply quota **once**, bounded by persistent `flow_version=2` in the same committed transaction. Further V2 restarts cannot reset it, STOP stays terminal and existing encrypted CRM messages/consent are never wiped. No automated bot sends before a new inbound Telegram message.
 

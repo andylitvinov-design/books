@@ -180,6 +180,33 @@ test('legacy V1 in-progress question remains intact until an explicit new /start
   const stopped={stage:'stopped',locale:'ru',flowVersion:1}
   assert.equal(transitionTelegramDiagnostic(stopped,msg('/start')).reply,null)
 })
+test('existing V1 chat can restart the exact six owner messages with a natural phrase and no visible slash commands',()=>{
+  for(const [locale,phrase] of [
+    ['ru','Начать заново'],['en','Start again'],['es','Empezar de nuevo'],
+  ]){
+    const previous={stage:'done',locale,flowVersion:1,consentAt:'2026-10-26T14:00:00Z'}
+    const response=transitionTelegramDiagnostic(previous,msg(phrase,{locale}))
+    assert.equal(response.flowVersion,2,locale)
+    assert.equal(response.stage,'consent',locale)
+    assert.equal(response.body,null,'restart is never an extra CRM lead')
+    assert.ok(response.reply&&response.reply.length>50,locale)
+    assert.ok(response.keyboard.every(row=>row.every(button=>!button.startsWith('/'))))
+    const newSession={...previous,flowVersion:2}
+    const second=transitionTelegramDiagnostic(newSession,msg(phrase,{locale}))
+    assert.equal(second.stage,'consent',locale)
+    assert.equal(second.consent,false)
+    assert.equal(telegramDiagnosticDailyReplyCount({
+      flow_version:2,reply_day:'2026-10-26',reply_count:8,
+    },second,'2026-10-26'),8,'V2 repeated restart cannot refill daily quota')
+    const stopped={...previous,stage:'stopped'}
+    assert.equal(transitionTelegramDiagnostic(stopped,msg(phrase,{locale})).reply,null)
+  }
+  const old={stage:'done',locale:'ru',flowVersion:1,consentAt:'2026-10-26T14:00:00Z'}
+  const noRestart=transitionTelegramDiagnostic(old,msg('Дополнительное пояснение'))
+  assert.equal(noRestart.flowVersion,undefined,'ordinary V1 reply preserves old version')
+  assert.equal(noRestart.body,'Дополнительное пояснение')
+})
+
 test('legacy chat at ten replies can restart six owner messages ONCE without unbounded daily resets',()=>{
   const day='2026-10-26'
   const old={flow_version:1,reply_day:day,reply_count:10}

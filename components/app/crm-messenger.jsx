@@ -96,6 +96,8 @@ const messageStatuses={
   unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
 }
 const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
+// Photo-only Telegram events carry a private attachment, not display text.
+const photoOnlyMessage=/^\[(?:Voluntary photo attached for private review|Additional voluntary photo|Client portrait photo, shared voluntarily for private review|ME-GOAL-OBSTACLE drawing, shared voluntarily for private review|Additional voluntary drawing\/photo)\]$/
 function mergeThreadPages(older=[],fresh=[]){
   const index=new Map(older.map(thread=>[thread.id,thread]))
   for(const thread of fresh)index.set(thread.id,thread)
@@ -193,7 +195,7 @@ function replyReason(reason,lang){
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',initialThreadSequence=0,compact=false,onOpenChange}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',initialThreadSequence=0,compact=false,onOpenChange,conversationOnly=false,onPortraitFound}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -315,6 +317,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           nextThreadsCursor:previous?.nextThreadsCursor===undefined
             ?result.nextThreadsCursor:previous.nextThreadsCursor,
         }))
+        // Portraits remain behind the existing authenticated CRM photo proxy.
+        const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+          onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }
     }catch{if(activeRef.current===id)setError('unavailable')}
@@ -450,9 +456,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   )
-  return <section className={styles.panel} aria-label={t.title}
+  return <section className={conversationOnly?styles.detailOnly:styles.panel} aria-label={t.title}
     data-compact={compact||undefined}>
-    <header className={styles.top}>
+    {!conversationOnly&&<header className={styles.top}>
       {!compact&&<div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>}
       <div className={styles.topActions}>
         {compact&&<button type="button" className={styles.settingsButton}
@@ -466,10 +472,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           {compact?<RefreshCw size={17} aria-hidden="true"/>:t.refresh}
         </button>
       </div>
-    </header>
-    {data&&data.accounts?.length===0&&
+    </header>}
+    {!conversationOnly&&data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
-    {(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
+    {!conversationOnly&&(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
       {compact&&<button type="button" className={styles.closeSettings}
         onClick={()=>setShowSettings(false)} aria-label={lang==='ru'?'Закрыть настройки':lang==='es'?'Cerrar ajustes':'Close settings'}>
         <X size={18} aria-hidden="true"/></button>}
@@ -557,8 +563,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     </div>}
     {!data&&!error&&<p role="status" className={styles.notice}>{t.loading}</p>}
     {error&&<p role="alert" className={styles.notice}>{t.failed}</p>}
-    {data&&<div className={styles.layout} data-chat-open={Boolean(selected)}>
-      <div className={styles.list} aria-label={t.customers}>
+    {data&&<div className={conversationOnly?styles.detailLayout:styles.layout}
+      data-chat-open={Boolean(selected)}>
+      {!conversationOnly&&<div className={styles.list} aria-label={t.customers}>
         <div className={styles.listHead}>
           <strong>{t.customers} <span className={styles.listCount}>{threads.length}</span></strong>
           {compact?<button type="button" className={styles.filterButton}
@@ -602,21 +609,21 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           disabled={threadsBusy||busy} onClick={loadMoreThreads}>
           {threadsBusy?t.loading:t.loadThreads}
         </button>}
-      </div>
-      <div className={styles.conversation}>
+      </div>}
+      <div className={conversationOnly?styles.detailConversation:styles.conversation}>
         {!selected?<p className={styles.empty}>{t.select}</p>:<>
-          <div className={styles.chatHeader}>
-            {compact&&<button type="button" className={styles.backButton} onClick={backToList}
+          {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
+            {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
               <ArrowLeft size={19} aria-hidden="true"/></button>}
-            <div className={styles.chatIdentity}>
+            {!conversationOnly&&<div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
               <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
-            </div>
+            </div>}
             {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
               onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
-          </div>
-          <div className={styles.contactActions}>
+          </div>}
+          {!conversationOnly&&<div className={styles.contactActions}>
             <label>{w.stage}
               <select value={selected.lifecycle} disabled={busy||threadLoading}
                 onChange={event=>changeStage(event.target.value)}>
@@ -633,7 +640,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!compact&&<span className={styles.smallHint}>{selected.suppressed?
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
               w.overview}</span>}
-          </div>
+          </div>}
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
             {!threadLoading&&data?.nextMessagesCursor&&<button type="button"
@@ -642,7 +649,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
-              <p>{m.text}</p>
+              {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
               {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
@@ -650,7 +657,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
             </div>)}
           </div>
-          {(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">
+          {!conversationOnly&&(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">
             <details className={styles.actionDetails}>
               <summary>{w.followups} · {(data?.followups||[]).length}</summary>
               <div className={styles.actionBody}>
@@ -694,34 +701,35 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             </details>
           </div>}
           <div className={styles.compose}>
-            <label htmlFor="crm-messenger-compose">{t.reply}</label>
-            {compact&&<button type="button" className={styles.repliesToggle}
+            <label className={conversationOnly?styles.srOnly:undefined} htmlFor="crm-messenger-compose">{t.reply}</label>
+            {compact&&!conversationOnly&&<button type="button" className={styles.repliesToggle}
               aria-expanded={showQuickReplies} aria-controls="hh-crm-quick-replies"
               onClick={()=>setShowQuickReplies(value=>!value)}>
               {lang==='ru'?'Шаблоны':lang==='es'?'Respuestas rápidas':'Quick replies'}
             </button>}
-            {(!compact||showQuickReplies)&&<div id="hh-crm-quick-replies" className={styles.quickReplies}
+            {!conversationOnly&&(!compact||showQuickReplies)&&<div id="hh-crm-quick-replies" className={styles.quickReplies}
               role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
               {quickReplies[lang].map(item=><button type="button" key={item.label}
                 disabled={busy||threadLoading||!selected.reply.ok}
                 onClick={()=>{pendingRequest.current=null;setText(item.text);setShowQuickReplies(false)}}>{item.label}</button>)}
             </div>}
+            {(conversationOnly||compact)&&status&&<p className={styles.composeNotice} role="status">{status}</p>}
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
-              maxLength={1200} rows={compact?1:3} onChange={e=>{
+              maxLength={1200} rows={conversationOnly?2:compact?1:3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
-              }} placeholder={t.manual}/>
+              }} placeholder={conversationOnly||compact?(lang==='ru'?'Написать сообщение…':lang==='es'?'Escribe un mensaje…':'Write a message…'):t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
-              {compact?<Send size={18} aria-hidden="true"/>:t.send}
+              {compact&&!conversationOnly?<Send size={18} aria-hidden="true"/>:t.send}
             </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
           </div>
         </>}
       </div>
     </div>}
-    {status&&<p role="status" className={styles.notice}>{status}</p>}
-    {!compact&&<p className={styles.disclaimer}>{t.manual}</p>}
+    {!conversationOnly&&!compact&&status&&<p role="status" className={styles.notice}>{status}</p>}
+    {!compact&&!conversationOnly&&<p className={styles.disclaimer}>{t.manual}</p>}
   </section>
 }

@@ -33,7 +33,6 @@ const focusAreas: Record<Focus, Area[]> = {
   work: ["work", "money"],
   identity: ["traits", "support", "meaning"],
 };
-const allAreas = Object.keys(areaAxes) as Area[];
 const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
 const allAxesFor = (areas: Area[]) => [...new Set(areas.flatMap(area => areaAxes[area]))];
 
@@ -86,6 +85,7 @@ const copy = {
     },
     topicTitle: "Choose the specific topics that matter",
     topicHelp: "We've suggested topics from your interests. Refine them before choosing actual measured scales.",
+    focusContext: "Selected interests",
     areas: {
       traits: ["Personality traits", "Patterns · strengths"],
       support: ["Resources & self-support", "Support · self-kindness"],
@@ -113,18 +113,18 @@ const copy = {
       ["Challenges", "Which practical obstacles deserve attention?"],
     ],
     swotNote: "SWOT is a guided reflection using your own interpretation, not an automatically inferred personality verdict.",
-    next: "Continue", back: "Back", start: "Yes, take these tests",
+    next: "Continue", back: "Back",
     review: "Review my test path", readyKicker: "YOUR PERSONAL TEST PATH",
     readyTitle: "Ready to build your profile?",
-    readyHelp: "To create your profile, take the following free tests in order. You can review this list before starting.",
-    saveToCabinet: "Save my selected tests in my Cabinet",
-    saveToCabinetHelp: "Continue with Google to keep this selected test plan in My Tests. Guest answers or earlier guest results are never imported automatically.",
-    saveToCabinetBusy: "Preparing your Cabinet…",
-    saveToCabinetError: "Google sign-in could not start. Try again or continue as a guest.",
-    saveToCabinetCheckError: "Could not verify your account. You can still start these tests as a guest.",
-    saveToCabinetStorageError: "Browser storage is unavailable. Allow site storage to keep your selection through Google sign-in, or continue as a guest.",
-    guestChoice: "Or start these tests as a guest with the button below.",
-    readyFoot: "One test at a time. You will see your progress at the top, and you can choose to save results privately in your Cabinet.",
+    readyHelp: "Start with these free tests. Continue with Google to save your selection.",
+    accountTitle: "Your personal profile & growth path",
+    accountDescription: "Take your free tests, explore your personal profile, and discover recommendations and next steps for development.",
+    accountPrivacy: "Free · Private · Saved in My Tests",
+    saveToCabinet: "Continue with Google — Free",
+    saveToCabinetBusy: "Connecting to Google…",
+    saveToCabinetError: "Google sign-in could not start. Please try again.",
+    saveToCabinetCheckError: "Could not verify your account. Please try again.",
+    saveToCabinetStorageError: "Browser storage is unavailable. Allow site storage to keep your selection through Google sign-in.",
     noTests: "No eligible free test measures this selection. Go back and choose other scales.",
     private: "Results can be saved in your protected account. Build your profile and set voluntary development goals there, after the tests.",
     myProfile: "My saved profile", myPath: "My development path",
@@ -161,6 +161,7 @@ const copy = {
     },
     topicTitle: "Уточните важные для вас темы",
     topicHelp: "Мы предложили темы на основе вашего выбора. Измените их перед выбором измеряемых шкал.",
+    focusContext: "Выбранные направления",
     areas: {
       traits: ["Особенности личности", "Качества · сильные стороны"],
       support: ["Ресурсы и поддержка", "Опора · бережность к себе"],
@@ -188,18 +189,18 @@ const copy = {
       ["Препятствия", "Какие обстоятельства важно учитывать?"],
     ],
     swotNote: "SWOT — упражнение для собственной рефлексии, а не автоматически поставленный психологический вердикт.",
-    next: "Далее", back: "Назад", start: "Да, пройти эти тесты",
+    next: "Далее", back: "Назад",
     review: "Проверить план тестов", readyKicker: "ВАШ ПУТЬ К ЛИЧНОМУ ПРОФИЛЮ",
     readyTitle: "Всё готово для создания профиля",
-    readyHelp: "Для создания профиля предлагаем пройти следующие бесплатные тесты по порядку. Подтвердите список перед началом.",
-    saveToCabinet: "Сохранить выбранные тесты в кабинете",
-    saveToCabinetHelp: "Войдите через Google, чтобы сохранить набор в «Моих тестах». Гостевые ответы и прошлые гостевые результаты автоматически не переносятся.",
-    saveToCabinetBusy: "Открываем ваш кабинет…",
-    saveToCabinetError: "Не удалось начать вход через Google. Повторите попытку или продолжите без кабинета.",
-    saveToCabinetCheckError: "Не удалось проверить вход. Тесты всё равно можно пройти как гость.",
-    saveToCabinetStorageError: "Хранение данных сайта недоступно. Разрешите его для сохранения подборки через Google или продолжите как гость.",
-    guestChoice: "Или начните тесты без регистрации кнопкой ниже.",
-    readyFoot: "Тесты идут один за другим. Сверху будет виден общий прогресс, а результаты можно сохранить в защищённом кабинете по вашему желанию.",
+    readyHelp: "Начните с этих бесплатных тестов. Войдите через Google, чтобы сохранить подборку.",
+    accountTitle: "Ваш личный профиль и программа развития",
+    accountDescription: "Пройдите тесты, изучите свой профиль, получите рекомендации и наметьте личный путь развития.",
+    accountPrivacy: "Бесплатно · Приватно · В разделе «Мои тесты»",
+    saveToCabinet: "Продолжить через Google — бесплатно",
+    saveToCabinetBusy: "Подключаем Google…",
+    saveToCabinetError: "Не удалось начать вход через Google. Повторите попытку.",
+    saveToCabinetCheckError: "Не удалось проверить ваш аккаунт. Повторите попытку.",
+    saveToCabinetStorageError: "Хранение данных сайта недоступно. Разрешите его, чтобы сохранить подборку через Google.",
     noTests: "Для выбранных шкал пока нет подходящего бесплатного теста. Вернитесь к выбору шкал.",
     private: "Результаты можно сохранить в защищённом кабинете. Там доступен личный профиль и цели программы развития.",
     myProfile: "Мой профиль", myPath: "Моя программа развития",
@@ -236,6 +237,7 @@ const copy = {
     },
     topicTitle: "Elige los temas específicos para explorar",
     topicHelp: "Sugerimos temas según tus intereses. Ajústalos antes de seleccionar escalas medibles.",
+    focusContext: "Áreas elegidas",
     areas: {
       traits: ["Rasgos personales", "Patrones · fortalezas"],
       support: ["Recursos y apoyo", "Apoyo · autocompasión"],
@@ -263,18 +265,18 @@ const copy = {
       ["Desafíos", "¿Qué obstáculos prácticos debes considerar?"],
     ],
     swotNote: "El DAFO es una reflexión guiada, no un veredicto automático sobre tu personalidad.",
-    next: "Continuar", back: "Atrás", start: "Sí, empezar estas pruebas",
+    next: "Continuar", back: "Atrás",
     review: "Revisar mi plan de pruebas", readyKicker: "TU RUTA DE PRUEBAS PERSONALES",
     readyTitle: "Tu perfil empieza aquí",
-    readyHelp: "Para crear tu perfil, realiza estas pruebas gratuitas en orden. Confirma la lista antes de empezar.",
-    saveToCabinet: "Guardar las pruebas elegidas en mi espacio",
-    saveToCabinetHelp: "Accede con Google para guardar tu selección en Mis pruebas. Tus respuestas y resultados de invitado no se importarán automáticamente.",
-    saveToCabinetBusy: "Abriendo tu espacio…",
-    saveToCabinetError: "No se pudo iniciar sesión con Google. Inténtalo de nuevo o continúa sin entrar.",
-    saveToCabinetCheckError: "No pudimos verificar tu cuenta. Puedes hacer estas pruebas como invitado.",
-    saveToCabinetStorageError: "No se puede guardar la selección en este navegador. Habilita el almacenamiento o continúa como invitado.",
-    guestChoice: "O empieza como invitado con el botón de abajo.",
-    readyFoot: "Avanza prueba por prueba. Verás el progreso total arriba y podrás guardar los resultados de forma privada si lo deseas.",
+    readyHelp: "Empieza con estas pruebas gratuitas. Accede con Google para guardar tu selección.",
+    accountTitle: "Tu perfil personal y plan de desarrollo",
+    accountDescription: "Completa las pruebas, explora tu perfil y descubre recomendaciones y próximos pasos para crecer.",
+    accountPrivacy: "Gratis · Privado · Guardado en Mis pruebas",
+    saveToCabinet: "Continuar con Google — Gratis",
+    saveToCabinetBusy: "Conectando con Google…",
+    saveToCabinetError: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+    saveToCabinetCheckError: "No pudimos verificar tu cuenta. Inténtalo de nuevo.",
+    saveToCabinetStorageError: "El almacenamiento del navegador no está disponible. Actívalo para conservar tu selección al entrar con Google.",
     noTests: "No hay una prueba gratuita adecuada para estas escalas. Regresa y cambia tu elección.",
     private: "Guarda tus resultados en tu cuenta protegida y define tus propias metas de desarrollo.",
     myProfile: "Mi perfil guardado", myPath: "Mi plan de desarrollo",
@@ -304,7 +306,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const [accountError, setAccountError] = useState("");
   const accountLocale = locale === "es" ? "en" : locale;
 
-  const availableAxes = allAxesFor(areas);
+  // Only topics selected on slide 1 may contribute axes or test suggestions.
+  const visibleAreas = areasFor(focuses);
+  const activeAreas = areas.filter(area => visibleAreas.includes(area));
+  const availableAxes = allAxesFor(activeAreas);
   const matches = useMemo(() => tests
     .map(test => ({ ...test, matches: test.axes.filter(axis => selectedAxes.includes(axis)) }))
     .filter(test => test.matches.length > 0)
@@ -319,9 +324,15 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   function toggleFocus(focus: Focus) {
     setFocuses(previous => previous.includes(focus)
       ? previous.filter(item => item !== focus) : [...previous, focus]);
+    // Never carry another direction’s topics, scales or tests into this choice.
+    setAreas([]);
+    setSelectedAxes([]);
+    setSelectedKeys([]);
+    setShowMore(false);
   }
 
   function toggleArea(area: Area) {
+    if (!visibleAreas.includes(area)) return;
     const next = areas.includes(area) ? areas.filter(item => item !== area) : [...areas, area];
     setAreas(next);
     setSelectedAxes(allAxesFor(next));
@@ -337,7 +348,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       setShowMore(false);
       setStep(1);
     }
-    if (step === 1 && areas.length) setStep(2);
+    if (step === 1 && activeAreas.length) setStep(2);
     if (step === 2 && selectedAxes.length) {
       setSelectedKeys([...recommendProfileBattery(matches, selectedAxes)]);
       setShowMore(false);
@@ -347,13 +358,13 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }
 
   const base = "/" + accountLocale;
-  const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","));
 
   async function saveSelectionWithGoogle() {
     if (accountBusy || selectedKeys.length === 0) return;
     setAccountError("");
     // The only cross-navigation state is a TTL-limited whitelist of eligible
     // questionnaire keys, not the user interests, answers or health results.
+    // No guest answers or guest results are imported into the Google account.
     try {
       window.sessionStorage.setItem(
         PENDING_TEST_SELECTION_KEY,
@@ -467,8 +478,11 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <p className={styles.templateLabel}>{t.unifiedNote}</p>
         <h2 id="profile-builder-step-title">{t.topicTitle}</h2>
         <p className={styles.help}>{t.topicHelp}</p>
-        <div className={styles.areaGrid}>
-          {allAreas.map(area =>
+        <p className={styles.focusContext} data-profile-selected-focus>
+          <strong>{t.focusContext}:</strong> {focuses.map(focus => t.focuses[focus][0]).join(" · ")}
+        </p>
+        <div className={styles.areaGrid} data-profile-topic-options>
+          {visibleAreas.map(area =>
             <button type="button" key={area} aria-pressed={areas.includes(area)}
               className={styles.areaCard} onClick={() => toggleArea(area)}>
               <span className={styles.selectDot}>{areas.includes(area) && <Check size={14} aria-hidden="true" />}</span>
@@ -562,40 +576,37 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
             </li>)}
         </ol>
         <div className={styles.accountOffer} data-profile-google-cabinet-offer>
-          <LockKeyhole size={20} aria-hidden="true" />
-          <div className={styles.accountOfferBody}>
-            <button type="button" className={styles.googleButton}
-              onClick={saveSelectionWithGoogle} disabled={accountBusy || selectedKeys.length === 0}
-              data-profile-google-signin>
-              {accountBusy ? t.saveToCabinetBusy : t.saveToCabinet}<ArrowRight size={16} aria-hidden="true" />
-            </button>
-            <p>{t.saveToCabinetHelp}</p>
-            <small>{t.guestChoice}</small>
-            {accountError && <p role="alert" className={styles.accountError}>{accountError}</p>}
+          <div className={styles.accountOfferHeading}>
+            <Sparkles size={18} aria-hidden="true" />
+            <strong>{t.accountTitle}</strong>
           </div>
+          <p className={styles.accountOfferDescription}>{t.accountDescription}</p>
+          <button type="button" className={styles.googleButton}
+            onClick={saveSelectionWithGoogle} disabled={accountBusy || selectedKeys.length === 0}
+            data-profile-google-signin>
+            <span className={styles.googleMark} aria-hidden="true">G</span>
+            <span>{accountBusy ? t.saveToCabinetBusy : t.saveToCabinet}</span>
+            <ArrowRight size={17} aria-hidden="true" />
+          </button>
+          <small className={styles.accountPrivacy}><LockKeyhole size={13} aria-hidden="true" />{t.accountPrivacy}</small>
+          {accountError && <p role="alert" className={styles.accountError}>{accountError}</p>}
         </div>
-        <p className={styles.reviewFoot}><LockKeyhole size={16} aria-hidden="true" />{t.readyFoot}</p>
       </section>}
 
-      <div className={styles.actions}>
+      {step < 4 && <div className={styles.actions}>
         {step > 0 && <button type="button" className={styles.back} onClick={() => setStep(step - 1)}><ArrowLeft size={17} />{t.back}</button>}
         {step === 0
           ? <button type="button" className={styles.primary} disabled={focuses.length === 0}
               onClick={goForward} data-profile-confirm-focus>{t.next}<ArrowRight size={17} /></button>
           : step < 3
-            ? <button type="button" className={styles.primary} disabled={step === 1 ? areas.length === 0 : selectedAxes.length === 0}
+            ? <button type="button" className={styles.primary} disabled={step === 1 ? activeAreas.length === 0 : selectedAxes.length === 0}
                 onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
-            : step === 3
-              ? <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
-                  onClick={goForward} data-profile-review-tests>{t.review}<ArrowRight size={17} /></button>
-              : selectedKeys.length > 0
-                ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
-                    {t.start}<ArrowRight size={17} /></Link>
-                : <button type="button" disabled className={styles.primary}>{t.start}</button>}
-      </div>
+            : <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
+                onClick={goForward} data-profile-review-tests>{t.review}<ArrowRight size={17} /></button>}
+      </div>}
     </div>
 
-    <aside className={styles.privateInfo}>
+    {step < 4 && <aside className={styles.privateInfo}>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{t.private}</p>
         <div className={styles.privateLinks}>
@@ -603,7 +614,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <Link href={base + "/app/portfolio#hh-development-program"} prefetch={false}>{t.myPath}<ArrowRight size={14} /></Link>
         </div>
       </div>
-    </aside>
+    </aside>}
     </>}
     {t.esNote && <p className={styles.languageNotice}>{t.esNote}</p>}
     <p className={styles.disclaimer}>{t.disclaimer}</p>

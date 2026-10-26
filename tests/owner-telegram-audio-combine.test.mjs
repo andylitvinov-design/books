@@ -49,7 +49,8 @@ test('owner-only commands and legitimate private callback buttons',()=>{
   for(const command of ['combine','done','cancel']){
     assert.equal(parseOwnerAudioCommand(message('/'+command),NOW)?.action,command)
     assert.equal(parseOwnerAudioCommand(message('/'+command+'@Andydotbot'),NOW)?.action,command)
-    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,command)
+    assert.equal(parseOwnerAudioCallback(callback('hh-audio:'+command))?.action,
+      command==='combine'?'combine':'legacy-batch-button')
   }
   const bad=message('/combine');bad.message.from.id=999
   assert.equal(parseOwnerAudioCommand(bad,NOW),null)
@@ -75,12 +76,19 @@ test('lossless Ogg chain preserves order and rewrites repeated serial numbers',(
   assert.equal(rewrittenSerial,new DataView(third.buffer,third.byteOffset+thirdPage).getUint32(14,true))
   assert.deepEqual(joinOggOpus([first,second]),joinOggOpus([first,second]))
 })
+test('12 Ogg/Opus voice messages can join losslessly, while 13 are rejected',()=>{
+  const sources=Array.from({length:12},(_,index)=>clip(index%3===0?123:index+100))
+  const joined=joinOggOpus(sources)
+  assert.equal(joined.length,sources.reduce((size,part)=>size+part.length,0))
+  assert.deepEqual(joined.slice(0,sources[0].length),sources[0])
+  assert.throws(()=>joinOggOpus([...sources,clip(987)]),/PART_COUNT/)
+})
 test('reject damaged Ogg pages, fake audio, oversize and extra parts',()=>{
   const sample=clip(777)
-  assert.equal(OWNER_AUDIO_COMBINE_MAX_PARTS,8)
+  assert.equal(OWNER_AUDIO_COMBINE_MAX_PARTS,12)
   assert.equal(OWNER_AUDIO_COMBINE_MAX_BYTES,20_000_000)
   assert.throws(()=>joinOggOpus([sample]),/PART_COUNT/)
-  assert.throws(()=>joinOggOpus(Array.from({length:9},()=>sample)),/PART_COUNT/)
+  assert.throws(()=>joinOggOpus(Array.from({length:13},()=>sample)),/PART_COUNT/)
   const tampered=new Uint8Array(sample);tampered[29]^=1
   assert.throws(()=>joinOggOpus([sample,tampered]),/INVALID_OPUS/)
   const notOpus=new Uint8Array(sample);notOpus[31]^=1
@@ -91,15 +99,18 @@ test('reject damaged Ogg pages, fake audio, oversize and extra parts',()=>{
 test('private PostgreSQL session, ordered storage and Telegram sender are wired before AI',()=>{
   const file=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
   const schema=readFileSync(new URL('../supabase/migrations/20261026131500_hh_telegram_owner_audio_combine.sql',import.meta.url),'utf8')
-  assert.match(file,/appendAudioCombine\(config,event,claimed\.row\.id\)/)
+  const expansion=readFileSync(new URL('../supabase/migrations/20261026191612_hh_telegram_audio_combine_12_parts.sql',import.meta.url),'utf8')
+  assert.match(file,/appendAudioCombine\(config,\{\.\.\.event,batchId:claimed\.batch\.batchId\},claimed\.row\.id\)/)
   assert.match(file,/result_audio_id/)
   assert.match(file,/where practitioner_id=\$1 for update/)
   assert.match(file,/items\.sort\(\(a,b\)=>a\.updateId-b\.updateId\)/)
-  assert.match(file,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,fetcher\)/)
+  assert.match(file,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher\)/)
   assert.match(file,/form\.set\('document'/)
   assert.match(file,/event\.chatId!==credentials\.chat\|\|event\.userId!==credentials\.chat/)
   assert.match(schema,/force row level security/i)
   assert.match(schema,/revoke all.*app_private\.telegram_owner_audio_combine[\s\S]*anon, authenticated, hh_app_inbox/)
   assert.match(schema,/hh\.owner_audio_manager/)
   assert.match(schema,/jsonb_array_length\(items\)<=8/)
+  assert.match(expansion,/drop constraint if exists telegram_owner_audio_combine_items_check/i)
+  assert.match(expansion,/jsonb_array_length\(items\)<=12/)
 })

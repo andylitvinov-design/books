@@ -160,3 +160,79 @@
  .panel[data-compact="true"] .channelGrid{grid-template-columns:1fr}
  .panel[data-compact="true"] .settingsHost{max-height:76%}
 }
+
+
+/* Focused owner conversation: all provider settings, CRM pipeline, follow-ups
+   and automation widgets remain available in My Practice, not inside a chat. */
+.detailOnly{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%;width:100%;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:#fff;color:#332f2b}
+.detailLayout{display:flex;flex:1;min-height:0;min-width:0;width:100%;overflow:hidden}
+.detailConversation{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;overflow:hidden;max-height:none}
+.detailConversation .messages{flex:1;min-height:0;max-height:none;padding:14px;overflow:auto;background:#fcfaf7;overscroll-behavior:contain}
+.detailConversation .chatHeader{display:flex;justify-content:flex-end;min-height:42px;border-bottom:0;padding:5px 12px}
+.detailConversation .compose{display:grid;gap:7px;flex:none;padding:10px 12px;border-top:1px solid #e9e0d7;background:#fff}
+.detailConversation .compose textarea{box-sizing:border-box;min-height:48px;max-height:105px;padding:10px 12px;resize:none;border-radius:11px;border:1px solid #ddd2c9;background:#fff}
+.detailConversation .compose>button{justify-self:end;min-height:40px;border:0;border-radius:11px;padding:8px 17px;background:#386e62;color:white;font-weight:700;cursor:pointer}
+.detailConversation .compose>button:disabled{opacity:.44;cursor:not-allowed}
+.detailOnly .notice{margin:4px 12px;font-size:12px;color:#76536a}
+.detailConversation .empty{margin:auto;color:#81766c}
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media(max-width:700px){.detailConversation .messages{min-height:0;max-height:none}.detailConversation .compose{padding:9px 11px}}
+
+
+/* Client conversation polish, preserving the one-screen owner inbox. */
+.detailConversation .inbound{background:#fff;border:1px solid #e4ede6;border-bottom-left-radius:5px}
+.detailConversation .outbound{background:#e3f2e9;border:1px solid #d6e7dc;border-bottom-right-radius:5px}
+.detailConversation .messages{background:#f9fbf9;gap:9px;padding:12px}
+.detailConversation .messages p{margin:0 0 5px;font:500 14px/1.42 system-ui,sans-serif;color:#244a3f}
+.detailConversation .messages small{font-size:10px;color:#788d82}
+.detailConversation .compose{grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;padding:8px 10px}
+.detailConversation .compose textarea{grid-column:1;grid-row:1;min-height:45px;height:45px;max-height:115px;font:500 14px/1.4 system-ui,sans-serif;border-color:#d4e3d8;border-radius:13px}
+.detailConversation .compose textarea::placeholder{color:#8a9d92}
+.detailConversation .compose>button{grid-column:2;grid-row:1;min-height:45px;white-space:nowrap;border-radius:13px;background:#2f7763}
+.detailConversation .compose small{grid-column:1/-1}
+@media(max-width:380px){.detailConversation .compose{gap:5px;padding:7px}.detailConversation .compose>button{padding:7px 10px;font-size:12px}}
+.panel[data-compact="true"] .compose{grid-template-rows:auto auto}
+.panel[data-compact="true"] .compose .repliesToggle{grid-row:1;grid-column:1/3;justify-self:start}
+.panel[data-compact="true"] .compose textarea{grid-row:2;grid-column:1}
+.panel[data-compact="true"] .compose>button:last-of-type{grid-row:2;grid-column:2}
+
+/* iPhone composer: only the message history scrolls. The editor and Send are
+   one fixed-height row at the bottom of the available conversation viewport. */
+.detailConversation{display:flex;flex-direction:column;min-height:0;max-height:none;overflow:hidden}
+.detailConversation .messages{flex:1 1 0%;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.detailConversation .compose{
+  position:relative;z-index:2;margin-top:auto;flex:0 0 auto;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(76px,max-content);
+  align-items:center;column-gap:8px;row-gap:5px;
+  padding:9px 11px;background:#fffdfb;
+}
+.detailConversation .compose textarea{
+  grid-column:1;grid-row:1;min-width:0;width:100%;height:46px;min-height:46px;
+  max-height:110px;resize:none;padding:11px 12px;font:400 16px/1.35 system-ui,sans-serif;
+}
+.detailConversation .compose>button:last-of-type{
+  grid-column:2;grid-row:1;justify-self:stretch;align-self:stretch;
+  display:flex;align-items:center;justify-content:center;
+  min-height:46px;min-width:76px;padding:8px 12px;white-space:nowrap;
+}
+.detailConversation .compose small{grid-column:1/-1}
+.composeNotice{
+  position:absolute;z-index:4;bottom:calc(100% + 4px);left:8px;right:8px;
+  max-height:44px;overflow-y:auto;pointer-events:none;
+  margin:0;padding:6px 9px;border:1px solid #e7ddcc;border-radius:9px;
+  background:#fffaf0;color:#755d40;font:600 12px/1.35 system-ui,sans-serif;
+}
+/* The older compact CRM entry is still accessible from My Practice.
+   Keep its Send on the same row, and prevent 13px Safari auto-zoom there too. */
+.panel[data-compact="true"] .compose{margin-top:auto}
+.panel[data-compact="true"] .compose textarea{
+  min-width:0;resize:none;font:400 16px/1.3 system-ui,sans-serif;
+}
+@media(max-width:760px){
+  .panel[data-compact="true"] .compose .repliesToggle{display:none}
+}
+
+
+@media(max-width:760px){
+  .panel .compose textarea{font-size:16px;resize:none}
+}

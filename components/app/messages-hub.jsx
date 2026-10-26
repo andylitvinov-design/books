@@ -1,24 +1,25 @@
 'use client'
-import {useCallback,useEffect,useState} from 'react'
-import {ArrowRight,ClipboardList,MessageCircle,ShieldCheck} from 'lucide-react'
+import {useCallback,useEffect,useRef,useState} from 'react'
+import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
 import DirectMessageInbox from './direct-message-inbox'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
+import MessagesSimpleInbox from './messages-simple-inbox'
 import styles from './messages-hub.module.css'
 
 const COPY={
   en:{title:'Messages',subtitle:'Private conversations and client enquiries, together.',sources:'Message source',crmSource:'Messengers',directSource:'On-site',
-    chats:'Conversations',requests:'Client requests',crm:'Telegram & other connected channels',direct:'Private conversations inside Holistic House',openCrm:'View Telegram conversations',
+    telegramShare:'Telegram link',telegramCopy:'Copy',telegramCopied:'Copied',chats:'Conversations',requests:'Client requests',crm:'Telegram & other connected channels',direct:'Private conversations inside Holistic House',openCrm:'View Telegram conversations',
     crmHint:'Owner-only CRM conversations. Replies depend on verified provider delivery.',
     refresh:'Refresh requests',loading:'Loading requests…',failure:'Could not load client requests. Please retry.',
     ownerLead:'New Telegram & messenger requests',ownerUnread:'unread messages',otherLoading:'Loading other requests…',sessionRequired:'This browser is not signed in to the Holistic House cabinet. Log in to see your messages.',signIn:'Sign in to view client enquiries',privacy:'Only you and the assigned practitioner can see private request conversations.'},
   ru:{title:'Сообщения',subtitle:'Переписка и заявки клиентов — в одном удобном месте.',sources:'Источник сообщений',crmSource:'Мессенджеры',directSource:'На сайте',
-    chats:'Переписка',requests:'Заявки',crm:'Telegram и другие подключённые каналы',direct:'Личная переписка внутри Holistic House',openCrm:'Открыть Telegram-переписки',
+    telegramShare:'Ссылка Telegram',telegramCopy:'Копировать',telegramCopied:'Скопировано',chats:'Переписка',requests:'Заявки',crm:'Telegram и другие подключённые каналы',direct:'Личная переписка внутри Holistic House',openCrm:'Открыть Telegram-переписки',
     crmHint:'Переписки владельца в CRM. Доставка ответа зависит от подтверждения провайдера.',
     refresh:'Обновить заявки',loading:'Загружаю заявки…',failure:'Не удалось загрузить заявки. Повторите попытку.',
     ownerLead:'Новые обращения Telegram и мессенджеров',ownerUnread:'непрочитанных сообщений',otherLoading:'Загружаем остальные заявки…',sessionRequired:'В этом браузере не выполнен вход в кабинет Holistic House. Войдите в аккаунт владельца, чтобы увидеть и открыть сообщения.',signIn:'Войдите, чтобы посмотреть заявки',privacy:'Личные ответы видят только клиент и назначенный мастер.'},
   es:{title:'Mensajes',subtitle:'Conversaciones privadas y solicitudes de clientes en un lugar.',sources:'Origen de mensajes',crmSource:'Mensajería',directSource:'En el sitio',
-    chats:'Conversaciones',requests:'Solicitudes',crm:'Telegram y otros canales conectados',direct:'Mensajes privados dentro de Holistic House',openCrm:'Abrir conversaciones de Telegram',
+    telegramShare:'Enlace Telegram',telegramCopy:'Copiar',telegramCopied:'Copiado',chats:'Conversaciones',requests:'Solicitudes',crm:'Telegram y otros canales conectados',direct:'Mensajes privados dentro de Holistic House',openCrm:'Abrir conversaciones de Telegram',
     crmHint:'Mensajes del CRM del propietario. La entrega depende de la confirmación del proveedor.',
     refresh:'Actualizar solicitudes',loading:'Cargando solicitudes…',failure:'No se pudieron cargar las solicitudes.',
     ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',signIn:'Inicia sesión para ver las solicitudes',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
@@ -30,6 +31,7 @@ export default function MessagesHub({locale='en'}){
   const [refreshKey,setRefreshKey]=useState(0)
   const [data,setData]=useState(null)
   const [ownerInfo,setOwnerInfo]=useState(null)
+  const [ownerBootstrapPending,setOwnerBootstrapPending]=useState(true)
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
   const [unauthenticated,setUnauthenticated]=useState(false)
@@ -39,16 +41,28 @@ export default function MessagesHub({locale='en'}){
   const [source,setSource]=useState('crm')
   const [crmOpen,setCrmOpen]=useState(false)
   const [directOpen,setDirectOpen]=useState(false)
+  const [telegramUrl,setTelegramUrl]=useState('')
+  const [telegramCopied,setTelegramCopied]=useState(false)
+  const [recipientIntent,setRecipientIntent]=useState(null)
+  // Keep the one-shot owner handoff above child remounts during Refresh.
+  const recipientOwner=useRef('')
+  const consumeRecipient=useCallback(()=>{
+    setRecipientIntent(null)
+    const url=new URL(window.location.href)
+    url.searchParams.delete('to')
+    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+  },[])
   const onCrmThreads=useCallback(summary=>setCrmSummary(summary),[])
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
-    if(/^[a-z0-9-]{2,90}$/.test(params.get('to')||''))setSource('direct')
+    const slug=params.get('to')||''
+    if(/^[a-z0-9-]{2,90}$/.test(slug))setRecipientIntent({slug,accountId:''})
   },[])
   useEffect(()=>{
     const controller=new AbortController()
     // Verify owner access without waiting for practice/business requests.
-    setOwnerInfo(null);setBootstrapSignInRequired(false)
+    setOwnerInfo(null);setBootstrapSignInRequired(false);setOwnerBootstrapPending(true)
     fetch('/api/app/messages/requests?view=owner',{
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
     }).then(async response=>{
@@ -58,6 +72,7 @@ export default function MessagesHub({locale='en'}){
       return typeof value.accountId==='string'&&typeof value.ownerMessenger==='boolean'?value:null
     }).then(result=>{if(!controller.signal.aborted)setOwnerInfo(result)})
       .catch(()=>{if(!controller.signal.aborted)setOwnerInfo(null)})
+      .finally(()=>{if(!controller.signal.aborted)setOwnerBootstrapPending(false)})
     return()=>controller.abort()
   },[refreshKey])
   useEffect(()=>{
@@ -88,12 +103,37 @@ export default function MessagesHub({locale='en'}){
   const ownerAccountId=sameAccount
     ?ownerInfo?.ownerMessenger?ownerInfo.accountId:data?.ownerMessenger?data.accountId:null
     :null
+  useEffect(()=>{
+    if(!recipientIntent)return
+    const previousOwner=recipientOwner.current
+    if(!sameAccount||(previousOwner&&(unauthenticated||bootstrapSignInRequired||
+      [ownerInfo?.accountId,data?.accountId].some(id=>id&&id!==previousOwner)))){
+      consumeRecipient();return
+    }
+    if(!ownerAccountId)return
+    if(previousOwner&&previousOwner!==ownerAccountId){consumeRecipient();return}
+    recipientOwner.current=ownerAccountId
+    if(recipientIntent.accountId!==ownerAccountId)
+      setRecipientIntent({...recipientIntent,accountId:ownerAccountId})
+  },[recipientIntent,ownerAccountId,ownerInfo,data,sameAccount,unauthenticated,bootstrapSignInRequired,consumeRecipient])
   // Slow/failed website requests must not prevent reading existing owner Telegram threads.
   const requestData=usableData||(ownerAccountId?{
     accountId:ownerAccountId,ownerMessenger:true,ownerAuthorized:true,
     hasPractice:true,requests:[],businessEnquiries:[],services:[],
     websiteUnavailable:!loading,websiteLoading:loading,businessUnavailable:false,
   }:null)
+  useEffect(()=>{
+    if(!ownerAccountId){setTelegramUrl('');return}
+    const controller=new AbortController()
+    fetch('/api/public/telegram-diagnostic',{cache:'no-store',signal:controller.signal})
+      .then(response=>response.ok?response.json():null)
+      .then(result=>{
+        if(controller.signal.aborted)return
+        const url=result?.available===true?result.url:''
+        setTelegramUrl(typeof url==='string'&&/^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(url)?url:'')
+      }).catch(()=>{if(!controller.signal.aborted)setTelegramUrl('')})
+    return()=>controller.abort()
+  },[ownerAccountId])
   const safeCrmSummary=ownerAccountId?crmSummary:null
   const crmLeads=(safeCrmSummary?.threads||[]).filter(item=>item.lifecycle==='lead')
   const crmUnreadLeads=crmLeads.filter(item=>item.unreadCount>0)
@@ -112,12 +152,33 @@ export default function MessagesHub({locale='en'}){
     setSource('crm')
     switchTab('chats')
   }
+  // Owner-only one-window inbox. Preserve the existing authenticated provider
+  // link check and member two-tab UI; no duplicate CRM or public send action.
+  if(ownerAccountId)return <MessagesSimpleInbox key={ownerAccountId} locale={locale}
+    accountId={ownerAccountId} requests={requestData?.requests||[]}
+    businessEnquiries={requestData?.businessEnquiries||[]}
+    telegramUrl={telegramUrl}
+    recipientIntent={recipientIntent?.accountId===ownerAccountId?recipientIntent:null}
+    onRecipientConsumed={consumeRecipient}
+    websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
+    onReload={()=>setRefreshKey(n=>n+1)}/>
+  if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
     <div className={styles.hero}>
       <div className={styles.icon}><MessageCircle aria-hidden="true"/></div>
       <div><span className={styles.eyebrow}>HOLISTIC HOUSE · INBOX</span>
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
+      {ownerAccountId&&telegramUrl&&<div className={styles.telegramShare}>
+        <a href={telegramUrl} target="_blank" rel="noopener noreferrer nofollow"
+          referrerPolicy="no-referrer"><Link2 size={15} aria-hidden="true"/>{t.telegramShare}</a>
+        <button type="button" onClick={async()=>{
+          try{
+            await navigator.clipboard.writeText(telegramUrl)
+            setTelegramCopied(true)
+          }catch{setTelegramCopied(false)}
+        }}>{telegramCopied?t.telegramCopied:t.telegramCopy}</button>
+      </div>}
     </div>
     {ownerAccountId&&crmUnreadLeads.length>0&&<button type="button"
       className={styles.unreadJump} onClick={()=>switchTab('requests')}>
@@ -166,6 +227,7 @@ export default function MessagesHub({locale='en'}){
         <section hidden={Boolean(ownerAccountId)&&source!=='direct'}
           className={styles.direct} aria-label={t.direct}>
           <DirectMessageInbox locale={locale} embedded compact onOpenChange={setDirectOpen}
+            recipientSlug={recipientOwner.current||!sameAccount?'':undefined}
             ownerCrmAvailable={Boolean(ownerAccountId)}/>
         </section>
       </div>
