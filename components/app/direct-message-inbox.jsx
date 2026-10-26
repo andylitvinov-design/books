@@ -107,7 +107,7 @@ function AudioPublication({message,onAction,busy,locale,t}){
     </div>
   </details>
 }
-export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,simpleDetail=false,initialThreadId='',onThreadsLoaded}){
+export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,simpleDetail=false,initialThreadId='',onThreadsLoaded,expectedAccountId=null}){
   const t=COPY[locale]||COPY.en
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
@@ -117,12 +117,13 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   const uploadRef=useRef(null),operationRef=useRef(null)
   const getThreads=useCallback(async()=>{
     const data=await jsonGet()
+    if(expectedAccountId&&data.accountId!==expectedAccountId)throw new Error('ACCOUNT_CHANGED')
     setAccountId(data.accountId)
     setSignedOut(false)
     setThreads(data.threads||[])
     onThreadsLoaded?.(data.threads||[])
     return data
-  },[onThreadsLoaded])
+  },[onThreadsLoaded,expectedAccountId])
   useEffect(()=>{
     const parameters=new URLSearchParams(window.location.search)
     const slug=parameters.get('to')||''
