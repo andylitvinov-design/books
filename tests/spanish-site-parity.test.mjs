@@ -7,11 +7,14 @@ const exists = path => existsSync(new URL('../'+path,import.meta.url));
 test('Spanish service funnel has real pages and localized form without EN fallback', () => {
  for (const path of ['app/es/page.tsx','app/es/services/page.tsx','components/free-situation-review-form.tsx','app/[locale]/services/free-situation-review/page.tsx','app/[locale]/services/imagery-therapy/page.tsx']) assert.ok(exists(path),path);
  const services=content('app/es/services/page.tsx');
- assert.match(services,/Psicohomeopatía/);
- assert.match(services,/title: "Trabajo con imágenes guiadas"/);
- assert.match(services,/href: "\/es\/services\/imagery-therapy"/);
- assert.match(services,/Constelaciones y acompañamiento arquetípico/);
- assert.match(services,/\/es\/services\/free-situation-review/);
+ assert.match(services,/<ServicesConversionHero locale="es" \/>/);
+ assert.match(services,/<ServicesStudioOffers locale="es" \/>/);
+ const offers=content('data/core-service-offers.ts');
+ assert.match(offers,/Alquimia del Alma · Psicohomeopatía/);
+ assert.match(offers,/Hipnoterapia con imágenes guiadas/);
+ assert.match(offers,/route: "free-situation-review"/);
+ const studio=content('components/services-studio-offers.tsx');
+ assert.match(studio,/Constelaciones sistémicas y apoyo arquetípico/);
  const form=content('components/free-situation-review-form.tsx');
  assert.match(form,/<FreeDrawingIntake locale=\{locale\}/);
  const chooser=content('components/consultation-choice-capture.tsx');
@@ -25,35 +28,26 @@ test('Spanish service funnel has real pages and localized form without EN fallba
 test('Spanish practitioner paths and contact routes keep protected app separate', () => {
  for(const path of ['app/[locale]/masters/page.tsx','app/[locale]/masters/[slug]/page.tsx','app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx']) assert.match(content(path),/isPublicLocale\(locale\)/);
  const service=content('app/[locale]/services/[practitionerSlug]/[serviceSlug]/page.tsx');
- // Canonical #979 preserves the selected service when Spanish opens the
- // supported English Cabinet, rather than diverting it to a generic free review.
+ // The public marketplace request is now localized and directly submitted on
+ // the same service page; the protected Cabinet remains optional.
  const assertRequestContract = input => {
   const expression=input.match(/const requestHref=([\s\S]*?);\s*const delivery=/)?.[1];
-  assert.ok(expression,'shared request route expression');
-  const serviceId='service /&=é', practitionerSlug='practitioner /&=ñ';
+  assert.ok(expression,'public website request route');
   for(const locale of ['en','ru','es']) {
-   for(const pricingMode of ['free','fixed','contact']) {
-    const context={locale,es:locale==='es',service:{slug:'personal-session',id:serviceId,pricingMode},practitioner:{slug:practitionerSlug}};
-    const href=runInNewContext('('+expression+')',context,{timeout:1000});
-    assert.equal(href,`/${locale==='es'?'en':locale}/app/consultations?service=${encodeURIComponent(serviceId)}`);
-   }
-   const href=runInNewContext('('+expression+')',{locale,es:locale==='es',service:{slug:'remote-energy-support',id:serviceId},practitioner:{slug:practitionerSlug}},{timeout:1000});
-   assert.equal(href,`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(practitionerSlug)}`);
+   const href=runInNewContext('('+expression+')',{locale},{timeout:1000});
+   assert.equal(href,'#site-service-request');
   }
-  assert.equal([...input.matchAll(/<TrackedServiceLink\b[^>]*href=\{requestHref\}/g)].length,2,'both request CTAs use the selected-service route');
-  assert.doesNotMatch(input,/\/es\/services\/free-situation-review\?topic=/);
-  assert.match(input,/El formulario de solicitud se abre en inglés\./);
+  assert.equal([...input.matchAll(/<TrackedServiceLink\b[^>]*href=\{requestHref\}/g)].length,2);
+  assert.match(input,/<MarketplaceWebsiteEnquiry locale=\{locale as PublicLocale\}/);
+  assert.match(input,/serviceId=\{service\.id\}/);
+  assert.match(input,/practitionerSlug=\{practitioner\.slug\}/);
+  assert.doesNotMatch(input,/El formulario de solicitud se abre en inglés\./);
  };
  assertRequestContract(service);
  for(const [before,after] of [
-  ['es?"en":locale','locale'],
-  ['encodeURIComponent(service.id)','encodeURIComponent(service.slug)'],
-  ['encodeURIComponent(service.id)','service.id'],
-  ['/app/consultations?service=', '/services/free-situation-review?topic='],
-  ['/services/remote-energy-support?practitioner=', '/app/consultations?service='],
-  ['encodeURIComponent(practitioner.slug)','practitioner.slug'],
+  ['const requestHref="#site-service-request";','const requestHref="/en/app/consultations";'],
+  ['<MarketplaceWebsiteEnquiry locale={locale as PublicLocale}','<Link locale={locale as PublicLocale}'],
   ['href={requestHref}','href="/en/services"'],
-  ['El formulario de solicitud se abre en inglés.',''],
  ]) {
   assert.ok(service.includes(before),before);
   assert.throws(()=>assertRequestContract(service.replace(before,after)),undefined,before);

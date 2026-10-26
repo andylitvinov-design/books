@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { PublicConsultationCta } from "@/components/public-consultation-cta";
+import { MarketplaceWebsiteEnquiry } from "@/components/marketplace-website-enquiry";
 import { ServiceReviews } from "@/components/service-reviews";
 import { isPublicLocale } from "@/data/academy/catalog";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -46,9 +47,7 @@ export default async function ServiceDetail({params}:PageProps){
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
   const isFree=service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);
   const price=isFree?(ru?"Бесплатно":es?"Gratis":"Free"):service.pricingMode!=="contact"&&service.confirmedPrice!=null?`${service.pricingMode==="from"?(ru?"от ":es?"desde ":"from "):""}${service.currency||""} ${service.confirmedPrice}`:ru?"Стоимость согласуется до записи":es?"Precio acordado antes de reservar":"Price agreed before booking";
-  const requestHref=service.slug === "remote-energy-support"
-    ? `/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(practitioner.slug)}`
-    : `/${es?"en":locale}/app/consultations?service=${encodeURIComponent(service.id)}`;
+  const requestHref="#site-service-request";
   const delivery=service.deliveryFormat==="hybrid"
     ? (ru?"Онлайн или лично":es?"En línea o presencial":"Online or in person")
     : service.deliveryFormat==="in_person"
@@ -64,7 +63,7 @@ export default async function ServiceDetail({params}:PageProps){
     : ru
       ? "Сначала отправьте запрос. Мастер подтвердит время и стоимость до оплаты; отправка не является бронированием."
       : es
-        ? `Primero envía tu solicitud. Se confirmarán el horario y precio antes del pago.${service.slug==="remote-energy-support"?"":" El formulario de solicitud se abre en inglés."}`
+        ? `Primero envía tu solicitud. Se confirmarán el horario y precio antes del pago.${service.slug==="remote-energy-support"?"":""}`
         : "Send an enquiry first. Your practitioner confirms the format, time and price before any booking or payment.";
   return <main className={`services-shell services-shell--studio ${styles.page}`} lang={locale} data-marketplace-service-landing>
     <PublicSiteHeader locale={locale}/>
@@ -100,6 +99,9 @@ export default async function ServiceDetail({params}:PageProps){
       {(service.faq||[]).length>0&&<details><summary>FAQ</summary><ul>{service.faq?.map((question,i)=><li key={i}>{question}</li>)}</ul></details>}
       <div className="hh-actions">{service.whatsapp&&<TrackedServiceExternalLink serviceId={service.id} event="whatsapp" href={`https://wa.me/${service.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer">WhatsApp</TrackedServiceExternalLink>}{service.telegram&&<TrackedServiceExternalLink serviceId={service.id} event="telegram" href={`https://t.me/${service.telegram.replace(/^@/,'')}`} target="_blank" rel="noopener noreferrer">Telegram</TrackedServiceExternalLink>}</div>{es&&<p className="remedy-disclaimer">La descripción facilitada por el profesional puede permanecer en inglés mientras se prepara su traducción.</p>}<p>{[service.deliveryFormat==="hybrid"?(ru?"Онлайн / очно":es?"En línea / presencial":"Online / in person"):service.deliveryFormat==="in_person"?(ru?"Очно":es?"Presencial":"In person"):"Online",service.locationLabel,service.durationMinutes?`${service.durationMinutes} min`:"",price].filter(Boolean).join(" · ")}</p><p>{(service.languages||[]).join(" · ").toUpperCase()}</p></div>
     </section>
+    <MarketplaceWebsiteEnquiry locale={locale as PublicLocale} serviceId={service.id}
+      serviceTitle={service.copy.title} practitionerName={service.practitionerName}
+      practitionerSlug={practitioner.slug} serviceSlug={service.slug} />
     <div className={styles.reviews}><ServiceReviews serviceId={service.id} locale={locale}/></div>
     <nav className={styles.bottomActions} aria-label={ru?"Следующий шаг":es?"Próximo paso":"Next step"}>
       <TrackedServiceLink serviceId={service.id} event="order" className={styles.bottomPrimary} href={requestHref}>{bookingLabel} →</TrackedServiceLink>

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { PublicService } from "@/lib/practitioners/public-types";
 import { ServiceFunnelImpression, TrackedServiceLink } from "@/components/service-funnel-tracking";
+import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
 import { DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery, serviceMatchesDiscoveryFacets } from "@/lib/practitioners/discovery-intent.js";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { ServicesFreeRecommendations } from "@/components/services-free-recommendations";
@@ -532,9 +533,9 @@ export function ServicesSmartDiscovery({
                   onClick={()=>setExpandedCard(current=>current==="listing:"+service.id?null:"listing:"+service.id)}>
                   {expandedCard==="listing:"+service.id?t.less:t.details}<ChevronDown size={15} aria-hidden="true"/>
                 </button>
-                <TrackedServiceLink serviceId={service.id} event="order" href={"/"+(locale==="es"?"en":locale)+"/app/consultations?service="+encodeURIComponent(service.id)} aria-label={locale==="es"?"Solicitar este servicio (formulario en inglés)":undefined}>{t.order}</TrackedServiceLink>
+                <TrackedServiceLink serviceId={service.id} event="order" href={getPublicServiceDetailHref(locale,service.practitionerSlug,service.slug)+(service.practitionerSlug==="andy-litvinov"&&service.slug==="homeopathy-consultation"?"":"#site-service-request")}>{t.order}</TrackedServiceLink>
               </div>
-              {locale==="es"&&<small className={styles.intakeNote}>El formulario de solicitud se abre en inglés; se conserva el servicio elegido.</small>}
+
               {reasonKey==="topic"&&<span className={styles.relevance}>{t.matched}</span>}
               <div id={"hh-listing-details-"+service.id} hidden={expandedCard!=="listing:"+service.id} className={styles.suggestionDetailPanel}>
                 <p>{service.copy.description || service.copy.shortDescription}</p>
