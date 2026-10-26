@@ -819,7 +819,7 @@ async function handle(request, { params }) {
         // Keep private practitioner tools available if the marketplace view fails.
         // The UI shows "unavailable" instead of a misleading zero.
       }
-      return json({ ...workspace, newServices })
+      return json({ ...workspace, newServices, freeExpressV2Enabled: process.env.HH_FREE_EXPRESS_V2_ENABLED === 'true' })
     }
     if (joined === 'practice/alias' && method === 'GET') {
       await consumeRate(config,{op:'practitioner-alias-check',account:actor.id},30,3600)

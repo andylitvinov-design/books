@@ -536,7 +536,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 <PersonalTestimonials locale={locale} variant="all" />
               </details>
             </>
-          }>
+          } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
             <div className={styles.coachingLink}>
               <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
                 {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />

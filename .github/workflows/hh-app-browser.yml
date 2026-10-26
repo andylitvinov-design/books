@@ -16,7 +16,7 @@ jobs:
       matrix:
         browser: [chromium, webkit]
         suite: [core, extended]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
       postgres:
@@ -109,7 +109,7 @@ jobs:
         browser: [chromium, webkit]
     needs: browser
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require every browser and suite

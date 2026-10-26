@@ -92,6 +92,20 @@ export function AnalyticsPreferences() {
   );
 }
 
+
+const publicStatsCookie = "hh_public_stats_consent";
+const publicStatsChoiceEvent = "holistic-house:public-stats-consent";
+function firstPartyCookie(name: string) {
+  return document.cookie.split("; ").find(part => part.startsWith(name + "="))?.split("=")[1];
+}
+export function setFirstPartyConsent(allow: boolean) {
+  // A durable refusal is as important as a durable opt-in: never reprompt
+  // people who declined, and never infer consent from visiting a page.
+  document.cookie = publicStatsCookie + "=" + (allow ? "v1" : "denied") +
+    "; Path=/; Max-Age=31536000; SameSite=Lax; Secure";
+  window.dispatchEvent(new Event(publicStatsChoiceEvent));
+}
+
 /** Separate, explicit consent for anonymous first-party counters.
  * The Google/Meta safety hold above is never lifted by this preference. */
 export function FirstPartyStatsPreferences() {
@@ -99,23 +113,22 @@ export function FirstPartyStatsPreferences() {
   const [excluded, setExcluded] = useState(false);
 
   useEffect(() => {
-    const cookie = (name: string) => document.cookie.split("; ")
-      .find(part => part.startsWith(name + "="))?.split("=")[1];
-    setAllowed(cookie("hh_public_stats_consent") === "v1");
-    setExcluded(cookie("hh_public_stats_skip") === "1");
+    setAllowed(firstPartyCookie(publicStatsCookie) === "v1");
+    setExcluded(firstPartyCookie("hh_public_stats_skip") === "1");
   }, []);
 
   function decide(allow: boolean) {
-    document.cookie = `hh_public_stats_consent=${allow ? "v1" : ""}; Path=/; Max-Age=${allow ? 31536000 : 0}; SameSite=Lax; Secure`;
+    setFirstPartyConsent(allow);
     setAllowed(allow);
   }
   function exclude(skip: boolean) {
     document.cookie = `hh_public_stats_skip=${skip ? "1" : ""}; Path=/; Max-Age=${skip ? 31536000 : 0}; SameSite=Lax; Secure`;
     setExcluded(skip);
+    window.dispatchEvent(new Event(publicStatsChoiceEvent));
   }
 
   return (
-    <section className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4" aria-label="Anonymous website statistics">
+    <section data-first-party-consent className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4" aria-label="Anonymous website statistics">
       <p className="m-0 text-sm text-stone-800">
         Optional first-party website statistics record public page entrances, page views,
         button/link clicks and coarse traffic sources (such as Google, Instagram or direct).

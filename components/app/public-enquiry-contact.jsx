@@ -24,6 +24,7 @@ export default function PublicEnquiryContact({request,locale='en',busy=false,onS
       {request.contact?.phone&&<> · {request.contact.phone}</>}
       <small> · {t.reply}</small></p>}
     <p>{t.hint}</p>
+
     <form onSubmit={event=>{
       event.preventDefault()
       if(!address.trim()||busy)return
