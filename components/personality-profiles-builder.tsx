@@ -7,11 +7,12 @@ import styles from "./personality-profiles-builder.module.css";
 import { recommendProfileBattery } from "@/lib/profile/profile-battery";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
+import { TEST_KINDS } from "@/lib/assessments/test-kinds";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity";
 type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning";
-type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null; questions: number | null };
+type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null; questions: number | null; testKind: string };
 type Props = { locale: Locale; tests: PublicTest[] };
 
 // Topics map to questionnaire dimensions, not diagnoses or financial outcomes.
@@ -69,7 +70,7 @@ const copy = {
     ],
     entryNote: "You can explore without an account. Sign in only when you want to save results privately.",
     returnIntro: "How it works", wizardKicker: "Your free profile", selectTemplate: "Select this",
-    stages: ["Focus", "Topics", "Scales", "Tests", "Ready"],
+    stages: ["Focus", "Topics", "Tests", "Ready"],
     profileTitle: "What would you like to understand or improve?",
     profileHelp: "Choose one or several interests. Each adds to the same personal profile; you can explore the rest later.",
     focusAdd: "Select this", focusSelected: "Selected",
@@ -84,7 +85,7 @@ const copy = {
       identity: ["Personality & personal growth", "Traits, strengths, values, life goals and self-actualization."],
     },
     topicTitle: "Choose the specific topics that matter",
-    topicHelp: "We've suggested topics from your interests. Refine them before choosing actual measured scales.",
+    topicHelp: "Choose what matters. Each topic shows the dimensions measured by available free questionnaires.",
     focusContext: "Selected interests",
     areas: {
       traits: ["Personality traits", "Patterns · strengths"],
@@ -101,7 +102,7 @@ const copy = {
     scaleHelp: "Only real source-declared dimensions can be measured. Keep the suggestions or select what you want to explore.",
     selectAll: "Select all", clearAll: "Clear all", selected: "selected",
     testTitle: "Your recommended free test selection",
-    testHelp: "These are existing, eligible free questionnaires matched to your topics. Edit the set before confirming.",
+    testHelp: "Start your suggested tests now, or add more from the filters below.",
     testCount: "tests", minutes: "min", questions: "questions",
     more: "See more matching tests", less: "Show fewer",
     chosen: "Your selection", unmeasured: "Some selected topics may not have a suitable free questionnaire yet. No score will be invented.",
@@ -113,7 +114,7 @@ const copy = {
       ["Challenges", "Which practical obstacles deserve attention?"],
     ],
     swotNote: "SWOT is a guided reflection using your own interpretation, not an automatically inferred personality verdict.",
-    next: "Continue", back: "Back", start: "Yes, take these tests",
+    next: "Continue", back: "Back", start: "Take tests",
     review: "Review my test path", readyKicker: "YOUR PERSONAL TEST PATH",
     readyTitle: "Ready to build your profile?",
     readyHelp: "To create your profile, take the following free tests in order. You can review this list before starting.",
@@ -125,7 +126,7 @@ const copy = {
     saveToCabinetStorageError: "Browser storage is unavailable. Allow site storage to keep your selection through Google sign-in, or continue as a guest.",
     guestChoice: "Or start these tests as a guest with the button below.",
     readyFoot: "One test at a time. You will see your progress at the top, and you can choose to save results privately in your Cabinet.",
-    noTests: "No eligible free test measures this selection. Go back and choose other scales.",
+    noTests: "No suitable free test covers these topics. Choose another topic or use the additional test filters.",
     private: "Results can be saved in your protected account. Build your profile and set voluntary development goals there, after the tests.",
     myProfile: "My saved profile", myPath: "My development path",
     esNote: "", disclaimer: "Educational self-reflection only; not a medical diagnosis, financial assessment, or guaranteed outcome.",
@@ -145,7 +146,7 @@ const copy = {
     ],
     entryNote: "Выбирать темы можно без регистрации. Для приватного сохранения результатов понадобится вход в кабинет.",
     returnIntro: "Как это работает", wizardKicker: "Ваш бесплатный профиль", selectTemplate: "Выбрать",
-    stages: ["Запрос", "Темы", "Шкалы", "Тесты", "Начало"],
+    stages: ["Запрос", "Темы", "Тесты", "Начало"],
     profileTitle: "Что вы хотите понять или улучшить?",
     profileHelp: "Выберите одно или несколько направлений. Всё войдёт в один личный профиль — остальное можно изучить позже.",
     focusAdd: "Выбрать", focusSelected: "Выбрано",
@@ -160,7 +161,7 @@ const copy = {
       identity: ["Личность и развитие", "Характер, способности, ценности, смысл жизни и самореализация."],
     },
     topicTitle: "Уточните важные для вас темы",
-    topicHelp: "Мы предложили темы на основе вашего выбора. Измените их перед выбором измеряемых шкал.",
+    topicHelp: "Выберите важные темы. Под каждой указаны измеряемые параметры из доступных бесплатных тестов.",
     focusContext: "Выбранные направления",
     areas: {
       traits: ["Особенности личности", "Качества · сильные стороны"],
@@ -177,7 +178,7 @@ const copy = {
     scaleHelp: "Можно выбрать лишь реальные шкалы, указанные в источниках тестов. Оставьте предложенные или выберите свои.",
     selectAll: "Выбрать все", clearAll: "Снять все", selected: "выбрано",
     testTitle: "Предложенный набор бесплатных тестов",
-    testHelp: "Здесь существующие доступные бесплатные тесты по вашим темам. Измените набор до подтверждения.",
+    testHelp: "Начните рекомендованные тесты или добавьте другие с помощью фильтров ниже.",
     testCount: "тестов", minutes: "мин", questions: "вопросов",
     more: "Показать больше подходящих тестов", less: "Показать меньше",
     chosen: "Ваш выбор", unmeasured: "Для части тем может не оказаться подходящего бесплатного теста. Баллы не придумываются.",
@@ -189,7 +190,7 @@ const copy = {
       ["Препятствия", "Какие обстоятельства важно учитывать?"],
     ],
     swotNote: "SWOT — упражнение для собственной рефлексии, а не автоматически поставленный психологический вердикт.",
-    next: "Далее", back: "Назад", start: "Да, пройти эти тесты",
+    next: "Далее", back: "Назад", start: "Пройти тесты",
     review: "Проверить план тестов", readyKicker: "ВАШ ПУТЬ К ЛИЧНОМУ ПРОФИЛЮ",
     readyTitle: "Всё готово для создания профиля",
     readyHelp: "Для создания профиля предлагаем пройти следующие бесплатные тесты по порядку. Подтвердите список перед началом.",
@@ -201,7 +202,7 @@ const copy = {
     saveToCabinetStorageError: "Хранение данных сайта недоступно. Разрешите его для сохранения подборки через Google или продолжите как гость.",
     guestChoice: "Или начните тесты без регистрации кнопкой ниже.",
     readyFoot: "Тесты идут один за другим. Сверху будет виден общий прогресс, а результаты можно сохранить в защищённом кабинете по вашему желанию.",
-    noTests: "Для выбранных шкал пока нет подходящего бесплатного теста. Вернитесь к выбору шкал.",
+    noTests: "Для этих тем пока нет подходящего бесплатного теста. Измените темы или выберите тест ниже.",
     private: "Результаты можно сохранить в защищённом кабинете. Там доступен личный профиль и цели программы развития.",
     myProfile: "Мой профиль", myPath: "Моя программа развития",
     esNote: "", disclaimer: "Для самопознания; не является медицинской диагностикой, финансовой оценкой или гарантией результата.",
@@ -221,7 +222,7 @@ const copy = {
     ],
     entryNote: "Puedes explorar sin cuenta. Inicia sesión solo si quieres guardar los resultados de forma privada.",
     returnIntro: "Cómo funciona", wizardKicker: "Tu perfil gratuito", selectTemplate: "Elegir",
-    stages: ["Interés", "Temas", "Escalas", "Pruebas", "Inicio"],
+    stages: ["Interés", "Temas", "Pruebas", "Inicio"],
     profileTitle: "¿Qué quieres comprender o mejorar?",
     profileHelp: "Elige uno o varios temas. Todos forman parte de un único perfil personal que puedes ampliar después.",
     focusAdd: "Elegir", focusSelected: "Elegido",
@@ -236,7 +237,7 @@ const copy = {
       identity: ["Personalidad y crecimiento", "Rasgos, fortalezas, valores, propósito y autorrealización."],
     },
     topicTitle: "Elige los temas específicos para explorar",
-    topicHelp: "Sugerimos temas según tus intereses. Ajústalos antes de seleccionar escalas medibles.",
+    topicHelp: "Elige tus temas. Cada uno muestra las dimensiones que miden las pruebas gratuitas disponibles.",
     focusContext: "Áreas elegidas",
     areas: {
       traits: ["Rasgos personales", "Patrones · fortalezas"],
@@ -253,7 +254,7 @@ const copy = {
     scaleHelp: "Solo medimos las dimensiones declaradas en los cuestionarios. Puedes cambiar las sugerencias.",
     selectAll: "Seleccionar todas", clearAll: "Desmarcar", selected: "seleccionadas",
     testTitle: "Tus pruebas gratuitas recomendadas",
-    testHelp: "Pruebas gratuitas existentes y aptas para tus temas. Revisa y edita la lista antes de confirmar.",
+    testHelp: "Empieza las pruebas recomendadas o añade otras con los filtros de abajo.",
     testCount: "pruebas", minutes: "min", questions: "preguntas",
     more: "Ver más pruebas compatibles", less: "Ver menos",
     chosen: "Tu selección", unmeasured: "Es posible que algunas áreas no tengan una prueba gratuita adecuada. No se inventan puntuaciones.",
@@ -265,7 +266,7 @@ const copy = {
       ["Desafíos", "¿Qué obstáculos prácticos debes considerar?"],
     ],
     swotNote: "El DAFO es una reflexión guiada, no un veredicto automático sobre tu personalidad.",
-    next: "Continuar", back: "Atrás", start: "Sí, empezar estas pruebas",
+    next: "Continuar", back: "Atrás", start: "Realizar pruebas",
     review: "Revisar mi plan de pruebas", readyKicker: "TU RUTA DE PRUEBAS PERSONALES",
     readyTitle: "Tu perfil empieza aquí",
     readyHelp: "Para crear tu perfil, realiza estas pruebas gratuitas en orden. Confirma la lista antes de empezar.",
@@ -277,11 +278,52 @@ const copy = {
     saveToCabinetStorageError: "No se puede guardar la selección en este navegador. Habilita el almacenamiento o continúa como invitado.",
     guestChoice: "O empieza como invitado con el botón de abajo.",
     readyFoot: "Avanza prueba por prueba. Verás el progreso total arriba y podrás guardar los resultados de forma privada si lo deseas.",
-    noTests: "No hay una prueba gratuita adecuada para estas escalas. Regresa y cambia tu elección.",
+    noTests: "No hay pruebas gratuitas para estos temas. Cámbialos o busca otra prueba abajo.",
     private: "Guarda tus resultados en tu cuenta protegida y define tus propias metas de desarrollo.",
     myProfile: "Mi perfil guardado", myPath: "Mi plan de desarrollo",
     esNote: "Los cuestionarios se presentan en inglés mientras se revisan las traducciones españolas.",
     disclaimer: "Solo para autorreflexión; no es diagnóstico médico, evaluación financiera ni garantía de resultados.",
+  },
+} as const;
+
+// The discovery facets reuse the same rights-cleared catalogue and kind registry
+// as Test Explorer. No new clinical scales or questionnaires are generated.
+const additionalCopy = {
+  en: {
+    notMeasured: "No eligible free questionnaire yet",
+    additionalTitle: "Other tests", additionalHint: "Optional. Add tests without replacing your recommended set.",
+    search: "Search tests", searchPlaceholder: "Test name or scale",
+    kind: "Type", allKinds: "All types", topic: "Topic", matching: "My topics", allTopics: "All topics",
+    time: "Duration", anyTime: "Any length", two: "Up to 2 min", five: "Up to 5 min", ten: "Up to 10 min",
+    sort: "Sort", relevant: "Best match", shortest: "Shortest", alphabetical: "A–Z",
+    add: "Add", remove: "Remove", nothing: "No additional tests match these filters.",
+    results: "found", more: "Show more tests", less: "Show fewer",
+    limit: "Up to 12 tests in a set. Remove one to add another.",
+    full: "Open full test catalogue", review: "Review & save this selection",
+  },
+  ru: {
+    notMeasured: "Пока нет доступного бесплатного теста",
+    additionalTitle: "Другие тесты", additionalHint: "По желанию: добавьте тесты к рекомендованному набору.",
+    search: "Поиск теста", searchPlaceholder: "Название теста или шкалы",
+    kind: "Тип", allKinds: "Все типы", topic: "Тема", matching: "Мои темы", allTopics: "Все темы",
+    time: "Длительность", anyTime: "Любая", two: "До 2 мин", five: "До 5 мин", ten: "До 10 мин",
+    sort: "Порядок", relevant: "По соответствию", shortest: "Сначала короткие", alphabetical: "А–Я",
+    add: "Добавить", remove: "Убрать", nothing: "По этим фильтрам других тестов нет.",
+    results: "найдено", more: "Показать ещё", less: "Свернуть список",
+    limit: "До 12 тестов в наборе. Чтобы добавить ещё, уберите один.",
+    full: "Открыть полный каталог тестов", review: "Просмотреть и сохранить набор",
+  },
+  es: {
+    notMeasured: "Aún no hay prueba gratuita disponible",
+    additionalTitle: "Otras pruebas", additionalHint: "Opcional: añade pruebas sin sustituir las recomendadas.",
+    search: "Buscar pruebas", searchPlaceholder: "Nombre o escala",
+    kind: "Tipo", allKinds: "Todos los tipos", topic: "Tema", matching: "Mis temas", allTopics: "Todos los temas",
+    time: "Duración", anyTime: "Cualquiera", two: "Hasta 2 min", five: "Hasta 5 min", ten: "Hasta 10 min",
+    sort: "Orden", relevant: "Mejor coincidencia", shortest: "Más cortas", alphabetical: "A–Z",
+    add: "Añadir", remove: "Quitar", nothing: "No hay más pruebas para estos filtros.",
+    results: "encontradas", more: "Ver más", less: "Ver menos",
+    limit: "Máximo 12 pruebas. Quita una para añadir otra.",
+    full: "Abrir catálogo completo", review: "Revisar y guardar selección",
   },
 } as const;
 
@@ -299,62 +341,93 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }, [started, step]);
   const [focuses, setFocuses] = useState<Focus[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
-  const [selectedAxes, setSelectedAxes] = useState<string[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [showMore, setShowMore] = useState(false);
+  const [kindFilter, setKindFilter] = useState("all");
+  const [topicFilter, setTopicFilter] = useState("matching");
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [sortFilter, setSortFilter] = useState("relevant");
+  const [search, setSearch] = useState("");
   const [accountBusy, setAccountBusy] = useState(false);
   const [accountError, setAccountError] = useState("");
   const accountLocale = locale === "es" ? "en" : locale;
+  const extra = additionalCopy[locale];
 
-  // Only topics selected on slide 1 may contribute axes or test suggestions.
+  // Only dimensions declared by eligible public questionnaires may be shown
+  // under a topic. The topic label itself is not a psychometric measurement.
+  const measurableAxes = useMemo(() => new Set(tests.flatMap(test => test.axes)), [tests]);
   const visibleAreas = areasFor(focuses);
   const activeAreas = areas.filter(area => visibleAreas.includes(area));
-  const availableAxes = allAxesFor(activeAreas);
-  const matches = useMemo(() => tests
+  const selectedAxes = allAxesFor(activeAreas).filter(axis => measurableAxes.has(axis));
+  const matches = tests
     .map(test => ({ ...test, matches: test.axes.filter(axis => selectedAxes.includes(axis)) }))
     .filter(test => test.matches.length > 0)
     .sort((a, b) => b.matches.length - a.matches.length ||
-      (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key))
-    .slice(0, 24), [tests, selectedAxes]);
-  const displayTests = showMore ? matches : matches.slice(0, 6);
-  const chosenTests = selectedKeys.flatMap(key => matches.filter(test => test.key === key));
-  const coverage = new Set(chosenTests.flatMap(test => test.matches));
+      (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
+  const chosenTests = selectedKeys.flatMap(key => tests.filter(test => test.key === key));
+  const coverage = new Set(chosenTests.flatMap(test => test.axes.filter(axis => selectedAxes.includes(axis))));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
+  const axesForFilters = [...measurableAxes].sort((a, b) =>
+    (axesCopy[a]?.[locale] || a).localeCompare(axesCopy[b]?.[locale] || b, locale));
+  const extraMatches = tests
+    .filter(test => !selectedKeys.includes(test.key))
+    .filter(test => kindFilter === "all" || test.testKind === kindFilter)
+    .filter(test => topicFilter === "all" || (topicFilter === "matching"
+      ? test.axes.some(axis => selectedAxes.includes(axis))
+      : test.axes.includes(topicFilter)))
+    .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
+    .filter(test => !search.trim() ||
+      [test.title, ...test.axes.map(axis => axesCopy[axis]?.[locale] || axis)]
+        .join(" ").toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)))
+    .sort((a, b) => sortFilter === "shortest"
+      ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
+      : sortFilter === "alphabetical"
+        ? a.title.localeCompare(b.title, locale)
+        : b.axes.filter(axis => selectedAxes.includes(axis)).length -
+          a.axes.filter(axis => selectedAxes.includes(axis)).length ||
+          (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
+  const displayTests = showMore ? extraMatches : extraMatches.slice(0, 6);
 
   function toggleFocus(focus: Focus) {
     setFocuses(previous => previous.includes(focus)
       ? previous.filter(item => item !== focus) : [...previous, focus]);
-    // Never carry another direction’s topics, scales or tests into this choice.
+    // A different direction must not carry stale topics or test selections.
     setAreas([]);
-    setSelectedAxes([]);
     setSelectedKeys([]);
     setShowMore(false);
   }
 
   function toggleArea(area: Area) {
-    if (!visibleAreas.includes(area)) return;
+    if (!visibleAreas.includes(area) || !areaAxes[area].some(axis => measurableAxes.has(axis))) return;
     const next = areas.includes(area) ? areas.filter(item => item !== area) : [...areas, area];
     setAreas(next);
-    setSelectedAxes(allAxesFor(next));
     setSelectedKeys([]);
+    setShowMore(false);
+  }
+
+  function toggleTest(key: string) {
+    // Keys arrive solely from the server-side rights-cleared guest catalogue.
+    if (!tests.some(test => test.key === key)) return;
+    setSelectedKeys(previous => previous.includes(key)
+      ? previous.filter(item => item !== key)
+      : previous.length < 12 ? [...previous, key] : previous);
   }
 
   function goForward() {
     if (step === 0 && focuses.length) {
-      const suggested = areasFor(focuses);
+      const suggested = areasFor(focuses)
+        .filter(area => areaAxes[area].some(axis => measurableAxes.has(axis)));
       setAreas(suggested);
-      setSelectedAxes(allAxesFor(suggested));
       setSelectedKeys([]);
       setShowMore(false);
       setStep(1);
-    }
-    if (step === 1 && activeAreas.length) setStep(2);
-    if (step === 2 && selectedAxes.length) {
+    } else if (step === 1 && activeAreas.length && selectedAxes.length) {
       setSelectedKeys([...recommendProfileBattery(matches, selectedAxes)]);
       setShowMore(false);
+      setStep(2);
+    } else if (step === 2 && selectedKeys.length) {
       setStep(3);
     }
-    if (step === 3 && selectedKeys.length > 0) setStep(4);
   }
 
   const base = "/" + accountLocale;
@@ -482,38 +555,22 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <strong>{t.focusContext}:</strong> {focuses.map(focus => t.focuses[focus][0]).join(" · ")}
         </p>
         <div className={styles.areaGrid} data-profile-topic-options>
-          {visibleAreas.map(area =>
-            <button type="button" key={area} aria-pressed={areas.includes(area)}
-              className={styles.areaCard} onClick={() => toggleArea(area)}>
+          {visibleAreas.map(area => {
+            const axes = areaAxes[area].filter(axis => measurableAxes.has(axis));
+            return <button type="button" key={area} aria-pressed={areas.includes(area)}
+              disabled={!axes.length} className={styles.areaCard} onClick={() => toggleArea(area)}>
               <span className={styles.selectDot}>{areas.includes(area) && <Check size={14} aria-hidden="true" />}</span>
-              <span><strong>{t.areas[area][0]}</strong><small>{t.areas[area][1]}</small></span>
-            </button>)}
+              <span><strong>{t.areas[area][0]}</strong>
+                <small>{axes.length
+                  ? axes.map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")
+                  : extra.notMeasured}</small>
+              </span>
+            </button>;
+          })}
         </div>
       </section>}
 
-      {step === 2 && <section aria-labelledby="profile-builder-step-title">
-        <h2 id="profile-builder-step-title">{t.scaleTitle}</h2>
-        <p className={styles.help}>{t.scaleHelp}</p>
-        <div className={styles.scaleBar}>
-          <span>{selectedAxes.length} {t.selected}</span>
-          <div>
-            <button type="button" onClick={() => setSelectedAxes([...availableAxes])}>{t.selectAll}</button>
-            <button type="button" onClick={() => setSelectedAxes([])}>{t.clearAll}</button>
-          </div>
-        </div>
-        <div className={styles.scaleList}>
-          {availableAxes.map(axis =>
-            <button key={axis} type="button" className={styles.scaleChip}
-              aria-pressed={selectedAxes.includes(axis)}
-              onClick={() => setSelectedAxes(previous => previous.includes(axis)
-                ? previous.filter(item => item !== axis) : [...previous, axis])}>
-              <span className={styles.selectDot}>{selectedAxes.includes(axis) && <Check size={13} aria-hidden="true" />}</span>
-              {axesCopy[axis]?.[locale] || axis}
-            </button>)}
-        </div>
-      </section>}
-
-      {step === 3 && <section aria-labelledby="profile-builder-step-title">
+      {step === 2 && <section aria-labelledby="profile-builder-step-title" data-profile-tests-step>
         <h2 id="profile-builder-step-title">{t.testTitle}</h2>
         <p className={styles.help}>{t.testHelp}</p>
         <div className={styles.testCount}><ClipboardList size={17} aria-hidden="true" />
@@ -521,36 +578,94 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           {minutes > 0 && <span>· {minutes} {t.minutes}</span>}
           <span>· {coverage.size}/{selectedAxes.length} {t.selected}</span>
         </div>
-        {matches.length > 0 ? <>
-          <div className={styles.testList}>
-            {displayTests.map(test =>
-              <label key={test.key} className={styles.testRow}>
-                <input type="checkbox" checked={selectedKeys.includes(test.key)}
-                  onChange={() => setSelectedKeys(previous => previous.includes(test.key)
-                    ? previous.filter(key => key !== test.key) : previous.length < 12 ? [...previous, test.key] : previous)} />
-                <span className={styles.testText}><strong>{test.title}</strong>
-                  <small>{test.questions ? test.questions + " " + t.questions : ""}
-                    {test.questions && test.minutes ? " · " : ""}
-                    {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                  <span>{test.matches.map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")}</span>
-                </span>
-              </label>)}
+        {chosenTests.length > 0 ? <div className={styles.testList} data-profile-recommended-tests>
+          {chosenTests.map(test =>
+            <label key={test.key} className={styles.testRow}>
+              <input type="checkbox" checked onChange={() => toggleTest(test.key)} />
+              <span className={styles.testText}>
+                <strong>{test.title}</strong>
+                <small>{test.questions ? test.questions + " " + t.questions : ""}
+                  {test.questions && test.minutes ? " · " : ""}
+                  {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
+                <span>{test.axes.filter(axis => selectedAxes.includes(axis))
+                  .map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")}</span>
+              </span>
+            </label>)}
+        </div> : <p className={styles.caution} role="status">{t.noTests}</p>}
+        {coverage.size < selectedAxes.length && chosenTests.length > 0 &&
+          <p className={styles.caution}>{t.unmeasured}</p>}
+        <div className={styles.startRow}>
+          {selectedKeys.length > 0
+            ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
+                {t.start}<ArrowRight size={17} aria-hidden="true" />
+              </Link>
+            : <button type="button" disabled className={styles.primary}>{t.start}</button>}
+        </div>
+
+        <section className={styles.extraPanel} aria-labelledby="profile-builder-extra-title" data-profile-additional-tests>
+          <div className={styles.extraHeading}>
+            <div><h3 id="profile-builder-extra-title">{extra.additionalTitle}</h3>
+              <p>{extra.additionalHint}</p></div>
+            <Link href={'/' + locale + '/client/tests'} prefetch={false} className={styles.fullCatalogue}>
+              {extra.full}<ArrowRight size={14} aria-hidden="true" />
+            </Link>
           </div>
-          {matches.length > 6 &&
-            <button type="button" className={styles.moreTests} onClick={() => setShowMore(!showMore)}>
-              {showMore ? t.less : t.more}<ChevronDown size={16} aria-hidden="true" />
-            </button>}
-          {coverage.size < selectedAxes.length && <p className={styles.caution}>{t.unmeasured}</p>}
-        </> : <p className={styles.caution} role="status">{t.noTests}</p>}
-        <details className={styles.swot}>
-          <summary>{t.swotTitle}<ChevronDown size={17} aria-hidden="true" /></summary>
-          <div className={styles.swotGrid}>{t.swot.map(item =>
-            <div key={item[0]}><strong>{item[0]}</strong><p>{item[1]}</p></div>)}</div>
-          <p className={styles.swotNote}>{t.swotNote}</p>
-        </details>
+          <div className={styles.extraFilters}>
+            <label className={styles.extraSearch}><span>{extra.search}</span>
+              <input type="search" value={search} placeholder={extra.searchPlaceholder}
+                onChange={event => { setSearch(event.currentTarget.value); setShowMore(false); }} />
+            </label>
+            <label><span>{extra.kind}</span>
+              <select value={kindFilter} onChange={event => { setKindFilter(event.currentTarget.value); setShowMore(false); }}>
+                <option value="all">{extra.allKinds}</option>
+                {TEST_KINDS.map(kind => <option key={kind.key} value={kind.key}>{kind.label[locale]}</option>)}
+              </select>
+            </label>
+            <label><span>{extra.topic}</span>
+              <select value={topicFilter} onChange={event => { setTopicFilter(event.currentTarget.value); setShowMore(false); }}>
+                <option value="matching">{extra.matching}</option>
+                <option value="all">{extra.allTopics}</option>
+                {axesForFilters.map(axis => <option key={axis} value={axis}>{axesCopy[axis]?.[locale] || axis}</option>)}
+              </select>
+            </label>
+            <label><span>{extra.time}</span>
+              <select value={timeFilter} onChange={event => { setTimeFilter(event.currentTarget.value); setShowMore(false); }}>
+                <option value="all">{extra.anyTime}</option>
+                <option value="2">{extra.two}</option>
+                <option value="5">{extra.five}</option>
+                <option value="10">{extra.ten}</option>
+              </select>
+            </label>
+            <label><span>{extra.sort}</span>
+              <select value={sortFilter} onChange={event => setSortFilter(event.currentTarget.value)}>
+                <option value="relevant">{extra.relevant}</option>
+                <option value="shortest">{extra.shortest}</option>
+                <option value="alphabetical">{extra.alphabetical}</option>
+              </select>
+            </label>
+          </div>
+          <p className={styles.extraResultCount} role="status">{extraMatches.length} {extra.results}</p>
+          {displayTests.length ? <div className={styles.testList}>
+            {displayTests.map(test => <label key={test.key} className={styles.testRow}>
+              <input type="checkbox" checked={false} disabled={selectedKeys.length >= 12}
+                onChange={() => toggleTest(test.key)} aria-label={extra.add + ": " + test.title} />
+              <span className={styles.testText}><strong>{test.title}</strong>
+                <small>{test.questions ? test.questions + " " + t.questions : ""}
+                  {test.questions && test.minutes ? " · " : ""}
+                  {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
+                <span>{test.axes.map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")}</span>
+              </span>
+            </label>)}
+          </div> : <p className={styles.extraEmpty}>{extra.nothing}</p>}
+          {extraMatches.length > 6 && <button type="button" className={styles.moreTests}
+            onClick={() => setShowMore(previous => !previous)} aria-expanded={showMore}>
+            {showMore ? extra.less : extra.more}<ChevronDown size={16} aria-hidden="true" />
+          </button>}
+          {selectedKeys.length >= 12 && <p className={styles.caution}>{extra.limit}</p>}
+        </section>
       </section>}
 
-      {step === 4 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
+      {step === 3 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
         <div className={styles.reviewIntro}>
           <div className={styles.reviewIcon} aria-hidden="true"><ClipboardList size={24} /></div>
           <p className={styles.templateLabel}>{t.readyKicker}</p>
@@ -592,16 +707,20 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
       </section>}
 
       <div className={styles.actions}>
-        {step > 0 && <button type="button" className={styles.back} onClick={() => setStep(step - 1)}><ArrowLeft size={17} />{t.back}</button>}
+        {step > 0 && <button type="button" className={styles.back} onClick={() => setStep(step - 1)}>
+          <ArrowLeft size={17} aria-hidden="true" />{t.back}
+        </button>}
         {step === 0
           ? <button type="button" className={styles.primary} disabled={focuses.length === 0}
               onClick={goForward} data-profile-confirm-focus>{t.next}<ArrowRight size={17} /></button>
-          : step < 3
-            ? <button type="button" className={styles.primary} disabled={step === 1 ? activeAreas.length === 0 : selectedAxes.length === 0}
+          : step === 1
+            ? <button type="button" className={styles.primary}
+                disabled={activeAreas.length === 0 || selectedAxes.length === 0}
                 onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
-            : step === 3
-              ? <button type="button" className={styles.primary} disabled={selectedKeys.length === 0}
-                  onClick={goForward} data-profile-review-tests>{t.review}<ArrowRight size={17} /></button>
+            : step === 2
+              ? <button type="button" className={styles.secondaryReview}
+                  disabled={selectedKeys.length === 0}
+                  onClick={goForward} data-profile-review-tests>{extra.review}<ArrowRight size={17} /></button>
               : selectedKeys.length > 0
                 ? <Link href={testHref} prefetch={false} className={styles.primary} data-profile-start-tests>
                     {t.start}<ArrowRight size={17} /></Link>
