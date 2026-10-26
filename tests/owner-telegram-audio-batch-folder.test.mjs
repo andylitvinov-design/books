@@ -197,7 +197,7 @@ test('exact two-chat-item UX and private temporary material contract',()=>{
   assert.match(nine,/появятся отдельно в кабинете/)
   assert.match(service,/editMessageText/)
   assert.match(service,/rememberAudioCombinePrompt\(config,state\.batchId,messageId\)/)
-  assert.match(service,/if\(state\.promptMessageId\)await editAudioCombinePrompt/)
+  assert.match(service,/showAudioCombinePrompt\(config,credentials,event,state,fetcher\)/)
   assert.match(service,/if\(claimed\.batch\)\{\s*\/\/ No per-file save acknowledgments/)
   assert.match(service,/const receipt=combineImportReply\(null,ready\.id\)/)
   assert.doesNotMatch(service,/await sendOwner\(credentials,'✅ Один файл из '/)
@@ -211,3 +211,24 @@ test('exact two-chat-item UX and private temporary material contract',()=>{
   assert.doesNotMatch(schema,/grant .* (anon|authenticated|service_role)/i)
   assert.match(model,/Исходные части не появляются в библиотеке/)
 });
+
+test('Combine callback exposes the tapped owner bot message ID',()=>{
+  const update={update_id:992,callback_query:{
+    id:'cb-992',data:'hh-audio:combine',from:{id:123456,is_bot:false},
+    message:{message_id:112,chat:{id:123456,type:'private'},
+      from:{is_bot:true,username:'Andydotbot'}},
+  }}
+  assert.equal(parseOwnerAudioCallback(update).messageId,112)
+  update.callback_query.from.id=777
+  assert.equal(parseOwnerAudioCallback(update),null)
+})
+test('old 9-note session opens visibly and failed Telegram edits never silently swallow callback',()=>{
+  const service=source('../lib/practitioners/owner-telegram-audio-service.js')
+  assert.ok(service.includes('event.callbackId?event.messageId:null,state.promptMessageId'))
+  assert.ok(service.includes('if(id!==Number(state.promptMessageId))'))
+  assert.ok(service.includes('showAudioCombinePrompt(config,credentials,event,state,fetcher)'))
+  assert.ok(service.includes('rememberAudioCombinePrompt(config,state.batchId,messageId,event.updateId)'))
+  assert.ok(service.includes('show_alert:!shown'))
+  assert.ok(service.includes('set last_command_update_id=$2,updated_at=now()'))
+  assert.ok(service.includes('and last_command_update_id=$4'))
+})
