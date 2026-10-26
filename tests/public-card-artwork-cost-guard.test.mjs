@@ -81,7 +81,10 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
+  // Public card generation is mandatory but may follow other checked prebuild
+  // stages. Enforce its exact single presence, not its position at index zero.
+  const prebuildStages=config.scripts.prebuild.split(/\s*&&\s*/);
+  assert.equal(prebuildStages.filter(stage=>stage==="node scripts/build-public-card-artwork.mjs").length,1);
   assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
