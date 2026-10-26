@@ -30,7 +30,7 @@ At EzoHata the public diagnostic CTA opens @ezohata_diagnostics_bot and asks for
 
 Vercel server-only settings (never paste tokens into GitHub issues or chat):
 - HH_CRM_MSG_TELEGRAM_TOKEN: BotFather secret from a NEW dedicated bot.
-- HH_CRM_MSG_TELEGRAM_BOT_ID: numeric getMe ID.
+- HH_CRM_MSG_TELEGRAM_BOT_ID: OPTIONAL. The numeric ID is derived server-side from the non-readable BotFather token prefix, then MUST match Telegram's official getMe response when owner connects. A supplied mismatched ID fails closed.
 - HH_CRM_MSG_TELEGRAM_WEBHOOK_SECRET: separate random secure webhook secret.
 - HH_CRM_MSG_TELEGRAM_USERNAME: verified BotFather username without @.
 - HH_CRM_MSG_TELEGRAM_ENABLED=true
