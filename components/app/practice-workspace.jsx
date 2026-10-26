@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
+import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones, MessageCircle } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeExpressReports from './practice-express-reports'
@@ -485,6 +485,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </button>
         <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
           <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
+        </button>
+        <button type="button" onClick={()=>window.location.assign('/'+locale+'/app/messages')}>
+          <MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span>
+          <small>{ru?'Личный инбокс':locale==='es'?'Bandeja privada':'Private inbox'}</small>
         </button>
         <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
           <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
