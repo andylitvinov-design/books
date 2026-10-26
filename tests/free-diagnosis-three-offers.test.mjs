@@ -18,7 +18,8 @@ test("express landing has one service; consultation hub keeps its existing three
   assert.match(hub, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
   assert.match(landing, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
   assert.match(hub, /<PersonalTestimonials locale=\{lang\} variant="all" \/>/);
-  assert.match(landing, /data-featured-constellations-video/);
+  assert.match(landing, /data-free-review-intro-video/);
+  assert.match(landing, /data-featured-free-review-testimonials/);
   assert.match(offers, /\{intro\}/);
   const oneService = source("components/personal-express-enquiry.tsx");
   assert.match(oneService, /data-personal-express-enquiry/);
