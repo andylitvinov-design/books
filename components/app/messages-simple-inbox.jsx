@@ -1,12 +1,13 @@
 'use client'
 
-import {useCallback,useEffect,useMemo,useState} from 'react'
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Link2,MessageCircle,RefreshCw} from 'lucide-react'
 import CrmMessengerPanel from './crm-messenger'
 import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-simple-inbox.module.css'
+import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
 
 const COPY={
   en:{title:'Messages',hint:'Conversations and requests',search:'Find a person',empty:'No messages or requests yet.',
@@ -93,6 +94,7 @@ export default function MessagesSimpleInbox({
   const [search,setSearch]=useState('')
   const [linkCopied,setLinkCopied]=useState(false)
   const [openDetail,setOpenDetail]=useState(false)
+  const inboxWindowRef=useRef(null)
   const [refreshNonce,setRefreshNonce]=useState(0)
   const onCrmThreads=useCallback(result=>setCrmState(result),[])
   const onDirectThreads=useCallback(result=>setDirectThreads(Array.isArray(result)?result:[]),[])
@@ -140,6 +142,55 @@ export default function MessagesSimpleInbox({
     setSelectedKey('');setOpenDetail(false);setCrmState({loading:true,error:false,threads:[],partial:false})
     setDirectThreads([]);setPortraits({})
   },[accountId])
+  // Safari's keyboard shrinks the visual viewport but does NOT reliably update
+  // vh/dvh sizing. Size the conversation to the actually visible area and
+  // hide the fixed bottom navigation only while an editor has focus.
+  useEffect(()=>{
+    const windowElement=inboxWindowRef.current
+    if(!windowElement)return
+    let frame=0
+    const update=()=>{
+      if(!window.matchMedia('(max-width:700px)').matches){
+        windowElement.style.removeProperty('--hh-mobile-window-height')
+        return
+      }
+      const visual=window.visualViewport
+      const bottom=visual?visual.offsetTop+visual.height:window.innerHeight
+      const top=windowElement.getBoundingClientRect().top
+      const focused=windowElement.contains(document.activeElement)&&
+        /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName||'')
+      const nav=document.querySelector('.hh-mobile-app-nav')
+      const navVisible=nav&&window.getComputedStyle(nav).display!=='none'
+      const navTop=navVisible&&!focused?nav.getBoundingClientRect().top:null
+      const height=availableInboxHeight({
+        visualBottom:bottom,windowTop:top,navigationTop:navTop,gutter:8,
+      })
+      if(height!==null)windowElement.style.setProperty('--hh-mobile-window-height',height+'px')
+    }
+    const requestUpdate=()=>{
+      if(frame)window.cancelAnimationFrame(frame)
+      frame=window.requestAnimationFrame(update)
+    }
+    const visual=window.visualViewport
+    requestUpdate()
+    window.addEventListener('resize',requestUpdate)
+    window.addEventListener('scroll',requestUpdate,{passive:true})
+    document.addEventListener('focusin',requestUpdate)
+    document.addEventListener('focusout',requestUpdate)
+    visual?.addEventListener('resize',requestUpdate)
+    visual?.addEventListener('scroll',requestUpdate)
+    return ()=>{
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('resize',requestUpdate)
+      window.removeEventListener('scroll',requestUpdate)
+      document.removeEventListener('focusin',requestUpdate)
+      document.removeEventListener('focusout',requestUpdate)
+      visual?.removeEventListener('resize',requestUpdate)
+      visual?.removeEventListener('scroll',requestUpdate)
+      windowElement.style.removeProperty('--hh-mobile-window-height')
+    }
+  },[])
+
   const select=item=>{
     setSelectedKey(item.key)
     setOpenDetail(true)
@@ -168,7 +219,7 @@ export default function MessagesSimpleInbox({
         </button>
       </div>
     </header>
-    <div className={styles.window}>
+    <div className={styles.window} ref={inboxWindowRef}>
       <aside className={styles.people} aria-label={t.back}>
         <label className={styles.search}>
           <span className={styles.srOnly}>{t.search}</span>
