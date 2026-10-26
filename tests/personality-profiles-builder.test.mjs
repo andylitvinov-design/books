@@ -186,7 +186,8 @@ test('Tests slide offers a direct start followed by discoverable filters for oth
   const additional = testsSlide.indexOf('data-profile-additional-tests')
   assert.ok(recommendations > 0 && directStart > recommendations && additional > directStart,
     'suggested tests and Take tests button are above extra test filters')
-  for (const phrase of ['type="search"', 'value={kindFilter}', 'value={topicFilter}',
+  for (const phrase of ['type="search"', 'value={kindFilter}', 'data-profile-extra-profile-filter', 'data-profile-extra-scales',
+    'aria-pressed={extraProfile === key}', 'aria-pressed={extraScales.includes(axis)}',
     'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'TEST_KINDS.map',
     "href={'/' + locale + '/client/tests'}"]) assert.ok(testsSlide.includes(phrase), phrase)
   assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key\)\)/)
@@ -214,9 +215,36 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
   }
   assert.match(builder, /test\.axes\.some\(axis => selectedAxes\.includes\(axis\)\)/)
   assert.match(builder, /kindFilter === "all" \|\| test\.testKind === kindFilter/)
-  assert.match(builder, /topicFilter === "all" \|\| \(topicFilter === "matching"/)
+  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
+  assert.match(builder, /setExtraScales\(previous => previous\.includes\(axis\)/)
+  assert.match(builder, /\[\.\.\.previous, axis\]/)
+  assert.match(builder, /allAxesFor\(focusAreas\[extraProfile\]\)\.filter\(axis => measurableAxes\.has\(axis\)\)/)
   assert.match(builder, /test\.minutes !== null && test\.minutes <= Number\(timeFilter\)/)
   assert.match(builder, /selectedKeys\.length >= 12/)
   assert.ok(!builder.includes('setSelectedAxes('))
   assert.ok(builder.includes('const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","))'), 'test launch encodes only catalogue keys')
+})
+
+test('additional test finder scopes a single life profile before opening multiple real scales', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  const slide = builder.slice(builder.indexOf('data-profile-additional-tests'), builder.indexOf('data-profile-test-review-slide'))
+  const profileAt = slide.indexOf('data-profile-extra-profile-filter')
+  const scalesAt = slide.indexOf('data-profile-extra-scales')
+  const testsAt = slide.indexOf('extraResultCount')
+  assert.ok(profileAt >= 0 && scalesAt > profileAt && testsAt > scalesAt)
+  assert.match(slide, /\(\["wellbeing", "relationships", "work", "identity"\] as const\)\.map/)
+  assert.match(slide, /extraProfile === key/)
+  assert.match(slide, /axesForExtraProfile\.map/)
+  assert.match(slide, /aria-pressed=\{extraScales\.includes\(axis\)\}/)
+  assert.match(slide, /setExtraScales\(\[\.\.\.axesForExtraProfile\]\)/)
+  assert.match(slide, /setExtraScales\(\[\]\)/)
+  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
+  for (const t of ['profile: "1. Выберите один профиль"', 'scales: "2. Отметьте шкалы профиля"',
+    'profile: "1. Choose one profile"', 'profile: "1. Elige un perfil"']) assert.ok(builder.includes(t))
+  assert.match(css, /\.extraProfileChoices\{display:grid/)
+  assert.match(css, /\.extraScaleChoices\{display:flex/)
+  assert.match(css, /@media\(max-width:450px\)\{\.extraProfileChoices\{grid-template-columns:1fr/)
 })
