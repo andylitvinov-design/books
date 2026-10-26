@@ -129,6 +129,10 @@ install_remaster() {
     printf 'FAIL: staged vendor skill not found/mismatched\n' >&2; exit 2;
   }
   mkdir -p "$REPO_DIR/.agents/skills"
+  # npm's Node process resolves macOS /var through /private/var. Canonicalize
+  # both paths before rewriting the vendor-installed absolute skill path.
+  src="$(cd "$(dirname "$src")" && pwd -P)/$(basename "$src")"
+  SKILL_DIR="$(cd "$REPO_DIR/.agents/skills" && pwd -P)/clone"
   cp -R "$src" "$SKILL_DIR"
   # Remaster substitutes the absolute skill path in SKILL.md at install time.
   # Rewrite that one path to our project directory after copying.
