@@ -59,6 +59,8 @@ test('batch-specific folder/finish/cancel callbacks validate owner, bot and batc
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:bf:'+ID+':private-client')),null)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:bf:not-an-id:reiki')),null)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:done:'+ID+':reiki')),null)
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:done')).action,'legacy-batch-button')
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:cancel')).action,'legacy-batch-button')
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:done:'+ID,999999)),null)
   const bot=callback('hh-audio:bf:'+ID+':reiki')
   bot.callback_query.message.from.username='FakeBot'
