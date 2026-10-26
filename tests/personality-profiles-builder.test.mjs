@@ -172,3 +172,51 @@ test('browse free tests opens the real catalogue and positions the existing pers
     assert.ok(offers.includes('  ' + locale + ': {'), locale + ' review localization')
   }
 })
+
+test('Tests slide offers a direct start followed by discoverable filters for other questionnaires', () => {
+  const builder = read('components/personality-profiles-builder.tsx')
+  const css = read('components/personality-profiles-builder.module.css')
+  const route = read('app/[locale]/personality-profiles/page.tsx')
+  const start = builder.indexOf('{step === 2 && <section')
+  const ready = builder.indexOf('{step === 3 && <section')
+  assert.ok(start > 0 && ready > start, 'Tests precedes optional Ready/save step')
+  const testsSlide = builder.slice(start, ready)
+  const recommendations = testsSlide.indexOf('data-profile-recommended-tests')
+  const directStart = testsSlide.indexOf('data-profile-start-tests')
+  const additional = testsSlide.indexOf('data-profile-additional-tests')
+  assert.ok(recommendations > 0 && directStart > recommendations && additional > directStart,
+    'suggested tests and Take tests button are above extra test filters')
+  for (const phrase of ['type="search"', 'value={kindFilter}', 'value={topicFilter}',
+    'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'TEST_KINDS.map',
+    "href={'/' + locale + '/client/tests'}"]) assert.ok(testsSlide.includes(phrase), phrase)
+  assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key\)\)/)
+  assert.match(builder, /setSelectedKeys\(\[\.\.\.recommendProfileBattery\(matches, selectedAxes\)\]\)/)
+  assert.match(builder, /previous\.length < 12/)
+  assert.match(builder, /if \(!tests\.some\(test => test\.key === key\)\) return/)
+  assert.match(route, /testKind: entry\.testKind/)
+  assert.match(css, /\.extraFilters \{/)
+  assert.match(css, /\.extraSearch \{ grid-column: 1 \/ -1; \}/)
+  assert.match(css, /\.startRow > \.primary \{ width: 100%; \}/)
+  assert.ok(builder.includes('start: "Пройти тесты"'))
+  assert.ok(builder.includes('start: "Take tests"'))
+  assert.ok(builder.includes('start: "Realizar pruebas"'))
+  assert.ok(builder.includes('data-profile-google-cabinet-offer'), 'private save remains optional')
+  assert.ok(!testsSlide.includes('data-profile-test-review-slide'), 'no forced intermediate confirmation to start')
+})
+
+test('additional test options inherit rights-filtered guest metadata; filters never create new scales or scores', () => {
+  const route = read('app/[locale]/personality-profiles/page.tsx')
+  const builder = read('components/personality-profiles-builder.tsx')
+  for (const flag of ['entry.selectable === true', 'entry.startable === true',
+    'entry.guestEligible === true', 'entry.free === true',
+    'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true']) {
+    assert.ok(route.includes(flag), flag)
+  }
+  assert.match(builder, /test\.axes\.some\(axis => selectedAxes\.includes\(axis\)\)/)
+  assert.match(builder, /kindFilter === "all" \|\| test\.testKind === kindFilter/)
+  assert.match(builder, /topicFilter === "all" \|\| \(topicFilter === "matching"/)
+  assert.match(builder, /test\.minutes !== null && test\.minutes <= Number\(timeFilter\)/)
+  assert.match(builder, /selectedKeys\.length >= 12/)
+  assert.ok(!builder.includes('setSelectedAxes('))
+  assert.ok(!builder.includes('startTests="'), 'test launch uses only an encoded whitelist of test keys')
+})
