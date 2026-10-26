@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import {
   TELEGRAM_DIAGNOSTIC_V2_VERSION,TELEGRAM_DIAGNOSTIC_V2_BUTTONS,
   TELEGRAM_DIAGNOSTIC_V2_PHOTO_LIMIT,
-  telegramV2CoachingLink,
+  telegramV2CoachingLink,telegramDiagnosticDailyReplyCount,
 } from '../lib/crm/telegram-diagnostic-v2.mjs'
 import {
   transitionTelegramDiagnostic,transitionTelegramDiagnosticLegacy,
@@ -180,6 +180,28 @@ test('legacy V1 in-progress question remains intact until an explicit new /start
   const stopped={stage:'stopped',locale:'ru',flowVersion:1}
   assert.equal(transitionTelegramDiagnostic(stopped,msg('/start')).reply,null)
 })
+test('legacy chat at ten replies can restart six owner messages ONCE without unbounded daily resets',()=>{
+  const day='2026-10-26'
+  const old={flow_version:1,reply_day:day,reply_count:10}
+  const prior={stage:'done',locale:'ru',flowVersion:1,consentAt:'2026-10-26T12:00:00Z'}
+  const restart=transitionTelegramDiagnostic(prior,msg('/start hhreview_ru'))
+  assert.equal(restart.flowVersion,2)
+  assert.equal(restart.stage,'consent')
+  assert.equal(telegramDiagnosticDailyReplyCount(old,restart,day),0)
+  assert.equal(telegramDiagnosticDailyReplyCount(old,{flowVersion:1,stage:'done'},day),10,
+    'unrestarted V1 must remain capped')
+  const newSession={flow_version:2,reply_day:day,reply_count:6}
+  assert.equal(telegramDiagnosticDailyReplyCount(newSession,restart,day),6,
+    'subsequent V2 /start must NOT reset quota')
+  assert.equal(telegramDiagnosticDailyReplyCount({...newSession,reply_count:10},restart,day),10)
+  assert.equal(telegramDiagnosticDailyReplyCount({...newSession,reply_count:10},restart,'2026-10-27'),0)
+  assert.equal(telegramDiagnosticDailyReplyCount(old,{flowVersion:2,stage:'focus',consent:true},day),10,
+    'only an explicit V2 consent-screen restart can reset')
+  const source=read('lib/crm/messenger-webhook.js')
+  assert.match(source,/telegramDiagnosticDailyReplyCount\(previous,next,today\)/)
+  assert.match(source,/Number\(previous\.last_update_id\)>=updateId/)
+})
+
 test('all Telegram replies fit existing transport and keyboards never include unsupported commands',()=>{
   const text=read('lib/crm/telegram-diagnostic-v2.mjs')
   const provider=read('lib/crm/messenger-provider.js')
