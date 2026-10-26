@@ -49,3 +49,13 @@ test('paid €50/€100 call-to-action shows the selected request, not an automa
   assert.doesNotMatch(checkout, /session: "(?:Book|Записаться|Reservar) (?:60|на 60)/)
   assert.match(checkout, /This is an enquiry, not a confirmed booking or payment/)
 })
+
+test('changing the selected paid offer remounts the enquiry to clear the previous draft and consent', () => {
+  // The chooser already resets on whatsappUrl changes, but only a keyed
+  // subtree guarantees the old form and saved receipt cannot be reused by
+  // React reconciliation when the tariff changes during an async request.
+  assert.match(checkout, /isPaidRequest\s*\?\s*\([\s\S]*?<ContactChannelChooser[\s\S]*?key=\{serviceChoice\}/)
+  assert.match(chooser, /const \[consent, setConsent\] = useState\(false\)/)
+  assert.match(chooser, /const \[saved, setSaved\] = useState<SavedEnquiry \| null>\(null\)/)
+  assert.match(chooser, /const operationId = useRef<string \| null>\(null\)/)
+})
