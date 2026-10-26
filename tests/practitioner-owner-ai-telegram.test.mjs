@@ -22,6 +22,9 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate(event('/council'),now).mode,'all')
   assert.equal(parseOwnerAiUpdate(event('/verify'),now).action,'verify')
   assert.equal(parseOwnerAiUpdate(event('/all План'),now).mode,'all')
+  assert.equal(parseOwnerAiUpdate(event('/all'),now).action,'prompt')
+  assert.equal(parseOwnerAiUpdate(event('/verify'),now).action,'verify')
+  assert.equal(parseOwnerAiUpdate(event('/gemini Привет'),now).mode,'gemini')
   assert.equal(parseOwnerAiUpdate(event('/free2 Улучши услуги'),now).mode,'free2')
   assert.equal(parseOwnerAiUpdate(event('/status'),now).action,'status')
   assert.equal(parseOwnerAiUpdate(event('/free Улучши страницу услуг'),now).mode,'free')
@@ -36,24 +39,24 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate({update_id:'not a number',message:base.message},now),null)
 })
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
-  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['audio','materials','ai','verify','all','status','gemini','free','free2','council','cancel'])
+  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials'])
   const live=ownerAiMenu({gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
-  assert.deepEqual(buttons,['hh-audio:help','hh-ai:all','hh-ai:free','hh-ai:gemini','hh-ai:verify','hh-ai:status'])
+  assert.deepEqual(buttons,['hh-ai:all'])
   assert.doesNotMatch(buttons.join(' '),/hh-ai:mistral|hh-ai:both/)
-  assert.match(live.text,/Mistral/)
+  assert.doesNotMatch(live.text,/Mistral/)
   const tryFirst=ownerAiMenu({
     free:{candidate:true,ready:false,model:'nvidia/nemotron-3-ultra-550b-a55b:free'},
     free2:{candidate:true,ready:false,model:'google/gemma-4-31b-it:free'}
   })
-  assert.match(tryFirst.text,/Реально ответили за последние 36 часов: 0/)
+  assert.match(tryFirst.text,/подтвердили реальный ответ: 0/)
   assert.deepEqual(tryFirst.reply_markup.inline_keyboard.flat()
     .filter(x=>x.callback_data==='hh-ai:all').map(x=>x.text),
-    ['🧠 Спросить всех · первая проверка'])
+    ['🧠 Задать вопрос всем ИИ'])
   assert.ok(!tryFirst.reply_markup.inline_keyboard.flat()
     .some(x=>x.callback_data==='hh-ai:mistral'))
   assert.match(tryFirst.text,/Mistral исключён/)
-  assert.deepEqual(ownerAiMenu().reply_markup.inline_keyboard.flat().map(x=>x.callback_data),['hh-audio:help','hh-ai:verify','hh-ai:status'])
+  assert.deepEqual(ownerAiMenu().reply_markup.inline_keyboard.flat().map(x=>x.callback_data),['hh-ai:all','hh-ai:status'])
   assert.equal(ownerAiPrompt('mistral').reply_markup.force_reply,true)
   const callback=parseOwnerAiUpdate({update_id:312,callback_query:{
     id:'cb-313',data:'hh-ai:mistral',
@@ -161,6 +164,7 @@ test('signed existing webhook, DB dedup, owner isolation and private RLS are man
   assert.doesNotMatch(service,/from app\.crm_contacts|from app\.assessment_results|console\.log/)
   assert.match(transport,/existing\?\.url&&existing\.url!==expected/)
   assert.match(transport,/allowed_updates:\['message','callback_query'\]/)
+  assert.match(transport,/saved.length===OWNER_AI_COMMANDS.length/)
   assert.match(transport,/scope:\{type:'chat',chat_id:chatNumber\}/)
   assert.match(setup,/practitionerEmailAllowed/)
   assert.match(setup,/requireSameOrigin/)
@@ -177,7 +181,7 @@ test('live provider menu never offers unverified models and free choice uses ver
     gemini:{ready:false,reason:'429'},free:{ready:true},mistral:{ready:false,reason:'STUDIO_HTTP_429'}
   })
   assert.deepEqual(notReady.reply_markup.inline_keyboard.flat().map(x=>x.callback_data),
-    ['hh-audio:help','hh-ai:free','hh-ai:verify','hh-ai:status'])
+    ['hh-ai:all','hh-ai:status'])
   const reply=event('Нужен совет про лендинг',{reply_to_message:{
     from:{is_bot:true,username:'Andydotbot'},text:ownerAiPrompt('free').text
   }})
@@ -203,8 +207,8 @@ test('candidate models unlock the first explicit all-question but are never fals
     free2:{ready:false},mistral:{ready:false}
   })
   const noButtons=cold.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
-  assert.deepEqual(noButtons,['hh-audio:help','hh-ai:all','hh-ai:verify','hh-ai:status'])
-  assert.match(cold.text,/нет подтверждённых ответов/i)
+  assert.deepEqual(noButtons,['hh-ai:all'])
+  assert.match(cold.text,/подтвердили реальный ответ: 0/)
   const live=ownerAiMenu({
     gemini:{ready:true,model:'gemini-3.8-flash'},
     free:{ready:true,model:'nvidia/nemotron-3-ultra-550b-a55b:free'},
@@ -212,11 +216,8 @@ test('candidate models unlock the first explicit all-question but are never fals
     mistral:{ready:false,reason:'HTTP 429'}
   })
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
-  assert.deepEqual(buttons,[
-    'hh-audio:help','hh-ai:all','hh-ai:free','hh-ai:free2','hh-ai:gemini',
-    'hh-ai:verify','hh-ai:status'
-  ])
-  assert.match(live.text,/nemotron-3-ultra/)
+  assert.deepEqual(buttons,['hh-ai:all'])
+  assert.match(live.text,/Предварительно доступно ИИ: 3/)
   assert.doesNotMatch(buttons.join(','),/mistral/)
   const callback=parseOwnerAiUpdate({update_id:455,callback_query:{
     id:'cb-455',data:'hh-ai:all',from:base.message.from,
