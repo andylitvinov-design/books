@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
@@ -429,9 +430,9 @@ export default function CrmManager({ locale = 'en', accountId }) {
        <button type="button" className={styles.leadShortcut} onClick={()=>setActiveSection('leads')}>
          {language==='ru'?'Лиды без открытой задачи':language==='es'?'Leads sin tarea abierta':'Leads without an open task'} · {data.overview?.unplannedLeads??0} →
        </button>
-      <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
+      <p><Link href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
       {language==='ru'?'Открыть CRM по Reiki-курсу: лиды и письма →':language==='es'?'Abrir CRM de Reiki: solicitudes y cartas →':'Open Reiki CRM: course leads and initiation letters →'}
-    </a></p>
+    </Link></p>
       <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]}
          busy={busy} onAction={save} onOpenContact={focusContact} onViewTasks={()=>setActiveSection('tasks')} />
       <CrmBusinessEnquiries locale={language} enquiries={data.businessEnquiries||[]} busy={busy} onAction={save} />
