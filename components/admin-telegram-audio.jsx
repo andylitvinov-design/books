@@ -15,6 +15,13 @@ const LABELS={
     steps:['Открой Dot → /audio → сначала нажми кнопку нужной папки.','В чате с медитацией зажми запись → «Переслать» → Dot → «Отправить».','Дождись ✅ с названием выбранной папки. Без выбора файл попадёт во «Входящие».'],
     botCta:'Выбрать папку в Dot',
     combine:'Чтобы склеить голосовые: /combine → перешли 2–8 записей OGG/Opus → дождись ✅ для каждой → /done. Общий файл появится здесь и в Dot. /cancel отменяет сборку. До 20 МБ суммарно.',
+    connection:'Подключение Telegram Dot',checkBot:'Проверить',repairBot:'Восстановить webhook',
+    connectionLoading:'Проверяем сервер Telegram…',
+    connectionReady:'Webhook зарегистрирован. Ответ на /audio нужно подтвердить настоящим сообщением.',
+    connectionMissing:'Telegram webhook не подтверждён. Нажми «Восстановить webhook», затем отправь /audio в Dot.',
+    connectionUnconfigured:'Сервер Telegram ещё не настроен. Проверь CRM → Подключения.',
+    connectionError:'Не удалось проверить подключение. Попробуй ещё раз.',
+    repairSuccess:'Webhook проверен после восстановления. Отправь /audio в Dot и проверь ответ.',
     autoSave:'Выбор папки действует 30 минут для следующей записи. Оригинал остаётся приватным в этой аудиотеке и не публикуется в курсе.'},
   en:{inbox:'Telegram audio inbox',intro:'Forward a voice message or audio file to @Andydotbot. It is saved privately here, never published to a course automatically.',
     all:'All folders',refresh:'Refresh',loading:'Loading recordings…',none:'No recordings in this folder yet.',
@@ -26,6 +33,13 @@ const LABELS={
     steps:['Open Dot → /audio → first tap the destination folder.','Hold your meditation recording → Forward → Dot → Send.','Wait for ✅ confirming that folder. With no choice, the file goes to Inbox.'],
     botCta:'Choose folder in Dot',
     combine:'Join voice notes: /combine → forward 2–8 OGG/Opus recordings → wait for ✅ on each → /done. The combined file appears here and in Dot. /cancel stops a batch. 20 MB total max.',
+    connection:'Dot Telegram connection',checkBot:'Check',repairBot:'Repair webhook',
+    connectionLoading:'Checking Telegram provider…',
+    connectionReady:'Webhook is registered. A real /audio response is still needed to prove delivery.',
+    connectionMissing:'Telegram webhook is not verified. Tap Repair webhook, then send /audio to Dot.',
+    connectionUnconfigured:'Telegram is not configured on the server. Check CRM → Connections.',
+    connectionError:'Could not check the connection. Try again.',
+    repairSuccess:'Webhook verified after repair. Send /audio to Dot and check its reply.',
     autoSave:'The choice applies to the next recording within 30 minutes. Originals stay private in this audio library, not published to a course.'},
   es:{inbox:'Bandeja de audio de Telegram',intro:'Reenvía un audio a @Andydotbot. Se guardará de forma privada, sin publicar en el curso.',
     all:'Todas las carpetas',refresh:'Actualizar',loading:'Cargando audios…',none:'Aún no hay audios en esta carpeta.',
@@ -37,6 +51,13 @@ const LABELS={
     steps:['Abre Dot → /audio → elige primero la carpeta.','Mantén pulsada la grabación → Reenviar → Dot → Enviar.','Espera ✅ con la carpeta elegida. Sin selección se guarda en Entrada.'],
     botCta:'Elegir carpeta en Dot',
     combine:'Unir mensajes de voz: /combine → reenvía 2–8 audios OGG/Opus → espera ✅ para cada uno → /done. El archivo unido aparece aquí y en Dot. /cancel cancela. Máximo 20 MB.',
+    connection:'Conexión Telegram de Dot',checkBot:'Verificar',repairBot:'Reparar webhook',
+    connectionLoading:'Comprobando el proveedor Telegram…',
+    connectionReady:'Webhook registrado. Hay que comprobar la respuesta real a /audio.',
+    connectionMissing:'Webhook sin verificar. Pulsa Reparar webhook y envía /audio a Dot.',
+    connectionUnconfigured:'Telegram no está configurado en el servidor. Revisa CRM → Conexiones.',
+    connectionError:'No se pudo comprobar la conexión. Inténtalo de nuevo.',
+    repairSuccess:'Webhook verificado tras repararlo. Envía /audio a Dot y comprueba su respuesta.',
     autoSave:'La elección sirve para el próximo audio durante 30 minutos. El original queda privado y no se publica en cursos.'}
 }
 const duration=value=>{
@@ -52,6 +73,10 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
   const [busy,setBusy]=useState(false),[saving,setSaving]=useState('')
   const [notice,setNotice]=useState(''),[error,setError]=useState('')
   const [truncated,setTruncated]=useState(false)
+  const [connection,setConnection]=useState(null)
+  const [connectionBusy,setConnectionBusy]=useState(false)
+  const [connectionError,setConnectionError]=useState('')
+  const [connectionNotice,setConnectionNotice]=useState('')
 
   const load=useCallback(async()=>{
     setBusy(true);setError('')
@@ -70,6 +95,38 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
     finally{setBusy(false)}
   },[t.failed])
   useEffect(()=>{load()},[load])
+  const checkConnection=useCallback(async()=>{
+    setConnectionBusy(true);setConnectionError('');setConnectionNotice('')
+    try{
+      const response=await fetch('/api/admin/materials/telegram/connection',{
+        credentials:'same-origin',cache:'no-store'})
+      const result=await response.json()
+      if(!response.ok||typeof result?.webhookVerified!=='boolean')
+        throw Error('OWNER_TELEGRAM_CONNECTION_FAILED')
+      setConnection(result)
+    }catch{
+      setConnection(null);setConnectionError(t.connectionError)
+    }finally{setConnectionBusy(false)}
+  },[t.connectionError])
+  useEffect(()=>{checkConnection()},[checkConnection])
+  async function repairConnection(){
+    if(connectionBusy||connection?.configured!==true)return
+    setConnectionBusy(true);setConnectionError('');setConnectionNotice('')
+    try{
+      const response=await fetch('/api/admin/materials/telegram/connection',{
+        method:'POST',credentials:'same-origin',cache:'no-store'})
+      if(!response.ok)throw Error('OWNER_TELEGRAM_REPAIR_FAILED')
+      // Never claim success solely from the POST response.
+      const verified=await fetch('/api/admin/materials/telegram/connection',{
+        credentials:'same-origin',cache:'no-store'})
+      const data=await verified.json()
+      if(!verified.ok||data?.webhookVerified!==true)
+        throw Error('OWNER_TELEGRAM_RECHECK_FAILED')
+      setConnection(data)
+      setConnectionNotice(t.repairSuccess)
+    }catch{setConnectionError(t.connectionError)}
+    finally{setConnectionBusy(false)}
+  }
   useEffect(()=>{
     if(!initialItem||!files.some(file=>file.id===initialItem))return
     setFolder('all')
@@ -109,6 +166,23 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
     <div className={styles.heading}>
       <div><h2>{t.inbox}</h2><p>{t.intro}</p></div>
       <button type="button" className={styles.secondary} onClick={load} disabled={busy||!!saving}>{t.refresh}</button>
+    </div>
+    <div className={styles.connection} data-owner-telegram-connection>
+      <div><strong>{t.connection}</strong>
+        <p role="status">{connectionBusy?t.connectionLoading:
+          connection?.webhookVerified?t.connectionReady:
+          connection?.configured===false?t.connectionUnconfigured:
+          connection?t.connectionMissing:t.connectionError}</p>
+        {connectionNotice&&<p role="status" className={styles.notice}>{connectionNotice}</p>}
+        {connectionError&&<p role="alert" className={styles.error}>{connectionError}</p>}
+      </div>
+      <div className={styles.connectionActions}>
+        <button type="button" onClick={checkConnection} disabled={connectionBusy}>
+          {t.checkBot}</button>
+        <button type="button" onClick={repairConnection}
+          disabled={connectionBusy||connection?.configured!==true}>
+          {t.repairBot}</button>
+      </div>
     </div>
     <div className={styles.instructions} data-owner-telegram-forward-guide>
       <div>
