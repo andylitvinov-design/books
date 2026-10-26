@@ -324,6 +324,10 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
   }
 
   const activeMedia: Kind = step === 4 ? "drawing" : "portrait";
+  // Energy/wellbeing requests do not need the symbolic drawing. They have a
+  // real five-step journey, not an invisible sixth step marked "complete".
+  const shownSteps = focus === "situation" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 5];
+  const visibleStepNumber = Math.max(1, shownSteps.indexOf(step) + 1);
   const whatsapp = receipt ? whatsappEnquiryUrl({
     locale, service: serviceTitle,
     request: "My free written review request is registered. " + t.ref + ": " + receipt.referenceCode,
@@ -332,10 +336,11 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
 
   return <section className={styles.root} data-free-express-wizard aria-label={t.title} lang={locale}>
     <div className={styles.progressWrap}>
-      <p className={styles.currentStep} role="status">{t.stepOf} {step + 1} {t.of} {t.steps.length} <strong>{t.steps[step]}</strong></p>
-      <div className={styles.progress} aria-label={t.title}>
-        {t.steps.map((label, i) => <span key={label} aria-current={i === step ? "step" : undefined}
-          data-active={i === step ? "true" : "false"} data-done={i < step ? "true" : "false"}>{i + 1}<small>{label}</small></span>)}
+      <p className={styles.currentStep} role="status">{t.stepOf} {visibleStepNumber} {t.of} {shownSteps.length} <strong>{t.steps[step]}</strong></p>
+      <div className={styles.progress} aria-label={t.title}
+        style={{ gridTemplateColumns: `repeat(${shownSteps.length}, minmax(0, 1fr))` }}>
+        {shownSteps.map((i, index) => <span key={t.steps[i]} aria-current={i === step ? "step" : undefined}
+          data-active={i === step ? "true" : "false"} data-done={i < step ? "true" : "false"}>{index + 1}<small>{t.steps[i]}</small></span>)}
       </div>
     </div>
 
