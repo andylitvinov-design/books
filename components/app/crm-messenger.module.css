@@ -214,3 +214,8 @@
 @media(max-width:760px){
   .panel[data-compact="true"] .compose .repliesToggle{display:none}
 }
+
+
+@media(max-width:760px){
+  .panel .compose textarea{font-size:16px;resize:none}
+}
