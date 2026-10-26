@@ -192,7 +192,7 @@ function replyReason(reason,lang){
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId=''}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',conversationOnly=false}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -432,14 +432,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   )
-  return <section className={styles.panel} aria-labelledby="crm-messenger-title">
-    <header className={styles.top}>
+  return <section className={conversationOnly?styles.detailOnly:styles.panel} aria-label={conversationOnly?t.title:undefined} aria-labelledby={conversationOnly?undefined:"crm-messenger-title"}>
+    {!conversationOnly&&<header className={styles.top}>
       <div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>
       <button type="button" className={styles.plainButton} disabled={busy} onClick={()=>refresh()}>{t.refresh}</button>
-    </header>
-    {data&&data.accounts?.length===0&&
+    </header>}
+    {!conversationOnly&&data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
-    <details className={styles.channels}>
+    {!conversationOnly&&<details className={styles.channels}>
       <summary>{t.channels} · {data?.accounts?.filter(item=>item.connected).length||0}/4 · {setupText[lang].instructions}</summary>
       <div className={styles.channelGrid}>
         {(data?.channels||['telegram','whatsapp','instagram','messenger'].map(channel=>({channel,providerConfigured:false,missingKeys:[]}))).map(channel=>{
@@ -519,11 +519,11 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           </div>
         })}
       </div>
-    </details>
+    </details>}
     {!data&&!error&&<p role="status" className={styles.notice}>{t.loading}</p>}
     {error&&<p role="alert" className={styles.notice}>{t.failed}</p>}
-    {data&&<div className={styles.layout}>
-      <div className={styles.list} aria-label={t.customers}>
+    {data&&<div className={conversationOnly?styles.detailLayout:styles.layout}>
+      {!conversationOnly&&<div className={styles.list} aria-label={t.customers}>
         <div className={styles.listHead}><strong>{t.customers}</strong><small>{threads.length} · {t.waiting}: {unread} · {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Awaiting reply'}: {waitingReply}</small></div>
         <div className={styles.inboxFilters}>
           <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
@@ -554,18 +554,18 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           disabled={threadsBusy||busy} onClick={loadMoreThreads}>
           {threadsBusy?t.loading:t.loadThreads}
         </button>}
-      </div>
-      <div className={styles.conversation}>
+      </div>}
+      <div className={conversationOnly?styles.detailConversation:styles.conversation}>
         {!selected?<p className={styles.empty}>{t.select}</p>:<>
-          <div className={styles.chatHeader}>
-            <div className={styles.chatIdentity}>
+          {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
+            {!conversationOnly&&<div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
               <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
-            </div>
+            </div>}
             {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
               onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
-          </div>
-          <div className={styles.contactActions}>
+          </div>}
+          {!conversationOnly&&<div className={styles.contactActions}>
             <label>{w.stage}
               <select value={selected.lifecycle} disabled={busy||threadLoading}
                 onChange={event=>changeStage(event.target.value)}>
@@ -577,7 +577,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             <span className={styles.smallHint}>{selected.suppressed?
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
               w.overview}</span>
-          </div>
+          </div>}
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
             {!threadLoading&&data?.nextMessagesCursor&&<button type="button"
@@ -594,7 +594,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
             </div>)}
           </div>
-          <div className={styles.workflowActions}>
+          {!conversationOnly&&<div className={styles.workflowActions}>
             <details className={styles.actionDetails}>
               <summary>{w.followups} · {(data?.followups||[]).length}</summary>
               <div className={styles.actionBody}>
@@ -636,20 +636,20 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 <button type="button" disabled={busy||!noteText.trim()} onClick={saveNote}>{w.saveNote}</button>
               </div>
             </details>
-          </div>
+          </div>}
           <div className={styles.compose}>
-            <label htmlFor="crm-messenger-compose">{t.reply}</label>
-            <div className={styles.quickReplies} role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
+            <label className={conversationOnly?styles.srOnly:undefined} htmlFor="crm-messenger-compose">{t.reply}</label>
+            {!conversationOnly&&<div className={styles.quickReplies} role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
               {quickReplies[lang].map(item=><button type="button" key={item.label}
                 disabled={busy||threadLoading||!selected.reply.ok}
                 onClick={()=>{pendingRequest.current=null;setText(item.text)}}>{item.label}</button>)}
-            </div>
+            </div>}
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
-              maxLength={1200} rows={3} onChange={e=>{
+              maxLength={1200} rows={conversationOnly?2:3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
-              }} placeholder={t.manual}/>
+              }} placeholder={conversationOnly?t.reply:t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()} type="button" onClick={send}>{t.send}</button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
           </div>
@@ -657,6 +657,6 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
       </div>
     </div>}
     {status&&<p role="status" className={styles.notice}>{status}</p>}
-    <p className={styles.disclaimer}>{t.manual}</p>
+    {!conversationOnly&&<p className={styles.disclaimer}>{t.manual}</p>}
   </section>
 }
