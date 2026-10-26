@@ -6,7 +6,7 @@ const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
     select:'Select a conversation',reply:'Your reply',send:'Send reply',refresh:'Refresh',loading:'Loading conversations…',
-    pending:'Connection requires official provider credentials.',connect:'Connect',verifyBot:'Verify Telegram bot',botVerified:'Telegram identity verified',botStates:{connected:'Webhook connected',not_set:'Webhook not configured',in_use_elsewhere:'Webhook belongs to another app — do not replace',unknown:'Webhook status unknown'},connected:'Registered in CRM · test delivery',none:'Not configured',
+    pending:'Connection requires official provider credentials.',connect:'Connect',pilotStart:'Start owner pilot in Telegram',pilotSteps:'In your own Telegram chat: Start → /agree → /situation → short non-sensitive question → /skip. Refresh Messages here after each step. Use /stop to end contact.',verifyBot:'Verify Telegram bot',botVerified:'Telegram identity verified',botStates:{connected:'Webhook connected',not_set:'Webhook not configured',in_use_elsewhere:'Webhook belongs to another app — do not replace',unknown:'Webhook status unknown'},connected:'Registered in CRM · test delivery',none:'Not configured',
     manual:'Manual customer replies only. Do not enter medical details, reports or secret client links.',
     failed:'Messages are temporarily unavailable.',unknown:'Delivery not confirmed. Do not resend automatically.',
     accepted:'Message accepted by the provider.',blocked:'This reply is unavailable.',read:'Mark read',
@@ -15,7 +15,7 @@ const copy={
   ru:{title:'Сообщения',sub:'Telegram, WhatsApp, Instagram и Messenger — единый защищённый inbox',all:'Все',
     empty:'Переписок пока нет. Входящие появятся после подключения канала и первого сообщения от клиента.',
     select:'Выберите переписку',reply:'Ваш ответ',send:'Отправить ответ',refresh:'Обновить',loading:'Загружаю переписки…',
-    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',verifyBot:'Проверить Telegram-бота',botVerified:'Telegram-бот подтверждён',botStates:{connected:'Webhook подключён',not_set:'Webhook ещё не настроен',in_use_elsewhere:'Webhook принадлежит другому приложению — не заменять',unknown:'Статус webhook не определён'},connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
+    pending:'Для подключения нужны официальные ключи провайдера.',connect:'Подключить',pilotStart:'Начать личный тест в Telegram',pilotSteps:'В своём чате Telegram: Старт → /agree → /situation → краткий вопрос без чувствительных данных → /skip. Затем обновите «Сообщения» в CRM. /stop прекращает переписку.',verifyBot:'Проверить Telegram-бота',botVerified:'Telegram-бот подтверждён',botStates:{connected:'Webhook подключён',not_set:'Webhook ещё не настроен',in_use_elsewhere:'Webhook принадлежит другому приложению — не заменять',unknown:'Статус webhook не определён'},connected:'Зарегистрирован в CRM · проверьте доставку',none:'Не настроен',
     manual:'Только ответы на обращения клиентов. Не отправляйте медицинские сведения, отчёты или секретные ссылки.',
     failed:'Переписки временно недоступны.',unknown:'Доставка не подтверждена. Не повторяйте отправку автоматически.',
     accepted:'Сообщение принято провайдером.',blocked:'Сейчас ответ недоступен.',read:'Отметить прочитанным',
@@ -24,7 +24,7 @@ const copy={
   es:{title:'Mensajes',sub:'Telegram, WhatsApp, Instagram y Messenger — bandeja privada',all:'Todos',
     empty:'Aún no hay conversaciones. Aparecerán cuando el canal esté conectado y un cliente escriba.',
     select:'Selecciona una conversación',reply:'Tu respuesta',send:'Enviar respuesta',refresh:'Actualizar',loading:'Cargando conversaciones…',
-    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',verifyBot:'Verificar bot de Telegram',botVerified:'Identidad del bot verificada',botStates:{connected:'Webhook conectado',not_set:'Webhook sin configurar',in_use_elsewhere:'Webhook pertenece a otra aplicación — no reemplazar',unknown:'Estado del webhook desconocido'},connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
+    pending:'Se necesitan credenciales oficiales del proveedor.',connect:'Conectar',pilotStart:'Iniciar prueba personal en Telegram',pilotSteps:'En tu chat personal: Inicio → /agree → /situation → pregunta breve sin datos sensibles → /skip. Actualiza Mensajes después. /stop detiene el contacto.',verifyBot:'Verificar bot de Telegram',botVerified:'Identidad del bot verificada',botStates:{connected:'Webhook conectado',not_set:'Webhook sin configurar',in_use_elsewhere:'Webhook pertenece a otra aplicación — no reemplazar',unknown:'Estado del webhook desconocido'},connected:'Registrado en CRM · comprobar entrega',none:'Sin configurar',
     manual:'Solo respuestas a clientes. No incluyas datos médicos, informes ni enlaces privados.',
     failed:'Los mensajes no están disponibles temporalmente.',unknown:'Entrega no confirmada. No reenviar automáticamente.',
     accepted:'Mensaje aceptado por el proveedor.',blocked:'Esta respuesta no está disponible.',read:'Marcar leído',
@@ -434,6 +434,13 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
           return <div className={styles.channel} key={channel.channel}>
             <strong>{names[channel.channel]}</strong>
             <span>{statusLabel}</span>
+            {channel.channel==='telegram'&&ok&&isPilot&&channel.pilotLinks?.[lang]&&
+              <div className={styles.pilotStart}>
+                <a href={channel.pilotLinks[lang]} target="_blank"
+                  rel="noopener noreferrer nofollow" referrerPolicy="no-referrer"
+                  className={styles.pilotAction}>{t.pilotStart}</a>
+                <p>{t.pilotSteps}</p>
+              </div>}
             {channel.channel==='telegram'&&<button type="button" className={styles.copyButton}
               disabled={busy||missing.length>0||!channel.enabled}
               onClick={async()=>{
