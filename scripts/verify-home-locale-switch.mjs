@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { createHomeRouteSupervisor } from './home-route-supervisor.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -40,17 +41,159 @@ async function chooseHomeLocale(page, locale) {
   await link.click();
 }
 
-async function installEntryDiagnostics(context, page) {
+async function installEntryDiagnostics(context, page, localeObservationOwner) {
   const requests = [];
-  await context.addInitScript(({ key }) => {
+  await context.addInitScript(({ key, localeObservationOwner }) => {
     const probe = Math.random().toString(36).slice(2);
     const record = (type, details = {}) => {
       try {
         const items = JSON.parse(sessionStorage.getItem(key) || '[]');
-        items.push({ type, time: Date.now(), probe, url: location.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), ...details });
+        items.push(type === 'home-locale-observation'
+          ? { type, time: Date.now(), probe, ...details }
+          : { type, time: Date.now(), probe, url: location.href, readyState: document.readyState, hydrated: Boolean(history.state?.__NA), earlyCsp: Boolean(window.__cspPreHydration), ...details });
         sessionStorage.setItem(key, JSON.stringify(items.slice(-500)));
       } catch {}
     };
+    // Passive, bounded evidence only: capture is before the native default action;
+    // toggle can coalesce changes, and mutation snapshots are read at delivery.
+    function installHomeLocaleObservation(record) {
+      if (window.top !== window) return () => {};
+      const limit = 64;
+      const listeners = [];
+      const identities = new WeakMap();
+      let nextIdentity = 0, count = 0;
+      let active = false, stopped = false, finishing = false, observer = null, watchedMenu = null;
+      const identity = node => node ? (identities.get(node) || (identities.set(node, ++nextIdentity), nextIdentity)) : null;
+      const category = node => {
+        if (!(node instanceof Element)) return 'other';
+        if (node.closest('summary.site-language-menu-trigger')?.closest('details.site-language-menu')) return 'summary';
+        if (node.closest('details.site-language-menu a[lang]')) return 'locale-link';
+        if (node.closest('details.site-language-menu')) return 'menu';
+        if (node.closest('[data-video-slot="home-intro"]')) {
+          if (node.closest('button.site-video-play')) return 'source-video-play';
+          if (node.matches('iframe.site-video-iframe')) return 'source-video-iframe';
+        }
+        return 'other';
+      };
+      const write = (kind, details) => {
+        try { record('home-locale-observation', { kind, ...details }); } catch {}
+      };
+      const emit = (kind, details) => {
+        if (stopped || count >= limit - 1) return false;
+        count++;
+        write(kind, details);
+        return true;
+      };
+      const mutations = entries => {
+        for (const entry of entries) {
+          if (entry.type !== 'attributes' || entry.attributeName !== 'open') continue;
+          if (!emit('open-mutation-delivered', {
+            menuId: identity(entry.target), connected: entry.target.isConnected,
+            oldOpen: entry.oldValue !== null, openAtDelivery: entry.target.open,
+          })) return false;
+        }
+        return true;
+      };
+      function finish(reason = 'case-cleanup') {
+        if (stopped || finishing) return;
+        finishing = true;
+        if (!['case-cleanup', 'pagehide', 'locale-link-capture-checkpoint', 'observation-error', 'cap'].includes(reason)) reason = 'observation-error';
+        let cleanupError = false;
+        try { if (observer) mutations(observer.takeRecords()); } catch { cleanupError = true; }
+        stopped = true;
+        try { observer?.disconnect(); } catch { cleanupError = true; }
+        for (const [target, type, callback, capture] of listeners) {
+          try { target.removeEventListener(type, callback, capture); } catch { cleanupError = true; }
+        }
+        listeners.length = 0;
+        if (active || reason === 'observation-error') {
+          count++;
+          write('stop', { reason: count >= limit ? 'cap' : reason, count, cleanupError });
+        }
+      }
+      const safely = callback => event => {
+        if (stopped || finishing) return;
+        try { callback(event); } catch { finish('observation-error'); }
+      };
+      const snapshot = target => {
+        const menu = document.querySelector('details.site-language-menu');
+        const priorMenu = watchedMenu;
+        if (menu !== watchedMenu) {
+          if (watchedMenu && !mutations(observer.takeRecords())) { finish('cap'); return null; }
+          if (stopped || finishing) return null;
+          if (watchedMenu) observer.disconnect();
+          if (stopped || finishing) return null;
+          watchedMenu = menu;
+          if (menu) observer.observe(menu, { attributes: true, attributeFilter: ['open'], attributeOldValue: true });
+        }
+        const targetCategory = category(target);
+        return {
+          menuId: identity(menu), connected: Boolean(menu?.isConnected), open: menu?.open ?? null,
+          priorMenuId: identity(priorMenu), priorConnected: Boolean(priorMenu?.isConnected),
+          target: targetCategory, targetId: targetCategory === 'other' ? null : identity(target),
+          targetConnected: targetCategory === 'other' ? null : target.isConnected,
+        };
+      };
+      const pointer = capture => safely(event => {
+        const target = category(event.target);
+        if (!active && target === 'source-video-play' && (event.type === 'pointerdown' || event.type === 'click')) {
+          active = true;
+          observer = new MutationObserver(safely(entries => { if (!mutations(entries)) finish('cap'); }));
+        }
+        if (!active || !['summary', 'source-video-play', 'locale-link'].includes(target)) return;
+        const state = snapshot(event.target);
+        if (state && !emit(event.type + (capture ? '-capture' : '-bubble'), {
+          ...state, trusted: event.isTrusted, prevented: event.defaultPrevented,
+        })) finish('cap');
+        // The checkpoint after capture may precede target/bubble listeners.
+        // Drain only mutations already queued; no dispatch/default completion claim.
+        if (capture && event.type === 'click' && target === 'locale-link') queueMicrotask(() => finish('locale-link-capture-checkpoint'));
+      });
+      const focus = safely(event => {
+        if (!active) return;
+        const state = snapshot(event.target);
+        if (state && !emit(event.type + '-capture', { ...state, trusted: event.isTrusted })) finish('cap');
+      });
+      const toggle = safely(event => {
+        if (!active || !(event.target instanceof Element) || !event.target.matches('details.site-language-menu')) return;
+        const state = snapshot(event.target);
+        if (state && !emit('native-toggle-coalescible', { ...state, trusted: event.isTrusted })) finish('cap');
+      });
+      const listen = (target, type, callback, capture) => {
+        // Track first so a partial registration failure still attempts removal.
+        listeners.push([target, type, callback, capture]);
+        target.addEventListener(type, callback, { capture, passive: true });
+      };
+      try {
+        for (const type of ['pointerdown', 'pointerup', 'click']) {
+          listen(document, type, pointer(true), true);
+          listen(document, type, pointer(false), false);
+        }
+        for (const type of ['focusin', 'focusout']) listen(document, type, focus, true);
+        listen(document, 'toggle', toggle, true);
+        listen(window, 'pagehide', () => finish('pagehide'), true);
+      } catch { finish('observation-error'); }
+      return finish;
+    }
+    // Own the cleanup slot before attaching anything. Collisions (including a
+    // repeated init in this document) never overwrite or invoke an existing slot.
+    try {
+      const cleanupKey = key + ':locale-cleanup';
+      const ownerKey = key + ':locale-owner';
+      if (typeof localeObservationOwner === 'string' && localeObservationOwner && !(cleanupKey in window) && !(ownerKey in window)) {
+        let disposeLocaleObservation = () => {};
+        const ownedCleanup = Object.freeze({ owner: localeObservationOwner, dispose: () => disposeLocaleObservation() });
+        Object.defineProperty(window, cleanupKey, { value: ownedCleanup, writable: false, configurable: false });
+        const installed = Object.getOwnPropertyDescriptor(window, cleanupKey);
+        if (installed?.value === ownedCleanup && installed.writable === false && installed.configurable === false) {
+          Object.defineProperty(window, ownerKey, { value: localeObservationOwner, writable: false, configurable: false });
+          const ownerReadback = Object.getOwnPropertyDescriptor(window, ownerKey);
+          if (ownerReadback?.value === localeObservationOwner && ownerReadback.writable === false && ownerReadback.configurable === false) {
+            disposeLocaleObservation = installHomeLocaleObservation(record);
+          }
+        }
+      }
+    } catch { /* No owned listeners exist before slot creation and readback. */ }
     record('init');
     for (const event of ['pageshow', 'pagehide', 'popstate', 'DOMContentLoaded', 'load']) {
       window.addEventListener(event, value => record(event, { persisted: Boolean(value.persisted) }), true);
@@ -69,7 +212,7 @@ async function installEntryDiagnostics(context, page) {
         return Reflect.apply(original, this, args);
       };
     }
-  }, { key: navigationTraceKey });
+  }, { key: navigationTraceKey, localeObservationOwner });
   const relevant = request => {
     const url = new URL(request.url());
     return url.origin === origin && (request.isNavigationRequest() || url.searchParams.has('_rsc') || url.pathname === '/api/app/guest/bootstrap');
@@ -261,7 +404,8 @@ async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
   const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
   const page = await context.newPage();
-  const navigationRequests = await installEntryDiagnostics(context, page);
+  const localeObservationOwner = randomUUID();
+  const navigationRequests = await installEntryDiagnostics(context, page, localeObservationOwner);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   let phase = 'setup';
@@ -437,7 +581,24 @@ async function exercise(engine, browserType, width) {
     releaseHeldRsc();
     phase = 'cleanup';
     try { await transport.drain(); } catch { cleanupErrors.push('initial-drain-failed'); }
-    const lifecycle = await page.evaluate(key => JSON.parse(sessionStorage.getItem(key) || '[]'), navigationTraceKey).catch(() => []);
+    const lifecycle = await page.evaluate(({ key, localeObservationOwner }) => {
+      try {
+        const registration = Object.getOwnPropertyDescriptor(window, key + ':locale-owner');
+        if (typeof localeObservationOwner === 'string' && localeObservationOwner && registration?.value === localeObservationOwner
+          && registration.writable === false && registration.configurable === false) {
+          // Only inspect a holder after the primitive installation bridge matches.
+          const slot = Object.getOwnPropertyDescriptor(window, key + ':locale-cleanup');
+          const holder = slot?.value;
+          if (slot?.writable === false && slot.configurable === false && holder && typeof holder === 'object') {
+          const owner = Object.getOwnPropertyDescriptor(holder, 'owner');
+          const dispose = Object.getOwnPropertyDescriptor(holder, 'dispose');
+          if (owner?.value === localeObservationOwner && owner.writable === false && owner.configurable === false
+            && dispose?.writable === false && dispose.configurable === false && typeof dispose.value === 'function') dispose.value();
+          }
+        }
+      } catch {}
+      return JSON.parse(sessionStorage.getItem(key) || '[]');
+    }, { key: navigationTraceKey, localeObservationOwner: typeof localeObservationOwner === 'string' ? localeObservationOwner : null }).catch(() => []);
     try { await context.close(); } catch { cleanupErrors.push('context-close-failed'); }
     try { await browser.close(); } catch { cleanupErrors.push('browser-close-failed'); }
     try { await transport.drain(1000); } catch { cleanupErrors.push('final-drain-failed'); }

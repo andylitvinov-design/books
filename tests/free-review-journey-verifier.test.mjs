@@ -2,8 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import vm from 'node:vm'
+import {compileContactModule} from './helpers/contact-component-fixture.mjs'
 import {classifyFreeReviewStartupMessage, createFreeReviewStartupDiagnostics} from '../scripts/helpers/free-review-startup-diagnostics.mjs'
-import {freeReviewOrigin, freeReviewPath, freeReviewService, freeReviewPublicTopic, freeReviewMarkers, assertFreeReviewBody, syntheticFreeReviewReceipt, freeReviewRequestGate, assertFreeReviewLink, installFreeReviewProbe, freeReviewInitScript, withFreeReviewIsolation, freeReviewSocketBoundary, verifyFreeReviewJourney, assertFreeReviewPrivateEntrySnapshot, FREE_REVIEW_CONTACT, FREE_REVIEW_PHONE, FREE_REVIEW_REFERENCE} from '../scripts/helpers/free-review-journey-verifier.mjs'
+import {freeReviewOrigin, freeReviewPath, freeReviewService, freeReviewPublicTopic, freeReviewMarkers, assertFreeReviewBody, syntheticFreeReviewReceipt, freeReviewRequestGate, assertFreeReviewLink, installFreeReviewProbe, freeReviewInitScript, prepareFreeReviewStaleConsent, withFreeReviewIsolation, freeReviewSocketBoundary, verifyFreeReviewJourney, assertFreeReviewPrivateEntrySnapshot, FREE_REVIEW_CONTACT, FREE_REVIEW_PHONE, FREE_REVIEW_REFERENCE} from '../scripts/helpers/free-review-journey-verifier.mjs'
 
 const origin = 'http://127.0.0.1:3100'
 const body = (locale='en', kind='compact', channel='whatsapp') => JSON.stringify({operationId:'27d6bba7-fede-49b3-90d8-c655b72202fd', serviceTitle:freeReviewService(locale, kind), description:kind === 'drawing' ? '' : freeReviewPublicTopic(locale), sourcePath:freeReviewPath(locale), locale, contact:kind==='compact'?{displayName:'',email:'',phone:FREE_REVIEW_PHONE}:{displayName:'', email:FREE_REVIEW_CONTACT, phone:''}, contactConsent:true, website:''})
@@ -201,7 +202,7 @@ for (const locale of ['en','ru']) for (const kind of ['compact','drawing']) for 
 test('clipboard probe records content only on deliberate success and recovers after denial', async () => {
   const listeners={},values=new Map(),sandbox={document:{documentElement:{dataset:{}},addEventListener:()=>{}},window:{addEventListener:(name,fn) => {listeners[name]=fn},open:()=>null},navigator:{},sessionStorage:{getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)},DOMException}
   vm.runInNewContext('('+installFreeReviewProbe.toString()+')()',sandbox)
-  assert.equal(sandbox.document.documentElement.dataset.analyticsConsent,'granted')
+  assert.equal(sandbox.document.documentElement.dataset.analyticsConsent,undefined,'Probe must not forge a prehydration consent marker')
   const {window,navigator}=sandbox
   assert.equal(window.__freeReviewClipboard.values.length,0)
   await navigator.clipboard.writeText('synthetic answers');assert.equal(window.__freeReviewClipboard.values[0],'synthetic answers')
@@ -273,14 +274,33 @@ for(const fault of ['socket','route','init','newPage','goto']) test('setup '+fau
   assert.ok(!JSON.stringify(logs).includes(marker))
 })
 
+// Actual consent/public-analytics source runs against synthetic hooks, not a
+// hand-written denied marker. This establishes effect ordering, not hydration.
+const actualConsentSource = await readFile(new URL('../components/analytics-consent.tsx',import.meta.url),'utf8')
+const actualPublicAnalyticsSource = await readFile(new URL('../lib/public-analytics.ts',import.meta.url),'utf8')
+function realConsentEffect(sandbox, source=actualConsentSource) {
+  const effects=[]
+  if (!Object.hasOwn(sandbox.document,'cookie')) Object.defineProperty(sandbox.document,'cookie',{get:()=>'',set:()=>assert.fail('Fixture never grants a consent cookie')})
+  const env={document:sandbox.document,window:sandbox.window,navigator:sandbox.navigator,frames:[],fetch:()=>assert.fail('No consent fixture request')}
+  const analytics=compileContactModule(actualPublicAnalyticsSource,{},env)
+  const consent=compileContactModule(source,{
+    react:{useEffect:effect=>effects.push(effect),useState:()=>assert.fail('No privacy preference interaction')},
+    'react/jsx-runtime':{jsx:()=>assert.fail('Consent renders null'),jsxs:()=>assert.fail('Consent renders null')},
+    'next/navigation':{usePathname:()=>'/en/services/free-situation-review'},
+    '@/lib/public-analytics':analytics,
+  },env)
+  assert.equal(consent.AnalyticsConsent(),null);assert.equal(effects.length,1)
+  return ()=>effects[0]()
+}
+
 // A lifecycle-only mock reaches the real wrapper's successful terminal path.
 // Component/DOM behavior remains covered separately; this is not browser proof.
-function socketTerminalHarness(onClose=async()=>{}, onInteraction=()=>{}) {
+function socketTerminalHarness(onClose=async()=>{}, onInteraction=()=>{}, completeConsentEffect=true) {
   class Store{constructor(){this.values=new Map()}getItem(key){return this.values.get(key)??null}setItem(key,value){this.values.set(key,String(value))}}
   const sessionStorage=new Store(),sandbox={Storage:Store,sessionStorage,DOMException,navigator:{},document:{documentElement:{dataset:{}},addEventListener:()=>{}},window:{addEventListener:()=>{},location:{href:origin+freeReviewPath('en')}}}
   let httpHandler,socketHandler,initScript,clicks=0,closes=0,interactionObserved=false
   const listeners=new Map(),retained={}
-  const observeInteraction=()=>{if(!interactionObserved){interactionObserved=true;onInteraction((kind,value)=>listeners.get(kind)?.(value),retained)}}
+  const observeInteraction=()=>{if(!interactionObserved){interactionObserved=true;onInteraction((kind,value)=>listeners.get(kind)?.(value),retained,sandbox)}}
   const locator=selector=>(observeInteraction(),{
     locator,getByRole:()=>locator('role'),scrollIntoViewIfNeeded:async()=>{},evaluate:async()=>false,
     check:async()=>{},uncheck:async()=>{},fill:async()=>{},selectOption:async()=>{},
@@ -299,11 +319,13 @@ function socketTerminalHarness(onClose=async()=>{}, onInteraction=()=>{}) {
   const page={url:()=>origin+freeReviewPath('en'),locator,on:(kind,fn)=>{listeners.set(kind,fn);retained[kind]=fn},off:(kind,fn)=>{assert.equal(listeners.get(kind),fn);listeners.delete(kind)},goto:async()=>{
     await httpHandler(route(request(origin+freeReviewPath('en'),'GET','document')))
     vm.runInNewContext(initScript.content,sandbox)
+    assert.equal(sandbox.document.documentElement.dataset.analyticsConsent,undefined)
+    if(completeConsentEffect)realConsentEffect(sandbox)()
   },evaluate:async(fn,arg)=>structuredClone(vm.runInNewContext('('+fn.toString()+')',sandbox)(arg))}
   const context={routeWebSocket:async(_pattern,fn)=>{socketHandler=fn},route:async(_pattern,fn)=>{httpHandler=fn},addInitScript:async script=>{initScript=script},newPage:async()=>page,close:async()=>onClose(++closes,socketHandler)}
   const assertions=new Proxy({}, {get:(_target,key)=>key==='not'?assertions:async()=>{}})
   const expect=()=>assertions
-  expect.poll=fn=>({toBe:async value=>assert.equal(await fn(),value),toEqual:async value=>assert.deepEqual(await fn(),value)})
+  expect.poll=fn=>({toBe:async value=>assert.equal(await fn(),value),toEqual:async value=>assert.deepEqual(await fn(),value),not:{toBe:async value=>assert.notEqual(await fn(),value)}})
   return {run:()=>verifyFreeReviewJourney(sourceFor(context),expect,'en'),get closes(){return closes}}
 }
 test('socket terminal lifecycle mock completes only after both closes',async t=>{
@@ -895,4 +917,218 @@ test('startup wrapper freezes before real interaction even when later cleanup fa
   assert.deepEqual(summary.startupDiagnostics,diagnosticSnapshot([],{consoleListener:'attached',cutoff:'interaction'}))
   assert.equal(summary.pageErrorCount,2,'Original pageerror counting continues after diagnostic freeze')
   assert.equal(summary.firstFatalRequest,undefined);assert.ok(!JSON.stringify(logs).includes(triggerMarker))
+})
+
+function staleConsentFixture({marker,afterPending=()=>{},beforeGrant=()=>{},evaluateResult}={}) {
+  const calls=[],failures=[],events=[],domListeners=new Map(),sandbox={
+    document:{documentElement:{dataset:{}},addEventListener:(name,fn)=>domListeners.set(name,fn)},navigator:{},
+    window:{open:()=>null,addEventListener:(name,fn)=>{if(name==='holistic-house:acquisition')events.push(fn)},gtag:()=>assert.fail('No provider authority')},
+    sessionStorage:{getItem:()=>null,setItem:()=>{}},DOMException,
+  }
+  vm.runInNewContext('('+installFreeReviewProbe.toString()+')()',sandbox)
+  if(marker!==undefined)sandbox.document.documentElement.dataset.analyticsConsent=marker
+  const effect=realConsentEffect(sandbox)
+  const page={evaluate:async fn=>{
+    const grant=fn.toString().includes("root.dataset.analyticsConsent = 'granted'")
+    calls.push(grant?'grant':'marker')
+    if(grant)beforeGrant(sandbox,failures)
+    if(evaluateResult!==undefined&&!grant)return evaluateResult
+    return vm.runInNewContext('('+fn.toString()+')()',sandbox)
+  }}
+  // A finite synthetic analogue of the pinned runner's default 5s expect.poll
+  // deadline. No real timer/browser/network is executed by this fixture.
+  let pollStarts=0
+  const expect={poll:(fn,...options)=>{
+    pollStarts++
+    assert.deepEqual(options,[],'No extended/custom timeout or intervals')
+    return {not:{toBe:async value=>{
+      for(let i=0;i<3;i++){
+        const actual=await fn();calls.push('poll:'+actual)
+        if(actual!==value)return
+        await afterPending(i,{sandbox,failures,effect,calls})
+      }
+      throw new Error('Synthetic existing expectation deadline exceeded')
+    }}}
+  }}
+  return {sandbox,page,expect,failures,effect,calls,domListeners,events,get pollStarts(){return pollStarts},run:()=>prepareFreeReviewStaleConsent(page,expect,failures)}
+}
+
+test('stale grant follows delayed actual consent effect and precedes audited work without init mutation',async()=>{
+  const f=staleConsentFixture({afterPending:(i,{effect,calls})=>{if(i===1){calls.push('actual-effect');effect()}}})
+  assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,undefined)
+  assert.equal(f.domListeners.has('DOMContentLoaded'),false)
+  await f.run();f.calls.push('audited-interaction')
+  assert.deepEqual(f.calls,['marker','poll:pending','marker','poll:pending','actual-effect','marker','poll:effect-observed','grant','audited-interaction'])
+  assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,'granted')
+  assert.equal(f.events.length,1,'The original pre-navigation event observer remains installed')
+  f.events[0]({detail:{event:'unexpected'}});assert.equal(f.sandbox.window.__freeReviewEvents.length,1,'Observation is never event suppression')
+})
+
+test('stale grant accepts an already completed real effect without an extra timing heuristic',async()=>{
+  const f=staleConsentFixture();f.effect();assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,'denied')
+  await f.run();assert.deepEqual(f.calls,['marker','poll:effect-observed','grant'])
+  assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,'granted')
+})
+
+for(const marker of [undefined,'granted','unexpected',null])test('missing/wrong consent-effect marker fails explicitly and never grants '+String(marker),async()=>{
+  const f=staleConsentFixture({marker})
+  await assert.rejects(f.run(),/existing expectation deadline exceeded/)
+  assert.equal(f.pollStarts,1,'Only one readiness budget')
+  assert.equal(f.calls.filter(value=>value==='marker').length,3);assert.equal(f.calls.includes('grant'),false)
+  assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,marker)
+})
+
+for(const value of [undefined,null,false,'denied','true',1,{},[]])test('nonboolean observation cannot bypass actual consent-effect setup '+String(value),async()=>{
+  const f=staleConsentFixture({evaluateResult:value})
+  await assert.rejects(f.run(),/existing expectation deadline exceeded/)
+  assert.equal(f.calls.includes('grant'),false)
+})
+
+test('existing fatal failure precedes marker reads and stale grant',async()=>{
+  const f=staleConsentFixture();f.failures.push(fatalBoundaryMessage)
+  await assert.rejects(f.run(),error=>{assert.deepEqual(error.actual,[fatalBoundaryMessage]);return true})
+  assert.deepEqual(f.calls,[])
+})
+
+test('fatal failure while waiting stops polling and remains the original boundary assertion',async()=>{
+  const f=staleConsentFixture({afterPending:(_i,{failures})=>failures.push(fatalBoundaryMessage)})
+  await assert.rejects(f.run(),error=>{assert.deepEqual(error.actual,[fatalBoundaryMessage]);assert.deepEqual(error.expected,[]);return true})
+  assert.deepEqual(f.calls,['marker','poll:pending','poll:blocked']);assert.equal(f.calls.includes('grant'),false)
+})
+
+test('marker changed after observation is rejected atomically without a stale grant',async()=>{
+  const f=staleConsentFixture({beforeGrant:sandbox=>{sandbox.document.documentElement.dataset.analyticsConsent='changed'}});f.effect()
+  await assert.rejects(f.run(),/unchanged real consent-effect marker/)
+  assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,'changed')
+})
+
+test('fatal failure during grant remains blocking before interaction',async()=>{
+  const f=staleConsentFixture({beforeGrant:(_sandbox,failures)=>failures.push(fatalBoundaryMessage)});f.effect()
+  await assert.rejects(f.run(),error=>{assert.deepEqual(error.actual,[fatalBoundaryMessage]);return true})
+})
+
+test('forged matcher success cannot bypass the effect observation',async()=>{
+  const f=staleConsentFixture();f.expect.poll=()=>({not:{toBe:async()=>{}}})
+  await assert.rejects(f.run(),/Real consent effect must precede/);assert.deepEqual(f.calls,[])
+})
+
+function assertConsentMarkerProvenance(layout,probe,consent=actualConsentSource,analytics=actualPublicAnalyticsSource) {
+  assert.match(layout,/<html lang=\{lang\}>/)
+  assert.doesNotMatch(layout,/data-analytics-consent|analyticsConsent/)
+  assert.match(layout,/<AnalyticsConsent\s*\/>/)
+  assert.doesNotMatch(probe,/analyticsConsent|data-analytics-consent|DOMContentLoaded/)
+  assert.match(analytics,/export const PUBLIC_ANALYTICS_AVAILABLE = false;/)
+  assert.match(consent,/document\.documentElement\.dataset\.analyticsConsent = PUBLIC_ANALYTICS_AVAILABLE \? value : "denied"/)
+  assert.match(consent,/useEffect\(\(\) => \{\s*applyConsent\(isPublicAnalyticsPath\(pathname\) \? savedConsent\(\) : "denied"\);\s*\}, \[pathname\]\)/)
+}
+
+test('pinned SSR/effect provenance rejects forged parser-time fixture or SSR markers',async()=>{
+  const layout=await readFile(new URL('../app/layout.tsx',import.meta.url),'utf8'),probe=installFreeReviewProbe.toString()
+  assertConsentMarkerProvenance(layout,probe)
+  for(const forged of ['denied','granted']) {
+    assert.throws(()=>assertConsentMarkerProvenance(layout.replace('<html lang={lang}>','<html lang={lang} data-analytics-consent="'+forged+'">'),probe))
+    assert.throws(()=>assertConsentMarkerProvenance(layout,probe+';document.documentElement.dataset.analyticsConsent="'+forged+'"'))
+    assert.throws(()=>assertConsentMarkerProvenance(layout,probe+';document.addEventListener("DOMContentLoaded",()=>{})'))
+  }
+  assert.throws(()=>assertConsentMarkerProvenance(layout.replace('<AnalyticsConsent />',''),probe))
+  assert.throws(()=>assertConsentMarkerProvenance(layout,probe,actualConsentSource.replace('  useEffect(() => {\n    applyConsent','  (() => {\n    applyConsent')))
+})
+
+test('actual consent effect, not render or init, owns the initial denied marker',()=>{
+  const f=staleConsentFixture();assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,undefined)
+  f.effect();assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,'denied')
+  assert.equal(f.sandbox.window.__freeReviewEvents.length,0)
+})
+
+test('fixture retains stale-granted end assertion and places handshake before all branches',async()=>{
+  const source=await readFile(new URL('../scripts/helpers/free-review-journey-verifier.mjs',import.meta.url),'utf8')
+  const wrapper=source.slice(source.indexOf('export async function verifyFreeReviewJourney('))
+  const marker=wrapper.indexOf('await prepareFreeReviewStaleConsent(page, expect, failures)')
+  assert.ok(marker>=0);assert.ok(marker<wrapper.indexOf("startupDiagnostics.freeze('interaction')"));assert.ok(marker<wrapper.indexOf('handler.beginInteraction()'));assert.ok(marker<wrapper.indexOf("if (kind === 'compact')"))
+  assert.match(source,/assert\.equal\(state\.staleConsentGranted, true/)
+  assert.match(source,/even with stale granted dataset/)
+  assert.equal((prepareFreeReviewStaleConsent.toString().match(/expect\.poll\(/g)||[]).length,1)
+  assert.doesNotMatch(prepareFreeReviewStaleConsent.toString(),/\.cookie|dispatchEvent|gtag|fetch\(|waitForTimeout|setTimeout|timeout\s*:/)
+})
+
+test('actual wrapper never begins audited interactions when the real effect is missing',async t=>{
+  const logs=[];t.mock.method(console,'log',(...args)=>logs.push(args))
+  let interacted=false
+  const fixture=socketTerminalHarness(async()=>{},()=>{interacted=true},false)
+  await assert.rejects(fixture.run());assert.equal(interacted,false);assert.equal(fixture.closes,2)
+  assert.equal(logs.length,1)
+  const summary=JSON.parse(logs[0][1]);assert.equal(summary.completed,false);assert.equal(summary.requestCount,0);assert.equal(summary.failureCount,0)
+  assert.equal(summary.startupDiagnostics.cutoff,'cleanup')
+})
+
+test('failed stale grant write cannot silently pass the adversarial setup',async()=>{
+  const f=staleConsentFixture();f.effect()
+  Object.defineProperty(f.sandbox.document.documentElement.dataset,'analyticsConsent',{get:()=> 'denied',set:()=>{},configurable:true})
+  await assert.rejects(f.run(),/unchanged real consent-effect marker/)
+})
+
+
+test('actual wrapper rejects loss of the stale-granted adversary before completion',async t=>{
+  const logs=[];t.mock.method(console,'log',(...args)=>logs.push(args))
+  const fixture=socketTerminalHarness(async()=>{},(_emit,_retained,sandbox)=>{sandbox.document.documentElement.dataset.analyticsConsent='denied'})
+  await assert.rejects(fixture.run(),/stale-granted adversary remains active/)
+  assert.equal(fixture.closes,2);assert.equal(JSON.parse(logs[0][1]).completed,false)
+})
+
+const actualGaSource=await readFile(new URL('../components/ga4-analytics.tsx',import.meta.url),'utf8')
+function assertActualStartupAnalyticsHold(publicSource) {
+  const f=staleConsentFixture(),effects=[]
+  f.sandbox.document.documentElement.dataset.analyticsConsent='granted'
+  f.sandbox.window.location={hostname:'holistichouse.vercel.app',origin:'https://holistichouse.vercel.app'}
+  f.sandbox.window.dispatchEvent=event=>{for(const listener of f.events)listener(event)}
+  f.sandbox.document.createElement=()=>assert.fail('No provider tag construction')
+  f.sandbox.document.head={appendChild:()=>assert.fail('No provider tag insertion')}
+  const env={document:f.sandbox.document,window:f.sandbox.window,navigator:f.sandbox.navigator,frames:[],fetch:()=>assert.fail('No provider request')}
+  const analytics=compileContactModule(publicSource,{},env)
+  // Synthetic lexical process binding only; no real environment/config is read.
+  const ga=compileContactModule("const process={env:{NEXT_PUBLIC_GA_MEASUREMENT_ID:'G-SYNTHETIC'}};\n"+actualGaSource,{
+    react:{useEffect:fn=>effects.push(fn),useRef:value=>({current:value})},
+    'next/navigation':{usePathname:()=>'/en/services/free-situation-review'},
+    '@/lib/public-analytics':analytics,
+  },env)
+  assert.equal(ga.Ga4Analytics({nonce:'SYNTHETIC_NONCE'}),null)
+  assert.equal(effects.length,1);effects[0]()
+  analytics.emitPublicAnalyticsEvent('free_questionnaire_started')
+  assert.equal(f.sandbox.window.__freeReviewEvents.length,0)
+}
+test('actual startup analytics hold remains off under stale grant without a prehydration DOM mutation',()=>{
+  assertActualStartupAnalyticsHold(actualPublicAnalyticsSource)
+  assert.throws(()=>assertActualStartupAnalyticsHold(actualPublicAnalyticsSource.replace('PUBLIC_ANALYTICS_AVAILABLE = false','PUBLIC_ANALYTICS_AVAILABLE = true')))
+})
+
+test('actual acquisition link negative control proves the unchanged observer detects local events',async()=>{
+  const f=staleConsentFixture();f.effect();await f.run()
+  f.sandbox.window.dispatchEvent=event=>{for(const listener of f.events)listener(event)}
+  const source=await readFile(new URL('../components/acquisition-event-link.tsx',import.meta.url),'utf8')
+  const env={document:f.sandbox.document,window:f.sandbox.window,navigator:f.sandbox.navigator,frames:[],fetch:()=>assert.fail('No external request')}
+  const link=compileContactModule(source,{'next/link':{default:'a'},'react/jsx-runtime':{jsx:(type,props)=>({type,props})}},env)
+  const element=link.AcquisitionEventLink({event:'contact_click',href:'#synthetic',children:'Synthetic'})
+  element.props.onClick()
+  assert.equal(f.sandbox.window.__freeReviewEvents.length,1)
+  assert.equal(f.sandbox.window.__freeReviewEvents[0].event,'contact_click')
+})
+
+for(const fatal of [false,true])test('poll rejection retains '+(fatal?'fatal boundary':'original operation')+' precedence without granting',async()=>{
+  const f=staleConsentFixture(),primary=Error('Synthetic readiness failure')
+  f.expect.poll=()=>({not:{toBe:async()=>{if(fatal)f.failures.push(fatalBoundaryMessage);throw primary}}})
+  await assert.rejects(f.run(),error=>{if(fatal){assert.deepEqual(error.actual,[fatalBoundaryMessage]);assert.deepEqual(error.expected,[])}else assert.equal(error,primary);return true})
+  assert.deepEqual(f.calls,[]);assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,undefined)
+})
+for(const fatal of [false,true])test('setter round-trip rejection retains '+(fatal?'fatal boundary':'original operation')+' precedence',async()=>{
+  const f=staleConsentFixture(),primary=Error('Synthetic setter round-trip failure'),evaluate=f.page.evaluate
+  f.effect()
+  f.page.evaluate=async fn=>{if(fn.toString().includes("root.dataset.analyticsConsent = 'granted'")){if(fatal)f.failures.push(fatalBoundaryMessage);throw primary}return evaluate(fn)}
+  await assert.rejects(f.run(),error=>{if(fatal){assert.deepEqual(error.actual,[fatalBoundaryMessage]);assert.deepEqual(error.expected,[])}else assert.equal(error,primary);return true})
+  assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,'denied')
+})
+test('fatal arriving at the last polling delay takes precedence over readiness deadline rejection',async()=>{
+  const f=staleConsentFixture(),deadline=Error('Synthetic existing expectation deadline exceeded')
+  f.expect.poll=fn=>({not:{toBe:async()=>{assert.equal(await fn(),'pending');f.failures.push(fatalBoundaryMessage);throw deadline}}})
+  await assert.rejects(f.run(),error=>{assert.deepEqual(error.actual,[fatalBoundaryMessage]);assert.deepEqual(error.expected,[]);return true})
+  assert.deepEqual(f.calls,['marker']);assert.equal(f.sandbox.document.documentElement.dataset.analyticsConsent,undefined)
 })

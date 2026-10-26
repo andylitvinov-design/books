@@ -271,9 +271,6 @@ export async function assertFreeReviewLanding(page, expect, locale) {
 }
 
 export function installFreeReviewProbe() {
-  const grant = () => { if (document.documentElement) document.documentElement.dataset.analyticsConsent = 'granted' }
-  grant()
-  document.addEventListener('DOMContentLoaded', grant, {once:true})
   window.__freeReviewEvents = []
   window.__freeReviewProbeStorageFailed = false
   // Only scalar fixture counts persist across genuine document navigation.
@@ -309,8 +306,40 @@ export function freeReviewInitScript(denyReceiptStorage) {
   return {content:'(' + installHypnotherapyPopupSpy.toString() + ')(' + JSON.stringify({receiptKey:FREE_REVIEW_RECEIPT_KEY, denyReceiptStorage}) + ');\n(' + installFreeReviewProbe.toString() + ')();'}
 }
 
+// Only the owned fresh synthetic context calls this. SSR omits this marker;
+// the audited AnalyticsConsent effect writes denied under the analytics hold.
+// Keep the adversarial stale grant, but never mutate <html> before hydration.
+export async function prepareFreeReviewStaleConsent(page, expect, failures) {
+  assert.deepEqual(failures, [])
+  let effectObserved = false
+  // One new readiness poll uses the existing expectation timeout default (5s
+  // in the pinned runner), so startup may gain up to 5s. No timeout override,
+  // repeated polling budgets, sleep, cookie, event or provider request.
+  try {
+    await expect.poll(async () => {
+      if (failures.length) return 'blocked'
+      effectObserved = await page.evaluate(() => document.documentElement?.dataset.analyticsConsent === 'denied') === true
+      return effectObserved ? 'effect-observed' : 'pending'
+    }).not.toBe('pending')
+  } catch (error) { assert.deepEqual(failures, []); throw error }
+  assert.deepEqual(failures, [])
+  assert.equal(effectObserved, true, 'Real consent effect must precede the synthetic stale grant')
+  let granted
+  try {
+    granted = await page.evaluate(() => {
+      const root = document.documentElement
+      if (root?.dataset.analyticsConsent !== 'denied') return false
+      root.dataset.analyticsConsent = 'granted'
+      return root.dataset.analyticsConsent === 'granted'
+    })
+  } catch (error) { assert.deepEqual(failures, []); throw error }
+  assert.deepEqual(failures, [])
+  assert.equal(granted, true, 'Synthetic stale grant requires the unchanged real consent-effect marker')
+}
+
 async function assertPrivateState(page, locale) {
-  const state = await page.evaluate(key => ({events:window.__freeReviewEvents, eventCount:Number(sessionStorage.getItem('hh-synthetic-free-review-events:v1') || 0), probeStorageFailed:window.__freeReviewProbeStorageFailed, url:window.location.href, receipt:sessionStorage.getItem(key)}), FREE_REVIEW_RECEIPT_KEY)
+  const state = await page.evaluate(key => ({events:window.__freeReviewEvents, staleConsentGranted:document.documentElement.dataset.analyticsConsent === 'granted', eventCount:Number(sessionStorage.getItem('hh-synthetic-free-review-events:v1') || 0), probeStorageFailed:window.__freeReviewProbeStorageFailed, url:window.location.href, receipt:sessionStorage.getItem(key)}), FREE_REVIEW_RECEIPT_KEY)
+  assert.equal(state.staleConsentGranted, true, 'The stale-granted adversary remains active through the audited journey')
   assert.equal(state.events.length, 0, 'Temporary analytics hold emits no acquisition event, even with stale granted dataset')
   assert.equal(state.eventCount, 0, 'No earlier document emitted an acquisition event')
   assert.equal(state.probeStorageFailed, false, 'Cross-document fixture count must remain observable')
@@ -510,6 +539,7 @@ export async function verifyFreeReviewJourney(sourcePage, expect, locale, {kind=
         assert.equal(receipt.count, 0, 'Bootstrap never submits a contact')
         assert.deepEqual(failures, [])
         assert.equal(await page.evaluate(() => window.__hypnotherapyFixture.opens.length), 0, 'No startup popup')
+        await prepareFreeReviewStaleConsent(page, expect, failures)
         startupDiagnostics.freeze('interaction'); startupDiagnostics.detachConsole()
         handler.beginInteraction()
         if (kind === 'compact') {
