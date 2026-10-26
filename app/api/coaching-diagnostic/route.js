@@ -24,7 +24,8 @@ export async function POST(request) {
     // CRM lead. A bare topic/query/referrer cannot establish identity.
     const handoff=raw?.handoff===undefined?null:verifyTelegramCoachingHandoff(raw.handoff,config)
     if(raw?.handoff!==undefined&&!handoff)throw new AppError('INVALID_TELEGRAM_HANDOFF',409)
-    const {handoff:unusedHandoff,...form}=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{}
+    const form=raw&&typeof raw==='object'&&!Array.isArray(raw)?{...raw}:{}
+    delete form.handoff
     let input
     try { input=buildCoachingDiagnosticEnquiry(form,{confirmedTelegramHandoff:Boolean(handoff)}) }
     catch { throw new AppError('INVALID_COACHING_ENQUIRY', 400) }
