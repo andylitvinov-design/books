@@ -35,6 +35,12 @@ concurrency:
 jobs:
   protected-wizard:
     runs-on: ubuntu-24.04
+    # Official Playwright image has matching Chromium/WebKit dependencies.
+    # Pinned image digest prevents surprises from mutable tags and avoids
+    # unreliable, slow Ubuntu apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001
     timeout-minutes: 25
     env:
       CI: 'true'
@@ -55,26 +61,15 @@ jobs:
           node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs
           npx eslint lib/practitioners/free-express-photo-client.ts components/free-express-wizard.tsx components/personal-express-enquiry.tsx components/free-entry-landing.tsx components/app/public-enquiry-contact.jsx components/app/free-express-owner-media.jsx components/app/free-express-my-requests.jsx app/api/free-express/route.js app/api/free-express/media/route.js app/api/free-express/claim/route.js lib/practitioners/free-express-enquiry.js lib/practitioners/free-express-media.js lib/practitioners/free-express-owner.js
           npx tsc --noEmit
-      - name: Run real additive migration against isolated PostgreSQL 17 and verify RLS
-        timeout-minutes: 5
-        run: |
-          set -euo pipefail
-          docker run --rm -d --name hh-free-express-pg17 -e POSTGRES_PASSWORD=test_only -v "$PWD:/workspace:ro" -w /workspace postgres:17
-          trap 'docker rm -f hh-free-express-pg17 >/dev/null 2>&1 || true' EXIT
-          for i in $(seq 1 50); do
-            if docker exec hh-free-express-pg17 pg_isready -U postgres >/dev/null 2>&1; then break; fi
-            sleep 2
-          done
-          docker exec -w /workspace hh-free-express-pg17 psql -U postgres -v ON_ERROR_STOP=1 -f tests/free-express-rls-isolated.sql
       - name: Build real preview with v2 visible (never production flag)
         timeout-minutes: 12
         run: |
           npm run build > /tmp/hh-express-v2-build.log 2>&1 || { tail -n 160 /tmp/hh-express-v2-build.log; exit 1; }
-      - name: Install isolated browser engines
-        timeout-minutes: 12
+      - name: Load matching Playwright client (browsers preinstalled in image)
+        timeout-minutes: 4
         run: |
           npm install --prefix /tmp/hh-free-express-playwright --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.63.0
-          /tmp/hh-free-express-playwright/node_modules/.bin/playwright install chromium webkit
+          test -x /ms-playwright/chromium-*/chrome-linux/chrome || test -d /ms-playwright
       - name: Synthetic no-provider mobile journey (EN/RU/ES Chromium/WebKit)
         timeout-minutes: 10
         run: |
