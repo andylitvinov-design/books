@@ -415,8 +415,8 @@ test('Studio inference timeout or truncated output must not trigger a second pro
 test('Gemini daily audit uses bounded free-first output and no retry on timeout',async()=>{
   const source=readFileSync(new URL('../lib/practitioners/council-free-models.mjs',import.meta.url),'utf8')
   assert.match(source,/const MAX_INPUT=11500/)
-  assert.match(source,/maxOutputTokens:options\.chat===true\?1600:2700/)
-  assert.match(source,/AbortSignal\.timeout\(26000\)/)
+  assert.match(source,/maxOutputTokens:chat\?\(options\.synthesis===true\?3200:2000\):2700/)
+  assert.match(source,/AbortSignal\.timeout\(chat\?35000:26000\)/)
   const env={HH_COUNCIL_GEMINI_API_KEY:'synthetic-key',
     HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'}
   let count=0
