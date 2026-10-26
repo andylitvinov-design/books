@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   TELEGRAM_DIAGNOSTIC_V2_VERSION,TELEGRAM_DIAGNOSTIC_V2_BUTTONS,
-  TELEGRAM_DIAGNOSTIC_V2_PHOTO_LIMIT,transitionTelegramDiagnosticV2,
+  TELEGRAM_DIAGNOSTIC_V2_PHOTO_LIMIT,
   telegramV2CoachingLink,
 } from '../lib/crm/telegram-diagnostic-v2.mjs'
 import {
