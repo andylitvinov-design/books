@@ -205,6 +205,10 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
           {selected.message&&!ownerCase&&<p className={styles.fullMessage}>{selected.message}</p>}
           {selected.remoteBooking&&<p className={styles.notice}>{t.booking}</p>}
           <div className={styles.detailActions}>
+            {data.ownerMessenger&&selected.telegramThreadId&&<button type="button"
+              onClick={()=>onOpenCrmThread?.(selected.telegramThreadId)}>
+              {t.crmOpen} · Telegram <ArrowRight size={15} aria-hidden="true"/>
+            </button>}
             {selected.status==='requested'&&!selected.remoteBooking&&
               <button type="button" disabled={busy} onClick={()=>statusChange(selected,'contacted')}>{t.contacted}</button>}
             {['requested','contacted'].includes(selected.status)&&!selected.remoteBooking&&
@@ -214,10 +218,11 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
           </div>
           {selected.requestKind==='public'?<>
             {ownerCase?<FreeExpressOwnerCase key={selected.id} request={selected}
-              locale={locale} accountId={data.accountId}/>:<p className={styles.notice}>{t.publicHint}</p>}
-            <button type="button" className={styles.contactToggle}
-              aria-expanded={showContact} onClick={()=>setShowContact(value=>!value)}>{t.editContact}</button>
-            {showContact&&<PublicEnquiryContact key={selected.id} request={selected}
+              locale={locale} accountId={data.accountId}/>:
+              <p className={styles.notice}>{selected.telegramThreadId?t.crmHint:t.publicHint}</p>}
+            {!selected.telegramThreadId&&<button type="button" className={styles.contactToggle}
+              aria-expanded={showContact} onClick={()=>setShowContact(value=>!value)}>{t.editContact}</button>}
+            {showContact&&!selected.telegramThreadId&&<PublicEnquiryContact key={selected.id} request={selected}
               locale={locale} busy={busy} onSave={saveContact}/>}
           </>:<div className={styles.conversation}>
             <PracticeRequestConversation key={selected.id} requestId={selected.id}
