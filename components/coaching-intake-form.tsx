@@ -446,10 +446,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
 
     {auth !== "guest" ? <div className={styles.authBar}>
       <LockKeyhole size={19} aria-hidden="true" />
-      <div><p>{auth === "signed" ? t.signedIn : auth === "guest" ? t.signedOut : auth === "checking" ? t.loading : t.unavailable}</p>
-        {auth === "guest" ? <small>{t.temporary}</small> : null}
-      </div>
-      {auth === "guest" ? <button type="button" disabled={busy} onClick={() => void signIn()} className={styles.login}>{t.login}<ArrowRight size={16} aria-hidden="true" /></button> : null}
+      <div><p>{auth === "signed" ? t.signedIn : auth === "checking" ? t.loading : t.unavailable}</p></div>
     </div> : <p className={styles.guestHint}><LockKeyhole size={14} aria-hidden="true" />{t.signedOut}</p>}
 
     {collision ? <div role="alert" className={styles.conflict}>
