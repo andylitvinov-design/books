@@ -59,7 +59,7 @@ test('first-party private messages retain their separate secure API and detail p
   const simple=read('components/app/messages-simple-inbox.jsx')
   const direct=read('components/app/direct-message-inbox.jsx')
   assert.match(simple,/<DirectMessageInbox key=\{accountId/)
-  assert.match(simple,/simpleDetail initialThreadId=\{directThreadId\}/)
+  assert.match(simple,/simpleDetail expectedAccountId=\{accountId\} initialThreadId=\{directThreadId\}/)
   assert.match(direct,/data-simple-detail=\{simpleDetail\|\|undefined\}/)
   assert.match(direct,/onThreadsLoaded\?\.\(data\.threads\|\|\[\]\)/)
   assert.match(direct,/if\(simpleDetail&&accountId&&initialThreadId/)
