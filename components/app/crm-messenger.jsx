@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {ArrowLeft, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
+import {ArrowLeft, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 const copy={
@@ -96,6 +96,9 @@ const messageStatuses={
   unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
 }
 const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
+// The encrypted CRM item already carries the photo reference: do not render a
+// long internal Telegram workflow token as a second, fake chat message.
+const photoOnlyMessage=/^\[(?:Voluntary photo attached for private review|Additional voluntary photo|Client portrait photo, shared voluntarily for private review|ME-GOAL-OBSTACLE drawing, shared voluntarily for private review|Additional voluntary drawing\/photo)\]$/
 function mergeThreadPages(older=[],fresh=[]){
   const index=new Map(older.map(thread=>[thread.id,thread]))
   for(const thread of fresh)index.set(thread.id,thread)
@@ -302,7 +305,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingNote.current=null
     pendingFollowup.current=null
     setActive(id);setText('');setNoteText('');setStatus('');setError('')
-    setShowTools(false);setShowQuickReplies(false)
+    setShowTools(false);setShowQuickReplies(false);setShowSettings(false)
     setThreadLoading(true)
     // Never display messages belonging to the previous client while B is loading.
     setData(previous=>previous?{...previous,messages:[],followups:[],nextMessagesCursor:null}:previous)
@@ -452,7 +455,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   )
   return <section className={styles.panel} aria-label={t.title}
     data-compact={compact||undefined}>
-    <header className={styles.top}>
+    {(!compact||!selected)&&<header className={styles.top}>
       {!compact&&<div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>}
       <div className={styles.topActions}>
         {compact&&<button type="button" className={styles.settingsButton}
@@ -466,7 +469,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           {compact?<RefreshCw size={17} aria-hidden="true"/>:t.refresh}
         </button>
       </div>
-    </header>
+    </header>}
     {data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
     {(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
@@ -609,12 +612,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {compact&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
               <ArrowLeft size={19} aria-hidden="true"/></button>}
+            {compact&&<span className={styles.chatAvatar} aria-hidden="true">
+              {selected.name?.slice(0,1).toUpperCase()||'?'}</span>}
             <div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
-              <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
+              <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Можно ответить':lang==='es'?'Puedes responder':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
             </div>
-            {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
-              onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
+            {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.markReadButton}
+              aria-label={t.read} title={t.read}
+              onClick={()=>action('read',{threadId:selected.id})}>
+              {compact?<CheckCheck size={18} aria-hidden="true"/>:t.read}</button>}
+            {compact&&<button type="button" className={styles.chatRefreshButton} disabled={busy||threadLoading}
+              aria-label={t.refresh} title={t.refresh} onClick={()=>refresh(selected.id)}>
+              <RefreshCw size={17} aria-hidden="true"/></button>}
           </div>
           <div className={styles.contactActions}>
             <label>{w.stage}
@@ -642,7 +652,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
-              <p>{m.text}</p>
+              {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
               {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
@@ -711,7 +721,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
-              }} placeholder={t.manual}/>
+              }} placeholder={compact?(lang==='ru'?'Написать сообщение…':lang==='es'?'Escribe un mensaje…':'Write a message…'):t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
               {compact?<Send size={18} aria-hidden="true"/>:t.send}
