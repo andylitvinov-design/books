@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2, ImagePlus, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, ImagePlus, ShieldCheck } from "lucide-react";
 import { PhoneCountryInput } from "@/components/phone-country-input";
 import { EXPRESS_MAX_SOURCE_BYTES, prepareFreeExpressPhoto } from "@/lib/practitioners/free-express-photo-client";
 import { COACHING_FIELDS, COACHING_GROUPS } from "@/lib/coaching/intake-model";
@@ -129,6 +129,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"short" | "detailed">("short");
+  const [groupsOpen, setGroupsOpen] = useState<Record<string, boolean>>({ focus: true });
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [detailsConsent, setDetailsConsent] = useState(false);
   const [detailsSaved, setDetailsSaved] = useState(false);
@@ -367,6 +368,15 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
     finally { setBusy(false); }
   }
 
+  const renderCoachingField = (field: (typeof COACHING_FIELDS)[number], index: number) => (
+    <label key={field.id} className={styles.answer}>
+      <span>{index + 1}. {field.label[locale]}
+        {(mode === "detailed" ? field.required : field.id !== "priorityQuestion") ? " *" : ""}</span>
+      <textarea rows={2} maxLength={field.max} disabled={busy} value={answers[field.id] || ""}
+        onChange={event => setAnswers(current => ({ ...current, [field.id]: event.target.value }))} />
+    </label>
+  );
+
   const activeMedia: Kind = step === 4 ? "drawing" : "portrait";
   // Energy/wellbeing requests do not need the symbolic drawing. They have a
   // real five-step journey, not an invisible sixth step marked "complete".
@@ -417,13 +427,25 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
         <button type="button" aria-pressed={mode === "detailed"} disabled={busy}
           onClick={() => { setMode("detailed"); setError(""); }}>{t.detailed}</button>
       </div>
-      {COACHING_FIELDS.filter(field => mode === "detailed" || fieldsShort.has(field.id)).map((field, index) =>
-        <label key={field.id} className={styles.answer}>
-          <span>{index + 1}. {field.label[locale]}{(mode === "detailed" ? field.required : field.id !== "priorityQuestion") ? " *" : ""}</span>
-          <textarea rows={2} maxLength={field.max} disabled={busy} value={answers[field.id] || ""}
-            onChange={event => setAnswers(current => ({ ...current, [field.id]: event.target.value }))} />
-        </label>)}
-      {mode === "detailed" && <small>{COACHING_GROUPS.map(group => group.title[locale]).join(" · ")}</small>}
+      {mode === "short"
+        ? COACHING_FIELDS.filter(field => fieldsShort.has(field.id)).map(renderCoachingField)
+        : COACHING_GROUPS.map((group, groupIndex) => (
+          <details key={group.id} className={styles.questionGroup}
+            open={groupsOpen[group.id] ?? (groupIndex === 0)}
+            onToggle={event => {
+              const opened = event.currentTarget.open;
+              setGroupsOpen(previous => previous[group.id] === opened ? previous : {
+                ...previous, [group.id]: opened,
+              });
+            }}>
+            <summary><span><strong>{group.title[locale]}</strong><small>{group.hint[locale]}</small></span>
+              <ChevronDown aria-hidden="true" size={19} /></summary>
+            <div className={styles.questionGroupFields}>
+              {COACHING_FIELDS.filter(field => field.group === group.id).map(field =>
+                renderCoachingField(field, COACHING_FIELDS.indexOf(field)))}
+            </div>
+          </details>
+        ))}
       <label className={styles.consent}><input type="checkbox" checked={detailsConsent} disabled={busy}
         onChange={event => setDetailsConsent(event.target.checked)} /><span>{t.detailsConsent}</span></label>
       {error && <p role="alert" className={styles.error}>{error}</p>}
