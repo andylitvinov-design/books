@@ -2645,7 +2645,7 @@
 .lifeProfileCard[aria-pressed=true]{border-color:#388574;background:#eaf4ee;box-shadow:inset 0 0 0 1px #388574}
 .lifeProfileCard[aria-pressed=true] .lifeProfileCheck{background:#2a7466;border-color:#2a7466}
 .lifeScaleGrid{display:flex;flex-wrap:wrap;gap:8px}
-.lifeScaleChip{display:inline-flex;align-items:center;gap:7px;min-height:43px;max-width:100%;text-align:left;padding:9px 13px;border:1px solid #d8d7cb;border-radius:999px;background:#fffdf9;color:#4d463c;font-size:.86rem}
+.lifeScaleChip{display:inline-flex;align-items:center;gap:7px;min-height:44px;max-width:100%;text-align:left;padding:9px 13px;border:1px solid #d8d7cb;border-radius:999px;background:#fffdf9;color:#4d463c;font-size:.86rem}
 .lifeScaleChip span{font-weight:750;color:#3b786a}
 .lifeScaleChip[aria-pressed=true]{background:#2a7466;border-color:#2a7466;color:white}
 .lifeScaleChip[aria-pressed=true] span{color:white}
@@ -2657,4 +2657,4 @@
 .lifeExtraTopics>summary::-webkit-details-marker{display:none}
 .lifeExtraTopics[open]>summary svg{transform:rotate(180deg)}
 .lifeExtraTopics>.section{margin:0;border:0;box-shadow:none}
-@media(max-width:560px){.lifeProfileGrid{grid-template-columns:1fr}.lifeProfileCard{min-height:67px;padding:11px 12px}.lifeScaleGrid{gap:6px}.lifeScaleChip{min-height:41px;padding:8px 11px;font-size:.82rem}.lifeScaleActions{justify-content:flex-start}}
+@media(max-width:560px){.lifeProfileGrid{grid-template-columns:1fr}.lifeProfileCard{min-height:67px;padding:11px 12px}.lifeScaleGrid{gap:6px}.lifeScaleChip{min-height:44px;padding:8px 11px;font-size:.82rem}.lifeScaleActions{justify-content:flex-start}}
