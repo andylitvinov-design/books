@@ -11,7 +11,7 @@ Status: **IMPLEMENTED ON FEATURE BRANCH; CI / MERGE / LIVE / SIGNED-IN E2E NOT Y
 | [Remaster](https://github.com/thenavidm/remaster) | 26 Oct 2026 · publicly documented `feature` mode | Apply one clean-room UX pattern to the existing product, without copying a competitor's code, layout or media |
 | [REA setup](https://rea.tools/get-started/) | 26 Oct 2026 · official runtime requirements | REA is not needed for public product research; it is reserved for authorized own/licensed artifacts |
 
-**Evidence boundary:** This improvement is informed by the public benchmark and current Holistic House source inspection. **No Remaster runtime capture or REA run happened for this PR.** The authorized Mac was offline and the prior browser sandbox blocked launch; REA is not installed. There are no third-party screen measurements, private screenshots, binaries, extracted JS, copied UI assets or copied competitor code. No unverified conversion lift is asserted.
+**Evidence boundary (updated 26 Oct):** This improvement is informed by public documentation and current Holistic House source. After the initial PR, **Remaster CLI was actually run on the reconnected owner Mac** in an isolated research folder, with bounded robots-respecting help-page fetch and a manually evidenced feature matrix (details below). **No Remaster browser measurement, screenshot, REA run, proprietary JS extraction, private-account access or conversion lift** is claimed.
 
 ## Existing feature inventory, reused not duplicated
 
@@ -42,6 +42,23 @@ Rollback: revert the scoped composer JSX, connection callback and CSS changes wh
 
 ## Toolchain follow-up (not a production dependency)
 
-Remaster `@thenavidm/remaster@0.2.1` was audited and installed in an isolated Mac Codex checkout under #2058/#2066. When the Mac and browser sandbox are available, perform a **public, read-only `feature` mode** screen-flow evaluation, record the mobile benchmark and run the after/before checks. Do not automate scraping, login or copying protected assets.
+Remaster `@thenavidm/remaster@0.2.1` is SRI-verified and **installed in the separate PR #2111 Mac test worktree**. In a separate disposable research directory, its **`remaster init https://publer.com/ --mode feature` and robots-respecting `remaster crawl --max 1–3` actually executed** and recorded six official public help documents. No interactive competitor login or browser measurement was done. A future mobile benchmark must use authorized, clean browser contexts and original work only.
 
 REA 6.8.0 requires Node 22.23.4+ on Node 22, or Node 24.22.1+, or Node 26.12.1+; previously observed Mac 22.22.3 is unsupported. REA is deferred until a compatible isolated runtime, separate dependency/security approval and a **first-party HH app/SDK analysis target**; it is **not** to reverse engineer Publer's closed code/API or run on Vercel production.
+
+
+## Actual Mac + Remaster evidence · 2026-10-26
+
+- **Mac connection restored:** Desktop Commander 0.3.1 device Online, independent of Codex process sandbox. Original `~/projects/books` is an unrelated dirty `main` checkout; it was **not modified**. An isolated detached worktree checked out exact PR head `2b1398b71828a72dad32648e4e82b2aba44cadb5` for baseline tests.
+- **Tests at that exact prior head:** all 124 of the workflow's Growth Studio owner-editorial/security/Redis/Telegram/CRM-navigation Node cases passed, 0 failed, on macOS ARM64 Node `22.22.3`. A later small follow-up fixes a default callback stability issue and hides expanded header until workspace open; its exact-head rerun is a separate requirement.
+- **Remaster authenticity:** installer verified pinned `@thenavidm/remaster@0.2.1`, immutable reviewed SHA-512, publisher metadata, 0 runtime dependencies and no lifecycle install hooks. Installed in an isolated checkout only, not global/production.
+- **Actual research:** `remaster init --mode feature`, bounded official-help `remaster crawl` against `publer.com/help/en/article` with robots.txt/rate-limit enforcement, six documented public pages, `remaster status --json`, and a 12-row `remaster parity --json` run. The source ledger is composed solely of first-party published Publer help URLs; no private features inferred.
+- **Provisional conservative feature coverage:** **32.8%**, **0/8 must-haves fully done**, verdict **`not shippable` for replacement of Publer**. This is Remaster's weighted score from our manually reviewed source/code classifications, **not a measured conversion rate or actual provider success**. The exact reproducible input is [PUBLER_REMASTER_MATRIX_2026-10-26.csv](./PUBLER_REMASTER_MATRIX_2026-10-26.csv).
+- **Research gate is still FAIL:** 6 source pages and 12 feature rows PASS, but zero cited user reviews, no pain-theme analysis, no screen recon or owner-approved verdict. Do not fabricate them or declare full Remaster research complete.
+- **REA remains separate:** Mac default Node `22.22.3` and independently discovered `/usr/local/bin/node` `24.14.1` both fail REA 6.8.0's `^22.23.4 || ^24.22.1 || >=26.12.1` engine. No REA setup, native analysis, MCP registration, Hopper/Ghidra/IDA or dependency install was performed; do not modify system-wide Node just for this audit.
+
+### Next measured acceptance
+
+1. Repeat **exact current PR head** Node tests and compile/Next build; inspect CI outcomes, no forced release if queued or failing.
+2. Compare base SHA, merge only after gates, verify Vercel READY/alias SHA; real signed-in owner Redis save/reload and responsive browser with user-provided session remain independent.
+3. Close missing Publer functionality only in new scoped PRs after official account rights and provider schedule/readback: queue, OAuth, media handling, analytics; do not equate local drafts or manual plans with actual network publication.
