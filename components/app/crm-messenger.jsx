@@ -39,6 +39,12 @@ const setupText={
     disabled:'Channel activation is off',approval:'Public sending is off until the test is approved',
     pilot:'Pilot mode: only the allowlisted Telegram chat can send or receive messages',
     testHint:'Do one controlled test conversation before enabling live client replies.',
+    pilotTitle:'Telegram pilot · verify the first enquiry',
+    pilotLead:'Telegram is connected. A real incoming request is still needed before CRM delivery is proven.',
+    pilotStart:'Open Telegram test chat',
+    pilotSteps:'In Telegram: Start → /agree → /situation → short test question → /skip (or one non-sensitive photo). Then come back and press Refresh.',
+    pilotNotReady:'This bot is not ready for the owner-only pilot yet. Keep public sending disabled.',
+    pilotCaution:'Use only your allowlisted Telegram chat. Do not send medical records or test results.',
     channelKeys:'Server settings in Vercel Production',copyUrl:'Copy webhook URL',
     copied:'Webhook URL copied',copyError:'Copy failed; use the URL shown below.',
     openPortal:'Open official provider setup',notVerified:'Never paste tokens into ChatGPT or GitHub. Use Vercel encrypted Environment Variables.',
@@ -53,6 +59,12 @@ const setupText={
     disabled:'Активация канала выключена',approval:'Отправка клиентам отключена до подтверждённого теста',
     pilot:'Пилот: Telegram доступен только одному разрешённому тестовому аккаунту',
     testHint:'Сначала проведите одну тестовую переписку и проверьте получение ответа.',
+    pilotTitle:'Telegram · проверка первой заявки',
+    pilotLead:'Telegram подключён. Нужно подтвердить входящую заявку — регистрация канала сама по себе не доказывает доставку.',
+    pilotStart:'Открыть тестовую заявку в Telegram',
+    pilotSteps:'В Telegram: Start → /agree → /situation → короткий тестовый вопрос → /skip (или одно обычное фото). Вернитесь сюда и нажмите «Обновить».',
+    pilotNotReady:'Пилотный чат ещё не разрешён. Публичную отправку пока не включайте.',
+    pilotCaution:'Используйте только свой разрешённый Telegram. Не присылайте медицинские документы или результаты тестов.',
     channelKeys:'Переменные в Vercel Production',copyUrl:'Копировать адрес webhook',
     copied:'Адрес webhook скопирован',copyError:'Не удалось скопировать. Адрес указан ниже.',
     openPortal:'Открыть официальный кабинет',notVerified:'Не передавайте токены в чат или GitHub. Добавляйте их только в секретные Environment Variables Vercel.',
@@ -67,6 +79,12 @@ const setupText={
     disabled:'La activación del canal está deshabilitada',approval:'El envío público está desactivado hasta completar la prueba',
     pilot:'Piloto: solo una cuenta de prueba autorizada puede usar Telegram',
     testHint:'Realiza una conversación de prueba controlada antes de activar respuestas reales.',
+    pilotTitle:'Telegram · comprobar la primera solicitud',
+    pilotLead:'Telegram está conectado. Falta verificar una solicitud entrante real en CRM.',
+    pilotStart:'Abrir chat de prueba en Telegram',
+    pilotSteps:'En Telegram: Start → /agree → /situation → pregunta breve de prueba → /skip (o una foto no sensible). Regresa y pulsa Actualizar.',
+    pilotNotReady:'La cuenta piloto todavía no está autorizada. Mantén desactivados los envíos públicos.',
+    pilotCaution:'Usa solo tu chat de Telegram autorizado. No envíes historiales médicos ni resultados de pruebas.',
     channelKeys:'Variables del servidor en Vercel Production',copyUrl:'Copiar URL del webhook',
     copied:'URL copiada',copyError:'No se pudo copiar. Usa la URL mostrada.',
     openPortal:'Abrir configuración oficial',notVerified:'No compartas tokens en el chat ni en GitHub. Usa Environment Variables cifradas en Vercel.',
@@ -340,6 +358,11 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     }
     finally{setBusy(false)}
   }
+  async function verifyTelegramBot(){
+    setBotCheck(null)
+    const checked=await action('verify_telegram',{channel:'telegram'})
+    if(checked?.verified===true)setBotCheck(checked)
+  }
   async function send(){
     const body=text.trim(),threadId=activeRef.current
     if(!threadId||!body)return
@@ -403,6 +426,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     if(result&&activeRef.current===threadId)setStatus(w.completed)
   }
   const threads=data?.threads||[]
+  // Authenticated CRM owner only: never expose this pilot link on public pages.
+  // Require Telegram's fresh Bot API identity and webhook readback before showing it.
+  const registeredTelegram=data?.accounts?.some(item=>item.channel==='telegram'&&item.connected)===true
+  const hasTelegramConversation=threads.some(item=>item.channel==='telegram')
+  const verifiedPilotLink=registeredTelegram && botCheck?.verified===true &&
+    botCheck.webhookState==='connected' && botCheck.pilotReady===true &&
+    typeof botCheck.username==='string' && /^[A-Za-z0-9_]{5,32}$/.test(botCheck.username)
+      ? 'https://t.me/'+botCheck.username+'?start=hhreview_'+lang : null
   const selected=threads.find(item=>item.id===active)
   const unread=threads.filter(item=>item.unreadCount>0).length
   const waitingReply=threads.filter(item=>item.needsReply).length
@@ -419,6 +450,21 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
     </header>
     {data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
+    {registeredTelegram&&!hasTelegramConversation&&<section className={styles.telegramPilot}
+      aria-label={setupText[lang].pilotTitle}>
+      <strong>{setupText[lang].pilotTitle}</strong>
+      <p>{setupText[lang].pilotLead}</p>
+      <div className={styles.pilotControls}>
+        <button type="button" disabled={busy} onClick={verifyTelegramBot}>{t.verifyBot}</button>
+        {verifiedPilotLink&&<a href={verifiedPilotLink} target="_blank"
+          rel="noopener noreferrer nofollow" referrerPolicy="no-referrer">{setupText[lang].pilotStart}</a>}
+      </div>
+      {botCheck?.verified&&<p role="status">{t.botVerified} ·
+        {' '}{t.botStates[botCheck.webhookState]||t.botStates.unknown}</p>}
+      {botCheck?.verified&&!botCheck.pilotReady&&<p>{setupText[lang].pilotNotReady}</p>}
+      <p>{setupText[lang].pilotSteps}</p>
+      <small>{setupText[lang].pilotCaution}</small>
+    </section>}
     <details className={styles.channels}>
       <summary>{t.channels} · {data?.accounts?.filter(item=>item.connected).length||0}/4 · {setupText[lang].instructions}</summary>
       <div className={styles.channelGrid}>
@@ -436,11 +482,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange}){
             <span>{statusLabel}</span>
             {channel.channel==='telegram'&&<button type="button" className={styles.copyButton}
               disabled={busy||missing.length>0||!channel.enabled}
-              onClick={async()=>{
-                setBotCheck(null)
-                const checked=await action('verify_telegram',{channel:'telegram'})
-                if(checked?.verified===true)setBotCheck(checked)
-              }}>{t.verifyBot}</button>}
+              onClick={verifyTelegramBot}>{t.verifyBot}</button>}
             {channel.channel==='telegram'&&botCheck?.verified&&<p role="status">
               {t.botVerified} · @{botCheck.username} ·
               {' '}{t.botStates[botCheck.webhookState]||t.botStates.unknown}
