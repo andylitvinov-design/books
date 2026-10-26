@@ -89,14 +89,14 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(service,/session\.batch_id!==event\.batchId/)
   assert.match(service,/result_folder=\$2,last_command_update_id=\$3/)
   assert.match(service,/status!=='collecting'\|\|session\.result_audio_id/)
-  assert.match(service,/folder:session\.result_folder,parts:ordered/)
+  assert.match(service,/folder:session\.result_folder,promptMessageId:session\.prompt_message_id,parts:ordered/)
   assert.match(service,/title,batch\.folder/)
   assert.doesNotMatch(service,/title,batch\.parts\[0\]\.folder/)
   assert.match(service,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher\)/)
-  assert.match(service,/sendOwner\(credentials,'✅ Один файл из '/)
-  assert.match(service,/combineImportReply\(combine,ready\.id\)/)
+  assert.doesNotMatch(service,/sendOwner\(credentials,'✅ Один файл из '/)
+  assert.match(service,/updateAudioCombineProgress\(credentials,combine,fetcher\)/)
   assert.ok(service.indexOf("const ready=await markAudio(config,row.id,'ready'")<
-    service.indexOf("const combine=await appendAudioCombine(config,event,row.id)"))
+    service.indexOf("const combine=await appendAudioCombine(config,\n        {...event,batchId:claimed.batch.batchId},row.id)"))
   assert.match(service,/combinedDeliveryKeyboard\(saved\.id\)/)
   assert.match(service,/if\(batch\.state==='ready'\)return resendSavedCombined/)
   assert.match(service,/if\(event\.action==='resend'\)return resendSavedCombined/)
@@ -113,3 +113,101 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(ui,/join:'Unir audios'/)
   assert.equal((ui.match(/2–12/g)||[]).length,3)
 })
+
+
+test('batch inputs produce ZERO per-file messages; one editable progress receipt',async()=>{
+  const service=source('../lib/practitioners/owner-telegram-audio-service.js')
+  const matched=service.match(/async function importAudio\([\s\S]*?\n}\n\nconst COMBINE_MINUTES/)
+  assert.ok(matched,'actual importer source must be extracted')
+  const importerSource=matched[0].replace(/\n\nconst COMBINE_MINUTES$/,'')
+  const create=(claim)=>{
+    const events={sent:[],progress:[],append:[],uploads:[],downloads:0}
+    const importer=new Function(
+      'claimAudio','appendAudioCombine','telegramAudioBytes','checkedAudioStorage',
+      'markAudio','updateAudioCombineProgress','editAudioCombinePrompt','sendOwner','combineImportReply',
+      'folderLabel','itemLink','NO_RETRIES',
+      importerSource+'\nreturn importAudio')(
+      async()=>claim,
+      async(_config,event,id)=>{
+        events.append.push({event,id})
+        return {state:'added',batchId:event.batchId,folder:'reiki',count:1,promptMessageId:42}
+      },
+      async()=>{events.downloads++;const bytes=new Uint8Array(128);bytes.set([79,103,103,83]);return bytes},
+      async()=>({
+        info:async()=>({error:{statusCode:'404',message:'Not found'}}),
+        upload:async(path)=>{events.uploads.push(path);return {error:null}},
+      }),
+      async(_config,id)=>({id,title:'Voice',folder:'inbox'}),
+      async(_credentials,batch)=>{events.progress.push(batch)},
+      async(_credentials,batch)=>{events.progress.push(batch)},
+      async(_credentials,msg)=>{events.sent.push(msg)},
+      ()=>({extra:'',keyboard:null}),
+      folder=>folder,id=>'https://example.invalid/'+id,3,
+    )
+    return {importer,events}
+  }
+  const base={id:ID,status:'processing',attempts:1,title:'Voice',folder:'inbox'}
+  const event={updateId:900,bytes:128,mime:'audio/ogg',ext:'ogg'}
+  const batch={batchId:ID,folder:'reiki',promptMessageId:42,count:0}
+  const first=create({claimed:true,row:{...base,combine_batch_id:ID},batch})
+  assert.deepEqual(await first.importer({},event,{}),{handled:true})
+  assert.deepEqual(first.events.uploads,['telegram-inbox/'+ID+'.ogg'])
+  assert.equal(first.events.downloads,1)
+  assert.equal(first.events.append.length,1)
+  assert.equal(first.events.append[0].event.batchId,ID)
+  assert.equal(first.events.progress.length,1)
+  assert.equal(first.events.sent.length,0,'no per-audio Telegram sendMessage')
+
+  // Forwarding the same file again must not create a duplicate bubble.
+  const duplicate=create({claimed:false,reason:'ready',row:{...base,status:'ready'},batch})
+  assert.deepEqual(await duplicate.importer({},event,{}),{handled:true})
+  assert.equal(duplicate.events.downloads,0)
+  assert.equal(duplicate.events.sent.length,0)
+  assert.equal(duplicate.events.progress.length,1)
+  assert.equal(duplicate.events.append[0].event.batchId,ID)
+
+  const regular=create({claimed:true,row:base,batch:null})
+  assert.deepEqual(await regular.importer({},event,{}),{handled:true})
+  assert.equal(regular.events.sent.length,1,'standalone audio stays supported')
+  assert.equal(regular.events.append.length,0,'ordinary audio cannot join a newer batch')
+
+  const rejected=create({claimed:false,reason:'batch_full',batch})
+  assert.deepEqual(await rejected.importer({},event,{}),{handled:true})
+  assert.equal(rejected.events.downloads,0)
+  assert.equal(rejected.events.sent.length,0)
+  assert.equal(rejected.events.progress.length,1)
+  assert.match(service,/batch_full.*batch_too_large/s)
+  assert.match(service,/editAudioCombinePrompt\(credentials,\{/)
+})
+
+test('exact two-chat-item UX and private temporary material contract',()=>{
+  const service=source('../lib/practitioners/owner-telegram-audio-service.js')
+  const model=source('../lib/practitioners/owner-telegram-audio-model.mjs')
+  const schema=source('../supabase/migrations/20261026200720_hh_telegram_audio_private_batch_staging.sql')
+  const p=service.match(/function audioCombinePrompt\([\s\S]*?\n}\nasync function editAudioCombinePrompt/)
+  assert.ok(p)
+  const prompt=new Function('OWNER_AUDIO_COMBINE_MAX_PARTS','folderLabel',
+    p[0].replace(/\nasync function editAudioCombinePrompt$/,'')+
+    '\nreturn audioCombinePrompt')(12,()=> 'Рейки')
+  const initial=prompt({folder:'reiki',count:0})
+  const nine=prompt({folder:'reiki',count:9})
+  assert.match(initial,/0\/12/)
+  assert.match(nine,/9\/12/)
+  assert.match(nine,/Аудио принято/)
+  assert.match(nine,/появятся отдельно в кабинете/)
+  assert.match(service,/editMessageText/)
+  assert.match(service,/rememberAudioCombinePrompt\(config,state\.batchId,messageId\)/)
+  assert.match(service,/if\(state\.promptMessageId\)await editAudioCombinePrompt/)
+  assert.match(service,/if\(claimed\.batch\)\{\s*\/\/ No per-file save acknowledgments/)
+  assert.match(service,/const receipt=combineImportReply\(null,ready\.id\)/)
+  assert.doesNotMatch(service,/await sendOwner\(credentials,'✅ Один файл из '/)
+  assert.match(service,/await sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher\)/)
+  assert.match(service,/await deleteTemporaryAudioParts\(config,batch\.batchId,storage\)/)
+  assert.match(service,/combine_batch_id is null/)
+  assert.match(service,/where practitioner_id=\$1 and combine_batch_id=\$2/)
+  assert.match(service,/where practitioner_id=\$1 and status='ready' and combine_batch_id is null/)
+  assert.match(schema,/add column if not exists combine_batch_id uuid/)
+  assert.match(schema,/add column if not exists prompt_message_id bigint/)
+  assert.doesNotMatch(schema,/grant .* (anon|authenticated|service_role)/i)
+  assert.match(model,/Исходные части не появляются в библиотеке/)
+});

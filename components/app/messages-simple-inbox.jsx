@@ -17,7 +17,7 @@ const COPY={
     waiting:'Waiting for your reply',received:'Received',details:'Request',contact:'Contact details',
     replyWebsite:'Reply in the protected client cabinet',openCase:'Full request',manual:'Open WhatsApp to reply',
     email:'Reply by email',unavailable:'Website requests could not be loaded; existing chats remain available.',
-    botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
+    offline:'Offline — reconnect to read and send messages.',botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
     more:'More conversations',other:'Other requests',portal:'Private website conversations'},
   ru:{title:'Сообщения',hint:'Диалоги и заявки',search:'Найти человека',empty:'Пока нет сообщений и заявок.',
     choose:'Выберите человека, чтобы открыть переписку',back:'К списку',card:'Карточка',refresh:'Обновить',loading:'Загружаем переписки…',
@@ -25,7 +25,7 @@ const COPY={
     waiting:'Ждёт вашего ответа',received:'Получена',details:'Заявка',contact:'Контакты',
     replyWebsite:'Ответить в защищённом кабинете',openCase:'Вся заявка',manual:'Ответить через WhatsApp',
     email:'Ответить по email',unavailable:'Заявки сайта сейчас недоступны, но переписка остаётся открытой.',
-    botLink:'Копировать ссылку Telegram',botCopied:'Ссылка скопирована',updated:'Обновлено',noMessage:'Описание не указано',private:'Ответы на заявки сайта не отправляются в Telegram автоматически.',
+    offline:'Нет интернета — для загрузки и отправки сообщений требуется соединение.',botLink:'Копировать ссылку Telegram',botCopied:'Ссылка скопирована',updated:'Обновлено',noMessage:'Описание не указано',private:'Ответы на заявки сайта не отправляются в Telegram автоматически.',
     more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте'},
   es:{title:'Mensajes',hint:'Conversaciones y solicitudes',search:'Buscar persona',empty:'Aún no hay mensajes ni solicitudes.',
     choose:'Elige una persona para abrir la conversación',back:'Volver',card:'Ficha',refresh:'Actualizar',loading:'Cargando conversaciones…',
@@ -33,7 +33,7 @@ const COPY={
     waiting:'Esperando tu respuesta',received:'Recibida',details:'Solicitud',contact:'Contacto',
     replyWebsite:'Responder en el portal privado',openCase:'Solicitud completa',manual:'Responder por WhatsApp',
     email:'Responder por correo',unavailable:'No están disponibles las solicitudes web, pero puedes leer tus chats.',
-    botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
+    offline:'Sin conexión — conéctate para leer y enviar mensajes.',botLink:'Copiar enlace de Telegram',botCopied:'Enlace copiado',updated:'Actualizado',noMessage:'Sin descripción',private:'No se envían respuestas web automáticamente por Telegram.',
     more:'Más conversaciones',other:'Otras solicitudes',portal:'Conversaciones privadas del sitio'},
 }
 const channelNames={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Messenger'}
@@ -98,6 +98,17 @@ export default function MessagesSimpleInbox({
   const [showCard,setShowCard]=useState(false)
   const inboxWindowRef=useRef(null)
   const [refreshNonce,setRefreshNonce]=useState(0)
+  const [offline,setOffline]=useState(false)
+  useEffect(()=>{
+    const syncNetwork=()=>setOffline(navigator.onLine===false)
+    syncNetwork()
+    window.addEventListener('online',syncNetwork)
+    window.addEventListener('offline',syncNetwork)
+    return()=>{
+      window.removeEventListener('online',syncNetwork)
+      window.removeEventListener('offline',syncNetwork)
+    }
+  },[])
   const onCrmThreads=useCallback(result=>setCrmState(result),[])
   const onDirectThreads=useCallback(result=>setDirectThreads(Array.isArray(result)?result:[]),[])
   const onPortraitFound=useCallback(({threadId,messageId})=>{
@@ -206,6 +217,7 @@ export default function MessagesSimpleInbox({
   }
 
   return <section className={styles.shell} aria-label={t.title} data-simple-messages data-detail-open={openDetail?'true':'false'}>
+    {offline&&<p className={styles.offline} role="status">{t.offline}</p>}
     <header className={styles.heading}>
       <div><h1>{t.title}</h1><span>{t.hint}{unreadCount>0?' · '+unreadCount:''}</span></div>
       <div className={styles.headingActions}>
