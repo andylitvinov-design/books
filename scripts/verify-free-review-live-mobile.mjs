@@ -176,10 +176,44 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
           assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
             "opening the form is not contact consent");
-          assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
-          assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-          assert.equal(await enquiry.locator('[role="status"]').count(), 0,
-            "no actual lead saved by navigating");
+          // The protected v2 wizard and the legacy compact capture are distinct
+          // safe variants. Neither navigation nor form opening creates a lead.
+          const wizardV2 = await enquiry.locator('[data-free-express-lead]').count() === 1;
+          if (wizardV2) {
+            const lead = enquiry.locator('[data-free-express-lead]');
+            assert.equal(await lead.locator('textarea').count(), 1, "one short question");
+            assert.equal(await lead.locator('input[type="checkbox"]').isChecked(), false,
+              "explicit consent remains unchecked");
+            assert.equal(await enquiry.locator('[data-free-express-receipt]').count(), 0,
+              "no CRM receipt from opening the form");
+            const fit = await enquiry.evaluate(root => {
+              const card = root.getBoundingClientRect();
+              const submit = root.querySelector('[data-free-express-lead] button[type="submit"]')?.getBoundingClientRect();
+              const fixedTab = [...document.querySelectorAll('nav')]
+                .filter(nav => getComputedStyle(nav).position === 'fixed')
+                .map(nav => nav.getBoundingClientRect())
+                .find(rect => rect.top > 0 && rect.top < innerHeight);
+              return { cardHeight: card.height, cardTop: card.top, submitBottom: submit?.bottom,
+                tabTop: fixedTab?.top ?? innerHeight,
+                overflow: document.documentElement.scrollWidth - innerWidth };
+            });
+            record.compactLeadFit = fit;
+            assert.ok(fit.cardHeight <= height - 90,
+              "first-contact section is not one mobile screen: " + JSON.stringify(fit));
+            assert.ok(fit.submitBottom <= fit.tabTop - 8,
+              "submit button must sit above fixed bottom tabs: " + JSON.stringify(fit));
+            assert.ok(fit.overflow <= 2, "mobile capture has no horizontal overflow");
+            assert.equal(await page.locator('[data-first-party-consent]').isVisible(), false,
+              "optional visitor analytics prompt cannot cover an open contact form");
+            if (width === 390) await page.screenshot({
+              path: output + "/" + name + "-compact-v2.png",
+              animations: "disabled", timeout: 20000 });
+          } else {
+            assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
+            assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
+            assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+              "no actual lead saved by navigating");
+          }
           // Touch users select the full 94px+ labelled card, not the tiny native
           // radio dot. WebKit may still be smoothly scrolling from the hero
           // anchor and a direct input.check() can hit a moving 19px target.

@@ -107,3 +107,21 @@
  .capture[data-expanded="true"] .choice strong{font-size:11px}
  .capture[data-expanded="true"] .body :global([data-phone-country-input]){grid-template-columns:minmax(88px,31%) minmax(0,1fr);gap:5px}
 }
+
+/* Free review v2: the topic selector stays on one row even with a native
+   fieldset legend. Scoped to the opened mobile request; no desktop changes. */
+@media(max-width:720px){
+ .capture[data-expanded="true"]{scroll-margin-top:12px}
+ .capture[data-expanded="true"] .body{grid-template-columns:minmax(0,1fr) 44px}
+ .capture[data-expanded="true"] .reveal{width:44px;height:44px;min-height:44px}
+ .capture[data-expanded="true"] .choices{display:block}
+ .capture[data-expanded="true"] .choices legend{float:none;display:block;width:100%;margin:0 0 5px}
+ .capture[data-expanded="true"] .choice,
+ .capture[data-expanded="true"] .choice[data-selected="true"]{
+   display:inline-flex;vertical-align:top;width:calc(50% - 4px);
+   margin:0 4px 0 0;min-height:44px;padding:7px 5px
+ }
+ .capture[data-expanded="true"] .choice .choiceLong{display:none}
+ .capture[data-expanded="true"] .choice .choiceShort{display:inline}
+ .capture[data-expanded="true"] .body :global([data-phone-country-input] select){font-size:16px}
+}
