@@ -82,3 +82,14 @@
 
 /* A real empty inbox should not occupy an entire phone viewport. */
 .emptySummary{padding:17px 14px;margin:5px 0 8px;border:1px dashed #d9c9b8;border-radius:13px;background:#fffaf5;color:#7e6659;font:500 13px/1.5 system-ui,sans-serif;text-align:center}
+
+
+/* The same protected direct-message thread in the unified one-screen inbox. */
+.shell[data-simple-detail="true"]{width:100%;height:100%;max-width:none;margin:0;padding:0;display:flex;flex-direction:column;min-width:0;min-height:0}
+.shell[data-simple-detail="true"] .layout{display:flex;flex:1;min-height:0;margin:0;padding:0;gap:0}
+.shell[data-simple-detail="true"] .chat{display:flex;flex:1;width:100%;min-height:0;max-height:none;border:0;border-radius:0;box-shadow:none}
+.shell[data-simple-detail="true"] .chatHeader{border:0;min-height:0;padding:5px 12px}
+.shell[data-simple-detail="true"] .chatHeader .back{display:none}
+.shell[data-simple-detail="true"] .feed{flex:1;min-height:0;max-height:none;overflow:auto;background:#fcfaf7}
+.shell[data-simple-detail="true"] .compose{flex:none;padding:10px 12px}
+.shell[data-simple-detail="true"] .placeholder{min-height:0}
