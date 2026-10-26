@@ -55,7 +55,8 @@ export async function POST(request,{params}){
             // CRM and consent were committed before contacting the provider.
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
             try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
-              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale})}catch{ /* leave intake in CRM for owner manual follow-up */ }
+              approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale,
+              webAppUrl:intake.webAppUrl||null})}catch{ /* leave intake in CRM for owner manual follow-up */ }
           }
           continue
         }
