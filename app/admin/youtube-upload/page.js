@@ -22,6 +22,7 @@ export default async function YoutubeUploadPage() {
   if (!await requireAdminRequest()) redirect('/admin/login')
   const locale = (await cookies()).get(uiLocaleCookie)?.value === 'en' ? 'en' : 'ru'
   const telegramVideoConfigured = ownerVideoOauthConfigured()
+  const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
   if(telegramVideoConfigured)try{
     telegramVideoConnected = await ownerVideoYoutubeConnected(getAppConfig())
@@ -62,10 +63,19 @@ export default async function YoutubeUploadPage() {
     </nav>
     <section aria-label="Telegram audio and photo videos" style={{margin:'12px 0',padding:12,border:'1px solid #bcae94',borderRadius:12}}>
       <h2 style={{margin:'0 0 6px',fontSize:'1rem'}}>🎬 Telegram → Видео → Русский YouTube</h2>
-      <p style={{margin:'0 0 8px',fontSize:14}}>
-        Собирайте фото и аудио через @holistichouse_bot командой <code>/video</code>.
-        Сначала бот отправляет приватный MP4 для проверки, и только по отдельному нажатию публикует на @shamanic_academy (по ссылке).
-      </p>
+      {telegramVideoEnabled ? <>
+        <p style={{margin:'0 0 8px',fontSize:14}}>
+          Отправьте фотографии и аудио боту: он создаст приватный MP4 для проверки.
+          Публикация на @shamanic_academy — только после отдельного подтверждения.
+        </p>
+        <a href="https://t.me/holistichouse_bot?start=video" target="_blank" rel="noopener noreferrer"
+          style={{display:'inline-block',fontSize:14,marginBottom:8}}>
+          🎬 Открыть видео в Telegram
+        </a>
+      </> : <p style={{margin:'0 0 8px',fontSize:14}}>
+        ⏳ Telegram-видео ещё не включено на сервере. Команда <code>/video</code>
+        станет доступна после проверки выпуска и подключения владельца.
+      </p>}
       <p style={{margin:'0 0 6px',fontSize:13}}>{telegramVideoConnected
         ?'✅ Отдельный токен Telegram-видео для русского канала сохранён приватно.'
         :telegramVideoConfigured

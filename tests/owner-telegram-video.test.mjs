@@ -26,6 +26,15 @@ function part(kind,index,options={}){
    bytes:kind==='photo'?1600:3000,duration:kind==='photo'?0:3,
    updateId:index+100,messageId:index+100,localPath:'/tmp/part'+index+(kind==='photo'?'.jpg':'.mp3'),...options}
 }
+test('owner-only Telegram video deep link and explicit private preview resend command',()=>{
+ const update={update_id:1302,message:{date:TIME/1000,chat:privateBase,from,
+   message_id:56,text:'/start video'}}
+ assert.equal(parsed(update)?.action,'start')
+ assert.equal(parsed({...update,message:{...update.message,text:'/video_retry'}})?.action,'retry')
+ assert.equal(parsed({...update,message:{...update.message,text:'/start@wrongbot video'}}),null)
+ const group={...update,message:{...update.message,chat:{...privateBase,type:'group'}}}
+ assert.equal(parsed(group),null)
+})
 test('photo and voice/audio messages attach only in an explicit owner video session',()=>{
  assert.equal(parsed(media([photo],'photo')).action,'media')
  assert.equal(parsed(media([photo],'photo')).part.kind,'photo')
