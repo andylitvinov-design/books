@@ -96,3 +96,25 @@
 .guestPilotButton{min-height:44px;width:100%;border-radius:10px;background:#80613c!important;
   color:#fff!important;padding:10px 12px;cursor:pointer;font:700 13px/1.4 system-ui,sans-serif}
 .guestPilotButton:focus-visible{outline:3px solid #185ac9;outline-offset:3px}
+
+
+/* Messenger window: reuse the existing owner-only CRM backend and composer,
+   but keep pipeline, bot setup and notes outside the customer conversation. */
+.detailOnly{display:flex;flex-direction:column;width:100%;height:100%;min-height:0;min-width:0;margin:0;padding:0;background:#fff;border:0;border-radius:0;box-shadow:none;color:#332f2b}
+.detailLayout{display:flex;flex:1;min-height:0;min-width:0;width:100%;background:#fff;overflow:hidden}
+.detailConversation{display:flex;flex:1;min-height:0;min-width:0;flex-direction:column;overflow:hidden;max-height:none}
+.detailConversation .messages{flex:1;min-height:0;max-height:none;padding:15px;background:#fcfaf7;gap:10px;overscroll-behavior:contain}
+.detailConversation .chatHeader{padding:5px 12px;border-bottom:0;min-height:42px;justify-content:flex-end}
+.detailConversation .compose{padding:11px 12px;flex:none;background:#fff;border-top:1px solid #e9e0d7;display:grid;gap:7px}
+.detailConversation .compose textarea{resize:none;width:100%;min-height:48px;max-height:100px;background:#fff;border:1px solid #ddd2c9;border-radius:12px;padding:10px 12px;box-sizing:border-box}
+.detailConversation .compose>button{justify-self:end;border:0;border-radius:11px;background:#386e62;color:#fff;min-height:40px;padding:8px 17px;font-weight:700}
+.detailConversation .compose>button:disabled{opacity:.45;cursor:not-allowed}
+.detailOnly .notice{margin:4px 10px;color:#76536a;font-size:12px}
+.detailConversation .empty{margin:auto;text-align:center;color:#837c75}
+.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media(max-width:700px){
+  .detailLayout{height:100%}
+  .detailConversation{min-height:0;max-height:none}
+  .detailConversation .messages{max-height:none;min-height:0}
+  .detailConversation .compose{padding:10px}
+}
