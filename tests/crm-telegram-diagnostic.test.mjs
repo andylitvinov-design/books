@@ -111,7 +111,9 @@ test('energy branch and optional /skip paths do not treat a click as a booking',
 test('photo is strictly optional, size bounded, accepted only after opt-in',()=>{
   assert.equal(TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,5*1024*1024)
   const before=transitionTelegramDiagnostic(null,message('',{photoFileId:'AgACAgQAAxk0123456789',photoBytes:50000}))
-  assert.equal(before.handled,false)
+  assert.equal(before.handled,true)
+  assert.equal(before.stage,'consent')
+  assert.equal(before.body,null)
   const waiting={stage:'photo',locale:'ru',consentAt:'2026-10-26T10:00:00Z'}
   for(const item of [
     {photoFileId:'AgACAgQAAxk0123456789',photoBytes:TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT+1},
