@@ -22,6 +22,14 @@ esac
 node "$ROOT/scripts/benchmarking/rea-node-readiness.mjs" --strict
 command -v npm >/dev/null || { echo 'BLOCKED: npm unavailable' >&2; exit 2; }
 
+# Fail closed before any package download when other builds are filling the disk.
+# The first Mac pilot showed that parallel builds can use several GiB within minutes.
+free_kib="$(df -Pk "$ROOT" | awk 'NR==2 {print $4}')"
+if [[ ! "$free_kib" =~ ^[0-9]+$ ]] || (( free_kib < 5 * 1024 * 1024 )); then
+  echo "BLOCKED: REA sandbox probe needs at least 5 GiB free before npm install (observed KiB: ${free_kib:-unknown})." >&2
+  exit 2
+fi
+
 # No checkout scripts, production secrets or user agent config in this workspace.
 workspace="$(mktemp -d "${TMPDIR:-/tmp}/hh-rea-doctor.XXXXXXXX")"
 trap 'rm -rf -- "$workspace"' EXIT
