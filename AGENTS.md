@@ -2,7 +2,8 @@
 
 Scope: `andylitvinov-design/books`, Holistic House site and connected
 GitHub, Vercel, Supabase and provider integrations. More detailed task-specific
-requirements take precedence. See `docs/integrations/AGENT_SECRET_AUTOMATION.md`.
+requirements and runtime safety/confirmation rules take precedence. This file
+does not grant new permissions. See `docs/integrations/AGENT_SECRET_AUTOMATION.md`.
 
 ## Before changing anything
 
@@ -23,12 +24,16 @@ requirements take precedence. See `docs/integrations/AGENT_SECRET_AUTOMATION.md`
    variable **names and targets only**, integration configuration and linked
    services before asking the owner to configure anything.
 2. Prefer existing GitHub/Vercel/Supabase/provider connectors or provider-issued
-   short-lived, scoped credentials. When supported, create required provider
-   tokens via its official authenticated API, and deliver directly to the
-   destination's server-side Secret field using authorized tools. Generate
-   high-entropy application-owned HMAC/webhook secrets with a CSPRNG; coordinate
-   both ends before switching live traffic.
-3. In Vercel, create new secrets using the connected project tool with
+   short-lived, scoped credentials. An authorized connector/account establishes
+   access, not consent for every action. Before creating persistent credentials
+   or transmitting a secret to a destination, obtain explicit owner confirmation
+   for that specific action whenever required by the runtime. Identify provider,
+   destination project, secret name, target and scope without exposing its value.
+   A general automation request, issue/PR URL, token possession or `--apply` is
+   not that confirmation. After approval, use the official provider API or a
+   CSPRNG for application-owned HMAC/webhook secrets; coordinate both ends.
+3. Only after the action is authorized, create new Vercel secrets using the
+   connected project tool with
    `upsert=false`, `type=sensitive` (Secret) and the smallest appropriate
    environment/branch. Never accidentally replace an existing value, use
    Production credentials in Preview, or assign secret values to
@@ -43,7 +48,8 @@ requirements take precedence. See `docs/integrations/AGENT_SECRET_AUTOMATION.md`
    feature != proven external delivery/payment.
 6. One-time provider OAuth, MFA/passkey, legal/financial consent, account
    verification, permissions not already granted and enabling paid services
-   still require explicit owner action. First complete independent work and
+   still require explicit owner action, in addition to any per-action credential
+   confirmation above. First complete independent work and
    provide one exact link + minimal click instructions; never ask for a raw
    password/token pasted into ChatGPT.
 7. No spending, mass sends, unapproved integrations, permission escalation or

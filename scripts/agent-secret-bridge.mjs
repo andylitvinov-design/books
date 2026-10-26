@@ -2,6 +2,7 @@
 /**
  * Safe optional bridge for an ALREADY AUTHORIZED headless Vercel API session.
  * ChatGPT agents should prefer their connected Vercel app; no new login needed.
+ * Runtime owner-confirmation rules still apply; a token/issue/--apply is not consent.
  * Never logs tokens or values, never updates/deletes existing credentials.
  */
 import { randomBytes } from 'node:crypto';
@@ -65,7 +66,7 @@ export function validateOptions(options) {
     throw new Error('Branch-scoped values are only allowed in Preview.');
   }
   if (target === 'production' && !/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:issues|pull)\/\d+$/.test(issue || '')) {
-    throw new Error('Production requires an approved tracking GitHub issue/PR URL.');
+    throw new Error('Production requires a tracking GitHub issue/PR URL; a URL is not approval.');
   }
   if (command === 'plan' && apply) throw new Error('plan is read-only.');
   if (command === 'create' && apply) {
@@ -107,8 +108,8 @@ export async function verifyLocalProject(cwd, fileReader = readFile) {
   }
 }
 
-export function generateSandboxSecret() {
-  return randomBytes(48).toString('base64url');
+export function generateSandboxSecret(bytes = randomBytes) {
+  return bytes(48).toString('base64url');
 }
 
 export async function readStdinSecret(stream) {
@@ -142,6 +143,58 @@ function publicResult(options, status) {
   };
 }
 
+const UNVERIFIED_WRITE = 'Secret creation outcome is unverified. Do not retry the POST; reconcile non-secret metadata and provider audit evidence first.';
+
+function unverifiedWrite() {
+  return Object.assign(new Error(UNVERIFIED_WRITE), { code: 'SECRET_CREATE_UNVERIFIED' });
+}
+
+async function requestJson(call, url, request, message) {
+  try {
+    const response = await call(url, request);
+    if (!response?.ok) throw new Error();
+    return await response.json();
+  } catch {
+    // Network clients and JSON parsers can include credentials/body snippets.
+    // Never retain their exception as a cause or print a response body.
+    throw new Error(message);
+  }
+}
+
+function completeInventory(listing) {
+  if (!listing || typeof listing !== 'object' || Array.isArray(listing) ||
+      !Array.isArray(listing.envs) ||
+      !listing.envs.every(item => item && !Array.isArray(item) &&
+        typeof item.key === 'string' && item.key.trim().length > 0)) return false;
+  // The documented envs variants require pagination OR hiddenProductionEnvCount.
+  // An absent marker (or omitted next) is not evidence of a complete inventory.
+  const paginated = Object.hasOwn(listing, 'pagination');
+  const hiddenCount = Object.hasOwn(listing, 'hiddenProductionEnvCount');
+  if (!paginated && !hiddenCount) return false;
+  if (hiddenCount && listing.hiddenProductionEnvCount !== 0) return false;
+  if (paginated) {
+    const page = listing.pagination;
+    if (!page || typeof page !== 'object' || Array.isArray(page) ||
+        !Number.isSafeInteger(page.count) || page.count !== listing.envs.length ||
+        page.next !== null || page.prev !== null || page.cursor != null) return false;
+  }
+  return true;
+}
+
+function matchesSecret(item, options) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  const targets = Array.isArray(item.target) ? item.target : [item.target];
+  const secretType = (item.type === 'sensitive' &&
+    (item.visibility === undefined || item.visibility === 'secret')) ||
+    (item.type === 'encrypted' && item.visibility === 'secret');
+  return typeof item.id === 'string' && item.id.trim().length > 0 &&
+    item.key === options.key && secretType && item.decrypted !== true &&
+    targets.length === 1 && targets[0] === options.target &&
+    (item.gitBranch || null) === (options.branch || null) &&
+    (item.customEnvironmentIds === undefined ||
+      (Array.isArray(item.customEnvironmentIds) && item.customEnvironmentIds.length === 0));
+}
+
 export async function createSecret(options, deps = {}) {
   validateOptions(options);
   if (!options.apply || options.command === 'plan') {
@@ -160,19 +213,16 @@ export async function createSecret(options, deps = {}) {
     'Content-Type': 'application/json'
   };
 
-  // List metadata first: no decrypt requests. Fail closed on unknown or paginated data.
+  // This helper cannot establish owner consent. Its caller must enforce runtime
+  // confirmation rules before secret issuance or transmission, even with --apply.
+  // List metadata first: no decrypt requests. Fail closed on unknown or hidden data.
   const readUrl = new URL(WRITE_ENDPOINT);
   readUrl.searchParams.delete('upsert');
-  readUrl.searchParams.set('limit', '100');
-  const current = await call(readUrl.toString(), {
+  readUrl.searchParams.set('decrypt', 'false');
+  const listing = await requestJson(call, readUrl.toString(), {
     method: 'GET', headers, redirect: 'error'
-  });
-  if (!current.ok) {
-    throw new Error('Vercel metadata preflight failed (HTTP ' + current.status + ').');
-  }
-  const listing = await current.json();
-  if (!Array.isArray(listing?.envs) ||
-      listing?.pagination?.next || listing?.pagination?.cursor) {
+  }, 'Vercel metadata preflight failed; no write attempted.');
+  if (!completeInventory(listing)) {
     throw new Error('Cannot verify a complete Vercel key inventory; refusing to write.');
   }
   if (listing.envs.some(item => item?.key === options.key)) {
@@ -180,14 +230,18 @@ export async function createSecret(options, deps = {}) {
   }
 
   let value;
-  if (options.source === 'stdin') {
-    value = await readStdinSecret(deps.stdin || process.stdin);
-  } else if (options.source === 'env') {
-    value = env[options['from-env']];
-  } else {
-    value = generateSandboxSecret();
+  try {
+    if (options.source === 'stdin') {
+      value = await readStdinSecret(deps.stdin || process.stdin);
+    } else if (options.source === 'env') {
+      value = env[options['from-env']];
+    } else {
+      value = generateSandboxSecret(deps.randomBytes);
+    }
+    validateSecretValue(value);
+  } catch {
+    throw new Error('Missing, invalid or unreadable secret input; no write attempted.');
   }
-  validateSecretValue(value);
   const body = {
     key: options.key,
     value,
@@ -196,23 +250,38 @@ export async function createSecret(options, deps = {}) {
     comment: 'Agent-managed create; ' + (options.issue || 'preview-only sandbox')
   };
   if (options.target === 'preview') body.gitBranch = options.branch;
-  let created;
+  let result;
   try {
-    created = await call(WRITE_ENDPOINT, {
+    result = await requestJson(call, WRITE_ENDPOINT, {
       method: 'POST', headers, redirect: 'error', body: JSON.stringify(body)
-    });
+    }, UNVERIFIED_WRITE);
+  } catch {
+    throw unverifiedWrite();
   } finally {
     // Never persist/re-emit the value. JS cannot guarantee string zeroization.
     value = undefined;
     body.value = undefined;
   }
-  if (!created.ok) {
-    throw new Error('Vercel rejected secret creation (HTTP ' + created.status + ').');
+  // Vercel's documented receipt allows a single object or an array. A truthy
+  // empty/partial receipt is not proof. Do not read or expose any value fields.
+  const receipts = Array.isArray(result?.created) ? result.created : [result?.created];
+  if (!Array.isArray(result?.failed) || result.failed.length !== 0 ||
+      receipts.length !== 1 || !matchesSecret(receipts[0], options)) {
+    throw unverifiedWrite();
   }
-  const result = await created.json();
-  if ((Array.isArray(result?.failed) && result.failed.length) ||
-      !result?.created) {
-    throw new Error('Vercel did not confirm an unambiguous new Secret.');
+  let readback;
+  try {
+    readback = await requestJson(call, readUrl.toString(), {
+      method: 'GET', headers, redirect: 'error'
+    }, UNVERIFIED_WRITE);
+  } catch {
+    throw unverifiedWrite();
+  }
+  if (!completeInventory(readback)) throw unverifiedWrite();
+  const matches = readback.envs.filter(item => item.key === options.key);
+  if (matches.length !== 1 || !matchesSecret(matches[0], options) ||
+      matches[0].id !== receipts[0].id) {
+    throw unverifiedWrite();
   }
   return publicResult(options, 'created');
 }
@@ -226,9 +295,11 @@ export async function cli(args = process.argv.slice(2), deps = {}) {
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   cli().then(result => {
     process.stdout.write(JSON.stringify(result) + '\n');
-  }).catch(() => {
+  }).catch(err => {
     // Do not print exceptions from third-party API clients or returned values.
-    process.stderr.write('Secret operation refused or failed; consult the agent-safe runbook. No secret printed.\n');
+    process.stderr.write(err?.code === 'SECRET_CREATE_UNVERIFIED'
+      ? UNVERIFIED_WRITE + '\n'
+      : 'Secret operation refused or failed; consult the agent-safe runbook. No secret printed.\n');
     process.exitCode = 1;
   });
 }
