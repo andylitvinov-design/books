@@ -719,7 +719,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               }} placeholder={conversationOnly?t.reply:t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
-              {compact&&!conversationOnly?<Send size={18} aria-hidden="true"/>:t.send}
+              {conversationOnly||compact?<Send size={19} aria-hidden="true"/>:t.send}
             </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
           </div>
