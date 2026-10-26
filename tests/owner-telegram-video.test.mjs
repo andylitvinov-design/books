@@ -5,6 +5,7 @@ import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPr
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_RU_CHANNEL_ID}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {ownerVideoOauthConfig,ownerVideoOauthConfigured} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 
@@ -121,6 +122,21 @@ test('photos after the last audio stay visible as an outro, never a zero-length 
  assert.ok(veryShort.every(p=>p.durationMs>=160))
  assert.equal(veryShort[0].startMs,0)
  assert.throws(()=>photoTimeline([part('photo',0)]),/INVALID_COMPOSITION/)
+})
+test('optional Google OAuth is isolated from the standalone phone uploader',()=>{
+ const unset={}
+ const valid={HH_OWNER_VIDEO_GOOGLE_CLIENT_ID:'000000000000000000000000.apps.googleusercontent.com',
+   HH_OWNER_VIDEO_GOOGLE_CLIENT_SECRET:'valid-local-test-only'}
+ assert.equal(ownerVideoOauthConfigured(unset),false)
+ assert.equal(ownerVideoOauthConfig(unset),null)
+ assert.equal(ownerVideoOauthConfigured(valid),true)
+ assert.equal(ownerVideoOauthConfig(valid).clientSecret,'valid-local-test-only')
+ assert.equal(ownerVideoOauthConfigured({...valid,HH_OWNER_VIDEO_GOOGLE_CLIENT_ID:'bad'}),false)
+ const page=readFileSync(new URL('../app/admin/youtube-upload/page.js',import.meta.url),'utf8')
+ assert.doesNotMatch(page,/^import .*owner-telegram-video-service/m)
+ assert.match(page,/if\(telegramVideoConfigured\)try\{[\s\S]*await Promise\.all/)
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/const oauthConfig=ownerVideoOauthConfig/)
 })
 test('Google RU ownership and Unlisted are checked before and after upload',async()=>{
  const calls=[];let begin=0,uploaded=0

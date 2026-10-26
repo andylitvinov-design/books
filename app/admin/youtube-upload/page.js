@@ -4,8 +4,7 @@ import {redirect} from 'next/navigation'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
-import {getAppConfig} from '@/lib/app/config'
-import {ownerVideoOauthConfigured,ownerVideoYoutubeConnected} from '@/lib/practitioners/owner-telegram-video-service'
+import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {uiLocaleCookie} from '@/lib/ui-locale'
 import {RUSSIAN_CHANNEL_ID, normalizeGoogleOauthClientId} from '@/lib/youtube/upload-history-model.mjs'
 import {getYoutubeHistoryStore} from '@/lib/youtube/upload-history-store'
@@ -25,6 +24,12 @@ export default async function YoutubeUploadPage() {
   const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
   if(telegramVideoConfigured)try{
+    // Avoid importing the large Telegram/DB/media service into the phone uploader
+    // when video OAuth has not been set up; the standalone uploader must work.
+    const [{getAppConfig},{ownerVideoYoutubeConnected}] = await Promise.all([
+      import('@/lib/app/config'),
+      import('@/lib/practitioners/owner-telegram-video-service')
+    ])
     telegramVideoConnected = await ownerVideoYoutubeConnected(getAppConfig())
   }catch{/* Authorisation remains unconfirmed. */}
   const environmentClientId = normalizeGoogleOauthClientId(process.env.HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID || '')
