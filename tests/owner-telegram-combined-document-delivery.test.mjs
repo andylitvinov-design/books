@@ -97,3 +97,83 @@ test('resend button is only valid for a real Dot callback in its owner chat',()=
   update.callback_query.message.from.username='FakeBot'
   assert.equal(parseOwnerAudioCallback(update),null)
 })
+
+const savedResend=service.match(/async function resendSavedCombined\([\s\S]*?\n}\nasync function finishAudioCombine/)
+assert.ok(savedResend,'owner-only resend helper must exist')
+const resendSource=savedResend[0].replace(/\nasync function finishAudioCombine$/,'')
+
+function simulatedSavedResend(row,{corrupt=false,providerFails=false}={}){
+  const events={downloads:0,binaries:[],messages:[]}
+  const bytes=new Uint8Array(128)
+  bytes.set([79,103,103,83],0)
+  const run=new Function(
+    'ownerTransaction','PRACTITIONER_ID','checkedAudioStorage',
+    'sendCombinedDocument','sendOwner','combinedDeliveryKeyboard',
+    'failure','OWNER_AUDIO_COMBINE_MAX_BYTES','OWNER_AUDIO_COMBINE_MAX_PARTS',
+    'audioMatchesMagic','folderLabel','itemLink',
+    resendSource+'\nreturn resendSavedCombined')(
+    async(_,callback)=>callback({query:async()=>({rows:[row]})}),
+    'owner-practitioner',
+    async()=>({download:async()=>{events.downloads++;return {
+      data:{size:bytes.length,arrayBuffer:async()=>bytes.buffer},
+      error:null,
+    }}}),
+    async(_credentials,sent,parts,folder)=>{
+      events.binaries.push({data:sent,parts,folder})
+      if(providerFails)throw Error('TELEGRAM_FAILURE')
+      return {messageId:444}
+    },
+    async(_credentials,text,keyboard)=>{
+      events.messages.push({text,keyboard})
+    },
+    id=>({inline_keyboard:[[
+      {text:'Resend',callback_data:'hh-audio:resend:'+id},
+    ]]}),
+    code=>{throw new Error(code)},
+    20_000_000,12,
+    bytes=>!corrupt&&[79,103,103,83].every((value,i)=>bytes[i]===value),
+    folder=>folder,
+    id=>'https://holistichouse.vercel.app/admin/materials/telegram?item='+id,
+  )
+  return {run,events}
+}
+test('finished file is resent from private Storage to Telegram with its selected folder',async()=>{
+  const id='550e8400-e29b-41d4-a716-446655440000'
+  const row={batch_id:id,result_audio_id:id,status:'ready',
+    parts:2,mime:'audio/ogg',bytes:128,folder:'meditations',
+    storage_path:'telegram-inbox/'+id+'.ogg'}
+  const {run,events}=simulatedSavedResend(row)
+  assert.deepEqual(await run({},{batchId:id},credentials),{handled:true})
+  assert.equal(events.downloads,1)
+  assert.equal(events.binaries.length,1)
+  assert.equal(events.binaries[0].parts,2)
+  assert.equal(events.binaries[0].folder,'meditations')
+  assert.equal(events.binaries[0].data.length,128)
+  assert.match(events.messages.at(-1).text,/отправлен в этот чат Telegram/)
+})
+test('stale batch button never downloads or transmits another saved audio',async()=>{
+  const id='550e8400-e29b-41d4-a716-446655440000'
+  const row={batch_id:id,result_audio_id:id,status:'ready',
+    parts:2,mime:'audio/ogg',bytes:128,folder:'inbox',
+    storage_path:'telegram-inbox/'+id+'.ogg'}
+  const {run,events}=simulatedSavedResend(row)
+  await run({},{batchId:'550e8400-e29b-41d4-a716-446655440001'},credentials)
+  assert.equal(events.downloads,0)
+  assert.equal(events.binaries.length,0)
+})
+test('uncertain Telegram sending exposes only explicit resend; no fake success',async()=>{
+  const id='550e8400-e29b-41d4-a716-446655440000'
+  const row={batch_id:id,result_audio_id:id,status:'ready',
+    parts:2,mime:'audio/ogg',bytes:128,folder:'inbox',
+    storage_path:'telegram-inbox/'+id+'.ogg'}
+  const {run,events}=simulatedSavedResend(row,{providerFails:true})
+  await run({},{batchId:id},credentials)
+  assert.equal(events.binaries.length,1)
+  assert.match(events.messages.at(-1).text,/не подтвердил отправку/)
+  assert.equal(events.messages.at(-1).keyboard.inline_keyboard[0][0].callback_data,
+    'hh-audio:resend:'+id)
+  assert.doesNotMatch(events.messages.at(-1).text,/повторно отправлен/)
+  const corrupted=simulatedSavedResend(row,{corrupt:true})
+  await corrupted.run({},{batchId:id},credentials)
+  assert.equal(corrupted.events.binaries.length,0)
+})
