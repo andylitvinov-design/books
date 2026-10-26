@@ -106,7 +106,7 @@ jobs:
       - name: Business pipeline stage integrity, owner actions and visual contract
         run: node --test tests/crm-business-pipeline.test.mjs
       - name: Lint business pipeline flow and accessible board
-        run: npx eslint lib/crm/business-pipeline.mjs components/app/crm-business-enquiries.jsx tests/crm-business-pipeline.test.mjs
+        run: npx eslint --ext .js,.jsx,.mjs lib/crm/business-pipeline.mjs components/app/crm-business-enquiries.jsx components/app/crm-manager.jsx tests/crm-business-pipeline.test.mjs
       - name: Compact enquiry and OAuth return policy
         run: node --test tests/compact-google-lead-entry.test.mjs tests/crm-public-registration.test.mjs tests/contact-channel-chooser.test.mjs tests/organic-event-referrals.test.mjs
       - name: Verify consent, ownership, actions and fail-closed client requests
