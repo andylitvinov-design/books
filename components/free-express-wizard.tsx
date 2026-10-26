@@ -46,7 +46,7 @@ const copy = {
     doneHint: "Andrey can review your question and get back to you personally. This is a free written reflection, not a live appointment or medical diagnosis.",
     contactSaved: "Contact and request saved", detailsSaved: "Questionnaire saved", drawingSaved: "Drawing saved", waiting: "You can add it later",
     messenger: "Optional: send only the reference code", whatsapp: "WhatsApp", telegram: "Telegram",
-    privacy: "Your question, photo and drawing stay in private storage. Do not send personal materials or health information through WhatsApp or Telegram. Images expire after 30 days.",
+    privacy: "Your question, photo and drawing stay in private storage. Do not send personal materials or health information through WhatsApp or Telegram. Images are scheduled for automatic deletion after about a month.",
     restored: "Your saved request has been restored.", timeout: "Your secure continuation expired. The original request remains received; contact Andrey using your reference.",
   },
   ru: {
@@ -77,7 +77,7 @@ const copy = {
     doneHint: "Андрей ознакомится с вопросом и свяжется с вами лично. Это бесплатный письменный разбор, не запись на созвон и не медицинский диагноз.",
     contactSaved: "Контакт и заявка сохранены", detailsSaved: "Анкета сохранена", drawingSaved: "Рисунок сохранён", waiting: "Можно добавить позже",
     messenger: "По желанию: отправить только номер заявки", whatsapp: "WhatsApp", telegram: "Telegram",
-    privacy: "Вопрос, фото и рисунок доступны только в защищённом хранилище. Не отправляйте личные данные и информацию о здоровье в WhatsApp или Telegram. Фото удаляются через 30 дней.",
+    privacy: "Вопрос, фото и рисунок доступны только в защищённом хранилище. Не отправляйте личные данные и информацию о здоровье в WhatsApp или Telegram. Автоматическое удаление фото запланировано примерно через месяц.",
     restored: "Ваша заявка восстановлена.", timeout: "Срок защищённого дополнения истёк. Исходная заявка получена; свяжитесь с Андреем, указав её номер.",
   },
   es: {
@@ -108,7 +108,7 @@ const copy = {
     doneHint: "Andrey revisará tu consulta y podrá responderte personalmente. Es una revisión escrita simbólica, no una cita ni un diagnóstico médico.",
     contactSaved: "Contacto y solicitud guardados", detailsSaved: "Respuestas guardadas", drawingSaved: "Dibujo guardado", waiting: "Puedes añadirlo después",
     messenger: "Opcional: envía solo la referencia", whatsapp: "WhatsApp", telegram: "Telegram",
-    privacy: "Tu pregunta, foto y dibujo permanecen privados. No envíes datos personales ni de salud por WhatsApp o Telegram. Las imágenes se eliminan tras 30 días.",
+    privacy: "Tu pregunta, foto y dibujo permanecen privados. No envíes datos personales ni de salud por WhatsApp o Telegram. Las imágenes se programan para su eliminación automática aproximadamente al mes.",
     restored: "Tu solicitud se ha recuperado.", timeout: "El período seguro para añadir datos caducó. La solicitud inicial permanece guardada.",
   },
 } as const;
