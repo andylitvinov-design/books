@@ -91,7 +91,7 @@ test('RLS is deny-by-default, signed guest token needed; private owner read is c
   assert.match(sql, /operation_id::text = current_setting\('hh\.public_enquiry_continuation', true\)/)
   assert.match(sql, /created_at > now\(\) - interval '1 hour'/)
   assert.match(sql, /force row level security/)
-  assert.match(sql, /account_id=\(select auth\.uid\(\)\)/)
+  assert.match(sql, /account_id\s*=\s*\(select\s+auth\.uid\(\)\)/)
   assert.match(owner, /trusted_auth_user_id=\$3/)
   assert.match(owner, /practitionerEmailAllowed/)
   assert.match(media, /FREE_EXPRESS_MEDIA_BUCKET/)
