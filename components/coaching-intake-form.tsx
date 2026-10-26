@@ -24,22 +24,25 @@ const blank = (): Draft => ({ topic: "personal", name: "", city: "", answers: {}
 const copy = {
   en: {
     sendEyebrow: "FINAL STEP · SEND YOUR REQUEST",
-    sendTitle: "Request your free written diagnostic",
+    sendTitle: "Send your questionnaire",
     sendPaidTitle: "Request a personal coaching session",
-    sendLead: "Choose a free written review or request a live consultation. Andrey receives your contact and the completed coaching questionnaire only when you explicitly send it.",
-    sendOption: "What would you like to request?",
-    sendFree: "Free written diagnostic · €0",
-    sendShort: "Personal session · 30 min · €50",
-    sendFull: "Personal session · 60 min · €100",
-    sendEmail: "Email for a reply",
-    sendPhone: "Phone (optional if email is supplied)",
-    sendConsent: "I explicitly agree to send all my completed coaching answers and contact details securely to Andrey in Holistic House CRM for one personal response. No marketing.",
-    sendButton: "Send questionnaire and request",
+    sendLead: "Choose the format below. Your answers reach Andrey only after you press Send.",
+    sendOption: "Response format",
+    moreQuestions: "Add details · {n} optional questions",
+    lessQuestions: "Hide optional questions",
+    phoneInstead: "Prefer to leave a phone number?",
+    sendFree: "Free · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
+    sendEmail: "Email for reply",
+    sendPhone: "Phone",
+    sendConsent: "I agree to share these answers and my contact with Andrey for one personal reply. No marketing.",
+    sendButton: "Send answers",
     sendError: "Complete the three essential questions, provide an email or phone, and agree to send your answers.",
     sendFailure: "Your request could not be confirmed. Please retry; your answers are still here.",
     sendSuccess: "Your questionnaire and contact were received. Reference:",
     sendUpgrade: "Would you prefer a live consultation? Request 30 minutes (€50) or 60 minutes (€100).",
-    sendNext: "Your request awaits personal review. This does not book an appointment, collect payment or guarantee availability.",
+    sendNext: "Your request will be reviewed personally. This is not a confirmed booking or payment.",
     saveOptional: "OPTIONAL · KEEP A PRIVATE COPY",
     eyebrow: "AUTHOR'S COACHING QUESTIONNAIRE · HOLISTIC HOUSE",
     title: "Your coaching questions",
@@ -79,22 +82,25 @@ const copy = {
   },
   ru: {
     sendEyebrow: "ЗАВЕРШЕНИЕ · ОТПРАВКА ЗАЯВКИ",
-    sendTitle: "Запросить бесплатную письменную диагностику",
+    sendTitle: "Отправить анкету",
     sendPaidTitle: "Записаться на личную коучинговую сессию",
-    sendLead: "Выберите бесплатный письменный разбор или личную сессию. Только после отправки Андрей получит ваши контакты и заполненную коучинговую анкету в защищённой CRM.",
-    sendOption: "Что вы хотите заказать?",
-    sendFree: "Бесплатная письменная диагностика · €0",
-    sendShort: "Личная сессия · 30 минут · €50",
-    sendFull: "Личная сессия · 60 минут · €100",
+    sendLead: "Выберите формат. Андрей получит ответы только после отправки.",
+    sendOption: "Формат ответа",
+    moreQuestions: "Добавить подробности · ещё {n} вопросов",
+    lessQuestions: "Скрыть дополнительные вопросы",
+    phoneInstead: "Оставить телефон вместо email",
+    sendFree: "Бесплатно · €0",
+    sendShort: "30 мин · €50",
+    sendFull: "60 мин · €100",
     sendEmail: "Email для ответа",
-    sendPhone: "Телефон (необязателен, если указан email)",
-    sendConsent: "Я явно согласен(на) отправить все ответы коучинговой анкеты и контакты Андрею в защищённую CRM Holistic House для одного личного ответа. Без рекламы и рассылок.",
-    sendButton: "Отправить анкету и заявку",
+    sendPhone: "Телефон",
+    sendConsent: "Согласен(на) передать ответы и контакт Андрею для одного личного ответа. Без рассылок.",
+    sendButton: "Отправить ответы",
     sendError: "Ответьте на три основных вопроса, укажите email или телефон и подтвердите согласие на отправку.",
     sendFailure: "Не удалось подтвердить получение заявки. Попробуйте повторить: ответы сохранились на экране.",
     sendSuccess: "Ваша анкета и контакт получены. Номер заявки:",
     sendUpgrade: "Хотите обсудить вопрос лично? Запросите 30 минут (€50) или 60 минут (€100).",
-    sendNext: "Андрей рассмотрит заявку. Это пока не подтверждённая запись, не оплата и не гарантия свободного времени.",
+    sendNext: "Андрей ответит лично. Запись и оплата пока не подтверждены.",
     saveOptional: "ДОПОЛНИТЕЛЬНО · ПРИВАТНАЯ КОПИЯ",
     eyebrow: "АВТОРСКАЯ КОУЧИНГ-АНКЕТА · HOLISTIC HOUSE",
     title: "Вопросы и ответы",
@@ -134,22 +140,25 @@ const copy = {
   },
   es: {
     sendEyebrow: "ÚLTIMO PASO · ENVÍA TU SOLICITUD",
-    sendTitle: "Solicitar evaluación escrita gratuita",
+    sendTitle: "Enviar tu cuestionario",
     sendPaidTitle: "Solicitar una sesión personal de coaching",
-    sendLead: "Elige una revisión gratuita o sesión personal. Andrey recibe tu contacto y el cuestionario únicamente cuando confirmas el envío.",
-    sendOption: "¿Qué te gustaría solicitar?",
-    sendFree: "Evaluación escrita gratis · €0",
-    sendShort: "Sesión personal · 30 min · €50",
-    sendFull: "Sesión personal · 60 min · €100",
-    sendEmail: "Email de contacto",
-    sendPhone: "Teléfono (opcional con email)",
-    sendConsent: "Acepto expresamente enviar todas mis respuestas y datos de contacto a Andrey mediante el CRM privado de Holistic House para recibir una respuesta personal. Sin publicidad.",
-    sendButton: "Enviar cuestionario y solicitud",
+    sendLead: "Elige el formato. Andrey recibirá tus respuestas solo cuando pulses Enviar.",
+    sendOption: "Formato de respuesta",
+    moreQuestions: "Añadir detalles · {n} preguntas opcionales",
+    lessQuestions: "Ocultar preguntas opcionales",
+    phoneInstead: "¿Prefieres dejar tu teléfono?",
+    sendFree: "Gratis · €0",
+    sendShort: "30 min · €50",
+    sendFull: "60 min · €100",
+    sendEmail: "Email para responder",
+    sendPhone: "Teléfono",
+    sendConsent: "Acepto enviar estas respuestas y mi contacto a Andrey para una respuesta personal. Sin publicidad.",
+    sendButton: "Enviar respuestas",
     sendError: "Completa las tres preguntas esenciales, indica email o teléfono y acepta enviar tus respuestas.",
     sendFailure: "No se pudo confirmar el envío. Vuelve a intentarlo; tus respuestas siguen aquí.",
     sendSuccess: "Hemos recibido tu cuestionario y contacto. Referencia:",
     sendUpgrade: "¿Prefieres una sesión en vivo? Solicita 30 minutos (€50) o 60 minutos (€100).",
-    sendNext: "Andrey revisará la solicitud. No confirma una cita, disponibilidad ni pago.",
+    sendNext: "Andrey responderá personalmente. Esto no confirma cita ni pago.",
     saveOptional: "OPCIONAL · GUARDAR COPIA PRIVADA",
     eyebrow: "FORMULARIO DE COACHING DEL AUTOR · HOLISTIC HOUSE",
     title: "Tus preguntas de coaching",
@@ -230,6 +239,8 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [error, setError] = useState("");
   const [fallbackCopy, setFallbackCopy] = useState(false);
   const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
+  const [showPhone, setShowPhone] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
   const [sendConsent, setSendConsent] = useState(false);
   const [leadBusy, setLeadBusy] = useState(false);
@@ -241,6 +252,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
   const filled = COACHING_FIELDS.filter(field => Boolean(draft.answers[field.id]?.trim())).length;
   const total = COACHING_FIELDS.length;
+  const optionalCount = COACHING_FIELDS.filter(field => !field.required).length;
 
   useEffect(() => {
     let active = true;
@@ -262,6 +274,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       const staged = parseDiagnosticStart(sessionStorage.getItem(DIAGNOSTIC_START_KEY), locale);
       if (staged) {
         setReplyContact({ email: staged.email, phone: staged.phone });
+        if (staged.phone) setShowPhone(true);
         if (!restored) {
           restored = normalise({
             ...blank(), name: staged.name, topic: staged.topic,
@@ -430,13 +443,13 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </div>
     </header>
 
-    <div className={styles.authBar}>
+    {auth !== "guest" ? <div className={styles.authBar}>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{auth === "signed" ? t.signedIn : auth === "guest" ? t.signedOut : auth === "checking" ? t.loading : t.unavailable}</p>
         {auth === "guest" ? <small>{t.temporary}</small> : null}
       </div>
       {auth === "guest" ? <button type="button" disabled={busy} onClick={() => void signIn()} className={styles.login}>{t.login}<ArrowRight size={16} aria-hidden="true" /></button> : null}
-    </div>
+    </div> : <p className={styles.guestHint}><LockKeyhole size={14} aria-hidden="true" />{t.signedOut}</p>}
 
     {collision ? <div role="alert" className={styles.conflict}>
       <p>{t.accountConflict}</p>
@@ -458,13 +471,18 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     </div>
 
     <p className={styles.requiredLegend}>{t.requiredLegend}</p>
-    {COACHING_GROUPS.map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
+    <button type="button" className={styles.moreToggle} aria-expanded={showMore}
+      onClick={() => setShowMore(value => !value)} disabled={collision || busy}>
+      {showMore ? t.lessQuestions : t.moreQuestions.replace("{n}", String(optionalCount))}
+      <span aria-hidden="true">{showMore ? "−" : "+"}</span>
+    </button>
+    {COACHING_GROUPS.filter(group => showMore || COACHING_FIELDS.some(field => field.group === group.id && field.required)).map((group, groupIndex) => <section key={group.id} className={styles.group} aria-labelledby={"coaching-" + group.id}>
       <div className={styles.groupHeading}><span className={styles.number}>{String(groupIndex + 1).padStart(2, "0")}</span>
         <div><h3 id={"coaching-" + group.id}>{group.title[locale]}</h3><p>{group.hint[locale]}</p></div>
-        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id).length}</span>
+        <span className={styles.groupCount}>{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || field.required) && draft.answers[field.id]?.trim()).length}/{COACHING_FIELDS.filter(field => field.group === group.id && (showMore || field.required)).length}</span>
       </div>
       <ol className={styles.fields} start={COACHING_FIELDS.findIndex(item => item.group === group.id) + 1}>
-        {COACHING_FIELDS.filter(field => field.group === group.id).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
+        {COACHING_FIELDS.filter(field => field.group === group.id && (showMore || field.required)).map(field => <li key={field.id} className={styles.fieldRow} data-coaching-question={field.id}>
           <label htmlFor={"coaching-field-" + field.id} className={styles.questionLabel}>
             <span className={styles.ordinal} aria-hidden="true">{String(COACHING_FIELDS.findIndex(item => item.id === field.id) + 1).padStart(2, "0")}</span>
             <span>{field.label[locale]} {field.required ? <em title={t.required}>*</em> : null}</span>
@@ -479,7 +497,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           />
         </li>)}
       </ol>
-      {group.id === "session" ? <div className={styles.ownQuestions}>
+      {showMore && group.id === "session" ? <div className={styles.ownQuestions}>
         <div className={styles.ownHeader}><div><h4>{t.ownQuestions}</h4><p>{t.ownHint}</p></div>
           <button type="button" disabled={collision || busy || draft.questions.length >= 8} onClick={() => edit(previous => ({ ...previous, questions: [...previous.questions, ""] }))}>
             <Plus size={16} aria-hidden="true" />{t.addQuestion}
@@ -519,10 +537,11 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
               onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
-            <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
+            {(showPhone || replyContact.phone) ? <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
               disabled={leadBusy || busy || collision} value={replyContact.phone}
-              onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label>
+              onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label> : null}
           </div>
+          {!showPhone && !replyContact.phone ? <button type="button" className={styles.phoneToggle} onClick={() => setShowPhone(true)}>{t.phoneInstead}</button> : null}
           <label className={styles.sendConsent}>
             <input type="checkbox" checked={sendConsent} disabled={leadBusy || busy || collision}
               onChange={event => setSendConsent(event.target.checked)} />
