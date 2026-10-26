@@ -30,3 +30,12 @@
   .heroCopy > p:not(.kicker) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .page * { scroll-behavior: auto; } }
+
+/* Intake stays task-focused on phone; large image and hero copy are unnecessary. */
+@media(max-width:680px){
+ .page:has([data-coaching-intake]) .hero{display:block;min-height:0;margin-bottom:8px;border-radius:12px}
+ .page:has([data-coaching-intake]) .heroImage{display:none}
+ .page:has([data-coaching-intake]) .heroCopy{padding:12px 14px;gap:4px}
+ .page:has([data-coaching-intake]) .heroCopy>p:not(.kicker),.page:has([data-coaching-intake]) .privacy{display:none}
+ .page:has([data-coaching-intake]) .hero h1{font-size:1.15rem}
+}
