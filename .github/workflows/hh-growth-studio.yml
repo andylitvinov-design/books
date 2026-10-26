@@ -46,6 +46,11 @@ on:
 permissions:
   contents: read
 
+# Keep only the latest validation for a moving PR head; manual dispatches are not canceled.
+concurrency:
+  group: growth-studio-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   editorial-security:
     name: Owner editorial and storage safety
