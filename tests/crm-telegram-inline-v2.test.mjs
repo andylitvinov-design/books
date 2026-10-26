@@ -114,13 +114,13 @@ test('same-user private Telegram callback normalizes once; foreign or forged mes
   }).length,0)
 })
 
-async function fakeBot(fetchMock,callbackEnabled=true){
+async function fakeBot(fetchMock,callbackEnabled=true,webhookUrl=callback){
   const old=globalThis.fetch
   const body=[]
   globalThis.fetch=async (url,options={})=>{
     if(String(url).includes('/getWebhookInfo')){
       return new Response(JSON.stringify({ok:true,result:{
-        url:callback,allowed_updates:callbackEnabled?['message','callback_query']:['message'],
+        url:webhookUrl,allowed_updates:callbackEnabled?['message','callback_query']:['message'],
       }}),{status:200,headers:{'Content-Type':'application/json'}})
     }
     if(String(url).includes('/sendMessage')){
@@ -188,4 +188,15 @@ test('signed second account needs explicit owner-verified pilot approval for mes
     assert.equal(body.length,2)
     assert.equal(body[1].callbackAck.callback_query_id,'Abc_123')
   })
+})
+
+test('foreign webhook stops both inline and downgraded sends before touching Telegram messages',async()=>{
+  const env=makeEnv()
+  await fakeBot(async body=>{
+    await assert.rejects(sendTelegramDiagnosticPrompt({
+      to:peer,text:'Harmless synthetic welcome',locale:'ru',stage:'consent',flowVersion:2,
+      keyboard:[['Да, начинаем','Не сейчас']],
+    },env),e=>e.code==='TELEGRAM_WEBHOOK_ALREADY_IN_USE')
+    assert.equal(body.length,0,'do not send a bot prompt when another webhook owns it')
+  },true,'https://unrelated.example/foreign')
 })
