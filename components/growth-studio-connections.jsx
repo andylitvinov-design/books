@@ -141,7 +141,7 @@ const RU_REQUIREMENTS={
   manual:'Готовый контент копируется владельцем вручную, без автоматической отправки.',
 }
 const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
-export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{}}){
+export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{},onStorageVerified=()=>{}}){
   const t=messages[locale==='ru'?'ru':'en']
   const [tested,setTested]=useState(false)
   const [verified,setVerified]=useState(false)
@@ -168,18 +168,22 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const verifyStorage=useCallback(async()=>{
     if(storageProbeInFlight.current)return
     storageProbeInFlight.current=true
+    onStorageVerified(false)
     setStorageChecking(true)
     setStorageState('untested')
     try {
       const result=await checkGrowthStudioStorageAction()
-      setStorageState(result?.ok===true&&result?.verified===true?'verified':'failed')
+      const passed=result?.ok===true&&result?.verified===true
+      setStorageState(passed?'verified':'failed')
+      onStorageVerified(passed)
     } catch {
       setStorageState('failed')
+      onStorageVerified(false)
     } finally {
       storageProbeInFlight.current=false
       setStorageChecking(false)
     }
-  },[])
+  },[onStorageVerified])
   // Executes once when an already-authenticated owner opens this workspace.
   // The server action checks the real admin session first. No provider posts.
   useEffect(()=>{void verifyStorage()},[verifyStorage])
