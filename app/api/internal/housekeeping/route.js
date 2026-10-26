@@ -30,10 +30,9 @@ export async function GET(request) {
           catch { console.error('HH_HOME_GUIDE_QUALITY_DAILY_FAILED') }
           try { await purgeExpiredGoalPhotos(config) }
           catch { console.error('HH_GOAL_PHOTO_RETENTION_FAILED') }
-          if (process.env.HH_FREE_EXPRESS_V2_ENABLED === 'true') {
-            try { await purgeExpiredFreeExpressMedia(config) }
-            catch { console.error('HH_FREE_EXPRESS_MEDIA_RETENTION_FAILED') }
-          }
+          // Emergency feature rollback must not also stop deleting already-uploaded media.
+          try { await purgeExpiredFreeExpressMedia(config) }
+          catch { console.error('HH_FREE_EXPRESS_MEDIA_RETENTION_FAILED') }
           try { await purgeOldPublicTraffic(config) }
           catch { console.error('HH_PUBLIC_TRAFFIC_RETENTION_FAILED') }
           return result
