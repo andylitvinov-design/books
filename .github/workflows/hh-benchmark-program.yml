@@ -11,6 +11,7 @@ on:
       - "lib/benchmarking/**"
       - "scripts/benchmarking/**"
       - "tests/benchmark-reference-matrix.test.mjs"
+      - "tests/mac-codex-research-tools.test.mjs"
   push:
     branches:
       - codex/public-book-library
@@ -20,6 +21,7 @@ on:
       - "lib/benchmarking/**"
       - "scripts/benchmarking/**"
       - "tests/benchmark-reference-matrix.test.mjs"
+      - "tests/mac-codex-research-tools.test.mjs"
 
 permissions:
   contents: read
@@ -35,7 +37,7 @@ jobs:
         with:
           node-version: "22"
       - name: Validate source-only competitor evidence, privacy and test contracts
-        run: node --test tests/benchmark-reference-matrix.test.mjs
+        run: node --test tests/benchmark-reference-matrix.test.mjs tests/mac-codex-research-tools.test.mjs
       - name: Verify no-network human-readable benchmark plan
         run: node scripts/benchmarking/plan.mjs
       - name: Verify machine-readable export

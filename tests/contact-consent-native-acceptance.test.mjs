@@ -802,8 +802,8 @@ for(const [name,mutate,reason]of [
  ['disabled phone',f=>f.state.disabled=true,'DISABLED'],['hidden phone',f=>f.state.hidden=true,'HIDDEN'],
  ['nonfinite geometry',f=>f.state.phone.top=NaN,'GEOMETRY'],['nonfinite scroll',f=>f.globals.scrollY=NaN,'VIEWPORT'],
  ['nonfinite visual viewport',f=>f.globals.window.visualViewport.scale=Infinity,'VIEWPORT'],
- ['stable outside phone',f=>{f.state.phone.top=-1;f.state.phone.bottom=43},'PHONE_OUTSIDE'],
- ['outside visual viewport',f=>f.globals.window.visualViewport.height=300,'PHONE_OUTSIDE'],
+ ['stable outside phone',f=>{f.state.phone.top=-44;f.state.phone.bottom=0},'PHONE_NO_OVERLAP'],
+ ['outside visual viewport',f=>f.globals.window.visualViewport.height=300,'PHONE_NO_OVERLAP'],
 ])test('natural start fails closed: '+name,async()=>{
  const f=naturalStartFixture();mutate(f);const p=f.run();f.frame(10);f.frame(20);f.frame(30)
  await assertReadyFailure(p,reason);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
@@ -933,11 +933,11 @@ test('actual verifier deadline plus confirmed close drains readiness and remains
 
 // Failure-only keyboard-ready evidence: no new browser operations or verdicts.
 test('ready evidence retains exact failed outside sample without another geometry read',async()=>{
- const f=naturalStartFixture();f.state.phone.top=-1;f.state.phone.bottom=43
+ const f=naturalStartFixture();f.state.phone.top=-44;f.state.phone.bottom=0
  const p=f.run();f.frame(10);f.frame(20);f.frame(30)
- const data=await assertReadyFailure(p,'PHONE_OUTSIDE')
- assert.deepEqual(data,{version:1,source:'browser',reason:'PHONE_OUTSIDE',sampled:true,frames:3,sampleFrame:3,stableFrames:3,inside:false,
-  phoneRect:[176,-1,353,43,177,44],consentRect:[37,361,55,379,18,18],viewport:[390,844],scroll:[0,0,0,0],
+ const data=await assertReadyFailure(p,'PHONE_NO_OVERLAP')
+ assert.deepEqual(data,{version:1,source:'browser',reason:'PHONE_NO_OVERLAP',sampled:true,frames:3,sampleFrame:3,stableFrames:3,inside:false,
+  phoneRect:[176,-44,353,0,177,44],consentRect:[37,361,55,379,18,18],viewport:[390,844],scroll:[0,0,0,0],
   visualViewportPresent:true,visualViewport:[0,0,0,0,390,844,1],numericComplete:true})
  assert.deepEqual(f.reads,['phone','consent','phone','consent','phone','consent'])
  f.frame(40);assert.equal(f.reads.length,6);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
@@ -960,15 +960,15 @@ for(const schedule of [1,2])test('unknown scheduling exception transports no raw
  assert.equal(f.queue.size,0)
 })
 test('ready sample numbers are bounded without changing unrounded stability',async()=>{
- const f=naturalStartFixture();f.state.phone.top=-1.00001;f.state.phone.bottom=42.99999;f.globals.scrollY=9999999
+ const f=naturalStartFixture();f.state.phone.top=-44.00001;f.state.phone.bottom=-0.00001;f.globals.scrollY=9999999
  const p=f.run();f.frame(10);f.frame(20);f.frame(30)
- const data=await assertReadyFailure(p,'PHONE_OUTSIDE')
- assert.equal(data.phoneRect[1],-1);assert.equal(data.scroll[1],1000000);assert.equal(data.numericComplete,false)
+ const data=await assertReadyFailure(p,'PHONE_NO_OVERLAP')
+ assert.equal(data.phoneRect[1],-44);assert.equal(data.scroll[1],1000000);assert.equal(data.numericComplete,false)
 })
 test('ready sample without visual viewport preserves absent flag and empty vector',async()=>{
- const f=naturalStartFixture();f.globals.window.visualViewport=null;f.state.phone.top=-1;f.state.phone.bottom=43
+ const f=naturalStartFixture();f.globals.window.visualViewport=null;f.state.phone.top=-44;f.state.phone.bottom=0
  const p=f.run();f.frame(10);f.frame(20);f.frame(30)
- const data=await assertReadyFailure(p,'PHONE_OUTSIDE');assert.equal(data.visualViewportPresent,false);assert.deepEqual(data.visualViewport,[])
+ const data=await assertReadyFailure(p,'PHONE_NO_OVERLAP');assert.equal(data.visualViewportPresent,false);assert.deepEqual(data.visualViewport,[])
 })
 test('ready diagnostic accepts only bounded JSON and no arbitrary object coercion',()=>{
  const unknown={version:1,source:'unknown',reason:'unknown',sampled:false}
@@ -986,12 +986,12 @@ test('browser payload cannot claim the private Node watchdog source',()=>{
   {version:1,source:'unknown',reason:'unknown',sampled:false})
 })
 for(const failClose of [false,true])test('actual verifier retains browser failed sample through safe wrapper: '+failClose,async t=>{
- const f=naturalStartFixture();f.state.phone.top=-1;f.state.phone.bottom=43
+ const f=naturalStartFixture();f.state.phone.top=-44;f.state.phone.bottom=0
  const p=f.run();f.frame(10);f.frame(20);f.frame(30);const result=await p
  const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>result,failAt:failClose?'close':undefined})
  await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
   assert.match(error.message,/^CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=(none|cleanup-close) boundary=none keyboardReady=/)
-  const data=JSON.parse(error.message.split(' keyboardReady=')[1].split(' keyboardStart=')[0]);assert.equal(data.source,'browser');assert.equal(data.reason,'PHONE_OUTSIDE')
+  const data=JSON.parse(error.message.split(' keyboardReady=')[1].split(' keyboardStart=')[0]);assert.equal(data.source,'browser');assert.equal(data.reason,'PHONE_NO_OVERLAP')
   assert.equal(data.sampled,true);assert.equal(data.inside,false);assert.equal(data.frames,3)
   assert.equal(unsafeConsentCleanup(error),failClose);assert.deepEqual(Object.keys(error),[]);assertPrivateDataExcluded(error,messages);return true
  })
@@ -1023,7 +1023,7 @@ test('late browser failure cannot replace the privately branded Node timeout', {
  const pending=keyboardDeferred(),h=harness({readKeyboardStart:()=>pending.promise}),messages=captureDiagnostics(t)
  const running=verifyContactConsentNativeAcceptance(h.source,h.expect,'en');running.catch(()=>{})
  await keyboardTurn();t.mock.timers.tick(30000);await keyboardTurn()
- pending.resolve({ready:false,keyboardReady:JSON.stringify({version:1,source:'browser',reason:'PHONE_OUTSIDE',sampled:true,private:marker})})
+ pending.resolve({ready:false,keyboardReady:JSON.stringify({version:1,source:'browser',reason:'PHONE_NO_OVERLAP',sampled:true,private:marker})})
  await assert.rejects(running,error=>{
   assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none keyboardReady={"version":1,"source":"node-deadline","reason":"DEADLINE","sampled":false} keyboardStart=unavailable')
   assert.equal(unsafeConsentCleanup(error),false);assertPrivateDataExcluded(error,messages);return true
@@ -1045,8 +1045,8 @@ function withReadyHistory() {
  observer.window.visualViewport=readiness.globals.window.visualViewport;readiness.globals.window=observer.window
  return {readiness,observer}
 }
-function failedOutside(readiness) {
- readiness.state.phone.top=-11.28;readiness.state.phone.bottom=32.72
+function failedNoOverlap(readiness) {
+ readiness.state.phone.top=-44;readiness.state.phone.bottom=0
  const promise=readiness.run();readiness.frame(10);readiness.frame(20);readiness.frame(30)
  return promise
 }
@@ -1058,7 +1058,7 @@ const historyFromError=error=>{
 test('ready failure transports real passive chronology without any new observer or DOM read',async()=>{
  const {readiness,observer}=withReadyHistory()
  for(const [kind,time]of [['focusin',1],['input',2],['scroll',3],['scrollend',4]]){observer.state.now=time;observer.dispatch(kind)}
- const before=observer.calls.length,result=await failedOutside(readiness)
+ const before=observer.calls.length,result=await failedNoOverlap(readiness)
  assert.equal(result.ready,false);assert.equal(observer.calls.length,before)
  assert.deepEqual(readiness.reads,['phone','consent','phone','consent','phone','consent'])
  const history=JSON.parse(keyboardStartDiagnostic(result.keyboardStart));assertStartSchema(history)
@@ -1071,7 +1071,7 @@ test('ready failure preserves existing passive overflow and read-error accountin
  const {readiness,observer}=withReadyHistory()
  observer.state.rectError=true;observer.dispatch('scroll');observer.state.rectError=false
  for(let i=0;i<300;i++){observer.state.now=i;observer.dispatch('scroll')}
- const before=observer.calls.length,result=await failedOutside(readiness),history=JSON.parse(keyboardStartDiagnostic(result.keyboardStart))
+ const before=observer.calls.length,result=await failedNoOverlap(readiness),history=JSON.parse(keyboardStartDiagnostic(result.keyboardStart))
  assertStartSchema(history);assert.ok(history.discarded>0);assert.ok(history.events.length<=64)
  assert.equal(observer.calls.length,before);assert.deepEqual(history,JSON.parse(keyboardStartDiagnostic(observer.raw())))
  assert.ok(result.keyboardStart.length<=32768);observer.noPrivateOrActive()
@@ -1079,7 +1079,7 @@ test('ready failure preserves existing passive overflow and read-error accountin
 test('ready failure preserves actual observer readErrors without triggering another read',async()=>{
  const readiness=naturalStartFixture(),observer=startObserverFixture({selectorFails:true})
  observer.window.visualViewport=readiness.globals.window.visualViewport;readiness.globals.window=observer.window
- observer.dispatch('scroll');const before=observer.calls.length,result=await failedOutside(readiness)
+ observer.dispatch('scroll');const before=observer.calls.length,result=await failedNoOverlap(readiness)
  const history=JSON.parse(keyboardStartDiagnostic(result.keyboardStart));assert.equal(history.readErrors,1);assert.deepEqual(history.events,[])
  assert.equal(observer.calls.length,before);observer.noPrivateOrActive()
 })
@@ -1088,7 +1088,7 @@ for(const kind of ['missing','own-accessor','prototype-accessor','nonprimitive']
  if(kind==='own-accessor')Object.defineProperty(f.globals.window,'__consentKeyboardStartSnapshot',{get(){getters++;throw Error(marker)}})
  if(kind==='prototype-accessor')Object.setPrototypeOf(f.globals.window,Object.defineProperty({},'__consentKeyboardStartSnapshot',{get(){getters++;throw Error(marker)}}))
  if(kind==='nonprimitive')Object.defineProperty(f.globals.window,'__consentKeyboardStartSnapshot',{value:{toString(){assert.fail('reader coercion')},toJSON(){assert.fail('reader coercion')}}})
- const result=await failedOutside(f);assert.equal(result.ready,false);assert.equal(Object.hasOwn(result,'keyboardStart'),false)
+ const result=await failedNoOverlap(f);assert.equal(result.ready,false);assert.equal(Object.hasOwn(result,'keyboardStart'),false)
  assert.equal(getters,0);assert.equal(f.reads.length,6);assert.equal(f.queue.size,0)
 })
 test('successful readiness does not access even the passive snapshot slot',async()=>{
@@ -1099,10 +1099,10 @@ test('successful readiness does not access even the passive snapshot slot',async
 })
 for(const unsafe of [false,true])test('real ready history survives actual safe wrapper without post-failure browser work: '+unsafe,async t=>{
  const {readiness,observer}=withReadyHistory();observer.state.error=true;observer.dispatch('focusin');observer.dispatch('scrollend')
- const result=await failedOutside(readiness),before=observer.calls.length,messages=captureDiagnostics(t)
+ const result=await failedNoOverlap(readiness),before=observer.calls.length,messages=captureDiagnostics(t)
  const h=harness({readKeyboardStart:()=>result,failAt:unsafe?'close':undefined})
  await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
-  assert.equal(readyFromError(error).reason,'PHONE_OUTSIDE')
+  assert.equal(readyFromError(error).reason,'PHONE_NO_OVERLAP')
   const history=historyFromError(error);assertStartSchema(history);assert.deepEqual(history.events.map(e=>e.kind),['focusin','scrollend'])
   assert.equal(history.events[0].errorPresent,true);assert.equal(unsafeConsentCleanup(error),unsafe)
   assertPrivateDataExcluded(error,messages);return true
@@ -1112,7 +1112,7 @@ for(const unsafe of [false,true])test('real ready history survives actual safe w
  observer.noPrivateOrActive()
 })
 for(const kind of ['malformed','oversized','unknown-version','object','own-accessor','prototype-accessor'])test('ready history payload is optional and never coerces arbitrary data: '+kind,async t=>{
- const result={ready:false,keyboardReady:JSON.stringify({version:1,source:'browser',reason:'PHONE_OUTSIDE',sampled:false})};let getters=0
+ const result={ready:false,keyboardReady:JSON.stringify({version:1,source:'browser',reason:'PHONE_NO_OVERLAP',sampled:false})};let getters=0
  if(kind==='malformed')result.keyboardStart=marker
  if(kind==='oversized')result.keyboardStart='x'.repeat(32769)
  if(kind==='unknown-version')result.keyboardStart='{"version":2}'
@@ -1121,7 +1121,7 @@ for(const kind of ['malformed','oversized','unknown-version','object','own-acces
  if(kind==='prototype-accessor')Object.setPrototypeOf(result,Object.defineProperty({},'keyboardStart',{get(){getters++;throw Error(marker)}}))
  const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>result})
  await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
-  assert.equal(readyFromError(error).reason,'PHONE_OUTSIDE');assert.equal(historyFromError(error),undefined);assertPrivateDataExcluded(error,messages);return true
+  assert.equal(readyFromError(error).reason,'PHONE_NO_OVERLAP');assert.equal(historyFromError(error),undefined);assertPrivateDataExcluded(error,messages);return true
  })
  assert.equal(getters,0);assert.equal(h.events.some(e=>e[1]==='key'||e[1]==='tail'),false)
 })
@@ -1129,7 +1129,7 @@ test('ready history node formatter removes hostile extras and enforces existing 
  const raw=JSON.stringify({version:1,discarded:1e20,readErrors:-1,tabCount:marker,private:marker,
   events:Array.from({length:70},()=>({kind:'scroll',target:'PRIVATE_MARKER',ms:1e20,phone:{rect:['PRIVATE_MARKER',null,-1e20,1e20]},secret:'PRIVATE_MARKER'})),tab:{kind:'tab',key:marker}})
  assert.ok(raw.length<32768)
- const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>({ready:false,keyboardReady:'{"version":1,"source":"browser","reason":"PHONE_OUTSIDE","sampled":false}',keyboardStart:raw})})
+ const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>({ready:false,keyboardReady:'{"version":1,"source":"browser","reason":"PHONE_NO_OVERLAP","sampled":false}',keyboardStart:raw})})
  await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
   const history=historyFromError(error);assertStartSchema(history);assert.equal(history.events.length,64)
   assert.equal(history.discarded,1000000);assert.equal(history.readErrors,0);assert.equal(history.tabCount,0)
@@ -1140,7 +1140,7 @@ test('ready history node formatter removes hostile extras and enforces existing 
 test('private Node watchdog reports history unavailable and never reads late result fields', {timeout:2000},async t=>{
  t.mock.timers.enable({apis:['setTimeout']})
  const pending=keyboardDeferred(),h=harness({readKeyboardStart:()=>pending.promise}),messages=captureDiagnostics(t);let reads=0
- const late={ready:false,keyboardReady:'{"version":1,"source":"browser","reason":"PHONE_OUTSIDE","sampled":false}'}
+ const late={ready:false,keyboardReady:'{"version":1,"source":"browser","reason":"PHONE_NO_OVERLAP","sampled":false}'}
  Object.defineProperty(late,'keyboardStart',{get(){reads++;throw Error(marker)}})
  const running=verifyContactConsentNativeAcceptance(h.source,h.expect,'en');running.catch(()=>{})
  await keyboardTurn();t.mock.timers.tick(30000);await keyboardTurn();pending.resolve(late)
@@ -1154,7 +1154,7 @@ test('private Node watchdog reports history unavailable and never reads late res
 test('readiness never invokes a replaced callable reader and uses only the data snapshot',async()=>{
  const {readiness,observer}=withReadyHistory();observer.dispatch('scroll');let invoked=0
  Object.defineProperty(observer.window,'__consentKeyboardStartRead',{value(){invoked++;throw Error(marker)}})
- const before=observer.calls.length,result=await failedOutside(readiness)
+ const before=observer.calls.length,result=await failedNoOverlap(readiness)
  assert.equal(invoked,0);assert.equal(JSON.parse(keyboardStartDiagnostic(result.keyboardStart)).events.length,1)
  assert.equal(observer.calls.length,before);assert.equal(readiness.reads.length,6)
 })
@@ -1163,7 +1163,7 @@ for(const kind of ['function','object','proxy','oversized'])test('readiness igno
  const value=kind==='function'?()=>{executed++;throw Error(marker)}:kind==='object'?{get toJSON(){executed++;throw Error(marker)}}:
   kind==='proxy'?new Proxy({},{get(){executed++;throw Error(marker)},getOwnPropertyDescriptor(){executed++;throw Error(marker)}}):'x'.repeat(32769)
  Object.defineProperty(observer.window,'__consentKeyboardStartSnapshot',{value})
- const result=await failedOutside(readiness);assert.equal(result.ready,false);assert.equal(Object.hasOwn(result,'keyboardStart'),false);assert.equal(executed,0)
+ const result=await failedNoOverlap(readiness);assert.equal(result.ready,false);assert.equal(Object.hasOwn(result,'keyboardStart'),false);assert.equal(executed,0)
 })
 for(const kind of ['configurable-getter','immutable-getter','writable-function','readonly-string','configurable-string','inherited-getter'])
 test('snapshot installation collision is explicitly unavailable without invoking old property: '+kind,async()=>{
@@ -1174,7 +1174,7 @@ test('snapshot installation collision is explicitly unavailable without invoking
   {value:raw,writable:false,configurable:kind==='configurable-string'}
  const observer=startObserverFixture(kind==='inherited-getter'?{snapshotPrototypeDescriptor:descriptor}:{snapshotDescriptor:descriptor})
  observer.dispatch('scroll');const readiness=naturalStartFixture();observer.window.visualViewport=readiness.globals.window.visualViewport;readiness.globals.window=observer.window
- const result=await failedOutside(readiness)
+ const result=await failedNoOverlap(readiness)
  assert.equal(Object.hasOwn(result,'keyboardStart'),false);assert.equal(invoked,0)
  assert.equal(observer.read().events.length,1);assert.equal(observer.listeners.size,6);observer.noPrivateOrActive()
 })
@@ -1182,20 +1182,20 @@ for(const mode of ['listener','reader-definition','nonextensible'])test('partial
  const options=mode==='listener'?{listenFails:'input'}:mode==='reader-definition'?{readerDescriptor:{value:undefined,configurable:false}}:{defineFails:true}
  const observer=startObserverFixture(options),readiness=naturalStartFixture()
  observer.window.visualViewport=readiness.globals.window.visualViewport;readiness.globals.window=observer.window
- const result=await failedOutside(readiness)
+ const result=await failedNoOverlap(readiness)
  assert.equal(Object.hasOwn(result,'keyboardStart'),false);assert.equal(observer.listeners.size,0);observer.noPrivateOrActive()
 })
 test('locking snapshot against publication gives unavailable while original tail reader still works',async()=>{
  const {readiness,observer}=withReadyHistory();observer.dispatch('scroll')
  Object.defineProperty(observer.window,'__consentKeyboardStartSnapshot',{writable:false})
- observer.dispatch('scrollend');const result=await failedOutside(readiness)
+ observer.dispatch('scrollend');const result=await failedNoOverlap(readiness)
  assert.equal(Object.hasOwn(result,'keyboardStart'),false)
  assert.deepEqual(observer.read().events.map(e=>e.kind),['scroll','scrollend']);observer.noPrivateOrActive()
 })
 test('reinstallation collision fails snapshot closed rather than trusting stale data',async()=>{
  const {readiness,observer}=withReadyHistory();observer.dispatch('scroll')
  vm.runInNewContext(`(${installKeyboardStartObserver.toString()})()`,observer.sandbox)
- const result=await failedOutside(readiness);assert.equal(Object.hasOwn(result,'keyboardStart'),false)
+ const result=await failedNoOverlap(readiness);assert.equal(Object.hasOwn(result,'keyboardStart'),false)
  assert.equal(Object.getOwnPropertyDescriptor(observer.window,'__consentKeyboardStartSnapshot').writable,false)
  observer.noPrivateOrActive()
 })
@@ -1219,7 +1219,7 @@ test('one reentrant existing observation keeps snapshot and original ring consis
  const raw=Object.getOwnPropertyDescriptor(observer.window,'__consentKeyboardStartSnapshot').value
  assert.equal(raw,observer.raw());const history=JSON.parse(keyboardStartDiagnostic(raw));assertStartSchema(history)
  assert.deepEqual(history.events.map(e=>e.kind),['scrollend','scroll'])
- const before=observer.calls.length,result=await failedOutside(readiness)
+ const before=observer.calls.length,result=await failedNoOverlap(readiness)
  assert.equal(result.keyboardStart,raw);assert.equal(observer.calls.length,before);assert.equal(nested,2);observer.noPrivateOrActive()
 })
 
@@ -1227,7 +1227,7 @@ for(const kind of ['malformed','unknown-version','oversized-valid-json'])test('b
  const {readiness,observer}=withReadyHistory()
  const raw=kind==='malformed'?marker:kind==='unknown-version'?JSON.stringify({version:2,secret:marker}):JSON.stringify({version:1,events:[],secret:'x'.repeat(32769)})
  Object.defineProperty(observer.window,'__consentKeyboardStartSnapshot',{value:raw})
- const result=await failedOutside(readiness)
+ const result=await failedNoOverlap(readiness)
  assert.equal(Object.hasOwn(result,'keyboardStart'),false);assert.ok(!JSON.stringify(result).includes('PRIVATE_MARKER'))
 })
 test('browser strips hostile snapshot strings before they cross the callback result',async()=>{
@@ -1235,7 +1235,7 @@ test('browser strips hostile snapshot strings before they cross the callback res
  const raw=JSON.stringify({version:1,discarded:1e20,readErrors:-1,tabCount:marker,secret:marker,
   events:[{kind:'scroll',ms:1e20,target:marker,phone:{sampled:true,rect:[marker,null,-1e20,1e20],value:marker},consent:{textContent:marker},url:marker},{kind:marker,text:marker}],tab:{kind:'tab',value:marker}})
  Object.defineProperty(observer.window,'__consentKeyboardStartSnapshot',{value:raw})
- const result=await failedOutside(readiness)
+ const result=await failedNoOverlap(readiness)
  assert.ok(!JSON.stringify(result).includes('PRIVATE_MARKER'));assert.ok(!JSON.stringify(result).includes('https://example.invalid'))
  const history=JSON.parse(result.keyboardStart);assertStartSchema(history);assert.equal(history.events.length,1)
  assert.equal(history.events[0].target,'other');assert.deepEqual(history.events[0].phone.rect,[0,0,-1000000,1000000])
@@ -1245,7 +1245,127 @@ test('browser strips hostile snapshot strings before they cross the callback res
 test('browser snapshot projection independently enforces event and output caps',async()=>{
  const {readiness,observer}=withReadyHistory(),raw=JSON.stringify({version:1,events:Array.from({length:200},()=>({kind:'scroll'})),tab:{kind:'input',secret:marker}})
  assert.ok(raw.length<32768);Object.defineProperty(observer.window,'__consentKeyboardStartSnapshot',{value:raw})
- const result=await failedOutside(readiness),history=JSON.parse(result.keyboardStart)
+ const result=await failedNoOverlap(readiness),history=JSON.parse(result.keyboardStart)
  assertStartSchema(history);assert.equal(history.events.length,64);assert.equal(history.tab,null);assert.ok(result.keyboardStart.length<=32768)
  assert.equal(result.keyboardStart,keyboardStartDiagnostic(raw));assert.ok(!JSON.stringify(result).includes('PRIVATE_MARKER'))
+})
+
+// 70ee QA prerequisite correction: admit a naturally focused, overlapping phone,
+// never preapprove the target checkbox or claim these VM fixtures are a browser.
+function recordedClippedPhoneFixture() {
+ const f=naturalStartFixture()
+ f.state.phone={left:176.72,top:-11.28,right:353,bottom:32.72,width:176.28,height:44}
+ f.state.consent={left:37,top:50.22,right:55,bottom:68.22,width:18,height:18}
+ f.globals.scrollY=9734;f.document.scrollingElement.scrollTop=9734
+ f.globals.window.visualViewport.pageTop=9734
+ return f
+}
+async function threeStableFrames(f) {
+ const pending=f.run();f.frame(10);f.frame(20);f.frame(30)
+ const result=await pending
+ assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
+ // Model Playwright result serialization, not a foreign VM object prototype.
+ return JSON.parse(JSON.stringify(result))
+}
+test('recorded 70ee clipped phone has positive overlap and admits only stable natural start',async()=>{
+ const f=recordedClippedPhoneFixture(),pending=f.run();let settled=false;pending.then(()=>settled=true)
+ f.frame(10);f.frame(20);await keyboardTurn();assert.equal(settled,false)
+ f.frame(30);assert.deepEqual(JSON.parse(JSON.stringify(await pending)),{ready:true})
+ assert.deepEqual(f.reads,['phone','consent','phone','consent','phone','consent'])
+ assert.deepEqual(f.effects,[]);assert.equal(f.queue.size,0)
+})
+for(const [name,mutate]of [
+ ['left',f=>Object.assign(f.state.phone,{left:-1,right:176})],
+ ['right',f=>Object.assign(f.state.phone,{left:389,right:566})],
+ ['bottom',f=>Object.assign(f.state.phone,{top:843,bottom:887})],
+ ['tiny top overlap',f=>Object.assign(f.state.phone,{top:-43.9999,bottom:0.0001})],
+ ['visual clipping',f=>Object.assign(f.globals.window.visualViewport,{offsetLeft:200,offsetTop:320,width:190,height:524})],
+ ['absent visual viewport',f=>{f.globals.window.visualViewport=null;Object.assign(f.state.phone,{top:-11.28,bottom:32.72})}],
+])test('positive phone overlap remains sufficient without whole-rect containment: '+name,async()=>{
+ const f=naturalStartFixture();mutate(f)
+ assert.deepEqual(JSON.parse(JSON.stringify(await threeStableFrames(f))),{ready:true})
+})
+for(const [name,mutate]of [
+ ['above',f=>Object.assign(f.state.phone,{top:-45,bottom:-1})],
+ ['below',f=>Object.assign(f.state.phone,{top:845,bottom:889})],
+ ['left',f=>Object.assign(f.state.phone,{left:-178,right:-1})],
+ ['right',f=>Object.assign(f.state.phone,{left:391,right:568})],
+ ['touching top',f=>Object.assign(f.state.phone,{top:-44,bottom:0})],
+ ['touching bottom',f=>Object.assign(f.state.phone,{top:844,bottom:888})],
+ ['touching left',f=>Object.assign(f.state.phone,{left:-177,right:0})],
+ ['touching right',f=>Object.assign(f.state.phone,{left:390,right:567})],
+ ['visual only outside',f=>Object.assign(f.globals.window.visualViewport,{offsetTop:344,height:500})],
+ ['disjoint layout and visual viewports',f=>{Object.assign(f.state.phone,{left:176,right:677,width:501});Object.assign(f.globals.window.visualViewport,{offsetLeft:500,width:390})}],
+])test('phone positive overlap rejects fully outside or edge-only intersection: '+name,async()=>{
+ const f=naturalStartFixture();mutate(f)
+ const result=await threeStableFrames(f),data=await assertReadyFailure(Promise.resolve(result),'PHONE_NO_OVERLAP')
+ assert.equal(data.inside,false);assert.equal(data.stableFrames,3);assert.equal(f.reads.length,6)
+})
+for(const [name,mutate,reason]of [
+ ['zero phone width',f=>f.state.phone.width=0,'GEOMETRY'],
+ ['zero phone height',f=>f.state.phone.height=0,'GEOMETRY'],
+ ['negative phone width',f=>f.state.phone.width=-1,'GEOMETRY'],
+ ['nonfinite phone height',f=>f.state.phone.height=Infinity,'GEOMETRY'],
+ ['unfocused clipped phone',f=>f.state.focused=false,'FOCUS'],
+ ['readonly clipped phone',f=>f.phone.readOnly=true,'DISABLED'],
+ ['hidden clipped phone',f=>f.state.hidden=true,'HIDDEN'],
+ ['zero layout viewport',f=>f.globals.innerHeight=0,'VIEWPORT'],
+ ['zero visual viewport',f=>f.globals.window.visualViewport.width=0,'VIEWPORT'],
+])test('phone overlap cannot excuse invalid natural start: '+name,async()=>{
+ const f=recordedClippedPhoneFixture();mutate(f)
+ const result=await threeStableFrames(f);await assertReadyFailure(Promise.resolve(result),reason)
+})
+test('full-containment diagnostic inside keeps v1 meaning for a partially overlapping phone',async()=>{
+ const f=recordedClippedPhoneFixture(),pending=f.run();f.frame(10);f.frame(20);f.state.focused=false;f.frame(30)
+ const data=await assertReadyFailure(pending,'FOCUS')
+ assert.equal(data.version,1);assert.equal(data.inside,false);assert.equal(data.sampleFrame,2)
+ assert.deepEqual(data.phoneRect,[176.72,-11.28,353,32.72,176.28,44])
+})
+test('legacy full-containment and current no-overlap reasons remain distinct strict constants',()=>{
+ for(const reason of ['PHONE_OUTSIDE','PHONE_NO_OVERLAP']){
+  const raw=JSON.stringify({version:1,source:'browser',reason,sampled:false})
+  assert.deepEqual(JSON.parse(keyboardReadyDiagnostic(raw)),{version:1,source:'browser',reason,sampled:false})
+ }
+ const raw=JSON.stringify({version:1,source:'browser',reason:'PHONE_NO_OVERLAP '+marker,sampled:false})
+ assert.equal(JSON.parse(keyboardReadyDiagnostic(raw)).reason,'unknown')
+ assert.ok(!keyboardReadyDiagnostic(raw).includes(marker))
+})
+test('clipped-phone readiness preserves both rejected actions and original real keyboard sequence',async t=>{
+ captureDiagnostics(t)
+ const f=recordedClippedPhoneFixture(),result=await threeStableFrames(f)
+ const target=keyboardFixture({rect:{left:37,top:50.22,right:55,bottom:68.22}})
+ const h=harness({readKeyboardStart:()=>result,readVisibility:target.evaluate})
+ await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ const events=h.events.filter(e=>e[0]===0),ready=events.findIndex(e=>e[1]==='readiness')
+ assert.deepEqual(events.slice(0,ready).filter(e=>['fill','click'].includes(e[1])).map(e=>e.slice(1,3)),
+  [['click','format'],['click','open'],['fill','phone'],['click','whatsapp'],['click','telegram'],['fill','phone']])
+ assert.deepEqual(events.filter(e=>e[1]==='key').map(e=>e[2]),['Tab','Space','Space','Shift+Tab'])
+ assert.equal(events.filter(e=>e[1]==='readiness').length,1)
+ assert.equal(events.some(e=>['scroll','bounds','down','move'].includes(e[1])),false)
+ assert.deepEqual(events.filter(e=>e[1]==='click'&&['whatsapp','telegram'].includes(e[2])).map(e=>e[2]),['whatsapp','telegram','whatsapp','telegram'])
+ assert.deepEqual(target.reads,['rect','style','matches','root-style']);assert.equal(h.contexts.length,3)
+})
+test('clipped phone never stages checkbox inside before original Tab',async t=>{
+ captureDiagnostics(t)
+ const f=recordedClippedPhoneFixture();f.state.consent.top=900;f.state.consent.bottom=918
+ const result=await threeStableFrames(f);assert.equal(result.ready,true);assert.equal(f.state.consent.top,900)
+ const target=keyboardFixture(),h=harness({readKeyboardStart:()=>result,readVisibility:target.evaluate})
+ await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ const events=h.events.filter(e=>e[0]===0),tab=events.findIndex(e=>e[1]==='key'&&e[2]==='Tab')
+ assert.ok(tab>0);assert.equal(events.slice(0,tab).some(e=>['scroll','bounds','down','move'].includes(e[1])),false)
+ assert.deepEqual(f.effects,[]);assert.equal(f.state.consent.top,900)
+})
+for(const [name,rect]of [
+ ['above',{left:37,top:-1,right:55,bottom:17}],['below',{left:37,top:843,right:55,bottom:861}],
+ ['left',{left:-1,top:50.22,right:17,bottom:68.22}],['right',{left:389,top:50.22,right:407,bottom:68.22}],
+])test('clipped phone cannot weaken original full consent containment after Tab: '+name,async t=>{
+ const f=recordedClippedPhoneFixture(),result=await threeStableFrames(f),target=keyboardFixture({rect})
+ const diagnostic=await keyboardFailure(t,{readKeyboardStart:()=>result,readVisibility:target.evaluate})
+ assert.equal(diagnostic.inside,false);assert.equal(diagnostic.outlined,true)
+ assert.deepEqual(diagnostic.rect,[rect.left,rect.top,rect.right,rect.bottom])
+})
+test('clipped phone cannot weaken original consent outline after Tab',async t=>{
+ const f=recordedClippedPhoneFixture(),result=await threeStableFrames(f),target=keyboardFixture({outlineStyle:'none'})
+ const diagnostic=await keyboardFailure(t,{readKeyboardStart:()=>result,readVisibility:target.evaluate})
+ assert.equal(diagnostic.inside,true);assert.equal(diagnostic.outlined,false)
 })

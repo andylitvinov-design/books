@@ -3,6 +3,8 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { createHomeRouteSupervisor } from '../scripts/home-route-supervisor.mjs';
 import { assertHomeVerifierMatrix } from './helpers/home-verifier-matrix.mjs';
+import { sourceModule, jsx, parse, ts, denied } from './helpers/current-source-render.mjs';
+import { environment, mount, turn } from './helpers/contact-component-fixture.mjs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const component = read('components/personal-testimonials.tsx');
@@ -117,15 +119,84 @@ test('source fixture retains six catalogue IDs per locale, four Services videos 
   }
 });
 
-test('remaining free-entry targets still match actual homepage links and destination markup', () => {
+test('remaining free-entry targets still match actual homepage links and destination markup', async () => {
   const capture = read('components/homepage-free-capture.tsx');
-  for (const suffix of ['/client/tests', '/services/free-situation-review', '/academy/principles-of-energywork/learn']) {
+  for (const suffix of ['/client/tests', '/academy/principles-of-energywork/learn']) {
     assert.ok(capture.includes('`/${locale}' + suffix + '`'));
     assert.ok(verifier.includes("'" + suffix + "'"));
   }
   assert.match(read('app/[locale]/services/free-situation-review/page.tsx'), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
   assert.match(read('components/free-entry-landing.tsx'), /<h1 id="free-entry-title">\{t\.title\}<\/h1>/);
-  assert.match(read('app/[locale]/services/dao-health-profile/page.tsx'), /const kind = "dao" as const/);
+  // The Home analysis action is intentionally in-place. Execute the complete
+  // existing Home/chooser/phone fixture; no anchors, requests or private writes
+  // may replace that disclosure. Its fuller verifier/validation controls remain
+  // in home-locale-free-capture.test.mjs and are part of the matched union.
+  for (const locale of ['en', 'ru']) {
+    const pathname = locale === 'en' ? '/' : '/ru';
+    const env = environment(locale, { pathname });
+    const f = mount('homepage-free-capture', 'HomepageFreeCapture', { locale }, env, { composeHomeCapture: true });
+    const untouched = () => {
+      for (const key of ['requests', 'writes', 'popups', 'navigations']) assert.deepEqual(env[key], [], 'HOME_ANALYSIS_NO_SIDE_EFFECTS: ' + key);
+      assert.equal(env.window.location.href, 'http://127.0.0.1:3100' + pathname, 'HOME_ANALYSIS_STAYS_IN_PLACE');
+    };
+    const trigger = () => f.find('button', props => Object.hasOwn(props, 'data-contact-order'));
+    try {
+      assert.deepEqual(f.nodes().filter(node => node.type === 'button' && node.props['data-home-free-option'])
+        .map(node => node.props['data-home-free-option']), ['selfTest', 'analysis', 'reiki']);
+      for (const [id, suffix] of [['selfTest', '/client/tests'], ['reiki', '/academy/principles-of-energywork/learn']]) {
+        await f.click('button', props => props['data-home-free-option'] === id); await turn(f);
+        const link = f.find('a', props => props['data-home-free-action'] === id);
+        assert.equal(link.props.href, '/' + locale + suffix, 'EXACT_DIRECT_HOME_ENTRY');
+        assert.equal(link.props.prefetch, false); untouched();
+      }
+      await f.click('button', props => props['data-home-free-option'] === 'analysis'); await turn(f);
+      assert.equal(f.nodes().filter(node => node.type === 'a' && node.props['data-home-free-action'] === 'analysis').length, 0, 'NO_DIRECT_ANALYSIS_LINK');
+      assert.equal(f.nodes().filter(node => node.props['data-compact-phone-trigger'] === 'true').length, 1);
+      assert.equal(trigger().props.type, 'button'); assert.notEqual(trigger().props.disabled, true);
+      assert.equal(trigger().props['aria-expanded'], false);
+      const panelId = trigger().props['aria-controls']; assert.ok(panelId, 'OWNED_ANALYSIS_PANEL');
+      assert.equal(f.find('div', props => props.id === panelId).hidden, true); untouched();
+      await f.click('button', props => Object.hasOwn(props, 'data-contact-order')); await turn(f);
+      assert.equal(trigger().props['aria-expanded'], true, 'ANALYSIS_DISCLOSURE_OPENS');
+      assert.equal(f.find('div', props => props.id === panelId).hidden, false);
+      const phone = f.find('input', props => props.type === 'tel');
+      assert.equal(phone.props.value, ''); assert.equal(phone.props.required, true); assert.equal(phone.hidden, false);
+      assert.equal(phone.props['aria-label'], locale === 'ru' ? 'Номер телефона' : 'Phone number');
+      const consent = f.find('input', props => props.type === 'checkbox');
+      assert.equal(consent.props.checked, false); assert.equal(consent.props.required, true);
+      for (const channel of ['whatsapp', 'telegram']) {
+        const submit = f.find('button', props => props['data-contact-channel-submit'] === channel);
+        assert.equal(submit.props.type, 'button'); assert.notEqual(submit.props.disabled, true);
+      }
+      untouched();
+      await f.click('button', props => Object.hasOwn(props, 'data-contact-order')); await turn(f);
+      assert.equal(trigger().props['aria-expanded'], false, 'ANALYSIS_DISCLOSURE_CLOSES');
+      assert.equal(f.find('div', props => props.id === panelId).hidden, true); untouched();
+    } finally { f.unmount(); }
+  }
+
+  // Dao is a separate public landing, not a Home direct-entry requirement.
+  // Execute its real default page and real pure locale predicate, not a local
+  // binding spelling or a permissive fake locale validator. Metadata generation
+  // and the landing's private/contact lifecycle are not invoked here.
+  const catalog = read('data/academy/catalog.ts'), parsed = parse(catalog, 'catalog.ts');
+  const predicates = parsed.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'isPublicLocale');
+  assert.equal(predicates.length, 1);
+  const localeApi = sourceModule(predicates[0].getText(parsed), 'isPublicLocale.ts');
+  const missing = new Error('SYNTHETIC_DAO_NOT_FOUND');
+  const daoPage = sourceModule(read('app/[locale]/services/dao-health-profile/page.tsx'), 'dao-page.tsx', {
+    'react/jsx-runtime': jsx, 'next/navigation': { notFound() { throw missing; } },
+    '@/components/free-entry-landing': { FreeEntryLanding: 'actual-free-entry-boundary' },
+    '@/data/academy/catalog': localeApi, '@/data/site-metadata': { metadataBaseFor: denied },
+  });
+  assert.deepEqual(JSON.parse(JSON.stringify(daoPage.generateStaticParams())), [{ locale: 'en' }, { locale: 'ru' }, { locale: 'es' }]);
+  for (const locale of ['en', 'ru', 'es']) {
+    const view = await daoPage.default({ params: Promise.resolve({ locale }) });
+    assert.equal(view.type, 'actual-free-entry-boundary', 'DAO_ACTUAL_LANDING');
+    assert.equal(view.props.kind, 'dao', 'DAO_KIND'); assert.equal(view.props.locale, locale, 'DAO_LOCALE');
+  }
+  for (const locale of [undefined, null, '', 'fr', 'EN', '../ru', 'ru?x=1'])
+    await assert.rejects(daoPage.default({ params: Promise.resolve({ locale }) }), error => error === missing);
   const dao = read('components/core-service-detail.tsx');
   assert.match(dao, /data-core-service-detail=\{kind\}/);
   assert.match(dao, /<h1>\{t\.title\}<\/h1>/);

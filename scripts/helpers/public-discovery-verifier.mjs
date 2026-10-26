@@ -1,3 +1,4 @@
+import { beginPublicDiscoverySearchDiagnostics } from './public-discovery-search-diagnostics.mjs'
 import assert from 'node:assert/strict'
 import { PORTRAIT_SECTORS } from '../../lib/assessments/portrait-sectors.js'
 import { availableTestCollections } from '../../lib/assessments/test-collections.js'
@@ -119,6 +120,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
   const preserved = await readSelection(picker)
   const currentUrl = page.url()
   const writes = []
+  let searchDiagnostics
   const observe = request => {
     const url = new URL(request.url())
     if (url.pathname.startsWith('/api/app/') && request.method() !== 'GET') writes.push(url.pathname)
@@ -154,6 +156,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     const sleep = root.locator('[data-test-collection="sleep"]')
     await sleep.click()
     await expect(sleep).toHaveAttribute('aria-pressed', 'true')
+    searchDiagnostics = await beginPublicDiscoverySearchDiagnostics(page, locale)
     const search = picker.locator('#hh-test-hero-search')
     const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
     await search.fill(query)
@@ -175,7 +178,10 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     await root.locator('[data-test-collection="sexuality"]').click()
     await more.click()
     assert.deepEqual(writes, [], 'Collection browsing must not create runs, save intents or account writes')
-  } finally { page.off('request', observe) }
+  } finally {
+    searchDiagnostics?.dispose()
+    page.off('request', observe)
+  }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), locale + ' collection picker fits the viewport')
 }
 

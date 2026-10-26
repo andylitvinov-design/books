@@ -72,7 +72,9 @@ export function keyboardReadyDiagnostic(raw,nodeDeadline=false) {
   try {if(typeof raw==='string'&&raw.length<=4096)data=JSON.parse(raw)} catch {}
   if(data?.version!==1)data=null
   const source=data?.source==='browser'?'browser':'unknown'
-  const reasons=['TARGET','FOCUS','DISABLED','HIDDEN','GEOMETRY','VIEWPORT','DEADLINE','PHONE_OUTSIDE']
+  // v1 PHONE_OUTSIDE remains historical full-containment evidence. The current
+  // phone prerequisite emits PHONE_NO_OVERLAP; `inside` keeps its old meaning.
+  const reasons=['TARGET','FOCUS','DISABLED','HIDDEN','GEOMETRY','VIEWPORT','DEADLINE','PHONE_OUTSIDE','PHONE_NO_OVERLAP']
   const reason=source==='browser'&&reasons.includes(data?.reason)?data.reason:'unknown'
   const safe={version:1,source,reason,sampled:source==='browser'&&data?.sampled===true}
   if(!safe.sampled)return JSON.stringify(safe)
@@ -442,7 +444,12 @@ export function naturalKeyboardStart(phone,{remainingMs}) {
       if(![...viewport,...scroll,...visual].every(finite)||viewport.some(value=>value<=0)||(visual.length&&(visual[4]<=0||visual[5]<=0||visual[6]<=0)))fail('VIEWPORT')
       const [left,top,right,bottom]=phoneRect
       const inside=top>=0&&bottom<=innerHeight&&left>=0&&right<=innerWidth&&(!visual.length||(left>=visual[0]&&top>=visual[1]&&right<=visual[0]+visual[4]&&bottom<=visual[1]+visual[5]))
-      return {inside,values:[...phoneRect,...consentRect,...viewport,...scroll,...visual]}
+      // Keep full containment as diagnostic evidence, not a phone prerequisite.
+      // Only positive overlap of the naturally focused phone with the common
+      // layout/visual viewport is required; checkbox containment is post-Tab.
+      const overlaps=Math.max(left,0,visual.length?visual[0]:0)<Math.min(right,innerWidth,visual.length?visual[0]+visual[4]:innerWidth)
+        &&Math.max(top,0,visual.length?visual[1]:0)<Math.min(bottom,innerHeight,visual.length?visual[1]+visual[5]:innerHeight)
+      return {inside,overlaps,values:[...phoneRect,...consentRect,...viewport,...scroll,...visual]}
     }
     const tick=time=>{
       frame=null
@@ -455,7 +462,7 @@ export function naturalKeyboardStart(phone,{remainingMs}) {
         const unchanged=previous&&current.values.length===previous.length&&current.values.every((value,index)=>value===previous[index])
         stable=unchanged&&previousTime!==null&&time>previousTime?stable+1:1
         previous=current.values;previousTime=time
-        if(stable>=3){if(!current.inside)fail('PHONE_OUTSIDE');finish(null,{ready:true})}
+        if(stable>=3){if(!current.overlaps)fail('PHONE_NO_OVERLAP');finish(null,{ready:true})}
         else frame=requestAnimationFrame(tick)
       }catch(error){finish(error)}
     }
