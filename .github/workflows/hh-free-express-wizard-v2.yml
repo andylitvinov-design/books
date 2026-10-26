@@ -13,6 +13,7 @@ on:
       - 'app/api/free-express/**'
       - 'app/api/app/practice/free-express/**'
       - 'lib/practitioners/free-express-*'
+      - 'lib/practitioners/free-express-photo-client.ts'
       - 'lib/practitioners/public-service-enquiry.js'
       - 'supabase/migrations/20261025191500_hh_free_express_guest_continuation_rls.sql'
       - 'tests/free-express-wizard-v2.test.mjs'
@@ -48,7 +49,7 @@ jobs:
         run: |
           npm ci --include=dev --no-audit --no-fund
           node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs
-          npx eslint components/free-express-wizard.tsx components/personal-express-enquiry.tsx components/free-entry-landing.tsx components/app/public-enquiry-contact.jsx components/app/free-express-owner-media.jsx components/app/free-express-my-requests.jsx app/api/free-express/route.js app/api/free-express/media/route.js app/api/free-express/claim/route.js lib/practitioners/free-express-enquiry.js lib/practitioners/free-express-media.js lib/practitioners/free-express-owner.js
+          npx eslint lib/practitioners/free-express-photo-client.ts components/free-express-wizard.tsx components/personal-express-enquiry.tsx components/free-entry-landing.tsx components/app/public-enquiry-contact.jsx components/app/free-express-owner-media.jsx components/app/free-express-my-requests.jsx app/api/free-express/route.js app/api/free-express/media/route.js app/api/free-express/claim/route.js lib/practitioners/free-express-enquiry.js lib/practitioners/free-express-media.js lib/practitioners/free-express-owner.js
           npx tsc --noEmit
       - name: Run real additive migration against isolated PostgreSQL 17 and verify RLS
         timeout-minutes: 5
