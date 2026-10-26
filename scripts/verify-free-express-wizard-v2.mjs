@@ -180,7 +180,7 @@ for (const [engine, driver] of [['chromium', chromium], ['webkit', webkit]]) {
             await wizard.locator('[data-free-express-complete]').waitFor({ state: 'visible' })
             assert.equal(await wizard.locator('[aria-current=step]').count(), 1)
             if (energyCase) {
-              assert.match(await wizard.locator('[role=status]').first().innerText(), /5 de 5/)
+              assert.match(await wizard.locator('p[role=status]').first().innerText(), /5 de 5/)
             }
             assert.equal(submits, 1, 'Optional stages never duplicate a CRM lead')
             assert.equal(uploads, mediaCase ? 2 : 0, 'Private image uploads occur only on explicit consent')
