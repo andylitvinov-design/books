@@ -49,6 +49,34 @@ const cleanPhone=value=>{
 }
 const fallbackPortrait=(name)=>Array.from((String(name||'?').trim()||'?'))[0]?.toUpperCase()||'?'
 
+// Private avatar: never use a Telegram CDN URL or raw Telegram file identifier.
+// If no verified portrait exists, show the person's initial instead.
+function PrivateAvatar({accountId,name,portrait,small=false}){
+  const [src,setSrc]=useState('')
+  useEffect(()=>{
+    setSrc('')
+    if(!accountId||!portrait?.threadId||!portrait?.messageId)return
+    const controller=new AbortController()
+    let blobUrl=''
+    const params=new URLSearchParams(portrait)
+    fetch('/api/app/crm/messenger/photo?'+params.toString(),{
+      credentials:'same-origin',cache:'no-store',signal:controller.signal,
+      headers:{'X-HH-Account-Id':accountId},
+    }).then(async response=>{
+      if(!response.ok)throw new Error('PHOTO_UNAVAILABLE')
+      const blob=await response.blob()
+      if(!blob.type.startsWith('image/')||blob.size>5*1024*1024)return
+      if(controller.signal.aborted)return
+      blobUrl=URL.createObjectURL(blob)
+      setSrc(blobUrl)
+    }).catch(()=>{})
+    return()=>{controller.abort();if(blobUrl)URL.revokeObjectURL(blobUrl)}
+  },[accountId,portrait?.threadId,portrait?.messageId])
+  return <span className={small?styles.avatarSmall:styles.avatar} aria-hidden="true">
+    {src?<img src={src} alt="" loading="lazy"/>:fallbackPortrait(name)}
+  </span>
+}
+
 // Presentation only: existing CRM, practitioner and private-message APIs retain their
 // independent authorization, storage, consent and actual send policies.
 export default function MessagesSimpleInbox({
@@ -58,12 +86,16 @@ export default function MessagesSimpleInbox({
   const t=COPY[locale]||COPY.en
   const [crmState,setCrmState]=useState({loading:true,error:false,threads:[],partial:false})
   const [directThreads,setDirectThreads]=useState([])
+  const [portraits,setPortraits]=useState({})
   const [selectedKey,setSelectedKey]=useState('')
   const [search,setSearch]=useState('')
   const [openDetail,setOpenDetail]=useState(false)
   const [refreshNonce,setRefreshNonce]=useState(0)
   const onCrmThreads=useCallback(result=>setCrmState(result),[])
   const onDirectThreads=useCallback(result=>setDirectThreads(Array.isArray(result)?result:[]),[])
+  const onPortraitFound=useCallback(({threadId,messageId})=>{
+    setPortraits(old=>old[threadId]===messageId?old:{...old,[threadId]:messageId})
+  },[])
   const rows=useMemo(()=>{
     const crm=(crmState.threads||[]).map(item=>({
       key:'crm:'+item.id,kind:'crm',id:item.id,name:item.name||t.choose,
@@ -103,7 +135,7 @@ export default function MessagesSimpleInbox({
 
   useEffect(()=>{
     setSelectedKey('');setOpenDetail(false);setCrmState({loading:true,error:false,threads:[],partial:false})
-    setDirectThreads([])
+    setDirectThreads([]);setPortraits({})
   },[accountId])
   const select=item=>{
     setSelectedKey(item.key)
@@ -137,7 +169,8 @@ export default function MessagesSimpleInbox({
             aria-pressed={selectedKey===row.key}
             className={selectedKey===row.key?styles.personSelected:styles.person}
             onClick={()=>select(row)}>
-            <span className={styles.avatar} aria-hidden="true">{fallbackPortrait(row.name)}</span>
+            <PrivateAvatar accountId={accountId} name={row.name}
+              portrait={row.kind==='crm'&&portraits[row.id]?{threadId:row.id,messageId:portraits[row.id]}:null}/>
             <span className={styles.personText}>
               <span className={styles.personHead}><strong>{row.name}</strong><time>{fmtDate(row.at,locale)}</time></span>
               <span className={styles.preview}>{row.preview||row.source}</span>
@@ -153,7 +186,8 @@ export default function MessagesSimpleInbox({
         {selected&&<header className={styles.personBar}>
           <button type="button" className={styles.back} onClick={()=>setOpenDetail(false)}
             aria-label={t.back}><ArrowLeft size={21} aria-hidden="true"/></button>
-          <span className={styles.avatarSmall} aria-hidden="true">{fallbackPortrait(selected.name)}</span>
+          <PrivateAvatar small accountId={accountId} name={selected.name}
+            portrait={selected.kind==='crm'&&portraits[selected.id]?{threadId:selected.id,messageId:portraits[selected.id]}:null}/>
           <span className={styles.personLabel}><strong>{selected.name}</strong><small>{selected.source}</small></span>
           {selected.unread>0&&<span className={styles.unread}>{selected.unread}</span>}
         </header>}
@@ -163,7 +197,7 @@ export default function MessagesSimpleInbox({
         </div>}
         <div className={styles.chatHolder} hidden={selected?.kind!=='crm'}>
           <CrmMessengerPanel key={accountId+':'+refreshNonce} accountId={accountId}
-            locale={locale} conversationOnly onThreadsLoaded={onCrmThreads}
+            locale={locale} conversationOnly onThreadsLoaded={onCrmThreads} onPortraitFound={onPortraitFound}
             initialThreadId={crmThreadId}/>
         </div>
         <div className={styles.chatHolder} hidden={selected?.kind!=='direct'}>
