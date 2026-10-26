@@ -7,6 +7,8 @@
 .telegramCta,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;padding:10px 13px;font-size:.87rem;font-weight:650;text-decoration:none;line-height:1.25;cursor:pointer}
 .telegramCta{background:#75482f;color:#fff;border:1px solid #75482f}
 .telegramCta:hover,.telegramCta:focus-visible{background:#5c3524;color:#fff}
+.combineCta{background:#fff8ee;color:#75482f;border-color:#c8ab8b}
+.combineCta:hover,.combineCta:focus-visible{background:#f1e2d2;color:#5c3524}
 .secondary{border:1px solid #c9b59e;background:#fff;color:#75482f}
 .secondary:disabled,.renew:disabled,.rename:disabled{opacity:.55;cursor:default}
 .tools{display:flex;align-items:flex-end;gap:10px;padding:16px 3px 12px;flex-wrap:wrap}
@@ -59,7 +61,7 @@
   .wrapper{padding:0 9px}
   .heading{padding:14px;align-items:stretch;flex-direction:column;border-radius:15px}
   .headingActions{width:100%;flex-wrap:wrap}
-  .headingActions .telegramCta{flex:1}
+  .headingActions .telegramCta{flex:1 1 120px;min-height:44px;text-align:center}
   .headingActions .secondary{flex:0 0 auto}
   .tools{gap:9px}
   .toolsTitle{flex-basis:100%}
