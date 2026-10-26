@@ -31,6 +31,33 @@ test('new chats use natural first-person consent and no slash command buttons',(
   assert.equal(random.stage,'consent')
   assert.equal(random.consent,false)
 })
+test('six exact owner-authored RU messages are sent in order; photo and drawing remain separate',()=>{
+  const steps=[]
+  let r=transitionTelegramDiagnostic(null,msg('/start hhreview_ru'));steps.push(r)
+  r=transitionTelegramDiagnostic(state(r,false),msg('Да, начинаем'));steps.push(r)
+  r=transitionTelegramDiagnostic(state(r),msg('деньги/ работа'));steps.push(r)
+  r=transitionTelegramDiagnostic(state(r),msg('',PHOTO));steps.push(r)
+  r=transitionTelegramDiagnostic(state(r),msg('Цель: деньги, сложность: выбор, подробности: тестовая цель.'));steps.push(r)
+  r=transitionTelegramDiagnostic(state(r),msg('',PHOTO));steps.push(r)
+  const expected=[
+    "Приветствую! Спасибо за интерес к экспресс-диагностике.\n\nБуду рад помочь.\n\nМы можем провести блиц диагностику текущей ситуации.\nЭто могут быть деньги, работа, отношения, переезд и тп.\n\nВ блиц-формате я могу дать обратную связь:\n- что сейчас происходит\n- в чем причина (где внутренний ступор)\n- что можно сделать с этим.\n\nЧерез этот бот я задам пару вопросов и потом в течение трех дней сделаю личный разбор.\n\nПодходит, начинаем?\n\nНажимая «Да, начинаем», вы соглашаетесь прислать ответы и фото для одного личного разбора без рекламы. Не отправляйте сюда медицинские документы и результаты тестов. В любой момент можно написать «Стоп».",
+    "Выбери, пожалуйста, с какой темой сейчас хотелось бы поработать:\n- деньги/ работа\n- энергия/ здоровье\n- отношения\n- другое.",
+    "Вышли, пожалуйста, свое фото (лучше недавнее, за последний год, чтобы четко было видно лицо, в полный рост - ну или любое которое есть).",
+    "Спасибо. Фото принял.\n\nНапиши, пожалуйста,\n1) в чем ключевая задача (цель)\n2) в чем сложность\n3) любые подробности, которые стоило бы добавить.",
+    "Спасибо за ответ.\n\nТеперь самое важное чтобы я мог разобрать ситуацию, сделай, пожалуйста, рисунок. Ручкой, на любом листике бумаги нарисуй три фигурки:\n- я\n- цель\n- сложность/ препятствие\n\nЭто могут быть любые абстрактные фигурки, человечки, квадратики.\nВсе что придет в голову.\n\nИ потом вышли, пожалуйста, фото рисунка в этот чат.",
+    "Спасибо.\nЗадача принята в работу.\n\nИ последнее.\nЧтобы еще чуть лучше понять, разобраться в текущей форме заполни, пожалуйста, эту коучинг форму.\n\nТакая форма поможет и тебе четче понять запрос и решения.\nИ мне подготовить для тебя те ответы, которые будут более значимы.\n\nКоучинг форма по этой ссылке.\nhttps://holistichouse.vercel.app/ru/coaching/intake?topic=business\n\nПросто зайти на нее, заполни ответы, нажми отправить.\nИ я займусь изучением твоего вопроса."
+  ]
+  assert.equal(steps.length,6,'exactly six distinct bot messages')
+  assert.deepEqual(steps.map(x=>x.stage),['consent','focus','photo','question','drawing','done'])
+  assert.deepEqual(steps.map(x=>x.reply),expected,'no paraphrase or missing fifth/drawing step')
+  assert.equal(steps[3].photoPurpose,'portrait')
+  assert.equal(steps[5].photoPurpose,'drawing')
+  assert.deepEqual(steps[1].keyboard,[
+    ['деньги/ работа','энергия/ здоровье'],['отношения','другое'],
+  ])
+  assert.equal(steps.some(x=>x.keyboard.flat().some(k=>k.startsWith('/'))),false)
+  assert.equal(steps.some(x=>x.reply?.includes('/agree')||x.reply?.includes('/stop')),false)
+})
 test('only explicit natural Yes or retained legacy /agree creates consent record',()=>{
   const first=transitionTelegramDiagnostic(null,msg('/start'))
   const declined=transitionTelegramDiagnostic(state(first,false),msg('Не сейчас'))
