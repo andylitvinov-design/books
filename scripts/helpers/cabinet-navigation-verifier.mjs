@@ -27,11 +27,11 @@ export async function assertCabinetPrimaryNavigation(page, expect, { locale = 'e
   const nav = page.locator('nav.hh-nav:visible, nav.hh-mobile-app-nav:visible')
   await expect(nav).toHaveCount(1)
   await expect(nav).toBeVisible()
-  const labels = locale === 'ru' ? ['Профиль', 'Тесты', 'Отчёты', 'Курсы', 'Практика'] : ['Profile', 'Tests', 'Reports', 'Courses', 'Practice']
-  const paths = ['portrait', 'tests', 'portfolio', 'course', 'practice']
+  const labels = locale === 'ru' ? ['Мой профиль', 'Курсы', 'Тесты', 'Практика', 'Сообщения'] : ['My Profile', 'Courses', 'Tests', 'Practice', 'Messages']
+  const paths = ['portrait', 'course?view=courses', 'tests', 'practice', 'messages']
   const links = nav.locator(':scope > a')
   const mobile = (await nav.getAttribute('class')).split(/\s+/).includes('hh-mobile-app-nav')
-  const expected = paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path === current ? 'page' : null, ariaLabel: null }))
+  const expected = paths.map((path, index) => ({ href: '/' + locale + '/app/' + path, label: labels[index], current: path.split('?')[0] === current ? 'page' : null, ariaLabel: null }))
   if (mobile) expected.push({ href: locale === 'ru' ? '/ru' : '/', label: locale === 'ru' ? 'Главная' : 'Home', current: null, ariaLabel: locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage' })
   await expect(links).toHaveCount(mobile ? 6 : 5)
   assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ href: node.getAttribute('href'), label: node.textContent.trim(), current: node.getAttribute('aria-current'), ariaLabel: node.getAttribute('aria-label') }))), expected)
