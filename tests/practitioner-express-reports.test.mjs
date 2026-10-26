@@ -53,7 +53,7 @@ test('only complete drafts can publish, with optimistic revisions', () => {
   assert.throws(()=>requireExpressReportReady({...body(),steps:''}),/REPORT_INCOMPLETE/)
   assert.deepEqual(validateExpressReportTransition({action:'publish',expectedRevision:1}),
     {action:'publish',expectedRevision:1})
-  for (const action of ['delete','send','pay','remedy'])
+  for (const action of ['delete','dispatch','pay','remedy'])
     assert.throws(()=>validateExpressReportTransition({action,expectedRevision:1}),/INVALID_REPORT_ACTION/)
   assert.throws(()=>validateExpressReportTransition({action:'revoke',expectedRevision:0}),/INVALID_REPORT_ACTION/)
   assert.throws(()=>validateExpressReportEdit({language:'en',issuedOn:'2026-10-25',content:body(),expectedRevision:'1'}),/INVALID_REVISION/)

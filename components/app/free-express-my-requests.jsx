@@ -1,5 +1,6 @@
 'use client'
 import {useEffect,useState} from 'react'
+import Link from 'next/link'
 import styles from './free-express-my-requests.module.css'
 const labels={
  en:{title:'My free review requests',hint:'These are requests you explicitly saved to your Google Cabinet. An enquiry is not a confirmed booking.',reference:'Enquiry',date:'Saved',view:'Read saved answers',hide:'Hide answers',loading:'Loading private details…',empty:'No saved free review requests yet.',error:'Requests cannot be loaded right now.'},
@@ -46,7 +47,10 @@ export default function FreeExpressMyRequests({locale='en'}){
    <small>{t.date}: {new Date(item.savedAt).toLocaleDateString(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA')}</small>
    <button type="button" disabled={busy} aria-expanded={opened===item.referenceCode}
      onClick={()=>{void toggle(item.referenceCode)}}>{opened===item.referenceCode?t.hide:t.view}</button>
-   {opened===item.referenceCode&&<div className={styles.details}>
+   <Link href={'/'+locale+'/app/messages'} prefetch={false}>
+      {locale==='ru'?'Мои защищённые сообщения':locale==='es'?'Mis mensajes privados':'My private messages'}
+    </Link>
+    {opened===item.referenceCode&&<div className={styles.details}>
      {busy&&<p role="status">{t.loading}</p>}
      {details&&<pre>{details}</pre>}
      {error&&<p role="alert">{error}</p>}
