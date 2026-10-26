@@ -65,14 +65,45 @@ export function permittedHolisticHomePrefetch(request, origin, locale) {
   } catch { return false; }
 }
 
+// Distinct ES public Home, opt-in only for the authored Spanish header Link.
+// Existing EN/RU Home and default four-route permissions remain independent.
+export function permittedHolisticSpanishHomePrefetch(request, origin, locale) {
+  if (locale !== 'es') return false;
+  try {
+    const rawUrl = request.url();
+    const url = new URL(rawUrl);
+    if (request.method() !== 'GET' || request.resourceType() !== 'fetch' ||
+      url.origin !== origin || url.pathname !== '/es' || url.username || url.password || url.hash) return false;
+    if (/\.\.|%2e|%2f|%5c|\\/i.test(url.pathname)) return false;
+    if ([...url.searchParams.keys()].join(',') !== '_rsc' ||
+      !/^[a-zA-Z0-9_-]{1,64}$/.test(url.searchParams.get('_rsc'))) return false;
+    // Literal spelling as well as parsed target: URL normalization must not
+    // admit dot/backslash paths, encoded query fields or empty separators.
+    if (rawUrl !== origin + '/es?_rsc=' + url.searchParams.get('_rsc')) return false;
+    const headers = request.headers();
+    const prototype = Object.getPrototypeOf(headers);
+    // Playwright's ordinary own-header map only; no custom inherited map.
+    if (prototype !== Object.prototype && prototype !== null) return false;
+    // Names only, including ordinary prototype names: no credential getter
+    // is invoked. This finite map contract is not a hostile-JS sandbox.
+    const names = [...Object.getOwnPropertyNames(headers),
+      ...(prototype === null ? [] : Object.getOwnPropertyNames(prototype))];
+    if (names.some(name => /^(?:proxy-)?authorization$/i.test(name))) return false;
+    return Object.hasOwn(headers, 'rsc') && Object.hasOwn(headers, 'next-router-prefetch') &&
+      headers.rsc === '1' && headers['next-router-prefetch'] === '1';
+  } catch { return false; }
+}
+
 // The current gallery's account-owned GET is fulfilled only by the shared
 // fixed anonymous401 fixture, never by the local API/provider/customer store.
-export async function createHolisticBrowserIsolation(browser, {origin, locale, viewport, observeTransport, allowPublicHomePrefetch = false}) {
+export async function createHolisticBrowserIsolation(browser, {origin, locale, viewport, observeTransport, allowPublicHomePrefetch = false, allowPublicSpanishHomePrefetch = false}) {
   assert.ok(locales.includes(locale));
   assert.equal(typeof allowPublicHomePrefetch, 'boolean');
+  assert.equal(typeof allowPublicSpanishHomePrefetch, 'boolean');
   return createReadOnlyPublicViewportIsolation(browser, {
     origin, viewport, mobile:true, anonymousTalismans:true, observeTransport,
     permittedRead: request => permittedHolisticRead(request, origin, locale) ||
-      (allowPublicHomePrefetch && permittedHolisticHomePrefetch(request, origin, locale)),
+      (allowPublicHomePrefetch && permittedHolisticHomePrefetch(request, origin, locale)) ||
+      (allowPublicSpanishHomePrefetch && permittedHolisticSpanishHomePrefetch(request, origin, locale)),
   });
 }

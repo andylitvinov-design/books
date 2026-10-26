@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {hypnotherapyRequestGate, installHypnotherapyPopupSpy, withHypnotherapyIsolation} from './hypnotherapy-enquiry-journey-verifier.mjs'
 import {alchemyRequestGate} from './alchemy-enquiry-journey-verifier.mjs'
+import {createFreeReviewStartupDiagnostics} from './free-review-startup-diagnostics.mjs'
 
 export const FREE_REVIEW_PHONE = '+14165550123'
 export const FREE_REVIEW_NATIONAL_PHONE = '4165550123'
@@ -490,29 +491,39 @@ export async function verifyFreeReviewJourney(sourcePage, expect, locale, {kind=
   const failures = [], blockedReads = [], pageErrors = []
   const sockets = freeReviewSocketBoundary(failures)
   const guardedContext = {route:(...args) => context.route(...args), close:() => sockets.closeContext(context)}
-  let primary, handler, completed = false
+  let primary, handler, observedPage, pageErrorListener, completed = false
+  const startupDiagnostics = createFreeReviewStartupDiagnostics(() => failures.length === 0 && !handler?.firstFatalRequest)
   try {
     await context.routeWebSocket('**/*', sockets.handler)
     handler = freeReviewRequestGate(origin, locale, kind, receipt, failures, blockedReads, {bootstrap:true})
     await withFreeReviewIsolation(guardedContext, handler, receipt, async () => {
-      await context.addInitScript(freeReviewInitScript(denyReceiptStorage))
-      const page = await context.newPage()
-      page.on('pageerror', () => pageErrors.push('Page error'))
-      // HTTP, API/write, socket and popup boundaries exist before any page script.
-      await page.goto(origin + freeReviewPath(locale), {waitUntil:'networkidle'})
-      assert.equal(handler.initialDocumentLoaded, true, 'Only the exact guarded initial document may load')
-      assert.equal(receipt.count, 0, 'Bootstrap never submits a contact')
-      assert.deepEqual(failures, [])
-      assert.equal(await page.evaluate(() => window.__hypnotherapyFixture.opens.length), 0, 'No startup popup')
-      handler.beginInteraction()
-      if (kind === 'compact') {
-        await verifyFreeReviewCompactInPage(page, expect, locale, receipt, failures, {channel, denyReceiptStorage})
-      } else await verifyFreeReviewPrivateEntryInPage(page, expect, locale, receipt, failures, {output})
+      try {
+        await context.addInitScript(freeReviewInitScript(denyReceiptStorage))
+        const page = await context.newPage()
+        observedPage = page
+        pageErrorListener = error => { pageErrors.push('Page error'); startupDiagnostics.observePageError(error) }
+        page.on('pageerror', pageErrorListener)
+        startupDiagnostics.attachConsole(page)
+        // HTTP, API/write, socket and popup boundaries exist before any page script.
+        await page.goto(origin + freeReviewPath(locale), {waitUntil:'networkidle'})
+        assert.equal(handler.initialDocumentLoaded, true, 'Only the exact guarded initial document may load')
+        assert.equal(receipt.count, 0, 'Bootstrap never submits a contact')
+        assert.deepEqual(failures, [])
+        assert.equal(await page.evaluate(() => window.__hypnotherapyFixture.opens.length), 0, 'No startup popup')
+        startupDiagnostics.freeze('interaction'); startupDiagnostics.detachConsole()
+        handler.beginInteraction()
+        if (kind === 'compact') {
+          await verifyFreeReviewCompactInPage(page, expect, locale, receipt, failures, {channel, denyReceiptStorage})
+        } else await verifyFreeReviewPrivateEntryInPage(page, expect, locale, receipt, failures, {output})
+      } finally { startupDiagnostics.freeze(failures.length ? 'boundary' : 'cleanup'); startupDiagnostics.detachConsole() }
     })
   } catch (error) { primary = error }
   finally {
+    startupDiagnostics.freeze(failures.length ? 'boundary' : 'cleanup'); startupDiagnostics.detachConsole()
     // Also covers partial setup before withFreeReviewIsolation owns the context.
     try { await guardedContext.close() } catch (error) { if (!primary) primary = error }
+    // Preserve the original pageerror count through both closes, then detach.
+    try { observedPage?.off('pageerror', pageErrorListener) } catch { /* Observation cleanup is best effort. */ }
     // Only decide success after the last close AND all admitted socket callbacks.
     if (!primary) {
       try {
@@ -523,6 +534,7 @@ export async function verifyFreeReviewJourney(sourcePage, expect, locale, {kind=
     console.log('SYNTHETIC_FREE_REVIEW_BOUNDARY', JSON.stringify({locale, kind, channel:kind === 'compact' ? channel : null, denyReceiptStorage, completed:completed && !primary,
       requestCount:receipt.count, failureCount:failures.length, pageErrorCount:pageErrors.length,
       blocked:blockedReads.map(read => ({type:read.type, asset:read.asset || (read.path?.startsWith('/_next/static/') ? 'next-static' : 'other')})),
+      ...(primary ? {startupDiagnostics:startupDiagnostics.snapshot()} : {}),
       ...(primary && handler?.firstFatalRequest ? {firstFatalRequest:handler.firstFatalRequest} : {})}))
   }
   if (primary) throw primary

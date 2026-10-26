@@ -43,10 +43,15 @@ function diagnosticFields(diagnostic) {
   const fixed=(value,values)=>values.includes(value)?value:'unknown'
   const phase=diagnostic.failedPhase ?? diagnostic.phase
   const keyboard=diagnostic.mode==='keyboard'&&phase==='keyboard-visible'?` keyboard=${keyboardDiagnostic(diagnostic)}`:''
-  let tail=''
+  let tail='',readyHistory=''
   if(diagnostic.mode==='keyboard'&&phase==='keyboard-ready') {
     // Node-only formatting: never retrieve more page state after a failed start.
     try {tail+=` keyboardReady=${keyboardReadyDiagnostic(diagnostic.keyboardReady,diagnostic.keyboardReadyNodeDeadline)}`} catch {}
+    readyHistory=' keyboardStart=unavailable'
+    try {
+      const start=keyboardStartDiagnostic(diagnostic.keyboardReadyHistory)
+      if(start!==undefined)readyHistory=` keyboardStart=${start}`
+    } catch { /* Missing or invalid history never replaces the original failure. */ }
   }
   try {if(diagnostic.keyboardTail!==undefined) tail=` keyboardTail=${keyboardTailDiagnostic(diagnostic.keyboardTail)}`} catch { /* A malformed optional tail cannot replace the original diagnostic. */ }
 // BEGIN KEYBOARD START DIAGNOSTIC format
@@ -54,7 +59,7 @@ function diagnosticFields(diagnostic) {
     const start=keyboardStartDiagnostic(diagnostic.keyboardTail?.keyboardStart)
     if(start!==undefined) tail+=` keyboardStart=${start}`
   } catch { /* Optional observation never replaces the first failed verdict. */ }
-  return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}${keyboard}${tail}`
+  return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}${keyboard}${tail}${readyHistory}`
 // END KEYBOARD START DIAGNOSTIC format
 }
 
@@ -107,10 +112,31 @@ function keyboardTailDiagnostic(tail) {
 // establishes a start precondition nor changes the original acceptance verdict.
 // No values, DOM text/identifiers, URLs or raw keys enter the observation.
 export function installKeyboardStartObserver() {
-  const installed=[]
+  const installed=[],snapshotKey='__consentKeyboardStartSnapshot'
+  let snapshotEnabled=false
   try {
     const records=[],start=performance.now()
     let bytes=0,discarded=0,readErrors=0,tabCount=0,lastTab='null'
+    // A data-only mirror: no callback from page-controlled state is invoked.
+    // Fail closed on collisions without executing accessors. This is not an
+    // authenticity guarantee against hostile scripts substituting plain data.
+    try {
+      const descriptor=Object.getOwnPropertyDescriptor(window,snapshotKey)
+      if(descriptor||snapshotKey in window) {
+        if(!descriptor||descriptor.configurable)Object.defineProperty(window,snapshotKey,{value:undefined,writable:false,configurable:false})
+        else if(Object.hasOwn(descriptor,'writable')&&descriptor.writable)Object.defineProperty(window,snapshotKey,{value:undefined,writable:false})
+      }else {
+        Object.defineProperty(window,snapshotKey,{value:undefined,writable:true,configurable:false})
+        snapshotEnabled=true
+      }
+    } catch { /* Existing observation remains optional if snapshot setup fails. */ }
+    const publishSnapshot=()=>{
+      if(!snapshotEnabled)return
+      try {
+        const raw=`{"version":1,"discarded":${discarded},"readErrors":${readErrors},"tabCount":${tabCount},"events":[${records.join(',')}],"tab":${lastTab}}`
+        Object.defineProperty(window,snapshotKey,{value:raw.length<=32768?raw:undefined})
+      } catch {snapshotEnabled=false}
+    }
     const count=value=>Math.min(1000000,value+1)
     const number=value=>typeof value==='number'&&Number.isFinite(value)
       ?Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100:0
@@ -143,19 +169,19 @@ export function installKeyboardStartObserver() {
           errorPresent:Boolean(chooser.querySelector('[role="alert"]'))}
         const encoded=JSON.stringify(entry)
         // ASCII-only fixed strings and bounded numbers make lengths byte counts.
-        if(encoded.length>2048) {discarded=count(discarded);return}
+        if(encoded.length>2048) {discarded=count(discarded);publishSnapshot();return}
         if(kind==='tab') {lastTab=encoded;tabCount=count(tabCount)}
         while(records.length>=64||bytes+encoded.length>24576) {
           bytes-=records.shift().length;discarded=count(discarded)
         }
-        records.push(encoded);bytes+=encoded.length
-      } catch {readErrors=count(readErrors)}
+        records.push(encoded);bytes+=encoded.length;publishSnapshot()
+      } catch {readErrors=count(readErrors);publishSnapshot()}
     }
     const listeners=[
       ['focusin',event=>record('focusin',event)],
       ['focusout',event=>record('focusout',event)],
       ['input',event=>record('input',event)],
-      ['keydown',event=>{try {if(event.key==='Tab') record('tab',event)} catch {readErrors=count(readErrors)}}],
+      ['keydown',event=>{try {if(event.key==='Tab') record('tab',event)} catch {readErrors=count(readErrors);publishSnapshot()}}],
       ['scroll',event=>record('scroll',event)],
       ['scrollend',event=>record('scrollend',event)],
     ]
@@ -169,7 +195,10 @@ export function installKeyboardStartObserver() {
         return result.length<=32768?result:undefined
       } catch {return undefined}
     }})
+    publishSnapshot()
   } catch {
+    // A partial installation must not leave an apparently available snapshot.
+    try {if(snapshotEnabled)Object.defineProperty(window,snapshotKey,{value:undefined,writable:false})} catch {}
     // Partial setup failure remains local and cannot become a pageerror.
     for(const [name,listener] of installed) {
       try {document.removeEventListener(name,listener,true)} catch {}
@@ -347,7 +376,49 @@ export function naturalKeyboardStart(phone,{remainingMs}) {
             phoneRect:values.slice(0,6),consentRect:values.slice(6,12),viewport:values.slice(12,14),scroll:values.slice(14,18),
             visualViewportPresent:values.length===25,visualViewport:values.slice(18),numericComplete})
         }
-        resolve({ready:false,keyboardReady:JSON.stringify(evidence)})
+        const result={ready:false,keyboardReady:JSON.stringify(evidence)}
+        // Copy only the already-published passive snapshot before settling.
+        // Never invoke a page reader, function, getter or inherited property.
+        // No DOM read, new evaluation, wait or post-close recovery is added.
+        try {
+          const descriptor=Object.getOwnPropertyDescriptor(window,'__consentKeyboardStartSnapshot')
+          if(descriptor&&Object.hasOwn(descriptor,'value')&&Object.hasOwn(descriptor,'writable')) {
+            const {value:raw,writable,configurable}=descriptor
+            if(writable===true&&configurable===false&&typeof raw==='string'&&raw.length<=32768) {
+              // Revalidate in this realm before any string crosses the result.
+              // This pure projection matches the independent Node sanitizer.
+              const sanitizeHistory=raw=>{
+                if(typeof raw!=='string'||raw.length>32768) return undefined
+                const data=JSON.parse(raw)
+                if(data?.version!==1) return undefined
+                const number=value=>typeof value==='number'&&Number.isFinite(value)
+                  ?Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100:0
+                const count=value=>Math.max(0,Math.trunc(number(value)))
+                const vector=(value,length)=>Array.from({length},(_,i)=>number(Array.isArray(value)?value[i]:undefined))
+                const node=value=>({sampled:value?.sampled===true,rect:vector(value?.rect,4),
+                  focused:value?.focused===true,focusVisible:value?.focusVisible===true,inside:value?.inside===true})
+                const event=value=>{
+                  if(!['focusin','focusout','input','tab','scroll','scrollend'].includes(value?.kind)) return null
+                  return {kind:value.kind,ms:number(value.ms),
+                    target:['phone','consent','document','other'].includes(value.target)?value.target:'other',
+                    prevented:value.prevented===true,shift:value.kind==='tab'&&value.shift===true,
+                    phone:node(value.phone),consent:node(value.consent),scroll:vector(value.scroll,2),viewport:vector(value.viewport,2),
+                    visualViewportPresent:value.visualViewportPresent===true,visualViewport:vector(value.visualViewport,4),
+                    errorPresent:value.errorPresent===true}
+                }
+                const safe={version:1,discarded:count(data.discarded),readErrors:count(data.readErrors),tabCount:count(data.tabCount),
+                  events:Array.isArray(data.events)?data.events.slice(0,64).map(event).filter(Boolean):[],
+                  tab:data.tab?.kind==='tab'?event(data.tab):null}
+                let result=JSON.stringify(safe)
+                while(result.length>32768&&safe.events.length) {safe.events.shift();safe.discarded=Math.min(1000000,safe.discarded+1);result=JSON.stringify(safe)}
+                return result.length<=32768?result:undefined
+              }
+              const history=sanitizeHistory(raw)
+              if(history!==undefined)result.keyboardStart=history
+            }
+          }
+        } catch { /* Preserve the failed verdict if the observer is unavailable. */ }
+        resolve(result)
       }else resolve(value)
     }
     const rect=node=>{
@@ -533,7 +604,7 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
 async function verifyNative(sourcePage, expect, locale, diagnostic) {
   const origin = alchemyOrigin(sourcePage.url(), locale)
   for (const mode of ['keyboard', 'label', 'canceled-pointer']) {
-    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null,keyboardTail:undefined,readKeyboardTail:undefined,keyboardPreparation:null,unsafeConsentCleanup:false,keyboardReady:undefined,keyboardReadyNodeDeadline:false})
+    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null,keyboardTail:undefined,readKeyboardTail:undefined,keyboardPreparation:null,unsafeConsentCleanup:false,keyboardReady:undefined,keyboardReadyNodeDeadline:false,keyboardReadyHistory:undefined})
     const context = await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
     const errors=[], failures=[], blocked=[]
     const initialGate=consentInitialGate(origin,locale,failures,blocked)
@@ -586,6 +657,10 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
           const readiness=await preparing(budget=>contact.evaluate(naturalKeyboardStart,{remainingMs:budget},{timeout:budget}))
           if(readiness?.ready!==true) {
             try {diagnostic.keyboardReady=keyboardReadyDiagnostic(readiness?.keyboardReady)} catch {}
+            try {
+              const raw=readiness&&typeof readiness==='object'?Object.getOwnPropertyDescriptor(readiness,'keyboardStart')?.value:undefined
+              diagnostic.keyboardReadyHistory=keyboardStartDiagnostic(raw)
+            } catch { /* Bounded passive history is optional, never an acceptance gate. */ }
           }
           assert.deepEqual(readiness,{ready:true})
           preparation.finish()

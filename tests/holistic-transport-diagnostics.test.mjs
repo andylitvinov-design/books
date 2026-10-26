@@ -238,17 +238,18 @@ test('failure categories and path redaction never serialize private/provider/ass
 // Execute the actual verifier's listener, matrix, verdict, catch and teardown.
 // Only native UI operations are replaced by inert synthetic calls; no browser,
 // network, database, provider or filesystem write is available inside the VM.
-async function runVerifier({pageError=false,primaryFailure=false,writeFailure=false,closeFailure=false}={}, raw=read('scripts/verify-holistic-master-browser.mjs')) {
+async function runVerifier({pageError=false,pageErrorAt=1,primaryFailure=false,writeFailure=false,closeFailure=false}={}, raw=read('scripts/verify-holistic-master-browser.mjs')) {
   let source=raw;
   const start='    const response = await page.goto(',end="    diagnostics.phase('assertions');";
   assert.equal(source.split(start).length,2);assert.equal(source.split(end).length,2);
   source=source.slice(0,source.indexOf(start))+'    await syntheticUi(page);\n'+source.slice(source.indexOf(end));
   source=source.replace(/^import .*;\n/gm,'').replace('const require = createRequire(import.meta.url);','')
     .replace('const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");','const {chromium,webkit}=drivers;');
-  const primary=Error('ORIGINAL_SYNTHETIC_FAILURE'),state={contexts:0,closed:0,browsersClosed:0,writes:[],artifacts:{},sequence:[]};
+  const primary=Error('ORIGINAL_SYNTHETIC_FAILURE'),state={esFlags:[],contexts:0,closed:0,browsersClosed:0,writes:[],artifacts:{},sequence:[]};
   const driver=name=>({name:()=>name,async launch(){return {async close(){state.browsersClosed++;state.sequence.push('browser-close');if(closeFailure)throw Error('CLOSE_FAILURE');}};}});
   const isolation=async(_browser,value)=>{
     state.contexts++;assert.equal(typeof value.observeTransport,'function');assert.equal(value.allowPublicHomePrefetch,true);
+    assert.equal(value.allowPublicSpanishHomePrefetch,value.locale === 'es');state.esFlags.push([value.locale,value.allowPublicSpanishHomePrefetch]);
     const listeners=new Map(),page={on:(kind,handler)=>listeners.set(kind,handler),async screenshot(){state.sequence.push('screenshot');},listeners};
     return {page,async assertClean(){},summary:()=>({anonymousTalismansReads:1}),async close(){state.closed++;state.sequence.push('context-close');
       value.observeTransport({requestId:7,target:'/',rsc:true,prefetch:true,verdict:'abort-draining',failure:'none'});}};
@@ -257,7 +258,7 @@ async function runVerifier({pageError=false,primaryFailure=false,writeFailure=fa
   try{await runInNewContext('(async()=>{'+source+'})()',{
     assert,drivers:{webkit:driver('webkit'),chromium:driver('chromium')},process:{env:{}},
     createHolisticBrowserIsolation:isolation,createHolisticTransportDiagnostics,privateRequestLeak:()=>false,
-    async mkdir(){},async syntheticUi(page){if(pageError)page.listeners.get('pageerror')(Error(secret+' due to access control checks.'));if(primaryFailure)throw primary;},
+    async mkdir(){},async syntheticUi(page){if(pageError&&state.contexts===pageErrorAt)page.listeners.get('pageerror')(Error(secret+' due to access control checks.'));if(primaryFailure)throw primary;},
     async writeFile(path,body){state.sequence.push('write');state.writes.push(path);state.artifacts[path]=JSON.parse(body);if(writeFailure)throw Error('WRITE_FAILURE');},
     console:{log(){},error(){}},
   });}catch(caught){error=caught;}
@@ -298,11 +299,11 @@ function anonymousPrefetch(path='/?_rsc=synthetic', {headers={}, ...other}={}) {
   req.headers=()=>({rsc:'1','next-router-prefetch':'1',cookie:'holistic_house_public_locale=ru',...headers});
   return req;
 }
-async function executeOptIn({req=anonymousPrefetch(), enabled=false, locale='ru', transport={}, lateRequest, observeTransport}={}) {
+async function executeOptIn({req=anonymousPrefetch(), enabled=false, spanishEnabled=false, locale='ru', transport={}, lateRequest, observeTransport}={}) {
   const f=fixture({lateRequest}),contextOptions=[];
   const browser={async newContext(value){contextOptions.push(value);return f.browser.newContext({viewport:value.viewport,serviceWorkers:value.serviceWorkers});}};
   const guard=await createHolisticBrowserIsolation(browser,{origin,locale,viewport:options.viewport,
-    allowPublicHomePrefetch:enabled,observeTransport});
+    allowPublicHomePrefetch:enabled,allowPublicSpanishHomePrefetch:spanishEnabled,observeTransport});
   const r=route(req,transport);await f.contexts[0].routes[0](r);
   let cleanError=null,closeError=null;
   try{await guard.assertClean();}catch(error){cleanError=error.message;}
@@ -421,9 +422,10 @@ test('negative controls detect weakened prefetch/header/query/document/locale re
     // The existing four-route resource-type check is deliberately separate;
     // apply this mutation only to the new opt-in function, never its default.
     const marker='export function permittedHolisticHomePrefetch';
-    const prefix=source.slice(0,source.indexOf(marker)),tail=source.slice(source.indexOf(marker));
+    const end=source.indexOf('export function permittedHolisticSpanishHomePrefetch',source.indexOf(marker));
+    const prefix=source.slice(0,source.indexOf(marker)),tail=source.slice(source.indexOf(marker),end),suffix=source.slice(end);
     assert.equal(tail.split(before).length,2);
-    const changed=(prefix+tail.replace(before,after)).replace(/^import .*;\n/gm,'').replaceAll('export function','function').replaceAll('export async function','async function');
+    const changed=(prefix+tail.replace(before,after)+suffix).replace(/^import .*;\n/gm,'').replaceAll('export function','function').replaceAll('export async function','async function');
     // Use this realm's Object because the synthetic Request owns its header
     // map here; a foreign realm's prototype is outside the map contract.
     const classifier=runInNewContext(changed+'\npermittedHolisticHomePrefetch',{assert,URL,Object});
@@ -504,4 +506,162 @@ assert.equal(credentialReads,0);assert.equal(checks,16);console.log('PROTOTYPE_C
   const child=spawnSync(process.execPath,['--unhandled-rejections=strict','--input-type=module','-e',source],{encoding:'utf8'});
   assert.equal(child.error,undefined);assert.equal(child.signal,null);assert.equal(child.status,0,child.stderr);
   assert.equal(child.stdout,'PROTOTYPE_CREDENTIAL_CHECKS_16_READS_0\n');assert.equal(child.stderr,'');
+});
+
+const spanishPrefetch = (tail='/es?_rsc=x', options={}) => anonymousPrefetch(tail,options);
+test('actual master ES-only binding executes all twelve cases and missing/all-locale/disabled mutations fail',async()=>{
+  const actual=await runVerifier();assert.equal(actual.error,null);
+  assert.equal(actual.state.esFlags.length,12);
+  assert.equal(actual.state.esFlags.filter(([locale,enabled])=>locale==='es'&&enabled).length,4);
+  assert.equal(actual.state.esFlags.filter(([locale,enabled])=>locale!=='es'&&!enabled).length,8);
+  const source=read('scripts/verify-holistic-master-browser.mjs'),token=', allowPublicSpanishHomePrefetch:locale === "es"';
+  assert.equal(source.split(token).length,2);
+  for(const replacement of ['',', allowPublicSpanishHomePrefetch:true',', allowPublicSpanishHomePrefetch:false']){
+    const result=await runVerifier({},source.replace(token,replacement));
+    assert.equal(result.error.code,'ERR_ASSERTION');
+    assert.equal(result.state.artifacts['artifacts/holistic-support-mobile/acceptance.json'],undefined);
+    assert.equal(result.state.browsersClosed,result.state.contexts);
+  }
+});
+
+test('actual ES390 pageerror remains fatal after explicit Spanish opt-in and cannot fabricate acceptance',async()=>{
+  const result=await runVerifier({pageError:true,pageErrorAt:8});
+  assert.equal(result.error.code,'ERR_ASSERTION');assert.match(result.error.message,/no client-side errors across every journey/);
+  assert.equal(result.state.contexts,8);assert.equal(result.state.closed,8);assert.equal(result.state.browsersClosed,8);
+  assert.deepEqual(result.state.esFlags.at(-1),['es',true]);
+  assert.deepEqual(result.state.writes,['artifacts/holistic-support-mobile/transport-failure-webkit-es-390.json']);
+  assert.equal(result.state.artifacts['artifacts/holistic-support-mobile/acceptance.json'],undefined);
+});
+
+test('ES root and EN/RU root grants remain directional under every explicit option combination',async()=>{
+  for(const locale of ['en','ru','es'])for(const enabled of [false,true])for(const spanishEnabled of [false,true])
+    for(const path of ['/?_rsc=x','/es?_rsc=x']){
+      const result=await executeOptIn({req:anonymousPrefetch(path),locale,enabled,spanishEnabled});
+      const permitted=path.startsWith('/es')?locale==='es'&&spanishEnabled:locale!=='es'&&enabled;
+      assert.deepEqual(result.actions,permitted?[['fetch',{maxRedirects:0}],['fulfill','response'],['dispose']]:[['abort','blockedbyclient']]);
+      assert.equal(result.cleanError,null);assert.equal(result.closeError,null);
+      assert.deepEqual(result.contextOptions,[{deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce',viewport:options.viewport,serviceWorkers:'block'}]);
+    }
+});
+
+test('ES option leaves all prior document/RSC/assets/anonymous fixture and fatal API/write policies identical',async()=>{
+  for(const locale of ['en','ru','es']){
+    const requests=[...['/holistic-support','/services/remote-energy-support','/services/free-consultation','/pro']
+      .flatMap(path=>[request('/'+locale+path,{type:'document'}),request('/'+locale+path+'?_rsc=x')]),
+      request('/images/holistic-house/hero-olive-incense.webp',{type:'image'}),
+      request('/_next/static/chunks/app/%5Blocale%5D/page-abc.js',{type:'script'}),
+      request('/api/holistic-support/talismans'),request('/api/client/synthetic'),
+      request('/'+locale+'/pro',{method:'POST'}),request('https://provider.invalid/',{absolute:true})];
+    for(const req of requests)
+      assert.deepEqual(await executeOptIn({req,locale,enabled:true,spanishEnabled:true}),await executeOptIn({req,locale,enabled:true}));
+  }
+});
+
+test('ES malformed literal or navigation requests never reach transport, including normalization counterexamples',async()=>{
+  const tails=['/es','/es?','/es/','/es/?_rsc=x','/./es?_rsc=x','/x/../es?_rsc=x','/%2e/es?_rsc=x',
+    '/api/%2e%2e/es?_rsc=x','/api\\..\\es?_rsc=x','/%65s?_rsc=x','//es?_rsc=x',
+    '/es?_rsc=','/es?_rsc='+('a'.repeat(65)),'/es?%5frsc=x','/es?_r%73c=x','/es?_rsc=%78',
+    '/es?_rsc=x&','/es?_rsc=x&&','/es?&_rsc=x','/es?_rsc=x#','/es?_rsc=x&_rsc=y',
+    '/es?_rsc=x&lang=es','/es/client?_rsc=x','/en/app?_rsc=x'];
+  const denied=[...tails.map(path=>spanishPrefetch(path)),
+    spanishPrefetch(undefined,{type:'document'}),spanishPrefetch(undefined,{method:'HEAD'}),
+    spanishPrefetch(undefined,{headers:{'next-router-prefetch':undefined}}),spanishPrefetch(undefined,{headers:{rsc:undefined}}),
+    spanishPrefetch(undefined,{headers:{authorization:''}}),spanishPrefetch(undefined,{headers:{'Proxy-Authorization':''}}),
+    spanishPrefetch('https://provider.invalid/es?_rsc=x',{absolute:true}),
+    spanishPrefetch('/api/client?_rsc=x'),spanishPrefetch(undefined,{method:'POST'})];
+  for(const req of denied){
+    const result=await executeOptIn({req,locale:'es',spanishEnabled:true});
+    assert.deepEqual(result.actions,[['abort','blockedbyclient']]);
+    const fatal=new URL(req.url()).pathname.startsWith('/api/')||req.method()==='POST';
+    assert.equal(Boolean(result.cleanError),fatal);assert.equal(Boolean(result.closeError),fatal);
+  }
+});
+
+for(const [name,transport]of [
+  ['redirect302',{status:302}],['not2xx401',{status:401}],['not2xx500',{status:500}],
+  ['responseURLmismatch',{responseUrl:origin+'/es/pro'}],['foreignResponseURL',{responseUrl:'https://provider.invalid/'}],
+  ['fetchFailure',{fetchFailure:true}],['fulfillFailure',{fulfillFailure:true}],['disposeFailure',{disposeFailure:true}],
+])test('ES allowance preserves original fatal '+name+' response/transport control',async()=>{
+  const result=await executeOptIn({req:spanishPrefetch(),locale:'es',spanishEnabled:true,transport});
+  assert.match(result.cleanError,/ROUTE_HANDLER_FAILED/);assert.match(result.closeError,/ROUTE_HANDLER_FAILED/);
+  assert.equal(result.closed,true);assert.deepEqual(result.actions[0],['fetch',{maxRedirects:0}]);
+  assert.ok(result.actions.some(row=>row[0]==='abort'));
+  if(!transport.fetchFailure)assert.ok(result.actions.some(row=>row[0]==='dispose'));
+  if(transport.status||transport.responseUrl||transport.fetchFailure)assert.ok(!result.actions.some(row=>row[0]==='fulfill'));
+});
+
+test('ES still aborts during drain; late API and write attempts remain fatal',async()=>{
+  for(const [req,fatal]of [[spanishPrefetch(),false],[spanishPrefetch('/api/client'),true],[spanishPrefetch(undefined,{method:'POST'}),true]]){
+    const late=route(req),result=await executeOptIn({req:spanishPrefetch(),locale:'es',spanishEnabled:true,lateRequest:late});
+    assert.deepEqual(late.actions,[['abort','blockedbyclient']]);assert.equal(Boolean(result.closeError),fatal);
+    if(fatal)assert.match(result.closeError,/UNEXPECTED_API_OR_WRITE/);
+  }
+});
+
+test('ES observer behavior cannot authorize transport and never gains credential artifacts or completion semantics',async()=>{
+  const selected={req:spanishPrefetch(),locale:'es',spanishEnabled:true},expected=await executeOptIn(selected);
+  for(const observeTransport of [()=>{throw Error(secret);},()=>{const p=Promise.reject(Error(secret));Object.defineProperty(p,'then',{get(){throw Error(secret);}});return p;}])
+    assert.deepEqual(await executeOptIn({...selected,observeTransport}),expected);
+  const rows=[];await executeOptIn({...selected,observeTransport:row=>rows.push(row)});
+  assert.deepEqual(rows.map(row=>[row.target,row.verdict,row.rsc,row.prefetch]),[['/es','fetch',true,true],['/es','fulfill',true,true]]);
+  let credentialReads=0;const denied=spanishPrefetch();
+  denied.headers=()=>{const headers={rsc:'1','next-router-prefetch':'1'};
+    Object.defineProperty(headers,'authorization',{get(){credentialReads++;throw Error(secret);}});return headers;};
+  const result=await executeOptIn({...selected,req:denied,observeTransport:row=>rows.push(row)});
+  assert.deepEqual(result.actions,[['abort','blockedbyclient']]);assert.equal(credentialReads,0);
+  assert.doesNotMatch(JSON.stringify(rows),/http|_rsc|cookie|authorization|SYNTHETIC/);
+});
+
+test('ES ordinary-prototype credential names and inherited required fields fail without value reads in strict child',()=>{
+  const helper=new URL('../scripts/helpers/holistic-browser-isolation.mjs',import.meta.url).href;
+  const fixtureUrl=new URL('./helpers/public-services-isolation-fixture.mjs',import.meta.url).href;
+  const source=`import assert from 'node:assert/strict';
+import {permittedHolisticSpanishHomePrefetch as classify,createHolisticBrowserIsolation} from ${JSON.stringify(helper)};
+import {fixture,origin} from ${JSON.stringify(fixtureUrl)};
+let reads=0,checks=0;
+const request=headers=>({url:()=>origin+'/es?_rsc=x',method:()=> 'GET',resourceType:()=> 'fetch',headers:()=>headers});
+for(const name of ['authorization','AUTHORIZATION','proxy-authorization','Proxy-Authorization'])for(const enumerable of [true,false]){
+  Object.defineProperty(Object.prototype,name,{configurable:true,enumerable,get(){reads++;throw Error('NO_CREDENTIAL_GETTER');}});
+  try{for(const prototype of [Object.prototype,null]){
+    const headers=Object.assign(Object.create(prototype),{rsc:'1','next-router-prefetch':'1'});
+    const req=request(headers);assert.equal(classify(req,origin,'es'),prototype===null);
+    const f=fixture(),actions=[],browser={newContext:async value=>f.browser.newContext({viewport:value.viewport,serviceWorkers:value.serviceWorkers})};
+    const guard=await createHolisticBrowserIsolation(browser,{origin,locale:'es',viewport:{width:390,height:844},allowPublicSpanishHomePrefetch:true});
+    await f.contexts[0].routes[0]({request:()=>req,async abort(){actions.push('abort');},
+      async fetch(options){assert.deepEqual(options,{maxRedirects:0});actions.push('fetch');return {url:req.url,status:()=>200,async dispose(){actions.push('dispose');}};},
+      async fulfill(){actions.push('fulfill');}});
+    await guard.close();assert.deepEqual(actions,prototype===null?['fetch','fulfill','dispose']:['abort']);checks++;
+  }}finally{delete Object.prototype[name];}
+}
+for(const name of ['rsc','next-router-prefetch']){
+  Object.defineProperty(Object.prototype,name,{configurable:true,value:'1'});
+  try{const headers=Object.fromEntries(Object.entries({rsc:'1','next-router-prefetch':'1'}).filter(([key])=>key!==name));assert.equal(classify(request(headers),origin,'es'),false);}
+  finally{delete Object.prototype[name];}
+}
+assert.equal(reads,0);assert.equal(checks,16);console.log('ES_PROTOTYPE_CHECKS_16_READS_0');`;
+  const child=spawnSync(process.execPath,['--unhandled-rejections=strict','--input-type=module','-e',source],{encoding:'utf8'});
+  assert.equal(child.error,undefined);assert.equal(child.signal,null);assert.equal(child.status,0,child.stderr);
+  assert.equal(child.stdout,'ES_PROTOTYPE_CHECKS_16_READS_0\n');assert.equal(child.stderr,'');
+});
+
+test('ES source mutations detect lost locale, method, fetch, literal, token, prefetch and credential gates',()=>{
+  const source=read('scripts/helpers/holistic-browser-isolation.mjs');
+  const start=source.indexOf('export function permittedHolisticSpanishHomePrefetch'),end=source.indexOf('// The current gallery',start);
+  const body=source.slice(start,end);
+  const custom=spanishPrefetch();custom.headers=()=>Object.assign(Object.create({}),{rsc:'1','next-router-prefetch':'1'});
+  for(const [before,after,req,locale]of [
+    ["if (locale !== 'es') return false;",'',spanishPrefetch(),'en'],
+    ["request.method() !== 'GET'",'false',spanishPrefetch(undefined,{method:'HEAD'}),'es'],
+    ["request.resourceType() !== 'fetch'",'false',spanishPrefetch(undefined,{type:'document'}),'es'],
+    ["if (rawUrl !== origin + '/es?_rsc=' + url.searchParams.get('_rsc')) return false;",'',spanishPrefetch('/es?_rsc=%78'),'es'],
+    ["!/^[a-zA-Z0-9_-]{1,64}$/.test(url.searchParams.get('_rsc'))",'false',spanishPrefetch('/es?_rsc='),'es'],
+    [" && headers['next-router-prefetch'] === '1'",'',spanishPrefetch(undefined,{headers:{'next-router-prefetch':undefined}}),'es'],
+    ["if (prototype !== Object.prototype && prototype !== null) return false;",'',custom,'es'],
+    ["if (names.some(name => /^(?:proxy-)?authorization$/i.test(name))) return false;",'',spanishPrefetch(undefined,{headers:{authorization:''}}),'es'],
+  ]){
+    assert.equal(body.split(before).length,2);
+    const changed=body.replace(before,after).replace('export function','function');
+    const classify=runInNewContext(changed+'\npermittedHolisticSpanishHomePrefetch',{URL,Object});
+    assert.throws(()=>assert.equal(classify(req,origin,locale),false),{code:'ERR_ASSERTION'});
+  }
 });

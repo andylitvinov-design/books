@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile} from 'node:fs/promises'
 import vm from 'node:vm'
+import {classifyFreeReviewStartupMessage, createFreeReviewStartupDiagnostics} from '../scripts/helpers/free-review-startup-diagnostics.mjs'
 import {freeReviewOrigin, freeReviewPath, freeReviewService, freeReviewPublicTopic, freeReviewMarkers, assertFreeReviewBody, syntheticFreeReviewReceipt, freeReviewRequestGate, assertFreeReviewLink, installFreeReviewProbe, freeReviewInitScript, withFreeReviewIsolation, freeReviewSocketBoundary, verifyFreeReviewJourney, assertFreeReviewPrivateEntrySnapshot, FREE_REVIEW_CONTACT, FREE_REVIEW_PHONE, FREE_REVIEW_REFERENCE} from '../scripts/helpers/free-review-journey-verifier.mjs'
 
 const origin = 'http://127.0.0.1:3100'
@@ -274,11 +275,13 @@ for(const fault of ['socket','route','init','newPage','goto']) test('setup '+fau
 
 // A lifecycle-only mock reaches the real wrapper's successful terminal path.
 // Component/DOM behavior remains covered separately; this is not browser proof.
-function socketTerminalHarness(onClose=async()=>{}) {
+function socketTerminalHarness(onClose=async()=>{}, onInteraction=()=>{}) {
   class Store{constructor(){this.values=new Map()}getItem(key){return this.values.get(key)??null}setItem(key,value){this.values.set(key,String(value))}}
   const sessionStorage=new Store(),sandbox={Storage:Store,sessionStorage,DOMException,navigator:{},document:{documentElement:{dataset:{}},addEventListener:()=>{}},window:{addEventListener:()=>{},location:{href:origin+freeReviewPath('en')}}}
-  let httpHandler,socketHandler,initScript,clicks=0,closes=0
-  const locator=selector=>({
+  let httpHandler,socketHandler,initScript,clicks=0,closes=0,interactionObserved=false
+  const listeners=new Map(),retained={}
+  const observeInteraction=()=>{if(!interactionObserved){interactionObserved=true;onInteraction((kind,value)=>listeners.get(kind)?.(value),retained)}}
+  const locator=selector=>(observeInteraction(),{
     locator,getByRole:()=>locator('role'),scrollIntoViewIfNeeded:async()=>{},evaluate:async()=>false,
     check:async()=>{},uncheck:async()=>{},fill:async()=>{},selectOption:async()=>{},
     getAttribute:async name=>name==='rel'?'noopener noreferrer':href('en','compact',selector.includes('telegram')?'telegram':'whatsapp'),
@@ -293,7 +296,7 @@ function socketTerminalHarness(onClose=async()=>{}) {
       await httpHandler(r)
     },
   })
-  const page={url:()=>origin+freeReviewPath('en'),locator,on:()=>{},goto:async()=>{
+  const page={url:()=>origin+freeReviewPath('en'),locator,on:(kind,fn)=>{listeners.set(kind,fn);retained[kind]=fn},off:(kind,fn)=>{assert.equal(listeners.get(kind),fn);listeners.delete(kind)},goto:async()=>{
     await httpHandler(route(request(origin+freeReviewPath('en'),'GET','document')))
     vm.runInNewContext(initScript.content,sandbox)
   },evaluate:async(fn,arg)=>structuredClone(vm.runInNewContext('('+fn.toString()+')',sandbox)(arg))}
@@ -655,6 +658,241 @@ for (const [name, url, endpointCategory] of [
   assert.deepEqual(calls, ['close','close','log']); assert.equal(logs.length, 1); assert.equal(logs[0][0], 'SYNTHETIC_FREE_REVIEW_BOUNDARY')
   const summary = JSON.parse(logs[0][1])
   assert.deepEqual(summary, {locale:'en',kind:'compact',channel:'whatsapp',denyReceiptStorage:false,completed:false,requestCount:0,failureCount:1,pageErrorCount:0,blocked:[],
+    startupDiagnostics:{consoleListener:'attached',cutoff:'boundary',eventCount:0,readFailureCount:0,overflow:false,omittedCallbackCount:0,events:[]},
     firstFatalRequest:{method:'POST',resource:'fetch',endpointCategory,pathnameCategory:'other',sameOrigin:true,navigation:false,mainFrame:true,subframe:false,beforeInteraction:true}})
   assert.doesNotMatch(logs[0][1], /PRIVATE_ENDPOINT_MARKER|https?:|__nextjs|unclassified-startup-write|[?#@]/)
+})
+
+// Synthetic strings only: no browser, user console, stack or record is read.
+const triggerMarker = 'SYNTHETIC_TRIGGER_PRIVATE_MARKER https://fixture.invalid/?input=secret'
+const triggerFamilies = [
+  ['hydration-html-mismatch', "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client."],
+  ['hydration-text-mismatch', "Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client."],
+  ['hydration-attribute-mismatch', "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up."],
+  ['dom-invalid-child', 'In HTML, %s cannot be a child of <%s>.%s\nThis will cause a hydration error.%s'],
+  ['dom-invalid-descendant', 'In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s'],
+  ['dom-text-child', 'In HTML, text nodes cannot be a child of <%s>.\nThis will cause a hydration error.%s'],
+  ['dom-whitespace-child', "In HTML, whitespace text nodes cannot be a child of <%s>. Make sure you don't have any extra whitespace between tags on each line of your source code.\nThis will cause a hydration error.%s"],
+  ['hydration-boundary-recovery-message', 'There was an error while hydrating but React was able to recover by instead client rendering from the nearest Suspense boundary.'],
+  ['hydration-root-recovery-message', 'There was an error while hydrating but React was able to recover by instead client rendering the entire root.'],
+]
+for (const [family, literal] of triggerFamilies) for (const prefix of ['', 'Error: ']) test('startup message exact family ' + family + ' prefix=' + Boolean(prefix), () => {
+  assert.equal(classifyFreeReviewStartupMessage(prefix + literal + '\n' + triggerMarker), family)
+  for (const changed of ['unrelated ' + literal, literal.toUpperCase(), literal.replace(/\.$|%s$/, '')]) {
+    assert.equal(classifyFreeReviewStartupMessage(changed), 'unclassified')
+  }
+})
+for (const [family, message] of [
+  ['dom-invalid-child', 'In HTML, <div> cannot be a child of <p>.\nThis will cause a hydration error.'],
+  ['dom-invalid-descendant', 'In HTML, <button> cannot be a descendant of <button>.\nThis will cause a hydration error.'],
+  ['dom-text-child', 'In HTML, text nodes cannot be a child of <tr>.\nThis will cause a hydration error.'],
+  ['dom-whitespace-child', "In HTML, whitespace text nodes cannot be a child of <table>. Make sure you don't have any extra whitespace between tags on each line of your source code.\nThis will cause a hydration error."],
+]) test('startup message exact interpolated family ' + family, () => {
+  assert.equal(classifyFreeReviewStartupMessage(message + '\n' + triggerMarker), family)
+  assert.equal(classifyFreeReviewStartupMessage(message.replace('hydration error.', 'different error.')), 'unclassified')
+})
+for (const [name, value] of [
+  ['undefined', undefined], ['null', null], ['number', 1], ['boolean', true], ['array', []], ['symbol', Symbol('synthetic')],
+  ['object', {toString:()=>assert.fail('No object coercion')}], ['empty', ''], ['generic hydration', 'A hydration warning happened'],
+  ['unrelated prefix', triggerMarker + triggerFamilies[0][1]], ['unknown React error', 'An error occurred in the <Synthetic> component.'],
+  ['companion nesting warning', '<p> cannot contain a nested <div>.\nSee this log for the ancestor stack trace.'],
+  ['oversize tag', 'In HTML, <'+'a'.repeat(33)+'> cannot be a child of <p>.\nThis will cause a hydration error.'],
+  ['attribute-bearing tag', 'In HTML, <div id="synthetic"> cannot be a child of <p>.\nThis will cause a hydration error.'],
+  ['bounded suffix only', 'x'.repeat(513)+triggerFamilies[0][1]],
+]) test('startup message unknown/malformed ' + name, () => assert.equal(classifyFreeReviewStartupMessage(value), 'unclassified'))
+const triggerConsole = (text, type='error') => ({type:()=>type, text:()=>text,
+  args:()=>assert.fail('No console args'),location:()=>assert.fail('No console location'),jsonValue:()=>assert.fail('No remote serialization')})
+const diagnosticSnapshot = (events=[], extra={}) => ({consoleListener:'unavailable',cutoff:'cleanup',eventCount:events.length,readFailureCount:0,overflow:false,omittedCallbackCount:0,
+  events:events.map(([source,family], index)=>({order:index+1,source,family})),...extra})
+test('startup observer keeps only closed enums and host callback order, not raw payloads', () => {
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>true)
+  diagnostic.observeConsole(triggerConsole(triggerFamilies[0][1]+'\n'+triggerMarker))
+  diagnostic.observeConsole(triggerConsole(triggerMarker,'warning'))
+  diagnostic.observePageError({message:triggerFamilies[1][1]+'\n'+triggerMarker,get stack(){assert.fail('No error stack')},get cause(){assert.fail('No error cause')}})
+  diagnostic.freeze('cleanup')
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([['console-error','hydration-html-mismatch'],['console-warning','unclassified'],['pageerror','hydration-text-mismatch']]))
+  assert.doesNotMatch(JSON.stringify(diagnostic.snapshot()),/SYNTHETIC_TRIGGER_PRIVATE_MARKER|https?:|input|secret|rendered|stack|cause/)
+  assert.ok(Object.isFrozen(diagnostic.snapshot()));assert.ok(Object.isFrozen(diagnostic.snapshot().events));assert.ok(diagnostic.snapshot().events.every(Object.isFrozen))
+  assert.throws(()=>{diagnostic.snapshot().events[0].family=triggerMarker})
+})
+for (const type of ['log','info','debug','warn','trace','assert',undefined,triggerMarker]) test('startup observer ignores unapproved console type ' + String(type), () => {
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>true)
+  diagnostic.observeConsole({type:()=>type,text:()=>assert.fail('Ignored type must not read text')})
+  diagnostic.freeze('cleanup');assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot())
+})
+for (const mode of ['type-method','type-property','text-method','text-property','pageerror-message','pageerror-null']) test('startup observer raw getter exception stays nonblocking '+mode, () => {
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>true),poison=()=>{throw Error(triggerMarker)}
+  if(mode==='type-method') diagnostic.observeConsole({type:poison})
+  if(mode==='type-property') diagnostic.observeConsole({get type(){return poison()}})
+  if(mode==='text-method') diagnostic.observeConsole({type:()=> 'error',text:poison})
+  if(mode==='text-property') diagnostic.observeConsole({type:()=> 'error',get text(){return poison()}})
+  if(mode==='pageerror-message') diagnostic.observePageError({get message(){return poison()}})
+  if(mode==='pageerror-null') diagnostic.observePageError(null)
+  diagnostic.freeze('cleanup')
+  const source=mode.startsWith('type')?'console-unavailable':mode.startsWith('text')?'console-error':'pageerror'
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([[source,'unclassified']],{readFailureCount:1}))
+  assert.ok(!JSON.stringify(diagnostic.snapshot()).includes(triggerMarker))
+})
+test('startup observer malformed scalar does not coerce or claim a read failure', () => {
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>true)
+  diagnostic.observeConsole(triggerConsole({toString:()=>assert.fail('No coercion')}))
+  diagnostic.observePageError({message:Symbol('synthetic')})
+  diagnostic.freeze('cleanup');assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([['console-error','unclassified'],['pageerror','unclassified']]))
+})
+test('startup observer bounds events and counts and stops raw reads on overflow', () => {
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>true)
+  for(let i=0;i<8;i++)diagnostic.observeConsole(triggerConsole(triggerMarker))
+  let saturatedReads=0
+  const poison=new Proxy({}, {get:()=>{saturatedReads++;throw Error(triggerMarker)}})
+  for(let i=0;i<1000;i++){diagnostic.observeConsole(poison);diagnostic.observePageError(poison)}
+  diagnostic.freeze('cleanup');assert.equal(saturatedReads,0,'No getters after counter saturation')
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot(Array.from({length:8},()=>['console-error','unclassified']),{eventCount:8,overflow:true,omittedCallbackCount:255}))
+})
+for (const reason of ['boundary','interaction','cleanup','unknown']) test('startup observer first freeze wins and stops getters '+reason, () => {
+  let before=true
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>before)
+  diagnostic.observeConsole(triggerConsole(triggerFamilies[2][1]))
+  if(reason==='boundary')before=false;else diagnostic.freeze(reason)
+  let reads=0
+  const poison=new Proxy({}, {get:()=>{reads++;throw Error(triggerMarker)}})
+  diagnostic.observeConsole(poison);diagnostic.observePageError(poison)
+  before=true;diagnostic.freeze('cleanup');diagnostic.observeConsole(triggerConsole(triggerMarker));assert.equal(reads,0)
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([['console-error','hydration-attribute-mismatch']],{cutoff:reason==='unknown'?'unavailable':reason}))
+})
+test('startup observer boundary read exception is unavailable and never reads event', () => {
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>{throw Error(triggerMarker)})
+  let reads=0
+  diagnostic.observeConsole(new Proxy({}, {get:()=>{reads++;throw Error(triggerMarker)}}));assert.equal(reads,0)
+  diagnostic.freeze('cleanup');assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([],{cutoff:'unavailable'}))
+})
+for(const fault of ['none','on','off'])test('startup observer listener teardown is idempotent, including partial attachment '+fault,()=>{
+  const calls=[],diagnostic=createFreeReviewStartupDiagnostics(()=>true)
+  let listener
+  const page={on:(name,fn)=>{calls.push('on:'+name);listener=fn;if(fault==='on')throw Error(triggerMarker)},off:(name,fn)=>{calls.push('off:'+name);assert.equal(fn,listener);if(fault==='off')throw Error(triggerMarker)}}
+  diagnostic.attachConsole(page);diagnostic.attachConsole(page)
+  listener(triggerConsole(triggerFamilies[0][1]))
+  diagnostic.freeze('cleanup');diagnostic.detachConsole();diagnostic.detachConsole()
+  listener(new Proxy({}, {get:()=>assert.fail('Stale callback must not read event')}))
+  assert.deepEqual(calls,['on:console','off:console'])
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([['console-error','hydration-html-mismatch']],{consoleListener:fault==='on'?'unavailable':'attached'}))
+})
+
+// The real wrapper emits this additive data only from its existing summary,
+// after both original closes. These lifecycle mocks are not browser evidence.
+async function triggerJourneyFixture(t,{before=()=>{},after=()=>{},close=()=>{},consoleFault=false,gotoFault=false}={}) {
+  const logs=[],calls=[],listeners=new Map(),retained={},primary=Error(triggerMarker)
+  t.mock.method(console,'log',(...args)=>{calls.push('log');logs.push(args)})
+  let httpHandler,closes=0
+  const emit=(kind,value)=>listeners.get(kind)?.(value)
+  const page={on:(kind,fn)=>{calls.push('on:'+kind);listeners.set(kind,fn);retained[kind]=fn;if(kind==='console'&&consoleFault)throw Error(triggerMarker)},
+    off:(kind,fn)=>{calls.push('off:'+kind);assert.equal(listeners.get(kind),fn);listeners.delete(kind)},goto:async()=>{
+      calls.push('goto');assert.ok(listeners.has('pageerror'));assert.ok(listeners.has('console'))
+      await httpHandler(route(request(origin+freeReviewPath('en'),'GET','document')))
+      before(emit)
+      if(gotoFault)throw primary
+      const denied=route(diagnosticRequest(origin+devStackLookupPath,'POST','fetch',{navigation:false}))
+      await httpHandler(denied);assert.deepEqual(denied.log,['abort'])
+      after(emit)
+    },evaluate:()=>assert.fail('No new browser read or unsafe interaction'),locator:()=>assert.fail('No unsafe interaction')}
+  const context={routeWebSocket:async()=>{},route:async(_pattern,fn)=>{httpHandler=fn},addInitScript:async()=>{},newPage:async()=>page,
+    close:async()=>{calls.push('close');close(emit,++closes)}}
+  let result
+  try{await verifyFreeReviewJourney(sourceFor(context),()=>assert.fail('Unsafe caller must not proceed'),'en')}catch(error){result=error}
+  assert.ok(result,'Observer never turns an underlying failure into success')
+  if(gotoFault)assert.equal(result,primary)
+  else{assert.equal(result.code,'ERR_ASSERTION');assert.deepEqual(result.actual,[fatalBoundaryMessage]);assert.deepEqual(result.expected,[])}
+  assert.equal(closes,2);assert.equal(logs.length,1);assert.equal(logs[0][0],'SYNTHETIC_FREE_REVIEW_BOUNDARY')
+  assert.ok(calls.indexOf('off:console')<calls.indexOf('close'));assert.ok(calls.indexOf('off:pageerror')>calls.lastIndexOf('close'));assert.equal(calls.at(-1),'log')
+  assert.equal(listeners.size,0)
+  const summary=JSON.parse(logs[0][1]);assert.equal(summary.completed,false);assert.equal(summary.requestCount,0);assert.equal(summary.failureCount,gotoFault?0:1)
+  assert.ok(!JSON.stringify(logs).includes(triggerMarker));assert.doesNotMatch(JSON.stringify(logs),/fixture\.invalid|input=secret/)
+  return {summary,calls,retained}
+}
+for(const [family,literal] of [...triggerFamilies,['unclassified',triggerMarker]])test('startup emitted recognized family '+family+' does not excuse denied lookup',async t=>{
+  const {summary}=await triggerJourneyFixture(t,{before:emit=>emit('console',triggerConsole(literal+'\n'+triggerMarker))})
+  assert.deepEqual(summary.startupDiagnostics,diagnosticSnapshot([['console-error',family]],{consoleListener:'attached',cutoff:'boundary'}))
+  assert.equal(summary.firstFatalRequest.endpointCategory,'dev-stack-lookup');assert.equal(summary.pageErrorCount,0)
+})
+test('startup emitted snapshot excludes post-fatal and cleanup getters while original pageerror count is retained',async t=>{
+  let reads=0
+  const poison=new Proxy({}, {get:()=>{reads++;throw Error(triggerMarker)}})
+  const {summary,retained}=await triggerJourneyFixture(t,{before:emit=>{emit('console',triggerConsole(triggerFamilies[2][1]));emit('pageerror',{message:triggerFamilies[1][1]})},
+    after:emit=>{emit('console',poison);emit('pageerror',poison)},close:emit=>{emit('console',poison);emit('pageerror',poison)}})
+  assert.deepEqual(summary.startupDiagnostics,diagnosticSnapshot([['console-error','hydration-attribute-mismatch'],['pageerror','hydration-text-mismatch']],{consoleListener:'attached',cutoff:'boundary'}))
+  assert.equal(summary.pageErrorCount,4,'Initial, post-fatal and both cleanup page errors retain the original count')
+  retained.console(poison);retained.pageerror(poison);assert.equal(reads,0)
+})
+test('startup emitted getter failure remains unknown without replacing original blocker',async t=>{
+  const {summary}=await triggerJourneyFixture(t,{before:emit=>emit('console',{type:()=> 'error',text:()=>{throw Error(triggerMarker)}})})
+  assert.deepEqual(summary.startupDiagnostics,diagnosticSnapshot([['console-error','unclassified']],{consoleListener:'attached',cutoff:'boundary',readFailureCount:1}))
+})
+test('startup emitted partial console registration is detached and preserves the original caller failure',async t=>{
+  const {summary}=await triggerJourneyFixture(t,{consoleFault:true,gotoFault:true,before:emit=>emit('console',triggerConsole(triggerMarker))})
+  assert.deepEqual(summary.startupDiagnostics,diagnosticSnapshot([['console-error','unclassified']],{cutoff:'cleanup'}))
+  assert.equal(summary.firstFatalRequest,undefined)
+})
+test('startup observer source owns no browser evaluation, additional request, console suppression or success assertion',async()=>{
+  const helper=await readFile(new URL('../scripts/helpers/free-review-startup-diagnostics.mjs',import.meta.url),'utf8')
+  for(const pattern of [/\.evaluate\s*\(/,/\.args\s*\(/,/\.jsonValue\s*\(/,/\.location\s*\(/,/\.stack\b/,/fetch\s*\(/,/setTimeout\s*\(/,/console\.(?:log|error|warn)\s*\(/,/\bawait\b/])assert.doesNotMatch(helper,pattern)
+  const wrapper=await readFile(new URL('../scripts/helpers/free-review-journey-verifier.mjs',import.meta.url),'utf8')
+  assert.ok(wrapper.indexOf('startupDiagnostics.attachConsole(page)')<wrapper.indexOf('await page.goto(origin + freeReviewPath(locale)'))
+  assert.ok(wrapper.includes("startupDiagnostics.freeze('interaction')"))
+  assert.ok(wrapper.indexOf("startupDiagnostics.freeze('interaction')")<wrapper.indexOf('      handler.beginInteraction()'))
+  assert.ok(wrapper.includes("pageErrorListener = error => { pageErrors.push('Page error'); startupDiagnostics.observePageError(error) }"))
+  assert.ok(wrapper.includes("...(primary ? {startupDiagnostics:startupDiagnostics.snapshot()} : {})"))
+})
+
+for(const getter of ['boundary','type','text','message'])test('startup observer recursive '+getter+' callback is bounded without fake slots',()=>{
+  let diagnostic,reads=0
+  const nested=()=>{reads++;diagnostic.observeConsole(triggerConsole(triggerMarker));diagnostic.observePageError({message:triggerMarker})}
+  diagnostic=createFreeReviewStartupDiagnostics(()=>{if(getter==='boundary')nested();return true})
+  if(getter==='message')diagnostic.observePageError({get message(){nested();return triggerFamilies[0][1]}})
+  else diagnostic.observeConsole({type:()=>{if(getter==='type')nested();return 'error'},text:()=>{if(getter==='text')nested();return triggerFamilies[0][1]}})
+  diagnostic.freeze('cleanup')
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([[getter==='message'?'pageerror':'console-error','hydration-html-mismatch']]))
+  assert.equal(reads,getter==='boundary'?3:1,'Nested observers never recursively invoke the predicate or raw getters')
+})
+for(const getter of ['boundary','type','text','message'])for(const mode of ['failure','freeze'])test('startup observer '+getter+' crosses '+mode+' before commit',()=>{
+  let before=true,diagnostic,rawReads=0
+  const cross=()=>{if(mode==='failure')before=false;else diagnostic.freeze('cleanup')}
+  diagnostic=createFreeReviewStartupDiagnostics(()=>{if(getter==='boundary')cross();return before})
+  if(getter==='message')diagnostic.observePageError({get message(){rawReads++;cross();return triggerFamilies[0][1]}})
+  else diagnostic.observeConsole({type:()=>{if(getter==='type')cross();return 'error'},text:()=>{rawReads++;if(getter==='text')cross();return triggerFamilies[0][1]}})
+  diagnostic.freeze('cleanup')
+  assert.equal(rawReads,['text','message'].includes(getter)?1:0)
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([],{cutoff:mode==='failure'?'boundary':'cleanup'}))
+})
+test('startup observer eighth-slot reentrancy cannot overflow or reverse order',()=>{
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>true)
+  for(let i=0;i<7;i++)diagnostic.observeConsole(triggerConsole(triggerMarker))
+  diagnostic.observeConsole({type:()=> 'warning',text:()=>{diagnostic.observePageError({get message(){assert.fail('No nested raw read')}});return triggerFamilies[2][1]}})
+  let reads=0
+  const poison=new Proxy({}, {get:()=>{reads++;throw Error(triggerMarker)}})
+  diagnostic.observeConsole(poison);diagnostic.observePageError(poison)
+  diagnostic.freeze('cleanup');assert.equal(reads,0)
+  assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([...Array.from({length:7},()=>['console-error','unclassified']),['console-warning','hydration-attribute-mismatch']],{overflow:true,omittedCallbackCount:2}))
+})
+for(const before of [undefined,null,'yes',1,Promise.resolve(true)])test('startup observer nonboolean boundary result never reads an event '+String(before),()=>{
+  const diagnostic=createFreeReviewStartupDiagnostics(()=>before)
+  let reads=0
+  diagnostic.observeConsole(new Proxy({}, {get:()=>{reads++;throw Error(triggerMarker)}}))
+  assert.equal(reads,0);assert.deepEqual(diagnostic.snapshot(),diagnosticSnapshot([],{cutoff:'unavailable'}))
+})
+
+
+test('startup wrapper freezes before real interaction even when later cleanup fails',async t=>{
+  const logs=[];t.mock.method(console,'log',(...args)=>logs.push(args))
+  let interaction=false,reads=0
+  const fixture=socketTerminalHarness(async count=>{if(count===1)throw Error(triggerMarker)},(emit,retained)=>{
+    interaction=true
+    const poison=new Proxy({}, {get:()=>{reads++;throw Error(triggerMarker)}})
+    emit('console',poison);retained.console(poison)
+    emit('pageerror',poison);retained.pageerror(poison)
+  })
+  await assert.rejects(fixture.run());assert.equal(interaction,true);assert.equal(reads,0)
+  assert.equal(fixture.closes,2);assert.equal(logs.length,1)
+  const summary=JSON.parse(logs[0][1]);assert.equal(summary.completed,false);assert.equal(summary.requestCount,2)
+  assert.deepEqual(summary.startupDiagnostics,diagnosticSnapshot([],{consoleListener:'attached',cutoff:'interaction'}))
+  assert.equal(summary.pageErrorCount,2,'Original pageerror counting continues after diagnostic freeze')
+  assert.equal(summary.firstFatalRequest,undefined);assert.ok(!JSON.stringify(logs).includes(triggerMarker))
 })

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {permittedHolisticRead, permittedHolisticHomePrefetch, createHolisticBrowserIsolation} from '../scripts/helpers/holistic-browser-isolation.mjs';
+import {permittedHolisticRead, permittedHolisticHomePrefetch, permittedHolisticSpanishHomePrefetch, createHolisticBrowserIsolation} from '../scripts/helpers/holistic-browser-isolation.mjs';
 import {readFileSync} from 'node:fs';
 
 const origin='http://127.0.0.1:3100';
@@ -180,7 +180,7 @@ test('only actual master verifier opts in; source-authored header remains unchan
   const master=read('scripts/verify-holistic-master-browser.mjs');
   assert.equal(master.split('allowPublicHomePrefetch:true').length,2);
   assert.match(master,/engine\.launch\(\{headless: true\}\)/);
-  assert.match(master,/createHolisticBrowserIsolation\(browser, \{origin, locale, viewport:\{width, height:844\}, observeTransport:diagnostics\.observeTransport, allowPublicHomePrefetch:true\}\)/);
+  assert.match(master,/createHolisticBrowserIsolation\(browser, \{origin, locale, viewport:\{width, height:844\}, observeTransport:diagnostics\.observeTransport, allowPublicHomePrefetch:true, allowPublicSpanishHomePrefetch:locale === "es"\}\)/);
   assert.doesNotMatch(master,/storageState|httpCredentials|addCookies|setExtraHTTPHeaders/);
   for(const path of ['scripts/verify-holistic-support-browser.mjs','scripts/verify-holistic-topics-browser.mjs']){
     const source=read(path);assert.match(source,/createHolisticBrowserIsolation\(browser/);
@@ -231,4 +231,100 @@ test('literal opt-in denial occurs before reading request header metadata',()=>{
     assert.equal(permittedHolisticHomePrefetch(req,origin,'ru'),false);
   }
   assert.equal(headerReads,0);
+});
+
+const spanishPrefetchRequest = (tail='/es?_rsc=x', headers=homePrefetchHeaders) => request(origin+tail,'GET','fetch',headers);
+test('separate ES predicate accepts only own public Spanish prefetch metadata and preserves directional EN/RU denial',()=>{
+  for(const prototype of [Object.prototype,null])for(const token of ['x','abc-123','_-9','a'.repeat(64)]){
+    const headers=Object.assign(Object.create(prototype),homePrefetchHeaders,{accept:'*/*'});
+    const req=spanishPrefetchRequest('/es?_rsc='+token,headers);
+    assert.equal(permittedHolisticSpanishHomePrefetch(req,origin,'es'),true);
+    assert.equal(permittedHolisticRead(req,origin,'es'),false);
+    for(const locale of ['en','ru','es'])assert.equal(permittedHolisticHomePrefetch(req,origin,locale),false);
+    for(const locale of ['en','ru','de','',undefined])assert.equal(permittedHolisticSpanishHomePrefetch(req,origin,locale),false);
+  }
+  for(const locale of ['en','ru','es'])
+    assert.equal(permittedHolisticSpanishHomePrefetch(spanishPrefetchRequest('/?_rsc=x'),origin,locale),false);
+});
+
+test('ES literal path/query gate rejects normalizations, extra routes and every noncanonical spelling before header reads',()=>{
+  const tails=['/es','/es?','/es/','/es/?_rsc=x','/?_rsc=x','/en?_rsc=x','/ru?_rsc=x',
+    '/./es?_rsc=x','/x/../es?_rsc=x','/%2e/es?_rsc=x','/api/%2e%2e/es?_rsc=x','/api\\..\\es?_rsc=x',
+    '/%65s?_rsc=x','//es?_rsc=x','/es%2f?_rsc=x','/es%5c?_rsc=x',
+    '/es?_rsc=','/es?_rsc='+('a'.repeat(65)),'/es?%5frsc=x','/es?_r%73c=x','/es?_rsc=%78',
+    '/es?_rsc=a%2Db','/es?_rsc=a%5Fb','/es?_rsc=x&','/es?_rsc=x&&','/es?&_rsc=x',
+    '/es?_rsc=x#','/es?_rsc=x#fragment','/es?_rsc=x&_rsc=y','/es?_rsc=x&lang=es',
+    '/es?lang=es&_rsc=x','/es?_rsc=x&private=synthetic','/api/client?_rsc=x','/es/client?_rsc=x','/en/app?_rsc=x'];
+  let headerReads=0;
+  for(const tail of tails){
+    const req={...spanishPrefetchRequest(tail),headers(){headerReads++;throw Error('NO_HEADER_READ_FOR_LITERAL_DENIAL');}};
+    assert.equal(permittedHolisticSpanishHomePrefetch(req,origin,'es'),false,tail);
+  }
+  for(const raw of [' '+origin+'/es?_rsc=x',origin+'/es?_rsc=x\n','https://127.0.0.1:3100/es?_rsc=x',
+    'http://localhost:3100/es?_rsc=x','http://127.0.0.1:3101/es?_rsc=x',
+    'http://user:synthetic@127.0.0.1:3100/es?_rsc=x','https://provider.invalid/es?_rsc=x'])
+    assert.equal(permittedHolisticSpanishHomePrefetch(request(raw,'GET','fetch',homePrefetchHeaders),origin,'es'),false);
+  assert.equal(headerReads,0);
+});
+
+test('ES cannot grant documents, HEAD, nonprefetch or custom maps and never reads credential or locale-cookie values',()=>{
+  const valid=origin+'/es?_rsc=x';
+  for(const method of ['HEAD','POST','PUT','PATCH','DELETE','OPTIONS'])
+    assert.equal(permittedHolisticSpanishHomePrefetch(request(valid,method,'fetch',homePrefetchHeaders),origin,'es'),false);
+  for(const type of ['document','xhr','image','script','stylesheet','font','media','other'])
+    assert.equal(permittedHolisticSpanishHomePrefetch(request(valid,'GET',type,homePrefetchHeaders),origin,'es'),false);
+  for(const headers of [{},{rsc:'1'},{'next-router-prefetch':'1'},{rsc:1,'next-router-prefetch':1},
+    {rsc:'1',purpose:'prefetch'},Object.assign(Object.create({}),homePrefetchHeaders),Object.assign([],homePrefetchHeaders),null,undefined])
+    assert.equal(permittedHolisticSpanishHomePrefetch({...spanishPrefetchRequest(),headers:()=>headers},origin,'es'),false);
+  // Check each owned value independently; two wrong values can mask a lost gate.
+  for(const prototype of [Object.prototype,null])for(const name of ['rsc','next-router-prefetch'])
+    for(const value of ['0',1,undefined,null,'']){
+      const headers=Object.assign(Object.create(prototype),homePrefetchHeaders,{[name]:value});
+      const other=name==='rsc'?'next-router-prefetch':'rsc';
+      assert.equal(Object.hasOwn(headers,name),true);
+      assert.equal(headers[other],'1');
+      assert.equal(permittedHolisticSpanishHomePrefetch(spanishPrefetchRequest(undefined,headers),origin,'es'),false,
+        'ES owned '+name+' must equal string 1 ('+(prototype===null?'null':'ordinary')+' map)');
+    }
+  let reads=0;
+  for(const name of ['authorization','Authorization','AUTHORIZATION','proxy-authorization','Proxy-Authorization'])
+    for(const enumerable of [true,false]){
+      const headers={...homePrefetchHeaders};
+      Object.defineProperty(headers,name,{enumerable,get(){reads++;throw Error('NO_CREDENTIAL_VALUE_READ');}});
+      assert.equal(permittedHolisticSpanishHomePrefetch(spanishPrefetchRequest(undefined,headers),origin,'es'),false);
+    }
+  const headers={...homePrefetchHeaders};
+  Object.defineProperty(headers,'cookie',{get(){reads++;throw Error('NO_COOKIE_VALUE_READ');}});
+  assert.equal(permittedHolisticSpanishHomePrefetch(spanishPrefetchRequest(undefined,headers),origin,'es'),true);
+  for(const name of ['authorization','Proxy-Authorization'])
+    assert.equal(permittedHolisticSpanishHomePrefetch(spanishPrefetchRequest(undefined,{...homePrefetchHeaders,[name]:''}),origin,'es'),false);
+  assert.equal(reads,0,'Fresh anonymous context is not a cookie-free claim');
+});
+
+test('ES option is separate default-false boolean with unchanged fresh context and old-flag denial',async()=>{
+  for(const locale of ['en','ru','es'])for(const oldFlag of [false,true])for(const selected of [undefined,false,true]){
+    const stub=stubBrowser();
+    const guard=await createHolisticBrowserIsolation(stub.browser,{origin,locale,viewport:{width:390,height:844},
+      allowPublicHomePrefetch:oldFlag,...(selected===undefined?{}:{allowPublicSpanishHomePrefetch:selected})});
+    await stub.route(spanishPrefetchRequest());
+    assert.deepEqual(stub.calls,[{deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce',viewport:{width:390,height:844},serviceWorkers:'block'}]);
+    assert.equal(stub.responses.some(row=>row.fetch),selected===true&&locale==='es');
+    await guard.close();
+  }
+  for(const invalid of ['true',1,{},null]){
+    const stub=stubBrowser();
+    await assert.rejects(createHolisticBrowserIsolation(stub.browser,{origin,locale:'es',viewport:{width:390,height:844},allowPublicSpanishHomePrefetch:invalid}),{code:'ERR_ASSERTION'});
+    assert.equal(stub.calls.length,0);
+  }
+});
+
+test('only actual master explicitly opts ES in; sibling callers and authored public header are untouched',()=>{
+  const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const master=read('scripts/verify-holistic-master-browser.mjs');
+  assert.equal(master.split('allowPublicSpanishHomePrefetch:locale === "es"').length,2);
+  assert.doesNotMatch(master,/storageState|httpCredentials|addCookies|setExtraHTTPHeaders/);
+  for(const path of ['scripts/verify-holistic-support-browser.mjs','scripts/verify-holistic-topics-browser.mjs'])
+    assert.doesNotMatch(read(path),/allowPublicSpanishHomePrefetch/);
+  assert.match(read('components/public-site-header.tsx'),/href=\{locale === "es" \? "\/es" : "\/"\}/);
+  assert.doesNotMatch(read('components/public-site-header.tsx'),/prefetch=/);
 });
