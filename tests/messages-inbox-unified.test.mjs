@@ -113,7 +113,7 @@ test('Messages has five focused app destinations without public site navigation'
   const nav=read('components/app/messages-bottom-navigation.jsx')
   const css=read('app/[locale]/app/messages/messages-page.css')
   assert.ok(page.includes('<MessagesBottomNavigation locale={locale}/>'))
-  assert.ok(nav.includes('className="hh-mobile-app-nav"'))
+  assert.ok(nav.includes('className="hh-mobile-app-nav hh-messages-app-dock"'))
   assert.doesNotMatch(nav,/hh-mobile-app-nav-home/)
   assert.equal((nav.match(/\{path:'/g)||[]).length,5)
   assert.ok(nav.includes("locale==='es'?'en':locale"))
