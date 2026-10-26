@@ -141,7 +141,10 @@ const RU_REQUIREMENTS={
   manual:'Готовый контент копируется владельцем вручную, без автоматической отправки.',
 }
 const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader',event_adapter:'eventAdapter',manual:'manual'}
-export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{},onStorageVerified=()=>{}}){
+// A stable no-op prevents the owner-only Redis probe effect from looping if this
+// component is ever mounted without a parent readiness callback.
+const NOOP_STORAGE_VERIFICATION=()=>{}
+export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{},onStorageVerified=NOOP_STORAGE_VERIFICATION}){
   const t=messages[locale==='ru'?'ru':'en']
   const [tested,setTested]=useState(false)
   const [verified,setVerified]=useState(false)
