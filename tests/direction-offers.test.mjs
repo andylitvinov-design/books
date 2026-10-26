@@ -9,7 +9,7 @@ test('Legacy Energy / Love / Business categories remain available in More but no
   for (const locale of ['en', 'ru', 'es']) {
     const primary = getSiteNavigation(locale)
     const bottom = getCompactNavigation(locale)
-    assert.deepEqual(bottom.map(item => item.id), ['home','analysis','courses','profile','alchemy','pro','temple'])
+    assert.deepEqual(bottom.map(item => item.id), ['profile','courses','home','analysis','alchemy','pro','temple'])
     assert.equal(bottom.find(item => item.id === 'alchemy')?.href, '/' + locale + '/services/alchemy-of-soul')
     assert.equal(activeCompactNavigationId('/' + locale + '/services/alchemy-of-soul'), 'alchemy')
     assert.ok(!bottom.some(item => item.id === 'coaching'), 'The old Coaching bottom tab must not return')
