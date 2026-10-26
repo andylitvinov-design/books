@@ -14,6 +14,8 @@ import { ServiceFunnelImpression, TrackedServiceLink, TrackedServiceExternalLink
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
 import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract";
 import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
+import { telegramServiceBotUrl } from "@/lib/practitioners/telegram-service-link.mjs";
+import { publishedTelegramOffering } from "@/lib/practitioners/telegram-service-offering";
 import mediaStyles from "@/components/marketplace-service-gallery.module.css";
 import styles from "@/components/marketplace-service-detail.module.css";
 
@@ -42,6 +44,12 @@ export default async function ServiceDetail({params}:PageProps){
   const canonicalHref=getPublicServiceDetailHref(locale,practitionerSlug,serviceSlug);
   if(canonicalHref!==`/${locale}/services/${practitionerSlug}/${serviceSlug}`)permanentRedirect(canonicalHref);
   const {service,practitioner}=value,ru=locale==="ru",es=locale==="es";
+  // Show the Telegram option only for a truly published, approved offering.
+  // A preview/submitted master must not promise a deliverable bot request.
+  const telegramBotCandidate=telegramServiceBotUrl(locale,service.id);
+  const telegramOffering=telegramBotCandidate
+    ?await publishedTelegramOffering(getAppConfig(),service.id,locale):null;
+  const telegramBotHref=telegramOffering?telegramBotCandidate:null;
   const isWuXingGuide=service.slug==="free-wu-xing-diagnostic";
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
   const isFree=service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);
@@ -85,6 +93,10 @@ export default async function ServiceDetail({params}:PageProps){
         </div>
         <div className={`hh-actions ${styles.actions}`}>
           <TrackedServiceLink serviceId={service.id} event="order" id="request-service" className={`services-studio-primary ${styles.primary}`} href={requestHref}>{bookingLabel}<span aria-hidden="true">→</span></TrackedServiceLink>
+          {telegramBotHref&&<TrackedServiceExternalLink serviceId={service.id} event="telegram"
+            href={telegramBotHref} target="_blank" rel="noopener noreferrer">
+            {ru?"Заявка через Telegram-бота":es?"Solicitar por Telegram":"Request via Telegram bot"}
+          </TrackedServiceExternalLink>}
           {isWuXingGuide&&<Link href={`/${locale}/wu-xing`}>{ru?"Методичка: уровни здоровья":es?"Guía: Niveles de salud":"Guide: Levels of Health"}</Link>}
           <Link href={`/${locale}/masters/${practitioner.slug}`}>{ru?"О практике":es?"Sobre el profesional":"About practitioner"}</Link>
           <Link href="#reviews">{ru?"Отзывы":es?"Opiniones":"Reviews"} ★</Link>
