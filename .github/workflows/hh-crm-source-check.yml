@@ -160,6 +160,10 @@ jobs:
         run: node --test tests/express-report-delivery.test.mjs tests/practitioner-express-reports.test.mjs tests/public-service-enquiries.test.mjs
       - name: Lint express report account ownership and notification routes
         run: npx eslint --ext .js,.jsx,.mjs lib/practitioners/express-report-repository.js lib/practitioners/express-report-contracts.js lib/app/express-report-notice.mjs lib/app/express-report-telegram-dispatch.js lib/app/client-telegram-transport.js app/api/free-express/claim/route.js 'app/api/app/[...path]/route.js' components/app/practice-express-reports.jsx components/app/practitioner-client-profiles.jsx components/app/practice-workspace.jsx components/app/crm-manager.jsx components/app/direct-message-inbox.jsx tests/express-report-delivery.test.mjs
+      - name: Free review signed Google claim without enabling gated v2 media
+        run: node --test tests/free-express-google-claim.test.mjs tests/public-service-enquiries.test.mjs
+      - name: Lint secured free review Google claim UI and account route
+        run: npx eslint components/free-express-google-claim.tsx components/contact-channel-chooser.tsx components/personal-express-enquiry.tsx app/api/free-express/claim/route.js app/api/service-enquiries/route.js lib/practitioners/free-express-google-claim.mjs tests/free-express-google-claim.test.mjs
       - name: Check notification worker syntax
         run: node --check public/course-notifications-sw.js
 

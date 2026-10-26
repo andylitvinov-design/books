@@ -16,8 +16,9 @@ export const preferredRegion = 'yul1'
 async function handle(request) {
   let auth
   try {
-    if (process.env.HH_FREE_EXPRESS_V2_ENABLED !== 'true')
-      throw new AppError('FEATURE_UNAVAILABLE', 503)
+    // A read or explicitly consented Google-account claim is independent of
+    // the gated v2 questionnaire/media flow. Authentication and the signed
+    // one-hour guest continuation remain mandatory for any new claim.
     const config = getAppConfig()
     requestOrigin(request, config)
     if (request.method === 'POST') requireSameOrigin(request, config)
