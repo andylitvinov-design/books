@@ -205,7 +205,7 @@ async function runEngine(name, engine) {
               // separate CRM/messenger choosers. Keep all original intents.
               const capture = page.locator("[data-tantra-whatsapp-capture]");
               assert.equal(count, 1, "Tantra requests reuse one consented chooser");
-              const selector = capture.locator("select");
+              const selector = capture.locator("#tantra-request-" + locale);
               const intents = await selector.locator("option").evaluateAll(options =>
                 options.map(option => option.value));
               assert.deepEqual(intents, ["free", "personal", "session", "answers", "feedback"],
