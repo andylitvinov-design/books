@@ -92,7 +92,7 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
   const requests=useMemo(()=>[...(data.requests||[])].sort(incomingSort),[data.requests])
   const business=data.businessEnquiries||[]
   const crmLeads=crmState.threads.filter(item=>item.lifecycle==='lead')
-  const visibleCrm=crmLeads.filter(item=>filter==='all'||(filter==='new'?item.unreadCount>0:item.needsReply))
+  const visibleCrm=crmLeads.filter(item=>filter==='all'||(filter==='new'?item.unreadCount>0:item.needsReply||item.unreadCount>0))
   const openCount=requests.filter(r=>OPEN.has(r.status)).length+
     business.filter(r=>['new','contacted'].includes(r.status)).length+crmLeads.filter(r=>r.needsReply).length
   const total=requests.length+business.length+crmLeads.length
