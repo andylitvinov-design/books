@@ -5,6 +5,7 @@ import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPi
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -423,7 +424,7 @@ async function assertPublicViewportFits(target,label){
  assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
 }
 async function verifyPublicServiceConversionJourneys(){
- const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ const publicContext=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
  const publicErrors=[]
  const services=[
   ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
@@ -437,7 +438,12 @@ async function verifyPublicServiceConversionJourneys(){
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    if(kind==='dao'){
+      const dao=servicePage.locator('main[data-free-entry-landing="dao"]')
+      await expect(dao).toHaveCount(1)
+      await expect(dao).toHaveAttribute('lang',locale)
+      await expect(dao.getByRole('heading',{level:1,name:locale==='ru'?'Узнайте, что даёт вам внутреннюю опору.':'Discover what gives you strength.',exact:true})).toBeVisible({timeout:30000})
+     }else await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -465,7 +471,10 @@ async function verifyPublicServiceConversionJourneys(){
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
-    if(kind==='alchemy'){
+    if(kind==='dao'){
+     await assertDaoFreeEntryCapture(servicePage,expect,{origin,locale})
+     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width+'/synthetic-receipt')
+    }else if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
      await expect(form.locator('select')).toHaveCount(2)
