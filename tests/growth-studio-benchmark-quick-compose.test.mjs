@@ -111,3 +111,12 @@ test('editing a saved post scrolls to the real editor, not to the page top above
   assert.doesNotMatch(handlers,/window\.scrollTo\(/)
   assert.match(studio,/id="growth-studio-compose"/)
 })
+
+test('revealed composer and saved posts move keyboard and screen reader focus with reduced-motion scrolling',()=>{
+  const action=studio.slice(studio.indexOf('const openWorkspace=nextTab=>'),studio.indexOf('const set=field=>'))
+  assert.match(action,/target\.focus\(\{preventScroll:true\}\)/)
+  assert.match(action,/target\.scrollIntoView/)
+  assert.match(action,/prefers-reduced-motion/)
+  assert.match(studio,/id="growth-studio-compose" tabIndex=\{-1\} role="region" aria-label=\{t\.compose\}/)
+  assert.match(studio,/id="growth-studio-posts" tabIndex=\{-1\} role="region" aria-label=\{t\.pending\}/)
+})
