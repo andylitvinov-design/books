@@ -106,7 +106,7 @@ function AudioPublication({message,onAction,busy,locale,t}){
     </div>
   </details>
 }
-export default function DirectMessageInbox({locale='en'}){
+export default function DirectMessageInbox({locale='en',embedded=false}){
   const t=COPY[locale]||COPY.en
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
@@ -207,9 +207,9 @@ export default function DirectMessageInbox({locale='en'}){
   }
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
   const audioSelected=file&&AUDIO_MIMES.has(mediaMime(file))
-  return <section className={styles.shell} aria-label={t.title}>
+  return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}>
     <header className={styles.head}>
-      <div><h1><MessageCircle aria-hidden="true"/>{t.title}</h1><p>{t.hint}</p></div>
+      <div>{embedded?<h2><MessageCircle aria-hidden="true"/>{t.title}</h2>:<h1><MessageCircle aria-hidden="true"/>{t.title}</h1>}<p>{t.hint}</p></div>
       <button type="button" className={styles.refresh} disabled={busy} onClick={async()=>{
         try{await getThreads();if(activeId)await openThread(activeId)}catch(e){setError(e.message)}
       }}><RefreshCw size={17} aria-hidden="true"/>{t.load}</button>
