@@ -177,3 +177,11 @@
 .detailConversation .empty{margin:auto;color:#81766c}
 .srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 @media(max-width:700px){.detailConversation .messages{min-height:0;max-height:none}.detailConversation .compose{padding:9px 11px}}
+
+/* A single inline composer. A separate Send row fell behind the iOS keyboard. */
+@media(max-width:700px){
+ .detailConversation .compose{display:grid;grid-template-columns:minmax(0,1fr) 46px;column-gap:7px;row-gap:4px;align-items:end;padding:8px}
+ .detailConversation .compose textarea{grid-column:1;grid-row:1;height:44px;min-height:44px;max-height:88px;resize:none;font-size:16px}
+ .detailConversation .compose>button{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:center;justify-self:stretch;width:46px;height:44px;min-height:44px;padding:0}
+ .detailConversation .compose small{grid-column:1/-1;max-height:36px;overflow:auto;font-size:11px;line-height:1.3}
+}
