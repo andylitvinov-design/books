@@ -95,6 +95,6 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Install exact dependency lock
-        run: npm ci
+        run: npm ci --include=dev
       - name: Next.js build
         run: npm run build
