@@ -67,3 +67,18 @@
 .shareLink{display:flex;align-items:center;gap:6px;flex:none;max-width:148px;min-height:40px;padding:8px 10px;border:1px solid #ddd6c9;border-radius:11px;background:#fff;color:#376e62;font:700 12px/1.25 system-ui,sans-serif;cursor:pointer}
 .shareLink span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:360px){.shareLink{max-width:97px;padding:7px 8px}.shareLink span{font-size:11px}}
+
+
+/* Mobile visual viewport: the keyboard is not included in CSS dvh on iOS.
+   JS updates --hh-mobile-window-height from visualViewport when it changes. */
+@media(max-width:700px){
+  .window{
+    height:var(--hh-mobile-window-height,calc(100dvh - 152px));
+    min-height:0;
+    max-height:none;
+  }
+  .shell input[type="search"],.shell textarea{
+    font-size:16px!important; /* iOS Safari must not auto-zoom a focused input */
+  }
+  .detail,.chatHolder{min-height:0;overflow:hidden}
+}
