@@ -196,7 +196,7 @@ test('exact two-chat-item UX and private temporary material contract',()=>{
   assert.match(nine,/Аудио принято/)
   assert.match(nine,/появятся отдельно в кабинете/)
   assert.match(service,/editMessageText/)
-  assert.match(service,/rememberAudioCombinePrompt\(config,state\.batchId,messageId\)/)
+  assert.match(service,/rememberAudioCombinePrompt\(config,state\.batchId,messageId,event\.updateId\)/)
   assert.match(service,/showAudioCombinePrompt\(config,credentials,event,state,fetcher\)/)
   assert.match(service,/if\(claimed\.batch\)\{\s*\/\/ No per-file save acknowledgments/)
   assert.match(service,/const receipt=combineImportReply\(null,ready\.id\)/)
