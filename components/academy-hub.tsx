@@ -1,3 +1,4 @@
+import "./academy-personal-courses.css";
 import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { PUBLIC_EVENTS } from "@/data/public-events";
 import Image from "next/image";
