@@ -77,7 +77,7 @@ test('guest pilot never bypasses webhook secret, positive consent or manual owne
   const ownerRoute=read('app/api/app/crm/messenger/route.js')
   const store=read('lib/crm/messenger-store.js')
   const publicApi=read('app/api/public/telegram-diagnostic/route.js')
-  const migration=read('supabase/migrations/20261026180532_hh_crm_telegram_second_pilot_20261026.sql')
+  const migration=read('supabase/migrations/20261026173446_hh_crm_telegram_second_pilot_20261026.sql')
   const ui=read('components/app/crm-messenger.jsx')
   assert.match(hook,/verifyTelegramSecondAccountInvite\(event\.rawText/)
   assert.match(hook,/one|second-chat-pilot/)
