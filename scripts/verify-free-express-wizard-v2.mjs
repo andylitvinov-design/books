@@ -98,6 +98,43 @@ for (const [engine, driver] of [['chromium', chromium], ['webkit', webkit]]) {
             assert.equal(submits, 1, 'Skipping optional stages never creates a second lead')
             assert.equal(uploads, 0, 'No upload without explicit image choice+consent')
           }
+          // Exercise the entire consented, no-provider journey at *every*
+          // locale/viewport/engine pair, not merely screenshot the opening card.
+          // RU/390 above also checks switching into the full 20-question path.
+          if (!(locale === 'ru' && width === 390)) {
+            const lead = wizard.locator('[data-free-express-lead]')
+            await lead.locator('[data-phone-country-input] input[type=tel]').fill('4165551234')
+            await lead.locator('textarea').fill('Synthetic personal question for private review.')
+            await lead.locator('button[type=submit]').click()
+            assert.equal(submits, 0, 'Initial CRM lead must require affirmative consent')
+            await lead.locator('input[type=checkbox]').check()
+            await lead.locator('button[type=submit]').click()
+            await wizard.locator('[data-free-express-receipt]').waitFor({ state: 'visible' })
+            assert.equal(submits, 1, 'Exactly one consented CRM lead')
+            assert.ok((await wizard.locator('[data-free-express-receipt]').innerText()).includes(HH))
+            const questionnaire = wizard.locator('[data-free-express-questions]')
+            await questionnaire.waitFor({ state: 'visible' })
+            assert.equal(await questionnaire.locator('textarea').count(), 3)
+            await questionnaire.locator('textarea').nth(0).fill('Synthetic challenge in my life.')
+            await questionnaire.locator('textarea').nth(1).fill('I would like clarity and a next step.')
+            await questionnaire.locator('button[type=submit]').click()
+            assert.equal(details, 0, 'Additional sensitive answers need separate consent')
+            await questionnaire.locator('input[type=checkbox]').check()
+            await questionnaire.locator('button[type=submit]').click()
+            await wizard.locator('[data-free-express-media=portrait]').waitFor({ state: 'visible' })
+            assert.equal(details, 1, 'Only one encrypted detail update')
+            await wizard.locator('[data-free-express-media=portrait] button').last().click()
+            await wizard.locator('[data-free-express-google]').waitFor({ state: 'visible' })
+            assert.equal(await wizard.locator('[data-free-express-google] input[type=checkbox]:checked').count(), 0)
+            await wizard.locator('[data-free-express-google] button').last().click()
+            await wizard.locator('[data-free-express-media=drawing]').waitFor({ state: 'visible' })
+            await wizard.locator('[data-free-express-media=drawing] button').last().click()
+            await wizard.locator('[data-free-express-complete]').waitFor({ state: 'visible' })
+            assert.equal(submits, 1, 'Optional stages never duplicate a CRM lead')
+            assert.equal(uploads, 0, 'No image upload without explicit selection and consent')
+          }
+          const finalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+          assert.ok(finalOverflow <= 2, 'Completed journey must not overflow narrow phones: ' + finalOverflow)
           assert.deepEqual(errors, [], 'Browser page errors')
           results.push({ engine, locale, width, ok: true })
         } finally {
