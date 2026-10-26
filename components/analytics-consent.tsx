@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { PUBLIC_ANALYTICS_AVAILABLE, isPublicAnalyticsPath } from "@/lib/public-analytics";
-import { safePublicPagePath } from "@/lib/analytics/public-page-traffic.mjs";
 
 const consentCookie = "holistic_house_analytics_consent";
 type ConsentChoice = "granted" | "denied";
@@ -100,68 +98,12 @@ const publicStatsChoiceEvent = "holistic-house:public-stats-consent";
 function firstPartyCookie(name: string) {
   return document.cookie.split("; ").find(part => part.startsWith(name + "="))?.split("=")[1];
 }
-function setFirstPartyConsent(allow: boolean) {
+export function setFirstPartyConsent(allow: boolean) {
   // A durable refusal is as important as a durable opt-in: never reprompt
   // people who declined, and never infer consent from visiting a page.
   document.cookie = publicStatsCookie + "=" + (allow ? "v1" : "denied") +
     "; Path=/; Max-Age=31536000; SameSite=Lax; Secure";
   window.dispatchEvent(new Event(publicStatsChoiceEvent));
-}
-
-const statsTranslations = {
-  en: {
-    title: "Count anonymous page visits?",
-    description: "Optional public-page views and broad sources only. No IP, identity or health data. Google/Meta stay off.",
-    allow: "Allow", deny: "No, thanks", details: "Privacy details",
-  },
-  ru: {
-    title: "Разрешить анонимный подсчёт посещений?",
-    description: "Только публичные страницы и общие источники, без IP, аккаунта и данных о здоровье. Google/Meta отключены.",
-    allow: "Разрешить", deny: "Нет, спасибо", details: "О приватности",
-  },
-  es: {
-    title: "¿Permitir el conteo anónimo de visitas?",
-    description: "Solo páginas públicas y fuentes generales; sin IP, identidad ni datos de salud. Google/Meta siguen desactivados.",
-    allow: "Permitir", deny: "No, gracias", details: "Privacidad",
-  },
-};
-
-/** Small dismissible choice, never a blocking modal or an implicit opt-in.
- * Display only on explicitly allowlisted public marketing pages. */
-export function FirstPartyStatsNotice() {
-  const pathname = usePathname();
-  const [show, setShow] = useState(false);
-  const locale = pathname?.split("/")[1];
-  const copy = locale === "ru" ? statsTranslations.ru :
-    locale === "es" ? statsTranslations.es : statsTranslations.en;
-
-  useEffect(() => {
-    setShow(Boolean(safePublicPagePath(pathname)) &&
-      !firstPartyCookie(publicStatsCookie) &&
-      firstPartyCookie("hh_public_stats_skip") !== "1");
-  }, [pathname]);
-
-  function choose(allow: boolean) {
-    setFirstPartyConsent(allow);
-    setShow(false);
-  }
-
-  if(!show)return null;
-  return (
-    <aside data-first-party-consent
-      aria-label={copy.title}
-      className="fixed bottom-24 left-3 right-3 z-40 mx-auto max-w-md rounded-2xl border border-stone-300 bg-stone-50 p-3 text-stone-900 shadow-lg md:bottom-4 md:left-auto md:right-4">
-      <p className="m-0 text-sm font-semibold">{copy.title}</p>
-      <p className="mt-1 mb-2 text-xs leading-snug">{copy.description}</p>
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => choose(true)}
-          className="min-h-11 rounded-full bg-amber-900 px-4 py-2 text-sm font-medium text-white">{copy.allow}</button>
-        <button type="button" onClick={() => choose(false)}
-          className="min-h-11 rounded-full border border-stone-400 bg-white px-3 py-2 text-sm">{copy.deny}</button>
-        <Link href="/privacy" className="text-xs underline underline-offset-2">{copy.details}</Link>
-      </div>
-    </aside>
-  );
 }
 
 /** Separate, explicit consent for anonymous first-party counters.
