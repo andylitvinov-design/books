@@ -83,3 +83,21 @@
   .actions button{flex:1 1 120px}
 }
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important}}
+
+/* Remaster feature-mode clean-room parity: bounded on-page workflow editing. */
+.graphTools{display:flex;flex-direction:column;gap:9px;min-width:0;padding:12px;border:1px solid #dfd3c4;border-radius:13px;background:#faf3e9}
+.graphTools h4{margin:0;color:#5b4539;font-size:13px}
+.graphTools label{width:100%}
+.graphTools select{max-width:100%;width:100%}
+.graphTools .secondary{align-self:flex-start;min-height:44px;max-width:100%;white-space:normal;text-align:center}
+.choiceEdit{display:flex;flex-direction:column;gap:6px;min-width:0;padding-bottom:9px;border-bottom:1px solid #e7d8c8}
+.choiceEdit label{width:100%}
+.choiceEdit .secondary{align-self:flex-start;min-height:44px;max-width:100%}
+.actionButton{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 13px;
+  max-width:100%;background:#246c69!important;color:#fff!important;border:1px solid #246c69!important;
+  border-radius:11px!important;font:750 12px/1.35 system-ui,sans-serif!important;text-align:center}
+.importPanel{min-width:0;padding:10px;border:1px solid #e2d3c1;border-radius:12px;background:#fffaf4}
+.importPanel summary{font:750 12px/1.5 system-ui,sans-serif;color:#315f5b;cursor:pointer;min-height:36px}
+.importPanel textarea{margin:8px 0;min-height:80px;font:500 11px/1.4 ui-monospace,monospace}
+.importPanel .actionButton{width:100%}
+@media(max-width:360px){.graphTools{padding:9px}.choiceEdit .secondary{width:100%}}
