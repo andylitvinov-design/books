@@ -245,14 +245,12 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const edit=post=>{
     setEditing({id:post.id,revision:post.revision})
     setForm({...post,scheduledAt:localFromIso(post.scheduledAt)})
-    setTab('compose');setNotice('')
-    window.scrollTo({top:0,behavior:'smooth'})
+    openWorkspace('compose')
   }
   const duplicate=post=>{
     setEditing(null)
     setForm({...post,title:post.title+' copy',scheduledAt:'',campaign:post.campaign})
-    setTab('compose');setNotice('')
-    window.scrollTo({top:0,behavior:'smooth'})
+    openWorkspace('compose')
   }
   async function refresh(){
     setBusy(true);setNotice('')
