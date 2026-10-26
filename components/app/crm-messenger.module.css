@@ -75,3 +75,14 @@
 .guideBody .copyButton{background:#ebf7f2;color:#1e6468;border:1px solid #9ccbc0;padding:10px 13px;min-height:44px}
 .channelGuide :focus-visible{outline:3px solid #185ac9;outline-offset:2px}
 @media(max-width:690px){.channelGrid{grid-template-columns:minmax(0,1fr)}.guideBody{padding-right:5px}}
+
+/* Signed-in CRM owner pilot: explicit first-party setup gate, no stored PII. */
+.pilotStart{box-sizing:border-box;width:100%;min-width:0;display:flex;flex-direction:column;gap:7px;
+  margin:7px 0;padding:11px;border:1px solid #abcfc3;border-radius:12px;background:#f1faf5}
+.pilotStart p{margin:0;color:#3b635b;font:500 12px/1.5 system-ui,sans-serif;overflow-wrap:anywhere}
+.pilotAction{display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-height:44px;max-width:100%;border:1px solid #246e67;border-radius:10px;
+  padding:9px 11px;background:#206861;color:#fff!important;text-decoration:none;
+  font:750 12px/1.4 system-ui,sans-serif;text-align:center;overflow-wrap:anywhere}
+.pilotAction:hover{background:#18574f}
+.pilotAction:focus-visible{outline:3px solid #185ac9;outline-offset:3px}
