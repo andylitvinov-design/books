@@ -130,11 +130,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     setDestination(/^[a-z0-9-]{2,90}$/.test(slug)?slug:'')
     getThreads().catch(e=>{setError(e.message);if(e.message==='SIGN_IN_REQUIRED')setSignedOut(true)})
   },[getThreads])
-  useEffect(()=>{
-    if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
-      void openThread(initialThreadId)
-  },[simpleDetail,accountId,initialThreadId,activeId])
-  async function post(body){
+  const post=useCallback(async(body)=>{
     if(!accountId)throw new Error('SIGN_IN_REQUIRED')
     const response=await fetch(URL,{method:'POST',cache:'no-store',credentials:'same-origin',
       headers:{'Content-Type':'application/json','x-hh-account-id':accountId},
@@ -142,19 +138,25 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     const data=await response.json().catch(()=>({}))
     if(!response.ok)throw new Error(data.error||t.error)
     return data
-  }
-  async function openThread(id){
+  },[accountId,t.error])
+  const openThread=useCallback(async(id)=>{
     setActiveId(id);setError('')
     try {
       const data=await jsonGet(URL+'?threadId='+encodeURIComponent(id))
-      if(data.accountId!==accountId){setCurrent(null);setAccountId(data.accountId);await getThreads();return}
+      if(data.accountId!==accountId||(expectedAccountId&&data.accountId!==expectedAccountId)){
+        setCurrent(null);await getThreads();return
+      }
       setCurrent(data)
       if(data.messages.some(m=>!m.mine)){
         await post({action:'read',threadId:id})
         await getThreads()
       }
     }catch(e){setError(e.message);setCurrent(null)}
-  }
+  },[accountId,expectedAccountId,getThreads,post])
+  useEffect(()=>{
+    if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
+      void openThread(initialThreadId)
+  },[simpleDetail,accountId,initialThreadId,activeId,openThread])
   async function action(body){
     setBusy(true);setError('')
     try {
