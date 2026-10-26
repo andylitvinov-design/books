@@ -70,6 +70,8 @@ for (const [engine, driver] of [['chromium', chromium], ['webkit', webkit]]) {
           await reveal.click()
           const wizard = page.locator('[data-free-express-wizard]')
           await wizard.waitFor({ state: 'visible' })
+          const energyCase = engine === 'chromium' && locale === 'es' && width === 320
+          if (energyCase) await page.locator('[data-express-focus=energy] input[type=radio]').check()
           assert.equal(await page.locator('[role=dialog],[aria-modal=true]').count(), 0)
           assert.equal(await page.locator('[data-free-diagnostic-start]').count(), 0)
           assert.equal(await wizard.locator('[data-free-express-lead]').count(), 1)
@@ -163,16 +165,23 @@ for (const [engine, driver] of [['chromium', chromium], ['webkit', webkit]]) {
               await save.locator('input[type=checkbox]').check()
               await save.getByRole('button',{name:'Sign in / Save to my account'}).click()
             } else await wizard.locator('[data-free-express-google] button').last().click()
-            await wizard.locator('[data-free-express-media=drawing]').waitFor({ state: 'visible' })
-            if (mediaCase) {
-              const drawing = wizard.locator('[data-free-express-media=drawing]')
-              await drawing.locator('input[type=file]').last().setInputFiles({
-                name:'synthetic-drawing.png', mimeType:'image/png', buffer:sampleImage,
-              })
-              await drawing.locator('input[type=checkbox]').check()
-              await drawing.getByRole('button',{name:'Upload privately'}).click()
-            } else await wizard.locator('[data-free-express-media=drawing] button').last().click()
+            if (!energyCase) {
+              await wizard.locator('[data-free-express-media=drawing]').waitFor({ state: 'visible' })
+              if (mediaCase) {
+                const drawing = wizard.locator('[data-free-express-media=drawing]')
+                await drawing.locator('input[type=file]').last().setInputFiles({
+                  name:'synthetic-drawing.png', mimeType:'image/png', buffer:sampleImage,
+                })
+                await drawing.locator('input[type=checkbox]').check()
+                await drawing.getByRole('button',{name:'Upload privately'}).click()
+              } else await wizard.locator('[data-free-express-media=drawing] button').last().click()
+            } else assert.equal(await wizard.locator('[data-free-express-media=drawing]').count(),0,
+              'Energy review correctly skips the drawing screen')
             await wizard.locator('[data-free-express-complete]').waitFor({ state: 'visible' })
+            assert.equal(await wizard.locator('[aria-current=step]').count(), 1)
+            if (energyCase) {
+              assert.match(await wizard.locator('[role=status]').first().innerText(), /5 de 5/)
+            }
             assert.equal(submits, 1, 'Optional stages never duplicate a CRM lead')
             assert.equal(uploads, mediaCase ? 2 : 0, 'Private image uploads occur only on explicit consent')
             assert.equal(claims, mediaCase ? 1 : 0, 'Google claim is separate, never an extra CRM lead')
