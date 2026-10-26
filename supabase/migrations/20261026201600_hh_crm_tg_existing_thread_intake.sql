@@ -19,7 +19,7 @@ begin
      and t.user_hash = p_user_hash and not t.suppressed and not c.suppressed
      and c.lifecycle <> 'archived'
    limit 1
-   for share of t;
+   for share of t, c;
   return coalesce(v_found, false);
 end;
 $fn$;
