@@ -58,8 +58,28 @@ async function check(browserType, locale, width, height) {
         label + ": readable full-width action card");
     }
     const last = await dao.boundingBox();
+    // Numeric, public-layout-only diagnostics: no question, form or user text.
+    const firstScreenGeometry = await first.evaluate(node => {
+      const bounds = element => {
+        if (!element) return null;
+        const r = element.getBoundingClientRect();
+        return { x:r.x, y:r.y, width:r.width, height:r.height, bottom:r.bottom };
+      };
+      return {
+        viewport:{width:innerWidth,height:innerHeight},
+        hero:bounds(node),
+        heading:bounds(node.querySelector("h1")),
+        choices:[...node.querySelectorAll("[data-holistic-choose]")].map(bounds),
+        header:bounds(document.querySelector(".house-header")),
+        bottomNavigation:bounds(document.querySelector(".mobile-bottom-navigation")),
+      };
+    });
+    await writeFile(folder + "/" + label + "-first-screen.json", JSON.stringify(firstScreenGeometry,null,2));
     assert.ok(last && last.y + last.height < height - 40,
-      label + ": last option must appear on the first mobile screen");
+      label + ": last option must appear on the first mobile screen " + JSON.stringify(firstScreenGeometry));
+    const bottomNavigation = firstScreenGeometry.bottomNavigation;
+    if (bottomNavigation) assert.ok(last && last.y + last.height <= bottomNavigation.y - 2,
+      label + ": the complete last option must stay above fixed navigation " + JSON.stringify(firstScreenGeometry));
     const before = await page.evaluate(() => ({
       content: document.documentElement.scrollWidth, viewport: window.innerWidth,
     }));
@@ -109,7 +129,7 @@ async function check(browserType, locale, width, height) {
 }
 
 for (const locale of ["en", "ru", "es"]) await check(webkit, locale, 390, 844);
-await check(webkit, "ru", 320, 568);
+for (const locale of ["en", "ru", "es"]) await check(webkit, locale, 320, 568);
 await check(webkit, "en", 430, 844);
 for (const locale of ["en", "ru", "es"]) await check(chromium, locale, 390, 844);
 await writeFile(folder + "/acceptance.json", JSON.stringify(evidence, null, 2));
