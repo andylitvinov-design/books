@@ -79,3 +79,6 @@
   .filePick{font-size:11px;padding:7px}
 }
 @media(prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important}}
+
+/* A real empty inbox should not occupy an entire phone viewport. */
+.emptySummary{padding:17px 14px;margin:5px 0 8px;border:1px dashed #d9c9b8;border-radius:13px;background:#fffaf5;color:#7e6659;font:500 13px/1.5 system-ui,sans-serif;text-align:center}
