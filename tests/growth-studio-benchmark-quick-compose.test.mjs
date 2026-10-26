@@ -32,6 +32,7 @@ test('clean-room quick start is one compact task and opens existing composer wit
   assert.match(studio,/channel:'manual'/)
   assert.match(studio,/scrollIntoView/)
   assert.match(studio,/prefers-reduced-motion/)
+  assert.match(studio,/\{workspaceOpen&&<div className=\{styles\.intro\}>/)
 })
 
 test('fast editor exposes only channel, title and caption before optional advanced fields',()=>{
@@ -77,6 +78,13 @@ test('all existing publishing, content discovery and manual-versus-verified stat
     "post.channel==='telegram'","telegramVerified", "confirmed:true",
   ])assert.ok(studio.includes(signal),'missing '+signal)
   assert.doesNotMatch(studio,/onClick=\{\(\)=>publishGrowthTelegramNowAction\(/)
+})
+
+test('optional storage callback is referentially stable and cannot re-trigger probe loop',()=>{
+  assert.match(connections,/const NOOP_STORAGE_VERIFICATION=\(\)=>\{\}/)
+  assert.match(connections,/onStorageVerified=NOOP_STORAGE_VERIFICATION/)
+  assert.match(connections,/\},\[onStorageVerified\]\)/)
+  assert.match(connections,/useEffect\(\(\)=>\{void verifyStorage\(\)\},\[verifyStorage\]\)/)
 })
 
 test('mobile focus targets, touch affordance, and reduced-motion support are explicit',()=>{
