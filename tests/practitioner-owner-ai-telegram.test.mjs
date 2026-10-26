@@ -196,14 +196,14 @@ test('live provider menu never offers unverified models and free choice uses ver
   },'duo').length,2)
 })
 
-test('only two truly responding assistants unlock all-mode and three actions stay explicit',()=>{
+test('candidate models unlock the first explicit all-question but are never falsely called verified',()=>{
   const cold=ownerAiMenu({
     gemini:{candidate:true,model:'gemini-3.8-flash',ready:false},
     free:{candidate:true,model:'nvidia/nemotron-3-ultra-550b-a55b:free',ready:false},
     free2:{ready:false},mistral:{ready:false}
   })
   const noButtons=cold.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
-  assert.deepEqual(noButtons,['hh-audio:help','hh-ai:verify','hh-ai:status'])
+  assert.deepEqual(noButtons,['hh-audio:help','hh-ai:all','hh-ai:verify','hh-ai:status'])
   assert.match(cold.text,/нет подтверждённых ответов/i)
   const live=ownerAiMenu({
     gemini:{ready:true,model:'gemini-3.8-flash'},
@@ -213,7 +213,7 @@ test('only two truly responding assistants unlock all-mode and three actions sta
   })
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
   assert.deepEqual(buttons,[
-    'hh-audio:help','hh-ai:all','hh-ai:gemini','hh-ai:free','hh-ai:free2',
+    'hh-audio:help','hh-ai:all','hh-ai:free','hh-ai:free2','hh-ai:gemini',
     'hh-ai:verify','hh-ai:status'
   ])
   assert.match(live.text,/nemotron-3-ultra/)
