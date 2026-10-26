@@ -76,3 +76,8 @@
 .questionGroup:focus-within{border-color:#8a4257}
 .questionGroup>summary:focus-visible{outline:3px solid #1765c1;outline-offset:-3px;border-radius:12px}
 .questionGroupFields{display:grid;gap:13px;padding:13px;border-top:1px solid #eee1d5}
+
+.optionalName{min-width:0;border:1px solid #e5d4c6;background:#fffdf9;border-radius:10px}
+.optionalName>summary{cursor:pointer;min-height:40px;padding:11px 13px;color:#735a4b;font-weight:650;font-size:12px}
+.optionalName>summary:focus-visible{outline:3px solid #1765c1;outline-offset:2px;border-radius:10px}
+.optionalName>label{display:grid;gap:5px;padding:0 11px 11px;min-width:0}
