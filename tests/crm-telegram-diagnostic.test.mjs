@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {runInNewContext} from 'node:vm'
+import {TELEGRAM_DIAGNOSTIC_V2_BUTTONS} from '../lib/crm/telegram-diagnostic-v2.mjs'
+import {telegramInlineMarkup} from '../lib/crm/telegram-inline-buttons.mjs'
+import {channelTransportReady,telegramPilotReady} from '../lib/crm/messenger-policy.js'
 import {
   parseDiagnosticStart,telegramPublicStartRequested,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
   transitionTelegramDiagnosticLegacy as transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
@@ -191,11 +195,98 @@ test('owner-only private photo, no public Telegram file ID or brokered medical d
   assert.doesNotMatch(ui,/file_id|telegramPhotoFileId|api\.telegram\.org/)
 })
 
-test('diagnostic webhook forwards committed reply as Bot API text, not a missing property',()=>{
-  const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
-  const provider=source('lib/crm/messenger-provider.js')
-  assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard,/)
-  assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
-  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en'\}/)
-  assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
+// Execute the committed function bodies without importing server/provider modules.
+// Every collaborator is pure or an in-memory fixture; no process/fetch/DB is exposed.
+const isolatedFunction=(path,name,scope)=>{
+  const body=source(path).match(new RegExp('^export async function '+name+'\\([\\s\\S]*?^\\}', 'm'))
+  assert.ok(body,`committed ${name} function must be present`)
+  return runInNewContext(body[0].replace(/^export /,'')+'\n'+name,scope,{timeout:1000})
+}
+const promptFixture=()=>{
+  const calls=[]
+  const send=isolatedFunction('lib/crm/messenger-provider.js','sendTelegramDiagnosticPrompt',{
+    AppError:class extends Error{constructor(code,status){super(code);this.status=status}},
+    channelTransportReady,telegramPilotReady,TELEGRAM_DIAGNOSTIC_V2_BUTTONS,telegramInlineMarkup,
+    API:'https://provider.invalid',token:()=> 'SYNTHETIC_TOKEN_ONLY',
+    readProvider:async(url,options)=>{
+      calls.push({url,method:options.method,body:JSON.parse(options.body)})
+      return {result:{message_id:123}}
+    },
+  })
+  return {calls,send:(input,config=env)=>send(input,config)}
+}
+const intakeUrl=locale=>'https://holistichouse.vercel.app/'+locale+'/coaching/intake?topic=business&from=telegram'
+
+test('diagnostic webhook forwards committed reply as Bot API text and optional Web App URL',async()=>{
+  for(const locale of ['en','ru','es'])for(const webAppUrl of [undefined,null,intakeUrl(locale)])
+    for(const approvedPilotGuest of [true,false,'true']){
+    const prompt=promptFixture(),events=[],forwarded=[]
+    const intake={handled:true,to:'123123123',reply:'Synthetic committed reply',keyboard:[],
+      approvedPilotGuest,locale,...(webAppUrl===undefined?{}:{webAppUrl})}
+    const POST=isolatedFunction('app/api/app/crm/messenger/webhook/[provider]/route.js','POST',{
+      Buffer,PRIVATE_HEADERS:{},MESSENGER_CHANNELS:['telegram'],getAppConfig:()=>({}),
+      NextResponse:{json:body=>body},verifyMessengerWebhook:()=>true,
+      normalizeMessengerUpdates:()=>[{type:'incoming'}],ensureTelegramInlineWebhookUpdates:async()=>{},
+      processTelegramDiagnostic:async()=>{events.push('committed');return intake},
+      sendTelegramDiagnosticPrompt:async input=>{
+        assert.deepEqual(events,['committed'],'reply is sent only after intake resolves')
+        forwarded.push(JSON.parse(JSON.stringify(input)))
+        return prompt.send(input)
+      },
+      ingestMessengerUpdate:async()=>{throw new Error('handled intake must not be ingested twice')},
+      safeError:()=>({status:500}),
+    })
+    const result=await POST({headers:{get:()=>null},arrayBuffer:async()=>Buffer.from('{}')},
+      {params:Promise.resolve({provider:'telegram'})})
+    assert.equal(result.ok,true)
+    assert.deepEqual(forwarded,[{to:intake.to,text:intake.reply,keyboard:[],
+      approvedPilotGuest:approvedPilotGuest===true,locale,webAppUrl:webAppUrl||null}])
+    assert.equal(prompt.calls.length,1)
+    assert.equal(prompt.calls[0].body.text,intake.reply)
+    assert.equal(prompt.calls[0].body.chat_id,intake.to)
+    assert.equal(prompt.calls[0].method,'POST')
+    if(webAppUrl){
+      const button=prompt.calls[0].body.reply_markup.inline_keyboard[0][0]
+      assert.equal(button.web_app.url,webAppUrl)
+      assert.equal(button.text,locale==='ru'?'Заполнить анкету':locale==='es'?'Completar formulario':'Fill questionnaire')
+    }else assert.deepEqual(prompt.calls[0].body.reply_markup,{remove_keyboard:true})
+  }
+})
+
+test('diagnostic prompt preserves legacy keyboard and rejects unsafe Web App links before transport',async()=>{
+  const input={to:'123123123',text:'Synthetic committed reply'}
+  const legacy=promptFixture()
+  await legacy.send({...input,keyboard:[['/agree','/stop']]})
+  assert.deepEqual(legacy.calls[0].body.reply_markup,telegramInlineMarkup([['/agree','/stop']],'en'))
+  const pilot={...env,HH_CRM_MSG_PRODUCTION_APPROVED:'false',HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED:'false',
+    HH_CRM_MSG_TELEGRAM_PILOT_ENABLED:'true',HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID:'999999999'}
+  for(const overrides of [{},{approvedPilotGuest:'true'}]){
+    const fixture=promptFixture()
+    await assert.rejects(fixture.send({...input,...overrides},pilot),/TEST_RECIPIENT_ONLY/)
+    assert.equal(fixture.calls.length,0)
+  }
+  const approved=promptFixture()
+  await approved.send({...input,approvedPilotGuest:true},pilot)
+  assert.equal(approved.calls.length,1)
+  for(const webAppUrl of [
+    '',false,{},'http://holistichouse.vercel.app/ru/coaching/intake?topic=business&from=telegram',
+    'https://example.invalid/ru/coaching/intake?topic=business&from=telegram',
+    'https://holistichouse.vercel.app.example.invalid/ru/coaching/intake?topic=business&from=telegram',
+    intakeUrl('fr'),intakeUrl('ru')+'&chat_id=123123123',intakeUrl('ru')+'#token=synthetic',
+    intakeUrl('ru').replace('business','unknown'),
+  ]){
+    const fixture=promptFixture()
+    await assert.rejects(fixture.send({...input,webAppUrl}),/INVALID_WEBAPP_LINK/)
+    assert.equal(fixture.calls.length,0)
+  }
+  for(const invalid of [
+    [{...input,webAppUrl:intakeUrl('en'),keyboard:[['/agree']]},env,'INVALID_WEBAPP_LINK'],
+    [{to:input.to,reply:input.text},env,'INVALID_MESSAGE'],
+    [{...input,text:''},env,'INVALID_MESSAGE'],
+    [input,{...env,HH_CRM_MSG_TELEGRAM_ENABLED:'false'},'CHANNEL_NOT_CONNECTED'],
+  ]){
+    const fixture=promptFixture()
+    await assert.rejects(fixture.send(invalid[0],invalid[1]),new RegExp(invalid[2]))
+    assert.equal(fixture.calls.length,0)
+  }
 })
