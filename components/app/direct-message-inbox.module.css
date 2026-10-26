@@ -125,3 +125,13 @@
 .shell[data-simple-detail="true"] .feed{flex:1;min-height:0;max-height:none;overflow:auto;background:#fcfaf7}
 .shell[data-simple-detail="true"] .compose{flex:none;padding:10px 12px}
 .shell[data-simple-detail="true"] .placeholder{min-height:0}
+
+/* Private on-site messages use the same full-height mobile reply experience. */
+@media(max-width:700px){
+ .shell[data-simple-detail="true"] .compose{display:grid;gap:5px;padding:8px 10px}
+ .shell[data-simple-detail="true"] .compose>label:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+ .shell[data-simple-detail="true"] .compose textarea{min-height:44px;height:44px;max-height:88px;resize:none;font-size:16px}
+ .shell[data-simple-detail="true"] .compose .actions{min-height:42px}
+ .shell[data-simple-detail="true"] .compose .send{min-height:42px}
+ .shell[data-simple-detail="true"] .compose>.hint{margin:0;font-size:11px;line-height:1.3}
+}
