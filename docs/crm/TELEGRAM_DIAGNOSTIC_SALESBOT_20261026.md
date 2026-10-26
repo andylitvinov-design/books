@@ -123,3 +123,30 @@ before releasing.
 → optional photo privately accessible to owner → manual owner reply accepted
 and physically received → /stop → blocked further sends. Only after real
 provider evidence and separate owner approval may public availability be enabled.
+
+
+## Telegram inline buttons · version-aware pilot, 26 October 2026
+
+The practice owner uses **Telegram → Connect** again in [CRM Messages](https://holistichouse.vercel.app/ru/app/practice?panel=crm&crmTab=messages)
+to refresh the verified first-party webhook with
+`allowed_updates=['message','callback_query']`. Never replace a foreign
+webhook; read-only Verify alone does not subscribe new updates.
+
+The server requires official `getWebhookInfo.allowed_updates` confirmation
+before showing inline controls under the latest bot message, **above the text
+composer**. Until connected, previous reply-keyboard controls remain usable.
+Retiring an old keyboard may require one neutral ReplyKeyboardRemove message.
+
+Button data contains only allowlisted flow version (1/2), stage, action and
+EN/RU/ES locale, never IDs, answers, photos, tokens or health data. Signed
+Telegram callbacks verify same human and private bot chat, current stage,
+version and locale, rejecting stale and wrong-owner presses without a new CRM
+lead. The original signed invited second-chat pilot and STOP after expiry
+remain; no automatic broadcasts or public Telegram CTA are enabled.
+
+**Physical acceptance required:** owner reconnects the existing bot, verifies
+Telegram callback subscription, taps an inline action in the real private
+Telegram client, checks that it appears above the composer and does not replay
+old steps. Complete one consented lead and send a manual CRM reply; verify
+arrival on the recipient's phone and STOP suppression. Build/HTTP 200/Bot API
+acceptance do not prove delivery.

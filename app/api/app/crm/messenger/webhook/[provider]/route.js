@@ -3,7 +3,7 @@ import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt } from '@/lib/crm/messenger-provider'
+import { sendTelegramDiagnosticPrompt, acknowledgeTelegramDiagnosticButton } from '@/lib/crm/messenger-provider'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -34,14 +34,29 @@ export async function POST(request,{params}){
       if(provider==='telegram'){
         const intake=await processTelegramDiagnostic(event,config)
         if(intake.handled){
+          if(event.callbackQueryId){
+            // Acknowledge after the DB decision. This does not send a message.
+            try{await acknowledgeTelegramDiagnosticButton({
+              to:event.userId,id:event.callbackQueryId,stale:intake.stale===true,
+              locale:intake.locale||event.callbackLocale||'en',
+              approvedPilotGuest:intake.approvedPilotGuest===true,
+            })}catch{ /* duplicate/stale callbacks never create extra messages */ }
+          }
           if(intake.reply){
             // CRM and consent were committed before contacting the provider.
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
-            try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
-              approvedPilotGuest:intake.approvedPilotGuest===true})}catch{ /* leave intake in CRM for owner manual follow-up */ }
+            try{await sendTelegramDiagnosticPrompt({
+              to:intake.to,text:intake.reply,keyboard:intake.keyboard,
+              stage:intake.stage,flowVersion:intake.flowVersion,locale:intake.locale,
+              approvedPilotGuest:intake.approvedPilotGuest===true,
+              clearReplyKeyboard:!event.callbackQueryId &&
+                /^\/(?:start|agree|situation|energy|skip|help)(?:@\w+)?(?:\s|$)/i.test(event.rawText||''),
+            })}catch{ /* provider acceptance is not client delivery */ }
           }
           continue
         }
+        // Callbacks are strictly diagnostic controls, never general CRM leads.
+        if(event.callbackQueryId)continue
       }
       await ingestMessengerUpdate(provider,event,config)
     }
