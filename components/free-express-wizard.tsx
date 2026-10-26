@@ -414,15 +414,17 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
 
     {step === 0 && <form className={styles.form} onSubmit={event => { void register(event); }} data-free-express-lead>
       <h3>{t.contact}</h3><p>{t.intro}</p>
-      <label>{t.name}<input autoComplete="name" value={name} maxLength={120} disabled={busy || !!pending.current}
-        onChange={event => setName(event.target.value)} /></label>
+      <details className={styles.optionalName}>
+        <summary>{t.name}</summary>
+        <label><input aria-label={t.name} autoComplete="name" value={name} maxLength={120}
+          disabled={busy || !!pending.current} onChange={event => setName(event.target.value)} /></label>
+      </details>
       <div className={styles.phone}><span>{t.phone}</span>
         <PhoneCountryInput locale={locale} value={phone} disabled={busy || !!pending.current} required
           onChange={value => { setPhone(value); setError(""); }} /></div>
-      <label>{t.question}<textarea rows={3} maxLength={400} value={question}
+      <label>{t.question}<textarea rows={2} maxLength={400} value={question}
         placeholder={t.questionHint} disabled={busy || !!pending.current}
-        onChange={event => { setQuestion(event.target.value); setError(""); }} />
-        <small>{t.questionHint}</small></label>
+        onChange={event => { setQuestion(event.target.value); setError(""); }} /></label>
       <label className={styles.consent}><input type="checkbox" checked={replyConsent} disabled={busy || !!pending.current}
         onChange={event => setReplyConsent(event.target.checked)} /><span>{t.consent}</span></label>
       {error && <p role="alert" className={styles.error}>{error}</p>}
