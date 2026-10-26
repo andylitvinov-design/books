@@ -1373,9 +1373,11 @@
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorLong{display:none}
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
     min-height:0;
-    /* 43svh rather than 31.38svh: the user's chart should dominate a normal
-       iPhone viewport. Restrict by card width on narrow/short devices. */
-    width:min(100%,clamp(290px,43svh,390px));
+    /* Keep 43svh preferred, but fit the 535px menu-to-menu mobile budget:
+       two 52px controls, 26px status + 7px margin, and 20px for picker
+       padding/borders, row margins and a 1px rounding reserve. Convert the
+       remaining height to width without changing the 360:390 artwork. */
+    width:min(100%,clamp(290px,43svh,calc((535px - 2 * 52px - 26px - 7px - 20px) * 360 / 390)));
     height:auto;
     aspect-ratio:360 / 390;
     margin:0 auto;
