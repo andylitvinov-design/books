@@ -35,7 +35,7 @@ test('claimed guest report flow checks verified linkage, never contact similarit
   assert.match(practice,/reportEligible:claimedIds\.has/)
   assert.match(migration,/hh_express_report_exactly_one_request/)
   assert.match(migration,/FORCE ROW LEVEL SECURITY/)
-  assert.match(migration,/free_express_account_links_practitioner_read/)
+  assert.match(migration,/Migration 20261026164817/)
   assert.match(migration,/free_express_link_practitioner_before_insert/)
   assert.match(migration,/NEW\.recipient_practitioner_id:=expected_id/)
   assert.doesNotMatch(repository,/WHERE.*email_hash.*client_account_id/)

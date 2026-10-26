@@ -2,11 +2,12 @@
 -- Google-claimed free express enquiry. No name/phone/email matching.
 BEGIN;
 
-ALTER TABLE app_private.free_express_account_links
-  ADD COLUMN recipient_practitioner_id uuid REFERENCES app.practitioners(id);
+-- Migration 20261026164817 (owner account reply) already added this column
+-- and its owner SELECT policy. Do not duplicate either object.
 UPDATE app_private.free_express_account_links l
 SET recipient_practitioner_id=e.recipient_practitioner_id
-FROM app.public_service_enquiries e WHERE e.id=l.enquiry_id;
+FROM app.public_service_enquiries e
+WHERE e.id=l.enquiry_id AND l.recipient_practitioner_id IS NULL;
 
 -- Backwards-compatible with a READY Vercel build still inserting four columns.
 -- DB derives and validates the recipient, never trusts a browser identity.
@@ -36,18 +37,6 @@ FOR EACH ROW EXECUTE FUNCTION app_private.free_express_link_practitioner();
 
 ALTER TABLE app_private.free_express_account_links
   ALTER COLUMN recipient_practitioner_id SET NOT NULL;
-
--- Do not join back to public_service_enquiries inside a link SELECT policy:
--- that table has a client policy referencing this link (RLS recursion).
-CREATE POLICY free_express_account_links_practitioner_read
-ON app_private.free_express_account_links FOR SELECT TO hh_app_backend
-USING (
-  (SELECT app_private.account_active()) AND
-  EXISTS (SELECT 1 FROM app.practitioners p
-    WHERE p.id=recipient_practitioner_id
-      AND p.trusted_auth_user_id=(SELECT auth.uid())
-      AND p.active AND p.status IN ('approved','submitted','changes_requested'))
-);
 
 ALTER TABLE app.practitioner_express_reports
   ALTER COLUMN request_id DROP NOT NULL;
