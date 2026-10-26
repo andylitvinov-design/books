@@ -634,3 +634,31 @@
  .page[lang="es"] .requestSection{gap:6px;padding-top:9px;padding-bottom:9px}
  .page[lang="es"] .requestText>.panelPhoto{height:52px;margin-bottom:6px}
 }
+
+/* Desktop formats: keep the portrait beside the naturally growing choice stack. */
+@media (min-width: 1024px) {
+  .panel.optionsSection {
+    display: grid;
+    grid-template-columns: minmax(220px, 26%) minmax(0, 1fr);
+    column-gap: 24px;
+    row-gap: 0;
+    padding-block: 20px;
+    align-items: start;
+  }
+  .optionsSection > .panelPhoto {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    height: auto;
+    align-self: stretch;
+  }
+  .optionsSection > .sectionHeading {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .optionsSection > :global([data-alchemy-booking-formats]) {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+  }
+}

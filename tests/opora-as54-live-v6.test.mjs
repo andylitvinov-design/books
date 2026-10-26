@@ -191,8 +191,16 @@ for(const [version,expected,programme='stress',slideModel] of [
    const players=['CourseSlidePlayer','OporaV6SlidePlayer','OporaExperiencePlayer']
    assert.ok(players.every(name=>!findPart(h.tree,name)),'A player must not open without an action')
    if(replay){
-    const path=courseButton(h.tree,programme==='stress'?'See all 14 days':'14-day path')
-    assert.ok(path);path.props.onClick();await h.settle()
+    // Returning stress learners already land on the map (owner PR #1997).
+    // Non-stress courses still require the real path-tab action.
+    if(programme==='stress'){
+     assert.equal(h.tree.props['data-course-view'],'path')
+    }else{
+     assert.equal(h.tree.props['data-course-view'],'today')
+     assert.equal(findPart(h.tree,'CourseQuestMap'),undefined)
+     const path=courseButton(h.tree,'14-day path')
+     assert.ok(path);path.props.onClick();await h.settle()
+    }
     const map=findPart(h.tree,'CourseQuestMap');assert.ok(map)
     map.props.onPlay(1);await h.settle()
    }else{

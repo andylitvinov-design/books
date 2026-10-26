@@ -1,9 +1,172 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import ts from 'typescript'
 import { readFileSync } from 'node:fs'
 import { sourceFixture, blocked, icons, link, element, textContent, accountNavigation } from './helpers/current-navigation-fixture.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+// #2041 composes both authorized report readers in the existing Profile archive.
+// Pin the supported exported/imported production pattern, direct composition and
+// known guards. This static contract is not general runtime/control-flow proof.
+function assertProfileReportComposition(source) {
+  const ast = ts.createSourceFile('app-workspace.jsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  assert.equal(ast.parseDiagnostics.length, 0, 'Workspace JSX parses')
+  const owners = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'AppWorkspace')
+  assert.equal(owners.length, 1, 'One genuine AppWorkspace declaration')
+  const owner = owners[0], bindings = []
+
+  // This contract supports the current direct default export and explicit import
+  // boundaries only; it is not a module resolver or general control-flow proof.
+  assert.ok(owner.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword), 'AppWorkspace is the actual default export')
+  assert.ok(owner.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.DefaultKeyword), 'AppWorkspace is the actual default export')
+  assert.equal(ast.statements.filter(node => ts.isExportAssignment(node) || node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.DefaultKeyword)).length, 1)
+  const identities = new Set(['PersonalAnalysisPanel', 'ProfileDomains', 'ClientExpressReports', 'reportTimeline', 'dynamic'])
+  const names = binding => ts.isIdentifier(binding) ? [binding.text]
+    : binding.elements.flatMap(entry => ts.isOmittedExpression(entry) ? [] : names(entry.name))
+  const topBindings = []
+  for (const statement of ast.statements) {
+    if (ts.isImportDeclaration(statement)) {
+      const clause = statement.importClause
+      if (clause?.name) topBindings.push({ name: clause.name.text, node: statement })
+      const bindings = clause?.namedBindings
+      if (bindings && ts.isNamedImports(bindings)) {
+        for (const entry of bindings.elements) topBindings.push({ name: entry.name.text, node: statement })
+      } else if (bindings) topBindings.push({ name: bindings.name.text, node: statement })
+    } else if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        for (const name of names(declaration.name)) topBindings.push({ name, node: declaration })
+      }
+    } else if ((ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) && statement.name) {
+      topBindings.push({ name: statement.name.text, node: statement })
+    }
+  }
+  const binding = name => {
+    const found = topBindings.filter(entry => entry.name === name)
+    assert.equal(found.length, 1, 'One top-level binding for ' + name)
+    return found[0].node
+  }
+  const imported = (name, path, exported = name) => {
+    const node = binding(name)
+    assert.ok(ts.isImportDeclaration(node), name + ' is imported, not a local replacement')
+    assert.equal(node.moduleSpecifier.text, path)
+    assert.ok(!node.importClause.isTypeOnly)
+    if (exported === 'default') assert.equal(node.importClause.name?.text, name)
+    else {
+      const entries = node.importClause.namedBindings
+      assert.ok(entries && ts.isNamedImports(entries))
+      const entry = entries.elements.find(value => value.name.text === name)
+      assert.ok(entry && !entry.isTypeOnly)
+      assert.equal((entry.propertyName || entry.name).text, exported)
+    }
+  }
+  imported('PersonalAnalysisPanel', '@/components/app/personal-analysis-panel')
+  imported('reportTimeline', '@/lib/app/cabinet-ux')
+  imported('dynamic', 'next/dynamic', 'default')
+  const dynamicReader = (name, path) => {
+    const declaration = binding(name)
+    assert.ok(ts.isVariableDeclaration(declaration) && (declaration.parent.flags & ts.NodeFlags.Const))
+    const call = declaration.initializer
+    assert.ok(call && ts.isCallExpression(call) && ts.isIdentifier(call.expression) && call.expression.text === 'dynamic')
+    assert.equal(call.arguments.length, 1)
+    const loader = call.arguments[0]
+    assert.ok(ts.isArrowFunction(loader) && !loader.modifiers?.length && loader.parameters.length === 0)
+    const then = loader.body
+    assert.ok(ts.isCallExpression(then) && ts.isPropertyAccessExpression(then.expression) && then.expression.name.text === 'then')
+    const request = then.expression.expression
+    assert.ok(ts.isCallExpression(request) && request.expression.kind === ts.SyntaxKind.ImportKeyword)
+    assert.equal(request.arguments.length, 1)
+    assert.ok(ts.isStringLiteral(request.arguments[0]))
+    assert.equal(request.arguments[0].text, path)
+    assert.equal(then.arguments.length, 1)
+    const select = then.arguments[0]
+    assert.ok(ts.isArrowFunction(select) && !select.modifiers?.length && select.parameters.length === 1)
+    const parameter = select.parameters[0]
+    assert.ok(ts.isIdentifier(parameter.name) && !parameter.initializer && !parameter.dotDotDotToken)
+    assert.ok(ts.isPropertyAccessExpression(select.body) && ts.isIdentifier(select.body.expression))
+    assert.equal(select.body.expression.text, parameter.name.text)
+    assert.equal(select.body.name.text, name)
+  }
+  dynamicReader('ProfileDomains', '@/components/app/profile-domains')
+  dynamicReader('ClientExpressReports', '@/components/app/practice-express-reports')
+  const rejectShadows = node => {
+    if ((ts.isVariableDeclaration(node) || ts.isParameter(node) || ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node)) && node.name) {
+      for (const name of names(node.name)) assert.ok(!identities.has(name), 'No owner-local shadow of ' + name)
+    }
+    ts.forEachChild(node, rejectShadows)
+  }
+  rejectShadows(owner)
+  const walk = node => {
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(ast) === 'ProfileDomains') bindings.push(node)
+    ts.forEachChild(node, walk)
+  }
+  walk(owner.body)
+  assert.equal(bindings.length, 1, 'One production Profile binding')
+  const profile = bindings[0]
+  const attributes = node => {
+    const attrs = {}
+    for (const attribute of node.attributes.properties) {
+      assert.ok(ts.isJsxAttribute(attribute), 'No spread may override account/report bindings')
+      const name = attribute.name.getText(ast)
+      assert.ok(!Object.hasOwn(attrs, name), 'No duplicate prop: ' + name)
+      const value = attribute.initializer
+      attrs[name] = !value ? true : ts.isJsxExpression(value) ? value.expression?.getText(ast) : JSON.stringify(value.text)
+    }
+    return attrs
+  }
+  const profileAttrs = attributes(profile)
+  assert.equal(profileAttrs.locale, 'locale')
+  assert.equal(profileAttrs.mode, '"account"')
+  assert.equal(profileAttrs.accountId, 'data.account.id')
+  assert.equal(profileAttrs.savedReports, 'data.savedReports || []')
+  assert.equal(profileAttrs.savedDocuments, 'data.savedDocuments || []')
+  const reportsProp = profile.attributes.properties.find(attribute => attribute.name?.getText(ast) === 'reportsContent')
+  assert.ok(reportsProp && ts.isJsxExpression(reportsProp.initializer), 'Actual reportsContent prop')
+  const reports = reportsProp.initializer.expression
+  assert.ok(ts.isJsxFragment(reports), 'Archive receives the current composed Fragment')
+  const readers = reports.children.filter(node => !(ts.isJsxText(node) && !node.text.trim()))
+  assert.equal(readers.length, 2, 'Exactly two direct, unconditional report readers')
+  assert.ok(readers.every(ts.isJsxSelfClosingElement))
+  assert.deepEqual(readers.map(node => node.tagName.getText(ast)), ['PersonalAnalysisPanel', 'ClientExpressReports'])
+  assert.deepEqual(attributes(readers[0]), {
+    key: 'data.account.id', locale: 'locale', reports: 'reportTimeline(data.savedReports)',
+    savedSessions: 'data.savedSessions || []', embedded: true,
+  })
+  assert.deepEqual(attributes(readers[1]), { locale: 'locale', accountId: 'data.account.id' })
+  const operand = node => { while (ts.isParenthesizedExpression(node.parent)) node = node.parent; return node }
+  const portrait = operand(profile.parent)
+  assert.ok(ts.isJsxFragment(profile.parent), 'Profile is a direct portrait child')
+  const pageGate = portrait.parent
+  assert.ok(ts.isBinaryExpression(pageGate) && pageGate.right === portrait && pageGate.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken)
+  assert.equal(pageGate.left.getText(ast), "page === 'portrait'")
+  assert.ok(ts.isJsxExpression(pageGate.parent) && pageGate.parent.expression === pageGate)
+  const account = operand(pageGate.parent.parent)
+  assert.ok(ts.isJsxFragment(pageGate.parent.parent))
+  const onboarding = account.parent
+  assert.ok(ts.isConditionalExpression(onboarding) && onboarding.whenFalse === account)
+  assert.equal(onboarding.condition.getText(ast), "data.account.onboardingState !== 'active'")
+  assert.ok(ts.isJsxExpression(onboarding.parent) && onboarding.parent.expression === onboarding)
+  const main = onboarding.parent.parent
+  assert.ok(ts.isJsxElement(main) && main.openingElement.tagName.getText(ast) === 'main')
+  const provider = main.parent
+  assert.ok(ts.isJsxElement(provider) && provider.openingElement.tagName.getText(ast) === 'SubscriptionProvider')
+  const returned = operand(provider).parent
+  assert.ok(ts.isReturnStatement(returned) && returned === owner.body.statements.at(-1), 'Profile belongs to the final account return in the supported source pattern')
+
+  // Reject only obvious returns in plain blocks, literal-true branches, or the
+  // exact portrait gate. Unknown conditions, loops and try/finally are not proved.
+  const exitsSupportedPath = statement => {
+    if (ts.isReturnStatement(statement)) return true
+    if (ts.isBlock(statement)) return statement.statements.some(exitsSupportedPath)
+    if (!ts.isIfStatement(statement)) return false
+    let condition = statement.expression
+    while (ts.isParenthesizedExpression(condition)) condition = condition.expression
+    const portraitGate = ts.isBinaryExpression(condition) && condition.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+      ts.isIdentifier(condition.left) && condition.left.text === 'page' && ts.isStringLiteral(condition.right) && condition.right.text === 'portrait'
+    return (condition.kind === ts.SyntaxKind.TrueKeyword || portraitGate) && exitsSupportedPath(statement.thenStatement)
+  }
+  assert.equal(owner.body.statements.slice(0, -1).filter(exitsSupportedPath).length, 0, 'No supported obvious early return hides the portrait branch')
+}
 
 test('Profile leads with authorized personal reports; category details are secondary', () => {
   const profile = read('components/app/profile-domains.jsx')
@@ -28,8 +191,7 @@ test('Profile leads with authorized personal reports; category details are secon
   assert.match(profile, /\{reportsContent\}/)
   assert.match(profile, /data-profile-report-archive/)
   assert.match(profile, /open=\{expanded\}/)
-  assert.match(workspace, /reportsContent=\{<PersonalAnalysisPanel key=\{data.account.id\}/)
-  assert.match(workspace, /embedded \/>\} \/>/)
+  assertProfileReportComposition(workspace)
   assert.doesNotMatch(profile, /ProfileServiceCards|<FreeInsightsPaths/)
   assert.match(workspace, /data-insights-detailed-scales/)
   assert.doesNotMatch(profile, /Math\.random\(|mockProfileScore|syntheticScores/)
@@ -179,4 +341,84 @@ test('Real Profile binding preserves account archive actions and legacy-only det
     }
   }
   fixture.assertNoExternalOperations()
+})
+
+
+test('Profile composition rejects genuine missing, detached, disabled and misbound source readers', async () => {
+  const source = read('components/app/app-workspace.jsx')
+  assertProfileReportComposition(source)
+  const panel = '<PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded />'
+  const express = '<ClientExpressReports locale={locale} accountId={data.account.id}/>'
+  const composition = 'reportsContent={<>' + panel + express + '</>}'
+  const replace = (before, after) => {
+    assert.ok(source.includes(before), 'Mutation anchor exists in genuine source')
+    const changed = source.replace(before, after)
+    assert.notEqual(changed, source)
+    return changed
+  }
+  const mutations = [
+    ['missing saved-report reader', replace(panel, '')],
+    ['missing express reader', replace(composition, 'reportsContent={<>' + panel + '</>}')],
+    ['reversed archive order', replace(composition, 'reportsContent={<>' + express + panel + '</>}')],
+    ['duplicate saved reader', replace(panel, panel + panel)],
+    ['disabled saved reader', replace(panel, '{false && ' + panel + '}')],
+    ['wrong saved account key', replace(panel, panel.replace('key={data.account.id}', 'key={"other-account"}'))],
+    ['wrong saved report source', replace(panel, panel.replace('reportTimeline(data.savedReports)', 'reportTimeline(data.results)'))],
+    ['wrong saved session source', replace(panel, panel.replace('data.savedSessions || []', '[]'))],
+    ['not embedded', replace(panel, panel.replace(' embedded />', ' embedded={false} />'))],
+    ['wrong express account', replace(composition, composition.replace('accountId={data.account.id}', 'accountId={"other-account"}'))],
+    ['wrong express locale', replace(composition, composition.replace(express, express.replace('locale={locale}', 'locale={"ru"}')))],
+    ['prop override', replace(panel, panel.replace(' embedded />', ' embedded {...unsafeProps} />'))],
+    ['wrong Profile mode', replace('<ProfileDomains locale={locale} mode="account"', '<ProfileDomains locale={locale} mode="legacy"')],
+    ['wrong Profile page', replace("{page === 'portrait' && (", "{page === 'tests' && (")],
+    ['wrong onboarding branch', replace("{data.account.onboardingState !== 'active' ? (", "{data.account.onboardingState === 'active' ? (")],
+    ['detached matching JSX', replace(composition, 'reportsContent={null}') + '\nconst detachedProfileReports = <>' + panel + express + '</>\n'],
+    ['comment decoy', replace(composition, 'reportsContent={null}') + '\n// ' + composition + '\n'],
+  ]
+  for (const [label, mutant] of mutations) {
+    assert.throws(() => assertProfileReportComposition(mutant), { code: 'ERR_ASSERTION' }, label)
+  }
+})
+
+
+test('Profile source identity rejects reviewer export, shadow, early-return and boundary mutations', async () => {
+  const source = read('components/app/app-workspace.jsx')
+  assertProfileReportComposition(source)
+  const owner = 'export default function AppWorkspace({ locale, path = [] }) {'
+  const returned = '  return (\n    <SubscriptionProvider key={data.account.id} accountId={data.account.id} locale={locale}>'
+  const replace = (before, after) => {
+    assert.equal(source.split(before).length - 1, 1, 'Unique genuine-source mutation anchor')
+    return source.replace(before, after)
+  }
+  const mutations = [
+    ['inactive-export-decoy', replace(owner, 'export default function EmptyWorkspace() { return null }\nfunction AppWorkspace({ locale, path = [] }) {')],
+    ['shadowed-saved-reader', replace(owner, owner + '\n  const PersonalAnalysisPanel = () => null;')],
+    ['shadowed-express-reader', replace(owner, owner + '\n  const ClientExpressReports = () => null;')],
+    ['shadowed-profile', replace(owner, owner + '\n  const ProfileDomains = () => null;')],
+    ['block-unconditional-return', replace(returned, '  { return null; }\n' + returned)],
+    ['true-unconditional-return', replace(returned, '  if (true) return null;\n' + returned)],
+    ['portrait-early-return', replace(returned, "  if (page === 'portrait') return null;\n" + returned)],
+    ['wrong saved-reader import', replace("from '@/components/app/personal-analysis-panel'", "from '@/components/app/unrelated-reader'")],
+    ['wrong Profile dynamic module', replace("import('@/components/app/profile-domains')", "import('@/components/app/unrelated-profile')")],
+    ['wrong express dynamic module', replace("import('@/components/app/practice-express-reports')", "import('@/components/app/unrelated-reader')")],
+    ['wrong Profile selected export', replace('module => module.ProfileDomains', 'module => module.default')],
+    ['wrong express selected export', replace('module => module.ClientExpressReports', 'module => module.default')],
+    ['wrong dynamic implementation', replace("from 'next/dynamic'", "from './unrelated-dynamic'")],
+    ['destructured reader shadow', replace(owner, 'export default function AppWorkspace({ locale, path = [], PersonalAnalysisPanel }) {')],
+    ['local timeline shadow', replace(owner, owner + '\n  const reportTimeline = () => [];')],
+  ]
+  const reviewerErrors = {
+    'inactive-export-decoy': /AppWorkspace is the actual default export/,
+    'shadowed-saved-reader': /No owner-local shadow of PersonalAnalysisPanel/,
+    'shadowed-express-reader': /No owner-local shadow of ClientExpressReports/,
+    'shadowed-profile': /No owner-local shadow of ProfileDomains/,
+    'block-unconditional-return': /No supported obvious early return hides the portrait branch/,
+    'true-unconditional-return': /No supported obvious early return hides the portrait branch/,
+    'portrait-early-return': /No supported obvious early return hides the portrait branch/,
+  }
+  for (const [label, mutant] of mutations) {
+    const ast = ts.createSourceFile('mutant-workspace.jsx', mutant, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+    assert.equal(ast.parseDiagnostics.length, 0, 'Reviewer/boundary mutant parses: ' + label)
+    assert.throws(() => assertProfileReportComposition(mutant), { code: 'ERR_ASSERTION', ...(reviewerErrors[label] ? { message: reviewerErrors[label] } : {}) }, label)
+  }
 })

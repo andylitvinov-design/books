@@ -264,3 +264,156 @@ test('header acceptance preserves the original two menu clicks and never trigger
   assert.ok(script.includes('await assertViewport(page, locale + "/services/" + width)'));
   assert.ok(script.includes('assert.deepEqual(diagnostics.pageErrors, []'));
 });
+
+// Execute real personal-journey statements against authored JSX, not a hand-made
+// hero. This is NOT computed CSS/native visibility proof: only the observed mobile
+// header rule and explicit hidden/style/closed-details states are modeled.
+function personalFreeAcceptance(input = script) {
+  const from = input.indexOf('  // Real hydrated, non-submitting conversion journey');
+  const to = input.indexOf('  // Business Strategy & Founder Coaching', from);
+  assert.ok(from >= 0 && to > from, 'Personal journey boundaries');
+  const ast = ts.createSourceFile('personal.mjs', input.slice(from, to), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const declarations = [];
+  const visit = node => {
+    if (ts.isVariableStatement(node) && node.declarationList.declarations.some(item => item.name.getText(ast) === 'free')) declarations.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(ast); assert.equal(declarations.length, 1, 'One actual personal free CTA statement');
+  const statement = declarations[0];
+  const next = statement.parent.statements[statement.parent.statements.indexOf(statement) + 1];
+  assert.equal(next?.getText(ast), 'await visible(free);', 'Original visible gate immediately follows selection');
+  const whole = ts.createSourceFile('acceptance.mjs', input, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const helpers = [];
+  const helperVisit = node => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(whole) === 'visible') helpers.push(node.initializer);
+    ts.forEachChild(node, helperVisit);
+  };
+  helperVisit(whole); assert.equal(helpers.length, 1, 'One actual shared visible helper');
+  return {
+    verify: new AsyncFunction('main', 'locale', 'visible', statement.getText(ast) + '\n' + next.getText(ast)),
+    visible: new Function('return (' + helpers[0].getText(whole) + ')')(),
+  };
+}
+
+function personalHeroFixture(locale, service, landingSource = read('components/personal-service-landing.tsx')) {
+  const authored = authoredHeader(locale);
+  const data = compile(read('data/personal-service-pages.ts'), 'personal-service-pages.ts', {});
+  const landing = compile(landingSource, 'personal-service-landing.tsx', {
+    'react/jsx-runtime': { jsx: authored.jsx, jsxs: authored.jsx },
+    'next/link': { __esModule: true, default: props => authored.jsx('a', props) },
+    'next/image': { __esModule: true, default: props => authored.jsx('img', props) },
+    'lucide-react': Object.fromEntries(['ArrowRight', 'CalendarCheck2', 'Check', 'Clock3', 'MessageCircle', 'ShieldCheck'].map(name => [name, () => null])),
+    '@/components/personal-consultation-form': { PersonalConsultationForm: () => null },
+    '@/components/service-video-showcase': { ServiceVideoShowcase: () => null },
+    '@/components/public-site-header': { PublicSiteHeader: () => authored.tree },
+    '@/data/personal-service-pages': data,
+    './personal-service-landing.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) },
+  });
+  const all = walk(authored.render(authored.jsx(landing.PersonalServiceLanding, { locale, service })));
+  const main = all.filter(node => node.type === 'main' && node.props['data-personal-service'] === service);
+  assert.equal(main.length, 1, 'Actual service main');
+  const href = '/' + locale + '/services/free-situation-review';
+  const headerFree = all.filter(node => node.type === 'a' && hasClass(node, 'site-nav-free-entry'));
+  assert.equal(headerFree.length, 1); assert.equal(headerFree[0].props.href, href);
+  const closingFree = all.filter(node => node.type === 'a' && hasClass(node, 'closingSecondary'));
+  assert.equal(closingFree.length, 1); assert.equal(closingFree[0].props.href, href);
+  // The native failure identified this source rule at390px. No arbitrary CSS
+  // cascade/layout claim is made by this source-only fixture.
+  assert.match(read('app/holistic-house-home.css'), /@media \(max-width: 767px\) \{[^}]*\}[\s\S]*?\.house-header--services \.site-navigation > a \{ display: none; \}/);
+  const explicitHidden = node => node.props.hidden === true || node.props.style?.display === 'none' || node.props.style?.visibility === 'hidden';
+  const isVisible = node => {
+    if ([...node.parents, node].some(explicitHidden)) return false;
+    if (node.type === 'a' && hasClass(node.parents.at(-1), 'site-navigation') && node.parents.some(parent => hasClass(parent, 'house-header--services'))) return false;
+    return !node.parents.some((parent, index) => parent.type === 'details' && !parent.props.open && node.parents[index + 1]?.type !== 'summary' && node.type !== 'summary');
+  };
+  assert.equal(isVisible(headerFree[0]), false, 'Native-backed hidden header decoy');
+  assert.equal(isVisible(closingFree[0]), true, 'Closing alternative remains available to expose fallback bugs');
+  const waits = [];
+  // Generic descendant/attribute matching, not an expected-selector-to-hero map.
+  function select(selector, scope) {
+    const parts = selector.split(/\s+/).map(part => {
+      const parsed = part.match(/^([a-z]+)(?:\[([a-z-]+)="([^"]*)"\])?$/);
+      assert.ok(parsed, 'Supported exact CSS selector grammar: ' + part);
+      return node => node.type === parsed[1] && (!parsed[2] || node.props[parsed[2]] === parsed[3]);
+    });
+    return all.filter(node => node.parents.some(parent => parent.props === scope.props) && parts.at(-1)(node) && (() => {
+      let cursor = node.parents.length - 1;
+      for (let part = parts.length - 2; part >= 0; part--) {
+        while (cursor >= 0 && !parts[part](node.parents[cursor])) cursor--;
+        if (cursor < 0) return false;
+        cursor--;
+      }
+      return true;
+    })());
+  }
+  class PersonalLocator {
+    constructor(matches) { this.matches = matches; }
+    first() { return new PersonalLocator(this.matches.slice(0, 1)); }
+    async waitFor(options) {
+      assert.deepEqual(plain(options), { state: 'visible', timeout: 30000 }, 'Original native visible state/timeout');
+      assert.equal(this.matches.length, 1, 'Exactly one intended hero CTA');
+      assert.equal(isVisible(this.matches[0]), true, 'Selected CTA is not the hidden header or hidden authored hero');
+      waits.push(this.matches[0]);
+    }
+  }
+  return {
+    all, headerFree: headerFree[0],
+    async run(input = script) {
+      waits.length = 0;
+      const actual = personalFreeAcceptance(input);
+      await actual.verify({ locator: selector => new PersonalLocator(select(selector, main[0])) }, locale, actual.visible);
+      assert.equal(waits.length, 1, 'Actual visible wait executes exactly once');
+      const selected = waits[0];
+      assert.ok(hasClass(selected, 'secondary'), 'Authored hero CTA, never closing/header fallback');
+      assert.equal(textOf(selected), data.servicePageShared[locale].free, 'Actual localized free-review copy');
+      assert.ok(selected.parents.some(node => node.type === 'section' && node.props['aria-labelledby'] === 'personal-service-title'));
+    },
+  };
+}
+
+for (const locale of ['en', 'ru', 'es']) for (const service of ['imagery-therapy', 'systemic-constellations']) {
+  test(`actual personal hero ignores hidden header and closing duplicates: ${locale}/${service}`, async () => {
+    const f = personalHeroFixture(locale, service);
+    assert.ok(f.all.indexOf(f.headerFree) < f.all.findIndex(node => hasClass(node, 'secondary')));
+    await f.run();
+  });
+}
+
+const authoredPersonalSource = read('components/personal-service-landing.tsx');
+const heroFreeTag = '<Link className={styles.secondary} href={`/${locale}/services/free-situation-review`}>{ui.free}</Link>';
+assert.equal(authoredPersonalSource.split(heroFreeTag).length, 2, 'Unique actual hero mutation anchor');
+for (const [name, change] of [
+  ['missing hero with other alternatives retained', source => source.replace(heroFreeTag, '')],
+  ['duplicate hero', source => source.replace(heroFreeTag, heroFreeTag + heroFreeTag)],
+  ['wrong hero destination', source => source.replace(heroFreeTag, heroFreeTag.replace('/services/free-situation-review', '/services/dao-health-profile'))],
+  ['wrong hero locale', source => source.replace(heroFreeTag, heroFreeTag.replace('`/${locale}/services/free-situation-review`', '`/${locale === "en" ? "ru" : "en"}/services/free-situation-review`'))],
+  ['hidden hero', source => source.replace(heroFreeTag, heroFreeTag.replace('<Link ', '<Link hidden '))],
+  ['hidden hero parent', source => source.replace(heroFreeTag, '<div hidden>' + heroFreeTag + '</div>')],
+  ['display-none hero', source => source.replace(heroFreeTag, heroFreeTag.replace('<Link ', '<Link style={{ display: "none" }} '))],
+  ['wrong hero aria binding', source => source.replace('aria-labelledby="personal-service-title"', 'aria-labelledby="wrong-title"')],
+  ['hero moved outside semantic section', source => source.replace(heroFreeTag, '').replace('<section className={styles.closing}>', '<section className={styles.closing}>' + heroFreeTag)],
+]) for (const locale of ['en', 'ru', 'es']) {
+  test(`actual personal acceptance rejects ${name}: ${locale}`, async () => {
+    const changed = change(authoredPersonalSource); assert.notEqual(changed, authoredPersonalSource);
+    await assert.rejects(personalHeroFixture(locale, 'imagery-therapy', changed).run(), { code: 'ERR_ASSERTION' });
+  });
+}
+
+test('original broad first-match verifier genuinely fails on the hidden header decoy', async () => {
+  const current = 'const free = main.locator(\'section[aria-labelledby="personal-service-title"] a[href="/\' + locale + \'/services/free-situation-review"]\');';
+  const original = 'const free = main.locator(\'a[href="/\' + locale + \'/services/free-situation-review"]\').first();';
+  assert.equal(script.split(current).length, 2);
+  await assert.rejects(personalHeroFixture('en', 'imagery-therapy').run(script.replace(current, original)), /Selected CTA is not the hidden header/);
+});
+
+test('personal acceptance rejects bypassed visibility and changed native timeout/state', async () => {
+  for (const [before, after] of [
+    ['await visible(free);', 'await Promise.resolve(free);'],
+    ['state: "visible", timeout: 30000', 'state: "attached", timeout: 30000'],
+    ['state: "visible", timeout: 30000', 'state: "visible", timeout: 60000'],
+  ]) {
+    assert.ok(script.includes(before));
+    const changed = script.replace(before, after); assert.notEqual(changed, script);
+    await assert.rejects(personalHeroFixture('en', 'imagery-therapy').run(changed), { code: 'ERR_ASSERTION' });
+  }
+});

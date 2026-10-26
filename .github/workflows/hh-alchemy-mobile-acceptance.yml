@@ -95,6 +95,8 @@ jobs:
         if: always()
         with:
           name: alchemy-mobile-geometry
-          path: artifacts/public-services-production/alchemy-one-screen-geometry*.json
+          path: |
+            artifacts/public-services-production/alchemy-one-screen-geometry*.json
+            artifacts/public-services-production/alchemy-desktop-formats/**
           if-no-files-found: warn
           retention-days: 7

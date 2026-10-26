@@ -1,5 +1,6 @@
 // Isolated public-only geometry QA. Expand/collapse only; no account, playback or provider sends.
 import { createAlchemyViewportIsolation } from "./helpers/alchemy-viewport-isolation.mjs";
+import { runAlchemyDesktopFormatsAcceptance } from "./helpers/alchemy-desktop-formats-acceptance.mjs";
 // Run against the current PR's loopback Next production server, never against live.
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -21,6 +22,7 @@ const cases = [
 ];
 const report = [];
 const failures = [];
+let desktopFormats = { cases: [], failures: [] };
 const browser = await (engine === "webkit" ? webkit : chromium).launch();
 try {
   for (const {locale,width,height} of cases) {
@@ -150,8 +152,10 @@ try {
       }
     }
   }
+  desktopFormats = await runAlchemyDesktopFormatsAcceptance({ browser, engine, origin });
+  failures.push(...desktopFormats.failures);
 } finally { await browser.close(); }
 const destination="artifacts/public-services-production";
 await mkdir(destination,{recursive:true});
-await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,failures},null,2)+"\n");
+await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,desktopFormats:desktopFormats.cases,failures},null,2)+"\n");
 assert.deepEqual(failures, [], "Alchemy viewport acceptance: "+failures.join(" | "));

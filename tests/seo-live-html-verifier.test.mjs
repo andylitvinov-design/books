@@ -5,6 +5,7 @@ import { auditPublicSeoHtml, auditLiveSeo, auditLiveSitemap, auditLiveRobots, is
 import { getPrioritySitemapEntries } from '../data/seo-priority-paths.js';
 import { getRobotsPolicy } from '../data/seo.js';
 
+const conditions = process.execArgv.filter((arg) => arg.startsWith('--conditions='));
 const origin = 'https://holistichouse.vercel.app';
 const entries = getPrioritySitemapEntries(origin);
 function fixture(entry = entries[0]) {
@@ -159,11 +160,14 @@ test('invalid live bases never fetch', async () => {
   }
 });
 test('source-only CLI labels its scope and invalid CLI live input exits nonzero', () => {
-  const source = spawnSync(process.execPath, ['scripts/verify-seo.mjs'], { encoding: 'utf8' });
+  const source = spawnSync(process.execPath, [...conditions, 'scripts/verify-seo.mjs'], { encoding: 'utf8' });
   assert.equal(source.status, 0, source.stderr);
   assert.match(source.stdout, /source checks only/);
   assert.doesNotMatch(source.stdout, /PASS: live/);
-  const invalid = spawnSync(process.execPath, ['scripts/verify-seo.mjs', '--live-base=http://example.com'], { encoding: 'utf8' });
+  const invalid = spawnSync(process.execPath, [...conditions, 'scripts/verify-seo.mjs', '--live-base=http://example.com'], { encoding: 'utf8' });
   assert.equal(invalid.status, 1);
+  assert.match(invalid.stdout, /source checks only/, 'Invalid live input is checked after actual source success');
   assert.match(invalid.stderr, /FAIL:/);
+  assert.match(invalid.stderr, /http:|https:/);
+  assert.doesNotMatch(invalid.stdout, /PASS: live/);
 });

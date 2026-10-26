@@ -38,10 +38,10 @@ export function permittedHolisticRead(request, origin, locale) {
 
 // The current gallery's account-owned GET is fulfilled only by the shared
 // fixed anonymous401 fixture, never by the local API/provider/customer store.
-export async function createHolisticBrowserIsolation(browser, {origin, locale, viewport}) {
+export async function createHolisticBrowserIsolation(browser, {origin, locale, viewport, observeTransport}) {
   assert.ok(locales.includes(locale));
   return createReadOnlyPublicViewportIsolation(browser, {
-    origin, viewport, mobile:true, anonymousTalismans:true,
+    origin, viewport, mobile:true, anonymousTalismans:true, observeTransport,
     permittedRead: request => permittedHolisticRead(request, origin, locale),
   });
 }

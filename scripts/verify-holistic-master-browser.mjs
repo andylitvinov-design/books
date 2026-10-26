@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { privateRequestLeak, privateBrowserPersistence } from "./helpers/holistic-browser-privacy.mjs";
 import { createHolisticBrowserIsolation } from "./helpers/holistic-browser-isolation.mjs";
+import { createHolisticTransportDiagnostics } from "./helpers/holistic-transport-diagnostics.mjs";
 import { remoteFinderGeometry, assertRemoteFinderGeometry } from "./helpers/remote-finder-geometry.mjs";
 
 const require = createRequire(import.meta.url);
@@ -32,10 +33,11 @@ async function verify(engine, locale, width) {
   let isolation, page;
   let primaryFailure;
   const errors = [], privateLeaks = [];
+  const diagnostics = createHolisticTransportDiagnostics();
   try {
-    isolation = await createHolisticBrowserIsolation(browser, {origin, locale, viewport:{width, height:844}});
+    isolation = await createHolisticBrowserIsolation(browser, {origin, locale, viewport:{width, height:844}, observeTransport:diagnostics.observeTransport});
     page = isolation.page;
-    page.on("pageerror", error => errors.push(error.message));
+    page.on("pageerror", error => { errors.push(error.message); diagnostics.pageError(error); });
     page.on("request", request => {
       if (privateRequestLeak(request, [copy[locale].question, copy[locale].intention])) privateLeaks.push("PRIVATE_TEXT_REQUEST");
     });
@@ -144,6 +146,7 @@ async function verify(engine, locale, width) {
         label + ": hero action " + index + " has 44px touch target");
       await control.click({trial:true});
     }
+    diagnostics.phase('dao');
     await dao.tap();
     assert.equal(await dao.getAttribute("aria-expanded"), "true");
     const panel = page.locator('#dao-guidance[data-holistic-dao-screen]');
@@ -192,6 +195,7 @@ async function verify(engine, locale, width) {
     assert.equal(await question.inputValue(), "", label + ": explicit localized reset clears the editable question");
     assert.equal(await panel.locator("[data-ideas-result]").count(), 0, label + ": reset removes the symbolic result");
     await question.fill(copy[locale].intention);
+    diagnostics.phase('energy-navigation');
     await energy.tap();
     await page.waitForURL(url => url.pathname === "/" + locale + "/services/remote-energy-support", {
       timeout: 30000,
@@ -241,6 +245,7 @@ async function verify(engine, locale, width) {
     assert.equal(await privateBrowserPersistence(page, [copy[locale].question, copy[locale].intention]), false,
       label + ": private question and intention never enter storage or cookies");
     assert.deepEqual(privateLeaks, [], label + ": neither private text appears in request URLs or bodies");
+    diagnostics.phase('energy-reload');
     await page.reload({waitUntil:"domcontentloaded"});
     await nextScreen.waitFor({state:"visible"});
     assert.equal(await handoff.inputValue(), "",
@@ -253,6 +258,7 @@ async function verify(engine, locale, width) {
     assert.ok(geometry.document <= geometry.viewport + 2,
       label + ": destination does not overflow " + JSON.stringify(geometry));
     // Return to the actual first screen for quick-anchor and practitioner journeys.
+    diagnostics.phase('holistic-return');
     await page.goto(origin + "/" + locale + "/holistic-support", {waitUntil:"domcontentloaded"});
     await root.waitFor({state:"visible"});
     if (width === 390) {
@@ -260,6 +266,7 @@ async function verify(engine, locale, width) {
     }
     const talisman = page.locator("[data-holistic-talismans-cta]");
     assert.equal(await talisman.getAttribute("href"), "#talismans");
+    diagnostics.phase('quick-anchors');
     for (const [control, target, marker] of [
       [meditation, "meditation-practices", "data-holistic-meditations"],
       [talisman, "talismans", "data-holistic-talismans"],
@@ -285,9 +292,11 @@ async function verify(engine, locale, width) {
       const box = await control.boundingBox();
       assert.ok(box && box.x >= -1 && box.x + box.width <= width + 1, label + ": practitioner card/action fits viewport");
     }
+    diagnostics.phase('pro-navigation');
     await practitioner.tap();
     await page.waitForURL(url => url.pathname === "/" + locale + "/pro" && url.hash === "#profi-practice", {timeout:30000});
     await page.locator("#profi-practice").waitFor({state:"visible"});
+    diagnostics.phase('assertions');
     assert.deepEqual(errors, [], label + ": no client-side errors across every journey");
     assert.deepEqual(privateLeaks, [], label + ": no private requests across every journey");
     await isolation.assertClean();
@@ -298,11 +307,14 @@ async function verify(engine, locale, width) {
     if (page) await page.screenshot({path:output + "/failure-" + engine.name() + "-" + locale + "-" + width + ".png", fullPage:true}).catch(() => {});
     throw error;
   } finally {
+    diagnostics.phase('teardown');
     const guardFailures = [];
     if (isolation) try { await isolation.close(); } catch { guardFailures.push("ISOLATION_CLOSE_FAILED"); }
     try { await browser.close(); } catch { guardFailures.push("BROWSER_CLOSE_FAILED"); }
     if (primaryFailure) {
       if (guardFailures.length) console.error("Additional QA guard failures:", JSON.stringify(guardFailures));
+      await writeFile(output + "/transport-failure-" + engine.name() + "-" + locale + "-" + width + ".json",
+        JSON.stringify(diagnostics.snapshot(), null, 2)).catch(() => {});
     } else assert.deepEqual(guardFailures, [], "No unexpected request, popup, socket or unclosed context");
   }
   evidence.push({engine:engine.name(),locale,width,result:"pass"});
