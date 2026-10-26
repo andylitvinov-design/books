@@ -189,9 +189,9 @@ export function SimpleTestPicker({
 }) {
   const publicCopy = TEXT[locale] || TEXT.en
   const accountCopy = {
-    en: { kicker: 'MY TESTS', finderTitle: 'Find the right tests', finderHelp: 'Search by name, concern or choose a topic below.', finderSearch: 'Search', finderPlaceholder: 'Stress, sleep, relationships…', build: 'Add selected tests', buildHelp: 'Save these tests to My tests', takeTest: 'Start test', privacy: 'Your choices stay on this page until you choose to add tests. Your saved tests, answers and results are preserved.', saved: 'Open My tests' },
-    ru: { kicker: 'МОИ ТЕСТЫ', finderTitle: 'Подобрать подходящие тесты', finderHelp: 'Введите запрос или выберите интересующую тему.', finderSearch: 'Найти', finderPlaceholder: 'Стресс, сон, отношения…', build: 'Добавить выбранные тесты', buildHelp: 'Сохранить эти тесты в «Мои тесты»', takeTest: 'Начать тест', privacy: 'Выбор остаётся на этой странице, пока вы не решите добавить тесты. Сохранённые тесты, ответы и результаты остаются без изменений.', saved: 'Открыть «Мои тесты»' },
-    es: { kicker: 'MIS PRUEBAS', finderTitle: 'Encuentra tus pruebas', finderHelp: 'Busca por nombre o elige un tema.', finderSearch: 'Buscar', finderPlaceholder: 'Estrés, sueño, relaciones…', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Iniciar prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
+    en: { kicker: 'MY TESTS', finderTitle: 'Find the right tests', finderHelp: 'Choose a profile below, select its scales, or search by test name.', finderSearch: 'Search', finderPlaceholder: 'Stress, sleep, relationships…', build: 'Add selected tests', buildHelp: 'Save these tests to My tests', takeTest: 'Start test', privacy: 'Your choices stay on this page until you choose to add tests. Your saved tests, answers and results are preserved.', saved: 'Open My tests' },
+    ru: { kicker: 'МОИ ТЕСТЫ', finderTitle: 'Подобрать подходящие тесты', finderHelp: 'Выберите профиль и его шкалы ниже или найдите тест по названию.', finderSearch: 'Найти', finderPlaceholder: 'Стресс, сон, отношения…', build: 'Добавить выбранные тесты', buildHelp: 'Сохранить эти тесты в «Мои тесты»', takeTest: 'Начать тест', privacy: 'Выбор остаётся на этой странице, пока вы не решите добавить тесты. Сохранённые тесты, ответы и результаты остаются без изменений.', saved: 'Открыть «Мои тесты»' },
+    es: { kicker: 'MIS PRUEBAS', finderTitle: 'Encuentra tus pruebas', finderHelp: 'Elige un perfil y sus escalas o busca una prueba por su nombre.', finderSearch: 'Buscar', finderPlaceholder: 'Estrés, sueño, relaciones…', build: 'Añadir pruebas seleccionadas', buildHelp: 'Guardar estas pruebas en Mis pruebas', takeTest: 'Iniciar prueba', privacy: 'La selección queda en esta página hasta que decidas añadir pruebas. Se conservan las pruebas, respuestas y resultados guardados.', saved: 'Abrir Mis pruebas' },
   }
   const c = authenticated ? { ...publicCopy, ...(accountCopy[locale] || accountCopy.en) } : publicCopy
   const currentProfile = findLifeTestProfile(profile)
@@ -280,30 +280,7 @@ export function SimpleTestPicker({
           placeholder={authenticated ? c.finderPlaceholder : c.heroSearchPlaceholder} maxLength={120} autoComplete="off" />
         <button className={authenticated ? styles.accountFinderSubmit : academyStyles.submit} type="submit">{authenticated ? c.finderSearch : c.heroSearchAction}<Search size={19} aria-hidden="true" /></button>
       </form>
-      {authenticated && <div className={styles.accountFinderFilters}>
-        <label>{c.heroTopicFilter}
-          <select value={focus.length === 1 && TOPICS.some((item) => item.key === focus[0]) ? focus[0] : 'all'}
-            onChange={(event) => {
-              const chosen = event.target.value
-              focus.forEach((key) => onToggleFocus(key))
-              if (chosen !== 'all') onToggleFocus(chosen)
-              setVisibleCount(5)
-            }}>
-            <option value="all">{c.heroAllTopics}</option>
-            {TOPICS.map((topic) => <option value={topic.key} key={topic.key}>{topic[locale] || topic.en}</option>)}
-          </select>
-        </label>
-        <label>{c.heroTypeFilter}
-          <select value={browseTab || 'all'} onChange={(event) => {
-            onSelectTestKind?.(event.target.value === 'all' ? null : event.target.value)
-            setVisibleCount(5)
-          }}>
-            <option value="all">{c.heroAllTypes}</option>
-            {BROWSE_TABS.filter((item) => item.key !== 'all').map((item) =>
-              <option value={item.key} key={item.key}>{testKindShortLabel({ testKind: item.key }, locale)}</option>)}
-          </select>
-        </label>
-      </div>}
+
     </header>
 
 
