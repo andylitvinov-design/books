@@ -95,7 +95,8 @@ test('backend RLS and account claims require verified scope and preserve existin
   const owner = root('lib/practitioners/free-express-owner.js')
   assert.match(owner, /practitionerEmailAllowed\(actor\)/)
   assert.match(owner, /p\.trusted_auth_user_id=\$3/)
-  assert.match(root('components/app/practice-workspace.jsx'), /FreeExpressOwnerMedia/)
+  assert.match(root('components/app/practice-workspace.jsx'), /FreeExpressOwnerCase/)
+  assert.match(root('components/app/free-express-owner-case.jsx'), /FreeExpressOwnerMedia/)
 })
 
 test('private media are never public, decoded, EXIF-stripped and owner-scoped', () => {

@@ -6,6 +6,7 @@ import { consumeRate, transaction } from '@/lib/app/database'
 import { openSealed } from '@/lib/app/crypto'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { freeExpressProof, withFreeExpressRequest } from '@/lib/practitioners/free-express-enquiry'
+import { createDirectMessages } from '@/lib/practitioners/direct-messages'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -86,7 +87,26 @@ async function handle(request) {
         )).rows[0]
       })
       if (!linked) throw new AppError('ENQUIRY_ALREADY_CLAIMED', 409)
-        result = { saved: true, referenceCode: row.reference_code }
+        // The visitor explicitly saved the request with their verified Google
+        // account. Start the EXISTING first-party member inbox as this signed-in
+        // client (never impersonate the client from the owner session).
+        // If messaging is unavailable, their original enquiry remains saved.
+        let inboxReady = false
+        try {
+          const recipient = await transaction(config, actor, async db =>
+            (await db.query(
+              `select slug from app.practitioners
+                where id=$1 and active and status in ('approved','submitted','changes_requested')
+                limit 1`, [row.recipient_practitioner_id],
+            )).rows[0])
+          if (recipient?.slug) {
+            const opened = await createDirectMessages(config).start(actor, recipient.slug)
+            inboxReady = Boolean(opened.threadId && !opened.blocked)
+          }
+        } catch {
+          // No message is sent. Client can still read their saved questionnaire.
+        }
+        result = { saved: true, referenceCode: row.reference_code, inboxReady }
       }
     }
     return auth.apply(NextResponse.json(result, { headers: PRIVATE_HEADERS }))

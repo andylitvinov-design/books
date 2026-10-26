@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {safePublicPagePath,safePublicSource,sourceFromPublicEntry} from '../lib/analytics/public-page-traffic.mjs'
 import {summarizePublicPageTraffic,publicPageDigestLines} from '../lib/analytics/public-page-traffic-report.mjs'
-import {readFileSync} from 'node:fs'
+import {existsSync, readFileSync} from 'node:fs'
 
 const period={yesterday:'2026-10-24',weekStart:'2026-10-18'}
 test('strictly public marketing paths, no private pages, queries or arbitrary slugs',()=>{
@@ -90,16 +90,16 @@ test('do not call lack of consent zero visits and never include private pages',(
  assert.doesNotMatch(message,/посещений: 0/)
  const tracker=readFileSync(new URL('../components/public-page-traffic.tsx',import.meta.url),'utf8')
  const choice=readFileSync(new URL('../components/analytics-consent.tsx',import.meta.url),'utf8')
- const notice=readFileSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url),'utf8')
+ const privacy=readFileSync(new URL('../app/privacy/page.tsx',import.meta.url),'utf8')
  const layout=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8')
- assert.match(notice,/safePublicPagePath\(pathname\)/)
+ assert.equal(existsSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url)),false)
  assert.match(choice,/setFirstPartyConsent\(allow\)/)
  assert.match(choice,/allow \? "v1" : "denied"/)
- assert.match(notice,/statsTranslations.*en/s)
+ assert.match(privacy,/<FirstPartyStatsPreferences \/>/)
+ assert.match(choice,/export function FirstPartyStatsPreferences\(\)/)
  assert.match(tracker,/holistic-house:public-stats-consent/)
  assert.match(tracker,/data-first-party-consent/)
- assert.match(layout,/<FirstPartyStatsNotice \/>/)
+ assert.doesNotMatch(layout,/FirstPartyStatsNotice|first-party-stats-notice|data-first-party-consent/)
  assert.doesNotMatch(tracker,/analytics\.google|gtag|facebook\.com\/tr/)
  assert.doesNotMatch(choice,/<aside\\b/)
- assert.match(notice,/<aside\\b/)
 })
