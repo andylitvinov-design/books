@@ -27,7 +27,7 @@ test('user can check zero, one or ALL of a profile\'s scales; unknown/stale scal
   assert.deepEqual(profileAxisSelection(profile.key, [profile.axes[0], profile.axes[0], 'salary', 'personality']), [profile.axes[0]])
   const checked = [...profile.axes]
   assert.deepEqual(selectedLifeProfileAxes(profile.key, checked), checked)
-  assert.deepEqual(selectedLifeProfileAxes('work', checked), checked.filter((key) => findLifeTestProfile('work').axes.includes(key)))
+  assert.deepEqual(selectedLifeProfileAxes('work', checked), findLifeTestProfile('work').axes)
   assert.deepEqual(selectedLifeProfileAxes('invalid', ['stress']), [])
   assert.deepEqual(profileAxisSelection('invalid', ['stress']), [])
 })
