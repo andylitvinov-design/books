@@ -297,17 +297,17 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     try{
       const result=await load(id)
       if(activeRef.current===id){
-        // Only a selected, owner-authorized Telegram portrait may appear as a
-        // sidebar avatar. The private proxy keeps provider file IDs secret.
-        const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
-        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
-          onPortraitFound?.({threadId:id,messageId:portrait.id})
         setData(previous=>({
           ...result,
           threads:mergeThreadPages(previous?.threads,result.threads),
           nextThreadsCursor:previous?.nextThreadsCursor===undefined
             ?result.nextThreadsCursor:previous.nextThreadsCursor,
         }))
+        // Owner-authorized, selected portrait only. No Telegram provider file ID
+        // is exposed: the browser still uses the existing private photo proxy.
+        const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+          onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }
     }catch{if(activeRef.current===id)setError('unavailable')}
