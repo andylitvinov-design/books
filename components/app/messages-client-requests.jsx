@@ -1,7 +1,7 @@
 'use client'
 import {useMemo,useState} from 'react'
 import Link from 'next/link'
-import {ArrowRight,CalendarDays,CheckCircle2,ClipboardList,Inbox,MessageCircle} from 'lucide-react'
+import {ArrowLeft,ArrowRight,CalendarDays,Inbox} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import PublicEnquiryContact from './public-enquiry-contact'
 import FreeExpressOwnerCase, {isOwnerFreeExpressRequest} from './free-express-owner-case'
@@ -10,7 +10,7 @@ import styles from './messages-hub.module.css'
 
 const OPEN=new Set(['requested','contacted','reschedule_proposed','confirmed','in_progress'])
 const COPY={
-  en:{title:'Client requests',hint:'Service enquiries and follow-ups addressed to your practice.',
+  en:{back:'Back to requests',editContact:'Contact details',title:'Client requests',hint:'Service enquiries and follow-ups addressed to your practice.',
     new:'New',need:'Need attention',all:'All',empty:'No client requests yet',
     emptyInfo:'When a visitor sends a real enquiry, it will appear here.',
     choose:'Select a request to view details',received:'Received',service:'Service request',
@@ -27,7 +27,7 @@ const COPY={
     crmLeads:'Telegram & messenger enquiries',crmHint:'Only existing consented CRM conversations. Private message text is not shown in this list.',
     crmOpen:'Open conversation',crmWaiting:'Waiting for your reply',crmRecent:'Showing the latest 30 CRM conversations; open CRM for older history.',
     crmLoading:'Checking CRM conversations…',crmError:'CRM conversations are unavailable. Try the owner messenger.'},
-  ru:{title:'Заявки клиентов',hint:'Заявки на услуги и последующие обращения к вашей практике.',
+  ru:{back:'К заявкам',editContact:'Данные для связи',title:'Заявки клиентов',hint:'Заявки на услуги и последующие обращения к вашей практике.',
     new:'Новые',need:'Требуют внимания',all:'Все',empty:'Пока нет заявок',
     emptyInfo:'Когда клиент действительно отправит заявку, она появится здесь.',
     choose:'Выберите заявку, чтобы открыть её',received:'Получена',service:'Заявка на услугу',
@@ -44,7 +44,7 @@ const COPY={
     crmLeads:'Обращения Telegram и мессенджеров',crmHint:'Только существующие диалоги CRM. Личный текст сообщений не показывается в списке.',
     crmOpen:'Открыть переписку',crmWaiting:'Ожидает вашего ответа',crmRecent:'Показаны последние 30 диалогов CRM. Более ранние откройте в CRM.',
     crmLoading:'Проверяем обращения CRM…',crmError:'Диалоги CRM сейчас недоступны. Проверьте мессенджер владельца.'},
-  es:{title:'Solicitudes de clientes',hint:'Consultas y seguimiento de tus servicios.',
+  es:{back:'Volver a solicitudes',editContact:'Datos de contacto',title:'Solicitudes de clientes',hint:'Consultas y seguimiento de tus servicios.',
     new:'Nuevas',need:'Pendientes',all:'Todas',empty:'Todavía no hay solicitudes',
     emptyInfo:'Las solicitudes enviadas aparecerán aquí.',choose:'Elige una solicitud para verla',
     received:'Recibida',service:'Solicitud de servicio',unnamed:'Consulta del cliente',
@@ -85,8 +85,9 @@ const incomingSort=(a,b)=>Number(b.needsReply)-Number(a.needsReply)||
 
 export default function MessagesClientRequests({data,locale='en',onReload,onOpenCrmThread,crmState={loading:false,error:false,threads:[],partial:false}}){
   const t=COPY[locale]||COPY.en
-  const [filter,setFilter]=useState('open')
+  const [filter,setFilter]=useState('all')
   const [selectedId,setSelectedId]=useState('')
+  const [showContact,setShowContact]=useState(false)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const requests=useMemo(()=>[...(data.requests||[])].sort(incomingSort),[data.requests])
@@ -94,13 +95,26 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
   const crmLeads=crmState.threads.filter(item=>item.lifecycle==='lead')
   const visibleCrm=crmLeads.filter(item=>filter==='all'||(filter==='new'?item.unreadCount>0:item.needsReply||item.unreadCount>0))
   const openCount=requests.filter(r=>OPEN.has(r.status)).length+
-    business.filter(r=>['new','contacted'].includes(r.status)).length+crmLeads.filter(r=>r.needsReply).length
+    business.filter(r=>['new','contacted'].includes(r.status)).length+crmLeads.filter(r=>r.needsReply||r.unreadCount>0).length
   const total=requests.length+business.length+crmLeads.length
   const newCount=requests.filter(r=>r.status==='requested').length+
     business.filter(r=>r.status==='new').length+crmLeads.filter(r=>r.unreadCount>0).length
   const visible=requests.filter(r=>filter==='all'||(filter==='new'?r.status==='requested':OPEN.has(r.status)))
   const visibleBusiness=business.filter(r=>filter==='all'||(filter==='new'?r.status==='new':['new','contacted'].includes(r.status)))
-  const selected=visible.find(item=>item.id===selectedId)||visible[0]||null
+  // One owner-scoped list: show the original items, never copy them into another table.
+  const rows=[
+    ...visible.map(item=>({key:'request:'+item.id,kind:'request',item,
+      needsReply:item.needsReply||item.newMessageCount>0,unread:item.newMessageCount||0,
+      createdAt:item.lastConversationAt||item.createdAt})),
+    ...visibleCrm.map(item=>({key:'crm:'+item.id,kind:'crm',item,
+      needsReply:item.needsReply||item.unreadCount>0,unread:item.unreadCount||0,createdAt:item.lastMessageAt})),
+    ...visibleBusiness.map(item=>({key:'business:'+item.id,kind:'business',item,
+      needsReply:item.status==='new',unread:0,createdAt:item.createdAt})),
+  ].sort((a,b)=>Number(b.needsReply)-Number(a.needsReply)||
+    (Date.parse(b.createdAt||'')||0)-(Date.parse(a.createdAt||'')||0))
+  const selection=rows.find(row=>row.key===selectedId)||null
+  const selected=selection?.kind==='request'?selection.item:null
+  const businessSelected=selection?.kind==='business'?selection.item:null
   const ownerCase=Boolean(selected&&data.ownerAuthorized&&data.freeExpressV2Enabled===true&&isOwnerFreeExpressRequest(selected))
   async function post(path,body,owner=false){
     if(busy||!data.accountId)return
@@ -123,108 +137,97 @@ export default function MessagesClientRequests({data,locale='en',onReload,onOpen
   }
   return <div className={styles.requests} data-client-request-inbox>
     <div className={styles.requestsHead}>
-      <div><h2>{t.title}</h2><p>{t.hint}</p></div>
-      <div className={styles.metrics}>
-        <span><strong>{newCount}</strong> {t.new}</span>
-        <span><strong>{openCount}</strong> {t.need}</span>
-        <span><strong>{total}</strong> {t.all}</span>
-      </div>
+      <h2>{t.title}</h2>
+      <span className={styles.requestTotal}>{total}</span>
     </div>
     <div className={styles.filters} aria-label={t.title}>
       {[['open',t.need,openCount],['new',t.new,newCount],['all',t.all,total]].map(([id,label,count])=>
         <button type="button" key={id} aria-pressed={filter===id}
-          onClick={()=>{setFilter(id);setSelectedId('')}}>{label} <span>{count}</span></button>)}
+          onClick={()=>{setFilter(id);setSelectedId('');setShowContact(false)}}>
+          {label} <span>{count}</span></button>)}
     </div>
-    {data.websiteUnavailable&&<p role="alert" className={styles.alert}>{t.siteUnavailable}</p>}
-    {data.ownerMessenger&&<section className={styles.crmLeads} aria-label={t.crmLeads}>
-      <div className={styles.crmLeadsHead}>
-        <div><h3>{t.crmLeads} <small>({crmLeads.length})</small></h3><p>{t.crmHint}</p></div>
-        <MessageCircle size={20} aria-hidden="true"/>
-      </div>
-      {crmState.loading&&<p className={styles.note} role="status">{t.crmLoading}</p>}
-      {crmState.error&&<p className={styles.note} role="alert">{t.crmError}</p>}
-      {visibleCrm.length>0&&<ul className={styles.crmLeadList}>
-        {visibleCrm.map(thread=><li key={thread.id}>
-          <div className={styles.crmLeadPerson}>
-            <span className={styles.requestAvatar} aria-hidden="true">{String(thread.name||'?').slice(0,1).toUpperCase()}</span>
-            <div><strong>{thread.name||t.unnamed}</strong>
-              <small>{thread.channel==='telegram'?'Telegram':thread.channel==='whatsapp'?'WhatsApp':
-                thread.channel==='instagram'?'Instagram':'Messenger'}
-                {thread.lastMessageAt?' · '+dateOf(thread.lastMessageAt,locale):''}</small>
-              {thread.needsReply&&<small className={styles.replyDue}>{t.crmWaiting}</small>}
-            </div>
-          </div>
-          <button type="button" onClick={()=>onOpenCrmThread?.(thread.id)}>
-            {t.crmOpen} <ArrowRight size={15} aria-hidden="true"/>
-            {thread.unreadCount>0&&<span className={styles.count}>{thread.unreadCount}</span>}
-          </button>
-        </li>)}
-      </ul>}
-      {crmState.partial&&<p className={styles.note}>{t.crmRecent}</p>}
-    </section>}
     {error&&<p role="alert" className={styles.alert}>{error}</p>}
     {data.businessUnavailable&&<p role="alert" className={styles.alert}>{t.unavailable}</p>}
-    {!data.websiteLoading&&!data.websiteUnavailable&&!data.hasPractice&&total===0&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
-      <Inbox size={32} aria-hidden="true"/><h3>{t.empty}</h3><p>{t.onboarding}</p>
-      <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.start} <ArrowRight size={16}/></Link>
-    </div>:!data.websiteLoading&&!data.websiteUnavailable&&!visible.length&&!visibleBusiness.length&&!visibleCrm.length&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
-      <CheckCircle2 size={32} aria-hidden="true"/><h3>{t.empty}</h3><p>{t.emptyInfo}</p>
-    </div>:null}
-    {visible.length>0&&<div className={styles.requestLayout}>
+    {data.websiteUnavailable&&<p role="alert" className={styles.alert}>{t.siteUnavailable}</p>}
+    {crmState.error&&data.ownerMessenger&&<p role="alert" className={styles.alert}>{t.crmError}</p>}
+    <div className={styles.requestLayout} data-detail-open={Boolean(selection)}>
       <div className={styles.requestList} role="group" aria-label={t.title}>
-        {visible.map(item=><button type="button" key={item.id}
-          className={styles.requestItem} aria-pressed={selected?.id===item.id}
-          onClick={()=>setSelectedId(item.id)}>
-          <span className={styles.requestAvatar}>{nameOf(item.contact,t.unnamed).charAt(0).toUpperCase()}</span>
-          <span className={styles.requestText}>
-            <span className={styles.requestRow}><strong>{nameOf(item.contact,t.unnamed)}</strong>
-              <time dateTime={item.createdAt}>{dateOf(item.createdAt,locale)}</time></span>
-            <span className={styles.requestService}>{serviceName(item,data.services||[],locale,t.service)}</span>
-            <span className={styles.requestPreview}>{(item.message||'').slice(0,125)||t.details}</span>
-          </span>
-          {item.needsReply||item.newMessageCount>0?<span className={styles.dot} aria-label={t.need}/>:null}
-        </button>)}
-      </div>
-      {selected&&<article className={styles.requestDetail} aria-label={t.details} key={selected.id}>
-        <div className={styles.detailHeader}>
-          <div><span className={styles.detailLabel}>{t.details}</span>
-            <h3>{serviceName(selected,data.services||[],locale,t.service)}</h3>
-            <p><CalendarDays size={15} aria-hidden="true"/>{t.received}: {dateOf(selected.createdAt,locale)}</p>
-          </div>
-          <span className={styles.status} data-status={selected.status}>{selected.status}</span>
-        </div>
-        <p className={styles.clientName}>{nameOf(selected.contact,t.unnamed)}</p>
-        {selected.message&&!ownerCase&&<p className={styles.fullMessage}>{selected.message}</p>}
-        {selected.remoteBooking&&<p className={styles.notice}>{t.booking}</p>}
-        <div className={styles.detailActions}>
-          {selected.status==='requested'&&!selected.remoteBooking&&
-            <button type="button" disabled={busy} onClick={()=>statusChange(selected,'contacted')}>{t.contacted}</button>}
-          {['requested','contacted'].includes(selected.status)&&!selected.remoteBooking&&
-            <button type="button" disabled={busy} onClick={()=>statusChange(selected,'closed')}>{t.closed}</button>}
-          <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}
-            prefetch={false}>{t.full} <ArrowRight size={15}/></Link>
-        </div>
-        {selected.requestKind==='public'?<>
-          {ownerCase?<FreeExpressOwnerCase key={selected.id} request={selected} locale={locale} accountId={data.accountId}/>:
-            <p className={styles.notice}>{t.publicHint}</p>}
-          <PublicEnquiryContact key={selected.id} request={selected} locale={locale} busy={busy} onSave={saveContact}/>
-        </>:<div className={styles.conversation}>
-          <p><MessageCircle size={16} aria-hidden="true"/>{t.inPortal}</p>
-          <PracticeRequestConversation key={selected.id} requestId={selected.id}
-            accountId={data.accountId} locale={locale}
-            initialMessage={selected.message||''} createdAt={selected.createdAt}
-            autoOpen={selected.needsReply||selected.newMessageCount>0}
-            onSaved={onReload} onViewed={onReload}/>
+        {rows.map(row=>{
+          const item=row.item
+          const name=row.kind==='crm'?item.name||t.unnamed:
+            row.kind==='business'?item.name||t.unnamed:nameOf(item.contact,t.unnamed)
+          const caption=row.kind==='crm'?({telegram:'Telegram',whatsapp:'WhatsApp',
+            instagram:'Instagram',messenger:'Messenger'})[item.channel]||t.crmLeads:
+            row.kind==='business'?t.business:serviceName(item,data.services||[],locale,t.service)
+          const preview=row.kind==='crm'?(item.needsReply||item.unreadCount>0?t.crmWaiting:t.crmHint):
+            row.kind==='business'?(item.question||t.businessHint):(item.message||t.details)
+          return <button type="button" key={row.key} className={styles.requestItem}
+            aria-pressed={row.key===selectedId}
+            onClick={()=>{
+              if(row.kind==='crm')onOpenCrmThread?.(item.id)
+              else {setSelectedId(row.key);setShowContact(false)}
+            }}>
+            <span className={styles.requestAvatar} aria-hidden="true">{name.charAt(0).toUpperCase()}</span>
+            <span className={styles.requestText}>
+              <span className={styles.requestRow}><strong>{name}</strong>
+                <time dateTime={row.createdAt}>{dateOf(row.createdAt,locale)}</time></span>
+              <span className={styles.requestService}>{caption}</span>
+              <span className={styles.requestPreview}>{String(preview).slice(0,110)}</span>
+            </span>
+            {row.unread>0?<span className={styles.count} aria-label={String(row.unread)}>{row.unread}</span>:
+              row.needsReply?<span className={styles.dot} aria-label={t.need}/>:null}
+          </button>
+        })}
+        {crmState.loading&&data.ownerMessenger&&<p className={styles.note} role="status">{t.crmLoading}</p>}
+        {crmState.partial&&<p className={styles.note}>{t.crmRecent}</p>}
+        {data.websiteLoading&&<p className={styles.note} role="status">{t.crmLoading}</p>}
+        {!rows.length&&!crmState.loading&&!data.websiteLoading&&!data.websiteUnavailable&&<div className={styles.empty}>
+          <Inbox size={26} aria-hidden="true"/><h3>{t.empty}</h3>
+          <p>{!data.hasPractice?t.onboarding:t.emptyInfo}</p>
+          {!data.hasPractice&&<Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>
+            {t.start} <ArrowRight size={15}/></Link>}
         </div>}
+      </div>
+      {selection&&<article className={styles.requestDetail} aria-label={t.details} key={selection.key}>
+        <button type="button" className={styles.backRequest} onClick={()=>{setSelectedId('');setShowContact(false)}}>
+          <ArrowLeft size={17} aria-hidden="true"/>{t.back}
+        </button>
+        {businessSelected?<CrmBusinessEnquiries enquiries={[businessSelected]} locale={locale}
+          busy={busy} onAction={businessAction}/>:selected&&<>
+          <div className={styles.detailHeader}>
+            <div><span className={styles.detailLabel}>{t.details}</span>
+              <h3>{serviceName(selected,data.services||[],locale,t.service)}</h3>
+              <p><CalendarDays size={15} aria-hidden="true"/>{t.received}: {dateOf(selected.createdAt,locale)}</p>
+            </div>
+            <span className={styles.status} data-status={selected.status}>{selected.status}</span>
+          </div>
+          <p className={styles.clientName}>{nameOf(selected.contact,t.unnamed)}</p>
+          {selected.message&&!ownerCase&&<p className={styles.fullMessage}>{selected.message}</p>}
+          {selected.remoteBooking&&<p className={styles.notice}>{t.booking}</p>}
+          <div className={styles.detailActions}>
+            {selected.status==='requested'&&!selected.remoteBooking&&
+              <button type="button" disabled={busy} onClick={()=>statusChange(selected,'contacted')}>{t.contacted}</button>}
+            {['requested','contacted'].includes(selected.status)&&!selected.remoteBooking&&
+              <button type="button" disabled={busy} onClick={()=>statusChange(selected,'closed')}>{t.closed}</button>}
+            <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice?panel=clients&requestId='+encodeURIComponent(selected.id)}
+              prefetch={false}>{t.full} <ArrowRight size={15}/></Link>
+          </div>
+          {selected.requestKind==='public'?<>
+            {ownerCase?<FreeExpressOwnerCase key={selected.id} request={selected}
+              locale={locale} accountId={data.accountId}/>:<p className={styles.notice}>{t.publicHint}</p>}
+            <button type="button" className={styles.contactToggle}
+              aria-expanded={showContact} onClick={()=>setShowContact(value=>!value)}>{t.editContact}</button>
+            {showContact&&<PublicEnquiryContact key={selected.id} request={selected}
+              locale={locale} busy={busy} onSave={saveContact}/>}
+          </>:<div className={styles.conversation}>
+            <PracticeRequestConversation key={selected.id} requestId={selected.id}
+              accountId={data.accountId} locale={locale}
+              initialMessage={selected.message||''} createdAt={selected.createdAt}
+              autoOpen
+              onSaved={onReload} onViewed={onReload}/>
+          </div>}
+        </>}
       </article>}
-    </div>}
-    {visibleBusiness.length>0&&data.ownerMessenger&&<section className={styles.business}>
-      <details open={!visible.length}>
-        <summary><ClipboardList size={18} aria-hidden="true"/>{t.business}<span>{visibleBusiness.length}</span></summary>
-        <p>{t.businessHint}</p>
-        <CrmBusinessEnquiries enquiries={visibleBusiness} locale={locale} busy={busy}
-          onAction={businessAction}/>
-      </details>
-    </section>}
+    </div>
   </div>
 }

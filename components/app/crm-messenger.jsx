@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import {ArrowLeft, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 const copy={
@@ -192,7 +193,7 @@ function replyReason(reason,lang){
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId=''}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',initialThreadSequence=0,compact=false,onOpenChange}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -212,6 +213,17 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const [threadsBusy,setThreadsBusy]=useState(false)
   const [messagesBusy,setMessagesBusy]=useState(false)
   const [needsReplyOnly,setNeedsReplyOnly]=useState(false)
+  const [showSettings,setShowSettings]=useState(false)
+  const [showFilters,setShowFilters]=useState(false)
+  const [showTools,setShowTools]=useState(false)
+  const [showQuickReplies,setShowQuickReplies]=useState(false)
+  useEffect(()=>{onOpenChange?.(Boolean(active))},[active,onOpenChange])
+  useEffect(()=>{
+    if(!showSettings)return
+    const onEscape=event=>{if(event.key==='Escape')setShowSettings(false)}
+    document.addEventListener('keydown',onEscape)
+    return()=>document.removeEventListener('keydown',onEscape)
+  },[showSettings])
   const load=useCallback(async(threadId='',signal,{threadsBefore=null,messagesBefore=null}={})=>{
     const params=new URLSearchParams()
     if(threadId)params.set('thread',threadId)
@@ -240,12 +252,11 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     load('',ctrl.signal).then(result=>{
       if(ctrl.signal.aborted)return
       if(!activeRef.current)setData(result)
-      // The owner should immediately SEE the existing customer message and
-      // reply composer, not an empty "select conversation" pane. Selection
-      // never sends to a provider or changes CRM consent.
+      // Full CRM opens an unread conversation; compact Messenger opens the
+      // conversation list first. Neither mode sends to a provider on open.
       if(initialThreadId){
         if(activeRef.current!==initialThreadId)void selectThread(initialThreadId)
-      }else if(!activeRef.current){
+      }else if(!activeRef.current&&!compact){
         const next=result.threads?.find(item=>item.needsReply||Number(item.unreadCount)>0)||
           result.threads?.[0]
         if(next?.id)void selectThread(next.id)
@@ -257,7 +268,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
       }
     })
     return ()=>ctrl.abort()
-  },[accountId,load,initialThreadId,onThreadsLoaded])
+  },[accountId,load,initialThreadId,initialThreadSequence,onThreadsLoaded])
   async function copyWebhook(channel){
     const url=data?.channels?.find(item=>item.channel===channel)?.callbackUrl
     if(!url)return
@@ -291,6 +302,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingNote.current=null
     pendingFollowup.current=null
     setActive(id);setText('');setNoteText('');setStatus('');setError('')
+    setShowTools(false);setShowQuickReplies(false)
     setThreadLoading(true)
     // Never display messages belonging to the previous client while B is loading.
     setData(previous=>previous?{...previous,messages:[],followups:[],nextMessagesCursor:null}:previous)
@@ -307,6 +319,12 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
       }
     }catch{if(activeRef.current===id)setError('unavailable')}
     finally{if(activeRef.current===id)setThreadLoading(false)}
+  }
+  function backToList(){
+    activeRef.current=''
+    setActive('');setText('');setStatus('');setThreadLoading(false)
+    setShowTools(false);setShowQuickReplies(false)
+    pendingRequest.current=null
   }
   async function loadMoreThreads(){
     const cursor=data?.nextThreadsCursor,selectedId=activeRef.current
@@ -432,14 +450,30 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   )
-  return <section className={styles.panel} aria-labelledby="crm-messenger-title">
+  return <section className={styles.panel} aria-label={t.title}
+    data-compact={compact||undefined}>
     <header className={styles.top}>
-      <div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>
-      <button type="button" className={styles.plainButton} disabled={busy} onClick={()=>refresh()}>{t.refresh}</button>
+      {!compact&&<div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>}
+      <div className={styles.topActions}>
+        {compact&&<button type="button" className={styles.settingsButton}
+          aria-expanded={showSettings} aria-controls="hh-crm-channel-settings"
+          onClick={()=>setShowSettings(value=>!value)}>
+          <Settings2 size={16} aria-hidden="true"/>{t.channels}
+          <span>{data?.accounts?.filter(item=>item.connected).length||0}/4</span>
+        </button>}
+        <button type="button" aria-label={t.refresh} className={styles.plainButton}
+          disabled={busy} onClick={()=>refresh()}>
+          {compact?<RefreshCw size={17} aria-hidden="true"/>:t.refresh}
+        </button>
+      </div>
     </header>
     {data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
-    <details className={styles.channels}>
+    {(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
+      {compact&&<button type="button" className={styles.closeSettings}
+        onClick={()=>setShowSettings(false)} aria-label={lang==='ru'?'Закрыть настройки':lang==='es'?'Cerrar ajustes':'Close settings'}>
+        <X size={18} aria-hidden="true"/></button>}
+    <details className={styles.channels} open={compact}>
       <summary>{t.channels} · {data?.accounts?.filter(item=>item.connected).length||0}/4 · {setupText[lang].instructions}</summary>
       <div className={styles.channelGrid}>
         {(data?.channels||['telegram','whatsapp','instagram','messenger'].map(channel=>({channel,providerConfigured:false,missingKeys:[]}))).map(channel=>{
@@ -520,24 +554,38 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         })}
       </div>
     </details>
+    </div>}
     {!data&&!error&&<p role="status" className={styles.notice}>{t.loading}</p>}
     {error&&<p role="alert" className={styles.notice}>{t.failed}</p>}
-    {data&&<div className={styles.layout}>
+    {data&&<div className={styles.layout} data-chat-open={Boolean(selected)}>
       <div className={styles.list} aria-label={t.customers}>
-        <div className={styles.listHead}><strong>{t.customers}</strong><small>{threads.length} · {t.waiting}: {unread} · {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Awaiting reply'}: {waitingReply}</small></div>
+        <div className={styles.listHead}>
+          <strong>{t.customers} <span className={styles.listCount}>{threads.length}</span></strong>
+          {compact?<button type="button" className={styles.filterButton}
+            aria-label={lang==='ru'?'Фильтры переписок':lang==='es'?'Filtrar conversaciones':'Conversation filters'}
+            aria-expanded={showFilters} aria-controls="hh-crm-filter-options"
+            onClick={()=>setShowFilters(value=>!value)}><SlidersHorizontal size={16} aria-hidden="true"/>
+            {(unreadOnly||needsReplyOnly||channelFilter!=='all')&&<span aria-hidden="true">•</span>}
+          </button>:<small>{t.waiting}: {unread} · {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Awaiting reply'}: {waitingReply}</small>}
+        </div>
         <div className={styles.inboxFilters}>
-          <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
-            aria-label={lang==='ru'?'Поиск переписок':lang==='es'?'Buscar conversaciones':'Search conversations'}
-            placeholder={lang==='ru'?'Поиск клиента…':lang==='es'?'Buscar cliente…':'Search client…'} />
-          <select aria-label={lang==='ru'?'Канал сообщений':lang==='es'?'Canal de mensajes':'Message channel'}
-            value={channelFilter} onChange={event=>setChannelFilter(event.target.value)}>
-            <option value="all">{t.all}</option>
-            {Object.entries(names).map(([id,name])=><option key={id} value={id}>{name}</option>)}
-          </select>
-          <label><input type="checkbox" checked={unreadOnly} onChange={event=>setUnreadOnly(event.target.checked)} />
-            {lang==='ru'?'Непрочитанные':lang==='es'?'Sin leer':'Unread only'}</label>
-          <label><input type="checkbox" checked={needsReplyOnly} onChange={event=>setNeedsReplyOnly(event.target.checked)} />
-            {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Needs reply'}</label>
+          <label className={styles.searchField}>
+            <Search size={17} aria-hidden="true"/>
+            <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
+              aria-label={lang==='ru'?'Поиск переписок':lang==='es'?'Buscar conversaciones':'Search conversations'}
+              placeholder={lang==='ru'?'Поиск клиента…':lang==='es'?'Buscar cliente…':'Search client…'} />
+          </label>
+          {(!compact||showFilters)&&<div className={styles.filtersExtra} id="hh-crm-filter-options">
+            <select aria-label={lang==='ru'?'Канал сообщений':lang==='es'?'Canal de mensajes':'Message channel'}
+              value={channelFilter} onChange={event=>setChannelFilter(event.target.value)}>
+              <option value="all">{t.all}</option>
+              {Object.entries(names).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+            </select>
+            <label><input type="checkbox" checked={unreadOnly} onChange={event=>setUnreadOnly(event.target.checked)} />
+              {lang==='ru'?'Непрочитанные':lang==='es'?'Sin leer':'Unread only'}</label>
+            <label><input type="checkbox" checked={needsReplyOnly} onChange={event=>setNeedsReplyOnly(event.target.checked)} />
+              {lang==='ru'?'Ждут ответа':lang==='es'?'Esperan respuesta':'Needs reply'}</label>
+          </div>}
         </div>
         {visibleThreads.length===0&&<p className={styles.empty}>{threads.length===0?t.empty:lang==='ru'?'Нет совпадений среди загруженных диалогов. Можно загрузить ещё.':lang==='es'?'No hay coincidencias entre los diálogos cargados. Puedes cargar más.':'No matching loaded conversations. You can load more.'}</p>}
         {visibleThreads.map(thread=><button type="button" key={thread.id}
@@ -558,6 +606,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
       <div className={styles.conversation}>
         {!selected?<p className={styles.empty}>{t.select}</p>:<>
           <div className={styles.chatHeader}>
+            {compact&&<button type="button" className={styles.backButton} onClick={backToList}
+              aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
+              <ArrowLeft size={19} aria-hidden="true"/></button>}
             <div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
               <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
@@ -574,9 +625,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 <option value="archived">{w.archived}</option>
               </select>
             </label>
-            <span className={styles.smallHint}>{selected.suppressed?
+            {compact&&<button type="button" className={styles.toolsButton}
+              aria-expanded={showTools} aria-controls="hh-crm-conversation-tools"
+              onClick={()=>setShowTools(value=>!value)}>
+              {lang==='ru'?'Действия':lang==='es'?'Acciones':'Actions'}
+            </button>}
+            {!compact&&<span className={styles.smallHint}>{selected.suppressed?
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
-              w.overview}</span>
+              w.overview}</span>}
           </div>
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
@@ -594,7 +650,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
             </div>)}
           </div>
-          <div className={styles.workflowActions}>
+          {(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">
             <details className={styles.actionDetails}>
               <summary>{w.followups} · {(data?.followups||[]).length}</summary>
               <div className={styles.actionBody}>
@@ -636,27 +692,36 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 <button type="button" disabled={busy||!noteText.trim()} onClick={saveNote}>{w.saveNote}</button>
               </div>
             </details>
-          </div>
+          </div>}
           <div className={styles.compose}>
             <label htmlFor="crm-messenger-compose">{t.reply}</label>
-            <div className={styles.quickReplies} role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
+            {compact&&<button type="button" className={styles.repliesToggle}
+              aria-expanded={showQuickReplies} aria-controls="hh-crm-quick-replies"
+              onClick={()=>setShowQuickReplies(value=>!value)}>
+              {lang==='ru'?'Шаблоны':lang==='es'?'Respuestas rápidas':'Quick replies'}
+            </button>}
+            {(!compact||showQuickReplies)&&<div id="hh-crm-quick-replies" className={styles.quickReplies}
+              role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
               {quickReplies[lang].map(item=><button type="button" key={item.label}
                 disabled={busy||threadLoading||!selected.reply.ok}
-                onClick={()=>{pendingRequest.current=null;setText(item.text)}}>{item.label}</button>)}
-            </div>
+                onClick={()=>{pendingRequest.current=null;setText(item.text);setShowQuickReplies(false)}}>{item.label}</button>)}
+            </div>}
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
-              maxLength={1200} rows={3} onChange={e=>{
+              maxLength={1200} rows={compact?1:3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
               }} placeholder={t.manual}/>
-            <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()} type="button" onClick={send}>{t.send}</button>
+            <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
+              type="button" onClick={send} aria-label={t.send}>
+              {compact?<Send size={18} aria-hidden="true"/>:t.send}
+            </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
           </div>
         </>}
       </div>
     </div>}
     {status&&<p role="status" className={styles.notice}>{status}</p>}
-    <p className={styles.disclaimer}>{t.manual}</p>
+    {!compact&&<p className={styles.disclaimer}>{t.manual}</p>}
   </section>
 }
