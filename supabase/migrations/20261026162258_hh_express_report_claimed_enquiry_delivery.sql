@@ -7,6 +7,33 @@ ALTER TABLE app_private.free_express_account_links
 UPDATE app_private.free_express_account_links l
 SET recipient_practitioner_id=e.recipient_practitioner_id
 FROM app.public_service_enquiries e WHERE e.id=l.enquiry_id;
+
+-- Backwards-compatible with a READY Vercel build still inserting four columns.
+-- DB derives and validates the recipient, never trusts a browser identity.
+CREATE FUNCTION app_private.free_express_link_practitioner()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $func$
+DECLARE expected_id uuid;
+BEGIN
+  SELECT e.recipient_practitioner_id INTO expected_id
+    FROM app.public_service_enquiries e WHERE e.id=NEW.enquiry_id;
+  IF expected_id IS NULL OR
+     (NEW.recipient_practitioner_id IS NOT NULL AND
+      NEW.recipient_practitioner_id<>expected_id) THEN
+    RAISE EXCEPTION 'INVALID_FREE_EXPRESS_PRACTITIONER';
+  END IF;
+  NEW.recipient_practitioner_id:=expected_id;
+  RETURN NEW;
+END;
+$func$;
+REVOKE ALL ON FUNCTION app_private.free_express_link_practitioner()
+  FROM PUBLIC,anon,authenticated,hh_app_inbox,hh_crm_backend;
+GRANT EXECUTE ON FUNCTION app_private.free_express_link_practitioner()
+  TO hh_app_backend;
+CREATE TRIGGER free_express_link_practitioner_before_insert
+BEFORE INSERT ON app_private.free_express_account_links
+FOR EACH ROW EXECUTE FUNCTION app_private.free_express_link_practitioner();
+
 ALTER TABLE app_private.free_express_account_links
   ALTER COLUMN recipient_practitioner_id SET NOT NULL;
 
