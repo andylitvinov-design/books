@@ -101,7 +101,7 @@ export default function MessagesHub({locale='en'}){
       </section>}
       <section className={styles.direct} aria-label={t.direct}>
         {data?.ownerMessenger&&<h2 className={styles.directTitle}>{t.direct}</h2>}
-        <DirectMessageInbox locale={locale} embedded/>
+        <DirectMessageInbox locale={locale} embedded ownerCrmAvailable={Boolean(data?.ownerMessenger)}/>
       </section>
     </section>
     <section id="hh-inbox-panel-requests" role="tabpanel" aria-labelledby="hh-inbox-tab-requests"
