@@ -113,7 +113,6 @@ test('Google fails closed on wrong channel, missing authorization and wrong visi
  await assert.rejects(()=>verifyUploadedRu('Yt123456abc','token'.repeat(9),privateVideo),/PRIVACY_HOLD/)
 })
 test('backend only webhook and forced RLS migration; no cross-bot or automatic YouTube upload',()=>{
- const root=new URL('..',import.meta.url)
  const migration=readFileSync(new URL('../supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql',import.meta.url),'utf8')
  const crmWebhook=readFileSync(new URL('../app/api/app/crm/messenger/webhook/[provider]/route.js',import.meta.url),'utf8')
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
