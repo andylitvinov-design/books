@@ -67,3 +67,7 @@
 .shareLink{display:flex;align-items:center;gap:6px;flex:none;max-width:148px;min-height:40px;padding:8px 10px;border:1px solid #ddd6c9;border-radius:11px;background:#fff;color:#376e62;font:700 12px/1.25 system-ui,sans-serif;cursor:pointer}
 .shareLink span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:360px){.shareLink{max-width:97px;padding:7px 8px}.shareLink span{font-size:11px}}
+
+.cardButton{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:6px;min-height:38px;padding:6px 10px;border:1px solid #bdd9cc;background:#eef6f0;color:#286b5b;border-radius:10px;cursor:pointer;font:700 12px/1.25 system-ui,sans-serif;white-space:nowrap}
+.cardButton[aria-pressed="true"]{background:#dbece2}
+@media(max-width:360px){.cardButton{width:39px;padding:5px}.cardButton span{position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);overflow:hidden;white-space:nowrap}}

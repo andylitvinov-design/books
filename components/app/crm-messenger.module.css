@@ -177,3 +177,7 @@
 .detailConversation .empty{margin:auto;color:#81766c}
 .srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 @media(max-width:700px){.detailConversation .messages{min-height:0;max-height:none}.detailConversation .compose{padding:9px 11px}}
+
+.profileAction{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:40px;padding:8px 12px;border:1px solid #b9d9cc;border-radius:10px;background:#fff;color:#286452;cursor:pointer;font:700 12px/1.35 system-ui,sans-serif}
+.profileAction:focus-visible{outline:3px solid #185ac9;outline-offset:2px}
+@media(max-width:360px){.profileAction{padding:7px 9px}.contactActions{gap:6px}}
