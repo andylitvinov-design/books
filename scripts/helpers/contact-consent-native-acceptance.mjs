@@ -44,6 +44,10 @@ function diagnosticFields(diagnostic) {
   const phase=diagnostic.failedPhase ?? diagnostic.phase
   const keyboard=diagnostic.mode==='keyboard'&&phase==='keyboard-visible'?` keyboard=${keyboardDiagnostic(diagnostic)}`:''
   let tail=''
+  if(diagnostic.mode==='keyboard'&&phase==='keyboard-ready') {
+    // Node-only formatting: never retrieve more page state after a failed start.
+    try {tail+=` keyboardReady=${keyboardReadyDiagnostic(diagnostic.keyboardReady,diagnostic.keyboardReadyNodeDeadline)}`} catch {}
+  }
   try {if(diagnostic.keyboardTail!==undefined) tail=` keyboardTail=${keyboardTailDiagnostic(diagnostic.keyboardTail)}`} catch { /* A malformed optional tail cannot replace the original diagnostic. */ }
 // BEGIN KEYBOARD START DIAGNOSTIC format
   try {
@@ -52,6 +56,37 @@ function diagnosticFields(diagnostic) {
   } catch { /* Optional observation never replaces the first failed verdict. */ }
   return `mode=${fixed(diagnostic.mode,diagnosticModes)} phase=${fixed(phase,diagnosticPhases)} cleanup=${fixed(diagnostic.cleanup,diagnosticPhases)} boundary=${fixed(diagnostic.boundary,diagnosticBoundaries)}${keyboard}${tail}`
 // END KEYBOARD START DIAGNOSTIC format
+}
+
+// Failed-readiness transport contains fixed vocabulary and the last complete
+// sample already used by the predicate. It is not a new read or an acceptance gate.
+// Parse a bounded string, never coerce unknown objects or inspect Error messages.
+export function keyboardReadyDiagnostic(raw,nodeDeadline=false) {
+  if(nodeDeadline===true)return JSON.stringify({version:1,source:'node-deadline',reason:'DEADLINE',sampled:false})
+  let data
+  try {if(typeof raw==='string'&&raw.length<=4096)data=JSON.parse(raw)} catch {}
+  if(data?.version!==1)data=null
+  const source=data?.source==='browser'?'browser':'unknown'
+  const reasons=['TARGET','FOCUS','DISABLED','HIDDEN','GEOMETRY','VIEWPORT','DEADLINE','PHONE_OUTSIDE']
+  const reason=source==='browser'&&reasons.includes(data?.reason)?data.reason:'unknown'
+  const safe={version:1,source,reason,sampled:source==='browser'&&data?.sampled===true}
+  if(!safe.sampled)return JSON.stringify(safe)
+  let numericComplete=true
+  const number=value=>{
+    if(typeof value!=='number'||!Number.isFinite(value)){numericComplete=false;return 0}
+    if(Math.abs(value)>1000000)numericComplete=false
+    return Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100
+  }
+  const vector=(value,length)=>Array.from({length},(_,i)=>number(Array.isArray(value)?value[i]:undefined))
+  const count=value=>Math.max(0,Math.trunc(number(value)))
+  safe.frames=count(data.frames);safe.sampleFrame=count(data.sampleFrame)
+  safe.stableFrames=Math.min(3,count(data.stableFrames));safe.inside=data.inside===true
+  safe.phoneRect=vector(data.phoneRect,6);safe.consentRect=vector(data.consentRect,6)
+  safe.viewport=vector(data.viewport,2);safe.scroll=vector(data.scroll,4)
+  safe.visualViewportPresent=data.visualViewportPresent===true
+  safe.visualViewport=safe.visualViewportPresent?vector(data.visualViewport,7):[]
+  safe.numericComplete=numericComplete&&data.numericComplete!==false
+  return JSON.stringify(safe)
 }
 
 function keyboardTailDiagnostic(tail) {
@@ -278,6 +313,7 @@ export function installConsentPopupGuard() {
 export const CONSENT_KEYBOARD_START_TIMEOUT_MS = 30_000
 export const CONSENT_KEYBOARD_ABORT_TIMEOUT_MS = 5_000
 const unsafeConsentFailures=new WeakSet()
+const keyboardStartDeadlineFailures=new WeakSet()
 export const unsafeConsentCleanup=error=>Boolean(error&&typeof error==='object'&&unsafeConsentFailures.has(error))
 const keyboardStartClock={now:()=>performance.now(),set:(fn,ms)=>setTimeout(fn,ms),clear:timer=>clearTimeout(timer)}
 
@@ -285,16 +321,34 @@ const keyboardStartClock={now:()=>performance.now(),set:(fn,ms)=>setTimeout(fn,m
 // unchanged frames establish a start state, not a guarantee about future frames.
 // Checkbox geometry participates in stability, but its containment is NOT a gate.
 export function naturalKeyboardStart(phone,{remainingMs}) {
-  return new Promise((resolve,reject)=>{
+  return new Promise(resolve=>{
     const start=performance.now()
     let frame=null,done=false,previous=null,previousTime=null,stable=0
-    const fail=reason=>{throw Error('CONSENT_KEYBOARD_START_'+reason)}
+    let failureReason='unknown',lastSample=null,frames=0,sampleFrame=0
+    const fail=reason=>{failureReason=reason;throw Error('CONSENT_KEYBOARD_START_'+reason)}
     const finite=value=>typeof value==='number'&&Number.isFinite(value)&&Math.abs(value)<=10000000
     const finish=(error,value)=>{
       if(done)return
       done=true
       if(frame!==null){try{cancelAnimationFrame(frame)}catch{};frame=null}
-      if(error)reject(error);else resolve(value)
+      if(error){
+        // Carry failure evidence in the result, not exception.message/stack.
+        // The unchanged {ready:true} assertion still rejects this failed start.
+        const evidence={version:1,source:'browser',reason:failureReason,sampled:lastSample!==null}
+        if(lastSample){
+          let numericComplete=true
+          const number=value=>{
+            if(typeof value!=='number'||!Number.isFinite(value)){numericComplete=false;return 0}
+            if(Math.abs(value)>1000000)numericComplete=false
+            return Math.round(Math.max(-1000000,Math.min(1000000,value))*100)/100
+          }
+          const values=lastSample.values.map(number)
+          Object.assign(evidence,{frames,sampleFrame,stableFrames:Math.min(3,stable),inside:lastSample.inside===true,
+            phoneRect:values.slice(0,6),consentRect:values.slice(6,12),viewport:values.slice(12,14),scroll:values.slice(14,18),
+            visualViewportPresent:values.length===25,visualViewport:values.slice(18),numericComplete})
+        }
+        resolve({ready:false,keyboardReady:JSON.stringify(evidence)})
+      }else resolve(value)
     }
     const rect=node=>{
       const r=node.getBoundingClientRect(),values=['left','top','right','bottom','width','height'].map(key=>r[key])
@@ -322,9 +376,11 @@ export function naturalKeyboardStart(phone,{remainingMs}) {
     const tick=time=>{
       frame=null
       if(done)return
+      frames=Math.min(1000000,frames+1)
       try{
         if(!finite(start)||!finite(time)||!finite(remainingMs)||remainingMs<=0||remainingMs>30000||performance.now()-start>=remainingMs)fail('DEADLINE')
         const current=sample()
+        lastSample=current;sampleFrame=frames
         const unchanged=previous&&current.values.length===previous.length&&current.values.every((value,index)=>value===previous[index])
         stable=unchanged&&previousTime!==null&&time>previousTime?stable+1:1
         previous=current.values;previousTime=time
@@ -342,6 +398,7 @@ export function createKeyboardStartPreparation(clock=keyboardStartClock) {
   const start=clock.now(),deadline=start+CONSENT_KEYBOARD_START_TIMEOUT_MS
   if(!Number.isFinite(start))throw Error('CONSENT_KEYBOARD_START_CLOCK')
   const timeoutError=Error('CONSENT_KEYBOARD_START_DEADLINE'),pending=new Set()
+  keyboardStartDeadlineFailures.add(timeoutError)
   let expired=false,stopped=false,timer
   const expiry=new Promise((_,reject)=>{timer=clock.set(()=>{expired=true;reject(timeoutError)},CONSENT_KEYBOARD_START_TIMEOUT_MS)})
   expiry.catch(()=>{})
@@ -434,8 +491,13 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
     }
     result=await run(drain)
 // END KEYBOARD START DIAGNOSTIC install
-  } catch {
+  } catch(error) {
     primary=true;failed(diagnostic)
+    if(diagnostic?.mode==='keyboard'&&diagnostic.failedPhase==='keyboard-ready'&&diagnostic.keyboardReady===undefined) {
+      // Only the actual private watchdog identity establishes a Node deadline.
+      // Other exceptions stay unknown; do not inspect their message or stack.
+      diagnostic.keyboardReadyNodeDeadline=Boolean(error&&typeof error==='object'&&keyboardStartDeadlineFailures.has(error))
+    }
     await captureKeyboardFailureTail(diagnostic)
   }
   finally {
@@ -471,7 +533,7 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
 async function verifyNative(sourcePage, expect, locale, diagnostic) {
   const origin = alchemyOrigin(sourcePage.url(), locale)
   for (const mode of ['keyboard', 'label', 'canceled-pointer']) {
-    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null,keyboardTail:undefined,readKeyboardTail:undefined,keyboardPreparation:null,unsafeConsentCleanup:false})
+    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null,keyboardTail:undefined,readKeyboardTail:undefined,keyboardPreparation:null,unsafeConsentCleanup:false,keyboardReady:undefined,keyboardReadyNodeDeadline:false})
     const context = await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
     const errors=[], failures=[], blocked=[]
     const initialGate=consentInitialGate(origin,locale,failures,blocked)
@@ -522,6 +584,9 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
           await preparing(()=>expect(contact).toBeFocused())
           checkpoint(diagnostic,'keyboard-ready')
           const readiness=await preparing(budget=>contact.evaluate(naturalKeyboardStart,{remainingMs:budget},{timeout:budget}))
+          if(readiness?.ready!==true) {
+            try {diagnostic.keyboardReady=keyboardReadyDiagnostic(readiness?.keyboardReady)} catch {}
+          }
           assert.deepEqual(readiness,{ready:true})
           preparation.finish()
           diagnostic.keyboardPreparation=null

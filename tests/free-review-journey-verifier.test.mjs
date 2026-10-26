@@ -520,7 +520,7 @@ for(const [name,url,method,type,pathnameCategory,sameOrigin,navigation,subframe]
   assert.equal(gate.initialDocumentLoaded,true);assert.equal(gate.firstFatalRequest,null)
   const denied=route(diagnosticRequest(url,method,type,{navigation,subframe}));await gate(denied)
   assert.deepEqual(denied.log,['abort']);assert.deepEqual(failures,[fatalBoundaryMessage]);assert.deepEqual(blocked,[]);assert.equal(receipt.count,0)
-  assert.deepEqual(gate.firstFatalRequest,{method,resource:type,pathnameCategory,sameOrigin,navigation,mainFrame:!subframe,subframe,beforeInteraction:true})
+  assert.deepEqual(gate.firstFatalRequest,{method,resource:type,endpointCategory:'unclassified',pathnameCategory,sameOrigin,navigation,mainFrame:!subframe,subframe,beforeInteraction:true})
   assert.equal(Object.isFrozen(gate.firstFatalRequest),true)
 })
 test('fatal diagnostic is first-only and distinguishes an armed interaction',async()=>{
@@ -538,7 +538,7 @@ test('new diagnostic getters may throw without altering the original rejection',
   for(const field of ['resourceType','frame','isNavigationRequest'])req[field]=()=>{throw Error(marker)}
   const denied=route(req);await gate(denied)
   assert.deepEqual(denied.log,['abort']);assert.deepEqual(failures,[fatalBoundaryMessage])
-  assert.deepEqual(gate.firstFatalRequest,{method:null,resource:null,pathnameCategory:'other',sameOrigin:true,navigation:null,mainFrame:null,subframe:null,beforeInteraction:true})
+  assert.deepEqual(gate.firstFatalRequest,{method:null,resource:null,endpointCategory:'unclassified',pathnameCategory:'other',sameOrigin:true,navigation:null,mainFrame:null,subframe:null,beforeInteraction:true})
   assert.ok(!JSON.stringify([failures,gate.firstFatalRequest]).includes(marker))
 })
 test('unknown enums and poison URL components never become diagnostic values',async()=>{
@@ -547,7 +547,7 @@ test('unknown enums and poison URL components never become diagnostic values',as
   req.isNavigationRequest=()=>marker;req.frame=()=>{throw Error(marker)}
   const denied=route(req);await gate(denied)
   assert.deepEqual(denied.log,['abort']);assert.deepEqual(failures,[fatalBoundaryMessage])
-  assert.deepEqual(gate.firstFatalRequest,{method:null,resource:null,pathnameCategory:'other',sameOrigin:false,navigation:null,mainFrame:null,subframe:null,beforeInteraction:true})
+  assert.deepEqual(gate.firstFatalRequest,{method:null,resource:null,endpointCategory:'unclassified',pathnameCategory:'other',sameOrigin:false,navigation:null,mainFrame:null,subframe:null,beforeInteraction:true})
   assert.doesNotMatch(JSON.stringify([failures,gate.firstFatalRequest]),/PRIVATE_DIAGNOSTIC_POISON|https?:|outside|\?|#|@/)
 })
 test('malformed encoded paths retain original catch failure rather than a fabricated fatal descriptor',async()=>{
@@ -571,6 +571,90 @@ for(const [name,url,method,type,,sameOrigin,navigation,subframe] of fatalCases.s
   assert.equal(result?.code,'ERR_ASSERTION');assert.deepEqual(result.actual,[fatalBoundaryMessage]);assert.deepEqual(result.expected,[])
   assert.equal(closeCount,2);assert.deepEqual(calls,['close','close','log']);assert.equal(logs.length,1);assert.equal(logs[0][0],'SYNTHETIC_FREE_REVIEW_BOUNDARY')
   const summary=JSON.parse(logs[0][1]);assert.equal(summary.completed,false);assert.equal(summary.requestCount,0);assert.equal(summary.failureCount,1);assert.equal(summary.pageErrorCount,0);assert.deepEqual(summary.blocked,[])
-  assert.equal(summary.firstFatalRequest.beforeInteraction,true);assert.equal(summary.firstFatalRequest.sameOrigin,sameOrigin);assert.equal(summary.firstFatalRequest.navigation,navigation);assert.equal(summary.firstFatalRequest.subframe,subframe)
+  assert.deepEqual(summary.firstFatalRequest,{method,resource:type,endpointCategory:'unclassified',pathnameCategory:fatalCases.find(row=>row[0]===name)[4],sameOrigin,navigation,mainFrame:!subframe,subframe,beforeInteraction:true})
   assert.doesNotMatch(JSON.stringify(summary),/https?:|outside|private-synthetic|secret|bootstrap|_rsc/)
+})
+
+
+// Only source-pinned endpoint identity is classified; this never excuses its
+// triggering error and never changes the denied request's failure or abort.
+const devStackLookupPath = '/__nextjs_original-stack-frames'
+const devStackLookupCases = [
+  ['exact endpoint', origin + devStackLookupPath, 'POST', 'fetch', 'dev-stack-lookup'],
+  ...[
+    ['trailing slash', devStackLookupPath + '/'],
+    ['extra suffix', devStackLookupPath + '-extra'],
+    ['extra prefix', '/prefix' + devStackLookupPath],
+    ['case drift', '/__NEXTJS_original-stack-frames'],
+    ['encoded leading underscore', '/%5f_nextjs_original-stack-frames'],
+    ['encoded internal hyphen', '/__nextjs_original%2dstack-frames'],
+    ['encoded trailing slash', devStackLookupPath + '%2f'],
+    ['double leading slash', '/' + devStackLookupPath],
+    ['query', devStackLookupPath + '?PRIVATE_ENDPOINT_MARKER=1'],
+    ['empty query', devStackLookupPath + '?'],
+    ['fragment', devStackLookupPath + '#PRIVATE_ENDPOINT_MARKER'],
+    ['empty fragment', devStackLookupPath + '#'],
+  ].map(([name, path]) => [name, origin + path, 'POST', 'fetch', 'unclassified']),
+  ['foreign hostname', 'http://localhost:3100' + devStackLookupPath, 'POST', 'fetch', 'unclassified'],
+  ['foreign port', 'http://127.0.0.1:3101' + devStackLookupPath, 'POST', 'fetch', 'unclassified'],
+  ['foreign scheme', 'https://127.0.0.1:3100' + devStackLookupPath, 'POST', 'fetch', 'unclassified'],
+  ['credentials', 'http://PRIVATE_ENDPOINT_MARKER:PRIVATE_ENDPOINT_MARKER@127.0.0.1:3100' + devStackLookupPath, 'POST', 'fetch', 'unclassified'],
+  ['wrong method', origin + devStackLookupPath, 'HEAD', 'fetch', 'unclassified'],
+  ['lowercase method', origin + devStackLookupPath, 'post', 'fetch', 'unclassified'],
+  ['wrong resource', origin + devStackLookupPath, 'POST', 'xhr', 'unclassified'],
+  ['unknown resource', origin + devStackLookupPath, 'POST', 'PRIVATE_ENDPOINT_MARKER', 'unclassified'],
+]
+for (const [name, url, method, resource, endpointCategory] of devStackLookupCases) test('denied endpoint enum ' + name + ' stays observation-only', async () => {
+  const failures = [], blocked = [], receipt = syntheticFreeReviewReceipt('en', 'compact', 'whatsapp')
+  const gate = freeReviewRequestGate(origin, 'en', 'compact', receipt, failures, blocked, {bootstrap:true})
+  const denied = route(diagnosticRequest(url, method, resource, {navigation:false}))
+  await gate(denied)
+  assert.deepEqual(denied.log, ['abort'])
+  assert.deepEqual(failures, [fatalBoundaryMessage]); assert.deepEqual(blocked, []); assert.equal(receipt.count, 0)
+  assert.deepEqual(gate.firstFatalRequest, {
+    method:method === 'post' ? null : method,
+    resource:resource === 'PRIVATE_ENDPOINT_MARKER' ? null : resource,
+    endpointCategory, pathnameCategory:'other', sameOrigin:new URL(url).origin === origin,
+    navigation:false, mainFrame:true, subframe:false, beforeInteraction:true,
+  })
+  assert.equal(Object.isFrozen(gate.firstFatalRequest), true)
+  assert.doesNotMatch(JSON.stringify([failures, gate.firstFatalRequest]), /PRIVATE_ENDPOINT_MARKER|https?:|__nextjs|[?#@]/)
+})
+test('denied endpoint enum does not reclassify a nonfatal GET read into a fatal write', async () => {
+  const failures = [], blocked = [], receipt = syntheticFreeReviewReceipt('en', 'compact', 'whatsapp')
+  const gate = freeReviewRequestGate(origin, 'en', 'compact', receipt, failures, blocked, {bootstrap:true})
+  const denied = route(diagnosticRequest(origin + devStackLookupPath, 'GET', 'fetch', {navigation:false}))
+  await gate(denied)
+  assert.deepEqual(denied.log, ['abort']); assert.deepEqual(failures, []); assert.equal(blocked.length, 1)
+  assert.equal(gate.firstFatalRequest, null); assert.equal(receipt.count, 0)
+})
+test('denied endpoint enum failed observation defaults to unclassified without swallowing the failure', async () => {
+  const failures = [], receipt = syntheticFreeReviewReceipt('en', 'compact', 'whatsapp')
+  const gate = freeReviewRequestGate(origin, 'en', 'compact', receipt, failures, [], {bootstrap:true})
+  const req = diagnosticRequest(origin + devStackLookupPath, 'POST', 'fetch', {navigation:false})
+  req.resourceType = () => { throw Error('PRIVATE_ENDPOINT_MARKER') }
+  const denied = route(req); await gate(denied)
+  assert.deepEqual(denied.log, ['abort']); assert.deepEqual(failures, [fatalBoundaryMessage]); assert.equal(receipt.count, 0)
+  assert.deepEqual(gate.firstFatalRequest, {method:'POST',resource:null,endpointCategory:'unclassified',pathnameCategory:'other',sameOrigin:true,navigation:false,mainFrame:true,subframe:false,beforeInteraction:true})
+})
+for (const [name, url, endpointCategory] of [
+  ['exact lookup', origin + devStackLookupPath, 'dev-stack-lookup'],
+  ['unknown write', origin + '/unclassified-startup-write?PRIVATE_ENDPOINT_MARKER=1', 'unclassified'],
+]) test('startup emitted endpoint enum ' + name + ' preserves blocking result after cleanup', async t => {
+  const logs = [], calls = []; t.mock.method(console, 'log', (...args) => {calls.push('log'); logs.push(args)})
+  let httpHandler
+  const page = {on:()=>{},goto:async()=>{
+    await httpHandler(route(request(origin + freeReviewPath('en'), 'GET', 'document')))
+    const denied = route(diagnosticRequest(url, 'POST', 'fetch', {navigation:false}))
+    await httpHandler(denied); assert.deepEqual(denied.log, ['abort'])
+  },evaluate:()=>assert.fail('No startup interaction'),locator:()=>assert.fail('No component interaction')}
+  const context = {routeWebSocket:async()=>{},route:async(_pattern, handler)=>{httpHandler=handler},addInitScript:async()=>{},newPage:async()=>page,close:async()=>{calls.push('close')}}
+  await assert.rejects(verifyFreeReviewJourney(sourceFor(context), () => assert.fail('No interaction'), 'en'), error => {
+    assert.equal(error.code, 'ERR_ASSERTION'); assert.deepEqual(error.actual, [fatalBoundaryMessage]); assert.deepEqual(error.expected, []); return true
+  })
+  assert.deepEqual(calls, ['close','close','log']); assert.equal(logs.length, 1); assert.equal(logs[0][0], 'SYNTHETIC_FREE_REVIEW_BOUNDARY')
+  const summary = JSON.parse(logs[0][1])
+  assert.deepEqual(summary, {locale:'en',kind:'compact',channel:'whatsapp',denyReceiptStorage:false,completed:false,requestCount:0,failureCount:1,pageErrorCount:0,blocked:[],
+    firstFatalRequest:{method:'POST',resource:'fetch',endpointCategory,pathnameCategory:'other',sameOrigin:true,navigation:false,mainFrame:true,subframe:false,beforeInteraction:true}})
+  assert.doesNotMatch(logs[0][1], /PRIVATE_ENDPOINT_MARKER|https?:|__nextjs|unclassified-startup-write|[?#@]/)
 })

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {permittedHolisticRead, createHolisticBrowserIsolation} from '../scripts/helpers/holistic-browser-isolation.mjs';
+import {permittedHolisticRead, permittedHolisticHomePrefetch, createHolisticBrowserIsolation} from '../scripts/helpers/holistic-browser-isolation.mjs';
+import {readFileSync} from 'node:fs';
 
 const origin='http://127.0.0.1:3100';
 const request=(url,method='GET',type='document',headers={})=>({url:()=>url,method:()=>method,resourceType:()=>type,headers:()=>headers});
@@ -93,4 +94,141 @@ test('synthetic gallery cannot authorize query variants, writes, other API, fore
     await assert.rejects(guard.assertClean);
     await assert.rejects(guard.close);
   }
+});
+
+const homePrefetchHeaders = {rsc:'1','next-router-prefetch':'1'};
+test('separate Home prefetch profile permits only authored EN/RU root fetches and never changes four-route default',()=>{
+  for(const locale of ['en','ru'])for(const token of ['a','_-9','a'.repeat(64)]){
+    const req=request(origin+'/?_rsc='+token,'GET','fetch',homePrefetchHeaders);
+    assert.equal(permittedHolisticHomePrefetch(req,origin,locale),true);
+    assert.equal(permittedHolisticRead(req,origin,locale),false,'Default four-route profile still denies root');
+  }
+  for(const locale of ['es','de','',undefined])
+    assert.equal(permittedHolisticHomePrefetch(request(origin+'/?_rsc=x','GET','fetch',homePrefetchHeaders),origin,locale),false);
+});
+
+test('Home prefetch rejects document/HEAD/nonprefetch/unknown-query/foreign/private/API/write variants',()=>{
+  const valid=origin+'/?_rsc=x';
+  const denied=[
+    request(origin),request(valid,'GET','document',homePrefetchHeaders),
+    ...['HEAD','POST','PUT','PATCH','DELETE','OPTIONS'].map(method=>request(valid,method,'fetch',homePrefetchHeaders)),
+    ...['xhr','image','script','stylesheet','font','media','other'].map(type=>request(valid,'GET',type,homePrefetchHeaders)),
+    ...[{}, {rsc:'1'}, {'next-router-prefetch':'1'}, {rsc:'0','next-router-prefetch':'1'},
+      {rsc:'1','next-router-prefetch':'0'}, {rsc:'1',purpose:'prefetch'},
+      {rsc:1,'next-router-prefetch':1}].map(headers=>request(valid,'GET','fetch',headers)),
+    ...['/','/?','/?_rsc=','/?_rsc='+('a'.repeat(65)),'/?_rsc=bad%20value',
+      '/?_rsc=bad%2Fvalue','/?_rsc=x&_rsc=y','/?_rsc=x&lang=ru','/?lang=ru&_rsc=x',
+      '/?_rsc=x&private=synthetic','/?unknown=x','/?_rsc=x#private',
+      '/ru?_rsc=x','/en?_rsc=x','/es?_rsc=x','/ru/pro?_rsc=x',
+      '/ru/app?_rsc=x','/ru/client?_rsc=x','/api/client?_rsc=x','/%2f?_rsc=x',
+      '/%5c?_rsc=x','//?_rsc=x'].map(path=>request(origin+path,'GET','fetch',homePrefetchHeaders)),
+    request('https://127.0.0.1:3100/?_rsc=x','GET','fetch',homePrefetchHeaders),
+    request('http://localhost:3100/?_rsc=x','GET','fetch',homePrefetchHeaders),
+    request('http://127.0.0.1:3101/?_rsc=x','GET','fetch',homePrefetchHeaders),
+    request('http://user:synthetic@127.0.0.1:3100/?_rsc=x','GET','fetch',homePrefetchHeaders),
+    request('https://provider.invalid/?_rsc=x','GET','fetch',homePrefetchHeaders),
+    request('not a URL','GET','fetch',homePrefetchHeaders),
+  ];
+  for(const [index,req]of denied.entries())
+    assert.equal(permittedHolisticHomePrefetch(req,origin,'ru'),false,'denied synthetic variant '+index);
+});
+
+test('new anonymous branch rejects credential-header names without reading their values and leaves existing routes unchanged',()=>{
+  for(const name of ['authorization','Authorization','AUTHORIZATION','proxy-authorization','Proxy-Authorization'])
+    for(const enumerable of [true,false]){
+      let valueReads=0;
+      const headers={...homePrefetchHeaders};
+      Object.defineProperty(headers,name,{enumerable,get(){valueReads++;throw Error('AUTH_VALUE_MUST_NOT_BE_READ');}});
+      assert.equal(permittedHolisticHomePrefetch(request(origin+'/?_rsc=x','GET','fetch',headers),origin,'ru'),false);
+      assert.equal(valueReads,0);
+      assert.equal(permittedHolisticRead(request(origin+'/ru/pro?_rsc=x','GET','fetch',headers),origin,'ru'),true,
+        'Existing four-route policy is not silently changed');
+      assert.equal(valueReads,0);
+    }
+  for(const authorization of ['', 'synthetic'])
+    assert.equal(permittedHolisticHomePrefetch(request(origin+'/?_rsc=x','GET','fetch',{...homePrefetchHeaders,authorization}),origin,'ru'),false);
+});
+
+test('locale cookie presence is not a cookie-free claim and no cookie value is inspected by Home predicate',()=>{
+  let cookieReads=0;const headers={...homePrefetchHeaders};
+  Object.defineProperty(headers,'cookie',{enumerable:true,get(){cookieReads++;throw Error('COOKIE_VALUE_MUST_NOT_BE_READ');}});
+  assert.equal(permittedHolisticHomePrefetch(request(origin+'/?_rsc=x','GET','fetch',headers),origin,'ru'),true);
+  assert.equal(cookieReads,0);
+  assert.equal(permittedHolisticHomePrefetch({...request(origin+'/?_rsc=x','GET','fetch',headers),headers(){throw Error('METADATA_UNAVAILABLE');}},origin,'ru'),false);
+});
+
+test('opt-in is explicit boolean and defaults stay blocked with identical fresh anonymous mobile context options',async()=>{
+  for(const selected of [undefined,false,true]){
+    const stub=stubBrowser();
+    const guard=await createHolisticBrowserIsolation(stub.browser,{origin,locale:'ru',viewport:{width:390,height:844},
+      ...(selected===undefined?{}:{allowPublicHomePrefetch:selected})});
+    await stub.route(request(origin+'/?_rsc=x','GET','fetch',homePrefetchHeaders));
+    assert.deepEqual(stub.calls,[{deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce',viewport:{width:390,height:844},serviceWorkers:'block'}]);
+    assert.equal(stub.responses.some(value=>value.fetch),selected===true);
+    assert.equal(stub.responses.some(value=>value.abort),selected!==true);
+    await guard.close();
+  }
+  for(const invalid of ['true',1,{},null]){
+    const stub=stubBrowser();
+    await assert.rejects(createHolisticBrowserIsolation(stub.browser,{origin,locale:'ru',viewport:{width:390,height:844},allowPublicHomePrefetch:invalid}),{code:'ERR_ASSERTION'});
+    assert.equal(stub.calls.length,0,'Invalid opt-in never creates a context');
+  }
+});
+
+test('only actual master verifier opts in; source-authored header remains unchanged and sibling callers retain defaults',()=>{
+  const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const master=read('scripts/verify-holistic-master-browser.mjs');
+  assert.equal(master.split('allowPublicHomePrefetch:true').length,2);
+  assert.match(master,/engine\.launch\(\{headless: true\}\)/);
+  assert.match(master,/createHolisticBrowserIsolation\(browser, \{origin, locale, viewport:\{width, height:844\}, observeTransport:diagnostics\.observeTransport, allowPublicHomePrefetch:true\}\)/);
+  assert.doesNotMatch(master,/storageState|httpCredentials|addCookies|setExtraHTTPHeaders/);
+  for(const path of ['scripts/verify-holistic-support-browser.mjs','scripts/verify-holistic-topics-browser.mjs']){
+    const source=read(path);assert.match(source,/createHolisticBrowserIsolation\(browser/);
+    assert.doesNotMatch(source,/allowPublicHomePrefetch/);
+  }
+  const header=read('components/public-site-header.tsx');
+  assert.match(header,/href=\{locale === "es" \? "\/es" : "\/"\}/);
+  assert.doesNotMatch(header,/prefetch=/);
+});
+
+test('Home opt-in rejects reviewer raw normalization and encoded-query counterexamples literally',()=>{
+  const normalizedPaths=['/./','/../','/%2e/','/%2e%2e/','/api/../','/api/%2E%2E/','/api\\..\\'];
+  for(const path of normalizedPaths){
+    const raw=origin+path+'?_rsc=x';
+    assert.equal(new URL(raw).pathname,'/','Reviewer examples still have only the effective public root target');
+    assert.equal(permittedHolisticHomePrefetch(request(raw,'GET','fetch',homePrefetchHeaders),origin,'ru'),false);
+  }
+  for(const tail of ['/?%5frsc=x','/?_r%73c=x','/?_rsc=%78','/?_rsc=ab%2Dcd','/?_rsc=ab%5Fcd',
+    '/?_rsc=x&','/?_rsc=x&&','/?&_rsc=x','/?_rsc=x#','/?_rsc=x&#'])
+    assert.equal(permittedHolisticHomePrefetch(request(origin+tail,'GET','fetch',homePrefetchHeaders),origin,'ru'),false,tail);
+  for(const raw of [' '+origin+'/?_rsc=x',origin+'/?_rsc=x\n',origin.toUpperCase()+'/?_rsc=x'])
+    assert.equal(permittedHolisticHomePrefetch(request(raw,'GET','fetch',homePrefetchHeaders),origin,'ru'),false);
+});
+
+test('Home opt-in accepts ordinary Playwright own-header maps only, with Object or null prototype',()=>{
+  for(const prototype of [Object.prototype,null])for(const token of ['x','abc-123','_-9','a'.repeat(64)]){
+    const headers=Object.assign(Object.create(prototype),homePrefetchHeaders,
+      {accept:'*/*','next-url':'/ru/pro',cookie:'holistic_house_public_locale=ru'});
+    const req=request(origin+'/?_rsc='+token,'GET','fetch',headers);
+    assert.equal(permittedHolisticHomePrefetch(req,origin,'ru'),true);
+    assert.equal(permittedHolisticRead(req,origin,'ru'),false);
+  }
+  let valueReads=0;
+  const inherited=Object.create(Object.defineProperty({},'authorization',
+    {get(){valueReads++;throw Error('CREDENTIAL_GETTER_MUST_NOT_RUN');}}));
+  Object.assign(inherited,homePrefetchHeaders);
+  const custom=Object.assign(Object.create({}),homePrefetchHeaders);
+  const array=Object.assign([],homePrefetchHeaders);
+  for(const headers of [inherited,custom,array,null,undefined])
+    assert.equal(permittedHolisticHomePrefetch({...request(origin+'/?_rsc=x','GET','fetch'),headers:()=>headers},origin,'ru'),false);
+  assert.equal(valueReads,0);
+});
+
+test('literal opt-in denial occurs before reading request header metadata',()=>{
+  let headerReads=0;
+  for(const tail of ['/api/../?_rsc=x','/api\\..\\?_rsc=x','/?_rsc=%78','/?%5frsc=x','/?_rsc=x&','/?_rsc=x#']){
+    const req={...request(origin+tail,'GET','fetch'),headers(){headerReads++;throw Error('UNNECESSARY_HEADER_READ');}};
+    assert.equal(permittedHolisticHomePrefetch(req,origin,'ru'),false);
+  }
+  assert.equal(headerReads,0);
 });

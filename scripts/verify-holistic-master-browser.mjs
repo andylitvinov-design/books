@@ -35,7 +35,7 @@ async function verify(engine, locale, width) {
   const errors = [], privateLeaks = [];
   const diagnostics = createHolisticTransportDiagnostics();
   try {
-    isolation = await createHolisticBrowserIsolation(browser, {origin, locale, viewport:{width, height:844}, observeTransport:diagnostics.observeTransport});
+    isolation = await createHolisticBrowserIsolation(browser, {origin, locale, viewport:{width, height:844}, observeTransport:diagnostics.observeTransport, allowPublicHomePrefetch:true});
     page = isolation.page;
     page.on("pageerror", error => { errors.push(error.message); diagnostics.pageError(error); });
     page.on("request", request => {

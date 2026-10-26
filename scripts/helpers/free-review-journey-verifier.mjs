@@ -88,9 +88,16 @@ function freeReviewFatalRequestDiagnostic(request, url, decoded, locale, origin,
     const frame = request.frame(), main = frame.page().mainFrame()
     if (frame && main) { mainFrame = frame === main; subframe = !mainFrame }
   } catch { /* A navigation may not have an associated frame yet. */ }
+  const method = scalar(() => request.method(), ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'CONNECT', 'TRACE'])
+  const resource = scalar(() => request.resourceType(), ['document', 'stylesheet', 'image', 'media', 'font', 'script', 'texttrack', 'xhr', 'fetch', 'eventsource', 'websocket', 'manifest', 'other'])
+  // Exact Next 15.5.21 source endpoint, not an initiator or root-cause claim.
+  // Observation only: the original fatal failure and abort remain unchanged.
+  const devStackLookupPath = '/__nextjs_original-stack-frames'
+  const endpointCategory = url.origin === origin && url.pathname === devStackLookupPath
+    && url.href === origin + devStackLookupPath && method === 'POST' && resource === 'fetch'
+    ? 'dev-stack-lookup' : 'unclassified'
   return Object.freeze({
-    method:scalar(() => request.method(), ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'CONNECT', 'TRACE']),
-    resource:scalar(() => request.resourceType(), ['document', 'stylesheet', 'image', 'media', 'font', 'script', 'texttrack', 'xhr', 'fetch', 'eventsource', 'websocket', 'manifest', 'other']),
+    method, resource, endpointCategory,
     pathnameCategory:/^\/api(?:\/|$)/i.test(decoded) ? 'api'
       : url.pathname === freeReviewPath(locale) ? 'free-review'
       : url.pathname === `/${locale}/thank-you` ? 'receipt'

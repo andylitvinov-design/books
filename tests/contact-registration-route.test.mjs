@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import * as helper from '../scripts/helpers/contact-channel-verifier.mjs';
+import { parse, descendants, opening, attribute, attributeText, ts } from './helpers/current-source-render.mjs';
 
 const origin = 'https://public.example.test';
 const endpoint = origin + '/api/service-enquiries';
@@ -94,9 +95,34 @@ test('invalid page/request URLs fail closed with fixed diagnostics',async () => 
 
 // An in-memory Playwright page/locator boundary: no sockets or real transport.
 // Both the actual registration helper and its installed page handler execute.
-function registeredPage(attack) {
+const nameSelector = 'input[autocomplete="name"]';
+const nameSummarySelector = 'details:has(input[autocomplete="name"]) > summary';
+const contactSource = () => readFileSync(new URL('../components/contact-channel-chooser.tsx', import.meta.url), 'utf8');
+function authoredNameDisclosure(source = contactSource()) {
+  const file = parse(source, 'contact-channel-chooser.tsx');
+  const inputs = descendants(file).filter(node => opening(node)?.tagName.getText(file) === 'input'
+    && attributeText(node, 'autoComplete', file) === 'name');
+  assert.equal(inputs.length, 1, 'One authored optional name input');
+  const input = inputs[0];
+  assert.equal(Boolean(attribute(input, 'required')), false, 'Name remains optional');
+  assert.equal(attributeText(input, 'disabled', file), 'locked || busy || googleBusy', 'Name keeps normal actionability');
+  let disclosure = input.parent;
+  while (disclosure && !(ts.isJsxElement(disclosure) && disclosure.openingElement.tagName.getText(file) === 'details')) disclosure = disclosure.parent;
+  assert.ok(disclosure, 'Name belongs to an authored native details disclosure');
+  assert.equal(attributeText(disclosure, 'className', file), 'styles.optionalName');
+  assert.equal(Boolean(attribute(disclosure, 'open')), false, 'Authored name disclosure starts closed');
+  const summaries = disclosure.children.filter(node => ts.isJsxElement(node) && node.openingElement.tagName.getText(file) === 'summary');
+  assert.equal(summaries.length, 1, 'One direct native summary opens the name disclosure');
+  const content = summaries[0].children.filter(ts.isJsxExpression);
+  assert.equal(content.length, 1);
+  assert.equal(content[0].expression.getText(file), 'c.nameOptional', 'Use the localized optional-name summary');
+  return { initiallyOpen: false };
+}
+
+function registeredPage(attack, ui = {}) {
   let opened=false,saved=false,consent=false,registered,removed=0;
-  const values={},escaped=[],contextReads=[],aborted=[],fulfilled=[];
+  let nameOpen = ui.alreadyVisible ?? authoredNameDisclosure().initiallyOpen;
+  const values={},escaped=[],contextReads=[],aborted=[],fulfilled=[],interactions=[];
   async function dispatch(url,method,payload) {
     const probe=routeProbe(url,method,payload);
     const matches=registered && (registered.pattern==='**/*' || (registered.pattern==='**/api/service-enquiries' && url.endsWith('/api/service-enquiries')));
@@ -116,14 +142,44 @@ function registeredPage(attack) {
     async route(pattern,handler) {assert.equal(registered,undefined);registered={pattern,handler};},
     async unroute(pattern,handler) {assert.equal(registered.pattern,pattern);assert.equal(registered.handler,handler);registered=undefined;removed++;},
   };
+  function count(selector) {
+    if (selector === nameSelector) return ui.nameCount ?? 1;
+    if (selector === nameSummarySelector) return ui.summaryCount ?? 1;
+    if (selector === 'a[data-contact-channel]') return saved ? 2 : 0;
+    return 1;
+  }
+  function visible(selector) {
+    if (!count(selector)) return false;
+    if (selector === 'button[data-contact-order]' || selector === '[data-contact-channel-chooser]') return true;
+    if (!opened) return false;
+    if (selector === nameSelector) return nameOpen && !ui.nameHidden;
+    if (selector === nameSummarySelector) return !ui.summaryHidden;
+    if (selector.startsWith('a[')) return saved;
+    return true;
+  }
+  function actionable(selector, options) {
+    assert.equal(options, undefined, 'Synthetic interactions cannot force or bypass actionability');
+    assert.equal(count(selector), 1, 'Unique action target: ' + selector);
+    assert.ok(visible(selector), 'Visible action target: ' + selector);
+    if (selector === nameSelector) assert.notEqual(ui.nameDisabled, true, 'Name must be enabled before fill');
+  }
   function locator(selector) {
     return {selector,locator,
-      async fill(value) {values[selector]=value;}, async check() {consent=true;},
-      async click() {
+      async isHidden() {return !visible(selector);},
+      async fill(value, options) {actionable(selector,options);interactions.push(['fill',selector]);values[selector]=value;},
+      async check(options) {actionable(selector,options);assert.equal(selector,'input[type="checkbox"]');consent=true;interactions.push(['consent']);},
+      async click(options) {
+        actionable(selector,options);
+        interactions.push(['click',selector]);
         if (selector==='button[data-contact-order]') {
           opened=true;
           await dispatch(origin+'/_next/static/app.js','GET');
           if (attack?.stage==='open') await dispatch(attack.url,attack.method,body());
+        } else if (selector===nameSummarySelector) {
+          if (!ui.ineffectiveSummary) nameOpen=!nameOpen;
+          if (attack?.stage==='disclosure') await dispatch(attack.url,attack.method,body());
+        } else if (selector==='details:has(textarea) > summary') {
+          // The actual optional-note summary is actionable, but cannot expose name.
         } else if (selector==='button[type="submit"]') {
           assert.equal(consent,true);
           if (attack && attack.stage!=='open') await dispatch(attack.url,attack.method,body());
@@ -139,17 +195,77 @@ function registeredPage(attack) {
     };
   }
   const expect=actual => ({
-    async toHaveCount(count) {assert.equal(actual.selector==='a[data-contact-channel]'?(saved?2:0):1,count);},
-    async toBeVisible() {assert.ok(actual.selector!=='form'||opened);},
+    async toHaveCount(expected) {assert.equal(count(actual.selector),expected);},
+    async toBeVisible() {assert.equal(count(actual.selector),1);assert.ok(visible(actual.selector),'Visible assertion target: '+actual.selector);},
     async toHaveAttribute(name,expected) {const value=await actual.getAttribute(name); if (expected instanceof RegExp) assert.match(value,expected); else assert.equal(value,expected);},
     async toBeDisabled() {assert.equal(consent,false);},
   });
-  return {page,scope:{locator},expect,escaped,contextReads,aborted,fulfilled,get removed(){return removed}};
+  return {page,scope:{locator},expect,escaped,contextReads,aborted,fulfilled,interactions,values,get removed(){return removed}};
 }
 
 test('registered helper installs exact synthetic gate, preserves context reads and removes only its handler',async () => {
   const f=registeredPage(); await helper.openRegisteredContactChannelChooser(f.scope,f.expect,f.page);
   assert.deepEqual(f.escaped,[]);assert.deepEqual(f.contextReads,['GET']);assert.deepEqual(f.fulfilled,['POST']);assert.equal(f.removed,1);
+  assert.deepEqual(f.interactions,[['click','button[data-contact-order]'],['click',nameSummarySelector],
+    ['fill',nameSelector],['fill','input[autocomplete="email"]'],['consent'],['click','button[type="submit"]']]);
+  assert.equal(f.values[nameSelector],'Public QA Visitor','The explicit synthetic name is not silently omitted');
+});
+test('authored optional name is closed behind its unique localized native summary', () => {
+  assert.deepEqual(authoredNameDisclosure(),{initiallyOpen:false});
+  const source=contactSource();
+  for (const [before,after] of [
+    ['<details className={styles.optionalName}>','<details open className={styles.optionalName}>'],
+    ['<summary>{c.nameOptional}</summary>','<span>{c.nameOptional}</span>'],
+    ['<summary>{c.nameOptional}</summary>','<summary>{c.description}</summary>'],
+    ['<summary>{c.nameOptional}</summary>','<summary>{c.nameOptional}</summary><summary>{c.nameOptional}</summary>'],
+    ['autoComplete="name" minLength','autoComplete="name" required minLength'],
+    ['autoComplete="name"','autoComplete="nickname"'],
+  ]) {
+    assert.equal(source.split(before).length-1,1,'Exact authored mutation target');
+    assert.throws(()=>authoredNameDisclosure(source.replace(before,after)),assert.AssertionError);
+  }
+});
+test('registered helper keeps a legitimately already-visible name open without another toggle',async () => {
+  const f=registeredPage(undefined,{alreadyVisible:true});
+  await helper.openRegisteredContactChannelChooser(f.scope,f.expect,f.page);
+  assert.equal(f.interactions.some(([action,selector])=>action==='click'&&selector===nameSummarySelector),false);
+  assert.equal(f.values[nameSelector],'Public QA Visitor');assert.deepEqual(f.fulfilled,['POST']);assert.deepEqual(f.escaped,[]);
+});
+for (const [label,ui] of [
+  ['missing name',{nameCount:0}],['duplicate name',{nameCount:2}],
+  ['missing summary',{summaryCount:0}],['duplicate summary',{summaryCount:2}],
+  ['hidden summary',{summaryHidden:true}],['ineffective summary',{ineffectiveSummary:true}],
+  ['still-hidden name',{nameHidden:true}],['disabled name',{nameDisabled:true}],
+]) test('registered helper rejects '+label+' without a synthetic submission',async () => {
+  const f=registeredPage(undefined,ui);
+  await assert.rejects(helper.openRegisteredContactChannelChooser(f.scope,f.expect,f.page),assert.AssertionError);
+  assert.deepEqual(f.fulfilled,[]);assert.deepEqual(f.escaped,[]);assert.equal(f.removed,1);
+});
+test('opening optional name cannot arm or submit the synthetic registration',async () => {
+  const f=registeredPage({method:'POST',url:endpoint,stage:'disclosure'});
+  await assert.rejects(helper.openRegisteredContactChannelChooser(f.scope,f.expect,f.page),/before-explicit-submit/);
+  assert.deepEqual(f.fulfilled,[]);assert.deepEqual(f.aborted,['POST']);assert.deepEqual(f.escaped,[]);assert.equal(f.removed,1);
+});
+test('actual helper source controls reject direct hidden fill, wrong disclosure, retoggle, force and omitted name',async () => {
+  const source=readFileSync(new URL('../scripts/helpers/contact-channel-verifier.mjs',import.meta.url),'utf8');
+  const start=source.indexOf('    // This synthetic scenario explicitly supplies a name.');
+  const end=source.indexOf("    await form.locator('input[autocomplete=\"name\"]').fill('Public QA Visitor');",start);
+  assert.ok(start>0 && end>start,'Exact current optional-name adaptation boundaries');
+  const mutants=[
+    ['original direct hidden fill',source.slice(0,start)+source.slice(end),{}],
+    ['wrong optional-note disclosure',source.replace("form.locator('details:has(input[autocomplete=\"name\"]) > summary')","form.locator('details:has(textarea) > summary')"),{}],
+    ['always toggles visible name',source.replace('if (await name.isHidden()) {','if (true) {'),{alreadyVisible:true}],
+    ['forced hidden fill',source.slice(0,start)+source.slice(end).replace(".fill('Public QA Visitor');",".fill('Public QA Visitor', {force:true});"),{}],
+    ['omitted explicit name',source.replace("    await form.locator('input[autocomplete=\"name\"]').fill('Public QA Visitor');",''),{}],
+  ];
+  for (const [label,mutant,ui] of mutants) {
+    assert.notEqual(mutant,source,label+' mutates actual helper');
+    const executable=mutant.replace("import assert from 'node:assert/strict';",'').replaceAll('export async function','async function').replaceAll('export function','function');
+    const run=runInNewContext(executable+'\nopenRegisteredContactChannelChooser',{assert,URL});
+    const f=registeredPage(undefined,ui);
+    await assert.rejects(run(f.scope,f.expect,f.page),label==='omitted explicit name'?/unexpected-synthetic-body/:assert.AssertionError,label);
+    assert.deepEqual(f.fulfilled,[],label);assert.deepEqual(f.escaped,[],label);assert.equal(f.removed,1,label);
+  }
 });
 test('registered helper refuses even an exact synthetic POST triggered by opening before explicit submit',async () => {
   const f=registeredPage({method:'POST',url:endpoint,stage:'open'});

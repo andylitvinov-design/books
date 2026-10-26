@@ -5,7 +5,7 @@ import vm from 'node:vm'
 import {createHash} from 'node:crypto'
 import {consentInitialGate,withConsentBootstrap,installConsentPopupGuard,verifyContactConsentNativeAcceptance,collectKeyboardFailureTail} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
 // BEGIN KEYBOARD START DIAGNOSTIC TEST imports
-import {installKeyboardStartObserver,keyboardStartDiagnostic,naturalKeyboardStart,createKeyboardStartPreparation,abortKeyboardStart,unsafeConsentCleanup,CONSENT_KEYBOARD_START_TIMEOUT_MS,CONSENT_KEYBOARD_ABORT_TIMEOUT_MS} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
+import {installKeyboardStartObserver,keyboardStartDiagnostic,keyboardReadyDiagnostic,naturalKeyboardStart,createKeyboardStartPreparation,abortKeyboardStart,unsafeConsentCleanup,CONSENT_KEYBOARD_START_TIMEOUT_MS,CONSENT_KEYBOARD_ABORT_TIMEOUT_MS} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
 const origin='http://127.0.0.1:3000', initial=origin+'/en/services/alchemy-of-soul'
 // END KEYBOARD START DIAGNOSTIC TEST imports
 function route(url=initial,method='GET',type='document',responseOptions={}) {
@@ -764,7 +764,16 @@ function naturalStartFixture(){
   run(remainingMs=100){globals.args={remainingMs};const result=vm.runInNewContext('('+naturalKeyboardStart.toString()+')(phone,args)',globals);result.catch(()=>{});return result},
   frame(time){now=time;const callbacks=[...queue.values()];queue.clear();for(const fn of callbacks)fn(time)}}
 }
-test('natural start requires three distinct stable frames; checkbox may remain outside',async()=>{
+async function assertReadyFailure(p,reason) {
+ const result=await p
+ assert.equal(result.ready,false)
+ assert.deepEqual(Object.keys(result).sort(),['keyboardReady','ready'])
+ const data=JSON.parse(keyboardReadyDiagnostic(result.keyboardReady))
+ assert.equal(data.source,'browser');assert.equal(data.reason,reason)
+ assert.ok(!JSON.stringify(data).includes('PRIVATE_MARKER'))
+ return data
+}
+test('natural start requires three distinct stable frames; checkbox may remain outside' ,async()=>{
  const f=naturalStartFixture();f.state.consent.top=900;f.state.consent.bottom=918
  const p=f.run();let done=false;p.then(()=>done=true)
  f.frame(10);await keyboardTurn();assert.equal(done,false)
@@ -782,7 +791,7 @@ for(const [name,mutate]of [
  ['visual viewport',(f,t)=>f.globals.window.visualViewport.pageTop=t],['checkbox geometry',(f,t)=>{f.state.consent.top=t;f.state.consent.bottom=t+18}],
 ])test('persistent '+name+' exhausts one readiness budget',async()=>{
  const f=naturalStartFixture(),p=f.run(60);for(const time of [10,20,30,40,50,60]){mutate(f,time);f.frame(time)}
- await assert.rejects(p,/DEADLINE/);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
+ await assertReadyFailure(p,'DEADLINE');assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
 })
 for(const [name,mutate,reason]of [
  ['lost focus',f=>f.state.focused=false,'FOCUS'],['detached phone',f=>f.phone.isConnected=false,'TARGET'],
@@ -794,16 +803,16 @@ for(const [name,mutate,reason]of [
  ['outside visual viewport',f=>f.globals.window.visualViewport.height=300,'PHONE_OUTSIDE'],
 ])test('natural start fails closed: '+name,async()=>{
  const f=naturalStartFixture();mutate(f);const p=f.run();f.frame(10);f.frame(20);f.frame(30)
- await assert.rejects(p,new RegExp(reason));assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
+ await assertReadyFailure(p,reason);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
 })
 test('last readiness frame rechecks focus instead of accepting an earlier sample',async()=>{
- const f=naturalStartFixture(),p=f.run();f.frame(10);f.frame(20);f.state.focused=false;f.frame(30);await assert.rejects(p,/FOCUS/);assert.equal(f.queue.size,0)
+ const f=naturalStartFixture(),p=f.run();f.frame(10);f.frame(20);f.state.focused=false;f.frame(30);await assertReadyFailure(p,'FOCUS');assert.equal(f.queue.size,0)
 })
 test('partial animation-frame scheduling failures reject without active operations',async()=>{
- for(const count of [1,2]){const f=naturalStartFixture();f.state.throwSchedule=count;const p=f.run();f.frame(10);await assert.rejects(p,/PRIVATE_MARKER/);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])}
+ for(const count of [1,2]){const f=naturalStartFixture();f.state.throwSchedule=count;const p=f.run();f.frame(10);await assertReadyFailure(p,'unknown');assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])}
 })
 test('exact readiness deadline is failure even with otherwise stable geometry',async()=>{
- const f=naturalStartFixture(),p=f.run(30);f.frame(10);f.frame(20);f.frame(30);await assert.rejects(p,/DEADLINE/)
+ const f=naturalStartFixture(),p=f.run(30);f.frame(10);f.frame(20);f.frame(30);await assertReadyFailure(p,'DEADLINE')
 })
 test('one original 30s setup budget decreases across fill, checks and readiness without resets',async()=>{
  const clock=keyboardClock(),preparation=createKeyboardStartPreparation(clock),budgets=[]
@@ -859,7 +868,7 @@ test('abort closes before draining outstanding tracked protocol and preserves co
 test('readiness failure in actual verifier issues zero Tabs and stops later modes',async t=>{
  const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>{throw Error(marker)}})
  await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
-  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none')
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none keyboardReady={"version":1,"source":"unknown","reason":"unknown","sampled":false}')
   assert.equal(unsafeConsentCleanup(error),false);assertPrivateDataExcluded(error,messages);return true
  })
  assert.equal(h.contexts.length,1);assert.ok(h.contexts[0].closed);assert.deepEqual(h.contexts[0].closeOptions,{reason:'CONSENT_KEYBOARD_START_ABORT'})
@@ -868,7 +877,7 @@ test('readiness failure in actual verifier issues zero Tabs and stops later mode
 test('failed abort marker survives sanitized wrapper without leaking original Error',async t=>{
  const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>{throw Error(marker)},failAt:'close'})
  await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
-  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=cleanup-close boundary=none')
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=cleanup-close boundary=none keyboardReady={"version":1,"source":"unknown","reason":"unknown","sampled":false}')
   assert.equal(unsafeConsentCleanup(error),true);assert.deepEqual(Object.keys(error),[]);assertPrivateDataExcluded(error,messages);return true
  })
  assert.equal(h.contexts.length,1);assert.equal(h.events.filter(e=>e[1]==='close').length,1);assert.equal(h.events.some(e=>e[1]==='key'),false)
@@ -898,7 +907,7 @@ test('actual verifier bounds starved readiness and undrained evaluation, never s
  assert.equal(h.events.filter(e=>e[1]==='close').length,1)
  t.mock.timers.tick(5000)
  await assert.rejects(running,error=>{
-  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=cleanup-drain-after-close boundary=none')
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=cleanup-drain-after-close boundary=none keyboardReady={"version":1,"source":"node-deadline","reason":"DEADLINE","sampled":false}')
   assert.equal(unsafeConsentCleanup(error),true);assertPrivateDataExcluded(error,messages);return true
  })
  assert.equal(h.events.some(e=>e[1]==='key'||e[1]==='tail'),false);assert.equal(h.contexts.length,1);assert.deepEqual(messages,[])
@@ -913,8 +922,116 @@ test('actual verifier deadline plus confirmed close drains readiness and remains
  assert.equal(h.events.filter(e=>e[1]==='close').length,1)
  pending.reject(Error('CONTEXT_TERMINATED'))
  await assert.rejects(running,error=>{
-  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none')
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none keyboardReady={"version":1,"source":"node-deadline","reason":"DEADLINE","sampled":false}')
   assert.equal(unsafeConsentCleanup(error),false);return true
  })
  assert.equal(h.events.some(e=>e[1]==='key'),false);assert.equal(h.contexts.length,1);assert.deepEqual(messages,[])
+})
+
+// Failure-only keyboard-ready evidence: no new browser operations or verdicts.
+test('ready evidence retains exact failed outside sample without another geometry read',async()=>{
+ const f=naturalStartFixture();f.state.phone.top=-1;f.state.phone.bottom=43
+ const p=f.run();f.frame(10);f.frame(20);f.frame(30)
+ const data=await assertReadyFailure(p,'PHONE_OUTSIDE')
+ assert.deepEqual(data,{version:1,source:'browser',reason:'PHONE_OUTSIDE',sampled:true,frames:3,sampleFrame:3,stableFrames:3,inside:false,
+  phoneRect:[176,-1,353,43,177,44],consentRect:[37,361,55,379,18,18],viewport:[390,844],scroll:[0,0,0,0],
+  visualViewportPresent:true,visualViewport:[0,0,0,0,390,844,1],numericComplete:true})
+ assert.deepEqual(f.reads,['phone','consent','phone','consent','phone','consent'])
+ f.frame(40);assert.equal(f.reads.length,6);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
+})
+test('focus failure labels prior complete sample rather than implying current geometry',async()=>{
+ const f=naturalStartFixture(),p=f.run();f.frame(10);f.frame(20);f.state.focused=false;f.frame(30)
+ const data=await assertReadyFailure(p,'FOCUS')
+ assert.equal(data.frames,3);assert.equal(data.sampleFrame,2);assert.equal(data.stableFrames,2);assert.equal(data.inside,true)
+ assert.deepEqual(f.reads,['phone','consent','phone','consent'])
+})
+test('browser deadline preserves last sample and is not labeled as Node watchdog',async()=>{
+ const f=naturalStartFixture(),p=f.run(30);f.frame(10);f.frame(20);f.frame(30)
+ const data=await assertReadyFailure(p,'DEADLINE')
+ assert.equal(data.frames,3);assert.equal(data.sampleFrame,2);assert.equal(data.stableFrames,2);assert.equal(f.reads.length,4)
+})
+for(const schedule of [1,2])test('unknown scheduling exception transports no raw details: '+schedule,async()=>{
+ const f=naturalStartFixture();f.state.throwSchedule=schedule;const p=f.run();f.frame(10)
+ const data=await assertReadyFailure(p,'unknown')
+ assert.equal(data.sampled,schedule===2);assert.equal(f.reads.length,schedule===2?2:0)
+ assert.equal(f.queue.size,0)
+})
+test('ready sample numbers are bounded without changing unrounded stability',async()=>{
+ const f=naturalStartFixture();f.state.phone.top=-1.00001;f.state.phone.bottom=42.99999;f.globals.scrollY=9999999
+ const p=f.run();f.frame(10);f.frame(20);f.frame(30)
+ const data=await assertReadyFailure(p,'PHONE_OUTSIDE')
+ assert.equal(data.phoneRect[1],-1);assert.equal(data.scroll[1],1000000);assert.equal(data.numericComplete,false)
+})
+test('ready sample without visual viewport preserves absent flag and empty vector',async()=>{
+ const f=naturalStartFixture();f.globals.window.visualViewport=null;f.state.phone.top=-1;f.state.phone.bottom=43
+ const p=f.run();f.frame(10);f.frame(20);f.frame(30)
+ const data=await assertReadyFailure(p,'PHONE_OUTSIDE');assert.equal(data.visualViewportPresent,false);assert.deepEqual(data.visualViewport,[])
+})
+test('ready diagnostic accepts only bounded JSON and no arbitrary object coercion',()=>{
+ const unknown={version:1,source:'unknown',reason:'unknown',sampled:false}
+ for(const raw of [undefined,null,{toJSON(){assert.fail('coercion')},toString(){assert.fail('coercion')}},marker,'x'.repeat(4097),'{"version":2}',JSON.stringify({version:1,source:marker,reason:marker,sampled:true})]) {
+  assert.deepEqual(JSON.parse(keyboardReadyDiagnostic(raw)),unknown)
+ }
+ const data=JSON.parse(keyboardReadyDiagnostic(JSON.stringify({version:1,source:'browser',reason:marker,sampled:true,
+  frames:1e30,sampleFrame:-1,stableFrames:99,inside:marker,phoneRect:[marker,null,{},1e30,-1e30,3],consentRect:[],viewport:[],scroll:[],visualViewportPresent:true,visualViewport:[],private:marker})))
+ assert.equal(data.reason,'unknown');assert.equal(data.frames,1000000);assert.equal(data.sampleFrame,0);assert.equal(data.stableFrames,3)
+ assert.equal(data.inside,false);assert.deepEqual(data.phoneRect,[0,0,0,1000000,-1000000,3]);assert.equal(data.numericComplete,false)
+ assert.ok(!JSON.stringify(data).includes('PRIVATE_MARKER'));assert.ok(JSON.stringify(data).length<=4096)
+})
+test('browser payload cannot claim the private Node watchdog source',()=>{
+ assert.deepEqual(JSON.parse(keyboardReadyDiagnostic(JSON.stringify({version:1,source:'node-deadline',reason:'DEADLINE',sampled:true}))),
+  {version:1,source:'unknown',reason:'unknown',sampled:false})
+})
+for(const failClose of [false,true])test('actual verifier retains browser failed sample through safe wrapper: '+failClose,async t=>{
+ const f=naturalStartFixture();f.state.phone.top=-1;f.state.phone.bottom=43
+ const p=f.run();f.frame(10);f.frame(20);f.frame(30);const result=await p
+ const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>result,failAt:failClose?'close':undefined})
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
+  assert.match(error.message,/^CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=(none|cleanup-close) boundary=none keyboardReady=/)
+  const data=JSON.parse(error.message.split(' keyboardReady=')[1]);assert.equal(data.source,'browser');assert.equal(data.reason,'PHONE_OUTSIDE')
+  assert.equal(data.sampled,true);assert.equal(data.inside,false);assert.equal(data.frames,3)
+  assert.equal(unsafeConsentCleanup(error),failClose);assert.deepEqual(Object.keys(error),[]);assertPrivateDataExcluded(error,messages);return true
+ })
+ assert.equal(h.contexts.length,1);assert.equal(h.events.filter(e=>e[1]==='close').length,1)
+ const readinessIndex=h.events.findIndex(e=>e[1]==='readiness')
+ assert.deepEqual(h.events.slice(readinessIndex+1).map(e=>e[1]),['close'])
+})
+for(const kind of ['forged-deadline','private-getters'])test('arbitrary error never establishes deadline identity: '+kind,async t=>{
+ const error=Error('CONSENT_KEYBOARD_START_DEADLINE')
+ if(kind==='private-getters')for(const key of ['message','stack'])Object.defineProperty(error,key,{get(){assert.fail('raw '+key+' read')}})
+ const messages=captureDiagnostics(t),h=harness({readKeyboardStart(){throw error}})
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),failure=>{
+  assert.notEqual(failure,error);assert.equal(failure.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none keyboardReady={"version":1,"source":"unknown","reason":"unknown","sampled":false}')
+  assert.equal(unsafeConsentCleanup(failure),false);assertPrivateDataExcluded(failure,messages);return true
+ })
+ assert.equal(h.events.some(e=>e[1]==='key'||e[1]==='tail'),false);assert.equal(h.contexts.length,1)
+})
+for(const [name,result]of [['missing',undefined],['missing-payload',{ready:false}],['extra-success-key',{ready:true,private:marker}],['malformed-payload',{ready:false,keyboardReady:marker}]])
+test('malformed readiness cannot authorize input or invent evidence: '+name,async t=>{
+ const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>result})
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none keyboardReady={"version":1,"source":"unknown","reason":"unknown","sampled":false}')
+  assertPrivateDataExcluded(error,messages);return true
+ })
+ assert.equal(h.contexts.length,1);assert.equal(h.events.some(e=>e[1]==='key'||e[1]==='tail'),false)
+})
+test('late browser failure cannot replace the privately branded Node timeout', {timeout:2000},async t=>{
+ t.mock.timers.enable({apis:['setTimeout']})
+ const pending=keyboardDeferred(),h=harness({readKeyboardStart:()=>pending.promise}),messages=captureDiagnostics(t)
+ const running=verifyContactConsentNativeAcceptance(h.source,h.expect,'en');running.catch(()=>{})
+ await keyboardTurn();t.mock.timers.tick(30000);await keyboardTurn()
+ pending.resolve({ready:false,keyboardReady:JSON.stringify({version:1,source:'browser',reason:'PHONE_OUTSIDE',sampled:true,private:marker})})
+ await assert.rejects(running,error=>{
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none keyboardReady={"version":1,"source":"node-deadline","reason":"DEADLINE","sampled":false}')
+  assert.equal(unsafeConsentCleanup(error),false);assertPrivateDataExcluded(error,messages);return true
+ })
+ assert.equal(h.contexts.length,1);assert.equal(h.events.some(e=>e[1]==='key'||e[1]==='tail'),false)
+})
+test('keyboard-ready field is absent from unchanged success and post-Tab failures',async t=>{
+ const messages=captureDiagnostics(t),success=harness();await verifyContactConsentNativeAcceptance(success.source,success.expect,'en')
+ assert.equal(messages.some(message=>message.includes('keyboardReady=')),false)
+ const failure=harness({visible:{inside:false,outlined:true},keyboard:{sampled:true}})
+ await assert.rejects(verifyContactConsentNativeAcceptance(failure.source,failure.expect,'en'),error=>{
+  assert.match(error.message,/phase=keyboard-visible /);assert.equal(error.message.includes('keyboardReady='),false);return true
+ })
 })

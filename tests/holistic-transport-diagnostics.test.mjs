@@ -238,8 +238,8 @@ test('failure categories and path redaction never serialize private/provider/ass
 // Execute the actual verifier's listener, matrix, verdict, catch and teardown.
 // Only native UI operations are replaced by inert synthetic calls; no browser,
 // network, database, provider or filesystem write is available inside the VM.
-async function runVerifier({pageError=false,primaryFailure=false,writeFailure=false,closeFailure=false}={}) {
-  let source=read('scripts/verify-holistic-master-browser.mjs');
+async function runVerifier({pageError=false,primaryFailure=false,writeFailure=false,closeFailure=false}={}, raw=read('scripts/verify-holistic-master-browser.mjs')) {
+  let source=raw;
   const start='    const response = await page.goto(',end="    diagnostics.phase('assertions');";
   assert.equal(source.split(start).length,2);assert.equal(source.split(end).length,2);
   source=source.slice(0,source.indexOf(start))+'    await syntheticUi(page);\n'+source.slice(source.indexOf(end));
@@ -248,7 +248,7 @@ async function runVerifier({pageError=false,primaryFailure=false,writeFailure=fa
   const primary=Error('ORIGINAL_SYNTHETIC_FAILURE'),state={contexts:0,closed:0,browsersClosed:0,writes:[],artifacts:{},sequence:[]};
   const driver=name=>({name:()=>name,async launch(){return {async close(){state.browsersClosed++;state.sequence.push('browser-close');if(closeFailure)throw Error('CLOSE_FAILURE');}};}});
   const isolation=async(_browser,value)=>{
-    state.contexts++;assert.equal(typeof value.observeTransport,'function');
+    state.contexts++;assert.equal(typeof value.observeTransport,'function');assert.equal(value.allowPublicHomePrefetch,true);
     const listeners=new Map(),page={on:(kind,handler)=>listeners.set(kind,handler),async screenshot(){state.sequence.push('screenshot');},listeners};
     return {page,async assertClean(){},summary:()=>({anonymousTalismansReads:1}),async close(){state.closed++;state.sequence.push('context-close');
       value.observeTransport({requestId:7,target:'/',rsc:true,prefetch:true,verdict:'abort-draining',failure:'none'});}};
@@ -291,4 +291,217 @@ test('artifact/cleanup errors cannot replace the exact original UI failure objec
 test('observer candidate leaves the no-primary cleanup failure fatal and does not invent a successful verdict',async()=>{
   const {state,error}=await runVerifier({closeFailure:true});assert.equal(error.code,'ERR_ASSERTION');
   assert.match(error.message,/BROWSER_CLOSE_FAILED/);assert.equal(state.writes.length,0);
+});
+
+function anonymousPrefetch(path='/?_rsc=synthetic', {headers={}, ...other}={}) {
+  const req=request(path,other);
+  req.headers=()=>({rsc:'1','next-router-prefetch':'1',cookie:'holistic_house_public_locale=ru',...headers});
+  return req;
+}
+async function executeOptIn({req=anonymousPrefetch(), enabled=false, locale='ru', transport={}, lateRequest, observeTransport}={}) {
+  const f=fixture({lateRequest}),contextOptions=[];
+  const browser={async newContext(value){contextOptions.push(value);return f.browser.newContext({viewport:value.viewport,serviceWorkers:value.serviceWorkers});}};
+  const guard=await createHolisticBrowserIsolation(browser,{origin,locale,viewport:options.viewport,
+    allowPublicHomePrefetch:enabled,observeTransport});
+  const r=route(req,transport);await f.contexts[0].routes[0](r);
+  let cleanError=null,closeError=null;
+  try{await guard.assertClean();}catch(error){cleanError=error.message;}
+  try{await guard.close();}catch(error){closeError=error.message;}
+  return {actions:r.actions,summary:guard.summary(),cleanError,closeError,closed:f.contexts[0].closed,contextOptions};
+}
+
+test('master opt-in root transport uses unchanged fetch/fulfill/dispose, while default and ES remain denied',async()=>{
+  const rows=[];
+  for(const locale of ['en','ru']){
+    const result=await executeOptIn({enabled:true,locale,observeTransport:row=>rows.push(row)});
+    assert.deepEqual(result.actions,[['fetch',{maxRedirects:0}],['fulfill','response'],['dispose']]);
+    assert.equal(result.cleanError,null);assert.equal(result.closeError,null);assert.equal(result.closed,true);
+    assert.deepEqual(result.contextOptions,[{deviceScaleFactor:1,isMobile:true,hasTouch:true,reducedMotion:'reduce',
+      viewport:options.viewport,serviceWorkers:'block'}]);
+  }
+  assert.ok(rows.every(row=>row.target==='/'&&row.rsc&&row.prefetch));
+  assert.deepEqual(rows.map(row=>row.verdict),['fetch','fulfill','fetch','fulfill'],'fulfill remains the unchanged attempt event');
+  for(const value of [{enabled:false},{enabled:true,locale:'es'}]){
+    const result=await executeOptIn(value);assert.deepEqual(result.actions,[['abort','blockedbyclient']]);
+    assert.equal(result.summary.blockedReads,1);assert.equal(result.cleanError,null);assert.equal(result.closeError,null);
+  }
+});
+
+test('enabling Home prefetch does not change any existing four-route/asset/anonymous-fixture action or fatal verdict',async()=>{
+  const requests=[
+    ...['/holistic-support','/services/remote-energy-support','/services/free-consultation','/pro']
+      .flatMap(path=>[request('/ru'+path,{type:'document'}),request('/ru'+path+'?_rsc=synthetic')]),
+    request('/images/holistic-house/hero-olive-incense.webp',{type:'image'}),
+    request('/_next/static/chunks/app/%5Blocale%5D/page-abc.js',{type:'script'}),
+    request('/audio/holistic-house-soft-melody-gentle-waves-96s.wav',{type:'media'}),
+    request('/api/holistic-support/talismans'),request('/api/client/synthetic'),
+    request('/ru/pro',{method:'POST'}),request('https://provider.invalid/',{absolute:true}),
+  ];
+  for(const req of requests){
+    const control=await executeOptIn({req,enabled:false});
+    assert.deepEqual(await executeOptIn({req,enabled:true}),control);
+  }
+});
+
+test('opt-in cannot grant root documents/HEAD/nonprefetch/credentials/unknown-query/private/API/foreign/mutation transport',async()=>{
+  const denied=[
+    anonymousPrefetch('/',{type:'document'}),anonymousPrefetch('/?_rsc=x',{method:'HEAD'}),
+    anonymousPrefetch('/?_rsc=x',{headers:{'next-router-prefetch':undefined}}),
+    anonymousPrefetch('/?_rsc=x',{headers:{rsc:undefined}}),
+    anonymousPrefetch('/?_rsc=x',{headers:{authorization:''}}),
+    anonymousPrefetch('/?_rsc=x',{headers:{'Proxy-Authorization':'synthetic'}}),
+    anonymousPrefetch('/?_rsc=x&_rsc=y'),anonymousPrefetch('/?_rsc=x&lang=ru'),
+    anonymousPrefetch('/ru/app?_rsc=x'),anonymousPrefetch('/api/client?_rsc=x'),
+    anonymousPrefetch('/?_rsc=x',{method:'POST'}),
+    anonymousPrefetch('https://provider.invalid/?_rsc=x',{absolute:true}),
+  ];
+  for(const req of denied){
+    const result=await executeOptIn({req,enabled:true});assert.deepEqual(result.actions,[['abort','blockedbyclient']]);
+    const fatal=req.method()==='POST'||req.url().includes('/api/');
+    assert.equal(Boolean(result.cleanError),fatal);assert.equal(Boolean(result.closeError),fatal);
+  }
+});
+
+for(const [name,transport]of [
+  ['redirect302',{status:302}],['not2xx401',{status:401}],['not2xx500',{status:500}],
+  ['responseURLmismatch',{responseUrl:origin+'/ru/pro'}],['foreignResponseURL',{responseUrl:'https://provider.invalid/'}],
+  ['fetchFailure',{fetchFailure:true}],['fulfillFailure',{fulfillFailure:true}],['disposeFailure',{disposeFailure:true}],
+])test('new root allowance preserves original fatal '+name+' response/transport control',async()=>{
+  const result=await executeOptIn({enabled:true,transport});
+  assert.match(result.cleanError,/ROUTE_HANDLER_FAILED/);assert.match(result.closeError,/ROUTE_HANDLER_FAILED/);
+  assert.equal(result.closed,true);assert.deepEqual(result.actions[0],['fetch',{maxRedirects:0}]);
+  assert.ok(result.actions.some(row=>row[0]==='abort'));
+  if(!transport.fetchFailure)assert.ok(result.actions.some(row=>row[0]==='dispose'));
+  if(transport.status||transport.responseUrl||transport.fetchFailure)assert.ok(!result.actions.some(row=>row[0]==='fulfill'));
+});
+
+test('opted root still aborts while draining and teardown API/write violations remain fatal',async()=>{
+  for(const [req,fatal]of [[anonymousPrefetch(),false],[anonymousPrefetch('/api/client'),true],
+    [anonymousPrefetch('/?_rsc=x',{method:'POST'}),true]]){
+    const late=route(req),result=await executeOptIn({enabled:true,lateRequest:late});
+    assert.deepEqual(late.actions,[['abort','blockedbyclient']]);assert.equal(Boolean(result.closeError),fatal);
+    if(fatal)assert.match(result.closeError,/UNEXPECTED_API_OR_WRITE/);
+  }
+});
+
+test('root opt-in is independent of observer return/throw behavior and records no credentials',async()=>{
+  const expected=await executeOptIn({enabled:true});
+  for(const observer of [createHolisticTransportDiagnostics().observeTransport,()=>{throw Error(secret);},
+    ()=>{const p=Promise.reject(Error(secret));Object.defineProperty(p,'then',{get(){throw Error(secret);}});return p;}])
+    assert.deepEqual(await executeOptIn({enabled:true,observeTransport:observer}),expected);
+  let credentialReads=0;const req=anonymousPrefetch(),rows=[];
+  req.headers=()=>{const headers={rsc:'1','next-router-prefetch':'1'};
+    Object.defineProperty(headers,'authorization',{enumerable:true,get(){credentialReads++;throw Error(secret);}});return headers;};
+  const result=await executeOptIn({req,enabled:true,observeTransport:row=>rows.push(row)});
+  assert.deepEqual(result.actions,[['abort','blockedbyclient']]);assert.equal(credentialReads,0);
+  assert.doesNotMatch(JSON.stringify(rows),/SYNTHETIC|authorization|cookie|http|_rsc/);
+});
+
+test('actual master caller opt-in is executable and missing opt-in mutation fails instead of manufacturing acceptance',async()=>{
+  const source=read('scripts/verify-holistic-master-browser.mjs'),token=', allowPublicHomePrefetch:true';
+  assert.equal(source.split(token).length,2);
+  const result=await runVerifier({},source.replace(token,''));
+  assert.equal(result.error.code,'ERR_ASSERTION');assert.equal(result.state.contexts,1);
+  assert.equal(result.state.browsersClosed,1);assert.equal(result.state.artifacts['artifacts/holistic-support-mobile/acceptance.json'],undefined);
+});
+
+test('negative controls detect weakened prefetch/header/query/document/locale restrictions',()=>{
+  const source=read('scripts/helpers/holistic-browser-isolation.mjs');
+  const customMapRequest=anonymousPrefetch();
+  customMapRequest.headers=()=>Object.assign(Object.create({}),{rsc:'1','next-router-prefetch':'1'});
+  const cases=[
+    [" && headers['next-router-prefetch'] === '1'",'',anonymousPrefetch('/?_rsc=x',{headers:{'next-router-prefetch':undefined}}),'ru'],
+    ["request.resourceType() !== 'fetch'",'false',anonymousPrefetch('/?_rsc=x',{type:'document'}),'ru'],
+    ["if (!['en', 'ru'].includes(locale)) return false;","if (!['en', 'ru', 'es'].includes(locale)) return false;",anonymousPrefetch(),'es'],
+    ["if (names.some(name => /^(?:proxy-)?authorization$/i.test(name))) return false;",'',anonymousPrefetch('/?_rsc=x',{headers:{authorization:''}}),'ru'],
+    ["if (rawUrl !== origin + '/?_rsc=' + url.searchParams.get('_rsc')) return false;",'',anonymousPrefetch('/?_rsc=%78'),'ru'],
+    ["if (prototype !== Object.prototype && prototype !== null) return false;",'',customMapRequest,'ru'],
+  ];
+  for(const [before,after,req,locale]of cases){
+    // The existing four-route resource-type check is deliberately separate;
+    // apply this mutation only to the new opt-in function, never its default.
+    const marker='export function permittedHolisticHomePrefetch';
+    const prefix=source.slice(0,source.indexOf(marker)),tail=source.slice(source.indexOf(marker));
+    assert.equal(tail.split(before).length,2);
+    const changed=(prefix+tail.replace(before,after)).replace(/^import .*;\n/gm,'').replaceAll('export function','function').replaceAll('export async function','async function');
+    // Use this realm's Object because the synthetic Request owns its header
+    // map here; a foreign realm's prototype is outside the map contract.
+    const classifier=runInNewContext(changed+'\npermittedHolisticHomePrefetch',{assert,URL,Object});
+    assert.throws(()=>assert.equal(classifier(req,origin,locale),false),{code:'ERR_ASSERTION'});
+  }
+});
+
+test('literal root syntax successor aborts exact reviewer normalization/query examples without transport',async()=>{
+  const tails=['/./?_rsc=x','/../?_rsc=x','/%2e/?_rsc=x','/%2e%2e/?_rsc=x',
+    '/api/../?_rsc=x','/api/%2E%2E/?_rsc=x','/api\\..\\?_rsc=x',
+    '/?%5frsc=x','/?_r%73c=x','/?_rsc=%78','/?_rsc=ab%2Dcd','/?_rsc=ab%5Fcd',
+    '/?_rsc=x&','/?_rsc=x&&','/?&_rsc=x','/?_rsc=x#','/?_rsc=x&#'];
+  for(const tail of tails){
+    const req=anonymousPrefetch(tail);
+    assert.equal(new URL(req.url()).pathname,'/','Effective target remains public root, not a private-access escape');
+    const result=await executeOptIn({req,enabled:true});
+    assert.deepEqual(result.actions,[['abort','blockedbyclient']],tail);
+    assert.equal(result.cleanError,null);assert.equal(result.closeError,null);
+  }
+  for(const prototype of [Object.prototype,null]){
+    const req=anonymousPrefetch('/?_rsc=abc-123');
+    req.headers=()=>Object.assign(Object.create(prototype),{rsc:'1','next-router-prefetch':'1',accept:'*/*'});
+    const result=await executeOptIn({req,enabled:true});
+    assert.deepEqual(result.actions,[['fetch',{maxRedirects:0}],['fulfill','response'],['dispose']]);
+    assert.equal(result.cleanError,null);assert.equal(result.closeError,null);
+  }
+});
+
+test('custom inherited header maps are denied without invoking inherited credential getters',async()=>{
+  let valueReads=0;
+  const inherited=Object.create(Object.defineProperty({},'authorization',
+    {get(){valueReads++;throw Error('CREDENTIAL_GETTER_MUST_NOT_RUN');}}));
+  Object.assign(inherited,{rsc:'1','next-router-prefetch':'1'});
+  for(const headers of [inherited,Object.assign(Object.create({}),{rsc:'1','next-router-prefetch':'1'})]){
+    const req=anonymousPrefetch();req.headers=()=>headers;
+    const result=await executeOptIn({req,enabled:true});
+    assert.deepEqual(result.actions,[['abort','blockedbyclient']]);
+    assert.equal(result.cleanError,null);assert.equal(result.closeError,null);
+  }
+  assert.equal(valueReads,0);
+});
+
+test('ordinary Object prototype credential names are rejected without getter reads in an isolated strict child',()=>{
+  const helper=new URL('../scripts/helpers/holistic-browser-isolation.mjs',import.meta.url).href;
+  const fixtureUrl=new URL('./helpers/public-services-isolation-fixture.mjs',import.meta.url).href;
+  const source=`import assert from 'node:assert/strict';
+import {permittedHolisticHomePrefetch,permittedHolisticRead,createHolisticBrowserIsolation} from ${JSON.stringify(helper)};
+import {fixture,origin} from ${JSON.stringify(fixtureUrl)};
+let credentialReads=0,checks=0;
+for(const name of ['authorization','Authorization','proxy-authorization','Proxy-Authorization'])for(const enumerable of [false,true]){
+  const prior=Object.getOwnPropertyDescriptor(Object.prototype,name);assert.equal(prior,undefined);
+  Object.defineProperty(Object.prototype,name,{configurable:true,enumerable,get(){credentialReads++;throw Error('NEVER_READ_CREDENTIAL');}});
+  try{
+    for(const prototype of [Object.prototype,null]){
+      const headers=Object.assign(Object.create(prototype),{rsc:'1','next-router-prefetch':'1'});
+      const req={url:()=>origin+'/?_rsc=x',method:()=> 'GET',resourceType:()=> 'fetch',headers:()=>headers};
+      assert.equal(permittedHolisticHomePrefetch(req,origin,'ru'),prototype===null);
+      assert.equal(permittedHolisticRead({...req,url:()=>origin+'/ru/pro?_rsc=x'},origin,'ru'),true);
+      const f=fixture(),actions=[];
+      const browser={async newContext(options){return f.browser.newContext({viewport:options.viewport,serviceWorkers:options.serviceWorkers});}};
+      const guard=await createHolisticBrowserIsolation(browser,{origin,locale:'ru',viewport:{width:390,height:844},allowPublicHomePrefetch:true});
+      await f.contexts[0].routes[0]({request:()=>req,async abort(){actions.push('abort');},
+        async fetch(options){assert.deepEqual(options,{maxRedirects:0});actions.push('fetch');return {url:req.url,status:()=>200,async dispose(){actions.push('dispose');}};},
+        async fulfill(){actions.push('fulfill');}});
+      await guard.close();assert.deepEqual(actions,prototype===null?['fetch','fulfill','dispose']:['abort']);checks++;
+    }
+  }finally{delete Object.prototype[name];}
+}
+for(const name of ['rsc','next-router-prefetch']){
+  Object.defineProperty(Object.prototype,name,{configurable:true,value:'1'});
+  try{
+    const headers=Object.fromEntries(Object.entries({rsc:'1','next-router-prefetch':'1'}).filter(([key])=>key!==name));
+    const req={url:()=>origin+'/?_rsc=x',method:()=> 'GET',resourceType:()=> 'fetch',headers:()=>headers};
+    assert.equal(permittedHolisticHomePrefetch(req,origin,'ru'),false,'Required prefetch headers must be own keys');
+  }finally{delete Object.prototype[name];}
+}
+assert.equal(credentialReads,0);assert.equal(checks,16);console.log('PROTOTYPE_CREDENTIAL_CHECKS_16_READS_0');`;
+  const child=spawnSync(process.execPath,['--unhandled-rejections=strict','--input-type=module','-e',source],{encoding:'utf8'});
+  assert.equal(child.error,undefined);assert.equal(child.signal,null);assert.equal(child.status,0,child.stderr);
+  assert.equal(child.stdout,'PROTOTYPE_CREDENTIAL_CHECKS_16_READS_0\n');assert.equal(child.stderr,'');
 });
