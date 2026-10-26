@@ -39,13 +39,15 @@ test("free landings explain benefits before closing with one short capture", () 
   const hero = landing.indexOf('aria-labelledby="free-entry-title"');
   const outcome = landing.indexOf('id="what-you-get"');
   const process = landing.indexOf('id="how-it-works"');
-  const video = landing.indexOf('data-featured-constellations-video');
+  const video = landing.indexOf('data-free-review-intro-video');
+  const proof = landing.indexOf('data-featured-free-review-testimonials');
   const final = landing.lastIndexOf("<CompactLeadCapture");
-  assert.ok(hero > 0 && hero < video && video < outcome && outcome < process && process < final,
-    "The selected recording belongs in the first scene");
+  assert.ok(hero > 0 && hero < video && video < outcome && outcome < proof && proof < process && process < final,
+    "A separate video introduction and three visible reviews belong to the same landing");
   assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
-  assert.match(landing, /data-featured-constellations-video/);
+  assert.match(landing, /data-free-review-intro-video/);
+  assert.match(landing, /data-featured-free-review-testimonials/);
   assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
   assert.doesNotMatch(landing, /<ServiceVideoShowcase topic="overview"/);
   assert.match(landing, /t\.bullets\.map/);
@@ -151,7 +153,6 @@ test("express review WebKit reveal stays immediately below its button throughout
   assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
     "Visual translateY moves an expanded in-flow region above its reveal button in WebKit before animation settles");
 });
-
 
 test("mobile browser acceptance taps the entire focus card and validates the native radio and unchanged consent", () => {
   const script = read("scripts/verify-free-review-live-mobile.mjs");
