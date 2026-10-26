@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { createHomeRouteSupervisor } from '../scripts/home-route-supervisor.mjs';
+import { assertHomeVerifierMatrix } from './helpers/home-verifier-matrix.mjs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const component = read('components/personal-testimonials.tsx');
@@ -137,7 +138,8 @@ test('remaining free-entry targets still match actual homepage links and destina
   assert.match(read('components/app/simple-test-picker.jsx'), /data-prelogin-test-picker/);
 });
 
-test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', () => {
+test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', async () => {
+  await assertHomeVerifierMatrix(verifier);
   for (const required of [
     "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'frame.evaluate(element => element.isConnected)',
     'size.height >= 46 && size.font >= 14', 'const firstReview = await verifyHomeTestimonialPosters(page)',
@@ -145,7 +147,6 @@ test('poster reconciliation preserves held-RSC, readability, first playback, Bac
     "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0)",
     'await page.goBack()', 'await expect(page).toHaveURL(origin + homePath(locale))',
     'assert.deepEqual(unexpectedApiRequests, []', "request.method() === 'GET'", 'APP_UNAVAILABLE',
-    'results.filter(result => result.firstClickRetained).length, 8', 'results.filter(result => result.freeJourney).length, 24',
     'await exerciseFreeJourneys(page, engine, width)', 'assert.deepEqual(errors, [])',
   ]) assert.ok(verifier.includes(required), required);
   assert.doesNotMatch(verifier, /videoPosters\)\.toHaveCount\(6\)|test\.skip|test\.only|test\.todo/);

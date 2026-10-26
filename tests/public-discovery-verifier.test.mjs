@@ -115,6 +115,89 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   assert.equal(starts, 0)
 })
 
+// Execute the exact pure expectation statements used by the browser journey,
+// not a second implementation or a result inferred from the rendered cards.
+// This boundary does not run Playwright; selectors and native input remain CI gates.
+function browserCollectionSearchKeys({ entries, collections, preserved, query, initialPreferences }) {
+  const source = read('scripts/helpers/public-discovery-verifier.mjs')
+  const start = '    const sleepCollection = collections.find(item=>item.id===\'sleep\')'
+  const end = '    assert.ok(expectedSearch.length > 0)'
+  assert.equal(source.split(start).length, 2, 'Exactly one browser search expectation starts here')
+  const tail = source.slice(source.indexOf(start))
+  assert.equal(tail.split(end).length, 2, 'The complete browser expectation has a unique boundary')
+  const recipe = tail.slice(0, tail.indexOf(end))
+  const evaluate = new Function('entries', 'collections', 'preserved', 'query', 'initialPreferences',
+    'rankPublicTestMatches', 'filterExplorerEntries', 'searchPublicTestEntries', 'groupViaRecommendations',
+    recipe + '\nreturn expectedSearch')
+  return evaluate(entries, collections, preserved, query, initialPreferences,
+    explorerModule.rankPublicTestMatches, explorerModule.filterExplorerEntries,
+    explorerModule.searchPublicTestEntries, modules['@/lib/assessments/via-family'].groupViaRecommendations)
+}
+
+for (const { locale, depth, query } of [
+  { locale: 'en', depth: 'quick', query: 'Love' },
+  { locale: 'ru', depth: 'balanced', query: 'Любовь' },
+]) test(locale + ' browser search oracle keeps prior Stress + ' + depth + ' through Sleep and exact ordered Love search', () => {
+  const parentHooks = hooks(), pickerHooks = hooks(), frames = []
+  let starts = 0, tree, pickerProps
+  assertAfterIsolation(() => assert.equal(starts, 0, 'Search must not start tests during effects or cleanup'))
+  const { TestExplorer } = compile(parentSource, parentHooks, modules)
+  const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules, {
+    window: { requestAnimationFrame(callback) { frames.push(callback) } },
+  })
+  const render = () => renderWithEffects([parentHooks, pickerHooks], () => {
+    pickerProps = TestExplorer({ locale, audience: 'guest', simpleMode: true, onStart: () => { starts++ } }).props
+    return tree = SimpleTestPicker(pickerProps)
+  })
+  render()
+  pickerProps.onToggleFocus('stress'); render()
+  pickerProps.onDepth(depth); render()
+  const suggested = pickerProps.activeBattery.map(entry => entry.key)
+  const manual = pickerProps.recommendations.find(entry => !suggested.includes(entry.key))
+  assert.ok(manual)
+  pickerProps.onToggleTest(manual.key); render()
+  const preserved = pickerProps.activeBattery.map(entry => entry.key)
+  assert.deepEqual(preserved.length, suggested.length + 1)
+  const sleepButton = nodes(tree).find(node => node.props['data-test-collection'] === 'sleep')
+  assert.ok(sleepButton)
+  sleepButton.props.onClick(); render()
+  assert.equal(frames.length, 1); frames.shift()()
+  assert.deepEqual(Array.from(pickerProps.focus), ['stress'])
+  assert.equal(pickerProps.depth, depth)
+  assert.equal(pickerProps.activeCollectionId, 'sleep')
+  const search = () => nodes(tree).find(node => node.props.id === 'hh-test-hero-search')
+  search().props.onChange({ target: { value: query } }); render()
+  nodes(tree).find(node => node.type === 'form' && node.props.role === 'search').props.onSubmit({ preventDefault() {} }); render()
+
+  // Independent public-catalog oracle: prior focus is a persistent preference,
+  // Sleep is additive, selected tests affect VIA grouping only, never relevance.
+  const entries = explorerModule.buildExplorerEntries({ locale, audience: 'guest' })
+  const initialPreferences = { focus: ['stress'], depth }
+  const collections = availableTestCollections(entries, initialPreferences)
+  const sleep = collections.find(item => item.id === 'sleep')
+  const pool = explorerModule.filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 })
+  const rank = focus => explorerModule.rankPublicTestMatches(pool, {
+    depth, focus, collectionId: 'sleep', collectionFocus: sleep.focus,
+  })
+  const searchKeys = ranked => explorerModule.searchPublicTestEntries(
+    modules['@/lib/assessments/via-family'].groupViaRecommendations(ranked, new Set(preserved), false).visible, query,
+  ).slice(0, 5).map(entry => entry.key)
+  const independentExpected = searchKeys(rank([...new Set(['stress', ...sleep.focus])]))
+  const droppedPersistentFocus = searchKeys(rank(sleep.focus))
+  assert.equal(independentExpected.length, 5)
+  assert.notDeepEqual(independentExpected, droppedPersistentFocus, 'Dropping persistent Stress is a real order-changing counterfactual')
+  const browserExpected = browserCollectionSearchKeys({ entries, collections, preserved, query, initialPreferences })
+  assert.deepEqual(browserExpected, independentExpected, 'The native browser oracle must retain prior Stress alongside Sleep')
+  const hits = nodes(tree).filter(node => node.props['data-test-match']).map(node => node.props['data-test-match'])
+  assert.deepEqual(hits, independentExpected, 'The actual picker preserves the exact ranked order, not only membership')
+  assert.deepEqual(Array.from(pickerProps.focus), ['stress'])
+  assert.equal(pickerProps.depth, depth)
+  assert.equal(pickerProps.activeCollectionId, 'sleep')
+  assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved, 'Love search cannot rewrite manual selection')
+  assert.equal(nodes(tree).filter(node => node.props['data-via-family']).length, 0)
+  assert.equal(starts, 0)
+})
+
 for (const locale of ['en','ru','es']) test(locale+' collection standard Details stays read-only and Start launches exactly one cleared test',async()=>{
  const parentHooks=hooks(),pickerHooks=hooks(),starts=[];let tree,props
  let explicitKey
