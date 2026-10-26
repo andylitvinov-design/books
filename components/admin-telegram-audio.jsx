@@ -22,6 +22,8 @@ const LABELS={
     connectionUnconfigured:'Сервер Telegram ещё не настроен. Проверь CRM → Подключения.',
     connectionError:'Не удалось проверить подключение. Попробуй ещё раз.',
     repairSuccess:'Webhook проверен после восстановления. Отправь /audio в Dot и проверь ответ.',
+    foreignWebhook:'Dot подключён к другому приложению. Настройки не изменены — проверь текущий webhook в CRM.',
+    pairingRequired:'Привязка владельца к Dot не подтверждена. Проверь Telegram в настройках кабинета.',
     autoSave:'Выбор папки действует 30 минут для следующей записи. Оригинал остаётся приватным в этой аудиотеке и не публикуется в курсе.'},
   en:{inbox:'Telegram audio inbox',intro:'Forward a voice message or audio file to @Andydotbot. It is saved privately here, never published to a course automatically.',
     all:'All folders',refresh:'Refresh',loading:'Loading recordings…',none:'No recordings in this folder yet.',
@@ -40,6 +42,8 @@ const LABELS={
     connectionUnconfigured:'Telegram is not configured on the server. Check CRM → Connections.',
     connectionError:'Could not check the connection. Try again.',
     repairSuccess:'Webhook verified after repair. Send /audio to Dot and check its reply.',
+    foreignWebhook:'Dot points to another app. Nothing was changed; inspect the existing webhook in CRM.',
+    pairingRequired:'Owner pairing is not verified. Check Telegram in Cabinet Settings.',
     autoSave:'The choice applies to the next recording within 30 minutes. Originals stay private in this audio library, not published to a course.'},
   es:{inbox:'Bandeja de audio de Telegram',intro:'Reenvía un audio a @Andydotbot. Se guardará de forma privada, sin publicar en el curso.',
     all:'Todas las carpetas',refresh:'Actualizar',loading:'Cargando audios…',none:'Aún no hay audios en esta carpeta.',
@@ -58,6 +62,8 @@ const LABELS={
     connectionUnconfigured:'Telegram no está configurado en el servidor. Revisa CRM → Conexiones.',
     connectionError:'No se pudo comprobar la conexión. Inténtalo de nuevo.',
     repairSuccess:'Webhook verificado tras repararlo. Envía /audio a Dot y comprueba su respuesta.',
+    foreignWebhook:'Dot está conectado a otra app. No se cambió nada; comprueba el webhook en CRM.',
+    pairingRequired:'La vinculación del propietario no está verificada. Revísala en la configuración.',
     autoSave:'La elección sirve para el próximo audio durante 30 minutos. El original queda privado y no se publica en cursos.'}
 }
 const duration=value=>{
@@ -115,7 +121,12 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
     try{
       const response=await fetch('/api/admin/materials/telegram/connection',{
         method:'POST',credentials:'same-origin',cache:'no-store'})
-      if(!response.ok)throw Error('OWNER_TELEGRAM_REPAIR_FAILED')
+      if(!response.ok){
+        const result=await response.json().catch(()=>({}))
+        const error=new Error('OWNER_TELEGRAM_REPAIR_FAILED')
+        error.code=result?.error
+        throw error
+      }
       // Never claim success solely from the POST response.
       const verified=await fetch('/api/admin/materials/telegram/connection',{
         credentials:'same-origin',cache:'no-store'})
@@ -124,7 +135,9 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
         throw Error('OWNER_TELEGRAM_RECHECK_FAILED')
       setConnection(data)
       setConnectionNotice(t.repairSuccess)
-    }catch{setConnectionError(t.connectionError)}
+    }catch(error){setConnectionError(error?.code==='TELEGRAM_WEBHOOK_ALREADY_IN_USE'
+      ?t.foreignWebhook:error?.code==='TELEGRAM_OWNER_PAIRING_REQUIRED'
+      ?t.pairingRequired:t.connectionError)}
     finally{setConnectionBusy(false)}
   }
   useEffect(()=>{
