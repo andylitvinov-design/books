@@ -316,6 +316,23 @@ async function verifyPaidServiceChoices() {
               label + " no submission without contact and consent");
             assert.equal(await chooser.locator('a[data-contact-channel="whatsapp"]').count(), 0,
               label + " no external messenger before saved first-party enquiry");
+            // Switching the quoted offer while the form is open must close
+            // the previous enquiry, reset consent, and restore the €100 CTA.
+            // Check at one mobile width per locale/engine to limit browser cost.
+            if (width === 390) {
+              await choices.nth(0).click();
+              await form.waitFor({ state: "hidden", timeout: 10000 });
+              assert.equal(await trigger.getAttribute("aria-expanded"), "false",
+                label + " changing tariff closes stale enquiry form");
+              assert.equal(await buttonText(), paidRequestLabels[locale][0],
+                label + " returned to €100 request");
+              await trigger.click();
+              await form.waitFor({ state: "visible", timeout: 10000 });
+              assert.equal(await form.locator('input[type="checkbox"]').isChecked(), false,
+                label + " changed tariff requires fresh consent");
+              assert.equal(await form.locator('button[type="submit"]').isDisabled(), true,
+                label + " changed tariff cannot reuse an uncommitted submission");
+            }
             assert.equal(postedLeads, 0, label + " no request sent during read-only QA");
             const dims = await page.evaluate(() => ({
               inner: window.innerWidth, scroll: document.documentElement.scrollWidth,
