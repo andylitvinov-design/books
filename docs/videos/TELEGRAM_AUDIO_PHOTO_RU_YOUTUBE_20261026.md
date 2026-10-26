@@ -6,6 +6,8 @@ Use only the existing signed @holistichouse_bot CRM webhook at /api/app/crm/mess
 
 In the active owner-private chat: /video → send 1–6 photos and 1–4 voice/audio attachments → /video_done or Assemble button → review the returned private 16:9 MP4 → explicitly press Upload to Russian YouTube. /video_cancel cancels a collecting/preview job.
 
+**Ordered mixed-media montage:** send photos and audio in the intended sequence (e.g. photo A → audio 1 → photo B → audio 2 → photo C). All audio is concatenated in Telegram message order. The slideshow anchors each photograph at the cumulative duration of preceding audio (approximate timing comes from Telegram duration metadata, not speech recognition). Multiple consecutive photos divide the following audio stretch; trailing photos after all audio get a short outro inside the final audio segment. If the first photo is sent after some audio, it also covers that earlier audio rather than leaving a black screen. No per-item upload confirmations or extra rendering-progress messages: ordinarily the owner sees the initial video-mode instructions and then the rendered private MP4. Validation errors and explicit YouTube actions can create additional alerts. Do not assume the original individual files are separate client-cabinet materials.
+
 Photo types: JPEG, PNG, WebP. Voice/audio: OGG, MP3, M4A, WAV with Telegram duration metadata. Total input max 20MB and soundtrack max 120s; session expires in 30 minutes. Generic audio documents without duration may be rejected; send them as a Telegram Audio attachment.
 
 ## Privacy and durability

@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs'
 import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_RU_CHANNEL_ID}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
-import {videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 
@@ -85,6 +85,42 @@ test('FFmpeg command arguments use no shell and encode a single bounded 16:9 str
  assert.ok(args.some(v=>v.includes('scale=1920:1080')))
  assert.ok(!args.includes('-c:v copy'))
  assert.throws(()=>videoRenderArguments([part('photo',0)],'/tmp/output.mp4'),/INVALID_COMPOSITION/)
+})
+test('photo positions follow cumulative audio durations in mixed Telegram message order',()=>{
+ const updates=[part('photo',0),part('audio',1,{duration:4}),part('photo',2),
+   part('audio',3,{duration:3}),part('photo',4),part('audio',5,{duration:2})]
+ const unordered=[updates[4],updates[5],updates[1],updates[3],updates[2],updates[0]]
+ const plan=photoTimeline(unordered)
+ assert.deepEqual(plan.map(x=>[x.part.updateId,x.startMs,x.durationMs]),[
+   [100,0,4000],[102,4000,3000],[104,7000,2000]
+ ])
+ const args=videoRenderArguments(unordered,'/tmp/output.mp4')
+ assert.deepEqual(args.filter((v,i)=>args[i-1]==='-t'),['4.000','3.000','2.000'])
+ assert.equal(plan.reduce((sum,p)=>sum+p.durationMs,0),9000)
+})
+test('consecutive photos split the following audio segment without reordering',()=>{
+ const plan=photoTimeline([part('photo',0),part('audio',1,{duration:3}),
+   part('photo',2),part('photo',3),part('audio',4,{duration:4})])
+ assert.deepEqual(plan.map(x=>[x.startMs,x.durationMs]),[
+   [0,3000],[3000,2000],[5000,2000]
+ ])
+})
+test('photos after the last audio stay visible as an outro, never a zero-length frame',()=>{
+ const seq=[part('photo',0),part('audio',1,{duration:8}),part('photo',2)]
+ assert.deepEqual(photoTimeline(seq).map(x=>[x.startMs,x.durationMs]),[
+   [0,6500],[6500,1500]
+ ])
+ const ending=[part('audio',0,{duration:2}),part('photo',1),part('photo',2)]
+ assert.deepEqual(photoTimeline(ending).map(x=>[x.startMs,x.durationMs]),[
+   [0,1000],[1000,1000]
+ ])
+ const short=[...Array.from({length:6},(_,i)=>part('photo',i)),
+   part('audio',6,{duration:1})]
+ const veryShort=photoTimeline(short)
+ assert.equal(veryShort.reduce((sum,p)=>sum+p.durationMs,0),1000)
+ assert.ok(veryShort.every(p=>p.durationMs>=160))
+ assert.equal(veryShort[0].startMs,0)
+ assert.throws(()=>photoTimeline([part('photo',0)]),/INVALID_COMPOSITION/)
 })
 test('Google RU ownership and Unlisted are checked before and after upload',async()=>{
  const calls=[];let begin=0,uploaded=0
@@ -178,6 +214,9 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(service,/if\(channel!=='crm'\)return \{handled:false\}/)
  assert.match(service,/if\(event.action==='publish'\)/)
  assert.match(service,/if\(event.action==='done'\)/)
+ assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)
+ const doneHandler=service.split("if(event.action==='done'){")[1].split("if(event.action==='retry'){")[0]
+ assert.doesNotMatch(doneHandler,/if\(batch.state==='reserved'\)\{\s*await ownerMessage/)
  assert.match(service,/state='uncertain'/)
  assert.equal(readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8').includes("await requireAdminRequest()"),true)
 })
