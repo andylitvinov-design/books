@@ -7,9 +7,12 @@ export async function assertCabinetPortrait(page, expect, { origin, locale = 'en
   await expect(page).toHaveURL(origin + '/' + locale + '/app/portrait', { timeout: 30000 })
   const profile = page.locator('[data-profile-domains][data-profile-interactive="true"]')
   await expect(profile).toBeVisible({ timeout: 30000 })
-  await expect(profile.getByRole('heading', {
-    name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true,
-  })).toBeVisible()
+  // The authenticated Profile now begins with four selectable areas,
+  // rather than the removed Reports heading. Check actual accessible tabs.
+  const chooser = profile.locator('details.hh-domain-more')
+  await expect(chooser).toBeVisible()
+  await expect(chooser).toHaveAttribute('open', '')
+  await expect(chooser.getByRole('tab')).toHaveCount(4)
 }
 
 export async function openCabinetMyTests(page, expect, { origin, locale = 'en' }) {
