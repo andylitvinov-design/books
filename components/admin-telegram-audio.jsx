@@ -9,7 +9,7 @@ const LABELS={
   ru:{
     heading:'Аудио из Telegram',
     intro:'Последние записи из Dot · только для вас, без публикации в курсах.',
-    add:'Добавить через Dot',refresh:'Обновить',recent:'Последние аудио',
+    add:'Добавить через Dot',join:'Объединить аудио',refresh:'Обновить',recent:'Последние аудио',
     newest:'Новые записи первыми',all:'Все папки',filter:'Показать папку',
     total:'всего',loading:'Загружаем аудио…',noneTitle:'Пока нет аудиозаписей',
     none:'Перешлите голосовое сообщение или аудиофайл в @Andydotbot. После подтверждения ✅ запись появится здесь.',
@@ -28,7 +28,7 @@ const LABELS={
       'Зажмите голосовое сообщение в Telegram → «Переслать» → Dot → «Отправить».',
       'Дождитесь ответа ✅ о сохранении. После этого запись появится в списке.'
     ],
-    combine:'Чтобы склеить голосовые: /combine → перешли 2–8 записей OGG/Opus → дождись ✅ для каждой → /done. Общий файл появится здесь и в Dot. /cancel отменяет сборку. До 20 МБ суммарно.',
+    combine:'Объединить: нажмите «Объединить аудио» → выберите папку для готового файла → перешлите 2–8 голосовых OGG/Opus → после подтверждений нажмите «Готово · объединить». Один файл придёт в Dot и будет сохранён в выбранной папке. Папку можно изменить и здесь. До 20 МБ суммарно, /cancel для отмены.',
     connection:'Подключение Telegram Dot',checkBot:'Проверить',repairBot:'Восстановить webhook',
     connectionLoading:'Проверяем сервер Telegram…',
     connectionReady:'Webhook зарегистрирован. Ответ на /audio нужно подтвердить настоящим сообщением.',
@@ -43,7 +43,7 @@ const LABELS={
   en:{
     heading:'Telegram audio',
     intro:'Your latest recordings from Dot · private and never auto-published.',
-    add:'Add via Dot',refresh:'Refresh',recent:'Latest recordings',
+    add:'Add via Dot',join:'Combine audio',refresh:'Refresh',recent:'Latest recordings',
     newest:'Newest recordings first',all:'All folders',filter:'Show folder',
     total:'total',loading:'Loading recordings…',noneTitle:'No recordings yet',
     none:'Forward a voice message or audio file to @Andydotbot. Once Dot confirms ✅, the recording will appear here.',
@@ -62,7 +62,7 @@ const LABELS={
       'Hold a Telegram voice message → Forward → Dot → Send.',
       'Wait for the ✅ saved confirmation. The recording will then appear here.'
     ],
-    combine:'Join voice notes: /combine → forward 2–8 OGG/Opus recordings → wait for ✅ on each → /done. The combined file appears here and in Dot. /cancel stops a batch. 20 MB total max.',
+    combine:'To combine: tap Combine audio → select the destination folder for the merged file → forward 2–8 OGG/Opus voice notes → wait for ✅ per clip → tap Done · Combine. One file will arrive in Dot and be saved in your chosen folder. You can move it here later. Maximum 20 MB; /cancel to stop.',
     connection:'Dot Telegram connection',checkBot:'Check',repairBot:'Repair webhook',
     connectionLoading:'Checking Telegram provider…',
     connectionReady:'Webhook is registered. A real /audio response is still needed to prove delivery.',
@@ -77,7 +77,7 @@ const LABELS={
   es:{
     heading:'Audios de Telegram',
     intro:'Tus grabaciones recientes de Dot · privadas y sin publicación automática.',
-    add:'Añadir desde Dot',refresh:'Actualizar',recent:'Audios recientes',
+    add:'Añadir desde Dot',join:'Unir audios',refresh:'Actualizar',recent:'Audios recientes',
     newest:'Primero los más recientes',all:'Todas las carpetas',filter:'Mostrar carpeta',
     total:'en total',loading:'Cargando grabaciones…',noneTitle:'Aún no hay grabaciones',
     none:'Reenvía un mensaje de voz o audio a @Andydotbot. Tras la confirmación ✅ aparecerá aquí.',
@@ -96,7 +96,7 @@ const LABELS={
       'Mantén pulsado un audio en Telegram → Reenviar → Dot → Enviar.',
       'Espera el mensaje ✅ de confirmación. Entonces aparecerá aquí.'
     ],
-    combine:'Unir mensajes de voz: /combine → reenvía 2–8 audios OGG/Opus → espera ✅ para cada uno → /done. El archivo unido aparece aquí y en Dot. /cancel cancela. Máximo 20 MB.',
+    combine:'Para unir: pulsa Unir audios → elige la carpeta del archivo final → reenvía 2–8 voces OGG/Opus → espera ✅ por clip → pulsa Listo · Unir. El archivo llegará a Dot y se guardará en la carpeta elegida. Puedes moverlo aquí después. Máximo 20 MB; /cancel para cancelar.',
     connection:'Conexión Telegram de Dot',checkBot:'Verificar',repairBot:'Reparar webhook',
     connectionLoading:'Comprobando el proveedor Telegram…',
     connectionReady:'Webhook registrado. Hay que comprobar la respuesta real a /audio.',
@@ -264,6 +264,11 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
         <a href="https://t.me/Andydotbot?start=audio" target="_blank"
           rel="noopener noreferrer" className={styles.telegramCta}>
           <Plus size={17} aria-hidden="true"/>{t.add}
+        </a>
+        <a href="https://t.me/Andydotbot?start=combine" target="_blank"
+          rel="noopener noreferrer" className={[styles.telegramCta,styles.combineCta].join(' ')}
+          data-owner-telegram-combine>
+          <AudioLines size={17} aria-hidden="true"/>{t.join}
         </a>
         <button type="button" className={styles.secondary} onClick={load}
           disabled={busy||!!moving} aria-label={t.refresh}>
