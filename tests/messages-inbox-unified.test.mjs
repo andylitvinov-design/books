@@ -45,7 +45,7 @@ test('request details respond via existing secure APIs without creating duplicat
   const req=read('components/app/messages-client-requests.jsx')
   const hub=read('components/app/messages-hub.jsx')
   assert.match(hub,/credentials:'same-origin',cache:'no-store'/)
-  assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded\/>/)
+  assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded ownerCrmAvailable=\{Boolean\(data\?\.ownerMessenger\)\}\/>/)
   assert.match(hub,/data\?\.ownerMessenger&&<section className=\{styles\.crm\}/)
   assert.match(hub,/botCheck|CrmMessengerPanel/)
   assert.ok(hub.indexOf('<CrmMessengerPanel')<hub.indexOf('<DirectMessageInbox'),
@@ -83,6 +83,8 @@ test('empty personal inbox is compact; does not hide or mislabel existing Telegr
   assert.match(inbox,/accountId&&\(threads.length>0\|\|destination\)&&<div className=\{styles\.layout\}/)
   assert.match(inbox,/!accountId&&!signedOut&&!error&&<p className=\{styles\.emptySummary\}/)
   assert.match(inboxCss,/\.emptySummary\{/)
+  assert.match(inbox,/ownerCrmAvailable\?t\.ownerEmpty:t\.empty/)
+  assert.match(inbox,/ownerCrmAvailable=false/)
   for(const locale of ['en','ru','es'])
     assert.ok(inbox.includes(locale+':{'),'existing language '+locale+' is retained')
   assert.doesNotMatch(inbox,/telegramPhotoFileId|HH_CRM_MSG_TELEGRAM_TOKEN/)
