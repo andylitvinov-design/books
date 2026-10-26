@@ -274,18 +274,37 @@ async function runEngine(name, engine) {
             await daoForm.waitFor({state:"visible",timeout:25000});
             const consent = daoForm.locator('input[type="checkbox"][required]');
             assert.equal(await consent.count(),1,"Consent is required for the free Dao CRM request");
-            assert.equal(await daoForm.locator('button[type="submit"]').isDisabled(),true,
-              "Dao form cannot submit without an opt-in");
+            assert.equal(await consent.isChecked(),false,"Dao opt-in must start unchecked");
             assert.equal(await page.locator('[data-free-entry-landing="dao"] [data-contact-channel-chooser]').count(),0,
               "Dao uses approved first-party contact capture, not a second messenger funnel");
-            // The network request is intercepted above; synthetic consent
-            // validates the CRM handoff without touching a real lead/account.
+            // CompactLeadCapture has two type=button channel actions, never a
+            // submit button. Both call the same first-party POST before handoff.
+            const whatsapp = daoForm.locator('button[data-compact-channel="whatsapp"]');
+            const telegram = daoForm.locator('button[data-compact-channel="telegram"]');
+            assert.equal(await whatsapp.count(),1,"Dao offers the existing WhatsApp action");
+            assert.equal(await telegram.count(),1,"Dao offers the existing Telegram action");
+            assert.equal(await whatsapp.getAttribute("type"),"button");
+            assert.equal(await daoForm.locator('button[type="submit"]').count(),0,
+              "Dao compact intake is channel-driven, not a submit-button form");
+            assert.equal(await daoForm.locator('a[data-compact-channel]').count(),0,
+              "No external messenger links before a server-acknowledged request");
+            // Negative consent path must never reach POST or a messenger.
+            // Positive path intercepts POST above and stubs window.open here:
+            // no real enquiry, popup, external request, or customer message.
             const previous = submissions.length;
-            const submit = daoForm.locator('button[type="submit"]');
             await daoForm.locator('input[name="contact"]').fill("qa-browser@example.test");
-            assert.equal(await submit.isDisabled(),true,"Contact cannot bypass consent");
+            await whatsapp.click();
+            assert.equal(submissions.length,previous,"Contact alone cannot bypass Dao consent");
+            assert.equal(await daoForm.getByRole("alert").count(),1,"Missing opt-in has an accessible error");
             await consent.check();
-            await submit.click();
+            await page.evaluate(() => {
+              window.__hhQaHandoffs = [];
+              window.open = () => ({
+                opener:null, closed:false, close(){},
+                location:{replace(destination){window.__hhQaHandoffs.push(destination);}},
+              });
+            });
+            await whatsapp.click();
             await page.locator('main[data-free-entry-landing="dao"] [data-lead-saved]').waitFor({state:"visible",timeout:10000});
             assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
             const enquiry = submissions.at(-1);
@@ -294,6 +313,12 @@ async function runEngine(name, engine) {
             assert.equal(enquiry.contact.email,"qa-browser@example.test");
             assert.equal(enquiry.sourcePath,"/"+locale+"/services/dao-health-profile");
             assert.ok(/^[a-f0-9-]{36}$/i.test(enquiry.operationId));
+            const handoffs = await page.evaluate(() => window.__hhQaHandoffs);
+            assert.equal(handoffs.length,1,"One intercepted, non-navigating messenger handoff");
+            assert.match(handoffs[0],/^https:\/\/wa\.me\//);
+            assert.doesNotMatch(handoffs[0],/qa-browser@example\.test/,"Never leak saved contact in messenger URL");
+            assert.equal(await page.locator('[data-free-entry-landing="dao"] a[data-compact-channel]').count(),2,
+              "Saved Dao receipt offers both optional channels without another CRM write");
           }
           if (name === "chromium" && width === 390 && locale === "en") {
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
