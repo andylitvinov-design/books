@@ -36,7 +36,7 @@ test('only verified private Telegram owner commands are recognized',()=>{
   assert.equal(parseOwnerAiUpdate({update_id:'not a number',message:base.message},now),null)
 })
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
-  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['audio','materials','ai','verify','all','status','gemini','free','free2','council','cancel'])
+  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['audio','materials','combine','done','ai','verify','all','status','gemini','free','free2','council','cancel'])
   const live=ownerAiMenu({gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
   assert.deepEqual(buttons,['hh-audio:help','hh-ai:all','hh-ai:gemini','hh-ai:free','hh-ai:verify','hh-ai:status'])
