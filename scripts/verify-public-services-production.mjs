@@ -128,7 +128,7 @@ try {
       assert.equal(await paid.locator('[data-services-studio-card]').count(), 6);
       const monthlySupport = paid.locator('[data-services-studio-card="monthly-support"]');
       await visible(monthlySupport);
-      await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : "€200 / month");
+      await expect(monthlySupport).toContainText(locale === "ru" ? "€200 / месяц" : locale === "es" ? "200 € / mes" : "€200 / month");
       assert.equal(await monthlySupport.locator('[data-services-studio-action="monthly-support"]').getAttribute("href"),
         "/" + locale + "/services/personal-support", "Approved monthly support must reach its own terms page");
       assert.equal(await page.locator("#find-your-service").count(), 0,
@@ -218,7 +218,12 @@ try {
         if (await businessAction.isVisible()) await businessAction.click();
         else await showcase.locator('[data-services-kind="business"]').click();
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
-        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
+        // Business has TWO approved offers: a one-off consultation and €200/month support.
+        // Keep both discoverable; do not hide the support card to satisfy an obsolete count.
+        const businessOffers = page.locator('[data-services-studio-paid] [data-services-studio-card]:visible');
+        await expect(businessOffers).toHaveCount(2);
+        await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
+        await expect(monthlySupport).toBeVisible();
         await showcase.locator('[data-services-mode="toronto"]').click();
         await expect(page.locator("[data-services-studio-free]")).toBeHidden();
         await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
