@@ -274,7 +274,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   const toggleProfileScale = (key) => {
     if (activeProfile && !activeProfile.axes.includes(key)) return
     setAxes((current) => toggle(activeProfile ? profileAxisSelection(profile, current) : current, key))
-    setSelectedKeys([]); setSimpleSelectionChanged(false); setAxisFilter(null)
+    // Adding another scale must keep tests explicitly checked for earlier scales.
+    setAxisFilter(null)
   }
   const [browseFull, setBrowseFull] = useState(Boolean(initialBrowseFull))
   const [simpleSelectionChanged, setSimpleSelectionChanged] = useState(false)
@@ -466,7 +467,7 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
   if (simpleMode && !browseFull) {
     return <SimpleTestPicker
       locale={locale} authenticated={authenticated}
-      profile={profile} onSelectProfile={selectProfile} selectedScales={axes} onToggleScale={toggleProfileScale} onSetScales={(next) => { setAxes(profileAxisSelection(profile, next)); setSelectedKeys([]); setSimpleSelectionChanged(false) }}
+      profile={profile} onSelectProfile={selectProfile} selectedScales={axes} onToggleScale={toggleProfileScale} onSetScales={(next) => setAxes(profileAxisSelection(profile, next))}
       initialMode={initialMode}
       focus={focus}
       onToggleFocus={(key) => { setFocus((current) => toggle(current, key)); setAvailability('available') }}
@@ -574,8 +575,8 @@ export function TestExplorer({ locale = 'en', audience = 'guest', onStart, onSta
             </button>)}
           </div>
           <div className={styles.lifeScaleActions}>
-            <button type="button" onClick={() => { setAxes([...activeProfile.axes]); setSelectedKeys([]); setSimpleSelectionChanged(false) }}>{locale === 'ru' ? 'Выбрать все' : locale === 'es' ? 'Seleccionar todas' : 'Select all'}</button>
-            <button type="button" onClick={() => { setAxes([]); setSelectedKeys([]); setSimpleSelectionChanged(false) }}>{locale === 'ru' ? 'Снять все' : locale === 'es' ? 'Quitar todas' : 'Clear all'}</button>
+            <button type="button" onClick={() => { setAxes([...activeProfile.axes]) }}>{locale === 'ru' ? 'Выбрать все' : locale === 'es' ? 'Seleccionar todas' : 'Select all'}</button>
+            <button type="button" onClick={() => { setAxes([...activeProfile.axes]) }}>{locale === 'ru' ? 'Снять все' : locale === 'es' ? 'Quitar todas' : 'Clear all'}</button>
             <span>{axes.length} / {activeProfile.axes.length}</span>
           </div>
         </div>}
