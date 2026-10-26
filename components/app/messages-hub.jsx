@@ -1,5 +1,5 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useCallback,useEffect,useState} from 'react'
 import {ClipboardList,MessageCircle,ShieldCheck} from 'lucide-react'
 import DirectMessageInbox from './direct-message-inbox'
 import CrmMessengerPanel from './crm-messenger'
@@ -32,13 +32,16 @@ export default function MessagesHub({locale='en'}){
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
   const [unauthenticated,setUnauthenticated]=useState(false)
+  const [crmSummary,setCrmSummary]=useState(null)
+  const [crmThreadToOpen,setCrmThreadToOpen]=useState('')
+  const onCrmThreads=useCallback(summary=>setCrmSummary(summary),[])
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
     setTab(params.has('to')?'chats':VALID_TABS.has(params.get('tab'))?params.get('tab'):'chats')
   },[])
   useEffect(()=>{
     const controller=new AbortController()
-    setLoading(true);setError('');setUnauthenticated(false);setData(null)
+    setLoading(true);setError('');setUnauthenticated(false);setData(null);setCrmSummary(null);setCrmThreadToOpen('')
     fetch('/api/app/messages/requests',{credentials:'same-origin',cache:'no-store',signal:controller.signal})
       .then(async response=>{
         const result=await response.json().catch(()=>({}))
@@ -66,6 +69,12 @@ export default function MessagesHub({locale='en'}){
     else url.searchParams.delete('tab')
     window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
   }
+  const openCrmThread=id=>{
+    if(!data?.ownerMessenger||!/^[0-9a-f-]{36}$/i.test(id))return
+    setCrmThreadToOpen(id)
+    switchTab('chats')
+    requestAnimationFrame(()=>document.getElementById('hh-owner-crm-inbox')?.scrollIntoView({block:'start'}))
+  }
   return <div className={styles.hub} data-messages-hub>
     <div className={styles.hero}>
       <div className={styles.icon}><MessageCircle aria-hidden="true"/></div>
@@ -87,8 +96,6 @@ export default function MessagesHub({locale='en'}){
             document.getElementById('hh-inbox-tab-'+next)?.focus()
           }}>
           <Icon size={19} aria-hidden="true"/><span>{label}</span>
-          {id==='requests'&&data&&data.requests.length+data.businessEnquiries.length>0&&
-            <span className={styles.count}>{data.requests.length+data.businessEnquiries.length}</span>}
         </button>)}
     </div>
     <section id="hh-inbox-panel-chats" role="tabpanel" aria-labelledby="hh-inbox-tab-chats"
@@ -97,7 +104,8 @@ export default function MessagesHub({locale='en'}){
         <div className={styles.crmTitle}><MessageCircle size={19} aria-hidden="true"/>
           <h2 id="hh-owner-crm-inbox">{t.crm}</h2></div>
         <p>{t.crmHint}</p>
-        <CrmMessengerPanel key={data.accountId} locale={locale} accountId={data.accountId}/>
+        <CrmMessengerPanel key={data.accountId} locale={locale} accountId={data.accountId}
+          onThreadsLoaded={onCrmThreads} initialThreadId={crmThreadToOpen}/>
       </section>}
       <section className={styles.direct} aria-label={t.direct}>
         {data?.ownerMessenger&&<h2 className={styles.directTitle}>{t.direct}</h2>}
@@ -117,7 +125,9 @@ export default function MessagesHub({locale='en'}){
       {loading?<p className={styles.note} role="status">{t.loading}</p>:error?
         <p className={styles.note} role="alert">{unauthenticated?
           <a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a>:error}</p>:
-        <MessagesClientRequests data={data} locale={locale} onReload={()=>setRefreshKey(v=>v+1)}/>}
+        <MessagesClientRequests data={data} locale={locale} onReload={()=>setRefreshKey(v=>v+1)}
+          onOpenCrmThread={openCrmThread}
+          crmState={crmSummary||{loading:Boolean(data?.ownerMessenger),error:false,threads:[],partial:false}}/>}
     </section>
   </div>
 }

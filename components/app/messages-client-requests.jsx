@@ -22,7 +22,10 @@ const COPY={
     failed:'Could not update this request. Please retry.',business:'Business consulting enquiries',
     businessHint:'Owner-only enquiries from the business form, with their existing CRM status and reply options.',
     onboarding:'Publish a practitioner service to receive client enquiries.',
-    start:'Open My Practice',unavailable:'Some owner CRM enquiries could not be loaded. Review them in My Practice.'},
+    start:'Open My Practice',unavailable:'Some owner CRM enquiries could not be loaded. Review them in My Practice.',
+    crmLeads:'Telegram & messenger enquiries',crmHint:'Only existing consented CRM conversations. Private message text is not shown in this list.',
+    crmOpen:'Open conversation',crmWaiting:'Waiting for your reply',crmRecent:'Showing the latest 30 CRM conversations; open CRM for older history.',
+    crmLoading:'Checking CRM conversations…',crmError:'CRM conversations are unavailable. Try the owner messenger.'},
   ru:{title:'Заявки клиентов',hint:'Заявки на услуги и последующие обращения к вашей практике.',
     new:'Новые',need:'Требуют внимания',all:'Все',empty:'Пока нет заявок',
     emptyInfo:'Когда клиент действительно отправит заявку, она появится здесь.',
@@ -35,7 +38,10 @@ const COPY={
     failed:'Не удалось обновить заявку. Повторите попытку.',business:'Заявки на бизнес-консалтинг',
     businessHint:'Личные заявки владельца с существующими статусами и способами ответа в CRM.',
     onboarding:'Разместите свою услугу, чтобы получать обращения клиентов.',
-    start:'Открыть Мою практику',unavailable:'Часть заявок CRM недоступна. Проверьте их в Моей практике.'},
+    start:'Открыть Мою практику',unavailable:'Часть заявок CRM недоступна. Проверьте их в Моей практике.',
+    crmLeads:'Обращения Telegram и мессенджеров',crmHint:'Только существующие диалоги CRM. Личный текст сообщений не показывается в списке.',
+    crmOpen:'Открыть переписку',crmWaiting:'Ожидает вашего ответа',crmRecent:'Показаны последние 30 диалогов CRM. Более ранние откройте в CRM.',
+    crmLoading:'Проверяем обращения CRM…',crmError:'Диалоги CRM сейчас недоступны. Проверьте мессенджер владельца.'},
   es:{title:'Solicitudes de clientes',hint:'Consultas y seguimiento de tus servicios.',
     new:'Nuevas',need:'Pendientes',all:'Todas',empty:'Todavía no hay solicitudes',
     emptyInfo:'Las solicitudes enviadas aparecerán aquí.',choose:'Elige una solicitud para verla',
@@ -47,7 +53,10 @@ const COPY={
     failed:'No se pudo actualizar la solicitud.',business:'Consultas de negocio',
     businessHint:'Consultas privadas del propietario y opciones actuales del CRM.',
     onboarding:'Publica un servicio para recibir consultas.',start:'Abrir Mi práctica',
-    unavailable:'Algunas consultas del CRM no están disponibles.'},
+    unavailable:'Algunas consultas del CRM no están disponibles.',
+    crmLeads:'Solicitudes de Telegram y mensajería',crmHint:'Solo conversaciones CRM existentes. No se muestra el texto privado.',
+    crmOpen:'Abrir conversación',crmWaiting:'Esperando respuesta',crmRecent:'Últimas 30 conversaciones CRM. Abre el CRM para ver más.',
+    crmLoading:'Revisando conversaciones CRM…',crmError:'Conversaciones CRM no disponibles. Abre el buzón del propietario.'},
 }
 function dateOf(value,locale){
   const time=Date.parse(value||'')
@@ -71,7 +80,7 @@ const incomingSort=(a,b)=>Number(b.needsReply)-Number(a.needsReply)||
   Number(b.status==='requested')-Number(a.status==='requested')||
   (Date.parse(b.lastConversationAt||b.createdAt||'')||0)-(Date.parse(a.lastConversationAt||a.createdAt||'')||0)
 
-export default function MessagesClientRequests({data,locale='en',onReload}){
+export default function MessagesClientRequests({data,locale='en',onReload,onOpenCrmThread,crmState={loading:false,error:false,threads:[],partial:false}}){
   const t=COPY[locale]||COPY.en
   const [filter,setFilter]=useState('open')
   const [selectedId,setSelectedId]=useState('')
@@ -79,11 +88,13 @@ export default function MessagesClientRequests({data,locale='en',onReload}){
   const [error,setError]=useState('')
   const requests=useMemo(()=>[...(data.requests||[])].sort(incomingSort),[data.requests])
   const business=data.businessEnquiries||[]
+  const crmLeads=crmState.threads.filter(item=>item.lifecycle==='lead')
+  const visibleCrm=crmLeads.filter(item=>filter==='all'||(filter==='new'?item.unreadCount>0:item.needsReply))
   const openCount=requests.filter(r=>OPEN.has(r.status)).length+
-    business.filter(r=>['new','contacted'].includes(r.status)).length
-  const total=requests.length+business.length
+    business.filter(r=>['new','contacted'].includes(r.status)).length+crmLeads.filter(r=>r.needsReply).length
+  const total=requests.length+business.length+crmLeads.length
   const newCount=requests.filter(r=>r.status==='requested').length+
-    business.filter(r=>r.status==='new').length
+    business.filter(r=>r.status==='new').length+crmLeads.filter(r=>r.unreadCount>0).length
   const visible=requests.filter(r=>filter==='all'||(filter==='new'?r.status==='requested':OPEN.has(r.status)))
   const visibleBusiness=business.filter(r=>filter==='all'||(filter==='new'?r.status==='new':['new','contacted'].includes(r.status)))
   const selected=visible.find(item=>item.id===selectedId)||visible[0]||null
@@ -123,10 +134,10 @@ export default function MessagesClientRequests({data,locale='en',onReload}){
     </div>
     {error&&<p role="alert" className={styles.alert}>{error}</p>}
     {data.businessUnavailable&&<p role="alert" className={styles.alert}>{t.unavailable}</p>}
-    {!data.hasPractice&&total===0?<div className={styles.empty}>
+    {!data.hasPractice&&total===0&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
       <Inbox size={32} aria-hidden="true"/><h3>{t.empty}</h3><p>{t.onboarding}</p>
       <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.start} <ArrowRight size={16}/></Link>
-    </div>:!visible.length&&!visibleBusiness.length?<div className={styles.empty}>
+    </div>:!visible.length&&!visibleBusiness.length&&!visibleCrm.length&&!crmState.loading&&!crmState.error?<div className={styles.empty}>
       <CheckCircle2 size={32} aria-hidden="true"/><h3>{t.empty}</h3><p>{t.emptyInfo}</p>
     </div>:null}
     {visible.length>0&&<div className={styles.requestLayout}>
@@ -177,6 +188,32 @@ export default function MessagesClientRequests({data,locale='en',onReload}){
         </div>}
       </article>}
     </div>}
+    {data.ownerMessenger&&<section className={styles.crmLeads} aria-label={t.crmLeads}>
+      <div className={styles.crmLeadsHead}>
+        <div><h3>{t.crmLeads} <small>({crmLeads.length})</small></h3><p>{t.crmHint}</p></div>
+        <MessageCircle size={20} aria-hidden="true"/>
+      </div>
+      {crmState.loading&&<p className={styles.note} role="status">{t.crmLoading}</p>}
+      {crmState.error&&<p className={styles.note} role="alert">{t.crmError}</p>}
+      {visibleCrm.length>0&&<ul className={styles.crmLeadList}>
+        {visibleCrm.map(thread=><li key={thread.id}>
+          <div className={styles.crmLeadPerson}>
+            <span className={styles.requestAvatar} aria-hidden="true">{String(thread.name||'?').slice(0,1).toUpperCase()}</span>
+            <div><strong>{thread.name||t.unnamed}</strong>
+              <small>{thread.channel==='telegram'?'Telegram':thread.channel==='whatsapp'?'WhatsApp':
+                thread.channel==='instagram'?'Instagram':'Messenger'}
+                {thread.lastMessageAt?' · '+dateOf(thread.lastMessageAt,locale):''}</small>
+              {thread.needsReply&&<small className={styles.replyDue}>{t.crmWaiting}</small>}
+            </div>
+          </div>
+          <button type="button" onClick={()=>onOpenCrmThread?.(thread.id)}>
+            {t.crmOpen} <ArrowRight size={15} aria-hidden="true"/>
+            {thread.unreadCount>0&&<span className={styles.count}>{thread.unreadCount}</span>}
+          </button>
+        </li>)}
+      </ul>}
+      {crmState.partial&&<p className={styles.note}>{t.crmRecent}</p>}
+    </section>}
     {visibleBusiness.length>0&&data.ownerMessenger&&<section className={styles.business}>
       <details open={!visible.length}>
         <summary><ClipboardList size={18} aria-hidden="true"/>{t.business}<span>{visibleBusiness.length}</span></summary>
