@@ -704,6 +704,12 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           </div>
         </div>
         <p className={styles.reviewFoot}><LockKeyhole size={16} aria-hidden="true" />{t.readyFoot}</p>
+        <details className={styles.swot}>
+          <summary>{t.swotTitle}<ChevronDown size={17} aria-hidden="true" /></summary>
+          <div className={styles.swotGrid}>{t.swot.map(item =>
+            <div key={item[0]}><strong>{item[0]}</strong><p>{item[1]}</p></div>)}</div>
+          <p className={styles.swotNote}>{t.swotNote}</p>
+        </details>
       </section>}
 
       <div className={styles.actions}>
