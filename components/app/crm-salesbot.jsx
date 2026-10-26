@@ -2,8 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  SALESBOT_TEMPLATES, SALESBOT_TOPICS,
+  SALESBOT_TEMPLATES, SALESBOT_TOPICS, SALESBOT_OFFER_IDS,
 } from '../../lib/crm/salesbot-flow.mjs'
+import {
+  SALESBOT_EDITOR_NODE_TYPES, salesbotEditorEdges, insertSalesbotStep,
+  addSalesbotChoice, removeSalesbotChoice, setSalesbotTopicCondition,
+  setSalesbotOfferTarget, removeSalesbotLinearStep, importSalesbotJson,
+} from '../../lib/crm/salesbot-editor.mjs'
 import styles from './crm-salesbot.module.css'
 import CrmSalesbotDraftControls from './crm-salesbot-drafts'
 
@@ -27,6 +32,13 @@ const LABELS = {
     waiting: 'Choose a simulated visitor answer:', completed: 'Preview completed.',
     empty: 'Press “Run safe preview” to walk through this flow without sending anything.',
     onlyPreview: 'Simulation. Following a link opens an existing page; no contact is created by the preview.',
+    graphTitle: 'Build conversation', graphPath: 'After this path', graphType: 'Next step',
+    graphAdd: 'Add step', graphRemove: 'Remove step', graphInvalid: 'Graph change was rejected: it would break the flow or exceed limits.',
+    graphChoiceAdd: 'Add response button', graphChoiceRemove: 'Remove this answer',
+    graphTopic: 'Condition: visitor topic', graphOffer: 'Recommended existing offer',
+    importTitle: 'Import a validated scenario', importPlaceholder: 'Paste a JSON scenario (no code execution)',
+    importAction: 'Validate and load JSON', importError: 'JSON is invalid or contains unsupported actions.',
+    customTemplate: 'Saved or imported scenario',
     open: 'Open existing page', answerSelected: 'Changing a step resets the preview.',
     chooseTopic: {
       direction: 'Direction', work: 'Business & work', stress: 'Stress',
@@ -53,6 +65,13 @@ const LABELS = {
     waiting: 'Выберите ответ тестового посетителя:', completed: 'Тестовый сценарий завершён.',
     empty: 'Нажмите «Проверить сценарий». Это не отправляет сообщения клиентам.',
     onlyPreview: 'Симуляция. Ссылка ведёт на действующую страницу, но не создаёт контакт в CRM.',
+    graphTitle: 'Собрать сценарий', graphPath: 'После какой ветки', graphType: 'Следующий шаг',
+    graphAdd: 'Добавить шаг', graphRemove: 'Убрать шаг', graphInvalid: 'Изменение отклонено: нарушаются связи сценария или лимиты.',
+    graphChoiceAdd: 'Добавить вариант ответа', graphChoiceRemove: 'Удалить вариант',
+    graphTopic: 'Условие: тема запроса', graphOffer: 'Подтверждённое предложение',
+    importTitle: 'Импорт проверенного сценария', importPlaceholder: 'Вставьте JSON сценария (код не выполняется)',
+    importAction: 'Проверить и загрузить JSON', importError: 'Ошибка JSON или запрещённые действия в сценарии.',
+    customTemplate: 'Сохранённый или импортированный сценарий',
     open: 'Открыть страницу', answerSelected: 'Редактирование сбросит текущий предпросмотр.',
     chooseTopic: {
       direction: 'Выбор пути', work: 'Работа и бизнес', stress: 'Стресс',
@@ -79,6 +98,13 @@ const LABELS = {
     waiting: 'Elige una respuesta simulada:', completed: 'La prueba ha terminado.',
     empty: 'Pulsa «Probar sin enviar» para recorrer el escenario.',
     onlyPreview: 'Simulación. Abrir un enlace no crea un contacto ni una reserva.',
+    graphTitle: 'Crear conversación', graphPath: 'Después de esta rama', graphType: 'Siguiente paso',
+    graphAdd: 'Agregar paso', graphRemove: 'Eliminar paso', graphInvalid: 'Cambio rechazado: flujo no válido o límite alcanzado.',
+    graphChoiceAdd: 'Agregar respuesta', graphChoiceRemove: 'Eliminar esta respuesta',
+    graphTopic: 'Condición: tema', graphOffer: 'Oferta existente',
+    importTitle: 'Importar un escenario validado', importPlaceholder: 'Pega JSON (no se ejecuta código)',
+    importAction: 'Validar y cargar JSON', importError: 'JSON no válido o contiene acciones no permitidas.',
+    customTemplate: 'Escenario guardado o importado',
     open: 'Abrir página', answerSelected: 'Editar reinicia la simulación.',
     chooseTopic: {
       direction: 'Dirección', work: 'Negocio y trabajo', stress: 'Estrés',
@@ -101,6 +127,9 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
+  const [insertType, setInsertType] = useState('say')
+  const [insertPath, setInsertPath] = useState('next')
+  const [importText, setImportText] = useState('')
   const controllerRef = useRef(null)
   const sessionRef = useRef(null)
 
@@ -142,6 +171,29 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
     setFlow(draft)
     setTemplateId(draft.id)
     setSelectedNodeId(draft.nodes.find(node => node.text)?.id || draft.start)
+  }
+  function applyEdit(edit) {
+    try {
+      const changed = edit(flow)
+      const nextFlow = changed.flow || changed
+      cancelPreview()
+      setFlow(nextFlow)
+      setSelectedNodeId(changed.selectedNodeId || selected.id)
+    } catch {
+      setNotice(t.graphInvalid)
+    }
+  }
+  function importScenario() {
+    try {
+      const graph = importSalesbotJson(importText)
+      cancelPreview()
+      setFlow(graph)
+      setTemplateId(graph.id)
+      setSelectedNodeId(graph.nodes.find(node => node.text)?.id || graph.start)
+      setImportText('')
+    } catch {
+      setNotice(t.importError)
+    }
   }
   function changeText(nodeId, text, optionId = null) {
     cancelPreview()
@@ -203,6 +255,9 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
   }
   const selected = flow.nodes.find(node => node.id === selectedNodeId) || flow.nodes[0]
   const isEditable = Boolean(selected.text)
+  const outgoing = salesbotEditorEdges(selected)
+  const activePath = outgoing.includes(insertPath) ? insertPath : outgoing[0] || ''
+  const inDefaultTemplates = SALESBOT_TEMPLATES.some(template => template.id === templateId)
   return <section className={styles.root} aria-labelledby="hh-salesbot-title" data-salesbot-mode="dry_run">
     <header className={styles.head}>
       <div>
@@ -218,6 +273,7 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
     <div className={styles.controls}>
       <label>{t.template}
         <select value={templateId} onChange={e => chooseTemplate(e.target.value)}>
+          {!inDefaultTemplates && <option value={templateId}>{t.customTemplate} · {flow.title[lang]}</option>}
           {SALESBOT_TEMPLATES.map(template => <option key={template.id} value={template.id}>
             {template.title[lang]}
           </option>)}
@@ -264,12 +320,68 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
             <textarea rows={4} maxLength={360} value={selected.text[editingLocale]}
               onChange={e => changeText(selected.id, e.target.value)} />
           </label>
-          {selected.type === 'choice' && selected.options.map(option => <label key={option.id}>{option.id}
-            <input maxLength={360} value={option.text[editingLocale]}
-              onChange={e => changeText(selected.id, e.target.value, option.id)} />
-          </label>)}
-          {selected.type === 'offer' && <p className={styles.note}>{t.offer}: <code>{selected.offer}</code></p>}
+          {selected.type === 'choice' && <>
+            {selected.options.map(option => <div className={styles.choiceEdit} key={option.id}>
+              <label>{option.id}
+                <input maxLength={360} value={option.text[editingLocale]}
+                  onChange={e => changeText(selected.id, e.target.value, option.id)} />
+              </label>
+              {selected.options.length > 2 && <button type="button" className={styles.secondary}
+                aria-label={t.graphChoiceRemove + ' ' + option.id}
+                onClick={() => applyEdit(current => removeSalesbotChoice(current, selected.id, option.id))}>
+                {t.graphChoiceRemove}
+              </button>}
+            </div>)}
+            {selected.options.length < 5 && <button type="button" className={styles.secondary}
+              onClick={() => applyEdit(current => addSalesbotChoice(current, selected.id))}>
+              {t.graphChoiceAdd}
+            </button>}
+          </>}
+          {selected.type === 'offer' && <label>{t.graphOffer}
+            <select value={selected.offer}
+              onChange={e => applyEdit(current => setSalesbotOfferTarget(current, selected.id, e.target.value))}>
+              {SALESBOT_OFFER_IDS.map(id => <option key={id} value={id}>{id.replaceAll('_', ' ')}</option>)}
+            </select>
+          </label>}
         </> : <p className={styles.note}>{t.noEditable}</p>}
+        {selected.type === 'branch' && <label>{t.graphTopic}
+          <select value={selected.equals}
+            onChange={e => applyEdit(current => setSalesbotTopicCondition(current, selected.id, e.target.value))}>
+            {SALESBOT_TOPICS.map(topic => <option key={topic} value={topic}>{t.chooseTopic[topic]}</option>)}
+          </select>
+        </label>}
+        <div className={styles.graphTools}>
+          <h4>{t.graphTitle}</h4>
+          {!!outgoing.length && <>
+            <label>{t.graphPath}
+              <select value={activePath} onChange={e => setInsertPath(e.target.value)}>
+                {outgoing.map(slot => <option key={slot} value={slot}>{slot.replace('choice:', '')}</option>)}
+              </select>
+            </label>
+            <label>{t.graphType}
+              <select value={insertType} onChange={e => setInsertType(e.target.value)}>
+                {SALESBOT_EDITOR_NODE_TYPES.map(type => <option key={type} value={type}>{t.types[type]}</option>)}
+              </select>
+            </label>
+            <button type="button" className={styles.actionButton}
+              onClick={() => applyEdit(current => insertSalesbotStep(current, {
+                nodeId: selected.id, slot: activePath, type: insertType,
+              }))}>{t.graphAdd}</button>
+          </>}
+          {['say', 'offer', 'handoff'].includes(selected.type) &&
+            <button type="button" className={styles.secondary}
+              onClick={() => applyEdit(current => ({
+                flow: removeSalesbotLinearStep(current, selected.id), selectedNodeId: current.start,
+              }))}>{t.graphRemove}</button>}
+        </div>
+        <details className={styles.importPanel}>
+          <summary>{t.importTitle}</summary>
+          <textarea rows={4} maxLength={24576} aria-label={t.importTitle}
+            placeholder={t.importPlaceholder} value={importText}
+            onChange={e => setImportText(e.target.value)} />
+          <button type="button" className={styles.actionButton} disabled={!importText.trim()}
+            onClick={importScenario}>{t.importAction}</button>
+        </details>
         <p className={styles.note}>{t.explain}</p>
         <button type="button" className={styles.secondary} onClick={copyJson}>{t.copy}</button>
       </div>
