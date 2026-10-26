@@ -24,7 +24,7 @@ const copy = {
     title: "Your free personal review", stepOf: "Step", of: "of", steps: ["Contact", "Question", "Photo", "Save", "Drawing", "Ready"],
     contact: "How can Andrey reach you?", intro: "Start with a phone number and one short question. No Google account or payment needed.",
     name: "Your name (optional)", phone: "Phone number (with country code)",
-    question: "What would you like to explore?", questionHint: "One or two sentences are enough. Please do not include test results or medical records.",
+    question: "What would you like to explore?", questionHint: "Briefly describe your question (no medical details).",
     consent: "I agree to save my contact and question securely for one personal reply from Andrey. No marketing.",
     request: "Submit my free request", saving: "Saving…", invalidPhone: "Enter an international phone number, e.g. +1 416 555 0123.",
     invalid: "Add a short question and agree to one personal reply.", error: "We could not confirm saving. Retry without changing your original request.",
@@ -55,7 +55,7 @@ const copy = {
     title: "Ваша бесплатная диагностика", stepOf: "Шаг", of: "из", steps: ["Контакт", "Запрос", "Фото", "Сохранить", "Рисунок", "Готово"],
     contact: "Как с вами связаться?", intro: "Оставьте телефон и кратко опишите вопрос. Регистрация Google и оплата не нужны.",
     name: "Как к вам обращаться? (необязательно)", phone: "Телефон с кодом страны",
-    question: "В чём суть вашего вопроса?", questionHint: "Достаточно одного-двух предложений. Не прикладывайте анализы или результаты тестов.",
+    question: "В чём суть вашего вопроса?", questionHint: "Кратко опишите вопрос (без медицинских данных).",
     consent: "Согласен(на) сохранить контакт и вопрос для одного личного ответа Андрея. Без рассылок.",
     request: "Оформить бесплатную заявку", saving: "Сохраняем…", invalidPhone: "Введите номер с кодом страны, например +1 416 555 0123.",
     invalid: "Кратко опишите вопрос и подтвердите согласие на один ответ.", error: "Не удалось подтвердить сохранение. Повторите без изменения исходной заявки.",
@@ -86,7 +86,7 @@ const copy = {
     title: "Tu revisión personal gratuita", stepOf: "Paso", of: "de", steps: ["Contacto", "Pregunta", "Foto", "Guardar", "Dibujo", "Listo"],
     contact: "¿Cómo puede contactarte Andrey?", intro: "Deja tu teléfono y una pregunta breve. No necesitas Google ni pagar.",
     name: "Tu nombre (opcional)", phone: "Teléfono con prefijo del país",
-    question: "¿Cuál es tu consulta?", questionHint: "Bastan una o dos frases. No adjuntes resultados de pruebas ni documentos médicos.",
+    question: "¿Cuál es tu consulta?", questionHint: "Describe tu consulta brevemente (sin datos médicos).",
     consent: "Acepto guardar mi contacto y pregunta para una respuesta personal de Andrey. Sin publicidad.",
     request: "Enviar solicitud gratuita", saving: "Guardando…", invalidPhone: "Introduce tu número internacional, p. ej. +1 416 555 0123.",
     invalid: "Describe tu consulta brevemente y acepta una respuesta personal.", error: "No pudimos confirmar el guardado. Vuelve a intentar sin cambiar la solicitud.",
@@ -398,7 +398,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
     pagePath: "/" + locale + "/services/free-situation-review",
   }) : "";
 
-  return <section className={styles.root} data-free-express-wizard aria-label={t.title} lang={locale}>
+  return <section className={styles.root} data-free-express-wizard data-free-express-step={step} aria-label={t.title} lang={locale}>
     <div className={styles.progressWrap}>
       <p className={styles.currentStep} role="status">{t.stepOf} {visibleStepNumber} {t.of} {shownSteps.length} <strong>{t.steps[step]}</strong></p>
       <div className={styles.progress} aria-label={t.title}
