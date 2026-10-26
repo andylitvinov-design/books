@@ -165,7 +165,8 @@ export default function MessagesSimpleInbox({
       const height=availableInboxHeight({
         visualBottom:bottom,windowTop:top,navigationTop:navTop,gutter:8,
       })
-      if(height!==null)windowElement.style.setProperty('--hh-mobile-window-height',height+'px')
+      if(height!==null&&windowElement.style.getPropertyValue('--hh-mobile-window-height')!==height+'px')
+        windowElement.style.setProperty('--hh-mobile-window-height',height+'px')
     }
     const requestUpdate=()=>{
       if(frame)window.cancelAnimationFrame(frame)
