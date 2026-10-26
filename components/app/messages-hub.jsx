@@ -3,6 +3,7 @@ import {useCallback,useEffect,useState} from 'react'
 import {ArrowRight,ClipboardList,MessageCircle,ShieldCheck} from 'lucide-react'
 import DirectMessageInbox from './direct-message-inbox'
 import CrmMessengerPanel from './crm-messenger'
+import MessagesSimpleInbox from './messages-simple-inbox'
 import MessagesClientRequests from './messages-client-requests'
 import styles from './messages-hub.module.css'
 
@@ -30,6 +31,7 @@ export default function MessagesHub({locale='en'}){
   const [refreshKey,setRefreshKey]=useState(0)
   const [data,setData]=useState(null)
   const [ownerInfo,setOwnerInfo]=useState(null)
+  const [ownerBootstrapPending,setOwnerBootstrapPending]=useState(true)
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
   const [unauthenticated,setUnauthenticated]=useState(false)
@@ -45,7 +47,7 @@ export default function MessagesHub({locale='en'}){
     const controller=new AbortController()
     // Separate fast owner permission read from expensive practice/business data.
     // Both routes authenticate on the server and use no-store private responses.
-    setOwnerInfo(null);setBootstrapSignInRequired(false)
+    setOwnerInfo(null);setBootstrapSignInRequired(false);setOwnerBootstrapPending(true)
     fetch('/api/app/messages/requests?view=owner',{
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
     }).then(async response=>{
@@ -55,6 +57,7 @@ export default function MessagesHub({locale='en'}){
       return typeof value.accountId==='string'&&typeof value.ownerMessenger==='boolean'?value:null
     }).then(result=>{if(!controller.signal.aborted)setOwnerInfo(result)})
       .catch(()=>{if(!controller.signal.aborted)setOwnerInfo(null)})
+      .finally(()=>{if(!controller.signal.aborted)setOwnerBootstrapPending(false)})
     return()=>controller.abort()
   },[refreshKey])
   useEffect(()=>{
@@ -109,6 +112,16 @@ export default function MessagesHub({locale='en'}){
     switchTab('chats')
     requestAnimationFrame(()=>document.getElementById('hh-owner-crm-inbox')?.scrollIntoView({block:'start'}))
   }
+  // The owner works in ONE messenger window: people on the left, the chosen
+  // authenticated conversation/request on the right. Preserve the original
+  // first-party member inbox below for regular (non-owner) account sessions.
+  if(ownerAccountId)return <MessagesSimpleInbox locale={locale}
+    accountId={ownerAccountId} requests={requestData?.requests||[]}
+    businessEnquiries={requestData?.businessEnquiries||[]}
+    services={requestData?.services||[]}
+    websiteLoading={loading} websiteUnavailable={!usableData&&!loading}
+    onReload={()=>setRefreshKey(n=>n+1)}/>
+  if(ownerBootstrapPending&&!data)return <p className={styles.authNotice} role="status">{t.loading}</p>
   return <div className={styles.hub} data-messages-hub>
     <div className={styles.hero}>
       <div className={styles.icon}><MessageCircle aria-hidden="true"/></div>
