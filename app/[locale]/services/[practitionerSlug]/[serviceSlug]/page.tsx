@@ -46,10 +46,10 @@ export default async function ServiceDetail({params}:PageProps){
   const {service,practitioner}=value,ru=locale==="ru",es=locale==="es";
   // Show the Telegram option only for a truly published, approved offering.
   // A preview/submitted master must not promise a deliverable bot request.
-  const telegramOffering=service.status==="published"
+  const telegramBotCandidate=telegramServiceBotUrl(locale,service.id);
+  const telegramOffering=telegramBotCandidate
     ?await publishedTelegramOffering(getAppConfig(),service.id,locale):null;
-  const telegramBotHref=telegramOffering
-    ?telegramServiceBotUrl(locale,service.id):null;
+  const telegramBotHref=telegramOffering?telegramBotCandidate:null;
   const isWuXingGuide=service.slug==="free-wu-xing-diagnostic";
   const verified=practitioner.credentials.some((item)=>item.verificationStatus==="verified");
   const isFree=service.pricingMode==="free"||(service.pricingMode!=="contact"&&service.confirmedPrice===0);

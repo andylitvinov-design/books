@@ -10,6 +10,15 @@ create index if not exists public_service_enquiries_offering_created_idx
   on app.public_service_enquiries(service_offering_id,created_at desc)
   where service_offering_id is not null;
 
+-- A Telegram service handoff is a consent boundary: following chat messages
+-- must not fall through to Andrey's diagnostic CRM or to any other master.
+-- Only the published offering UUID is retained, never client health context.
+alter table app_private.crm_tg_diagnostic_sessions
+  add column if not exists service_handoff boolean not null default false;
+alter table app_private.crm_tg_diagnostic_sessions
+  add column if not exists service_offering_id uuid
+    references app.service_offerings(id) on delete set null;
+
 -- The existing policy restricts CRM contact inserts to Andrey. Add a *separate*
 -- tightly scoped policy for a committed request addressed to a different owner.
 -- Unlike checking an arbitrary service title, the FK ties the saved application
@@ -45,6 +54,8 @@ do $$ begin
           from pg_class where oid='app.crm_contacts'::regclass)
      or not (select relrowsecurity and relforcerowsecurity
           from pg_class where oid='app.public_service_enquiries'::regclass)
+     or not (select relrowsecurity and relforcerowsecurity
+          from pg_class where oid='app_private.crm_tg_diagnostic_sessions'::regclass)
   then raise exception 'Existing FORCE RLS required'; end if;
 end $$;
 commit;

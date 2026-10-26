@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import { normalizePublicServiceEnquiry } from '../lib/practitioners/public-service-enquiry-input.mjs'
 import {
  parseTelegramServiceStart,telegramServiceRequestUrl,telegramMasterDirectoryUrl,
  telegramServiceBotUrl,telegramServiceStartPrompt,
@@ -60,7 +61,13 @@ test('signed webhook sends only public link, with no booking or lead before expl
  const webhook=source('lib/crm/messenger-webhook.js')
  assert.match(webhook,/parseTelegramServiceStart\(event.rawText\)/)
  assert.match(webhook,/previous\?\.stage==='stopped'/)
+ assert.match(webhook,/previous\?\.service_handoff/)
+ assert.match(webhook,/service_handoff=false,service_offering_id=null/)
  assert.match(webhook,/last_update_id=excluded\.last_update_id/)
+ assert.match(webhook,/previous\?\.service_handoff/)
+ assert.match(webhook,/service_handoff=false,service_offering_id=null/)
+ assert.match(webhook,/service_handoff=true/)
+ assert.match(webhook,/telegramPublicStartRequested\(rawStop\)/)
  assert.match(webhook,/telegramServiceStartPrompt\(serviceStart,offering\)/)
  assert.match(webhook,/!telegramPublicStartRequested\(rawStop\)&&!serviceStart/)
 })
@@ -87,6 +94,8 @@ test('single encrypted enquiry and CRM lead target approved offering owner',()=>
  assert.match(server,/values\(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$10,\$11\)/)
  assert.match(server,/ownerId = practitioner\.owner_id/)
  assert.match(server,/on conflict do nothing/)
+ assert.match(server,/offering\?\.id \|\| null/)
+ assert.match(server,/service_offering_id\)/)
  assert.match(source('app/api/service-enquiries/route.js'),/requireSameOrigin\(request, config\)/)
 })
 
@@ -95,9 +104,16 @@ test('RLS contact grant only on matching committed published service and owner',
  assert.match(policy,/for insert to hh_app_backend/)
  assert.match(policy,/p\.trusted_auth_user_id\s*=\s*crm_contacts\.owner_id/)
  assert.match(policy,/e\.contact_ciphertext is not null/)
+ assert.match(policy,/e\.service_offering_id is not null/)
+ assert.match(policy,/join app\.service_offerings s on s\.id=e\.service_offering_id/)
+ assert.match(policy,/service_handoff boolean not null default false/)
+ assert.match(policy,/relforcerowsecurity/)
+ assert.doesNotMatch(policy,/drop policy|bypassrls|grant all/i)
  assert.match(policy,/e\.source_path\s*=\s*'\/' \|\| e\.locale \|\| '\/services\/telegram-request'/)
  assert.match(policy,/s\.status='published'/)
  assert.match(policy,/s\.practitioner_id=p\.id/)
+ assert.match(policy,/add column if not exists service_handoff/)
+ assert.match(policy,/add column if not exists service_offering_id/)
  assert.doesNotMatch(policy,/GRANT ALL|BYPASSRLS|security definer/i)
 })
 
@@ -112,4 +128,65 @@ test('public form is opt-in, retry idempotent, with server confirmed reference',
  assert.match(form,/\^HH-\[A-F0-9\]\{12\}\$/)
  assert.match(page,/if \(!offering\) notFound\(\)/)
  assert.match(page,/robots: \{index: false/)
+})
+
+
+test('public request validation enforces exact service, locale, contact and consent',()=>{
+ const value={operationId:'8d1e8173-7009-41ad-9e12-a2c411e54a25',
+   serviceOfferingId:fixtureId,serviceTitle:'Untrusted title',
+   description:'',sourcePath:'/ru/services/telegram-request',locale:'ru',
+   contact:{displayName:'Customer',email:'person@example.com',phone:''},
+   contactConsent:true}
+ const accepted=normalizePublicServiceEnquiry(value)
+ assert.equal(accepted.serviceOfferingId,fixtureId)
+ assert.equal(accepted.contact.email,'person@example.com')
+ assert.match(accepted.description,/Untrusted title/)
+ for(const patch of [
+  {contactConsent:false},
+  {serviceOfferingId:'00000000-0000-0000-0000-000000000000?to=other'},
+  {sourcePath:'/ru/app/practice'},
+  {sourcePath:'/en/services/telegram-request'},
+  {contact:{displayName:'Customer',email:'bad',phone:''}},
+  {practitionerId:'99999999-9999-4999-8999-999999999999'},
+ ]){
+  assert.throws(()=>normalizePublicServiceEnquiry({...value,...patch}))
+ }
+})
+
+test('service handoff cannot turn later client texts into Andy diagnostic messages',()=>{
+ const webhook=source('lib/crm/messenger-webhook.js')
+ const prior=webhook.indexOf("if(publicIntake&&previous?.service_handoff")
+ const ingest=webhook.indexOf("const saved=await ingestMessengerEventInTransaction(db,'telegram'")
+ assert.ok(prior>0&&ingest>prior)
+ const mode=webhook.slice(prior,ingest)
+ assert.match(mode,/if\(isStop\)/)
+ assert.match(mode,/crm_tg_suppress_existing/)
+ assert.match(mode,/return \{handled:true,to:String\(event.userId\),reply/)
+ assert.doesNotMatch(mode,/ingestMessengerEventInTransaction/)
+ assert.match(webhook,/service_handoff=false,service_offering_id=null/)
+})
+
+test('Telegram provider shows restricted inline URL and preserves diagnosis buttons',()=>{
+ const provider=source('lib/crm/messenger-provider.js')
+ const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
+ assert.match(route,/serviceRequestUrl:intake.serviceRequestUrl/)
+ assert.match(provider,/target.origin!=='https:\/\/holistichouse.vercel.app'/)
+ assert.match(provider,/target.searchParams.keys\(\)/)
+ assert.match(provider,/inline_keyboard/)
+ assert.match(provider,/url:serviceRequestUrl/)
+ assert.match(provider,/telegramInlineMarkup\(keyboard,locale\)/)
+})
+
+test('legacy service requests and same-origin route stay unchanged',()=>{
+ const input=source('lib/practitioners/public-service-enquiry-input.mjs')
+ const server=source('lib/practitioners/public-service-enquiry.js')
+ const route=source('app/api/service-enquiries/route.js')
+ assert.match(server,/const recipientId = practitioner.id/)
+ assert.match(server,/\[PRACTITIONER_ID\]/)
+ assert.match(input,/Only an explicitly submitted author questionnaire/)
+ assert.match(route,/requireSameOrigin\(request, config\)/)
+ const old={operationId:'8d1e8173-7009-41ad-9e12-a2c411e54a25',
+   serviceTitle:'Ordinary service',description:'Please contact me for session',
+   sourcePath:'/en/services/personal-support',locale:'en'}
+ assert.equal(normalizePublicServiceEnquiry(old).serviceTitle,'Ordinary service')
 })
