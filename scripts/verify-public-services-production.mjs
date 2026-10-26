@@ -183,13 +183,15 @@ try {
         "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
-      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/books"]');
-      await expect(booksEntry).toHaveCount(1);
-      await visible(booksEntry);
-      await expect(booksEntry).toHaveText(locale === "ru" ? "Идеи" : "Ideas");
-      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/books", "Books opens the locale-specific library books view");
-      const booksBounds = await booksEntry.boundingBox();
-      assert.ok(booksBounds && booksBounds.x >= 0 && booksBounds.x + booksBounds.width <= width + 1, "Books entry must fit the opened menu: " + locale + "/" + width);
+      // The canonical expanded-menu destination is the Library hub;
+      // /books remains a separate editorial route, not this menu entry.
+      const libraryEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/library"]');
+      await expect(libraryEntry).toHaveCount(1);
+      await visible(libraryEntry);
+      await expect(libraryEntry).toHaveText(locale === "ru" ? "Библиотека" : locale === "es" ? "Biblioteca" : "Library");
+      assert.equal(await libraryEntry.getAttribute("href"), "/" + locale + "/library", "Library opens the localized editorial hub");
+      const libraryBounds = await libraryEntry.boundingBox();
+      assert.ok(libraryBounds && libraryBounds.x >= 0 && libraryBounds.x + libraryBounds.width <= width + 1, "Library entry must fit the opened menu: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);
