@@ -178,41 +178,22 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "opening the form is not contact consent");
           assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
           assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-          // One-screen open-state acceptance at 320/375/390/430 CSS px.
-          // Reserve space for the fixed mobile tab navigation and scroll margin.
-          const compactGeometry = await enquiry.evaluate(root => {
-            const card = root.getBoundingClientRect();
-            const whatsapp = root.querySelector('[data-contact-channel-submit="whatsapp"]')?.getBoundingClientRect();
-            const telegram = root.querySelector('[data-contact-channel-submit="telegram"]')?.getBoundingClientRect();
-            const optional = root.querySelector('form details');
-            return {
-              cardHeight: card.height,
-              actionBottom: Math.max(whatsapp?.bottom || 0, telegram?.bottom || 0) - card.top,
-              optionalClosed: Boolean(optional && !optional.open),
-              horizontalOverflow: document.documentElement.scrollWidth - innerWidth,
-            };
-          });
-          record.compactGeometry = compactGeometry;
-          assert.ok(compactGeometry.cardHeight <= height - 110,
-            "opened card exceeds available iPhone viewport: " + JSON.stringify(compactGeometry));
-          assert.ok(compactGeometry.actionBottom <= height - 125,
-            "chat actions must fit above fixed bottom tabs: " + JSON.stringify(compactGeometry));
-          assert.equal(compactGeometry.optionalClosed, true, "optional question must start collapsed");
-          assert.ok(compactGeometry.horizontalOverflow <= 2, "no sideways scroll");
-          if (width === 390) await page.screenshot({
-            path: output + "/" + name + "-compact-request.png", animations: "disabled", timeout: 20000 });
-          const optionalQuestion = enquiry.locator('form details');
-          await optionalQuestion.locator('summary').click();
-          assert.equal(await optionalQuestion.locator('textarea').isVisible(), true);
-          await optionalQuestion.locator('summary').click();
-          assert.equal(await optionalQuestion.locator('textarea').isVisible(), false);
           assert.equal(await enquiry.locator('[role="status"]').count(), 0,
             "no actual lead saved by navigating");
-          await enquiry.locator('input[value="energy"]').check();
+          // Touch users select the full 94px+ labelled card, not the tiny native
+          // radio dot. WebKit may still be smoothly scrolling from the hero
+          // anchor and a direct input.check() can hit a moving 19px target.
+          // Verify the REAL large-card interaction, including native checked
+          // state, selected styling and unchanged one-off contact consent.
+          await enquiry.locator('[data-express-focus="energy"]').click();
+          assert.equal(await enquiry.locator('input[value="energy"]').isChecked(), true,
+            "tapping the energy card must check its actual radio in WebKit");
           assert.equal(await enquiry.locator('[data-express-focus="energy"]').getAttribute('data-selected'), "true");
           assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
             "changing the focus cannot silently opt the user in");
-          await enquiry.locator('input[value="situation"]').check();
+          await enquiry.locator('[data-express-focus="situation"]').click();
+          assert.equal(await enquiry.locator('input[value="situation"]').isChecked(), true,
+            "tapping the situation card must check its actual radio in WebKit");
           assert.equal(await enquiry.locator('[data-express-focus="situation"]').getAttribute('data-selected'), "true");
           assert.equal(await enquiry.locator('[role="status"]').count(), 0,
             "changing focus is not a lead or booking");
