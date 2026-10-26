@@ -711,12 +711,13 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 disabled={busy||threadLoading||!selected.reply.ok}
                 onClick={()=>{pendingRequest.current=null;setText(item.text);setShowQuickReplies(false)}}>{item.label}</button>)}
             </div>}
+            {(conversationOnly||compact)&&status&&<p className={styles.composeNotice} role="status">{status}</p>}
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
               maxLength={1200} rows={conversationOnly?2:compact?1:3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
-              }} placeholder={conversationOnly?t.reply:t.manual}/>
+              }} placeholder={conversationOnly||compact?t.reply:t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
               {compact&&!conversationOnly?<Send size={18} aria-hidden="true"/>:t.send}
@@ -726,7 +727,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
         </>}
       </div>
     </div>}
-    {status&&<p role="status" className={styles.notice}>{status}</p>}
+    {!conversationOnly&&!compact&&status&&<p role="status" className={styles.notice}>{status}</p>}
     {!compact&&!conversationOnly&&<p className={styles.disclaimer}>{t.manual}</p>}
   </section>
 }
