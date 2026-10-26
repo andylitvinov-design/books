@@ -4,15 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, HeartHandshake, HeartPulse, LockKeyhole, Sparkles } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
-import { recommendProfileBattery } from "@/lib/profile/profile-battery";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
-import { TEST_KINDS } from "@/lib/assessments/test-kinds";
+import { buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes,
+  recommendProfileMode, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity";
 type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning";
-type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null; questions: number | null; testKind: string };
+type TestMode = "questionnaires" | "pro";
+type PublicScale = { key: string; label: string; axis: string; scaleQuestions: number | null };
+type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null;
+  questions: number | null; testKind: string; scales: PublicScale[] };
 type Props = { locale: Locale; tests: PublicTest[] };
 
 // Topics map to questionnaire dimensions, not diagnoses or financial outcomes.
@@ -70,7 +73,7 @@ const copy = {
     ],
     entryNote: "You can explore without an account. Sign in only when you want to save results privately.",
     returnIntro: "How it works", wizardKicker: "Your free profile", selectTemplate: "Select this",
-    stages: ["Focus", "Topics", "Tests", "Ready"],
+    stages: ["Focus", "Topics", "Scales", "Tests", "Ready"],
     profileTitle: "What would you like to understand or improve?",
     profileHelp: "Choose one or several interests. Each adds to the same personal profile; you can explore the rest later.",
     focusAdd: "Select this", focusSelected: "Selected",
@@ -85,7 +88,7 @@ const copy = {
       identity: ["Personality & personal growth", "Traits, strengths, values, life goals and self-actualization."],
     },
     topicTitle: "Choose the specific topics that matter",
-    topicHelp: "Choose what matters. Each topic shows the dimensions measured by available free questionnaires.",
+    topicHelp: "Choose your topics here; open the next step to expand each topic into its real measured scales.",
     focusContext: "Selected interests",
     areas: {
       traits: ["Personality traits", "Patterns · strengths"],
@@ -101,6 +104,13 @@ const copy = {
     scaleTitle: "Choose the scales for your profile",
     scaleHelp: "Only real source-declared dimensions can be measured. Keep the suggestions or select what you want to explore.",
     selectAll: "Select all", clearAll: "Clear all", selected: "selected",
+    scaleSourceLabel: "Questionnaire", scaleItemsLabel: "scale questions", scaleUnknown: "Scale item count not documented",
+    fullTestNote: "The time and total questions shown belong to the full source questionnaire. Shared tests are counted only once in the next step.",
+    scaleSelected: "scales selected", scalePerTopic: "of this topic", scaleMore: "Show more scales", scaleFewer: "Show fewer scales",
+    scaleEmpty: "No eligible source-declared scales for this topic yet.", scaleRequired: "Choose at least one scale to continue.",
+    modeCheckins: "Questionnaires", modePro: "Pro tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
+    modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
+    modeOverview: "Recommended for your selected scales", modeEstimated: "estimated total", modeSource: "Test questions",
     testTitle: "Your recommended free test selection",
     testHelp: "Start your suggested tests now, or add more from the filters below.",
     testCount: "tests", minutes: "min", questions: "questions",
@@ -146,7 +156,7 @@ const copy = {
     ],
     entryNote: "Выбирать темы можно без регистрации. Для приватного сохранения результатов понадобится вход в кабинет.",
     returnIntro: "Как это работает", wizardKicker: "Ваш бесплатный профиль", selectTemplate: "Выбрать",
-    stages: ["Запрос", "Темы", "Тесты", "Начало"],
+    stages: ["Запрос", "Темы", "Шкалы", "Тесты", "Начало"],
     profileTitle: "Что вы хотите понять или улучшить?",
     profileHelp: "Выберите одно или несколько направлений. Всё войдёт в один личный профиль — остальное можно изучить позже.",
     focusAdd: "Выбрать", focusSelected: "Выбрано",
@@ -161,7 +171,7 @@ const copy = {
       identity: ["Личность и развитие", "Характер, способности, ценности, смысл жизни и самореализация."],
     },
     topicTitle: "Уточните важные для вас темы",
-    topicHelp: "Выберите важные темы. Под каждой указаны измеряемые параметры из доступных бесплатных тестов.",
+    topicHelp: "Выберите темы. На следующем шаге раскроются соответствующие им измеряемые шкалы.",
     focusContext: "Выбранные направления",
     areas: {
       traits: ["Особенности личности", "Качества · сильные стороны"],
@@ -177,6 +187,13 @@ const copy = {
     scaleTitle: "Выберите шкалы своего профиля",
     scaleHelp: "Можно выбрать лишь реальные шкалы, указанные в источниках тестов. Оставьте предложенные или выберите свои.",
     selectAll: "Выбрать все", clearAll: "Снять все", selected: "выбрано",
+    scaleSourceLabel: "Опросник", scaleItemsLabel: "вопросов шкалы", scaleUnknown: "Число вопросов шкалы не указано в методике",
+    fullTestNote: "Время и общее число вопросов относятся к тесту-источнику. Если шкалы входят в один тест, время на следующем шаге считается один раз.",
+    scaleSelected: "шкал выбрано", scalePerTopic: "по этой теме", scaleMore: "Больше шкал", scaleFewer: "Свернуть шкалы",
+    scaleEmpty: "По этой теме пока нет доступных шкал с указанным источником.", scaleRequired: "Выберите хотя бы одну шкалу.",
+    modeCheckins: "Опросники", modePro: "Pro-тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
+    modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
+    modeOverview: "Рекомендуем по выбранным шкалам", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
     testTitle: "Предложенный набор бесплатных тестов",
     testHelp: "Начните рекомендованные тесты или добавьте другие с помощью фильтров ниже.",
     testCount: "тестов", minutes: "мин", questions: "вопросов",
@@ -222,7 +239,7 @@ const copy = {
     ],
     entryNote: "Puedes explorar sin cuenta. Inicia sesión solo si quieres guardar los resultados de forma privada.",
     returnIntro: "Cómo funciona", wizardKicker: "Tu perfil gratuito", selectTemplate: "Elegir",
-    stages: ["Interés", "Temas", "Pruebas", "Inicio"],
+    stages: ["Interés", "Temas", "Escalas", "Pruebas", "Inicio"],
     profileTitle: "¿Qué quieres comprender o mejorar?",
     profileHelp: "Elige uno o varios temas. Todos forman parte de un único perfil personal que puedes ampliar después.",
     focusAdd: "Elegir", focusSelected: "Elegido",
@@ -237,7 +254,7 @@ const copy = {
       identity: ["Personalidad y crecimiento", "Rasgos, fortalezas, valores, propósito y autorrealización."],
     },
     topicTitle: "Elige los temas específicos para explorar",
-    topicHelp: "Elige tus temas. Cada uno muestra las dimensiones que miden las pruebas gratuitas disponibles.",
+    topicHelp: "Elige tus temas; en el siguiente paso podrás abrir sus escalas medibles.",
     focusContext: "Áreas elegidas",
     areas: {
       traits: ["Rasgos personales", "Patrones · fortalezas"],
@@ -253,6 +270,13 @@ const copy = {
     scaleTitle: "Selecciona las escalas de tu perfil",
     scaleHelp: "Solo medimos las dimensiones declaradas en los cuestionarios. Puedes cambiar las sugerencias.",
     selectAll: "Seleccionar todas", clearAll: "Desmarcar", selected: "seleccionadas",
+    scaleSourceLabel: "Cuestionario", scaleItemsLabel: "preguntas de la escala", scaleUnknown: "Sin número de ítems verificado",
+    fullTestNote: "El tiempo y el total de preguntas pertenecen al cuestionario completo. Si varias escalas usan el mismo test, su duración se cuenta una sola vez.",
+    scaleSelected: "escalas elegidas", scalePerTopic: "de este tema", scaleMore: "Más escalas", scaleFewer: "Ver menos escalas",
+    scaleEmpty: "Aún no hay escalas disponibles con fuente para este tema.", scaleRequired: "Elige al menos una escala.",
+    modeCheckins: "Cuestionarios", modePro: "Pruebas Pro", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
+    modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
+    modeOverview: "Recomendado para tus escalas", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
     testTitle: "Tus pruebas gratuitas recomendadas",
     testHelp: "Empieza las pruebas recomendadas o añade otras con los filtros de abajo.",
     testCount: "pruebas", minutes: "min", questions: "preguntas",
@@ -344,9 +368,13 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   }, [started, step]);
   const [focuses, setFocuses] = useState<Focus[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [selectedScaleIds, setSelectedScaleIds] = useState<string[]>([]);
+  const [scalesInitialized, setScalesInitialized] = useState(false);
+  const [expandedScaleAreas, setExpandedScaleAreas] = useState<Area[]>([]);
+  const [batteryMode, setBatteryMode] = useState<TestMode>("questionnaires");
+  const [selectedByMode, setSelectedByMode] = useState<Record<TestMode, string[]>>({ questionnaires: [], pro: [] });
+  const [batterySignature, setBatterySignature] = useState("");
   const [showMore, setShowMore] = useState(false);
-  const [kindFilter, setKindFilter] = useState("all");
   const [extraProfile, setExtraProfile] = useState<Focus | null>(null);
   const [extraScales, setExtraScales] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
@@ -357,20 +385,27 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const accountLocale = locale === "es" ? "en" : locale;
   const extra = additionalCopy[locale];
 
-  // Only dimensions declared by eligible public questionnaires may be shown
-  // under a topic. The topic label itself is not a psychometric measurement.
-  const measurableAxes = useMemo(() => new Set(tests.flatMap(test => test.axes)), [tests]);
+  // Topics define the scope. The accordion selects exact source-declared
+  // subscales; their question/time metadata always belongs to a real test.
+  const measurableAxes = useMemo(() => new Set(tests.flatMap(test => test.scales.map(scale => scale.axis))), [tests]);
   const visibleAreas = areasFor(focuses);
   const activeAreas = areas.filter(area => visibleAreas.includes(area));
-  const selectedAxes = allAxesFor(activeAreas).filter(axis => measurableAxes.has(axis));
-  const matches = tests
-    .map(test => ({ ...test, matches: test.axes.filter(axis => selectedAxes.includes(axis)) }))
-    .filter(test => test.matches.length > 0)
-    .sort((a, b) => b.matches.length - a.matches.length ||
-      (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
-  const chosenTests = selectedKeys.flatMap(key => tests.filter(test => test.key === key));
+  const scaleGroups = buildProfileScaleGroups(tests, activeAreas, areaAxes) as Array<{
+    area: Area; scales: Array<{ id: string; key: string; label: string; axis: string;
+      testKey: string; testTitle: string; testKind: string; scaleQuestions: number | null;
+      questions: number | null; minutes: number | null }>;
+  }>;
+  const selectedAxes = selectedProfileAxes(scaleGroups, selectedScaleIds) as string[];
+  const selectedKeys = selectedByMode[batteryMode];
+  const chosenTests = selectedKeys.flatMap(key => tests.filter(test => test.key === key &&
+    test.testKind === (batteryMode === "pro" ? "professional" : "monitoring")));
   const coverage = new Set(chosenTests.flatMap(test => test.axes.filter(axis => selectedAxes.includes(axis))));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
+  const modeTotals = {
+    questionnaires: profileBatteryTotals(tests, selectedByMode.questionnaires),
+    pro: profileBatteryTotals(tests, selectedByMode.pro),
+  };
+  const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
   const axesForExtraProfile = extraProfile
     ? allAxesFor(focusAreas[extraProfile]).filter(axis => measurableAxes.has(axis))
       .sort((a, b) => (axesCopy[a]?.[locale] || a).localeCompare(axesCopy[b]?.[locale] || b, locale))
@@ -378,11 +413,11 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const effectiveExtraScales = extraScales.length ? extraScales : axesForExtraProfile;
   const extraMatches = tests
     .filter(test => !selectedKeys.includes(test.key))
-    .filter(test => kindFilter === "all" || test.testKind === kindFilter)
+    .filter(test => test.testKind === modeKind)
     .filter(test => extraProfile !== null && test.axes.some(axis => effectiveExtraScales.includes(axis)))
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
-      [test.title, ...test.axes.map(axis => axesCopy[axis]?.[locale] || axis)]
+      [test.title, ...test.scales.map(scale => scale.label), ...test.axes.map(axis => axesCopy[axis]?.[locale] || axis)]
         .join(" ").toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)))
     .sort((a, b) => sortFilter === "shortest"
       ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
@@ -396,42 +431,72 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   function toggleFocus(focus: Focus) {
     setFocuses(previous => previous.includes(focus)
       ? previous.filter(item => item !== focus) : [...previous, focus]);
-    // A different direction must not carry stale topics or test selections.
+    // Other directions must not contribute stale topics, scales or plans.
     setAreas([]);
-    setSelectedKeys([]);
+    setSelectedScaleIds([]);
+    setScalesInitialized(false);
+    setSelectedByMode({ questionnaires: [], pro: [] });
+    setBatterySignature("");
     setShowMore(false);
   }
 
   function toggleArea(area: Area) {
     if (!visibleAreas.includes(area) || !areaAxes[area].some(axis => measurableAxes.has(axis))) return;
-    const next = areas.includes(area) ? areas.filter(item => item !== area) : [...areas, area];
-    setAreas(next);
-    setSelectedKeys([]);
+    setAreas(previous => previous.includes(area) ? previous.filter(item => item !== area) : [...previous, area]);
+    setSelectedScaleIds([]);
+    setScalesInitialized(false);
+    setSelectedByMode({ questionnaires: [], pro: [] });
+    setBatterySignature("");
     setShowMore(false);
   }
 
+  function toggleScale(id: string) {
+    if (!scaleGroups.some(group => group.scales.some(scale => scale.id === id))) return;
+    setSelectedScaleIds(previous => previous.includes(id)
+      ? previous.filter(item => item !== id) : [...previous, id]);
+    setBatterySignature("");
+  }
+
   function toggleTest(key: string) {
-    // Keys arrive solely from the server-side rights-cleared guest catalogue.
-    if (!tests.some(test => test.key === key)) return;
-    setSelectedKeys(previous => previous.includes(key)
-      ? previous.filter(item => item !== key)
-      : previous.length < 12 ? [...previous, key] : previous);
+    // Only tests from this mode of the rights-cleared guest catalogue may enter.
+    if (!tests.some(test => test.key === key && test.testKind === modeKind)) return;
+    setSelectedByMode(previous => {
+      const keys = previous[batteryMode];
+      return { ...previous, [batteryMode]: keys.includes(key)
+        ? keys.filter(item => item !== key)
+        : keys.length < 12 ? [...keys, key] : keys };
+    });
   }
 
   function goForward() {
     if (step === 0 && focuses.length) {
-      const suggested = areasFor(focuses)
-        .filter(area => areaAxes[area].some(axis => measurableAxes.has(axis)));
-      setAreas(suggested);
-      setSelectedKeys([]);
+      setAreas(areasFor(focuses).filter(area => areaAxes[area].some(axis => measurableAxes.has(axis))));
+      setSelectedScaleIds([]);
+      setScalesInitialized(false);
+      setSelectedByMode({ questionnaires: [], pro: [] });
+      setBatterySignature("");
       setShowMore(false);
       setStep(1);
-    } else if (step === 1 && activeAreas.length && selectedAxes.length) {
-      setSelectedKeys([...recommendProfileBattery(matches, selectedAxes)]);
-      setShowMore(false);
+    } else if (step === 1 && activeAreas.length) {
+      if (!scalesInitialized) {
+        setSelectedScaleIds(defaultProfileScaleIds(scaleGroups, 3));
+        setScalesInitialized(true);
+      }
       setStep(2);
-    } else if (step === 2 && selectedKeys.length) {
+    } else if (step === 2 && selectedScaleIds.length && selectedAxes.length) {
+      const signature = [...selectedScaleIds].sort().join("|");
+      if (batterySignature !== signature) {
+        setSelectedByMode({
+          questionnaires: recommendProfileMode(tests, selectedAxes, "questionnaires"),
+          pro: recommendProfileMode(tests, selectedAxes, "pro"),
+        });
+        setBatterySignature(signature);
+        setBatteryMode("questionnaires");
+      }
+      setShowMore(false);
       setStep(3);
+    } else if (step === 3 && selectedKeys.length > 0) {
+      setStep(4);
     }
   }
 
@@ -577,9 +642,74 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </div>
       </section>}
 
-      {step === 2 && <section aria-labelledby="profile-builder-step-title" data-profile-tests-step>
+      {step === 2 && <section aria-labelledby="profile-builder-step-title" data-profile-scales-step>
+        <h2 id="profile-builder-step-title">{t.scaleTitle}</h2>
+        <p className={styles.help}>{t.scaleHelp}</p>
+        <div className={styles.scaleOverview} role="status">
+          <strong>{selectedScaleIds.length} {t.scaleSelected}</strong>
+          <span>{activeAreas.map(area => t.areas[area][0]).join(" · ")}</span>
+        </div>
+        <div className={styles.topicAccordions} data-profile-scales-by-topic>
+          {scaleGroups.map((group, index) => {
+            const selectedInTopic = group.scales.filter(scale => selectedScaleIds.includes(scale.id)).length;
+            const expanded = expandedScaleAreas.includes(group.area);
+            const shortlist = group.scales.slice(0, 8);
+            const visible = expanded ? group.scales : [
+              ...shortlist,
+              ...group.scales.filter(scale => selectedScaleIds.includes(scale.id) &&
+                !shortlist.some(item => item.id === scale.id)),
+            ];
+            return <details key={group.area} className={styles.topicAccordion}
+                open={index === 0} data-profile-scale-topic={group.area}>
+              <summary><span className={styles.topicAccordionTitle}>
+                <strong>{t.areas[group.area][0]}</strong>
+                <small>{selectedInTopic} / {group.scales.length} {t.scalePerTopic}</small>
+              </span><ChevronDown size={18} aria-hidden="true" /></summary>
+              <div className={styles.topicAccordionBody}>
+                {visible.map(scale => <label key={scale.id} className={styles.topicScaleRow}
+                    data-profile-source-scale={scale.id}>
+                  <input type="checkbox" checked={selectedScaleIds.includes(scale.id)}
+                    onChange={() => toggleScale(scale.id)} />
+                  <span className={styles.topicScaleText}>
+                    <strong>{scale.label}</strong>
+                    <small>{t.scaleSourceLabel}: {scale.testTitle}</small>
+                    <small>{scale.scaleQuestions
+                      ? scale.scaleQuestions + " " + t.scaleItemsLabel + " · "
+                      : t.scaleUnknown + " · "}{scale.questions ? scale.questions + " " + t.questions + " · " : ""}
+                      {scale.minutes ? "~" + scale.minutes + " " + t.minutes : ""}</small>
+                  </span>
+                </label>)}
+                {group.scales.length === 0 && <p className={styles.scaleRequired}>{t.scaleEmpty}</p>}
+                {group.scales.length > 8 && <button type="button" className={styles.scaleExpand}
+                    onClick={() => setExpandedScaleAreas(previous => expanded
+                      ? previous.filter(area => area !== group.area) : [...previous, group.area])}
+                    aria-expanded={expanded}>
+                  {expanded ? t.scaleFewer : t.scaleMore}<ChevronDown size={15} aria-hidden="true" />
+                </button>}
+              </div>
+            </details>;
+          })}
+        </div>
+        <p className={styles.scaleSourceNote}>{t.fullTestNote}</p>
+        {selectedScaleIds.length === 0 && <p className={styles.caution} role="status">{t.scaleRequired}</p>}
+      </section>}
+
+      {step === 3 && <section aria-labelledby="profile-builder-step-title" data-profile-tests-step>
         <h2 id="profile-builder-step-title">{t.testTitle}</h2>
         <p className={styles.help}>{t.testHelp}</p>
+        <fieldset className={styles.batteryModes} data-profile-test-mode>
+          <legend>{t.modeOverview}</legend>
+          <div className={styles.batteryModeChoices}>
+            {(["questionnaires", "pro"] as const).map(mode => <button type="button" key={mode}
+                aria-pressed={batteryMode === mode} data-profile-mode={mode}
+                onClick={() => { setBatteryMode(mode); setShowMore(false); }}>
+              <strong>{mode === "pro" ? t.modePro : t.modeCheckins}</strong>
+              <small>{modeTotals[mode].count} {t.testCount} · ~{modeTotals[mode].minutes} {t.minutes}
+                {modeTotals[mode].questions ? " · " + modeTotals[mode].questions + " " + t.questions : ""}</small>
+            </button>)}
+          </div>
+          <p>{t.modeMeaning}</p>
+        </fieldset>
         <div className={styles.testCount}><ClipboardList size={17} aria-hidden="true" />
           <strong>{chosenTests.length} {t.testCount}</strong>
           {minutes > 0 && <span>· {minutes} {t.minutes}</span>}
@@ -598,7 +728,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                   .map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")}</span>
               </span>
             </label>)}
-        </div> : <p className={styles.caution} role="status">{t.noTests}</p>}
+        </div> : <p className={styles.caution} role="status">{t.modeNoTests}</p>}
         {coverage.size < selectedAxes.length && chosenTests.length > 0 &&
           <p className={styles.caution}>{t.unmeasured}</p>}
         <div className={styles.startRow}>
@@ -652,12 +782,6 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               <input type="search" value={search} placeholder={extra.searchPlaceholder}
                 onChange={event => { setSearch(event.currentTarget.value); setShowMore(false); }} />
             </label>
-            <label><span>{extra.kind}</span>
-              <select value={kindFilter} onChange={event => { setKindFilter(event.currentTarget.value); setShowMore(false); }}>
-                <option value="all">{extra.allKinds}</option>
-                {TEST_KINDS.map(kind => <option key={kind.key} value={kind.key}>{kind.label[locale]}</option>)}
-              </select>
-            </label>
             <label><span>{extra.time}</span>
               <select value={timeFilter} onChange={event => { setTimeFilter(event.currentTarget.value); setShowMore(false); }}>
                 <option value="all">{extra.anyTime}</option>
@@ -695,7 +819,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </section>
       </section>}
 
-      {step === 3 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
+      {step === 4 && <section aria-labelledby="profile-builder-step-title" data-profile-test-review-slide>
         <div className={styles.reviewIntro}>
           <div className={styles.reviewIcon} aria-hidden="true"><ClipboardList size={24} /></div>
           <p className={styles.templateLabel}>{t.readyKicker}</p>
@@ -744,7 +868,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </details>
       </section>}
 
-      {step < 3 && <div className={styles.actions}>
+      {step < 4 && <div className={styles.actions}>
         {step > 0 && <button type="button" className={styles.back} onClick={() => setStep(step - 1)}>
           <ArrowLeft size={17} aria-hidden="true" />{t.back}
         </button>}
@@ -752,16 +876,17 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           ? <button type="button" className={styles.primary} disabled={focuses.length === 0}
               onClick={goForward} data-profile-confirm-focus>{t.next}<ArrowRight size={17} /></button>
           : step === 1
-            ? <button type="button" className={styles.primary}
-                disabled={activeAreas.length === 0 || selectedAxes.length === 0}
+            ? <button type="button" className={styles.primary} disabled={activeAreas.length === 0}
                 onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
-            : <button type="button" className={styles.secondaryReview}
-                disabled={selectedKeys.length === 0}
-                onClick={goForward} data-profile-review-tests>{extra.review}<ArrowRight size={17} /></button>}
+            : step === 2
+              ? <button type="button" className={styles.primary} disabled={selectedScaleIds.length === 0}
+                  onClick={goForward} data-profile-confirm-scales>{t.next}<ArrowRight size={17} /></button>
+              : <button type="button" className={styles.secondaryReview} disabled={selectedKeys.length === 0}
+                  onClick={goForward} data-profile-review-tests>{extra.review}<ArrowRight size={17} /></button>}
       </div>}
     </div>
 
-    {step < 3 && <aside className={styles.privateInfo}>
+    {step < 4 && <aside className={styles.privateInfo}>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{t.private}</p>
         <div className={styles.privateLinks}>
