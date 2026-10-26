@@ -101,6 +101,8 @@ test('guest pilot never bypasses webhook secret, positive consent or manual owne
 test('Expired invited guest STOP stays effective',()=>{
   const hook=read('lib/crm/messenger-webhook.js')
   assert.ok(hook.includes('const isStop='))
+  assert.match(hook,/остановить диалог/)
+  assert.match(hook,/rawStop\.toLowerCase\(\)/)
   assert.ok(hook.includes('!activeGuest&&!invite&&!isStop'))
   assert.ok(hook.includes('isStop&&!previous&&restricted&&!ownerChat'))
   assert.ok(hook.includes('crm_tg_suppress_existing'))
