@@ -1,15 +1,15 @@
 # Holistic House — Mac / Codex reverse-engineering research toolchain
 
 **2026-10-26 · G0 / BENCH-01 · STATUS: PARTIALLY MAC-VERIFIED; NO PRODUCTION CHANGE**
-Related: [program #2058](https://github.com/andylitvinov-design/books/issues/2058), specification [PR #2060](https://github.com/andylitvinov-design/books/pull/2060), separate source-matrix [PR #2061](https://github.com/andylitvinov-design/books/pull/2061). These PRs are distinct; do not overwrite their specs. Production branch: `codex/public-book-library`, NOT `codex/bootstrap-books`.
+Related: [program #2058](https://github.com/andylitvinov-design/books/issues/2058), specification [PR #2060](https://github.com/andylitvinov-design/books/pull/2060), merged source-matrix [PR #2065](https://github.com/andylitvinov-design/books/pull/2065). These PRs are distinct; do not overwrite their specs. Production branch: `codex/public-book-library`, NOT `codex/bootstrap-books`.
 
 ## What is prepared vs verified
 
 - **Remaster audit and install (PASS):** local macOS audit downloaded the published `@thenavidm/remaster@0.2.1` tarball without lifecycle execution. Its independently calculated SHA-512 SRI was `sha512-5spbVptne6xnojsUzdsRV/pMubuakCR1KofcKNTMshWK0SsiqrjY3hrdYMjBsemny22DDJeWOtvGhnsmJ885Dw==`, exactly matching registry metadata. The 139.4 kB tarball contains 77 files, is Apache-2.0, has zero direct/optional/peer/bundled dependencies and no `preinstall`/`install`/`postinstall`/`prepare` lifecycle script. `npm run check` passed and static review covered the installer, entrypoint, browser/network helpers and clean-room policy. The upstream GitHub `gitHead` is `10a59350a132d847df3d4568bb1f1e23f049e146` (GitHub reports it unsigned); npm registry signatures were present, but that GitHub signature status is recorded as provenance context, not proof of compromise.
 - **Project-only Remaster (PASS):** with Node `v22.22.3`, npm `10.9.8`, Git `2.50.1`, and Codex CLI `0.164.0`, the fail-closed installer accepted only the exact reviewed SRI and installed `clone` into an isolated PR checkout. A fresh ephemeral Codex session invoked `$clone`, reported version `0.2.1`, and correctly stated the clean-room prohibition on reading target code. The installer now canonicalizes macOS `/var` and `/private/var` paths before rewriting `SKILL.md`; `tests/mac-codex-research-tools.test.mjs` reproduces that case without network and passes.
 - **REA (BLOCKED; not installed):** `rea-agents@6.8.0` tarball SRI matched `sha512-9QDeRnGqEDzABZyr04eLnBXBv/c6I9/TWu/6M0MD4pEfkySI/BIgwTODIbAReX3C1x6hjw9+Jlx4A2yUSPZ9ww==`; it is MIT, 2,398 files / 49.3 MB unpacked, has 23 direct dependencies plus optional `frida`, and declares `prepare`/`prepack`. Its Node engine is `^22.23.4 || ^24.22.1 || >=26.12.1`; the local `v22.22.3` fails it. No REA command, MCP registration, Hopper, Ghidra, IDA, or external-code analysis was run.
-- **Playwright (BLOCKED):** the CLI is available, but no local Playwright package or browser was present. An isolated Chromium download required 184 MiB and failed with `ENOSPC`; partial temporary browser/cache files were removed. Chromium/WebKit mobile smoke tests, live form submission, payments, and client data were not run.
-- **NOT VERIFIED:** remote Desktop Commander status, REA doctor/MCP registration, Chromium/WebKit local browser smoke, competition research, Vercel READY/SHA, and any live user flow.
+- **Playwright browsers installed, local launch BLOCKED:** after deleting only a temporary audit cache, the isolated Mac environment downloaded Chromium/Chrome for Testing 155 and WebKit 26.6 (863 MiB combined). Direct Chromium launch failed before navigation with `MachPortRendezvousServer: Permission denied`; WebKit failed with `Abort trap: 6`. This is a macOS execution-sandbox process restriction, **not** a site failure. No Mac browser page opened; see issue #2058 comments `6408432306` / `6408470472`. A separate *read-only public* Chromium/WebKit smoke has now been authored for **GitHub Actions** (see next section); it does not prove Remaster itself can launch on the Mac.
+- **NOT VERIFIED:** local Chromium/WebKit navigation from the constrained Mac shell, Remaster-driven browser research, REA doctor/MCP registration, competitor UI inspection, and any real CRM/payment client E2E. The remote Desktop Commander connection is separately OFFLINE (does not contradict the prior authorized local Mac shell run). Vercel `READY` for the currently deployed site is independently checked, **not** for this unmerged PR.
 
 ## Runbook on an authorized Mac, inside the HH repository
 
@@ -42,10 +42,17 @@ Restart Codex after install. In the new session, verify the `clone` skill is ava
 | Vendor source / pin | PASS | Independently calculated tarball SRI exactly matched `HH_REMASTER_APPROVED_SHA512`; source/lifecycle/dependency audit recorded above |
 | Local Mac / tools | PASS | Darwin, Node `v22.22.3`, npm `10.9.8`, Git `2.50.1`, Codex `0.164.0` read back locally |
 | Project skill | PASS | Installed project-only, staging-path regression test passes, fresh Codex `$clone` response read back |
-| Browser smoke test | BLOCKED | Chromium download failed `ENOSPC`; Chromium and WebKit were not launched |
+| Mac browser smoke | BLOCKED | Browser binaries downloaded successfully; process launch denied by the macOS execution sandbox before first navigation |
+| CI public browser smoke | PENDING CI | New GitHub Actions job on permitted Linux runner: guest-only Chromium/WebKit × EN/RU/ES × 320/375/390/430; no POST, no third-party requests, no secrets or form submission |
 | REA | BLOCKED | Node engine mismatch and large dependency/native-tool surface; no doctor/dry-run/MCP registration |
 | Application E2E | NOT RUN | Independent HH app/CRM/provider flow if a product change follows |
 | Live deployment | NOT CHANGED | No production SHA or Vercel READY claim for local setup |
+
+## Alternative browser execution (no Mac sandbox bypass)
+
+Rather than weaken macOS restrictions, `.github/workflows/hh-benchmark-public-browser.yml` runs a **separate** Playwright smoke job in an authorized, disposable GitHub-hosted Ubuntu environment. It is scoped to changes in the workflow or its script; it is not run for unrelated production commits. `scripts/benchmarking/public-browser-smoke.mjs` uses first-party, read-only GET requests against the existing `https://holistichouse.vercel.app` public pages. Network routing aborts POST/PUT/PATCH/DELETE requests and all off-site requests; browsers get empty cookie/storage and no private-account access. It checks a visible test CTA, no forced contact capture, its target route, touch size and horizontal overflow, and follows a public test-explorer navigation without answering any questions. Results are in the CI artifact `hh-benchmark-public-browser-results` and use `PASS/FAIL` only after runner execution.
+
+**Evidence boundary:** this verifies actual public website behavior from Linux-headless **mobile emulation**. It is not a physical iPhone, not a macOS browser test, does not validate Remaster browser launching, does not access a logged-in client account, and is not an independent provider/CRM/payment E2E. If CI fails, report the exact failing engine/locale/viewport and repair the actual defect or adjust only a provably invalid test. Mac launch remains separately BLOCKED; do not disable SIP/sandbox restrictions or use unrestricted Codex access to bypass them.
 
 ## References
 
