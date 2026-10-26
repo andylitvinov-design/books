@@ -26,16 +26,16 @@ const copy = {
     sendEyebrow: "FINAL STEP · SEND YOUR REQUEST",
     sendTitle: "Request your free written diagnostic",
     sendPaidTitle: "Request a personal coaching session",
-    sendLead: "Choose a free written review or request a live consultation. Andrey receives your contact and the completed coaching questionnaire only when you explicitly send it.",
+    sendLead: "When you send your answers, the questionnaire and reply contact are saved automatically in the secure Holistic House CRM. No second save step is needed.",
     sendOption: "What would you like to request?",
     sendFree: "Free written diagnostic · €0",
     sendShort: "Personal session · 30 min · €50",
     sendFull: "Personal session · 60 min · €100",
     sendEmail: "Email for a reply",
     sendPhone: "Phone (optional if email is supplied)",
-    sendConsent: "I explicitly agree to send all my completed coaching answers and contact details securely to Andrey in Holistic House CRM for one personal response. No marketing.",
-    sendButton: "Send questionnaire and request",
-    sendError: "Complete the three essential questions, provide an email or phone, and agree to send your answers.",
+    sendDisclosure: "By selecting “Send answers to Andrey”, you agree to share your answers and reply contact with Andrey for this one request only. No marketing.",
+    sendButton: "Send answers to Andrey",
+    sendError: "Complete the three essential questions and provide an email or phone for a reply.",
     sendFailure: "Your request could not be confirmed. Please retry; your answers are still here.",
     sendSuccess: "Your questionnaire and contact were received. Reference:",
     sendUpgrade: "Would you prefer a live consultation? Request 30 minutes (€50) or 60 minutes (€100).",
@@ -80,17 +80,17 @@ const copy = {
   ru: {
     sendEyebrow: "ЗАВЕРШЕНИЕ · ОТПРАВКА ЗАЯВКИ",
     sendTitle: "Запросить бесплатную письменную диагностику",
-    sendPaidTitle: "Записаться на личную коучинговую сессию",
-    sendLead: "Выберите бесплатный письменный разбор или личную сессию. Только после отправки Андрей получит ваши контакты и заполненную коучинговую анкету в защищённой CRM.",
+    sendPaidTitle: "Запросить личную коучинговую сессию",
+    sendLead: "После отправки ответы и контакт автоматически сохраняются в защищённой CRM Holistic House для личного ответа Андрея. Повторно сохранять ничего не нужно.",
     sendOption: "Что вы хотите заказать?",
     sendFree: "Бесплатная письменная диагностика · €0",
     sendShort: "Личная сессия · 30 минут · €50",
     sendFull: "Личная сессия · 60 минут · €100",
     sendEmail: "Email для ответа",
     sendPhone: "Телефон (необязателен, если указан email)",
-    sendConsent: "Я явно согласен(на) отправить все ответы коучинговой анкеты и контакты Андрею в защищённую CRM Holistic House для одного личного ответа. Без рекламы и рассылок.",
-    sendButton: "Отправить анкету и заявку",
-    sendError: "Ответьте на три основных вопроса, укажите email или телефон и подтвердите согласие на отправку.",
+    sendDisclosure: "Нажимая «Отправить ответы Андрею», вы передаёте ответы и контакт Андрею для одного личного ответа. Без рекламы и рассылок.",
+    sendButton: "Отправить ответы Андрею",
+    sendError: "Ответьте на три основных вопроса и укажите email или телефон для ответа.",
     sendFailure: "Не удалось подтвердить получение заявки. Попробуйте повторить: ответы сохранились на экране.",
     sendSuccess: "Ваша анкета и контакт получены. Номер заявки:",
     sendUpgrade: "Хотите обсудить вопрос лично? Запросите 30 минут (€50) или 60 минут (€100).",
@@ -136,16 +136,16 @@ const copy = {
     sendEyebrow: "ÚLTIMO PASO · ENVÍA TU SOLICITUD",
     sendTitle: "Solicitar evaluación escrita gratuita",
     sendPaidTitle: "Solicitar una sesión personal de coaching",
-    sendLead: "Elige una revisión gratuita o sesión personal. Andrey recibe tu contacto y el cuestionario únicamente cuando confirmas el envío.",
+    sendLead: "Al enviar tus respuestas, el formulario y tu contacto se guardan automáticamente en el CRM privado de Holistic House. No necesitas guardarlos otra vez.",
     sendOption: "¿Qué te gustaría solicitar?",
     sendFree: "Evaluación escrita gratis · €0",
     sendShort: "Sesión personal · 30 min · €50",
     sendFull: "Sesión personal · 60 min · €100",
     sendEmail: "Email de contacto",
     sendPhone: "Teléfono (opcional con email)",
-    sendConsent: "Acepto expresamente enviar todas mis respuestas y datos de contacto a Andrey mediante el CRM privado de Holistic House para recibir una respuesta personal. Sin publicidad.",
-    sendButton: "Enviar cuestionario y solicitud",
-    sendError: "Completa las tres preguntas esenciales, indica email o teléfono y acepta enviar tus respuestas.",
+    sendDisclosure: "Al pulsar «Enviar respuestas a Andrey», aceptas compartir el formulario y tu contacto solo para esta respuesta personal. Sin publicidad.",
+    sendButton: "Enviar respuestas a Andrey",
+    sendError: "Completa las tres preguntas esenciales e indica un email o teléfono para responderte.",
     sendFailure: "No se pudo confirmar el envío. Vuelve a intentarlo; tus respuestas siguen aquí.",
     sendSuccess: "Hemos recibido tu cuestionario y contacto. Referencia:",
     sendUpgrade: "¿Prefieres una sesión en vivo? Solicita 30 minutos (€50) o 60 minutos (€100).",
@@ -223,6 +223,9 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [auth, setAuth] = useState<"checking" | "guest" | "signed" | "error">("checking");
   const [consent, setConsent] = useState(false);
+  // Only an explicit private-copy link opens the legacy personal-account tools.
+  // Standard Telegram/public questionnaires have one CRM submission, not two save choices.
+  const [privateCopyMode, setPrivateCopyMode] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [collision, setCollision] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -231,7 +234,6 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [fallbackCopy, setFallbackCopy] = useState(false);
   const [replyContact, setReplyContact] = useState({ email: "", phone: "" });
   const [offerChoice, setOfferChoice] = useState<"free" | "short" | "full">("free");
-  const [sendConsent, setSendConsent] = useState(false);
   const [leadBusy, setLeadBusy] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [leadReceipt, setLeadReceipt] = useState("");
@@ -245,6 +247,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   useEffect(() => {
     let active = true;
     let restored: Draft | null = null;
+    let privateCopyRequested = new URLSearchParams(window.location.search).get("private") === "1";
     // Only a public, allowlisted topic may cross this page link.
     setDraft(previous => hasSomeAnswers(previous) ? previous
       : { ...previous, topic: coachingIntakeEntryTopic(window.location.search) });
@@ -254,6 +257,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       if (value) {
         const parsed = JSON.parse(value);
         if (parsed.version === COACHING_INTAKE_VERSION && Number(parsed.expires) > Date.now()) {
+          privateCopyRequested = privateCopyRequested || parsed.privateMode === true;
           restored = normalise(parsed.draft);
           setDraft(restored);
           setDirty(hasSomeAnswers(restored));
@@ -274,7 +278,8 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     } catch {
       // The private account remains the source of truth if browser storage is blocked.
     }
-    appFetch("coaching-intake").then((result: Saved) => {
+    setPrivateCopyMode(privateCopyRequested);
+    if (privateCopyRequested) appFetch("coaching-intake").then((result: Saved) => {
       if (!active) return;
       setSaved(result);
       setAuth("signed");
@@ -289,6 +294,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       if (!active) return;
       setAuth(reason?.status === 401 ? "guest" : "error");
     });
+    else setAuth("guest");
     const onSignOut = (event: MessageEvent) => {
       if (event.data === "signed-out") {
         setSaved(null); setAuth("guest"); setDraft(blank()); setConsent(false); setDirty(false);
@@ -315,7 +321,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       const result = await appFetch("auth/start", { locale, continueTo: "coaching-intake" });
       if (!result?.redirectUrl) throw new Error("SIGN_IN_UNAVAILABLE");
       try {
-        sessionStorage.setItem(key, JSON.stringify({ version: COACHING_INTAKE_VERSION, expires: Date.now() + 15 * 60 * 1000, draft }));
+        sessionStorage.setItem(key, JSON.stringify({ version: COACHING_INTAKE_VERSION, expires: Date.now() + 15 * 60 * 1000, privateMode: true, draft }));
       } catch { /* browser storage may be disabled; no private data sent in OAuth URL */ }
       window.location.assign(result.redirectUrl);
     } catch {
@@ -358,7 +364,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   }
   async function submitDiagnostic() {
     if (leadBusy || leadReceipt || busy || collision) return;
-    if (missing || !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())) {
+    if (missing || (!replyContact.email.trim() && !replyContact.phone.trim())) {
       setLeadError(t.sendError); return;
     }
     setLeadBusy(true); setLeadError("");
@@ -430,15 +436,15 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </div>
     </header>
 
-    <div className={styles.authBar}>
+    {privateCopyMode ? <div className={styles.authBar}>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{auth === "signed" ? t.signedIn : auth === "guest" ? t.signedOut : auth === "checking" ? t.loading : t.unavailable}</p>
         {auth === "guest" ? <small>{t.temporary}</small> : null}
       </div>
       {auth === "guest" ? <button type="button" disabled={busy} onClick={() => void signIn()} className={styles.login}>{t.login}<ArrowRight size={16} aria-hidden="true" /></button> : null}
-    </div>
+    </div> : null}
 
-    {collision ? <div role="alert" className={styles.conflict}>
+    {privateCopyMode && collision ? <div role="alert" className={styles.conflict}>
       <p>{t.accountConflict}</p>
       <div><button type="button" onClick={loadSaved}>{t.chooseSaved}</button><button type="button" onClick={keepLocal}>{t.chooseLocal}</button></div>
     </div> : null}
@@ -523,19 +529,16 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
               disabled={leadBusy || busy || collision} value={replyContact.phone}
               onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label>
           </div>
-          <label className={styles.sendConsent}>
-            <input type="checkbox" checked={sendConsent} disabled={leadBusy || busy || collision}
-              onChange={event => setSendConsent(event.target.checked)} />
-            <span>{t.sendConsent}</span>
-          </label>
+          <p className={styles.requestDisclosure}>{t.sendDisclosure}</p>
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
           <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
-            !sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())} onClick={() => void submitDiagnostic()}>
+            (!replyContact.email.trim() && !replyContact.phone.trim())} onClick={() => void submitDiagnostic()}>
             {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
           </button>
           <p className={styles.requestFootnote}>{t.sendNext}</p>
         </>}
       </div>
+      {privateCopyMode ? <>
       <p className={styles.requestEyebrow}>{t.saveOptional}</p>
       <div className={styles.saveStatus}><ShieldCheck size={19} aria-hidden="true" />{dirty ? t.dirty : saved?.intake ? t.upToDate : t.unsaved}</div>
       {auth === "signed" ? <label className={styles.consent}>
@@ -560,6 +563,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       <p className={styles.small}>{t.contactNote}</p>
       <p className={styles.small}>{t.privacy}</p>
       {saved?.intake && auth === "signed" ? <button className={styles.delete} type="button" disabled={busy || collision} onClick={() => void remove()}><Trash2 size={15} aria-hidden="true" />{t.delete}</button> : null}
+      </> : null}
     </section>
   </section>;
 }
