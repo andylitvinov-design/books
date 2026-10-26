@@ -41,7 +41,7 @@ test('Google claim creates private member thread under client role',()=>{
   assert.match(claim,/saved: true, referenceCode: row.reference_code/)
 })
 test('additive FORCE RLS owner link keeps claims private and avoids recursion',()=>{
-  const migration=src('../supabase/migrations/20261026162646_hh_free_express_owner_account_reply_20261026.sql')
+  const migration=src('../supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql')
   assert.match(migration,/create policy free_express_account_links_practitioner_read/)
   assert.match(migration,/trusted_auth_user_id=\(select auth.uid\(\)\)/)
   assert.match(migration,/where p\.id=recipient_practitioner_id/)

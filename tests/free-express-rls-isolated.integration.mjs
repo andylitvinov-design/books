@@ -14,7 +14,7 @@ const isolated = process.env.CI === 'true'
 const read = file => readFileSync(new URL('../supabase/migrations/' + file, import.meta.url),'utf8')
 const old = '20261019152000_hh_public_service_enquiries_secure.sql'
 const next = '20261026133321_hh_free_express_guest_continuation_rls_20261025.sql'
-const ownerReply = '20261026162646_hh_free_express_owner_account_reply_20261026.sql'
+const ownerReply = '20261026164817_hh_free_express_owner_account_reply_20261026.sql'
 const practitionerId = '246aa1a3-a371-5a83-9f4b-cd23ff027a76'
 const actorA = '10000000-0000-4000-8000-000000000001'
 const actorB = '10000000-0000-4000-8000-000000000002'

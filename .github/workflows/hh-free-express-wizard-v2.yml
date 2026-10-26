@@ -27,7 +27,7 @@ on:
       - 'components/app/free-express-owner-case.jsx'
       - 'components/app/free-express-owner-case.module.css'
       - 'components/app/practitioner-client-profiles.jsx'
-      - 'supabase/migrations/20261026162646_hh_free_express_owner_account_reply_20261026.sql'
+      - 'supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql'
       - 'tests/free-express-owner-reply.test.mjs'
       - 'components/app/free-express-my-requests.jsx'
       - 'scripts/verify-free-express-wizard-v2.mjs'
