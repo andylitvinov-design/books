@@ -29,6 +29,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: hh-free-express-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   protected-wizard:
     runs-on: ubuntu-24.04
