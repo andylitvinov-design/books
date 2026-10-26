@@ -19,7 +19,7 @@ const PHOTO_LIMIT = 2_750_000;
 const fieldsShort = new Set(["request", "idealOutcome", "priorityQuestion"]);
 const copy = {
   en: {
-    title: "Your free personal review", steps: ["Contact", "Question", "Photo", "Save", "Drawing", "Ready"],
+    title: "Your free personal review", stepOf: "Step", of: "of", steps: ["Contact", "Question", "Photo", "Save", "Drawing", "Ready"],
     contact: "How can Andrey reach you?", intro: "Start with a phone number and one short question. No Google account or payment needed.",
     name: "Your name (optional)", phone: "Phone number (with country code)",
     question: "What would you like to explore?", questionHint: "One or two sentences are enough. Please do not include test results or medical records.",
@@ -50,7 +50,7 @@ const copy = {
     restored: "Your saved request has been restored.", timeout: "Your secure continuation expired. The original request remains received; contact Andrey using your reference.",
   },
   ru: {
-    title: "Ваша бесплатная диагностика", steps: ["Контакт", "Запрос", "Фото", "Сохранить", "Рисунок", "Готово"],
+    title: "Ваша бесплатная диагностика", stepOf: "Шаг", of: "из", steps: ["Контакт", "Запрос", "Фото", "Сохранить", "Рисунок", "Готово"],
     contact: "Как с вами связаться?", intro: "Оставьте телефон и кратко опишите вопрос. Регистрация Google и оплата не нужны.",
     name: "Как к вам обращаться? (необязательно)", phone: "Телефон с кодом страны",
     question: "В чём суть вашего вопроса?", questionHint: "Достаточно одного-двух предложений. Не прикладывайте анализы или результаты тестов.",
@@ -81,7 +81,7 @@ const copy = {
     restored: "Ваша заявка восстановлена.", timeout: "Срок защищённого дополнения истёк. Исходная заявка получена; свяжитесь с Андреем, указав её номер.",
   },
   es: {
-    title: "Tu revisión personal gratuita", steps: ["Contacto", "Pregunta", "Foto", "Guardar", "Dibujo", "Listo"],
+    title: "Tu revisión personal gratuita", stepOf: "Paso", of: "de", steps: ["Contacto", "Pregunta", "Foto", "Guardar", "Dibujo", "Listo"],
     contact: "¿Cómo puede contactarte Andrey?", intro: "Deja tu teléfono y una pregunta breve. No necesitas Google ni pagar.",
     name: "Tu nombre (opcional)", phone: "Teléfono con prefijo del país",
     question: "¿Cuál es tu consulta?", questionHint: "Bastan una o dos frases. No adjuntes resultados de pruebas ni documentos médicos.",
@@ -328,8 +328,12 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
   }) : "";
 
   return <section className={styles.root} data-free-express-wizard aria-label={t.title} lang={locale}>
-    <div className={styles.progress} aria-label={t.title}>
-      {t.steps.map((label, i) => <span key={label} data-active={i === step ? "true" : "false"} data-done={i < step ? "true" : "false"}>{i + 1}<small>{label}</small></span>)}
+    <div className={styles.progressWrap}>
+      <p className={styles.currentStep} role="status">{t.stepOf} {step + 1} {t.of} {t.steps.length} <strong>{t.steps[step]}</strong></p>
+      <div className={styles.progress} aria-label={t.title}>
+        {t.steps.map((label, i) => <span key={label} aria-current={i === step ? "step" : undefined}
+          data-active={i === step ? "true" : "false"} data-done={i < step ? "true" : "false"}>{i + 1}<small>{label}</small></span>)}
+      </div>
     </div>
 
     {receipt && <div className={styles.receipt} role="status" data-free-express-receipt>
