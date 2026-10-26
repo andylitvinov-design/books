@@ -108,6 +108,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: SalesBot strict flow simulator and owner API contract
         run: node --test tests/crm-salesbot-flow.test.mjs
+      - name: Read-only owner Telegram BotFather identity and webhook preflight
+        run: node --conditions=react-server --test tests/crm-telegram-preflight.test.mjs
       - name: Verify opt-in Telegram diagnostic intake, STOP and private photo privacy contracts
         run: node --test tests/crm-telegram-diagnostic.test.mjs
       - name: Lint Telegram diagnostic runtime, owner photo proxy and public entry
