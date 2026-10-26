@@ -8,6 +8,8 @@ import {aggregateOwnerCouncil,ownerEnsembleSynthesisPrompt,
 
 const reply=(data,status=200)=>Response.json(data,{status})
 const models=[
+  {id:'thinkingmachines/inkling-small:free',pricing:{prompt:'0',completion:'0'},
+    architecture:{input_modalities:['text'],output_modalities:['text']}},
   {id:'nvidia/nemotron-3-ultra-550b-a55b:free',pricing:{prompt:'0',completion:'0'},
     architecture:{input_modalities:['text'],output_modalities:['text']}},
   {id:'google/gemma-4-31b-it:free',pricing:{prompt:'0',completion:'0'},
@@ -37,13 +39,13 @@ const synth={
 }
 const results={
   gemini:sample('gemini-3.8-flash'),
-  free:sample('nvidia/nemotron-3-ultra-550b-a55b:free')
+  free:sample('thinkingmachines/inkling-small:free')
 }
 test('real live-catalog rankings prefer independently authored strong models, never paid substitutes',()=>{
   const top=chooseTopFreeOpenRouterModels(models)
   assert.deepEqual(top.map(m=>m.id),[
-    'nvidia/nemotron-3-ultra-550b-a55b:free',
-    'google/gemma-4-31b-it:free'
+    'thinkingmachines/inkling-small:free',
+    'nvidia/nemotron-3-ultra-550b-a55b:free'
   ])
   assert.ok(top.every(m=>!m.id.includes('mistralai')))
   assert.throws(()=>chooseTopFreeOpenRouterModels(models,0))
@@ -66,7 +68,7 @@ test('two independent OpenRouter completions are exactly $0 and actually name th
   }
   const check=await inspectOpenRouterFreeAccess(env,fetcher)
   assert.equal(check.status,'ready')
-  assert.equal(check.secondModel,'google/gemma-4-31b-it:free')
+  assert.equal(check.secondModel,'nvidia/nemotron-3-ultra-550b-a55b:free')
   const r=await askCouncilTelegram('Проверь заявку','all',env,fetcher,{
     allowed:['free','free2']
   })
@@ -84,25 +86,33 @@ test('one verified responder never triggers synthesis or invents a consensus',as
   assert.equal(r.status,'unavailable')
   assert.equal(inference,0)
 })
-test('one extra real Gemini completion synthesizes concrete, attributable actions',async()=>{
+test('synthesis prefers proven zero-priced free model, not a second flaky Gemini request',async()=>{
   const prompt=ownerEnsembleSynthesisPrompt('Как улучшить вход?',results)
   assert.match(prompt,/НЕДОВЕРЕННЫЕ ДАННЫЕ/i)
-  assert.match(prompt,/Проверьте|Проверить/)
-  let calls=0
+  let completions=0
   const r=await aggregateOwnerCouncil('Как улучшить вход?',results,{
-    HH_COUNCIL_GEMINI_API_KEY:'synthetic',
-    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'
+    HH_COUNCIL_GEMINI_API_KEY:'synthetic-google',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router'
   },async(url,opt)=>{
-    calls++
-    assert.match(String(url),/gemini-3\.8-flash:generateContent/)
+    const target=String(url)
+    assert.doesNotMatch(target,/generativelanguage.googleapis.com/)
+    if(target.endsWith('/key'))return reply({data:{key_id:'synthetic-test'}})
+    if(target.endsWith('/models'))return reply({data:models})
+    completions++
     const req=JSON.parse(opt.body)
-    assert.match(req.contents[0].parts[0].text,/crm/i)
-    return reply({candidates:[{finishReason:'STOP',content:{
-      parts:[{text:JSON.stringify(synth)}]}}]})
+    assert.equal(req.model,'thinkingmachines/inkling-small:free')
+    assert.equal(req.provider.allow_fallbacks,false)
+    assert.equal(req.provider.data_collection,'deny')
+    assert.equal(req.provider.max_price.prompt,0)
+    assert.match(req.messages[1].content,/crm/i)
+    return reply({model:req.model,usage:{cost:0},choices:[{
+      finish_reason:'stop',message:{content:JSON.stringify(synth)}
+    }]})
   })
-  assert.equal(calls,1)
+  assert.equal(completions,1)
   assert.equal(r.status,'ok')
-  assert.equal(r.model,'gemini-3.8-flash')
+  assert.equal(r.model,'thinkingmachines/inkling-small:free')
   assert.match(r.text,/🛠 Что конкретно сделать/)
   assert.match(r.text,/Проверить: В CRM появляется/)
   assert.match(r.text,/Gemini \+ Free AI 1/)
