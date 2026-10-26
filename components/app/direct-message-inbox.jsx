@@ -5,6 +5,7 @@ import {Camera,Headphones,MessageCircle,Send,ShieldCheck,RefreshCw,ArrowLeft,Pap
 import {preparePhoto} from '@/components/session-photo-uploader'
 import {directMediaSpec} from '@/lib/practitioners/direct-message-policy.mjs'
 import styles from './direct-message-inbox.module.css'
+import {ClientExpressReportNotices} from './practice-express-reports'
 
 const COPY={
   en:{
@@ -215,6 +216,7 @@ export default function DirectMessageInbox({locale='en'}){
       }}><RefreshCw size={17} aria-hidden="true"/>{t.load}</button>
     </header>
     {signedOut?<p role="alert" className={styles.notice}><a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>:null}
+    {accountId&&!signedOut&&<ClientExpressReportNotices locale={locale} accountId={accountId}/>}
     {error&&<p role="alert" className={styles.error}>{t.error} <code>{error}</code></p>}
     {destination&&!signedOut&&<div className={styles.intro}>
       <ShieldCheck size={18} aria-hidden="true"/><p>{t.welcome}</p>
