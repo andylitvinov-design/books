@@ -34,24 +34,39 @@ export function PublicPageTraffic() {
 
   useEffect(() => {
     const path = safePublicPagePath(pathname);
-    if (!path || !optedIn()) return;
-    if (originalSource.current === null) {
-      originalSource.current = sourceFromPublicEntry(window.location.href, document.referrer);
-    }
-    if (lastPath.current !== path) {
-      sendPublicStat(path, originalSource.current, lastPath.current === null ? "landing" : "view");
-      lastPath.current = path;
+    if (!path) {
+      lastPath.current = null;
+      originalSource.current = null;
+      return;
     }
 
+    const recordPage = () => {
+      if (!optedIn() || lastPath.current === path) return;
+      if (originalSource.current === null)
+        originalSource.current = sourceFromPublicEntry(window.location.href, document.referrer);
+      sendPublicStat(path, originalSource.current, lastPath.current === null ? "landing" : "view");
+      lastPath.current = path;
+    };
+
+    // A visitor who explicitly consents on the current landing page should
+    // count that landing without requiring an additional route navigation.
+    recordPage();
+    window.addEventListener("holistic-house:public-stats-consent", recordPage);
+
     const recordClick = (event: MouseEvent) => {
-      if (!event.isTrusted || event.defaultPrevented) return;
+      if (!optedIn() || !event.isTrusted || event.defaultPrevented) return;
       const target = event.target;
-      if (!(target instanceof Element) || !target.closest("a[href],button")) return;
+      if (!(target instanceof Element) ||
+          target.closest("[data-first-party-consent]") ||
+          !target.closest("a[href],button")) return;
       if (safePublicPagePath(window.location.pathname) !== path) return;
       sendPublicStat(path, originalSource.current || "unknown", "click");
     };
     document.addEventListener("click", recordClick);
-    return () => document.removeEventListener("click", recordClick);
+    return () => {
+      window.removeEventListener("holistic-house:public-stats-consent", recordPage);
+      document.removeEventListener("click", recordClick);
+    };
   }, [pathname]);
 
   return null;
