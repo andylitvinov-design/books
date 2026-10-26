@@ -264,7 +264,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     finally {setBusy(false)}
   }
   async function execute(action,post){
-    if (!ready||busy) return
+    if (!ready||!storageVerified||busy) return
     setBusy(true);setNotice('')
     try {
       const result=await updateGrowthStudioPostAction(action==='save'
@@ -405,41 +405,41 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <button type="button" onClick={reset}><Plus size={15}/>{t.new}</button></div>
         <p className={styles.hint}>{t.quickGuide}</p>
         <div className={styles.quickComposerFields}>
-          <label>{t.channel}<select disabled={!ready||busy} value={form.channel} onChange={set('channel')}>
+          <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={set('channel')}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
-          <label>{t.title}<input disabled={!ready||busy} type="text" maxLength={120} required
+          <label>{t.title}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={120} required
             placeholder={locale==='ru'?'Название публикации':'Post title'}
             value={form.title} onChange={set('title')}/></label>
-          <label>{t.caption}<textarea disabled={!ready||busy} maxLength={3500} rows={5} value={form.caption}
+          <label>{t.caption}<textarea disabled={!ready||!storageVerified||busy} maxLength={3500} rows={5} value={form.caption}
             placeholder={locale==='ru'?'Напишите публичный текст...':'Write public post text...'} onChange={set('caption')}/></label>
         </div>
         <details key={editing?.id||'new'} defaultOpen={isEditing} className={styles.composerOptions}>
           <summary>{t.moreOptions}{form.mediaUrl?' · 📷':''}{form.scheduledAt?' · 📅':''}</summary>
           <p className={styles.hint}>{t.advancedHint}</p>
           <div className={styles.pair}>
-            <label>{t.brand}<select disabled={!ready||busy} value={form.brand} onChange={set('brand')}>
+            <label>{t.brand}<select disabled={!ready||!storageVerified||busy} value={form.brand} onChange={set('brand')}>
               {Object.keys(GROWTH_BRANDS).map(brand=><option key={brand} value={brand}>{BRANDS[brand]}</option>)}</select></label>
-            <label>{t.language}<select disabled={!ready||busy} value={form.locale} onChange={set('locale')}>
+            <label>{t.language}<select disabled={!ready||!storageVerified||busy} value={form.locale} onChange={set('locale')}>
               {GROWTH_LANGUAGES.map(language=><option key={language} value={language}>{language.toUpperCase()}</option>)}</select></label>
-            <label>{t.campaign}<input disabled={!ready||busy} type="text" maxLength={64} pattern="[a-zA-Z0-9_-]*"
+            <label>{t.campaign}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={64} pattern="[a-zA-Z0-9_-]*"
               placeholder="academy_intro_202610" value={form.campaign} onChange={set('campaign')}/></label>
           </div>
           <div className={styles.pair}>
-            <label>{t.media}<input disabled={!ready||busy} type="text" maxLength={500} value={form.mediaUrl||''}
+            <label>{t.media}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={500} value={form.mediaUrl||''}
               placeholder={GROWTH_BRANDS[form.brand]+'/images/photo.webp'} onChange={set('mediaUrl')}/></label>
-            <label>{t.mediaAlt}<input disabled={!ready||busy} type="text" maxLength={240} value={form.mediaAlt||''}
+            <label>{t.mediaAlt}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={240} value={form.mediaAlt||''}
               placeholder={locale==='ru'?'Описание изображения':'What the image shows'} onChange={set('mediaAlt')}/></label>
           </div>
           <p className={styles.hint}>{t.mediaHint}</p>
-          <label>{t.source}<input disabled={!ready||busy} type="text" maxLength={500} value={form.sourceUrl}
+          <label>{t.source}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={500} value={form.sourceUrl}
             placeholder={GROWTH_BRANDS[form.brand]+'/en/academy'} onChange={set('sourceUrl')}/></label>
           <p className={styles.hint}>{t.sourceHint}</p>
           <GrowthStudioSourcePicker brand={form.brand} sourceUrl={form.sourceUrl}
-            locale={locale} disabled={!ready||busy} onApply={applyPublicSource}/>
-          <label>{t.schedule}<input disabled={!ready||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
+            locale={locale} disabled={!ready||!storageVerified||busy} onApply={applyPublicSource}/>
+          <label>{t.schedule}<input disabled={!ready||!storageVerified||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
           <p className={styles.hint}>{t.scheduleNote}</p>
           <div className={styles.manualSlotActions}>
-            <button type="button" disabled={!ready||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
+            <button type="button" disabled={!ready||!storageVerified||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
             <span>{locale==='ru'?'Пн–Пт · 10:00/17:00 по Торонто. Не прогноз лучшего времени.':'Mon–Fri · 10:00/17:00 Toronto. Editorial preset, not an analytics-based best time.'}</span>
           </div>
           <p className={styles.hint}>{t.captionHint}</p>
@@ -452,8 +452,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
               <li key={code}>{CHANNEL_WARNINGS[locale]?.[code]||CHANNEL_WARNINGS.en[code]||code}</li>)}</ul>}
         </div>
         <div className={styles.editorActions}>
-          <button className={styles.primary} disabled={!ready||busy||!form.title.trim()} type="button" onClick={()=>execute('save')}><Check size={16}/>{t.save}</button>
-          {isEditing&&<button type="button" disabled={!ready||busy} onClick={reset}>{t.clear}</button>}
+          <button className={styles.primary} disabled={!ready||!storageVerified||busy||!form.title.trim()} type="button" onClick={()=>execute('save')}><Check size={16}/>{t.save}</button>
+          {isEditing&&<button type="button" disabled={!ready||!storageVerified||busy} onClick={reset}>{t.clear}</button>}
         </div>
         {isEditing&&<p className={styles.hint}>{t.draft}: #{editing.revision}. {t.notes}</p>}
       </div>
@@ -478,7 +478,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         </div>
       </div>
     </div>}
-    {tab==='bulk'&&<GrowthStudioBulk locale={locale} base={form} ready={ready} onCreated={onCreated}/>}
+    {tab==='bulk'&&<GrowthStudioBulk locale={locale} base={form} ready={ready&&storageVerified} onCreated={onCreated}/>}
     {tab==='library'&&<section className={styles.library}>
       <h3>{t.library} · {library.length}</h3>
       <p className={styles.hint}>{t.mediaHint} <Link href="/admin/materials">{t.materials}</Link></p>
@@ -503,7 +503,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     </div>}
     {tab==='inbox'&&<GrowthStudioManualInbox
       records={records.filter(post=>brandFilter==='all'||post.brand===brandFilter)}
-      locale={locale} ready={ready} busy={busy}
+      locale={locale} ready={ready&&storageVerified} busy={busy}
       onEdit={edit} onMarkDone={markManualDone}/>}
     {tab==='calendar'&&<div className={styles.calendar}>
       <div className={styles.calendarHead}>
@@ -527,7 +527,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <p className={styles.hint}>{scheduled.length} {t.monthItems}. {t.notes}</p>
     </div>}
     {tab==='posts'&&evergreenSource&&<GrowthStudioEvergreen key={evergreenSource.id}
-      source={evergreenSource} locale={locale} disabled={!ready||busy}
+      source={evergreenSource} locale={locale} disabled={!ready||!storageVerified||busy}
       onClose={()=>setEvergreenSource(null)}
       onCreated={(items,reused)=>{
         onCreated(items);setEvergreenSource(null)
@@ -545,24 +545,24 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
             && <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button>}</div>
         <p className={styles.postExcerpt}>{post.caption||'—'}</p>
         <div className={styles.postButtons}>
-          {post.status==='draft'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
-          {post.status==='approved'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
+          {post.status==='draft'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
+          {post.status==='approved'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
           {post.channel==='telegram'&&post.brand==='holistic_house'&&['approved','planned_manual'].includes(post.status)&&
-            <button type="button" disabled={busy||!ready||!telegramVerified}
+            <button type="button" disabled={busy||!ready||!storageVerified||!telegramVerified}
               title={telegramVerified?t.telegramSend:locale==='ru'?'Сначала проверьте права бота в разделе подключений':'Verify bot posting rights under Connections first'} onClick={()=>sendTelegram(post)}>
               <Send size={15}/>{t.telegramSend}</button>}
-          {post.status==='planned_manual'&&<button type="button" disabled={busy||!ready}
+          {post.status==='planned_manual'&&<button type="button" disabled={busy||!ready||!storageVerified}
             onClick={()=>markManualDone(post)}><CheckCheck size={15}/>{t.manualDoneButton}</button>}
-          {post.status==='manual_done'&&<button type="button" disabled={busy||!ready}
+          {post.status==='manual_done'&&<button type="button" disabled={busy||!ready||!storageVerified}
             onClick={()=>undoManualDone(post)}><RefreshCcw size={15}/>{t.manualUndo}</button>}
           {post.status==='manual_done'&&<small className={styles.manualDoneTimestamp}>{t.manualDoneTime}: {formatTime(post.manualDoneAt,locale)}</small>}
           {post.status==='published'&&post.delivery?.url&&
             <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>}
-          {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
+          {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
           {!['archived','sending','published','delivery_unknown','manual_done'].includes(post.status)&&
-            <button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
+            <button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
           {['approved','planned_manual','published'].includes(post.status)&&
-            <button type="button" disabled={busy||!ready} onClick={()=>{setEvergreenSource(post);setNotice('')}}>
+            <button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>{setEvergreenSource(post);setNotice('')}}>
               <RefreshCcw size={15}/>{locale==='ru'?'Подготовить повторы':'Prepare repeats'}</button>}
           <button type="button" onClick={()=>copyPost(post)}><Copy size={15}/>{t.copyPost}</button>
           {post.sourceUrl&&<button type="button" onClick={()=>copyLink(post)}><Copy size={15}/>{t.copy}</button>}
