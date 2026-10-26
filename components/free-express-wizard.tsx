@@ -16,6 +16,7 @@ type Kind = "portrait" | "drawing";
 type MediaState = Record<Kind, boolean>;
 type Receipt = { referenceCode: string; saved: true };
 const RESUME = "hh-free-express-wizard-resume-v2";
+const PENDING_GOOGLE_CLAIM = "hh-free-express-google-claim-v2";
 const PHOTO_LIMIT = 2_750_000;
 const fieldsShort = new Set(["request", "idealOutcome", "priorityQuestion"]);
 const copy = {
@@ -186,9 +187,47 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
         }
         setStep(isGoogleReturn ? 3 : data.contextSaved ? 3 : 1);
         setError(t.restored);
+        if (isGoogleReturn) {
+          // The user explicitly ticked consent and pressed Google save before
+          // OAuth. Match this tab's short-lived intent to the verified receipt,
+          // then complete the account link once. A URL marker alone is never consent.
+          let pendingClaim: { locale?: string; referenceCode?: string; createdAt?: number } | null = null;
+          try { pendingClaim = JSON.parse(window.sessionStorage.getItem(PENDING_GOOGLE_CLAIM) || "null"); }
+          catch { /* Invalid tab state cannot authorize a claim. */ }
+          const marker = new URL(window.location.href);
+          const oauthFailed = marker.searchParams.has("auth");
+          marker.searchParams.delete("hh_enquiry");
+          marker.searchParams.delete("auth");
+          window.history.replaceState(window.history.state, "", marker.pathname + marker.search + marker.hash);
+          const canClaim = !oauthFailed
+            && pendingClaim?.locale === locale
+            && pendingClaim.referenceCode === data.referenceCode
+            && Number.isSafeInteger(pendingClaim.createdAt)
+            && Date.now() >= Number(pendingClaim.createdAt)
+            && Date.now() - Number(pendingClaim.createdAt) < 10 * 60_000;
+          if (canClaim) {
+            try {
+              const claimResponse = await fetch("/api/free-express/claim", {
+                method: "POST", credentials: "same-origin", cache: "no-store",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ consent: true, referenceCode: data.referenceCode }),
+              });
+              const claim = await claimResponse.json().catch(() => null);
+              if (!claimResponse.ok || claim?.saved !== true
+                || claim.referenceCode !== data.referenceCode) throw new Error("CLAIM_NOT_CONFIRMED");
+              setGoogleSaved(true);
+              setStep(data.focus === "energy" ? 5 : 4);
+              setError("");
+              window.sessionStorage.removeItem(PENDING_GOOGLE_CLAIM);
+            } catch { setError(t.googleError); }
+          } else if (oauthFailed) {
+            setError(t.googleError);
+            try { window.sessionStorage.removeItem(PENDING_GOOGLE_CLAIM); } catch {}
+          }
+        }
       } catch { /* The original server receipt, not browser state, is authoritative. */ }
     })();
-  }, [locale, onSaved, onRestoredFocus, t.restored]);
+  }, [locale, onSaved, onRestoredFocus, t.restored, t.googleError]);
 
   function remember(referenceCode: string) {
     try { window.sessionStorage.setItem(RESUME, JSON.stringify({ locale, referenceCode })); }
@@ -305,6 +344,7 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
         const data = await res.json();
         if (data.saved !== true || data.referenceCode !== receipt?.referenceCode) throw new Error("CLAIM_FAILED");
         setGoogleSaved(true);
+        try { window.sessionStorage.removeItem(PENDING_GOOGLE_CLAIM); } catch {}
         nextAfterGoogle();
         return;
       }
@@ -318,6 +358,10 @@ export function FreeExpressWizard({ locale, focus, serviceTitle, onSaved, onRest
       if (!auth.ok || typeof value?.redirectUrl !== "string" || !value.redirectUrl.startsWith("https://"))
         throw new Error("GOOGLE_UNAVAILABLE");
       remember(receipt?.referenceCode || "");
+      try {
+        window.sessionStorage.setItem(PENDING_GOOGLE_CLAIM,
+          JSON.stringify({ locale, referenceCode: receipt?.referenceCode, createdAt: Date.now() }));
+      } catch { /* The client can confirm manually after OAuth if storage is unavailable. */ }
       window.location.assign(value.redirectUrl);
     } catch { setError(t.googleError); }
     finally { setBusy(false); }
