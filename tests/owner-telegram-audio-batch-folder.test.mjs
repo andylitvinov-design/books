@@ -136,7 +136,7 @@ test('temporary parts stay invisible in library and are cleaned by exact batch I
   const service=source('../lib/practitioners/owner-telegram-audio-service.js')
   assert.match(service,/where practitioner_id=\$1 and status='ready' and combine_batch_id is null/)
   assert.match(service,/where id=\$1 and practitioner_id=\$2 and status='ready' and combine_batch_id is null/)
-  const cleanup=service.match(/async function deleteTemporaryAudioParts\([\s\S]*?\n}\nasync function telegramAudioBytes/)
+  const cleanup=service.match(/async function deleteTemporaryAudioParts\([\s\S]*?\n}\n\s*async function telegramAudioBytes/)
   assert.ok(cleanup,'scoped storage cleanup')
   assert.match(cleanup[0],/combine_batch_id=\$2/)
   assert.match(cleanup[0],/storage\.remove\(/)
