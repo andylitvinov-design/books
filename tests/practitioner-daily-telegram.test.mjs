@@ -130,10 +130,10 @@ test('owner digest shows ranked public landing pages and coarse sources, never p
   {day:dates.weekStart,pagePath:'/ru/academy',source:'direct',landings:7,views:11,clicks:4},
   {day:dates.yesterday,pagePath:'/en/app/private',source:'unknown',landings:999,views:999,clicks:999}
  ]})
- assert.match(report.text,/Вчера: входы 4 · просмотры 6 · клики 3/)
- assert.match(report.text,/За 7 дней: входы 11 · просмотры 17 · клики 7/)
+ assert.match(report.text,/Вчера: просмотры 6 · входы 4 · клики 3/)
+ assert.match(report.text,/За 7 дней: просмотры 17 · входы 11 · клики 7/)
  assert.match(report.text,/\/en\/services\/alchemy-of-soul/)
- assert.match(report.text,/Google поиск 2, Telegram 1/)
+ assert.match(report.text,/Google поиск 3 · Telegram 1/)
  assert.doesNotMatch(report.text,/\/en\/app\/private|999|\/\?/)
  assert.ok(report.text.length<=3900)
 })
