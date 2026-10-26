@@ -107,7 +107,7 @@ function AudioPublication({message,onAction,busy,locale,t}){
     </div>
   </details>
 }
-export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false}){
+export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,simpleDetail=false,initialThreadId='',onThreadsLoaded}){
   const t=COPY[locale]||COPY.en
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
@@ -120,14 +120,19 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     setAccountId(data.accountId)
     setSignedOut(false)
     setThreads(data.threads||[])
+    onThreadsLoaded?.(data.threads||[])
     return data
-  },[])
+  },[onThreadsLoaded])
   useEffect(()=>{
     const parameters=new URLSearchParams(window.location.search)
     const slug=parameters.get('to')||''
     setDestination(/^[a-z0-9-]{2,90}$/.test(slug)?slug:'')
     getThreads().catch(e=>{setError(e.message);if(e.message==='SIGN_IN_REQUIRED')setSignedOut(true)})
   },[getThreads])
+  useEffect(()=>{
+    if(simpleDetail&&accountId&&initialThreadId&&activeId!==initialThreadId)
+      void openThread(initialThreadId)
+  },[simpleDetail,accountId,initialThreadId,activeId])
   async function post(body){
     if(!accountId)throw new Error('SIGN_IN_REQUIRED')
     const response=await fetch(URL,{method:'POST',cache:'no-store',credentials:'same-origin',
@@ -208,15 +213,15 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
   }
   function changeFile(next){setFile(next);setAllowPublicReuse(false);uploadRef.current=null;operationRef.current=null}
   const audioSelected=file&&AUDIO_MIMES.has(mediaMime(file))
-  return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined}>
-    <header className={styles.head}>
+  return <section className={styles.shell} aria-label={t.title} data-embedded={embedded||undefined} data-simple-detail={simpleDetail||undefined}>
+    {!simpleDetail&&<header className={styles.head}>
       <div>{embedded?<h2><MessageCircle aria-hidden="true"/>{t.title}</h2>:<h1><MessageCircle aria-hidden="true"/>{t.title}</h1>}<p>{t.hint}</p></div>
       <button type="button" className={styles.refresh} disabled={busy} onClick={async()=>{
         try{await getThreads();if(activeId)await openThread(activeId)}catch(e){setError(e.message)}
       }}><RefreshCw size={17} aria-hidden="true"/>{t.load}</button>
-    </header>
+    </header>}
     {signedOut?<p role="alert" className={styles.notice}><a href={'/'+(locale==='es'?'en':locale)+'/app/portrait'}>{t.signIn}</a></p>:null}
-    {accountId&&!signedOut&&<ClientExpressReportNotices locale={locale} accountId={accountId}/>}
+    {!simpleDetail&&accountId&&!signedOut&&<ClientExpressReportNotices locale={locale} accountId={accountId}/>}
     {error&&<p role="alert" className={styles.error}>{t.error} <code>{error}</code></p>}
     {destination&&!signedOut&&<div className={styles.intro}>
       <ShieldCheck size={18} aria-hidden="true"/><p>{t.welcome}</p>
@@ -225,7 +230,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     {!accountId&&!signedOut&&!error&&<p className={styles.emptySummary} role="status">{t.loading}</p>}
     {accountId&&!threads.length&&!destination&&<p className={styles.emptySummary}>{ownerCrmAvailable?t.ownerEmpty:t.empty}</p>}
     {accountId&&(threads.length>0||destination)&&<div className={styles.layout}>
-      <aside className={styles.conversations} aria-label={t.back}>
+      {!simpleDetail&&<aside className={styles.conversations} aria-label={t.back}>
         <h2>{t.back}</h2>
         {!threads.length&&<p className={styles.hint}>{t.empty}</p>}
         {threads.map(item=><button type="button" key={item.id} className={item.id===activeId?styles.selected:styles.thread}
@@ -235,7 +240,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
             <small>{new Date(item.updatedAt).toLocaleDateString(locale)}</small></span>
           {item.unread>0&&<span className={styles.unread} aria-label={String(item.unread)}>{item.unread}</span>}
         </button>)}
-      </aside>
+      </aside>}
       <div className={styles.chat}>
         {!current?<div className={styles.placeholder}><Headphones size={28} aria-hidden="true"/>
           <p>{t.choose}</p></div>:<>
