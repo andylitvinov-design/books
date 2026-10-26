@@ -40,7 +40,7 @@ function assertPublicTestHref(href, locale, direction, selectedTopic, label) {
       'Only the existing public test catalog may be a fallback: ' + label)
     assert.deepEqual([...target.searchParams.keys()], ['focus', 'journey', 'topics'],
       'Catalog fallback carries only allowlisted public filters: ' + label)
-    assert.equal(target.searchParams.get('journey'), direction,
+    assert.equal(target.searchParams.get('journey'), direction === 'love' ? 'relationships' : direction,
       'Catalog fallback remains in the selected direction: ' + label)
     assert.equal(target.searchParams.get('topics'), selectedTopic,
       'Catalog fallback follows the selected topic: ' + label)
