@@ -76,6 +76,7 @@ export type PublicPractitioner = {
   id: string
   slug: string
   isPartner: boolean
+  canMessage?: boolean
   profile: PractitionerPublicProfile
   credentials: PractitionerCredentialPublic[]
   services: PublicService[]

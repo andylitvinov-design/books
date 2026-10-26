@@ -8,7 +8,7 @@ import './saved-document-reader.css'
 import Image from 'next/image'
 import consultationStyles from './consultation-offers.module.css'
 import dynamic from 'next/dynamic'
-import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap } from 'lucide-react'
+import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import PracticeRequestConversation from './practice-request-conversation'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -560,6 +560,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: root + '/practice', icon: Users },
+    { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||

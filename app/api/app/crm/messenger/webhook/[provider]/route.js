@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
-import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate } from '@/lib/crm/messenger-webhook'
+import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
+import { sendTelegramDiagnosticPrompt } from '@/lib/crm/messenger-provider'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
@@ -29,7 +30,20 @@ export async function POST(request,{params}){
     const config=getAppConfig()
     const body=JSON.parse(raw.toString('utf8'))
     const updates=normalizeMessengerUpdates(provider,body)
-    for(const event of updates)await ingestMessengerUpdate(provider,event,config)
+    for(const event of updates){
+      if(provider==='telegram'){
+        const intake=await processTelegramDiagnostic(event,config)
+        if(intake.handled){
+          if(intake.reply){
+            // CRM and consent were committed before contacting the provider.
+            // Unknown provider results are NOT automatically retried (no duplicate prompts).
+            try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard})}catch{ /* leave intake in CRM for owner manual follow-up */ }
+          }
+          continue
+        }
+      }
+      await ingestMessengerUpdate(provider,event,config)
+    }
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }catch(error){
     const safe=safeError(error)

@@ -28,7 +28,7 @@ permissions:
 jobs:
   course-and-save-gate:
     name: Full course / save checkpoint — ${{ matrix.browser }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     strategy:
       fail-fast: false
