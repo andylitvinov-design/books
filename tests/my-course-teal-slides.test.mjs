@@ -1,3 +1,4 @@
+import { assertCheckinReviewGuard } from './helpers/course-current-source-contracts.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -56,7 +57,7 @@ test('one meaningful lesson unit becomes one slide; guided sections each get a s
   assert.match(today, /<details className=\{styles\.classicPanel\}>/)
 })
 
-test('clinical questionnaire scoring and private storage are unchanged, rewards are only for server saved lessons', () => {
+test('clinical questionnaire scoring and private storage are unchanged, rewards are only for server saved lessons', async () => {
   assert.match(slides, /onCheckin\(\{/)
   assert.match(slides, /severity, interference: today\?\.interference \?\? null/)
   assert.match(slides, /expectedRevision:today\.revision/)
@@ -65,7 +66,7 @@ test('clinical questionnaire scoring and private storage are unchanged, rewards 
   assert.match(slides, /if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(slides, /alreadyDone = Boolean\(session\)/)
   assert.match(slides, /if \(alreadyDone\) \{ setIndex\(slides\.length\); return \}/)
-  assert.match(slides, /if \(!Number\.isInteger\(severity\)/)
+  await assertCheckinReviewGuard(slides)
   assert.match(slides, /preferNot: 'Prefer not to say'/)
   assert.doesNotMatch(slides, /localStorage|sessionStorage|dangerouslySetInnerHTML|sendBeacon|leaderboard|correctAnswer|wrongAnswer/)
   assert.match(slideCss, /\.error\{/)
