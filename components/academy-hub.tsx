@@ -386,6 +386,16 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      {view === "programs" && <section className="academy-personal-courses" aria-labelledby="academy-my-courses-title">
+        <div>
+          <p className="academy-personal-courses-label">{locale === "ru" ? "МОЁ ПРОСТРАНСТВО · ОБУЧЕНИЕ" : locale === "es" ? "MI ESPACIO · APRENDIZAJE" : "MY SPACE · LEARNING"}</p>
+          <h2 id="academy-my-courses-title">{locale === "ru" ? "Мои курсы" : locale === "es" ? "Mis cursos" : "My Courses"}</h2>
+          <p>{locale === "ru" ? "Начатые курсы, прогресс и продолжение обучения — в вашем кабинете." : locale === "es" ? "Continúa tus cursos y consulta tu progreso en tu espacio privado (disponible en inglés)." : "Continue your started courses and see your progress in your private space."}</p>
+        </div>
+        <Link className="academy-personal-courses-link" href={"/" + (locale === "es" ? "en" : locale) + "/app/course?view=courses"}>
+          {locale === "ru" ? "Открыть мои курсы" : locale === "es" ? "Abrir mis cursos" : "Open My Courses"} <ChevronRight size={18} aria-hidden="true" />
+        </Link>
+      </section>}
       <AcademyDiscovery locale={locale} view={view} items={items} coachingItem={coachingItem} legacyCourses={legacyCourses} legacyVideos={legacyVideos} events={PUBLIC_EVENTS} label={text.allPrograms} />
       {view === "videos" ? (
         <section id="academy-video-courses">
