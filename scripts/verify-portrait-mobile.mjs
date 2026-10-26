@@ -8,6 +8,7 @@ import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { capturePortraitPageErrors, freshPortraitReportPage } from './helpers/portrait-mobile-auth-handoff.mjs'
 
 assertIsolated()
 const origin = process.env.HH_TEST_APP_ORIGIN || 'http://127.0.0.1:3100'
@@ -18,9 +19,9 @@ const output = 'artifacts/portrait-mobile'
 await mkdir(output, { recursive: true })
 const browser = await engine.launch()
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })
-const page = await context.newPage()
 const problems = []
-page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
+capturePortraitPageErrors(context, problems)
+let page = await context.newPage()
 const open = path => page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 90000 })
 const card = () => page.locator('[data-testid="insights-psychological-portrait"]')
 const buttons = () => card().locator('button[data-portrait-sector]')
@@ -103,14 +104,10 @@ try {
   await page.getByLabel('I am 18 or older.').check()
   await page.getByLabel('I agree to private processing',{exact:false}).check()
   await page.getByRole('button',{name:'Create my private space'}).click()
-  // The consent transition is asynchronous: a visible tab bar may briefly
-  // precede the app's own /app/portrait or /app/tests navigation. Await the
-  // settled account landing, otherwise WebKit may interrupt the first goto.
-  await expect(page).toHaveURL(/\/en\/app\/(?:portrait|tests)(?:[?#]|$)/,{timeout:90000})
-  await expect(page.locator('.hh-mobile-app-nav')).toBeVisible({timeout:90000})
-  // The current signed-in Profile is ProfileDomains (not the older
-  // PersonalPortraitSummary/My Tests landing referenced in legacy E2E tests).
-  await expect(page.locator('[data-profile-domains]')).toBeVisible({timeout:90000})
+  // Preserve actual account/hydration readiness, then measure Reports in a
+  // fresh document of this same authenticated synthetic browser context.
+  // The original landing navigation race remains a separate integration issue.
+  page = await freshPortraitReportPage({ context, landingPage: page, expect, origin })
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
   for (const locale of ['en','ru']) {
