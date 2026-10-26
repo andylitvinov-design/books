@@ -111,7 +111,7 @@ test('private media are never public, decoded, EXIF-stripped and owner-scoped', 
   assert.match(route, /authorizedFreeExpressOwnerMedia/)
   assert.match(route, /'Cache-Control': 'private, no-store/)
   const housekeeping = root('app/api/internal/housekeeping/route.js')
-  assert.match(housekeeping, /purgeExpiredFreeExpressMedia\\(config\\)/)
+  assert.match(housekeeping, /purgeExpiredFreeExpressMedia\(config\)/)
   assert.doesNotMatch(housekeeping, /HH_FREE_EXPRESS_V2_ENABLED/,
     'Emergency intake rollback must not stop deletion of previously uploaded media')
 })
