@@ -14,3 +14,16 @@
  .hh-app.hh-messages-page{padding-top:4px}
  .hh-app.hh-messages-page .hh-header{display:none}
 }
+
+/* Installed app and mobile browser share one full-height, keyboard-aware inbox.
+   The normal website chrome stays out of the conversation; private data is never cached. */
+@media(max-width:760px){
+  .hh-app.hh-messages-page{
+    display:flex;flex-direction:column;overflow:hidden;min-height:0;
+    height:var(--hh-messages-viewport,100dvh);
+    padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  }
+  .hh-messages-page [data-messages-hub]{flex:1;min-height:0;height:100%;overflow:hidden}
+  .hh-messages-page:has(textarea:focus, input[type="search"]:focus){padding-bottom:0}
+  .hh-messages-page:has(textarea:focus, input[type="search"]:focus) .hh-mobile-app-nav{display:none}
+}
