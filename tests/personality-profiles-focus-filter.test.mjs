@@ -30,7 +30,7 @@ test('slide two shows only measured axes for its focus and clears stale test cho
   assert.match(builder, /const areasFor = \(focuses: Focus\[\]\) => \[\.\.\.new Set\(focuses.flatMap\(focus => focusAreas\[focus\]\)\)\]/)
   assert.match(builder, /const visibleAreas = areasFor\(focuses\);/)
   assert.match(builder, /const activeAreas = areas.filter\(area => visibleAreas.includes\(area\)\);/)
-  assert.match(builder, /const selectedAxes = allAxesFor\(activeAreas\)\.filter\(axis => measurableAxes\.has\(axis\)\)/)
+  assert.match(builder, /const selectedAxes = selectedProfileAxes\(scaleGroups, selectedScaleIds\) as string\[\]/)
   assert.match(builder, /if \(!visibleAreas.includes\(area\) \|\| !areaAxes\[area\]\.some\(axis => measurableAxes\.has\(axis\)\)\) return;/)
   const stepTwo = builder.split('{step === 1 && <section')[1]?.split('{step === 2 && <section')[0]
   assert.ok(stepTwo, 'topic slide must exist')
@@ -38,11 +38,11 @@ test('slide two shows only measured axes for its focus and clears stale test cho
   assert.doesNotMatch(stepTwo, /allAreas\.map/)
   assert.match(stepTwo, /data-profile-topic-options/)
   assert.match(stepTwo, /data-profile-selected-focus/)
-  assert.match(builder, /else if \(step === 1 && activeAreas.length && selectedAxes.length\)/)
-  assert.match(builder, /disabled=\{activeAreas.length === 0 \|\| selectedAxes.length === 0\}/)
+  assert.match(builder, /else if \(step === 1 && activeAreas.length\)/)
+  assert.match(builder, /disabled=\{activeAreas.length === 0\}/)
   const onFocusChange = builder.split('function toggleFocus(focus: Focus) {')[1]?.split('function toggleArea(area: Area) {')[0]
   assert.ok(onFocusChange)
-  for (const stale of ['setAreas([])', 'setSelectedKeys([])', 'setShowMore(false)']) {
+  for (const stale of ['setAreas([])', 'setSelectedScaleIds([])', 'setShowMore(false)']) {
     assert.ok(onFocusChange.includes(stale), 'reset on focus change: ' + stale)
   }
 })
@@ -59,17 +59,17 @@ test('filtered focus summary is localized and mobile topics use compact full-wid
   assert.match(css, /\.areaCard \{ min-height: 64px; align-items: center; padding: 10px 12px; gap: 10px; \}/)
 })
 
-test('topic cards show catalogue-backed dimensions and the redundant Scales step is absent', () => {
-  assert.match(builder, /const measurableAxes = useMemo\(\(\) => new Set\(tests\.flatMap\(test => test\.axes\)\), \[tests\]\)/)
+test('topic cards show only available axes; third step exposes source-declared scales', () => {
+  assert.match(builder, /const measurableAxes = useMemo\(\(\) => new Set\(tests\.flatMap\(test => test\.scales\.map\(scale => scale\.axis\)\)\), \[tests\]\)/)
   assert.match(builder, /areaAxes\[area\]\.filter\(axis => measurableAxes\.has\(axis\)\)/)
   assert.match(builder, /axes\.map\(axis => axesCopy\[axis\]\?\.\[locale\] \|\| axis\)/)
   assert.match(builder, /disabled=\{!axes\.length\}/)
-  assert.doesNotMatch(builder, /\{step === 4 && <section/)
-  assert.doesNotMatch(builder, /setSelectedAxes/)
+  assert.match(builder, /data-profile-scales-by-topic/)
+  assert.match(builder, /data-profile-confirm-scales/)
   for (const stages of [
-    '["Focus", "Topics", "Tests", "Ready"]',
-    '["Запрос", "Темы", "Тесты", "Начало"]',
-    '["Interés", "Temas", "Pruebas", "Inicio"]',
+    '["Focus", "Topics", "Scales", "Tests", "Ready"]',
+    '["Запрос", "Темы", "Шкалы", "Тесты", "Начало"]',
+    '["Interés", "Temas", "Escalas", "Pruebas", "Inicio"]',
   ]) assert.ok(builder.includes(stages), stages)
-  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/)
+  assert.match(css, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/)
 })

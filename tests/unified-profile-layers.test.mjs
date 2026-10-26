@@ -76,7 +76,7 @@ test('client profile and Insights reuse one owner-scoped source model', () => {
   assert.match(style, /focus-visible/)
 })
 
-test('optional fourth Ready slide offers Google handoff without silent guest import', () => {
+test('optional fifth Ready slide offers Google handoff without silent guest import', () => {
   const builder = source('components/personality-profiles-builder.tsx')
   const css = source('components/personality-profiles-builder.module.css')
   const page = source('app/[locale]/personality-profiles/page.tsx')
