@@ -34,7 +34,7 @@ const copy = {
     telegramLinked: "Connected to your Telegram request · no contact details needed.",
     telegramSuccess: "Your answers were attached to the existing Telegram chat. Reference:",
     telegramUnavailable: "Telegram session could not be verified. Open this form using the button in the bot, or leave an email/phone.",
-    telegramExpiry: "Telegram session expired. Please reopen the form from your bot or add your contact.",
+    telegramExpiry: "Telegram cannot confirm this attempt. It may already have arrived. Keep this form open and ask Andrey in the same Telegram chat to check; do not send a new request.",
     telegramConsent: "Sending will attach your answers to the existing private conversation with Andrey.",
     sendFree: "Free · €0",
     sendShort: "30 min · €50",
@@ -43,6 +43,11 @@ const copy = {
     sendPhone: "Phone",
     sendConsent: "I agree to share these answers and my contact with Andrey for one personal reply. No marketing.",
     sendButton: "Send answers",
+    sendRetry: "Retry original send",
+    sendAccountChanged: "Your account changed. This form no longer shows or resends the previous request. Ask Andrey to confirm it using the original contact or Telegram conversation before starting another.",
+    sendLocked: "This attempt keeps the original answers and request ID. Do not open another form until receipt is confirmed.",
+    sendChecking: "Checking your Telegram connection before sending…",
+    sendRejected: "These answers were not accepted. You can edit them and send a new attempt.",
     sendError: "Complete the three essential questions, provide an email or phone, and agree to send your answers.",
     sendFailure: "Your request could not be confirmed. Please retry; your answers are still here.",
     sendSuccess: "Your questionnaire and contact were received. Reference:",
@@ -97,7 +102,7 @@ const copy = {
     telegramLinked: "Связано с заявкой в Telegram · контакты повторно не нужны.",
     telegramSuccess: "Ответы добавлены в существующий диалог Telegram. Номер:",
     telegramUnavailable: "Не удалось подтвердить Telegram. Откройте форму кнопкой в боте или оставьте email/телефон.",
-    telegramExpiry: "Сессия Telegram истекла. Откройте форму заново из бота или оставьте контакт.",
+    telegramExpiry: "Telegram не подтверждает эту попытку. Ответы уже могли дойти. Не закрывайте форму; попросите Андрея проверить тот же диалог Telegram. Не отправляйте новую заявку.",
     telegramConsent: "После отправки ответы добавятся в вашу существующую переписку с Андреем.",
     sendFree: "Бесплатно · €0",
     sendShort: "30 мин · €50",
@@ -106,6 +111,11 @@ const copy = {
     sendPhone: "Телефон",
     sendConsent: "Согласен(на) передать ответы и контакт Андрею для одного личного ответа. Без рассылок.",
     sendButton: "Отправить ответы",
+    sendRetry: "Повторить исходную отправку",
+    sendAccountChanged: "Аккаунт изменился. Эта форма больше не показывает и не отправляет прежнюю заявку. Попросите Андрея подтвердить получение через исходный контакт или диалог Telegram, прежде чем создавать новую.",
+    sendLocked: "Сохранены исходные ответы и номер попытки. Не открывайте новую форму, пока получение не подтверждено.",
+    sendChecking: "Перед отправкой проверяем связь с Telegram…",
+    sendRejected: "Эти ответы не приняты. Можно исправить их и отправить новую попытку.",
     sendError: "Ответьте на три основных вопроса, укажите email или телефон и подтвердите согласие на отправку.",
     sendFailure: "Не удалось подтвердить получение заявки. Попробуйте повторить: ответы сохранились на экране.",
     sendSuccess: "Ваша анкета и контакт получены. Номер заявки:",
@@ -160,7 +170,7 @@ const copy = {
     telegramLinked: "Conectado con tu solicitud de Telegram. No necesitas dar tus datos otra vez.",
     telegramSuccess: "Tus respuestas ya están en el chat de Telegram. Número:",
     telegramUnavailable: "No se pudo verificar Telegram. Abre este formulario con el botón del bot o deja email/teléfono.",
-    telegramExpiry: "La sesión de Telegram caducó. Vuelve a abrir desde el bot o deja un contacto.",
+    telegramExpiry: "Telegram no puede confirmar este intento. Puede haber llegado. Mantén el formulario abierto y pide a Andrey que lo compruebe en el mismo chat; no envíes otra solicitud.",
     telegramConsent: "Al enviar, tus respuestas se añadirán al chat privado existente con Andrey.",
     sendFree: "Gratis · €0",
     sendShort: "30 min · €50",
@@ -169,6 +179,11 @@ const copy = {
     sendPhone: "Teléfono",
     sendConsent: "Acepto enviar estas respuestas y mi contacto a Andrey para una respuesta personal. Sin publicidad.",
     sendButton: "Enviar respuestas",
+    sendRetry: "Reintentar el envío original",
+    sendAccountChanged: "Tu cuenta cambió. Este formulario ya no muestra ni reenvía la solicitud anterior. Pide a Andrey que confirme la recepción mediante el contacto o chat de Telegram original antes de empezar otra.",
+    sendLocked: "Este intento conserva las respuestas y el identificador originales. No abras otro formulario hasta confirmar la recepción.",
+    sendChecking: "Comprobando la conexión con Telegram antes del envío…",
+    sendRejected: "Estas respuestas no se aceptaron. Puedes corregirlas y enviarlas de nuevo.",
     sendError: "Completa las tres preguntas esenciales, indica email o teléfono y acepta enviar tus respuestas.",
     sendFailure: "No se pudo confirmar el envío. Vuelve a intentarlo; tus respuestas siguen aquí.",
     sendSuccess: "Hemos recibido tu cuestionario y contacto. Referencia:",
@@ -263,7 +278,18 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   const [leadReceipt, setLeadReceipt] = useState("");
   const [telegramInitData, setTelegramInitData] = useState<string | null>(null);
   const [telegramStatus, setTelegramStatus] = useState<"none" | "checking" | "linked" | "unavailable">("none");
-  const leadAttempt = useRef<{ id: string; body: string } | null>(null);
+  const leadAttempt = useRef<Readonly<{ id: string; body: string; endpoint: string }> | null>(null);
+  const accountGeneration = useRef(0);
+  const accountEpoch = accountGeneration.current;
+  const leadStarted = useRef(false);
+  const leadSessionInvalid = useRef(false);
+  const [leadSessionChanged, setLeadSessionChanged] = useState(false);
+  const leadUncertain = useRef(false);
+  const leadSending = useRef(false);
+  const [leadLocked, setLeadLocked] = useState(false);
+  const requestFromTelegram = leadAttempt.current
+    ? leadAttempt.current.endpoint === "/api/coaching-diagnostic/telegram"
+    : telegramStatus === "linked";
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const fullText = useMemo(() => formatAnswers(draft, locale), [draft, locale]);
   const missing = COACHING_FIELDS.filter(field => field.required && !draft.answers[field.id]?.trim()).length;
@@ -274,6 +300,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
 
   useEffect(() => {
     let active = true;
+    const loadEpoch = accountGeneration.current;
     let restored: Draft | null = null;
     // Only a public, allowlisted topic may cross this page link.
     setDraft(previous => hasSomeAnswers(previous) ? previous
@@ -312,7 +339,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       return () => { active = false; };
     }
     appFetch("coaching-intake").then((result: Saved) => {
-      if (!active) return;
+      if (!active || loadEpoch !== accountGeneration.current || leadStarted.current) return;
       setSaved(result);
       setAuth("signed");
       setConsent(Boolean(result.intake));
@@ -323,13 +350,20 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
         setDirty(false);
       }
     }).catch((reason: { status?: number }) => {
-      if (!active) return;
+      if (!active || loadEpoch !== accountGeneration.current || leadStarted.current) return;
       setAuth(reason?.status === 401 ? "guest" : "error");
     });
     const onSignOut = (event: MessageEvent) => {
       if (event.data === "signed-out") {
+        accountGeneration.current += 1;
+        if (leadAttempt.current) {
+          // Retain dedupe identity, but never resend or show former-account data.
+          leadSessionInvalid.current = true;
+          setLeadSessionChanged(true);
+        }
         setSaved(null); setAuth("guest"); setDraft(blank()); setConsent(false); setDirty(false);
-        setCollision(false); setNotice(""); setError("");
+        setReplyContact({ email: "", phone: "" }); setSendConsent(false); setShowPhone(false);
+        setCollision(false); setNotice(""); setError(""); setBusy(false);
       }
     };
     let channel: BroadcastChannel | null = null;
@@ -362,8 +396,11 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     return () => { active = false; };
   }, []);
 
+  function sessionChanged() {
+    return accountEpoch !== accountGeneration.current || leadSessionInvalid.current;
+  }
   function edit(next: (draft: Draft) => Draft) {
-    if (collision || busy) return;
+    if (sessionChanged() || collision || busy || (leadAttempt.current && !leadReceipt)) return;
     setDraft(previous => ({ ...next(previous), status: "draft" }));
     setDirty(true); setNotice(""); setError(""); setFallbackCopy(false);
   }
@@ -371,22 +408,24 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     edit(previous => ({ ...previous, answers: { ...previous.answers, [id]: value } }));
   }
   async function signIn() {
-    if (busy) return;
+    if (sessionChanged() || busy || (leadAttempt.current && !leadReceipt)) return;
     setBusy(true); setError(""); setNotice("");
     try {
       const result = await appFetch("auth/start", { locale, continueTo: "coaching-intake" });
+      if (sessionChanged()) return;
       if (!result?.redirectUrl) throw new Error("SIGN_IN_UNAVAILABLE");
       try {
         sessionStorage.setItem(key, JSON.stringify({ version: COACHING_INTAKE_VERSION, expires: Date.now() + 15 * 60 * 1000, draft }));
       } catch { /* browser storage may be disabled; no private data sent in OAuth URL */ }
       window.location.assign(result.redirectUrl);
     } catch {
+      if (sessionChanged()) return;
       setError(t.signInError);
       setBusy(false);
     }
   }
   async function save(status: "draft" | "complete") {
-    if (collision || busy) return;
+    if (sessionChanged() || collision || busy || (leadAttempt.current && !leadReceipt)) return;
     if (status === "complete" && missing) { setError(t.needsRequired); return; }
     if (!saved?.accountId) { setError(t.saveRequired); return; }
     if (!consent) { setError(t.consent); return; }
@@ -397,77 +436,105 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
         topic: draft.topic, name: draft.name, city: draft.city,
         answers: draft.answers, questions: draft.questions, status,
       }, "POST", { accountId: saved.accountId });
+      if (sessionChanged()) return;
       setSaved(result);
       setDraft(normalise(result.intake));
       setDirty(false);
       setNotice(status === "complete" ? t.completed : t.saved);
     } catch (reason: unknown) {
+      if (sessionChanged()) return;
       const code = (reason as { code?: string })?.code;
       setError(code === "COACHING_REVISION_CONFLICT" ? t.conflict :
         code === "COACHING_REQUIRED_ANSWERS" ? t.needsRequired : t.saveError);
-    } finally { setBusy(false); }
+    } finally { if (!sessionChanged()) setBusy(false); }
   }
   async function remove() {
-    if (!saved?.intake || !saved.accountId || busy || !window.confirm(t.deleteConfirm)) return;
+    if (sessionChanged() || !saved?.intake || !saved.accountId || busy || (leadAttempt.current && !leadReceipt) || !window.confirm(t.deleteConfirm)) return;
     setBusy(true); setError(""); setNotice("");
     try {
       const result: Saved = await appFetch("coaching-intake", {
         action: "delete", revision: saved.revision, confirmed: true,
       }, "POST", { accountId: saved.accountId });
+      if (sessionChanged()) return;
       setSaved(result); setDraft(blank()); setDirty(false); setConsent(false);
       setNotice(t.deleted);
-    } catch { setError(t.deleteError); } finally { setBusy(false); }
+    } catch { if (!sessionChanged()) setError(t.deleteError); } finally { if (!sessionChanged()) setBusy(false); }
   }
   async function submitDiagnostic() {
-    if (leadBusy || leadReceipt || busy || collision) return;
-    const fromTelegram = telegramStatus === "linked" && Boolean(telegramInitData);
-    if (missing || (!fromTelegram && (!sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())))) {
-      setLeadError(t.sendError); return;
-    }
-    setLeadBusy(true); setLeadError("");
-    try {
-      if (!leadAttempt.current) {
-        const id = window.crypto.randomUUID();
-        const intake = {
-          operationId: id, locale, offer: offerChoice,
-          topic: draft.topic, name: draft.name, city: draft.city,
-          answers: draft.answers, questions: draft.questions,
-        };
-        leadAttempt.current = { id, body: JSON.stringify(fromTelegram
+    if (sessionChanged() || leadBusy || leadSending.current || leadReceipt || busy || collision) return;
+    if (!leadAttempt.current) {
+      if (telegramStatus === "checking") { setLeadError(t.sendChecking); return; }
+      const fromTelegram = telegramStatus === "linked" && Boolean(telegramInitData);
+      if (missing || (!fromTelegram && (!sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())))) {
+        setLeadError(t.sendError); return;
+      }
+      let id: string;
+      try { id = window.crypto.randomUUID(); }
+      catch { setLeadError(t.sendFailure); return; }
+      const intake = {
+        operationId: id, locale, offer: offerChoice,
+        topic: draft.topic, name: draft.name, city: draft.city,
+        answers: draft.answers, questions: draft.questions,
+      };
+      // Freeze routing together with the accepted payload, not with later UI state.
+      leadAttempt.current = Object.freeze({ id,
+        endpoint: fromTelegram ? "/api/coaching-diagnostic/telegram" : "/api/coaching-diagnostic",
+        body: JSON.stringify(fromTelegram
           ? { action: "submit", initData: telegramInitData, questionnaire: { ...intake, confirmed: true } }
           : { ...intake, contact: { displayName: draft.name, email: replyContact.email.trim(), phone: replyContact.phone.trim() },
-              contactConsent: true, website: "" }) };
+              contactConsent: true, website: "" }),
+      });
+      leadUncertain.current = false;
+      leadStarted.current = true;
+      if (auth === "checking") {
+        // A pending private-account load must not replace the submitted answers.
+        // Keep private saving explicitly unavailable until deliberate login.
+        setSaved(null); setAuth("error"); setConsent(false); setCollision(false);
       }
-      const submissionOptions = {
-        method: "POST", credentials: "same-origin" as const,
+      setLeadLocked(true);
+    }
+    const attempt = leadAttempt.current;
+    leadSending.current = true;
+    setLeadBusy(true); setLeadError("");
+    try {
+      const response = await fetch(attempt.endpoint, {
+        method: "POST", credentials: "same-origin",
         headers: { "content-type": "application/json" },
-        body: leadAttempt.current.body,
-      };
-      const response = fromTelegram
-        ? await fetch("/api/coaching-diagnostic/telegram", submissionOptions)
-        : await fetch("/api/coaching-diagnostic", submissionOptions);
+        body: attempt.body,
+      });
+      if (sessionChanged()) { leadUncertain.current = true; return; }
       const result = await response.json().catch(() => null);
+      if (sessionChanged()) { leadUncertain.current = true; return; }
       if (!response.ok || result?.saved !== true || !/^HH-[A-F0-9]{12}$/.test(result.referenceCode || "")) {
-        // A rejected payload was never saved, so edits must get a fresh idempotency key.
-        if (response.status === 400) leadAttempt.current = null;
-        if (fromTelegram && (response.status === 401 || response.status === 404)) {
-          setTelegramInitData(null); setTelegramStatus("unavailable");
-          leadAttempt.current = null;
-          setLeadError(t.telegramExpiry);
-          return;
+        // A first definitive validation rejection permits edits. After any
+        // unknown outcome, even a later rejection cannot disprove an earlier save.
+        const rejectedBeforeWrite = result?.error === "INVALID_COACHING_ENQUIRY" ||
+          (attempt.endpoint === "/api/coaching-diagnostic" && result?.error === "INVALID_SERVICE_ENQUIRY");
+        if (response.status === 400 && rejectedBeforeWrite && !leadUncertain.current) {
+          leadAttempt.current = null; setLeadLocked(false);
+          setLeadError(t.sendRejected); return;
         }
-        throw new Error("COACHING_ENQUIRY_NOT_CONFIRMED");
+        leadUncertain.current = true;
+        setLeadError(attempt.endpoint === "/api/coaching-diagnostic/telegram" &&
+          (response.status === 401 || response.status === 404) ? t.telegramExpiry : t.sendFailure);
+        return;
       }
       setLeadReceipt(result.referenceCode);
+      setLeadLocked(false);
       try { sessionStorage.removeItem(DIAGNOSTIC_START_KEY); } catch { /* optional */ }
     } catch {
-      // Retain the exact idempotency key and frozen payload across retries.
-      // A lost response must not create a second coach request.
+      // Never switch identity, regenerate the UUID or unlock edits after a
+      // timeout/lost response: the first submission may already be committed.
+      leadUncertain.current = true;
       setLeadError(t.sendFailure);
-    } finally { setLeadBusy(false); }
+    } finally {
+      leadSending.current = false;
+      setLeadBusy(false);
+    }
   }
 
   async function copyAnswers() {
+    if (sessionChanged()) return;
     try {
       await navigator.clipboard.writeText(fullText);
       setNotice(t.copied); setError(""); setFallbackCopy(false);
@@ -477,6 +544,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     }
   }
   function downloadAnswers() {
+    if (sessionChanged()) return;
     const url = URL.createObjectURL(new Blob([fullText], { type: "text/plain;charset=utf-8" }));
     const element = document.createElement("a");
     element.href = url; element.download = t.downloadName; document.body.appendChild(element);
@@ -484,11 +552,17 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   function loadSaved() {
+    if (sessionChanged() || (leadAttempt.current && !leadReceipt)) return;
     setDraft(normalise(saved?.intake)); setCollision(false); setDirty(false); setNotice(""); setError("");
   }
   function keepLocal() {
+    if (sessionChanged() || (leadAttempt.current && !leadReceipt)) return;
     setCollision(false); setDirty(true); setNotice(""); setError("");
   }
+
+  if (leadSessionChanged) return <section className={styles.form} data-coaching-send-quarantined lang={locale}>
+    <h2>{t.title}</h2><p className={styles.requestError} role="alert">{t.sendAccountChanged}</p>
+  </section>;
 
   return <section className={styles.form} aria-labelledby="coaching-form-title" data-coaching-intake lang={locale}>
     <header className={styles.intro}>
@@ -504,33 +578,33 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </div>
     </header>
 
-    {auth === "guest" && telegramStatus === "linked" ? null : auth !== "guest" ? <div className={styles.authBar}>
+    {auth === "guest" && requestFromTelegram ? null : auth !== "guest" ? <div className={styles.authBar}>
       <LockKeyhole size={19} aria-hidden="true" />
       <div><p>{auth === "signed" ? t.signedIn : auth === "checking" ? t.loading : t.unavailable}</p></div>
     </div> : <p className={styles.guestHint}><LockKeyhole size={14} aria-hidden="true" />{t.signedOut}</p>}
 
     {collision ? <div role="alert" className={styles.conflict}>
       <p>{t.accountConflict}</p>
-      <div><button type="button" onClick={loadSaved}>{t.chooseSaved}</button><button type="button" onClick={keepLocal}>{t.chooseLocal}</button></div>
+      <div><button type="button" disabled={leadLocked} onClick={loadSaved}>{t.chooseSaved}</button><button type="button" disabled={leadLocked} onClick={keepLocal}>{t.chooseLocal}</button></div>
     </div> : null}
 
     <div className={styles.basic}>
       <label>{t.labelTopic}
-        <select value={draft.topic} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, topic: event.target.value }))}>
+        <select value={draft.topic} disabled={leadLocked || collision || busy} onChange={event => edit(previous => ({ ...previous, topic: event.target.value }))}>
           {COACHING_TOPICS.map(topic => <option key={topic.id} value={topic.id}>{topic.label[locale]}</option>)}
         </select>
       </label>
       {showMore ? <label>{t.yourName}
-        <input value={draft.name} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, name: event.target.value }))} maxLength={120} autoComplete="nickname" />
+        <input value={draft.name} disabled={leadLocked || collision || busy} onChange={event => edit(previous => ({ ...previous, name: event.target.value }))} maxLength={120} autoComplete="nickname" />
       </label> : null}
       {showMore ? <label>{t.location}
-        <input value={draft.city} disabled={collision || busy} onChange={event => edit(previous => ({ ...previous, city: event.target.value }))} maxLength={150} autoComplete="address-level2" />
+        <input value={draft.city} disabled={leadLocked || collision || busy} onChange={event => edit(previous => ({ ...previous, city: event.target.value }))} maxLength={150} autoComplete="address-level2" />
       </label> : null}
     </div>
 
     <p className={styles.requiredLegend}>{t.requiredLegend}</p>
     <button type="button" className={styles.moreToggle} aria-expanded={showMore}
-      onClick={() => setShowMore(value => !value)} disabled={collision || busy}>
+      onClick={() => setShowMore(value => !value)} disabled={leadLocked || collision || busy}>
       {showMore ? t.lessQuestions : t.moreQuestions.replace("{n}", String(optionalCount))}
       <span aria-hidden="true">{showMore ? "−" : "+"}</span>
     </button>
@@ -547,7 +621,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
           </label>
           <textarea
             id={"coaching-field-" + field.id}
-            value={draft.answers[field.id] || ""} disabled={collision || busy}
+            value={draft.answers[field.id] || ""} disabled={leadLocked || collision || busy}
             onChange={event => fieldChange(field.id, event.target.value)}
             rows={2} maxLength={field.max}
             placeholder={t.answerPlaceholder}
@@ -557,15 +631,15 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       </ol>
       {showMore && group.id === "session" ? <div className={styles.ownQuestions}>
         <div className={styles.ownHeader}><div><h4>{t.ownQuestions}</h4><p>{t.ownHint}</p></div>
-          <button type="button" disabled={collision || busy || draft.questions.length >= 8} onClick={() => edit(previous => ({ ...previous, questions: [...previous.questions, ""] }))}>
+          <button type="button" disabled={leadLocked || collision || busy || draft.questions.length >= 8} onClick={() => edit(previous => ({ ...previous, questions: [...previous.questions, ""] }))}>
             <Plus size={16} aria-hidden="true" />{t.addQuestion}
           </button>
         </div>
         {draft.questions.map((question, index) => <div className={styles.questionRow} key={index} data-extra-question={index + 1}>
           <label htmlFor={"coaching-question-" + index}>{index + 1}</label>
-          <textarea id={"coaching-question-" + index} rows={2} maxLength={600} value={question} disabled={collision || busy}
+          <textarea id={"coaching-question-" + index} rows={2} maxLength={600} value={question} disabled={leadLocked || collision || busy}
             placeholder={t.questionPlaceholder} onChange={event => edit(previous => ({ ...previous, questions: previous.questions.map((item, i) => i === index ? event.target.value : item) }))} />
-          <button type="button" className={styles.removeQuestion} aria-label={locale === "ru" ? "Удалить вопрос" : locale === "es" ? "Eliminar pregunta" : "Remove question"} disabled={collision || busy || draft.questions.length <= 1} onClick={() => edit(previous => ({ ...previous, questions: previous.questions.filter((_, i) => i !== index) }))}><Trash2 size={17} /></button>
+          <button type="button" className={styles.removeQuestion} aria-label={locale === "ru" ? "Удалить вопрос" : locale === "es" ? "Eliminar pregunta" : "Remove question"} disabled={leadLocked || collision || busy || draft.questions.length <= 1} onClick={() => edit(previous => ({ ...previous, questions: previous.questions.filter((_, i) => i !== index) }))}><Trash2 size={17} /></button>
         </div>)}
       </div> : null}
     </section>)}
@@ -574,55 +648,56 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       <div className={styles.requestBox} data-coaching-request>
         <p className={styles.requestEyebrow}>{t.sendEyebrow}</p>
         <h3>{offerChoice === "free" ? t.sendTitle : t.sendPaidTitle}</h3>
-        <p className={styles.requestLead}>{telegramStatus === "linked" ? t.telegramConsent : t.sendLead}</p>
-        {telegramStatus === "linked"
+        <p className={styles.requestLead}>{requestFromTelegram ? t.telegramConsent : t.sendLead}</p>
+        {requestFromTelegram
           ? <p className={styles.telegramStatus} role="status"><Check size={15} aria-hidden="true" />{t.telegramLinked}</p>
           : telegramStatus === "unavailable"
             ? <p className={styles.telegramWarning} role="status">{t.telegramUnavailable}</p>
             : null}
         {leadReceipt ? <div className={styles.requestSuccess} data-coaching-enquiry-saved role="status">
-          <Check size={18} aria-hidden="true" /><div><strong>{telegramStatus === "linked" ? t.telegramSuccess : t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
+          <Check size={18} aria-hidden="true" /><div><strong>{requestFromTelegram ? t.telegramSuccess : t.sendSuccess} {leadReceipt}</strong><p>{t.sendNext}</p></div>
           {offerChoice === "free" ? <Link className={styles.requestUpgrade} href={"/" + locale + "/holistic-support#personal-insights-master"} prefetch={false}>
             {t.sendUpgrade}<ArrowRight size={17} aria-hidden="true" />
           </Link> : null}
         </div> : <>
-          <fieldset className={styles.choiceFieldset} disabled={leadBusy || busy || collision}>
+          <fieldset className={styles.choiceFieldset} disabled={leadLocked || leadBusy || busy || collision}>
             <legend>{t.sendOption}</legend>
             <div className={styles.choiceGrid}>
               {(["free", "short", "full"] as const).map(option => <label key={option} data-selected={offerChoice === option}>
                 <input type="radio" name="coaching-service-request" checked={offerChoice === option}
-                  onChange={() => { setOfferChoice(option); setLeadError(""); }} />
+                  onChange={() => { if (sessionChanged() || leadLocked) return; setOfferChoice(option); setLeadError(""); }} />
                 <span>{option === "free" ? t.sendFree : option === "short" ? t.sendShort : t.sendFull}</span>
               </label>)}
             </div>
           </fieldset>
-          {telegramStatus !== "linked" ? <div className={styles.replyFields}>
+          {!requestFromTelegram ? <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
-              disabled={leadBusy || busy || collision} value={replyContact.email}
-              onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
+              disabled={leadLocked || leadBusy || busy || collision} value={replyContact.email}
+              onChange={event => { if (sessionChanged() || leadLocked) return; setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
             {(showPhone || replyContact.phone) ? <label>{t.sendPhone}<input type="tel" autoComplete="tel" maxLength={28}
-              disabled={leadBusy || busy || collision} value={replyContact.phone}
-              onChange={event => { setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label> : null}
+              disabled={leadLocked || leadBusy || busy || collision} value={replyContact.phone}
+              onChange={event => { if (sessionChanged() || leadLocked) return; setReplyContact(value => ({ ...value, phone: event.target.value })); setLeadError(""); }} /></label> : null}
           </div> : null}
-          {telegramStatus !== "linked" && !showPhone && !replyContact.phone ? <button type="button" className={styles.phoneToggle} onClick={() => setShowPhone(true)}>{t.phoneInstead}</button> : null}
-          {telegramStatus !== "linked" ? <label className={styles.sendConsent}>
-            <input type="checkbox" checked={sendConsent} disabled={leadBusy || busy || collision}
-              onChange={event => setSendConsent(event.target.checked)} />
+          {!requestFromTelegram && !showPhone && !replyContact.phone ? <button type="button" className={styles.phoneToggle} onClick={() => setShowPhone(true)}>{t.phoneInstead}</button> : null}
+          {!requestFromTelegram ? <label className={styles.sendConsent}>
+            <input type="checkbox" checked={sendConsent} disabled={leadLocked || leadBusy || busy || collision}
+              onChange={event => { if (!sessionChanged() && !leadLocked) setSendConsent(event.target.checked); }} />
             <span>{t.sendConsent}</span>
           </label> : null}
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
-          <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
-            (telegramStatus !== "linked" && (!sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())))} onClick={() => void submitDiagnostic()}>
-            {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
+          {leadLocked ? <p className={styles.requestFootnote} data-coaching-send-locked role="status">{t.sendLocked}</p> : null}
+          <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || (!leadLocked &&
+            (telegramStatus === "checking" || missing > 0 || (!requestFromTelegram && (!sendConsent || (!replyContact.email.trim() && !replyContact.phone.trim())))))} onClick={() => void submitDiagnostic()}>
+            {leadBusy ? "…" : leadLocked ? t.sendRetry : t.sendButton}<ArrowRight size={17} aria-hidden="true" />
           </button>
           <p className={styles.requestFootnote}>{t.sendNext}</p>
         </>}
       </div>
-      {telegramStatus !== "linked" ? <>
+      {!requestFromTelegram ? <>
       <p className={styles.requestEyebrow}>{t.saveOptional}</p>
       <div className={styles.saveStatus}><ShieldCheck size={19} aria-hidden="true" />{dirty ? t.dirty : saved?.intake ? t.upToDate : t.unsaved}</div>
       {auth === "signed" ? <label className={styles.consent}>
-        <input type="checkbox" checked={consent} disabled={busy || collision} onChange={event => setConsent(event.target.checked)} />
+        <input type="checkbox" checked={consent} disabled={leadLocked || busy || collision} onChange={event => { if (!sessionChanged() && !leadLocked) setConsent(event.target.checked); }} />
         <span>{t.consent}</span>
       </label> : null}
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
@@ -630,10 +705,10 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
       <div className={styles.actions}>
         {auth === "signed"
           ? <>
-            <button type="button" disabled={busy || collision || !consent} className={styles.saveDraft} onClick={() => void save("draft")}>{t.draft}</button>
-            <button type="button" disabled={busy || collision || !consent || missing > 0} className={styles.primary} onClick={() => void save("complete")}>{t.complete}<ArrowRight size={17} aria-hidden="true" /></button>
+            <button type="button" disabled={leadLocked || busy || collision || !consent} className={styles.saveDraft} onClick={() => void save("draft")}>{t.draft}</button>
+            <button type="button" disabled={leadLocked || busy || collision || !consent || missing > 0} className={styles.primary} onClick={() => void save("complete")}>{t.complete}<ArrowRight size={17} aria-hidden="true" /></button>
           </>
-          : <button type="button" className={styles.saveDraft} disabled={busy} onClick={() => void signIn()}>{t.login}</button>}
+          : <button type="button" className={styles.saveDraft} disabled={leadLocked || busy} onClick={() => void signIn()}>{t.login}</button>}
         <button type="button" className={styles.copy} onClick={() => void copyAnswers()}><ClipboardCopy size={17} aria-hidden="true" />{t.copy}</button>
         <button type="button" className={styles.export} onClick={downloadAnswers}>{t.downloaded}</button>
       </div>
@@ -642,7 +717,7 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
         <Link href={"/" + locale + "/contact"} prefetch={false}>{t.contact}<ArrowRight size={15} aria-hidden="true" /></Link></div>
       <p className={styles.small}>{t.contactNote}</p>
       <p className={styles.small}>{t.privacy}</p>
-      {saved?.intake && auth === "signed" ? <button className={styles.delete} type="button" disabled={busy || collision} onClick={() => void remove()}><Trash2 size={15} aria-hidden="true" />{t.delete}</button> : null}
+      {saved?.intake && auth === "signed" ? <button className={styles.delete} type="button" disabled={leadLocked || busy || collision} onClick={() => void remove()}><Trash2 size={15} aria-hidden="true" />{t.delete}</button> : null}
       </> : null}
     </section>
   </section>;

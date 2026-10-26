@@ -24,7 +24,9 @@ test('already staged contact stays staged and phone is optional, not a new requi
   assert.match(form, /setReplyContact\(\{ email: staged\.email, phone: staged\.phone \}\)/)
   assert.match(form, /showPhone \|\| replyContact\.phone/)
   assert.match(form, /!replyContact\.email\.trim\(\) && !replyContact\.phone\.trim\(\)/)
-  assert.match(form, /fetch\("\/api\/coaching-diagnostic"/)
+  assert.match(form, /endpoint: fromTelegram \? "\/api\/coaching-diagnostic\/telegram" : "\/api\/coaching-diagnostic"/)
+  assert.match(form, /fetch\(attempt\.endpoint,/)
+  assert.match(form, /body: attempt\.body/)
   assert.doesNotMatch(form, /Telegram\.WebApp\.initData|URLSearchParams\([^)]*chat_id/ ,
     'public UI cannot assert a Telegram identity without server verification')
 })
