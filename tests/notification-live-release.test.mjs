@@ -11,6 +11,10 @@ test('hourly dispatch must keep secrets server-side and not use Hobby hourly Ver
  const route=readFileSync('app/api/internal/notification-dispatch/route.js','utf8')
  const vercel=JSON.parse(readFileSync('vercel.json','utf8'))
  assert.match(route,/HH_PUSH_CRON_SECRET/)
- assert.equal(vercel.crons.length,1)
- assert.equal(vercel.crons[0].schedule,'0 5 * * *')
+ assert.deepEqual(vercel.crons,[
+  {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
+  {path:'/api/internal/practice-telegram-digest',schedule:'0 13 * * *'},
+  {path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'},
+ ])
+ assert.equal(vercel.crons.some(cron=>cron.path==='/api/internal/notification-dispatch'),false)
 })

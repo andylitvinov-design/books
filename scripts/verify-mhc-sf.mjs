@@ -91,7 +91,14 @@ try{
  page=await account.newPage()
  observePage(page,'account')
  await navigate(page,origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ await expect(page).toHaveURL(origin+'/en/app/portrait')
+ const guestOverview=page.locator('[data-cabinet-guest-overview="true"]')
+ await expect(guestOverview).toHaveCount(1)
+ await expect(guestOverview).toBeVisible()
+ const google=guestOverview.getByRole('button',{name:'Open my Cabinet with Google',exact:true})
+ await expect(google).toHaveCount(1)
+ await expect(google).toBeEnabled()
+ await google.click()
  await expect(page.getByRole('heading',{name:'Create my private space',exact:true}).or(page.locator('[data-profile-domains]')).first()).toBeVisible({timeout:60000})
  // Works with a fresh isolated DB or after the main regression journey.
  if(await page.getByRole('heading',{name:'Create my private space',exact:true}).isVisible()){

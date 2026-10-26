@@ -1,6 +1,8 @@
 import { PAID_PLAN_KEYS, SUBSCRIPTION_PLANS } from '../lib/billing/public-plan.js'
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 import { readFileSync } from 'node:fs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -11,7 +13,40 @@ const css = read('components/app/course-entry-selector.module.css')
 test('My Course first renders the selection slide and keeps the existing course wizard', () => {
   assert.match(wrapper, /<CourseEntrySelector/)
   // Direct banner entry skips the selector; generic My Courses still has its current-course cards.
-  assert.match(wrapper, /if \(!showCourse && !testReturn && !programmeEntry && !personalEntry && !fastAntistressEntry\) return/)
+  // Exercise the actual JSX return predicate, not a formatting-specific regex.
+  const ast = ts.createSourceFile('my-course.jsx', wrapper, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX)
+  const candidates = []
+  const visit = node => {
+    if (ts.isIfStatement(node) && ts.isReturnStatement(node.thenStatement) &&
+        node.thenStatement.expression && ts.isJsxSelfClosingElement(node.thenStatement.expression) &&
+        node.thenStatement.expression.tagName.getText(ast) === 'CourseEntrySelector') candidates.push(node.expression)
+    ts.forEachChild(node, visit)
+  }
+  visit(ast)
+  assert.equal(candidates.length, 1, 'exact selector return predicate must remain identifiable')
+  const predicate = candidates[0].getText(ast)
+  // Reject executable calls, dynamic property access or newly introduced inputs.
+  const allowedIdentifiers = new Set(['showCourse','coursesIndexEntry','courses','length','testReturn','programmeEntry','personalEntry','fastAntistressEntry'])
+  const inspect = node => {
+    if (ts.isIdentifier(node)) assert.ok(allowedIdentifiers.has(node.text), 'unreviewed predicate input '+node.text)
+    assert.ok(!ts.isCallExpression(node) && !ts.isNewExpression(node) && !ts.isElementAccessExpression(node) &&
+      !ts.isArrowFunction(node) && !ts.isFunctionExpression(node), 'selector predicate must remain pure')
+    ts.forEachChild(node, inspect)
+  }
+  inspect(candidates[0])
+  for (const showCourse of [false,true]) for (const coursesIndexEntry of [false,true]) {
+    for (const count of [0,1,2]) for (let flags=0;flags<16;flags++) {
+      const testReturn=Boolean(flags&1),programmeEntry=Boolean(flags&2),personalEntry=Boolean(flags&4),fastAntistressEntry=Boolean(flags&8)
+      const context={showCourse,coursesIndexEntry,courses:Object.freeze(Array(count).fill(null)),testReturn,programmeEntry,personalEntry,fastAntistressEntry}
+      let expected=false
+      if (flags===0) {
+        if (!showCourse) expected=true
+        else if (coursesIndexEntry && count===0) expected=true
+      }
+      const actual=vm.runInNewContext('('+predicate+')',context,{timeout:100})
+      assert.equal(actual,expected,JSON.stringify({showCourse,coursesIndexEntry,count,flags}))
+    }
+  }
   assert.match(wrapper, /personalEntry = stage === 0 &&/)
   assert.match(wrapper, /onOpen=\{\(\) => \{/)
   assert.match(wrapper, /selectCourse\(state\.course\.id\)/)
@@ -160,7 +195,7 @@ test('programme links offer one clear fast-start button without creating a cours
   const consent = nodes(h.tree).find(node => node.props['data-opora-fast-consent'] !== undefined)
   assert.ok(consent)
   assert.equal(consent.props.disabled, false)
-  assert.match(textOf(consent), /Continue to the first check-in/)
+  assert.equal(textOf(consent).trim(), "Yes, I'd like to enrol")
   assert.equal(h.calls.filter(call => call.body).length, 0)
   h.unmount()
 })

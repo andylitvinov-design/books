@@ -9,10 +9,14 @@ for (const locale of ['en', 'ru']) {
   test(locale + ' verifier checks the exact portrait before using real My Tests navigation', async () => {
     const origin = 'http://127.0.0.1:3100', path = '/' + locale + '/app/tests'
     const events = []
-    const profile = { name: 'profile', getByRole(role, options) {
-      assert.equal(role, 'heading')
-      assert.deepEqual(options, { name: locale === 'ru' ? 'Мой профиль и отчёты' : 'My profile & reports', level: 1, exact: true })
-      return { name: 'heading' }
+    const tabs = { name: 'profile-tabs' }
+    const area = { name: 'profile-areas', getByRole(role) {
+      assert.equal(role, 'tab')
+      return tabs
+    } }
+    const profile = { name: 'profile', locator(selector) {
+      assert.equal(selector, 'details.hh-domain-more')
+      return area
     } }
     const link = { name: 'link', first() { return this }, async click() {
       events.push('click'); page.url = origin + path
@@ -24,15 +28,17 @@ for (const locale of ['en', 'ru']) {
       return { name: 'dashboard' }
     } }
     const expect = value => ({
+      async toHaveCount(n) { assert.equal(value, tabs); assert.equal(n, 4); events.push('four-tabs') },
       async toHaveURL(url) { assert.equal(value.url, url); events.push('url:' + url) },
       async toBeVisible() { events.push('visible:' + value.name) },
       async toHaveText(text) { assert.equal(text, locale === 'ru' ? 'Тесты' : 'Tests'); events.push('label') },
-      async toHaveAttribute(name, href) { assert.equal(name, 'href'); assert.equal(href, path); events.push('href') },
+      async toHaveAttribute(name, value) { if(value === '') { assert.equal(name,'open'); events.push('open'); } else { assert.equal(name,'href'); assert.equal(value, path); events.push('href'); } },
+
     })
     await assertCabinetPortrait(page, expect, { origin, locale })
     await openCabinetMyTests(page, expect, { origin, locale })
     assert.deepEqual(events, [
-      'url:' + origin + '/' + locale + '/app/portrait', 'visible:profile', 'visible:heading',
+      'url:' + origin + '/' + locale + '/app/portrait', 'visible:profile', 'visible:profile-areas', 'open', 'four-tabs',
       'visible:link', 'label', 'href', 'click', 'url:' + origin + path, 'visible:dashboard',
     ])
   })

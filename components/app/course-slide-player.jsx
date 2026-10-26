@@ -374,7 +374,7 @@ function RoutePracticeLab({plan,...props}) {
 }
 
 export default function CourseSlidePlayer({
-  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onFinish, onCheckin, onSession, onPreferences,
+  locale = 'en', data, busy = false, promotion = {}, onOpenRetest, onClose, onBackToMap = onClose, onFinish, onCheckin, onSession, onPreferences,
   reviewOnly = false,
 }) {
   const words = WORDS[locale] || WORDS.en
@@ -1308,7 +1308,7 @@ export default function CourseSlidePlayer({
       <footer className={styles.footer}>
         {!discomfortOpen && <div className={styles.subactions}>
           <button type="button" disabled={locked} className={styles.back}
-            onClick={index===0?onClose:goBack}>
+            onClick={index===0?onBackToMap:goBack}>
             <ArrowLeft size={16}/>{words.back}</button>
           {!finished&&!isSkillV5&&!isDayOne&&(['baseline','checkin','guided','ritual','transfer','symbol','moment','reflection'].includes(slide.kind)) && <button
             type="button" className={styles.skip} disabled={locked} onClick={goNext}>

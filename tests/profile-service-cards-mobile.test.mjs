@@ -11,7 +11,7 @@ test('Profile no longer duplicates the dedicated Tests and Courses destinations'
   const styles = read('components/app/profile-service-cards.module.css')
   assert.doesNotMatch(profile, /<ProfileServiceCards|import \{ ProfileServiceCards \}/)
   assert.match(profile, /id="personal-reports"/)
-  assert.ok(profile.indexOf('id="personal-reports"') < profile.indexOf('className="hh-domain-more"'))
+  assert.ok(profile.indexOf('{!external && profileNavigation}') < profile.indexOf('id="personal-reports"'))
   assert.match(workspace, /page === 'tests' &&/)
   assert.match(workspace, /page === 'course' &&/)
   assert.match(workspace, /data-insights-detailed-scales/)

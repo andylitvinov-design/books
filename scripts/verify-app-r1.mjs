@@ -5,6 +5,7 @@ import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPi
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
 import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -276,10 +277,24 @@ async function launchPublicGuestWithoutAccountWrite(target,ctx,expectedDefinitio
 // PR784 moved measured scales and profile tools into Insights, not out of the journey.
 async function openInsightsProfileTools(target=page,locale='en'){
  const path='/'+locale+'/app/portfolio'
- const link=target.locator('nav a[href="'+path+'"]:visible').first()
- await expect(link).toHaveText(locale==='ru'?'Отчёты':'Reports')
- await expect(link).toHaveAttribute('href',path)
- await link.click()
+ const profilePath='/'+locale+'/app/portrait'
+ // The removed Reports bottom tab is now the four-area My Profile.
+ // Navigate via the existing private profile's measured-results link,
+ // preserving the old /portfolio route without reviving a duplicate nav item.
+ if(!target.url().startsWith(origin+path)){
+  const profile=target.locator('nav a[href="'+profilePath+'"]:visible').first()
+  await expect(profile).toHaveText(locale==='ru'?'Мой профиль':'My Profile')
+  await expect(profile).toHaveAttribute('href',profilePath)
+  await profile.click()
+  await expect(target).toHaveURL(origin+profilePath)
+  const area=target.locator('.hh-profile-domains[data-profile-mode="account"] details.hh-domain-more')
+  await expect(area).toHaveAttribute('open','')
+  const history=target.locator('.hh-profile-domains[data-profile-mode="account"] a[href="'+path+'?tab=dynamics"]')
+  await expect(history).toBeVisible()
+  await history.click()
+ }
+ await expect(target.locator('#hh-results-tab-values')).toBeVisible()
+ await target.locator('#hh-results-tab-values').click()
  await expect(target).toHaveURL(origin+path)
  const portrait=target.locator('[data-testid="insights-psychological-portrait"]')
  await expect(portrait).toBeVisible()
@@ -423,7 +438,7 @@ async function assertPublicViewportFits(target,label){
  assert.ok(scroll<=width+1,`Public overflow: ${label} (${scroll} > ${width})`)
 }
 async function verifyPublicServiceConversionJourneys(){
- const publicContext=await browser.newContext({viewport:{width:390,height:844}})
+ const publicContext=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'})
  const publicErrors=[]
  const services=[
   ['dao-health-profile','dao',{en:'Free Wu Xing Resource Profile',ru:'Бесплатный профиль ресурсов У-Син'}],
@@ -437,7 +452,12 @@ async function verifyPublicServiceConversionJourneys(){
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
-    await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    if(kind==='dao'){
+      const dao=servicePage.locator('main[data-free-entry-landing="dao"]')
+      await expect(dao).toHaveCount(1)
+      await expect(dao).toHaveAttribute('lang',locale)
+      await expect(dao.getByRole('heading',{level:1,name:locale==='ru'?'Узнайте, что даёт вам внутреннюю опору.':'Discover what gives you strength.',exact:true})).toBeVisible({timeout:30000})
+     }else await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -465,7 +485,10 @@ async function verifyPublicServiceConversionJourneys(){
     }
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
-    if(kind==='alchemy'){
+    if(kind==='dao'){
+     await assertDaoFreeEntryCapture(servicePage,expect,{origin,locale})
+     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width+'/synthetic-receipt')
+    }else if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
      await expect(form.locator('select')).toHaveCount(2)
@@ -789,7 +812,7 @@ try {
  await expect(page.getByRole('button',{name:'Get recommendations'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Download report'})).toBeVisible();
  await expect(page.locator('.hh-nav')).toBeHidden();
- await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'My Profile'})).toBeVisible();
  await screenshotEvidence(page,{path:output+'/my-tests-first-screen.png',fullPage:false});
  await assertCompactAccountPicker(await openAccountTestPicker(page,expect),expect);
  await firstPicker.toggle.click();
@@ -799,7 +822,7 @@ try {
  await page.locator('[data-profile-extra-tools] > summary').click();
  await expect(page.getByRole('heading',{name:'Check your current state',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:/Take a free state analysis and get recommendations/})).toBeVisible();
- await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Profile',exact:true}).click();
+ await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'My Profile',exact:true}).click();
  await assertCabinetPortrait(page,expect,{origin});
  passed('supported SDK PKCE callback opens private reports, then real My tests and detailed Insights navigation')
 
@@ -877,7 +900,7 @@ try {
   const primaryNav=page.getByRole('navigation',{name:'Quick navigation'})
   await expect(primaryNav.locator(':scope > a')).toHaveCount(6)
   await expect(primaryNav.getByRole('link',{name:'Analysis'})).toHaveCount(0)
-  await expect(primaryNav.getByRole('link',{name:'Profile'})).toHaveAttribute('aria-current','page')
+  await expect(primaryNav.getByRole('link',{name:'My Profile'})).toHaveAttribute('aria-current','page')
   for(const width of [320,390,768,1280]){
     await page.setViewportSize({width,height:900})
     await assertCabinetPrimaryNavigation(page,expect,{current:'portrait'})

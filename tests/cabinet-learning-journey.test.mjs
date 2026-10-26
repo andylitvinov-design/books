@@ -85,13 +85,13 @@ test('API only exposes a GET behind verified actor and account header', () => {
   assert.doesNotMatch(server, /insert into|update app\.|delete from/i)
 })
 
-test('journey is FIRST in signed-in Profile, never duplicated in reports or guest state', () => {
+test('journey follows the four signed-in profiles, never duplicated in reports or guest state', () => {
   const workspace = source('components/app/app-workspace.jsx')
   const profile = source('components/app/profile-domains.jsx')
   const journey = source('components/app/cabinet-journey.jsx')
   const profileSection = workspace.slice(workspace.indexOf("{page === 'portrait' && ("))
-  assert.match(profileSection, /<CabinetJourney\b[^>]*accountId=\{data\.account\.id\}[^>]*\/>\s*<CabinetToday/)
-  assert.match(profileSection, /<CabinetToday[\s\S]*<ProfileDomains/)
+  assert.match(profileSection, /<ProfileDomains[\s\S]*<CabinetJourney\b[^>]*accountId=\{data\.account\.id\}[^>]*\/>\s*<CabinetToday/)
+  assert.ok(profileSection.indexOf('<ProfileDomains') < profileSection.indexOf('<CabinetJourney'))
   assert.doesNotMatch(profile, /CabinetJourney/)
   assert.match(workspace, /data\.account\.onboardingState !== 'active'/)
   assert.match(journey, /appFetch\('journey', undefined, undefined, \{ accountId, signal:/)

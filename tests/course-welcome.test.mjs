@@ -1,3 +1,4 @@
+import { assertReviewPreferenceGuard } from './helpers/course-current-source-contracts.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -36,7 +37,7 @@ test('welcome is purely qualitative; quantitative baseline and last-24-hours che
   assert.match(player, /data-course-welcome/)
   assert.match(player, /welcomeFeelingChoices\(cycle\.activeGoal \|\| cycle\.primaryGoal, locale\)/)
   assert.match(player, /welcomeFeeling:welcomeFeeling\|\|'skip'/)
-  assert.match(today, /onPreferences=\{patch=>submit\('preferences'/)
+  assertReviewPreferenceGuard(today)
   assert.match(player, /onCheckin\(\{/)
   assert.match(api, /welcomeFeelingOptions=new Set\(\['steady','tense','low','unsure','skip'\]\)/)
   assert.match(api, /welcomeFeeling:optionalChoice\(input\.welcomeFeeling,welcomeFeelingOptions\)/)

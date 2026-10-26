@@ -48,7 +48,7 @@ async function scenario(locale, surface, fault, visible = true) {
   if (fault === 'extra link') anchors.push({ type: 'a', props: { href: '/extra', 'data-nav-item': 'extra' } });
   if (fault === 'wrong order') [anchors[5], anchors[6]] = [anchors[6], anchors[5]];
   if (fault === 'missing active') anchors.forEach(node => delete node.props['aria-current']);
-  if (fault === 'duplicate active') anchors[0].props['aria-current'] = 'page';
+  if (fault === 'duplicate active') anchors[1].props['aria-current'] = 'page'; // Profile is already active in client/tests; make Courses active too.
   if (fault === 'wrong active') { anchors.forEach(node => delete node.props['aria-current']); anchors[4].props['aria-current'] = 'page'; }
   const collection = selected => ({ selected, nth: index => collection([selected[index]].filter(Boolean)),
     async evaluateAll(fn) { return fn(selected.map(node => ({ getAttribute: name => node.props[name] ?? null }))); } });

@@ -1,0 +1,115 @@
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {resolve,dirname} from 'node:path'
+import vm from 'node:vm'
+import ts from 'typescript'
+
+// Finite synthetic renderer. Actual component functions execute independently;
+// each mounted type/key/path has its own hooks, stable setters, refs and cleanup.
+// Host output is a logical tree, not a browser DOM or layout/E2E implementation.
+export const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject}}
+export const response=(value,status=200)=>({ok:status>=200&&status<300,status,json:async()=>value})
+export function compose({root,search='',locale='en',fetch,crmThreads=[]}){
+  const instances=new Map(),modules=new Map(),effects=[],trace=[],timers=new Map();let nextTimer=0
+  let current=null,dirty=true,tree=null,active=true,nextOperation=0,networkOnline=true,url=new URL('https://synthetic.invalid/'+locale+'/app/messages'+search)
+  const networkListeners=new Map()
+  function networkListener(type,fn,remove=false){
+    if(!['online','offline','focus','document:visibilitychange'].includes(type))throw Error('Unexpected window event '+type)
+    if(!networkListeners.has(type))networkListeners.set(type,new Set())
+    if(remove)networkListeners.get(type).delete(fn);else networkListeners.get(type).add(fn)
+  }
+  const typeIds=new WeakMap();let nextType=0
+  const identity=type=>{if(!typeIds.has(type))typeIds.set(type,++nextType);return typeIds.get(type)}
+  const equal=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]))
+  const jsx=(type,props,key)=>({type,props:props||{},key:key??null})
+  function slot(kind,create){assert.ok(current,'hook outside component');const index=current.index++;if(!current.slots[index]){current.slots[index]=create();current.slots[index].kind=kind};assert.equal(current.slots[index].kind,kind,'hook order changed');return current.slots[index]}
+  const hooks={
+    useState(initial){const fiber=current;const value=slot('state',()=>{const s={value:typeof initial==='function'?initial():initial};s.set=next=>{if(!active||!fiber.mounted){trace.push('late-setState-ignored');return}const n=typeof next==='function'?next(s.value):next;if(!Object.is(s.value,n)){s.value=n;dirty=true}};return s});return [value.value,value.set]},
+    useRef(initial){return slot('ref',()=>({ref:{current:initial}})).ref},
+    useMemo(fn,deps){const s=slot('memo',()=>({deps:undefined}));if(!equal(s.deps,deps)){s.value=fn();s.deps=deps}return s.value},
+    useCallback(fn,deps){return hooks.useMemo(()=>fn,deps)},
+    useEffect(fn,deps){const fiber=current,s=slot('effect',()=>({deps:undefined,cleanup:undefined}));if(!equal(s.deps,deps)){s.nextDeps=deps;effects.push({fiber,slot:s,fn})}},
+  }
+  function icon(props){return jsx('i',{'data-fixture-icon':true,...props})}
+  function CrmFixture(props){hooks.useEffect(()=>{let alive=true;Promise.resolve().then(()=>{if(alive)props.onThreadsLoaded?.({loading:false,error:false,threads:crmThreads,partial:false})});return()=>{alive=false}},[props.onThreadsLoaded]);return jsx('fixture-crm',props)}
+  function inert(name){return props=>jsx('fixture-'+name,props)}
+  const externals={
+    react:hooks,'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:'Fragment'},
+    'lucide-react':new Proxy({},{get:()=>icon}),
+    'next/link':{default:props=>jsx('a',props)},
+    '@supabase/supabase-js':{createClient:()=>{throw Error('Forbidden storage/client operation')}},
+    '@/components/session-photo-uploader':{preparePhoto:()=>{throw Error('Forbidden photo operation')}},
+    '@/lib/practitioners/direct-message-policy.mjs':{directMediaSpec:()=>{throw Error('Forbidden media operation')}},
+  }
+  const actual=new Set(['messages-hub.jsx','messages-simple-inbox.jsx','direct-message-inbox.jsx','messages-contact-card.jsx','practice-request-conversation.jsx'])
+  const boundary={
+    './crm-telegram-photo':{default:()=>{throw Error('Forbidden photo renderer')}},
+    './crm-messenger':{default:CrmFixture},
+    './messages-client-requests':{default:inert('client-requests')},
+    './practice-express-reports':{ClientExpressReportNotices:inert('express-notices')},
+    './message-avatar':{default:inert('avatar')},
+    './messages-avatar':{default:inert('avatar')},
+    './public-enquiry-contact':{default:inert('public-enquiry')},
+    './crm-business-enquiries':{default:inert('business-enquiries')},
+  }
+  function load(path){path=resolve(path);if(modules.has(path))return modules.get(path);const exports={};modules.set(path,exports)
+    // Compile the exact .mjs helper bytes as CommonJS for this VM wrapper;
+    // TypeScript otherwise forces .mjs output to keep ESM export syntax.
+    const source=readFileSync(path,'utf8'),compiled=ts.transpileModule(source,{fileName:path.replace(/\.mjs$/,'.js'),compilerOptions:{allowJs:true,jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
+    const context={exports,URL,URLSearchParams,AbortController,console,crypto:{randomUUID:()=> '60000000-0000-4000-8000-'+String(++nextOperation).padStart(12,'0')},
+      setTimeout:()=>{throw Error('Unexpected timer')},clearTimeout:()=>{},
+      window:{get location(){return url},history:{state:null,replaceState:(_state,_title,path)=>{url=new URL(path,url)}},
+        addEventListener:(type,fn)=>networkListener(type,fn),removeEventListener:(type,fn)=>networkListener(type,fn,true),
+        setInterval:(fn,ms)=>{assert.equal(ms,60000);const id=++nextTimer;timers.set(id,fn);return id},clearInterval:id=>timers.delete(id)},
+      document:{getElementById:()=>null,visibilityState:'visible',addEventListener:(type,fn)=>networkListener('document:'+type,fn),removeEventListener:(type,fn)=>networkListener('document:'+type,fn,true)},navigator:{get onLine(){return networkOnline},clipboard:{writeText:()=>{throw Error('Unexpected clipboard action')}}},
+      fetch:(...args)=>{if(!active)trace.push('fetch-after-unmount');return fetch(...args)},
+      require:key=>{
+        // Use the exact pure upstream helper. Host refs remain null in this
+        // logical renderer, so native viewport measurement is NOT simulated.
+        if(key==='@/lib/practitioners/conversation-state')return load(resolve(root,'lib/practitioners/conversation-state.js'))
+        if(key==='@/lib/app/mobile-inbox-height.mjs')return load(resolve(root,'lib/app/mobile-inbox-height.mjs'))
+        if(Object.hasOwn(externals,key))return externals[key]
+        if(Object.hasOwn(boundary,key))return boundary[key]
+        if(key.endsWith('.module.css'))return {default:new Proxy({},{get:(_t,k)=>key+':'+String(k)})}
+        if(key.startsWith('./')&&actual.has(key.slice(2)+'.jsx'))return load(resolve(dirname(path),key+'.jsx'))
+        throw Error('Unapproved module boundary '+key+' in '+path)
+      },
+    }
+    vm.runInNewContext(compiled,context,{filename:path});return exports
+  }
+  const Hub=load(resolve(root,'components/app/messages-hub.jsx')).default
+  function cleanup(fiber){fiber.mounted=false;for(const s of fiber.slots)if(s.kind==='effect'&&typeof s.cleanup==='function')s.cleanup();trace.push('unmounted:'+fiber.type.name)}
+  function visit(element,path,seen,ancestors=[]){
+    if(element==null||typeof element==='boolean')return null
+    if(Array.isArray(element))return element.map((child,i)=>visit(child,path+'/'+(child?.key!=null?'key='+child.key:i),seen,ancestors)).filter(x=>x!=null)
+    if(typeof element!=='object')return element
+    if(typeof element.type==='function'){
+      const id=path+'/component='+identity(element.type)+'/key='+String(element.key)
+      let fiber=instances.get(id);if(!fiber){fiber={id,type:element.type,index:0,slots:[],mounted:true};instances.set(id,fiber);trace.push('mounted:'+fiber.type.name)}
+      seen.add(id);fiber.index=0;fiber.props=element.props
+      const previous=current;current=fiber;const result=element.type(element.props);current=previous
+      const children=visit(result,id+'/render',seen,ancestors)
+      return {type:element.type,props:element.props,key:element.key,children,component:true}
+    }
+    const node={type:element.type,props:element.props,key:element.key,ancestors}
+    node.children=visit(element.props.children,path+'/'+String(element.type),seen,[...ancestors,node]);return node
+  }
+  function render(){assert.ok(active);dirty=false;effects.length=0;const seen=new Set();tree=visit(jsx(Hub,{locale}),'/root',seen)
+    for(const [id,fiber] of instances)if(!seen.has(id)){cleanup(fiber);instances.delete(id)}
+    // Child passive effects run before their parents, matching the relevant mount lifecycle.
+    for(const e of effects.splice(0).sort((a,b)=>b.fiber.id.split('/').length-a.fiber.id.split('/').length)){
+      if(!e.fiber.mounted)continue;if(typeof e.slot.cleanup==='function')e.slot.cleanup();e.slot.deps=e.slot.nextDeps;e.slot.cleanup=e.fn()
+    }
+  }
+  async function settle(){let renders=0;for(let i=0;i<80;i++){await Promise.resolve();if(dirty){if(++renders>40)throw Error('Synthetic render did not converge');render()}}return tree}
+  render()
+  return {settle,get tree(){return tree},get url(){return url},trace,instances,
+    setOnline(next){networkOnline=Boolean(next);for(const fn of networkListeners.get(networkOnline?'online':'offline')||[])fn()},
+    intervalCount(){return timers.size},
+    networkListenerCount(){return [...networkListeners.values()].reduce((n,set)=>n+set.size,0)},
+    rerender(){dirty=true},unmount(){active=false;for(const f of instances.values())cleanup(f);instances.clear()},
+    nodes(){const walk=n=>n==null||typeof n!=='object'?[]:Array.isArray(n)?n.flatMap(walk):[n,...walk(n.children)];return walk(tree)},
+  }
+}
+export const textContent=node=>node==null||typeof node==='boolean'?'':typeof node!=='object'?String(node):Array.isArray(node)?node.map(textContent).join(''):textContent(node.children??node.props?.children)
+export const visible=node=>!node.component&&!node.props?.hidden&&!node.ancestors?.some(a=>a.props.hidden)

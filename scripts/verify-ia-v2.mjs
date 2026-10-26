@@ -393,7 +393,7 @@ try {
           assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(7)
           await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
-          await expect(nav.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/' + locale + '/personality-profiles')
+          await expect(nav.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/' + (locale === 'es' ? 'en' : locale) + '/app/portrait')
         }
       }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)

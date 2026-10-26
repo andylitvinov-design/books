@@ -81,8 +81,22 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
-  assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
+  const artworkCommand = "node scripts/build-public-card-artwork.mjs";
+  const lifecycleSteps = name => {
+    const steps = config.scripts[name].split("&&").map(step => step.trim());
+    // Supported literal commands only: no shell wrappers, path aliases or bypass operators.
+    for (const step of steps) {
+      assert.match(step, /^(?:node scripts\/[\w-]+\.mjs|node --test tests\/[\w-]+\.test\.mjs|npm run test:[\w:-]+)$/, name);
+    }
+    assert.equal(steps.filter(step => step === artworkCommand).length, 1, name + " must build public artwork exactly once");
+    return steps;
+  };
+  const prebuild = lifecycleSteps("prebuild");
+  const pdfCommand = "node scripts/build-report-pdf-art.mjs";
+  assert.equal(prebuild.filter(step => step === pdfCommand).length, 1);
+  assert.ok(prebuild.indexOf(artworkCommand) < prebuild.indexOf(pdfCommand), "public artwork must precede PDF artwork");
+  assert.equal(config.scripts.build, "next build");
+  lifecycleSteps("predev");
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
 

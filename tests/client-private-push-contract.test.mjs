@@ -70,7 +70,17 @@ test('tap preserves a request through sign-in while read remains participant sco
   const messages=source('lib/practitioners/client-messages.js')
   assert.match(api,/continueTo === 'consultations'/)
   assert.match(api,/app\/consultations\?request=/)
-  assert.match(cabinet,/autoOpen=\{requestedMessageId === request\.id\}/)
+  const conversation=cabinet.match(/<PracticeRequestConversation key=\{request\.id\}[\s\S]*?\/>/)
+  assert.ok(conversation,'the request-scoped conversation must be rendered')
+  assert.match(conversation[0],/requestId=\{request\.id\}/)
+  assert.match(conversation[0],/accountId=\{data\.account\.id\}/)
+  const expression=conversation[0].match(/autoOpen=\{([^}]+)\}/)?.[1]
+  assert.ok(expression,'auto-open must be controlled by this request')
+  const autoOpen=vm.runInNewContext('(requestedMessageId,request)=>('+expression+')')
+  assert.equal(autoOpen(id,{id,newMessageCount:0}),true,'the tapped request opens without unread messages')
+  assert.equal(autoOpen('other',{id,newMessageCount:1}),true,'unread messages open independently')
+  assert.equal(autoOpen('other',{id,newMessageCount:'0'}),false,'an unrelated read request stays closed')
+  assert.equal(autoOpen('',{id}),false,'a request with no alert or unread count stays closed')
   assert.match(messages,/if\(!isRequester&&!isPractitioner\)throw new AppError\('NOT_FOUND',404\)/)
 })
 

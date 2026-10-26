@@ -96,6 +96,7 @@ const PLANS = COURSE_PUBLIC_PLANS
 
 export default function CourseEntrySelector({ accountId, course, access, locale = 'en', onOpen, onAdd, onCloseCourse, closing = false }) {
   const t = COPY[locale] || COPY.en
+  const ru = locale === 'ru'
   const hasCourse = Boolean(course?.stage > 0 && !['closed','archived'].includes(course?.status))
   const [progressSnapshot, setProgressSnapshot] = useState(null)
   const scope = accountId + ':' + (course?.id || '')
@@ -268,6 +269,13 @@ export default function CourseEntrySelector({ accountId, course, access, locale 
     </section>}
 
     <CabinetFreeCourseBanners locale={locale}/>
+    <section className={styles.courseCatalogBridge} aria-label={ru ? 'Каталог курсов Holistic House' : 'Holistic House course catalogue'}>
+      <div>
+        <strong>{ru ? 'Выбрать следующий курс' : 'Explore more courses'}</strong>
+        <small>{ru ? 'Бесплатные и расширенные программы — без потери прогресса в моих курсах.' : 'Browse free and advanced programmes without losing your saved progress.'}</small>
+      </div>
+      <a href={'/' + locale + '/academy'}>{ru ? 'Все курсы' : 'All Courses'} <ArrowRight size={17} aria-hidden="true"/></a>
+    </section>
 
     <section className={styles.tiles} aria-label={t.title}>
       <button type="button" className={styles.addTile} onClick={addCourse} data-add-course>
