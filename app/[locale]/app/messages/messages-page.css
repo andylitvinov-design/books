@@ -8,3 +8,9 @@
   .hh-app.hh-messages-page .hh-header>a:last-child{font-size:12px;white-space:nowrap}
 }
 @media(max-width:360px){.hh-app.hh-messages-page{width:calc(100% - 10px)}}
+
+/* Mobile Messages is a workspace: no duplicated site header above the chat. */
+@media(max-width:760px){
+ .hh-app.hh-messages-page{padding-top:4px}
+ .hh-app.hh-messages-page .hh-header{display:none}
+}

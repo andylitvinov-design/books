@@ -82,3 +82,35 @@
 
 /* A real empty inbox should not occupy an entire phone viewport. */
 .emptySummary{padding:17px 14px;margin:5px 0 8px;border:1px dashed #d9c9b8;border-radius:13px;background:#fffaf5;color:#7e6659;font:500 13px/1.5 system-ui,sans-serif;text-align:center}
+
+/* One-screen member chat inside Messages, without stacked horizontal previews. */
+.shell[data-compact="true"]{position:relative;display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;margin:0;padding:0;background:#fffdf9}
+.shell[data-compact="true"] .head{flex:none;justify-content:flex-end;margin:0;padding:4px 9px;border-bottom:1px solid #e8e0d6;min-height:41px}
+.headActions{display:flex;align-items:center;gap:6px;margin-left:auto}
+.shell[data-compact="true"] .refresh{display:inline-flex;align-items:center;justify-content:center;width:34px;min-height:32px;padding:5px;border-radius:9px}
+.shell[data-compact="true"] .noticesPane{position:absolute;z-index:9;top:44px;left:8px;right:8px;max-height:55%;overflow:auto;padding:9px;border:1px solid #e2d4c7;border-radius:12px;background:#fffdf9;box-shadow:0 12px 30px #35261f24}
+.shell[data-compact="true"] .layout{display:grid;flex:1;min-height:0;gap:0;grid-template-columns:minmax(220px,32%) minmax(0,1fr)}
+.shell[data-compact="true"] .conversations,.shell[data-compact="true"] .chat{border:0;border-radius:0;box-shadow:none;min-height:0;max-height:none}
+.shell[data-compact="true"] .conversations{display:flex;flex-direction:column;align-items:stretch;gap:0;min-height:0;max-height:none;overflow:auto;padding:0;background:#fffbf6;border-right:1px solid #e8ded4}
+.shell[data-compact="true"] .conversations h2{display:none}
+.shell[data-compact="true"] .thread,.shell[data-compact="true"] .selected{flex:none;width:100%;min-width:0;max-width:none;min-height:63px;border:0;border-bottom:1px solid #f0e6dc;border-radius:0;padding:10px}
+.shell[data-compact="true"] .chat{display:flex;flex-direction:column;min-width:0;min-height:0}
+.shell[data-compact="true"] .chatHeader{flex:none;min-height:48px;padding:6px 9px}
+.shell[data-compact="true"] .back{display:inline-flex;gap:5px;align-items:center;min-height:34px;padding:6px 9px;font-size:0;border:0;background:#e9f3ed;color:#256253}
+.shell[data-compact="true"] .back svg{height:19px;width:19px}
+.shell[data-compact="true"] .feed{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain}
+.shell[data-compact="true"] .compose{display:flex;flex:none;flex-direction:column;gap:4px;padding:7px 9px;background:#fffcf8}
+.shell[data-compact="true"] .compose>label:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.shell[data-compact="true"] .compose textarea{min-height:43px;max-height:104px;padding:9px 11px;resize:vertical;border-radius:11px}
+.shell[data-compact="true"] .compose .actions{display:flex;justify-content:space-between;gap:5px}
+.shell[data-compact="true"] .filePick{min-height:33px;padding:5px 9px;border-radius:9px;font-size:11px}
+.shell[data-compact="true"] .send{min-height:33px;padding:5px 11px;border-radius:9px}
+.shell[data-compact="true"] .compose>.hint{display:none}
+.shell[data-compact="true"] .emptySummary{margin:8px 10px}
+@media(max-width:760px){
+ .shell[data-compact="true"] .layout{display:flex;flex-direction:column}
+ .shell[data-compact="true"] .conversations{flex:1;max-height:none;display:flex;overflow:auto}
+ .shell[data-compact="true"] .layout[data-chat-open="true"] .conversations{display:none}
+ .shell[data-compact="true"] .layout[data-chat-open="false"] .chat{display:none}
+ .shell[data-compact="true"] .thread,.shell[data-compact="true"] .selected{max-width:none}
+}

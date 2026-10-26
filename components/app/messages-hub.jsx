@@ -7,21 +7,21 @@ import MessagesClientRequests from './messages-client-requests'
 import styles from './messages-hub.module.css'
 
 const COPY={
-  en:{title:'Messages',subtitle:'Private conversations and client enquiries, together.',
+  en:{title:'Messages',subtitle:'Private conversations and client enquiries, together.',sources:'Message source',crmSource:'Messengers',directSource:'On-site',
     chats:'Conversations',requests:'Client requests',crm:'Telegram & other connected channels',direct:'Private conversations inside Holistic House',openCrm:'View Telegram conversations',
     crmHint:'Owner-only CRM conversations. Replies depend on verified provider delivery.',
     refresh:'Refresh requests',loading:'Loading requests…',failure:'Could not load client requests. Please retry.',
-    ownerLead:'New Telegram & messenger requests',ownerUnread:'unread messages',otherLoading:'Loading other requests…',signIn:'Sign in to view client enquiries',sessionRequired:'This browser is not signed in to the Holistic House cabinet. Log in to see your messages.',privacy:'Only you and the assigned practitioner can see private request conversations.'},
-  ru:{title:'Сообщения',subtitle:'Переписка и заявки клиентов — в одном удобном месте.',
+    ownerLead:'New Telegram & messenger requests',ownerUnread:'unread messages',otherLoading:'Loading other requests…',sessionRequired:'This browser is not signed in to the Holistic House cabinet. Log in to see your messages.',signIn:'Sign in to view client enquiries',privacy:'Only you and the assigned practitioner can see private request conversations.'},
+  ru:{title:'Сообщения',subtitle:'Переписка и заявки клиентов — в одном удобном месте.',sources:'Источник сообщений',crmSource:'Мессенджеры',directSource:'На сайте',
     chats:'Переписка',requests:'Заявки',crm:'Telegram и другие подключённые каналы',direct:'Личная переписка внутри Holistic House',openCrm:'Открыть Telegram-переписки',
     crmHint:'Переписки владельца в CRM. Доставка ответа зависит от подтверждения провайдера.',
     refresh:'Обновить заявки',loading:'Загружаю заявки…',failure:'Не удалось загрузить заявки. Повторите попытку.',
-    ownerLead:'Новые обращения Telegram и мессенджеров',ownerUnread:'непрочитанных сообщений',otherLoading:'Загружаем остальные заявки…',signIn:'Войдите, чтобы посмотреть заявки',sessionRequired:'В этом браузере не выполнен вход в кабинет Holistic House. Войдите в аккаунт владельца, чтобы увидеть и открыть сообщения.',privacy:'Личные ответы видят только клиент и назначенный мастер.'},
-  es:{title:'Mensajes',subtitle:'Conversaciones privadas y solicitudes de clientes en un lugar.',
+    ownerLead:'Новые обращения Telegram и мессенджеров',ownerUnread:'непрочитанных сообщений',otherLoading:'Загружаем остальные заявки…',sessionRequired:'В этом браузере не выполнен вход в кабинет Holistic House. Войдите в аккаунт владельца, чтобы увидеть и открыть сообщения.',signIn:'Войдите, чтобы посмотреть заявки',privacy:'Личные ответы видят только клиент и назначенный мастер.'},
+  es:{title:'Mensajes',subtitle:'Conversaciones privadas y solicitudes de clientes en un lugar.',sources:'Origen de mensajes',crmSource:'Mensajería',directSource:'En el sitio',
     chats:'Conversaciones',requests:'Solicitudes',crm:'Telegram y otros canales conectados',direct:'Mensajes privados dentro de Holistic House',openCrm:'Abrir conversaciones de Telegram',
     crmHint:'Mensajes del CRM del propietario. La entrega depende de la confirmación del proveedor.',
     refresh:'Actualizar solicitudes',loading:'Cargando solicitudes…',failure:'No se pudieron cargar las solicitudes.',
-    ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',signIn:'Inicia sesión para ver las solicitudes',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
+    ownerLead:'Nuevas solicitudes de Telegram y mensajería',ownerUnread:'mensajes sin leer',otherLoading:'Cargando otras solicitudes…',sessionRequired:'Inicia sesión en la cuenta de Holistic House para ver los mensajes de esta conversación.',signIn:'Inicia sesión para ver las solicitudes',privacy:'Las conversaciones privadas solo son visibles para el cliente y su profesional.'},
 }
 const VALID_TABS=new Set(['chats','requests'])
 export default function MessagesHub({locale='en'}){
@@ -35,7 +35,10 @@ export default function MessagesHub({locale='en'}){
   const [unauthenticated,setUnauthenticated]=useState(false)
   const [bootstrapSignInRequired,setBootstrapSignInRequired]=useState(false)
   const [crmSummary,setCrmSummary]=useState(null)
-  const [crmThreadToOpen,setCrmThreadToOpen]=useState('')
+  const [crmThreadToOpen,setCrmThreadToOpen]=useState({id:'',sequence:0})
+  const [source,setSource]=useState('crm')
+  const [crmOpen,setCrmOpen]=useState(false)
+  const [directOpen,setDirectOpen]=useState(false)
   const onCrmThreads=useCallback(summary=>setCrmSummary(summary),[])
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
@@ -43,13 +46,12 @@ export default function MessagesHub({locale='en'}){
   },[])
   useEffect(()=>{
     const controller=new AbortController()
-    // Separate fast owner permission read from expensive practice/business data.
-    // Both routes authenticate on the server and use no-store private responses.
+    // Verify owner access without waiting for practice/business requests.
     setOwnerInfo(null);setBootstrapSignInRequired(false)
     fetch('/api/app/messages/requests?view=owner',{
       credentials:'same-origin',cache:'no-store',signal:controller.signal,
     }).then(async response=>{
-      if(response.status===401){setBootstrapSignInRequired(true);return null}
+      if(response.status===401){if(!controller.signal.aborted)setBootstrapSignInRequired(true);return null}
       if(!response.ok)return null
       const value=await response.json()
       return typeof value.accountId==='string'&&typeof value.ownerMessenger==='boolean'?value:null
@@ -59,7 +61,7 @@ export default function MessagesHub({locale='en'}){
   },[refreshKey])
   useEffect(()=>{
     const controller=new AbortController()
-    setLoading(true);setError('');setUnauthenticated(false);setData(null);setCrmSummary(null);setCrmThreadToOpen('')
+    setLoading(true);setError('');setUnauthenticated(false);setData(null);setCrmSummary(null);setCrmThreadToOpen({id:'',sequence:0})
     fetch('/api/app/messages/requests',{credentials:'same-origin',cache:'no-store',signal:controller.signal})
       .then(async response=>{
         const result=await response.json().catch(()=>({}))
@@ -79,13 +81,13 @@ export default function MessagesHub({locale='en'}){
       }).finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     return()=>controller.abort()
   },[refreshKey,t.failure])
-  // Fail closed if parallel cookie-bound reads saw different signed-in users.
+  // Account-bound responses must agree before any CRM threads can be shown.
   const sameAccount=!data||!ownerInfo||data.accountId===ownerInfo.accountId
   const usableData=sameAccount?data:null
   const ownerAccountId=sameAccount
     ?ownerInfo?.ownerMessenger?ownerInfo.accountId:data?.ownerMessenger?data.accountId:null
     :null
-  // CRM threads remain accessible when website request loading fails or is slow.
+  // Slow/failed website requests must not prevent reading existing owner Telegram threads.
   const requestData=usableData||(ownerAccountId?{
     accountId:ownerAccountId,ownerMessenger:true,ownerAuthorized:true,
     hasPractice:true,requests:[],businessEnquiries:[],services:[],
@@ -105,11 +107,12 @@ export default function MessagesHub({locale='en'}){
   }
   const openCrmThread=id=>{
     if(!ownerAccountId||!/^[0-9a-f-]{36}$/i.test(id))return
-    setCrmThreadToOpen(id)
+    setCrmThreadToOpen(previous=>({id,sequence:previous.sequence+1}))
+    setSource('crm')
     switchTab('chats')
-    requestAnimationFrame(()=>document.getElementById('hh-owner-crm-inbox')?.scrollIntoView({block:'start'}))
   }
-  return <div className={styles.hub} data-messages-hub>
+  return <div className={styles.hub} data-messages-hub
+    data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
     <div className={styles.hero}>
       <div className={styles.icon}><MessageCircle aria-hidden="true"/></div>
       <div><span className={styles.eyebrow}>HOLISTIC HOUSE · INBOX</span>
@@ -146,24 +149,28 @@ export default function MessagesHub({locale='en'}){
     </div>
     <section id="hh-inbox-panel-chats" role="tabpanel" aria-labelledby="hh-inbox-tab-chats"
       hidden={tab!=='chats'} className={styles.panel}>
-      {ownerAccountId&&<section className={styles.crm} aria-labelledby="hh-owner-crm-inbox">
-        <div className={styles.crmTitle}><MessageCircle size={19} aria-hidden="true"/>
-          <h2 id="hh-owner-crm-inbox">{t.crm}</h2></div>
-        <p>{t.crmHint}</p>
-        <CrmMessengerPanel key={ownerAccountId} locale={locale} accountId={ownerAccountId}
-          onThreadsLoaded={onCrmThreads} initialThreadId={crmThreadToOpen}/>
-      </section>}
-      <section className={styles.direct} aria-label={t.direct}>
-        {ownerAccountId&&<h2 className={styles.directTitle}>{t.direct}</h2>}
-        <DirectMessageInbox locale={locale} embedded ownerCrmAvailable={Boolean(ownerAccountId)}/>
-      </section>
+      {ownerAccountId&&<div className={styles.sources} role="group" aria-label={t.sources}>
+        <button type="button" aria-pressed={source==='crm'} onClick={()=>setSource('crm')}>
+          {t.crmSource}</button>
+        <button type="button" aria-pressed={source==='direct'} onClick={()=>setSource('direct')}>
+          {t.directSource}</button>
+      </div>}
+      <div className={styles.inboxFrame}>
+        {ownerAccountId&&<section hidden={source!=='crm'} className={styles.crm}
+          aria-label={t.crm} id="hh-owner-crm-inbox">
+          <CrmMessengerPanel key={ownerAccountId} locale={locale} accountId={ownerAccountId}
+            compact onOpenChange={setCrmOpen}
+            onThreadsLoaded={onCrmThreads} initialThreadId={crmThreadToOpen.id} initialThreadSequence={crmThreadToOpen.sequence}/>
+        </section>}
+        <section hidden={Boolean(ownerAccountId)&&source!=='direct'}
+          className={styles.direct} aria-label={t.direct}>
+          <DirectMessageInbox locale={locale} embedded compact onOpenChange={setDirectOpen}
+            ownerCrmAvailable={Boolean(ownerAccountId)}/>
+        </section>
+      </div>
     </section>
     <section id="hh-inbox-panel-requests" role="tabpanel" aria-labelledby="hh-inbox-tab-requests"
       hidden={tab!=='requests'} className={styles.panel}>
-      {ownerAccountId&&<div className={styles.crmShortcut}>
-        <span>{t.crm}</span>
-        <button type="button" onClick={()=>switchTab('chats')}>{t.openCrm}</button>
-      </div>}
       <div className={styles.toolbar}>
         <p><ShieldCheck size={16} aria-hidden="true"/>{t.privacy}</p>
         <button type="button" disabled={loading} onClick={()=>setRefreshKey(v=>v+1)}>{t.refresh}</button>
