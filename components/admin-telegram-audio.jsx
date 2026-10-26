@@ -14,6 +14,7 @@ const LABELS={
     guideTitle:'Как перенести голосовое из Telegram',
     steps:['Открой Dot → /audio → сначала нажми кнопку нужной папки.','В чате с медитацией зажми запись → «Переслать» → Dot → «Отправить».','Дождись ✅ с названием выбранной папки. Без выбора файл попадёт во «Входящие».'],
     botCta:'Выбрать папку в Dot',
+    combine:'Чтобы склеить голосовые: /combine → перешли 2–8 записей OGG/Opus → дождись ✅ для каждой → /done. Общий файл появится здесь и в Dot. /cancel отменяет сборку. До 20 МБ суммарно.',
     autoSave:'Выбор папки действует 30 минут для следующей записи. Оригинал остаётся приватным в этой аудиотеке и не публикуется в курсе.'},
   en:{inbox:'Telegram audio inbox',intro:'Forward a voice message or audio file to @Andydotbot. It is saved privately here, never published to a course automatically.',
     all:'All folders',refresh:'Refresh',loading:'Loading recordings…',none:'No recordings in this folder yet.',
@@ -24,6 +25,7 @@ const LABELS={
     guideTitle:'How to transfer a Telegram recording',
     steps:['Open Dot → /audio → first tap the destination folder.','Hold your meditation recording → Forward → Dot → Send.','Wait for ✅ confirming that folder. With no choice, the file goes to Inbox.'],
     botCta:'Choose folder in Dot',
+    combine:'Join voice notes: /combine → forward 2–8 OGG/Opus recordings → wait for ✅ on each → /done. The combined file appears here and in Dot. /cancel stops a batch. 20 MB total max.',
     autoSave:'The choice applies to the next recording within 30 minutes. Originals stay private in this audio library, not published to a course.'},
   es:{inbox:'Bandeja de audio de Telegram',intro:'Reenvía un audio a @Andydotbot. Se guardará de forma privada, sin publicar en el curso.',
     all:'Todas las carpetas',refresh:'Actualizar',loading:'Cargando audios…',none:'Aún no hay audios en esta carpeta.',
@@ -34,6 +36,7 @@ const LABELS={
     guideTitle:'Cómo transferir un audio de Telegram',
     steps:['Abre Dot → /audio → elige primero la carpeta.','Mantén pulsada la grabación → Reenviar → Dot → Enviar.','Espera ✅ con la carpeta elegida. Sin selección se guarda en Entrada.'],
     botCta:'Elegir carpeta en Dot',
+    combine:'Unir mensajes de voz: /combine → reenvía 2–8 audios OGG/Opus → espera ✅ para cada uno → /done. El archivo unido aparece aquí y en Dot. /cancel cancela. Máximo 20 MB.',
     autoSave:'La elección sirve para el próximo audio durante 30 minutos. El original queda privado y no se publica en cursos.'}
 }
 const duration=value=>{
@@ -112,6 +115,7 @@ export default function AdminTelegramAudio({locale='en',initialFolder='all',init
         <h3>{t.guideTitle}</h3>
         <ol>{t.steps.map((step,index)=><li key={index}>{step}</li>)}</ol>
         <p>{t.autoSave}</p>
+        <p>{t.combine}</p>
       </div>
       <a href="https://t.me/Andydotbot?start=audio" target="_blank"
         rel="noopener noreferrer" className={styles.telegramCta}>{t.botCta}</a>
