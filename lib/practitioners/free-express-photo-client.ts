@@ -4,7 +4,7 @@ export const EXPRESS_MAX_UPLOAD_BYTES = 2_750_000;
 export const EXPRESS_MAX_SOURCE_BYTES = 12_000_000;
 
 function photoPixels(file: File): Promise<ImageBitmap | HTMLImageElement> {
-  return createImageBitmap(file).catch(() => new Promise<HTMLImageElement>((resolve, reject) => {
+  const fallback = () => new Promise<HTMLImageElement>((resolve, reject) => {
     // A CSP-approved data: URL fallback supports older iOS Safari and HEIC.
     // Never create public blob URLs or send original bytes outside this tab.
     const reader = new FileReader();
@@ -17,7 +17,8 @@ function photoPixels(file: File): Promise<ImageBitmap | HTMLImageElement> {
       image.src = reader.result;
     };
     reader.readAsDataURL(file);
-  }));
+  });
+  return typeof createImageBitmap === "function" ? createImageBitmap(file).catch(fallback) : fallback();
 }
 
 function jpegBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
@@ -36,8 +37,8 @@ export async function prepareFreeExpressPhoto(file: File): Promise<File> {
 
   const image = await photoPixels(file);
   try {
-    const width = "width" in image ? image.width : image.naturalWidth;
-    const height = "height" in image ? image.height : image.naturalHeight;
+    const width = image.width;
+    const height = image.height;
     if (!Number.isFinite(width) || !Number.isFinite(height)
       || width < 1 || height < 1 || width * height > 60_000_000)
       throw new Error("PHOTO_DIMENSIONS_NOT_ALLOWED");
