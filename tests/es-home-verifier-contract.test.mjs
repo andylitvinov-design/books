@@ -129,6 +129,9 @@ test('Spanish browser verifier matches actual My Space, public directions, acces
 test('Spanish Academy remains available without inventing an Academy bottom-bar slot', () => {
   assert.match(source, /getByRole\('heading', \{ level: 1, name: 'Cursos de IA gratuitos'/)
   assert.match(source, /await expect\(freeStart\)\.toHaveAttribute\('href', '\/es\/services\/free-situation-review'\)/)
-  assert.match(source, /mobile-bottom-navigation \[aria-current="page"\]'\)\)\.toHaveCount\(0\)/)
+  assert.match(source, /const activeCourse = page\.locator\('\.mobile-bottom-navigation \[aria-current="page"\]'\)/)
+  assert.match(source, /await expect\(activeCourse\)\.toHaveCount\(1\)/)
+  assert.match(source, /await expect\(activeCourse\)\.toHaveAttribute\('data-nav-item', 'courses'\)/)
+  assert.match(source, /await expect\(activeCourse\)\.toHaveAttribute\('href', '\/es\/academy'\)/)
   assert.doesNotMatch(navigationSource, /getCompactNavigation\(activeLocale\)\.filter\(item => item\.id === 'academy'\)/)
 })

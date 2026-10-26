@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
-  paidAdLandingUrl, readPaidAdReferral, withPaidAdReferral,
+  paidAdLandingUrl, readPaidAdReferral, withPaidAdReferral, metaAdsUrlParameters,
 } from "../lib/paid-ad-referrals.js";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "../lib/whatsapp-enquiry.js";
 
@@ -40,6 +40,32 @@ test("paid Meta and Google ad URLs are allowlisted public landings with no PII",
   ]) assert.throws(() => paidAdLandingUrl(invalid, { source: "facebook", campaign }), TypeError);
   for (const invalid of ["private@email.com", "anxiety depression", "anxiety_depression", "x".repeat(65), "symptom/heart"])
     assert.throws(() => paidAdLandingUrl(path, { source: "facebook", campaign: invalid }), TypeError);
+});
+
+test("Meta Ads Manager URL parameters use actual serving platform, never ad creative identity", () => {
+  const params=metaAdsUrlParameters(path,{campaign,content:"ad_a"});
+  assert.equal(params,
+    "utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign="+campaign+"&utm_content=ad_a");
+  for (const [served,canonical,label] of [
+    ["fb","facebook","Facebook"],["ig","instagram","Instagram"],
+  ]) {
+    const resolved="?"+params.replace("{{site_source_name}}",served);
+    const referral=readPaidAdReferral(resolved,path);
+    assert.equal(referral?.source,canonical);
+    assert.equal(referral?.label,label);
+    assert.equal(referral?.content,"ad_a");
+    assert.match(message(withPaidAdReferral(base,resolved,path)),new RegExp("Ad referral: "+label));
+  }
+  for(const served of ["an","msg","th","{{site_source_name}}","", "facebook,instagram"]){
+    const resolved="?"+params.replace("{{site_source_name}}",served);
+    assert.equal(readPaidAdReferral(resolved,path),null,served);
+    assert.equal(withPaidAdReferral(base,resolved,path),base,served);
+  }
+  for (const invalid of ["search_a","unknown","client_info","ad_a?email=user@example.com"]){
+    assert.throws(()=>metaAdsUrlParameters(path,{campaign,content:invalid}),TypeError);
+  }
+  assert.throws(()=>metaAdsUrlParameters("/en/client/tests",{campaign,content:"ad_a"}),TypeError);
+  assert.throws(()=>metaAdsUrlParameters(path,{campaign:"other",content:"ad_a"}),TypeError);
 });
 
 test("private, duplicated, mismatched, unknown or sensitive query params fail closed", () => {
@@ -107,6 +133,12 @@ test("the existing owner-approved Meta pilot remains draft-only, within CAD 35, 
   assert.equal(manifest.campaign.targeting.sensitiveInterests, false);
   assert.equal(manifest.campaign.targeting.remarketing, false);
   assert.equal(manifest.campaign.targeting.healthSegments, false);
+  assert.equal(manifest.campaign.placementPolicy.mode, "MANUAL_UNTIL_MEDIA_QA");
+  assert.equal(manifest.campaign.placementPolicy.oneSharedCampaignAndAdSet, true);
+  assert.ok(manifest.campaign.placementPolicy.excluded.includes("audience_network"));
+  assert.equal(manifest.campaign.attribution.sourceMacro, "{{site_source_name}}");
+  assert.equal(manifest.campaign.attribution.resolvedAllowlist.fb,"facebook");
+  assert.equal(manifest.campaign.attribution.resolvedAllowlist.ig,"instagram");
   assert.equal(manifest.campaign.adSet.status, "PAUSED");
   assert.ok(manifest.campaign.ads.length > 0 && manifest.campaign.ads.length <= 2);
   for (const ad of manifest.campaign.ads) {
@@ -114,6 +146,10 @@ test("the existing owner-approved Meta pilot remains draft-only, within CAD 35, 
     assert.equal(ad.cta, "Learn More");
     const source = new URL(ad.landingUrl).searchParams.get("utm_source");
     assert.equal(ad.landingUrl, paidAdLandingUrl(path, { source, campaign, content: ad.id }));
+    assert.equal(ad.adsManagerWebsiteUrl,"https://holistichouse.vercel.app"+path);
+    assert.equal(ad.landingUrlRole,"PREVIEW_ONLY_NOT_META_DELIVERY_URL");
+    assert.equal(ad.adsManagerUrlParameters,metaAdsUrlParameters(path,{campaign,content:ad.id}));
+    assert.doesNotMatch(ad.adsManagerWebsiteUrl,/utm_/);
     assert.doesNotMatch(ad.headline + " " + ad.primaryText, /\b(depression|anxiety diagnosis|guaranteed cure|medical treatment|registered psychotherapist)\b/i);
   }
 });
@@ -128,4 +164,22 @@ test("paid labels are opt-in user-controlled handoffs; existing organic referral
   assert.match(chooser, /telegramEnquiryUrlFromWhatsApp\(preparedWhatsApp\)/);
   assert.doesNotMatch(logic, /fetch\(|sendBeacon|localStorage|sessionStorage|navigator\.sendBeacon/);
   assert.match(analytics, /PUBLIC_ANALYTICS_AVAILABLE = false/);
+});
+
+
+test("Growth Studio shows only owner-gated Meta setup drafts, not connected or live ads", () => {
+  const parent=readFileSync(new URL("../components/growth-studio-connections.jsx",import.meta.url),"utf8");
+  const panel=readFileSync(new URL("../components/growth-studio-meta-ads.jsx",import.meta.url),"utf8");
+  const css=readFileSync(new URL("../components/growth-studio.module.css",import.meta.url),"utf8");
+  const ownerPage=readFileSync(new URL("../app/admin/growth-studio/page.js",import.meta.url),"utf8");
+  assert.match(parent,/import GrowthStudioMetaAds from/);
+  assert.match(parent,/<GrowthStudioMetaAds locale=\{locale\}\/>/);
+  assert.match(panel,/data-meta-ads-readiness/);
+  assert.match(panel,/metaAdsUrlParameters\(/);
+  assert.match(panel,/navigator\.clipboard\.writeText/);
+  assert.match(panel,/Meta Pixel/);
+  assert.match(panel,/draft\.campaign\.lifetimeBudgetCad/);
+  assert.match(ownerPage,/requireAdminRequest\(\)/);
+  assert.doesNotMatch(panel,/fetch\(|sendBeacon|gtag\(|fbq\(|createCampaign|publishAd|localStorage|sessionStorage/);
+  assert.match(css,/@media\(max-width:420px\)\{\.metaAdsPanel/);
 });

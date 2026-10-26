@@ -24,6 +24,15 @@ test("browser-only artwork URL map matches pinned source manifest without leakin
   assert.doesNotMatch(helper, /import registry from "@\/data\/public-card-artwork\.json"/);
 });
 
+const assertRequiredArtworkLifecycle = command => {
+  assert.equal(typeof command, "string");
+  const steps = command.split("&&").map(step => step.trim());
+  assert.ok(steps.every(step => step.length > 0 && /^[A-Za-z0-9_./: -]+$/.test(step)),
+    "Lifecycle commands must be a plain, fail-closed && chain without shell error masking");
+  assert.equal(steps.filter(step => step === "node scripts/build-public-card-artwork.mjs").length, 1,
+    "Lifecycle must execute the artwork generator exactly once as a required command");
+};
+
 const sourceGitHash = source => {
   const bytes = readFileSync(new URL("../" + source, import.meta.url));
   return {
@@ -81,8 +90,8 @@ test("card delivery bypasses runtime transforms without disabling book reader op
   assert.match(generator, /Sha|sha/);
   assert.match(generator, /fileHashes\.size/);
   const config = JSON.parse(read("package.json"));
-  assert.ok(config.scripts.prebuild.startsWith("node scripts/build-public-card-artwork.mjs"));
-  assert.equal(config.scripts.predev, "node scripts/build-public-card-artwork.mjs");
+  assertRequiredArtworkLifecycle(config.scripts.prebuild);
+  assertRequiredArtworkLifecycle(config.scripts.predev);
   assert.match(config.scripts["test:app"], /tests\/public-card-artwork-cost-guard\.test\.mjs/);
 });
 
@@ -101,3 +110,19 @@ test("every pinned WebP source has a complete declared RIFF body before build-ti
     assert.equal(bytes.readUInt32LE(4) + 8, bytes.length, "Incomplete WebP source: " + item.source);
   }
 });
+
+test("artwork lifecycle guard rejects skipped generators and masked failures", () => {
+  const config = JSON.parse(read("package.json"));
+  const generator = "node scripts/build-public-card-artwork.mjs";
+  for (const lifecycle of ["prebuild", "predev"]) {
+    const command = config.scripts[lifecycle];
+    assertRequiredArtworkLifecycle(command);
+    for (const replacement of ["node scripts/other.mjs", "echo " + generator,
+      generator + " && " + generator, generator + "; echo done",
+      generator + " || true", generator + " & echo done"]) {
+      assert.throws(() => assertRequiredArtworkLifecycle(command.replace(generator, replacement)),
+        undefined, lifecycle + ": " + replacement);
+    }
+  }
+});
+

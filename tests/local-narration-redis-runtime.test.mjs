@@ -2,12 +2,11 @@
 // No patient records, credentials, network egress or paid inference.
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {execFileSync} from 'node:child_process'
+import {isolatedRedisCommand} from './helpers/isolated-redis-container.mjs'
 import {readFileSync} from 'node:fs'
 import {randomUUID} from 'node:crypto'
 
 const code=readFileSync(new URL('../lib/clients/local-narration-redis.js',import.meta.url),'utf8')
-const container='andrey-voice-redis-ci'
 const ttl='1209600'
 const readyTtl='7776000'
 function lua(name) {
@@ -19,15 +18,11 @@ function lua(name) {
   return code.slice(start+marker.length,end)
 }
 function evalLua(name,keys,args) {
-  const output=execFileSync('docker',[
-    'exec',container,'redis-cli','--raw','EVAL',lua(name),
-    String(keys.length),...keys,...args.map(String),
-  ],{encoding:'utf8',maxBuffer:120_000,timeout:5000})
-  return output.trim()
+  return isolatedRedisCommand(['EVAL',lua(name),
+    String(keys.length),...keys,...args.map(String)])
 }
 function get(key) {
-  return execFileSync('docker',['exec',container,'redis-cli','--raw','GET',key],
-    {encoding:'utf8',timeout:5000}).trim()
+  return isolatedRedisCommand(['GET',key])
 }
 const fixture=()=> {
   const prefix='hh:test:voice:'+randomUUID()+':'

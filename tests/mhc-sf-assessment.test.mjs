@@ -1,3 +1,4 @@
+import { CURRENT_PROFESSIONAL_COUNT, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import { ADDITIONAL_PROFESSIONAL_DEFINITIONS } from '../data/assessments/professional-additions-2026.js'
 import test from 'node:test'
@@ -113,8 +114,8 @@ test('EN/RU reports provide four continuous sums, attribution, form-specific lim
 })
 
 test('one MHC-SF replaces its research reference in EN/RU guest/account filters without duplication',()=>{
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable).length,150)
-  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,77)
+  assertCatalogAvailability(MONITORING_CATALOG)
+  assert.equal(MONITORING_CATALOG.filter(c=>c.startable&&c.testStyle==='professional').length,CURRENT_PROFESSIONAL_COUNT)
   const digest=value=>createHash('sha256').update(canonicalJSON(value)).digest('hex')
   const newViaIds = new Set(IPIP_VIA_R_COMPLETION_DEFINITIONS.map(d=>d.id))
   // Exclude only the six appended split-v2 IDs from this historical baseline.

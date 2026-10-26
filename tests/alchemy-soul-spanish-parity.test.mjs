@@ -1,8 +1,36 @@
 import test from "node:test";
+import ts from "typescript";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+
+function assertCompactChoosers(form) {
+  const ast = ts.createSourceFile("alchemy-soul-lead-form.tsx", form, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  assert.equal(ast.parseDiagnostics.length, 0);
+  const choosers = [];
+  const visit = node => {
+    if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && node.tagName.getText(ast) === "ContactChannelChooser") choosers.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  assert.equal(choosers.length, 2, "Both actual Alchemy parents use the canonical compact chooser");
+  for (const chooser of choosers) {
+    assert.ok(chooser.attributes.properties.every(ts.isJsxAttribute), "No spread may override verified compact props");
+    const names = chooser.attributes.properties.map(attribute => attribute.name.getText(ast));
+    assert.equal(new Set(names).size, names.length, "No duplicate compact props");
+    const attributes = Object.fromEntries(chooser.attributes.properties.filter(ts.isJsxAttribute).map(attribute => [attribute.name.getText(ast), attribute.initializer]));
+    for (const name of ["compactPhone", "compactTrigger", "stayAfterSave"]) {
+      assert.ok(Object.hasOwn(attributes, name), name); assert.equal(attributes[name], undefined, name + " is enabled");
+    }
+    for (const [name, expression] of [["locale", "locale"], ["onSubmissionLockChange", "setSubmissionLocked"]]) {
+      assert.ok(ts.isJsxExpression(attributes[name]));assert.equal(attributes[name].expression.getText(ast), expression);
+    }
+    assert.ok(ts.isJsxExpression(attributes.resetKey));assert.ok(ts.isJsxExpression(attributes.publicTopic));
+    assert.match(attributes.publicTopic.expression.getText(ast), /t\.formatField.*t\.formatNames/);
+  }
+  assert.deepEqual(choosers.map(node => node.attributes.properties.find(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(ast) === "resetKey").initializer.expression.getText(ast)), ['format + ":" + topic', 'selected']);
+}
 
 test("Spanish Alchemy shares the ten media-led chapters in EN/RU", () => {
   const enRoute = read("app/[locale]/services/alchemy-of-soul/page.tsx");
@@ -43,7 +71,7 @@ test("Spanish Alchemy booking formats, safe handoff and navigation mirror EN/RU"
     assert.match(form, new RegExp('data-alchemy-format="' + selection + '"'));
   }
   assert.match(landing, /<AlchemySoulLeadForm locale=\{locale\} \/>/);
-  assert.match(form, /<ContactChannelChooser locale=\{locale\}/);
+  assertCompactChoosers(form);
   assert.match(form, /pagePath: "\/" \+ locale \+ "\/services\/alchemy-of-soul"/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|sendBeacon|fetch\(/);
   assert.match(redirect, /permanentRedirect\("\/" \+ locale \+ "\/services\/alchemy-of-soul"\)/);
@@ -67,4 +95,14 @@ test("Spanish Services shares the concise personal studio with EN/RU and origina
   assert.match(offers, /Perfil gratuito de recursos Wu Xing/);
   assert.match(offers, /route: "alchemy-of-soul"/);
   assert.match(reviews, /Audio original en inglés/);
+});
+
+test("Spanish compact parity rejects spread or duplicate overrides while accepting reordered props", () => {
+  const form = read("components/alchemy-soul-lead-form.tsx");
+  assertCompactChoosers(form);
+  const token = "<ContactChannelChooser onSubmissionLockChange={setSubmissionLocked} locale={locale}";
+  assert.equal(form.split(token).length - 1, 2);
+  assertCompactChoosers(form.replaceAll(token, "<ContactChannelChooser locale={locale} onSubmissionLockChange={setSubmissionLocked}"));
+  assert.throws(() => assertCompactChoosers(form.replace(token, token + " {...overrides}")), /No spread/);
+  assert.throws(() => assertCompactChoosers(form.replace(token, token + " locale={locale}")), /No duplicate/);
 });

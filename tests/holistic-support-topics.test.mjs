@@ -47,7 +47,7 @@ test("thematic cards include distinct EN/RU/ES copy without medical claims or fa
   assert.match(filter, /historical Academy learning materials remain available separately/);
   assert.match(filter, /Ваши загруженные талисманы остаются приватными/);
   assert.match(filter, /Los talismanes que subas son privados/);
-  assert.match(filter, /no diagnostica, trata ni sustituye/i);
+  assert.ok(filter.includes("No diagnostica, trata ni sustituye la atención médica."), "Full Spanish non-diagnostic and non-substitution disclaimer remains intact");
   assert.doesNotMatch(filter, /fetch\(|localStorage|sessionStorage|window\.location|[?&](?:condition|health|question)=/);
   assert.doesNotMatch(filter, /checkout|payment_received|orderConfirmed|<form/);
   assert.match(page, /Homeopathy lacks reliable evidence/);

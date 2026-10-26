@@ -13,9 +13,11 @@ on:
       - 'components/alchemy-soul-lead-form.tsx'
       - 'components/alchemy-example-report.tsx'
       - 'components/alchemy-example-report.module.css'
-      - 'app/[locale]/services/alchemy-of-soul/**'
+      - 'app/\[locale\]/services/alchemy-of-soul/**'
       - 'app/es/services/alchemy-of-soul/**'
       - 'scripts/verify-alchemy-one-screen.mjs'
+      - 'scripts/helpers/alchemy-viewport-isolation.mjs'
+      - 'scripts/helpers/public-viewport-isolation.mjs'
       - 'tests/alchemy-*.test.mjs'
       - 'tests/service-alchemy-one-screen-story.test.mjs'
   workflow_dispatch:
@@ -54,6 +56,7 @@ jobs:
             tests/personal-testimonials-prefetch.test.mjs \
             tests/alchemy-soul-spanish-parity.test.mjs \
             tests/alchemy-panel-overflow-diagnostics.test.mjs \
+            tests/alchemy-viewport-isolation.test.mjs \
             tests/service-alchemy-one-screen-story.test.mjs \
             tests/alchemy-of-soul-method.test.mjs
           npx tsc --noEmit
@@ -92,6 +95,8 @@ jobs:
         if: always()
         with:
           name: alchemy-mobile-geometry
-          path: artifacts/public-services-production/alchemy-one-screen-geometry*.json
+          path: |
+            artifacts/public-services-production/alchemy-one-screen-geometry*.json
+            artifacts/public-services-production/alchemy-desktop-formats/**
           if-no-files-found: warn
           retention-days: 7

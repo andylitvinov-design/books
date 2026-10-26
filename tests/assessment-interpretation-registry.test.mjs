@@ -43,10 +43,13 @@ function scoreSumAt(definition, dimensionKey, target) {
 
 test('all current runnable tests have exact-version plans; licensed references stay disabled', () => {
   const coverage = interpretationRegistryCoverage(MONITORING_CATALOG)
-  assert.ok(coverage.total>=150)
-  assert.equal(coverage.registered, coverage.total)
+  assert.equal(coverage.total, 149)
+  // The held ONS form keeps its plan for historical reports, not new starts.
+  assert.equal(coverage.registered, coverage.total + 1)
+  assert.equal(MONITORING_CATALOG.find(row => row.key === 'ons-personal-wellbeing-4').startable, false)
+  assert.ok(interpretationPlan('ons-personal-wellbeing-4', 'v1'))
   assert.deepEqual(coverage.uncovered, [])
-  assert.deepEqual(coverage.obsolete, [])
+  assert.deepEqual(coverage.obsolete, ['ons-personal-wellbeing-4:v1'])
   assert.equal(new Set(runnable.map(d => d.key)).size, coverage.total)
   assert.equal(interpretationPlan('hh-current-state', 'v2')?.key, 'hh-current-state')
   assert.equal(interpretationPlan('hh-current-state', 'v1')?.key, 'hh-current-state')
@@ -58,7 +61,7 @@ test('all current runnable tests have exact-version plans; licensed references s
     assert.ok(plan.step.en.length > 24 && plan.step.ru.length > 24)
     assert.equal(plan.reviewStatus, 'preauthored-requires-clinical-qa')
   }
-  for (const row of MONITORING_CATALOG.filter(row => !row.startable)) {
+  for (const row of MONITORING_CATALOG.filter(row => !row.startable && row.key !== 'ons-personal-wellbeing-4')) {
     assert.equal(interpretationPlan(row.key, row.version), null, 'Unavailable tests must not acquire a plan: ' + row.key)
   }
 })

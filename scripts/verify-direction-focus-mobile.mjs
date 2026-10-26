@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { mkdir } from 'node:fs/promises'
+import { assertDirectionTestState, directionTestContract } from './helpers/direction-focus-verifier.mjs'
 
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.HH_PLAYWRIGHT_PACKAGE || 'playwright')
@@ -75,23 +76,33 @@ try {
           }
         }
 
-        // Real React hydration and click: selected topic must reach the existing
-        // test filter URL, and the inline controls must remain the same height.
+        // Real hydration and clicks must preserve the current two-card guest
+        // questionnaire contract, while inline controls remain the same height.
+        const contract = directionTestContract(locale, direction, ids)
+        const initialHrefs = await assertDirectionTestState(page, contract)
         const heightBefore = await panel.evaluate(node => node.getBoundingClientRect().height)
         await panel.locator('[data-direction-filter="' + ids[1] + '"]').click()
         await page.waitForFunction(id => document.querySelector(
           '[data-direction-filter="' + id + '"]')?.getAttribute('aria-pressed') === 'true', ids[1])
-        const testUrl = await page.locator('[data-offer-action="test"]').getAttribute('href')
-        assert.equal(new URL(testUrl, origin).searchParams.get('topics'), ids[1],
-          'Pressed topic updates the real test link: ' + name)
+        await assertDirectionTestState(page, contract, { topicId: ids[1] })
         assert.ok(Math.abs((await panel.evaluate(node => node.getBoundingClientRect().height)) - heightBefore) < 1,
           'Selecting a request cannot shift the filter: ' + name)
         await panel.locator('[data-direction-filter="all"]').click()
         await page.waitForFunction(() => document.querySelector(
           '[data-direction-filter="all"]')?.getAttribute('aria-pressed') === 'true')
-        const allUrl = await page.locator('[data-offer-action="test"]').getAttribute('href')
-        assert.equal(new URL(allUrl, origin).searchParams.get('topics'), '',
-          'All topics resets the request: ' + name)
+        assert.deepEqual(await assertDirectionTestState(page, contract), initialHrefs,
+          'All topics restores the exact initial questionnaire links: ' + name)
+
+        const more = page.locator('[data-direction-section="test"] button[data-direction-show-more="test"]')
+        await more.click()
+        await page.waitForFunction(() => document.querySelector(
+          '[data-direction-show-more="test"]')?.getAttribute('aria-expanded') === 'true')
+        await assertDirectionTestState(page, contract, { expanded: true })
+        await more.click()
+        await page.waitForFunction(() => document.querySelector(
+          '[data-direction-show-more="test"]')?.getAttribute('aria-expanded') === 'false')
+        assert.deepEqual(await assertDirectionTestState(page, contract), initialHrefs,
+          'Collapsing restores exactly the original two cards: ' + name)
       } finally {
         await context.close()
       }
@@ -100,4 +111,4 @@ try {
 } finally {
   await browser.close()
 }
-console.log('Directional focus browser checks passed:', checks, 'mobile layouts, 9 hydrated topic/reset journeys')
+console.log('Directional focus browser checks passed:', checks, 'mobile layouts, 9 hydrated topic/reset and 2→4→2 journeys')

@@ -3,11 +3,15 @@ import { writeFile } from "node:fs/promises";
 // Read-only geometry of the public landing page. Do not collect text, input
 // values, link destinations, storage, or account/client data.
 export function collectAlchemyPanelGeometry() {
+  const finite = value => Number.isFinite(value) ? value : null;
+  const bounded = (nodes, limit) => Array.from(nodes || []).slice(0, limit);
+  const locales = ["en", "ru", "es"];
+  const documentLocale = locales.includes(document.documentElement.lang) ? document.documentElement.lang : null;
   const box = (node) => {
     if (!node) return null;
     const rect = node.getBoundingClientRect();
     return Object.fromEntries(["x", "y", "top", "right", "bottom", "left", "width", "height"]
-      .map(key => [key, rect[key]]));
+      .map(key => [key, finite(rect[key])]));
   };
   const describe = (node) => {
     const style = getComputedStyle(node);
@@ -21,62 +25,83 @@ export function collectAlchemyPanelGeometry() {
   };
   const main = document.querySelector('main[data-core-service-detail="alchemy"]');
   const paymentOptions = main?.querySelector("[data-alchemy-payment-disclosure] > div");
+  const formats = main?.querySelector('[data-alchemy-panel="formats"]');
+  const selector = formats?.querySelector("[data-alchemy-booking-formats]");
+  const disclosure = node => ({ present: Boolean(node), open: node ? Boolean(node.open) : null });
+  const capture = formats?.querySelector("[data-contact-order]");
+  const expanded = capture?.getAttribute("aria-expanded");
   return {
-    documentLocale: document.documentElement.lang,
+    documentLocale,
     viewport: {
-      width: window.innerWidth,
-      height: window.innerHeight,
-      devicePixelRatio: window.devicePixelRatio,
-      scrollX: window.scrollX,
-      scrollY: window.scrollY,
+      width: finite(window.innerWidth),
+      height: finite(window.innerHeight),
+      devicePixelRatio: finite(window.devicePixelRatio),
+      scrollX: finite(window.scrollX),
+      scrollY: finite(window.scrollY),
     },
-    panels: Array.from(main?.querySelectorAll("[data-alchemy-panel]") || [], node => ({
+    disclosures: {
+      guide: disclosure(document.querySelector("details[data-alchemy-extended-guide]")),
+      payment: disclosure(formats?.querySelector("[data-alchemy-payment-disclosure]")),
+      formatDetails: disclosure(formats?.querySelector("[data-alchemy-format-details]")),
+      formatsCapture: { present: Boolean(capture), expanded: expanded === "true" ? true : expanded === "false" ? false : null },
+    },
+    panels: bounded(main?.querySelectorAll("[data-alchemy-panel]"), 10).map(node => ({
       name: node.getAttribute("data-alchemy-panel"),
       ...describe(node),
-      children: Array.from(node.children, describe),
+      children: bounded(node.children, 12).map(describe),
     })),
-    formatChoices: Array.from(main?.querySelectorAll("[data-alchemy-format], [data-alchemy-format] span, [data-alchemy-format] strong, [data-alchemy-format] small") || [], node => ({
+    formatsSelector: selector ? { ...describe(selector), children: bounded(selector.children, 8).map(describe) } : null,
+    formatChoices: bounded(main?.querySelectorAll("[data-alchemy-format], [data-alchemy-format] span, [data-alchemy-format] strong, [data-alchemy-format] small"), 24).map(node => ({
       format: node.getAttribute("data-alchemy-format"),
       ...describe(node),
     })),
     paymentOptions: paymentOptions ? {
       ...describe(paymentOptions),
-      children: Array.from(paymentOptions.children, node => ({
+      children: bounded(paymentOptions.children, 3).map(node => ({
         ...describe(node),
         markers: ["data-wise-payment-link", "data-paypal-personal-offer", "data-zen-manual-request"]
           .filter(attribute => node.hasAttribute(attribute)),
-        children: Array.from(node.children, describe),
+        children: bounded(node.children, 4).map(describe),
       })),
     } : null,
   };
 }
 
 export async function captureAlchemyPanelOverflow({ page, output, locale, width, panelHeights }) {
+  if (!["en", "ru", "es"].includes(locale) || !Number.isFinite(width) || width <= 0) {
+    throw new Error("INVALID_ALCHEMY_DIAGNOSTIC_CASE");
+  }
+  const snapshot = panelHeights.map(({ name, height, max }) => ({ name, height, max }));
+  const viewport = page.viewportSize();
   const stem = output + "/alchemy-" + locale + "-panel-overflow-" + width;
   const evidence = {
-    url: page.url(),
+    pathname: "/" + locale + "/services/alchemy-of-soul",
     locale,
     requestedWidth: width,
-    configuredViewport: page.viewportSize(),
+    configuredViewport: viewport ? {
+      width: Number.isFinite(viewport.width) ? viewport.width : null,
+      height: Number.isFinite(viewport.height) ? viewport.height : null,
+    } : null,
     capturedAt: new Date().toISOString(),
-    panelHeights,
-    overflow: panelHeights.filter(panel => panel.height > panel.max),
+    panelHeights: snapshot,
+    overflow: snapshot.filter(panel => panel.name !== "reviews" && panel.height > panel.max),
+    geometryTiming: "later-than-original-panel-measurement; non-atomic; before-screenshots",
     geometry: null,
     screenshot: { path: stem + ".png", fullPage: true, captured: false },
     captureErrors: [],
   };
-  // Collect rectangles first: full-page screenshots may temporarily resize the
-  // viewport, so their capture must not alter the recorded failure geometry.
+  // This later state/geometry sample is not atomic with the original verdict.
+  // Collect it before screenshots, which may temporarily resize or scroll.
   try {
     evidence.geometry = await page.evaluate(collectAlchemyPanelGeometry);
-  } catch (error) {
-    evidence.captureErrors.push({ stage: "geometry", error: String(error) });
+  } catch {
+    evidence.captureErrors.push({ stage: "geometry", failed: true });
   }
   try {
     await page.screenshot({ path: evidence.screenshot.path, fullPage: true, timeout: 10000 });
     evidence.screenshot.captured = true;
-  } catch (error) {
-    evidence.captureErrors.push({ stage: "screenshot", error: String(error) });
+  } catch {
+    evidence.captureErrors.push({ stage: "screenshot", failed: true });
   }
   if (evidence.overflow.some(panel => panel.name === "formats")) {
     evidence.formatsScreenshot = { path: stem + "-formats.png", captured: false };
@@ -85,8 +110,8 @@ export async function captureAlchemyPanelOverflow({ page, output, locale, width,
         path: evidence.formatsScreenshot.path, timeout: 10000,
       });
       evidence.formatsScreenshot.captured = true;
-    } catch (error) {
-      evidence.captureErrors.push({ stage: "formats-screenshot", error: String(error) });
+    } catch {
+      evidence.captureErrors.push({ stage: "formats-screenshot", failed: true });
     }
   }
   // Persist the original measurement even if the page/screenshot is unavailable.

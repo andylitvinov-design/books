@@ -1,3 +1,4 @@
+import { CURRENT_ACTIVE_COUNT, CURRENT_PROFESSIONAL_COUNT, assertReviewedCatalogInventory } from './helpers/catalog-availability-contract.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildExplorerEntries, filterExplorerEntries } from '../lib/assessments/test-explorer.js'
@@ -18,14 +19,14 @@ test('authored and hobby provenance takes precedence over reference storage and 
   assert.equal(testKindFor({ key: 'unknown-without-metadata' }), 'monitoring')
 })
 
-test('all 290 reviewed entries retain their purpose, with 145 active instruments', () => {
+test('all prior reviewed entries and five canonical additions retain their purpose under the exact ONS hold', () => {
   for (const locale of ['en', 'ru']) {
     const entries = buildExplorerEntries({ locale, audience: 'account' })
-    assert.equal(entries.length, 290)
+    assertReviewedCatalogInventory(entries)
     const active = entries.filter(entry => entry.selectable)
-    assert.equal(active.length, 145)
+    assert.equal(active.length, CURRENT_ACTIVE_COUNT)
     assert.deepEqual(['monitoring', 'professional', 'hobby'].map(kind =>
-      active.filter(entry => entry.testKind === kind).length), [67, 72, 6])
+      active.filter(entry => entry.testKind === kind).length), [67, CURRENT_PROFESSIONAL_COUNT, 6])
     for (const entry of entries) {
       const expected = HOBBY_TEST_KEYS.includes(entry.key) ? 'hobby'
         : entry.key.startsWith('hh-') || entry.key === 'functioning-review' ? 'monitoring' : 'professional'

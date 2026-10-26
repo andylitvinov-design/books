@@ -1,3 +1,4 @@
+import { CURRENT_ACTIVE_COUNT, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -61,11 +62,12 @@ test('eight adult EN/RU questionnaires have stable provenance, six questions and
   }
 })
 test('catalog selection, privacy and recommended focus discover intimacy and sexuality without any diagnosis',()=>{
+  assertCatalogAvailability(MONITORING_CATALOG)
   const count=MONITORING_CATALOG.filter(item=>item.startable).length
-  assert.equal(count,150)
+  assert.equal(count,CURRENT_ACTIVE_COUNT)
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
   assert.deepEqual(coverage.uncovered,[])
-  assert.equal(coverage.registered,coverage.total)
+  assert.equal(coverage.registered,coverage.total + 1)
   for(const lang of ['en','ru']){
     const entries=buildExplorerEntries({locale:lang,audience:'guest'})
     for(const key of RELATIONSHIPS_INTIMACY_KEYS){

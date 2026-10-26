@@ -323,3 +323,45 @@
   margin-top:14px;border-top:1px solid #e4eae8;padding-top:12px;color:#85591a}
 .growthSetupPrivacy svg{flex:none;margin-top:1px}
 @media(max-width:750px){.growthSetupSteps{grid-template-columns:1fr}}
+
+
+/* Read-only Meta Ads preparation, not a second ad manager or account connection. */
+.metaAdsPanel{margin:12px 14px 16px;border:1px solid #e6d7be;background:#fffcf7;border-radius:13px;overflow:hidden}
+.metaAdsPanel>summary{display:flex;align-items:center;gap:9px;min-height:48px;padding:11px 14px;cursor:pointer;font-size:14px;font-weight:750;color:#59412b}
+.metaAdsPanel>summary>span:first-of-type{flex:1}
+.metaAdsPanel>summary::marker{color:#9f7754}
+.metaAdDraft{flex:none;padding:4px 8px;border-radius:9px;border:1px solid #efd8b0;color:#825d2d;font-size:11px;font-weight:700}
+.metaAdsPanel[open]>summary{border-bottom:1px solid #eddfc9}
+.metaAdsBody{padding:12px 14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.metaAdsBody>p{margin:0;color:#5e6262;font-size:12px;line-height:1.6}
+.metaAdsBody h4{font-size:14px;line-height:1.4;color:#59442d;margin:4px 0 0}
+.metaAdsFacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.metaAdsFacts>div{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px;background:#fff;border:1px solid #e9dfd1;border-radius:10px}
+.metaAdsFacts small{font-size:11px;color:#7e756a}
+.metaAdsFacts strong{font-size:12px;color:#4c493e;overflow-wrap:anywhere}
+.metaAdsCampaign{overflow-wrap:anywhere}
+.metaAdsGates{margin:0;padding-left:23px;display:grid;gap:8px}
+.metaAdsGates li{font-size:12px;line-height:1.55;color:#625f55;padding-left:2px}
+.metaAdsNotice{display:flex;align-items:flex-start;gap:9px;background:#f2f8f5;border:1px solid #d1e2dc;padding:11px;border-radius:11px;color:#275950}
+.metaAdsNotice>svg{flex:none;margin-top:1px}
+.metaAdsNotice strong{font-size:12px}
+.metaAdsNotice p{font-size:12px;line-height:1.55;margin:5px 0 0}
+.metaAdsCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.metaAdsCard{min-width:0;padding:13px;border:1px solid #dfdfd5;border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:10px}
+.metaAdsCard>small{color:#7a7969;font-size:11px}
+.metaAdsCard h5{font-size:15px;color:#39584f;margin:0}
+.metaAdsCard p{margin:0;font-size:12px;line-height:1.6;color:#4c5c5b}
+.metaAdsCard>div:not(.metaAdsCardActions){display:flex;flex-direction:column;gap:6px;min-width:0}
+.metaAdsCard>div>strong{font-size:11px;color:#53615a}
+.metaAdsCard code{padding:7px 8px;font-size:11px;line-height:1.45;white-space:normal;overflow-wrap:anywhere;background:#f1f5f1;border-radius:7px;color:#364e47}
+.metaAdsCard button,.metaAdsCardActions a{display:inline-flex;align-items:center;gap:7px;justify-content:center;padding:8px 10px;min-height:42px;border:1px solid #d5ded6;border-radius:9px;background:#fff;color:#24574e;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none}
+.metaAdsCard button:hover,.metaAdsCardActions a:hover{background:#edf6f1}
+.metaAdsCardActions{display:flex;gap:8px;flex-wrap:wrap}
+.metaAdsCardActions a{flex:1}
+.metaAdsCard button:focus-visible,.metaAdsCardActions a:focus-visible,.metaAdsLinks a:focus-visible{outline:3px solid #dca967;outline-offset:2px}
+.metaAdsBody .metaAdsSafety{display:flex;align-items:flex-start;gap:8px;color:#746048;background:#fcf6e8;border:1px solid #eee0c8;border-radius:9px;padding:10px}
+.metaAdsSafety svg{flex:none;margin-top:1px}
+.metaAdsLinks{display:flex;flex-wrap:wrap;gap:9px}
+.metaAdsLinks a{display:inline-flex;min-height:38px;align-items:center;border:1px solid #e4d7c3;border-radius:9px;padding:7px 11px;background:#fff;color:#2b5c54;text-decoration:none;font-size:12px;font-weight:700}
+@media(max-width:750px){.metaAdsCards{grid-template-columns:1fr}.metaAdsFacts{grid-template-columns:1fr 1fr}.metaAdsFacts>div:last-child{grid-column:1/-1}}
+@media(max-width:420px){.metaAdsPanel{margin:8px}.metaAdsPanel>summary{padding:10px;flex-wrap:wrap}.metaAdsBody{padding:10px}.metaAdsFacts{grid-template-columns:1fr 1fr}.metaAdsFacts>div{padding:8px}.metaAdsCards{gap:9px}.metaAdsCard{padding:10px}}

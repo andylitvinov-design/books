@@ -2,13 +2,10 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import pg from 'pg'
+import { isSquareIsolatedTestEnvironment } from './helpers/square-isolated-guard.mjs'
 
 const conn = process.env.HH_TEST_ADMIN_DATABASE_URL
-const good = process.env.CI === 'true' &&
-  process.env.HH_APP_TEST_RUNTIME === 'isolated' &&
-  process.env.HH_BILLING_TEST_APPLY_PROPOSALS === 'synthetic-only' &&
-  !process.env.VERCEL && conn &&
-  ['localhost','127.0.0.1'].includes(new URL(conn).hostname)
+const good = isSquareIsolatedTestEnvironment(process.env)
 if (!good) {
   test('Square migration executes only against synthetic isolated PG17 in CI', { skip: true }, () => {})
 } else {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { courseMediaCspFixture, syntheticMediaOrigin } from './helpers/course-media-csp-fixture.mjs'
 
 const source = name => readFileSync(new URL('../'+name,import.meta.url),'utf8')
 
@@ -46,9 +47,50 @@ test('New Routes reuse protected audio editor without spawning duplicate media s
   assert.doesNotMatch(audio,/autoPlay|autoplay/)
 })
 
-test('Canonical course editor CSP permits scoped private draft upload and preview',()=>{
-  assert.match(middleware,/reikiIntroAudioManager = .*courses/)
-  assert.match(middleware,/reikiIntroAudioManager \? reikiIntroAudioOrigin/)
-  assert.match(middleware,/media-src 'self'/)
-  assert.match(middleware,/connect-src 'self'/)
+test('Canonical course editor CSP permits scoped private draft upload and preview',async()=>{
+  await assertOwnerAudioPolicy(middleware)
+})
+
+async function assertOwnerAudioPolicy(source) {
+  const policy=courseMediaCspFixture(source)
+  for(const path of ['/admin/materials/courses/reiki-practitioner','/admin/materials/coaching/egyptian','/admin/materials/coaching/greek/']) {
+    const csp=await policy(path)
+    assert.ok(csp['media-src'].includes('blob:'),path+' requires owner-only local preview')
+    for(const directive of ['media-src','connect-src']) assert.ok(csp[directive].includes(syntheticMediaOrigin),path+' requires signed upload/playback origin')
+  }
+  for(const path of ['/en/academy/principles-of-energywork/learn','/ru/academy/principles-of-energywork/learn/','/es/academy/principles-of-energywork/learn','/en/app/coaching/egyptian','/ru/app/coaching/greek']) {
+    const csp=await policy(path)
+    assert.ok(csp['media-src'].includes(syntheticMediaOrigin),path+' requires audio playback')
+    assert.ok(!csp['connect-src'].includes(syntheticMediaOrigin),path+' must not inherit owner upload connection')
+    assert.ok(!csp['media-src'].includes('blob:'),path+' must not inherit owner local preview')
+  }
+  for(const path of ['/','/en/client','/ru/app/account','/admin','/api/app/course','/admin/materials/courses/reiki-practitioner/unrelated','/admin/materials/coaching/unknown']) {
+    const csp=await policy(path)
+    for(const directive of ['media-src','connect-src']) assert.ok(!csp[directive].includes(syntheticMediaOrigin),path+' must not inherit private audio origin')
+    assert.ok(!csp['media-src'].includes('blob:'),path+' must not inherit local audio preview')
+  }
+}
+
+test('owner audio policy rejects invalid Storage origins without losing local preview',async()=>{
+  const policy=courseMediaCspFixture(middleware)
+  for(const origin of ['', 'not-a-url', 'http://abcdefghijklmnopqrst.supabase.co', 'https://example.invalid', 'https://abcdefghijklmnopqrst.supabase.co.evil.invalid']) {
+    const csp=await policy('/admin/materials/courses/reiki-practitioner',origin)
+    assert.deepEqual(csp['media-src'],["'self'",'blob:'])
+    assert.deepEqual(csp['connect-src'],["'self'"])
+  }
+})
+
+test('owner audio CSP contract rejects lost upload and learner upload grants',async()=>{
+  const condition="((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '')"
+  const missing=middleware.replace(condition,"''")
+  const broadened=middleware.replace(condition,'reikiIntroAudioOrigin')
+  assert.notEqual(missing,middleware)
+  assert.notEqual(broadened,middleware)
+  await assert.rejects(assertOwnerAudioPolicy(missing),/requires signed upload\/playback origin/)
+  await assert.rejects(assertOwnerAudioPolicy(broadened),/must not inherit owner upload connection/)
+})
+
+test('CSP fixture rejects unrecognized dependencies instead of silently stubbing them',async()=>{
+  const policy=courseMediaCspFixture("import './unexpected-csp-dependency';\n"+middleware)
+  await assert.rejects(policy('/admin/materials/courses/reiki-practitioner'),/Unexpected CSP fixture import/)
 })

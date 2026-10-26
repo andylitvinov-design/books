@@ -58,7 +58,13 @@ test('day one is orientation, while later prompts preserve previously learned-sk
 test('full text keeps recall before teaching and player retains server-confirmed save contract', () => {
   const full = readFileSync(new URL('../components/app/course-today.jsx', import.meta.url), 'utf8')
   assert.ok(full.indexOf('data-course-active-recall') < full.indexOf('className={styles.aphorism}'))
-  assert.match(source, /const \[index, setIndex\] = useState\(alreadyDone \? slides.length : 0\)/)
+  const initialIndex = source.match(/const \[index, setIndex\] = useState\(([^\n]+)\)/)?.[1]
+  assert.ok(initialIndex, 'execute the actual player index initializer')
+  for (const reviewOnly of [false,true]) for (const alreadyDone of [false,true]) {
+    assert.equal(runInNewContext(initialIndex,{reviewOnly,alreadyDone,slides:{length:17}}),
+      reviewOnly ? 0 : alreadyDone ? 17 : 0,
+      'saved replay starts at the first slide; ordinary saved/new sessions keep their behavior')
+  }
   assert.match(source, /day:cycle.day,lessonId:lesson.id,operationId:sessionOp.current/)
   assert.match(source, /feedback:legacyFeedback,beforeNow,afterNow,reflection/)
   assert.match(source, /if \(response\) \{ sessionOp.current = null; setEarned\(true\); setIndex\(slides.length\) \}/)

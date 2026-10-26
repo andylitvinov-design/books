@@ -20,7 +20,7 @@ const pureImports = [
   '../inner-growth/course-presets.js', './course-access.js', '../assessments/contracts.js', './crypto.js',
   '../inner-growth/course-model.js', '../inner-growth/course-programs.js', '../../data/assessments/catalog.js',
   '../inner-growth/course-final-retest.js', '../inner-growth/anti-stress-weekly-checkpoint.js',
-  '../assessments/scale-guides.js', '../inner-growth/lesson-library.js', '../inner-growth/course-v3.js',
+  '../assessments/verified-history.js', '../assessments/scale-guides.js', '../inner-growth/lesson-library.js', '../inner-growth/course-v3.js',
   '../../data/inner-growth/course-journey.js', '../inner-growth/course-strategy.js',
   '../inner-growth/course-adaptation.js', '../inner-growth/antistress-module-lessons.js',
   '../inner-growth/antistress-module-router.js', '../inner-growth/anti-stress-day-one.js',
@@ -204,3 +204,20 @@ test('current educational route AS6 remains usable as a selected course', async 
   assertCreated(h, await h.create(), COURSE_CONTENT_V4, preferences('AS6'))
   assert.equal(course.concerns_ciphertext, ciphertext, 'stored choice must remain unchanged')
 })
+
+
+test('strict cycle fixture retains denied transport and rejects unverified history without repairing it', () => {
+  assert.throws(() => runtime.require('./unexpected-transport.js'), /No unmocked database or unknown import/);
+  assert.throws(() => runtime.require('./database.js').transaction(), /Live transaction is forbidden/);
+  const history = modules['../assessments/verified-history.js'];
+  const unverified = { id: 'synthetic-unverified-result', accountId: OWNER,
+    definitionKey: 'unknown-synthetic-instrument', measurementAt: '2026-10-01T00:00:00Z',
+    dimensions: [{ key: 'synthetic.invalid', value: 1 }] };
+  const before = clone(unverified);
+  assert.equal(history.verifiedHistoryResult(unverified), false, 'Missing immutable provenance never becomes verified');
+  const view = history.verifiedHistoryView([unverified]);
+  assert.deepEqual(view.current, []);
+  assert.deepEqual(view.eligible, []);
+  assert.deepEqual(view.rejected, [unverified]);
+  assert.deepEqual(unverified, before, 'Rejected history remains unchanged');
+});

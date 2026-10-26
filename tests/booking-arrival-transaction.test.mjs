@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createAppRepository} from '../lib/app/repository.js'
-import {createPractitionerClientMessages} from '../lib/practitioners/client-messages.js'
+import {createBookingServerHarness} from './helpers/booking-server-harness.mjs'
+const bookingHarness=createBookingServerHarness()
+const {createAppRepository}=await bookingHarness.load('lib/app/repository.js')
+const {createPractitionerClientMessages}=await bookingHarness.load('lib/practitioners/client-messages.js')
 import {openSealed} from '../lib/app/crypto.js'
 import {PRACTITIONER_ID} from '../data/app-services.js'
 

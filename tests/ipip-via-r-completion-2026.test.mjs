@@ -1,3 +1,4 @@
+import { CURRENT_ACTIVE_COUNT, EXPECTED_LOCAL_INTERPRETATION_COVERAGE, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -30,8 +31,9 @@ test('17 new legal professional IPIP-VIA-R forms complete the existing 24 streng
   assert.equal(new Set(definitions.map(d=>d.key)).size,17)
   const existing = ASSESSMENT_DEFINITIONS.filter(d=>d.key.startsWith('ipip-via-r-'))
   assert.equal(new Set(existing.map(d=>d.key)).size,28,'24 standalone strengths, three global cores, and one complete profile')
-  assert.equal(new Set(MONITORING_CATALOG.filter(x=>x.startable).map(x=>x.key)).size,150)
-  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),{total:150,registered:150,uncovered:[],obsolete:[]})
+  assertCatalogAvailability(MONITORING_CATALOG)
+  assert.equal(new Set(MONITORING_CATALOG.filter(x=>x.startable).map(x=>x.key)).size,CURRENT_ACTIVE_COUNT)
+  assert.deepEqual(interpretationRegistryCoverage(MONITORING_CATALOG),EXPECTED_LOCAL_INTERPRETATION_COVERAGE)
 })
 
 test('published verbatim EN items, source names, key signs and immutable hashes remain consistent', () => {

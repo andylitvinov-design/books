@@ -107,7 +107,11 @@ test("new DAO and situation footer submits a consented contact to the existing p
   assert.match(capture, /setReference\(committedReference\)/);
   assert.match(capture, /committedReference = result.referenceCode/);
   assert.match(capture, /Please don\x27t enter health details/);
-  assert.match(capture, /request: t\.message \+ " " \+ t\.reference \+ ": " \+ referenceCode/);
+  assert.match(capture, /return whatsappEnquiryUrl\(\{ locale, service: serviceTitle, request: t\.message,/);
+  assert.match(capture, /base = savedWhatsapp \|\| currentWhatsappUrl\(\), referenceLabel = savedReferenceLabel \|\| t\.reference/);
+  assert.match(capture, /setSavedWhatsapp\(submitted\.whatsappUrl\)/);
+  assert.match(capture, /setSavedReferenceLabel\(submitted\.referenceLabel\)/);
+  assert.match(capture, /draft\.searchParams\.set\("text", \(draft\.searchParams\.get\("text"\) \|\| ""\) \+ "\\n\\n" \+ referenceLabel \+ ": " \+ referenceCode\)/);
   assert.doesNotMatch(capture, /encodeURIComponent\(address\)|localStorage|sendBeacon|gtag\(/);
   assert.match(captureCss, /:focus-visible/);
   assert.match(captureCss, /@media\(max-width:600px\)/);

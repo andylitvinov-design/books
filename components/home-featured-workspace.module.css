@@ -127,7 +127,7 @@
 .offerSecondary[aria-expanded="true"] .detailChevron { transform: rotate(180deg); }
 .offerPrimary {
   order: 1; flex: 0 1 62%; min-width: 0; border: 1px solid #187c9f;
-  background: linear-gradient(108deg, #07899c 0%, #305a93 100%); color: #fff;
+  background: linear-gradient(108deg, #078293 0%, #305a93 100%); color: #fff;
   box-shadow: 0 2px 6px rgb(27 87 111 / 15%);
 }
 .offerPrimary:hover {

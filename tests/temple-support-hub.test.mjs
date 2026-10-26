@@ -17,6 +17,11 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
     assert.deepEqual(links.map(item => item.id), ["home", "analysis", "courses", "profile", "alchemy", "pro", "temple"]);
     assert.equal(links[1].href, "/" + locale + "/services/free-situation-review");
     assert.equal(links[2].href, "/" + locale + "/academy");
+    assert.equal(links[4].href, "/" + locale + "/services/alchemy-of-soul");
+    assert.equal(links[4].label, {en:"Psychic Alchemy",ru:"Алхимия души",es:"Alquimia del Alma"}[locale]);
+    assert.equal(activeCompactNavigationId("/" + locale + "/services/alchemy-of-soul"), "alchemy");
+    assert.equal(activeCompactNavigationId("/" + locale + "/services/psychohomeopathy"), "alchemy");
+    assert.equal(activeCompactNavigationId("/" + locale + "/coaching"), undefined);
     assert.equal(links[6].href, "/" + locale + "/holistic-support");
     assert.equal(links[6].label, {en:"Holistic Support",ru:"Холистическая поддержка",es:"Apoyo holístico"}[locale]);
     assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "temple");

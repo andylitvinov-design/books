@@ -1,3 +1,5 @@
+import { assertPaidServiceCards } from './helpers/services-paid-contract.mjs'
+import { SERVICE_VIDEO_DETAIL_CASES, expectedServiceVideoWatchUrl, matchesServiceVideoPlayback, withServiceVideoFailureContext } from './helpers/site-video-route-contract.mjs'
 // Synthetic credentials + ephemeral CI Redis only. --live performs no login or
 // mutation on production. Run with the production application's locked build.
 import assert from 'node:assert/strict'
@@ -139,7 +141,7 @@ try {
         await expect(visibleGallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
       }
       const offers = page.locator('[data-services-studio-paid] [data-services-studio-card]')
-      await expect(offers).toHaveCount(5)
+      await assertPaidServiceCards(offers, locale, 'Services video placement')
       for (const [id, suffix] of [['alchemy', 'alchemy-of-soul'], ['hypnotherapy', 'hypnotherapy-course']]) {
         // The offer itself is the matching card, not an obsolete direct-video link.
         const hrefs = await page.locator('[data-services-studio-card="' + id + '"] a[href]')
@@ -155,33 +157,36 @@ try {
     }
     pass('EN/RU Services galleries are open on load, video links work, and mobile width is safe')
 
-    const detailRoutes = [
-      ['/en/services/alchemy-of-soul', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/hypnotherapy-course', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/ru/services/alchemy-of-soul', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/ru/services/hypnotherapy-course', 'hypnotherapy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/en/services/psychohomeopathy', 'alchemy', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/ru/services/psychohomeopathy', 'alchemy', 'https://www.youtube-nocookie.com/embed/Cz6SxXJNZbw?'],
-      ['/es/services/imagery-therapy', 'hypnotherapy', 'https://app.heygen.com/embeds/8c1634ce904434a91931429b6a7eefe1'],
-      ['/en/services/systemic-constellations', 'constellations', 'https://app.heygen.com/embeds/7c6b243f048b9c0581ae29619a4a89fc'],
-      ['/en/services/free-situation-review', 'overview', 'https://www.youtube-nocookie.com/embed/s30Y42IwPcg?'],
-    ]
-    for (const [route, topic, expectedUrl] of detailRoutes) {
+    for (const detail of SERVICE_VIDEO_DETAIL_CASES) {
+      const { route } = detail
+      await withServiceVideoFailureContext({ page, detail, write: receipt =>
+        writeFileSync(`${evidence}/service-detail-failure.json`, JSON.stringify(receipt, null, 2)) }, async () => {
       await navigate(route)
       if (route.endsWith('/psychohomeopathy')) {
         assert.equal(new URL(page.url()).pathname, route.replace('/psychohomeopathy', '/alchemy-of-soul'), 'Legacy service redirects to its canonical Alchemy page')
       }
-      const block = page.locator(topic === 'alchemy' ? '[data-alchemy-panel="video"]' : `[data-service-video="${topic}"]`)
+      const block = page.locator(detail.selector)
       await expect(block).toHaveCount(1)
+      await expect(block.locator('.site-video-player')).toHaveCount(1)
       await block.scrollIntoViewIfNeeded()
       await expect(block.locator('.site-video-play')).toBeVisible()
       assert.equal(await block.locator('iframe').count(), 0, route + ' eager third-party iframe')
       const transcript = block.locator('details.site-video-transcript')
       if (await transcript.count() && !(await transcript.evaluate(node => node.open))) await transcript.locator('summary').click()
-      await expect(block.locator('.site-video-watch-link').first()).toHaveAttribute('href', /^https:\/\//)
+      // The free-review featured player intentionally has no in-player offsite
+      // link. Its separately authored public source link remains available.
+      const playerWatchLinks = block.locator('.site-video-watch-link')
+      await expect(playerWatchLinks).toHaveCount(detail.internalOnly ? 0 : 1)
+      const watchLink = detail.internalOnly ? block.locator(':scope > a[href]') : playerWatchLinks
+      await expect(watchLink).toHaveCount(1)
+      await expect(watchLink).toHaveAttribute('href', expectedServiceVideoWatchUrl(detail))
+      await expect(watchLink).toHaveAttribute('target', '_blank')
+      await expect(watchLink).toHaveAttribute('rel', 'noopener noreferrer')
       await block.locator('.site-video-play').click()
-      await expect.poll(async () => (await block.locator('iframe').getAttribute('src'))?.startsWith(expectedUrl), { timeout: 10000 }).toBe(true)
+      await expect.poll(async () => matchesServiceVideoPlayback(await block.locator('iframe').getAttribute('src'), detail), { timeout: 10000 }).toBe(true)
+      await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', detail.provider)
       assert.equal(await block.locator('.site-video-play').count(), 0, route + ' poster remained after Play')
+      })
     }
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.

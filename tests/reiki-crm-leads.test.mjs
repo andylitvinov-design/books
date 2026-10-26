@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { assertCurrentCourse, assertCurrentNextGate } from './helpers/reiki-current-course-contract.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url),'utf8')
 const sql=read('supabase/migrations/20261018184658_hh_reiki_course_private_crm_leads_20261018.sql')
@@ -73,15 +74,14 @@ test('After five lessons, the student explicitly submits an initiation-choice ap
   assert.match(learner,/onClick=\{applyForInitiation\}/)
 })
 
-test('All 64 steps, private meditation reports and course progress remain intact',()=>{
-  const slides=[...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
-  // Tantra Reiki now has five question screens; historical retired IDs remain private.
-  assert.equal(slides.filter(match => match[0] !== 'id: "tan-study-03"').length,64)
+test('All approved active steps, private meditation reports and course progress remain intact',()=>{
+  // Execute the rendered sequence; nested/historical answer IDs are not slides.
+  assertCurrentCourse()
   assert.match(repo,/energyworkMeditationFeedbackComplete/)
   assert.match(repo,/COURSE_PROGRESS_CHANGED/)
   assert.match(repo,/updateSharedReikiJournal/)
   assert.match(repo,/deleteReikiLeads/)
-  assert.match(learner,/disabled=\{busy \|\| sync === "checking" \|\| sync === "unavailable" \|\|/)
+  assertCurrentNextGate(learner)
   assert.doesNotMatch(leads,/insert into app\.crm_contacts/i)
   assert.doesNotMatch(leads,/select \* from app_private\.academy_course_progress/i)
 })

@@ -72,9 +72,35 @@ test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs wi
   assert.match(player, /setPlaying\(true\)/);
   assert.match(player, /youtube-nocookie\.com\/embed/);
   assert.match(sound, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
-  // A checked-in media manifest is named *.generated.json; that does NOT create audio.
-  // Reject only real standalone audio paths, synthesis calls, or hard-coded YouTube IDs.
   assert.doesNotMatch(model, /\.mp3\b|\.m4a\b|storage\.from\s*\(|(?:generateAudio|generateVoice|synthesizeSpeech)\s*\(|youtubeId:\s*["']/);
+  // A generated manifest filename is provenance, not a generation operation.
+  // This model may only select verified local records: no provider imports,
+  // dynamic loading, network transports or generation/storage call sites.
+  const file = ts.createSourceFile('holistic-support-meditations.ts', model,
+    ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  assert.equal(file.parseDiagnostics.length, 0);
+  const imports = file.statements.filter(ts.isImportDeclaration);
+  assert.deepEqual(imports.map(item => item.moduleSpecifier.text), [
+    './psimaster-media.generated.json', './english-guided-meditations', '@/lib/public-locales',
+  ]);
+  assert.equal(imports[2].importClause.isTypeOnly, true);
+  const selectors = new Set(['englishGuidedMeditations.find', 'validYoutubeId.test',
+    'selection.flatMap', 'psimasterMedia.find', 'seen.has', 'seen.add']);
+  function pureSelectorOnly(node) {
+    assert.ok(!ts.isTaggedTemplateExpression(node), 'No tagged-template generation/provider invocation');
+    assert.ok(!ts.isDecorator(node), 'No decorator generation/provider invocation');
+    if (ts.isCallExpression(node)) {
+      assert.ok(selectors.has(node.expression.getText(file)),
+        'No generation/provider/network call in the authored selector: ' + node.expression.getText(file));
+    }
+    if (ts.isNewExpression(node)) {
+      assert.equal(node.expression.getText(file), 'Set', 'Only an in-memory uniqueness Set is constructed');
+      assert.equal(node.arguments?.length ?? 0, 0);
+    }
+    assert.ok(!(ts.isExportDeclaration(node) && node.moduleSpecifier), 'No provider re-exports');
+    ts.forEachChild(node, pureSelectorOnly);
+  }
+  pureSelectorOnly(file);
   for (const [family, positions] of [
     ["videos/strength-protection", [1, 3, 5, 6, 7]],
     ["videos/energy-pump-ups", [1, 2]],
@@ -92,16 +118,16 @@ function evalTypeScript(path, mocks = {}) {
   const compiled = ts.transpileModule(read(path), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
-  const module = { exports: {} };
+  const compiledModule = { exports: {} };
   vm.runInNewContext(compiled, {
-    module,
-    exports: module.exports,
+    module: compiledModule,
+    exports: compiledModule.exports,
     require: id => {
       if (Object.prototype.hasOwnProperty.call(mocks, id)) return mocks[id];
       throw new Error("Unexpected source dependency: " + id);
     },
   }, { filename: path, timeout: 1000 });
-  return module.exports;
+  return compiledModule.exports;
 }
 
 test("language-aware meditation selector: EN Flight to the Sun, RU only seven original PsiMaster videos", () => {

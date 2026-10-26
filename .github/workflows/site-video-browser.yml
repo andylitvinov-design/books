@@ -33,6 +33,10 @@ on:
       - 'app/page.tsx'
       - 'middleware.ts'
       - 'scripts/verify-site-video-browser.mjs'
+      - 'scripts/helpers/site-video-route-contract.mjs'
+      - 'tests/site-video-route-current-contract.test.mjs'
+      - 'scripts/helpers/services-paid-contract.mjs'
+      - 'tests/public-browser-current-contracts.test.mjs'
       - 'scripts/verify-page-video-release.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
@@ -71,6 +75,10 @@ on:
       - 'middleware.ts'
       - 'app/admin/videos/**'
       - 'scripts/verify-site-video-browser.mjs'
+      - 'scripts/helpers/site-video-route-contract.mjs'
+      - 'tests/site-video-route-current-contract.test.mjs'
+      - 'scripts/helpers/services-paid-contract.mjs'
+      - 'tests/public-browser-current-contracts.test.mjs'
       - 'scripts/verify-page-video-release.mjs'
       - 'tests/page-video-release.test.mjs'
       - 'scripts/verify-ru-about-video.mjs'
@@ -109,7 +117,7 @@ jobs:
       - name: Check Spanish translation and affected components
         run: |
           node --test tests/es-about.test.mjs tests/es-public-site.test.mjs tests/about-page.test.mjs tests/native-*.test.mjs
-          node --test tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/home-testimonial-lazy-disclosure.test.mjs
+          node --test tests/personal-testimonials.test.mjs tests/personal-testimonials-prefetch.test.mjs tests/home-testimonial-lazy-disclosure.test.mjs tests/public-browser-current-contracts.test.mjs tests/site-video-route-current-contract.test.mjs
           npx eslint app/es/ data/about-es.ts data/spanish-books.ts components/spanish-*.tsx components/site-navigation.tsx components/public-site-header.tsx components/mobile-bottom-navigation.tsx components/personal-consultation-form.tsx components/client-cabinet-entry.tsx components/home-testimonial-more.tsx components/personal-testimonials.tsx components/services-studio-extras.tsx app/page.tsx app/layout.tsx app/sitemap.ts middleware.ts lib/public-locales.ts lib/spanish-metadata.ts
           npx tsc --noEmit
       - name: Install isolated browser test dependencies without changing the app lockfile

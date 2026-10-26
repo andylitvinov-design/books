@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict'
+import { withOporaNativeClickDiagnostics } from './helpers/opora-native-click-diagnostics.mjs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { oporaExperienceGuide, oporaExperienceDepth, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaExperienceGuide, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { OPORA_BROWSER_FRESH_EDITION, OPORA_BROWSER_DAY5_COPY } from './fixtures/opora-as60-day5-copy.mjs'
+import { OPORA_BROWSER_FRESH_REVISION, OPORA_BROWSER_DAY5_OVERVIEW } from './fixtures/opora-as60-variety-day5-copy.mjs'
+import { verifyOporaTakeaway } from './helpers/opora-takeaway-acceptance.mjs'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -16,13 +20,13 @@ const fixture = await buildOporaBrowserFixture()
 const evidence = { scope: 'ACTUAL_HYDRATED_AS56_PLAYER_SYNTHETIC_DAY5_REAL_CSS_NO_AUTH_NO_API',
   engine: engineName, sourceProof: fixture.sourceProof, cases: [] }
 const words = {
-  ru: { save: 'Сохранить мою практику', next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
+  ru: { save: 'Сохранить мою практику', next: 'Продолжить', previous: 'Назад', microNext: 'Следующий шаг', help: 'Показать мягкую подсказку',
     original: 'Показать мягкую подсказку', pause: 'Пауза', neutral: 'Вернуться с нейтральной опорой',
     back: 'Вернуться', end: 'Закончить без сохранения', anchor: 'Если хочется, посмотрите на один обычный предмет вокруг.' },
-  es: { save: 'Guardar mi práctica', next: 'Continuar', previous: 'Atrás', help: 'Ver una pista suave',
+  es: { save: 'Guardar mi práctica', next: 'Continuar', previous: 'Atrás', microNext: 'Siguiente paso', help: 'Ver una pista suave',
     original: 'Ver una pista suave', pause: 'Pausa', neutral: 'Volver con una referencia neutra',
     back: 'Volver', end: 'Salir sin guardar', anchor: 'Si quieres, mira un objeto neutro a tu alrededor.' },
-  en: { save: 'Save my practice', next: 'Continue', previous: 'Back', help: 'Show gentle guidance',
+  en: { save: 'Save my practice', next: 'Continue', previous: 'Back', microNext: 'Next step', help: 'Show gentle guidance',
     original: 'Show gentle guidance', pause: 'Pause', neutral: 'Return with a neutral anchor',
     back: 'Go back', end: 'End without saving', anchor: 'If you wish, look at one ordinary object around you.' },
 }
@@ -39,11 +43,12 @@ try {
     const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
-    const t = words[locale], brief = oporaExperienceGuide(5, locale)
-    const support = oporaExperienceSupport(5,locale)
+    const t = words[locale], copy = OPORA_BROWSER_DAY5_COPY[locale], brief = copy.practice
+    assert.notEqual(brief, oporaExperienceGuide(5, locale), 'Fresh fixture must not expect the archived practice')
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
       lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
+    assert.equal(data.currentSession, null, 'This fixture verifies a fresh lesson, not archived saved copy')
     const detail = locale === 'es' ? 'Si te incomoda, mira un objeto neutro.' : data.lesson.antiStress.neutralText
     const html = oporaFixtureDocument(locale, data, fixture.css)
     page.on('pageerror', error => errors.push(error.message))
@@ -98,9 +103,11 @@ try {
       await page.goto(origin + oporaFixturePath(locale))
       await expect(page.locator('[data-opora-experience-first="as-5.6"]')).toBeVisible()
       await expect(page.locator('[data-course-visual-theme]')).toHaveAttribute('data-course-visual-theme', OPORA_EXPERIENCE_DESIGN_VERSION)
-      await click(t.next)
-      await expect(page.locator('[data-opora-daily-support="5"]')).toContainText(support.body)
-      await expect(page.getByRole('heading', { name: support.title })).toBeVisible()
+      await expect(page.locator('[data-opora-experience-first]')).toHaveAttribute('data-opora-practical-skills-version', OPORA_BROWSER_FRESH_EDITION)
+      await expect(page.locator('[data-opora-experience-first]')).toHaveAttribute('data-opora-content-revision', OPORA_BROWSER_FRESH_REVISION)
+      await withOporaNativeClickDiagnostics(page, { engine: engineName, locale, width, priorHelp }, () => click(t.next))
+      await expect(page.locator('[data-opora-daily-support="5"]')).toHaveText(copy.purpose)
+      await expect(page.getByRole('heading', { name: copy.supportTitle, exact: true })).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toHaveCount(0)
       await expect(page.locator('[aria-pressed]')).toHaveCount(0)
       await assertBounds('support')
@@ -115,14 +122,46 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
-      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaExperienceDepth(5,locale).why)
+      await expect(page.locator('[data-opora-overview-purpose] p')).toHaveText(OPORA_BROWSER_DAY5_OVERVIEW[locale])
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
+      for (const moment of ['bodyExperience','emotionExperience','mentalExperience','imageryMeditation']) {
+        await click(t.next)
+        await expect(page.locator('[data-opora-current-screen="'+moment+'"]')).toBeVisible()
+        await expect(page.locator('[data-opora-integrated-day="5"]')).toHaveCount(1)
+        await assertBounds(moment)
+      }
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
-      await expect(page.getByText(brief, { exact: true })).toBeVisible()
+      await expect(page.locator('[data-opora-one-daily-practice="5"]')).toBeVisible()
+      await expect(page.locator('[data-opora-one-daily-practice="5"]')).toHaveText(brief)
+      // Keep the unchanged single-action/140-character/20-word gate on the
+      // actually served AS6.0 lead. AS5.9's historical failure is not erased.
       assert.ok((brief.replace(/…/gu, '').match(/[.!?]/gu) || []).length <= 1)
       assert.ok(brief.length <= 140 && brief.split(/\s+/u).length <= 20)
+      // The new experiment is not an opaque child: exactly one authored step
+      // is visible at once; choices are optional and cannot imply completion.
+      for (let step = 0; step < 3; step++) {
+        await expect(page.locator('[data-opora-micro-step]')).toHaveCount(1)
+        await expect(page.locator('[data-opora-micro-step]')).toHaveAttribute('data-opora-micro-step', String(step + 1))
+        await expect(page.locator('[data-opora-micro-step]')).toHaveText(copy.experiment.steps[step])
+        const choices = page.getByRole('group', { name: copy.experiment.prompt, exact: true })
+        if (step < 2) {
+          await expect(choices).toHaveCount(0)
+          await click(t.microNext)
+        } else {
+          await expect(choices.getByRole('button')).toHaveText(copy.experiment.choices.map(choice => choice.label))
+          for (const choice of copy.experiment.choices)
+            await expect(choices.getByRole('button', { name: choice.label, exact: true })).toHaveAttribute('aria-pressed', 'false')
+          await choices.getByRole('button', { name: copy.experiment.choices[0].label, exact: true }).click()
+          await expect(choices.getByRole('button', { name: copy.experiment.choices[0].label, exact: true })).toHaveAttribute('aria-pressed', 'true')
+          assert.equal(await page.evaluate(() => window.__oporaBrowser.saves), 0)
+        }
+      }
+      // Two inner Back clicks reset the micro-step; footer Back remains separate.
+      for (let back = 0; back < 2; back++)
+        await page.locator('[data-opora-micro-experiment]').getByRole('button', { name: t.previous, exact: true }).click()
+      await expect(page.locator('[data-opora-micro-step="1"]')).toHaveText(copy.experiment.steps[0])
       await expect(page.getByText(detail, { exact: true })).toHaveCount(0)
       await assertBounds('brief')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-brief.png` })
@@ -148,10 +187,14 @@ try {
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-neutral.png` })
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
+      await click(t.next) // AS6.0 ritual follows the experiment.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
       await click(t.next) // Feel; navigation closes optional original guidance.
       await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
       await click(t.pause); await click(t.neutral)
-      await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
+      await click(t.previous) // Feel -> ritual.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
+      await click(t.previous) // Ritual -> practice cannot resurrect day-five guidance.
       await assertNeutral()
       await click(t.original)
       await click(t.pause); await click(t.back)
@@ -192,8 +235,7 @@ try {
             assert.ok(size.screenWidth <= width + 1,
               locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
             if (moment !== 'recapFeedback') {
-              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
-                'Each takeaway has exactly one visible idea')
+              await verifyOporaTakeaway(recapPage, expect, moment)
               await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
               await recapPage.getByRole('button', { name: t.next, exact: true }).click()
             } else {

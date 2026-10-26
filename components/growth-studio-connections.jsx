@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lucide-react'
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction} from '@/app/admin/growth-studio/actions'
+import GrowthStudioMetaAds from './growth-studio-meta-ads'
 import styles from './growth-studio.module.css'
 
 const messages={
@@ -272,6 +273,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       <p>{t.bridgeNote}</p>
       <a href="https://help.metricool.com/basic-guide-for-api-integration-r97af" target="_blank" rel="noopener noreferrer">{t.bridgeHelp} ↗</a>
     </div>
+    <GrowthStudioMetaAds locale={locale}/>
     <div className={styles.connectionBox}>
       <div className={styles.connectionBoxTitle}><strong>{t.ownerConnectTitle}</strong></div>
       <p>{t.ownerConnectNote}</p>

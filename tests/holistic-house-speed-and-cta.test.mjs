@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { assertReadableHomeOfferCta } from "./helpers/home-cta-contrast.mjs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
@@ -113,7 +114,49 @@ test("visible H1, privacy, and free/paid distinction agree in EN/RU/ES", () => {
   assert.match(stage, /Request a session · from €50/);
   assert.match(stage, /Заказать бесплатный письменный разбор/);
   assert.match(stage, /This is a request for a written response, not a call/);
-  assert.match(css, /\.offerPrimary \{[\s\S]*?background: #742c42/);
+  assertReadableHomeOfferCta(css);
   assert.doesNotMatch(home, /force-static|s-maxage/);
   assert.match(es, /<PublicConsultationCta locale="es" \/>/);
+});
+
+
+
+test("home offer contrast contract rejects unreadable colors and lost action affordances", () => {
+  const current = read("components/home-featured-workspace.module.css");
+  // Explicitly synthetic readable specimen; it does not edit the runtime stylesheet.
+  const readable = current.replace(/linear-gradient\(108deg, #[\da-f]{6} 0%, #305a93 100%\)/i,
+    "linear-gradient(108deg, #078293 0%, #305a93 100%)");
+  assertReadableHomeOfferCta(readable);
+  for (const [before, after, message] of [
+    ["#078293 0%", "#07899c 0%", /white text contrast/],
+    ["#078293 0%", "#078394 0%", /white text contrast/],
+    ["#305a93 100%", "#ffffff 100%", /white text contrast/],
+    ["#097285 0%", "#aaaaaa 0%", /white text contrast/],
+    ["background: linear-gradient(108deg, #078293 0%, #305a93 100%); color: #fff;",
+      "background: linear-gradient(108deg, #078293 0%, #305a93 100%); color: #ddd;", /opaque white/],
+    ["gap: 7px;\n  min-height: 44px; padding: 9px 13px", "gap: 7px;\n  min-height: 24px; padding: 9px 13px", /44px action target/],
+    ["outline: 3px solid #a37d58", "outline: none", /keyboard focus ring/],
+  ]) {
+    assert.ok(readable.includes(before), "Mutation targets actual CSS");
+    assert.throws(() => assertReadableHomeOfferCta(readable.replace(before, after)),
+      error => error.code === "ERR_ASSERTION" && message.test(error.message));
+  }
+  assert.throws(() => assertReadableHomeOfferCta(readable + "\n@media (max-width: 640px) { .offerPrimary { color: #aaa; } }"),
+    /Unexpected CTA contrast override/);
+});
+
+test("public TTFB contract dependencies are installed before every mandatory targeted suite", () => {
+  const workflow = read(".github/workflows/hh-public-performance-audit.yml");
+  const install = "run: npm ci --include=dev --ignore-scripts --no-audit --no-fund";
+  assert.equal(workflow.split(install).length, 2, "Install locked declared development dependencies exactly once");
+  assert.ok(workflow.indexOf(install) < workflow.indexOf("run: node --test "), "Install must precede contract execution");
+  const command = workflow.match(/run: node --test ([^\n]+)/)?.[1].trim().split(/\s+/);
+  assert.deepEqual(command, [
+    "tests/holistic-house-image-quota.test.mjs", "tests/hh-public-html-metrics.test.mjs",
+    "tests/holistic-house-speed-and-cta.test.mjs", "tests/holistic-house-home-streaming.test.mjs",
+    "tests/home-carousel-first-screen-cta.test.mjs", "tests/home-rsc-on-demand.test.mjs",
+    "tests/public-consultation-cta-design.test.mjs", "tests/consultation-capture-choice.test.mjs",
+    "tests/personal-testimonials.test.mjs",
+  ], "Do not remove or suppress targeted safety, routing, booking or testimonial contracts");
+  assert.doesNotMatch(workflow, /continue-on-error|--omit=dev|--production|if: false/);
 });

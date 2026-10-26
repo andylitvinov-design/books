@@ -154,10 +154,15 @@ test('Pro is a real EN/RU/ES route with correct metadata and safe account fallba
 })
 
 test('bottom bar uses the seven established EN/RU/ES links and keeps Pro next to Holistic Support',()=>{
-  const expected=['home','analysis','courses','profile','coaching','pro','temple']
+  const expected=['home','analysis','courses','profile','alchemy','pro','temple']
   for(const locale of ['en','ru','es']){
     const nav=getCompactNavigation(locale)
     assert.deepEqual(nav.map(x=>x.id),expected)
+    assert.equal(nav[4].href,'/'+locale+'/services/alchemy-of-soul')
+    assert.equal(nav[4].label,{en:'Psychic Alchemy',ru:'Алхимия души',es:'Alquimia del Alma'}[locale])
+    assert.equal(activeCompactNavigationId('/'+locale+'/services/alchemy-of-soul'),'alchemy')
+    assert.equal(activeCompactNavigationId('/'+locale+'/services/psychohomeopathy'),'alchemy')
+    assert.equal(activeCompactNavigationId('/'+locale+'/coaching'),undefined)
     assert.equal(nav.at(-2).href,'/'+locale+'/pro')
     assert.equal(nav.at(-1).href,'/'+locale+'/holistic-support')
     assert.equal(getSiteNavigation(locale).find(x=>x.id==='pro')?.href,'/'+locale+'/pro')
@@ -375,8 +380,52 @@ test('Pro includes the same consented express-written-review CTA as other direct
 test('Pro starts with three localized, accessible paths, including real mentor discovery',()=>{
   const masters = read('app/[locale]/masters/page.tsx')
   const switcher = read('components/mentor-community-switch.tsx')
-  assert.match(masters,/initialView=\{requestedView === "mentors" \? "mentors" : undefined\}/)
-  assert.match(switcher,/initialView \?\? \(hasArticles \|\| hasServices \? "articles" : "mentors"\)/)
+  const pageAst=ts.createSourceFile('masters-page.tsx',masters,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
+  assert.equal(pageAst.parseDiagnostics.length,0)
+  const initializers=[]
+  function visit(node){
+    if((ts.isJsxSelfClosingElement(node)||ts.isJsxOpeningElement(node))&&
+        node.tagName.getText(pageAst)==='MentorCommunitySwitch'){
+      const attr=node.attributes.properties.find(item=>ts.isJsxAttribute(item)&&item.name.text==='initialView')
+      assert.ok(attr&&ts.isJsxExpression(attr.initializer)&&attr.initializer.expression)
+      initializers.push(attr.initializer.expression.getText(pageAst))
+    }
+    ts.forEachChild(node,visit)
+  }
+  visit(pageAst)
+  assert.equal(initializers.length,1,'one actual Masters-to-switcher initialView binding')
+  const initialViewFor=new Function('requestedView','return ('+initializers[0]+')')
+  const cases=[['articles','articles'],['mentors','mentors'],[undefined,'mentors'],
+    [null,'mentors'],['','mentors'],['unknown','mentors'],[['articles'],'mentors']]
+  for(const [requested,expected] of cases)assert.equal(initialViewFor(requested),expected)
+  const style=new Proxy({}, {get:(_,key)=>String(key)})
+  const modules={
+    'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:'fragment'},
+    react:{useState:value=>[value,()=>{throw Error('No interaction expected in initial-view proof')}],
+      useRef:value=>({current:value}),useEffect:()=>{}},
+    'next/link':{__esModule:true,default:props=>jsx('a',props)},
+    './mentor-community-switch.module.css':{__esModule:true,default:style},
+  }
+  const compiled=ts.transpileModule(switcher,{fileName:'mentor-community-switch.tsx',
+    compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},
+  }).outputText
+  const exports={}
+  runInNewContext(compiled,{exports,require:name=>{
+    assert.ok(Object.hasOwn(modules,name),'Explicit MentorCommunitySwitch dependency: '+name)
+    return modules[name]
+  }},{timeout:1000})
+  for(const locale of ['en','ru','es'])for(const hasArticles of [false,true])for(const hasServices of [false,true]){
+    for(const initialView of [undefined,'mentors','articles']){
+      const tree=exports.MentorCommunitySwitch({locale,initialView,hasArticles,hasServices,
+        mentors:jsx('div',{'data-proof-content':'mentors'}),articles:jsx('div',{'data-proof-content':'articles'})})
+      const expected=initialView==='articles'?'articles':'mentors'
+      const selected=nodes(tree).filter(node=>node.props?.role==='tab'&&node.props['aria-selected']===true)
+      assert.equal(selected.length,1)
+      assert.equal(selected[0].props.id,'mentor-community-tab-'+expected)
+      assert.equal(find(tree,'id','mentor-community-panel-mentors').props.hidden,expected!=='mentors')
+      assert.equal(find(tree,'id','mentor-community-panel-articles').props.hidden,expected!=='articles')
+    }
+  }
   assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/\.finderPhoto\{/)
   for(const locale of ['en','ru','es']){

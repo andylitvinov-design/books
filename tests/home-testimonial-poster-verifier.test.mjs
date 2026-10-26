@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
+import { createHomeRouteSupervisor } from '../scripts/home-route-supervisor.mjs';
+import { assertHomeVerifierMatrix } from './helpers/home-verifier-matrix.mjs';
+import { sourceModule, jsx, parse, ts, denied } from './helpers/current-source-render.mjs';
+import { environment, mount, turn } from './helpers/contact-component-fixture.mjs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const component = read('components/personal-testimonials.tsx');
@@ -115,15 +119,84 @@ test('source fixture retains six catalogue IDs per locale, four Services videos 
   }
 });
 
-test('remaining free-entry targets still match actual homepage links and destination markup', () => {
+test('remaining free-entry targets still match actual homepage links and destination markup', async () => {
   const capture = read('components/homepage-free-capture.tsx');
-  for (const suffix of ['/client/tests', '/services/free-situation-review', '/academy/principles-of-energywork/learn']) {
+  for (const suffix of ['/client/tests', '/academy/principles-of-energywork/learn']) {
     assert.ok(capture.includes('`/${locale}' + suffix + '`'));
     assert.ok(verifier.includes("'" + suffix + "'"));
   }
   assert.match(read('app/[locale]/services/free-situation-review/page.tsx'), /<FreeEntryLanding locale=\{locale\} kind="situation" \/>/);
   assert.match(read('components/free-entry-landing.tsx'), /<h1 id="free-entry-title">\{t\.title\}<\/h1>/);
-  assert.match(read('app/[locale]/services/dao-health-profile/page.tsx'), /const kind = "dao" as const/);
+  // The Home analysis action is intentionally in-place. Execute the complete
+  // existing Home/chooser/phone fixture; no anchors, requests or private writes
+  // may replace that disclosure. Its fuller verifier/validation controls remain
+  // in home-locale-free-capture.test.mjs and are part of the matched union.
+  for (const locale of ['en', 'ru']) {
+    const pathname = locale === 'en' ? '/' : '/ru';
+    const env = environment(locale, { pathname });
+    const f = mount('homepage-free-capture', 'HomepageFreeCapture', { locale }, env, { composeHomeCapture: true });
+    const untouched = () => {
+      for (const key of ['requests', 'writes', 'popups', 'navigations']) assert.deepEqual(env[key], [], 'HOME_ANALYSIS_NO_SIDE_EFFECTS: ' + key);
+      assert.equal(env.window.location.href, 'http://127.0.0.1:3100' + pathname, 'HOME_ANALYSIS_STAYS_IN_PLACE');
+    };
+    const trigger = () => f.find('button', props => Object.hasOwn(props, 'data-contact-order'));
+    try {
+      assert.deepEqual(f.nodes().filter(node => node.type === 'button' && node.props['data-home-free-option'])
+        .map(node => node.props['data-home-free-option']), ['selfTest', 'analysis', 'reiki']);
+      for (const [id, suffix] of [['selfTest', '/client/tests'], ['reiki', '/academy/principles-of-energywork/learn']]) {
+        await f.click('button', props => props['data-home-free-option'] === id); await turn(f);
+        const link = f.find('a', props => props['data-home-free-action'] === id);
+        assert.equal(link.props.href, '/' + locale + suffix, 'EXACT_DIRECT_HOME_ENTRY');
+        assert.equal(link.props.prefetch, false); untouched();
+      }
+      await f.click('button', props => props['data-home-free-option'] === 'analysis'); await turn(f);
+      assert.equal(f.nodes().filter(node => node.type === 'a' && node.props['data-home-free-action'] === 'analysis').length, 0, 'NO_DIRECT_ANALYSIS_LINK');
+      assert.equal(f.nodes().filter(node => node.props['data-compact-phone-trigger'] === 'true').length, 1);
+      assert.equal(trigger().props.type, 'button'); assert.notEqual(trigger().props.disabled, true);
+      assert.equal(trigger().props['aria-expanded'], false);
+      const panelId = trigger().props['aria-controls']; assert.ok(panelId, 'OWNED_ANALYSIS_PANEL');
+      assert.equal(f.find('div', props => props.id === panelId).hidden, true); untouched();
+      await f.click('button', props => Object.hasOwn(props, 'data-contact-order')); await turn(f);
+      assert.equal(trigger().props['aria-expanded'], true, 'ANALYSIS_DISCLOSURE_OPENS');
+      assert.equal(f.find('div', props => props.id === panelId).hidden, false);
+      const phone = f.find('input', props => props.type === 'tel');
+      assert.equal(phone.props.value, ''); assert.equal(phone.props.required, true); assert.equal(phone.hidden, false);
+      assert.equal(phone.props['aria-label'], locale === 'ru' ? 'Номер телефона' : 'Phone number');
+      const consent = f.find('input', props => props.type === 'checkbox');
+      assert.equal(consent.props.checked, false); assert.equal(consent.props.required, true);
+      for (const channel of ['whatsapp', 'telegram']) {
+        const submit = f.find('button', props => props['data-contact-channel-submit'] === channel);
+        assert.equal(submit.props.type, 'button'); assert.notEqual(submit.props.disabled, true);
+      }
+      untouched();
+      await f.click('button', props => Object.hasOwn(props, 'data-contact-order')); await turn(f);
+      assert.equal(trigger().props['aria-expanded'], false, 'ANALYSIS_DISCLOSURE_CLOSES');
+      assert.equal(f.find('div', props => props.id === panelId).hidden, true); untouched();
+    } finally { f.unmount(); }
+  }
+
+  // Dao is a separate public landing, not a Home direct-entry requirement.
+  // Execute its real default page and real pure locale predicate, not a local
+  // binding spelling or a permissive fake locale validator. Metadata generation
+  // and the landing's private/contact lifecycle are not invoked here.
+  const catalog = read('data/academy/catalog.ts'), parsed = parse(catalog, 'catalog.ts');
+  const predicates = parsed.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'isPublicLocale');
+  assert.equal(predicates.length, 1);
+  const localeApi = sourceModule(predicates[0].getText(parsed), 'isPublicLocale.ts');
+  const missing = new Error('SYNTHETIC_DAO_NOT_FOUND');
+  const daoPage = sourceModule(read('app/[locale]/services/dao-health-profile/page.tsx'), 'dao-page.tsx', {
+    'react/jsx-runtime': jsx, 'next/navigation': { notFound() { throw missing; } },
+    '@/components/free-entry-landing': { FreeEntryLanding: 'actual-free-entry-boundary' },
+    '@/data/academy/catalog': localeApi, '@/data/site-metadata': { metadataBaseFor: denied },
+  });
+  assert.deepEqual(JSON.parse(JSON.stringify(daoPage.generateStaticParams())), [{ locale: 'en' }, { locale: 'ru' }, { locale: 'es' }]);
+  for (const locale of ['en', 'ru', 'es']) {
+    const view = await daoPage.default({ params: Promise.resolve({ locale }) });
+    assert.equal(view.type, 'actual-free-entry-boundary', 'DAO_ACTUAL_LANDING');
+    assert.equal(view.props.kind, 'dao', 'DAO_KIND'); assert.equal(view.props.locale, locale, 'DAO_LOCALE');
+  }
+  for (const locale of [undefined, null, '', 'fr', 'EN', '../ru', 'ru?x=1'])
+    await assert.rejects(daoPage.default({ params: Promise.resolve({ locale }) }), error => error === missing);
   const dao = read('components/core-service-detail.tsx');
   assert.match(dao, /data-core-service-detail=\{kind\}/);
   assert.match(dao, /<h1>\{t\.title\}<\/h1>/);
@@ -136,7 +209,8 @@ test('remaining free-entry targets still match actual homepage links and destina
   assert.match(read('components/app/simple-test-picker.jsx'), /data-prelogin-test-picker/);
 });
 
-test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', () => {
+test('poster reconciliation preserves held-RSC, readability, first playback, Back, no-write and full journey gates', async () => {
+  await assertHomeVerifierMatrix(verifier);
   for (const required of [
     "await perform('gate', () => gate);", 'await expect(next).toHaveCount(0)', 'frame.evaluate(element => element.isConnected)',
     'size.height >= 46 && size.font >= 14', 'const firstReview = await verifyHomeTestimonialPosters(page)',
@@ -144,36 +218,140 @@ test('poster reconciliation preserves held-RSC, readability, first playback, Bac
     "await expect(firstReview.locator('.site-video-fallback-poster')).toHaveCount(0)",
     'await page.goBack()', 'await expect(page).toHaveURL(origin + homePath(locale))',
     'assert.deepEqual(unexpectedApiRequests, []', "request.method() === 'GET'", 'APP_UNAVAILABLE',
-    'results.filter(result => result.firstClickRetained).length, 8', 'results.filter(result => result.freeJourney).length, 24',
     'await exerciseFreeJourneys(page, engine, width)', 'assert.deepEqual(errors, [])',
   ]) assert.ok(verifier.includes(required), required);
   assert.doesNotMatch(verifier, /videoPosters\)\.toHaveCount\(6\)|test\.skip|test\.only|test\.todo/);
 });
 
-async function assertHeldResponseOrdering(source) {
-  const begin = source.indexOf("  await page.route('**/*', async route => {");
+const homeOrigin = 'http://127.0.0.1:3129';
+const catchAllPattern = '**/*';
+const enquiryPattern = '**/api/service-enquiries**';
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+function routingSource(source) {
+  const marker = source.indexOf('  // Hold the real RSC response.');
+  const begin = source.indexOf('  await page.route(', marker);
   const end = source.indexOf('\n  try {', begin);
-  assert.ok(begin >= 0 && end > begin);
-  let callback, release;
+  assert.ok(marker >= 0 && begin > marker && end > begin, 'ROUTING_SOURCE_BOUNDARY');
+  return source.slice(begin, end);
+}
+function createRouteRegistry({preferFirst = false} = {}) {
+  const registrations = [];
+  return {
+    registrations,
+    async route(pattern, handler) {
+      // Only the two actual verifier patterns are supported. Do not silently
+      // approximate an unfamiliar Playwright wildcard as a catch-all.
+      assert.ok([catchAllPattern, enquiryPattern].includes(pattern), 'UNSUPPORTED_ROUTE_PATTERN');
+      assert.equal(typeof handler, 'function');
+      registrations.push({pattern, handler});
+    },
+    resolve(request) {
+      assert.equal(typeof request.method, 'function', 'REQUEST_METHOD_REQUIRED');
+      assert.equal(typeof request.url, 'function', 'REQUEST_URL_REQUIRED');
+      assert.equal(typeof request.headers, 'function', 'REQUEST_HEADERS_REQUIRED');
+      const url = request.url();
+      assert.equal(typeof request.method(), 'string', 'REQUEST_METHOD_REQUIRED');
+      const matches = registrations.filter(({pattern}) => pattern === catchAllPattern
+        || /^.*\/api\/service-enquiries.*$/.test(url));
+      assert.ok(matches.length, 'NO_MATCHING_ROUTE');
+      return preferFirst ? matches[0] : matches.at(-1);
+    },
+  };
+}
+async function routeFixture(source, options) {
+  const registry = createRouteRegistry(options), events = [], unexpectedEnquiryRequests = [], results = [];
+  let release;
   const gate = new Promise(resolve => { release = resolve; });
-  const events = [];
+  const actualTransport = createHomeRouteSupervisor({origin:homeOrigin, engine:'fixture', width:390});
+  const transport = {handle: (route, action) => actualTransport.handle(route, perform =>
+    action((operation, action) => { events.push(operation); return perform(operation, action); }))};
+  const start = source.indexOf('function homePath('), end = source.indexOf('async function chooseHomeLocale(', start);
+  assert.ok(start >= 0 && end > start);
+  const shouldHoldHomeRsc = new Function('assert', 'origin', source.slice(start, end) + '; return shouldHoldHomeRsc;')(assert, homeOrigin);
+  const heldCount = await new AsyncFunction('page','transport','shouldHoldHomeRsc','delayedLocale','delayedRscGate','heldRequests','pause','unexpectedEnquiryRequests','results','engine','width',
+    routingSource(source) + '; return () => heldRequests;')(
+    registry, transport, shouldHoldHomeRsc, 'en', gate, 0, async ms => assert.equal(ms,2000), unexpectedEnquiryRequests, results, 'fixture', 390);
+  assert.deepEqual(registry.registrations.map(({pattern}) => pattern), [catchAllPattern,enquiryPattern], 'ROUTE_REGISTRATION_SHAPE');
+  return {registry, events, unexpectedEnquiryRequests, results, release, heldCount, transport:actualTransport};
+}
+async function assertHeldResponseOrdering(source) {
+  const f = await routeFixture(source);
   const response = {};
-  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-  await new AsyncFunction('page','transport','shouldHoldHomeRsc','delayedLocale','delayedRscGate','heldRequests','pause', source.slice(begin,end))(
-    { route:async (_,handler) => {callback=handler;} },
-    {handle:async (_,action) => action(async (operation, action) => {events.push(operation);return await action();})},
-    () => true, 'en', gate, 0, async () => {});
-  const pending = callback({request:()=>({}), fetch:async()=>response, fulfill:async value=>{assert.equal(value.response,response);events.push('fulfilled');}});
+  const request = {method:()=> 'GET', url:()=>homeOrigin+'/?_rsc=fixture', headers:()=>({rsc:'1'})};
+  const selected = f.registry.resolve(request);
+  assert.equal(selected.pattern, catchAllPattern, 'RSC_ROUTE_SELECTION');
+  const pending = selected.handler({request:()=>request, fetch:async()=>response,
+    fulfill:async value=>{assert.equal(value.response,response);f.events.push('fulfilled');},
+    continue:async()=>{throw new Error('RSC_MUST_NOT_CONTINUE');}, abort:async()=>{f.events.push('aborted');}});
   try {
     await new Promise(resolve=>setImmediate(resolve));
-    assert.deepEqual(events,['fetch','delay','gate'],'The real response must remain unfulfilled at the observation gate');
-    release();await pending;
-    assert.deepEqual(events,['fetch','delay','gate','fulfill','fulfilled']);
-  } finally {release();await pending;}
+    assert.deepEqual(f.events,['fetch','delay','gate'],'HELD_RESPONSE_BEFORE_GATE');
+    assert.equal(f.heldCount(),1);
+    assert.deepEqual(f.unexpectedEnquiryRequests,[]);
+    assert.deepEqual(f.results,[]);
+    f.release();await pending;await f.transport.drain();f.transport.assertHealthy();
+    assert.deepEqual(f.events,['fetch','delay','gate','fulfill','fulfilled']);
+  } finally {f.release();await pending;await f.transport.drain();}
 }
+async function assertEnquiryGuard(source, method, {preferFirst = false, missingMethod = false} = {}) {
+  const f = await routeFixture(source,{preferFirst});
+  let payloadReads = 0;
+  const request = {method:()=>method, url:()=>homeOrigin+'/api/service-enquiries?DO_NOT_RECORD', headers:()=>({}),
+    postData:()=>{payloadReads++;throw new Error('PAYLOAD_READ_FORBIDDEN');},
+    postDataJSON:()=>{payloadReads++;throw new Error('PAYLOAD_READ_FORBIDDEN');}};
+  if (missingMethod) delete request.method;
+  const selected = f.registry.resolve(request);
+  assert.equal(selected.pattern,enquiryPattern,'ENQUIRY_ROUTE_PRIORITY');
+  const calls = [], responses = [];
+  await selected.handler({request:()=>request,
+    fulfill:async response=>{calls.push('fulfill');responses.push(response);},
+    continue:async()=>{calls.push('continue');},fetch:async()=>{calls.push('fetch');},
+    abort:async reason=>{assert.equal(reason,'failed');calls.push('abort');}});
+  await f.transport.drain();
+  assert.deepEqual(calls,['fulfill','abort'],'ENQUIRY_MUST_BE_BLOCKED_AND_FATAL');
+  assert.equal(responses[0]?.status,401,'ENQUIRY_RESPONSE_MUST_DENY');
+  assert.deepEqual(JSON.parse(responses[0].body),{error:'SUBMISSION_FORBIDDEN'},'ENQUIRY_DENIAL_BODY_ONLY');
+  assert.throws(()=>f.transport.assertHealthy(),/transport failed/,'ENQUIRY_ATTEMPT_MUST_REMAIN_FATAL');
+  assert.equal(f.heldCount(),0);
+  assert.equal(payloadReads,0);
+  assert.deepEqual(f.unexpectedEnquiryRequests,[{method}]);
+  assert.deepEqual(f.results,[{engine:'fixture',width:390,enquiryRequestBlocked:true,method}]);
+  assert.doesNotMatch(JSON.stringify([f.results,f.unexpectedEnquiryRequests,f.transport.events,f.transport.failures]),/DO_NOT_RECORD|referenceCode|saved|phone|contact|https?:/);
+}
+function mutateOnce(source, before, after) {
+  assert.equal(source.split(before).length-1,1,'MUTATION_TARGET_EXACTLY_ONCE');
+  return source.replace(before,after);
+}
+function withoutEnquiryGuard(source) {
+  const begin=source.indexOf("  await page.route('**/api/service-enquiries**', async route => {");
+  const end=source.indexOf('\n  try {',begin);
+  assert.ok(begin>=0&&end>begin,'ENQUIRY_GUARD_SOURCE_REQUIRED');
+  return source.slice(0,begin)+source.slice(end);
+}
+
 test('supervised response is strictly held until the observation gate resolves',()=>assertHeldResponseOrdering(verifier));
 for (const [name, replacement] of [
   ['unawaited gate', "perform('gate', () => gate);"],
   ['bypassed gate', "await perform('gate', () => Promise.resolve());"],
   ['removed gate', ''],
-]) test('held-response contract rejects '+name,()=>assert.rejects(assertHeldResponseOrdering(verifier.replace("await perform('gate', () => gate);",replacement))));
+]) test('held-response contract rejects '+name,()=>assert.rejects(assertHeldResponseOrdering(verifier.replace("await perform('gate', () => gate);",replacement)),/HELD_RESPONSE_BEFORE_GATE/));
+for(const method of ['GET','POST']) test('actual enquiry '+method+' is denied without payload/receipt/network and remains fatal',()=>assertEnquiryGuard(verifier,method));
+test('last matching enquiry route wins its collision with catch-all',()=>assert.rejects(assertEnquiryGuard(verifier,'POST',{preferFirst:true}),/ENQUIRY_ROUTE_PRIORITY/));
+test('missing request method fails fixture admission explicitly, not as a guard TypeError',()=>assert.rejects(assertEnquiryGuard(verifier,'POST',{missingMethod:true}),/REQUEST_METHOD_REQUIRED/));
+test('removing the real enquiry guard is not silently accepted by the consumer',()=>assert.rejects((async()=>assertEnquiryGuard(withoutEnquiryGuard(verifier),'POST'))(),/ROUTE_REGISTRATION_SHAPE/));
+test('moving the enquiry guard before catch-all is rejected as an actual source priority regression',()=>assert.rejects((async()=>{
+  const registrations=routingSource(verifier);
+  const guardStart=registrations.indexOf("  await page.route('**/api/service-enquiries**'");
+  assert.ok(guardStart>0,'ENQUIRY_GUARD_SOURCE_REQUIRED');
+  const reordered=registrations.slice(guardStart)+'\n'+registrations.slice(0,guardStart);
+  return assertEnquiryGuard(mutateOnce(verifier,registrations,reordered),'POST');
+})(),/ROUTE_REGISTRATION_SHAPE/));
+test('misrouting the enquiry guard as another catch-all is rejected',()=>assert.rejects((async()=>assertEnquiryGuard(mutateOnce(verifier,"page.route('**/api/service-enquiries**'","page.route('**/*'"),'POST'))(),/ROUTE_REGISTRATION_SHAPE/));
+test('unfamiliar route patterns fail closed rather than becoming wildcard matches',async()=>{
+  const registry=createRouteRegistry();
+  await assert.rejects(registry.route('**/api/other**',()=>{}),/UNSUPPORTED_ROUTE_PATTERN/);
+  assert.deepEqual(registry.registrations,[]);
+});
+test('a matching enquiry guard without its fatal violation cannot pass',()=>assert.rejects((async()=>assertEnquiryGuard(mutateOnce(verifier,"throw new Error('Home capture inspection attempted an enquiry');",'/* mutation: fatal violation removed */'),'POST'))(),/ENQUIRY_MUST_BE_BLOCKED_AND_FATAL/));
+test('a matching enquiry guard cannot substitute a successful response',()=>assert.rejects((async()=>assertEnquiryGuard(mutateOnce(verifier,"status: 401, contentType: 'application/json', body: '{\"error\":\"SUBMISSION_FORBIDDEN\"}'","status: 200, contentType: 'application/json', body: '{\"error\":\"SUBMISSION_FORBIDDEN\"}'"),'POST'))(),/ENQUIRY_RESPONSE_MUST_DENY/));

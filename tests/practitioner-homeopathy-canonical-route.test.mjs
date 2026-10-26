@@ -1,10 +1,22 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { assertFilteredMentorRoutes } from './helpers/current-mentor-contract.mjs';
 
 import { getPublicServiceDetailHref } from '../lib/practitioners/public-service-links.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+
+for (const [name, before, after] of [
+  ['wrong first filtered service', 'filteredServices[0];', 'masterServices[0];'],
+  ['stale hardcoded first service', 'getPublicServiceDetailHref(locale, master.slug, firstService.slug)', 'getPublicServiceDetailHref(locale, master.slug, master.services[0].slug)'],
+  ['bypassed canonical mapping', 'getPublicServiceDetailHref(locale, master.slug, firstService.slug)', '`/${locale}/services/${master.slug}/${firstService.slug}`'],
+  ['forced English locale', 'getPublicServiceDetailHref(locale, master.slug, firstService.slug)', 'getPublicServiceDetailHref("en", master.slug, firstService.slug)'],
+]) test('current mentor service routing rejects ' + name, () => {
+  const source = read('components/master-network-explorer.tsx');
+  assert.ok(source.includes(before), 'Mutation target is actual source');
+  assert.throws(() => assertFilteredMentorRoutes(source.replace(before, after)), { code: 'ERR_ASSERTION' });
+});
 
 test('Andrey legacy Homeopathy consultation opens the approved new psycho-homeopathy landing', () => {
   assert.equal(getPublicServiceDetailHref('en', 'andy-litvinov', 'homeopathy-consultation'), '/en/services/alchemy-of-soul');
@@ -29,6 +41,7 @@ test('My Practice and Services listing card destinations use the shared canonica
   const listing = read('components/master-network-explorer.tsx');
   assert.match(practice, /href=\{getPublicServiceDetailHref\(locale,item\.practitionerSlug,item\.slug\)\}/);
   assert.match(listing, /const detailsHref = getPublicServiceDetailHref\(locale, service\.practitionerSlug, service\.slug\)/);
+  assertFilteredMentorRoutes(listing);
   // The mentor quick link must use the offer actually matched by active filters,
   // not the practitioner's unrelated first service in catalogue order.
   assert.match(listing, /const filteredServices = matchingMasterServices\(master, state\)/);

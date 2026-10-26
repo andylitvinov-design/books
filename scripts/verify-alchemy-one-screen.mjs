@@ -1,4 +1,6 @@
-// Isolated public-only geometry QA. No account, playback, clicks or provider sends.
+// Isolated public-only geometry QA. Expand/collapse only; no account, playback or provider sends.
+import { createAlchemyViewportIsolation } from "./helpers/alchemy-viewport-isolation.mjs";
+import { runAlchemyDesktopFormatsAcceptance } from "./helpers/alchemy-desktop-formats-acceptance.mjs";
 // Run against the current PR's loopback Next production server, never against live.
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -20,10 +22,13 @@ const cases = [
 ];
 const report = [];
 const failures = [];
+let desktopFormats = { cases: [], failures: [] };
 const browser = await (engine === "webkit" ? webkit : chromium).launch();
 try {
   for (const {locale,width,height} of cases) {
-    const page = await browser.newPage({viewport:{width,height}});
+    const isolation = await createAlchemyViewportIsolation(browser, {origin, locale, viewport:{width,height}});
+    const {page} = isolation;
+    let primaryFailure = false;
     const key = locale + "/" + width + "x" + height;
     try {
       const response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"networkidle",timeout:45000});
@@ -123,6 +128,7 @@ try {
           issues.push("long email capture incorrectly expanded from the hero");
         await trigger.click();
       }
+      await isolation.assertClean();
       report.push({locale,width,height,...data,issues});
       if (issues.length) {
         failures.push(key+": "+issues.join("; "));
@@ -133,13 +139,23 @@ try {
       const sampleResponse = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul/example-report", {waitUntil:"domcontentloaded",timeout:45000});
       assert.equal(sampleResponse?.status(),200,key+": sample report");
       assert.equal(await page.locator('[data-alchemy-example-report="fictional"]').count(),1,key+": no private client data");
+      await isolation.assertClean();
     } catch (error) {
+      primaryFailure = true;
       failures.push(key+": "+String(error));
       console.error("ALCHEMY_QA_ERROR "+key+" "+String(error));
-    } finally { await page.close(); }
+    } finally {
+      try { await isolation.close(); }
+      catch (error) {
+        // A cleanup violation is fatal but cannot replace the original failure.
+        if (!primaryFailure) failures.push(key+": "+String(error));
+      }
+    }
   }
+  desktopFormats = await runAlchemyDesktopFormatsAcceptance({ browser, engine, origin });
+  failures.push(...desktopFormats.failures);
 } finally { await browser.close(); }
 const destination="artifacts/public-services-production";
 await mkdir(destination,{recursive:true});
-await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,failures},null,2)+"\n");
+await writeFile(destination+"/alchemy-one-screen-geometry"+(engine === "webkit" ? "-webkit" : "")+".json", JSON.stringify({engine,cases:report,desktopFormats:desktopFormats.cases,failures},null,2)+"\n");
 assert.deepEqual(failures, [], "Alchemy viewport acceptance: "+failures.join(" | "));

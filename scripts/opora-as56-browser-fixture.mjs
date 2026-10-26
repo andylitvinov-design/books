@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url'
 export const oporaFixtureOrigin = 'http://127.0.0.1:3100'
 export const oporaFixturePrefix = '/__hh-test__/opora-as56/'
 export const oporaFixtureBundlePath = oporaFixturePrefix + 'fixture.js'
-const fixturePerformanceBudget = Object.freeze({ hints: 'warning', maxAssetSize: 1200 * 1024, maxEntrypointSize: 1200 * 1024 })
-function assertFixtureCompilation(stats) {
+const fixturePerformanceBudget = Object.freeze({ hints: 'warning', maxAssetSize: 804 * 1024, maxEntrypointSize: 804 * 1024 })
+export function assertFixtureCompilation(stats) {
   if (stats.hasErrors() || stats.hasWarnings()) throw new Error(stats.toString({ all: false, errors: true, warnings: true }))
 }
 const fixtureDirectory = fileURLToPath(new URL('./fixtures/', import.meta.url))
@@ -21,6 +21,9 @@ const productionInputs = [
   'lib/inner-growth/opora-as56-experience-guides.js',
   'lib/inner-growth/anti-stress-skills-v6.js',
   'lib/inner-growth/course-slide-sequence.js',
+  'lib/inner-growth/opora-as59-seven-skills.js',
+  'lib/inner-growth/opora-as60-experiential-practices.js',
+  'lib/inner-growth/opora-as60-integrated-journey.js',
 ]
 export function oporaFixturePath(locale) {
   assert.ok(['en', 'ru', 'es'].includes(locale), 'Unsupported OPORA fixture locale')
@@ -47,12 +50,15 @@ export function oporaFixtureDocument(locale, data, css) {
 export async function buildOporaBrowserFixture({ projectRoot = projectDirectory } = {}) {
   const root = resolve(projectRoot)
   const projectRequire = createRequire(join(root, 'package.json'))
-  let webpack, trace, cssLoader, styleLoader, postcss, getLocalIdent
+  let webpack, trace, cssLoader, styleLoader, postcss, getLocalIdent, MinifyPlugin, spans
   try {
     const bundled = projectRequire('next/dist/compiled/webpack/webpack')
     bundled.init()
     webpack = bundled.webpack
     trace = projectRequire('next/dist/trace').trace
+    ;({ MinifyPlugin } = projectRequire('next/dist/build/webpack/plugins/minify-webpack-plugin/src'))
+    ;({ spans } = projectRequire('next/dist/build/webpack/plugins/profiling-plugin'))
+    assert.ok(projectRequire('next/dist/build/swc').getBinaryMetadata().target, 'Installed native Next SWC required')
     cssLoader = projectRequire.resolve('next/dist/build/webpack/loaders/css-loader/src')
     styleLoader = projectRequire.resolve('next/dist/build/webpack/loaders/next-style-loader')
     getLocalIdent = projectRequire('next/dist/build/webpack/config/blocks/css/loaders/getCssModuleLocalIdent').getCssModuleLocalIdent
@@ -60,7 +66,7 @@ export async function buildOporaBrowserFixture({ projectRoot = projectDirectory 
     projectRequire.resolve('typescript')
     assert.equal(typeof webpack, 'function')
   } catch (cause) {
-    throw new Error('OPORA fixture requires the repository npm ci toolchain (Next bundled webpack, CSS loaders, PostCSS and TypeScript); refusing a fallback or package installation', { cause })
+    throw new Error('OPORA fixture requires the repository npm ci toolchain (Next bundled webpack/SWC, CSS loaders, PostCSS and TypeScript); refusing a fallback or package installation', { cause })
   }
   const directory = await mkdtemp(join(tmpdir(), 'hh-opora-fixture-'))
   const span = trace('opora-browser-fixture')
@@ -74,12 +80,13 @@ export async function buildOporaBrowserFixture({ projectRoot = projectDirectory 
       output: { path: directory, filename: 'fixture.js' },
       devtool: false,
       cache: false,
-      // This standalone Playwright fixture includes unminified React, all three
-      // languages and the AS-5.8/5.9 historical plus AS-6.0 14×5 teaching scripts.
-      // It is NOT a production Next.js client chunk. Bound the fixture at 1.2 MiB;
-      // production performance requires separate Vercel bundle review.
-      // Next's compiled Webpack cannot access its own Terser plugin here.
-      optimization: { minimize: false },
+      // Use the installed Next production minifier explicitly: bundled Webpack's
+      // default Terser path is not available in this standalone fixture. This
+      // includes the current AS6.0 and historical AS5.8/5.9 curricula without mocking
+      // the player or its children. Keep the stricter 804 KiB fixture budget,
+      // rather than the unminified target's 1200 KiB; all warnings remain fatal.
+      // This synthetic fixture is not evidence of production Next chunk size.
+      optimization: { minimize: true, minimizer: [new MinifyPlugin({})] },
       performance: fixturePerformanceBudget,
       resolve: {
         extensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
@@ -102,12 +109,15 @@ export async function buildOporaBrowserFixture({ projectRoot = projectDirectory 
       ] },
       plugins: [{ apply(build) {
         build.hooks.compilation.tap('OporaFixture', (compilation) => {
+          spans.set(build, span)
+          spans.set(compilation, span)
           webpack.NormalModule.getCompilationHooks(compilation).loader.tap('OporaFixture', (context) => { context.currentTraceSpan = span })
         })
       } }],
     })
     const stats = await new Promise((resolveBuild, reject) => compiler.run((error, result) => error ? reject(error) : resolveBuild(result)))
     assertFixtureCompilation(stats)
+    assert.equal(stats.compilation.getAsset('fixture.js')?.info.minimized, true, 'Fixture must use the production minifier')
     const bundledFiles = new Set([...stats.compilation.fileDependencies].map((path) => relative(root, path).split('\\').join('/')))
     const sourceProof = []
     for (const path of productionInputs) {

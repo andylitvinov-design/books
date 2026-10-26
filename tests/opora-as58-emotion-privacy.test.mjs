@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import vm from 'node:vm'
+import {onlyKeys} from '../lib/assessments/contracts.js'
 import {repositoryHarness,mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
 import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 import {OPORA_EXPERIENCE_PRE_SAVE_KEYS} from '../lib/inner-growth/course-slide-sequence.js'
@@ -25,7 +27,7 @@ function field(player,day){
 
 test('EN/RU/ES Day 4 and 11 free-text emotions are voluntary, owner-only and sealed in course signals',async()=>{
   for(const {lang,next,review,save,feeling,choice} of locales)for(const day of [4,11]){
-    const owner=repositoryHarness({freshPhase:true})
+    const owner=repositoryHarness({freshPhase:true,sameRealm:true})
     await owner.create('AS2')
     owner.seedDay(day)
     const data=await owner.read(lang)
@@ -64,7 +66,7 @@ test('EN/RU/ES Day 4 and 11 free-text emotions are voluntary, owner-only and sea
 
 test('Day 4 clearing a feeling and choosing Not today produces no emotion or fake plan',async()=>{
   for(const {lang,next,review,save} of locales){
-    const owner=repositoryHarness({freshPhase:true})
+    const owner=repositoryHarness({freshPhase:true,sameRealm:true})
     await owner.create('AS2')
     owner.seedDay(4)
     const data=await owner.read(lang)
@@ -104,11 +106,12 @@ test('server blocks forged emotion labels, conflicting choices, oversize or out-
     [11,{customText:''}],
   ]
   for(const [day,emotion] of invalid){
-    const owner=repositoryHarness({freshPhase:true})
+    const owner=repositoryHarness({freshPhase:true,sameRealm:true})
     await owner.create('AS2')
     owner.seedDay(day)
     const data=await owner.read('en')
-    const before=owner.writes.length
+    const before=structuredClone({writes:owner.writes,sessions:owner.sessions,cycle:owner.cycle,course:owner.course})
+    assert.equal(before.sessions.length,day-1,'Fixture retains prior completed days')
     await assert.rejects(owner.command({
       day,lessonId:data.lesson.id,operationId:'00000000-0000-4000-8000-000000001985',
       feedback:'skip',practiceWindow:'practice_v6',
@@ -117,29 +120,73 @@ test('server blocks forged emotion labels, conflicting choices, oversize or out-
         transferPlanVersion:'one-v1'},hints:[],ease:null},
       practiceEmotion:emotion,
     },'en'),/INVALID_OPORA_PRACTICE_EMOTION/)
-    assert.equal(owner.writes.length,before,'No database write on rejected input')
-    assert.equal(owner.sessions.length,0)
+    assert.deepEqual(owner.writes,before.writes,'No database write on rejected input')
+    assert.deepEqual(owner.sessions,before.sessions,'Rejected input preserves every historical session')
+    assert.deepEqual(owner.cycle,before.cycle,'Rejected input preserves the cycle')
+    assert.deepEqual(owner.course,before.course,'Rejected input preserves the course')
   }
 })
 
 test('old Day 4 input is migrated to sealed owner text, without changing legacy session signals',async()=>{
-  const owner=repositoryHarness({freshPhase:true})
+  const legacyFeeling='Quietly steady' // Distinct from the public calm_regulation goal.
+  const owner=repositoryHarness({freshPhase:true,sameRealm:true})
   await owner.create('AS2')
   owner.seedDay(4)
   const data=await owner.read('en')
+  const history=structuredClone(owner.sessions)
   await owner.command({
     day:4,lessonId:data.lesson.id,operationId:'00000000-0000-4000-8000-000000001988',
     feedback:'skip',practiceWindow:'practice_v6',
     visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
-    opora54:{answers:{transfer:'planned',transferChoice:'two',transferFeeling:'calm'},
+    opora54:{answers:{transfer:'planned',transferChoice:'two',transferFeeling:legacyFeeling},
       hints:[],ease:null},
   },'en')
+  assert.equal(owner.sessions.length,history.length+1)
+  assert.deepEqual(owner.sessions.slice(0,-1),history,'Legacy migration cannot rewrite historical sessions')
   const stored=owner.sessions.at(-1).signals
   assert.equal(stored.opora54.answers.transfer,'planned')
   assert.equal(stored.opora54.answers.transferChoice,'two')
   assert.equal(stored.opora54.answers.transferFeeling,undefined)
-  assert.equal(JSON.stringify(stored).includes('calm'),false)
+  assert.equal(JSON.stringify(stored).includes(legacyFeeling),false)
   assert.ok(stored.practiceEmotion.customTextCiphertext.length>30)
   const readBack=await owner.read('en')
-  assert.equal(readBack.currentSession.signals.practiceEmotion.customText,'calm')
+  assert.equal(readBack.currentSession.signals.practiceEmotion.customText,legacyFeeling)
+})
+
+// The actual validator stays prototype-strict: the fixture corrects execution
+// realms, not inputs or production validation.
+test('real object validator rejects foreign realms and malformed prototypes',()=>{
+  assert.doesNotThrow(()=>onlyKeys({customText:'calm'},['customText']))
+  assert.doesNotThrow(()=>onlyKeys(Object.assign(Object.create(null),{customText:'calm'}),['customText']))
+  const foreign=vm.runInNewContext('({customText:"calm"})')
+  const inherited=Object.create({customText:'calm'})
+  for(const value of [foreign,inherited,[],null,'calm',new Date()]){
+    assert.throws(()=>onlyKeys(value,['customText']),/INVALID_OBJECT/)
+  }
+  assert.throws(()=>onlyKeys({customText:'calm',unexpected:true},['customText']),/UNKNOWN_FIELD/)
+})
+
+test('same-realm repository still rejects malformed emotion objects without changing history',async()=>{
+  const cases=[
+    [Object.create({customText:'Quietly steady'}),/INVALID_OBJECT/],
+    [vm.runInNewContext('({customText:"Quietly steady"})'),/INVALID_OBJECT/],
+    [[],/INVALID_OPORA_PRACTICE_EMOTION/],
+    [null,/INVALID_OPORA_PRACTICE_EMOTION/],
+    [{customText:'Quietly steady',unexpected:true},/UNKNOWN_FIELD/],
+  ]
+  for(const [practiceEmotion,error] of cases){
+    const owner=repositoryHarness({freshPhase:true,sameRealm:true})
+    await owner.create('AS2')
+    owner.seedDay(4)
+    const data=await owner.read('en')
+    const before=structuredClone({writes:owner.writes,sessions:owner.sessions,cycle:owner.cycle,course:owner.course})
+    await assert.rejects(owner.command({
+      day:4,lessonId:data.lesson.id,operationId:'00000000-0000-4000-8000-000000001989',
+      feedback:'skip',practiceWindow:'practice_v6',
+      visitedSlideKeys:[...OPORA_EXPERIENCE_PRE_SAVE_KEYS],
+      opora54:{answers:{transfer:'planned',transferChoice:'two',transferPlanVersion:'one-v1'},hints:[],ease:null},
+      practiceEmotion,
+    }),error)
+    assert.deepEqual({writes:owner.writes,sessions:owner.sessions,cycle:owner.cycle,course:owner.course},before)
+  }
 })

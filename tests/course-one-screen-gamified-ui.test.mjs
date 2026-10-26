@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { assertCurrentSaveStatus, assertCurrentFinishAndVideo } from './helpers/reiki-current-contracts.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {join, dirname, resolve} from 'node:path';
@@ -57,15 +58,7 @@ test('OPORA learning path: five nearby steps and a manual 14-day reveal without 
 test('Academy: bottom save status retains guest, consent and authenticated persistence', () => {
   assert.match(academy, /data-course-one-screen="v1"/);
   assert.match(academy, /data-energywork-slide-kind=\{slide\.kind\}/);
-  assert.match(academy, /<details className=\{styles\.saveDetails\}>/);
-  assert.match(academy, /sync === "guest"/);
-  assert.match(academy, /sync === "consent"/);
-  assert.match(academy, /sync === "ready"/);
-  assert.match(academy, /checked=\{consented\}/);
-  assert.match(academy, /onClick=\{startSaving\}/);
-  assert.match(academy, /onClick=\{signIn\}/);
-  assert.ok(academy.indexOf('<aside className={styles.preview}') > academy.indexOf('<section className={styles.slide'));
-  assert.ok(academy.indexOf('<aside className={styles.preview}') < academy.indexOf('<footer className={styles.footer}>'));
+  assertCurrentSaveStatus();
 });
 
 test('Academy: immersive mobile viewport still scrolls dense lessons and keeps real video', () => {
@@ -75,5 +68,5 @@ test('Academy: immersive mobile viewport still scrolls dense lessons and keeps r
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.next\{/);
   assert.match(academyCss, /\.page\[data-course-one-screen\] \.art\{/);
   assert.match(academy, /<AcademyVideoPlayer key=\{slide\.id\}/);
-  assert.match(academy, /\{t\.stop\}/);
+  assertCurrentFinishAndVideo();
 });

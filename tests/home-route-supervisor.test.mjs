@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHomeRouteSupervisor} from '../scripts/home-route-supervisor.mjs';
+import {assertHomeVerifierMatrix} from './helpers/home-verifier-matrix.mjs';
 const origin='http://127.0.0.1:3129';
 const make=()=>createHomeRouteSupervisor({origin,engine:'webkit',width:390,stage:()=> 'ru-to-en',pageUrl:()=>origin+'/ru'});
 const route=(abort=async()=>{})=>({request:()=>({url:()=>origin+'/?_rsc=secret'}),abort});
@@ -31,9 +32,9 @@ test('bounded metadata excludes private paths/query and retains fatal records be
  await s.handle(r,async()=>{});await s.handle(r,async()=>{throw Error('secret');});
  assert.equal(s.events.length,1);assert.ok(s.dropped>0);assert.equal(s.failures.length,1);assert.ok(!JSON.stringify(s.events).includes('secret'));assert.throws(()=>s.assertHealthy());
 });
-test('integration preserves totals, fatal gates and ordered cleanup with original error priority',()=>{
+test('integration preserves totals, fatal gates and ordered cleanup with original error priority',async()=>{
  const s=readFileSync(new URL('../scripts/verify-home-locale-switch.mjs',import.meta.url),'utf8');
- assert.match(s,/firstClickRetained\)\.length, 8/);assert.match(s,/freeJourney\)\.length, 24/);assert.match(s,/assert\.deepEqual\(errors, \[\]\)/);
+ await assertHomeVerifierMatrix(s);assert.match(s,/assert\.deepEqual\(errors, \[\]\)/);
  assert.ok(s.lastIndexOf('releaseHeldRsc();')<s.indexOf('await transport.drain();'));
  assert.ok(s.indexOf('await transport.drain();')<s.indexOf('await context.close();'));
  assert.match(s,/caseFailure = transport.failure \?\? error/);assert.match(s,/if \(caseFailure\) throw caseFailure/);assert.ok(!s.includes('Promise.race'));

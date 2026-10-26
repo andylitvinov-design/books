@@ -1,9 +1,15 @@
-import test from 'node:test'
+import test, {after} from 'node:test'
 import assert from 'node:assert/strict'
 import {randomBytes} from 'node:crypto'
 import {readFileSync} from 'node:fs'
-import {createPractitionerClientMessages} from '../lib/practitioners/client-messages.js'
+import {createBookingServerHarness} from './helpers/booking-server-harness.mjs'
+import {openSealed} from '../lib/app/crypto.js'
 import {canReplyToConsultation} from '../lib/practitioners/conversation-policy.js'
+
+const messageHarness=createBookingServerHarness()
+const {createPractitionerClientMessages}=await messageHarness.load('lib/practitioners/client-messages.js')
+after(()=>assert.deepEqual(messageHarness.blocked,{database:0,fetch:0},
+ 'Message-chain behavior must use only explicitly injected synthetic transports'))
 
 const requestId='10000000-0000-4000-8000-000000000101'
 const clientId='10000000-0000-4000-8000-000000000102'
@@ -171,4 +177,116 @@ test('RLS hotfix closes shared messages on terminal remote sessions without chan
  assert.doesNotMatch(sql,/'in_progress','completed','declined'/)
  assert.match(sql,/visibility='practitioner_note'/)
  assert.doesNotMatch(sql,/create policy .*for select/i)
+})
+
+test('stranger cannot read, send or mark seen; rejected access cannot change encrypted rows',async()=>{
+ const db=fixture(),store=createPractitionerClientMessages(config,{transaction:db.transaction})
+ const client={id:clientId},master={id:masterId},stranger={id:otherMasterId}
+ const shared={requestId,operationId:id(501),text:'A synthetic scheduling question.',visibility:'participants'}
+ await store.send(client,shared)
+ await store.send(master,{requestId,operationId:id(502),
+   text:'A synthetic private scheduling note.',visibility:'practitioner_note'})
+ const encryptedRows=JSON.stringify(db.messages)
+ for(const attempt of [
+  ()=>store.list(stranger,requestId),
+  ()=>store.send(stranger,{...shared,operationId:id(503)}),
+  ()=>store.markSeen(stranger,{requestId,messageId:id(501)}),
+  ()=>store.send(client,{...shared,operationId:id(504),visibility:'practitioner_note'}),
+  ()=>store.markSeen(client,{requestId,messageId:id(502)}),
+  ()=>store.markSeen(client,{requestId,messageId:id(501)}),
+ ]){
+  await assert.rejects(attempt,e=>e.code==='NOT_FOUND'&&e.status===404)
+  assert.equal(JSON.stringify(db.messages),encryptedRows,'rejected operation must not write or alter ciphertext')
+ }
+ assert.equal((await store.list(master,requestId)).unseenCount,1,'stranger cannot advance the master read marker')
+ assert.deepEqual((await store.list(client,requestId)).messages.map(message=>message.id),[id(501)])
+ assert.deepEqual(messageHarness.blocked,{database:0,fetch:0})
+})
+
+test('real message encryption rejects wrong owner, wrong record and tampered content',async()=>{
+ const db=fixture(),store=createPractitionerClientMessages(config,{transaction:db.transaction})
+ const text='A synthetic appointment question.'
+ await store.send({id:clientId},{requestId,operationId:id(511),text,visibility:'participants'})
+ const row=db.messages[0],context={accountId:clientId,recordId:id(511),field:'practice.request.message'}
+ assert.ok(!JSON.stringify(db.messages).includes(text),'synthetic persisted rows must contain no cleartext message')
+ assert.deepEqual(openSealed(row.body_ciphertext,context,config),{text},'real crypto and exact message context stay active')
+ for(const wrongContext of [
+  {...context,accountId:otherMasterId},
+  {...context,recordId:id(512)},
+  {...context,field:'practice.request.note'},
+ ])assert.throws(()=>openSealed(row.body_ciphertext,wrongContext,config),
+   e=>e.code==='PRIVATE_DATA_UNAVAILABLE'&&e.status===503)
+ const envelope=JSON.parse(row.body_ciphertext),tampered=Buffer.from(envelope.data,'base64')
+ tampered[0]^=1
+ row.body_ciphertext=JSON.stringify({...envelope,data:tampered.toString('base64')})
+ await assert.rejects(store.list({id:masterId},requestId),
+   e=>e.code==='PRIVATE_DATA_UNAVAILABLE'&&e.status===503)
+ assert.deepEqual(messageHarness.blocked,{database:0,fetch:0})
+})
+
+test('message fixture defaults forbid database access and an explicit synthetic fetch probe',async()=>{
+ const dbHarness=createBookingServerHarness()
+ const real=await dbHarness.load('lib/practitioners/client-messages.js')
+ await assert.rejects(real.createPractitionerClientMessages(config).list({id:clientId},requestId),
+   /Synthetic booking transaction must be explicitly injected/)
+ assert.deepEqual(dbHarness.blocked,{database:1,fetch:0})
+ // This named sentinel is only an in-memory fixture override. No production
+ // import/transport is changed, and the invalid URL must never reach a network.
+ const path='lib/practitioners/client-messages.js'
+ const fetchHarness=createBookingServerHarness({sourceOverrides:{
+  [path]:read(path)+"\nexport function syntheticForbiddenFetchProbe(){ return fetch('https://synthetic.invalid/forbidden') }\n",
+ }})
+ const probe=await fetchHarness.load(path)
+ assert.throws(()=>probe.syntheticForbiddenFetchProbe(),/Synthetic booking fetch must be explicitly injected/)
+ assert.deepEqual(fetchHarness.blocked,{database:0,fetch:1})
+ assert.deepEqual(messageHarness.blocked,{database:0,fetch:0})
+})
+
+test('message fixture rejects removed server guard, wrong policy and unknown module loads',async()=>{
+ const path='lib/practitioners/client-messages.js',source=read(path)
+ for(const candidate of [
+  source.replace("import 'server-only'",''),
+  source.replace("'./conversation-policy.js'","'./unlisted-conversation-policy.js'"),
+  source+"\nimport 'node:net';\n",
+  source+"\nimport('node:net');\n",
+ ]){
+  assert.notEqual(candidate,source,'negative control must actually change its source sentinel')
+  const harness=createBookingServerHarness({sourceOverrides:{[path]:candidate}})
+  await assert.rejects(harness.load(path),/Unexpected booking fixture import contract|server-only guard|Dynamic module loading/)
+  assert.deepEqual(harness.blocked,{database:0,fetch:0})
+ }
+ assert.deepEqual(messageHarness.blocked,{database:0,fetch:0})
+})
+
+test('markSeen emits the private-note exclusion before synthetic row filtering',async()=>{
+ const db=fixture(),observed=[]
+ const transaction=async(receivedConfig,actor,run)=>db.transaction(receivedConfig,actor,sourceDb=>run({
+  async query(sql,parameters=[]){
+   if(/\bselect\s+id\s*,\s*created_at\s+from\s+app\.practitioner_request_messages\b/i.test(sql)){
+    // Inspect the actual runtime query BEFORE forwarding it to the synthetic
+    // fixture, whose independent filtering must not hide a deleted predicate.
+    assert.match(sql,/\bwhere\s+id\s*=\s*\$1\s+and\s+request_id\s*=\s*\$2\s+and\s+visibility\s*=\s*'participants'\s+and\s+author_account_id\s*<>\s*\$3\s+limit\s+1\b/i,
+      'markSeen SQL must exclude private practitioner notes before fixture filtering')
+    observed.push({actorId:actor.id,parameters:[...parameters]})
+   }
+   return sourceDb.query(sql,parameters)
+  },
+ }))
+ const store=createPractitionerClientMessages(config,{transaction})
+ const master={id:masterId},client={id:clientId}
+ await store.send(master,{requestId,operationId:id(521),
+   text:'A synthetic shared appointment reply.',visibility:'participants'})
+ await store.send(master,{requestId,operationId:id(522),
+   text:'A synthetic private appointment note.',visibility:'practitioner_note'})
+ assert.deepEqual(await store.markSeen(client,{requestId,messageId:id(521)}),{requestId,viewed:true})
+ await assert.rejects(store.markSeen(client,{requestId,messageId:id(522)}),
+   e=>e.code==='NOT_FOUND'&&e.status===404)
+ await assert.rejects(store.markSeen(master,{requestId,messageId:id(521)}),
+   e=>e.code==='NOT_FOUND'&&e.status===404)
+ assert.deepEqual(observed,[
+  {actorId:clientId,parameters:[id(521),requestId,clientId]},
+  {actorId:clientId,parameters:[id(522),requestId,clientId]},
+  {actorId:masterId,parameters:[id(521),requestId,masterId]},
+ ],'actual read queries bind the exact message, request and viewing account')
+ assert.deepEqual(messageHarness.blocked,{database:0,fetch:0})
 })

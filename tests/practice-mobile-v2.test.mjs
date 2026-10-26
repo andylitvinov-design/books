@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
+import {assertCurrentPracticeLeadIsolation} from './helpers/current-practice-lead-contract.mjs'
+
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
 
 test('mobile practice v2 keeps first service, share link and moderation honest', async () => {
@@ -36,11 +38,12 @@ test('practitioner leads stay item-scoped; owner CRM mounts only on demand', asy
     read('components/app/crm-manager.jsx'),
     read('app/api/app/crm/route.js'),
   ])
-  assert.match(view, /isOwner\?openOwner\('clients'\):choosePanel\('clients'\)/)
+  assertCurrentPracticeLeadIsolation(view)
   assert.match(view, /Business contacts & subscribers/)
-  assert.match(view, /function ClientLeads/)
+  assert.match(view, /<PractitionerClientProfiles/)
   assert.match(view, /safeLeadContact/)
-  assert.match(view, /Private tests and health records are not shared/)
+  const profiles = await read('components/app/practitioner-client-profiles.jsx')
+  assert.match(profiles, /Only enquiries to your services\. Anonymous contacts are not verified; private tests and records stay hidden\./)
   assert.match(view, /isOwner&&accountId/)
   assert.match(view, /CrmManager key=\{accountId\}/)
   assert.doesNotMatch(workspace, /data\.practitioner && <CrmManager/)
@@ -49,4 +52,16 @@ test('practitioner leads stay item-scoped; owner CRM mounts only on demand', asy
   assert.match(crm, /only business contacts|Business contacts only/)
   assert.match(route, /if \(!practitionerEmailAllowed\(actor\)\)/)
   assert.match(route, /if \(!crmEnabled\(\)\)/)
+})
+
+for(const [name,before,after,reason] of [
+  ['missing owner gate',"activePanel==='crm'&&isOwner&&accountId&&","activePanel==='crm'&&accountId&&",/requires selected panel AND owner AND account ID/],
+  ['missing account gate',"activePanel==='crm'&&isOwner&&accountId&&","activePanel==='crm'&&isOwner&&",/requires selected panel AND owner AND account ID/],
+  ['unselected CRM mount',"activePanel==='crm'&&isOwner&&accountId&&","isOwner&&accountId&&",/requires selected panel AND owner AND account ID/],
+  ['unscoped request update',"practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision})","practiceFetch('/requests/unscoped',{...(status?{status}:{}),...extra,expectedRevision:item.revision})",/synthetic-request-a/],
+  ['missing optimistic revision','...extra,expectedRevision:item.revision','...extra,expectedRevision:0',/expectedRevision/],
+]) test('practice lead contract rejects '+name,async()=>{
+  const original=await read('components/app/practice-workspace.jsx')
+  assert.ok(original.includes(before),'Mutation target must exist')
+  assert.throws(()=>assertCurrentPracticeLeadIsolation(original.replace(before,after)),reason)
 })

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { assertCurrentReviewSurface } from './helpers/reiki-current-contracts.mjs'
 import { readFileSync } from 'node:fs'
 
 const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
@@ -38,7 +39,7 @@ test('Tantra Reiki preserves four complete archived learner reviews, rather than
 })
 
 test('Review area presents complete scrollable text over the sunrise photograph', () => {
-  assert.match(learner, /data-reiki-reviews="v4" data-reiki-full-reviews="v1"/)
+  assertCurrentReviewSurface()
   assert.match(learner, /data-reiki-current-kind=\{slide\.kind\}/)
   assert.match(learner, /data-review-fulltext role="region" tabIndex=\{0\} aria-label=\{t\.voicesFullText\}/)
   assert.match(learner, /voicesFullText: "Full learner review"/)

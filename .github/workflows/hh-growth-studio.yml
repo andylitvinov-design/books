@@ -16,6 +16,10 @@ on:
       - 'components/growth-studio.*'
       - 'components/growth-studio-bulk.jsx'
       - 'components/growth-studio-connections.jsx'
+      - 'components/growth-studio-meta-ads.jsx'
+      - 'lib/paid-ad-referrals.js'
+      - 'data/meta-ads-pilot-draft.json'
+      - 'tests/paid-ad-referrals.test.mjs'
       - 'components/growth-studio-source-picker.jsx'
       - 'components/growth-studio-content-radar.jsx'
       - 'components/growth-studio-content-radar.module.css'
@@ -59,6 +63,7 @@ jobs:
           node-version: '22'
       - name: Validate JS modules
         run: |
+          node --check lib/paid-ad-referrals.js
           node --check lib/growth-studio/model.mjs
           node --check lib/growth-studio/manual-calendar.mjs
           node --check lib/growth-studio/channel-capabilities.mjs
@@ -71,7 +76,7 @@ jobs:
           node --check lib/growth-studio/manual-inbox.mjs
           node --check app/admin/growth-studio/actions.js
       - name: Check editorial transitions, URL and Redis guards
-        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-content-radar.test.mjs tests/growth-studio-provider-readiness.test.mjs tests/practice-marketing-navigation.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/admin-login-security.test.mjs tests/practitioner-bridge.test.mjs
+        run: node --test tests/growth-studio-editorial.test.mjs tests/growth-studio-csv.test.mjs tests/growth-studio-bulk.test.mjs tests/growth-studio-telegram.test.mjs tests/growth-studio-platforms.test.mjs tests/growth-studio-manual-calendar.test.mjs tests/growth-studio-navigation-preservation.test.mjs tests/growth-studio-storage-health.test.mjs tests/growth-studio-source-preview.test.mjs tests/growth-studio-evergreen.test.mjs tests/growth-studio-manual-inbox.test.mjs tests/growth-studio-owner-setup.test.mjs tests/growth-studio-content-radar.test.mjs tests/growth-studio-provider-readiness.test.mjs tests/practice-marketing-navigation.test.mjs tests/practice-single-owner-cabinet.test.mjs tests/admin-login-security.test.mjs tests/practitioner-bridge.test.mjs tests/paid-ad-referrals.test.mjs tests/organic-event-referrals.test.mjs
 
   next-build:
     name: Next.js production build / Growth Studio
@@ -89,6 +94,11 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Install exact dependency lock
-        run: npm ci
+        run: npm ci --include=dev
+      - name: Lint Meta Ads and safe attribution changes
+        run: npx --no-install eslint --ext .jsx components/growth-studio-meta-ads.jsx components/growth-studio-connections.jsx lib/paid-ad-referrals.js tests/paid-ad-referrals.test.mjs
+      - name: Typecheck
+        run: npx --no-install tsc --noEmit
       - name: Next.js build
         run: npm run build
+

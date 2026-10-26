@@ -16,9 +16,18 @@ const defFor = (item, locale) => getAssessmentDefinition(item.key,item.version,i
 const allAnswers = d => Object.fromEntries(d.questions.map(q=>[q.id,q.min??d.answerScale?.min??0]))
 
 test('every active test has a bilingual short purpose/origin/evidence paragraph without changing scoring hashes',()=>{
-  // New source-cleared scales are additive; coverage must not freeze at the
-  // previous 145-source snapshot or silently omit the five new 2026 forms.
-  assert.ok(active.length>=150)
+  // Four IPIP additions stay active; ONS remains a source-attributed reference.
+  // Keep the earlier 145 instruments and all five immutable forms covered.
+  assert.equal(active.length, 149)
+  assert.ok(['ipip-emotion-decision-making-9', 'ipip-responsive-joy-10',
+    'ipip-responsive-distress-10', 'ipip-empathic-concern-10'].every(key => active.some(item => item.key === key)))
+  const ons = MONITORING_CATALOG.find(item => item.key === 'ons-personal-wellbeing-4')
+  assert.equal(ons.startable, false)
+  for (const locale of ['en', 'ru']) {
+    const about = assessmentExplanation({key: ons.key, catalog: ons, locale})
+    assert.equal(about.status, 'reference')
+    assert.match(about.originAndEvidence, /Office for National Statistics.*Open Government Licence v3\.0/)
+  }
   for(const locale of ['en','ru']){
     for(const item of active){
       const def=defFor(item,item.instrumentLocale==='dynamic'?locale:'en')

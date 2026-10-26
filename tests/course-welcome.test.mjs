@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { GROWTH_GOALS } from '../lib/inner-growth/course-model.js'
@@ -36,7 +37,24 @@ test('welcome is purely qualitative; quantitative baseline and last-24-hours che
   assert.match(player, /data-course-welcome/)
   assert.match(player, /welcomeFeelingChoices\(cycle\.activeGoal \|\| cycle\.primaryGoal, locale\)/)
   assert.match(player, /welcomeFeeling:welcomeFeeling\|\|'skip'/)
-  assert.match(today, /onPreferences=\{patch=>submit\('preferences'/)
+  const preferenceExpression = today.match(/onPreferences=\{(patch=>[\s\S]*?\n    \}\))\}/)?.[1]
+  assert.ok(preferenceExpression, 'execute the actual preference callback')
+  for (const reviewLesson of [null, {day: 2}]) for (const preferences of [
+    undefined, {length:'quick', imagery:'no_imagery', checkinFrequency:'weekly'},
+  ]) for (const patch of [{}, {length:'standard', expectedRevision:999, unexpected:'ignored'}]) {
+    const calls = []
+    const callback = runInNewContext('(' + preferenceExpression + ')', {
+      reviewLesson, cycle:{revision:7, preferences},
+      submit:(...args) => { calls.push(args); return 'confirmed' },
+    })
+    assert.equal(callback(patch), reviewLesson ? null : 'confirmed')
+    assert.equal(calls.length, reviewLesson ? 0 : 1, 'replay must not call submit')
+    if (!reviewLesson) assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), ['preferences', {
+      expectedRevision:7, length:patch.length || preferences?.length || 'standard',
+      imagery:preferences?.imagery || 'optional',
+      checkinFrequency:preferences?.checkinFrequency || 'daily',
+    }])
+  }
   assert.match(player, /onCheckin\(\{/)
   assert.match(api, /welcomeFeelingOptions=new Set\(\['steady','tense','low','unsure','skip'\]\)/)
   assert.match(api, /welcomeFeeling:optionalChoice\(input\.welcomeFeeling,welcomeFeelingOptions\)/)

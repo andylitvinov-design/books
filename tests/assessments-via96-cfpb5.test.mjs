@@ -1,3 +1,4 @@
+import { EXPECTED_LOCAL_INTERPRETATION_COVERAGE, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -106,8 +107,9 @@ test('both measures have immutable SHA256 and appear as optional selectable card
     assert.equal(contentHash, 'sha256:'+createHash('sha256').update(canonicalJSON(rest)).digest('hex'))
     assert.ok(interpretationPlan(def.key,'v1'))
   }
+  assertCatalogAvailability(MONITORING_CATALOG)
   const coverage=interpretationRegistryCoverage(MONITORING_CATALOG)
-  assert.deepEqual(coverage,{total:150,registered:150,uncovered:[],obsolete:[]})
+  assert.deepEqual(coverage,EXPECTED_LOCAL_INTERPRETATION_COVERAGE)
   for(const locale of ['en','ru'])for(const audience of ['guest','account']){
     const entries=buildExplorerEntries({locale,audience})
     for(const key of [via.key,cfpb.key]){

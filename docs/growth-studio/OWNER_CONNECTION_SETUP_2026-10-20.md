@@ -94,3 +94,37 @@ Only synthetic, generic non-client data is ever written; the main `holistic-hous
 The narrow mobile layout now keeps the important privacy notices while reducing excessive empty vertical space before the editor. The `0/16 channels` count still refers exclusively to actual verified **site-side** publisher credentials; a Redis success does NOT alter that value. HYPD and Metricool connection through ChatGPT do not provide the Holistic House production server with publisher OAuth.
 
 **Important limitation:** an isolated synthetic Redis hash roundtrip validates connectivity and CAS semantics. It does **not** assert that a real owner-created marketing post has been reviewed and saved, nor that iPhone Safari E2E, account credentials, remote scheduling or provider delivery were verified. A screenshot alone of the editor cannot establish a successful Save/Reload flow. No automated public posts, paid ads, subscriptions or video renders are authorized.
+
+---
+
+## 2026-10-24 · Meta Ads: Facebook + Instagram preflight (not publishing)
+
+**Single source of truth:** [Meta Ads v2 issue #371](https://github.com/andylitvinov-design/books/issues/371), existing data/meta-ads-pilot-draft.json. **Owner UI:** authenticated [Growth Studio](https://holistichouse.vercel.app/admin/growth-studio) → **Connections and publishing methods** → **Facebook + Instagram · advertising setup**. This is an advertising-preparation panel, separate from the organic-post editor. Neither a visible Windsor/ChatGPT connector nor a manually scheduled social post confirms advertiser permission.
+
+### Concept and first-stage funnel
+- **Offer:** one EN free **written situation review**, NOT a free live coaching session or clinical diagnosis. Public /en/services/free-situation-review explains reflection/drawing and voluntary contact; use existing server-confirmed enquiry and CRM. Clicks/messenger drafts are not received leads. A paid session is an optional follow-up (€50/30min or €100/60min, verify before displaying).
+- **One experiment across both networks:** one campaign, one ad set, up to two reviewed ads. Planning average CAD 5/day; absolute CAD 35 lifetime cap; maximum seven days. No parallel separate Instagram budget or automatic extension. Campaign stays draft-only, account unset, spend unauthorized.
+- **Target:** adult 18+, broad Toronto/GTA English without inferred health, mental-health, sexual or religious traits. No private audiences, lookalikes or sensitive retargeting. Manual placements until creatives pass QA: Facebook Feed / Instagram Feed / Instagram Stories only if suitable. No Audience Network, Messenger or Threads without separate review.
+- **Assets:** prepared ad_a “A Thoughtful Place to Begin” and ad_b “Explore Your Next Step”; genuinely approved real-Andrey photos only. The previously saved Tantra Reiki creative kit is a **separate later campaign candidate** and cannot consume this pilot’s CAD 35 limit without explicit new approval.
+- **Measurement:** platform-reported delivery and clicks vs independently verified CRM intake and later paid consultation. No GA4 safety-hold bypass, Meta Pixel, CAPI, test result sharing, health-based segmentation or promise that a CTA click is a lead.
+
+### Critical cross-placement tracking repair
+**Do not paste static Facebook- or Instagram-labelled landing URLs into a cross-platform ad.** The same creative may serve on both networks. The actual site source must be supplied by Meta on delivery, not inferred from the creative name.
+
+In Meta Ads Manager → individual Ad → Destination + Tracking:
+1. Website URL must be exactly: https://holistichouse.vercel.app/en/services/free-situation-review
+2. In the **separate URL parameters field (without leading ?)** for ad_a paste:
+    utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign=hh_free_review_en_toronto_202610&utm_content=ad_a
+3. For ad_b use the same string ending in utm_content=ad_b.
+4. Perform a real Facebook and Instagram preview/click before any launch. Confirm the site_source_name macro resolves to **fb** or **ig**. The first-party allowlist normalizes to facebook or instagram; unknown codes (an/msg/th), unresolved macros, duplicates and private fields fail closed. Meta click IDs never enter messenger draft text or analytics.
+5. Growth Studio’s new copy controls provide reviewed **draft inputs only**; they do not import or create an ad, and the page preview is not a real provider conversion.
+
+### Five required launch gates
+- [ ] Owner-controlled Business Portfolio, Page and Instagram Professional account verified. Previously accessible read-only Meta accounts are not proven to belong to Holistic House.
+- [ ] Correct advertiser, **CAD** currency and **America/Toronto** billing timezone explicitly checked; do not use a USD/other-person account.
+- [ ] Landing, rights, Meta policy and 320–430px mobile crops checked. One real form submission with consent, server receipt and owner-confirmed CRM delivery is demonstrated.
+- [ ] Actual objective and **hard lifetime CAD 35** cap with seven-day end date accepted in Ads Manager. If Meta rejects this limit, **STOP**, do not raise it.
+- [ ] Separate explicit owner authorization naming account, campaign, exact media/placement, cap and activation.
+
+### Verification boundary
+Local automated tests check the draft, source parsing, public landing allowlist, mobile style contracts and absence of Pixel/provider writes. They do not prove Meta access, ad approval, delivery, spend enforcement, physical iPhone rendering or real paid conversions. Never mark Meta ads live until actual provider account/ads readback and genuine CRM receipt, booking and payment are independently verified.

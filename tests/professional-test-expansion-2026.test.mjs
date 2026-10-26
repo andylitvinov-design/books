@@ -17,7 +17,7 @@ const NEW_KEYS = [
   'ons-personal-wellbeing-4',
 ]
 
-test('five distinct, source-backed, fully startable professional questionnaires join the existing catalog', () => {
+test('four startable IPIP questionnaires and one ONS reference retain all five immutable forms', () => {
   const catalogKeys = new Set(MONITORING_CATALOG.map(item => item.key))
   const entries = buildExplorerEntries({ locale: 'en', audience: 'guest' })
   assert.equal(ADDITIONAL_PROFESSIONAL_CATALOG.length, 5)
@@ -26,20 +26,21 @@ test('five distinct, source-backed, fully startable professional questionnaires 
   assert.equal(new Set(NEW_KEYS).size, NEW_KEYS.length)
   assert.equal(catalogKeys.size, MONITORING_CATALOG.length)
   for (const key of NEW_KEYS) {
+    const held = key === 'ons-personal-wellbeing-4'
     const item = MONITORING_CATALOG.find(value => value.key === key)
     const entry = entries.find(value => value.key === key)
     const definition = getAssessmentDefinition(key, 'v1', 'en')
     assert.ok(item && entry && definition, key)
-    assert.equal(item.startable, true, key)
+    assert.equal(item.startable, !held, key)
     assert.equal(item.rightsStatus, 'cleared', key)
     assert.equal(item.instrumentLocale, 'en', key)
     assert.equal(item.questionCount, definition.questions.length, key)
     assert.equal(item.testStyle, 'professional', key)
-    assert.equal(item.starterEligible, true, key)
+    assert.equal(item.starterEligible, !held, key)
     assert.equal(entry.testKind, 'professional', key)
     assert.equal(testKindFor({ key, source: 'product', catalog: item, definition }), 'professional', key)
-    assert.equal(entry.selectable, true, key)
-    assert.equal(auditTestKey({ catalog: item, definition }).status, 'ready', key)
+    assert.equal(entry.selectable, !held, key)
+    assert.equal(auditTestKey({ catalog: item, definition }).status, held ? 'reference' : 'ready', key)
     assert.match(definition.source.url, /^https:\/\//, key)
     assert.match(definition.contentHash, /^sha256:[a-f0-9]{64}$/, key)
     const items = definition.questions.map(question => question.text)
@@ -120,7 +121,10 @@ test('new items do not silently become Russian questionnaire translations', () =
   const entriesRu = buildExplorerEntries({locale:'ru',audience:'guest'})
   for (const key of NEW_KEYS) {
     const item = entriesRu.find(entry => entry.key === key)
-    assert.ok(item?.selectable && item.definition?.instrumentLocale === 'en', key)
+    assert.ok(item, key)
+    assert.equal(item.selectable, key !== 'ons-personal-wellbeing-4', key)
+    assert.equal(item.catalog.instrumentLocale, 'en', key)
+    if (item.selectable) assert.equal(item.definition.instrumentLocale, 'en', key)
     assert.match(item.title, /EN|IPIP/, key)
   }
 })
@@ -131,11 +135,12 @@ test('new source-backed tests present truthful methodology in EN/RU rather than 
     const entries = buildExplorerEntries({locale, audience: 'guest'})
     for (const key of NEW_KEYS) {
       const entry = entries.find(value => value.key === key)
-      assert.equal(entry?.selectable, true, key + '/' + locale)
-      assert.ok(['traits', 'research'].includes(entry.methodologyStatus), key + '/' + locale)
-      assert.equal(entry.methodologySourceUrl, entry.definition.source.url, key + '/' + locale)
+      const held = key === 'ons-personal-wellbeing-4'
+      assert.equal(entry?.selectable, !held, key + '/' + locale)
+      assert.ok((held ? ['reference'] : ['traits', 'research']).includes(entry.methodologyStatus), key + '/' + locale)
+      assert.equal(entry.methodologySourceUrl, getAssessmentDefinition(key, 'v1', 'en').source.url, key + '/' + locale)
       assert.match(entry.methodology, /IPIP|ONS4/, key + '/' + locale)
-      assert.doesNotMatch(entry.methodology, /not yet cleared|not startable|not available|пока недоступн|ещё не проверен/i, key + '/' + locale)
+      if (!held) assert.doesNotMatch(entry.methodology, /not yet cleared|not startable|not available|пока недоступн|ещё не проверен/i, key + '/' + locale)
     }
   }
 })

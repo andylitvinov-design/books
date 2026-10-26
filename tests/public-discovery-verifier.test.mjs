@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import test, { afterEach } from 'node:test'
 import { readFileSync } from 'node:fs'
-import { runInNewContext } from 'node:vm'
-import ts from 'typescript'
+import { hooks, compile, modules, jsx, renderWithEffects, assertDiscoveryIsolation, assertAfterIsolation } from './helpers/public-discovery-fixture.mjs'
+
+afterEach(assertDiscoveryIsolation)
 import { availableTestCollections, availableTantraTestPaths } from '../lib/assessments/test-collections.js'
 import { assertCompactAccountPicker } from '../scripts/helpers/account-picker-disclosure-verifier.mjs'
 import { exercisePortraitRays, assertPublicCollectionChips, assertPublicCollectionMatches } from '../scripts/helpers/public-discovery-verifier.mjs'
@@ -14,49 +15,12 @@ import * as explorerModule from '../lib/assessments/test-explorer.js'
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 const accessibleText = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(accessibleText).join('') : tree.props['aria-hidden'] ? '' : accessibleText(tree.props.children)
-const jsx = (type, props, key) => ({ type, props: props || {}, key })
-const styles = { default: new Proxy({}, { get: (_, key) => String(key) }) }
-function hooks() {
-  let cursor = 0
-  const values = []
-  return {
-    reset() { cursor = 0 },
-    useState(initial) { const index = cursor++; if (!(index in values)) values[index] = typeof initial === 'function' ? initial() : initial; return [values[index], next => { values[index] = typeof next === 'function' ? next(values[index]) : next }] },
-    useMemo: fn => fn(), useEffect() {}, useRef: initial => ({ current: initial }), useId: () => 'synthetic-portrait-rays',
-  }
-}
-function compile(source, react, modules = {}, browser = {}) {
-  const exported = {}
-  runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText, {
-    exports: exported, window: browser.window || {}, console, URLSearchParams,
-    document: browser.document || { getElementById: () => ({ scrollIntoView() {} }) },
-    require(name) {
-      if (modules[name]) return modules[name]
-      if (name === 'react') return react
-      if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
-      if (name === 'next/link' || name === 'next/image') return { default: name === 'next/link' ? 'a' : 'img' }
-      if (name.endsWith('.css')) return styles
-      if (name === 'lucide-react') return new Proxy({}, { get: () => 'svg' })
-      if (name === '../discovery-section-tabs') return compile(read('components/discovery-section-tabs.tsx'), react, modules, browser)
-      if (name === './simple-test-picker') return { SimpleTestPicker: 'SimpleTestPicker' }
-      if (name === './test-explorer-visual') return { TestExplorerVisual: 'TestExplorerVisual' }
-      if (name === './priority-methods-review') return { PriorityMethodsReview: 'PriorityMethodsReview' }
-      if (name === './test-scale-guide') return { TestScaleGuide: 'TestScaleGuide' }
-      throw new Error('Unexpected dependency: ' + name)
-    },
-  })
-  return exported
-}
-
 const parentSource = read('components/app/test-explorer.jsx')
 const pickerSource = read('components/app/simple-test-picker.jsx')
-const modules = {}
-for (const source of [parentSource, pickerSource])
-  for (const [, name] of source.matchAll(/from ['"](@\/[^'"]+)['"]/g)) modules[name] = await import(new URL('../' + name.slice(2) + '.js', import.meta.url))
-
 for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handlers preserve chosen facets, preserve manual selections and never start tests', () => {
   const parentHooks = hooks(), pickerHooks = hooks()
   let starts = 0, tree, pickerProps
+  assertAfterIsolation(() => assert.equal(starts, 0, 'Browsing must not start tests during effects or cleanup'))
   const frames = [], scrolls = []
   const browser = {
     window: { requestAnimationFrame(callback) { frames.push(callback) } },
@@ -64,14 +28,13 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   }
   const { TestExplorer } = compile(parentSource, parentHooks, modules)
   const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules, browser)
-  const render = () => {
-    parentHooks.reset(); pickerHooks.reset()
+  const render = () => renderWithEffects([parentHooks, pickerHooks], () => {
     const parent = TestExplorer({ locale, audience: 'guest', simpleMode: true, onStart: () => { starts++ } })
     assert.equal(parent.type, 'SimpleTestPicker')
     pickerProps = parent.props
     tree = SimpleTestPicker(pickerProps)
     return tree
-  }
+  })
   const collectionCards = () => nodes(tree).filter(node => node.type === 'button' && node.props['data-test-collection'])
   const chooseCollection = id => {
     const card = collectionCards().find(node => node.props['data-test-collection'] === id)
@@ -85,9 +48,12 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
     assert.deepEqual(scrolls.slice(before), [{ id: target, behavior: 'smooth', block: 'start' }])
   }
   render()
+  assert.equal(tree.props['data-public-test-picker'], 'true')
+  assert.equal(tree.props['data-account-test-picker'], undefined)
+  assert.equal(nodes(tree).filter(node => node.props['data-research-directory']).length, 0)
   const collections = availableTestCollections(pickerProps.catalogEntries)
   assert.deepEqual(collectionCards().map(node => node.props['data-test-collection']), collections.map(item => item.id))
-  const title = locale === 'ru' ? 'Подборки тестов по темам' : locale === 'es' ? 'Colecciones de pruebas por tema' : 'Test collections by topic'
+  const title = locale === 'ru' ? 'Подборки тестов по темам (необязательно)' : locale === 'es' ? 'Colecciones de pruebas por tema (opcional)' : 'Test collections by topic (optional)'
   assert.ok(nodes(tree).some(node => node.type === 'h2' && accessibleText(node) === title))
   const more = () => nodes(tree).find(node => node.props['aria-controls'] === 'hh-test-curated-grid')
   assert.equal(more().props['aria-expanded'], false)
@@ -101,12 +67,17 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   assert.equal(preserved.length, selected.length + 1)
   assert.ok(preserved.includes(candidate.key))
   // Explicit collection changes retain the owner-approved visible preferences.
+  pickerProps.onToggleFocus('sleep'); render()
+  pickerProps.onToggleProblem('unrested'); render()
   pickerProps.onDepth('deep'); pickerProps.onMaxMinutes(5); pickerProps.onSelectTestKind('professional'); render()
   pickerProps.onChooseCollection('stress'); render()
+  assert.deepEqual(Array.from(pickerProps.focus), ['sleep'])
+  assert.deepEqual(Array.from(pickerProps.problems), ['unrested'])
   assert.equal(pickerProps.depth, 'deep'); assert.equal(pickerProps.maxMinutes, 5)
   assert.deepEqual(Array.from(pickerProps.testKinds), ['professional'])
   assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved)
   // The user explicitly clears these facets before browsing every collection.
+  pickerProps.onToggleFocus('sleep'); pickerProps.onClearProblems();
   pickerProps.onDepth('balanced'); pickerProps.onMaxMinutes(0); pickerProps.onClearTestKinds(); pickerProps.onChooseCollection(null); render()
   for (const id of ['stress', 'relationships', 'tantra', 'sexuality']) {
     const collection = collections.find(item => item.id === id)
@@ -144,15 +115,100 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' real collection handler
   assert.equal(starts, 0)
 })
 
+// Execute the exact pure expectation statements used by the browser journey,
+// not a second implementation or a result inferred from the rendered cards.
+// This boundary does not run Playwright; selectors and native input remain CI gates.
+function browserCollectionSearchKeys({ entries, collections, preserved, query, initialPreferences }) {
+  const source = read('scripts/helpers/public-discovery-verifier.mjs')
+  const start = '    const sleepCollection = collections.find(item=>item.id===\'sleep\')'
+  const end = '    assert.ok(expectedSearch.length > 0)'
+  assert.equal(source.split(start).length, 2, 'Exactly one browser search expectation starts here')
+  const tail = source.slice(source.indexOf(start))
+  assert.equal(tail.split(end).length, 2, 'The complete browser expectation has a unique boundary')
+  const recipe = tail.slice(0, tail.indexOf(end))
+  const evaluate = new Function('entries', 'collections', 'preserved', 'query', 'initialPreferences',
+    'rankPublicTestMatches', 'filterExplorerEntries', 'searchPublicTestEntries', 'groupViaRecommendations',
+    recipe + '\nreturn expectedSearch')
+  return evaluate(entries, collections, preserved, query, initialPreferences,
+    explorerModule.rankPublicTestMatches, explorerModule.filterExplorerEntries,
+    explorerModule.searchPublicTestEntries, modules['@/lib/assessments/via-family'].groupViaRecommendations)
+}
+
+for (const { locale, depth, query } of [
+  { locale: 'en', depth: 'quick', query: 'Love' },
+  { locale: 'ru', depth: 'balanced', query: 'Любовь' },
+]) test(locale + ' browser search oracle keeps prior Stress + ' + depth + ' through Sleep and exact ordered Love search', () => {
+  const parentHooks = hooks(), pickerHooks = hooks(), frames = []
+  let starts = 0, tree, pickerProps
+  assertAfterIsolation(() => assert.equal(starts, 0, 'Search must not start tests during effects or cleanup'))
+  const { TestExplorer } = compile(parentSource, parentHooks, modules)
+  const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules, {
+    window: { requestAnimationFrame(callback) { frames.push(callback) } },
+  })
+  const render = () => renderWithEffects([parentHooks, pickerHooks], () => {
+    pickerProps = TestExplorer({ locale, audience: 'guest', simpleMode: true, onStart: () => { starts++ } }).props
+    return tree = SimpleTestPicker(pickerProps)
+  })
+  render()
+  pickerProps.onToggleFocus('stress'); render()
+  pickerProps.onDepth(depth); render()
+  const suggested = pickerProps.activeBattery.map(entry => entry.key)
+  const manual = pickerProps.recommendations.find(entry => !suggested.includes(entry.key))
+  assert.ok(manual)
+  pickerProps.onToggleTest(manual.key); render()
+  const preserved = pickerProps.activeBattery.map(entry => entry.key)
+  assert.deepEqual(preserved.length, suggested.length + 1)
+  const sleepButton = nodes(tree).find(node => node.props['data-test-collection'] === 'sleep')
+  assert.ok(sleepButton)
+  sleepButton.props.onClick(); render()
+  assert.equal(frames.length, 1); frames.shift()()
+  assert.deepEqual(Array.from(pickerProps.focus), ['stress'])
+  assert.equal(pickerProps.depth, depth)
+  assert.equal(pickerProps.activeCollectionId, 'sleep')
+  const search = () => nodes(tree).find(node => node.props.id === 'hh-test-hero-search')
+  search().props.onChange({ target: { value: query } }); render()
+  nodes(tree).find(node => node.type === 'form' && node.props.role === 'search').props.onSubmit({ preventDefault() {} }); render()
+
+  // Independent public-catalog oracle: prior focus is a persistent preference,
+  // Sleep is additive, selected tests affect VIA grouping only, never relevance.
+  const entries = explorerModule.buildExplorerEntries({ locale, audience: 'guest' })
+  const initialPreferences = { focus: ['stress'], depth }
+  const collections = availableTestCollections(entries, initialPreferences)
+  const sleep = collections.find(item => item.id === 'sleep')
+  const pool = explorerModule.filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 })
+  const rank = focus => explorerModule.rankPublicTestMatches(pool, {
+    depth, focus, collectionId: 'sleep', collectionFocus: sleep.focus,
+  })
+  const searchKeys = ranked => explorerModule.searchPublicTestEntries(
+    modules['@/lib/assessments/via-family'].groupViaRecommendations(ranked, new Set(preserved), false).visible, query,
+  ).slice(0, 5).map(entry => entry.key)
+  const independentExpected = searchKeys(rank([...new Set(['stress', ...sleep.focus])]))
+  const droppedPersistentFocus = searchKeys(rank(sleep.focus))
+  assert.equal(independentExpected.length, 5)
+  assert.notDeepEqual(independentExpected, droppedPersistentFocus, 'Dropping persistent Stress is a real order-changing counterfactual')
+  const browserExpected = browserCollectionSearchKeys({ entries, collections, preserved, query, initialPreferences })
+  assert.deepEqual(browserExpected, independentExpected, 'The native browser oracle must retain prior Stress alongside Sleep')
+  const hits = nodes(tree).filter(node => node.props['data-test-match']).map(node => node.props['data-test-match'])
+  assert.deepEqual(hits, independentExpected, 'The actual picker preserves the exact ranked order, not only membership')
+  assert.deepEqual(Array.from(pickerProps.focus), ['stress'])
+  assert.equal(pickerProps.depth, depth)
+  assert.equal(pickerProps.activeCollectionId, 'sleep')
+  assert.deepEqual(pickerProps.activeBattery.map(entry => entry.key), preserved, 'Love search cannot rewrite manual selection')
+  assert.equal(nodes(tree).filter(node => node.props['data-via-family']).length, 0)
+  assert.equal(starts, 0)
+})
+
 for (const locale of ['en','ru','es']) test(locale+' collection standard Details stays read-only and Start launches exactly one cleared test',async()=>{
  const parentHooks=hooks(),pickerHooks=hooks(),starts=[];let tree,props
+ let explicitKey
+ assertAfterIsolation(() => assert.deepEqual(starts, [[explicitKey]], 'Only the explicit single Start is allowed, including after cleanup'))
  const {TestExplorer}=compile(parentSource,parentHooks,modules)
  const {SimpleTestPicker}=compile(pickerSource,pickerHooks,modules)
- const render=()=>{parentHooks.reset();pickerHooks.reset();props=TestExplorer({locale,audience:'guest',simpleMode:true,onStart:async entries=>starts.push(Array.from(entries,e=>e.key))}).props;tree=SimpleTestPicker(props)}
+ const render=()=>renderWithEffects([parentHooks,pickerHooks],()=>{props=TestExplorer({locale,audience:'guest',simpleMode:true,onStart:async entries=>starts.push(Array.from(entries,e=>e.key))}).props;return tree=SimpleTestPicker(props)})
  render();props.onChooseCollection('sexuality');render()
  assert.equal(nodes(tree).filter(n=>n.props['data-tantra-path']).length,0)
  const first=nodes(tree).find(n=>n.props['data-test-match']);assert.ok(first)
- const key=first.props['data-test-match'];assert.ok(props.catalogEntries.some(e=>e.key===key&&e.selectable))
+ const key=first.props['data-test-match'];explicitKey=key;assert.ok(props.catalogEntries.some(e=>e.key===key&&e.selectable))
  const card=()=>nodes(tree).find(n=>n.props['data-test-match']===key)
  const details=()=>nodes(card()).find(n=>n.props.className==='testDetailsButton')
  const battery=props.activeBattery.map(e=>e.key)
@@ -287,11 +343,11 @@ for (const locale of ['en', 'ru', 'es']) test(locale + ' compact account finder 
   const { TestExplorer } = compile(parentSource, parentHooks, modules)
   const { SimpleTestPicker } = compile(pickerSource, pickerHooks, modules)
   let starts = 0, pickerProps, tree
-  const render = () => {
-    parentHooks.reset(); pickerHooks.reset()
+  assertAfterIsolation(() => assert.equal(starts, 0, 'Account search must not start tests during effects or cleanup'))
+  const render = () => renderWithEffects([parentHooks, pickerHooks], () => {
     const parent = TestExplorer({ locale, audience: 'account', authenticated: true, simpleMode: true, preserveScaleFilters: true, onStart: () => { starts++ } })
     pickerProps = parent.props; tree = SimpleTestPicker(pickerProps); return tree
-  }
+  })
   render()
   await assertCompactAccountPicker(accountPickerLocator([tree]), accountPickerExpect, { locale })
   assert.equal(nodes(tree).filter(node => node.props['data-test-topic-collections']).length, 0)
@@ -339,11 +395,12 @@ function collectionChipHarness(locale, fault = null, width = 390) {
     heading = nodes(root).find(node => node.type === 'h2')
     const cards = nodes(root).filter(node => node.props['data-test-collection'])
     const expanded = root.props['data-expanded'] === 'true'
-    const collapsedCount = width <= 760 ? 4 : 8
+    const collapsedCount = fault === 'legacyCollapsedCount' ? (width <= 760 ? 4 : 8) : 2
     // Match accepted CSS: display:none removes a card and its descendants from
-    // the accessibility tree; the offscreen heading remains accessible.
+    // the accessibility tree; the visible optional heading remains accessible.
     for (const [index, card] of cards.entries()) for (const node of nodes(card)) node.cssHidden = !expanded && index >= collapsedCount
     if (fault === 'missingHeading') heading.type = 'p'
+    if (fault === 'missingOptionalQualifier') heading.props.children = heading.props.children.replace(/ \(.*\)$/, '')
     if (fault === 'hiddenHeading') heading.props['aria-hidden'] = true
     if (fault === 'wrongBinding') root.props['aria-labelledby'] = 'wrong-heading'
     if (fault === 'wrongName') cards[0].props['aria-label'] = 'Stress only'
@@ -400,7 +457,7 @@ function collectionChipHarness(locale, fault = null, width = 390) {
 }
 for (const locale of ['en', 'ru', 'es']) for (const width of [390, 760, 761, 1280]) test(locale + ' collection disclosure preserves every source chip and verifies visible accessibility at ' + width + 'px', async () => {
   const h = collectionChipHarness(locale, null, width)
-  const hidden = h.root.locator('[data-test-collection]').nth(width <= 760 ? 4 : 8)
+  const hidden = h.root.locator('[data-test-collection]').nth(2)
   await assert.rejects(h.expect(hidden).toHaveAccessibleName('A CSS-hidden chip cannot expose its aria-label'))
   await h.expect(hidden).toHaveAccessibleName('')
   await assertPublicCollectionChips(h.root, h.expect, locale, h.collections, h.width)
@@ -408,19 +465,41 @@ for (const locale of ['en', 'ru', 'es']) for (const width of [390, 760, 761, 128
   await h.expect(h.root.getByRole('heading', {name: h.heading().props.children, level: 2, exact: true})).toBeVisible()
   assert.equal(h.clicks(), 2, 'Real expansion and collapse handlers must both run')
 })
-for (const fault of ['missingHeading', 'hiddenHeading', 'wrongBinding', 'wrongName', 'wrongHiddenName', 'wrongCount', 'wrongTitle', 'description', 'missingCard', 'expandedHidden', 'expandedInaccessible', 'wrongCollapsedOrder', 'blockedExpansion', 'blockedCollapse']) test('compact collection proof rejects ' + fault, async () => {
+for (const fault of ['missingHeading', 'missingOptionalQualifier', 'legacyCollapsedCount', 'hiddenHeading', 'wrongBinding', 'wrongName', 'wrongHiddenName', 'wrongCount', 'wrongTitle', 'description', 'missingCard', 'expandedHidden', 'expandedInaccessible', 'wrongCollapsedOrder', 'blockedExpansion', 'blockedCollapse']) test('compact collection proof rejects ' + fault, async () => {
   const h = collectionChipHarness('en', fault)
   await assert.rejects(assertPublicCollectionChips(h.root, h.expect, 'en', h.collections, h.width))
 })
-test('collection heading stays accessible offscreen; visible chip rows and real interaction checks remain strict', () => {
+test('visible optional heading and two-chip collapsed layout keep expansion and interaction checks strict', () => {
   const css = read('components/app/simple-test-picker.module.css')
   const rule = css.match(/\.curatedSrOnly\s*\{([^}]+)\}/)?.[1]
   assert.ok(rule)
   for (const declaration of [/position:\s*absolute/, /width:\s*1px/, /height:\s*1px/, /clip:\s*rect\(0, 0, 0, 0\)/]) assert.match(rule, declaration)
   assert.doesNotMatch(rule, /display:\s*none|visibility:\s*hidden/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+9\)\s*\{\s*display:\s*none/)
-  assert.match(css, /\.curatedCard:nth-child\(n\+5\)\s*\{\s*display:\s*none/)
+  assert.match(css, /\.curatedCard:nth-child\(n\+3\)\s*\{\s*display:\s*none/)
+  assert.match(css, /\.curated\[data-expanded="true"\] \.curatedCard\s*\{\s*display:\s*flex/)
+  assert.doesNotMatch(css, /\.curatedCard:nth-child\(n\+(?:5|9)\)/)
   const helper = read('scripts/helpers/public-discovery-verifier.mjs')
   assert.match(helper, /await assertPublicCollectionChips\(root, expect, locale, collections, width\)/)
   for (const guard of ["'aria-pressed', 'true'", 'assert.deepEqual(shown,expected', 'readSelection(picker), preserved', 'toHaveURL(currentUrl)', 'assert.deepEqual(writes, []', 'expectedSearch']) assert.ok(helper.includes(guard), guard)
+})
+
+for (const name of ['./unreviewed-discovery-child', '@/lib/unreviewed-discovery-module', './unreviewed-discovery.module.css']) test('discovery module map rejects unknown import ' + name, () => {
+  assert.throws(() => compile(`import * as unreviewed from '${name}'; export const result = unreviewed.value`, hooks()), /Unexpected dependency:/)
+})
+
+test('real research directory remains an unmounted function boundary in simple-mode exploration', () => {
+  const actual = compile(read('components/app/research-directory.jsx'), hooks())
+  assert.equal(typeof actual.ResearchDirectory, 'function')
+  const source = parentSource.replace("import { ResearchDirectory } from './research-directory'", "import { ResearchDirectory } from './research-directory'; export { ResearchDirectory }")
+  assert.notEqual(source, parentSource)
+  const loaded = compile(source, hooks(), modules)
+  assert.equal(typeof loaded.ResearchDirectory, 'function')
+  assert.equal(loaded.ResearchDirectory.toString(), actual.ResearchDirectory.toString(), 'The strict map loads independently compiled real research source, not a no-op leaf')
+  const directory = actual.ResearchDirectory({ locale: 'en' })
+  assert.equal(directory.props['data-research-directory'], true)
+  assert.ok(nodes(directory).some(node => node.type === 'h3' && accessibleText(node) === 'Scientific test reference library'))
+  assert.equal(nodes(directory).filter(node => node.type === 'button').length, 0, 'Initial research metadata has no questionnaire Start action')
+  const tree = loaded.TestExplorer({ locale: 'en', audience: 'guest', simpleMode: true })
+  assert.equal(tree.type, 'SimpleTestPicker')
+  assert.equal(nodes(tree).some(node => node.type === loaded.ResearchDirectory), false)
 })

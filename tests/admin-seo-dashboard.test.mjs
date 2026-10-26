@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { sourceFixture, blocked, icons, css, link, textContent } from "./helpers/current-navigation-fixture.mjs";
 import { isPublicSeoPath, searchDateRange, serviceAccountReady, readSearchMetrics, verifiedSeoBaseline } from "../lib/seo/admin-dashboard-data.mjs";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -18,13 +19,40 @@ test("SEO access is gated by same signed admin session as the existing cabinet",
   assert.match(exportRoute, /noindex, nofollow/);
 });
 
-test("SEO admin is discoverable in cabinet and top navigation, not public navigation", () => {
-  const home = read("components/practitioner-cabinet.jsx");
-  const nav = read("components/prescription-admin-header.jsx");
-  assert.match(home, /href:'\/admin\/seo'/);
-  assert.match(nav, /href="\/admin\/seo"/);
-  assert.match(home, /SEO-аналитика/);
-  assert.match(home, /SEO Analytics/);
+test("SEO remains discoverable through the real owner tools header and Marketing route", () => {
+  // #1495 intentionally removed duplicate marketing cards from /admin/tools.
+  for (const locale of ["en", "ru"]) {
+    const fixture = sourceFixture({ document: { cookie: "fixture-locale=" + locale },
+      window: { addEventListener() {}, removeEventListener() {} } });
+    const uiLocale = { readUiLocale: () => locale, saveUiLocale: blocked };
+    const { PrescriptionAdminHeader } = fixture.load(read("components/prescription-admin-header.jsx"), "header.jsx", {
+      "next/link": link, "@/app/admin/logout/actions": { logout: blocked }, "@/lib/ui-locale": uiLocale,
+    }, { exports: ["PrescriptionAdminHeader"] });
+    const { PractitionerCabinet } = fixture.load(read("components/practitioner-cabinet.jsx"), "cabinet.jsx", {
+      "next/link": link, "@/components/prescription-admin-header": { PrescriptionAdminHeader },
+      "@/lib/ui-locale": uiLocale, "./practitioner-cabinet.module.css": css,
+      "lucide-react": icons("Archive BadgeCheck ChevronDown ChevronRight FileText Film Headphones Images Inbox PlusCircle ReceiptText Users"),
+    }, { exports: ["PractitionerCabinet"] });
+    const cabinet = fixture.mount(PractitionerCabinet, {});
+    const header = cabinet.one(node => node.type === PrescriptionAdminHeader);
+    assert.equal(header.props.compactMarketing, undefined);
+    const marketing = cabinet.one(node => node.type === "a" && node.props.href === `/${locale}/app/practice?panel=marketing`);
+    assert.match(textContent(marketing), locale === "ru" ? /Маркетинг/ : /Marketing/);
+    for (const compactMarketing of [false, true]) {
+      const navigation = fixture.mount(PrescriptionAdminHeader, { ...header.props, initialLocale: locale, compactMarketing });
+      const seo = navigation.one(node => node.type === "a" && node.props.href === "/admin/seo");
+      assert.equal(textContent(seo), "SEO");
+      if (compactMarketing) {
+        navigation.one(node => node.type === "a" && node.props.href === `/${locale}/app/practice?panel=marketing`);
+        assert.equal(navigation.nodes().filter(node => node.type === "details").length, 0);
+      } else {
+        const more = navigation.one(node => node.type === "details");
+        assert.ok(textContent(more).includes("SEO"));
+      }
+    }
+    fixture.assertNoExternalOperations();
+  }
+  assert.doesNotMatch(read("components/public-site-header.tsx"), /\/admin\/seo/);
 });
 
 test("SEO metrics are sourced, with accurate distinctions between two indexing reports", () => {

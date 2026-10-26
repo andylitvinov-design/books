@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { jsx, nodes, sourceModule, denied } from "./helpers/current-source-render.mjs";
 
 const read = (...segments) => readFileSync(path.join(process.cwd(), ...segments), "utf8");
 
@@ -14,10 +15,7 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   assert.match(services, /<PersonalTestimonials locale=\{locale as Locale\} variant="services"/);
   assert.ok(home.indexOf("PersonalTestimonials locale") < home.indexOf('className="service-home-about"'));
   assert.ok(services.indexOf("PersonalTestimonials locale") > services.indexOf('<ServicesIntroMedia'));
-  // Conversion-first Services intentionally presents the booking action in the first screen.
-  // Genuine customer stories follow the offers + intro media rather than delaying the booking CTA.
   assert.ok(services.indexOf('<PublicConsultationCta locale=') < services.indexOf('<ServicesStudioOffers'));
-  assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
   assert.ok(services.indexOf('<ServicesStudioOffers') < services.indexOf("PersonalTestimonials locale"));
   assert.match(testimonials, /<HomeTestimonialMore/);
   const lazy = read("components", "home-testimonial-more.tsx");
@@ -25,6 +23,67 @@ test("homepage keeps four matching-audio videos; Services uses four and preserve
   assert.match(testimonials, /data-more-services-testimonials/);
   assert.match(extra, /<PageVideo slot="consultation" locale=\{locale\} \/>/);
   assert.match(extra, /id="method-videos" data-services-methods lang=\{locale\} open/);
+});
+
+
+async function assertServicesTestimonials(source = read("app", "[locale]", "services", "page.tsx")) {
+  const imports = {
+    "react/jsx-runtime": jsx,
+    "next/navigation": { notFound: denied, redirect: denied },
+    "@/components/public-site-header": { PublicSiteHeader: "site-header" },
+    "@/components/services-conversion-hero": { ServicesConversionHero: "service-navigation" },
+    "@/components/services-explorer-state": { ServicesExplorerProvider: "service-explorer" },
+    "@/components/services-studio-offers": { ServicesStudioOffers: "service-offers" },
+    "@/components/services-studio-extras": { ServicesIntroMedia: "intro", ServicesMethodVideos: "methods", ServicesDirectoryInvitation: "directory" },
+    "@/components/personal-testimonials": { PersonalTestimonials: "testimonials" },
+    "@/components/public-consultation-cta": { PublicConsultationCta: "consultation" },
+    "@/components/compact-lead-capture": { CompactLeadCapture: "capture" },
+    "@/lib/commerce/wise-payments": { wisePaymentsEnabled: () => false },
+    "@/lib/commerce/paypal-personal": { personalPayPalEnabled: () => false },
+    "@/data/remedies": { isSupportedLocale: locale => ["en", "ru"].includes(locale), getHomeopathyLocaleParams: () => [{ locale: "en" }, { locale: "ru" }] },
+    "@/data/site-metadata": { metadataBaseFor: () => new URL("https://synthetic.invalid") },
+  };
+  const Page = sourceModule(source, "app/[locale]/services/page.tsx", imports).default;
+  const visible = tree => {
+    if (Array.isArray(tree)) return tree.flatMap(visible);
+    if (!tree || typeof tree !== "object" || !("type" in tree)) return [];
+    const p = tree.props;
+    if (p.hidden || p["aria-hidden"] === true || p["aria-hidden"] === "true" || p.style?.display === "none" || p.style?.visibility === "hidden") return [];
+    return [tree, ...visible(p.children)];
+  };
+  const order = ["service-navigation", "consultation", "service-offers", "intro", "testimonials", "methods", "directory"];
+  for (const locale of ["en", "ru"]) {
+    const tree = await Page({ params: Promise.resolve({ locale }) });
+    const parts = visible(tree).filter(node => order.includes(node.type));
+    assert.deepEqual(parts.map(node => node.type), order,
+      "Services keeps navigation, paid selector, offers, intro, then visible testimonial evidence");
+    for (const part of parts) assert.equal(part.props.locale, locale, "Every section preserves the selected locale");
+    const consultation = parts.find(node => node.type === "consultation");
+    assert.equal(consultation.props.id, "consultation", "Navigation still resolves the paid selector anchor");
+    assert.equal(consultation.props.serviceBooking, true, "Keep the actual priced booking selector, not a generic CTA");
+    const testimonial = parts.find(node => node.type === "testimonials");
+    assert.equal(testimonial.props.variant, "services", "Keep the four-video Services testimonial role");
+    assert.equal(nodes(tree).filter(node => node.type === "testimonials").length, 1, "No duplicate hidden testimonial block");
+  }
+}
+
+test("Services deliberately places booking and offers before intro and testimonial evidence", () => assertServicesTestimonials());
+
+test("Services composition rejects missing booking, hidden testimonials and stale placement", async () => {
+  const original = read("app", "[locale]", "services", "page.tsx");
+  const intro = '<ServicesIntroMedia locale={locale as Locale} />';
+  const testimonial = '<PersonalTestimonials locale={locale as Locale} variant="services" />';
+  for (const [before, after, reason] of [
+    ['id="consultation" serviceBooking ', 'id="consultation" serviceBooking={false} ', /priced booking selector/],
+    ['id="consultation" serviceBooking ', 'id="wrong" serviceBooking ', /paid selector anchor/],
+    [testimonial, '<div hidden>' + testimonial + '</div>', /then visible testimonial evidence/],
+    [intro + "\n      " + testimonial, testimonial + "\n      " + intro, /then visible testimonial evidence/],
+    [testimonial, testimonial.replace('variant="services"', 'variant="home"'), /Services testimonial role/],
+  ]) {
+    assert.ok(original.includes(before), "Mutation targets actual Services markup");
+    await assert.rejects(assertServicesTestimonials(original.replace(before, after)),
+      error => error.code === "ERR_ASSERTION" && reason.test(error.message));
+  }
 });
 
 test("homepage previews four sourced videos and preserves all 12 originals behind the disclosure", () => {

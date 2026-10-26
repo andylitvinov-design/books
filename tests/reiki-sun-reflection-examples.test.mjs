@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { assertCurrentReviewCarousel, assertCurrentReviewTapTargets } from './helpers/reiki-current-contracts.mjs'
 import { readFileSync } from 'node:fs'
 
 const read = (file) => readFileSync(new URL('../' + file, import.meta.url), 'utf8')
@@ -26,15 +27,10 @@ test('Flight to the Sun has four individually browsable, complete anonymous exam
 })
 
 test('Sun examples hide unsupported video-comments links and use narrower, tap-safe mobile arrows', () => {
-  assert.match(learner, /const showVideoComments = slide\.id !== "flight-voices" && Boolean\(youtubeId\)/)
-  assert.match(learner, /\{\(currentReview\?\.sourcePath \|\| showVideoComments\) \? \(/)
-  assert.match(learner, /\{showVideoComments \? \(/)
-  assert.match(learner, /<ArrowLeft size=\{18\}/)
-  assert.match(learner, /<ArrowRight size=\{18\}/)
+  assertCurrentReviewCarousel()
   assert.match(styles, /\.voicesCard \{[\s\S]*?padding: 10px 9px 8px;/)
   assert.match(styles, /\.voiceQuote \{[\s\S]*?padding: 3px 0 0 13px;/)
-  assert.match(styles, /\.voicesControls button \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/)
-  assert.match(styles, /\.voicesControls button::before \{[\s\S]*?inset: 5px;/)
+  assertCurrentReviewTapTargets(styles)
 })
 
 test('Anonymous examples do not create false source-page links or affect course progress', () => {

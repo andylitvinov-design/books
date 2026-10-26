@@ -1,3 +1,4 @@
+import { beginPublicDiscoverySearchDiagnostics } from './public-discovery-search-diagnostics.mjs'
 import assert from 'node:assert/strict'
 import { PORTRAIT_SECTORS } from '../../lib/assessments/portrait-sectors.js'
 import { availableTestCollections } from '../../lib/assessments/test-collections.js'
@@ -6,9 +7,9 @@ import { groupViaRecommendations } from '../../lib/assessments/via-family.js'
 import { getCompactNavigation } from '../../lib/site-navigation-model.js'
 
 const COPY = {
-  en: { collections: 'Test collections by topic', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
-  ru: { collections: 'Подборки тестов по темам', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
-  es: { collections: 'Colecciones de pruebas por tema', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
+  en: { collections: 'Test collections by topic (optional)', more: 'Show all collections', less: 'Show fewer collections', browse: 'Prioritize collection', raysMore: 'Show 7 more scales', raysLess: 'Show fewer scales' },
+  ru: { collections: 'Подборки тестов по темам (необязательно)', more: 'Показать все подборки', less: 'Свернуть подборки', browse: 'Повысить приоритет подборки', raysMore: 'Показать ещё 7 шкал', raysLess: 'Свернуть остальные шкалы' },
+  es: { collections: 'Colecciones de pruebas por tema (opcional)', more: 'Mostrar todas las colecciones', less: 'Mostrar menos', browse: 'Priorizar colección', raysMore: 'Ver 7 escalas más', raysLess: 'Mostrar menos escalas' },
 }
 const selectedKeys = picker => picker.locator('[data-public-selected-tests] [data-selected-test-key]')
 const readSelection = picker => selectedKeys(picker).evaluateAll(nodes => nodes.map(node => node.dataset.selectedTestKey))
@@ -28,7 +29,7 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
     ru: {home:'Домой',analysis:'Разбор',courses:'Курсы',profile:'Профиль',alchemy:'Алхимия души',pro:'Pro',temple:'Поддержка'},
     es: {home:'Inicio',analysis:'Análisis',courses:'Cursos',profile:'Mi perfil',alchemy:'Alquimia del Alma',pro:'Pro',temple:'Apoyo holístico'},
   }
-  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim() }))), destinations.map(({ id, href }) => ({ id, href, label: visibleLabels[locale][id] })))
+  assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({ id: node.getAttribute('data-nav-item'), href: node.getAttribute('href'), label: node.textContent.trim(), ariaLabel: node.getAttribute('aria-label') }))), destinations.map(({ id, href, ariaLabel }) => ({ id, href, label: visibleLabels[locale][id], ariaLabel })))
   await expect(bar.locator('a[aria-current="page"]')).toHaveCount(1)
   await expect(bar.locator('a[aria-current="page"]')).toHaveAttribute('data-nav-item', 'profile')
 }
@@ -36,7 +37,7 @@ export async function assertPublicDiscoveryChrome(page, expect, locale) {
 export async function assertPublicCollectionChips(root, expect, locale, collections, width) {
   const copy = COPY[locale]
   assert.ok(Number.isFinite(width) && width > 0, 'Use the actual viewport for collapsed collection visibility')
-  const collapsedCount = Math.min(width <= 760 ? 4 : 8, collections.length)
+  const collapsedCount = Math.min(2, collections.length)
   await expect(root).toBeVisible()
   await expect(root).toHaveAttribute('data-expanded', 'false')
   await expect(root).toHaveAttribute('aria-labelledby', 'hh-test-curated-heading')
@@ -119,6 +120,7 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
   const preserved = await readSelection(picker)
   const currentUrl = page.url()
   const writes = []
+  let searchDiagnostics
   const observe = request => {
     const url = new URL(request.url())
     if (url.pathname.startsWith('/api/app/') && request.method() !== 'GET') writes.push(url.pathname)
@@ -154,12 +156,14 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     const sleep = root.locator('[data-test-collection="sleep"]')
     await sleep.click()
     await expect(sleep).toHaveAttribute('aria-pressed', 'true')
+    searchDiagnostics = await beginPublicDiscoverySearchDiagnostics(page, locale)
     const search = picker.locator('#hh-test-hero-search')
     const query = locale === 'ru' ? 'Любовь' : locale === 'es' ? 'amor' : 'Love'
     await search.fill(query)
     await search.press('Enter')
     const sleepCollection = collections.find(item=>item.id==='sleep')
-    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced', focus: sleepCollection.focus, collectionId:'sleep', collectionFocus:sleepCollection.focus })
+    const searchFocus = [...new Set([...(initialPreferences.focus || []), ...sleepCollection.focus])]
+    const searchable = rankPublicTestMatches(filterExplorerEntries(entries, { availability: 'available', kinds: [], maxMinutes: 0 }), { depth: initialPreferences.depth || 'balanced', focus: searchFocus, collectionId:'sleep', collectionFocus:sleepCollection.focus })
     const expectedSearch = searchPublicTestEntries(groupViaRecommendations(searchable, new Set(preserved), false).visible, query).slice(0, 5).map(entry => entry.key)
     assert.ok(expectedSearch.length > 0)
     await expect.poll(() => picker.locator('[data-test-match]').evaluateAll(nodes => nodes.map(node => node.dataset.testMatch))).toEqual(expectedSearch)
@@ -174,7 +178,10 @@ export async function exercisePublicCollections(page, expect, locale, initialPre
     await root.locator('[data-test-collection="sexuality"]').click()
     await more.click()
     assert.deepEqual(writes, [], 'Collection browsing must not create runs, save intents or account writes')
-  } finally { page.off('request', observe) }
+  } finally {
+    searchDiagnostics?.dispose()
+    page.off('request', observe)
+  }
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), locale + ' collection picker fits the viewport')
 }
 

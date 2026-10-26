@@ -92,7 +92,7 @@ function requestDate(value, locale) {
 }
 
 export default function PracticeRequestsOverview({
-  requests = [], services = [], locale = 'en', canAdd = true, onAddService, onViewAll,
+  requests = [], services = [], locale = 'en', canAdd = true, showServiceAction = true, onAddService, onViewAll,
 }) {
   const c = COPY[locale] || COPY.en
   const summary = summarizePracticeRequests(requests)
@@ -119,11 +119,11 @@ export default function PracticeRequestsOverview({
             <strong>{c.emptyTitle}</strong>
             <p>{c.emptyText}</p>
           </div>
-          {canAdd
+          {showServiceAction && (canAdd
             ? <button className={styles.addButton} type="button" onClick={onAddService}>
                 <Plus size={17} aria-hidden="true" />{c.add}<ArrowRight size={17} aria-hidden="true" />
               </button>
-            : <p className={styles.quota}>{c.quota}</p>}
+            : <p className={styles.quota}>{c.quota}</p>)}
         </div>
       : <>
           <div className={styles.summary} aria-label={c.title}>

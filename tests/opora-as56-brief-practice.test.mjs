@@ -1,8 +1,10 @@
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaExperienceDay,oporaExperienceGuide,oporaExperienceGuidesValid,OPORA_EXPERIENCE_DESIGN_VERSION} from '../lib/inner-growth/opora-as56-experience-guides.js'
+import {oporaAs59Day} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {oporaAs58Day,oporaAs58Valid} from '../lib/inner-growth/opora-as58-one-action.js'
-import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
+import {oporaAs60Day,OPORA_EXPERIENTIAL_EDITION} from '../lib/inner-growth/opora-as60-experiential-practices.js'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,findButton,nodes,textOf} from './helpers/route-pipeline-harness.mjs'
@@ -29,12 +31,12 @@ const actions={
   ru:['посмотрите','остановите','заметьте','назовите','добавьте','произнесите','повторите','заметьте','остановите','расслабьте','назовите','скажите','произнесите','повторите'],
   es:['mira','detén','nota','nombra','añade','practica','repite','observa','detén','relaja','nombra','di','practica','repite'],
 }
-function fixture(locale,day=5,currentSession=null){
+function fixture(locale,day=5,currentSession=null,reviewOnly=false){
   const lesson=lessonFor('calm_regulation',day,locale,'standard',COURSE_ANTISTRESS_SKILLS_V7)
   const data={cycle:{id:'00000000-0000-4000-8000-000000001056',day,durationDays:14},programme:{id:'stress'},lesson,currentSession}
   const original=structuredClone(data)
   let saves=0,closes=0
-  const h=mount('opora-experience-player',{locale,data,onClose(){closes++},onFinish(){},onSession:async()=>{saves++;return true}})
+  const h=mount('opora-experience-player',{locale,data,reviewOnly,onClose(){closes++},onFinish(){},onSession:async()=>{saves++;return true}})
   return {h,data,original,get saves(){return saves},get closes(){return closes},
     async click(label){const b=findButton(h.tree,label);assert.ok(b,label);await b.props.onClick();await h.settle()}}
 }
@@ -57,15 +59,22 @@ for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++){
     assert.deepEqual(instruction.toLocaleLowerCase().split(/[^\p{L}]+/u).filter(x=>verbs.includes(x)),[actions[locale][day-1]])
     assert.doesNotMatch(instruction,/экзамен|обязан|должны|\bquiz\b|\bexam\b|\byou must\b|\bdebes\b/iu)
   })
-  test(`AS5.7 ${locale} day ${day}: actual player preserves owner title, practice and voluntary hint without writes`,async()=>{
+  test(`AS5.7 ${locale} day ${day}: fresh AS6.0 player preserves current title, practice and voluntary hint without writes`,async()=>{
     const f=fixture(locale,day),t=words[locale]
     try{
       // The acceptance screen is second for every day. Day 1 still keeps its
       // five original opening screens before arriving at practical work.
       await advanceOporaTo(f.h,'practice',t.next)
-      const current=oporaAs60VariedDay(day,locale)
-      assert.ok(textOf(f.h.tree).includes(current.title),'Current 3-step practice has its own day title')
-      assert.ok(textOf(f.h.tree).includes(current.practice),'Practice card shows the real AS-6.0 experiment')
+      const current=oporaAs60VariedDay(day,locale),title=current.title
+      assert.ok(textOf(f.h.tree).includes(title))
+      const practice=nodes(f.h.tree).find(n=>n.props?.['data-opora-one-daily-practice']===day)
+      assert.ok(practice,'Exactly rendered production practice text is present')
+      assert.equal(textOf(practice.props.children[0]),current.practice)
+      assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-practical-skills-version']===OPORA_EXPERIENTIAL_EDITION))
+      assert.notEqual(textOf(practice.props.children[0]),oporaAs58Day(day,locale).practice,
+        'Fresh lessons never revert to the archived AS5.8 exercise')
+      assert.notEqual(textOf(practice.props.children[0]),oporaAs59Day(day,locale).practice,
+        'Fresh lessons never revert to the archived AS5.9 exercise')
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-course-visual-theme']===OPORA_EXPERIENCE_DESIGN_VERSION))
       assert.equal(findButton(f.h.tree,t.help).props['aria-expanded'],false)
       await f.click(t.help)
@@ -138,3 +147,21 @@ test('AS5.7 validates current trilingual content without resurrecting superseded
   assert.match(oporaExperienceGuide(12,'en'),/thought that…/u)
   assert.match(oporaExperienceGuide(12,'es'),/pensamiento de que…/u)
 })
+
+// The edition update is not permission to rewrite a previously saved lesson.
+for(const locale of ['ru','en','es'])for(let day=1;day<=14;day++)
+  test(`AS5.8 ${locale} day ${day}: saved review preserves original exercise and never writes`,async()=>{
+    const session={signals:{opora54:{answers:{experienceEdition:'as-5.8-one-action-v1'}}}}
+    const f=fixture(locale,day,session,true)
+    try{
+      await advanceOporaTo(f.h,'practice',words[locale].next)
+      const practice=nodes(f.h.tree).find(n=>n.props?.['data-opora-one-daily-practice']===day)
+      assert.ok(practice)
+      assert.equal(textOf(practice.props.children[0]),oporaAs58Day(day,locale).practice)
+      assert.ok(!nodes(f.h.tree).some(n=>n.props?.['data-opora-practical-skills-version']))
+      if(oporaAs59Day(day,locale).practice!==oporaAs58Day(day,locale).practice)
+        assert.ok(!textOf(f.h.tree).includes(oporaAs59Day(day,locale).practice),
+          'Saved AS5.8 is not silently upgraded to AS5.9')
+      assert.equal(f.saves,0);assert.deepEqual(f.data,f.original)
+    }finally{f.h.unmount()}
+  })

@@ -1543,6 +1543,14 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .root[data-temple-mode="true"] .heroUtility .freeTestLink { font-size: 12px; }
 }
 
+
+/* On 320px Ideas, the switchboard adds its own 14px inset around Temple.
+   Reclaim 6px per side only for its quote/result card; keep the surrounding
+   controls, standalone Temple composition and all wider layouts unchanged. */
+@media (max-width: 360px) {
+  .root [data-tests-coaching-temple] > .results { margin-inline: -6px; }
+}
+
 /* Holistic Support: compact second row for meditation and personal talismans. */
 [data-holistic-entry="true"] .holisticQuickLink{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:44px;border:1px solid #dcc9b6;border-radius:12px;padding:8px 10px;background:#faf1e5;color:#72513b;text-align:center;text-decoration:none;font-size:12px;font-weight:700;line-height:1.25}
 [data-holistic-entry="true"] .holisticQuickLink:hover,[data-holistic-entry="true"] .holisticQuickLink:focus-visible{border-color:#926a4e;background:#f2e5d4}

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { withoutSourceComments } from './helpers/source-comments.mjs'
 
 test('report invitation uses fragment exchange, report-scoped viewer and explicit save intent', async () => {
   const [projection, flow, view, appApi, page, migration, worker, middleware] = await Promise.all([
@@ -80,7 +81,7 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
     assert.equal(source.split(sessionTargetCall).length - 1, 2)
     assert.equal(source.split(supportDraftRead).length - 1, 2)
     assert.equal(source.split(supportDraftDelete).length - 1, 1)
-    assert.doesNotMatch(source.replaceAll(sessionTargetCall, '').replaceAll(supportDraftRead, '').replaceAll(supportDraftDelete, ''), /sessionStorage|localStorage/)
+    assert.doesNotMatch(withoutSourceComments(source).replaceAll(sessionTargetCall, '').replaceAll(supportDraftRead, '').replaceAll(supportDraftDelete, ''), /sessionStorage|localStorage/)
   }
   assertNoAssessmentStorage(workspace)
   for (const forbidden of [
@@ -100,3 +101,37 @@ test('Cabinet guest flow is server-backed and never auto-imports on ordinary log
   assert.doesNotMatch(clientPage, /redirect\(/)
   assert.match(clientPage, /legacySelector/)
 })
+
+
+test('storage source comments cannot hide executable access or comment-like token text', () => {
+  for (const source of ["window.sessionStorage.clear()","window.localStorage.clear()","window[\"sessionStorage\"].clear()","window['localStorage'].clear()","const {sessionStorage: storage} = window","const a=\"//\"; window.sessionStorage.clear()","const a=\"/*\"; window.localStorage.clear(); const b=\"*/\"","const s=\"//sessionStorage\";","const s=\"/*localStorage*/\";","const s=/\\/\\/sessionStorage/;","const s=/\\/\\*localStorage\\*\\//;","const s=`//sessionStorage ${window.localStorage}`;","const s=<div>/*sessionStorage*/<span title=\"//localStorage\"/></div>;"]) {
+    assert.match(withoutSourceComments(source), /sessionStorage|localStorage/);
+  }
+  for (const source of ["const s=\"//sessionStorage\";","const s=\"/*localStorage*/\";","const s=/\\/\\/sessionStorage/;","const s=/\\/\\*localStorage\\*\\//;","const s=`//sessionStorage ${window.localStorage}`;","const s=<div>/*sessionStorage*/<span title=\"//localStorage\"/></div>;"]) {
+    assert.equal(withoutSourceComments(source), source);
+  }
+  for (const source of ["// sessionStorage\nconst x=1;","/* localStorage */ const x=1;","const x=<div>{/* sessionStorage */}</div>;"]) {
+    const stripped = withoutSourceComments(source);
+    assert.equal(stripped.length, source.length);
+    assert.doesNotMatch(stripped, /sessionStorage|localStorage/);
+  }
+  for (const source of ["const = ;","const x = \"unterminated","const x = <div>","/* unterminated"]) {
+    assert.throws(() => withoutSourceComments(source));
+  }
+});
+test('JSDoc stays trivia and Unicode line terminators never disappear', () => {
+  const docs = '/** @type {sessionStorage} */ const x=1;';
+  assert.doesNotMatch(withoutSourceComments(docs), /sessionStorage/);
+  assert.match(withoutSourceComments(docs + ' window.localStorage.clear();'), /localStorage/);
+  const source = '/* a\u2028sessionStorage\u2029c */ const x=1;';
+  const stripped = withoutSourceComments(source);
+  assert.equal(stripped.length, source.length);
+  for (const terminator of ['\u2028', '\u2029'])
+    assert.equal(stripped.indexOf(terminator), source.indexOf(terminator));
+  assert.doesNotMatch(stripped, /sessionStorage/);
+  for (const terminator of ['\u2028', '\u2029']) {
+    const boundary = '// comment' + terminator + 'window.sessionStorage.clear();';
+    assert.match(withoutSourceComments(boundary), /window\.sessionStorage\.clear\(\)/);
+    assert.equal(withoutSourceComments(boundary).indexOf(terminator), boundary.indexOf(terminator));
+  }
+});

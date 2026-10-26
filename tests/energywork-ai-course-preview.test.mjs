@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { sourceFixture, blocked, icons, css as cssModule, link, textContent, assertVoicesBinding } from './helpers/current-navigation-fixture.mjs'
 import { readFileSync } from 'node:fs'
 import { energyworkSequence } from '../data/academy/energywork-ai-schema.js'
 
@@ -46,10 +47,74 @@ test('New peer voices and celebrations appear between the existing lessons', () 
   assert.match(learner,/data-reiki-milestone-choices/)
   assert.match(learner,/data-energywork-next/)
   assert.match(learner,/data-reiki-tomorrow-choice/)
-  assert.match(learner,/data-meditation-voices/)
+  // #1631 deliberately removed Video comments on all four review slides.
+  assertVoicesBinding(learner)
+  assert.doesNotMatch(learner, /voicesComments|data-review-video-comments/)
   assert.doesNotMatch(learner,/data-meditation-feeling/)
   assert.match(learner,/t\.saveReview/)
   assert.match(css,/flex-direction:row;align-items:stretch;gap:7px/)
+})
+
+test('Actual peer review carousel preserves localized quotes, optional sources and independent arrows', () => {
+  const fixture = sourceFixture()
+  const forbidden = names => fixture.forbiddenModule(names.split(' '))
+  const { MeditationVoices } = fixture.load(learner, 'learner.tsx', {
+    'next/link': link, 'next/image': { default: blocked },
+    'lucide-react': icons('ArrowLeft ArrowRight Award BookOpen Check ClipboardCopy Clock3 Compass HandHeart Heart LockKeyhole PlayCircle Sparkles Sprout MessageCircle ExternalLink ChevronDown'),
+    './energywork-ai-learner.module.css': cssModule,
+    '@/components/academy-video-player': forbidden('AcademyVideoPlayer'), '@/components/reiki-lesson-intro-audio': forbidden('ReikiLessonIntroAudio'),
+    '@/components/reiki-course-referral-share': forbidden('ReikiCourseReferralShare'),
+    '@/components/reiki-initiation-photo': forbidden('ReikiInitiationPhoto ReikiPhoto'), '@/lib/app/client-fetch': forbidden('appFetch'),
+    '@/lib/whatsapp-enquiry': forbidden('whatsappEnquiryUrl telegramEnquiryUrlFromWhatsApp'), '@/data/academy/english-guided-meditations': forbidden('englishGuidedMeditations'),
+    '@/data/academy/reiki-practitioner-lesson-videos': forbidden('reikiPractitionerLessonVideos ReikiPractitionerLessonVideo'), './ocean-practice-audio': forbidden('useOceanPracticeAudio'),
+    './ocean-sound-toggle': forbidden('default'), '@/data/academy/energywork-ai-curriculum': forbidden('ENERGYWORK_COURSE_ID ENERGYWORK_COURSE_VERSION energyworkPhases energyworkLessons energyworkInitiationRequirements energyworkPathChoices energyworkSlides EnergyworkLocale EnergyworkPath EnergyworkSlide'),
+    '@/data/academy/energywork-first-lesson': forbidden('ENERGYWORK_FIRST_LESSON_NEXT ENERGYWORK_FIRST_LESSON_STORAGE_KEY energyworkCreateFirstLessonHandoff energyworkReadFirstLessonHandoff'), '@/data/academy/energywork-ai-schema': forbidden('energyworkLessonRanges energyworkAdvanceAlreadyStored ENERGYWORK_REVIEW_MIN_CHARS ENERGYWORK_TANTRA_STUDY_QUESTION_IDS ENERGYWORK_KUNDALINI_STUDY_QUESTION_IDS ENERGYWORK_YGGDRASIL_STUDY_QUESTION_IDS energyworkReikiStudyAnswerComplete energyworkTantraStudyAnswerComplete energyworkCombinedTantraAnswer'),
+    '@/data/academy/reiki-initiation-request.js': forbidden('readReikiInitiationRequest writeReikiInitiationRequest reikiInitiationRequestValid formatReikiInitiationRequest REIKI_PERSONAL_SESSIONS'),
+  }, { exports: ['EnergyworkAiLearner'], expose: ['MeditationVoices'] })
+  for (const locale of ['en', 'ru']) {
+    for (const id of ['flight-voices', 'tan-voices', 'kun-voices', 'ygg-voices']) {
+      // Synthetic testimonials only; no real learner records or provider requests.
+      const entries = [0, 1, 2].map(index => ({ id: 'fixture-' + index,
+        quote: { en: 'Full fictional reflection ' + index, ru: 'Полный вымышленный отзыв ' + index },
+        attribution: { en: 'Fictional learner ' + index, ru: 'Вымышленный участник ' + index },
+        ...(index === 1 ? { sourcePath: 'fixture-original-review' } : {}),
+      }))
+      const slide = { id, kind: 'voices', testimonials: entries }
+      const original = JSON.stringify(slide)
+      const view = fixture.mount(MeditationVoices, { slide, locale })
+      function check(index) {
+        const quote = view.one(node => Object.hasOwn(node.props, 'data-review-fulltext'))
+        assert.equal(textContent(quote), entries[index].quote[locale])
+        assert.equal(quote.props.role, 'region'); assert.equal(quote.props.tabIndex, 0)
+        assert.equal(quote.props['aria-label'], locale === 'ru' ? 'Полный текст отзыва' : 'Full learner review')
+        assert.equal(textContent(view.one(node => node.type === 'cite')), entries[index].attribution[locale])
+        const links = view.nodes().filter(node => node.type === 'a')
+        assert.equal(links.length, index === 1 ? 1 : 0)
+        if (index === 1) {
+          assert.equal(links[0].props.href, '/' + locale + '/academy/fixture-original-review')
+          assert.equal(textContent(links[0]), locale === 'ru' ? 'Источник отзыва' : 'Original review')
+        }
+        const buttons = view.nodes().filter(node => node.type === 'button')
+        assert.equal(buttons.length, 2)
+        for (const button of buttons) { assert.equal(button.props.type, 'button'); assert.ok(button.props['aria-label']) }
+        assert.equal(JSON.stringify(slide), original, 'Review arrows must not alter the lesson or source entries')
+      }
+      const next = node => Object.hasOwn(node.props, 'data-review-next')
+      const prev = node => Object.hasOwn(node.props, 'data-review-prev')
+      check(0); view.click(next); check(1); view.click(next); check(2); view.click(next); check(0)
+      view.click(prev); check(2); view.click(prev); check(1); view.click(prev); check(0)
+    }
+    for (const testimonials of [undefined, [], [{ id: 'only', quote: { en: 'One fictional quote', ru: 'Один вымышленный отзыв' }, attribution: { en: 'Fictional', ru: 'Вымышленный' } }]]) {
+      const view = fixture.mount(MeditationVoices, { slide: { id: 'flight-voices', testimonials }, locale })
+      assert.equal(view.nodes().filter(node => node.type === 'button' || node.type === 'a').length, 0)
+      if (testimonials?.length) {
+        assert.equal(textContent(view.one(node => Object.hasOwn(node.props, 'data-review-fulltext'))), testimonials[0].quote[locale])
+        assert.equal(textContent(view.one(node => node.type === 'cite')), testimonials[0].attribution[locale])
+      }
+      if (!testimonials?.length) assert.ok(view.nodes().some(node => textContent(node).includes(locale === 'ru' ? 'Подтверждённых отзывов' : 'No verified comments')))
+    }
+  }
+  fixture.assertNoExternalOperations()
 })
 
 test('Videos reuse the four approved original source recordings; no render or autoplay', () => {
@@ -261,5 +326,21 @@ test('All five Reiki introductions say what to expect in simple, compact EN/RU c
       assert.ok(en.length <= 45, id + ' EN topic wraps excessively')
       assert.ok(ru.length <= 51, id + ' RU topic wraps excessively')
     }
+  }
+})
+
+test('JSX fixture rejects erased unknown imports, unknown exports and caught forbidden boundaries', () => {
+  for (const [source, imports] of [
+    ['import { missing } from "allowed"; export const value = missing;', { allowed: { known: true } }],
+    ['import { unused } from "unknown"; export const value = 1;', {}],
+    ['import missing from "allowed"; export const value = 1;', { allowed: { known: true } }],
+    ['export const value = 1; export const unexpected = 2;', {}],
+  ]) assert.throws(() => sourceFixture().load(source, 'invalid.js', imports, { exports: ['value'] }))
+  for (const body of ['attempt()', 'const ignored = attempt', 'require("allowed").unknown', 'new WebSocket("wss://fixture.invalid")', 'new XMLHttpRequest()']) {
+    const fixture = sourceFixture()
+    const moduleValue = fixture.load('import { attempt } from "allowed"; export function action() { try { ' + body + '; } catch {} }',
+      'caught.js', { allowed: fixture.forbiddenModule(['attempt']) }, { exports: ['action'] })
+    moduleValue.action()
+    assert.throws(() => fixture.assertNoExternalOperations(), /deep-equal/)
   }
 })

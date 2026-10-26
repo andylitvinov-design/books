@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { assertCurrentReviewSequence, assertCurrentReviewGates } from "./helpers/reiki-current-contracts.mjs";
+import { assertCurrentTestimonialSources } from "./helpers/reiki-testimonial-source-contract.mjs";
 import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -9,19 +11,8 @@ const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
 const browser = read("scripts/verify-reiki-all-slides-browser.mjs");
 
-test("Four meditation review screens remain in the correct slots among 63 active screens", () => {
-  const ids = [...curriculum.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)];
-  assert.equal(ids.length, 63);
-  for (const sequence of [["flight-03","flight-voices","flight-04"],
-    ["tan-03","tan-voices","tan-04"],["kun-03","kun-voices","kun-04"],
-    ["ygg-03","ygg-voices","ygg-04"]]) {
-    let last = -1;
-    for (const id of sequence) {
-      const offset = curriculum.indexOf('id: "' + id + '"');
-      assert.ok(offset > last, id + " must remain after the corresponding meditation");
-      last = offset;
-    }
-  }
+test("Four meditation review screens retain their order among 64 active screens including the private photo step", () => {
+  assertCurrentReviewSequence();
 });
 
 test("All five Yggdrasil and four independently sourced Tantra reviews are available", () => {
@@ -47,7 +38,7 @@ test("Buttons switch quotes without navigating away or touching required student
   assert.match(learner, /aria-live="polite" aria-atomic="true"/);
   assert.match(learner, /t\.voicesSource/);
   assert.doesNotMatch(learner, /showVideoComments|voicesComments/, "No review screen should expose a Video comments CTA");
-  assert.match(learner, /disabled=\{busy \|\| sync === "checking" \|\| experienceMissing \|\| feedbackMissing\}/);
+  assertCurrentReviewGates();
   assert.match(browser, /Next switches quote in place/);
   assert.match(browser, /Previous restores quote/);
   assert.match(css, /\.voicesControls button:focus-visible/);
@@ -81,8 +72,7 @@ test("Full original Tantra Reiki testimonials survive without excerpt truncation
   for (const fullText of completeTexts) {
     assert.ok(tantra.includes(JSON.stringify(fullText)), "Original review must be published in full");
   }
-  assert.match(tantra, /перевод с английского/);
-  assert.match(tantra, /translated from Russian/);
+  assertCurrentTestimonialSources();
 });
 
 test("Long reviews scroll inside a labelled, focusable region on mobile", () => {

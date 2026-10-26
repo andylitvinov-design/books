@@ -1,3 +1,7 @@
+import { assertPaidServiceCards } from './helpers/services-paid-contract.mjs';
+import { createPublicServicesPageManager } from './helpers/public-services-isolation.mjs';
+import { createFreeReviewViewportIsolation } from './helpers/free-review-viewport-isolation.mjs';
+import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
 import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
@@ -16,14 +20,20 @@ const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "next-start production", console: [], pageErrors: [], devIssueOverlay: false, expectedBoundaryConsoleBlocks: 0 };
 let failure;
+const publicServices = createPublicServicesPageManager(browser, { origin });
 try {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pages = new Set();
-  const attachDiagnostics = (page) => {
+  const attachDiagnostics = (page, expectedBoundaryBlock) => {
     pages.add(page);
     page.on("console", (message) => {
+      // Exempt only an exact expected resource denial already recorded by this
+      // page's isolation boundary. Missing/unrelated console sources remain errors.
+      if (expectedBoundaryBlock?.({location: message.location(), type: message.type(), text: message.text()})) {
+        diagnostics.expectedBoundaryConsoleBlocks += 1;
+        return;
+      }
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
         try { path = new URL(message.location().url).pathname; } catch {}
@@ -54,9 +64,8 @@ try {
   };
   const visible = async (locator) => locator.waitFor({ state: "visible", timeout: 30000 });
   const createPage = async (width) => {
-    const page = await context.newPage();
+    const page = await publicServices.createPage(width);
     attachDiagnostics(page);
-    await page.setViewportSize({ width, height: 844 });
     return page;
   };
 
@@ -78,7 +87,7 @@ try {
         "Default Spanish payment details are collapsed before geometry measurement");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
-      assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
+      assertAlchemyPanelOrder(panelHeights);
       if (width <= 390) {
         if (panelHeights.some(p => p.name !== "reviews" && p.height > p.max)) {
           try {
@@ -107,7 +116,7 @@ try {
       const page = await createPage(width);
       await page.goto(origin + "/" + locale + "/services", { waitUntil: "networkidle" });
       await visible(page.locator("#services-conversion-title"));
-      // Free-first studio: three distinct no-payment paths, then five real
+      // Free-first studio: three distinct no-payment paths, then six real
       // personal offers. No secondary marketplace repeats on the landing.
       const freeCta = page.locator('[data-service-hero-cta="free"]');
       const paidCta = page.locator('[data-service-hero-cta="paid"]');
@@ -125,7 +134,7 @@ try {
       await visible(free.locator("h2#services-free-title"));
       await visible(paid.locator("h2#services-personal-title"));
       assert.equal(await free.locator('[data-services-studio-card]').count(), 3);
-      assert.equal(await paid.locator('[data-services-studio-card]').count(), 5);
+      await assertPaidServiceCards(paid.locator('[data-services-studio-card]'), locale, locale + '/services/' + width);
       assert.equal(await page.locator("#find-your-service").count(), 0,
         "Detailed practitioner search belongs on the separate directory");
       const testAction = free.locator('[data-services-studio-action="tests"]');
@@ -135,14 +144,14 @@ try {
       await visible(free.locator('a[href="/' + locale + '/courses/antistress"]'));
       assert.equal(await page.locator("h1#services-conversion-title").count(), 1);
       assert.equal(await page.evaluate(() => {
-        const selectors = ["#services-conversion-title", "#free-insights", "#solutions",
+        const selectors = ["#services-conversion-title", "#consultation", "#free-insights", "#solutions",
           "[data-services-meet]", '[data-personal-testimonials="services"]',
-          "#method-videos", "#consultation", "[data-services-directory-invitation]"];
+          "#method-videos", "[data-services-directory-invitation]"];
         const sections = selectors.map(selector => [...document.querySelectorAll(selector)]);
         if (sections.some(matches => matches.length !== 1)) return false;
         return sections.every((matches, index) => index === 0 ||
           Boolean(sections[index - 1][0].compareDocumentPosition(matches[0]) & Node.DOCUMENT_POSITION_FOLLOWING));
-      }), true, "Owner studio order: hero, 3 free, personal offers, intro, reviews, methods, booking, directory");
+      }), true, "Owner studio order: hero, booking, 3 free, personal offers, intro, reviews, methods, directory");
       await expect(page.locator("#method-videos")).toHaveAttribute("open", "",
         { timeout: 15000 });
       // Method posters are visible, while third-party players stay opt-in.
@@ -150,14 +159,28 @@ try {
         "Method videos must not eagerly load third-party players");
       await visible(page.locator('a[href="/' + locale + '/services/free-situation-review"]').first());
       await assertNoDevIssueOverlay(page, locale + "/services/" + width);
-      // Canonical header: Cabinet is immediately accessible; Books occupies the bottom bar.
+      // Canonical header: the provider-mounted My Space button controls a private dialog.
+      // Inspect its initial affordance only; do not open it or initiate private/auth reads.
       const header = page.locator("header.house-header--services");
-      const cabinetEntry = header.locator("a.site-cabinet-entry");
+      const cabinetEntry = header.locator('button.site-cabinet-entry[data-nav-item="cabinet"]');
+      await expect(header.locator(".site-cabinet-entry")).toHaveCount(1);
       await expect(cabinetEntry).toHaveCount(1);
       await visible(cabinetEntry);
-      assert.equal(await cabinetEntry.getAttribute("href"), "/" + locale + "/app", "top Cabinet opens the authenticated app");
+      await expect(cabinetEntry).toBeEnabled();
+      await expect(cabinetEntry).toHaveAttribute("type", "button");
+      await expect(cabinetEntry).toHaveAccessibleName(locale === "ru" ? "Моё пространство" : "My Space");
+      await expect(cabinetEntry).toHaveAttribute("aria-haspopup", "dialog");
+      await expect(cabinetEntry).toHaveAttribute("aria-controls", "home-personal-space-dialog");
+      await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+      const spaceDialog = page.locator("dialog#home-personal-space-dialog");
+      await expect(spaceDialog).toHaveCount(1);
+      assert.equal(await spaceDialog.evaluate(node => node.open), false, "My Space dialog is mounted but initially closed");
+      await expect(spaceDialog).toBeHidden();
+      assert.equal(await cabinetEntry.evaluate(node => node.tabIndex >= 0 &&
+        !node.closest("[inert]") && node.getAttribute("aria-disabled") !== "true" &&
+        getComputedStyle(node).pointerEvents !== "none"), true, "My Space has an enabled keyboard/pointer affordance");
       const cabinetBounds = await cabinetEntry.boundingBox();
-      assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "Cabinet entry must fit the visible header: " + locale + "/" + width);
+      assert.ok(cabinetBounds && cabinetBounds.width > 0 && cabinetBounds.height > 0 && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
@@ -167,13 +190,46 @@ try {
         "Public site menu must fit the header: " + locale + "/" + width);
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).toHaveAttribute("open", "");
-      const booksEntry = siteMenu.locator('.site-main-menu-panel a[href="/' + locale + '/books"]');
-      await expect(booksEntry).toHaveCount(1);
-      await visible(booksEntry);
-      await expect(booksEntry).toHaveText(locale === "ru" ? "Идеи" : "Ideas");
-      assert.equal(await booksEntry.getAttribute("href"), "/" + locale + "/books", "Books opens the locale-specific library books view");
-      const booksBounds = await booksEntry.boundingBox();
-      assert.ok(booksBounds && booksBounds.x >= 0 && booksBounds.x + booksBounds.width <= width + 1, "Books entry must fit the opened menu: " + locale + "/" + width);
+      // Independent current authored structure: seven visitor journeys, then public extras.
+      // Retired /books + Ideas menu expectations must not restore old runtime navigation.
+      const menuCopy = locale === "ru" ? {
+        home: "Главная", analysis: "Бесплатный разбор", courses: "Курсы", profile: "Мой профиль",
+        alchemy: "Алхимия души", pro: "Pro", temple: "Холистическая поддержка", shop: "Магазин", cart: "Корзина",
+        energy: "Тело и энергия", love: "Стресс и отношения", business: "Деньги и бизнес", library: "Библиотека",
+        events: "События", insights: "Храмовые подсказки", services: "Услуги", about: "Обо мне",
+      } : {
+        home: "Home", analysis: "Free Analysis", courses: "Courses", profile: "My Profile",
+        alchemy: "Psychic Alchemy", pro: "Pro", temple: "Holistic Support", shop: "Shop", cart: "Cart",
+        energy: "Body and Energy", love: "Stress and Relationships", business: "Money and Business", library: "Library",
+        events: "Events", insights: "Temple Insights", services: "Services", about: "About",
+      };
+      for (const [selector, entries] of [
+        [".site-main-menu-grid a[data-nav-item]", [
+          ["home", locale === "en" ? "/" : "/" + locale], ["analysis", "/" + locale + "/services/free-situation-review"],
+          ["courses", "/" + locale + "/academy"], ["profile", "/" + locale + "/personality-profiles"],
+          ["alchemy", "/" + locale + "/services/alchemy-of-soul"], ["pro", "/" + locale + "/pro"],
+          ["temple", "/" + locale + "/holistic-support"],
+        ]],
+        [".site-main-menu-more a[data-nav-item]", [
+          ["shop", "/" + locale + "/shop"], ["cart", "/" + locale + "/cart"],
+          ["energy", "/" + locale + "/explore/energy"], ["love", "/" + locale + "/explore/love"],
+          ["business", "/" + locale + "/explore/business"], ["library", "/" + locale + "/library"],
+          ["events", "/" + locale + "/events"], ["insights", "/" + locale + "/temple-insights"],
+          ["services", "/" + locale + "/services"], ["about", "/" + locale + "/about"],
+        ]],
+      ]) {
+        const links = siteMenu.locator(selector);
+        assert.deepEqual(await links.evaluateAll(nodes => nodes.map(node => ({
+          id: node.getAttribute("data-nav-item"), href: node.getAttribute("href"), text: node.textContent.trim(),
+        }))), entries.map(([id, href]) => ({ id, href, text: menuCopy[id] })), "Current authored menu identity/order/locale: " + locale);
+        for (let index = 0; index < entries.length; index += 1) {
+          const link = links.nth(index);
+          await visible(link);
+          const bounds = await link.boundingBox();
+          assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width + 1,
+            "Public menu entry must fit the opened menu: " + locale + "/" + width + "/" + entries[index][0]);
+        }
+      }
       await siteMenu.locator("summary.site-main-menu-trigger").click();
       await expect(siteMenu).not.toHaveAttribute("open", "");
       await assertViewport(page, locale + "/services/" + width);
@@ -200,7 +256,8 @@ try {
         if (await businessAction.isVisible()) await businessAction.click();
         else await showcase.locator('[data-services-kind="business"]').click();
         await expect(page.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
-        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(1);
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "Business filter retains both current personal-support and business offers", "business");
         await showcase.locator('[data-services-mode="toronto"]').click();
         await expect(page.locator("[data-services-studio-free]")).toBeHidden();
         await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
@@ -208,6 +265,8 @@ try {
         // Reiki is online-only, so choosing it intentionally resets Toronto.
         await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
         await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "Online Reiki filter", "reiki");
         // Explicitly switching back to Toronto must show the helpful empty state.
         await showcase.locator('[data-services-mode="toronto"]').click();
         await visible(showcase.locator("[data-services-empty]"));
@@ -215,11 +274,14 @@ try {
         await showcase.locator("[data-services-empty] button").click();
         await expect(showcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
         await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "Online Reiki filter", "reiki");
         await showcase.locator('[data-services-kind="free"]').click();
         await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
         await expect(page.locator("[data-services-studio-paid]")).toBeHidden();
         await showcase.locator('[data-services-kind="all"]').click();
-        await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+        await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), locale,
+          "All filter restores the canonical personal offers at " + width);
         await assertViewport(page, locale + "/services/slider-filter/" + width);
       }
       // Keep the advanced matching UX available on a separate, dedicated
@@ -306,7 +368,7 @@ try {
     await page.goto(origin + "/es/services", { waitUntil: "networkidle" });
     await visible(page.locator('[data-services-studio-free]'));
     assert.equal(await page.locator('[data-services-studio-free] [data-services-studio-card]').count(), 3);
-    assert.equal(await page.locator('[data-services-studio-paid] [data-services-studio-card]').count(), 5);
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]'), 'es', 'es/services/390');
     assert.equal(await page.locator("#find-your-service").count(), 0);
     // Verify the same service mode and topic filtering in Spanish.
     const esShowcase = page.locator("[data-services-showcase-hero]");
@@ -314,15 +376,24 @@ try {
     await esShowcase.locator('[data-services-slide-action="business"]').click();
     await expect(esShowcase.locator('[data-services-kind="business"]')).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator('[data-services-studio-card="business"]')).toBeVisible();
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "Spanish Business filter", "business");
     await esShowcase.locator('[data-services-mode="toronto"]').click();
     await expect(page.locator("[data-services-studio-free]")).toBeHidden();
     await esShowcase.locator('[data-services-kind="reiki"]').click();
-    await expect(esShowcase.locator("[data-services-empty]")).toBeVisible();
+    // Like EN/RU, choosing online-only Reiki naturally resets Toronto to Online.
+    // This existing sequence does not claim the separate explicit-Toronto empty-state case.
+    await expect(esShowcase.locator('[data-services-mode="online"]')).toHaveAttribute("aria-pressed", "true");
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "Spanish Reiki selection resets to Online", "reiki");
     await esShowcase.locator('[data-services-mode="online"]').click();
     await expect(page.locator('[data-services-studio-card="remote-energy-support"]')).toBeVisible();
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "Spanish Online Reiki filter", "reiki");
     await esShowcase.locator('[data-services-kind="all"]').click();
     await expect(page.locator('[data-services-studio-free] [data-services-studio-card]:visible')).toHaveCount(3);
-    await expect(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible')).toHaveCount(5);
+    await assertPaidServiceCards(page.locator('[data-services-studio-paid] [data-services-studio-card]:visible'), 'es',
+      "All filter restores the canonical personal offers at es/390");
     await assertViewport(page, "es/services/slider-filter/390");
     await page.goto(origin + "/es/services/catalog", { waitUntil: "networkidle" });
     const freeOnly = page.locator("#find-your-service input[data-free-services-only]");
@@ -352,7 +423,7 @@ try {
       assert.equal(await main.locator('[class*="heroFacts"]').count(), 1);
       const facts = await main.locator('[class*="heroFacts"]').innerText();
       assert.ok(facts.includes("€50") && facts.includes("€100"), "Both paid session formats visible: " + label);
-      const free = main.locator('a[href="/' + locale + '/services/free-situation-review"]').first();
+      const free = main.locator('section[aria-labelledby="personal-service-title"] a[href="/' + locale + '/services/free-situation-review"]');
       await visible(free);
       const primary = main.locator('section[aria-labelledby="personal-service-title"] a[href="#request-session"]');
       await visible(primary);
@@ -555,7 +626,12 @@ try {
       ["dao", "services/dao-health-profile", "request-free-wu-xing"],
     ]) {
       for (const width of [320, 360, 390, 1188]) {
-        const page = await createPage(width);
+        const diagnosisIsolation = kind === "situation"
+          ? await createFreeReviewViewportIsolation(browser, {origin, locale, viewport:{width,height:844}, mobile:false}) : null;
+        const page = diagnosisIsolation?.page || await createPage(width);
+        if (diagnosisIsolation) attachDiagnostics(page, diagnosisIsolation.consumeExpectedConsoleBlock);
+        let primaryDiagnosisFailure;
+        try {
         await page.goto(origin + "/" + locale + "/" + slug, { waitUntil: "domcontentloaded" });
         const main = page.locator('main[data-free-entry-landing="' + kind + '"]');
         await visible(main.locator("h1"));
@@ -587,33 +663,75 @@ try {
           await visible(featured);
           assert.equal(await featured.locator("iframe").count(), 0,
             "Approved YouTube recording never autoplays before opt-in");
-          const offers = main.locator("[data-diagnosis-offer]");
-          assert.equal(await offers.count(), 3,
-            "Free written situation, free Wu Xing and €50 personal session are three distinct options");
-          assert.equal(await offers.locator("img").count(), 3,
-            "Each diagnosis option has its own real photograph");
-          const chooser = main.locator("#" + captureId + "[data-diagnosis-order-form]");
-          await visible(chooser);
-          assert.equal(await chooser.locator("[data-free-diagnostic-start]").count(), 1,
-            "Free situation option reuses the existing coaching questionnaire funnel");
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "No duplicate lead is created before the questionnaire is sent");
-
-          const details = offers.nth(1).locator("details");
-          await details.locator("summary").click();
-          assert.equal(await details.evaluate(el => el.open), true,
-            "Details disclose the Wu Xing offer inline");
-          await offers.nth(2).locator('[data-diagnosis-order="personal-session-30-eur50"]').click();
-          await visible(chooser.locator("[data-service-lead-capture]"));
-          assert.equal(await chooser.locator("select").inputValue(), "personal-session-30-eur50");
-          assert.equal(await chooser.locator('input[type="checkbox"]').isChecked(), false);
-          assert.equal(await chooser.locator("[data-lead-saved]").count(), 0,
-            "An offer click does not create a CRM lead, booking or payment");
-
-          await offers.nth(0).locator('[data-diagnosis-order="situation-written-free"]').click();
-          await visible(chooser.locator("[data-free-diagnostic-start]"));
-          assert.equal(await chooser.locator("[data-service-lead-capture]").count(), 0,
-            "Switching back to the written review restores the single secure funnel");
+          assert.equal(await main.locator('[data-diagnosis-offer],[data-free-diagnosis-options]').count(), 0,
+            "The personal express landing is one service, not the separate three-offer hub");
+          const enquiry = main.locator('#' + captureId + '[data-personal-express-enquiry]');
+          assert.equal(await enquiry.count(), 1, "One localized personal express enquiry");
+          const reveal = enquiry.locator('button[data-express-reveal]');
+          const disclosure = enquiry.locator('#express-request-form[data-express-inline-disclosure]');
+          assert.equal(await reveal.getAttribute('aria-expanded'), 'false');
+          assert.equal(await reveal.getAttribute('aria-controls'), 'express-request-form');
+          assert.equal(await disclosure.getAttribute('role'), 'region');
+          assert.equal(await disclosure.isVisible(), false, "Inline form starts folded");
+          assert.equal(await main.locator('[role="dialog"],[aria-modal="true"]').count(), 0,
+            "The new in-flow enquiry never presents modal dialog semantics");
+          assert.equal(await disclosure.locator('[data-reiki-phone-enquiry]').count(), 1,
+            "Folded chooser remains mounted; folding is not cancellation");
+          assert.deepEqual(await enquiry.locator('input[name="express-review-focus"]').evaluateAll(nodes => nodes.map(node => node.value)),
+            ['situation', 'energy']);
+          assert.equal(await enquiry.locator('input[value="situation"]').isChecked(), true);
+          const originalOverflow = await page.evaluate(() => document.body.style.overflow);
+          await reveal.click();
+          for (const focus of ['energy','situation']) {
+            await enquiry.locator('input[name="express-review-focus"][value="' + focus + '"]').check();
+            assert.equal(await enquiry.locator('[data-express-focus="' + focus + '"]').getAttribute('data-selected'), 'true');
+            const form = disclosure.locator('[data-reiki-phone-enquiry] form');
+            await visible(form);
+            const country = form.locator('[data-phone-country-input] select');
+            assert.equal(await country.count(), 1, "Only international country selection");
+            const phone = form.locator('input[type="tel"][required]');
+            assert.equal(await phone.getAttribute('inputmode'), 'tel');
+            assert.equal(await phone.getAttribute('autocomplete'), 'tel-national');
+            assert.equal(await phone.inputValue(), '', "A new focus key starts with empty phone");
+            const consent = form.locator('input[type="checkbox"][required]');
+            assert.equal(await consent.isChecked(), false, "Each new focus key requires fresh consent");
+            assert.deepEqual(await form.locator('button[data-contact-channel-submit]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-contact-channel-submit'))),
+              ['whatsapp', 'telegram']);
+            assert.equal(await disclosure.locator('a[data-contact-channel],[role="status"]').count(), 0,
+              "Opening or changing focus does not save a lead, book, pay or hand off a messenger");
+            await country.selectOption('CA');
+            await phone.fill('4165550123');
+            for (const channel of ['whatsapp','telegram']) {
+              await form.locator('button[data-contact-channel-submit="' + channel + '"]').click();
+              await visible(form.locator('[role="alert"]'));
+              await diagnosisIsolation.assertClean();
+            }
+            await consent.check(); // Deliberately never submit a consented request here.
+            await reveal.click();
+            await disclosure.waitFor({state:'hidden'});
+            assert.equal(await form.count(), 1, "Fold hides, never detaches or cancels, the current chooser");
+            assert.equal(await reveal.getAttribute('aria-expanded'), 'false');
+            await reveal.click();
+            await visible(disclosure);
+            assert.equal(await phone.inputValue(), '4165550123', "Same-key folding preserves current phone");
+            assert.equal(await consent.isChecked(), true, "Same-key folding preserves explicit consent");
+            await phone.focus();
+            await page.keyboard.press('Escape');
+            await disclosure.waitFor({state:'hidden'});
+            await expect(reveal).toBeFocused();
+            assert.equal(await page.evaluate(() => document.body.style.overflow), originalOverflow,
+              "Inline form never locks document scrolling");
+            await hero.locator('a[href="#request-free-review"]').click();
+            await visible(disclosure);
+            assert.equal(new URL(page.url()).hash, '#request-free-review');
+            assert.equal(await phone.inputValue(), '4165550123', "Repeated anchor is a reveal, not a new form");
+            assert.equal(await consent.isChecked(), true);
+            assert.equal(await main.locator('[data-optional-written-review]').count(), focus === 'situation' ? 1 : 0,
+              "Private situation entry follows the selected focus");
+          }
+          await reveal.click();
+          await disclosure.waitFor({state:'hidden'});
+          await diagnosisIsolation.assertClean();
 
           const writtenIntake = main.locator("[data-optional-written-review]");
           assert.equal(await writtenIntake.evaluate(el => el.open), false);
@@ -627,21 +745,29 @@ try {
             assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
               "Expanded information must fit the phone width");
 
-            const hub = await page.context().newPage();
-            await hub.setViewportSize({width, height: 844});
+            const hub = page; // Same guarded public context, not an unguarded extra page.
             await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});
             assert.equal(await hub.locator("[data-free-consultation-hub] [data-diagnosis-offer]").count(), 3,
               "The free consultation hub reuses the same three offers");
-            assert.equal(await hub.locator("[data-free-consultation-hub] [data-free-diagnostic-start]").count(), 1,
-              "The hub offers the secure free questionnaire without a second CRM form");
-            await hub.close();
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-diagnosis-placement] button[aria-haspopup="dialog"]').count(), 2,
+              "The hub reuses both current inline request actions");
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-diagnosis-order-form]').getAttribute('data-open'), 'false');
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-diagnosis-order-form]').isVisible(), false,
+              "Hub selected-offer dialog is hidden until explicit intent");
+            assert.equal(await hub.locator('[data-free-consultation-hub] [data-free-diagnostic-start]').count(), 0);
+            await diagnosisIsolation.assertClean();
+            await page.goto(origin + "/" + locale + "/" + slug, {waitUntil:"domcontentloaded"});
           }
         }
         await assertViewport(page, locale + "/" + slug + "/" + width + "/after-actions");
         if (width === 390 || width === 1188) {
           await page.screenshot({path: output + "/free-" + kind + "-" + locale + "-hero-" + width + ".png", fullPage: false});
         }
-        await page.close();
+        } catch (error) { primaryDiagnosisFailure = error; throw error; }
+        finally {
+          try { if (diagnosisIsolation) await diagnosisIsolation.close(); else await page.close(); }
+          catch (error) { if (!primaryDiagnosisFailure) throw error; }
+        }
       }
     }
   }
@@ -649,12 +775,23 @@ try {
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
   assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
-  await context.close();
+  await publicServices.assertClean();
 } catch (error) {
   failure = error;
 } finally {
-  await writeFile(output + "/browser-diagnostics.json", JSON.stringify(diagnostics, null, 2) + "\n");
-  await browser.close();
+  // Close/drain every context even after UI/assertion failure. Cleanup must not
+  // hide the original failure or prevent the remaining cleanup attempts.
+  try { await publicServices.close(); } catch (error) { failure ||= error; }
+  try { await browser.close(); } catch (error) { failure ||= error; }
+  // Context/browser closure can deliver a final queued diagnostic. Include it
+  // in the verdict and artifact rather than reporting a pre-teardown PASS.
+  try {
+    assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
+    assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
+  } catch (error) { failure ||= error; }
+  diagnostics.network = publicServices.summary();
+  try { await writeFile(output + "/browser-diagnostics.json", JSON.stringify(diagnostics, null, 2) + "\n"); }
+  catch (error) { failure ||= error; }
 }
 if (failure) throw failure;
 console.log("PASS public production service acceptance");

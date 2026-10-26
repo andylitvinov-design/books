@@ -1,3 +1,4 @@
+import { assertCurrentDiagnosisOffers } from "./helpers/current-free-entry-contract.mjs";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import test from "node:test";
@@ -157,4 +158,13 @@ test("legacy coaching questionnaire remains reachable separately without interce
   assert.match(diagnostic, /until you explicitly send your completed questionnaire/);
   assert.match(phoneCss, /\.compactForm/);
   assert.match(phoneCss, /@media\(max-width:610px\)/);
+});
+
+// The nested parent/chooser/phone transaction behavior is exercised separately
+// in current-diagnosis-parent-lifecycle.test.mjs, not by the legacy capture.
+for (const locale of ["en", "ru", "es"]) test(locale + ": standalone consultation-hub offers compose selected compact chooser and inline dialogs", () => assertCurrentDiagnosisOffers({ locale }));
+
+for (const locale of ["en", "ru", "es"]) test(locale + ": standalone compact hub preserves supplied intro and children", () => {
+ const intro={type:'aside',props:{children:'Actual supplied intro'}},children={type:'aside',props:{children:'Actual supplied children'}};
+ assertCurrentDiagnosisOffers({locale,compact:true,intro,children});
 });

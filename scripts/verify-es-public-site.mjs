@@ -78,8 +78,8 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog).toHaveCount(1);
   await expect(catalog).toHaveAttribute('lang', 'es');
   await expect(catalog.getByRole('heading', { level: 1, name: 'Cursos de IA gratuitos', exact: true })).toBeVisible();
-  // The header's free-start action and the course hero intentionally share a label.
-  // Scope each contract; the direct header action is hidden at compact widths.
+  // Written review and course enrollment are distinct public actions.
+  // Scope each contract; the direct header review is hidden at compact widths.
   const freeStart = catalog.locator('.site-navigation > a.site-nav-free-entry');
   await expect(freeStart).toHaveCount(1);
   await expect(freeStart).toHaveText('Revisión gratis');
@@ -104,7 +104,10 @@ async function assertSpanishCourseCatalog(page, response) {
   await expect(catalog.locator('#my-courses [data-course-cabinet]')).toHaveCount(1);
   await expect(catalog.locator('[data-opora-stress-seven-skills] ol > li')).toHaveCount(7);
   await expect(catalog.locator('[data-opora-14-day-public-plan]')).toHaveCount(1);
-  await expect(page.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(0);
+  const activeCourse = page.locator('.mobile-bottom-navigation [aria-current="page"]');
+  await expect(activeCourse).toHaveCount(1);
+  await expect(activeCourse).toHaveAttribute('data-nav-item', 'courses');
+  await expect(activeCourse).toHaveAttribute('href', '/es/academy');
 }
 
 // Production-parity HTTPS browser checks. Never read real private records,

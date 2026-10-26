@@ -35,7 +35,7 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + ': public home must load');
           const slider = page.locator('[data-home-section-carousel] [role="region"][aria-roledescription="carousel"]');
           const paid = slider.locator('[data-home-first-screen-cta="paid"]');
-          const free = page.locator('[data-home-free-diagnosis-banner] [data-home-diagnosis-order]');
+          const free = page.locator('[data-home-module="situation"] [data-home-offer-primary="review"]');
           await paid.waitFor({ state: 'visible', timeout: 30000 });
           await free.waitFor({ state: 'visible', timeout: 30000 });
           const [card, book, review] = await Promise.all([
@@ -52,18 +52,20 @@ for (const engine of [chromium, webkit]) {
           const paidHref = await paid.getAttribute('href');
           const freeHref = '/' + locale + '/services/free-situation-review';
           assert.equal(paidHref, '/' + locale + '/services#consultation', label + ': existing booking destination');
-          assert.equal(await free.getAttribute('aria-expanded'), 'false',
-            label + ': free diagnosis opens the existing consent-gated inline form');
-          // The approved first carousel slide keeps the original photo, seven named
+          assert.equal(await free.getAttribute('href'), freeHref,
+            label + ': free written-review card reaches the existing consented public flow');
+          assert.equal(await page.locator('[data-home-offer-card="review"]').getAttribute('data-home-offer-free'), 'true',
+            label + ': written-review offer stays explicitly free');
+          // The approved first carousel slide keeps the original photo, six named
           // section links and the priced consultation button on the first fold.
           const sectionNav = page.locator('[data-home-hero-nav="true"]');
           await sectionNav.waitFor({ state: 'visible', timeout: 30000 });
           const sectionLinks = sectionNav.locator('a[data-home-nav-section]');
-          assert.equal(await sectionLinks.count(), 7, label + ': seven plain text site sections');
+          assert.equal(await sectionLinks.count(), 6, label + ': six plain text site sections');
           assert.equal(await sectionNav.locator('svg, img').count(), 0, label + ': no icons in the hero navigation');
           assert.ok((await sectionNav.getAttribute('aria-label'))?.length > 3, label + ': accessible section list');
-          const keys = ['home', 'tests', 'services', 'academy', 'business', 'ideas', 'cabinet'];
-          const suffixes = ['', '/client/tests', '/services', '/academy', '/explore/business', '/books', '/app'];
+          const keys = ['services', 'academy', 'business', 'tests', 'ideas', 'cabinet'];
+          const suffixes = ['/explore/energy', '/explore/love', '/explore/business', '/client/tests', '/books', '/app'];
           for (let i = 0; i < keys.length; i++) {
             const link = sectionLinks.nth(i);
             assert.equal(await link.getAttribute('data-home-nav-section'), keys[i], label + ': navigation order');
@@ -73,7 +75,7 @@ for (const engine of [chromium, webkit]) {
             const target = await link.boundingBox();
             assert.ok(target && target.height >= 44, label + ': touch target for ' + keys[i]);
           }
-          assert.equal(await sectionLinks.nth(2).getAttribute('aria-current'), 'true', label + ': first services slide selected');
+          assert.equal(await sectionLinks.nth(0).getAttribute('aria-current'), 'true', label + ': first services slide selected');
           const [navBox, copyBox] = await Promise.all([
             sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
           ]);
@@ -90,20 +92,23 @@ for (const engine of [chromium, webkit]) {
           if (engine === webkit && width === 390) {
             await page.screenshot({ path: output + '/home-' + locale + '-webkit-390.png', fullPage: false });
           }
-          // Opening the existing collapsed catalogue is the only trigger for
+          // Opening the existing collapsed conversation guide is the only trigger for
           // downloading its heavier client code. Preserve route links even if
           // the visitor keeps the disclosure closed.
           if (width === 390) {
             const more = page.locator('[data-home-more-deferred="true"]');
-            assert.equal(await more.locator('[data-home-start]').count(), 0,
-              label + ': closed catalogue must not inflate initial SSR/RSC');
+            assert.equal(await more.locator('[data-home-conversation-guide]').count(), 0,
+              label + ': closed conversation guide must not inflate initial SSR/RSC');
             await more.locator('summary').first().click();
-            await page.locator('[data-home-start]').waitFor({ state: 'visible', timeout: 30000 });
+            await page.locator('[data-home-conversation-guide]').waitFor({ state: 'visible', timeout: 30000 });
             assert.equal(await more.getAttribute('open'), '',
-              label + ': expanding reveals the existing section directory');
-            if (locale !== 'es') {
-              await page.locator('[data-core-service-id]').first().waitFor({ state: 'visible', timeout: 30000 });
-            }
+              label + ': expanding reveals the existing conversation guide');
+            const catalogLinks = page.locator('[data-home-topic-filters] [data-home-topic-filter]');
+            assert.deepEqual(await catalogLinks.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-home-topic-filter'))),
+              ['energy', 'love', 'business', 'temple', 'services', 'courses'], label + ': direction and catalogue links remain discoverable');
+            const topicSuffixes = ['/explore/energy', '/explore/love', '/explore/business', '/temple-support', '/services', '/academy'];
+            for (let i = 0; i < topicSuffixes.length; i++) assert.equal(await catalogLinks.nth(i).getAttribute('href'),
+              '/' + locale + topicSuffixes[i], label + ': exact topic/catalogue destination');
             await more.locator('summary').first().click();
             assert.equal(await more.getAttribute('open'), null, label + ': closes without navigation');
           }
@@ -129,3 +134,4 @@ for (const engine of [chromium, webkit]) {
 }
 await writeFile(output + '/first-screen-results.json', JSON.stringify(result, null, 2));
 console.log('First-screen consultation QA passed in Chromium/WebKit, EN/RU/ES at 320/390/430px:', result.length);
+

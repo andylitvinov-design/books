@@ -42,7 +42,30 @@ jobs:
           }, null, 2));
           JS
       - run: npm ci --no-audit --no-fund
-      - run: npm run test:unit
+      - name: Build pinned static artwork for unit tests
+        run: npm run build:static-artwork
+      - id: ia_unit_tests
+        run: |
+          unit_log="$RUNNER_TEMP/ia222-unit.log"
+          unit_status_file="$RUNNER_TEMP/ia222-unit-status.json"
+          set +e
+          (umask 077; : > "$unit_log"; : > "$unit_status_file")
+          npm run test:unit 2>&1 | tee --output-error=warn "$unit_log"
+          unit_status=("${PIPESTATUS[@]}")
+          printf '{"npmExit":%s,"teeExit":%s}\n' "${unit_status[0]}" "${unit_status[1]}" > "$unit_status_file" || :
+          exit "${unit_status[0]}"
+        env:
+          HH_TEST_REDIS_CONTAINER: ${{ job.services.redis.id }}
+          HH_TEST_REDIS_ISOLATED: 'true'
+      - name: Observe bounded unit failure locations
+        if: always()
+        continue-on-error: true
+        run: >-
+          node scripts/summarize-ia-unit-log.mjs
+          "$RUNNER_TEMP/ia222-unit.log"
+          "$RUNNER_TEMP/ia222-unit-status.json"
+          /tmp/ia222-evidence/unit-failure-inventory.json
+          "${{ steps.ia_unit_tests.outcome }}"
       - name: Source-content validators
         run: npm run validate:remedy-inventory && npm run validate:remedy-content && npm run validate:remedy-images
       - run: npm run lint

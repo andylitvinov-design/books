@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
@@ -56,7 +57,7 @@ test('one meaningful lesson unit becomes one slide; guided sections each get a s
   assert.match(today, /<details className=\{styles\.classicPanel\}>/)
 })
 
-test('clinical questionnaire scoring and private storage are unchanged, rewards are only for server saved lessons', () => {
+test('clinical questionnaire scoring and private storage are unchanged, rewards are only for server saved lessons', async () => {
   assert.match(slides, /onCheckin\(\{/)
   assert.match(slides, /severity, interference: today\?\.interference \?\? null/)
   assert.match(slides, /expectedRevision:today\.revision/)
@@ -65,7 +66,55 @@ test('clinical questionnaire scoring and private storage are unchanged, rewards 
   assert.match(slides, /if \(response\) \{ sessionOp\.current = null; setEarned\(true\); setIndex\(slides\.length\) \}/)
   assert.match(slides, /alreadyDone = Boolean\(session\)/)
   assert.match(slides, /if \(alreadyDone\) \{ setIndex\(slides\.length\); return \}/)
-  assert.match(slides, /if \(!Number\.isInteger\(severity\)/)
+  const saveCheckinSource=slides.match(/  async function saveCheckin\(\) \{[\s\S]*?\n  \}/)?.[0]
+  assert.ok(saveCheckinSource, 'execute the actual check-in function')
+  const cases=[
+    {reviewOnly:true,severity:4,today:null,writes:0,next:1},
+    {reviewOnly:false,severity:null,today:null,writes:0,next:1},
+    {reviewOnly:false,severity:4.5,today:null,writes:0,next:1},
+    {reviewOnly:false,severity:4,today:{severity:4},writes:0,next:1},
+    {reviewOnly:false,severity:0,today:null,writes:1,next:1},
+    {reviewOnly:false,severity:4,today:{severity:3,revision:9},writes:1,next:1},
+    {reviewOnly:false,severity:4,today:null,writes:1,next:0,response:null},
+    {reviewOnly:false,severity:4,today:null,writes:1,next:0,throws:true},
+    {reviewOnly:false,severity:4,today:null,writes:0,next:0,busy:true},
+  ]
+  for(const scenario of cases){
+    const calls=[],errors=[];let next=0,attempt=0,allocated=0
+    const context={...scenario,submitting:{current:Boolean(scenario.busy)},checkinOp:{current:null},
+      crypto:{randomUUID:()=>{allocated++;return 'fictional-operation'}},
+      setSaving:()=>{},setError:value=>errors.push(value),words:{saveError:'save-failed'},
+      goNext:()=>next++,onCheckin:async payload=>{
+        calls.push(payload);attempt++
+        if(attempt===1&&scenario.throws)throw Error('fictional failure')
+        return attempt===1&&'response' in scenario?scenario.response:{saved:true}
+      }}
+    const saveCheckin=runInNewContext('('+saveCheckinSource+')',context)
+    await saveCheckin()
+    assert.equal(calls.length,scenario.writes)
+    assert.equal(next,scenario.next)
+    assert.equal(allocated,scenario.writes)
+    if(scenario.writes){
+      assert.equal(calls[0].severity,scenario.severity,'zero is a real rating, not missing')
+      assert.equal(calls[0].operationId,'fictional-operation')
+      assert.equal(calls[0].interference,scenario.today?.interference??null)
+      assert.equal(calls[0].resource,scenario.today?.resource??null)
+      assert.equal(calls[0].note,scenario.today?.note||'')
+      if(scenario.today)assert.equal(calls[0].expectedRevision,scenario.today.revision)
+    }
+    if(scenario.writes&&!scenario.next){
+      assert.equal(errors.at(-1),'save-failed')
+      assert.equal(context.checkinOp.current,'fictional-operation')
+      await saveCheckin()
+      assert.equal(calls.length,2)
+      assert.equal(calls[1].operationId,calls[0].operationId,'retry reuses the pending operation ID')
+      assert.equal(allocated,1)
+      assert.equal(next,1,'advance only after the retry is confirmed')
+      assert.equal(context.checkinOp.current,null)
+    }
+    if(scenario.writes&&scenario.next)assert.equal(context.checkinOp.current,null)
+    assert.equal(context.submitting.current,Boolean(scenario.busy))
+  }
   assert.match(slides, /preferNot: 'Prefer not to say'/)
   assert.doesNotMatch(slides, /localStorage|sessionStorage|dangerouslySetInnerHTML|sendBeacon|leaderboard|correctAnswer|wrongAnswer/)
   assert.match(slideCss, /\.error\{/)

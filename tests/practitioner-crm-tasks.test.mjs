@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import ts from 'typescript'
 import {PRACTITIONER_TASK_KINDS,taskKindAllowed,torontoToday,validTaskDay} from '../lib/practitioners/task-policy.js'
 import {masterMessagePushPayload,clientMessagePushPayload} from '../lib/app/notification-contract.js'
 
@@ -128,9 +129,38 @@ test('fixed-content master alert opens own scoped client request, not another ma
   assert.match(master,/params\.get\('panel'\)==='clients'/)
   assert.match(master,/setFocusRequestId\(requested\)/)
   assert.match(profile,/const actual=groups\.find\(group=>group\.items\.some\(item=>item\.id===focusRequestId\)\)/)
-  // A scoped request can open from a deep link OR its own unread counter.
-  // Neither condition grants new access; the server enforces request ownership.
-  assert.match(profile,/autoOpen=\{request\.id===focusRequestId \|\| request\.newMessageCount>0\}/)
+
+  const file = ts.createSourceFile('practitioner-client-profiles.jsx', profile,
+    ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX)
+  assert.equal(file.parseDiagnostics.length, 0)
+  const expressions = []
+  function visit(node) {
+    if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) &&
+        node.tagName.getText(file) === 'PracticeRequestConversation') {
+      const attribute = node.attributes.properties.find(item =>
+        ts.isJsxAttribute(item) && item.name.text === 'autoOpen')
+      assert.ok(attribute && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression,
+        'actual request conversation keeps an explicit autoOpen expression')
+      expressions.push(attribute.initializer.expression)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  assert.equal(expressions.length, 1, 'one actual conversation autoOpen binding')
+  const expression = expressions[0]
+  assert.ok(ts.isBinaryExpression(expression) && expression.operatorToken.kind === ts.SyntaxKind.BarBarToken,
+    'focus and positive unread arrivals are independent alternatives')
+  const autoOpen = new Function('request', 'focusRequestId', 'return (' + expression.getText(file) + ')')
+  for (const unread of [0, -1, undefined, null, 'invalid', NaN]) {
+    assert.equal(autoOpen({id: uuid, newMessageCount: unread}, 'another-request'), false,
+      'unfocused zero, negative or malformed unread count must not open')
+    assert.equal(autoOpen({id: uuid, newMessageCount: unread}, uuid), true,
+      'an explicitly focused own request still opens without unread arrivals')
+  }
+  for (const unread of [1, 2, 99]) {
+    assert.equal(autoOpen({id: uuid, newMessageCount: unread}, 'another-request'), true)
+    assert.equal(autoOpen({id: uuid, newMessageCount: unread}, uuid), true)
+  }
 })
 
 test('concurrent create and reopen task operations serialize under the exact assigned request lock',()=>{

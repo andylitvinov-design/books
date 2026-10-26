@@ -4,6 +4,8 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import * as navigationModel from '../lib/site-navigation-model.js';
+import * as cart from '../lib/commerce/cart.js';
+import * as homeSpace from '../lib/home-personal-space.mjs';
 import * as uiLocale from '../lib/ui-locale.js';
 import { isSupportedLocale, getHomeopathyLocaleParams } from '../data/remedies.js';
 
@@ -15,25 +17,50 @@ const canonical = '/es/academy/free-ai-courses';
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} };
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props.children)];
 const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(text).join('') : text(tree.props.children);
+const denied = () => assert.fail('No transport, navigation, storage or enrollment in this rendering fixture');
+const publicSpace = Object.freeze({ status: 'idle', summary: null, open: false, openPanel: denied });
+const css = { default: new Proxy({}, { get: (_target, key) => String(key) }) };
 const common = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { default: props => jsx('a', props) },
-  'lucide-react': new Proxy({}, { get: () => () => null }),
-  react: { useEffect() {}, useRef: () => ({ current: null }), useState: value => [value, () => assert.fail('No effect may run in a rendering fixture')] },
+  'lucide-react': Object.fromEntries('ArrowRight ArrowUpRight BookOpen BriefcaseBusiness ChevronDown ClipboardCheck ClipboardList FileText Flame FlaskConical GraduationCap Heart HeartHandshake House Landmark LockKeyhole Menu MessageCircle Search ShieldCheck ShoppingBasket Sparkles Target UserRound Users X'.split(' ').map(name => [name, () => null])),
+  react: { createContext: value => ({ value }), useContext: () => publicSpace, useCallback: fn => fn, useId: () => 'synthetic-search-id', useEffect() {}, useRef: () => ({ current: null }), useState: value => [value, () => assert.fail('No effect may run in a rendering fixture')] },
   './public-growth-courses.module.css': { default: new Proxy({}, { get: (_target, key) => String(key) }) },
 };
 function load(path, imports, transform = value => value) {
   const exports = {};
   runInNewContext(ts.transpileModule(transform(read(path)), { fileName: path, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, {
-    exports, require(name) { assert.ok(Object.hasOwn(imports, name), name); return imports[name]; },
+    exports, fetch: denied, XMLHttpRequest: denied, WebSocket: denied, require(name) { assert.ok(Object.hasOwn(imports, name), name); return imports[name]; },
   });
   return exports;
 }
 const discoveryTabs=load('components/discovery-section-tabs.tsx',{...common,'./discovery-section-tabs.module.css':{default:new Proxy({},{get:(_,key)=>String(key)})}});
 common['@/components/discovery-section-tabs']=discoveryTabs;
 const publicLocales = load('lib/public-locales.ts', {});
+const localePredicate = ts.createSourceFile('catalog.ts', read('data/academy/catalog.ts'), ts.ScriptTarget.Latest, true).statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'isPublicLocale');
+assert.ok(localePredicate, 'Actual Academy locale predicate exists');
+const { isPublicLocale } = load('data/academy/catalog.ts', {}, () => localePredicate.getText());
+const compactIcons = load('components/compact-navigation-icons.ts', common);
+const personalSpace = load('components/home-personal-space.tsx', {
+  ...common, 'next/image': { default: props => jsx('img', props) },
+  'next/navigation': { usePathname: () => canonical },
+  '@/lib/app/client-fetch': { appFetch: denied }, '@/lib/native/client': { isNativeHolisticHouse: denied },
+  '@/lib/home-personal-space.mjs': homeSpace, './home-personal-space.module.css': css,
+});
+const cartNav = load('components/commerce/cart-nav-link.tsx', { ...common,
+  '@/lib/commerce/cart': cart, './cart-nav-link.module.css': css,
+});
+const siteSearch = load('components/site-search.tsx', { ...common,
+  'next/navigation': { useRouter: () => ({ push: denied }) }, './site-search.module.css': css,
+});
+const navigationImports = {
+  '@/components/commerce/cart-nav-link': cartNav,
+  '@/components/site-search': siteSearch,
+  './compact-navigation-icons': compactIcons,
+  './home-personal-space': personalSpace,
+};
 const { SiteNavigation } = load('components/site-navigation.tsx', {
-  ...common, 'next/navigation': { usePathname: () => canonical },
+  ...common, ...navigationImports, 'next/navigation': { usePathname: () => canonical },
   '@/lib/ui-locale': uiLocale, '@/lib/public-locales': publicLocales,
   '@/lib/site-navigation-model': navigationModel,
   './use-navigation-locale': { useNavigationLocale: locale => locale },
@@ -50,7 +77,7 @@ const { PublicGrowthCourses } = load('components/public-growth-courses.tsx', {
   '@/components/app/course-14-day-overview': { default: props => { assert.equal(props.programId, 'stress'); return null; } },
 });
 const { MobileBottomNavigation } = load('components/mobile-bottom-navigation.tsx', {
-  ...common, 'next/navigation': { usePathname: () => canonical },
+  ...common, './compact-navigation-icons': compactIcons, 'next/navigation': { usePathname: () => canonical },
   '@/lib/site-navigation-model': navigationModel, './use-navigation-locale': { useNavigationLocale: () => 'es' },
 });
 function matches(node, selector) {
@@ -86,7 +113,7 @@ function visibleNodes(tree, width) {
     if (!node || typeof node !== 'object') return;
     const classes = String(node.props.className || '').split(' ');
     const compactDirect = width <= 1140 && parent?.props.className === 'site-navigation'
-      && node.type === 'a' && !classes.includes('site-library-entry');
+      && node.type === 'a' && !(width >= 768 && classes.includes('site-cabinet-entry'));
     hidden ||= Boolean(node.props.hidden) || node.props['aria-hidden'] === 'true' || compactDirect;
     if (!hidden) visible.add(node);
     const children = [node.props.children].flat(Infinity);
@@ -133,8 +160,10 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
   if (fault === 'missing course cabinet') delete one('[data-course-cabinet]').props['data-course-cabinet'];
   if (fault === 'missing skill') one('[data-opora-stress-seven-skills] ol').props.children.pop();
   if (fault === 'missing daily plan') delete one('[data-opora-14-day-public-plan]').props['data-opora-14-day-public-plan'];
-  if (fault === 'wrong active') one('[data-nav-item="academy"]').props['aria-current'] = undefined;
-  if (fault === 'duplicate active') one('[data-nav-item="tests"]').props['aria-current'] = 'page';
+  if (fault === 'wrong active') one('.mobile-bottom-navigation [data-nav-item="courses"]').props['aria-current'] = undefined;
+  if (fault === 'duplicate active') one('.mobile-bottom-navigation [data-nav-item="profile"]').props['aria-current'] = 'page';
+  if (fault === 'other active') { one('.mobile-bottom-navigation [data-nav-item="courses"]').props['aria-current'] = undefined; one('.mobile-bottom-navigation [data-nav-item="profile"]').props['aria-current'] = 'page'; }
+  if (fault === 'wrong active destination') one('.mobile-bottom-navigation [data-nav-item="courses"]').props.href = '/es/courses';
   const visible = visibleNodes(tree, width);
   if (fault === 'wrong free-start visibility') {
     if (visible.has(freeStart)) visible.delete(freeStart);
@@ -163,38 +192,39 @@ async function scenario(fault, { width = 1365, verifier = helper } = {}) {
   assert.ok(enrollment.every(node => node.props.prefetch === false), 'The public catalog must not prefetch private enrollment');
   if (!fault) {
     const starts = nodes(catalog).filter(node => node.type === 'a' && text(node) === 'Empezar gratis');
-    assert.equal(starts.length, 3, 'Real JSX includes the direct header, closed site menu and course hero actions');
-    assert.equal(starts.filter(node => visible.has(node)).length, width > 1140 ? 2 : 1, 'Reproduce desktop collision and compact navigation visibility');
+    assert.equal(starts.length, 1, 'Enrollment belongs to the course hero, not the separately named written review');
+    assert.equal(starts.filter(node => visible.has(node)).length, 1, 'Enrollment remains visible at both widths');
+    const cartLink = one('.site-navigation > a[data-nav-item="cart"]');
+    assert.equal(cartLink.props.href, '/es/cart');
+    assert.equal(cartLink.props['aria-label'], 'Carrito (0)', 'Actual cart child uses readonly initial state');
   }
 }
 for (const width of [390, 1365]) {
   test(width + 'px actual Spanish catalog and header JSX satisfy separately scoped free-start and enrollment contracts', () => scenario(undefined, { width }));
 }
-test('real header fixture exposes the old whole-catalog selector failure on desktop', async () => {
-  const unscoped = helper.replace("const start = hero.getByRole(", "const start = catalog.getByRole(");
-  assert.notEqual(unscoped, helper);
-  await assert.rejects(scenario(undefined, { width: 1365, verifier: unscoped }));
-  await scenario(undefined, { width: 390, verifier: unscoped });
+test('current review wording is distinct from enrollment, while duplicate enrollment still fails scoped checks', async () => {
+  await scenario();
+  await assert.rejects(scenario('duplicate hero action'));
 });
 test('desktop free-start verifier rejects a wrong accessible name', () => assert.rejects(scenario('wrong free-start accessible name')));
 test('fixture compact-header breakpoint agrees with actual source CSS', () => {
   const css = read('app/holistic-house-home.css');
   assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.house-header--services \.site-navigation > a \{ display: none; \}/);
-  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-library-entry\) \{ display: none; \}/);
+  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?> a:not\(\.site-cabinet-entry\) \{ display: none; \}/);
 });
-for (const width of [390, 1365]) for (const fault of ['missing hero', 'duplicate hero', 'missing hero action', 'duplicate hero action', 'hidden hero action', 'wrong free-start destination', 'wrong free-start label', 'wrong free-start visibility', 'missing free-start action', 'duplicate free-start action', 'swapped free-start and enrollment', 'wrong canonical', 'duplicate canonical', 'missing catalog', 'duplicate catalog', 'wrong language', 'wrong heading', 'wrong enrollment', 'missing programme', 'extra programme', 'wrong stress label', 'missing programme enrollment', 'wrong detail route', 'missing detail action', 'wrong methodology', 'missing course cabinet', 'missing skill', 'missing daily plan', 'wrong active', 'duplicate active', 'legacy URL', 'hidden heading', 'redirect response', 'wrong response URL']) {
+for (const width of [390, 1365]) for (const fault of ['missing hero', 'duplicate hero', 'missing hero action', 'duplicate hero action', 'hidden hero action', 'wrong free-start destination', 'wrong free-start label', 'wrong free-start visibility', 'missing free-start action', 'duplicate free-start action', 'swapped free-start and enrollment', 'wrong canonical', 'duplicate canonical', 'missing catalog', 'duplicate catalog', 'wrong language', 'wrong heading', 'wrong enrollment', 'missing programme', 'extra programme', 'wrong stress label', 'missing programme enrollment', 'wrong detail route', 'missing detail action', 'wrong methodology', 'missing course cabinet', 'missing skill', 'missing daily plan', 'wrong active', 'duplicate active', 'other active', 'wrong active destination', 'legacy URL', 'hidden heading', 'redirect response', 'wrong response URL']) {
   test(width + 'px actual Spanish catalog verifier rejects ' + fault, () => assert.rejects(scenario(fault, { width })));
 }
 async function verifyLegacyRedirect(locale, transform) {
   const imports = { 'next/navigation': { permanentRedirect(path) { throw new Error('PERMANENT:' + path); }, notFound() { throw new Error('NOT_FOUND'); } },
-    '@/data/remedies': { isSupportedLocale, getHomeopathyLocaleParams }, '@/data/site-metadata': { metadataBaseFor: () => new URL('https://holistichouse.vercel.app') },
+    '@/data/remedies': { isSupportedLocale, getHomeopathyLocaleParams }, '@/data/academy/catalog': { isPublicLocale }, '@/data/site-metadata': { metadataBaseFor: () => new URL('https://holistichouse.vercel.app') },
     '@/lib/spanish-metadata': { spanishMetadata: () => ({}) } };
   const route = load(locale === 'es' ? 'app/es/courses/page.tsx' : 'app/[locale]/courses/page.tsx', imports, transform);
-  await assert.rejects(async () => route.default({ params: Promise.resolve({ locale }) }), { message: 'PERMANENT:/' + locale + '/academy/free-ai-courses' });
+  await assert.rejects(async () => route.default({ params: Promise.resolve({ locale }) }), { message: 'PERMANENT:/' + locale + (locale === 'es' ? '/academy/free-ai-courses' : '/academy') });
 }
 for (const locale of ['en', 'ru', 'es']) {
   test(locale + ' legacy page executes its exact permanent canonical redirect', () => verifyLegacyRedirect(locale));
-  test(locale + ' redirect verifier rejects an actual wrong-destination source mutation', () => assert.rejects(verifyLegacyRedirect(locale, value => value.replaceAll('/academy/free-ai-courses', '/academy/unrelated'))));
+  test(locale + ' redirect verifier rejects an actual wrong-destination source mutation', () => assert.rejects(verifyLegacyRedirect(locale, value => value.replaceAll('/academy', '/unrelated'))));
 }
 test('Spanish audit checks both redirect and direct canonical catalog without indexing the redirect', () => {
   const routes = source.match(/const routes = \[([^;]+)\];/)?.[1];
@@ -205,7 +235,7 @@ test('Spanish audit checks both redirect and direct canonical catalog without in
   assert.match(source, /new URL\(href\)\.pathname === '\/es\/courses'/);
   assert.match(source, /assert\.deepEqual\(unselectedClientRequests,\[\]/);
   assert.match(source, /assert\.deepEqual\(errors,\[\]/);
-  assert.match(read('app/[locale]/academy/[[...slug]]/page.tsx'), /if \(key === "free-ai-courses"\) return <PublicGrowthCourses locale=\{locale\} \/>/);
+  assert.match(read('app/[locale]/academy/[[...slug]]/page.tsx'), /if \(key === "free-ai-courses"\) return <><PublicGrowthCourses locale=\{locale\} \/><PublicPractitionerCourses locale=\{locale\} \/><\/>/);
 });
 
 test('actual Spanish request observer blocks speculative EN/RU discovery roots and tests, but not explicit ES navigation', () => {
@@ -242,4 +272,26 @@ test('actual sitemap assertions require the canonical origin and exact course UR
     correct.map(href => href.endsWith('/academy/free-ai-courses') ? href + '/unrelated' : href),
     [...correct, 'https://holistichouse.vercel.app/es/courses'],
   ]) assert.throws(() => check(sitemap(bad), routes, assert, URL));
+});
+
+test('strict navigation fixture rejects a missing cart binding and checks the actual readonly cart link', () => {
+  const imports = { ...common, ...navigationImports, 'next/navigation': { usePathname: () => canonical },
+    '@/lib/ui-locale': uiLocale, '@/lib/public-locales': publicLocales,
+    '@/lib/site-navigation-model': navigationModel,
+    './use-navigation-locale': { useNavigationLocale: locale => locale },
+  };
+  delete imports['@/components/commerce/cart-nav-link'];
+  assert.throws(() => load('components/site-navigation.tsx', imports), /@\/components\/commerce\/cart-nav-link/);
+  const assertCart = component => {
+    const tree = component({ locale: 'es' });
+    assert.equal(tree.type, 'a');
+    assert.equal(tree.props.href, '/es/cart', 'Actual cart destination');
+    assert.equal(tree.props['aria-label'], 'Carrito (0)', 'No account or storage state is invented');
+    assert.equal(tree.props['data-cart-has-items'], 'false');
+  };
+  assertCart(cartNav.CartNavLink);
+  const wrong = load('components/commerce/cart-nav-link.tsx', { ...common,
+    '@/lib/commerce/cart': cart, './cart-nav-link.module.css': css,
+  }, value => { assert.ok(value.includes('`/${locale}/cart`')); return value.replace('`/${locale}/cart`', '"/wrong"'); });
+  assert.throws(() => assertCart(wrong.CartNavLink), /Actual cart destination/);
 });

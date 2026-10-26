@@ -164,7 +164,10 @@
 .optionalName input:focus-visible,.privacy summary:focus-visible {
   outline:3px solid #80abc7; outline-offset:2px;
 }
-.enquiryForm input { scroll-margin-bottom:170px; }
+/* Keep the form's clearance stable when focus moves from an editor to consent.
+   The mobile body's nav-height rule otherwise overrides this margin and changes
+   it during mousedown. Avoid changing the scroll target mid-pointer sequence. */
+.wrapper .enquiryForm input { scroll-margin-bottom:170px; }
 @container (max-width: 300px) {
   .methodChoices { grid-template-columns:1fr; }
 }

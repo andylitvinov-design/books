@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
@@ -61,9 +62,75 @@ test('XP is earned for saved lessons, never for psychological severity or test s
   assert.match(quest, /if \(alreadySaved\) \{ setStep\(5\); return \}/)
 })
 
-test('guided tests remain original instrument and autosave while course links launch one-question mode', () => {
+test('course continuation preserves ordinary guided and starter quick modes with original instruments and autosave', async () => {
   assert.match(courseSteps, /\?mode=guided&course=1/)
-  assert.match(runner, /\?mode=guided&course=1/)
+  // The later OPORA starter contract uses Quick; ordinary courses stay Guided.
+  // Exercise the production handler, not the spelling of its dynamic URL.
+  // Optional opt-out and superset mode semantics are intentionally not redefined here.
+  const { getAssessmentDefinition } = await import('../lib/assessments/definitions.js')
+  const { isCourseTest, coursePendingKeys, startOrResumeCourseTest } = await import('../lib/app/course-test-flow.js')
+  const start = runner.indexOf('  async function continueCoursePlan(')
+  const end = runner.indexOf('  async function completePlan(', start)
+  assert.ok(start >= 0 && end > start, 'the actual continuation handler must exist')
+  const handler = runner.slice(start, end)
+  const starter = ['hh-weekly-pulse', 'gad-7', 'hh-resource-pulse']
+  async function continueFixture(keys, completed, { wrongOwner = false } = {}) {
+    const original = { accountId: 'owner-a', courseId: 'course-a', cycleId: null, page: 'runs', recordId: 'run-a', courseMode: '1' }
+    const scope = { current: { ...original } }, lifetime = { current: { mounted: true, epoch: 1 } }
+    const definitions = keys.map(key => getAssessmentDefinition(key, 'v1', 'en'))
+    const course = { course: { id: 'course-a', stage: 2, testKeys: keys },
+      assessments: { selectedTests: keys.map(key => ({ key, completed: completed.includes(key) })) } }
+    const calls = [], navigations = [], updates = []
+    const request = async (...args) => {
+      calls.push(args)
+      const [path] = args
+      if (path === 'course?courseId=course-a') return course
+      if (path === 'bootstrap') return { account: { id: wrongOwner ? 'owner-b' : 'owner-a' },
+        activeTestPlan: { definitionIds: definitions.map(def => def.id) }, runs: [] }
+      if (path === 'runs') return { id: 'next-run' }
+      throw new Error('UNEXPECTED_REQUEST:' + path)
+    }
+    const fn = new Function('renderedRetestScope', 'renderedRetestEpoch', 'retestScope', 'retestLifetime',
+      'appFetch', 'router', 'setData', 'setState', 'locale', 'root', 'isCourseTest', 'coursePendingKeys',
+      'startOrResumeCourseTest', handler + '; return continueCoursePlan')(
+      original, 1, scope, lifetime, request, { push: url => navigations.push(url) },
+      value => updates.push(value), () => {}, 'en', '/en/app', isCourseTest, coursePendingKeys, startOrResumeCourseTest)
+    const pending = fn({ id: 'result-a', runId: 'run-a', definitionKey: keys[0], definitionId: definitions[0].id })
+    if (wrongOwner) await assert.rejects(pending, /COURSE_SELECTION_CHANGED/)
+    else await pending
+    assert.ok(calls.every(call => call[3]?.accountId === 'owner-a'), 'all reads and writes retain the original owner')
+    return { calls, navigations, updates, definitions }
+  }
+  for (const scenario of [
+    { keys: ['hh-weekly-pulse', 'phq-4'], completed: ['hh-weekly-pulse'], mode: 'guided', next: 'phq-4' },
+    { keys: starter, completed: ['hh-weekly-pulse'], mode: 'quick', next: 'gad-7' },
+    { keys: starter, completed: ['hh-weekly-pulse', 'gad-7'], mode: 'quick', next: 'hh-resource-pulse' },
+    { keys: starter, completed: starter, mode: null, next: null },
+  ]) {
+    const f = await continueFixture(scenario.keys, scenario.completed)
+    assert.deepEqual(f.navigations, [scenario.next
+      ? '/en/app/runs/next-run?mode=' + scenario.mode + '&course=1&courseId=course-a'
+      : '/en/app/course?tests=complete&courseId=course-a'])
+    const writes = f.calls.filter(call => call[0] === 'runs')
+    assert.equal(writes.length, Number(Boolean(scenario.next)), 'saved tests are skipped and terminal completion creates no run')
+    if (scenario.next) {
+      const def = f.definitions.find(item => item.key === scenario.next)
+      assert.equal(writes[0][1].definitionKey, def.key)
+      assert.equal(writes[0][1].definitionVersion, def.version)
+      assert.equal(writes[0][1].instrumentLocale, def.instrumentLocale)
+    }
+    assert.equal(f.updates.length, 1)
+  }
+  const stale = await continueFixture(starter, ['hh-weekly-pulse'], { wrongOwner: true })
+  assert.equal(stale.navigations.length, 0)
+  assert.equal(stale.updates.length, 0)
+  assert.equal(stale.calls.filter(call => call[1]).length, 0)
+  // Both presentations still use the full stored instrument and identical submit path.
+  assert.match(runner, /getDefinitionById\(run\.definitionId\)/)
+  assert.match(runner, /def\.questions\.map\(\(item, step\) => \(/)
+  assert.match(runner, /selected=\{run\.answers\[item\.id\]\}/)
+  assert.match(runner, /allAnswered = def \? answeredCount === def\.questions\.length : false/)
+  assert.match(runner, /appFetch\(`runs\/\$\{id\}\/submit`, \{ expectedRevision: pending\.revision \}\)/)
   assert.match(runner, /initialMode=\{searchParams\.get\('mode'\) === 'quick' \? 'quick' : searchParams\.get\('mode'\) === 'guided' \? 'guided' : null\}/)
   // An explicit Guided URL opens the one-question runner directly, for courses and regular tests.
   assert.match(runner, /initialMode === 'guided' \? 'guided' : 'quick'/)
@@ -110,12 +177,24 @@ test('every lesson screen exposes Back, including the first and the saved receip
   const regular = read('components/app/course-slide-player.jsx')
   const oporaV6 = read('components/app/opora-v6-slide-player.jsx')
   const oporaV7 = read('components/app/opora-experience-player.jsx')
-  assert.match(regular, /onClick=\{index===0\?onClose:goBack\}/)
+  assert.match(regular, /onClick=\{index===0\?onBackToPath:goBack\}/)
   assert.match(regular, /data-course-history-review=/)
-  assert.match(oporaV6, /onClick=\{afterSave\?\(\)=>setStep\(slides\.length-1\):step===0\?onClose:back\}/)
+  assert.match(oporaV6, /onClick=\{afterSave\?\(\)=>setStep\(slides\.length-1\):step===0\?onBackToPath:back\}/)
   assert.match(oporaV6, /if\(reviewOnly\)\{setStep\(slides\.length\);return\}/)
-  assert.match(oporaV7, /onClick=\{step===0\?onClose:back\}/)
-  assert.match(oporaV7, /:inPreview\?backFromPreview:\(\)=>setStep\(displayScenes\.length-1\)/)
+  assert.match(oporaV7, /onClick=\{step===0\?onBackToPath:back\}/)
+  const receiptBack = oporaV7.match(/onClick=\{(moment==='habit'[\s\S]*?)\}>/)?.[1]
+  assert.ok(receiptBack, 'execute the actual saved-receipt Back callback')
+  for (const variant of ['habit', 'preview', 'receipt']) {
+    const calls = []
+    const callback = runInNewContext('(' + receiptBack + ')', {
+      moment:variant === 'habit' ? 'habit' : 'receipt', habitSetup:variant === 'habit',
+      inPreview:variant === 'preview', flowScenes:{length:17}, displayScenes:{length:12},
+      setHabitSetup:value=>calls.push(['habit',value]), backFromPreview:()=>calls.push(['preview']),
+      setStep:value=>calls.push(['step',value]),
+    })
+    callback()
+    assert.deepEqual(calls, variant === 'habit' ? [['habit',false]] : variant === 'preview' ? [['preview']] : [['step',16]])
+  }
   assert.match(quest, /if\(step===0\)onClose\(\)/)
   assert.match(quest, /step === 5 && <>/)
 })
@@ -141,9 +220,48 @@ test('previous completed days reopen a no-write lesson, not an XP-earning sessio
   assert.match(daily, /context\(actor,reviewedSession\.id,'course\.session_note'\)/)
   assert.match(route, /new URL\(request\.url\)\.searchParams\.get\('reviewDay'\)/)
   assert.match(oporaV6, /reviewOnly\?0:hasSaved\?OPORA54_PRE_SAVE_KEYS\.length:0/)
-  assert.match(oporaV7, /reviewOnly\?0:hasSaved\?displayScenes\.length:0/)
+  const initialStep = oporaV7.match(/const \[step,setStep\]=useState\(([^\n]+)\)/)?.[1]
+  assert.ok(initialStep, 'execute the actual OPORA player initializer')
+  for (const reviewOnly of [false,true]) for (const hasSaved of [false,true]) {
+    assert.equal(runInNewContext(initialStep,{reviewOnly,hasSaved,flowScenes:{length:17},displayScenes:{length:12}}),
+      reviewOnly ? 0 : hasSaved ? 17 : 0)
+  }
   assert.match(standard, /reviewOnly \? 0 : alreadyDone \? slides\.length : 0/)
   assert.match(standard, /if \(reviewOnly \|\| !Number\.isInteger\(severity\)/)
   const css = read('components/app/course-quest.module.css')
   assert.match(css, /\.previousLesson\{[^}]*min-height:48px/s)
+})
+
+test('first-slide Back routes to the map separately from X, with standalone close fallback', () => {
+  for (const [file, initial, previous, saved] of [
+    ['course-slide-player', 'index', 'goBack', false],
+    ['opora-experience-player', 'step', 'back', false],
+    ['opora-v6-slide-player', 'step', 'back', true],
+  ]) {
+    const source = read(`components/app/${file}.jsx`)
+    const fallback = source.match(/onBackToPath\s*=\s*([^,}]+)/)?.[1]
+    assert.ok(fallback, `${file}: standalone fallback exists`)
+    const expression = source.match(new RegExp('onClick=\\{([^\\n]*' + initial + '===0\\?onBackToPath:' + previous + ')\\}'))?.[1]
+    assert.ok(expression, `${file}: execute actual first-slide Back binding`)
+    for (const supplied of [false, true]) {
+      for (const position of [0, 1]) {
+        const calls = []
+        const context = { [initial]:position, afterSave:false,
+          onClose:()=>calls.push('close'), [previous]:()=>calls.push('previous') }
+        context.onBackToPath = supplied ? ()=>calls.push('map') : runInNewContext(fallback, context)
+        runInNewContext('(' + expression + ')', context)()
+        assert.deepEqual(calls, [position ? 'previous' : supplied ? 'map' : 'close'], file)
+      }
+    }
+    if (saved) {
+      const calls = []
+      runInNewContext('(' + expression + ')', {afterSave:true, step:0, slides:{length:10},
+        setStep:n=>calls.push(n), onBackToPath:()=>calls.push('map'), back:()=>calls.push('back')})()
+      assert.deepEqual(calls, [9], 'saved receipt Back retains prior slide')
+    }
+    assert.match(source, /onClick=\{onClose\}/, `${file}: X retains close-only callback`)
+  }
+  assert.match(today, /onOpenRetest=\{reviewLesson\?finishLessonPlayer:showFinalRetest\}/, 'review retest exit retains existing map destination')
+  assert.equal((today.match(/onBackToPath=\{finishLessonPlayer\}/g)||[]).length, 3)
+  assert.equal((today.match(/onClose=\{closeLessonPlayer\}/g)||[]).length, 3)
 })

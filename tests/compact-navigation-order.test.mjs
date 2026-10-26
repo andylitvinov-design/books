@@ -1,8 +1,45 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import ts from 'typescript'
+import { runInNewContext } from 'node:vm'
 import { activeCompactNavigationId, compactNavigationIds, getCompactNavigation, getSiteNavigation, navigationCopy } from '../lib/site-navigation-model.js'
 const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+function assertGuestBrowseDestination(source) {
+  const file = ts.createSourceFile('personality-profiles-builder.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  assert.equal(file.parseDiagnostics.length, 0)
+  const links = []
+  function visit(node) {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node))
+      && node.attributes.properties.some(prop => ts.isJsxAttribute(prop) && prop.name.getText(file) === 'data-profile-direct-tests')) links.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  assert.equal(links.length, 1, 'one actual direct guest-browse action')
+  const link = links[0]
+  assert.equal(link.tagName.getText(file), 'Link')
+  assert.ok(link.attributes.properties.every(prop => ts.isJsxAttribute(prop)), 'no spread may override the approved guest destination')
+  const names = link.attributes.properties.map(prop => prop.name.getText(file))
+  assert.equal(new Set(names).size, names.length, 'no duplicate attributes may override the destination')
+  assert.ok(!names.some(name => /^onClick/.test(name) || name === 'data-profile-start-tests'), 'browsing does not auto-start a selected test or perform a click-side effect')
+  const attr = name => link.attributes.properties.find(prop => prop.name.getText(file) === name)
+  const href = attr('href')?.initializer
+  const prefetch = attr('prefetch')?.initializer
+  assert.ok(href && ts.isJsxExpression(href) && href.expression, 'actual href expression is required')
+  assert.ok(prefetch && ts.isJsxExpression(prefetch) && prefetch.expression?.kind === ts.SyntaxKind.FalseKeyword, 'guest browse keeps prefetch disabled')
+  const origin = 'https://public.invalid'
+  for (const locale of ['en', 'ru', 'es']) {
+    const value = runInNewContext('(' + href.expression.getText(file) + ')', { locale }, { timeout: 1000 })
+    assert.equal(value, '/' + locale + '/client/tests', locale + ': exact public guest catalogue, not a private or auto-start URL')
+    const url = new URL(value, origin)
+    assert.equal(url.origin, origin)
+    assert.equal(url.pathname, '/' + locale + '/client/tests')
+    assert.equal(url.search, '', 'browse has no selection, return or auto-start query')
+    assert.equal(url.hash, '', 'browse has no start fragment')
+  }
+}
+
 const order = ['home','analysis','courses','profile','alchemy','pro','temple']
 test('seven accessible public tabs lead to distinct routes in EN/RU/ES', () => {
   assert.deepEqual(compactNavigationIds, order)
@@ -61,7 +98,7 @@ test('My Profile guest tests and separate support journeys are all localized and
   const locales=read('lib/public-locales.ts'), sitemap=read('app/sitemap.ts')
   assert.ok(builder.includes('data-personality-profile-builder'))
   assert.ok(builder.includes('data-profile-direct-tests'))
-  assert.ok(builder.includes("locale + '/tests'"))
+  assertGuestBrowseDestination(builder)
   assert.ok(builder.includes('data-profile-start-tests'))
   assert.ok(builder.includes('/app/portfolio#hh-development-program'))
   for (const section of ['temple-insights','holistic-support']) {

@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {bookingMasterEmailConfig,sendBookingMasterEmail} from '../lib/practitioners/booking-master-email.js'
+import {createBookingServerHarness} from './helpers/booking-server-harness.mjs'
+const bookingHarness=createBookingServerHarness()
+const {bookingMasterEmailConfig,sendBookingMasterEmail}=await bookingHarness.load('lib/practitioners/booking-master-email.js')
 import {PRACTITIONER_ID} from '../data/app-services.js'
 
 const env={VERCEL_ENV:'production',HH_BOOKING_EMAIL_ENABLED:'true',

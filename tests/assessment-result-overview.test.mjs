@@ -39,16 +39,27 @@ test('existing professional follow-up notice is not buried in a long report or r
 })
 
 test('missing, malformed, outside-range scores and dates do not produce fabricated values', () => {
+  const invalidSections = [
+    section('bad', { value: null }),
+    section('outside', { value: 12 }),
+    section('non-numeric', { value: 'high' }),
+  ]
   const overview = assessmentResultOverview({
     intro: 'No interpretation until compatible data are present.',
-    sections: [
-      section('bad', { value: null }),
-      section('outside', { value: 12 }),
-      section('non-numeric', { value: 'high' }),
-      section('ok', { value: 0 }),
-    ],
+    sections: [...invalidSections, section('ok', { value: 0 })],
   }, { measurementAt: 'bad-date' })
-  assert.deepEqual(overview.preview.map(item => item.score), [null, null, null])
+  // Valid zero is a real score and may rank ahead of invalid sections.
+  // Assert by identity, not the input order or the truncated preview position.
+  const scores = new Map(overview.preview.map(item => [item.key, item.score]))
+  assert.equal(scores.get('ok'), '0 / 0–10')
+  for (const item of overview.preview.filter(item => item.key !== 'ok')) {
+    assert.ok(invalidSections.some(section => section.key === item.key))
+    assert.equal(item.score, null, item.key)
+  }
+  // Check every invalid section even if ranking omitted it from the mixed preview.
+  const invalidOnly = assessmentResultOverview({ sections: invalidSections }, null)
+  assert.deepEqual(new Map(invalidOnly.preview.map(item => [item.key, item.score])),
+    new Map(invalidSections.map(item => [item.key, null])))
   assert.equal(overview.additionalCount, 1)
   assert.equal(overview.measurementDateLabel, null)
   assert.match(overview.purpose, /compatible data/)

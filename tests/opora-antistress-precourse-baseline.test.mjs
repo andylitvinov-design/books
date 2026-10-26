@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
@@ -57,7 +58,7 @@ test('stage-2 server rejects omitting the baseline and reviewing without complet
   assert.match(active,/COURSE_TESTS_REMAIN/)
 })
 
-test('the private step-2 interface visibly leads through starting tests before the first lesson', () => {
+test('the private step-2 interface visibly leads through starting tests before the first lesson', async () => {
   const wizard=read('components/app/course-r3-steps.jsx')
   const css=read('components/app/course-r3-steps.module.css')
   const root=read('components/app/my-course.jsx')
@@ -67,7 +68,111 @@ test('the private step-2 interface visibly leads through starting tests before t
   assert.match(root,/Weekly Pulse baseline/)
   assert.match(wizard,/data-course-antistress-pretests/)
   assert.match(wizard,/data-course-required-baseline/)
-  assert.match(wizard,/withAntistressRequiredBaseline\(confirmedKeys\.length/)
+  const initialization=wizard.match(/useEffect\(\(\)=>\{\n    if\(stage!==2 \|\| testsTouched\) return[\s\S]*?\n  \},\[stage,testsTouched,confirmedKeys,ranked,preset,programme\?\.id\]\)/)?.[0]
+  assert.ok(initialization,'execute the actual selection effect, not a duplicate selection algorithm')
+  const initializationBody=initialization.slice('useEffect(()=>{'.length,initialization.lastIndexOf('\n  },'))
+  const starter=['hh-weekly-pulse','gad-7','hh-resource-pulse']
+  const extras=['fictional-extra']
+  const ranked=Object.freeze([...starter,...extras].map(key=>Object.freeze({key})))
+  function selectionContext(confirmedKeys=[],intent=null,preset=null){
+    const calls=[]
+    const context={stage:2,testsTouched:false,programme:{id:'stress'},preset,
+      confirmedKeys:Object.freeze([...confirmedKeys]),ranked,
+      readCourseEntryIntent:()=>intent,getCourseProgram,withAntistressRequiredBaseline,
+      setChosenTests:keys=>calls.push(Array.from(keys))}
+    return {context,calls}
+  }
+  const initialize=context=>runInNewContext('(()=>{'+initializationBody+'})()',context)
+  const cases=[
+    {confirmed:[],expected:starter},
+    {confirmed:[],intent:{testKeys:['gad-7','unavailable-item']},expected:starter},
+    {confirmed:['hh-weekly-pulse'],expected:['hh-weekly-pulse']},
+    {confirmed:['hh-weekly-pulse','gad-7'],expected:['hh-weekly-pulse','gad-7']},
+    {confirmed:starter,expected:starter},
+    {confirmed:['hh-weekly-pulse','fictional-extra'],expected:['hh-weekly-pulse','fictional-extra']},
+    {confirmed:['gad-7'],expected:['hh-weekly-pulse','gad-7']},
+  ]
+  for(const scenario of cases){
+    const {context,calls}=selectionContext(scenario.confirmed,scenario.intent)
+    initialize(context)
+    assert.deepEqual(calls,[scenario.expected],'retain confirmed opt-outs; defaults are only for an unconfirmed selection')
+    assert.deepEqual(Array.from(context.confirmedKeys),scenario.confirmed,'do not mutate persisted selection')
+    assert.ok(calls[0].includes(ANTISTRESS_REQUIRED_BASELINE_KEY))
+  }
+  const preset=Object.freeze({testKeys:Object.freeze(['fixed-a','fixed-b'])})
+  const fixed=selectionContext(['hh-weekly-pulse'],null,preset)
+  initialize(fixed.context)
+  assert.deepEqual(fixed.calls,[['fixed-a','fixed-b']],'fixed presets remain exact, without OPORA additions')
+  assert.deepEqual(Array.from(preset.testKeys),['fixed-a','fixed-b'])
+  for(const patch of [{stage:1},{testsTouched:true}]){
+    const {context,calls}=selectionContext()
+    Object.assign(context,patch);initialize(context)
+    assert.equal(calls.length,0,'do not overwrite outside stage 2 or while user edits')
+  }
+  const extract=name=>{
+    const declaration=wizard.match(new RegExp('  (?:async )?function '+name+'\\([^\\n]*\\) \\{[\\s\\S]*?\\n  \\}'))?.[0]
+    assert.ok(declaration,name+' is extracted from actual component source')
+    return '('+declaration+')'
+  }
+  const state=selectionContext()
+  const commands=[],routes=[],errors=[]
+  const c=state.context
+  Object.assign(c,{
+    chosenTests:[],isAntistress:true,ANTISTRESS_REQUIRED_BASELINE_KEY,hasAntistressRequiredBaseline,
+    setChosenTests:value=>{c.chosenTests=typeof value==='function'?value(c.chosenTests):value},
+    setTestsTouched:value=>{c.testsTouched=value},
+    actionLock:{current:false},busy:false,localBusy:false,openingTest:false,confirmed:false,
+    optionByKey:new Map(ranked.map(item=>[item.key,{...item,definitionVersion:'fictional-v1',instrumentLocale:'en'}])),
+    assessment:{planStatus:'active',planKeys:starter},data:{account:{id:'fictional-owner'}},
+    setLocalBusy:()=>{},onError:message=>{if(message)errors.push(message)},ensureCurrent:()=>{},
+    saveExistingAccountPlan:()=>{throw Error('existing fictional plan should be reused')},
+    onCourseCommand:async(action,body)=>{
+      commands.push({action,body:JSON.parse(JSON.stringify(body))})
+      return {course:{id:'fictional-course',testKeys:[...body.testKeys],revision:2}}
+    },
+    onState:value=>{c.confirmedKeys=Object.freeze([...value.course.testKeys])},
+    discardCourseEntryIntent:()=>{},setShowCompletedOptions:()=>{},isCourseCurrent:()=>true,
+    onCourseRead:()=>{throw Error('initial selection has not been confirmed')},
+    coursePendingKeys:()=>['hh-weekly-pulse'],startOrResumeCourseTest:async()=>({id:'fictional-run'}),
+    locale:'en',root:'/en/app',boundRequest:()=>{throw Error('no real network requests in this test')},
+    router:{push:path=>routes.push(path)},
+  })
+  initialize(c)
+  const toggle=runInNewContext(extract('toggleTest'),c)
+  toggle('gad-7');toggle('hh-resource-pulse');toggle('hh-weekly-pulse')
+  assert.deepEqual(Array.from(c.chosenTests),['hh-weekly-pulse'],'both optional choices are removable, required Weekly is not')
+  const disabled=wizard.match(/disabled=\{([^}\n]+)\} onClick=\{startCompactTests\}/)?.[1]
+  assert.ok(disabled)
+  assert.equal(runInNewContext(disabled,c),false,'Weekly-only is a permitted enabled CTA')
+  const start=runInNewContext(extract('startCompactTests'),c)
+  assert.equal(commands.length,0,'render and selection do not confirm consent automatically')
+  for(const field of ['busy','localBusy','openingTest']){
+    c[field]=true;await start();c[field]=false
+    assert.equal(commands.length,0,'busy guards do not save or start tests')
+    assert.equal(routes.length,0)
+  }
+  c.actionLock.current=true
+  await start()
+  c.actionLock.current=false
+  assert.equal(commands.length,0,'in-flight action lock prevents duplicate confirmation')
+  assert.equal(routes.length,0)
+  c.ensureCurrent=()=>{throw Error('fictional-owner-changed')}
+  await start()
+  assert.deepEqual(errors,['fictional-owner-changed'])
+  assert.equal(commands.length,0,'owner/lifetime guard runs before confirmation')
+  assert.equal(routes.length,0)
+  errors.length=0;c.ensureCurrent=()=>{}
+  await start()
+  assert.deepEqual(commands,[{action:'confirm-tests',body:{testKeys:['hh-weekly-pulse']}}])
+  assert.deepEqual(routes,['/en/app/runs/fictional-run?mode=quick&course=1&courseId=fictional-course'])
+  assert.deepEqual(errors,[])
+  assert.equal(c.testsTouched,false)
+  initialize(c)
+  assert.deepEqual(Array.from(c.chosenTests),['hh-weekly-pulse'],'confirmation must not re-add optional tests')
+  const reloaded=selectionContext(Array.from(c.confirmedKeys))
+  initialize(reloaded.context)
+  assert.deepEqual(reloaded.calls,[['hh-weekly-pulse']],'a remount retains the saved optional opt-out')
+
   assert.match(wizard,/if\(isAntistress && key===ANTISTRESS_REQUIRED_BASELINE_KEY\) return/)
   assert.match(wizard,/confirmed && baselineConfirmed && pending\.length===0/)
   assert.match(wizard,/pending\.length===0&&baselineConfirmed/)

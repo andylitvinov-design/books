@@ -1,8 +1,42 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
+import { diagnosisFixture } from "./helpers/diagnosis-parent-fixture.mjs";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
+
+function assertDaoDetailsTarget(ui, intro, offers) {
+  assert.match(ui, /href=\{"\/" \+ locale \+ "\/services\/free-consultation#free-diagnosis-options"\} prefetch=\{false\}/);
+  assert.doesNotMatch(ui, /\/services\/free-consultation#intro-request/);
+  assert.match(intro, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
+  assert.equal([...intro.matchAll(/<FreeDiagnosisOffers\b/g)].length, 1, "Exactly one actual hub mount");
+  // The canonical consultation hub anchors its heading inside the localized
+  // full-mode section. Execute that actual parent: a literal anywhere is not proof.
+  for (const locale of ["en", "ru", "es"]) {
+    const f = diagnosisFixture({locale, parentSource: offers, pathname: "/" + locale + "/services/free-consultation"});
+    try {
+      const sections = f.nodes().filter(n => n.type === "section" && Object.hasOwn(n.props, "data-free-diagnosis-options"));
+      assert.equal(sections.length, 1, "One actual consultation offer section");
+      const section = sections[0];
+      assert.equal(section.props.lang, locale);
+      assert.equal(section.props["data-free-diagnosis-layout"], "full", "The default hub is full mode");
+      assert.equal(section.hidden, false);
+      const targets = f.nodes().filter(n => n.props.id === "free-diagnosis-options");
+      assert.equal(targets.length, 1, "Exactly one fragment target");
+      assert.equal(targets[0].type, "header", "Fragment lands at the offer heading");
+      assert.equal(targets[0].hidden, false, "Fragment target is visible before interaction");
+      function contains(node, target) {
+        if (Array.isArray(node)) return node.some(child => contains(child, target));
+        if (!node || typeof node !== "object") return false;
+        return node.element === target.element || contains(node.props?.children, target);
+      }
+      assert.ok(contains(section, targets[0]), "Target belongs to the actual offer section");
+      const headings = f.nodes().filter(n => n.type === "h2" && n.props.id === section.props["aria-labelledby"]);
+      assert.equal(headings.length, 1);
+      assert.ok(contains(targets[0], headings[0]), "Target contains the section's accessible heading");
+    } finally { f.unmount(); }
+  }
+}
 
 test("Tests & Coaching first screen offers four paths, with original private Dao panel preserved on demand", () => {
   const ui = read("components/ideas-discovery.tsx");
@@ -108,15 +142,14 @@ test("Dao insight offers two localized cards with in-place consented enquiries a
   const ui = read("components/ideas-discovery.tsx");
   const css = read("components/ideas-discovery.module.css");
   const intro = read("app/[locale]/services/free-consultation/page.tsx");
+  const offers = read("components/free-diagnosis-offers.tsx");
   const free = read("app/[locale]/services/free-situation-review/page.tsx");
   assert.match(ui, /data-ideas-dao-promos/);
   assert.match(ui, /result\.mode === "dao" && hexagram[\s\S]*?<DaoOfferCards locale=\{answerLocale\}[\s\S]*?result\.mode === "aphorisms"/);
   assert.match(ui, /t\.daoPromoReading\.title/);
   assert.match(ui, /t\.daoPromoGift\.title/);
-  assert.match(ui, /\/services\/free-consultation#free-diagnosis-options/);
+  assertDaoDetailsTarget(ui, intro, offers);
   assert.match(ui, /\/services\/free-situation-review#request-free-review/);
-  assert.match(intro, /<FreeDiagnosisOffers locale=\{lang\} \/>/);
-  assert.match(read("components/free-diagnosis-offers.tsx"), /id="free-diagnosis-options"/);
   assert.match(free, /FreeEntryLanding locale=\{locale\} kind="situation"/);
   for (const text of ["Получите персональное даосское гадание", "Get a personal Daoist reading", "Recibe una lectura taoísta personal", "ПОДАРОК · БЕСПЛАТНО", "FREE GIFT", "REGALO · GRATIS"]) {
     assert.ok(ui.includes(text), "missing localized offer: " + text);
@@ -124,6 +157,32 @@ test("Dao insight offers two localized cards with in-place consented enquiries a
   assert.match(css, /\.daoPromos \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.daoPromos \{ grid-template-columns: 1fr/);
   assert.match(css, /\.daoPromoAction \{[^}]*min-height: 44px/);
+});
+
+test("Dao details navigation rejects stale fragments, missing targets and detached offers", () => {
+  const ui = read("components/ideas-discovery.tsx");
+  const intro = read("app/[locale]/services/free-consultation/page.tsx");
+  const offers = read("components/free-diagnosis-offers.tsx");
+  assertDaoDetailsTarget(ui, intro, offers);
+  for (const fragment of ["intro-request", "missing-offer"]) {
+    const broken = ui.replace("/services/free-consultation#free-diagnosis-options", "/services/free-consultation#" + fragment);
+    assert.notEqual(broken, ui);
+    assert.throws(() => assertDaoDetailsTarget(broken, intro, offers), assert.AssertionError);
+  }
+  const missingTarget = offers.replace('id="free-diagnosis-options"', 'id="missing-offer"');
+  assert.notEqual(missingTarget, offers);
+  assert.throws(() => assertDaoDetailsTarget(ui, intro, missingTarget), assert.AssertionError);
+  for (const changed of [
+    offers.replace('id="free-diagnosis-options"', 'id="free-diagnosis-options" hidden'),
+    offers.replace('id="free-diagnosis-options-title"', 'id="free-diagnosis-options"'),
+    offers.replace('<header className={styles.heading}', '<div className={styles.heading}').replace('</header>', '</div>'),
+  ]) {
+    assert.notEqual(changed, offers);
+    assert.throws(() => assertDaoDetailsTarget(ui, intro, changed), assert.AssertionError);
+  }
+  const detached = intro.replace("<FreeDiagnosisOffers locale={lang} />", "");
+  assert.notEqual(detached, intro);
+  assert.throws(() => assertDaoDetailsTarget(ui, detached, offers), assert.AssertionError);
 });
 
 test("approved image-based reference renders Dao, expandable meaning and three readable horizontal aphorism rows", () => {

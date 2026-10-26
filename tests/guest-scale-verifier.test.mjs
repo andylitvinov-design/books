@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
 import vm from 'node:vm'
 import ts from 'typescript'
-import { assertGuestSnapshot, assertAccountReportSnapshot, assertGuestSaveIntent, guestFinishLabel, guestAnalysisLabel } from '../scripts/helpers/guest-scale-verifier.mjs'
+import { assertGuestSnapshot, assertAccountReportSnapshot, assertGuestSaveIntent, guestFinishLabel, guestAnalysisLabel, expectedAccountRangeRow } from '../scripts/helpers/guest-scale-verifier.mjs'
 import * as reportModule from '../lib/assessments/result-report.js'
 import * as gaugeModule from '../lib/assessments/dashboard-gauges.js'
 import * as guideModule from '../lib/assessments/scale-guides.js'
@@ -21,6 +21,14 @@ import { ASRS6_DEFINITIONS } from '../data/assessments/asrs-v1-6-nyu.js'
 import { TANTRIC_REFLECTION_DEFINITIONS } from '../data/assessments/tantric-reflections-v1.js'
 import { RELATIONSHIPS_INTIMACY_DEFINITIONS } from '../data/assessments/relationships-intimacy-v1.js'
 const { buildAssessmentResultReport } = reportModule
+
+test('account range presentation uses exact source answer codes including zero, never a guessed ordinal', () => {
+  const base={displayRange:'0–2',label:'Not at all',current:true}
+  assert.deepEqual(expectedAccountRangeRow({...base,originalAnswerCode:0},'en'),{range:'0–2',label:'≈ option 0 · Not at all',current:true})
+  assert.deepEqual(expectedAccountRangeRow({...base,label:'Совсем нет',originalAnswerCode:0},'ru'),{range:'0–2',label:'≈ вариант 0 · Совсем нет',current:true})
+  for(const originalAnswerCode of [null,undefined])assert.deepEqual(expectedAccountRangeRow({...base,originalAnswerCode},'en'),{range:'0–2',label:'Not at all',current:true})
+  assert.deepEqual(expectedAccountRangeRow({...base,originalAnswerCode:4,current:false},'en'),{range:'0–2',label:'≈ option 4 · Not at all',current:false})
+})
 const definitions = [...PERSONALITY_TYPE_DEFINITIONS, ...MHC_SF_DEFINITIONS, ...COMPASSION_DEFINITIONS, ...ASRS6_DEFINITIONS, ...RELATIONSHIPS_INTIMACY_DEFINITIONS, ...TANTRIC_REFLECTION_DEFINITIONS,
   getAssessmentDefinition('phq-9','v1','en'), getAssessmentDefinition('brcs','v1','en'),
   getAssessmentDefinition('gad-7','v1','ru'), getAssessmentDefinition('hh-money-pressure','v1','en')]
@@ -484,5 +492,41 @@ test('Tantric reports retain all five source-bound descriptive levels on every r
         assert.throws(() => assertAccountReportSnapshot(broken, result, locale))
       }
     }
+  }
+})
+
+test('actual typology JSX retains exact ordinal prefix, semantic label, range and current band in EN/RU', () => {
+  const key=PERSONALITY_TYPE_DEFINITIONS[0].key
+  for(const locale of ['en','ru'])for(const profile of ['min','mixed','max']){
+    const definition=PERSONALITY_TYPE_DEFINITIONS.find(item=>item.key===key&&item.instrumentLocale===locale)
+    assert.ok(definition)
+    const result=scored(definition,profile),snapshot=accountFixture(result,locale)
+    assertAccountReportSnapshot(snapshot,result,locale)
+    for(const [index,scale] of snapshot.scales.entries()){
+      const reading=gaugeModule.gaugeModel(result.dimensions[index],result,locale).rangeReading
+      assert.deepEqual(reading.rows.map(row=>row.originalAnswerCode),[1,2,3,4,5],'Original source codes, not zero-based row indexes')
+      assert.deepEqual(scale.publishedBands.map(row=>row.label),definition.responseAnchors.map((label,anchorIndex)=>
+        (locale==='ru'?'≈ вариант ':'≈ option ')+(anchorIndex+1)+' · '+label))
+      assert.deepEqual(scale.publishedBands.map(row=>row.range),reading.rows.map(row=>row.displayRange))
+      assert.deepEqual(scale.publishedBands.map(row=>row.current),reading.rows.map(row=>row.current))
+      assert.equal(scale.publishedBands.filter(row=>row.current).length,1)
+    }
+    const reading=gaugeModule.gaugeModel(result.dimensions[0],result,locale).rangeReading
+    const semantic=reading.rows[0].label,code=reading.rows[0].originalAnswerCode
+    for(const mutate of [
+      row=>{row.label=semantic},
+      row=>{row.label='Estimated '+code+' · '+semantic},
+      row=>{row.label=(locale==='ru'?'≈ вариант ':'≈ option ')+(code+1)+' · '+semantic},
+      row=>{row.label=(locale==='ru'?'≈ option ':'≈ вариант ')+code+' · '+semantic},
+      row=>{row.label=(locale==='ru'?'≈ вариант ':'≈ option ')+code+' · Unrelated meaning'},
+      row=>{row.range='999–1000'},
+      row=>{row.current=!row.current},
+    ]){
+      const broken=structuredClone(snapshot);mutate(broken.scales[0].publishedBands[0])
+      assert.throws(()=>assertAccountReportSnapshot(broken,result,locale),{code:'ERR_ASSERTION'})
+    }
+    const reordered=structuredClone(snapshot)
+    ;[reordered.scales[0].publishedBands[0],reordered.scales[0].publishedBands[1]]=[reordered.scales[0].publishedBands[1],reordered.scales[0].publishedBands[0]]
+    assert.throws(()=>assertAccountReportSnapshot(reordered,result,locale),{code:'ERR_ASSERTION'})
   }
 })

@@ -5,6 +5,8 @@ import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as navigationModel from '../lib/site-navigation-model.js';
+import * as cart from '../lib/commerce/cart.js';
+import * as homeSpace from '../lib/home-personal-space.mjs';
 import * as acquisition from '../data/local-acquisition.js';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
@@ -19,35 +21,49 @@ const link = props => jsx('a', props);
 function loadComponent(path, modules) {
   const compiled = ts.transpileModule(read(path), { fileName: path, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const exports = {};
-  runInNewContext(compiled, { exports, require: name => {
+  runInNewContext(compiled, { exports, fetch: denied, XMLHttpRequest: denied, WebSocket: denied, require: name => {
     assert.ok(Object.hasOwn(modules, name), 'Known component dependency: ' + name);
     return modules[name];
   } });
   return exports;
 }
+const denied = () => assert.fail('No navigation, storage, account or transport in this fixture');
+const publicSpace = Object.freeze({ status: 'idle', summary: null, open: false, openPanel: denied });
+const hooks = { createContext: value => ({ value }), useContext: () => publicSpace, useCallback: fn => fn, useId: () => 'synthetic-search-id', useEffect() {}, useRef: value => ({ current: value }), useState: value => [value, denied] };
 const common = {
+  react: hooks,
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { default: link },
-  'lucide-react': Object.fromEntries(['BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'Sparkles'].map(name => [name, () => null])),
+  'lucide-react': Object.fromEntries(['Archive', 'BookOpenCheck', 'BriefcaseBusiness', 'CalendarDays', 'ClipboardList', 'Flame', 'FlaskConical', 'Heart', 'HeartHandshake', 'House', 'Landmark', 'LockKeyhole', 'MessageCircle', 'Search', 'ShoppingBasket', 'UserRound', 'Users', 'X', 'BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'ShieldCheck', 'Target', 'Sparkles'].map(name => [name, () => null])),
 };
 let pathname = '/';
+const css = { default: new Proxy({}, { get: (_target, key) => String(key) }) };
+const personalSpace = loadComponent('components/home-personal-space.tsx', {
+  ...common, 'next/image': { default: props => jsx('img', props) },
+  'next/navigation': { usePathname: () => pathname },
+  '@/lib/app/client-fetch': { appFetch: denied }, '@/lib/native/client': { isNativeHolisticHouse: denied },
+  '@/lib/home-personal-space.mjs': homeSpace, './home-personal-space.module.css': css,
+});
+const cartNav = loadComponent('components/commerce/cart-nav-link.tsx', { ...common,
+  '@/lib/commerce/cart': cart, './cart-nav-link.module.css': css,
+});
+const siteSearch = loadComponent('components/site-search.tsx', { ...common,
+  'next/navigation': { useRouter: () => ({ push: denied }) }, './site-search.module.css': css,
+});
+const compactIcons = loadComponent('components/compact-navigation-icons.ts', common);
 const { SiteNavigation } = loadComponent('components/site-navigation.tsx', {
   ...common,
-  react: { useEffect() {}, useRef: () => ({ current: null }) },
+  react: hooks,
   'next/navigation': { usePathname: () => pathname },
   '@/lib/ui-locale': { localePath: (path, locale) => '/' + locale + path, saveUiLocale() {} },
   '@/lib/public-locales': { hasSpanishCounterpart: () => true, publicCounterpart: (_path, locale) => locale === 'en' ? '/' : '/' + locale, savePublicLocale() {} },
   '@/lib/site-navigation-model': navigationModel,
-  '@/components/commerce/cart-nav-link': { CartNavLink: () => null },
-  '@/components/site-search': { SiteSearch: () => null },
-  './compact-navigation-icons': { compactNavigationIcons: Object.fromEntries(navigationModel.compactNavigationIds.map(id => [id, () => null])) },
+  '@/components/commerce/cart-nav-link': cartNav,
+  '@/components/site-search': siteSearch,
+  './compact-navigation-icons': compactIcons,
   './use-navigation-locale': { useNavigationLocale: locale => locale },
-  './home-personal-space': { HomePersonalSpaceNavEntry: ({locale}) => jsx('button', {
-    className:'site-cabinet-entry','data-nav-item':'cabinet',
-    'aria-haspopup':'dialog','aria-controls':'home-personal-space-dialog',
-    'aria-expanded':false,'aria-label':{en:'My Space',ru:'Моё пространство',es:'Mi espacio'}[locale],
-    children:locale==='ru'?'Моё':{en:'My Space',es:'Mi espacio'}[locale],
-  }) },
+  './home-personal-space': personalSpace,
+
 });
 const { AcquisitionEventLink } = loadComponent('components/acquisition-event-link.tsx', { ...common, '@/data/local-acquisition': acquisition });
 const { coreServiceOffers } = loadComponent('data/core-service-offers.ts', {});
@@ -62,8 +78,24 @@ const { ServicesSolutions } = loadComponent('components/services-solutions.tsx',
   '@/data/service-video-library': { getServiceVideoWatchUrl: (id, locale) => '/' + locale + '/services/video/' + id },
   './services-solutions.module.css': { default: {} },
 });
+const homeChildren = {
+  '@/components/home-section-carousel': loadComponent('components/home-section-carousel.tsx', {
+    ...common, 'next/image': { default: props => jsx('img', props) },
+    '@/components/static-portrait': { StaticPortrait: props => jsx('img', props) },
+    './services-conversion-hero.module.css': { default: {} },
+  }),
+  '@/components/home-more-disclosure': loadComponent('components/home-more-disclosure.tsx', {
+    ...common, './home-more-disclosure.module.css': { default: {} },
+    'next/dynamic': { default: (_loader, options) => { assert.equal(options.ssr, false); return denied; } },
+  }),
+  '@/components/home-featured-workspace': loadComponent('components/home-featured-workspace.tsx', {
+    ...common, 'next/image': { default: props => jsx('img', props) },
+    './home-featured-workspace.module.css': { default: {} },
+    '@/components/home-personal-space': { useHomePersonalSpace: () => null },
+  }),
+};
 const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx', {
-  ...common, '@/data/local-acquisition': acquisition,
+  ...common, ...homeChildren, '@/data/local-acquisition': acquisition,
   '@/components/site-navigation': { SiteNavigation },
   '@/components/home-personal-space': { HomePersonalSpaceProvider: ({children}) => children, HomePersonalSpaceCard: () => null },
   '@/components/services-solutions': { ServicesSolutions },
@@ -90,25 +122,26 @@ test('CSP history clicks the unique body About CTA despite the real header dupli
   assert.match(release, /assert\.deepEqual\(cspErrors, \[\]/);
 });
 
-const homeLabels = {
-  en: ['Get a free written review', 'Take free self-checks', 'Ask about a session · from €50'],
-  ru: ['Получить бесплатный разбор', 'Пройти бесплатные тесты', 'Запросить личную сессию · от €50'],
-};
 function assertHomeRoutes(tree, locale) {
   const nodes = treeNodes(tree);
-  const actions = nodes.filter(node => node.type === 'a' && node.props['data-hero-cta']);
-  assert.deepEqual(actions.map(node => [node.props['data-hero-cta'], node.props.href, node.props.children[0]]), [
-    ['paid-sessions', '/' + locale + '/services#consultation', homeLabels[locale][2]],
-    ['free-written-review', '/' + locale + '/services/free-situation-review', homeLabels[locale][0]],
-    ['free-tests', '/' + locale + '/client/tests', homeLabels[locale][1]],
-  ]);
-  assert.deepEqual(actions.map(node => node.props.className), ['service-home-button service-home-button--primary', 'service-home-button service-home-button--secondary', 'service-home-selfcheck-link']);
-  const freeStart = nodes.filter(node => node.props.id === 'free-start');
-  assert.equal(freeStart.length, 1, 'Start free resolves to the actual photo service heading');
-  const services = nodes.filter(node => node.props['data-core-service-offers'] === 'home');
-  assert.equal(services.length, 1, 'Only the existing photographic services section is rendered');
-  assertPhotoServices(services[0], locale);
-  assert.ok(nodes.indexOf(actions[2]) < nodes.indexOf(services[0]));
+  const carousel = nodes.filter(node => node.props['data-home-section-carousel'] !== undefined);
+  assert.equal(carousel.length, 1, 'One real current Home carousel');
+  const actions = treeNodes(carousel).filter(node => node.type === 'a' && node.props['data-home-slide-action']);
+  assert.equal(actions.length, 1, 'One current first-screen service action');
+  assert.equal(actions[0].props.href, '/' + locale + '/services#consultation', 'Exact current consultation destination');
+  assert.equal(actions[0].props['data-home-first-screen-cta'], 'paid', 'First current action is explicitly paid');
+  assert.match(actions[0].props.children[0], /€50/, 'Current consultation is not misrepresented as free');
+  const sectionLinks = treeNodes(carousel).filter(node => node.props['data-home-nav-section']);
+  assert.deepEqual(sectionLinks.map(node => node.props.href), ['explore/energy', 'explore/love', 'explore/business', 'client/tests', 'books', 'app'].map(path => '/' + locale + '/' + path), 'All six actual section destinations');
+  const topics = nodes.filter(node => node.props['data-home-topic-filter']);
+  assert.deepEqual(topics.map(node => node.props.href), ['explore/energy', 'explore/love', 'explore/business', 'temple-support', 'services', 'academy'].map(path => '/' + locale + '/' + path), 'Current topic and catalogue links');
+  for (const [id,path] of [['academy','academy'],['review','services/free-situation-review'],['reiki','academy/principles-of-energywork/learn'],['opora','courses/antistress']]) {
+    const links = nodes.filter(node => node.props['data-home-offer-primary'] === id);
+    assert.equal(links.length, 1, 'Actual public offer ' + id);
+    assert.equal(links[0].props.href, '/' + locale + '/' + path, 'Exact current offer ' + id);
+    assert.equal(links[0].props.prefetch, false, 'No speculative offer navigation');
+  }
+  assert.equal(nodes.filter(node => node.props['data-home-reports-cta']).length, 0, 'Anonymous public context does not expose reports');
 }
 function assertPhotoServices(section, locale) {
   const cards = treeNodes(section).filter(node => node.props['data-core-service-id']);
@@ -126,30 +159,23 @@ function assertPhotoServices(section, locale) {
   });
 }
 for (const locale of ['en', 'ru']) {
-  test(locale + ' homepage renders exact personal-session, free-review and self-check routes in owner-approved order', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
+  test(locale + ' homepage renders current consultation carousel and exact public learning/review routes', () => assertHomeRoutes(HolisticHouseHome({ locale }), locale));
 }
 for (const locale of ['en', 'ru']) {
   test(locale + ' existing photo cards keep both free services and two personal-work options', () => assertPhotoServices(ServicesSolutions({ locale, variant: 'home' }), locale));
 }
-for (const action of ['free-written-review', 'free-tests', 'paid-sessions']) {
-  test('homepage route contract rejects wrong ' + action + ' destination', () => {
-    const tree = HolisticHouseHome({ locale: 'en' });
-    treeNodes(tree).find(node => node.props['data-hero-cta'] === action).props.href = '/wrong';
-    assert.throws(() => assertHomeRoutes(tree, 'en'));
-  });
-}
-for (const fault of ['wrong paid label', 'missing primary consultation class', 'missing free target', 'wrong Wu Xing route']) {
-  test('homepage contract rejects ' + fault, () => {
-    const tree = HolisticHouseHome({ locale: 'en' });
-    const nodes = treeNodes(tree);
-    if (fault === 'wrong paid label') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.children[0] = 'Free call';
-    if (fault === 'missing primary consultation class') nodes.find(node => node.props['data-hero-cta'] === 'paid-sessions').props.className = 'service-home-paid-link';
-    if (fault === 'missing free target') nodes.find(node => node.props.id === 'free-start').props.id = 'missing';
-    if (fault === 'wrong Wu Xing route') {
-      const dao = nodes.find(node => node.props['data-core-service-id'] === 'dao');
-      treeNodes(dao).find(node => node.type === 'a' && node.props.href === '/en/services/dao-health-profile').props.href = '/wrong';
-    }
-    assert.throws(() => assertHomeRoutes(tree, 'en'));
+for (const fault of ['missing carousel', 'wrong consultation destination', 'free consultation claim', 'missing paid indication', 'wrong tests route', 'missing Academy entry', 'wrong Academy route', 'wrong review route']) {
+  test('current Home route contract rejects ' + fault, () => {
+    const tree = HolisticHouseHome({ locale: 'en' }), nodes = treeNodes(tree);
+    if (fault === 'missing carousel') delete nodes.find(node => node.props['data-home-section-carousel'] !== undefined).props['data-home-section-carousel'];
+    if (fault === 'wrong consultation destination') nodes.find(node => node.props['data-home-slide-action']).props.href = '/wrong';
+    if (fault === 'free consultation claim') nodes.find(node => node.props['data-home-slide-action']).props.children[0] = 'Free session';
+    if (fault === 'missing paid indication') delete nodes.find(node => node.props['data-home-slide-action']).props['data-home-first-screen-cta'];
+    if (fault === 'wrong tests route') nodes.find(node => node.props['data-home-nav-section'] === 'tests').props.href = '/wrong';
+    if (fault === 'missing Academy entry') delete nodes.find(node => node.props['data-home-offer-primary'] === 'academy').props['data-home-offer-primary'];
+    if (fault === 'wrong Academy route') nodes.find(node => node.props['data-home-offer-primary'] === 'academy').props.href = '/wrong';
+    if (fault === 'wrong review route') nodes.find(node => node.props['data-home-offer-primary'] === 'review').props.href = '/wrong';
+    assert.throws(() => assertHomeRoutes(tree, 'en'), error => error.code === 'ERR_ASSERTION');
   });
 }
 
@@ -254,7 +280,7 @@ async function menuScenario(locale, surface, fault) {
     async toBeFocused() { assert.equal(focused, actual); },
     async toHaveURL(expected) { assert.equal(actual, page); assert.equal(url, fault === 'wrong navigation' ? origin + '/wrong' : expected); },
   });
-  const verify = new Function('assert', 'expect', 'origin', helper + ';return verifySiteMenu;')(assert, expect, origin);
+  const verify = new Function('assert', 'expect', 'origin', 'getSiteNavigation', helper + ';return verifySiteMenu;')(assert, expect, origin, navigationModel.getSiteNavigation);
   const bounded = [];
   await verify(page, header, { locale, surface, label: 'synthetic', expectedMenu, inViewport: async control => {
     assert.notEqual(fault, 'out of bounds'); bounded.push(control);
@@ -269,15 +295,25 @@ for (const fault of ['wrong destination', 'missing catalog destination', 'extra 
   test('site-menu verifier rejects ' + fault, () => assert.rejects(menuScenario('en', 'home', fault)));
 }
 
-async function directScenario(locale, surface, fault) {
+async function directScenario(locale, surface, fault, verifier = directHelper) {
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const direct = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a');
   const controls = Array.from(tree.props.children).flat(Infinity).filter(node => node?.type === 'a' || node?.type === 'button');
+  const cabinet = controls.find(node => node.props.className === 'site-cabinet-entry');
+  assert.ok(cabinet, 'Real globally provided dialog control');
   if (fault === 'wrong free review route') direct[0].props.href = '/wrong-free-route';
   if (fault === 'wrong energy route') direct[1].props.href = '/wrong';
   if (fault === 'wrong About route') direct[4].props.href = '/wrong';
-  if (fault === 'wrong cabinet route') direct[5].props.href = '/' + locale + '/library';
+  if (fault === 'wrong cabinet kind') { cabinet.type = 'a'; cabinet.props.href = '/' + locale + '/app'; }
+  if (fault === 'missing dialog') controls.splice(controls.indexOf(cabinet), 1);
+  if (fault === 'duplicate dialog') controls.push({...cabinet});
+  if (fault === 'wrong dialog target') cabinet.props['aria-controls'] = 'wrong-dialog';
+  if (fault === 'wrong dialog type') cabinet.props['aria-haspopup'] = 'menu';
+  if (fault === 'wrong dialog state') cabinet.props['aria-expanded'] = true;
+  if (fault === 'wrong dialog label') cabinet.props['aria-label'] = 'Private dashboard';
+  if (fault === 'missing top-level item') controls.splice(controls.indexOf(direct[1]), 1);
+  if (fault === 'duplicate top-level item') controls.push({...direct[1]});
   if (fault === 'missing direct link') direct.splice(4, 1);
   if (fault === 'extra direct link') direct.push({ type: 'a', props: { href: '/' + locale + '/library' } });
   if (fault === 'missing data id') delete direct[1].props['data-nav-item'];
@@ -290,22 +326,25 @@ async function directScenario(locale, surface, fault) {
   if (fault === 'spurious library active state') direct[1].props['aria-current'] = 'page';
   const nav = { locator(selector) {
     const nodes = selector === ':scope > a' ? direct
-      : selector === '[data-nav-item]' ? controls.filter(node => node.props['data-nav-item'])
+      : selector === ':scope > [data-nav-item]' ? controls.filter(node => node.props['data-nav-item'])
+      : selector === '[data-nav-item]' ? treeNodes(tree).filter(node => node.props['data-nav-item'])
+      : selector === ':scope > .site-cabinet-entry' ? controls.filter(node => node.props.className === 'site-cabinet-entry')
       : selector === ':scope > a[aria-current="page"]' ? direct.filter(node => node.props['aria-current'] === 'page')
       : assert.fail('Unexpected direct selector: ' + selector);
     return { nodes, evaluateAll: async callback => callback(nodes.map(node => ({ getAttribute: name => node.props[name] ?? null }))) };
   } };
   const expect = actual => ({
     async toHaveCount(count) { assert.equal(actual.nodes.length, count); },
-    async toHaveAttribute(name, value) { assert.equal(actual.nodes.length, 1); assert.equal(actual.nodes[0].props[name], value); },
+    async toHaveAttribute(name, value) { assert.equal(actual.nodes.length, 1); assert.equal(String(actual.nodes[0].props[name]), value); },
+    async toHaveJSProperty(name, value) { assert.equal(actual.nodes.length, 1); assert.equal(name, 'tagName'); assert.equal(actual.nodes[0].type.toUpperCase(), value); },
   });
-  const verify = new Function('assert', 'expect', directHelper + ';return verifyDirectNavigation;')(assert, expect);
+  const verify = new Function('assert', 'expect', verifier + ';return verifyDirectNavigation;')(assert, expect);
   await verify(nav, { locale, surface, expected: navigationModel.getSiteNavigation(locale), label: 'synthetic' });
 }
 for (const locale of ['en', 'ru', 'es']) {
   for (const surface of ['home', 'energy', 'love', 'business', 'library']) test(`${locale}/${surface} verifier checks actual direct JSX destinations and active state`, () => directScenario(locale, surface));
 }
-for (const fault of ['wrong free review route', 'wrong energy route', 'wrong About route', 'wrong cabinet route', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
+for (const fault of ['wrong free review route', 'wrong energy route', 'wrong About route', 'wrong cabinet kind', 'missing dialog', 'duplicate dialog', 'wrong dialog target', 'wrong dialog type', 'wrong dialog state', 'wrong dialog label', 'missing top-level item', 'duplicate top-level item', 'missing direct link', 'extra direct link', 'missing data id', 'missing active state', 'duplicate active state', 'wrong active surface', 'spurious library active state']) {
   test('direct header verifier rejects ' + fault, () => assert.rejects(directScenario('en', fault === 'spurious library active state' ? 'library' : 'energy', fault)));
 }
 
@@ -315,5 +354,79 @@ test('library audit checks the menu active link while preserving exact seven-slo
   assert.match(ia, /await expect\(current\)\.toHaveAttribute\('href', '\/' \+ locale \+ '\/books'\)/);
   assert.match(ia, /await expect\(nav\.locator\('\[data-nav-item\]'\)\)\.toHaveCount\(7\)/);
   assert.match(ia, /const cabinetEntry = header\.locator\('\.site-cabinet-entry'\)/);
-  assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(1\)/);
+  assert.match(ia, /await expect\(nav\.locator\('\[aria-current="page"\]'\)\)\.toHaveCount\(0\)/);
+});
+
+
+test('direct verifier scopes top-level identities instead of silently hiding actual menu descendants', async () => {
+  await directScenario('en', 'energy');
+  assert.ok(directHelper.includes("nav.locator(':scope > [data-nav-item]')"));
+  const descendantSelector = directHelper.replace("nav.locator(':scope > [data-nav-item]')", "nav.locator('[data-nav-item]')");
+  await assert.rejects(directScenario('en', 'energy', undefined, descendantSelector), /exact header destinations/);
+});
+
+// Pure source-tree keyboard model: no browser focus, account load or dialog
+// opening. The finite focus order is derived from actual top-level JSX children.
+async function cabinetMatrixScenario(locale, width, fault) {
+  pathname = '/' + locale + '/explore/energy';
+  const tree = SiteNavigation({ locale });
+  const top = Array.from(tree.props.children).flat(Infinity).filter(node => node && typeof node === 'object');
+  const cabinet = top.find(node => node.props.className === 'site-cabinet-entry');
+  const shop = top.find(node => node.props['data-nav-item'] === 'shop');
+  const cart = top.find(node => node.props['data-nav-item'] === 'cart');
+  const language = treeNodes(tree).find(node => node.type === 'summary' && node.props.className === 'site-language-menu-trigger');
+  const labelClass = width <= 1023 ? 'site-cabinet-entry__compact' : 'site-cabinet-entry__full';
+  const label = treeNodes(cabinet).find(node => node.props.className === labelClass);
+  if (fault === 'wrong label') label.props.children = 'Cabinet';
+  if (fault === 'hidden label') label.props.hidden = true;
+  if (fault === 'missing label') label.props.className = 'retired-label';
+  if (fault === 'wrong shop route') shop.props.href = '/wrong';
+  if (fault === 'wrong cart route') cart.props.href = '/wrong';
+  if (fault === 'missing shop') top.splice(top.indexOf(shop), 1);
+  if (fault === 'duplicate cart') top.splice(top.indexOf(cart), 0, { ...cart });
+  if (fault === 'hidden shop') shop.props.hidden = true;
+  if (fault === 'hidden cart') cart.props.hidden = true;
+  if (fault === 'extra focusable before language') top.splice(top.indexOf(cart) + 1, 0, jsx('button', { type: 'button' }));
+  const visible = node => !node.props.hidden && (node === shop || node === cart ? width > 1140 :
+    node.props.className === 'site-cabinet-entry__compact' ? width <= 1023 :
+    node.props.className === 'site-cabinet-entry__full' ? width > 1023 : true);
+  const focusOrder = top.flatMap(node => ['a', 'button'].includes(node.type) ? (visible(node) ? [node] : []) :
+    node.props.className === 'site-language-switch' ? [language] : []).filter(node => node === cabinet || top.indexOf(node) > top.indexOf(cabinet) || node === language);
+  let focused;
+  const presses = [];
+  const locator = selected => ({ selected,
+    locator: selector => locator(selected.flatMap(treeNodes).filter(node => node.props.className === selector.slice(1))),
+    async focus() { assert.equal(selected.length, 1); assert.equal(selected[0], cabinet, 'Only the initial control is focused directly'); focused = cabinet; },
+    async press(key) { assert.equal(key, 'Tab'); assert.equal(selected.length, 1); assert.equal(focused, selected[0]); presses.push(selected[0]); focused = focusOrder[focusOrder.indexOf(focused) + 1]; },
+  });
+  const header = { locator(selector) {
+    const id = selector.match(/^\.site-navigation > a\[data-nav-item="(shop|cart)"\]$/)?.[1];
+    assert.ok(id, 'Exact desktop top-level focus target');
+    return locator(top.filter(node => node.type === 'a' && node.props['data-nav-item'] === id));
+  } };
+  const expect = value => ({
+    async toHaveCount(count) { assert.equal(value.selected.length, count, 'Exact matrix control count'); },
+    async toHaveAttribute(name, expected) { assert.equal(value.selected.length, 1); assert.equal(String(value.selected[0].props[name]), expected, 'Exact matrix attribute ' + name); },
+    async toHaveAccessibleName(expected) { assert.equal(value.selected.length, 1); assert.equal(value.selected[0].props['aria-label'], expected); },
+    async toHaveText(expected) { assert.equal(value.selected.length, 1); assert.equal(value.selected[0].props.children, expected, 'Exact current visible label'); },
+    async toBeVisible() { assert.equal(value.selected.length, 1); assert.ok(visible(value.selected[0]), 'Expected control remains visible'); },
+    async toBeFocused() { assert.equal(value.selected.length, 1); assert.equal(focused, value.selected[0], 'Exact natural Tab focus order'); },
+  });
+  const source = ia.slice(ia.indexOf('async function verifyPublicCabinetControl('), ia.indexOf('async function verifyPublicHeaderMatrix('));
+  const check = new Function('expect', source + '; return { verifyPublicCabinetControl, focusPublicLanguageMenu };')(expect);
+  await check.verifyPublicCabinetControl(locator([cabinet]), { locale, width });
+  await check.focusPublicLanguageMenu(header, locator([cabinet]), locator([language]), { locale, width });
+  assert.deepEqual(presses, width > 1140 ? [cabinet, shop, cart] : [cabinet], 'Exactly two additional natural desktop Tabs, no skipped controls');
+}
+for (const locale of ['en', 'ru', 'es']) for (const width of [320, 767, 768, 1023, 1024, 1140, 1141, 1280]) {
+  test(`${locale}/${width} current My Space label and exact natural language-menu focus path`, () => cabinetMatrixScenario(locale, width));
+}
+for (const fault of ['wrong label', 'hidden label', 'missing label', 'wrong shop route', 'wrong cart route', 'missing shop', 'duplicate cart', 'hidden shop', 'hidden cart', 'extra focusable before language']) {
+  test('public header matrix rejects ' + fault, () => assert.rejects(cabinetMatrixScenario('ru', 1280, fault), error => error.code === 'ERR_ASSERTION'));
+}
+test('compact header matrix rejects an extra focusable control instead of skipping it', () => assert.rejects(cabinetMatrixScenario('es', 390, 'extra focusable before language'), /Exact natural Tab focus order/));
+test('label and keyboard models use the actual existing CSS breakpoints', () => {
+  const css = read('app/holistic-house-home.css');
+  assert.match(css, /@media \(max-width: 1023px\)\s*\{\s*\.site-navigation \.site-cabinet-entry__full \{ display: none; \}\s*\.site-navigation \.site-cabinet-entry__compact \{ display: inline; \}/);
+  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1140px\)[\s\S]*?a:not\(\.site-cabinet-entry\) \{ display: none; \}/);
 });

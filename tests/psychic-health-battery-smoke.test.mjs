@@ -1,3 +1,4 @@
+import { CURRENT_ACTIVE_COUNT, assertCatalogAvailability } from './helpers/catalog-availability-contract.mjs'
 import { syntheticTraumaContext } from './helpers/trauma-context-fixtures.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -6,8 +7,8 @@ import { getAssessmentDefinition } from '../lib/assessments/definitions.js'
 import { scoreAssessment } from '../lib/assessments/scoring.js'
 
 test('published Psychic Health battery resolves all active executable definitions and score shapes', () => {
-  const active = MONITORING_CATALOG.filter((item) => item.startable)
-  assert.equal(active.length, 145)
+  const active = assertCatalogAvailability(MONITORING_CATALOG)
+  assert.equal(active.length, CURRENT_ACTIVE_COUNT)
 
   for (const item of active) {
     const locale = item.instrumentLocale === 'dynamic' ? 'en' : item.instrumentLocale

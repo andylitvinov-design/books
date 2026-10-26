@@ -1,10 +1,18 @@
+import { verifyAccountProfileOffers } from './helpers/profile-account-offers-verifier.mjs'
+import { assertOporaGuestFirstWeek } from './helpers/opora-guest-first-week-verifier.mjs'
+import { verifyHypnotherapyEnquiryJourney } from './helpers/hypnotherapy-enquiry-journey-verifier.mjs'
+import { verifyAlchemyEnquiryJourney } from './helpers/alchemy-enquiry-journey-verifier.mjs'
+import { verifyContactConsentNativeAcceptance, unsafeConsentCleanup } from './helpers/contact-consent-native-acceptance.mjs'
+import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs'
+import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs'
+import { verifyDaoLeadJourney } from './helpers/dao-lead-journey-verifier.mjs'
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { assertFreeReviewLanding, verifyFreeReviewJourney } from './helpers/free-review-journey-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {mkdir,writeFile,readFile} from 'node:fs/promises'
@@ -432,12 +440,21 @@ async function verifyPublicServiceConversionJourneys(){
  ]
  for(const locale of ['en','ru']){
   for(const [slug,kind,names] of services){
-   const servicePage=await publicContext.newPage()
+   const serviceContext=kind==='dao'||kind==='alchemy'?await browser.newContext({serviceWorkers:'block'}):publicContext
+   const servicePage=await serviceContext.newPage()
    servicePage.on('pageerror',error=>publicErrors.push(error.message))
    for(const width of [320,360,390,1280]){
     await servicePage.setViewportSize({width,height:844})
     await servicePage.goto(origin+'/'+locale+'/services/'+slug,{waitUntil:'networkidle'})
+    if(kind==='dao'){
+     const heading=servicePage.locator('main[data-free-entry-landing="dao"] h1#free-entry-title')
+     await expect(heading).toBeVisible({timeout:30000})
+     await expect(heading).toHaveText(locale==='ru'?'Узнайте, что даёт вам внутреннюю опору.':'Discover what gives you strength.')
+     await expect(servicePage.locator('a[href="#request-free-wu-xing"]')).toBeVisible()
+     await expect(servicePage.locator('#request-free-wu-xing[data-service-lead-capture]')).toHaveCount(1)
+    }else{
     await expect(servicePage.locator('main[data-core-service-detail="'+kind+'"] h1')).toBeVisible({timeout:30000})
+    }
     await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width)
     if(kind==='alchemy'){
      const guide=servicePage.locator('details[data-alchemy-extended-guide]')
@@ -449,9 +466,17 @@ async function verifyPublicServiceConversionJourneys(){
       'Default payment details are collapsed before geometry measurement')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
-     assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     assertAlchemyPanelOrder(measurements)
+     if(measurements.some(x=>x.name!=='reviews'&&x.height>x.max)){
+      try{
+       await captureAlchemyPanelOverflow({page:servicePage,output,locale,width,
+        panelHeights:measurements.map(panel=>({...panel}))})
+      }catch{
+       console.error('ALCHEMY_PANEL_DIAGNOSTIC_FAILED')
+      }
+     }
+     assert.deepEqual(measurements.filter(x=>x.name!=='reviews'&&x.height>x.max),[],
+      'Every collapsed Alchemy section except the twelve-video reviews feed must fit one phone screen: '+JSON.stringify(measurements))
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
@@ -468,116 +493,81 @@ async function verifyPublicServiceConversionJourneys(){
     if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
-     await expect(form.locator('select')).toHaveCount(2)
+     // The two editorial controls remain separate from the phone-country control.
+     await expect(form.locator('select')).toHaveCount(3)
+     const format=form.locator('select[id$="-format"]'),topic=form.locator('select[id$="-topic"]')
+     const countryCode=form.locator('[data-phone-country-input] select')
+     await expect(format).toHaveCount(1)
+     await expect(topic).toHaveCount(1)
+     await expect(countryCode).toHaveCount(1)
+     await expect(countryCode).toHaveAttribute('aria-label',locale==='ru'?'Код страны':'Country calling code')
      await expect(form.locator('[data-contact-order]')).toBeVisible()
-     await form.locator('select').first().selectOption('30')
-     await form.locator('select').nth(1).selectOption('business')
-     await expect(form.locator('select').first()).toHaveValue('30')
-     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(3)
+     await format.selectOption('30')
+     await topic.selectOption('business')
+     await expect(format).toHaveValue('30')
+     await expect(topic).toHaveValue('business')
+     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(12)
      const stack=servicePage.locator('[data-alchemy-review-stack]')
      const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
-       nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
-     assert.equal(boxes.length,3,'All three source-backed videos are visible')
+       nodes.map(node=>({id:node.getAttribute('data-testimonial-video-id'),audio:node.getAttribute('data-testimonial-original-audio'),
+         top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
+     assert.equal(boxes.length,12,'All twelve original-language source-backed videos are visible')
+     const originalReviewIds={
+      en:['Dk0LBmOivQo','aUJde6A-9p0','fE6sD1zr1Js','itjo2_z2NGk','4NrryHcEF1A','hYwRNMxIMjc'],
+      ru:['m9RfDgK76PU','MIVLm1GUTtM','ttQxUHopaUM','VABgpmn4ZYA','muOnIHllI7E','5oj0BIbLT4w'],
+     }
+     const reviewLanguages=locale==='ru'?['ru','en']:['en','ru']
+     assert.deepEqual(boxes.map(({id,audio})=>({id,audio})),
+       reviewLanguages.flatMap(audio=>originalReviewIds[audio].map(id=>({id,audio}))),
+       'All twelve approved recordings retain their locale-first order and truthful original-audio tags')
      assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
        'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
      assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
        'Vertical testimonial stack cannot overflow horizontally')
-     const pricing=servicePage.locator('[data-alchemy-booking-formats]')
-     await pricing.locator('[data-alchemy-format="30"]').click()
-     await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const order=await openContactChannelChooser(pricing,expect)
-     const prepared=await assertPreparedContactChannels(order,expect)
-     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-       'Selected 30-minute format must be carried into WhatsApp and Telegram')
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
+     await verifyAlchemyEnquiryJourney(servicePage,expect,locale)
+     // Each scenario owns a disposable guarded context. Default save really
+     // navigates; the other exercises the genuine storage-denied fallback.
+     await verifyAlchemyEnquiryJourney(servicePage,expect,locale,{denyReceiptStorage:true})
+     await verifyContactConsentNativeAcceptance(servicePage,expect,locale)
+    }else if(kind==='dao'){
+     await verifyDaoLeadJourney(servicePage,expect,locale)
     }else{
-     const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')
-     await capture.scrollIntoViewIfNeeded()
-     await expect(capture).toBeVisible({timeout:30000})
-     const chooser=await openContactChannelChooser(capture,expect)
-     const {whatsappUrl}=await assertPreparedContactChannels(chooser,expect)
-     const href=whatsappUrl.href
-     const message=decodeURIComponent(new URL(href).searchParams.get('text')||'')
-     assert.ok(message.includes(names[locale]),'Hydrated footer CTA must retain '+names[locale])
-     const alternative=capture.locator('details')
+     await expect(servicePage.locator('main[data-core-service-detail="hypnotherapy"] h1')).toHaveText(names[locale])
+     // The current sitewide footer uses CompactLeadCapture, not the old chooser.
+     await verifyHypnotherapyEnquiryJourney(servicePage,expect,locale)
+     await verifyHypnotherapyEnquiryJourney(servicePage,expect,locale,{channel:'telegram',denyReceiptStorage:true})
+     // The free alternative belongs to CoreServiceDetail's own final section.
+     const alternative=servicePage.locator('main[data-core-service-detail="hypnotherapy"] > section:last-child > details')
+     await expect(alternative).toHaveCount(1)
      assert.equal(await alternative.evaluate(element=>element.open),false,'Free review alternative starts collapsed')
      await alternative.locator('summary').click()
      await expect(alternative.locator('a[href="/'+locale+'/services/free-situation-review"]')).toBeVisible()
     }
    }
    await servicePage.close()
+   if(kind==='dao'||kind==='alchemy')await serviceContext.close()
   }
  }
  for(const locale of ['en','ru']){
   const publicPage=await publicContext.newPage()
   publicPage.on('pageerror',error=>publicErrors.push(error.message))
-  const copy=locale==='ru'
-   ? {ready:'Ответы готовы к копированию. Пока ничего не отправлено.',copyButton:'Скопировать ответы',copied:'Скопировано',fallback:'Выделите и скопируйте текст ниже'}
-   : {ready:'Your answers are ready to copy. Nothing has been sent.',copyButton:'Copy answers',copied:'Copied',fallback:'Select and copy the text below'}
   for(const width of [320,360,390,1280]){
    await publicPage.setViewportSize({width,height:844})
    await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
-   const quick=publicPage.locator('[data-free-quick-request]').first()
-   await expect(quick).toBeVisible({timeout:30000})
-   const intake=publicPage.locator('[data-free-drawing-intake]')
-   await expect(intake).toBeHidden()
-   const advanced=publicPage.locator('details').filter({has:intake})
-   assert.equal(await advanced.evaluate(element=>element.open),false,'Detailed drawing form must start collapsed')
+   await assertFreeReviewLanding(publicPage,expect,locale)
    await assertPublicViewportFits(publicPage,locale+'/free-review/'+width)
    if(width===390||width===1280)await publicPage.screenshot({path:output+'/free-review-'+locale+'-'+width+'.png',fullPage:false})
   }
   await publicPage.setViewportSize({width:390,height:844})
-  await publicPage.goto(origin+'/'+locale+'/services/free-situation-review',{waitUntil:'networkidle'})
-  await publicPage.evaluate(()=>{
-   document.documentElement.dataset.analyticsConsent='granted'
-   window.__publicAcquisition=[]
-   window.addEventListener('holistic-house:acquisition',event=>window.__publicAcquisition.push(event.detail))
-  })
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboard=value}}}))
-  const quick=publicPage.locator('[data-free-quick-request]').first()
-  await expect(quick).toBeVisible()
-  const intake=publicPage.locator('[data-free-drawing-intake]')
-  const advanced=publicPage.locator('details').filter({has:intake})
-  await expect(intake).toBeHidden()
-  await advanced.locator(':scope > summary').click()
-  await expect(intake).toBeVisible()
-  const uniqueProblem='Synthetic public form value — '+locale
-  const uniqueGoal='Synthetic public goal value — '+locale
-  await intake.locator('textarea').nth(0).fill(uniqueProblem)
-  await intake.locator('textarea').nth(1).fill(uniqueGoal)
-  await intake.locator('form button[type="submit"]').click()
-  const ready=intake.locator('[role="region"]')
-  await expect(ready).toBeVisible()
-  await expect(ready.getByRole('heading')).toHaveText(copy.ready)
-  assert.equal(await ready.getAttribute('aria-live'),'polite')
-  await expect(ready).toBeFocused({timeout:15000})
-  await ready.screenshot({path:output+'/free-review-'+locale+'-ready-region-390.png'})
-  const readyChooser=await openContactChannelChooser(ready,expect)
-  const {whatsappUrl,telegramUrl}=await assertPreparedContactChannels(readyChooser,expect)
-  const whatsappText=whatsappUrl.searchParams.get('text')||''
-  const telegramText=telegramUrl.searchParams.get('text')||''
-  const decodedPageUrl=decodeURIComponent(publicPage.url())
-  for(const marker of [uniqueProblem,uniqueGoal]){
-   assert.ok(!whatsappText.includes(marker),'Answers never enter decoded WhatsApp text')
-   assert.ok(!telegramText.includes(marker),'Answers never enter decoded Telegram text')
-   assert.ok(!decodedPageUrl.includes(marker),'Answers never enter decoded page URL')
-  }
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('synthetic clipboard denial')}}}))
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.fallback)
-  await publicPage.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__syntheticClipboardRecovery=value}}}))
-  await ready.getByRole('button',{name:copy.copyButton,exact:true}).click()
-  await expect(ready.locator('p[aria-live="polite"]')).toContainText(copy.copied)
-  const events=await publicPage.evaluate(()=>window.__publicAcquisition)
-  // The temporary SDK safety hold also suppresses the public event emitter,
-  // including when this fixture forces a stale granted dataset. Restore the
-  // positive analytics contract only with the fully verified transport repair.
-  assert.deepEqual(events,[], 'Temporary analytics hold must emit no acquisition events')
-  assert.ok(!JSON.stringify(events).includes(uniqueProblem),'Analytics event metadata never contains answers')
-  assert.ok(!JSON.stringify(events).includes(uniqueGoal),'Analytics event metadata never contains answers')
-  await publicPage.screenshot({path:output+'/free-review-'+locale+'-prepared-390.png',fullPage:false})
+  // Separate real components, separate disposable guarded contexts. The short
+  // contact capture never requires answers from the private questionnaire.
+  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'compact'})
+  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'compact',channel:'telegram',denyReceiptStorage:true})
+  // The retired public drawing preview is now a private questionnaire entry.
+  // Both storage modes must collect nothing and perform no write before navigation.
+  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'private-entry'})
+  await verifyFreeReviewJourney(publicPage,expect,locale,{kind:'private-entry',denyReceiptStorage:true,output})
   await publicPage.close()
  }
  assert.deepEqual(publicErrors,[])
@@ -744,39 +734,22 @@ try {
  await guestPickerContext.close()
  passed('pre-login test picker, optional filters, recommendations and full database')
 
- // The new public course presentation is a real mobile-first landing,
- // with seven expandable skills and all 14 days accessible before consent.
- for (const [language, title] of [
-   ['en',/Stress Relief/],
-   ['ru',/Антистресс/],
- ]) {
+ // Compact App entry previews the approved first week, not the full public landing.
+ for (const language of ['en','ru']) {
    await page.goto(origin+'/'+language+'/app/course?program=stress')
-   const landing=page.locator('[data-opora-guest-landing]')
-   await expect(landing).toBeVisible({timeout:20000})
-   await expect(landing.getByRole('heading',{name:title,level:1})).toBeVisible()
-   await expect(landing.locator('[data-antistress-start-tests]')).toBeVisible()
-   const overview=landing.locator('[data-course-before-signup="guest"]')
-   await expect(overview).toBeVisible()
-   await expect(overview.locator('[data-course-phase]')).toHaveCount(7)
-   await expect(overview.locator('[data-course-skill-accordion]')).toHaveCount(7)
-   const firstStage=overview.locator('[data-course-skill-accordion]').first()
-   await firstStage.locator('summary').click()
-   await expect(firstStage).toHaveAttribute('open','')
-   const detailed=overview.locator('[data-course-14-day-list]')
-   await detailed.locator('summary').first().click()
-   await expect(detailed.locator('[data-course-day]')).toHaveCount(14)
+   await assertOporaGuestFirstWeek(page,expect,language)
    for (const width of [320,390]) {
      await page.setViewportSize({width,height:844})
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
-       language+' redesigned OPORA landing must fit the mobile viewport')
+       language+' OPORA first-week invite must fit the mobile viewport')
    }
    await screenshotEvidence(page,{path:output+'/course-public-'+language+'.png',fullPage:false})
  }
  await page.setViewportSize({width:390,height:844})
- passed('anonymous EN/RU OPORA landing exposes seven skills and all 14 days without account access')
+ passed('anonymous EN/RU OPORA first-week preview retains explicit sign-in and private enrolment')
 
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
- await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
+ await page.locator('[data-cabinet-guest-overview="true"]').getByRole('button',{name:'Open my Cabinet with Google',exact:true}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
  await page.getByRole('button',{name:'Create my private space'}).click();await ready();
  await assertCabinetPortrait(page,expect,{origin});
@@ -837,8 +810,8 @@ try {
    }
    await target.locator('#hh-domain-tab-psychology').click()
  }
- await verifyProfileServiceOffers(page)
- passed('every Google Cabinet profile has one working service-specific WhatsApp enquiry and matching landing link')
+ await verifyAccountProfileOffers(page,expect,{origin,browser})
+ passed('account Profile exposes current consultation options; isolated read-only href-follow verifies destination, not same-tab signed-in navigation')
  await page.goto(origin+'/en/app/monitoring');await ready();await expect(page.getByRole('heading',{name:'Psi-Monitoring',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'My Monitoring',exact:true})).toBeVisible();await expect(page.getByText('Not completed',{exact:true}).first()).toBeVisible();await screenshotEvidence(page,{path:output+'/psi-monitoring-initial.png',fullPage:false});passed('Psi-Monitoring opens as a first-class signed-in monitoring workspace')
  await page.getByRole('button',{name:'Happy',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect.poll(async()=>((await api('bootstrap')).data.moodCheckins||[]).length).toBe(1);await page.getByRole('button',{name:'Not now',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);passed('signed-in mood tap persists even when the user chooses Not now')
  const practitionerDb=await adminClient();try{await practitionerDb.query('update app.practitioners set trusted_auth_user_id=$1 where active',[A])}finally{await practitionerDb.end()}
@@ -1248,7 +1221,7 @@ try {
  await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}])
  const otherPage=await other.newPage()
  await otherPage.goto(origin+'/en/app')
- await otherPage.getByRole('button',{name:'Continue with Google'}).click()
+ await otherPage.locator('[data-cabinet-guest-overview="true"]').getByRole('button',{name:'Open my Cabinet with Google',exact:true}).click()
  await expect(otherPage).toHaveURL(/\/en\/app\/portrait$/,{timeout:30000})
  await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:30000})
  // These old readiness signals are already true before consent is submitted.
@@ -1366,7 +1339,7 @@ try {
  const settingsResponse=await page.goto(origin+'/en/app/settings')
  assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
- await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.locator('[data-cabinet-guest-overview="true"]').getByRole('button',{name:'Open my Cabinet with Google',exact:true})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
@@ -1446,7 +1419,7 @@ try {
  await launchPublicGuestWithoutAccountWrite(page,context,newPublicTest.definition)
  // Sign in explicitly, then append through the actual account picker.
  await page.goto(origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ await page.locator('[data-cabinet-guest-overview="true"]').getByRole('button',{name:'Open my Cabinet with Google',exact:true}).click()
  await assertCabinetPortrait(page,expect,{origin})
  assert.deepEqual((await api('bootstrap')).data.activeTestPlan,savedBeforeSignout,'guest selection and Google sign-in leave the saved battery unchanged')
  const appendExplorer=await chooseSingleAccountTest(page,newPublicTest.title)
@@ -1494,15 +1467,26 @@ try {
  primaryFailure=true
  try {
  const historyNavigationEvidence=collectHistoryNavigationEvidence(historyNavigationDiagnostics,true)
+ // An unconfirmed consent abort is fatal. Preserve Node-only evidence first;
+ // do not enqueue screenshots/evaluation on any page of the affected browser.
+ if(unsafeConsentCleanup(error)) {
+  const failure={category:'consent_cleanup_unconfirmed',stage:'outside-history',elapsedMs:null}
+  console.log('SYNTHETIC_FAILURE_ENTERED',JSON.stringify(failure))
+  const record=await boundedBestEffort(()=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,status:'FAIL',failure,consentCleanup:'unconfirmed',historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)))
+  console.log('SYNTHETIC_FAILURE_RECORD',JSON.stringify({outcome:record}))
+  console.log('SYNTHETIC_FAILURE_SCREENSHOT',JSON.stringify({outcome:'skipped_unsafe_consent_cleanup'}))
+ } else {
  await preserveBrowserFailure({
   error, stage:historyDiagnosticStage,
   elapsedMs:historyDiagnosticStartedAt===null?null:performance.now()-historyDiagnosticStartedAt,
   log:(name,evidence)=>console.log(name,JSON.stringify(evidence)),
   write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
   screenshot:()=>screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}),
- }) } finally { throw error }
+ })
+ } } finally { throw error }
 } finally {
  const outcome=await boundedBestEffort(()=>browser.close())
  console.log('SYNTHETIC_BROWSER_CLEANUP',JSON.stringify({outcome}))
  if(outcome!=='completed'&&!primaryFailure)throw new Error('Synthetic browser cleanup did not complete')
 }
+
