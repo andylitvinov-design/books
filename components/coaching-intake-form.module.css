@@ -332,3 +332,8 @@
   .choiceGrid{gap:4px}
   .choiceGrid label{font-size:10px;padding:6px 3px}
 }
+
+/* Only verified Telegram Mini Apps may omit the browser contact fields. */
+.telegramStatus{display:flex;align-items:center;gap:6px;margin:0 0 10px;color:#2d7054;font-size:12px;font-weight:650;line-height:1.4}
+.telegramStatus svg{flex:none}
+.telegramWarning{margin:0 0 10px;padding:8px 10px;border:1px solid #ddc2a6;border-radius:8px;background:#fff8eb;color:#835637;font-size:12px;line-height:1.4}
