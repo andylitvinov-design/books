@@ -42,8 +42,23 @@ test('public CTA stays absent without connected dedicated bot, explicit rollout 
     'https://t.me/HolisticHouseBot?start=hhreview_es')
   assert.equal(telegramDiagnosticPublicUrl('en',{...env,VERCEL_ENV:'preview'}),null)
 })
-test('unknown chat does not enter diagnostic flow; /start never creates a CRM lead',()=>{
-  assert.equal(transitionTelegramDiagnostic(null,message('Hi')).handled,false)
+test('new Telegram chats only enter consent stage; /start cannot create CRM lead',()=>{
+  const unsolicited=transitionTelegramDiagnostic(null,message('Hi'))
+  assert.equal(unsolicited.handled,true)
+  assert.equal(unsolicited.stage,'consent')
+  assert.equal(unsolicited.body,null,'no CRM lead before /agree')
+  assert.match(unsolicited.reply,/\/agree/)
+  const photoBeforeConsent=transitionTelegramDiagnostic(null,message('',{
+    photoFileId:'AgACAgQAAxk0123456789',photoBytes:123456,
+  }))
+  assert.equal(photoBeforeConsent.body,null,'unapproved photo is never ingested')
+  assert.equal(photoBeforeConsent.stage,'consent')
+  const plainStart=transitionTelegramDiagnostic(null,message('/start'))
+  assert.equal(plainStart.stage,'consent')
+  assert.equal(plainStart.locale,'ru')
+  assert.equal(plainStart.body,null)
+  assert.match(plainStart.reply,/\/agree/)
+  assert.equal(transitionTelegramDiagnostic(null,message('/start@holistichouse_bot')).stage,'consent')
   const started=transitionTelegramDiagnostic(null,message('/start hhreview_ru'))
   assert.equal(started.stage,'consent')
   assert.equal(started.locale,'ru')
