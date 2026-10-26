@@ -438,6 +438,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     setAccountError("");
     // The only cross-navigation state is a TTL-limited whitelist of eligible
     // questionnaire keys, not the user interests, answers or health results.
+    // No guest answers or guest results are imported into the Google account.
     try {
       window.sessionStorage.setItem(
         PENDING_TEST_SELECTION_KEY,
