@@ -2,9 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import vm from 'node:vm'
+import {createHash} from 'node:crypto'
 import {consentInitialGate,withConsentBootstrap,installConsentPopupGuard,verifyContactConsentNativeAcceptance,collectKeyboardFailureTail} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
 // BEGIN KEYBOARD START DIAGNOSTIC TEST imports
-import {installKeyboardStartObserver,keyboardStartDiagnostic} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
+import {installKeyboardStartObserver,keyboardStartDiagnostic,naturalKeyboardStart,createKeyboardStartPreparation,abortKeyboardStart,unsafeConsentCleanup,CONSENT_KEYBOARD_START_TIMEOUT_MS,CONSENT_KEYBOARD_ABORT_TIMEOUT_MS} from '../scripts/helpers/contact-consent-native-acceptance.mjs'
 const origin='http://127.0.0.1:3000', initial=origin+'/en/services/alchemy-of-soul'
 // END KEYBOARD START DIAGNOSTIC TEST imports
 function route(url=initial,method='GET',type='document',responseOptions={}) {
@@ -59,7 +60,7 @@ test('bootstrap drains active reads before closing and retains asynchronous fail
  await assert.rejects(withConsentBootstrap(context,gate,async()=>{void tracked({})}),/CONSENT_CLEANUP_FAILED/)
  assert.equal(closed,true)
 })
-function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,latePage=false,latePageError=false,latePost=false,lateRouteError=false,lateSocketError=false,latePageCloseError=false,createError=false,stuckTab=false,visible={inside:true,outlined:true},keyboard={sampled:false},readVisibility,readKeyboardTail}={}) {
+function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,latePage=false,latePageError=false,latePost=false,lateRouteError=false,lateSocketError=false,latePageCloseError=false,createError=false,stuckTab=false,visible={inside:true,outlined:true},keyboard={sampled:false},readVisibility,readKeyboardTail,readKeyboardStart}={}) {
  const events=[],contexts=[]
  const browser={newContext:async options=>{
   if(createError)throw new Error(marker)
@@ -74,8 +75,9 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
    locator:selector=>loc(selector==='..'?'label-parent':selector==='span'?'label':selector.includes('type="tel"')?'phone':selector==='select'?'country':selector.includes('checkbox')?'consent':selector==='[data-contact-channel-submit]'?'actions':selector.includes('data-contact-channel-submit="whatsapp"')?'whatsapp':selector.includes('data-contact-channel-submit="telegram"')?'telegram':selector.includes('role="status"')?'receipt':selector.includes('data-contact-order')?'open':selector.includes('data-alchemy-format=')?'format':selector.includes('data-contact-channel]')?'links':'container'),
    click:async()=>{record('click',name);if(name==='label')state.checked=!state.checked},
    selectOption:async value=>record('select',name,value),
-   fill:async value=>{record('fill',name,value);state.focus='phone'},
-   evaluate:async fn=>{
+   fill:async (value,options)=>{if(options!==undefined){assert.equal(id,0);assert.ok(options.timeout>0&&options.timeout<=30000);state.finalFillTimeout=options.timeout}record('fill',name,value);state.focus='phone'},
+   evaluate:async (fn,args,options)=>{
+    if(fn===naturalKeyboardStart){record('readiness',name);assert.ok(args.remainingMs>0&&args.remainingMs<=30000);assert.equal(options.timeout,args.remainingMs);return readKeyboardStart?readKeyboardStart(fn):{ready:true}}
     if(fn===collectKeyboardFailureTail){record('tail',name);return readKeyboardTail?.(fn)}
     record('evaluate',name,String(fn).includes('getBoundingClientRect')?'visibility':'focus')
     if(String(fn).includes('getBoundingClientRect'))return readVisibility?readVisibility(fn):{visible,keyboard}
@@ -100,7 +102,7 @@ function harness({failAt,post=false,popup=false,pageError=false,latePopup=false,
 // BEGIN KEYBOARD START DIAGNOSTIC TEST init-harness
     addInitScript:async fn=>{if(fn===installKeyboardStartObserver){record('observer-init');state.observer=fn;return}record('init');assert.equal(fn,installConsentPopupGuard);state.init=true},
 // END KEYBOARD START DIAGNOSTIC TEST init-harness
-    exposeBinding:async(name,fn)=>{record('binding');state.binding=fn},on:(name,fn)=>{record('pages');state.pageHandler=fn},newPage:async()=>{record('newPage');state.pageHandler(page);return page},close:async()=>{record('close');if(latePopup)state.binding();if(latePage||latePageCloseError)state.pageHandler({close:async()=>{if(latePageCloseError)throw new Error(marker)}});if(latePost)await state.routes[0](route(origin+'/api/service-enquiries','POST','fetch'));if(lateRouteError)void state.routes[0]({request:()=>{throw new Error(marker)}});if(lateSocketError)void state.socketHandler({close:async()=>{throw new Error(marker)}});if(latePageError)state.pageError(new Error('PRIVATE_MARKER'));state.closed=true}}
+    exposeBinding:async(name,fn)=>{record('binding');state.binding=fn},on:(name,fn)=>{record('pages');state.pageHandler=fn},newPage:async()=>{record('newPage');state.pageHandler(page);return page},close:async options=>{state.closeOptions=options;record('close');if(latePopup)state.binding();if(latePage||latePageCloseError)state.pageHandler({close:async()=>{if(latePageCloseError)throw new Error(marker)}});if(latePost)await state.routes[0](route(origin+'/api/service-enquiries','POST','fetch'));if(lateRouteError)void state.routes[0]({request:()=>{throw new Error(marker)}});if(lateSocketError)void state.socketHandler({close:async()=>{throw new Error(marker)}});if(latePageError)state.pageError(new Error('PRIVATE_MARKER'));state.closed=true}}
   return context
  }}
  function expect(locator) {
@@ -728,3 +730,191 @@ test('actual new observer source has no active APIs, storage, scheduling, consol
  assert.match(source,/capture:true,passive:true/)
 })
 // END KEYBOARD START DIAGNOSTIC TEST cases
+
+// Native keyboard START experiment: VM/clock tests only, not browser acceptance.
+const keyboardTurn=()=>new Promise(resolve=>setImmediate(resolve))
+const keyboardDeferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject}}
+function keyboardClock(){
+ let now=0,next=0;const timers=new Map(),delays=[]
+ return {now:()=>now,set(fn,ms){delays.push(ms);const id=++next;timers.set(id,{fn,due:now+ms});return id},clear:id=>timers.delete(id),
+  advance(value,fire=true){now=value;if(fire)for(const [id,{fn,due}]of [...timers])if(due<=now){timers.delete(id);fn()}},timers,delays}
+}
+function naturalStartFixture(){
+ let now=0,next=0,requests=0;const queue=new Map(),reads=[],effects=[]
+ class HTMLInputElement{}
+ const box=(left,top,width,height)=>({left,top,right:left+width,bottom:top+height,width,height})
+ const state={phone:box(176,300,177,44),consent:box(37,361,18,18),focused:true,duplicate:false,hidden:false,disabled:false,throwSchedule:0,throwCancel:false}
+ const consent={isConnected:true,getBoundingClientRect(){reads.push('consent');return state.consent}}
+ const chooser={querySelectorAll(selector){if(selector==='[data-phone-country-input] input[type="tel"]')return state.duplicate?[phone,phone]:[phone];assert.equal(selector,'input[type="checkbox"]');return [consent]}}
+ const phone=new HTMLInputElement();Object.assign(phone,{isConnected:true,type:'tel',readOnly:false,hidden:false,
+  closest(selector){if(selector==='[data-contact-channel-chooser]')return chooser;assert.equal(selector,'[inert]');return null},
+  getBoundingClientRect(){reads.push('phone');return state.phone},getClientRects:()=>state.hidden?[]:[state.phone]})
+ Object.defineProperty(phone,'disabled',{get:()=>state.disabled})
+ for(const node of [phone,consent]){
+  for(const key of ['value','textContent','innerHTML','outerHTML','id','name','checked'])Object.defineProperty(node,key,{get(){assert.fail('private/outcome read '+key)}})
+  for(const key of ['focus','click','check','scrollIntoView','dispatchEvent','setAttribute'])Object.defineProperty(node,key,{get(){effects.push(key);assert.fail('active API '+key)}})
+ }
+ const document={scrollingElement:{scrollLeft:0,scrollTop:0}};Object.defineProperty(document,'activeElement',{get:()=>state.focused?phone:null})
+ const globals={phone,HTMLInputElement,document,innerWidth:390,innerHeight:844,scrollX:0,scrollY:0,
+  window:{visualViewport:{offsetLeft:0,offsetTop:0,pageLeft:0,pageTop:0,width:390,height:844,scale:1}},
+  getComputedStyle:()=>({display:'block',visibility:'visible'}),performance:{now:()=>now},
+  requestAnimationFrame(fn){requests++;if(requests===state.throwSchedule)throw Error('PRIVATE_MARKER');const id=++next;queue.set(id,fn);return id},
+  cancelAnimationFrame(id){queue.delete(id);if(state.throwCancel)throw Error('PRIVATE_MARKER')}}
+ return {state,phone,consent,document,globals,queue,reads,effects,
+  run(remainingMs=100){globals.args={remainingMs};const result=vm.runInNewContext('('+naturalKeyboardStart.toString()+')(phone,args)',globals);result.catch(()=>{});return result},
+  frame(time){now=time;const callbacks=[...queue.values()];queue.clear();for(const fn of callbacks)fn(time)}}
+}
+test('natural start requires three distinct stable frames; checkbox may remain outside',async()=>{
+ const f=naturalStartFixture();f.state.consent.top=900;f.state.consent.bottom=918
+ const p=f.run();let done=false;p.then(()=>done=true)
+ f.frame(10);await keyboardTurn();assert.equal(done,false)
+ f.frame(10);f.frame(20);await keyboardTurn();assert.equal(done,false)
+ f.frame(30);assert.deepEqual(JSON.parse(JSON.stringify(await p)),{ready:true});assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
+})
+test('ongoing setup scroll and unrounded subpixel layout motion reset readiness',async()=>{
+ const f=naturalStartFixture(),p=f.run();f.frame(10)
+ f.state.phone.top+=0.0001;f.state.phone.bottom+=0.0001;f.frame(20);f.frame(30)
+ let done=false;p.then(()=>done=true);await keyboardTurn();assert.equal(done,false)
+ f.frame(40);await p;assert.equal(f.queue.size,0)
+})
+for(const [name,mutate]of [
+ ['window scroll',(f,t)=>f.globals.scrollY=t],['document scroll',(f,t)=>f.document.scrollingElement.scrollTop=t],
+ ['visual viewport',(f,t)=>f.globals.window.visualViewport.pageTop=t],['checkbox geometry',(f,t)=>{f.state.consent.top=t;f.state.consent.bottom=t+18}],
+])test('persistent '+name+' exhausts one readiness budget',async()=>{
+ const f=naturalStartFixture(),p=f.run(60);for(const time of [10,20,30,40,50,60]){mutate(f,time);f.frame(time)}
+ await assert.rejects(p,/DEADLINE/);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
+})
+for(const [name,mutate,reason]of [
+ ['lost focus',f=>f.state.focused=false,'FOCUS'],['detached phone',f=>f.phone.isConnected=false,'TARGET'],
+ ['duplicate phone',f=>f.state.duplicate=true,'TARGET'],['detached checkbox',f=>f.consent.isConnected=false,'TARGET'],
+ ['disabled phone',f=>f.state.disabled=true,'DISABLED'],['hidden phone',f=>f.state.hidden=true,'HIDDEN'],
+ ['nonfinite geometry',f=>f.state.phone.top=NaN,'GEOMETRY'],['nonfinite scroll',f=>f.globals.scrollY=NaN,'VIEWPORT'],
+ ['nonfinite visual viewport',f=>f.globals.window.visualViewport.scale=Infinity,'VIEWPORT'],
+ ['stable outside phone',f=>{f.state.phone.top=-1;f.state.phone.bottom=43},'PHONE_OUTSIDE'],
+ ['outside visual viewport',f=>f.globals.window.visualViewport.height=300,'PHONE_OUTSIDE'],
+])test('natural start fails closed: '+name,async()=>{
+ const f=naturalStartFixture();mutate(f);const p=f.run();f.frame(10);f.frame(20);f.frame(30)
+ await assert.rejects(p,new RegExp(reason));assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])
+})
+test('last readiness frame rechecks focus instead of accepting an earlier sample',async()=>{
+ const f=naturalStartFixture(),p=f.run();f.frame(10);f.frame(20);f.state.focused=false;f.frame(30);await assert.rejects(p,/FOCUS/);assert.equal(f.queue.size,0)
+})
+test('partial animation-frame scheduling failures reject without active operations',async()=>{
+ for(const count of [1,2]){const f=naturalStartFixture();f.state.throwSchedule=count;const p=f.run();f.frame(10);await assert.rejects(p,/PRIVATE_MARKER/);assert.equal(f.queue.size,0);assert.deepEqual(f.effects,[])}
+})
+test('exact readiness deadline is failure even with otherwise stable geometry',async()=>{
+ const f=naturalStartFixture(),p=f.run(30);f.frame(10);f.frame(20);f.frame(30);await assert.rejects(p,/DEADLINE/)
+})
+test('one original 30s setup budget decreases across fill, checks and readiness without resets',async()=>{
+ const clock=keyboardClock(),preparation=createKeyboardStartPreparation(clock),budgets=[]
+ assert.equal(CONSENT_KEYBOARD_START_TIMEOUT_MS,30000)
+ await preparation.run(budget=>{budgets.push(budget);clock.advance(100)})
+ await preparation.run(budget=>{budgets.push(budget);clock.advance(200)})
+ await preparation.run(budget=>{budgets.push(budget);clock.advance(300);return {ready:true}})
+ preparation.finish();assert.deepEqual(budgets,[30000,29900,29800]);assert.deepEqual(clock.delays,[30000]);assert.equal(clock.timers.size,0)
+ await assert.rejects(preparation.run(()=>assert.fail('new operation after finish')),/STOPPED/)
+})
+test('exhausted budget before fill or exact-deadline readiness success cannot admit input',async()=>{
+ for(const phase of ['before-fill','exact-ready','late-ready']){
+  const clock=keyboardClock(),preparation=createKeyboardStartPreparation(clock);let calls=0
+  if(phase==='before-fill')clock.advance(30000,false)
+  await assert.rejects(preparation.run(()=>{calls++;clock.advance(phase==='late-ready'?30001:30000,false);return {ready:true}}),/DEADLINE/)
+  preparation.stop();assert.equal(calls,phase==='before-fill'?0:1);assert.equal(clock.timers.size,0)
+ }
+})
+test('hung evaluation and starved RAF expire under Node watchdog and drain only after close',async()=>{
+ const clock=keyboardClock(),preparation=createKeyboardStartPreparation(clock),f=naturalStartFixture(),closed=keyboardDeferred()
+ const p=preparation.run(()=>Promise.race([f.run(30000),closed.promise]));p.catch(()=>{});await keyboardTurn()
+ assert.equal(f.queue.size,1);clock.advance(30000);await assert.rejects(p,/DEADLINE/)
+ const order=[],diagnostic={cleanup:'none'}
+ const confirmed=await abortKeyboardStart({preparation,diagnostic,gate:{beginTeardown(){order.push('stop')}},
+  context:{async close(){order.push('close');f.queue.clear();closed.reject(Error('context-closed'))}},drain:async()=>order.push('drain')},clock)
+ assert.equal(confirmed,true);assert.deepEqual(order,['stop','close','drain']);assert.equal(clock.timers.size,0);assert.deepEqual(clock.delays,[30000,5000])
+})
+test('pending fill receives no repeated operation and is drained by abort close',async()=>{
+ const clock=keyboardClock(),preparation=createKeyboardStartPreparation(clock),fill=keyboardDeferred();let fills=0
+ const p=preparation.run(()=>{fills++;return fill.promise});p.catch(()=>{});await keyboardTurn();clock.advance(30000);await assert.rejects(p,/DEADLINE/)
+ assert.equal(await abortKeyboardStart({preparation,diagnostic:{cleanup:'none'},gate:{beginTeardown(){}},context:{async close(){fill.reject(Error('closed'))}},drain:async()=>{}},clock),true)
+ assert.equal(fills,1);assert.equal(clock.timers.size,0)
+})
+for(const mode of ['close-reject','close-hang','tracked-drain-hang','setup-drain-hang','stop-fails','preparation-stop-fails','late-close'])test('abort barrier truthfully marks unconfirmed cleanup: '+mode,async()=>{
+ const clock=keyboardClock(),wait=keyboardDeferred(),diagnostic={cleanup:'none'},order=[];wait.promise.catch(()=>{})
+ const preparation={stop(){order.push('prep-stop');if(mode==='preparation-stop-fails')throw Error('PRIVATE_MARKER')},drain:()=>{order.push('prep-drain');return mode==='setup-drain-hang'?wait.promise:Promise.resolve()}}
+ const gate={beginTeardown(){order.push('stop');if(mode==='stop-fails')throw Error('PRIVATE_MARKER')}}
+ const context={close(){order.push('close');if(mode==='close-reject')return Promise.reject(Error('PRIVATE_MARKER'));if(mode==='close-hang'||mode==='late-close')return wait.promise;return Promise.resolve()}}
+ const drain=()=>{order.push('tracked-drain');return mode==='tracked-drain-hang'?wait.promise:Promise.resolve()}
+ const p=abortKeyboardStart({context,gate,drain,preparation,diagnostic},clock);await keyboardTurn()
+ if(mode.endsWith('hang'))clock.advance(5000)
+ if(mode==='late-close'){clock.advance(5000,false);wait.resolve()}
+ assert.equal(await p,false);assert.equal(diagnostic.unsafeConsentCleanup,true);assert.notEqual(diagnostic.cleanup,'none');if(mode==='stop-fails'||mode==='preparation-stop-fails')assert.equal(diagnostic.cleanup,'cleanup-stop')
+ assert.equal(order.filter(x=>x==='close').length,1);assert.ok(order.indexOf('stop')<order.indexOf('close'))
+ assert.equal(clock.timers.size,0);assert.deepEqual(clock.delays,[CONSENT_KEYBOARD_ABORT_TIMEOUT_MS]);wait.reject(Error('LATE_PRIVATE_MARKER'));await keyboardTurn()
+})
+test('abort closes before draining outstanding tracked protocol and preserves confirmed result',async()=>{
+ const clock=keyboardClock(),protocol=keyboardDeferred(),order=[]
+ const p=abortKeyboardStart({preparation:{stop(){},drain:async()=>order.push('setup-drain')},diagnostic:{cleanup:'none'},gate:{beginTeardown(){order.push('stop')}},
+  context:{async close(){order.push('close');protocol.resolve()}},drain:async()=>{order.push('tracked-drain');await protocol.promise}},clock)
+ assert.equal(await p,true);assert.deepEqual(order,['stop','close','setup-drain','tracked-drain']);assert.equal(clock.timers.size,0)
+})
+test('readiness failure in actual verifier issues zero Tabs and stops later modes',async t=>{
+ const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>{throw Error(marker)}})
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none')
+  assert.equal(unsafeConsentCleanup(error),false);assertPrivateDataExcluded(error,messages);return true
+ })
+ assert.equal(h.contexts.length,1);assert.ok(h.contexts[0].closed);assert.deepEqual(h.contexts[0].closeOptions,{reason:'CONSENT_KEYBOARD_START_ABORT'})
+ assert.equal(h.events.some(e=>e[1]==='key'||e[1]==='tail'||e[1]==='down'),false);assert.deepEqual(messages,[])
+})
+test('failed abort marker survives sanitized wrapper without leaking original Error',async t=>{
+ const messages=captureDiagnostics(t),h=harness({readKeyboardStart:()=>{throw Error(marker)},failAt:'close'})
+ await assert.rejects(verifyContactConsentNativeAcceptance(h.source,h.expect,'en'),error=>{
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=cleanup-close boundary=none')
+  assert.equal(unsafeConsentCleanup(error),true);assert.deepEqual(Object.keys(error),[]);assertPrivateDataExcluded(error,messages);return true
+ })
+ assert.equal(h.contexts.length,1);assert.equal(h.events.filter(e=>e[1]==='close').length,1);assert.equal(h.events.some(e=>e[1]==='key'),false)
+})
+test('normal native modes only add readiness before first Tab and preserve fill budget isolation',async()=>{
+ const h=harness();await verifyContactConsentNativeAcceptance(h.source,h.expect,'en')
+ const ready=h.events.findIndex(e=>e[1]==='readiness'),tab=h.events.findIndex(e=>e[1]==='key')
+ assert.ok(ready>=0&&ready<tab);assert.equal(h.events.filter(e=>e[1]==='readiness').length,1)
+ assert.ok(h.contexts[0].finalFillTimeout>0);assert.equal(h.contexts[1].finalFillTimeout,undefined);assert.equal(h.contexts[2].finalFillTimeout,undefined)
+ assert.equal(h.contexts.every(c=>c.closeOptions===undefined),true)
+})
+
+test('original max12 Tab loop and immediate post-Tab region are byte-locked',()=>{
+ const source=readFileSync(new URL('../scripts/helpers/contact-consent-native-acceptance.mjs',import.meta.url),'utf8')
+ const region=source.slice(source.indexOf("          checkpoint(diagnostic,'keyboard-tab')"),source.indexOf("          checkpoint(diagnostic,'keyboard-space-on')"))
+ assert.equal(createHash('sha256').update(region).digest('hex'),'71860259fd92905b5fa50f155e3d9b9596ddbaaeb64bac0c472874ebc4ace7ae')
+ const callback=naturalKeyboardStart.toString()
+ assert.doesNotMatch(callback,/scrollIntoView|scrollTo\(|scrollBy\(|\.focus\(|\.click\(|\.check\(|dispatchEvent|\.style\s*=|waitForTimeout|setTimeout|setInterval|textContent|\.value\b|\.checked\b/)
+})
+
+test('actual verifier bounds starved readiness and undrained evaluation, never sending Tab', {timeout:2000}, async t=>{
+ t.mock.timers.enable({apis:['setTimeout']})
+ const messages=captureDiagnostics(t),pending=keyboardDeferred(),h=harness({readKeyboardStart:()=>pending.promise})
+ const running=verifyContactConsentNativeAcceptance(h.source,h.expect,'en');running.catch(()=>{})
+ await keyboardTurn();assert.equal(h.events.filter(e=>e[1]==='readiness').length,1)
+ t.mock.timers.tick(30000);await keyboardTurn()
+ assert.equal(h.events.filter(e=>e[1]==='close').length,1)
+ t.mock.timers.tick(5000)
+ await assert.rejects(running,error=>{
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=cleanup-drain-after-close boundary=none')
+  assert.equal(unsafeConsentCleanup(error),true);assertPrivateDataExcluded(error,messages);return true
+ })
+ assert.equal(h.events.some(e=>e[1]==='key'||e[1]==='tail'),false);assert.equal(h.contexts.length,1);assert.deepEqual(messages,[])
+ pending.reject(Error('LATE_PRIVATE_MARKER'));await keyboardTurn()
+})
+
+test('actual verifier deadline plus confirmed close drains readiness and remains zero-Tab', {timeout:2000}, async t=>{
+ t.mock.timers.enable({apis:['setTimeout']})
+ const messages=captureDiagnostics(t),pending=keyboardDeferred(),h=harness({readKeyboardStart:()=>pending.promise})
+ const running=verifyContactConsentNativeAcceptance(h.source,h.expect,'en');running.catch(()=>{})
+ await keyboardTurn();t.mock.timers.tick(30000);await keyboardTurn()
+ assert.equal(h.events.filter(e=>e[1]==='close').length,1)
+ pending.reject(Error('CONTEXT_TERMINATED'))
+ await assert.rejects(running,error=>{
+  assert.equal(error.message,'CONSENT_NATIVE_ACCEPTANCE_FAILED mode=keyboard phase=keyboard-ready cleanup=none boundary=none')
+  assert.equal(unsafeConsentCleanup(error),false);return true
+ })
+ assert.equal(h.events.some(e=>e[1]==='key'),false);assert.equal(h.contexts.length,1);assert.deepEqual(messages,[])
+})

@@ -9,7 +9,7 @@ const diagnosticPhases=[
   'none','origin','context','bootstrap-route','bootstrap-socket','bootstrap-binding',
   'bootstrap-pages','bootstrap-init','page','navigation','initial-drain','format',
   'open','contact-fill','initial-actions','initial-state','keyboard-focus','keyboard-tab',
-  'keyboard-visible','keyboard-space-on','keyboard-space-off','keyboard-shift-tab',
+  'keyboard-ready','keyboard-visible','keyboard-space-on','keyboard-space-off','keyboard-shift-tab',
   'label-on','label-off','canceled-geometry','canceled-down','canceled-drag',
   'canceled-up','canceled-state','terminal-submit','terminal-links','terminal-receipt',
   'terminal-popup','terminal-boundary','terminal-page-errors','late-page-errors',
@@ -272,6 +272,128 @@ export function installConsentPopupGuard() {
   window.open=()=>{window.__consentPopupAttempts++; void window.__consentReportPopup().catch(()=>{}); return null}
 }
 
+// Harness starting-state experiment only, not a runtime keyboard correction.
+// Spend the final fill's original 30s action budget on fill + pre-Tab readiness;
+// never reset it, retry input, or alter the immediate native post-Tab verdict.
+export const CONSENT_KEYBOARD_START_TIMEOUT_MS = 30_000
+export const CONSENT_KEYBOARD_ABORT_TIMEOUT_MS = 5_000
+const unsafeConsentFailures=new WeakSet()
+export const unsafeConsentCleanup=error=>Boolean(error&&typeof error==='object'&&unsafeConsentFailures.has(error))
+const keyboardStartClock={now:()=>performance.now(),set:(fn,ms)=>setTimeout(fn,ms),clear:timer=>clearTimeout(timer)}
+
+// Serialized callback: public geometry/focus only. Three distinct, exactly
+// unchanged frames establish a start state, not a guarantee about future frames.
+// Checkbox geometry participates in stability, but its containment is NOT a gate.
+export function naturalKeyboardStart(phone,{remainingMs}) {
+  return new Promise((resolve,reject)=>{
+    const start=performance.now()
+    let frame=null,done=false,previous=null,previousTime=null,stable=0
+    const fail=reason=>{throw Error('CONSENT_KEYBOARD_START_'+reason)}
+    const finite=value=>typeof value==='number'&&Number.isFinite(value)&&Math.abs(value)<=10000000
+    const finish=(error,value)=>{
+      if(done)return
+      done=true
+      if(frame!==null){try{cancelAnimationFrame(frame)}catch{};frame=null}
+      if(error)reject(error);else resolve(value)
+    }
+    const rect=node=>{
+      const r=node.getBoundingClientRect(),values=['left','top','right','bottom','width','height'].map(key=>r[key])
+      if(!values.every(finite)||r.width<=0||r.height<=0)fail('GEOMETRY')
+      return values
+    }
+    const sample=()=>{
+      if(!(phone instanceof HTMLInputElement)||!phone.isConnected||phone.type!=='tel')fail('TARGET')
+      const chooser=phone.closest('[data-contact-channel-chooser]')
+      const phones=chooser?.querySelectorAll('[data-phone-country-input] input[type="tel"]')
+      const consents=chooser?.querySelectorAll('input[type="checkbox"]')
+      if(phones?.length!==1||phones[0]!==phone||consents?.length!==1||!consents[0].isConnected)fail('TARGET')
+      if(document.activeElement!==phone)fail('FOCUS')
+      if(phone.disabled||phone.readOnly||phone.closest('[inert]'))fail('DISABLED')
+      const style=getComputedStyle(phone)
+      if(phone.hidden||!phone.getClientRects().length||style.display==='none'||style.visibility==='hidden'||style.visibility==='collapse')fail('HIDDEN')
+      const phoneRect=rect(phone),consentRect=rect(consents[0])
+      const viewport=[innerWidth,innerHeight],scroll=[scrollX,scrollY,document.scrollingElement?.scrollLeft,document.scrollingElement?.scrollTop]
+      const visual=window.visualViewport?['offsetLeft','offsetTop','pageLeft','pageTop','width','height','scale'].map(key=>window.visualViewport[key]):[]
+      if(![...viewport,...scroll,...visual].every(finite)||viewport.some(value=>value<=0)||(visual.length&&(visual[4]<=0||visual[5]<=0||visual[6]<=0)))fail('VIEWPORT')
+      const [left,top,right,bottom]=phoneRect
+      const inside=top>=0&&bottom<=innerHeight&&left>=0&&right<=innerWidth&&(!visual.length||(left>=visual[0]&&top>=visual[1]&&right<=visual[0]+visual[4]&&bottom<=visual[1]+visual[5]))
+      return {inside,values:[...phoneRect,...consentRect,...viewport,...scroll,...visual]}
+    }
+    const tick=time=>{
+      frame=null
+      if(done)return
+      try{
+        if(!finite(start)||!finite(time)||!finite(remainingMs)||remainingMs<=0||remainingMs>30000||performance.now()-start>=remainingMs)fail('DEADLINE')
+        const current=sample()
+        const unchanged=previous&&current.values.length===previous.length&&current.values.every((value,index)=>value===previous[index])
+        stable=unchanged&&previousTime!==null&&time>previousTime?stable+1:1
+        previous=current.values;previousTime=time
+        if(stable>=3){if(!current.inside)fail('PHONE_OUTSIDE');finish(null,{ready:true})}
+        else frame=requestAnimationFrame(tick)
+      }catch(error){finish(error)}
+    }
+    try{frame=requestAnimationFrame(tick)}catch(error){finish(error)}
+  })
+}
+
+// Clock injection is an offline-test seam only; runtime cannot extend the budget.
+// Locator.evaluate's timeout bounds attachment, not its asynchronous callback.
+export function createKeyboardStartPreparation(clock=keyboardStartClock) {
+  const start=clock.now(),deadline=start+CONSENT_KEYBOARD_START_TIMEOUT_MS
+  if(!Number.isFinite(start))throw Error('CONSENT_KEYBOARD_START_CLOCK')
+  const timeoutError=Error('CONSENT_KEYBOARD_START_DEADLINE'),pending=new Set()
+  let expired=false,stopped=false,timer
+  const expiry=new Promise((_,reject)=>{timer=clock.set(()=>{expired=true;reject(timeoutError)},CONSENT_KEYBOARD_START_TIMEOUT_MS)})
+  expiry.catch(()=>{})
+  const remaining=()=>{
+    const value=deadline-clock.now()
+    if(expired||!Number.isFinite(value)||value<=0)throw timeoutError
+    if(stopped)throw Error('CONSENT_KEYBOARD_START_STOPPED')
+    return value
+  }
+  return {
+    async run(operation){
+      remaining()
+      const task=Promise.resolve().then(()=>operation(remaining()))
+      pending.add(task)
+      task.then(()=>pending.delete(task),()=>pending.delete(task))
+      const value=await Promise.race([task,expiry])
+      remaining() // A late success cannot authorize Tab when the timer was delayed.
+      return value
+    },
+    finish(){remaining();stopped=true;clock.clear(timer)},
+    stop(){stopped=true;clock.clear(timer)},
+    async drain(){while(pending.size)await Promise.allSettled([...pending])},
+  }
+}
+
+// Safety-only abort budget, not extra readiness time. Close before draining a
+// stranded evaluation/request; ordinary successful bootstrap teardown is intact.
+export async function abortKeyboardStart({context,gate,drain,preparation,diagnostic},clock=keyboardStartClock) {
+  let preparationStopFailed=false
+  try{preparation.stop()}catch{preparationStopFailed=true}
+  const deadline=clock.now()+CONSENT_KEYBOARD_ABORT_TIMEOUT_MS
+  let timer,expired=false,phase='cleanup-stop',firstCleanupFailure=preparationStopFailed?'cleanup-stop':null
+  const operation=Promise.resolve().then(async()=>{
+    let stopFailed=preparationStopFailed
+    try{gate.beginTeardown()}catch{stopFailed=true;firstCleanupFailure='cleanup-stop'}
+    phase='cleanup-close'
+    await context.close({reason:'CONSENT_KEYBOARD_START_ABORT'})
+    phase='cleanup-drain-after-close'
+    await Promise.all([preparation.drain(),drain()])
+    if(stopFailed)throw Error('CONSENT_KEYBOARD_STOP_FAILED')
+  })
+  operation.catch(()=>{})
+  try{
+    await Promise.race([operation,new Promise((_,reject)=>{timer=clock.set(()=>{expired=true;reject(Error('CONSENT_KEYBOARD_ABORT_DEADLINE'))},CONSENT_KEYBOARD_ABORT_TIMEOUT_MS)})])
+    if(expired||!Number.isFinite(deadline)||clock.now()>=deadline)throw Error('CONSENT_KEYBOARD_ABORT_DEADLINE')
+    return true
+  }catch{
+    if(diagnostic){diagnostic.unsafeConsentCleanup=true;if(diagnostic.cleanup==='none')diagnostic.cleanup=firstCleanupFailure||phase}
+    return false
+  }finally{clock.clear(timer)}
+}
+
 // Retain the bootstrap guard through close, and drain its admitted reads first.
 // The same consent-only guard remains installed for initial load and interactions.
 // Popup counters live in Node and are checked after close and draining.
@@ -317,7 +439,11 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
     await captureKeyboardFailureTail(diagnostic)
   }
   finally {
-    for(const [phase,cleanup] of [
+    if(diagnostic?.keyboardPreparation){
+      const confirmed=await abortKeyboardStart({context,gate,drain,preparation:diagnostic.keyboardPreparation,diagnostic})
+      diagnostic.keyboardPreparation=null
+      if(!confirmed)errors.push('CONSENT_CLEANUP_FAILED')
+    }else for(const [phase,cleanup] of [
       ['cleanup-stop',()=>gate.beginTeardown()],['cleanup-drain-before-close',drain],
       ['cleanup-close',()=>context.close()],['cleanup-drain-after-close',drain],
     ]) {
@@ -345,7 +471,7 @@ export async function withConsentBootstrap(context, gate, run, diagnostic) {
 async function verifyNative(sourcePage, expect, locale, diagnostic) {
   const origin = alchemyOrigin(sourcePage.url(), locale)
   for (const mode of ['keyboard', 'label', 'canceled-pointer']) {
-    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null,keyboardTail:undefined,readKeyboardTail:undefined})
+    Object.assign(diagnostic,{mode,phase:'context',failedPhase:null,cleanup:'none',boundary:'none',visibilityPassed:false,keyboard:null,keyboardTail:undefined,readKeyboardTail:undefined,keyboardPreparation:null,unsafeConsentCleanup:false})
     const context = await sourcePage.context().browser().newContext({serviceWorkers:'block',viewport:sourcePage.viewportSize()})
     const errors=[], failures=[], blocked=[]
     const initialGate=consentInitialGate(origin,locale,failures,blocked)
@@ -383,14 +509,22 @@ async function verifyNative(sourcePage, expect, locale, diagnostic) {
         assert.deepEqual(failures,[])
         assert.equal(await page.evaluate(()=>window.__consentPopupAttempts),0)
         // Native fill restores the natural input focus after the rejection taps.
-        await contact.fill(ALCHEMY_NATIONAL_PHONE)
+        const preparation=mode==='keyboard'?createKeyboardStartPreparation():null
+        diagnostic.keyboardPreparation=preparation
+        const preparing=operation=>preparation?preparation.run(operation):operation(undefined)
+        await preparing(budget=>contact.fill(ALCHEMY_NATIONAL_PHONE,budget===undefined?undefined:{timeout:budget}))
         checkpoint(diagnostic,'initial-state')
-        await expect(consent).not.toBeChecked()
-        for(const action of actions) await expect(action).toBeEnabled()
+        await preparing(()=>expect(consent).not.toBeChecked())
+        for(const action of actions) await preparing(()=>expect(action).toBeEnabled())
         if (mode==='keyboard') {
           // Start at naturally focused phone, then use real sequential navigation.
           checkpoint(diagnostic,'keyboard-focus')
-          await expect(contact).toBeFocused()
+          await preparing(()=>expect(contact).toBeFocused())
+          checkpoint(diagnostic,'keyboard-ready')
+          const readiness=await preparing(budget=>contact.evaluate(naturalKeyboardStart,{remainingMs:budget},{timeout:budget}))
+          assert.deepEqual(readiness,{ready:true})
+          preparation.finish()
+          diagnostic.keyboardPreparation=null
           checkpoint(diagnostic,'keyboard-tab')
           for (let i=0;i<12 && !await consent.evaluate(node=>node===document.activeElement);i++) await page.keyboard.press('Tab')
           await expect(consent).toBeFocused()
@@ -488,7 +622,9 @@ export async function verifyContactConsentNativeAcceptance(sourcePage, expect, l
   try { await verifyNative(sourcePage,expect,locale,diagnostic) }
   catch {
     failed(diagnostic)
-    throw new Error(`CONSENT_NATIVE_ACCEPTANCE_FAILED ${diagnosticFields(diagnostic)}`)
+    const failure=new Error(`CONSENT_NATIVE_ACCEPTANCE_FAILED ${diagnosticFields(diagnostic)}`)
+    if(diagnostic.unsafeConsentCleanup)unsafeConsentFailures.add(failure)
+    throw failure
   }
 }
 

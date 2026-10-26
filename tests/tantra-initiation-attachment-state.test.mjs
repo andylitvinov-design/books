@@ -38,11 +38,11 @@ const dependencies = (name) => {
   throw new Error("Unexpected import: " + name);
 };
 const instantiate = source => {
-  const module = { exports: {} };
+  const componentModule = { exports: {} };
   new Function("require", "module", "exports", compile(source))(
-    dependencies, module, module.exports,
+    dependencies, componentModule, componentModule.exports,
   );
-  return module.exports;
+  return componentModule.exports;
 };
 ClientChoice = instantiate(clientSource).TantraInitiationChoice;
 const { TantraInitiationForm, tantraInitiationWhatsAppUrl } = instantiate(serverSource);

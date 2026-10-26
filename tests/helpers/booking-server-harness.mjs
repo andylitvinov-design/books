@@ -109,16 +109,16 @@ export function createBookingServerHarness({ sourceOverrides = {} } = {}) {
       }
       dependencies[name] = dependency
     }
-    const module = { exports: {} }
+    const serverModule = { exports: {} }
     const compiled = ts.transpileModule(source, { fileName: path, compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true,
     } }).outputText
     new Function('require', 'module', 'exports', 'fetch', 'process', compiled)(name => {
       assert.ok(Object.hasOwn(dependencies, name), 'Unexpected booking fixture require: ' + name)
       return dependencies[name]
-    }, module, module.exports, noFetch, Object.freeze({ env: Object.freeze({}) }))
-    cache.set(path, module.exports)
-    return module.exports
+    }, serverModule, serverModule.exports, noFetch, Object.freeze({ env: Object.freeze({}) }))
+    cache.set(path, serverModule.exports)
+    return serverModule.exports
   }
   return { load, blocked }
 }

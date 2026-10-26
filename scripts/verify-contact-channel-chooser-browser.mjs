@@ -2,6 +2,7 @@
 // Test the real hydrated two-step capture on local Next production server.
 import assert from "node:assert/strict";
 import { publicQaRequestAction, fulfillSyntheticServiceEnquiry, createPopupClosureTracker, closePublicQaContext } from "./helpers/public-browser-network-guard.mjs";
+import { withYggdrasilConsentDiagnostics } from "./helpers/yggdrasil-consent-diagnostics.mjs";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 
@@ -14,6 +15,7 @@ const output = "artifacts/contact-channel-browser";
 await mkdir(output, { recursive: true });
 const results = [];
 const errors = [];
+const consentDiagnostics = [];
 const questions = {
   en: "Leave your contact to enquire or join",
   ru: "Оставьте контакт, чтобы записаться или узнать подробности",
@@ -37,7 +39,7 @@ function draft(href, host, path) {
  * the first-party POST, verify its shape, and return a synthetic successful
  * acknowledgement. No real lead is written to production or test Supabase.
  */
-async function submitSyntheticForm(page, chooser, locale, submissions, receiptRedirect = false) {
+async function submitSyntheticForm(page, chooser, locale, submissions, receiptRedirect = false, consentDiagnostic = null) {
   const form=chooser.locator('form');
   await form.waitFor({state:"visible"});
   const button=form.locator('button[type="submit"]');
@@ -66,7 +68,11 @@ async function submitSyntheticForm(page, chooser, locale, submissions, receiptRe
     await form.locator('textarea').fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
-  await form.locator('input[type="checkbox"]').check();
+  await withYggdrasilConsentDiagnostics(page, consentDiagnostic && {
+    ...consentDiagnostic, contactMethod: usePhone ? "phone" : "email", optionalName: withName, optionalNote: hasNote,
+  }, async () => {
+    await form.locator('input[type="checkbox"]').check();
+  }, diagnostic => { if (consentDiagnostics.length < 1) consentDiagnostics.push(diagnostic); });
   const priorCount=submissions.length;
   await button.click();
   if (receiptRedirect) {
@@ -294,7 +300,8 @@ async function runEngine(name, engine) {
               const button = chooser.locator("button[data-contact-order]");
               assert.equal(await button.getAttribute("aria-expanded"),"false");
               await button.click();
-              await submitSyntheticForm(page,chooser,locale,submissions);
+              await submitSyntheticForm(page,chooser,locale,submissions,false,
+                {live,engine:name,width,locale,phase:"yggdrasil-personal"});
               const text = new URL(await chooser.locator('a[data-contact-channel="telegram"]').getAttribute("href")).searchParams.get("text");
               assert.match(text || "", /PERSONAL|ЛИЧНУЮ/i, "The new selection must be in the prepared message");
               await button.click();
@@ -371,7 +378,8 @@ try {
   assert.ok(results.length >= 30,"Insufficient mobile and desktop coverage");
 } catch(e) { failure=e; }
 finally {
-  await writeFile(output+"/results.json",JSON.stringify({origin,live,checkedAt:new Date().toISOString(),results,errors,failure:failure?.message||null},null,2));
+  await writeFile(output+"/results.json",JSON.stringify({origin,live,checkedAt:new Date().toISOString(),results,errors,failure:failure?.message||null,
+    ...(consentDiagnostics.length ? {consentDiagnostics} : {})},null,2));
 }
 if(failure)throw failure;
 console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);

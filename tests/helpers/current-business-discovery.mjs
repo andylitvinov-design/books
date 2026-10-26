@@ -23,11 +23,11 @@ export function sourceModule(source, path, modules) {
   const code = ts.transpileModule(source, {fileName: path, compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   }}).outputText
-  const module = {exports: {}}
-  vm.runInNewContext(code, {module, exports: module.exports, fetch: denied, XMLHttpRequest: denied, WebSocket: denied,
+  const compiledModule = {exports: {}}
+  vm.runInNewContext(code, {module: compiledModule, exports: compiledModule.exports, fetch: denied, XMLHttpRequest: denied, WebSocket: denied,
     require: name => {assert.ok(Object.hasOwn(modules, name), 'Unexpected dependency ' + name); return modules[name]},
   }, {filename: path, timeout: 5000})
-  return module.exports
+  return compiledModule.exports
 }
 function flat(tree) {
   if (Array.isArray(tree)) return tree.flatMap(flat)

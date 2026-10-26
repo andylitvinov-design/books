@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import { parse } from 'acorn';
+import ts from 'typescript';
 import { ALCHEMY_PANEL_IDS } from '../scripts/helpers/alchemy-panel-contract.mjs';
 import { ALCHEMY_DESKTOP_FORMAT_CASES, alchemyDesktopPhotoReady, collectAlchemyDesktopFormatsGeometry,
   assertAlchemyDesktopFormatsGeometry, runAlchemyDesktopFormatsAcceptance } from '../scripts/helpers/alchemy-desktop-formats-acceptance.mjs';
@@ -277,7 +278,89 @@ test('Actual lazy-image readiness callback waits for loaded unique media before 
   assert.ok(events.indexOf('photo-ready') < events.indexOf('evaluate'));
 });
 
-function collectorFixture({ height = 687.01, width = 1024, viewportHeight = 768, unknownPanel = false, escaped = false } = {}) {
+const readSource = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+const routePaths = ['app/[locale]/services/alchemy-of-soul/page.tsx', 'app/es/services/alchemy-of-soul/page.tsx'];
+const landingPath = 'components/alchemy-soul-landing.tsx';
+const selectorPath = 'components/alchemy-soul-lead-form.tsx';
+
+// Static host-element/ancestry projection from the ACTUAL authored TSX. This
+// deliberately does not execute React, conditions, CSS or layout. The guide is
+// unconditional in both route wrappers; its tag, marker and initial open state
+// come from those files, not from a hand-written selector -> success fixture.
+function authoredElements(path, source = readSource(path), functionName) {
+  const ast = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  assert.equal(ast.parseDiagnostics.length, 0, path + ' parses');
+  const start = functionName ? ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === functionName) : ast;
+  assert.ok(start, 'Authored component exists: ' + functionName);
+  const elements = [];
+  function visit(node, parent = null) {
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const opening = ts.isJsxElement(node) ? node.openingElement : node;
+      const attributes = {};
+      for (const attribute of opening.attributes.properties) {
+        if (!ts.isJsxAttribute(attribute)) continue;
+        const name = attribute.name.getText(ast), value = attribute.initializer;
+        if (!value) attributes[name] = '';
+        else if (ts.isStringLiteral(value)) attributes[name] = value.text;
+        else if (name === 'open') {
+          assert.ok(ts.isJsxExpression(value), 'Known native details open state');
+          assert.ok([ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword].includes(value.expression?.kind),
+            'Dynamic open cannot be assumed closed by the source projection');
+          if (value.expression.kind === ts.SyntaxKind.TrueKeyword) attributes.open = '';
+        }
+      }
+      const element = { tag: opening.tagName.getText(ast), attributes, parent,
+        get open() { return Object.hasOwn(attributes, 'open'); } };
+      elements.push(element);
+      if (ts.isJsxElement(node)) for (const child of node.children) visit(child, element);
+    } else ts.forEachChild(node, child => visit(child, parent));
+  }
+  visit(start); return elements;
+}
+
+// A bounded tag/attribute/descendant selector evaluator, independent of the
+// helper's selector constants. Unsupported selector grammar fails rather than
+// returning an invented matching node. No browser/layout acceptance is implied.
+function authoredQuery(elements, selector, scope = null) {
+  const parts = selector.split(/\s+/).map(part => {
+    const match = /^([A-Za-z][\w-]*)?((?:\[[\w-]+(?:="[^"]*")?\])*)$/.exec(part);
+    assert.ok(match && (match[1] || match[2]), 'Supported source selector: ' + part);
+    const attributes = [...match[2].matchAll(/\[([\w-]+)(?:="([^"]*)")?\]/g)].map(([, name, value]) => [name, value]);
+    return element => (!match[1] || element.tag === match[1]) && attributes.every(([name, value]) =>
+      Object.hasOwn(element.attributes, name) && (value === undefined || element.attributes[name] === value));
+  });
+  const within = element => { for (let parent = element.parent; parent; parent = parent.parent) if (parent === scope) return true; return !scope; };
+  return elements.filter(element => {
+    if (!within(element) || !parts.at(-1)(element)) return false;
+    let ancestor = element.parent;
+    for (let i = parts.length - 2; i >= 0; i--) {
+      while (ancestor && !parts[i](ancestor)) ancestor = ancestor.parent;
+      if (!ancestor) return false;
+      ancestor = ancestor.parent;
+    }
+    return true;
+  });
+}
+
+function authoredPage(routePath = routePaths[0], routeSource = readSource(routePath), landingSource = readSource(landingPath)) {
+  const elements = authoredElements(routePath, routeSource);
+  const mount = elements.filter(element => element.tag === 'AlchemySoulLanding');
+  assert.equal(mount.length, 1, 'Actual route has a unique landing mount');
+  const landing = authoredElements(landingPath, landingSource, 'AlchemySoulLanding');
+  for (const element of landing) if (!element.parent) element.parent = mount[0];
+  elements.push(...landing);
+  const formatsMount = elements.filter(element => element.tag === 'AlchemySoulFormatSelector');
+  assert.equal(formatsMount.length, 1, 'Actual landing mounts one formats selector');
+  const formats = authoredElements(selectorPath, readSource(selectorPath), 'AlchemySoulFormatSelector');
+  for (const element of formats) if (!element.parent) element.parent = formatsMount[0];
+  elements.push(...formats);
+  const roots = authoredQuery(elements, 'main[data-core-service-detail="alchemy"]');
+  assert.equal(roots.length, 1);
+  return { elements, root: roots[0], query: (selector, scope) => authoredQuery(elements, selector, scope) };
+}
+
+function collectorFixture({ height = 687.01, width = 1024, viewportHeight = 768, unknownPanel = false, escaped = false,
+  page = authoredPage(), collector = collectAlchemyDesktopFormatsGeometry } = {}) {
   const rect = { left: 0, right: width, width, height };
   const photo = { getBoundingClientRect: () => ({ ...rect, height: 56 }), complete: true, naturalWidth: 800 };
   const trigger = { getAttribute: name => { assert.equal(name, 'aria-expanded'); return 'false'; } };
@@ -293,14 +376,12 @@ function collectorFixture({ height = 687.01, width = 1024, viewportHeight = 768,
   const root = { querySelectorAll(selector) {
     if (selector === '[data-alchemy-panel]') return nodes;
     if (selector === '[data-alchemy-panel="formats"]') return [panel];
-    assert.ok(['details[data-alchemy-extended-guide]', '[data-alchemy-panel="formats"] details[data-alchemy-payment-disclosure]',
-      '[data-alchemy-panel="formats"] details[data-alchemy-format-details]'].includes(selector));
-    return [{ open: false }];
+    return page.query(selector, page.root);
   } };
   const document = { documentElement: { scrollWidth: width }, querySelectorAll(selector) {
-    assert.equal(selector, 'main[data-core-service-detail="alchemy"]'); return [root];
+    return selector === 'main[data-core-service-detail="alchemy"]' ? [root] : page.query(selector);
   } };
-  return runInNewContext('(' + collectAlchemyDesktopFormatsGeometry.toString() + ')()', {
+  return runInNewContext('(' + collector.toString() + ')()', {
     document, innerWidth: width, innerHeight: viewportHeight,
     getComputedStyle: () => ({ display: 'block', visibility: 'visible' }),
   });
@@ -311,6 +392,85 @@ test('Actual document collector rounds up, reads dynamic viewport, and emits onl
   assert.equal(result.formats.height, 688); assert.equal(result.viewport.height, 767);
   assert.equal(result.formats.escapingChildren, 1); assert.equal(result.panelNames[0], null);
   assert.equal(result.formats.visiblePhoto, true); assert.equal(JSON.stringify(result).includes(secret), false);
+});
+
+function changeAuthoredGuide(routePath, transform) {
+  const source = readSource(routePath);
+  const ast = ts.createSourceFile(routePath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const matches = [];
+  function visit(node) {
+    if (ts.isJsxElement(node) && node.openingElement.attributes.properties.some(attribute =>
+      ts.isJsxAttribute(attribute) && attribute.name.getText(ast) === 'data-alchemy-extended-guide')) matches.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(ast); assert.equal(matches.length, 1, 'Mutation target is the actual uniquely authored route guide');
+  const node = matches[0];
+  return source.slice(0, node.getStart(ast)) + transform(node.getText(ast)) + source.slice(node.end);
+}
+
+for (const routePath of routePaths) {
+  test('Actual route/landing ancestry binds the document-scoped guide: ' + routePath, async () => {
+    const page = authoredPage(routePath), selector = 'details[data-alchemy-extended-guide]';
+    const guides = page.query(selector);
+    assert.equal(guides.length, 1); assert.equal(guides[0].tag, 'details'); assert.equal(guides[0].open, false);
+    assert.equal(page.query(selector, page.root).length, 0, 'Extended guide is outside the main, not missing from the document');
+    assert.equal(page.query('details[data-alchemy-details="introduction"]', page.root).length, 1,
+      'The introduction is a separate landing disclosure, not a replacement for the route guide');
+    const data = structuredClone(collectorFixture({ page }));
+    assert.deepEqual(data.disclosures, valid(ALCHEMY_DESKTOP_FORMAT_CASES[0]).disclosures);
+    assert.doesNotThrow(() => assertAlchemyDesktopFormatsGeometry(data, ALCHEMY_DESKTOP_FORMAT_CASES[0]));
+    const f = fixture({ alter(value, index) { if (index === 0) Object.assign(value, data); } });
+    const result = await f.run('chromium');
+    assert.deepEqual(result.failures, []);
+    assert.equal(result.cases[0].formatsScreenshot.captured, true);
+  });
+
+  test('Real collector reproduces and rejects the old root-scope guide lookup: ' + routePath, () => {
+    const source = collectAlchemyDesktopFormatsGeometry.toString();
+    const fixed = "disclosure('details[data-alchemy-extended-guide]', document)";
+    assert.equal(source.split(fixed).length, 2, 'Guide explicitly uses document scope');
+    const oldCollector = runInNewContext('(' + source.replace(fixed, "disclosure('details[data-alchemy-extended-guide]')") + ')');
+    const data = structuredClone(collectorFixture({ page: authoredPage(routePath), collector: oldCollector }));
+    assert.deepEqual(data.disclosures.guide, { count: 0, open: null });
+    assert.throws(() => assertAlchemyDesktopFormatsGeometry(data, ALCHEMY_DESKTOP_FORMAT_CASES[0]), { code: 'COLLAPSED_STATE_FAILED' });
+  });
+
+  for (const [name, transform, expected] of [
+    ['missing', () => '', { count: 0, open: null }],
+    ['duplicate', source => source + '\n' + source, { count: 2, open: false }],
+    ['open', source => source.replace('<details ', '<details open '), { count: 1, open: true }],
+    ['string false is still native open', source => source.replace('<details ', '<details open="false" '), { count: 1, open: true }],
+    ['wrong tag', source => source.replace('<details ', '<div ').replace('</details>', '</div>'), { count: 0, open: null }],
+    ['wrong marker', source => source.replace('data-alchemy-extended-guide', 'data-unrelated-guide'), { count: 0, open: null }],
+    ['introduction-marked', source => source.replace('data-alchemy-extended-guide', 'data-alchemy-details="introduction"'), { count: 0, open: null }],
+  ]) test('Authored route ' + name + ' guide fails strict native-state gate: ' + routePath, async () => {
+    const page = authoredPage(routePath, changeAuthoredGuide(routePath, transform));
+    const data = structuredClone(collectorFixture({ page }));
+    assert.deepEqual(data.disclosures.guide, expected);
+    assert.throws(() => assertAlchemyDesktopFormatsGeometry(data, ALCHEMY_DESKTOP_FORMAT_CASES[0]), { code: 'COLLAPSED_STATE_FAILED' });
+    const f = fixture({ alter(value, index) { if (index === 0) Object.assign(value, data); } });
+    const result = await f.run('chromium');
+    assert.deepEqual(result.cases[0].issues, ['COLLAPSED_STATE_FAILED']);
+    assert.equal(result.cases[0].passed, false);
+    assert.equal(result.cases[0].formatsScreenshot, null, 'Invalid collapsed state cannot be labelled pass-case visual evidence');
+    assert.deepEqual(f.captures, []);
+  });
+}
+
+test('Payment and format disclosures stay main/formats-scoped even with valid outside decoys', () => {
+  const base = authoredPage();
+  for (const marker of ['data-alchemy-payment-disclosure', 'data-alchemy-format-details']) {
+    const target = base.query('details[' + marker + ']', base.root);
+    assert.equal(target.length, 1);
+    const page = authoredPage();
+    const [inside] = page.query('details[' + marker + ']', page.root);
+    inside.parent = null; // Actual authored node moved outside, not a fabricated matching fixture.
+    assert.equal(page.query('details[' + marker + ']').length, 1);
+    const data = structuredClone(collectorFixture({ page }));
+    const key = marker.includes('payment') ? 'payment' : 'formatDetails';
+    assert.deepEqual(data.disclosures[key], { count: 0, open: null });
+    assert.throws(() => assertAlchemyDesktopFormatsGeometry(data, ALCHEMY_DESKTOP_FORMAT_CASES[0]), { code: 'COLLAPSED_STATE_FAILED' });
+  }
 });
 
 const verifier = readFileSync(new URL('../scripts/verify-alchemy-one-screen.mjs', import.meta.url), 'utf8');

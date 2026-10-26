@@ -27,8 +27,8 @@ export function collectAlchemyDesktopFormatsGeometry() {
   const panels = root?.querySelectorAll('[data-alchemy-panel]') ?? [];
   const formats = root?.querySelectorAll('[data-alchemy-panel="formats"]') ?? [];
   const panel = formats[0];
-  const disclosure = selector => {
-    const nodes = root?.querySelectorAll(selector) ?? [];
+  const disclosure = (selector, scope = root) => {
+    const nodes = scope?.querySelectorAll(selector) ?? [];
     return { count: nodes.length, open: nodes[0] ? Boolean(nodes[0].open) : null };
   };
   const triggers = panel?.querySelectorAll('[data-contact-order]') ?? [];
@@ -57,7 +57,8 @@ export function collectAlchemyDesktopFormatsGeometry() {
     formats: { height: rect ? finite(Math.ceil(rect.height)) : null, width: rect ? finite(rect.width) : null,
       visiblePhoto, escapingChildren: escaping },
     disclosures: {
-      guide: disclosure('details[data-alchemy-extended-guide]'),
+      // The route authors this guide after the landing main, not inside it.
+      guide: disclosure('details[data-alchemy-extended-guide]', document),
       payment: disclosure('[data-alchemy-panel="formats"] details[data-alchemy-payment-disclosure]'),
       formatDetails: disclosure('[data-alchemy-panel="formats"] details[data-alchemy-format-details]'),
       capture: { count: triggers.length, expanded: expanded === 'true' ? true : expanded === 'false' ? false : null },

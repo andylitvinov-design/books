@@ -43,11 +43,11 @@ export function diagnosisFixture({locale='en',parentSource=read('components/free
   function compile(source,name) {
     const parsed=ts.createSourceFile(name,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
     assert.equal(parsed.parseDiagnostics.length,0,'Actual TSX parses')
-    const module={exports:{}}
+    const compiledModule={exports:{}}
     const code=ts.transpileModule(source,{fileName:name,compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-    runInNewContext(code,{module,exports:module.exports,require:name=>{if(name.endsWith('.module.css'))return css;assert.ok(Object.hasOwn(imports,name),'Unexpected dependency '+name);return imports[name]},
+    runInNewContext(code,{module: compiledModule,exports:compiledModule.exports,require:name=>{if(name.endsWith('.module.css'))return css;assert.ok(Object.hasOwn(imports,name),'Unexpected dependency '+name);return imports[name]},
       window:env.window,document:env.document,HTMLElement:Element,fetch:env.fetch,crypto:env.window.crypto,URL,URLSearchParams,Date,
-    },{filename:name,timeout:5000});return module.exports
+    },{filename:name,timeout:5000});return compiledModule.exports
   }
   imports['@/components/phone-country-input']=compile(read('components/phone-country-input.tsx'),'phone-country-input.tsx')
   imports['@/components/contact-channel-chooser']=compile(chooserSource,'contact-channel-chooser.tsx')

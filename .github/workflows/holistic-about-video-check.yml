@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'components/psychic-alchemy-intro-video*'
+      - 'components/personal-testimonials.tsx'
       - 'app/**/about/page.tsx'
       - 'tests/psychic-alchemy-intro-video.test.mjs'
       - 'lib/site-videos/**'
@@ -26,7 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
       - run: npm ci --no-audit --no-fund
+      - run: node --test tests/psychic-alchemy-intro-video.test.mjs tests/site-videos.test.mjs tests/site-video-defaults.test.mjs
       - run: npx eslint components/psychic-alchemy-intro-video.tsx components/site-video-player.tsx components/site-video-manager.tsx components/page-video.tsx 'app/[locale]/about/page.tsx' app/admin/videos/page.tsx
       - run: npx tsc --noEmit

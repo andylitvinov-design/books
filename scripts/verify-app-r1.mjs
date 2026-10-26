@@ -1,6 +1,6 @@
 import { verifyHypnotherapyEnquiryJourney } from './helpers/hypnotherapy-enquiry-journey-verifier.mjs'
 import { verifyAlchemyEnquiryJourney } from './helpers/alchemy-enquiry-journey-verifier.mjs'
-import { verifyContactConsentNativeAcceptance } from './helpers/contact-consent-native-acceptance.mjs'
+import { verifyContactConsentNativeAcceptance, unsafeConsentCleanup } from './helpers/contact-consent-native-acceptance.mjs'
 import { assertAlchemyPanelOrder } from './helpers/alchemy-panel-contract.mjs'
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs'
 import { verifyDaoLeadJourney } from './helpers/dao-lead-journey-verifier.mjs'
@@ -1482,13 +1482,23 @@ try {
  primaryFailure=true
  try {
  const historyNavigationEvidence=collectHistoryNavigationEvidence(historyNavigationDiagnostics,true)
+ // An unconfirmed consent abort is fatal. Preserve Node-only evidence first;
+ // do not enqueue screenshots/evaluation on any page of the affected browser.
+ if(unsafeConsentCleanup(error)) {
+  const failure={category:'consent_cleanup_unconfirmed',stage:'outside-history',elapsedMs:null}
+  console.log('SYNTHETIC_FAILURE_ENTERED',JSON.stringify(failure))
+  const record=await boundedBestEffort(()=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,status:'FAIL',failure,consentCleanup:'unconfirmed',historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)))
+  console.log('SYNTHETIC_FAILURE_RECORD',JSON.stringify({outcome:record}))
+  console.log('SYNTHETIC_FAILURE_SCREENSHOT',JSON.stringify({outcome:'skipped_unsafe_consent_cleanup'}))
+ } else {
  await preserveBrowserFailure({
   error, stage:historyDiagnosticStage,
   elapsedMs:historyDiagnosticStartedAt===null?null:performance.now()-historyDiagnosticStartedAt,
   log:(name,evidence)=>console.log(name,JSON.stringify(evidence)),
   write:failure=>writeFile(output+'/verification.json',JSON.stringify({commit:process.env.GITHUB_SHA,checks,failure,historyNavigationEvidence,auth:'ISOLATED_PROVIDER_PROTOCOL_DOUBLE_NOT_GOOGLE'},null,2)),
   screenshot:()=>screenshotEvidence(page,{path:output+'/failure-synthetic-only.png',fullPage:true}),
- }) } finally { throw error }
+ })
+ } } finally { throw error }
 } finally {
  const outcome=await boundedBestEffort(()=>browser.close())
  console.log('SYNTHETIC_BROWSER_CLEANUP',JSON.stringify({outcome}))

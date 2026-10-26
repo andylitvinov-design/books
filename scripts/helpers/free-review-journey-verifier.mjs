@@ -77,12 +77,38 @@ export function syntheticFreeReviewReceipt(locale, kind, channel) {
   }
 }
 
+// Observe a denied request only; none of these reads can grant or forward it.
+// Unknown/throwing diagnostic getters retain no raw value or exception text.
+function freeReviewFatalRequestDiagnostic(request, url, decoded, locale, origin, beforeInteraction) {
+  const scalar = (read, allowed) => {
+    try { const value = read(); return allowed.includes(value) ? value : null } catch { return null }
+  }
+  let mainFrame = null, subframe = null
+  try {
+    const frame = request.frame(), main = frame.page().mainFrame()
+    if (frame && main) { mainFrame = frame === main; subframe = !mainFrame }
+  } catch { /* A navigation may not have an associated frame yet. */ }
+  return Object.freeze({
+    method:scalar(() => request.method(), ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'CONNECT', 'TRACE']),
+    resource:scalar(() => request.resourceType(), ['document', 'stylesheet', 'image', 'media', 'font', 'script', 'texttrack', 'xhr', 'fetch', 'eventsource', 'websocket', 'manifest', 'other']),
+    pathnameCategory:/^\/api(?:\/|$)/i.test(decoded) ? 'api'
+      : url.pathname === freeReviewPath(locale) ? 'free-review'
+      : url.pathname === `/${locale}/thank-you` ? 'receipt'
+      : url.pathname.startsWith('/_next/static/') ? 'next-static'
+      : url.pathname.startsWith('/_next/') ? 'next-internal' : 'other',
+    sameOrigin:url.origin === origin,
+    navigation:scalar(() => request.isNavigationRequest(), [true, false]),
+    mainFrame, subframe, beforeInteraction,
+  })
+}
+
 /** Reuse the reviewed strict guards; narrow their inputs for this exact route. */
 export function freeReviewRequestGate(origin, locale, kind, receipt, failures, blockedReads, {bootstrap=false}={}) {
   assert.ok(['en', 'ru'].includes(locale) && ['compact', 'drawing', 'private-entry'].includes(kind))
   assert.equal(freeReviewOrigin(origin + freeReviewPath(locale), locale), origin)
   assert.equal(typeof bootstrap, 'boolean')
   let draining = false, initialAvailable = bootstrap, initialDocumentLoaded = false, acceptingRequests = !bootstrap
+  let firstFatalRequest = null
   // Alchemy's older gate records assertion messages. Never retain those raw
   // diffs here: a rejected payload can contain a private questionnaire marker.
   const redactedFailures = {push: () => failures.push('Free-review delegated boundary failed')}
@@ -115,6 +141,10 @@ export function freeReviewRequestGate(origin, locale, kind, receipt, failures, b
           (receiptRead && (kind !== 'drawing' || !receipt.confirmed)) ||
           (request.resourceType() === 'document' && !(receiptRead && kind === 'drawing' && receipt.confirmed))) {
         failures.push('Unexpected API, write or navigation blocked')
+        if (!firstFatalRequest) {
+          try { firstFatalRequest = freeReviewFatalRequestDiagnostic(request, url, decoded, locale, origin, !acceptingRequests) }
+          catch { /* Observation never changes the original failure or abort. */ }
+        }
         return await route.abort()
       }
       if (draining && !exactPost) return await route.abort()
@@ -127,6 +157,7 @@ export function freeReviewRequestGate(origin, locale, kind, receipt, failures, b
   }
   wrapped.beginTeardown = () => { draining = true; gate.beginTeardown?.() }
   Object.defineProperty(wrapped, 'initialDocumentLoaded', {get: () => initialDocumentLoaded})
+  Object.defineProperty(wrapped, 'firstFatalRequest', {get: () => firstFatalRequest})
   wrapped.beginInteraction = () => { assert.equal(initialDocumentLoaded, true); assert.equal(draining, false); acceptingRequests = true }
   return wrapped
 }
@@ -452,10 +483,10 @@ export async function verifyFreeReviewJourney(sourcePage, expect, locale, {kind=
   const failures = [], blockedReads = [], pageErrors = []
   const sockets = freeReviewSocketBoundary(failures)
   const guardedContext = {route:(...args) => context.route(...args), close:() => sockets.closeContext(context)}
-  let primary, completed = false
+  let primary, handler, completed = false
   try {
     await context.routeWebSocket('**/*', sockets.handler)
-    const handler = freeReviewRequestGate(origin, locale, kind, receipt, failures, blockedReads, {bootstrap:true})
+    handler = freeReviewRequestGate(origin, locale, kind, receipt, failures, blockedReads, {bootstrap:true})
     await withFreeReviewIsolation(guardedContext, handler, receipt, async () => {
       await context.addInitScript(freeReviewInitScript(denyReceiptStorage))
       const page = await context.newPage()
@@ -484,7 +515,8 @@ export async function verifyFreeReviewJourney(sourcePage, expect, locale, {kind=
     }
     console.log('SYNTHETIC_FREE_REVIEW_BOUNDARY', JSON.stringify({locale, kind, channel:kind === 'compact' ? channel : null, denyReceiptStorage, completed:completed && !primary,
       requestCount:receipt.count, failureCount:failures.length, pageErrorCount:pageErrors.length,
-      blocked:blockedReads.map(read => ({type:read.type, asset:read.asset || (read.path?.startsWith('/_next/static/') ? 'next-static' : 'other')}))}))
+      blocked:blockedReads.map(read => ({type:read.type, asset:read.asset || (read.path?.startsWith('/_next/static/') ? 'next-static' : 'other')})),
+      ...(primary && handler?.firstFatalRequest ? {firstFatalRequest:handler.firstFatalRequest} : {})}))
   }
   if (primary) throw primary
 }

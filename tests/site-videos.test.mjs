@@ -8,6 +8,7 @@ import {
 import {
   createMemorySiteVideoStore, createPublicSiteVideoStore, createSiteVideoStore, getSiteVideoStore,
 } from '../lib/site-videos/store.js'
+import { builtInSiteVideoRecords, existingHomeIntroVideoEn } from '../lib/site-videos/defaults.js'
 
 const firstId = 'OkLEN8Zb-sY'
 const secondId = 'ELhK96TJALg'
@@ -657,30 +658,124 @@ test('read-only media credential serves public records without any write privile
   assert.equal(calls[0].command[2], record.key);
 });
 
-test('read-only auth fallback retries writer only on authentication, never on timeout/quota', async () => {
-  const keys = [];
-  const env = { ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN:'synthetic-read-only-token' };
-  const fetchFn = async (_url, options) => {
-    keys.push(options.headers.Authorization);
-    if (keys.length === 1) return { ok:false, status:401 };
-    return { ok:true, json:async () => ({ result:null }) };
-  };
-  const store = createPublicSiteVideoStore({environment:env,fetchFn});
-  assert.equal(await store.get(videoKey('home-intro', 'en')), null);
-  assert.deepEqual(keys, ['Bearer synthetic-read-only-token','Bearer synthetic-test-token']);
-  for (const code of [429,503]) {
-    const seen = [];
-    const blocked = createPublicSiteVideoStore({
-      environment:env,
-      fetchFn: async (_url, options) => {
-        seen.push(options.headers.Authorization);
-        return { ok:false,status:code };
-      },
-    });
-    await assert.rejects(blocked.get(videoKey('home-intro','en')), error => error.code==='storage');
-    assert.deepEqual(seen,['Bearer synthetic-read-only-token']);
-  }
+// Explicit synthetic environment and injected fetch only: no runtime store,
+// process credentials, provider, browser, or client namespace enters this fixture.
+const publicReadKey = videoKey('home-intro', 'en');
+const publicReadEnvironment = {
+  ...environment, PRESCRIPTIONS_KV_REST_API_READ_ONLY_TOKEN: 'synthetic-read-only-token',
+};
+const publicReadCredentials = ['Bearer synthetic-read-only-token', 'Bearer synthetic-test-token'];
+function publicReadFixture(respond, options = {}) {
+  const calls = [];
+  const store = createPublicSiteVideoStore({
+    environment: publicReadEnvironment,
+    ...options,
+    fetchFn: async (url, request) => {
+      const command = JSON.parse(request.body);
+      calls.push({ url, request, authorization: request.headers.Authorization, command, signal: request.signal });
+      return respond(calls.length, request, command);
+    },
+  });
+  assert.deepEqual(Object.keys(store).sort(), ['get', 'list']);
+  assert.equal(typeof store.save, 'undefined');
+  return { store, calls, authorizations() {
+    // Check captured requests outside fetch: storage error normalization must
+    // never disguise a failed fixture assertion as an expected transport error.
+    for (const { url, request, command } of calls) {
+      assert.equal(url, environment.PRESCRIPTIONS_KV_REST_API_URL);
+      assert.equal(request.method, 'POST');
+      assert.equal(request.cache, 'no-store');
+      assert.equal(request.redirect, 'error');
+      assert.equal(request.credentials, 'omit');
+      assert.deepEqual(command, command[0] === 'HGETALL'
+        ? ['HGETALL', 'holistic-house:site-videos:v1']
+        : ['HGET', 'holistic-house:site-videos:v1', publicReadKey]);
+    }
+    return calls.map(call => call.authorization);
+  } };
+}
+const missingPublicOverride = command => ({
+  ok: true, json: async () => ({ result: command[0] === 'HGETALL' ? [] : null }),
 });
+
+test('read-only auth fallback preserves the approved default public publication without persisting it', async () => {
+  const fixture = publicReadFixture((attempt, _request, command) =>
+    attempt === 1 ? { ok: false, status: 401 } : missingPublicOverride(command));
+  const record = await fixture.store.get(publicReadKey);
+  assert.deepEqual(fixture.authorizations(), publicReadCredentials);
+  assert.ok(record, 'A missing override must preserve the approved built-in publication');
+  assert.equal(record.key, publicReadKey);
+  assert.equal(record.revision, 0);
+  assert.deepEqual(toPublishedSiteVideo(record), existingHomeIntroVideoEn);
+  assert.doesNotMatch(JSON.stringify(toPublishedSiteVideo(record)), /drive\.google|draft|youtubeUrl|youtubeVisibility/);
+  assert.ok(fixture.calls.every(call => call.command[0] === 'HGET'));
+});
+
+test('read-only auth fallback returns null only for an explicitly empty default collection', async () => {
+  const fixture = publicReadFixture((attempt, _request, command) =>
+    attempt === 1 ? { ok: false, status: 401 } : missingPublicOverride(command), { initialRecords: [] });
+  const record = await fixture.store.get(publicReadKey);
+  assert.deepEqual(fixture.authorizations(), publicReadCredentials);
+  assert.equal(record, null);
+});
+
+for (const status of [401, 403]) for (const method of ['get', 'list']) {
+  test(`read-only ${method} retries ${status} once with writer credentials and only editorial read commands`, async () => {
+    const fixture = publicReadFixture((attempt, _request, command) =>
+      attempt === 1 ? { ok: false, status } : missingPublicOverride(command));
+    const result = method === 'get' ? await fixture.store.get(publicReadKey) : await fixture.store.list();
+    assert.deepEqual(fixture.authorizations(), publicReadCredentials);
+    assert.deepEqual(fixture.calls.map(call => call.command), Array(2).fill(method === 'get'
+      ? ['HGET', 'holistic-house:site-videos:v1', publicReadKey]
+      : ['HGETALL', 'holistic-house:site-videos:v1']));
+    if (method === 'get') assert.deepEqual(toPublishedSiteVideo(result), existingHomeIntroVideoEn);
+    else assert.deepEqual(result.map(toPublishedSiteVideo), builtInSiteVideoRecords()
+      .sort((a, b) => a.key.localeCompare(b.key)).map(toPublishedSiteVideo));
+  });
+}
+
+for (const [status, diagnosticCode] of [[429, 'provider-limit'], [503, 'provider-5xx']]) {
+  for (const method of ['get', 'list']) {
+    test(`read-only ${method} does not retry ${status} or replace its error with a built-in publication`, async () => {
+      const fixture = publicReadFixture(() => ({ ok: false, status }));
+      const pending = method === 'get' ? fixture.store.get(publicReadKey) : fixture.store.list();
+      await assert.rejects(pending, error => codeIs('storage')(error) && error.diagnosticCode === diagnosticCode);
+      assert.deepEqual(fixture.authorizations(), publicReadCredentials.slice(0, 1));
+    });
+  }
+}
+
+for (const method of ['get', 'list']) {
+  test(`read-only ${method} timeout aborts once without writer retry or built-in fallback`, async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const fixture = publicReadFixture((attempt, request, command) => attempt === 1
+      ? new Promise((_resolve, reject) => {
+        request.signal.addEventListener('abort', () => reject(new Error('synthetic aborted read')), { once: true });
+      })
+      : missingPublicOverride(command));
+    const pending = method === 'get' ? fixture.store.get(publicReadKey) : fixture.store.list();
+    assert.equal(fixture.calls.length, 1);
+    assert.equal(fixture.calls[0].signal.aborted, false);
+    t.mock.timers.tick(5000);
+    assert.equal(fixture.calls[0].signal.aborted, true);
+    await assert.rejects(pending, error => codeIs('storage')(error) && error.diagnosticCode === 'timeout');
+    assert.deepEqual(fixture.authorizations(), publicReadCredentials.slice(0, 1));
+  });
+
+  test(`read-only ${method} transport failure neither retries the writer nor substitutes built-ins`, async () => {
+    const fixture = publicReadFixture(() => { throw new Error('synthetic transport failure'); });
+    const pending = method === 'get' ? fixture.store.get(publicReadKey) : fixture.store.list();
+    await assert.rejects(pending, error => codeIs('storage')(error) && error.diagnosticCode === 'transport');
+    assert.deepEqual(fixture.authorizations(), publicReadCredentials.slice(0, 1));
+  });
+
+  test(`read-only ${method} stops after the single writer attempt also fails authentication`, async () => {
+    const fixture = publicReadFixture(() => ({ ok: false, status: 401 }));
+    const pending = method === 'get' ? fixture.store.get(publicReadKey) : fixture.store.list();
+    await assert.rejects(pending, error => codeIs('storage')(error) && error.diagnosticCode === 'provider-auth');
+    assert.deepEqual(fixture.authorizations(), publicReadCredentials);
+  });
+}
 
 test('a hung storage request is aborted after the bounded timeout', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] })

@@ -307,6 +307,7 @@ test('socket terminal lifecycle mock completes only after both closes',async t=>
   const logs=[];t.mock.method(console,'log',(...args)=>logs.push(args))
   const fixture=socketTerminalHarness();await fixture.run()
   assert.equal(fixture.closes,2);assert.equal(JSON.parse(logs.at(-1)[1]).completed,true)
+  assert.deepEqual(JSON.parse(logs.at(-1)[1]),{locale:'en',kind:'compact',channel:'whatsapp',denyReceiptStorage:false,completed:true,requestCount:2,failureCount:0,pageErrorCount:0,blocked:[]},'Successful summary is unchanged')
 })
 for(const closeAt of [1,2]) for(const reject of [false,true]) test(`socket admitted during close ${closeAt} is drained before terminal result: reject=${reject}`,async t=>{
   const logs=[];t.mock.method(console,'log',(...args)=>logs.push(args))
@@ -491,3 +492,85 @@ for(const locale of ['en','ru'])test(locale+' actual inline fold after unknown r
  f.reveal();assert.equal(f.find('input',p=>p.type==='tel').hidden,true);assert.equal(f.find('input',p=>p.type==='tel').props.value,'4165550123');assert.equal(f.find('input',p=>p.type==='checkbox').props.checked,true);assert.equal(f.env.requests.length,1);
  f.reveal();f.env.setRespond(success);f.send('telegram');await turn(f);assert.equal(f.env.requests.length,2);assert.equal(f.env.requests[1],raw);assert.equal(f.env.writes.length,1);assert.equal(f.links().length,2);f.unmount();
 });
+
+// Execute the actual denied-request gate; diagnostics never admit a request.
+const fatalBoundaryMessage = 'Unexpected API, write or navigation blocked'
+function diagnosticRequest(url, method='GET', type='document', {navigation=true, subframe=false}={}) {
+  const req=request(url,method,type),main={},frame=subframe?{}:main
+  frame.page=()=>({mainFrame:()=>main});frame.url=()=>assert.fail('No frame URL observation')
+  req.frame=()=>frame;req.isNavigationRequest=()=>navigation
+  req.headers=()=>assert.fail('No diagnostic headers');req.postData=()=>assert.fail('No diagnostic body')
+  return req
+}
+const fatalCases=[
+  ['API read',origin+'/api/app/bootstrap','GET','fetch','api',true,false,false],
+  ['encoded API',origin+'/%61pi%2fapp/bootstrap','GET','xhr','api',true,false,false],
+  ['non-GET',origin+'/other','HEAD','other','other',true,false,false],
+  ['premature receipt',origin+'/en/thank-you?_rsc=synthetic','GET','fetch','receipt',true,false,false],
+  ['repeated service document',origin+freeReviewPath('en'),'GET','document','free-review',true,true,false],
+  ['foreign document','https://outside.invalid/private-synthetic?secret=synthetic','GET','document','other',false,true,false],
+  ['subframe document',origin+'/frame-synthetic','GET','document','other',true,true,true],
+  ['static document',origin+'/_next/static/a.js','GET','document','next-static',true,true,false],
+  ['development document',origin+'/_next/development','GET','document','next-internal',true,true,false],
+]
+for(const [name,url,method,type,pathnameCategory,sameOrigin,navigation,subframe] of fatalCases) test('first fatal diagnostic classifies '+name+' without changing policy',async()=>{
+  const failures=[],blocked=[],receipt=syntheticFreeReviewReceipt('en','compact','whatsapp')
+  const gate=freeReviewRequestGate(origin,'en','compact',receipt,failures,blocked,{bootstrap:true})
+  await gate(route(request(origin+freeReviewPath('en'),'GET','document')))
+  assert.equal(gate.initialDocumentLoaded,true);assert.equal(gate.firstFatalRequest,null)
+  const denied=route(diagnosticRequest(url,method,type,{navigation,subframe}));await gate(denied)
+  assert.deepEqual(denied.log,['abort']);assert.deepEqual(failures,[fatalBoundaryMessage]);assert.deepEqual(blocked,[]);assert.equal(receipt.count,0)
+  assert.deepEqual(gate.firstFatalRequest,{method,resource:type,pathnameCategory,sameOrigin,navigation,mainFrame:!subframe,subframe,beforeInteraction:true})
+  assert.equal(Object.isFrozen(gate.firstFatalRequest),true)
+})
+test('fatal diagnostic is first-only and distinguishes an armed interaction',async()=>{
+  const failures=[],receipt=syntheticFreeReviewReceipt('en','compact','whatsapp'),gate=freeReviewRequestGate(origin,'en','compact',receipt,failures,[],{bootstrap:true})
+  await gate(route(request(origin+freeReviewPath('en'),'GET','document')));gate.beginInteraction()
+  const first=route(diagnosticRequest(origin+'/api/first','GET','fetch',{navigation:false}));await gate(first)
+  const snapshot=gate.firstFatalRequest;assert.equal(snapshot.beforeInteraction,false)
+  for(let i=0;i<20;i++) { const denied=route(diagnosticRequest('https://outside.invalid/other-'+i));await gate(denied);assert.deepEqual(denied.log,['abort']) }
+  assert.strictEqual(gate.firstFatalRequest,snapshot);assert.equal(failures.length,21);assert.ok(failures.every(value=>value===fatalBoundaryMessage));assert.equal(receipt.count,0)
+})
+test('new diagnostic getters may throw without altering the original rejection',async()=>{
+  const marker='PRIVATE_DIAGNOSTIC_THROW_MARKER',failures=[],gate=freeReviewRequestGate(origin,'en','compact',{confirmed:false,accept:()=>assert.fail()},failures,[],{bootstrap:true})
+  const req=diagnosticRequest(origin+'/other','PUT','fetch');let methodReads=0
+  req.method=()=>{if(++methodReads===1)return 'PUT';throw Error(marker)}
+  for(const field of ['resourceType','frame','isNavigationRequest'])req[field]=()=>{throw Error(marker)}
+  const denied=route(req);await gate(denied)
+  assert.deepEqual(denied.log,['abort']);assert.deepEqual(failures,[fatalBoundaryMessage])
+  assert.deepEqual(gate.firstFatalRequest,{method:null,resource:null,pathnameCategory:'other',sameOrigin:true,navigation:null,mainFrame:null,subframe:null,beforeInteraction:true})
+  assert.ok(!JSON.stringify([failures,gate.firstFatalRequest]).includes(marker))
+})
+test('unknown enums and poison URL components never become diagnostic values',async()=>{
+  const marker='PRIVATE_DIAGNOSTIC_POISON',failures=[],gate=freeReviewRequestGate(origin,'en','compact',{confirmed:false,accept:()=>assert.fail()},failures,[],{bootstrap:true})
+  const req=diagnosticRequest('https://'+marker+':'+marker+'@outside.invalid/'+marker+'?'+marker+'='+marker+'#'+marker,marker,marker)
+  req.isNavigationRequest=()=>marker;req.frame=()=>{throw Error(marker)}
+  const denied=route(req);await gate(denied)
+  assert.deepEqual(denied.log,['abort']);assert.deepEqual(failures,[fatalBoundaryMessage])
+  assert.deepEqual(gate.firstFatalRequest,{method:null,resource:null,pathnameCategory:'other',sameOrigin:false,navigation:null,mainFrame:null,subframe:null,beforeInteraction:true})
+  assert.doesNotMatch(JSON.stringify([failures,gate.firstFatalRequest]),/PRIVATE_DIAGNOSTIC_POISON|https?:|outside|\?|#|@/)
+})
+test('malformed encoded paths retain original catch failure rather than a fabricated fatal descriptor',async()=>{
+  const failures=[],gate=freeReviewRequestGate(origin,'en','compact',{confirmed:false,accept:()=>assert.fail()},failures,[],{bootstrap:true})
+  const denied=route(diagnosticRequest(origin+'/%malformed'));await gate(denied)
+  assert.deepEqual(denied.log,['abort']);assert.deepEqual(failures,['Free-review request boundary failed']);assert.equal(gate.firstFatalRequest,null)
+})
+for(const [name,url,method,type,,sameOrigin,navigation,subframe] of fatalCases.slice(0,7)) test('startup wrapper '+name+' rejects before interaction and emits only after cleanup',async t=>{
+  const logs=[],calls=[];t.mock.method(console,'log',(...args)=>{calls.push('log');logs.push(args)})
+  let httpHandler,releaseClose,closeCount=0,settled=false,result
+  const closed=new Promise(resolve=>{releaseClose=resolve})
+  const page={on:()=>{},goto:async()=>{
+    await httpHandler(route(request(origin+freeReviewPath('en'),'GET','document')))
+    const denied=route(diagnosticRequest(url,method,type,{navigation,subframe}));await httpHandler(denied);assert.deepEqual(denied.log,['abort'])
+  },evaluate:()=>assert.fail('No startup interaction or popup evaluation'),locator:()=>assert.fail('No component interaction')}
+  const context={routeWebSocket:async()=>{},route:async(_pattern,handler)=>{httpHandler=handler},addInitScript:async()=>{},newPage:async()=>page,
+    close:async()=>{calls.push('close');if(++closeCount===1)await closed}}
+  const task=verifyFreeReviewJourney(sourceFor(context),()=>assert.fail('No interaction'),'en').catch(error=>{result=error;settled=true})
+  await turn();assert.equal(settled,false);assert.equal(logs.length,0);assert.equal(closeCount,1)
+  releaseClose();await task
+  assert.equal(result?.code,'ERR_ASSERTION');assert.deepEqual(result.actual,[fatalBoundaryMessage]);assert.deepEqual(result.expected,[])
+  assert.equal(closeCount,2);assert.deepEqual(calls,['close','close','log']);assert.equal(logs.length,1);assert.equal(logs[0][0],'SYNTHETIC_FREE_REVIEW_BOUNDARY')
+  const summary=JSON.parse(logs[0][1]);assert.equal(summary.completed,false);assert.equal(summary.requestCount,0);assert.equal(summary.failureCount,1);assert.equal(summary.pageErrorCount,0);assert.deepEqual(summary.blocked,[])
+  assert.equal(summary.firstFatalRequest.beforeInteraction,true);assert.equal(summary.firstFatalRequest.sameOrigin,sameOrigin);assert.equal(summary.firstFatalRequest.navigation,navigation);assert.equal(summary.firstFatalRequest.subframe,subframe)
+  assert.doesNotMatch(JSON.stringify(summary),/https?:|outside|private-synthetic|secret|bootstrap|_rsc/)
+})

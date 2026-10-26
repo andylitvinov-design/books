@@ -89,8 +89,8 @@ test('negative controls detect removed field redaction, raw error retention and 
       assert.throws(()=>assert.equal(diagnostic.snapshot().events.length,192));}],
   ]){
     assert.equal(source.split(before).length,2);
-    const module=await import('data:text/javascript;base64,'+Buffer.from(source.replace(before,after)).toString('base64'));
-    probe(module);
+    const diagnosticsModule=await import('data:text/javascript;base64,'+Buffer.from(source.replace(before,after)).toString('base64'));
+    probe(diagnosticsModule);
   }
 });
 

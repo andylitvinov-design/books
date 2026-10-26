@@ -52,16 +52,16 @@ function harness({locale='en',kind='start',source,storage=new Map(),storageBlock
     './free-diagnostic-start.module.css':css,'./coaching-intake-form.module.css':css,
     '@/lib/app/client-fetch':{appFetch:async(...args)=>{assert.deepEqual(args,['coaching-intake'],'Only synthetic account-read probe allowed');auth.push(args);throw {status:401}}},
   }
-  const module={exports:{}}
+  const componentModule={exports:{}}
   vm.runInNewContext(ts.transpileModule(source,{fileName:filename,compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
-    module,exports:module.exports,require:name=>{assert.ok(Object.hasOwn(modules,name),'Unapproved dependency '+name);return modules[name]},
+    module: componentModule,exports:componentModule.exports,require:name=>{assert.ok(Object.hasOwn(modules,name),'Unapproved dependency '+name);return modules[name]},
     URL,URLSearchParams,sessionStorage:browserStorage,localStorage:{getItem:denied,setItem:denied},
     window:{location:{search:'',assign:href=>navigation.push(href)},crypto:{randomUUID:()=>`00000000-0000-4000-8000-${String(++uuid).padStart(12,'0')}`}},
     BroadcastChannel:class{constructor(name){assert.equal(name,'hh-app-session')}close(){}},
     navigator:{clipboard:{writeText:denied}},XMLHttpRequest:denied,WebSocket:denied,
     fetch:async(url,options)=>{assert.equal(url,'/api/coaching-diagnostic','Only the actual diagnostic endpoint');assert.equal(options.method,'POST');assert.equal(options.credentials,'same-origin');calls.push({url,...options});assert.ok(queue.length,'Unplanned external operation');return queue.shift()()},
   },{filename,timeout:5000})
-  const render=()=>{index=0;pending=[];dirty=false;tree=module.exports[kind==='start'?'FreeDiagnosticStart':'CoachingIntakeForm']({locale,...componentProps});pending.forEach(fn=>fn())}
+  const render=()=>{index=0;pending=[];dirty=false;tree=componentModule.exports[kind==='start'?'FreeDiagnosticStart':'CoachingIntakeForm']({locale,...componentProps});pending.forEach(fn=>fn())}
   const h={calls,writes,removes,navigation,queue,auth,storage,get tree(){return tree},all:()=>nodes(tree),one:predicate=>nodes(tree).find(predicate),
     async settle(){for(let i=0;i<30;i++){await Promise.resolve();if(dirty)render()}},
     async change(node,value){assert.ok(node,'Actual control exists');node.props.onChange({target:{value,checked:value}});await h.settle()},

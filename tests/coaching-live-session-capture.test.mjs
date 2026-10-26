@@ -32,10 +32,10 @@ function assertRestoredFit(source) {
   const text=tree=>Array.isArray(tree)?tree.map(text).join(''):tree==null||typeof tree==='boolean'?'':typeof tree==='object'?hidden(tree.props)?'':text(tree.props.children):String(tree)
   const evaluate=(node,bindings={})=>{
     assert.ok(node,'Actual declaration exists')
-    const module={exports:{}}
+    const evaluatedModule={exports:{}}
     const code=ts.transpileModule('export const value=('+node.getText(file)+')',{fileName:'fit.jsx',compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-    vm.runInNewContext(code,{module,exports:module.exports,...bindings,require:id=>{assert.equal(id,'react/jsx-runtime');return {jsx,jsxs:jsx,Fragment:'fragment'}}},{timeout:1000})
-    return module.exports.value
+    vm.runInNewContext(code,{module: evaluatedModule,exports:evaluatedModule.exports,...bindings,require:id=>{assert.equal(id,'react/jsx-runtime');return {jsx,jsxs:jsx,Fragment:'fragment'}}},{timeout:1000})
+    return evaluatedModule.exports.value
   }
   const expected={
     en:{title:'Is this the right coach for me?',intro:'Before sending a request, check the points that really matter:',checks:['Relevant experience with your particular goal and a clear explanation of training.','An approach and communication style where you feel heard, safe and comfortable.','Spoken language, online format, price, length and how to confirm a session.'],notice:'Andrey is the one personal coach listed here. No credential, review score or availability has been independently verified on this page.'},

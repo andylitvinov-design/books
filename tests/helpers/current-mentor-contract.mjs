@@ -25,10 +25,10 @@ function fixture(source, locale, slug = 'andy-litvinov') {
     '@/lib/practitioners/public-service-links.js': { getPublicServiceDetailHref },
     './master-network-explorer.module.css': { default: new Proxy({}, { get: (_, key) => String(key) }) },
   }
-  const module = { exports: {} }
+  const componentModule = { exports: {} }
   vm.runInNewContext(ts.transpileModule(source, { fileName: 'master-network-explorer.tsx', compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
-  } }).outputText, { module, exports: module.exports, fetch: forbidden, XMLHttpRequest: forbidden, WebSocket: forbidden,
+  } }).outputText, { module: componentModule, exports: componentModule.exports, fetch: forbidden, XMLHttpRequest: forbidden, WebSocket: forbidden,
     require: name => { assert.ok(Object.hasOwn(modules, name), 'Unexpected mentor import ' + name); return modules[name] },
   }, { timeout: 2000 })
   const service = (id, serviceSlug, offeringType) => ({ id, slug: serviceSlug, offeringType,
@@ -40,7 +40,7 @@ function fixture(source, locale, slug = 'andy-litvinov') {
   let masterTree, filtersTree
   function render() {
     context = 'master'; cursor = 0
-    masterTree = module.exports.MarketplaceMasterFinder({ practitioners, courses: [], locale })
+    masterTree = componentModule.exports.MarketplaceMasterFinder({ practitioners, courses: [], locale })
     const filters = nodes(masterTree).find(node => typeof node.type === 'function' && node.type.name === 'Filters')
     assert.ok(filters, 'Actual Filters component remains composed before cards')
     context = 'filters'; cursor = 0; filtersTree = filters.type(filters.props)

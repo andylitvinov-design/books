@@ -59,14 +59,14 @@ function renderLandingCards(locale, context, reviews, overrides) {
     '@/data/academy/energywork-ai-curriculum': { tantraVoices: reviews },
     './tantra-learner-review-cards.module.css': { default: new Proxy({}, { get: (_, key) => String(key) }) },
   };
-  const module = { exports: {} };
+  const cardsModule = { exports: {} };
   const forbidden = () => { throw new Error('External operation forbidden in testimonial fixture'); };
   vm.runInNewContext(ts.transpileModule(source, { fileName: path, compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
-  } }).outputText, { module, exports: module.exports, fetch: forbidden, XMLHttpRequest: forbidden, WebSocket: forbidden,
+  } }).outputText, { module: cardsModule, exports: cardsModule.exports, fetch: forbidden, XMLHttpRequest: forbidden, WebSocket: forbidden,
     require: name => { assert.ok(Object.hasOwn(modules, name), 'Unexpected cards dependency: ' + name); return modules[name]; },
   }, { filename: path, timeout: 5000 });
-  return module.exports.TantraLearnerReviewCards({ locale, context, headingId: 'synthetic-testimonial-heading' });
+  return cardsModule.exports.TantraLearnerReviewCards({ locale, context, headingId: 'synthetic-testimonial-heading' });
 }
 
 export function assertCurrentTestimonialSources(overrides = {}) {

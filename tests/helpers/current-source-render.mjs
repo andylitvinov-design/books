@@ -37,15 +37,15 @@ export function attributeText(node, name, file) {
 }
 export function sourceModule(source, filename, modules = {}, globals = {}) {
   parse(source, filename)
-  const module = {exports: {}}
+  const compiledModule = {exports: {}}
   const code = ts.transpileModule(source, {fileName: filename, compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   }}).outputText
-  vm.runInNewContext(code, {module, exports: module.exports, ...globals,
+  vm.runInNewContext(code, {module: compiledModule, exports: compiledModule.exports, ...globals,
     fetch: denied, XMLHttpRequest: denied, WebSocket: denied,
     require: name => {assert.ok(Object.hasOwn(modules, name), 'Unapproved dependency ' + name); return modules[name]},
   }, {filename, timeout: 5000})
-  return module.exports
+  return compiledModule.exports
 }
 export function expression(node, file, bindings) {
   return sourceModule('export const value = (' + node.getText(file) + ');', 'expression.tsx', {'react/jsx-runtime': jsx}, bindings).value

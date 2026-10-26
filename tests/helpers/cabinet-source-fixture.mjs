@@ -40,10 +40,10 @@ export function cabinetFixture({page='portrait',locale='en',data,request='',stat
   const globals={window,document,navigator:{onLine:true},URL,URLSearchParams,Date,Intl,AbortController,requestAnimationFrame:fn=>fn(),crypto:{randomUUID:denied},fetch:async(path,options={})=>{requests.push({path,options});return transport(path,options)},XMLHttpRequest:denied,WebSocket:denied,localStorage:new Proxy({},{get:denied}),sessionStorage:new Proxy({},{get:denied})}
   function compile(source,name,modules={},bindings={}) {
     parse(source,name)
-    const module={exports:{}}
+    const compiledModule={exports:{}}
     const code=ts.transpileModule(source,{fileName:name,compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-    runInNewContext(code,{...globals,...bindings,module,exports:module.exports,require:name=>{assert.ok(Object.hasOwn(modules,name),'Unapproved dependency '+name);return modules[name]}},{filename:name,timeout:5000})
-    return module.exports
+    runInNewContext(code,{...globals,...bindings,module: compiledModule,exports:compiledModule.exports,require:name=>{assert.ok(Object.hasOwn(modules,name),'Unapproved dependency '+name);return modules[name]}},{filename:name,timeout:5000})
+    return compiledModule.exports
   }
   const icons=Object.fromEntries('ArrowDownToLine ArrowUpRight FileText LockKeyhole Pin ArrowRight Brain CalendarDays ChevronDown Flower2 HeartHandshake Leaf MessageCircle Sparkles Plus Save Send ShieldCheck House UserRound ClipboardList BarChart3 BookOpen Users'.split(' ').map(name=>[name,'icon-'+name]))
   const base={'react':hooks,'react/jsx-runtime':jsx,'next/link':{default:'a'},'next/image':{default:'img'},'lucide-react':icons}
@@ -119,7 +119,7 @@ export async function participantScope(actor,row,requestId) {
   const selected=file.statements.filter(n=>(ts.isFunctionDeclaration(n)&&n.name?.text==='participant')||(ts.isVariableStatement(n)&&n.declarationList.declarations.some(d=>d.name.getText(file)==='admittedStatuses')))
   assert.equal(selected.length,2)
   const code=selected.map(n=>n.getText(file)).join('\n')+'\nmodule.exports=participant'
-  const module={exports:{}}
-  runInNewContext(code,{module,...contracts,...conversationPolicy},{timeout:5000})
-  return module.exports({query:async(sql,args)=>{assert.equal(args[0],requestId);return {rows:row?[row]:[]}}},actor,requestId)
+  const participantModule={exports:{}}
+  runInNewContext(code,{module: participantModule,...contracts,...conversationPolicy},{timeout:5000})
+  return participantModule.exports({query:async(sql,args)=>{assert.equal(args[0],requestId);return {rows:row?[row]:[]}}},actor,requestId)
 }
