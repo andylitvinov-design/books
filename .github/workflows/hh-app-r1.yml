@@ -101,6 +101,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: WhatsApp replay receipts in the existing disposable PG17 fixture
+        run: node scripts/verify-whatsapp-receipts-isolated.mjs
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         run: npm run test:app:db
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback

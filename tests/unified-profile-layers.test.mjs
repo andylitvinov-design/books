@@ -76,12 +76,12 @@ test('client profile and Insights reuse one owner-scoped source model', () => {
   assert.match(style, /focus-visible/)
 })
 
-test('existing fifth review slide offers explicit Google handoff without silent guest import', () => {
+test('optional fourth Ready slide offers Google handoff without silent guest import', () => {
   const builder = source('components/personality-profiles-builder.tsx')
   const css = source('components/personality-profiles-builder.module.css')
   const page = source('app/[locale]/personality-profiles/page.tsx')
   assert.ok(builder.indexOf('data-profile-google-cabinet-offer') > builder.indexOf('data-profile-test-review-slide'))
-  assert.ok(builder.includes('data-profile-start-tests'))
+  assert.ok(builder.includes('data-profile-google-signin'))
   assert.ok(builder.includes('data-profile-review-tests'))
   assert.ok(builder.includes('makeTestSelectionIntent(selectedKeys)'))
   assert.ok(builder.includes('PENDING_TEST_SELECTION_KEY'))
@@ -90,7 +90,8 @@ test('existing fifth review slide offers explicit Google handoff without silent 
   assert.ok(builder.includes('continueTo: "tests"'))
   assert.ok(builder.includes('/app/tests?selection=pending'))
   for (const locale of ['en','ru','es']) assert.ok(builder.includes(locale + ': {'))
-  assert.ok(builder.includes('Гостевые ответы и прошлые гостевые результаты автоматически не переносятся.'))
+  assert.ok(builder.includes('No guest answers or guest results are imported into the Google account.'))
+  assert.doesNotMatch(builder, /guestAnswers|results\/import/)
   assert.ok(css.includes('.accountOffer'))
   assert.ok(!page.includes('business, wellbeing or comprehensive profile'))
   const ts = require('typescript')
