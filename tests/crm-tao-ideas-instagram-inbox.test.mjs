@@ -141,6 +141,18 @@ test('bounded batches, malformed IDs and empty unsupported Meta events fail clos
     Array.from({length:31},(_,i)=>event({text:'valid'},'m_'+i))),BUSINESS),RangeError);
   assert.deepEqual(normalizeTaoIdeasInstagramMessages({object:'instagram',entry:{}},BUSINESS),[]);
 });
+test('malformed/future Meta timestamps do not reopen the conservative 23-hour reply window',()=>{
+  const valid=event({text:'Valid customer timestamp'},'m_time');
+  for(const ts of [undefined,null,0,1793100000,Date.now()+10*60*1000,'not-a-time',Infinity]){
+    const malformed={...valid,timestamp:ts};
+    assert.deepEqual(normalizeTaoIdeasInstagramMessages(payload([malformed]),BUSINESS),[],
+      'unexpected timestamp '+String(ts));
+  }
+  const old={...valid,timestamp:Date.now()-24*60*60*1000};
+  const accepted=normalizeTaoIdeasInstagramMessages(payload([old]),BUSINESS);
+  assert.equal(accepted.length,1);
+  assert.equal(accepted[0].sentAt,old.timestamp,'retain original time, never Date.now');
+});
 test('production handler reuses signed HMAC and exactly one encrypted owner inbox, no silent forward to Telegram',()=>{
   const webhook=source('lib/crm/messenger-webhook.js');
   const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js');
