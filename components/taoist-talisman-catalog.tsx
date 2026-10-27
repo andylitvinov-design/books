@@ -33,9 +33,14 @@ const copy = {
   },
 } as const;
 
-export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
+export function TaoistTalismanCatalog({ locale, featuredId }: { locale: PublicLocale; featuredId?: string }) {
   const router = useRouter();
   const t = copy[locale];
+  // Use the *existing* illustrated SKUs and cart, just put the relevant
+  // symbol first. No purchase is made or customer details transferred.
+  const orderedTalismans = featuredId && TAOIST_TALISMANS.some(item => item.id === featuredId)
+    ? [...TAOIST_TALISMANS].sort((a, b) => Number(b.id === featuredId) - Number(a.id === featuredId))
+    : TAOIST_TALISMANS;
   const [cartIds, setCartIds] = useState<string[]>([]);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [storageError, setStorageError] = useState(false);
@@ -61,8 +66,8 @@ export function TaoistTalismanCatalog({ locale }: { locale: PublicLocale }) {
   return (
     <div className={styles.root} data-taoist-talisman-catalog>
       <div className={styles.scroller} role="region" tabIndex={0} aria-label={t.scroll}>
-        {TAOIST_TALISMANS.map(item => (
-          <article key={item.id} className={styles.card} data-tao-talisman={item.id}>
+        {orderedTalismans.map(item => (
+          <article key={item.id} className={styles.card} data-tao-talisman={item.id} data-recommended={item.id === featuredId ? "true" : undefined}>
             <div className={styles.photo}>
               <Image src={item.image} fill
                 alt={item[locale].title + " · " + t.example}
