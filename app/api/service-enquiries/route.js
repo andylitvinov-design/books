@@ -4,6 +4,7 @@ import { consumeRate } from '@/lib/app/database'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { createPublicServiceEnquiry } from '@/lib/practitioners/public-service-enquiry'
 import { dispatchPublicServiceEnquiryTelegram } from '@/lib/app/public-enquiry-telegram'
+import { SESSION_BOOKING_COOKIE, SESSION_BOOKING_TTL, isAlchemyBooking, signSessionBooking } from '@/lib/practitioners/public-session-booking.mjs'
 import { FREE_EXPRESS_COOKIE, FREE_EXPRESS_TTL_SECONDS, createFreeExpressToken, isFreeExpressRequest } from '@/lib/practitioners/free-express-continuation.mjs'
 
 export const runtime = 'nodejs'
@@ -34,6 +35,18 @@ export async function POST(request) {
       })
     }
     const response = NextResponse.json(result, { status: 201, headers: PRIVATE_HEADERS })
+    // A committed, consented Alchemy request gets an HttpOnly status proof.
+    // This is not payment, a guest login, or a claim to someone else's records.
+    if (result.saved === true && isAlchemyBooking(payload)) {
+      const createdAt = Date.parse(result.createdAt || '')
+      if (Number.isFinite(createdAt) && Date.now() - createdAt < SESSION_BOOKING_TTL * 1000) {
+        response.cookies.set(SESSION_BOOKING_COOKIE,
+          signSessionBooking({ id: result.id, operationId: payload.operationId, createdAt }, config), {
+            httpOnly: true, secure: !config.test, sameSite: 'strict',
+            path: '/api/service-enquiries/booking-status', maxAge: SESSION_BOOKING_TTL,
+          })
+      }
+    }
     // A confirmed, consented free express request gets a scoped 1-hour
     // continuation cookie even when the optional v2 media wizard is disabled.
     // This allows an explicitly signed-in client to save the original request

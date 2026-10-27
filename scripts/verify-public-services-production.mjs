@@ -74,8 +74,8 @@ try {
       await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
       await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
       await assertViewport(page, "es/alchemy-of-soul/" + width);
-      assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-        "Default Spanish payment details are collapsed before geometry measurement");
+      assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+        "Spanish booking does not expose payment methods before confirmed time");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
       assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
@@ -471,8 +471,8 @@ try {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
         if (kind === "alchemy") {
-          assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-            "Default payment details are collapsed before geometry measurement");
+          assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+            "Payment options belong only to the confirmed booking cart");
         }
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
@@ -532,27 +532,21 @@ try {
             });
             assert.ok(bottomGap >= 0 && bottomGap < 55, "No empty testimonial viewport after the last video");
             const pricing = main.locator('[data-alchemy-booking-formats]');
-            // Payments are still available after agreement, but the default
-            // 320/390px decision screen must not be extended by transfer notes.
-            const paymentDisclosure = pricing.locator('[data-alchemy-payment-disclosure]');
-            if (await paymentDisclosure.count()) {
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), false,
-                "Payment methods must be collapsed until explicitly requested");
-              await paymentDisclosure.locator('summary').click();
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), true,
-                "Payment help can be expanded with an accessible control");
-              await paymentDisclosure.locator('summary').click();
-            }
+            // No payment methods or external provider links on an unconfirmed booking.
+            await assertAlchemyPaymentsExpanded(main, expect, width);
             await pricing.locator('[data-alchemy-format="month"]').click();
             await expect(pricing.locator('[data-alchemy-format="month"]')).toHaveAttribute('aria-pressed','true');
-            assert.equal(await paymentDisclosure.count(), 0,
-              "Unpriced monthly support must never expose one-time transfer amounts");
+            assert.equal(await pricing.locator('[data-booking-cta]').count(), 0,
+              "Monthly support uses its independent service enquiry, not this one-time booking flow");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredCompactPhoneChooser(pricing, expect, page);
-            const prepared = await assertPreparedContactChannels(channels, expect);
-            assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-              "Selected express session must appear in prepared order draft");
+            const book = pricing.locator('[data-booking-cta="book"]');
+            await expect(book).toHaveCount(1);
+            await book.click();
+            await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible();
+            await expect(pricing.locator('[data-booking-step="contact"] input[type="checkbox"]')).toHaveCount(1);
+            assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,
+              "No cart or payment method before a server-confirmed booking");
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {
