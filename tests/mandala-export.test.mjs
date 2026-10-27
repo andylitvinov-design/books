@@ -9,6 +9,7 @@ test("mandala export preserves local-only image and no external upload", () => {
   const client = read("components/mandala-meditation-client.tsx");
   const exporter = read("lib/mandala/export-png.ts");
   const css = read("components/mandala-meditation.module.css");
+  const middleware = read("middleware.ts");
   assert.match(client, /renderMandalaPng/);
   assert.match(client, /download="holistic-house-mandala\.png"/);
   assert.match(client, /const pngHref = preparedPng\?\.signature === pngSignature/);
@@ -20,6 +21,8 @@ test("mandala export preserves local-only image and no external upload", () => {
   assert.match(exporter, /decode\("\/mandalas\/legacy-stone-mosaic\.svg"\)/);
   assert.match(exporter, /ctx\.clip\(\)/);
   assert.match(css, /\.focus \.exportButton\{display:none\}/);
+  assert.match(middleware, /const publicMandalaLocalImages/);
+  assert.match(middleware, /ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:'/);
   assert.doesNotMatch(exporter + client, /fetch\(|XMLHttpRequest|navigator\.sendBeacon|FormData|localStorage|sessionStorage/);
 });
 
