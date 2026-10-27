@@ -37,7 +37,7 @@ const copy = {
     unavailable: "Requests are temporarily unavailable. Please try again later.",
     success: "Your request has been received",
     reference: "Request number",
-    pending: "The practitioner will contact you to agree on availability and next steps. This is not a confirmed booking or payment.",
+    pending: "Holistic House will contact you about the selected practitioner and arrange availability. This is not a confirmed booking or payment.",
     privacy: "Your contact and message are sent securely to Holistic House only after you confirm.",
   },
   ru: {
@@ -56,7 +56,7 @@ const copy = {
     unavailable: "Приём заявок временно недоступен. Попробуйте позже.",
     success: "Ваша заявка получена",
     reference: "Номер заявки",
-    pending: "Мы свяжемся с вами, чтобы согласовать время и дальнейшие действия. Запись и оплата пока не подтверждены.",
+    pending: "Holistic House свяжется с вами по выбранному мастеру и согласует время. Запись и оплата пока не подтверждены.",
     privacy: "Ваши контакты и сообщение отправляются в Holistic House только после подтверждения.",
   },
   es: {
@@ -75,7 +75,7 @@ const copy = {
     unavailable: "Las solicitudes no están disponibles temporalmente. Inténtalo más tarde.",
     success: "Hemos recibido tu solicitud",
     reference: "Número de solicitud",
-    pending: "Nos pondremos en contacto para acordar la disponibilidad y los próximos pasos. No es una reserva ni un pago confirmados.",
+    pending: "Holistic House te contactará sobre el profesional elegido y su disponibilidad. No es una reserva ni un pago confirmados.",
     privacy: "Tus datos se envían de forma segura a Holistic House solo al confirmar.",
   },
 } as const;
@@ -198,13 +198,16 @@ export function RemoteSupportEnquiryContact({
             onChange={event => { setContact(event.target.value); operationId.current = null; setError(""); }}/>
           <small>{t.contactHint}</small>
         </div>
-        <div className={styles.field}>
-          <label htmlFor={"remote-name-" + master.serviceId}>{t.name}</label>
-          <input id={"remote-name-" + master.serviceId} type="text"
-            autoComplete="name" maxLength={120} placeholder={t.namePlaceholder}
-            value={displayName} disabled={busy}
-            onChange={event => { setDisplayName(event.target.value); operationId.current = null; setError(""); }}/>
-        </div>
+        <details className={styles.nameDetails}>
+          <summary>{t.name}</summary>
+          <div className={styles.field}>
+            <label htmlFor={"remote-name-" + master.serviceId}>{t.name}</label>
+            <input id={"remote-name-" + master.serviceId} type="text"
+              autoComplete="name" maxLength={120} placeholder={t.namePlaceholder}
+              value={displayName} disabled={busy}
+              onChange={event => { setDisplayName(event.target.value); operationId.current = null; setError(""); }}/>
+          </div>
+        </details>
       </div>
       <label className={styles.contactConsent}>
         <input type="checkbox" required checked={consent} disabled={busy}
