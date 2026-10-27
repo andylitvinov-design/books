@@ -84,13 +84,19 @@ export function GoalProfilePanel({ locale = 'en', accountId, entriesByKey, resul
   useEffect(() => {
     let active = true
     if (!accountId) { setState('error'); return () => {} }
-    appFetch('development-goals', undefined, 'GET', { accountId })
-      .then(response => { if (active) {
-        setRating(response?.goals?.goalCheckin || null)
-        setState('ready')
-      }})
-      .catch(() => { if (active) setState('error') })
-    return () => { active = false }
+    const reload = () => {
+      setState('loading')
+      appFetch('development-goals', undefined, 'GET', { accountId })
+        .then(response => { if (active) {
+          setRating(response?.goals?.goalCheckin || null)
+          setState('ready')
+        }})
+        .catch(() => { if (active) setState('error') })
+    }
+    reload()
+    // The existing private editor reports success without exposing values in an event.
+    window.addEventListener('hh:goal-checkin-saved', reload)
+    return () => { active = false; window.removeEventListener('hh:goal-checkin-saved', reload) }
   }, [accountId])
   const rows = useMemo(() => GOAL_RATING_KEYS.map(key => ({
     key, label:GOAL_RATING_LABELS[key][lang], value:rating?.values?.[key] ?? null,
