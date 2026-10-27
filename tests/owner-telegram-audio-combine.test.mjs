@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
+import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs'
+import {execFileSync} from 'node:child_process'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {joinOggOpus,OWNER_AUDIO_COMBINE_MAX_PARTS,OWNER_AUDIO_COMBINE_MAX_BYTES}
   from '../lib/practitioners/owner-telegram-audio-join.mjs'
 import {parseOwnerAudioCommand,parseOwnerAudioCallback,ownerAudioHelpMessage}
@@ -128,4 +131,38 @@ test('private PostgreSQL session, ordered storage and Telegram sender are wired 
   assert.match(schema,/jsonb_array_length\(items\)<=8/)
   assert.match(expansion,/drop constraint if exists telegram_owner_audio_combine_items_check/i)
   assert.match(expansion,/jsonb_array_length\(items\)<=12/)
+})
+
+test('real encoded Ogg/Opus clips remux into one fully decodable recording',t=>{
+  for(const binary of ['ffmpeg','ffprobe']){
+    try{execFileSync(binary,['-version'],{stdio:'ignore'})}
+    catch{t.skip(binary+' not installed in runner');return}
+  }
+  const dir=mkdtempSync(join(tmpdir(),'hh-ogg-combine-'))
+  try{
+    const recordings=[]
+    for(const [index,duration] of [[0,0.55],[1,0.72]]){
+      const filename=join(dir,'part-'+index+'.ogg')
+      execFileSync('ffmpeg',[
+        '-nostdin','-hide_banner','-loglevel','error',
+        '-f','lavfi','-i','sine=frequency='+(330+110*index)+':duration='+duration,
+        '-c:a','libopus','-b:a','24k','-y',filename,
+      ],{stdio:'pipe'})
+      recordings.push(new Uint8Array(readFileSync(filename)))
+    }
+    const bytes=joinOggOpus(recordings)
+    const output=join(dir,'result.ogg')
+    writeFileSync(output,bytes)
+    const duration=Number(execFileSync('ffprobe',[
+      '-v','error','-show_entries','format=duration',
+      '-of','default=noprint_wrappers=1:nokey=1',output,
+    ],{encoding:'utf8'}).trim())
+    assert(duration>1.20&&duration<1.36,'merged duration includes both recordings')
+    execFileSync('ffmpeg',[
+      '-nostdin','-v','error','-i',output,'-f','null','-',
+    ],{stdio:'pipe'})
+    const stream=pages(bytes)
+    assert.equal(stream.filter(page=>page.flags&2).length,1)
+    assert.equal(stream.filter(page=>page.flags&4).length,1)
+  }finally{rmSync(dir,{recursive:true,force:true})}
 })
