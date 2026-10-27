@@ -1,0 +1,44 @@
+.banner{
+  box-sizing:border-box;
+  width:min(1188px,calc(100% - 28px));
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:17px;
+  margin:24px auto 30px;
+  padding:20px clamp(18px,3vw,29px);
+  border:1px solid #e2cfbb;
+  border-radius:20px;
+  background:linear-gradient(115deg,#f9f2e8,#f0e5d7);
+  color:#47382c;
+  box-shadow:0 5px 18px rgba(78,55,33,.045);
+}
+.symbol{width:50px;height:50px;display:grid;place-items:center;border-radius:16px;background:#e3d1bd;color:#795235}
+.copy{min-width:0}
+.eyebrow{margin:0 0 4px;color:#8a6242;font:800 10px/1.4 Arial,sans-serif;letter-spacing:.12em}
+.copy h2{margin:0;color:#48372a;font:400 clamp(23px,2.4vw,29px)/1.2 Georgia,serif;letter-spacing:-.02em}
+.description{max-width:660px;margin:5px 0 0;color:#6d5a4c;font:14px/1.55 Arial,sans-serif}
+.action{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:50px;
+  padding:12px 19px;
+  border:1px solid #76513b;
+  border-radius:999px;
+  background:#76513b;
+  color:#fffaf1;
+  font:750 13px/1.3 Arial,sans-serif;
+  text-decoration:none;
+  white-space:nowrap;
+}
+.action:hover{background:#62402d}
+.action:focus-visible{outline:3px solid #be986b;outline-offset:3px}
+@media(max-width:650px){
+  .banner{grid-template-columns:auto minmax(0,1fr);gap:12px;margin:14px auto 22px;padding:16px}
+  .symbol{width:42px;height:42px}
+  .description{font-size:13px}
+  .action{grid-column:1/-1;width:100%;white-space:normal;text-align:center}
+}
+@media(max-width:350px){.banner{width:calc(100% - 16px);padding:12px;border-radius:16px}.copy h2{font-size:22px}}
