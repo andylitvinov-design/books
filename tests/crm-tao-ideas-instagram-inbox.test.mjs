@@ -70,7 +70,7 @@ test('signed Instagram DM event becomes one same-account encrypted CRM event mod
   assert.equal(result.length,1);
   assert.deepEqual(result[0],{
     type:'incoming',accountId:BUSINESS,userId:USER,
-    name:'Instagram DM · @tao.ideas',language:null,
+    name:'Instagram DM · #4321',language:null,
     body:'Hello from my Instagram',eventId:'instagram:m_test_1',
     messageId:'instagram:m_test_1',sentAt:1793100000000,stop:false,
   });
