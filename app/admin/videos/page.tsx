@@ -51,6 +51,7 @@ export default async function SiteVideosPage() {
         initialLocale={klingLocale}
         configured={Boolean(process.env.KLING_API_KEY)}
         enabled={process.env.HH_KLING_PAID_GENERATION_ENABLED === "true"}
+        premiumEnabled={process.env.HH_KLING_PREMIUM_RENDER_ENABLED === "true"}
       />
       <KlingAvatarStudio
         initialLocale={klingLocale}
