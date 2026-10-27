@@ -125,7 +125,7 @@ export default function MessagesSimpleInbox({
   },[])
   const rows=useMemo(()=>{
     const crm=(crmState.threads||[]).map(item=>({
-      key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,name:item.name||t.choose,
+      key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,lifecycle:item.lifecycle,name:item.name||t.choose,
       source:channelNames[item.channel]||item.channel,unread:Number(item.unreadCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastMessageAt||item.lastInboundAt,
       preview:item.needsReply?t.waiting:channelNames[item.channel]||item.channel,
@@ -158,7 +158,7 @@ export default function MessagesSimpleInbox({
   const chatsCount=filterInboxRows(rows,'chats').length
   const requestsCount=filterInboxRows(rows,'requests').length
   const tabTotal=tab==='requests'?requestsCount:chatsCount
-  const tabLoading=tab==='requests'?websiteLoading:crmState.loading
+  const tabLoading=tab==='requests'?(websiteLoading||crmState.loading):crmState.loading
   const displayed=filterInboxRows(rows,tab,search)
   const unreadCount=rows.reduce((sum,item)=>sum+Math.max(0,item.unread),0)
   const crmThreadId=selected?.kind==='crm'?selected.id:''
@@ -286,7 +286,7 @@ export default function MessagesSimpleInbox({
           {!tabTotal&&tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
           {!tabTotal&&!tabLoading?<p className={styles.info}>{tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
           {tabTotal>0&&!displayed.length&&search.trim()&&<p className={styles.info}>{t.noMatches}</p>}
-          {crmState.error&&tab==='chats'&&<p role="alert" className={styles.info}>{t.loading}</p>}
+          {crmState.error&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
           {websiteUnavailable&&tab==='requests'&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
           {displayed.map(row=><button type="button" key={row.key}
             aria-pressed={selectedKey===row.key}
