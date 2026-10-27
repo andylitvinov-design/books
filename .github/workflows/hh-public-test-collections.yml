@@ -25,6 +25,7 @@ on:
       - 'lib/profile/profile-scale-selection.js'
       - 'tests/profile-test-taxonomy.test.mjs'
       - 'tests/profile-construct-axes.test.mjs'
+      - 'scripts/audit-profile-construct-links.mjs'
       - 'tests/profile-scale-hierarchy.test.mjs'
       - 'tests/personality-profiles-focus-filter.test.mjs'
       - 'components/personality-profiles-builder.module.css'
@@ -54,6 +55,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Source-only taxonomy / scorer identity coverage for every registered test
+        run: node scripts/audit-profile-construct-links.mjs --verify
       - name: Real collection membership, matching, standard cards and EN/RU/ES tests
         run: >-
           node --conditions=react-server --test
@@ -86,6 +89,7 @@ jobs:
           tests/profile-scale-hierarchy.test.mjs
           tests/profile-test-taxonomy.test.mjs
           tests/profile-construct-axes.test.mjs
+          scripts/audit-profile-construct-links.mjs
           components/app/unified-profile-layers.jsx
           lib/profile/unified-profile.js
           tests/unified-profile-layers.test.mjs
