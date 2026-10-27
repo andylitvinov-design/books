@@ -21,7 +21,7 @@ function makeWav(seconds=5,sampleRate=16000){
 const valid=()=>({imageBytes:makePng(),imageMime:'image/png',audioBytes:makeWav(5),
   audioMime:'audio/wav',prompt:'The owner speaks calmly',externalTaskId});
 
-test('accept original owner portrait with real bytes and 2–20 seconds of PCM WAV',()=>{
+test('accept original owner portrait with real bytes and a 2–5s PCM WAV',()=>{
   assert.deepEqual(detectPortrait(makePng(),'image/png'),{width:400,height:500});
   assert.equal(pcmWavDuration(makeWav(5),'audio/wav'),5);
   const normalized=normalizeKlingAvatar(valid());
@@ -38,7 +38,7 @@ test('reject malformed/third-party-looking image bytes and oversize / out-of-ran
     assert.throws(()=>detectPortrait(img,mime),/validation/);
 });
 test('reject unsupported audio, forged RIFF, high duration, and oversized WAV without outbound calls',()=>{
-  for(const wav of [Buffer.alloc(120),makeWav(1),makeWav(21),Buffer.alloc(KLING_AVATAR_LIMITS.audioBytes+1)]){
+  for(const wav of [Buffer.alloc(120),makeWav(1),makeWav(6),makeWav(21),Buffer.alloc(KLING_AVATAR_LIMITS.audioBytes+1)]){
     assert.throws(()=>pcmWavDuration(wav,'audio/wav'),/validation/);
   }
   assert.throws(()=>pcmWavDuration(makeWav(5),'audio/mpeg'),/validation/);
@@ -47,7 +47,7 @@ test('reject unsupported audio, forged RIFF, high duration, and oversized WAV wi
 });
 test('strict external ID, prompt and server maximum reject before any provider charge',()=>{
   for(const change of [{externalTaskId:'bad'},{prompt:'x'.repeat(1201)},
-    {imageBytes:Buffer.alloc(10)},{audioBytes:makeWav(21)}])
+    {imageBytes:Buffer.alloc(10)},{audioBytes:makeWav(6)},{audioBytes:makeWav(21)}])
     assert.throws(()=>normalizeKlingAvatar({...valid(),...change}),/validation/);
 });
 test('one authenticated provider POST, sound from owner only, STD mode, no secrets in result',async()=>{
@@ -139,4 +139,32 @@ test('read-only handshake rejects invalid auth and never leaks provider error or
   assert.match(route,/requireAdminRequest\(\)/);
   assert.match(ui,/verifyConnection\(\)/);
   assert.ok(!ui.includes('process.env.KLING_API_KEY'));
+});
+
+
+test('default 5-second paid Avatar ceiling is enforced on server', () => {
+  assert.equal(KLING_AVATAR_LIMITS.maxSeconds,5);
+  assert.equal(KLING_AVATAR_LIMITS.minSeconds,2);
+  assert.throws(() => normalizeKlingAvatar({...valid(),audioBytes:makeWav(6)}),/validation/);
+  const ui=readFileSync(new URL('../components/kling-avatar-studio.tsx',import.meta.url),'utf8');
+  assert.match(ui,/buffer.duration>5/);
+  assert.ok(!ui.includes('up to 20 seconds'));
+});
+
+test('scenes default to 3s silent 720p and premium server flag gates more costly settings', async () => {
+  const {normalizeKlingScene,klingRequestForScene}=await import('../lib/kling-video.mjs');
+  const scene=normalizeKlingScene({mode:'text',prompt:'Cinematic quiet forest with natural sunlight',duration:3,
+    resolution:'720p',aspectRatio:'16:9',imageUrl:'',externalTaskId:'hh_kling_1234567890abcdef1234567890abcdef'});
+  const req=klingRequestForScene(scene);
+  assert.equal(req.body.settings.duration,3);
+  assert.equal(req.body.settings.resolution,'720p');
+  assert.equal(req.body.settings.audio,'off');
+  const action=readFileSync(new URL('../app/admin/videos/kling-actions.js',import.meta.url),'utf8');
+  const page=readFileSync(new URL('../app/admin/videos/page.tsx',import.meta.url),'utf8');
+  const ui=readFileSync(new URL('../components/kling-scene-studio.tsx',import.meta.url),'utf8');
+  assert.match(action,/HH_KLING_PREMIUM_RENDER_ENABLED/);
+  assert.match(action,/scene.duration !== 3/);
+  assert.match(action,/scene.resolution !== '720p'/);
+  assert.match(page,/premiumEnabled=\{process\.env\.HH_KLING_PREMIUM_RENDER_ENABLED === "true"\}/);
+  assert.match(ui,/useState<3 \| 5 \| 10>\(3\)/);
 });
