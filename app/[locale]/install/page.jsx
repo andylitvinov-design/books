@@ -12,7 +12,7 @@ const COPY={
     open:'Open my Cabinet',messages:'Open my messages',settings:'Notification settings',
     stepsTitle:'Three steps to get started',
     steps:[
-      'Open this page in Safari on iPhone or Chrome on Android. Tap “Install for free” above; if no system prompt appears, follow the browser menu instructions.',
+      'Open in Safari on iPhone (Share → Add to Home Screen) or Chrome on Android (menu ⋮ → Install app). First try “Install for free” above. If no system prompt appears, use the browser menu.',
       'Open Holistic House from the new Home Screen icon. Sign in to access your personal Cabinet.',
       'For private-message alerts, open Cabinet Settings and opt in separately. Availability depends on device and browser permissions.'
     ],
@@ -26,7 +26,7 @@ const COPY={
     open:'Открыть кабинет',messages:'Мои сообщения',settings:'Настройки уведомлений',
     stepsTitle:'Три шага для установки',
     steps:[
-      'Откройте эту страницу в Safari на iPhone или Chrome на Android. Нажмите «Установить бесплатно» выше. Если браузер не предложил установку, используйте меню браузера.',
+      'В Safari на iPhone: Поделиться → На экран «Домой». В Chrome на Android: меню ⋮ → Установить приложение. Сначала попробуйте кнопку «Установить бесплатно» выше.',
       'Запустите Holistic House с новой иконки на главном экране и войдите в личный кабинет.',
       'Уведомления о личных сообщениях включаются отдельно в настройках, если телефон и браузер их поддерживают.'
     ],
@@ -40,7 +40,7 @@ const COPY={
     open:'Abrir mi espacio',messages:'Abrir mis mensajes',settings:'Configurar notificaciones',
     stepsTitle:'Tres pasos para instalar',
     steps:[
-      'Abre esta página en Safari (iPhone) o Chrome (Android). Toca «Instalar gratis». Si no aparece la ventana del navegador, sigue las instrucciones del menú.',
+      'En Safari (iPhone): Compartir → Añadir a la pantalla de inicio. En Chrome (Android): menú ⋮ → Instalar aplicación. Prueba primero «Instalar gratis» arriba.',
       'Abre Holistic House desde el nuevo icono e inicia sesión para acceder a tu espacio privado.',
       'Las alertas de mensajes son opcionales: actívalas por separado en Configuración si tu dispositivo lo permite.'
     ],
