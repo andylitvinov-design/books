@@ -53,7 +53,7 @@ Optional **offline proposal stage** for finished, explicitly approved **non-sens
 node scripts/propose-openverse-video-sfx.mjs /absolute/path/to/public-master.mp4
 ~~~
 
-This calls only the existing bundled ffmpeg-static executable, **never** sends video, audio, speech, transcript or frames to Openverse/HeyGen, never downloads sounds or writes to the original MP4. A single local sibling *-sfx-proposal.json report is created with mode 0600; existing proposals are not overwritten. Input must be an ordinary local MP4 up to 250 MB and 120 seconds.
+This calls only the existing bundled ffmpeg-static executable, **never** sends video, audio, speech, transcript or frames to Openverse/HeyGen, never downloads sounds or writes to the original MP4. A single local sibling *-sfx-proposal.json report is created with mode 0600; existing proposals are not overwritten. Input must be an ordinary local MP4 up to 250 MB and 120 seconds. The current downstream FFmpeg mixer requires an existing audio track; silent MP4s are explicitly rejected until a separately tested silence-friendly mixer is available.
 
 The read-only FFmpeg scene detector finds strong hard cuts (scene threshold 0.30), ignores cuts at start/end and within 2 seconds of the previous cut, and proposes up to six **quiet** generic soft-transition cues. Proposed cues all reuse the same sound type and query, so the downstream Openverse script searches just once per type. No facial action recognition, semantic scene understanding, speech transcription or automatic sound placement outside montage cuts is claimed.
 
