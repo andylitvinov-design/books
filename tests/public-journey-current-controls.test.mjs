@@ -597,9 +597,10 @@ async function assertCompactTalisman(input=read('components/remote-energy-suppor
     const directory=await directoryFixture(locale,10000,'masters');directory.fixture.arm();await directory.send(directory.request())
     const payload=JSON.parse(directory.actions[0][1].body);await directory.fixture.close()
     const f=compactFixture(read('components/holistic-inline-support-order.tsx'),locale,'talisman',{ok:true,status:200,data:payload})
-    f.props.initialTalismanId='fu-prosperity';f.render();f.click('data-support-budget','20');f.click('data-support-search')
+    // Generic topic search retains the budget picker. Selected catalog IDs now use a separate one-click path below.
+    f.render();assert.equal(f.requests.length,0);f.click('data-support-budget','20');f.click('data-support-search')
     const nodes=await f.settle(),child=nodes.find(n=>n.type==='booking');assert.ok(child)
-    assert.equal(child.props.compactFinder,true);assert.equal(child.props.priceBudget,'20');assert.equal(child.props.initialTalismanId,'fu-prosperity')
+    assert.equal(child.props.compactFinder,true);assert.equal(child.props.priceBudget,'20');assert.equal(child.props.initialTalismanId,'')
     const deny=()=>assert.fail('No interaction, transport, or navigation during price-filter render')
     const jsx=(type,props)=>({type,props:props||{}})
     // This selected-result render tests the pure price filter; mount effects are a separate fixture above.
@@ -610,7 +611,7 @@ async function assertCompactTalisman(input=read('components/remote-energy-suppor
       '@/lib/practitioners/holistic-search-budgets.js':budget,'./remote-energy-support-booking.module.css':{default:{}}})
     const result=[],walk=n=>{if(Array.isArray(n))return n.forEach(walk);if(!n||typeof n!=='object')return;result.push(n);walk(n.props?.children)}
     walk(component.RemoteEnergySupportBooking(child.props))
-    assert.equal(result.filter(n=>Object.hasOwn(n.props,'data-remote-support-specialist')).length,0)
+    assert.equal(result.filter(n=>Object.hasOwn(n.props,'data-remote-support-specialist')).length,0,'TALISMAN_EUR_FILTER_MUST_HIDE_SESSION_PRICED_MASTERS')
     assert.equal(result.filter(n=>n.props.role==='status').length,1)
     assert.equal(result.filter(n=>['form','input','textarea','select'].includes(n.type)).length,0)
     f.close()
@@ -624,7 +625,105 @@ test('talisman product-price filter regression cannot expose session offers as p
   const source=read('components/remote-energy-support-booking.tsx')
   const guard='const matchingMasters = compactFinder && priceBudget !== "any"'
   assert.equal(source.split(guard).length-1,1)
-  await assert.rejects(assertCompactTalisman(source.replace(guard,'const matchingMasters = false')),{code:'ERR_ASSERTION'})
+  await assert.rejects(assertCompactTalisman(source.replace(guard,'const matchingMasters = false')),
+    error=>error.code==='ERR_ASSERTION'&&error.message.includes('TALISMAN_EUR_FILTER_MUST_HIDE_SESSION_PRICED_MASTERS'))
+})
+
+
+// Actual component state/initial markup only: no browser, layout, form submission,
+// account, payment or OAuth action is executed by this source-contract fixture.
+function renderCatalogBooking(input,props) {
+  const data=compileCompact(read('lib/practitioners/taoist-talismans.js'),{})
+  const bridge=compileCompact(read('lib/practitioners/remote-energy-support.js'),{'./taoist-talismans.js':data})
+  const budget=compileCompact(read('lib/practitioners/holistic-search-budgets.js'),{})
+  const deny=()=>assert.fail('CATALOG_RENDER_MUST_NOT_NAVIGATE_SUBMIT_OR_PERSIST')
+  const jsx=(type,props)=>({type,props:props||{}})
+  const component=compileCompact(input,{
+    'react/jsx-runtime':{jsx,jsxs:jsx},react:{useState:initial=>[typeof initial==='function'?initial():initial,deny],useMemo:fn=>fn(),useEffect:()=>{}},
+    'next/link':{default:'a'},'next/navigation':{useRouter:()=>({push:deny})},
+    '@/lib/practitioners/remote-energy-support':bridge,'@/lib/practitioners/taoist-talismans':data,
+    '@/lib/practitioners/holistic-search-budgets.js':budget,'./remote-energy-support-booking.module.css':{default:{}}})
+  const result=[],walk=n=>{if(Array.isArray(n))return n.forEach(walk);if(!n||typeof n!=='object')return;result.push(n);walk(n.props?.children)}
+  walk(component.RemoteEnergySupportBooking(props));return result
+}
+async function assertCatalogOneClick(inline=read('components/holistic-inline-support-order.tsx'),booking=read('components/remote-energy-support-booking.tsx')) {
+  const data=compileCompact(read('lib/practitioners/taoist-talismans.js'),{})
+  for(const locale of ['en','ru','es']) for(const item of data.TAOIST_TALISMANS) {
+    const lease=await directoryFixture(locale,10000,'masters');lease.fixture.arm();await lease.send(lease.request())
+    const payload=JSON.parse(lease.actions[0][1].body);await lease.fixture.close()
+    const f=compactFixture(inline,locale,'talisman',{ok:true,status:200,data:payload},item.goal)
+    f.props.initialTalismanId=item.id
+    try {
+      const first=f.render()
+      assert.equal(first.filter(n=>Object.hasOwn(n.props,'data-support-search')||Object.hasOwn(n.props,'data-support-theme')||Object.hasOwn(n.props,'data-support-choice')||Object.hasOwn(n.props,'data-support-budget')).length,0,'CATALOG_MUST_NOT_REPEAT_SEARCH_PICKER')
+      assert.equal(first.find(n=>n.props.id==='holistic-inline-results').props.hidden,false,'CATALOG_RESULTS_MUST_START_OPEN')
+      assert.equal(f.requests.length,1,'CATALOG_SELECTION_MUST_START_ONE_DIRECTORY_READ')
+      assert.equal(f.requests[0].url,'/api/public/remote-energy-support-masters?locale='+locale)
+      assert.equal(f.requests[0].options.credentials,'omit','CATALOG_DIRECTORY_MUST_OMIT_CREDENTIALS')
+      const result=await f.settle(),child=result.find(n=>n.type==='booking');assert.ok(child,'CATALOG_MUST_REACH_BOOKING_BOUNDARY')
+      assert.equal(f.requests.length,1,'CATALOG_SELECTION_MUST_NOT_DUPLICATE_DIRECTORY_READ')
+      assert.equal(child.props.initialTalismanId,item.id,'CATALOG_ID_MUST_REACH_BOOKING')
+      assert.equal(child.props.initialGoal,item.goal);assert.equal(child.props.selectedKind,'talisman')
+      assert.equal(child.props.mode,'inline');assert.equal(child.props.compactFinder,true);assert.equal(child.props.priceBudget,'any')
+      const nodes=renderCatalogBooking(booking,child.props)
+      const open=nodes.filter(n=>n.props['data-booking-open']==='true')
+      assert.equal(open.length,1,'SINGLE_CATALOG_MASTER_MUST_OPEN_ENQUIRY')
+      assert.equal(open[0].props['data-remote-support-specialist'],payload.masters[0].serviceId)
+      const forms=nodes.filter(n=>n.type==='form')
+      assert.equal(forms.length,1,'CATALOG_MUST_RENDER_ONE_UNSUBMITTED_ENQUIRY')
+      assert.equal(forms[0].props.id,'remote-request-'+payload.masters[0].serviceId)
+      assert.equal(nodes.filter(n=>n.type==='textarea').length,1)
+      assert.equal(nodes.find(n=>n.type==='textarea').props.value,'')
+      assert.equal(nodes.filter(n=>n.type==='select'||n.type==='input').length,0,'CATALOG_MUST_NOT_PRESENT_SESSION_BOOKING_CONTROLS')
+      const text=n=>Array.isArray(n)?n.map(text).join(''):typeof n==='string'?n:typeof n==='number'?String(n):text(n?.props?.children||'')
+      assert.doesNotMatch(nodes.map(text).join(' '),/€\s?(?:50|100)|(?:50|100)\s?€/,'CATALOG_MUST_NOT_INVENT_TALISMAN_PRICE_FROM_SESSION')
+      for(const node of nodes.filter(n=>n.type==='a'))assert.doesNotMatch(node.props.href,/payments|checkout|square\.|paypal\.|stripe\./,'CATALOG_MUST_NOT_OFFER_PAYMENT')
+    }finally{f.close()}
+    assert.equal(f.requests[0]?.options.signal.aborted,true,'CATALOG_CLOSE_MUST_ABORT_REQUEST')
+  }
+}
+
+test('actual selected catalog skips repeated search and opens only the single published unpriced enquiry across locales',async()=>{
+  await assertCatalogOneClick()
+})
+test('catalog one-click regressions fail intended state, identity, credential and selection assertions',async()=>{
+  const inline=read('components/holistic-inline-support-order.tsx'),booking=read('components/remote-energy-support-booking.tsx')
+  for(const [source,before,after,expected] of [
+    ['inline','{!catalogMode && <div className={styles.picker}>','{true && <div className={styles.picker}>','CATALOG_MUST_NOT_REPEAT_SEARCH_PICKER'],
+    ['inline','useState(catalogMode)','useState(false)','CATALOG_RESULTS_MUST_START_OPEN'],
+    ['inline','initialTalismanId={initialTalismanId} compactFinder','initialTalismanId="wrong-catalog" compactFinder','CATALOG_ID_MUST_REACH_BOOKING'],
+    ['inline','fetch(query, { credentials: "omit"','fetch(query, { credentials: "include"','CATALOG_DIRECTORY_MUST_OMIT_CREDENTIALS'],
+    ['booking','initialTalismanId && selectedKind === "talisman" && masters.length === 1','false','SINGLE_CATALOG_MASTER_MUST_OPEN_ENQUIRY'],
+    ['booking','requestKind === "talisman" ? null : offers.length ?','false ? null : offers.length ?','CATALOG_MUST_NOT_INVENT_TALISMAN_PRICE_FROM_SESSION'],
+    ['booking','href={"/" + locale + "/masters/" + master.slug}','href="https://square.link/u/synthetic"','CATALOG_MUST_NOT_OFFER_PAYMENT'],
+  ]) {
+    const original=source==='inline'?inline:booking;assert.equal(original.split(before).length-1,1)
+    await assert.rejects(assertCatalogOneClick(source==='inline'?original.replace(before,after):inline,source==='booking'?original.replace(before,after):booking),
+      error=>error.code==='ERR_ASSERTION'&&error.message.includes(expected),expected)
+  }
+})
+
+test('catalog selection never auto-opens generic, energy or ambiguous multiple-master forms and denial stays visible',async()=>{
+  const source=read('components/remote-energy-support-booking.tsx')
+  const lease=await directoryFixture('en',10000,'masters');lease.fixture.arm();await lease.send(lease.request())
+  const payload=JSON.parse(lease.actions[0][1].body);await lease.fixture.close()
+  for(const [initialTalismanId,selectedKind,masters] of [
+    ['', 'talisman',payload.masters],['fu-prosperity','energy',payload.masters],
+    ['fu-prosperity','talisman',[]],['fu-prosperity','talisman',[...payload.masters,{...payload.masters[0],slug:'second',serviceId:'second'}]],
+  ]) {
+    const nodes=renderCatalogBooking(source,{locale:'en',masters,preferredPractitioner:'',mode:'inline',compactFinder:true,initialGoal:'Work and money',initialTalismanId,selectedKind})
+    assert.equal(nodes.filter(n=>n.props['data-booking-open']==='true'||n.type==='form').length,0,'CATALOG_AUTO_OPEN_REQUIRES_ID_TALISMAN_AND_EXACTLY_ONE_MASTER')
+  }
+  for(const locale of ['en','ru','es']) {
+    const f=compactFixture(read('components/holistic-inline-support-order.tsx'),locale,'talisman')
+    f.props.initialTalismanId='fu-prosperity'
+    try {
+      f.render();const result=await f.settle()
+      assert.equal(f.requests.length,1);assert.equal(result.filter(n=>n.props.role==='alert').length,1)
+      assert.equal(result.filter(n=>n.type==='booking'||['form','textarea','input','select'].includes(n.type)).length,0)
+    }finally{f.close()}
+    assert.equal(f.requests[0].options.signal.aborted,true)
+  }
 })
 
 async function assertPublishedConsultations(input=read('lib/practitioners/public-remote-support-masters.ts')) {

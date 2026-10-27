@@ -65,6 +65,8 @@ test('ZEN is only an enquiry alongside existing PayPal; no API charge or receipt
 test('Alchemy defers payment methods to the existing cart after verified booking confirmation', () => {
   const alchemy = read('components/alchemy-soul-lead-form.tsx')
   const chooser = read('components/contact-channel-chooser.tsx')
+  assert.match(alchemy, /<ContactChannelChooser/)
+  assert.doesNotMatch(alchemy, /\/api\/payments\/zen\//)
   // Both one-time selectors pass only the published fixed-price SKU. The
   // four-week programme remains a separate enquiry, never a guessed SKU.
   for (const choice of ['format', 'selected']) {

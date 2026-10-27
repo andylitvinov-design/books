@@ -94,8 +94,8 @@ test('private owner /audio, /materials and Telegram deep link show safe instruct
   assert.match(prompt.text,/20 МБ/)
   assert.doesNotMatch(prompt.text,/файл уже сохранён/)
   assert.match(ownerAudioMaterialsMessage().text,/admin\/materials\/telegram/)
-  assert.equal(prompt.reply_markup.inline_keyboard[0][0].callback_data,'hh-audio:to:meditations')
-  const library=prompt.reply_markup.inline_keyboard.flat().find(button=>button.url)
+  assert.ok(prompt.reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-audio:to:meditations'))
+  const library=prompt.reply_markup.inline_keyboard.flat().find(button=>button.url==='https://holistichouse.vercel.app/admin/materials/telegram')
   assert.equal(library.url,'https://holistichouse.vercel.app/admin/materials/telegram')
 })
 test('in-chat audio entry button is owner-only and cannot alter folders by itself',()=>{
@@ -145,7 +145,7 @@ test('choose the exact private materials folder BEFORE the next voice',()=>{
   assert.match(chosen.text,/Медитации/)
   assert.match(chosen.text,/30 минут/)
   assert.match(chosen.text,/Следующая запись/)
-  const folderLink=chosen.reply_markup.inline_keyboard.flat().find(item=>item.url)?.url
+  const folderLink=chosen.reply_markup.inline_keyboard.flat().find(item=>item.url?.startsWith('https://holistichouse.vercel.app/admin/materials/telegram'))?.url
   assert.equal(folderLink,'https://holistichouse.vercel.app/admin/materials/telegram?folder=meditations')
   assert.throws(()=>ownerAudioDestinationSelectedMessage('client-reports'))
 })

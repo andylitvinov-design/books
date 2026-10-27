@@ -124,7 +124,7 @@ test('unified profile is multi-select and describes four separate analysis layer
   for (const token of [
     'data-profile-focus-selection', 'data-profile-focus={key}', 'data-profile-confirm-focus',
     'aria-pressed={focuses.includes(key)}', 'disabled={focuses.length === 0}',
-    'setAreas(visibleAreas)', 'data-profile-four-layers', 't.layers.map',
+    'setSelectedResearchIds([])', 'data-profile-four-layers', 't.layers.map',
     'ONE PERSONAL PROFILE', 'ОДИН ЛИЧНЫЙ ПРОФИЛЬ', 'UN PERFIL PERSONAL',
   ]) assert.ok(component.includes(token), token)
   assert.ok(!component.includes('data-profile-kind='))
@@ -155,7 +155,7 @@ test('five life directions retain the original topics and add a goal-support top
   for (const name of ['PROFILE_FOCUS_AREAS', 'PROFILE_AREA_AXES', 'profileAreasWithTests'])
     assert.ok(component.includes(name), 'uses shared source-backed taxonomy: ' + name)
   assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
-  assert.match(component, /\[areas, setAreas\] = useState<Area\[]>\(\[\]\)/)
+  assert.match(component, /\[selectedResearchIds, setSelectedResearchIds\] = useState<string\[\]>\(\[\]\)/)
   assert.doesNotMatch(component, /purpose: \[/)
   assert.doesNotMatch(component, /not five diagnoses|пять диагнозов|cinco diagnósticos/)
 })
@@ -223,8 +223,8 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
   }
   assert.match(builder, /selectedAxisRefs\.includes\(scale\.researchAxisId\)/)
   assert.match(builder, /test\.testKind === modeKind/)
-  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
-  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
+  assert.match(builder, /\.filter\(test => extraTestKeys\.has\(test\.key\)\)/)
+  assert.match(builder, /const effectiveExtraScales = extraProfile[\s\S]*?: selectedAxisRefs;/)
   assert.match(builder, /setExtraScales\(previous => previous\.includes\(axis\)/)
   assert.match(builder, /\[\.\.\.previous, axis\]/)
   assert.match(builder, /buildProfileScaleGroups\(tests, areasFor\(\[extraProfile\]\), areaAxes\)/)
@@ -234,7 +234,7 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
   assert.ok(builder.includes('const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","))'), 'test launch encodes only catalogue keys')
 })
 
-test('additional test finder scopes a single life profile before opening multiple real scales', () => {
+test('additional test finder starts from selected topics and can explore other life directions', () => {
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
   const slide = builder.slice(builder.indexOf('data-profile-additional-tests'), builder.indexOf('data-profile-test-review-slide'))
@@ -244,14 +244,17 @@ test('additional test finder scopes a single life profile before opening multipl
   assert.ok(profileAt >= 0 && scalesAt > profileAt && testsAt > scalesAt)
   assert.match(slide, /\(\["wellbeing", "relationships", "work", "identity", "goal"\] as const\)\.map/)
   assert.match(slide, /extraProfile === key/)
+  assert.match(slide, /data-profile-extra-profile="selected"/)
+  assert.match(slide, /aria-pressed=\{extraProfile === null\}/)
   assert.match(slide, /axesForExtraProfile\.map/)
   assert.match(slide, /aria-pressed=\{extraScales\.includes\(axis\)\}/)
   assert.match(slide, /setExtraScales\(\[\.\.\.axesForExtraProfile\]\)/)
   assert.match(slide, /setExtraScales\(\[\]\)/)
-  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
-  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
-  for (const t of ['profile: "1. Выберите один профиль"', 'scales: "2. Отметьте шкалы профиля"',
-    'profile: "1. Choose one profile"', 'profile: "1. Elige un perfil"']) assert.ok(builder.includes(t))
+  assert.match(builder, /\.filter\(test => extraTestKeys\.has\(test\.key\)\)/)
+  assert.match(builder, /const effectiveExtraScales = extraProfile[\s\S]*?: selectedAxisRefs;/)
+  for (const t of ['profile: "Другие направления (по желанию)"', 'scales: "2. Отметьте шкалы профиля"',
+    'profile: "Explore other directions (optional)"', 'profile: "Otras áreas (opcional)"']) assert.ok(builder.includes(t))
+
   assert.match(css, /\.extraProfileChoices\{display:grid/)
   assert.match(css, /\.extraScaleChoices\{display:flex/)
   assert.match(css, /@media\(max-width:450px\)\{\.extraProfileChoices\{grid-template-columns:1fr/)

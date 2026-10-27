@@ -22,7 +22,7 @@ const TOPICS = [
 
 const copy = {
   en: {
-    title: "Find personal support", topic: "Theme", kind: "Service", budget: "Budget",
+    title: "Find personal support", catalogTitle: "Request this talisman", topic: "Theme", kind: "Service", budget: "Budget",
     themes: { business: "Business & money", relationships: "Relationships", wellbeing: "Energy & health" },
     kinds: { energy: "Energy support", talisman: "Talisman", consultation: "Consultation" },
     budgets: { any: "Any", free: "Free", "20": "Up to €20", "100": "Up to €100" },
@@ -36,7 +36,7 @@ const copy = {
     results: "Matching consultations",
   },
   ru: {
-    title: "Подобрать поддержку", topic: "Тема", kind: "Услуга", budget: "Бюджет",
+    title: "Подобрать поддержку", catalogTitle: "Заказать выбранный талисман", topic: "Тема", kind: "Услуга", budget: "Бюджет",
     themes: { business: "Бизнес и деньги", relationships: "Отношения", wellbeing: "Энергия и здоровье" },
     kinds: { energy: "Энергоподдержка", talisman: "Талисман", consultation: "Консультация" },
     budgets: { any: "Любой", free: "Бесплатно", "20": "До €20", "100": "До €100" },
@@ -50,7 +50,7 @@ const copy = {
     results: "Подходящие консультации",
   },
   es: {
-    title: "Encontrar apoyo personal", topic: "Tema", kind: "Servicio", budget: "Presupuesto",
+    title: "Encontrar apoyo personal", catalogTitle: "Solicitar este talismán", topic: "Tema", kind: "Servicio", budget: "Presupuesto",
     themes: { business: "Negocios y dinero", relationships: "Relaciones", wellbeing: "Energía y salud" },
     kinds: { energy: "Apoyo energético", talisman: "Talismán", consultation: "Consulta" },
     budgets: { any: "Cualquiera", free: "Gratis", "20": "Hasta €20", "100": "Hasta €100" },
@@ -73,18 +73,21 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
   onKindChange: (kind: SupportRequestKind) => void;
   onClose: () => void;
 }) {
+  // A selected catalog design already fixes the theme and service kind.
+  // Do not make the buyer repeat the three-row search screen.
+  const catalogMode = kind === "talisman" && Boolean(initialTalismanId);
   const [choice, setChoice] = useState<RequestChoice>(kind);
   const [topic, setTopic] = useState(initialGoal);
   const [budget, setBudget] = useState<Budget>("any");
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(catalogMode);
   const [masters, setMasters] = useState<EnergySupportMaster[] | null>(null);
   const [consultations, setConsultations] = useState<ConsultationOffer[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const t = copy[locale];
 
-  useEffect(() => { setChoice(kind); setSearched(false); }, [kind]);
-  useEffect(() => { setTopic(initialGoal); setSearched(false); }, [initialGoal]);
+  useEffect(() => { setChoice(kind); setSearched(Boolean(initialTalismanId)); }, [kind, initialTalismanId]);
+  useEffect(() => { setTopic(initialGoal); setSearched(Boolean(initialTalismanId)); }, [initialGoal, initialTalismanId]);
 
   useEffect(() => {
     if (!searched) return;
@@ -121,10 +124,10 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
     <aside className={styles.panel} id="holistic-inline-order" data-holistic-inline-order={choice}
       aria-labelledby="holistic-inline-order-title">
       <div className={styles.heading}>
-        <h3 id="holistic-inline-order-title" tabIndex={-1}>{t.title}</h3>
+        <h3 id="holistic-inline-order-title" tabIndex={-1}>{catalogMode ? t.catalogTitle : t.title}</h3>
         <button type="button" onClick={onClose} aria-label={t.close} className={styles.close}>×</button>
       </div>
-      <div className={styles.picker}>
+      {!catalogMode && <div className={styles.picker}>
         <div className={styles.choiceGroup} role="group" aria-label={t.topic}>
           <p className={styles.groupLabel}>{t.topic}</p>
           <div className={styles.threeColumns}>
@@ -158,7 +161,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
           aria-controls="holistic-inline-results" aria-expanded={searched}
           onClick={() => setSearched(true)}>{t.search}<span aria-hidden="true">→</span></button>
         <p className={styles.note}>{t.note}</p>
-      </div>
+      </div>}
       <div id="holistic-inline-results" className={styles.results} hidden={!searched}>
         {searched && !failed && masters === null && consultations === null &&
           <p className={styles.status} role="status">{t.loading}</p>}
