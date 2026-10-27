@@ -159,7 +159,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
                 {t.budgets[value]}</button>)}
           </div>
         </div>
-        <button type="button" data-support-search className={styles.search}
+        {!standalone && <button type="button" data-support-search className={styles.search}
           aria-controls="holistic-inline-results" aria-expanded={searched}
           onClick={() => {
              setSearched(true);
@@ -167,7 +167,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialT
                block: "start",
                behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
              });
-           }}>{t.search}<span aria-hidden="true">→</span></button>
+           }}>{t.search}<span aria-hidden="true">→</span></button>}
         <p className={styles.note}>{t.note}</p>
       </div>}
       <div id="holistic-inline-results" className={styles.results} hidden={!searched}>
