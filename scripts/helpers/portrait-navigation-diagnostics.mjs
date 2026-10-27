@@ -6,6 +6,7 @@ const HMR_EVENTS = new Set(['client-full-reload', 'client-reload-page', 'server-
 const ERROR_NAMES = new Set(['Error', 'TypeError', 'SyntaxError', 'ReferenceError', 'RangeError', 'EvalError', 'URIError', 'AggregateError', 'DOMException', 'ChunkLoadError', 'AbortError', 'SecurityError', 'NetworkError', 'InvalidStateError'])
 const PHASES = new Set(['goto-start', 'goto-complete', 'goto-failed', 'signed-in', 'success', 'failure'])
 const PORTRAIT_READS = new Map([
+  ['/api/app/bootstrap', 'bootstrap'],
   ['/api/app/journey', 'journey'],
   ['/api/app/express-reports', 'express-reports'],
   ['/api/app/development-goals', 'development-goals'],
@@ -107,7 +108,7 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
     if (!match) return
     add({ type, asset: match[1] === 'json' ? 'manifest' : 'chunk', ...extra })
   }
-  // Only the four read effects mounted by Profile. Request identity is local
+  // The four Profile read effects plus app bootstrap. Request identity is local
   // and monotonic, not a browser, account or server ID. Missing request events
   // remain missing evidence; an access-control label is not an abort verdict.
   const startRead = request => {

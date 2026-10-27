@@ -6,6 +6,11 @@ import { openContactChannelChooser, openRegisteredCompactPhoneChooser, assertPre
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const reference = 'HH-ABCD1234EF56'
+const alchemyStart = "    }else if(kind==='alchemy'){\n"
+const alchemyEnd = '\n    }\n   }\n   await servicePage.close()'
+const alchemyFirst = '     const form=servicePage.locator(\'[data-alchemy-lead-form="single"]\')'
+const alchemyLast = '     await expect(servicePage.locator(\'a[href="/\'+locale+\'/services/free-situation-review"]\').first()).toBeVisible()'
+
 function fixture(locale = 'en', fault = '') {
   const state = { open: false, consent: false, phone: '', saved: false, requests: [], events: [], externalClicks: 0 }
   const sandbox = { window: { open: () => assert.fail('Real provider popup is forbidden') } }
@@ -57,7 +62,7 @@ function fixture(locale = 'en', fault = '') {
       } }
   }
   const expect = actual => ({
-    toHaveCount: async value => assert.equal(counts(actual.selector), value),
+    toHaveCount: async value => assert.equal(counts(actual.selector), value, 'Compact fixture ' + actual.selector + ' count'),
     toBeVisible: async () => { assert.equal(counts(actual.selector), 1); if (actual.selector === 'form' || actual.selector.startsWith('a[')) assert.equal(state.open, true) },
     toBeHidden: async () => assert.ok(!counts(actual.selector) || !state.open),
     toHaveAttribute: async (name, value) => { const found = await actual.getAttribute(name); if (value instanceof RegExp) assert.match(found, value); else assert.equal(found, value) },
@@ -68,22 +73,39 @@ function fixture(locale = 'en', fault = '') {
   }
   return { state, expect, page, scope: { locator } }
 }
-async function runActualCoreCall(f) {
-  const source = read('scripts/verify-app-r1.mjs')
-  const start = source.indexOf('     const order=await ')
-  const end = source.indexOf("     await expect(servicePage.locator('a[href=", start)
-  assert.ok(start > 0 && end > start)
-  const snippet = source.slice(start, end)
-  return runInNewContext('(async () => {' + snippet + '\n})()', { assert,
-    pricing: f.scope, expect: f.expect, servicePage: f.page,
-    openContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels }, { timeout: 1000 })
+const bookingFirst = '     const book=pricing.locator(\'[data-booking-cta="book"]\')'
+const bookingLast = '     await expect(pricing.locator(\'[data-booking-payment-options]\')).toHaveCount(0)'
+function extractCurrentBookingCall(source) {
+  const branch = extractWholeAlchemyForm(source)
+  const start = branch.indexOf(bookingFirst), end = branch.indexOf(bookingLast)
+  assert.ok(start >= 0 && end > start, 'Booking extraction requires ordered complete CTA boundaries')
+  assert.equal(branch.lastIndexOf(bookingFirst), start, 'Booking extraction requires one Book action')
+  assert.equal(branch.lastIndexOf(bookingLast), end, 'Booking extraction requires one payment gate')
+  return branch.slice(start, end + bookingLast.length)
 }
-for (const locale of ['en', 'ru']) test(locale + ' actual core Alchemy CTA uses registered compact helper with one synthetic consented receipt', async () => {
+async function runActualCoreCall(h) {
+  const snippet = extractCurrentBookingCall(read('scripts/verify-app-r1.mjs'))
+  return runInNewContext('(async () => {' + snippet + '\n})()', { assert,
+    pricing: h.pricing, expect: h.expect }, { timeout: 1000 })
+}
+for (const locale of ['en', 'ru']) test(locale + ' actual core Alchemy Book CTA opens contact without registration, handoff or payment', async () => {
+  const h = serviceControls(locale)
+  await runActualCoreCall(h)
+  assert.deepEqual(h.booking.events, ['book'])
+  assert.equal(h.booking.open, true); assert.equal(h.booking.paymentExpanded, false)
+  assert.equal(h.f.state.requests.length, 0, 'Core preflight does not submit an enquiry')
+  assert.equal(h.f.state.externalClicks, 0); assert.deepEqual(h.f.state.events, [])
+})
+// Generic compact messenger callers still retain their separate consented-save
+// contract. A migrated Alchemy Book preflight must not delete this coverage.
+for (const locale of ['en', 'ru']) test(locale + ' generic registered compact helper still saves exactly one consented synthetic receipt', async () => {
   const f = fixture(locale)
-  await runActualCoreCall(f)
+  await openRegisteredCompactPhoneChooser(f.scope, f.expect, f.page)
   assert.deepEqual(f.state.events, ['route', 'popup-intercept', 'open', 'phone', 'consent', 'submit', 'receipt'])
   assert.equal(f.state.requests.length, 1); assert.equal(f.state.requests[0].contactConsent, true)
   assert.equal(f.state.externalClicks, 0)
+  const prepared = await assertPreparedContactChannels(f.scope.locator('[data-contact-channel-chooser]'), f.expect)
+  assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'))
 })
 test('legacy direct-link helper rejects current zero-links-before-registration state without any submit', async () => {
   const f = fixture()
@@ -92,19 +114,43 @@ test('legacy direct-link helper rejects current zero-links-before-registration s
 })
 for (const fault of ['contact-leak', 'missing-channel']) test('registered helper retains strict privacy/channel rejection: ' + fault, async () => {
   const f = fixture('en', fault)
-  await assert.rejects(openRegisteredCompactPhoneChooser(f.scope, f.expect, f.page), { code: 'ERR_ASSERTION' })
+  await assert.rejects(openRegisteredCompactPhoneChooser(f.scope, f.expect, f.page), { code: 'ERR_ASSERTION',
+    message: fault === 'contact-leak' ? /Contact details never appear/ : /Compact fixture a\[data-contact-channel\] count/ })
   assert.equal(f.state.externalClicks, 0)
 })
-test('exact current source keeps compact consent-first runtime and the registered helper import', () => {
+function currentBookingBranch(source = read('components/contact-channel-chooser.tsx')) {
+  const start = source.indexOf('  if (compactPhone && bookingSku) {')
+  const end = source.indexOf('\n  if (compactPhone) {', start)
+  assert.ok(start >= 0 && end > start, 'Authored booking and generic compact branches remain separate')
+  return source.slice(start, end)
+}
+function currentBookAction(booking) {
+  const branch = currentBookingBranch()
+  const match = branch.match(/data-booking-cta=\{paidReady \? "pay" : "book"\}[\s\S]*?onClick=\{\(\) => \{([\s\S]*?)\n          \}\}/)
+  assert.ok(match, 'Execute the actual authored Book disclosure action, not an invented fixture transition')
+  return runInNewContext('(function () {' + match[1] + '\n})', {
+    paidReady: false,
+    setOpen: value => { booking.open = typeof value === 'function' ? value(booking.open) : value },
+    setPaymentExpanded: value => { booking.paymentExpanded = typeof value === 'function' ? value(booking.paymentExpanded) : value },
+  }, { timeout: 1000 })
+}
+test('exact current source keeps fixed-SKU Book preflight separate from generic compact registration', () => {
   const core = read('scripts/verify-app-r1.mjs'), form = read('components/alchemy-soul-lead-form.tsx')
-  const runtime = read('components/contact-channel-chooser.tsx')
-  assert.match(core, /import \{ openRegisteredCompactPhoneChooser, assertPreparedContactChannels \} from '.\/helpers\/contact-channel-verifier.mjs'/)
+  const runtime = read('components/contact-channel-chooser.tsx'), booking = currentBookingBranch(runtime)
+  const branch = extractWholeAlchemyForm(core)
+  assert.doesNotMatch(branch, /openRegisteredCompactPhoneChooser|assertPreparedContactChannels|\.check\(|\.fill\(|\.submit\(|\.route\(|\.evaluate\(/,
+    'Book disclosure preflight never performs the retired messenger registration')
   assert.equal((form.match(/compactPhone compactTrigger stayAfterSave/g) || []).length, 2)
   assert.match(form, /resetKey=\{selected\}/)
+  for (const key of ['format', 'selected']) assert.ok(form.includes('bookingSku={' + key + ' === "30" ? "express-consultation-30" : "personal-session-60"}'))
   assert.match(runtime, /if \(!consent\) \{[\s\S]*?return;/)
   assert.match(runtime, /if \(compactPhone\) \{\s+return \([\s\S]*?\{!saved \? \(/)
   assert.match(runtime, /data\.saved !== true/)
-  assert.match(core, /prepared\.whatsappUrl\.searchParams\.get\('text'\)\.includes\('€50'\)/)
+  assert.match(booking, /<form[^>]*data-booking-step="contact"/)
+  assert.match(booking, /\{paidReady && paymentExpanded \? \(/, 'Payment UI still requires confirmed booking plus explicit disclosure')
+  assert.match(extractCurrentBookingCall(core), /data-booking-step="contact"/)
+  assert.ok(read('scripts/helpers/contact-channel-verifier.mjs').includes('export async function openRegisteredCompactPhoneChooser('),
+    'Generic compact helper remains available to its own callers')
 })
 
 // Execute the whole bounded Alchemy form/pricing branch, using semantic labels
@@ -145,13 +191,32 @@ function serviceControls(locale, fault = '', countryFirst = false) {
       if (selector === ':scope > label > select') return selections(() => fields.filter(field => field.direct), 'service options')
       if (selector === '[data-contact-order]') return control('request', { 'aria-expanded': 'false' })
       if (selector === '[data-phone-country-input] input[type="tel"]') return control('phone', fault === 'optional-phone' ? {} : { required: '' })
-      if (selector === '[data-compact-phone-trigger="true"] input[type="checkbox"]') return control('consent', fault === 'optional-consent' ? {} : { required: '' })
+      if (selector === '[data-booking-step="contact"] input[type="checkbox"]') return control('consent', fault === 'optional-consent' ? {} : { required: '' })
       assert.fail('Unexpected service-form selector: ' + selector)
     } }
   let selectedPrice = '60'
   const priceButton = control('price', { 'aria-pressed': 'false' })
   priceButton.click = async () => { selectedPrice = '30'; priceButton.items = () => [{ id: 'price', visible: true, attrs: { 'aria-pressed': 'true' } }] }
-  const pricing = { locator: selector => selector === '[data-alchemy-format="30"]' ? priceButton : f.scope.locator(selector) }
+  const booking = { open: false, paymentExpanded: false, events: [] }
+  const authoredBookAction = currentBookAction(booking)
+  const book = control('book')
+  book.items = () => fault === 'missing-book' ? [] : Array.from({length:fault === 'duplicate-book' ? 2 : 1}, () => ({id:'book',visible:true,attrs:{}}))
+  book.click = async () => {
+    assert.equal(book.items().length, 1, 'Alchemy book count')
+    booking.events.push('book')
+    if (fault !== 'contact-not-opened') authoredBookAction()
+  }
+  const contact = control('booking contact')
+  contact.items = () => [{id:'booking contact',visible:booking.open,attrs:{}}]
+  const payments = control('booking payment options')
+  payments.items = () => fault === 'premature-payment' ? [{id:'payment',visible:true,attrs:{}}] : []
+  const pricing = { locator: selector => {
+    if (selector === '[data-alchemy-format="30"]') return priceButton
+    if (selector === '[data-booking-cta="book"]') return book
+    if (selector === '[data-booking-step="contact"]') return contact
+    if (selector === '[data-booking-payment-options]') return payments
+    assert.fail('Unexpected current booking selector: ' + selector)
+  } }
   const link = control('free-review'); link.first = () => link
   const page = { ...f.page, locator: selector => {
     if (selector === '[data-alchemy-lead-form="single"]') return form
@@ -160,16 +225,12 @@ function serviceControls(locale, fault = '', countryFirst = false) {
   } }
   const expect = actual => actual.selection ? {
     toHaveCount: async count => assert.equal(actual.items().length, count, 'Alchemy ' + actual.name + ' count'),
-    toBeVisible: async () => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].visible, true) },
+    toBeVisible: async () => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].visible, true, 'Alchemy ' + actual.name + ' visible') },
     toHaveValue: async value => { assert.equal(actual.items().length, 1); assert.equal(values[actual.items()[0].id], value, 'Alchemy ' + actual.name + ' value') },
     toHaveAttribute: async (name, value) => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].attrs?.[name], value, 'Alchemy ' + actual.name + ' attribute ' + name) },
   } : f.expect(actual)
-  return { f, page, expect, changed, values, selectedPrice: () => selectedPrice }
+  return { f, page, expect, pricing, booking, changed, values, selectedPrice: () => selectedPrice }
 }
-const alchemyStart = "    }else if(kind==='alchemy'){\n"
-const alchemyEnd = '\n    }\n   }\n   await servicePage.close()'
-const alchemyFirst = '     const form=servicePage.locator(\'[data-alchemy-lead-form="single"]\')'
-const alchemyLast = '     await expect(servicePage.locator(\'a[href="/\'+locale+\'/services/free-situation-review"]\').first()).toBeVisible()'
 function extractWholeAlchemyForm(script) {
   const start = script.indexOf(alchemyStart), end = script.indexOf(alchemyEnd)
   assert.ok(start >= 0 && end > start, 'Alchemy extraction requires ordered standalone branch boundaries')
@@ -211,7 +272,9 @@ for (const locale of ['en', 'ru']) for (const countryFirst of [false, true]) {
     assert.deepEqual(h.changed, ['format:30', 'topic:business'])
     assert.equal(h.values.country, 'CA', 'Service choices never alter the phone country')
     assert.equal(h.selectedPrice(), '30')
-    assert.equal(h.f.state.requests.length, 1); assert.equal(h.f.state.requests[0].contactConsent, true)
+    assert.equal(h.f.state.requests.length, 0, 'Book preflight must not submit or fabricate a receipt')
+    assert.deepEqual(h.booking.events, ['book']); assert.equal(h.booking.open, true)
+    assert.equal(h.f.state.saved, false); assert.deepEqual(h.f.state.events, [])
     assert.equal(h.f.state.externalClicks, 0)
   })
 }
@@ -232,7 +295,7 @@ for (const [fault, message] of [
   test('complete Alchemy branch rejects broken semantic controls: ' + fault, async () => {
     const h = serviceControls('en', fault)
     await assert.rejects(runWholeAlchemyForm(h, 'en'), { code: 'ERR_ASSERTION', message })
-    assert.equal(h.f.state.requests.length, 0, 'Broken prerequisites never reach even the synthetic pricing request')
+    assert.equal(h.f.state.requests.length, 0, 'Broken prerequisites never submit or invoke any registration helper')
   })
 }
 test('source provides two labelled service choices and a separately required phone/country/consent form', () => {
@@ -243,7 +306,27 @@ test('source provides two labelled service choices and a separately required pho
   assert.match(phone, /<select aria-label=\{words\.country\}/)
   for (const label of ['Country calling code', 'Код страны']) assert.ok(phone.includes(label))
   assert.match(phone, /required=\{required\}/)
+  const booking = currentBookingBranch(runtime)
+  assert.match(booking, /<PhoneCountryInput[\s\S]*?disabled=\{busy \|\| googleBusy\} required/)
+  assert.match(booking, /<input type="checkbox" checked=\{consent\} required disabled=\{busy \|\| googleBusy\}/)
   assert.match(runtime, /<PhoneCountryInput[\s\S]*?disabled=\{busy\} required/)
   assert.match(runtime, /<input type="checkbox" checked=\{consent\} required disabled=\{busy\}/)
   assert.match(runtime, /if \(!consent\) \{[\s\S]*?return;/)
+})
+
+for (const [fault,message] of [
+  ['missing-book', /^Alchemy book count/], ['duplicate-book', /^Alchemy book count/],
+  ['contact-not-opened', /^Alchemy booking contact visible/], ['premature-payment', /^Alchemy booking payment options count/],
+]) test('current Book preflight rejects ' + fault + ' without any registration', async () => {
+  const h = serviceControls('en', fault)
+  await assert.rejects(runWholeAlchemyForm(h, 'en'), {code:'ERR_ASSERTION',message})
+  assert.equal(h.f.state.requests.length,0); assert.equal(h.f.state.externalClicks,0)
+})
+for (const [name,mutate,message] of [
+  ['missing Book', source => source.replace(bookingFirst, ''), /ordered complete CTA boundaries/],
+  ['missing payment gate', source => source.replace(bookingLast, ''), /ordered complete CTA boundaries/],
+  ['duplicate Book', source => source.replace(bookingFirst, bookingFirst + '\n' + bookingFirst), /one Book action/],
+  ['duplicate payment gate', source => source.replace(bookingLast, bookingLast + '\n' + bookingLast), /one payment gate/],
+]) test('current Book extraction rejects '+name, () => {
+  assert.throws(() => extractCurrentBookingCall(mutate(read('scripts/verify-app-r1.mjs'))), {code:'ERR_ASSERTION',message})
 })

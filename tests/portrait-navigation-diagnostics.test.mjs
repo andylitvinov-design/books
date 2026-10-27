@@ -378,7 +378,7 @@ test('read scope rejects other origins, protocols, ports, credentials, frames, m
     ...['https://127.0.0.1:3100/api/app/journey', 'http://external.invalid/api/app/journey',
       'http://127.0.0.1:54329/api/app/journey', 'http://secret@127.0.0.1:3100/api/app/journey',
       'http://127.0.0.1:3100/api/app/journey/secret', 'http://127.0.0.1:3100/api/app/%6aourney',
-      origin + '/api/app/journey?' + 's'.repeat(16384), origin + '/api/app/bootstrap',
+      origin + '/api/app/journey?' + 's'.repeat(16384), origin + '/api/app/bootstrap/unknown',
       origin + '/api/free-express/claim/secret'].map(url => ({ url: () => url })),
     { frame: () => ({}) }, { method: () => 'POST' }, { method: () => 'DELETE' },
   ]
@@ -506,7 +506,7 @@ test('native error target rejects foreign origins, credentials, unknown paths an
   const urls = [
     'https://127.0.0.1:3100/api/app/journey', 'http://external.invalid/api/app/journey',
     'http://127.0.0.1:54329/api/app/journey', 'http://secret@127.0.0.1:3100/api/app/journey',
-    origin + '/api/app/journey/private', origin + '/api/app/%6aourney', origin + '/api/app/bootstrap',
+    origin + '/api/app/journey/private', origin + '/api/app/%6aourney', origin + '/api/app/bootstrap/unknown',
     origin + '/_next/static/chunks/secret.js', origin + '/other?next=/_next/static/webpack/secret.hot-update.json',
     origin + '/_next/static/webpack/secret…secret.hot-update.json', origin + '/_next/static/webpack/secret...secret.hot-update.json',
     origin + '/_next/static/webpack/secret%e2%80%a6secret.hot-update.json',
@@ -569,4 +569,123 @@ test('real verifier finally emits safe target aliases while its unchanged pageer
     assert.throws(() => runInNewContext(source.slice(gateStart, gateEnd), { problems, assert }, { timeout: 1000 }),
       error => error.code === 'ERR_ASSERTION' && error.actual === 1 && error.expected === 0)
   }
+})
+
+// This observes only the already-issued isolated app bootstrap. It neither
+// fulfills a fixture nor establishes that navigation caused a fetch failure.
+test('bootstrap diagnostics distinguish two concurrent request identities at a locale transition without inferring causality', options, () => {
+  const { page } = fixture(), original = []
+  page.on('pageerror', error => original.push(error))
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const first = readRequest(page, '/api/app/bootstrap?view=portrait&token=secret')
+  const second = readRequest(page, '/api/app/bootstrap?token=secret')
+  page.emit('request', first); page.emit('request', second)
+  probe.mark('goto-start', '/ru/app/portfolio')
+  const errors = [nativeFetchError(origin + '/api/app/bootstrap?token=secret'), nativeFetchError(origin + '/api/app/bootstrap')]
+  errors.forEach(error => page.emit('pageerror', error))
+  page.emit('requestfailed', second); page.emit('requestfailed', first)
+  const result = probe.stop(), events = withoutTime(result.events)
+  assert.deepEqual(events.filter(event => event.type === 'portrait-read-request'), [
+    { type:'portrait-read-request',requestId:1,endpoint:'bootstrap',method:'GET',resourceType:'fetch' },
+    { type:'portrait-read-request',requestId:2,endpoint:'bootstrap',method:'GET',resourceType:'fetch' },
+  ])
+  assert.deepEqual(events.filter(event => event.type === 'portrait-read-failed').map(event => [event.requestId,event.endpoint,event.category]),
+    [[2,'bootstrap','request_aborted'],[1,'bootstrap','request_aborted']])
+  const classified = events.filter(event => event.type === 'page-error')
+  assert.equal(classified.length,2)
+  assert.ok(classified.every(event => event.errorTarget === 'bootstrap' && event.category === 'access_control_error'))
+  assert.ok(classified.every(event => !Object.hasOwn(event,'requestId')), 'Error text must not fabricate a matching Request identity')
+  assert.deepEqual(original,errors)
+  assert.ok(result.events.every(event => Number.isInteger(event.atMs) && event.atMs >= 0))
+  assert.doesNotMatch(JSON.stringify(result), /secret|token|https?:|cause|benign|ignored|waived/)
+  assert.deepEqual(page.eventNames(),['pageerror'])
+})
+
+test('bootstrap diagnostics retain observed response status and terminals but never inspect headers, cookies or bodies', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime:'isolated' })
+  let sensitiveReads = 0
+  const forbidden = () => { sensitiveReads++; throw Error('secret') }
+  const requests = [200,503].map(() => readRequest(page,'/api/app/bootstrap',{
+    headers:forbidden,allHeaders:forbidden,postData:forbidden,postDataJSON:forbidden,
+  }))
+  const missed = readRequest(page,'/api/app/bootstrap')
+  page.emit('response',{request:()=>missed,status:()=>200}); page.emit('requestfinished',missed)
+  requests.forEach((request,index) => {
+    const response={request:()=>request,status:()=>index===0?200:503,headers:forbidden,allHeaders:forbidden,body:forbidden,json:forbidden,text:forbidden}
+    page.emit('request',request);page.emit('request',request)
+    page.emit('response',response);page.emit('response',response)
+    page.emit('requestfinished',request);page.emit('requestfailed',request)
+  })
+  const result=probe.stop()
+  assert.deepEqual(withoutTime(result.events),[1,2].flatMap((requestId,index)=>[
+    {type:'portrait-read-request',requestId,endpoint:'bootstrap',method:'GET',resourceType:'fetch'},
+    {type:'portrait-read-response',requestId,endpoint:'bootstrap',status:index===0?200:503},
+    {type:'portrait-read-finished',requestId,endpoint:'bootstrap'},
+  ]))
+  assert.equal(sensitiveReads,0)
+  assert.doesNotMatch(JSON.stringify(result),/secret|headers|cookie|body|https?:/i)
+})
+
+test('bootstrap observation rejects changed origin, private paths, navigation, non-GET and foreign frames', options, () => {
+  const { page } = fixture(), probe=observePortraitNavigation(page,{origin,runtime:'isolated'})
+  const overrides=[
+    ...['https://127.0.0.1:3100/api/app/bootstrap','http://127.0.0.1:54329/api/app/bootstrap',
+      'http://external.invalid/api/app/bootstrap','http://secret@127.0.0.1:3100/api/app/bootstrap',
+      origin+'/api/app/bootstrap/private',origin+'/api/app/%62ootstrap',origin+'/api/app/private-bootstrap',
+      origin+'/api/app/bootstrap?'+ 's'.repeat(16384)].map(url=>({url:()=>url})),
+    {frame:()=>({})},{method:()=> 'POST'},{method:()=> 'DELETE'},
+  ]
+  for(const override of overrides){
+    const request=readRequest(page,'/api/app/bootstrap',override)
+    page.emit('request',request);page.emit('response',{request:()=>request,status:()=>200});page.emit('requestfinished',request)
+  }
+  const navigation=readRequest(page,'/api/app/bootstrap',{isNavigationRequest:()=>true,redirectedFrom:()=>null})
+  page.emit('request',navigation)
+  assert.ok(probe.stop().events.every(event=>!event.type.startsWith('portrait-read')))
+  assert.doesNotMatch(JSON.stringify(probe.stop()),/secret|external|https?:/)
+})
+
+test('bootstrap access-control target remains absent for foreign, deceptive and missing error evidence', options, () => {
+  const {page}=fixture(), probe=observePortraitNavigation(page,{origin,runtime:'isolated'})
+  for(const error of [
+    nativeFetchError('http://external.invalid/api/app/bootstrap'),
+    nativeFetchError(origin+'/api/app/bootstrap/private'),
+    nativeFetchError('http://secret@127.0.0.1:3100/api/app/bootstrap'),
+    {name:'Error',message:'Load failed',stack:'Fetch API cannot load '+origin+'/api/app/bootstrap due to access control checks.'},
+    {message:'/127.0.0.1:3100/api/app/bootstrap due to access control checks.'},
+  ])page.emit('pageerror',error)
+  const events=probe.stop().events
+  assert.equal(events.length,5);assert.ok(events.every(event=>!Object.hasOwn(event,'errorTarget')&&!Object.hasOwn(event,'requestId')))
+  assert.doesNotMatch(JSON.stringify(events),/secret|external|https?:|stack|message/)
+})
+
+test('bootstrap uses the existing shared request budget, event cap and exact listener cleanup', options, () => {
+  const {page}=fixture(), original=[];page.on('requestfinished',request=>original.push(request))
+  const probe=observePortraitNavigation(page,{origin,runtime:'isolated'})
+  const requests=Array.from({length:80},()=>readRequest(page,'/api/app/bootstrap'))
+  requests.forEach(request=>page.emit('request',request));requests.forEach(request=>page.emit('requestfinished',request))
+  const result=probe.stop()
+  assert.deepEqual(result.events.filter(event=>event.type==='portrait-read-request').map(event=>event.requestId),Array.from({length:64},(_,i)=>i+1))
+  assert.equal(result.events.filter(event=>event.type==='portrait-read-limit').length,1)
+  assert.equal(result.events.filter(event=>event.type==='portrait-read-finished').length,64)
+  assert.equal(result.dropped,0);assert.equal(original.length,80);assert.deepEqual(page.eventNames(),['requestfinished'])
+  page.emit('request',requests[0]);assert.deepEqual(probe.stop(),result)
+  const second=fixture(), capped=observePortraitNavigation(second.page,{origin,runtime:'isolated'})
+  for(let i=0;i<195;i++)second.page.emit('load')
+  for(let i=0;i<4;i++){
+    const request=readRequest(second.page,'/api/app/bootstrap');second.page.emit('request',request)
+    second.page.emit('response',{request:()=>request,status:()=>200});second.page.emit('requestfinished',request)
+  }
+  assert.equal(capped.stop().events.length,200);assert.equal(capped.stop().dropped,7)
+})
+
+test('unchanged actual global pageerror gate rejects bootstrap errors even beside known dev overlay noise', options, async () => {
+  const source=await readFile(sourceURL,'utf8'), start=source.indexOf('const devOverlayBlocked = ')
+  const end=source.indexOf("console.log('PORTRAIT_QA_SUCCESS'",start)
+  assert.ok(start>0&&end>start)
+  const gate=source.slice(start,end)
+  const bootstrap=nativeFetchError(origin+'/api/app/bootstrap').message
+  for(const problems of [[bootstrap,bootstrap],['/__nextjs_original-stack-frames','[object Event]',bootstrap],['unrelated real script failure']])
+    assert.throws(()=>runInNewContext(gate,{problems,assert},{timeout:1000}),error=>error.code==='ERR_ASSERTION'&&error.expected===0&&error.actual>0)
+  assert.doesNotThrow(()=>runInNewContext(gate,{problems:[],assert},{timeout:1000}))
 })
