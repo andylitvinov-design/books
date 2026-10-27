@@ -1,5 +1,5 @@
-import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { assertAlchemyBookingGate } from './helpers/alchemy-payment-disclosure-verifier.mjs';
+import { openRegisteredContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -74,8 +74,8 @@ try {
       await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
       await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
       await assertViewport(page, "es/alchemy-of-soul/" + width);
-      assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-        "Default Spanish payment details are collapsed before geometry measurement");
+      assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+        "Booking must not expose payment methods before a confirmed time");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
       assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
@@ -96,7 +96,7 @@ try {
       await main.locator('[data-alchemy-panel="formats"]').screenshot({
         path: output + "/alchemy-es-formats-default-" + width + ".png",
       });
-      await assertAlchemyPaymentsExpanded(main, expect, width);
+      await assertAlchemyBookingGate(main, expect, width);
       assert.deepEqual(diagnostics.pageErrors.slice(pageErrorStart), [], "Unexpected Spanish Alchemy browser page errors: " + width);
       await page.close();
     }
@@ -471,8 +471,8 @@ try {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
         if (kind === "alchemy") {
-          assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-            "Default payment details are collapsed before geometry measurement");
+          assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+            "Payment options belong only to the post-booking cart");
         }
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
@@ -492,7 +492,7 @@ try {
           assert.equal(await page.locator('[data-sitewide-capture="core-service"]').count(), 0, "No duplicate global enquiry panel");
           assert.equal(await page.locator('[data-alchemy-lead-form="single"]').count(), 1, "Exactly one enquiry form");
         }
-        if (kind === "alchemy") await assertAlchemyPaymentsExpanded(main, expect, width);
+        if (kind === "alchemy") await assertAlchemyBookingGate(main, expect, width);
         if (width === 390) {
           if (kind === "alchemy") {
             const form = main.locator('[data-alchemy-lead-form="single"]');
@@ -532,27 +532,21 @@ try {
             });
             assert.ok(bottomGap >= 0 && bottomGap < 55, "No empty testimonial viewport after the last video");
             const pricing = main.locator('[data-alchemy-booking-formats]');
-            // Payments are still available after agreement, but the default
-            // 320/390px decision screen must not be extended by transfer notes.
-            const paymentDisclosure = pricing.locator('[data-alchemy-payment-disclosure]');
-            if (await paymentDisclosure.count()) {
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), false,
-                "Payment methods must be collapsed until explicitly requested");
-              await paymentDisclosure.locator('summary').click();
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), true,
-                "Payment help can be expanded with an accessible control");
-              await paymentDisclosure.locator('summary').click();
-            }
+            // No payment links, provider instructions, or immediate checkout
+            // until the signed request is confirmed by the practitioner's API.
+            await expect(pricing.locator('[data-alchemy-payment-disclosure]')).toHaveCount(0);
             await pricing.locator('[data-alchemy-format="month"]').click();
             await expect(pricing.locator('[data-alchemy-format="month"]')).toHaveAttribute('aria-pressed','true');
-            assert.equal(await paymentDisclosure.count(), 0,
-              "Unpriced monthly support must never expose one-time transfer amounts");
+            await expect(pricing.locator('[data-session-booking-flow]')).toHaveCount(0);
             await pricing.locator('[data-alchemy-format="30"]').click();
-            await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredCompactPhoneChooser(pricing, expect, page);
-            const prepared = await assertPreparedContactChannels(channels, expect);
-            assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-              "Selected express session must appear in prepared order draft");
+            await assertAlchemyBookingGate(main, expect, width);
+            const booking = pricing.locator('[data-session-booking-flow][data-booking-sku="express-consultation-30"]');
+            await expect(booking).toHaveCount(1);
+            await booking.locator('[data-booking-cta="book"]').click();
+            await expect(booking.locator('[data-booking-step="contact"]')).toHaveCount(1);
+            await expect(booking.locator('[data-booking-cart-link]')).toHaveCount(0);
+            await expect(booking.locator('[data-booking-payment-options]')).toHaveCount(0);
+            await expect(booking.getByRole('button', { name: /Google/i })).toHaveCount(1);
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {

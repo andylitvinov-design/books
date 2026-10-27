@@ -34,24 +34,23 @@ test('redirect always goes to owner-controlled PayPal.Me with no browser prices,
   assert.doesNotMatch(route, /request\.json|searchParams|markAsPaid|payment_verified|grantEntitlement|PAYPAL_CLIENT_SECRET/)
 })
 
-test('all EN/RU/ES service selectors show only fixed-price personal payment choices', () => {
+test('Alchemy session payment is available in cart only after confirmed booking', () => {
   const capture = file('components/consultation-choice-capture.tsx')
   const alchemy = file('components/alchemy-soul-lead-form.tsx')
-  const main = file('app/[locale]/services/page.tsx')
-  const spanish = file('app/es/services/page.tsx')
   const landing = file('components/alchemy-soul-landing.tsx')
+  const checkout = file('components/commerce/personal-cart.tsx')
+  const cartPage = file('app/[locale]/cart/page.tsx')
   const cta = file('components/public-consultation-cta.tsx')
   assert.match(capture, /isPaidRequest && paypalPersonalEnabled/)
   assert.match(capture, /\/api\/payments\/paypal\//)
-  assert.match(alchemy, /selected !== "month" && \(wiseEnabled \|\| paypalPersonalEnabled \|\| Boolean\(zenInquiryUrl\)\)/)
-  assert.match(alchemy, /\{paypalPersonalEnabled \? \(/)
+  assert.match(alchemy, /bookingSku=\{selected === "30"/)
   assert.match(alchemy, /"express-consultation-30" : "personal-session-60"/)
-  assert.match(landing, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
-  assert.match(cta, /paypalPersonalEnabled=\{paypalPersonalEnabled\}/)
-  assert.match(main, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
-  assert.match(spanish, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
+  assert.doesNotMatch(alchemy, /data-paypal-personal-offer|data-wise-payment-link|data-zen-manual-request/)
+  assert.match(landing, /<AlchemySoulFormatSelector locale=\{locale\} \/>/)
+  assert.match(cartPage, /<PersonalCart/)
+  assert.match(checkout, /buildPersonalPayPalCartUrl/)
+  assert.match(cta, /ConsultationChoiceCapture|ConsultationCartEntry/)
 })
-
 test('payment page transparently requires Goods & Services and manual verification', () => {
   const page = file('app/[locale]/payments/page.tsx')
   for (const phrase of ['Goods & Services', 'Товары и услуги', 'Productos y servicios', 'PERSONAL_PAYPAL_PAYEE'])

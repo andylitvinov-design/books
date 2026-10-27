@@ -1,6 +1,6 @@
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
-import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
+import { assertAlchemyBookingGate } from './helpers/alchemy-payment-disclosure-verifier.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
@@ -445,14 +445,14 @@ async function verifyPublicServiceConversionJourneys(){
      assert.equal(await guide.evaluate(node=>node.open),false,'Long guide stays collapsed')
      await expect(servicePage.locator('[data-alchemy-lead-form="single"]')).toHaveCount(1)
      await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
-     assert.equal(await servicePage.locator('details[data-alchemy-payment-disclosure]').evaluate(node=>node.open),false,
-      'Default payment details are collapsed before geometry measurement')
+     assert.equal(await servicePage.locator('[data-alchemy-payment-disclosure]').count(),0,
+      'Payment methods are hidden until a real booking is confirmed')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
      assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
       'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
-     await assertAlchemyPaymentsExpanded(servicePage,expect,width)
+     await assertAlchemyBookingGate(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
       const guideHeading=guide.locator('#distance-homeopathy-guide h1')

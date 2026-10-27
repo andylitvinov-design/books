@@ -21,7 +21,8 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
   assert.doesNotMatch(form, /window\.location\.assign/);
   assert.match(landing, /<ContactChannelChooser locale=\{locale\} whatsappUrl=\{heroWhatsApp\}/);
   assert.match(landing, /compactPhone compactTrigger stayAfterSave/);
-  assert.doesNotMatch(form, /fetch\(|localStorage|sessionStorage|sendBeacon/);
+  assert.doesNotMatch(form, /fetch\(|localStorage|sendBeacon/);
+  assert.match(form, /hh-alchemy-selected-format/);
   assert.match(form, /no automatic charge/);
   assert.match(landing, /getServiceVideoMedia\("alchemy", locale\)/);
   const catalog = read("components/personal-testimonials.tsx");
@@ -61,23 +62,27 @@ test("single turquoise mobile landing reuses the approved PR498 media and the fo
 });
 
 
-test("mobile format choices keep all payment methods but collapse them until after time confirmation", () => {
+test("Alchemy opens a one-step phone/Google booking, no payment methods before confirmation", () => {
   const form = read("components/alchemy-soul-lead-form.tsx");
+  const chooser = read("components/contact-channel-chooser.tsx");
   const css = read("components/alchemy-soul-landing.module.css");
+  const mobile = read("components/contact-channel-chooser.module.css");
   const qa = read("scripts/verify-public-services-production.mjs");
   assert.match(form, /data-alchemy-booking-formats/);
-  assert.match(form, /selected !== "month" && \(wiseEnabled \|\| paypalPersonalEnabled \|\| Boolean\(zenInquiryUrl\)\)/);
-  assert.match(form, /<details className=\{styles.paymentDisclosure\} data-alchemy-payment-disclosure>/);
-  assert.match(form, /Payment options — after confirming a time/);
-  assert.match(form, /Способы оплаты — после подтверждения времени/);
-  assert.match(form, /Opciones de pago — tras confirmar la hora/);
-  for (const key of ["data-wise-payment-link", "data-paypal-personal-offer", "data-zen-manual-request"]) assert.ok(form.includes(key), key);
-  for (const price of ["€50", "€100"]) assert.ok(form.includes(price), price);
-  assert.match(css, /\.paymentDisclosure summary\{[^}]*min-height:44px/);
+  assert.match(form, /bookingSku=\{selected === "30"/);
+  assert.match(form, /bookingSku=\{format === "30"/);
+  assert.match(form, /hh-alchemy-selected-format/);
+  assert.match(chooser, /data-session-booking-flow/);
+  assert.match(chooser, /data-booking-cta=\{paidReady \? "pay" : "book"\}/);
+  assert.match(chooser, /data-booking-payment-options/);
+  assert.match(chooser, /data-booking-cart-link/);
+  assert.match(chooser, /Google/);
+  assert.doesNotMatch(form, /data-alchemy-payment-disclosure|data-wise-payment-link|data-paypal-personal-offer/);
+  assert.match(mobile, /\.bookingPrimary/);
+  assert.match(mobile, /@media\(max-width:350px\)/);
   assert.match(css, /\.optionsSection\{justify-content:flex-start;padding-top:16px;padding-bottom:16px\}/);
-  assert.match(qa, /openRegisteredCompactPhoneChooser\(pricing, expect, page\)/);
+  assert.match(qa, /assertAlchemyBookingGate/);
   assert.match(qa, /All twelve original-language testimonials are visible in a vertical feed/);
   assert.match(qa, /Ten Alchemy chapters including video and public sample report/);
-    assert.match(qa, /Payment methods must be collapsed until explicitly requested/);
-  assert.match(qa, /Unpriced monthly support must never expose one-time transfer amounts/);
+  assert.match(qa, /data-booking-payment-options/);
 });
