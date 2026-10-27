@@ -1,4 +1,4 @@
-name: Holistic House Gauntlet offline safety gate
+name: Holistic House Gauntlet free-model safety and contract gate
 
 on:
   pull_request:
@@ -54,4 +54,67 @@ jobs:
         run: |
           npx eslint scripts/benchmarking/hh-gauntlet-loop.mjs lib/benchmarking/hh-gauntlet-loop.mjs tests/hh-gauntlet-loop.test.mjs
           npx tsc --noEmit
-      # No OpenCode CLI, API key, live POST, migrations, deployments or paid calls in CI.
+      # Never invoke a model in the contract job: repeatable, zero-provider baseline.
+
+  isolated-free-model-smoke:
+    name: Zero-credential OpenCode GLM Free connectivity, synthetic-only
+    # Run on this explicit tooling PR, never on a normal production push.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned official OpenCode CLI outside repository
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/hh-opencode-cli"
+          npm install --prefix "$RUNNER_TEMP/hh-opencode-cli" --no-audit --no-fund --no-save @opencode/cli@2.1.2
+          "$RUNNER_TEMP/hh-opencode-cli/node_modules/.bin/opencode" --version
+      - name: Verify one anonymous free-only synthetic invocation
+        shell: bash
+        env:
+          HH_FREE_MODEL: opencode/glm-5.3-flash-free
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/hh-oc-home" "$RUNNER_TEMP/hh-oc-home/config" "$RUNNER_TEMP/hh-oc-home/data" "$RUNNER_TEMP/hh-oc-home/cache" "$RUNNER_TEMP/hh-oc-work"
+          cd "$RUNNER_TEMP/hh-oc-work"
+          set +e
+          timeout --kill-after=5s 100s env -i \
+            HOME="$RUNNER_TEMP/hh-oc-home" \
+            XDG_CONFIG_HOME="$RUNNER_TEMP/hh-oc-home/config" \
+            XDG_DATA_HOME="$RUNNER_TEMP/hh-oc-home/data" \
+            XDG_CACHE_HOME="$RUNNER_TEMP/hh-oc-home/cache" \
+            TMPDIR="$RUNNER_TEMP" PATH="$PATH" CI=true \
+            "$RUNNER_TEMP/hh-opencode-cli/node_modules/.bin/opencode" run \
+            --standalone --model "$HH_FREE_MODEL" --format json \
+            "Reply with exactly the token HH_GAUNTLET_FREE_20261027_OK. No tools; do not access files or websites." \
+            > "$RUNNER_TEMP/hh-oc-free.stdout" 2> "$RUNNER_TEMP/hh-oc-free.stderr"
+          status=$?
+          set -e
+          echo "OpenCode process exit status: $status"
+          if [ "$status" -ne 0 ]; then
+            echo "No free-model inference was confirmed. No paid retry is permitted."
+            sed -E 's/[A-Za-z0-9_=-]{30,}/[REDACTED]/g' "$RUNNER_TEMP/hh-oc-free.stderr" | tail -c 1500
+            exit 1
+          fi
+          node -e '
+            const fs=require("fs");
+            const raw=fs.readFileSync(process.argv[1],"utf8");
+            const lines=raw.split("\\n").filter(Boolean);
+            let hasText=false, error=false;
+            for(const line of lines){
+              try{
+                const p=JSON.parse(line);
+                if(p.type==="error" || p.type==="session.error")error=true;
+                const data=JSON.stringify(p);
+                if(data.includes("HH_GAUNTLET_FREE_20261027_OK") && /message|text|part|delta/i.test(data))hasText=true;
+              } catch {}
+            }
+            console.log("Synthetic free-model response received: "+(hasText&&!error));
+            if(!hasText || error)process.exit(1);
+          ' "$RUNNER_TEMP/hh-oc-free.stdout"
+          echo "PASS: one zero-credential free-model response. Not proof of GitHub builder/critic or CRM E2E."
