@@ -24,7 +24,7 @@ test('new chats use natural first-person consent and no slash command buttons',(
   assert.match(first.reply,/Приветствую! Спасибо за интерес к экспресс-диагностике/)
   assert.match(first.reply,/в течение трех дней/)
   assert.match(first.reply,/соглашаетесь/)
-  assert.deepEqual(first.keyboard,[['Да, начинаем','Не сейчас']])
+  assert.deepEqual(first.keyboard,[['Да, начинаем']])
   assert.equal(first.keyboard.flat().some(x=>x.startsWith('/')),false)
   const random=transitionTelegramDiagnostic(null,msg('some personal story'))
   assert.equal(random.body,null,'no unsolicited personal text can enter CRM')
@@ -150,6 +150,7 @@ test('English and Spanish are equal flows and coaching links only allow canonica
   ]){
     const first=transitionTelegramDiagnostic(null,msg('/start hhreview_'+lang))
     assert.equal(first.locale,lang)
+    assert.deepEqual(first.keyboard,[[yes]],lang+' shows one full-row consent action')
     const agreed=transitionTelegramDiagnostic(state(first,false),msg(yes,{locale:lang}))
     assert.equal(agreed.stage,'focus')
     const selection=transitionTelegramDiagnostic(state(agreed),msg(topic,{locale:lang}))
