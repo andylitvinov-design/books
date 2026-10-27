@@ -54,6 +54,11 @@ function fixture(options={}){
   const button=label=>nodes().find(n=>n.type==='button'&&(n.props['aria-label']===label||textContent(n)===label))
   const person=name=>nodes().find(n=>n.type==='button'&&n.props.className?.includes('person')&&textContent(n).includes(name))
   return {app,calls,violations,queued,nodes,shell,starts,visibleStarts,button,person,
+    async folder(id){
+      const tab=nodes().find(n=>n.type==='button'&&n.props.id==='hh-simple-tab-'+id)
+      assert.ok(tab,'expected folder '+id)
+      if(!tab.props['aria-selected']){tab.props.onClick();await app.settle()}
+    },
     setAccount(next){account=next},setList(next){list=next},
     assertClean(){assert.deepEqual(violations,[]);assert.ok(!app.trace.includes('fetch-after-unmount'),'no requests after unmount')},
     async click(n){assert.ok(n,'expected button');assert.ok(!n.props.disabled,'button disabled');n.props.onClick?.({preventDefault(){}});await app.settle()},
@@ -94,7 +99,7 @@ for(const kind of ['crm','direct','request','business'])test('selecting real '+k
  if(kind==='direct')opt.threads=[{...row,peerName:name}]
  if(kind==='request')opt.requests=[{id:R,contact:{name},requestKind:'public',message:'Synthetic request'}]
  if(kind==='business')opt.business=[{id:E,name,question:'Synthetic business',status:'new'}]
- return run(opt,async f=>{assertOwnerIntent(f);await f.click(f.person(name));assert.equal(f.visibleStarts().length,0);assert.equal(f.person(name).props['aria-pressed'],true);f.app.rerender();await f.app.settle();assert.equal(f.visibleStarts().length,0);assert.equal(f.calls.filter(c=>c.method==='POST').length,0)})
+ return run(opt,async f=>{assertOwnerIntent(f);await f.folder(['request','business'].includes(kind)?'requests':'chats');await f.click(f.person(name));assert.equal(f.visibleStarts().length,0);assert.equal(f.person(name).props['aria-pressed'],true);f.app.rerender();await f.app.settle();assert.equal(f.visibleStarts().length,0);assert.equal(f.calls.filter(c=>c.method==='POST').length,0)})
 })
 
 test('delayed owner bootstrap reaches recipient while website requests stay pending',async()=>{
@@ -160,7 +165,7 @@ for(const kind of ['request','business'])for(const phase of ['start','list','rea
  if(phase==='list')opt.queue['GET /api/app/direct-messages']=[response({accountId:A,threads:[]}),later.promise]
  if(phase==='read')opt.queue['GET /api/app/direct-messages?threadId='+T]=[later.promise]
  const f=fixture(opt)
- try{await f.app.settle();assertOwnerIntent(f);await f.click(f.visibleStarts()[0]);await f.click(f.person(name));const count=f.calls.length
+ try{await f.app.settle();assertOwnerIntent(f);await f.click(f.visibleStarts()[0]);await f.folder(['request','business'].includes(kind)?'requests':'chats');await f.click(f.person(name));const count=f.calls.length
  later.resolve(response(phase==='start'?{threadId:T}:phase==='list'?{accountId:A,threads:[row]}:{threadId:T,accountId:A,peerName:row.peerName,messages:[{id:'old',mine:true,text:'STALE_SYNTHETIC_DIRECT_CONTENT'}]}))
  await f.app.settle();assert.equal(f.calls.length,count);assert.equal(f.person(name).props['aria-pressed'],true);assert.ok(!f.nodes().some(n=>n.type==='article'&&visible(n)&&textContent(n).includes('STALE_SYNTHETIC_DIRECT_CONTENT')));f.assertClean()
  }finally{f.close()}
@@ -188,12 +193,12 @@ const replyOptions=extra=>({search:'',threads:[row],
   business:[{id:E,name:'Synthetic business target',question:'Synthetic business'}],...extra})
 const replyInput=f=>f.nodes().find(n=>n.type==='textarea'&&visible(n))
 const replyForm=f=>f.nodes().find(n=>n.type==='form'&&visible(n))
-async function typeReply(f){await f.click(f.person(row.peerName));const input=replyInput(f);assert.ok(input);input.props.onChange({target:{value:replyText}});await f.app.settle()}
+async function typeReply(f){await f.folder('chats');await f.click(f.person(row.peerName));const input=replyInput(f);assert.ok(input);input.props.onChange({target:{value:replyText}});await f.app.settle()}
 async function leaveReply(f,leave){
   if(leave==='back')await f.click(f.button('Conversations'))
   else if(leave==='card')await f.click(f.button('Client card'))
   else if(leave==='internal-back')await f.click(f.button('All conversations'))
-  else await f.click(f.person('Synthetic '+(leave==='crm'?'CRM':leave)+' target'))
+  else {await f.folder(['request','business'].includes(leave)?'requests':'chats');await f.click(f.person('Synthetic '+(leave==='crm'?'CRM':leave)+' target'))}
 }
 async function submitReply(f){const form=replyForm(f);assert.ok(form);form.props.onSubmit({preventDefault(){}});await f.app.settle()}
 const sendCalls=f=>f.calls.filter(c=>c.body?.action==='send')
@@ -203,7 +208,7 @@ for(const leave of draftLeaves)test('draft/file preserved across temporary '+lea
   f.nodes().find(n=>n.type==='input'&&n.props.type==='file'&&visible(n)).props.onChange({target:{files:[file]}})
   await f.app.settle()
   f.nodes().find(n=>n.type==='input'&&n.props.type==='checkbox'&&visible(n)).props.onChange({target:{checked:true}})
-  await f.app.settle();await leaveReply(f,leave);await f.click(f.person(row.peerName))
+  await f.app.settle();await leaveReply(f,leave);await f.folder('chats');await f.click(f.person(row.peerName))
   assert.equal(replyInput(f)?.props.value,replyText)
   assert.ok(f.nodes().some(n=>n.type==='p'&&n.props.className?.includes('fileName')&&textContent(n).includes(file.name)))
   assert.equal(f.nodes().find(n=>n.type==='input'&&n.props.type==='checkbox'&&visible(n))?.props.checked,true)
@@ -212,7 +217,7 @@ for(const leave of draftLeaves)test('draft/file preserved across temporary '+lea
 for(const leave of draftLeaves)test('uncertain Send operation survives temporary '+leave+' and same-thread retry',()=>run(replyOptions({allowSend:true,sendQueue:[()=>Promise.reject(new Error('SYNTHETIC_UNCERTAIN_SEND')),response({ok:true})]}),async f=>{
   await typeReply(f);await submitReply(f);assert.equal(sendCalls(f).length,1)
   const operation=sendCalls(f)[0].body.operationId
-  await leaveReply(f,leave);await f.click(f.person(row.peerName))
+  await leaveReply(f,leave);await f.folder('chats');await f.click(f.person(row.peerName))
   assert.equal(replyInput(f)?.props.value,replyText,'uncertain draft must survive')
   await submitReply(f);assert.equal(sendCalls(f).length,2)
   assert.equal(sendCalls(f)[1].body.operationId,operation,'retry must retain original operation identity')
@@ -222,7 +227,7 @@ for(const leave of ['back','crm','request','business','card'])test('pending Send
   try{
     await f.app.settle();await typeReply(f);await submitReply(f);assert.equal(sendCalls(f).length,1)
     const operation=sendCalls(f)[0].body.operationId
-    await leaveReply(f,leave);await f.click(f.person(row.peerName))
+    await leaveReply(f,leave);await f.folder('chats');await f.click(f.person(row.peerName))
     assert.equal(replyInput(f)?.props.value,replyText);assert.equal(replyInput(f)?.props.disabled,true)
     pending.reject(new Error('SYNTHETIC_UNCERTAIN_SEND'));await f.app.settle()
     assert.equal(replyInput(f)?.props.value,replyText)
@@ -240,7 +245,7 @@ test('different direct thread retains baseline draft behavior but uses a differe
 test('account remount clears direct draft/file and prior uncertain Send operation',()=>run(replyOptions({allowSend:true,sendQueue:[()=>Promise.reject(new Error('SYNTHETIC_UNCERTAIN_SEND')),response({ok:true})]}),async f=>{
   await typeReply(f);await submitReply(f);const first=sendCalls(f)[0].body.operationId
   f.nodes().find(n=>n.type==='input'&&n.props.type==='file'&&visible(n)).props.onChange({target:{files:[{name:'synthetic-note.ogg',type:'audio/ogg',size:128}]}})
-  await f.app.settle();f.setAccount(B);await f.click(f.button('Refresh'));await f.click(f.person(row.peerName))
+  await f.app.settle();f.setAccount(B);await f.click(f.button('Refresh'));await f.folder('chats');await f.click(f.person(row.peerName))
   assert.equal(replyInput(f)?.props.value,'');assert.ok(!f.nodes().some(n=>n.type==='p'&&n.props.className?.includes('fileName')))
   replyInput(f).props.onChange({target:{value:replyText}});await f.app.settle();await submitReply(f)
   assert.notEqual(sendCalls(f)[1].body.operationId,first);assert.equal(sendCalls(f)[1].headers['x-hh-account-id'],B)
@@ -263,7 +268,7 @@ test('pending direct Send may reject while actual Client card stays open without
     await submitReply(f);assert.equal(sendCalls(f)[1].body.operationId,operation);f.assertClean()
   }finally{f.close()}
 })
-const requestLifetimeOptions=extra=>({search:'',requestLifetime:true,requests:[{id:R,contact:{name:'Synthetic private request'},requestKind:'private',message:'Synthetic request'}],...extra})
+const requestLifetimeOptions=extra=>({search:'?tab=requests',requestLifetime:true,requests:[{id:R,contact:{name:'Synthetic private request'},requestKind:'private',message:'Synthetic request'}],...extra})
 const requestInput=f=>f.nodes().find(n=>n.type==='textarea'&&n.props.id==='practice-chat-'+R&&visible(n))
 async function typeRequestReply(f){await f.click(f.person('Synthetic private request'));requestInput(f).props.onChange({target:{value:'Synthetic request reply'}});await f.app.settle()}
 async function sendRequestReply(f){await f.click(f.nodes().find(n=>n.type==='button'&&visible(n)&&n.props.onClick?.name==='send'))}
@@ -287,6 +292,30 @@ test('canonical private request pending/uncertain UUID survives outer Back and r
 })
 for(const kind of ['crm','business'])test('canonical '+kind+' selected row survives outer Back',()=>run(replyOptions(),async f=>{
   const name='Synthetic '+(kind==='crm'?'CRM':kind)+' target'
-  await f.click(f.person(name));await f.click(f.button('Conversations'));assert.equal(f.shell().props['data-detail-open'],'false')
+  await f.folder(kind==='business'?'requests':'chats');await f.click(f.person(name));await f.click(f.button('Conversations'));assert.equal(f.shell().props['data-detail-open'],'false')
   assert.equal(f.person(name).props['aria-pressed'],true);assert.equal(f.calls.filter(c=>c.method==='POST').length,0)
 }))
+
+test('account-bound recipient overrides Requests arrival without losing unrelated URL state or auto-sending',()=>run({search:'?tab=requests&to='+SLUG+'&keep=1#anchor'},async f=>{
+  assertOwnerIntent(f)
+  assert.equal(f.nodes().find(n=>n.props?.id==='hh-simple-tab-chats').props['aria-selected'],true)
+  assert.equal(f.app.url.searchParams.has('tab'),false)
+  assert.equal(f.app.url.searchParams.get('keep'),'1');assert.equal(f.app.url.hash,'#anchor')
+  await f.click(f.visibleStarts()[0])
+  assert.equal(f.person(row.peerName)?.props['aria-pressed'],true)
+  assert.ok(f.nodes().some(n=>n.type==='textarea'&&visible(n)))
+  assert.equal(f.calls.filter(c=>c.body?.action==='send').length,0)
+}))
+for(const phase of ['start','list'])test('Requests folder invalidates pending recipient '+phase+' without reopening or follow-on reads',async()=>{
+  const pending=deferred(),queue=phase==='start'?{'POST /api/app/direct-messages':[pending.promise]}:
+    {'GET /api/app/direct-messages':[response({accountId:A,threads:[]}),pending.promise]}
+  const f=fixture({queue})
+  try{await f.app.settle();assertOwnerIntent(f);await f.click(f.visibleStarts()[0]);await f.folder('requests')
+    assert.equal(f.app.url.searchParams.get('tab'),'requests');assert.equal(f.app.url.searchParams.has('to'),false)
+    const reads=f.calls.length
+    pending.resolve(response(phase==='start'?{threadId:T}:{accountId:A,threads:[row]}));await f.app.settle()
+    assert.equal(f.calls.length,reads);assert.equal(f.visibleStarts().length,0)
+    assert.equal(f.shell().props['data-detail-open'],'false');assert.equal(f.calls.filter(c=>c.body?.action==='send').length,0)
+    f.assertClean()
+  }finally{f.close()}
+})

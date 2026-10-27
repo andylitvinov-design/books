@@ -71,6 +71,7 @@ export function compose({root,props,fetch,crmThreads=[]}){
         // Use the exact pure upstream helper. Host refs remain null in this
         // logical renderer, so native viewport measurement is NOT simulated.
         if(key==='@/lib/app/mobile-inbox-height.mjs')return load(resolve(root,'lib/app/mobile-inbox-height.mjs'))
+        if(key==='@/lib/app/messages-inbox-tabs.mjs')return load(resolve(root,'lib/app/messages-inbox-tabs.mjs'))
         if(key==='@/lib/practitioners/conversation-state')return load(resolve(root,'lib/practitioners/conversation-state.js'))
         if(Object.hasOwn(externals,key))return externals[key]
         if(Object.hasOwn(boundary,key))return boundary[key]

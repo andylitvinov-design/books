@@ -64,16 +64,16 @@ test('request details respond via existing secure APIs without creating duplicat
   assert.match(req,/onViewed=\{onReload\}/)
   assert.doesNotMatch(req,/\/api\/app\/crm\/leads/)
 })
-test('iPhone seven-item Cabinet navigation remains one row and not six columns',()=>{
+test('iPhone consolidated six-item Cabinet navigation remains one row with Profile first',()=>{
   const workspace=read('components/app/app-workspace.jsx')
   const css=read('app/[locale]/app/[[...path]]/workspace.css')
   const start=workspace.indexOf('const nav = [')
   const end=workspace.indexOf('const navIsActive',start)
   const nav=workspace.slice(start,end)
-  assert.equal((nav.match(/id: '/g)||[]).length,6)
+  assert.equal((nav.match(/id: '/g)||[]).length,5)
   assert.match(nav,/id: 'messages'/)
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
-  assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important/)
+  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)!important/)
 })
 
 test('empty personal inbox is compact; does not hide or mislabel existing Telegram CRM data',()=>{
@@ -108,19 +108,27 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages has five focused app destinations without public site navigation',()=>{
+test('Messages dock mirrors the consolidated six-destination private Cabinet menu',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const nav=read('components/app/messages-bottom-navigation.jsx')
   const css=read('app/[locale]/app/messages/messages-page.css')
+  const workspace=read('components/app/app-workspace.jsx')
   assert.ok(page.includes('<MessagesBottomNavigation locale={locale}/>'))
-  assert.ok(nav.includes('className="hh-mobile-app-nav hh-messages-app-dock"'))
-  assert.doesNotMatch(nav,/hh-mobile-app-nav-home/)
+  assert.ok(nav.includes('className="hh-mobile-app-nav"'))
+  assert.match(nav,/hh-mobile-app-nav-home/)
   assert.equal((nav.match(/\{path:'/g)||[]).length,5)
+  const order=[...nav.matchAll(/\{path:'([^']+)'/g)].map(match=>match[1].split('?')[0])
+  const cabinet=workspace.slice(workspace.indexOf('const nav = ['),workspace.indexOf('const navIsActive'))
+  const cabinetOrder=[...cabinet.matchAll(/id: '([^']+)'/g)].map(match=>match[1])
+  assert.deepEqual(order,cabinetOrder)
+  assert.deepEqual(order,['portrait','course','tests','practice','messages'])
+  assert.ok(nav.includes("path:'course?view=courses'"))
+  assert.ok(nav.includes("en:'My Profile'"))
+  assert.ok(!order.includes('portfolio'),'Reports remain inside My Profile, not a duplicate dock entry')
   assert.ok(nav.includes("locale==='es'?'en':locale"))
-  assert.match(css,/hh-messages-app-dock/)
+  assert.doesNotMatch(css,/hh-messages-app-dock|repeat\(5,minmax\(0,1fr\)\)/)
   assert.ok(css.includes('padding-bottom:calc(110px + env(safe-area-inset-bottom))'))
 })
-
 
 test('Messages compact mode opens only one mobile pane at a time, with accessible Back',()=>{
   const hub=read('components/app/messages-hub.jsx')

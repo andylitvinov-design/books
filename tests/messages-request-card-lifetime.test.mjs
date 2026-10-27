@@ -56,7 +56,18 @@ function fixture(options={}){
   async function click(node){assert.ok(node,'expected control');assert.ok(!node.props.disabled,'control disabled');node.props.onClick?.({preventDefault(){}});await app.settle()}
   return {app,calls,violations,nodes,person,cardToggle,card,cardBack,input,instance,sent,click,
     savedCallbacks:()=>savedCallbacks,viewedCallbacks:()=>viewedCallbacks,
-    async select(id=R){await click(person(id))},
+    async folder(id){
+      const tab=nodes().find(n=>n.type==='button'&&n.props.id==='hh-simple-tab-'+id)
+      assert.ok(tab,'expected folder '+id)
+      if(!tab.props['aria-selected'])await click(tab)
+    },
+    async select(id=R){
+      // The canonical owner UI puts private requests and direct messages in separate folders.
+      const tab=nodes().find(n=>n.type==='button'&&n.props.id==='hh-simple-tab-'+(id===T?'chats':'requests'))
+      assert.ok(tab,'expected source folder')
+      if(!tab.props['aria-selected'])await click(tab)
+      await click(person(id))
+    },
     async type(id=R){assert.ok(input(id));input(id).props.onChange({target:{value:TEXT}});await app.settle()},
     async send(){await click(nodes().find(n=>n.type==='button'&&visible(n)&&n.props.onClick?.name==='send'))},
     async account(next){account=next;app.updateProps({accountId:next});await app.settle()},
@@ -147,3 +158,23 @@ test('Direct draft and selected file also remain mounted across its existing car
   assert.ok(f.nodes().some(n=>n.type==='p'&&n.props.className?.includes(':fileName')&&textContent(n).includes('synthetic-note.ogg')))
   assert.equal(f.sent().length,0);assert.ok(!f.calls.some(c=>/photo|media/.test(c.path)))
 }))
+
+test('Inbox/Requests round trip keeps the request draft and client card mounted without extra reads',()=>run({},async f=>{
+  await composeReply(f);const before=f.instance('MessageConversation'),reads=f.calls.length
+  await f.click(f.cardToggle());const card=f.instance('MessagesContactCard')
+  await f.folder('chats')
+  assert.ok(f.instance('MessageConversation')===before);assert.ok(f.instance('MessagesContactCard')===card)
+  assert.equal(Boolean(f.input()),false);assert.equal(f.input(R,true)?.props.value,TEXT)
+  assert.ok(!visible(f.card()),'client card must be hidden outside its source folder')
+  await f.folder('requests');assert.ok(visible(f.card()));await f.click(f.cardBack())
+  assert.equal(f.input()?.props.value,TEXT);assert.equal(f.calls.length,reads);assert.equal(f.sent().length,0)
+}))
+test('folder switch keeps an uncertain request Send and retry bound to one operation ID',async()=>{
+  const pending=deferred(),f=fixture({postQueue:[pending.promise]})
+  try{await f.app.settle();await composeReply(f);await f.send();const first=f.sent()[0],before=f.instance('MessageConversation')
+    await f.folder('chats');assert.equal(first.signal.aborted,false);assert.ok(f.instance('MessageConversation')===before)
+    pending.reject(Error('SYNTHETIC_FOLDER_UNCERTAIN'));await f.app.settle()
+    assert.equal(Boolean(f.input()),false);await f.folder('requests');assert.equal(f.input()?.props.value,TEXT)
+    await f.send();assert.equal(f.sent()[1].body.operationId,first.body.operationId);f.clean()
+  }finally{f.close()}
+})
