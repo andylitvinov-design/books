@@ -224,3 +224,33 @@
  .kindChooser{gap:6px;padding:8px}
  .kindChooser button{padding:8px 6px;font-size:11px}
 }
+
+/* Optional preferred time starts collapsed; the contact and receipt stay inline. */
+.timeGroup{min-width:0;border:1px solid #ccddd5;border-radius:11px;background:#fff;padding:0 11px}
+.timeToggle{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:44px;list-style:none;cursor:pointer;color:#155964;font:800 12px/1.3 system-ui,sans-serif}
+.timeToggle::-webkit-details-marker{display:none}
+.timeToggle span{color:#597c77;font-size:17px}
+.timeGroup[open] .timeToggle span{transform:rotate(180deg)}
+.timeHint{margin:0 0 10px;color:#647a78;font:11px/1.45 system-ui,sans-serif}
+.timeGroup .timeFields{padding-bottom:10px}
+.enquiryContact{grid-column:1/-1;min-width:0;display:grid;gap:9px;padding-top:3px}
+.contactFields{display:grid;grid-template-columns:minmax(0,1fr);gap:9px}
+.enquiryContact .field small,.contactPrivacy{color:#687e79;font:11px/1.4 system-ui,sans-serif}
+.enquiryContact .field input{font-size:16px}
+.contactConsent{display:flex;align-items:flex-start;gap:9px;color:#375b61;font:12px/1.4 system-ui,sans-serif;cursor:pointer}
+.contactConsent input{flex:0 0 19px;width:19px;height:19px;margin:0;accent-color:#8e3652}
+.enquiryContact .submit{width:100%}
+.enquiryContact .error{margin:0}
+.nameDetails{border:0;padding:0;min-width:0}
+.nameDetails summary{width:fit-content;cursor:pointer;color:#386c71;font:700 11px/1.3 system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.nameDetails>.field{margin-top:8px}
+.honeypot{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important}
+.enquiryReceipt{grid-column:1/-1;min-width:0;border:1px solid #bddbd0;border-radius:12px;background:#ebf8f1;padding:13px;color:#175a51}
+.enquiryReceipt strong{display:block;font:800 16px/1.35 system-ui,sans-serif}
+.enquiryReceipt p{margin:6px 0 0;font:12px/1.5 system-ui,sans-serif;overflow-wrap:anywhere}
+@media(max-width:650px){
+  .enquiryContact{gap:7px}
+  .contactFields{gap:7px}
+  .enquiryReceipt{padding:12px}
+  .timeToggle{font-size:11.5px}
+}
