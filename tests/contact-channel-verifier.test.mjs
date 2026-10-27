@@ -352,9 +352,17 @@ test('actual core JSX has one footer section with one chooser and the matching s
 
 function assertFreeReviewCallerContract(source, compact = false, helper = '') {
   if (!compact) {
-    assert.ok(source.includes(`a[href="/' + locale + '/coaching/intake?topic=personal"]`));
-    assert.match(source, /preview\.locator\("form,textarea"\)\.count\(\), 0/);
-    assert.match(source, /The private answers are entered only in the protected questionnaire/);
+    assert.match(source, /verifyFreeReviewCurrentFlow\(page, expect, \{/);
+    assert.match(source, /origin, locale, inspectPrivateIntake: width === 390/);
+    const start = helper.indexOf('export async function verifyFreeReviewCurrentFlow(');
+    const end = helper.indexOf('export async function verifyFreeDiagnosisHub(');
+    assert.ok(start >= 0 && end > start);
+    const flow = helper.slice(start, end);
+    assert.ok(flow.includes('/coaching/intake?topic=personal'));
+    assert.match(flow, /intake\.locator\('form,textarea,input\[type="file"\]'\)\)\.toHaveCount\(0\)/);
+    assert.match(flow, /await advanced\.locator\(':scope > summary'\)\.click\(\)/);
+    assert.match(flow, /assert.equal\(guard.submissions.length,0\)/);
+    assert.match(flow, /assert.deepEqual\(guard.blocked,\[\]\)/);
     return;
   }
   assert.match(source, /verifyFreeReviewPrivateHandoff\(publicPage,expect,\{origin,locale,/);
@@ -370,9 +378,11 @@ function assertFreeReviewCallerContract(source, compact = false, helper = '') {
 }
 
 test('free-review callers preserve current private questionnaire entry, consented synthetic receipt and external-answer privacy', () => {
-  const helper = read('scripts/helpers/free-review-private-handoff-verifier.mjs');
+  const compactHelper = read('scripts/helpers/free-review-private-handoff-verifier.mjs');
+  const publicHelper = read('scripts/helpers/free-entry-current-verifier.mjs');
   for (const [path, compact] of [['scripts/verify-app-r1.mjs', true], ['scripts/verify-public-services-production.mjs', false]]) {
     const source = read(path);
+    const helper = compact ? compactHelper : publicHelper;
     assertFreeReviewCallerContract(source, compact, helper);
     const mutations = compact ? [
       [source.replace('verifyFreeReviewPrivateHandoff(publicPage,expect,{origin,locale,', 'retiredFlow(publicPage,expect,{origin,locale,'), helper],
@@ -384,8 +394,10 @@ test('free-review callers preserve current private questionnaire entry, consente
       [source, helper.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private')],
       [source, helper.replace("assert.equal(guard.submissions.length, 0, 'A phone without explicit consent never submits')", 'void guard.submissions')],
     ] : [
-      [source.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private'), helper],
-      [source.replace('preview.locator("form,textarea").count(), 0', 'preview.locator("form,textarea").count(), 1'), helper],
+      [source.replace('verifyFreeReviewCurrentFlow(page, expect, {', 'retiredFlow(page, expect, {'), helper],
+      [source, helper.replace('/coaching/intake?topic=personal', '/coaching/intake?answer=private')],
+      [source, helper.replace("intake.locator('form,textarea,input[type=\"file\"]')).toHaveCount(0)", "intake.locator('form,textarea,input[type=\"file\"]')).toHaveCount(1)")],
+      [source, helper.replace('assert.equal(guard.submissions.length,0); assert.deepEqual(guard.blocked,[])', 'assert.equal(guard.submissions.length,1); assert.deepEqual(guard.blocked,[])')],
     ];
     for (const [changed, changedHelper] of mutations) {
       assert.ok(changed !== source || changedHelper !== helper, 'Negative control must alter the actual caller/helper');

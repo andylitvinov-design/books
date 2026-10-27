@@ -31,6 +31,18 @@ const reviewedPublicPrefetchPaths = new Set([
   ]),
 ])
 const reviewedAdvancedRunesPath = '/academy/reiki-yggdrasil/source/advanced-runes.png'
+// WebKit-only caller opt-in for browser-local object images, not source identity.
+// Raw origin/prefix/UUID checks reject forgiving URL-parser normalization.
+function isBrowserLocalBlobImageCandidate(request, origin) {
+  if (typeof origin !== 'string' || !/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin)) return false
+  try { if (new URL(origin).origin !== origin) return false } catch { return false }
+  const prefix = 'blob:' + origin + '/'
+  return typeof request.url === 'string' && request.url.startsWith(prefix) && request.url.length === prefix.length + 36 &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(request.url.slice(prefix.length)) &&
+    request.method === 'GET' && request.resourceType === 'image' && request.body === '' && request.navigation === false &&
+    request.prefetch === false && request.prefetchSignals?.purposePrefetch === false &&
+    request.prefetchSignals?.nextRouterPrefetch === false && request.prefetchSignals?.rsc === false
+}
 export function publicJourneyRequestDecision(request, origin, sensitive = [], fixtures = {}) {
   const { url, method, body = '', navigation = false, resourceType, prefetch, prefetchSignals,
     hasAuthHeaders, hasPrefetchHeaders } = request
@@ -57,6 +69,10 @@ export function publicJourneyRequestDecision(request, origin, sensitive = [], fi
       resourceType === 'image' && hasAuthHeaders === false && hasPrefetchHeaders === false && prefetch === false &&
       prefetchSignals?.purposePrefetch === false && prefetchSignals?.nextRouterPrefetch === false &&
       prefetchSignals?.rsc === false) return 'allow'
+  // Blob loads use WebKit's local registry, not HTTP. Keep all unknown network
+  // images/API/media closed and reject credential/prefetch evidence defensively.
+  if (fixtures.browserLocalBlobImages === true && isBrowserLocalBlobImageCandidate(request, origin) &&
+      hasAuthHeaders === false && hasPrefetchHeaders === false) return 'allow'
   if (plainLocalRead && target.pathname === '/holistic-house-app.webmanifest' &&
       target.search === '' && resourceType === 'other' && prefetch === false &&
       prefetchSignals?.purposePrefetch === false && prefetchSignals?.nextRouterPrefetch === false &&
@@ -176,9 +192,11 @@ export async function installPublicJourneyFence(context, origin, sensitive = [],
       prefetch: headers.purpose === 'prefetch' || headers['next-router-prefetch'] === '1',
       prefetchSignals: { purposePrefetch: headers.purpose === 'prefetch',
         nextRouterPrefetch: headers['next-router-prefetch'] === '1', rsc: headers.rsc === '1' } }
-    if (fixtures.reviewedAdvancedRunesImage === true && info.url === origin + reviewedAdvancedRunesPath) {
-      // headers() can omit cookies. Read complete headers only for this exact
-      // opted-in public asset; retain no values and fail closed on missing data.
+    if ((fixtures.reviewedAdvancedRunesImage === true && info.url === origin + reviewedAdvancedRunesPath) ||
+        (fixtures.browserLocalBlobImages === true && isBrowserLocalBlobImageCandidate(info, origin))) {
+      // Inspect header names only for these exact opted-in candidates; fail closed
+      // on missing data. Intercepted WebKit allHeaders() is provisional, not proof
+      // of absent on-wire cookies. Blob safety rests on its local registry loader.
       info.hasAuthHeaders = true
       info.hasPrefetchHeaders = true
       try {

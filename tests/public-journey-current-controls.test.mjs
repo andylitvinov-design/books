@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
 import { publicJourneyRequestDecision } from '../scripts/helpers/public-journey-verifier.mjs'
+import { blockedApiDetails } from '../scripts/helpers/contact-request-diagnostics.mjs'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const ast = (source, name='source.tsx') => ts.createSourceFile(name,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
@@ -131,11 +132,11 @@ test('Tantra actual component preserves all five intents, keys, public draft con
 test('contact context fence fulfills only one exact synthetic POST; all writes/API reads/providers stay closed',async()=>{
   const node=findNode(tantra,node=>ts.isCallExpression(node)&&node.expression.getText()==='context.route')
   const callback=node.arguments[1],body=callback.body.getText().slice(1,-1)
-  const fn=new (Object.getPrototypeOf(async()=>{}).constructor)('route','origin','submissions','blocked','publicJourneyRequestDecision',body)
+  const fn=new (Object.getPrototypeOf(async()=>{}).constructor)('route','origin','submissions','blocked','publicJourneyRequestDecision','blockedApiDetails','requestPhase',body)
   const origin='http://127.0.0.1:3100',submissions=[],blocked=[],actions=[]
   const payload={contactConsent:true,contact:{email:'qa-browser@example.test'}}
-  const send=async(url,method,navigation=false,data=payload)=>fn({request:()=>({url:()=>url,method:()=>method,isNavigationRequest:()=>navigation,postData:()=>method==='POST'?JSON.stringify(data):''}),
-    fulfill:async data=>actions.push(['fulfill',data.status]),continue:async()=>actions.push(['continue']),abort:async()=>actions.push(['abort'])},origin,submissions,blocked,publicJourneyRequestDecision)
+  const send=async(url,method,navigation=false,data=payload)=>fn({request:()=>({url:()=>url,method:()=>method,isNavigationRequest:()=>navigation,resourceType:()=> 'fetch',frame:()=>({url:()=>origin+'/en/academy'}),postData:()=>method==='POST'?JSON.stringify(data):''}),
+    fulfill:async data=>actions.push(['fulfill',data.status]),continue:async()=>actions.push(['continue']),abort:async()=>actions.push(['abort'])},origin,submissions,blocked,publicJourneyRequestDecision,blockedApiDetails,'academy')
   await send(origin+'/api/service-enquiries','POST')
   assert.deepEqual(submissions,[payload]);assert.deepEqual(actions,[['fulfill',200]])
   for(const [url,method,nav] of [[origin+'/api/service-enquiries?other=1','POST'],[origin+'/api/service-enquiries','GET'],
@@ -147,6 +148,15 @@ test('contact context fence fulfills only one exact synthetic POST; all writes/A
   await send(origin+'/en/academy?note=PRIVATE_QA_NOTE_NOT_FOR_MESSENGER','GET')
   assert.equal(submissions.length,1);assert.equal(blocked.length,10)
   assert.equal(actions.filter(action=>action[0]==='continue').length,0)
+  // Source-recognized reads are still aborted, never anonymous-success fixtures.
+  for(const [path,apiKind] of [['/api/app/bootstrap','account-bootstrap'],['/api/app/bootstrap?view=portrait','portrait-bootstrap'],['/api/app/auth/contact-profile','contact-profile'],['/api/academy/reiki-guide?course=yggdrasil&locale=en','yggdrasil-guide']]) {
+    await send(origin+path,'GET')
+    assert.deepEqual(blocked.at(-1),{method:'GET',category:'unexpected-api',apiKind,framePageAtBlock:'academy',scenarioPhase:'academy',resourceType:'fetch',navigation:false})
+    assert.deepEqual(actions.at(-1),['abort'])
+  }
+  assert.equal(blocked.length,14);assert.equal(submissions.length,1)
+  assert.equal(actions.filter(action=>action[0]==='continue').length,0)
+  assert.equal(actions.filter(action=>action[0]==='fulfill').length,1)
   assert.match(tantra,/process\.argv\.includes\("--live"\)\) throw/)
   assert.match(tantra,/assertPublicJourneyRuntime\(origin\)/)
   assert.match(tantra,/assert\.deepEqual\(blocked,\[\]/)

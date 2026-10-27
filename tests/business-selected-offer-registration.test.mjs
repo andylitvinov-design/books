@@ -20,7 +20,7 @@ const owner='a0000000-0000-4000-8000-000000000001'
 const children=node=>{const out=[];function walk(v){if(Array.isArray(v))return v.forEach(walk);if(!v?.props)return;out.push(v);walk(v.props.children)}walk(node);return out}
 function captureProps(locale,source=component){
  const element=(type,props)=>({type,props:props||{}})
- const module=compileContactModule(source,{
+ const compiledModule=compileContactModule(source,{
   'react/jsx-runtime':{jsx:element,jsxs:element,Fragment:'fragment'},'next/image':{default:'img'},'next/link':{default:'a'},
   'lucide-react':Object.fromEntries(['ArrowRight','ArrowUpRight','Check','ChevronDown','ClipboardCheck','Compass','Lightbulb','ShieldCheck'].map(x=>[x,'icon-'+x])),
   '@/components/acquisition-event-link':{AcquisitionEventLink:'acquisition-link'},'@/components/contact-channel-chooser':{ContactChannelChooser:'chooser'},
@@ -28,7 +28,7 @@ function captureProps(locale,source=component){
   '@/components/service-video-showcase':{ServiceVideoShowcase:'video'},'@/lib/whatsapp-enquiry':enquiries,'@/data/business-consulting-copy':{businessConsultingCopy:copy},
   './business-consulting-landing.module.css':{default:{}},
  },{})
- return children(module.BusinessConsultingLanding({locale})).filter(n=>n.type==='chooser').map(n=>n.props)
+ return children(compiledModule.BusinessConsultingLanding({locale})).filter(n=>n.type==='chooser').map(n=>n.props)
 }
 function backend({available=true,crm=true}={}){
  const state={enquiries:[],contacts:[],queries:[],transactions:0,lookups:0}

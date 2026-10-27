@@ -93,7 +93,11 @@ export function sanitizeServiceLog(raw, { origin, source }) {
       const action = match[1].toLowerCase()
       const timing = body.match(/\bin\s+(\d+(?:\.\d+)?)\s*(ms|s)\b/)
       const pathname = ['compiling','compiled'].includes(action) ? sanitizePathname(match[2] || '', origin) : null
-      retain({ ...event, type: 'server_lifecycle', action, ...(pathname ? { pathname } : {}), ...(timing ? { durationMs: duration(timing[1],timing[2]) } : {}) })
+      // One observed static route only; do not make its words generally safe.
+      // An exact compile label identifies the trigger, never a failure cause.
+      const compileTarget = source === 'next' && ['compiling','compiled'].includes(action)
+        && match[2] === '/api/free-express/claim' ? 'free-express-claim' : null
+      retain({ ...event, type: 'server_lifecycle', action, ...(pathname ? { pathname } : {}), ...(timing ? { durationMs: duration(timing[1],timing[2]) } : {}), ...(compileTarget ? { compileTarget } : {}) })
     } else if (source === 'provider' && body === 'Loopback provider protocol double ready. No live Google test.') {
       retain({ ...event, type: 'provider_ready' })
     } else if (/socket hang up|ECONNRESET|ECONNREFUSED|ETIMEDOUT|heap out of memory|out of memory|ENOMEM/i.test(body)) {

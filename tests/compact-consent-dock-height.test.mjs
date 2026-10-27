@@ -2,16 +2,23 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import test from 'node:test'
-import { extractCompactDockLayoutEffect, nativeCompactConsentFixture } from '../scripts/helpers/native-compact-consent-layout.mjs'
+import { extractCompactDockLayoutEffect, nativeCompactConsentFixture, prepareNativeConsentTarget, installNativeConsentProbe, sanitizeNativeConsentFailure, preserveNativeConsentFailure } from '../scripts/helpers/native-compact-consent-layout.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const source=read('components/mobile-bottom-navigation.tsx')
 // Authored effect executed against a deterministic event/layout model, not a
 // claim of native browser focus, scrolling or pointer behavior.
-function fixture({sourceOverride=source,mobile=true,hidden=false,retainedInline=false}={}) {
+function fixture({sourceOverride=source,mobile=true,hidden=false,retainedInline=false,webkitImportant=false}={}) {
   const properties=new Map(),listeners=new Map(),windowListeners=new Map(),frames=new Map(),timers=new Map()
   let next=0,observer,disconnected=false,dockHeight=69,compact=true
-  const style={setProperty(name,value,priority=''){properties.set(name,{value,priority})},removeProperty(name){properties.delete(name)},
+  // Pinned WebKit MutableStyleProperties.cpp:262-267 rejects a normal
+  // custom-property write over an existing important declaration, even when
+  // its value differs. This models that source path, not native browser proof.
+  const style={setProperty(name,value,priority=''){
+      if(value===''){properties.delete(name);return}
+      if(webkitImportant&&name.startsWith('--')&&properties.get(name)?.priority==='important'&&priority!=='important')return
+      properties.set(name,{value,priority})
+    },removeProperty(name){properties.delete(name)},
     getPropertyValue:name=>properties.get(name)?.value||'',getPropertyPriority:name=>properties.get(name)?.priority||''}
   class Element {closest(){return null}}
   class HTMLInputElement extends Element {}
@@ -188,4 +195,181 @@ test('actual final native assertion rejects delayed second activation and untrus
     {inputs:2,changes:2,trustedInputs:2,trustedChanges:2},
     {inputs:1,changes:1,trustedInputs:1,trustedChanges:0},
   ])await assert.rejects(execute(counts),{code:'ERR_ASSERTION'})
+})
+
+
+// These are fixture-precondition models, not native browser results.
+test('coordinate preparation uses native scrolling before measurement and hit testing',async()=>{
+  const calls=[];let visible=false
+  const page={viewportSize:()=>({width:390,height:844})}
+  const target={scrollIntoViewIfNeeded:async()=>{calls.push('scroll');visible=true},
+    boundingBox:async()=>{calls.push('box');return{x:37,y:visible?600:1390,width:22,height:22}},
+    evaluate:async(fn,point)=>{calls.push('hit');assert.deepEqual(point,{x:48,y:611});return true}}
+  assert.deepEqual(await prepareNativeConsentTarget(page,target),{x:48,y:611})
+  assert.deepEqual(calls,['scroll','box','hit'])
+})
+
+for(const bad of ['offscreen','occluded','missing','zero','nonfinite'])test('coordinate preparation fails closed for '+bad,async()=>{
+  const target={scrollIntoViewIfNeeded:async()=>{},boundingBox:async()=>bad==='missing'?null:
+    {x:37,y:bad==='offscreen'?1390:600,width:bad==='zero'?0:22,height:bad==='nonfinite'?NaN:22},evaluate:async()=>bad!=='occluded'}
+  await assert.rejects(prepareNativeConsentTarget({viewportSize:()=>({width:390,height:844})},target),{code:'ERR_ASSERTION'})
+})
+
+test('all native branches prepare the target and preserve phone focus before initial geometry and original actions',()=>{
+  const helper=read('scripts/helpers/native-compact-consent-layout.mjs')
+  const prepare=helper.indexOf('const {x,y}=await prepareNativeConsentTarget(page,target)')
+  const focus=helper.indexOf('await expect(phone).toBeFocused()',prepare)
+  const initial=helper.indexOf('const initialHeight=',focus)
+  const gesture=helper.indexOf("stage='gesture'",initial)
+  assert.ok(prepare>0&&focus>prepare&&initial>focus&&gesture>initial)
+  assert.match(helper.slice(gesture),/await consent.check\(\)/)
+  assert.match(helper.slice(gesture),/page.touchscreen.tap\(x,y\)/)
+  assert.equal(helper.split('await prepareNativeConsentTarget(page,target)').length,2)
+  assert.match(helper,/catch\(error\) \{\n        await preserveNativeConsentFailure\(page,kind,stage\)\n        throw error\n      \} finally/)
+  assert.doesNotMatch(helper,/force:\s*true|waitForTimeout|dispatchEvent|\.blur\(|\.checked\s*=|test.skip|fetch\(/)
+  finalNativeCountContract(helper)
+})
+
+function probeFixture({clearance='0px'}={}){
+  class Node{contains(node){return node===this||(this.children||[]).includes(node)}}
+  const consent=Object.assign(new Node(),{checked:false,isConnected:true,disabled:false}),phone=new Node(),label=new Node(),nav=new Node(),body=new Node()
+  label.children=[consent];consent.closest=()=>label
+  consent.getBoundingClientRect=()=>({top:600,left:37,width:22,height:22});nav.getBoundingClientRect=()=>({height:0})
+  const writes=[],listeners=new Map(),inputListeners=new Map()
+  body.style={getPropertyValue:()=> '0px',getPropertyPriority:()=> 'important',setProperty:()=>writes.push('style')}
+  const document={body,activeElement:phone,documentElement:{scrollHeight:2400},
+    querySelector:selector=>selector==='nav'?nav:selector.includes('checkbox')?consent:phone,
+    addEventListener(type,fn,options){assert.equal(options.passive,true);const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list)}}
+  consent.addEventListener=(type,fn,options)=>{assert.equal(options.passive,true);inputListeners.set(type,fn)}
+  const window={scrollY:790};runInNewContext('('+installNativeConsentProbe.toString()+')()',
+    {window,document,Node,getComputedStyle:()=>({getPropertyValue:()=>clearance})})
+  return{window,consent,phone,writes,fire(type,extra={}){
+    const event={type,target:consent,isTrusted:true,isPrimary:true,pointerId:7,button:0,clientX:48,clientY:611,...extra}
+    for(const fn of listeners.get(type)||[])fn(event)
+    inputListeners.get(type)?.(event)
+  }}
+}
+
+test('passive exact probe records bounded physical IDs, focus and geometry without field or style writes',()=>{
+  const f=probeFixture();f.fire('pointerdown');f.fire('pointerup');f.fire('input');f.fire('change')
+  const result=f.window.__nativeConsentLayoutSnapshot()
+  assert.equal(result.inputs,1);assert.equal(result.changes,1);assert.equal(result.trustedInputs,1);assert.equal(result.trustedChanges,1)
+  assert.equal(result.events[0].pointerId,7);assert.equal(result.events[0].target,1);assert.equal(result.events[0].focus,2)
+  assert.equal(result.events[0].important,true);assert.equal(result.events[0].height,2400);assert.equal(result.events[0].clearance,0)
+  for(let i=0;i<100;i++)f.fire('pointerdown')
+  assert.equal(f.window.__nativeConsentLayoutSnapshot().events.length,48)
+  assert.ok(f.window.__nativeConsentLayoutSnapshot().dropped>0);assert.deepEqual(f.writes,[]);assert.equal(f.consent.checked,false)
+})
+
+test('native failure serialization rejects unknown text/URLs and bounds event and numeric fields',()=>{
+  const secret='PRIVATE_FIXTURE_SENTINEL'
+  const record={type:0,phase:1,pointerId:Infinity,height:1e30,top:12.345,important:true,target:secret,value:secret,url:secret}
+  const result=sanitizeNativeConsentFailure(secret,secret,{inputs:1,current:record,events:Array(200).fill(record),url:secret})
+  assert.equal(result.kind,'unknown');assert.equal(result.stage,'unknown');assert.equal(result.events.length,48)
+  assert.equal(result.current.pointerId,null);assert.equal(result.current.height,1000000);assert.equal(result.current.top,12.3)
+  const encoded=JSON.stringify(result);assert.ok(encoded.length<25000);assert.ok(!encoded.includes(secret))
+  assert.equal(sanitizeNativeConsentFailure('touch-label','hold-release',null).events.length,0)
+})
+
+for(const mode of ['completed','rejected','timed_out'])test('native failure evidence reaches bounded stderr path on '+mode,async()=>{
+  const output=[]
+  const page={evaluate:()=>mode==='completed'?Promise.resolve({inputs:1,events:[]}):mode==='rejected'?Promise.reject(new Error('PRIVATE_ERROR')):new Promise(()=>{})}
+  await preserveNativeConsentFailure(page,'touch-checkbox','counts',(...args)=>output.push(args),1)
+  assert.equal(output.length,1);assert.equal(output[0][0],'NATIVE_COMPACT_CONSENT_FAILURE')
+  const parsed=JSON.parse(output[0][1]);assert.equal(parsed.outcome,mode);assert.equal(parsed.kind,'touch-checkbox');assert.equal(parsed.stage,'counts')
+  assert.ok(!output[0][1].includes('PRIVATE_ERROR'))
+})
+
+
+test('native exact-zero gate rejects fractional clearance hidden by diagnostic rounding',()=>{
+  const helper=read('scripts/helpers/native-compact-consent-layout.mjs')
+  const gate=helper.split('\n').find(line=>line.includes("assert.equal(event.clearanceZero,true,"))
+  assert.ok(gate,'The native physical-event gate must assert the unrounded exact-zero boolean')
+  const execute=new Function('assert','event','kind',gate)
+  for(const clearance of ['0px',' 0px ']){
+    const f=probeFixture({clearance});f.fire('pointerdown')
+    const event=f.window.__nativeConsentLayout.events[0]
+    assert.equal(event.clearanceZero,true);execute(assert,event,'synthetic-exact-zero')
+  }
+  for(const clearance of ['0.04px','-0.04px','0.0px','0','-0px','invalid']){
+    const f=probeFixture({clearance});f.fire('pointerdown')
+    const event=f.window.__nativeConsentLayout.events[0]
+    if(clearance==='0.04px')assert.equal(event.clearance,0,'Counterexample retains bounded numeric diagnostic zero')
+    assert.equal(event.clearanceZero,false)
+    assert.throws(()=>execute(assert,event,'synthetic-nonexact-zero'),{code:'ERR_ASSERTION'})
+    const logged=sanitizeNativeConsentFailure('mouse-checkbox','geometry',{current:event,events:[event]})
+    assert.equal(logged.current.clearanceZero,false);assert.equal(logged.events[0].clearanceZero,false)
+  }
+  const weakened=helper.replace('assert.equal(event.clearanceZero,true,','assert.equal(event.clearance,0,')
+  assert.ok(!weakened.includes('assert.equal(event.clearanceZero,true,'),'Source guard rejects the former rounded-only gate')
+})
+
+
+const ownedPinRemoval="      document.body.style.removeProperty('--ia222-bottom-height');\n      if (saved.value)"
+function withoutOwnedPinRemoval(){
+  assert.equal(source.split(ownedPinRemoval).length,2,'Exactly one owned-pin removal precedes saved-state restoration')
+  return source.replace(ownedPinRemoval,'      if (saved.value)')
+}
+
+test('WebKit-faithful setter reproduces old retained pin and candidate clears only its temporary pin',()=>{
+  const old=fixture({sourceOverride:withoutOwnedPinRemoval(),webkitImportant:true})
+  old.focusPhone();old.press();old.blurPhone();old.release();old.flush()
+  assert.equal(old.clearance(),'0px');assert.equal(old.style.getPropertyPriority('--ia222-bottom-height'),'important')
+  old.cleanup()
+  const fixed=fixture({webkitImportant:true});assertPressStaysStable(fixed);fixed.cleanup()
+})
+
+for(const webkitImportant of [false,true])for(const prior of ['normal','empty','important'])test('owned-pin release preserves existing writer policy: WebKit='+webkitImportant+' prior='+prior,()=>{
+  const f=fixture({webkitImportant});f.focusPhone()
+  if(prior==='empty')f.style.removeProperty('--ia222-bottom-height')
+  if(prior==='important')f.style.setProperty('--ia222-bottom-height','14px','important')
+  const initial=f.height();f.press();f.blurPhone();f.release()
+  assert.equal(f.height(),initial,'Owned pin holds the starting computed geometry through native release')
+  f.flush()
+  const retainedPrior=webkitImportant&&prior==='important'
+  assert.equal(f.clearance(),retainedPrior?'14px':'69px')
+  assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),retainedPrior?'important':'')
+  // The saved important state is restored first; the unchanged normal writer
+  // then follows the engine's existing policy, not universal normalization.
+  f.cleanup();assert.equal(f.properties.size,0);assert.equal(f.timers.size,0)
+})
+
+for(const terminal of ['cancel','keydown','blur','pagehide','visibilitychange','cleanup'])test('WebKit-faithful owned pin releases on '+terminal,()=>{
+  const f=fixture({webkitImportant:true});f.focusPhone();f.press();f.blurPhone();f.release()
+  if(terminal==='cancel')f.cancel()
+  else if(terminal==='keydown')f.fire('keydown')
+  else if(terminal==='visibilitychange'){f.doc.visibilityState='hidden';f.fire('visibilitychange')}
+  else if(terminal==='cleanup')f.cleanup()
+  else f.fireWindow(terminal)
+  assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'');assert.equal(f.timers.size,0)
+  if(terminal!=='cleanup'){assert.equal(f.clearance(),'69px');f.cleanup()}
+})
+
+test('WebKit-faithful stale completion cannot clear a newer owned pin',()=>{
+  const f=fixture({webkitImportant:true});f.focusPhone();f.press();f.blurPhone();f.release()
+  const stale=[...f.timers.values()][0]
+  f.focusPhone();f.press({pointerId:8});f.blurPhone();stale()
+  assert.equal(f.clearance(),'0px');assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'important')
+  assert.equal(f.timers.size,0);f.release({pointerId:8});f.flush()
+  assert.equal(f.clearance(),'69px');assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'');f.cleanup()
+})
+
+test('owned-pin change is confined to active-hold restoration, retaining original measure writer and consent acceptance',()=>{
+  const finish=source.slice(source.indexOf('    const finishHeightPress = () => {'),source.indexOf('    const onConsentPointerDown ='))
+  const owned=finish.indexOf("document.body.style.removeProperty('--ia222-bottom-height');")
+  assert.ok(owned>finish.indexOf('if (!heightPress) return;')&&owned>finish.indexOf('heightPress = null;'))
+  assert.ok(owned<finish.indexOf('if (saved.value)')&&finish.indexOf('if (saved.value)')<finish.indexOf('measureHeight();'))
+  assert.match(source,/const measureHeight = \(\) => \{\n      if \(heightPress\) return;\n      document.body.style.setProperty\('--ia222-bottom-height', `\$\{element.getBoundingClientRect\(\).height\}px`\);\n    \};/)
+  finalNativeCountContract(read('scripts/helpers/native-compact-consent-layout.mjs'))
+})
+
+
+test('height completion does not remove an unrelated inline priority when no owned hold exists',()=>{
+  const f=fixture({webkitImportant:true});f.style.setProperty('--ia222-bottom-height','14px','important')
+  for(const terminal of ['keydown','blur','pagehide']){
+    if(terminal==='keydown')f.fire(terminal);else f.fireWindow(terminal)
+    assert.equal(f.style.getPropertyValue('--ia222-bottom-height'),'14px')
+    assert.equal(f.style.getPropertyPriority('--ia222-bottom-height'),'important')
+  }
+  f.cleanup()
 })

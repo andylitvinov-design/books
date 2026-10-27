@@ -20,7 +20,7 @@ test('My space provides profile building and development plan for guests and sig
 test('My space reaches established sections without inventing a duplicate private flow', () => {
   for (const fragment of [
     '/explore/energy', '/explore/love', '/explore/business',
-    '/coaching', '/books', '/masters', '/pro#profi-learning',
+    '/coaching', '/temple-support', '/masters', '/pro#profi-learning',
     '/client/tests', '/academy', '/services/free-situation-review',
     '/practice?panel=services', '/practice?panel=materials&materialTab=courses'
   ]) {
@@ -31,6 +31,11 @@ test('My space reaches established sections without inventing a duplicate privat
     'Sesiones de coaching', 'Guía del templo y del Dao']) {
     assert.ok(panel.includes(label), label);
   }
+  // The former books entry now reaches the approved support hub through its legacy redirect.
+  assert.match(panel, /id: "temple", href: "\/" \+ activeLocale \+ "\/temple-support", label: t\.temple/);
+  const legacySupport = readFileSync(new URL('../app/[locale]/temple-support/page.tsx', import.meta.url), 'utf8');
+  assert.match(legacySupport, /if \(!isPublicLocale\(locale\)\) notFound\(\)/);
+  assert.match(legacySupport, /permanentRedirect\("\/" \+ locale \+ "\/holistic-support"\)/);
   assert.match(panel, /status === "guest" \|\| \(status === "ready" && summary\)/);
   assert.match(panel, /onClick=\{closePanel\}/);
   assert.match(panel, /summary\.professional \?/);

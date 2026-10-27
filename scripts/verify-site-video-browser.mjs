@@ -64,6 +64,35 @@ function classifyDetailVideoSource(raw, contract) {
 }
 // END bounded public detail-video contract.
 
+// BEGIN bounded About gallery contract (public identity/rendering metadata only).
+// The About archive is not the compact home/services preview. Keep these ten
+// independently pinned IDs in EN-first order, including each original audio language.
+const aboutTestimonialVideos = [
+  ['Dk0LBmOivQo', 'en'], ['aUJde6A-9p0', 'en'], ['fE6sD1zr1Js', 'en'],
+  ['itjo2_z2NGk', 'en'], ['4NrryHcEF1A', 'en'], ['hYwRNMxIMjc', 'en'],
+  ['MIVLm1GUTtM', 'ru'], ['ttQxUHopaUM', 'ru'], ['VABgpmn4ZYA', 'ru'], ['muOnIHllI7E', 'ru'],
+]
+function classifyAboutGallery(snapshot) {
+  if (!snapshot || !Array.isArray(snapshot.cards)) return 'invalid'
+  if (snapshot.galleryCount !== 1) return 'gallery-count'
+  if (snapshot.locale !== 'en') return 'gallery-locale'
+  if (snapshot.cards.length !== aboutTestimonialVideos.length) return 'card-count'
+  if (snapshot.playerCount !== aboutTestimonialVideos.length) return 'player-count'
+  if (snapshot.iframeCount !== 0) return 'eager-iframe'
+  if (snapshot.watchLinkCount !== 0) return 'external-watch-link'
+  for (const [index, [id, language]] of aboutTestimonialVideos.entries()) {
+    const card = snapshot.cards[index]
+    if (!card || card.id !== id) return 'video-order-or-identity'
+    if (card.playerCount !== 1) return 'card-player-count'
+    if (card.playerLocale !== 'en') return 'player-locale'
+    if (card.audioLanguage !== language) return 'audio-language'
+    if (card.playCount !== 1 || card.playDisabled !== false) return 'poster-not-ready'
+    if (card.posterSrc !== `/images/holistic-house/testimonial-posters/${id}.webp`) return 'poster-identity'
+  }
+  return 'match'
+}
+// END bounded About gallery contract.
+
 try {
   if (!live) {
     assert.equal(process.env.CI, 'true', 'Isolated tests must run in CI')
@@ -119,10 +148,37 @@ try {
     // Readiness concerns the outer application page, not imported source markup.
     await expect(page.locator('main').first()).toBeVisible()
   }
+  async function readAboutGallery() {
+    // Read only public identity/cardinality attributes. No titles, narratives,
+    // transcripts, frame URLs, HTML dumps or client information enter diagnostics.
+    return page.locator('#about-testimonials[data-personal-testimonials="about"]').evaluateAll(galleries => {
+      const gallery = galleries[0]
+      const cards = gallery ? [...gallery.querySelectorAll('[data-testimonial-video-id]')].slice(0, 11) : []
+      return {
+        galleryCount: Math.min(galleries.length, 2), locale: gallery?.getAttribute('lang') ?? null,
+        playerCount: gallery ? Math.min(gallery.querySelectorAll('.site-video-player').length, 11) : 0,
+        iframeCount: gallery ? Math.min(gallery.querySelectorAll('iframe').length, 1) : 0,
+        watchLinkCount: gallery ? Math.min(gallery.querySelectorAll('.site-video-watch-link').length, 1) : 0,
+        cards: cards.map(card => {
+          const player = card.querySelector('.site-video-player')
+          const play = player?.querySelector('button.site-video-play')
+          return {
+            id: card.getAttribute('data-testimonial-video-id'),
+            playerCount: Math.min(card.querySelectorAll('.site-video-player').length, 2),
+            playerLocale: player?.getAttribute('lang') ?? null,
+            audioLanguage: player?.querySelector('.site-video-caption [lang]')?.getAttribute('lang') ?? null,
+            playCount: player ? Math.min(player.querySelectorAll('button.site-video-play').length, 2) : 0,
+            playDisabled: play ? play.disabled : null,
+            posterSrc: player?.querySelector('.site-video-fallback-poster')?.getAttribute('src') ?? null,
+          }
+        }),
+      }
+    })
+  }
   if (live) {
     for (let i = 0; ; i++) {
       await navigate('/en/about')
-      if (await page.locator('.site-video-player').count() === 3) break
+      if (classifyAboutGallery(await readAboutGallery()) === 'match') break
       if (i >= 40) throw new Error('Updated module not observed on production')
       await pause(5000)
     }
@@ -265,9 +321,10 @@ try {
   await navigate('/en/about')
   await expect(page.locator('#psychic-alchemy-video')).toBeVisible()
   assert.equal(await page.locator('iframe').count(), 0)
-  assert.equal(await page.locator('.site-video-player').count(), 3)
+  await expect.poll(async () => classifyAboutGallery(await readAboutGallery()),
+    { timeout: 10000, message: 'About EN gallery: exact ten locale-first identities, local posters and opt-in players' }).toBe('match')
   await expect(page.locator('#personal-consultation-title')).toBeVisible()
-  pass(`${live ? 'Production' : 'Local'}: approved About intro, three testimonials, form; no eager iframe`)
+  pass(`${live ? 'Production' : 'Local'}: approved About intro, ten exact locale-first testimonials, form; no eager iframe`)
   await page.screenshot({ path: `${evidence}/${live ? 'live' : 'local'}-about-desktop.png`, fullPage: true })
   await navigate('/en/homeopathy/remedies')
   const remedyPath = await page.locator('a[href^="/en/homeopathy/remedies/"]').first().getAttribute('href')

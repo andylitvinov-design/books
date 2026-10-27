@@ -50,6 +50,9 @@ export function MobileBottomNavigation({ initialLocale = 'en' }: { initialLocale
       if (!heightPress) return;
       const saved = heightPress;
       heightPress = null;
+      // WebKit can reject normal-priority custom-property replacements while
+      // our temporary important pin exists. Remove only that owned pin first.
+      document.body.style.removeProperty('--ia222-bottom-height');
       if (saved.value) document.body.style.setProperty('--ia222-bottom-height', saved.value, saved.priority);
       else document.body.style.removeProperty('--ia222-bottom-height');
       measureHeight();

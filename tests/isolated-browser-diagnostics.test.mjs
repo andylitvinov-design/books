@@ -131,3 +131,86 @@ test('path segment count and a single oversized line cannot produce unbounded ou
     assert.ok(!saved.includes('fixture-no-newline-secret'))
   } finally { await rm(root, { recursive: true, force: true }) }
 })
+
+test('only exact Next compile records add the fixed target without changing sanitized route metadata', { timeout: 3000 }, () => {
+  const evidence = sanitizeServiceLog([
+    '2026-10-27T07:10:00Z ○ Compiling /api/free-express/claim ...',
+    '\u001b[32m✓ Compiled /api/free-express/claim in 973ms (1234 modules)\u001b[0m',
+  ].join('\n'), { origin, source: 'next' })
+  assert.deepEqual(evidence.events, [
+    { line: 1, timestamp: '2026-10-27T07:10:00.000Z', type: 'server_lifecycle', action: 'compiling', pathname: '/api/[segment]/[segment]', compileTarget: 'free-express-claim' },
+    { line: 2, type: 'server_lifecycle', action: 'compiled', pathname: '/api/[segment]/[segment]', durationMs: 973, compileTarget: 'free-express-claim' },
+  ])
+  assert.equal(evidence.recognizedEvents, 2); assert.equal(evidence.droppedEvents, 0)
+  assert.equal(sanitizePathname('/api/free-express/claim', origin), '/api/[segment]/[segment]')
+  assert.equal(sanitizePathname('/free-express/claim/private', origin), '/[segment]/[segment]/[segment]')
+})
+
+test('compile aliases reject query, fragment, private suffix, encoded, absolute and lookalike routes', { timeout: 3000 }, () => {
+  const routes = [
+    '/api/free-express/claim?account=fixture-secret', '/api/free-express/claim#fixture-secret',
+    '/api/free-express/claim/private', '/api/free-express/claim/', '/api/free-express/claim-private',
+    '/api/free-express/claims', '/api/free-express/%63laim', '/api/Free-express/claim',
+    '/api/private/../free-express/claim', '/api//free-express/claim', '/api/free-express\\claim',
+    'http://localhost:3100/api/free-express/claim', 'https://localhost:3100/api/free-express/claim',
+    'http://other.invalid/api/free-express/claim', 'http://fixture-secret@localhost:3100/api/free-express/claim',
+    '//localhost:3100/api/free-express/claim', '/api/private/fixture-secret',
+  ]
+  for (const route of routes) {
+    for (const action of ['Compiling', 'Compiled']) {
+      const evidence = sanitizeServiceLog(action + ' ' + route + ' in 1s', { origin, source: 'next' })
+      assert.equal(evidence.events.length, 1)
+      assert.ok(!Object.hasOwn(evidence.events[0], 'compileTarget'), route)
+      assert.doesNotMatch(JSON.stringify(evidence), /fixture-secret|account=|other\.invalid|https?:|claim-private/)
+    }
+  }
+})
+
+test('compile target does not expand request, provider, readiness or unrecognized log capture', { timeout: 3000 }, () => {
+  const lines = [
+    'GET /api/free-express/claim 401 in 10ms', 'POST /api/free-express/claim 200 in 10ms',
+    'Ready /api/free-express/claim in 1s', 'Starting /api/free-express/claim',
+    'private log /api/free-express/claim fixture-secret',
+  ]
+  const evidence = sanitizeServiceLog(lines.join('\n'), { origin, source: 'next' })
+  assert.equal(evidence.events.length, 4); assert.equal(evidence.droppedLines, 1)
+  assert.ok(evidence.events.every(event => !Object.hasOwn(event, 'compileTarget')))
+  const provider = sanitizeServiceLog('Compiling /api/free-express/claim ...\nCompiled /api/free-express/claim in 1s', { origin, source: 'provider' })
+  assert.equal(provider.events.length, 2)
+  assert.ok(provider.events.every(event => !Object.hasOwn(event, 'compileTarget')))
+  assert.doesNotMatch(JSON.stringify([evidence, provider]), /fixture-secret/)
+})
+
+test('existing artifact writer emits compile alias with redacted paths and unchanged isolation checks', { timeout: 3000 }, async () => {
+  const root = await mkdtemp(join(tmpdir(), 'hh-diag-compile-'))
+  try {
+    const input = join(root, 'next.log'), output = join(root, 'evidence')
+    const raw = [
+      '○ Compiling /api/free-express/claim ...',
+      '✓ Compiled /api/free-express/claim in 1.25s (1234 modules)',
+      'Compiled /api/free-express/claim?token=fixture-secret in 1ms',
+      'GET /api/free-express/claim/private?account=fixture-secret 401 in 2ms',
+      'Cookie: fixture-secret',
+    ].join('\n')
+    await writeFile(input, raw)
+    await preserveIsolatedServiceDiagnostics({ runtime: 'isolated', origin, directory: output, sources: [[input, 'next']] })
+    assert.deepEqual(await readdir(output), ['next.json'])
+    const saved = await readFile(join(output, 'next.json'), 'utf8'), evidence = JSON.parse(saved)
+    assert.deepEqual(evidence.events.filter(event => event.compileTarget).map(event => event.compileTarget), ['free-express-claim', 'free-express-claim'])
+    assert.ok(evidence.events.slice(0, 3).every(event => event.pathname === '/api/[segment]/[segment]'))
+    assert.equal(evidence.events[1].durationMs, 1250)
+    assert.equal(evidence.capture.truncated, false); assert.equal(evidence.capture.sourceBytes, Buffer.byteLength(raw))
+    assert.doesNotMatch(saved, /fixture-secret|token=|account=|Cookie|\?|https?:|\/api\/free-express\/claim/)
+    await assert.rejects(preserveIsolatedServiceDiagnostics({ runtime: 'production', origin, directory: output, sources: [[input, 'next']] }), /Isolated diagnostics only/)
+  } finally { await rm(root, { recursive: true, force: true }) }
+})
+
+test('compile aliases retain the existing service-event cap and chronological evidence', { timeout: 3000 }, () => {
+  const count = MAX_SERVICE_EVENTS + 25
+  const raw = Array.from({ length: count }, (_, index) => 'Compiled /api/free-express/claim in ' + index + 'ms').join('\n')
+  const evidence = sanitizeServiceLog(raw, { origin, source: 'next' })
+  assert.equal(evidence.events.length, MAX_SERVICE_EVENTS); assert.equal(evidence.droppedEvents, 25)
+  assert.equal(evidence.recognizedEvents, count)
+  assert.ok(evidence.events.every(event => event.compileTarget === 'free-express-claim' && event.pathname === '/api/[segment]/[segment]'))
+  assert.deepEqual(evidence.events.map(event => event.durationMs), Array.from({ length: MAX_SERVICE_EVENTS }, (_, index) => index + 25))
+})

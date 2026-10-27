@@ -5,6 +5,8 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { assertPublicJourneyRuntime, publicJourneyRequestDecision } from "./helpers/public-journey-verifier.mjs";
 
+import { blockedApiDetails } from "./helpers/contact-request-diagnostics.mjs";
+
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 if (process.argv.includes("--live")) throw new Error("Synthetic contact acceptance must never run against live production");
@@ -254,6 +256,7 @@ async function runEngine(name, engine) {
         const page = await context.newPage();
         const submissions=[];
         const blocked=[];
+        let requestPhase = "setup";
         // Fence the whole context, including popups. No request can write to a
         // backend or navigate to a provider; only this exact synthetic POST exists.
         await context.route('**/*',async route=>{
@@ -281,7 +284,8 @@ async function runEngine(name, engine) {
           if(!['GET','HEAD'].includes(method)||url.pathname.startsWith('/api/')||
              (url.origin!==origin&&request.isNavigationRequest())){
             blocked.push({method:['GET','HEAD','POST','PUT','PATCH','DELETE'].includes(method)?method:'OTHER',
-              category:url.pathname.startsWith('/api/')?'unexpected-api':request.isNavigationRequest()?'external-navigation':'unexpected-write'});
+              category:url.pathname.startsWith('/api/')?'unexpected-api':request.isNavigationRequest()?'external-navigation':'unexpected-write',
+              ...(url.pathname.startsWith('/api/') ? blockedApiDetails({ url: request.url(), resourceType: request.resourceType(), navigation: request.isNavigationRequest(), frameUrl: () => request.frame().url() }, origin, requestPhase) : {})});
             return route.abort('blockedbyclient');
           }
           if(url.origin!==origin)return route.abort('blockedbyclient');
@@ -294,13 +298,14 @@ async function runEngine(name, engine) {
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
-            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",tantra:true},
-            {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
-            {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
+            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",tantra:true,phase:"tantra"},
+            {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1,phase:"yggdrasil"},
+            {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1,phase:"academy"},
           ];
           // EN/RU/ES Dao now share one consented first-party CRM landing.
           // None use a parallel messenger chooser; verify them after the loop.
           for (const item of cases) {
+            requestPhase = item.phase;
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
             if(item.tantra){
@@ -335,6 +340,7 @@ async function runEngine(name, engine) {
             }
           }
           {
+            requestPhase = "dao-entry";
             const daoResponse = await page.goto(origin + "/" + locale + "/services/dao-health-profile",
               {waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(daoResponse?.status(),200,name + " " + locale + " Dao free landing");
@@ -377,8 +383,10 @@ async function runEngine(name, engine) {
             // The first-party POST is still intercepted by the context fence;
             // the existing inert popup never visits or sends to a provider.
             await consent.check();
+            requestPhase = "dao-save";
             await submit.click();
             await saved.waitFor({state:"visible",timeout:10000});
+            requestPhase = "dao-receipt";
             assert.equal(submissions.length,previous+1,"Exactly one synthetic Dao enquiry");
             const enquiry = submissions.at(-1);
             assert.equal(enquiry.locale,locale);
@@ -390,6 +398,7 @@ async function runEngine(name, engine) {
             assert.ok(/^[a-f0-9-]{36}$/i.test(enquiry.operationId));
           }
           if (name === "chromium" && width === 390 && locale === "en") {
+            requestPhase = "temple";
             await page.goto(origin + "/en/academy/temple-studies", {waitUntil:"domcontentloaded",timeout:60000});
             const temple = page.locator("[data-temple-initiation-chooser]");
             await temple.locator('[data-temple-step="tradition"] button').first().click();

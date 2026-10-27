@@ -35,7 +35,7 @@ async function verify(engine, locale, width) {
     reducedMotion: "reduce", serviceWorkers: "block",
   });
   const fence = await installPublicJourneyFence(context, origin, [copy[locale].question, copy[locale].intention],
-    {anonymousTalismans:true});
+    {anonymousTalismans:true,browserLocalBlobImages:engine === webkit});
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));

@@ -25,7 +25,7 @@ for (const engine of [chromium, webkit]) {
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
           serviceWorkers: "block",
         });
-        const fence = await installPublicJourneyFence(page.context(), origin, [], {anonymousTalismans:true});
+        const fence = await installPublicJourneyFence(page.context(), origin, [], {anonymousTalismans:true,browserLocalBlobImages:engine === webkit});
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
         try {
