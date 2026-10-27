@@ -436,7 +436,7 @@ export function RemoteEnergySupportBooking({
   };
 
   return (
-    <section className={mode === "inline" ? styles.page + " " + styles.inline : styles.page}
+    <section className={mode === "inline" ? styles.page + " " + styles.inline + (compactFinder ? " " + styles.compactResults : "") : styles.page}
       aria-labelledby="remote-support-title" data-remote-support-intent-first
       data-support-request-kind={requestKind}>
       {compactFinder ? <h2 id="remote-support-title" className={styles.srOnly}>{t.specialistsTitle}</h2> : <header className={styles.intro}>
