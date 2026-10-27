@@ -60,3 +60,7 @@ The existing verified `@Andydotbot` owner menu retains its `/audio` command but 
 The existing signed Dot webhook routes owner-only video BEFORE ordinary audio imports. When video collection is inactive, all existing `/audio`, `/combine`, `/done`, AI Council and customer messaging remain untouched. Starting video while a Dot audio batch is still collecting/building returns a neutral warning without disturbing its inputs. `/audio` refreshes the owner-chat Bot API menu when either the command list OR its descriptions differ; global/client bot scopes are never modified. Official Telegram setMyCommands is provider-owned and client UI may cache it.
 
 Provider acceptance is still required: genuine owner `/audio`, Bot API getMyCommands for owner chat, one real photo+audio → confirmed Dot MP4, owner cabinet iPhone playback; then separately authorized RU YouTube `videos.insert`, `videos.list`, and anonymous Unlisted playback. A green Node/FFmpeg build alone is not proof.
+
+### Canonical bot isolation (2026-10-27)
+
+**Only Dot now creates a video.** The previous owner commands in the signed `@holistichouse_bot` CRM webhook answer with a direct Dot link instead of starting/finishing/publishing shared jobs; photos and audio that arrive in the CRM bot are not enrolled in Dot video. This prevents cross-bot media mixing while preserving CRM enquiries. The entire `/audio`→video→MP4→explicit YouTube approval path is within the original `@Andydotbot` private owner chat. No client content or source media enters YouTube automatically.
