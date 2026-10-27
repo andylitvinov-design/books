@@ -17,8 +17,8 @@
 - [x] Предыдущие native/PWA релизы и текущие конфиги проанализированы, рабочая ветка production определена; не переиспользовать старые ID/SHA автоматически.
 - [x] Обнаружен source drift: `capacitor.holistic-house.config.json` использует `/en/app/messages`, а `scripts/prepare-holistic-house-native.mjs` и контрактный тест всё ещё требуют `/en/app/portrait`. PR: исправить и проверить в CI.
 - [ ] PASS: `node --test tests/holistic-house-native-build.test.mjs tests/native-private-message-push.test.mjs tests/native-push-release.test.mjs` с соответствующими Node flags где нужно; Android debug APK/unsigned iOS simulator из `holistic-house-native.yml` собираются, совпадают label/package/start URL. Debug ≠ production.
-- [ ] Создать **отдельный вручную запускаемый** Android signed AAB pipeline (только trusted production ref, секреты в защищённом CI environment, preflight, SHA256/подпись, защищённый артефакт), **без автоматического upload в Play или внешних покупок**.
-- [ ] Зафиксировать версию Android `versionCode` monotonically increasing, имя `versionName`, `targetSdk` по актуальной политике Google. Отдельно проверить исходный PsiAlchemy build неизменным.
+- [x] Создана **исходная реализация** отдельного вручную запускаемого Android signed AAB pipeline (только trusted production ref, секреты в защищённом CI environment, preflight, SHA256/подпись, артефакт), **без автоматического upload в Play или внешних покупок**; [runbook](./HOLISTIC_HOUSE_PLAY_OPERATOR_RUNBOOK_20261027.md). **Не является проверенным подписанным AAB** до CI, настоящего ключа и Play Console QA.
+- [ ] Зафиксировать версию Android `versionCode` monotonically increasing, имя `versionName`. **Google Play после 31.08.2026 требует API 36** для новых Android app submissions; исходный PsiAlchemy native target 35 **не менять**, вместо этого stage-only upgrade `compileSdkVersion/targetSdkVersion 36` и AGP `8.9.1` в ручном Android Play Release Candidate (`Gradle 8.11.1`). До Android device QA поведение Android 16 не заявлять проверенным. См. [официальное требование API 36](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en) и [минимальную AGP 8.9.1 для API36](https://developer.android.com/build/releases/about-agp).
 - [ ] PR CI (source checks, native Android, iOS, security checks) и review изменений в signing workflow; **не включать секреты в PR workflows**. Merge только после green gates и ревью.
 
 ### P1 — учётная запись Google, ключи и право на распространение (владелец)
@@ -90,6 +90,8 @@
 - [Google Play / AI Studio Personal Library announcement](https://blog.google/products-and-platforms/platforms/google-play/google-play-updates-october-2026/)
 - [Play Console — Choose developer account type (health apps require Organization)](https://support.google.com/googleplay/android-developer/answer/13634885?hl=en)
 - [Play Console — Health apps declaration](https://support.google.com/googleplay/android-developer/answer/14738291?hl=en)
+- [Google Play API36 requirement since 31 Aug 2026](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en)
+- [AGP minimum for Android API36](https://developer.android.com/build/releases/about-agp)
 - [Google Play Developer Policy — health, sexual content, privacy](https://support.google.com/googleplay/android-developer/answer/18258653?hl=en)
 - [Payments policy and one-to-one online services exception](https://support.google.com/googleplay/android-developer/answer/10281818?hl=en)
 - [Personal account closed testing rule](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en)
