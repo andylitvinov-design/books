@@ -1,5 +1,21 @@
 # Telegram photos + audio → Russian YouTube (26 October 2026)
 
+## 27 October 2026 — Dot video: choose RU / EN YouTube, receive a private preview and then link
+
+In private `@Andydotbot`, send `/audio` and choose **🇷🇺 Видео → Русский YouTube** or **🇬🇧 Video → English YouTube**. This opens `/start video_ru` or `/start video_en`; `/video` also opens a channel chooser, and `/video_ru` / `/video_en` are typed fallbacks. Only the verified owner and signed Dot webhook may use these controls. The first **video** menu no longer shows private audio-storage folders; the distinct **Папки аудиотеки** button preserves existing folder import, /combine and /track.
+
+The selected RU/EN destination is stored under forced RLS on the one owner job and cannot be changed after inputs arrive or rendering begins. User sends up to **15 photos + 15 audio/voice clips**, mixed chronologically; up to 20 MB input total, 120 seconds of audio and 50 MB final MP4. `/video_done` assembles 16:9 1080p H.264/AAC and sends a **private** MP4 for review. Only when the owner separately presses the preview button `▶️ Опубликовать: [chosen channel] · по ссылке` does the server initiate a YouTube upload. No auto-post merely on receiving media, no client/health videos, no stock avatars or paid API. Upload is Unlisted; successful `videos.list` channel/privacy/**processed** readback triggers a **YouTube watch link sent to the same Telegram chat**. `/video_status` re-sends an already verified watch URL or reconciles a known uncertain ID **read-only**, never issues a second upload.
+
+YouTube authorization is **per language**, not a Vercel secret re-entry:
+- RU: immutable channel `UCjWq6NHZTQkUr3bC3WbXXcw` (@shamanic_academy)
+- EN: owner-known handle `@aatapro`, independently verified through YouTube Data API `channels.list(forHandle)` and authenticated `mine=true`; wrong/missing channel fails closed
+- Admin OAuth start `/api/admin/telegram-video/youtube/start?target=ru` or `?target=en` reuses the existing confidential Google Web Client and owner-only PKCE challenge with target sealed in state, stores **separate per-target encrypted grants** in the existing protected table. No Google account consent can be fabricated from saved Client ID/Secret; browser/MetricooI connections cannot be silently reused as offline grants.
+- RLS migration: `20261027193500_hh_owner_video_youtube_ru_en_destinations.sql`. Production database must be migrated and read back before deploying the new server.
+
+Current acceptance remains **OPEN** until exact PR CI; Vercel production READY/source SHA/alias; real owner Telegram source→MP4; correct Google grant for chosen channel; YouTube `processed`/Unlisted/provider and returned Telegram watch-link evidence. Do not interpret successful tests or existing Metricool RU connection as video sent.
+
+---
+
 ## Owner-only workflow
 
 Use only the existing signed `@Andydotbot` practice webhook at `/api/app/notification-channels/telegram/webhook`. The separately verified personal owner numeric Telegram chat ID is required. Clients and CRM pilot guests never gain video creation/publishing privileges. The CRM `@holistichouse_bot` only redirects owner video commands to Dot; no duplicate bot or cross-bot media collection is allowed.
