@@ -6,12 +6,15 @@ on:
     paths:
       - ".github/workflows/hh-owner-telegram-video.yml"
       - "app/admin/youtube-upload/page.js"
+      - "app/admin/materials/page.js"
+      - "components/admin-telegram-videos.jsx"
       - "app/api/admin/telegram-video/**"
       - "app/api/app/crm/messenger/webhook/**"
       - "lib/practitioners/owner-telegram-video-*"
       - "tests/owner-telegram-video.test.mjs"
       - "tests/owner-telegram-audio-combine.test.mjs"
       - "supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql"
+      - "supabase/migrations/20261027020000_hh_owner_video_final_only_cabinet.sql"
       - "next.config.ts"
       - "package.json"
       - "package-lock.json"
@@ -39,7 +42,7 @@ jobs:
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files
-        run: npx eslint lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js tests/owner-telegram-video.test.mjs
+        run: npx eslint lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js components/admin-telegram-videos.jsx tests/owner-telegram-video.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit --incremental false
       - name: Next production build

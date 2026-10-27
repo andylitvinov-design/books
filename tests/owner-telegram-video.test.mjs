@@ -8,6 +8,8 @@ import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-tel
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
+import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
+ from '../lib/practitioners/owner-telegram-video-playback.mjs'
 
 const TIME=1793001600000
 const BOT='holistichouse_bot'
@@ -256,4 +258,40 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.doesNotMatch(doneHandler,/if\(batch.state==='reserved'\)\{\s*await ownerMessage/)
  assert.match(service,/state='uncertain'/)
  assert.equal(readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8').includes("await requireAdminRequest()"),true)
+})
+
+test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',()=>{
+ const id='b6e8526e-c251-4dd5-a9ca-2886c430f912'
+ assert.equal(ownerVideoIdValid(id),true)
+ assert.equal(ownerVideoIdValid('../bad'),false)
+ assert.equal(ownerVideoMediaPath(id),'telegram-slides/'+id+'.mp4')
+ assert.equal(ownerVideoMediaPath('bad'),null)
+ assert.deepEqual(ownerVideoByteRange(null,5000),{status:200,start:0,end:4999})
+ assert.deepEqual(ownerVideoByteRange('bytes=0-0',5000),{status:206,start:0,end:0})
+ assert.deepEqual(ownerVideoByteRange('bytes=4096-',5000),{status:206,start:4096,end:4999})
+ assert.deepEqual(ownerVideoByteRange('bytes=-128',5000),{status:206,start:4872,end:4999})
+ assert.equal(ownerVideoByteRange('bytes=0-1,5-8',5000),null)
+ assert.equal(ownerVideoByteRange('bytes=5000-',5000),null)
+ assert.equal(ownerVideoByteRange(null,50000001),null)
+ const migration=readFileSync(new URL('../supabase/migrations/20261027020000_hh_owner_video_final_only_cabinet.sql',import.meta.url),'utf8')
+ assert.match(migration,/force row level security/i)
+ assert.match(migration,/revoke all on app_private.telegram_owner_video_drafts from public, anon, authenticated, hh_app_inbox/)
+ assert.match(migration,/current_setting\('hh.owner_video_manager',true\)='1'/)
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/video_bytes=\$4,items='\[\]'::jsonb/)
+ assert.match(service,/insert into app_private.telegram_owner_video_drafts/)
+ assert.match(service,/listOwnerTelegramVideoDrafts/)
+ assert.match(service,/getOwnerTelegramVideoDraftFile/)
+ assert.match(service,/ownerVideoByteRange\(request.headers.get\('range'\)/)
+ assert.doesNotMatch(service,/createSignedUrl|createSignedUrls|publicUrl|signedUrl/)
+ const listing=readFileSync(new URL('../app/api/admin/telegram-video/drafts/route.js',import.meta.url),'utf8')
+ const media=readFileSync(new URL('../app/api/admin/telegram-video/drafts/[id]/file/route.js',import.meta.url),'utf8')
+ assert.match(listing,/ownerMaterialRequest\(/)
+ assert.match(media,/ownerMaterialRequest\(/)
+ assert.match(media,/serve as HEAD/)
+ const client=readFileSync(new URL('../components/admin-telegram-videos.jsx',import.meta.url),'utf8')
+ assert.match(client,/playsInline/)
+ assert.match(client,/preload="metadata"/)
+ assert.match(client,/credentials:'same-origin'/)
+ assert.match(readFileSync(new URL('../app/admin/materials/page.js',import.meta.url),'utf8'),/<AdminTelegramVideos /)
 })
