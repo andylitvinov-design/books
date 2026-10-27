@@ -122,3 +122,18 @@ test('CI structural controls: only signed post-consent opt-in event can enroll; 
   assert.match(api,/practitionerEmailAllowed\(actor\)/)
   assert.doesNotMatch(runtime,/sendTelegramDiagnosticPrompt|sendOneMessengerMessage|fetch\(|sendSMS|checkout|billing/)
 })
+
+test('R4 follow-on RLS migration explicitly binds run owner, consented Telegram identity and minimal column writes',()=>{
+  const migration=src('supabase/migrations/20261027030256_hh_salesbot_event_run_owner_relation_rls_20261027.sql')
+  assert.match(migration,/alter policy crm_salesbot_runs_signed_inbound_insert/)
+  assert.match(migration,/f\.owner_id\s*=\s*crm_salesbot_runs\.owner_id/)
+  assert.match(migration,/t\.owner_id\s*=\s*crm_salesbot_runs\.owner_id/)
+  assert.match(migration,/f\.version\s*=\s*crm_salesbot_runs\.flow_version/)
+  assert.match(migration,/t\.account_id::text\s*=\s*current_setting\('hh\.salesbot_event_account'/)
+  assert.match(migration,/t\.user_hash\s*=\s*current_setting\('hh\.salesbot_event_user'/)
+  assert.match(migration,/revoke update on app\.crm_salesbot_runs from hh_crm_backend/)
+  assert.match(migration,/grant update \(status, payload_ciphertext, revision, updated_at\)/)
+  assert.match(migration,/revoke insert on app\.crm_salesbot_runs from hh_app_inbox/)
+  assert.match(migration,/grant insert \(id, owner_id, flow_id, thread_id, flow_version,/)
+  assert.doesNotMatch(migration,/grant\s+select\s+on\s+app\.crm_salesbot_runs\s+to\s+anon|grant\s+all/i)
+})
