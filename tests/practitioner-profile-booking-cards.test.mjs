@@ -29,8 +29,9 @@ test('profile shares canonical marketplace service card, preserving direct reque
   assert.match(serviceCards, /<ServiceCard key=\{service\.id\} service=\{service\} locale=\{locale\} profileView/);
   assert.match(serviceCards, /<ServiceFunnelImpression serviceId=\{service\.id\}/);
   assert.match(serviceCards, /<TrackedServiceLink serviceId=\{service\.id\} event="order"/);
-  assert.match(serviceCards, /"\/app\/consultations\?service=" \+ encodeURIComponent\(service\.id\)/);
-  assert.match(serviceCards, /"\/services\/remote-energy-support\?practitioner="/);
+  assert.match(serviceCards, /const requestHref = detailsHref/);
+  assert.match(serviceCards, /"#site-service-request"/);
+  assert.match(serviceCards, /service.slug === "homeopathy-consultation"/);
   assert.match(serviceCards, /detailsHref/);
   assert.match(serviceCards, /styles\.secondary/);
   assert.match(serviceCards, /styles\.primary/);
