@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { BriefcaseBusiness, Heart, HeartPulse, Play, Sparkles } from "lucide-react";
 
-import { AcademyVideoPlayer } from "@/components/academy-video-player";
+import Link from "next/link";
 import type { MeditationTopic, MeditationVideo } from "@/data/academy/holistic-support-meditations";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-meditation-gallery.module.css";
@@ -22,7 +22,7 @@ const copy = {
     audio: "Original audio: English",
     other: "Choose another recording",
     empty: "No verified recording is available for this theme yet. Try All.",
-    watch: "Play selected recording",
+    watch: "Open full-screen YouTube viewer",
   },
   ru: {
     filter: "Фильтр медитаций по темам",
@@ -32,7 +32,7 @@ const copy = {
     audio: "Оригинальное аудио: русский",
     other: "Выбрать другую запись",
     empty: "Для этой темы пока нет подтверждённых записей. Выберите «Все».",
-    watch: "Воспроизвести выбранную запись",
+    watch: "Открыть на весь экран",
   },
   es: {
     filter: "Filtrar las meditaciones por tema",
@@ -42,7 +42,7 @@ const copy = {
     audio: "Audio original: inglés",
     other: "Elegir otra grabación",
     empty: "Aún no hay grabaciones verificadas para este tema. Prueba Todas.",
-    watch: "Reproducir la grabación seleccionada",
+    watch: "Abrir reproductor a pantalla completa",
   },
 } as const;
 
@@ -86,13 +86,13 @@ export function HolisticMeditationGallery({
         <div className={styles.content}>
           <div className={styles.featured}>
             <div className={styles.media} aria-label={t.watch}>
-              <AcademyVideoPlayer
-                key={activeTopic + ":" + activeVideo.id}
-                youtubeId={activeVideo.id}
-                title={activeVideo.title}
-                locale={locale}
-                posterLoading="eager"
-              />
+              <Link className={styles.openApp} href={"/" + locale + "/meditations?video=" + encodeURIComponent(activeVideo.id)} prefetch={false}
+                aria-label={t.watch + ": " + activeVideo.title} data-open-meditation-app>
+                <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(activeVideo.id) + "/hqdefault.jpg"}
+                  width={640} height={360} sizes="(max-width:760px) 100vw, 580px"
+                  unoptimized alt="" loading="eager" />
+                <span className={styles.openAppLabel}><Play size={22} aria-hidden="true" />{t.watch}</span>
+              </Link>
             </div>
             <div className={styles.videoCaption}>
               <h3 aria-live="polite">{activeVideo.title}</h3>
