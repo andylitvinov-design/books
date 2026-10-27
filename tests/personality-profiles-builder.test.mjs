@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { recommendProfileBattery } from '../lib/profile/profile-battery.js'
+import { profileTestScopeCoverage } from '../lib/profile/profile-scale-selection.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
@@ -152,8 +153,10 @@ test('five life directions retain the original topics and add a goal-support top
     'Cuerpo, salud y energía', 'Relaciones y cercanía',
     'Trabajo, negocios y dinero', 'Personalidad y crecimiento',
   ]) assert.ok(component.includes(phrase), phrase)
-  for (const name of ['PROFILE_FOCUS_AREAS', 'PROFILE_AREA_AXES', 'profileAreasWithTests'])
+  for (const name of ['PROFILE_AREA_AXES', 'profileAreasWithTests'])
     assert.ok(component.includes(name), 'uses shared source-backed taxonomy: ' + name)
+  const taxonomy = read('lib/profile/profile-scale-selection.js')
+  assert.ok(taxonomy.includes('PROFILE_FOCUS_AREAS'), 'focus mapping belongs to the shared library')
   assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
   assert.match(component, /\[areas, setAreas\] = useState<Area\[]>\(\[\]\)/)
   assert.doesNotMatch(component, /purpose: \[/)
@@ -181,78 +184,93 @@ test('browse free tests opens the real catalogue and positions the existing pers
   }
 })
 
-test('Tests slide offers a direct start followed by discoverable filters for other questionnaires', () => {
+test('Tests slide keeps its three priority tests and optional extra tests visible while toggling checkboxes', () => {
   const builder = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  const route = read('app/[locale]/personality-profiles/page.tsx')
   const start = builder.indexOf('{step === 3 && <section')
   const ready = builder.indexOf('{step === 4 && <section')
-  assert.ok(start > 0 && ready > start, 'Tests precedes optional Ready/save step')
-  const testsSlide = builder.slice(start, ready)
-  const recommendations = testsSlide.indexOf('data-profile-recommended-tests')
-  const directStart = testsSlide.indexOf('data-profile-start-tests')
-  const additional = testsSlide.indexOf('data-profile-additional-tests')
-  assert.ok(recommendations > 0 && directStart > recommendations && additional > directStart,
-    'suggested tests and Take tests button are above extra test filters')
-  for (const phrase of ['type="search"', 'data-profile-test-mode', 'data-profile-extra-profile-filter', 'data-profile-extra-scales',
-    'aria-pressed={extraProfile === key}', 'aria-pressed={extraScales.includes(axis)}',
+  assert.ok(start > 0 && ready > start)
+  const slide = builder.slice(start, ready)
+  const priority = slide.indexOf('data-profile-recommended-tests')
+  const directStart = slide.indexOf('data-profile-start-tests')
+  const extras = slide.indexOf('data-profile-additional-tests')
+  assert.ok(priority > 0 && directStart > priority && extras > directStart)
+  for (const phrase of ['type="search"', 'data-profile-test-mode', 'data-profile-extra-selected-scope',
     'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'data-profile-mode={mode}',
-    "href={'/' + locale + '/client/tests'}"]) assert.ok(testsSlide.includes(phrase), phrase)
-  assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key/)
-  assert.match(builder, /selectedScaleIds, "pro"\)/)
-  assert.match(builder, /keys\.length < 12/)
-  assert.match(builder, /test\.key === key && test\.testKind === modeKind/)
-  assert.match(route, /testKind: entry\.testKind/)
-  assert.match(css, /\.extraFilters \{/)
-  assert.match(css, /\.extraSearch \{ grid-column: 1 \/ -1; \}/)
-  assert.match(css, /\.startRow > \.primary \{ width: 100%; \}/)
-  assert.ok(builder.includes('start: "Пройти тесты"'))
-  assert.ok(builder.includes('start: "Take tests"'))
-  assert.ok(builder.includes('start: "Realizar pruebas"'))
-  assert.ok(builder.includes('data-profile-google-cabinet-offer'), 'private save remains optional')
-  assert.ok(!testsSlide.includes('data-profile-test-review-slide'), 'no forced intermediate confirmation to start')
+    'recommendedTests.map(test =>', 'checked={selectedKeys.includes(test.key)}',
+    'disabled={!selectedKeys.includes(test.key) && selectedKeys.length >= 12}',
+    'scopeMatch(test.key).percent']) {
+    assert.ok(slide.includes(phrase), phrase)
+  }
+  assert.ok(builder.includes('extraMatches.slice(0, 5)'))
+  assert.ok(builder.includes('extraMatches.slice(5).filter(test => selectedKeys.includes(test.key))'))
+  assert.ok(builder.includes('selectedScaleIds, "questionnaires", 3)'))
+  assert.ok(builder.includes('selectedScaleIds, "pro", 3)'))
+  assert.match(builder, /recommendedKeys = \[\.\.\.recommendProfileAxisBattery\(tests, scaleGroups,/)
+  assert.match(builder, /if \(!tests\.some\(test => test\.key === key && test\.testKind === modeKind\) \|\|\s+scopeMatch\(key\)\.matched === 0\) return/)
+  assert.ok(css.includes('.extraScope{display:grid'))
+  assert.ok(css.includes('.matchPercent{'))
+  assert.ok(!slide.includes('data-profile-extra-profile-filter'))
+  assert.ok(!slide.includes('data-profile-extra-scales'))
+  assert.ok(!builder.includes('setExtraProfile('))
+  assert.ok(!builder.includes('setExtraScales('))
+  assert.ok(builder.includes('const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","))'))
+  assert.ok(builder.includes('data-profile-google-cabinet-offer'))
 })
 
-test('additional test options inherit rights-filtered guest metadata; filters never create new scales or scores', () => {
-  const route = read('app/[locale]/personality-profiles/page.tsx')
+test('optional tests inherit only selected topics/source-backed axes and existing guest rights', () => {
+  const page = read('app/[locale]/personality-profiles/page.tsx')
   const builder = read('components/personality-profiles-builder.tsx')
   for (const flag of ['entry.selectable === true', 'entry.startable === true',
     'entry.guestEligible === true', 'entry.free === true',
-    'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true']) {
-    assert.ok(route.includes(flag), flag)
-  }
+    'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true'])
+    assert.ok(page.includes(flag), flag)
+  assert.match(builder, /const scopeMatch = \(key: string\) => profileTestScopeCoverage\(scaleGroups, selectedScaleIds, key\)/)
+  assert.match(builder, /\.filter\(test => scopeMatch\(test\.key\)\.matched > 0\)/)
+  assert.match(builder, /\.filter\(test => test\.testKind === modeKind && !recommendedKeys\.includes\(test\.key\)\)/)
   assert.match(builder, /selectedAxisRefs\.includes\(scale\.researchAxisId\)/)
-  assert.match(builder, /test\.testKind === modeKind/)
-  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
-  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
-  assert.match(builder, /setExtraScales\(previous => previous\.includes\(axis\)/)
-  assert.match(builder, /\[\.\.\.previous, axis\]/)
-  assert.match(builder, /buildProfileScaleGroups\(tests, areasFor\(\[extraProfile\]\), areaAxes\)/)
-  assert.match(builder, /test\.minutes !== null && test\.minutes <= Number\(timeFilter\)/)
+  assert.match(builder, /activeAreas\.map\(area => t\.areas\[area\]\[0\]\)/)
+  assert.match(builder, /selectedAxisRefs\.map\(ref => profileResearchAxisLabel\(ref, locale\)\)/)
+  assert.doesNotMatch(builder, /effectiveExtraScales|extraTestKeys|extraProfile|extraGroups/)
+  assert.match(builder, /timeFilter === "all" \|\| \(test\.minutes !== null && test\.minutes <= Number\(timeFilter\)\)/)
   assert.match(builder, /selectedKeys\.length >= 12/)
   assert.ok(!builder.includes('setSelectedAxes('))
-  assert.ok(builder.includes('const testHref = base + "/client?startTests=" + encodeURIComponent(selectedKeys.join(","))'), 'test launch encodes only catalogue keys')
+  for (const phrase of [
+    'additionalTitle: "Other tests for your topics"',
+    'additionalTitle: "Дополнительные тесты по вашим темам"',
+    'additionalTitle: "Otras pruebas para tus temas"',
+    'matchLabel: "Selected-scale match"',
+    'matchLabel: "Соответствие выбранным шкалам"',
+    'matchLabel: "Coincidencia con escalas elegidas"',
+  ]) assert.ok(builder.includes(phrase), phrase)
 })
 
-test('additional test finder scopes a single life profile before opening multiple real scales', () => {
-  const builder = read('components/personality-profiles-builder.tsx')
-  const css = read('components/personality-profiles-builder.module.css')
-  const slide = builder.slice(builder.indexOf('data-profile-additional-tests'), builder.indexOf('data-profile-test-review-slide'))
-  const profileAt = slide.indexOf('data-profile-extra-profile-filter')
-  const scalesAt = slide.indexOf('data-profile-extra-scales')
-  const testsAt = slide.indexOf('extraResultCount')
-  assert.ok(profileAt >= 0 && scalesAt > profileAt && testsAt > scalesAt)
-  assert.match(slide, /\(\["wellbeing", "relationships", "work", "identity", "goal"\] as const\)\.map/)
-  assert.match(slide, /extraProfile === key/)
-  assert.match(slide, /axesForExtraProfile\.map/)
-  assert.match(slide, /aria-pressed=\{extraScales\.includes\(axis\)\}/)
-  assert.match(slide, /setExtraScales\(\[\.\.\.axesForExtraProfile\]\)/)
-  assert.match(slide, /setExtraScales\(\[\]\)/)
-  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
-  assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
-  for (const t of ['profile: "1. Выберите один профиль"', 'scales: "2. Отметьте шкалы профиля"',
-    'profile: "1. Choose one profile"', 'profile: "1. Elige un perfil"']) assert.ok(builder.includes(t))
-  assert.match(css, /\.extraProfileChoices\{display:grid/)
-  assert.match(css, /\.extraScaleChoices\{display:flex/)
-  assert.match(css, /@media\(max-width:450px\)\{\.extraProfileChoices\{grid-template-columns:1fr/)
+test('match percent counts selected research facets, not other topics or unrelated generic axes', () => {
+  const groups = [
+    { area: 'work', scales: [
+      { id: 'focus-original', researchAxisId: 'work::focus', testKey: 'main' },
+      { id: 'clarity-original', researchAxisId: 'work::clarity', testKey: 'main' },
+      { id: 'focus-alternative', researchAxisId: 'work::focus', testKey: 'extra' },
+      { id: 'workload', researchAxisId: 'work::workload', testKey: 'unselected-work' },
+    ] },
+    { area: 'connection', scales: [
+      { id: 'relation', researchAxisId: 'connection::social_connection', testKey: 'unrelated' },
+    ] },
+    { area: 'goal', scales: [
+      { id: 'motivation', researchAxisId: 'goal::motivation', testKey: 'goal-only' },
+    ] },
+  ]
+  const selected = ['focus-original', 'clarity-original']
+  assert.deepEqual(profileTestScopeCoverage(groups, selected, 'main'),
+    { matched: 2, total: 2, percent: 100 })
+  assert.deepEqual(profileTestScopeCoverage(groups, selected, 'extra'),
+    { matched: 1, total: 2, percent: 50 })
+  assert.equal(profileTestScopeCoverage(groups, selected, 'unselected-work').percent, 0)
+  assert.equal(profileTestScopeCoverage(groups, selected, 'unrelated').percent, 0)
+  assert.equal(profileTestScopeCoverage(groups, selected, 'goal-only').percent, 0)
+  assert.equal(profileTestScopeCoverage(groups, [], 'main').percent, 0)
+  assert.equal(profileTestScopeCoverage(groups, ['motivation'], 'goal-only').percent, 100)
+  assert.equal(profileTestScopeCoverage(groups, ['focus-original', 'focus-alternative'], 'main').percent, 100,
+    'two source scales covering the same research facet must not double-count')
+  assert.ok(Object.isFrozen(profileTestScopeCoverage(groups, selected, 'main')))
 })
