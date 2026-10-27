@@ -35,7 +35,8 @@ export default function PrivateChatPhoto({src,alt='',locale='en',onLoad,onError}
    </button>
    {open&&typeof document!=='undefined'&&createPortal(
      <div className={styles.overlay} onClick={event=>{if(event.target===event.currentTarget)setOpen(false)}}>
-       <div className={styles.viewer} role="dialog" aria-modal="true" aria-label={alt||t.open}>
+       <div className={styles.viewer} role="dialog" aria-modal="true" aria-label={alt||t.open}
+         onClick={event=>{if(event.target===event.currentTarget)setOpen(false)}}>
          <button ref={close} className={styles.close} type="button" onClick={()=>setOpen(false)}
            aria-label={t.close}><X size={21} aria-hidden="true"/><span>{t.close}</span></button>
          <img className={styles.full} src={src} alt={alt} decoding="async" onError={onError}/>
