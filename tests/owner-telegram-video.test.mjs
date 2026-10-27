@@ -443,3 +443,121 @@ test('Vercel installs pinned FFmpeg and ships its binary with the private Dot we
  const workflow=readFileSync(new URL('../.github/workflows/hh-owner-telegram-video.yml',import.meta.url),'utf8')
  assert.match(workflow,/ensure-owner-video-renderer\.mjs --verify-trace/)
 })
+
+
+test('Dot channel selector binds RU/EN choice and upload to a single owner video job',()=>{
+ const job='b6e8526e-c251-4dd5-a9ca-2886c430f912'
+ const chooser=ownerVideoStartMessage(null,job)
+ assert.equal(chooser.reply_markup.inline_keyboard[0][0].callback_data,
+   'hh-video:target:ru:'+job)
+ assert.equal(chooser.reply_markup.inline_keyboard[1][0].callback_data,
+   'hh-video:target:en:'+job)
+ assert.deepEqual(ownerVideoTargetKeyboard(job).inline_keyboard.slice(0,2).map(x=>x[0].text),
+   ['🇷🇺 Русский YouTube','🇬🇧 English YouTube'])
+ assert.match(ownerVideoStartMessage('en',job).text,/English YouTube/)
+ assert.match(ownerVideoStartMessage('ru',job).text,/Русский YouTube/)
+ assert.match(ownerVideoStartMessage('en',job).text,/приватный MP4/)
+ assert.equal(ownerVideoPreviewButtons(job,'en').inline_keyboard[0][0].callback_data,
+   'hh-video:publish:en:'+job)
+ assert.equal(ownerVideoPreviewButtons(job,'ru').inline_keyboard[0][0].callback_data,
+   'hh-video:publish:ru:'+job)
+ assert.deepEqual({action:parsed(callback('hh-video:target:en:'+job)).action,
+   target:parsed(callback('hh-video:target:en:'+job)).target},
+   {action:'choose',target:'en'})
+ assert.deepEqual({action:parsed(callback('hh-video:publish:en:'+job)).action,
+   target:parsed(callback('hh-video:publish:en:'+job)).target},
+   {action:'publish',target:'en'})
+ assert.equal(parsed(callback('hh-video:target:de:'+job)),null)
+ assert.equal(parsed(callback('hh-video:publish:de:'+job)),null)
+ assert.equal(parsed(callback('hh-video:publish:en:invalid')),null)
+ assert.throws(()=>ownerVideoPreviewButtons(job,'de'),/INVALID_VIDEO_TARGET/)
+ const command={update_id:1302,message:{date:TIME/1000,chat:privateBase,from,
+   message_id:56,text:'/start video_en'}}
+ assert.deepEqual({action:parsed(command).action,target:parsed(command).target},
+   {action:'start',target:'en'})
+ assert.equal(parsed({...command,message:{...command.message,text:'/video_ru'}}).target,'ru')
+ assert.equal(parsed({...command,message:{...command.message,text:'/start@WrongBot video_en'}}),null)
+})
+
+test('English Google channel must match both authenticated ownership and official @aatapro handle',async()=>{
+ assert.equal(VIDEO_EN_CHANNEL_HANDLE,'@aatapro')
+ const english='UCaaaaaaaaaaaaaaaaaaaaaa'
+ const calls=[]
+ const fetcher=async url=>{
+   calls.push(String(url))
+   if(String(url).includes('mine=true'))return Response.json({items:[{id:english}]})
+   if(String(url).includes('forHandle='))return Response.json({items:[{id:english}]})
+   throw Error('unexpected API call')
+ }
+ assert.equal(await verifyYoutubeTargetOwner('token'.repeat(9),'en',fetcher),english)
+ assert.equal(calls.length,2)
+ assert.match(calls[1],/forHandle=%40aatapro/)
+ await assert.rejects(()=>verifyYoutubeTargetOwner('token'.repeat(9),'en',
+   async url=>Response.json({items:[{id:
+     String(url).includes('forHandle=')?'UCbbbbbbbbbbbbbbbbbbbbbb':english}]})),/WRONG_CHANNEL/)
+ await assert.rejects(()=>verifyYoutubeTargetOwner('token'.repeat(9),'en',
+   async()=>Response.json({items:[{id:VIDEO_RU_CHANNEL_ID}]})),/WRONG_CHANNEL/)
+ const video='Yt123456abc'
+ const inspected=await verifyUploadedTarget(video,'token'.repeat(9),{
+   target:'en',channelId:english,fetcher:async()=>Response.json({items:[{id:video,
+     snippet:{channelId:english,title:'EN video'},
+     status:{privacyStatus:'unlisted',uploadStatus:'processed'}}]})
+ })
+ assert.equal(inspected.channelId,english)
+ await assert.rejects(()=>verifyUploadedTarget(video,'token'.repeat(9),{
+   target:'en',channelId:english,fetcher:async()=>Response.json({items:[{id:video,
+     snippet:{channelId:VIDEO_RU_CHANNEL_ID},
+     status:{privacyStatus:'unlisted',uploadStatus:'processed'}}]})
+ }),/WRONG_CHANNEL/)
+})
+
+test('EN upload uses Unlisted and returns completed same-channel ID, never trusts RU grant',async()=>{
+ const english='UCaaaaaaaaaaaaaaaaaaaaaa'
+ const calls=[]
+ const fetcher=async(url,opt={})=>{
+   calls.push({url:String(url),method:opt.method||'GET',body:String(opt.body||'')})
+   if(String(url).includes('mine=true'))return Response.json({items:[{id:english}]})
+   if(String(url).includes('forHandle='))return Response.json({items:[{id:english}]})
+   if(opt.method==='POST')return new Response('',{
+     status:200,headers:{location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=sample'}})
+   if(opt.method==='PUT')return Response.json({id:'Yt123456abc'})
+   if(String(url).includes('/videos?'))return Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:english,title:'Video'},
+     status:{privacyStatus:'unlisted',uploadStatus:'processed'}
+   }]})
+   throw Error('unexpected API call')
+ }
+ const mp4=Buffer.alloc(2048);mp4.write('ftyp',4)
+ let begun=0,uploaded=0
+ const result=await uploadUnlistedTarget(mp4,'token'.repeat(9),{
+   target:'en',channelId:english,fetcher,
+   onBeginUpload:()=>{begun++},onUploaded:()=>{uploaded++},
+   title:'Video for English'
+ })
+ assert.equal(result.channelId,english)
+ assert.equal(result.uploadStatus,'processed')
+ assert.equal(begun,1)
+ assert.equal(uploaded,1)
+ assert.equal(calls.filter(c=>c.method==='PUT').length,1)
+ assert.match(calls.find(c=>c.method==='POST').body,/"defaultLanguage":"en"/)
+})
+
+test('dual-target persistence keeps verified Google PKCE, private RLS and immutable publishing',()=>{
+ const migration=readFileSync(new URL('../supabase/migrations/20261027193500_hh_owner_video_youtube_ru_en_destinations.sql',import.meta.url),'utf8')
+ assert.match(migration,/youtube_target/)
+ assert.match(migration,/primary key\(practitioner_id,target\)/i)
+ assert.match(migration,/force row level security/i)
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/row\.youtube_target!==event\.target/)
+ assert.match(service,/on conflict\(practitioner_id,target\)/)
+ assert.match(service,/tokenContext\(target\)/)
+ assert.match(service,/verifyUploadedTarget/)
+ assert.match(service,/videoTargetLabel/)
+ assert.match(service,/youtube_video_id=\$2/)
+ const start=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8')
+ const cb=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',import.meta.url),'utf8')
+ assert.match(start,/seal\(\{verifier,state,target,time:Date\.now\(\)\}/)
+ assert.match(cb,/ownerVideoOauthStateMatches\(sealed,state\)/)
+ assert.match(cb,/verifyYoutubeTargetOwner\(token\.access_token,sealed\.target\)/)
+ assert.match(cb,/saveOwnerVideoYoutubeConsent\(config,token\.refresh_token,channel,sealed\.target\)/)
+})
