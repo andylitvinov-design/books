@@ -80,7 +80,7 @@ test('strict ordered safe source limits and anti-duplication',()=>{
  assert.equal(VIDEO_IMAGE_LIMIT,15)
  assert.equal(VIDEO_AUDIO_LIMIT,15)
  assert.equal(safeVideoParts([...items,items[1]]),null)
- assert.equal(safeVideoParts([...Array.from({length:16},(_,i)=>part('photo',i)),part('audio',7)]),null)
+ assert.equal(safeVideoParts([...Array.from({length:16},(_,i)=>part('photo',i)),part('audio',16)]),null)
  assert.equal(safeVideoParts([part('audio',0,{duration:121})]),null)
  assert.equal(safeVideoParts([part('photo',0,{mime:'audio/mpeg'})]),null)
  assert.equal(safeVideoParts([part('photo',0,{bytes:6e6})]),null)
@@ -97,8 +97,10 @@ test('15 photographs and 15 audio pieces are allowed and compose in their real m
  assert.equal(safeVideoParts([...interleaved,part('audio',30)]),null)
  assert.equal(safeVideoParts(interleaved.map((item,i)=>
    i===1?{...item,duration:100}:item)),null)
- assert.equal(safeVideoParts(interleaved.map((item,i)=>
-   i===0?{...item,bytes:19_950_000}:item)),null)
+ assert.equal(safeVideoParts(interleaved.map(item=>
+   item.kind==='photo'?{...item,bytes:1_400_000}:item)),null)
+ assert.equal(safeVideoParts(interleaved.map(item=>
+   item.kind==='photo'?{...item,bytes:1_250_000}:item))?.images,15)
  const mixed=[...interleaved].reverse()
  const plan=photoTimeline(mixed)
  assert.equal(plan.length,15)
