@@ -55,7 +55,17 @@ test('ZEN is only an enquiry alongside existing PayPal; no API charge or receipt
   assert.match(cart, /buildZenTransferInquiry\(chosen\.map/)
   assert.match(cart, /data-zen-transfer-inquiry/)
   assert.match(read('components/consultation-choice-capture.tsx'), /data-zen-manual-request/)
-  assert.match(read('components/alchemy-soul-lead-form.tsx'), /data-zen-manual-request/)
+  // Alchemy now books first and reveals payment methods only after the owner confirms the time.
+  // ZEN remains a manual enquiry in the shared cart, not a direct Alchemy charge.
+  const alchemy = read('components/alchemy-soul-lead-form.tsx')
+  const booking = read('components/contact-channel-chooser.tsx')
+  assert.match(alchemy, /<ContactChannelChooser/)
+  assert.ok(alchemy.includes('bookingSku={selected === "30" ? "express-consultation-30" : "personal-session-60"}'))
+  assert.ok(booking.includes('const paidReady = bookingConfirmed && Boolean(saved && bookingStartsAt);'))
+  assert.match(booking, /paidReady && paymentExpanded/)
+  assert.match(booking, /data-booking-cart-link/)
+  assert.equal(alchemy.includes('data-zen-manual-request'), false)
+  assert.equal(alchemy.includes('/api/payments/zen/'), false)
   assert.match(read('components/commerce/personal-cart.tsx'), /data-zen-transfer-inquiry="cart"/)
   assert.match(paymentPage, /data-paypal-personal-link/)
   assert.match(cart, /serviceCommerceRuntime|\/api\/app\/commerce\/checkout/)
