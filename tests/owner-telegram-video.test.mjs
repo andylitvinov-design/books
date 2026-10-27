@@ -379,13 +379,15 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','video','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','materials','track'])
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
    .find(x=>x.url==='https://t.me/Andydotbot?start=video')
  assert.ok(videoButton)
  assert.match(videoButton.text,/Создать видео/)
+ assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
+   .some(x=>x.url==='https://t.me/Andydotbot?start=combine'))
  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
    .some(x=>x.url==='https://t.me/Andydotbot?start=video'))
  const dotOwner={id:privateBase.id,is_bot:false}
@@ -412,9 +414,9 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
 test('private /video command remains registered if Owner AI is disabled',()=>{
  const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
    ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
- assert.deepEqual(menu('shared_practice',false,true),['audio','video','materials','track'])
- assert.deepEqual(menu('shared_practice',true,true),['all','audio','video','materials','track'])
- assert.deepEqual(menu('shared_practice',true,false),['all','audio','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,false),['all','audio','combine','done','materials','track'])
  assert.deepEqual(menu('shared_practice',false,false),[])
  assert.deepEqual(menu('dedicated',true,true),[])
  const source=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
