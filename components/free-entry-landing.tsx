@@ -593,15 +593,19 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal fallbackPoster={situationVideo.poster} />
               <p className={styles.reviewIntroAudio}>{situationVideoStory[locale].audio}</p>
               <p className={styles.reviewIntroSourceNote}>{situationVideoStory[locale].recording}</p>
-              {constellationVideo ? (
-                <article className={styles.reviewIntroConstellation} data-free-review-constellation-video data-constellation-audio-language={constellationVideo.video.language}>
+            </div>
+            {constellationVideo ? (
+              <article className={styles.reviewIntroConstellation} data-free-review-constellation-video data-constellation-audio-language={constellationVideo.video.language}>
+                <div className={styles.reviewIntroConstellationCopy}>
                   <h3>{situationVideoStory[locale].constellationTitle}</h3>
                   <p className={styles.reviewIntroAudio}>{situationVideoStory[locale].constellationAudio}</p>
-                  <SiteVideoPlayer video={constellationVideo.video} locale={locale} compact minimal fallbackPoster={constellationVideo.poster} />
                   <p className={styles.reviewIntroSourceNote}>{situationVideoStory[locale].constellationNote}</p>
-                </article>
-              ) : null}
-            </div>
+                </div>
+                <div className={styles.reviewIntroConstellationMedia}>
+                  <SiteVideoPlayer video={constellationVideo.video} locale={locale} compact minimal fallbackPoster={constellationVideo.poster} />
+                </div>
+              </article>
+            ) : null}
           </section>
         ) : null}
 
