@@ -121,7 +121,7 @@ test("web handoff fails closed and keeps existing non-Telegram first-party CRM i
   assert.match(ui,/safeDaoUrl\(body\?\.daoUrls\?\.\[locale\], locale\)/);
   assert.match(ui,/referrerPolicy="no-referrer"/);
   assert.match(ui,/if \(!url\) return null/);
-  assert.match(page,/kind === "dao" \? <DaoTelegramHandoff locale=\{locale\} \/>/);
+  assert.match(page,/<DaoTelegramHandoff locale=\{locale\} \/>/);
   assert.match(page,/<CompactLeadCapture/);
   assert.match(page,/dao-free-start/);
   assert.equal((page.match(/<DaoTelegramHandoff locale=\{locale\}/g)||[]).length,1,
