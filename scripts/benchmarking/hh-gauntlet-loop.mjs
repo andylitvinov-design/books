@@ -74,7 +74,7 @@ function preflight(model) {
     '.vercel', 'supabase/.env', 'supabase/.env.local']) {
     if (existsSync(join(root, secret))) throw new Error('Private runtime file present: ' + secret);
   }
-  const models = run('opencode', ['models', 'opencode'], 40_000, agentEnv());
+  const models = run('opencode', ['models', '--standalone'], 40_000, agentEnv());
   if (!models.ok || !models.stdout.split(/\r?\n/).some(line => line.trim() === model))
     throw new Error('Chosen verified-free model not enabled in OpenCode; connect provider, never fall back to paid');
   return branch;
