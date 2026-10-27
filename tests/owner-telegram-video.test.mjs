@@ -3,12 +3,12 @@ import assert from 'node:assert/strict'
 import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,
-  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID}
+import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,ownerVideoTargetKeyboard,
+  VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,VIDEO_EN_CHANNEL_HANDLE}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
-import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
+import {refreshYoutubeAccess,verifyYoutubeRuOwner,verifyYoutubeTargetOwner,uploadUnlistedRu,uploadUnlistedTarget,verifyUploadedRu,verifyUploadedTarget}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
@@ -74,7 +74,7 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  assert.match(ownerVideoStartMessage().text,/сборку|собрать/i)
  assert.match(ownerVideoStartMessage().text,/1–15 фотографий и 1–15/)
  assert.ok(ownerVideoStartMessage().reply_markup.inline_keyboard.flat().some(button=>button.callback_data==='hh-video:status'))
- assert.equal(ownerVideoPreviewButtons(fixed).inline_keyboard[0][0].callback_data,'hh-video:publish:'+fixed)
+ assert.equal(ownerVideoPreviewButtons(fixed,'ru').inline_keyboard[0][0].callback_data,'hh-video:publish:ru:'+fixed)
 })
 test('strict ordered safe source limits and anti-duplication',()=>{
  const items=[part('photo',0),part('audio',1)]
@@ -382,12 +382,12 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
  assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','video','materials','track'])
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
- const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
-   .find(x=>x.url==='https://t.me/Andydotbot?start=video')
- assert.ok(videoButton)
- assert.match(videoButton.text,/Создать видео/)
+ const buttons=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
+ assert.ok(buttons.some(x=>x.url==='https://t.me/Andydotbot?start=video_ru'))
+ assert.ok(buttons.some(x=>x.url==='https://t.me/Andydotbot?start=video_en'))
+ assert.ok(!buttons.some(x=>x.callback_data?.startsWith('hh-audio:to:')))
  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
-   .some(x=>x.url==='https://t.me/Andydotbot?start=video'))
+   .some(x=>x.url==='https://t.me/Andydotbot?start=video_en'))
  const dotOwner={id:privateBase.id,is_bot:false}
  const dotCommand={update_id:2007,message:{
    date:TIME/1000,chat:privateBase,from:dotOwner,message_id:47,text:'/video'}}
