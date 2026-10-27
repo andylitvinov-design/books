@@ -67,12 +67,22 @@ async function submitSyntheticForm(page, chooser, locale, submissions, receiptMo
     // Preserve a single, real user expansion when the details is closed.
     const note = form.locator('details:has(textarea)');
     assert.equal(await note.count(), 1, "Exactly one optional note field");
+    const textarea = note.locator('textarea');
     if (!(await note.evaluate(element => element.open))) {
-      await note.locator('summary').click();
+      // Native WebKit disclosure toggles can settle after click returns.
+      // Preflight the genuine summary hit target, then perform one real tap;
+      // never force the field open through script or bypass the UI.
+      const summary = note.locator('summary');
+      await summary.scrollIntoViewIfNeeded();
+      await summary.click({ trial: true, timeout: 8000 });
+      await summary.click();
     }
+    // This also proves a real visitor can reach the note, rather than
+    // accepting a transient open attribute during hydration/re-render.
+    await textarea.waitFor({ state: "visible", timeout: 8000 });
     assert.equal(await note.evaluate(element => element.open), true,
       "The optional note is expanded before editing");
-    await note.locator('textarea').fill(privateNote);
+    await textarea.fill(privateNote);
   }
   assert.equal(await button.isDisabled(),true,"Consent must not be pre-checked");
   await form.locator('input[type="checkbox"]').check();
