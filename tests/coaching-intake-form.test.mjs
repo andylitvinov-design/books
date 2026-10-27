@@ -48,7 +48,7 @@ test('author coaching model: pinned identity, valid multilingual groups, no fabr
 })
 
 test('coaching form is one page, text inputs plus up to eight user questions, no score/lead/autosend', () => {
-  assert.match(form, /COACHING_GROUPS\.map/)
+  assert.match(form, /COACHING_GROUPS\.filter\(group => showMore \|\| COACHING_FIELDS\.some\(field => field\.group === group\.id && field\.required\)\)\.map/)
   assert.match(form, /COACHING_FIELDS\.filter/)
   assert.match(form, /COACHING_TOPICS\.map/)
   assert.match(form, /draft\.questions\.map/)
