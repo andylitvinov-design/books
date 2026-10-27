@@ -1,7 +1,6 @@
 import {NextResponse} from 'next/server'
 import {cookies} from 'next/headers'
-import {timingSafeEqual} from 'node:crypto'
-import {requireAdminRequest} from '@/lib/prescriptions/admin'
+import {ownerVideoOauthStateMatches} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {getAppConfig} from '@/lib/app/config'
 import {openSealed} from '@/lib/app/crypto'
 import {PRACTITIONER_ID} from '@/data/app-services'
@@ -21,7 +20,10 @@ function result(state){
  return res
 }
 export async function GET(request){
- if(!await requireAdminRequest())return result('failed')
+ // /start requires a verified owner admin session before issuing this sealed
+ // PKCE state. A Google cross-site callback cannot carry admin SameSite=Strict
+ // cookies, so validate only the owner-bound, short-lived sealed state below.
+ // Do not weaken admin session cookies or trust a query-string state alone.
  if(!ownerVideoOauthConfigured())return result('failed')
  try{
    const url=new URL(request.url)
@@ -32,11 +34,7 @@ export async function GET(request){
    const config=getAppConfig()
    const cookie=(await cookies()).get(COOKIE)?.value
    const sealed=openSealed(cookie,CONTEXT,config)
-   if(!sealed||Date.now()-sealed.time>600000||Date.now()-sealed.time<0||
-     typeof sealed.verifier!=='string'||typeof sealed.state!=='string'||
-     sealed.state.length!==state.length||
-     !timingSafeEqual(Buffer.from(sealed.state),Buffer.from(state)))
-     return result('failed')
+   if(!ownerVideoOauthStateMatches(sealed,state))return result('failed')
    const payload=new URLSearchParams({code,code_verifier:sealed.verifier,
      grant_type:'authorization_code',
      client_id:process.env.HH_OWNER_VIDEO_GOOGLE_CLIENT_ID,

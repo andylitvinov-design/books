@@ -5,7 +5,7 @@ import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPr
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_RU_CHANNEL_ID}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
-import {ownerVideoOauthConfig,ownerVideoOauthConfigured} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
+import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 
@@ -137,6 +137,27 @@ test('optional Google OAuth is isolated from the standalone phone uploader',()=>
  assert.match(page,/if\(telegramVideoConfigured\)try\{[\s\S]*await Promise\.all/)
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
  assert.match(service,/const oauthConfig=ownerVideoOauthConfig/)
+})
+test('Google callback accepts only owner-issued sealed PKCE state after cross-site redirect',()=>{
+ const state='s'.repeat(43),verifier='v'.repeat(43)
+ const valid={state,verifier,time:TIME}
+ assert.equal(ownerVideoOauthStateMatches(valid,state,TIME),true)
+ assert.equal(ownerVideoOauthStateMatches(valid,state,TIME+600000),true)
+ assert.equal(ownerVideoOauthStateMatches(valid,state,TIME+600001),false)
+ assert.equal(ownerVideoOauthStateMatches(valid,state,TIME-1),false)
+ assert.equal(ownerVideoOauthStateMatches(valid,'x'.repeat(43),TIME),false)
+ assert.equal(ownerVideoOauthStateMatches({...valid,verifier:'short'},state,TIME),false)
+ assert.equal(ownerVideoOauthStateMatches({...valid,state:'short'},state,TIME),false)
+ assert.equal(ownerVideoOauthStateMatches(null,state,TIME),false)
+ const start=readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8')
+ const cb=readFileSync(new URL('../app/api/admin/telegram-video/youtube/callback/route.js',import.meta.url),'utf8')
+ assert.match(start,/if\(!await requireAdminRequest\(\)\)/)
+ assert.match(start,/sameSite:'lax'/)
+ assert.match(cb,/openSealed\(cookie,CONTEXT,config\)/)
+ assert.match(cb,/ownerVideoOauthStateMatches\(sealed,state\)/)
+ assert.match(cb,/verifyYoutubeRuOwner\(token.access_token\)/)
+ assert.doesNotMatch(cb,/requireAdminRequest\(/)
+ assert.match(cb,/maxAge:0/)
 })
 test('Google RU ownership and Unlisted are checked before and after upload',async()=>{
  const calls=[];let begin=0,uploaded=0
