@@ -22,6 +22,8 @@ on:
       - "tests/owner-telegram-audio-combine.test.mjs"
       - "supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql"
       - "supabase/migrations/20261027020000_hh_owner_video_final_only_cabinet.sql"
+      - "supabase/migrations/20261027193500_hh_owner_video_youtube_ru_en_destinations.sql"
+      - "tests/owner-telegram-audio-inbox.test.mjs"
       - "next.config.ts"
       - "package.json"
       - "package-lock.json"
