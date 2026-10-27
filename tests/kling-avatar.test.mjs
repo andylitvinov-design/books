@@ -163,8 +163,17 @@ test('scenes default to 3s silent 720p and premium server flag gates more costly
   const page=readFileSync(new URL('../app/admin/videos/page.tsx',import.meta.url),'utf8');
   const ui=readFileSync(new URL('../components/kling-scene-studio.tsx',import.meta.url),'utf8');
   assert.match(action,/HH_KLING_PREMIUM_RENDER_ENABLED/);
-  assert.match(action,/scene.duration !== 3/);
+  assert.match(action,/budgetDuration = scene.mode === 'image' \? 5 : 3/);
+  assert.match(action,/scene.duration !== budgetDuration/);
   assert.match(action,/scene.resolution !== '720p'/);
   assert.match(page,/premiumEnabled=\{process\.env\.HH_KLING_PREMIUM_RENDER_ENABLED === "true"\}/);
   assert.match(ui,/useState<3 \| 5 \| 10>\(3\)/);
+  assert.match(ui,/setDuration\(next === "image" \? 5 : 3\)/);
+  const img=normalizeKlingScene({mode:'image',prompt:'Warm natural landscape with gentle motion',duration:5,
+    resolution:'720p',aspectRatio:'16:9',publicImageApproved:true,
+    imageUrl:'https://holistichouse.vercel.app/images/holistic-house/coaching-ancient/egyptian-cover.jpg',
+    externalTaskId:'hh_kling_1234567890abcdef1234567890abcdef'});
+  const imageRequest=klingRequestForScene(img);
+  assert.equal(imageRequest.path,'/image-to-video/kling-2.5-turbo');
+  assert.deepEqual(imageRequest.body.settings,{duration:5,resolution:'720p'});
 });
