@@ -8,7 +8,7 @@ import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
   buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes, selectedProfileResearchAxes,
-  profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, rankProfileAxisTests, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
+  profileResearchAxisLabel, previewProfileScales, recommendProfileTopThreeTests, rankProfileAxisTests, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
@@ -406,8 +406,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   // from checked test keys. Unchecking changes the plan, not the recommendation.
   const rankedCandidates = rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)
     as Array<{ key: string; matchPercent: number; matchedAxes: readonly string[] }>;
-  const recommendedKeys = recommendProfileAxisBattery(tests, scaleGroups,
-    selectedScaleIds, batteryMode).slice(0, 3);
+  const recommendedKeys = recommendProfileTopThreeTests(tests, scaleGroups,
+    selectedScaleIds, batteryMode);
   const recommendedTests = rankedCandidates
     .filter(candidate => recommendedKeys.includes(candidate.key))
     .flatMap(candidate => tests.filter(test => test.key === candidate.key && test.testKind === modeKind)
@@ -513,10 +513,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         // Big Five extraversion cannot be substituted with an unrelated trait.
         // The selector returns immutable suggestions; React keeps editable
         // per-mode selections as its own mutable arrays.
-        const questionnaires = [...recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "questionnaires")].slice(0, 3);
-        const pro = [...recommendProfileAxisBattery(tests, scaleGroups,
-          selectedScaleIds, "pro")].slice(0, 3);
+        const questionnaires = [...recommendProfileTopThreeTests(tests, scaleGroups,
+          selectedScaleIds, "questionnaires")];
+        const pro = [...recommendProfileTopThreeTests(tests, scaleGroups,
+          selectedScaleIds, "pro")];
         setSelectedByMode({ questionnaires, pro });
         setBatterySignature(signature);
         setBatteryMode(questionnaires.length ? "questionnaires" : pro.length ? "pro" : "questionnaires");
