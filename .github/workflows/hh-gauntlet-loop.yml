@@ -11,13 +11,14 @@ on:
       - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
       - 'tests/hh-gauntlet-loop.test.mjs'
   push:
-    branches: ['codex/public-book-library']
+    branches: ['codex/public-book-library', 'codex/hh-gauntlet-run-*']
     paths:
       - '.github/workflows/hh-gauntlet-loop.yml'
       - '.opencode/agents/hh-gauntlet-*.md'
       - 'lib/benchmarking/hh-gauntlet-loop.mjs'
       - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
       - 'tests/hh-gauntlet-loop.test.mjs'
+      - 'docs/benchmarking/gauntlet-runs/**'
   workflow_dispatch:
 
 permissions:
@@ -58,8 +59,9 @@ jobs:
 
   isolated-free-model-smoke:
     name: Zero-credential OpenCode GLM Free connectivity, synthetic-only
-    # Run on this explicit tooling PR, never on a normal production push.
-    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'codex/hh-gauntlet-execution-')
+    # Explicit disposable branch push only; never on PRs or production pushes.
+    # Each intentionally created gauntlet-runs marker authorizes one free-tier trial.
+    if: github.event_name == 'push' && startsWith(github.ref_name, 'codex/hh-gauntlet-run-')
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     permissions:
