@@ -18,6 +18,15 @@ type PublicScale = { key: string; label: string; axis: string; scaleQuestions: n
 type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null;
   questions: number | null; testKind: string; topics: string[]; scales: PublicScale[] };
 type Props = { locale: Locale; tests: PublicTest[] };
+type ProfileScaleGroup = {
+  area: Area;
+  scales: Array<{
+    id: string; key: string; label: string; axis: string; researchAxisId: string;
+    testKey: string; testTitle: string; testKind: string;
+    scaleQuestions: number | null; questions: number | null; minutes: number | null;
+  }>;
+  researchAxes: Array<{ id: string; sourceAxis: string; label: Record<Locale, string>; scaleCount: number }>;
+};
 
 // Shared, source-backed topic taxonomy. All catalogue axes are mapped,
 // but only topics supported by eligible tests appear in the wizard.
@@ -357,13 +366,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   // subscales; their question/time metadata always belongs to a real test.
   const visibleAreas = profileAreasWithTests(tests, focuses) as Area[];
   const activeAreas = areas.filter(area => visibleAreas.includes(area));
-  const visibleScaleGroups = buildProfileScaleGroups(tests, visibleAreas, areaAxes);
-  const scaleGroups = buildProfileScaleGroups(tests, activeAreas, areaAxes) as Array<{
-    area: Area; scales: Array<{ id: string; key: string; label: string; axis: string;
-      researchAxisId: string; testKey: string; testTitle: string; testKind: string;
-      scaleQuestions: number | null; questions: number | null; minutes: number | null }>;
-    researchAxes: Array<{ id: string; sourceAxis: string; label: Record<Locale, string>; scaleCount: number }>;
-  }>;
+  const visibleScaleGroups = buildProfileScaleGroups(tests, visibleAreas, areaAxes) as ProfileScaleGroup[];
+  const scaleGroups = buildProfileScaleGroups(tests, activeAreas, areaAxes) as ProfileScaleGroup[];
   const selectedAxes = selectedProfileAxes(scaleGroups, selectedScaleIds) as string[];
   const selectedAxisRefs = selectedProfileResearchAxes(scaleGroups, selectedScaleIds) as string[];
   const selectedKeys = selectedByMode[batteryMode];
@@ -380,8 +384,8 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     pro: profileBatteryTotals(tests, selectedByMode.pro),
   };
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
-  const extraGroups = extraProfile
-    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) : [];
+  const extraGroups: ProfileScaleGroup[] = extraProfile
+    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) as ProfileScaleGroup[] : [];
   const axesForExtraProfile = [...new Set(extraGroups.flatMap(group =>
     group.researchAxes.map(axis => axis.id)))]
     .sort((a, b) => profileResearchAxisLabel(a, locale).localeCompare(profileResearchAxisLabel(b, locale), locale));
