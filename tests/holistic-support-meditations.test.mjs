@@ -11,11 +11,9 @@ test("Holistic Support has an accessible audio and video meditation destination 
   const page = read("app/[locale]/holistic-support/page.tsx");
   const css = read("app/[locale]/holistic-support/holistic-support.module.css");
   for (const label of [
-    "Meditation · Audio & Video", "Медитации · аудио и видео", "Meditación · Audio y vídeo",
     "Meditation · Flight to the Sun", "Бесплатные подкачки", "Meditación · Flight to the Sun",
   ]) assert.ok(page.includes(label), "missing locale text " + label);
-  assert.match(page, /data-holistic-offer="meditations"/);
-  assert.match(page, /data-holistic-meditation-cta/);
+  assert.match(read("components/holistic-support-topic-filter.tsx"), /if \(offer === "meditation"\) return "#meditation-practices"/);
   assert.match(page, /href="#meditation-practices"/);
   assert.match(page, /id="meditation-practices"/);
   assert.match(page, /data-holistic-audio-player/);
@@ -48,7 +46,7 @@ test("Holistic Support has an accessible audio and video meditation destination 
     "video should be encountered before the ambient audio on narrow screens");
   assert.match(css, /\.section\[data-holistic-meditations\]\{scroll-margin-top/);
   assert.match(css, /@media\(max-width:350px\)/);
-  assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("data-holistic-healing"));
+  assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("<HolisticSupportTopicFilter"));
   assert.ok(page.indexOf("data-holistic-meditations") < page.indexOf("data-holistic-coaching-followup"));
 });
 
