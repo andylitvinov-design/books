@@ -134,6 +134,9 @@ test('moderator review snapshot is invalidated by changed ticket, price, event d
     {startsAt:'2030-11-12T18:00:00-05:00'},
     {registrationHref:'https://example.org/new-registration'},
     {title:{...verified.title,en:'Different event'}},
+    {title:{...verified.title,ru:'Другое мероприятие'}},
+    {description:{...verified.description,es:'Otra inscripción'}},
+    {location:'Different room'},
   ]) assert.notEqual(snapshot,eventTicketReviewSnapshot({...verified,...patch}))
   const repo=read('lib/practitioners/events-repository.js')
   const moderator=read('components/practitioner-moderation.jsx')
