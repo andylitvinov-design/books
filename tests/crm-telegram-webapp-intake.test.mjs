@@ -81,7 +81,7 @@ test('Mini App appends to the active encrypted Telegram thread, never creates a 
   assert.match(form,/!requestFromTelegram/)
   assert.match(form,/missingTelegramProof/)
   assert.match(form,/telegramEntry && !fromTelegram/)
-  assert.match(form,/telegramEntry \?\: boolean/)
+  assert.match(form,/telegramEntry\?: boolean/)
   assert.match(read('app\/[locale]\/coaching\/intake\/page.tsx'),/telegramEntry=\{query\?\.from === 'telegram'\}/)
   assert.match(form,/contactConsent: true/)
 })
