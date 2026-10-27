@@ -70,7 +70,7 @@ test("focus screen has mobile-safe controls, visible player and Escape handling"
   assert.match(client, /document\.body\.style\.overflow = "hidden"/);
   assert.match(client, /aria-pressed=\{focusMode\}/);
   assert.match(styles, /\.focus .videoFrame/);
-  assert.match(styles, /\.focus .editor\{display:none\}/);
+  assert.match(styles, /\.focus .editor,\.focus .caution\{display:none\}/);
   assert.match(styles, /@media\(max-width:720px\)/);
   assert.match(styles, /@media\(max-width:350px\)/);
   assert.match(styles, /env\(safe-area-inset-bottom\)/);
