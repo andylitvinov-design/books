@@ -23,6 +23,7 @@ export default async function YoutubeUploadPage() {
   const telegramVideoConfigured = ownerVideoOauthConfigured()
   const telegramVideoEnabled = process.env.HH_OWNER_VIDEO_ENABLED === 'true'
   let telegramVideoConnected = false
+  let telegramVideoConnectedEnglish = false
   if(telegramVideoConfigured)try{
     // Avoid importing the large Telegram/DB/media service into the phone uploader
     // when video OAuth has not been set up; the standalone uploader must work.
@@ -30,7 +31,11 @@ export default async function YoutubeUploadPage() {
       import('@/lib/app/config'),
       import('@/lib/practitioners/owner-telegram-video-service')
     ])
-    telegramVideoConnected = await ownerVideoYoutubeConnected(getAppConfig())
+    const config=getAppConfig()
+    ;[telegramVideoConnected,telegramVideoConnectedEnglish]=await Promise.all([
+      ownerVideoYoutubeConnected(config,process.env,'ru'),
+      ownerVideoYoutubeConnected(config,process.env,'en'),
+    ])
   }catch{/* Authorisation remains unconfirmed. */}
   // The client ID is public; the separate server-side OAuth secret never
   // reaches the browser. Reuse the validated Web client to avoid double setup.
@@ -94,8 +99,13 @@ export default async function YoutubeUploadPage() {
         :telegramVideoConfigured
           ?'🔐 Требуется однократное подтверждение канала Google для Telegram-видео.'
           :'🔐 Сначала настройте отдельный Google OAuth Web Client для серверной загрузки Telegram-видео.'}</p>
-      {telegramVideoConfigured&&<Link prefetch={false} href="/api/admin/telegram-video/youtube/start" style={{fontSize:14}}>
-        {telegramVideoConnected?'Переподключить русский канал':'Подключить русский YouTube'}</Link>}
+      {telegramVideoConfigured&&<div style={{display:'grid',gap:6}}>
+        <Link prefetch={false} href="/api/admin/telegram-video/youtube/start?target=ru" style={{fontSize:14}}>
+          🇷🇺 {telegramVideoConnected?'Русский YouTube подключён · сменить доступ':'Подключить русский YouTube'}</Link>
+        <Link prefetch={false} href="/api/admin/telegram-video/youtube/start?target=en" style={{fontSize:14}}>
+          🇬🇧 {telegramVideoConnectedEnglish?'English YouTube подключён · сменить доступ':'Подключить English YouTube (@aatapro)'}</Link>
+        <p style={{margin:0,fontSize:12}}>Каждый канал подтверждается Google отдельно. Готовый MP4 остаётся приватным до твоего нажатия «Опубликовать» в Dot.</p>
+      </div>}
     </section>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
       oauthSource={oauthSource} setupAvailable={setupAvailable}
