@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, TALISMAN_REQUEST_DRAFT_KEY, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import { matchesHolisticEuroBudget } from "@/lib/practitioners/holistic-search-budgets.js";
 import styles from "./remote-energy-support-booking.module.css";
+import { talismanFromCatalog } from "@/lib/practitioners/taoist-talismans";
 
 type Locale = "en" | "ru" | "es";
 type Format = "asynchronous" | "live";
@@ -269,7 +270,7 @@ function localDateToday() {
 
 export function RemoteEnergySupportBooking({
   locale, masters, preferredPractitioner, mode = "standalone", selectedKind = "energy",
-  initialGoal = "", onKindChange, compactFinder = false, priceBudget = "any", onClearBudget,
+  initialGoal = "", initialTalismanId = "", onKindChange, compactFinder = false, priceBudget = "any", onClearBudget,
 }: {
   locale: Locale;
   masters: EnergySupportMaster[];
@@ -277,6 +278,7 @@ export function RemoteEnergySupportBooking({
   mode?: "inline" | "standalone";
   selectedKind?: SupportRequestKind;
   initialGoal?: string;
+  initialTalismanId?: string;
   onKindChange?: (kind: SupportRequestKind) => void;
   compactFinder?: boolean;
   priceBudget?: PriceBudget;
@@ -289,10 +291,12 @@ export function RemoteEnergySupportBooking({
   );
   const [goal, setGoal] = useState(initialGoal);
   const [requestKind, setRequestKind] = useState<SupportRequestKind>(selectedKind);
+  const [catalogId, setCatalogId] = useState(initialTalismanId);
   useEffect(() => {
     setRequestKind(selectedKind);
     if (initialGoal) setGoal(initialGoal);
-  }, [selectedKind, initialGoal]);
+    setCatalogId(initialTalismanId);
+  }, [selectedKind, initialGoal, initialTalismanId]);
   const [intention, setIntention] = useState("");
   const [showResults, setShowResults] = useState(mode === "inline" || Boolean(preferredPractitioner));
   const [method, setMethod] = useState("");
@@ -398,7 +402,9 @@ export function RemoteEnergySupportBooking({
         // Only controlled, non-sensitive theme/master metadata survives login.
         window.sessionStorage.setItem(TALISMAN_REQUEST_DRAFT_KEY, JSON.stringify({
           version: 1, serviceId: selected.serviceId, practitioner: selected.name,
-          goal: topic, savedAt: Date.now(),
+          goal: topic,
+          ...(catalogId && talismanFromCatalog(catalogId)?.goal === topic ? { catalogId } : {}),
+          savedAt: Date.now(),
         }));
         stageRemoteSupportPrivateIntention(selected.serviceId, intention);
         const cabinetLocale = locale === "es" ? "en" : locale;
@@ -467,7 +473,7 @@ export function RemoteEnergySupportBooking({
           {FOCUSES.map((focus) => (
             <button key={focus.id} type="button" data-remote-focus-chip aria-pressed={goal === focus.id}
               className={goal === focus.id ? styles.focusActive : ""}
-              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setError(""); }}>
+              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setCatalogId(""); setError(""); }}>
               {focus[locale]}
             </button>
           ))}

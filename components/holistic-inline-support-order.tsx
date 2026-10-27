@@ -65,10 +65,11 @@ const copy = {
   },
 } as const;
 
-export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindChange, onClose }: {
+export function HolisticInlineSupportOrder({ locale, kind, initialGoal, initialTalismanId = "", onKindChange, onClose }: {
   locale: PublicLocale;
   kind: SupportRequestKind;
   initialGoal: string;
+  initialTalismanId?: string;
   onKindChange: (kind: SupportRequestKind) => void;
   onClose: () => void;
 }) {
@@ -168,7 +169,7 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindCh
         {searched && choice !== "consultation" && masters && (
           <RemoteEnergySupportBooking key={choice + topic + budget} locale={locale} masters={masters}
             preferredPractitioner="" mode="inline" selectedKind={choice} initialGoal={topic}
-            compactFinder priceBudget={budget} onClearBudget={() => setBudget("any")}/>
+            initialTalismanId={initialTalismanId} compactFinder priceBudget={budget} onClearBudget={() => setBudget("any")}/>
         )}
         {searched && choice === "consultation" && consultations && <>
           <h4 className={styles.resultTitle}>{t.results}</h4>
