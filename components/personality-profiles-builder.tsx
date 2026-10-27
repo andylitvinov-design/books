@@ -15,7 +15,7 @@ type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
 type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning" | "goal";
 type TestMode = "questionnaires" | "pro";
 type PublicScale = { key: string; label: string; axis: string; scaleQuestions: number | null };
-type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null;
+type PublicTest = { key: string; version: string; title: string; axes: string[]; minutes: number | null;
   questions: number | null; testKind: string; topics: string[]; scales: PublicScale[] };
 type Props = { locale: Locale; tests: PublicTest[] };
 type ProfileScaleGroup = {
