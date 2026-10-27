@@ -737,7 +737,7 @@ test('master attribution is a verified public snapshot, not an arbitrary or priv
     {practitionerSlug:'',practitionerName:'Andy'},
     {practitionerSlug:'../admin',practitionerName:'Someone'},
     {practitionerSlug:'andy-litvinov',practitionerName:'x'.repeat(121)},
-    {practitionerSlug:'andy-litvinov',practitionerName:'Private\\u0000Profile'},
+    {practitionerSlug:'andy-litvinov',practitionerName:'Private'+String.fromCharCode(0)+'Profile'},
   ]) assert.throws(()=>published(change),codeIs('validation'))
   const changed = structuredClone(record)
   changed.published.practitionerName = ''
