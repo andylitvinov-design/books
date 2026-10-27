@@ -28,7 +28,7 @@ export async function generateMetadata({ params, searchParams }) {
   }
   return {
   title: `${titles[path[0] || 'portrait'] || (locale === 'ru' ? 'Мой кабинет' : 'My cabinet')} | Holistic House`,
-  manifest: oporaInstall ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : (locale === 'ru' ? '/holistic-house-app-ru.webmanifest' : '/holistic-house-app.webmanifest'),
+  manifest: oporaInstall ? (locale === 'ru' ? '/opora-antistress-ru.webmanifest' : '/opora-antistress-en.webmanifest') : (locale === 'ru' ? '/holistic-house-app-ru.webmanifest' : locale === 'es' ? '/holistic-house-app-es.webmanifest' : '/holistic-house-app.webmanifest'),
   icons: { icon: '/icons/holistic-house-teal.svg', apple: '/holistic-house-icon/180' },
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
