@@ -118,7 +118,7 @@ test('home Stage 2 is one free service while account reports remain separate and
 test('unified profile is multi-select and describes four separate analysis layers', () => {
   const component = read('components/personality-profiles-builder.tsx')
   const css = read('components/personality-profiles-builder.module.css')
-  for (const focus of ['wellbeing', 'relationships', 'work', 'identity']) {
+  for (const focus of ['wellbeing', 'relationships', 'work', 'identity', 'goal']) {
     assert.ok(component.includes(focus + ': ['), focus)
   }
   for (const token of [
@@ -135,15 +135,16 @@ test('unified profile is multi-select and describes four separate analysis layer
 })
 
 
-test('four life directions retain all nine topics, are localized and require an explicit selection', () => {
+test('five life directions retain the original topics and add a goal-support topic', () => {
   const component = read('components/personality-profiles-builder.tsx')
   const sections = [...component.matchAll(/^    focuses: \{\n([\s\S]*?)^    \},/gm)]
   assert.equal(sections.length, 3, 'EN, RU, ES must have matching focus options')
-  const directions = ['wellbeing', 'relationships', 'work', 'identity']
+  const directions = ['wellbeing', 'relationships', 'work', 'identity', 'goal']
   for (const section of sections) {
     assert.deepEqual([...section[1].matchAll(/^      ([a-z]+): \[/gm)].map(match => match[1]), directions)
   }
   for (const phrase of [
+    'Goal Profile', 'Профиль цели', 'Perfil de la meta',
     'Body, health & energy', 'Relationships & connection',
     'Work, business & money', 'Personality & personal growth',
     'Тело, здоровье и энергия', 'Отношения и близость',
@@ -241,7 +242,7 @@ test('additional test finder scopes a single life profile before opening multipl
   const scalesAt = slide.indexOf('data-profile-extra-scales')
   const testsAt = slide.indexOf('extraResultCount')
   assert.ok(profileAt >= 0 && scalesAt > profileAt && testsAt > scalesAt)
-  assert.match(slide, /\(\["wellbeing", "relationships", "work", "identity"\] as const\)\.map/)
+  assert.match(slide, /\(\["wellbeing", "relationships", "work", "identity", "goal"\] as const\)\.map/)
   assert.match(slide, /extraProfile === key/)
   assert.match(slide, /axesForExtraProfile\.map/)
   assert.match(slide, /aria-pressed=\{extraScales\.includes\(axis\)\}/)

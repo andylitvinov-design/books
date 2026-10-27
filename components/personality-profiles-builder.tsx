@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, HeartHandshake, HeartPulse, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, BriefcaseBusiness, Check, ChevronDown, ClipboardList, HeartHandshake, HeartPulse, LockKeyhole, Sparkles, Target } from "lucide-react";
 import styles from "./personality-profiles-builder.module.css";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
@@ -11,11 +11,11 @@ import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
   profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
-type Focus = "wellbeing" | "relationships" | "work" | "identity";
-type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning";
+type Focus = "wellbeing" | "relationships" | "work" | "identity" | "goal";
+type Area = "traits" | "support" | "emotions" | "recovery" | "body" | "connection" | "work" | "money" | "meaning" | "goal";
 type TestMode = "questionnaires" | "pro";
 type PublicScale = { key: string; label: string; axis: string; scaleQuestions: number | null };
-type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null;
+type PublicTest = { key: string; version: string; title: string; axes: string[]; minutes: number | null;
   questions: number | null; testKind: string; topics: string[]; scales: PublicScale[] };
 type Props = { locale: Locale; tests: PublicTest[] };
 type ProfileScaleGroup = {
@@ -63,6 +63,7 @@ const copy = {
       relationships: ["Relationships & connection", "Love, family, communication, trust and personal boundaries."],
       work: ["Work, business & money", "Career, entrepreneurship, professional growth and financial habits."],
       identity: ["Personality & personal growth", "Traits, strengths, values, life goals and self-actualization."],
+      goal: ["Goal Profile", "Clarity, motivation and confidence in one chosen goal. Self-ratings are saved privately; tests provide context."],
     },
     topicTitle: "Choose the specific topics that matter",
     topicHelp: "Choose your topics here; open the next step to expand each topic into its real measured scales.",
@@ -77,6 +78,7 @@ const copy = {
       work: ["Work & focus", "Clarity · daily actions"],
       money: ["Money decisions", "Choices · habits, not income"],
       meaning: ["Purpose & values", "Meaning · direction"],
+      goal: ["Goal clarity · motivation · confidence", "Supporting questionnaires (not the 3 goal ratings)"],
     },
     scaleTitle: "Choose the axes and scales for your profile",
     scaleHelp: "Research axes group related questions. Select the actual questionnaire scales beneath them; scores from different tests are not interchangeable.",
@@ -146,6 +148,7 @@ const copy = {
       relationships: ["Отношения и близость", "Любовь, семья, общение, доверие и личные границы."],
       work: ["Дело, бизнес и деньги", "Карьера, предпринимательство, профессиональная реализация и финансы."],
       identity: ["Личность и развитие", "Характер, способности, ценности, смысл жизни и самореализация."],
+      goal: ["Профиль цели", "Ясность, мотивация и уверенность в достижении выбранной цели. Личная самооценка сохраняется приватно."],
     },
     topicTitle: "Уточните важные для вас темы",
     topicHelp: "Выберите темы. На следующем шаге раскроются соответствующие им измеряемые шкалы.",
@@ -160,6 +163,7 @@ const copy = {
       work: ["Работа и фокус", "Ясность · действия"],
       money: ["Решения о деньгах", "Привычки, не уровень дохода"],
       meaning: ["Ценности и смысл", "Цели · направление"],
+      goal: ["Ясность · мотивация · уверенность", "Вспомогательные тесты, не оценки конкретной цели"],
     },
     scaleTitle: "Выберите оси и шкалы своего профиля",
     scaleHelp: "Оси группируют близкие темы, а галочки выбирают реальные шкалы тестов. Баллы разных методик не приравниваются друг к другу.",
@@ -229,6 +233,7 @@ const copy = {
       relationships: ["Relaciones y cercanía", "Amor, familia, comunicación, confianza y límites personales."],
       work: ["Trabajo, negocios y dinero", "Carrera, emprendimiento, desarrollo profesional y hábitos financieros."],
       identity: ["Personalidad y crecimiento", "Rasgos, fortalezas, valores, propósito y autorrealización."],
+      goal: ["Perfil de la meta", "Claridad, motivación y confianza en una meta elegida. Autoevaluación privada y pruebas complementarias."],
     },
     topicTitle: "Elige los temas específicos para explorar",
     topicHelp: "Elige tus temas; en el siguiente paso podrás abrir sus escalas medibles.",
@@ -243,6 +248,7 @@ const copy = {
       work: ["Trabajo y enfoque", "Claridad · acciones"],
       money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
       meaning: ["Sentido y valores", "Metas · dirección"],
+      goal: ["Claridad · motivación · confianza", "Pruebas complementarias, no puntajes de la meta"],
     },
     scaleTitle: "Elige los ejes y las escalas de tu perfil",
     scaleHelp: "Los ejes agrupan temas afines; marca las escalas de cuestionarios reales. Sus resultados no son intercambiables.",
@@ -593,7 +599,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               aria-pressed={focuses.includes(key)} onClick={() => toggleFocus(key)} data-profile-focus={key}>
               <span className={styles.templateIcon} aria-hidden="true">
                 {key === "wellbeing" ? <HeartPulse size={21} /> : key === "relationships" ? <HeartHandshake size={21} />
-                  : key === "work" ? <BriefcaseBusiness size={21} /> : <Brain size={21} />}
+                  : key === "work" ? <BriefcaseBusiness size={21} /> : key === "goal" ? <Target size={21} /> : <Brain size={21} />}
               </span>
               <span className={styles.templateBody}>
                 <strong>{t.focuses[key][0]}</strong>
@@ -754,7 +760,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <div className={styles.extraProfileSelector} data-profile-extra-profile-filter>
             <strong>{extra.profile}</strong>
             <div className={styles.extraProfileChoices} role="group" aria-label={extra.profile}>
-              {(["wellbeing", "relationships", "work", "identity"] as const).map(key =>
+              {(["wellbeing", "relationships", "work", "identity", "goal"] as const).map(key =>
                 <button type="button" key={key} data-profile-extra-profile={key}
                   aria-pressed={extraProfile === key}
                   onClick={() => { setExtraProfile(key); setExtraScales([]); setSearch(""); setShowMore(false); }}>

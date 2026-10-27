@@ -2327,6 +2327,7 @@ function PortfolioPage({ data, locale }) {
         </summary>
         <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
           portrait={buildPsychPortrait(data.results || [])}
+          goalProfileProps={{ accountId, entriesByKey, results: data.results || [] }}
           portraitTab={portraitTab}
           portraitActions={({ selectedSector, portrait }) => <>
             <PortraitTestQuickActions locale={locale} sector={selectedSector} portrait={portrait}
