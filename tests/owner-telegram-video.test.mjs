@@ -24,7 +24,7 @@ const media=(file,attr)=>({update_id:1001,message:{date:TIME/1000,chat:privateBa
 const photo={file_id:'PHOTO_PHOTO_555',file_unique_id:'UNIQUE_PHOTO_555',file_size:900}
 const audio={file_id:'AUDIO_AUDIO_555',file_unique_id:'UNIQUE_AUDIO_555',file_size:2000,
   mime_type:'audio/mpeg',duration:4}
-const callback=(data)=>({update_id:1200,callback_query:{id:'callback-1234',data,from,
+const callback=(data)=>({update_id:1200,callback_query:{id:'callback-1234',data,from:{...from},
   message:{chat:privateBase,from:{is_bot:true,username:BOT}}}})
 const parsed=(update)=>parseOwnerVideoUpdate(update,{now:TIME,botUsername:BOT})
 function part(kind,index,options={}){
@@ -227,7 +227,7 @@ test('Google callback accepts only owner-issued sealed PKCE state after cross-si
  assert.match(start,/sameSite:'lax'/)
  assert.match(cb,/openSealed\(cookie,CONTEXT,config\)/)
  assert.match(cb,/ownerVideoOauthStateMatches\(sealed,state\)/)
- assert.match(cb,/verifyYoutubeRuOwner\(token.access_token\)/)
+ assert.match(cb,/verifyYoutubeTargetOwner\(token.access_token,sealed.target\)/)
  assert.doesNotMatch(cb,/requireAdminRequest\(/)
  assert.match(cb,/maxAge:0/)
 })
