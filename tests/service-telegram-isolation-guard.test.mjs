@@ -21,7 +21,7 @@ test('rejects production/provider/implicit-libpq environment inputs',()=>{
 })
 test('connected server must be empty PG17 loopback test DB, never another server/schema',()=>{
  const row={database:'hh_app_test',address:'127.0.0.1',port:5432,version:'170005',login:'postgres',superuser:true,occupied:false};server(row);server({...row,address:'172.18.0.2'})
- for(const patch of [{database:'postgres'},{address:'192.0.2.1'},{port:5433},{version:'160005'},{version:'180001'},
+ for(const patch of [{database:'postgres'},{address:'192.0.2.1'},{address:'127.0.0.1/32'},{address:'172.18.0.2/32'},{port:5433},{version:'160005'},{version:'180001'},
  {login:'other'},{superuser:false},{occupied:true}])assert.throws(()=>server({...row,...patch}))
 })
 test('PG acceptance guard precedes pg import; exact old and Telegram policies are both retained',()=>{
@@ -34,6 +34,18 @@ test('PG acceptance guard precedes pg import; exact old and Telegram policies ar
  assert.match(fixture,/from pg_class c join pg_namespace n/)
  assert.match(fixture,/nspname not in \('public','information_schema'\)/)
  assert.match(fixture,/rolname <> 'postgres'/)
+ assert.match(fixture,/host\(inet_server_addr\(\)\) as address/)
+ assert.doesNotMatch(fixture,/inet_server_addr\(\)::text/)
+})
+
+test('server rejection exposes only bounded failed-predicate names, never raw server values',()=>{
+ const row={database:'hh_app_test',address:'127.0.0.1',port:5432,version:'170011',login:'postgres',superuser:true,occupied:false}
+ for(const [key,patch] of Object.entries({database:{database:'unapproved-db'},address:{address:'unapproved-host'},
+  port:{port:5433},version:{version:'180001'},login:{login:'unapproved-login'},superuser:{superuser:false},empty:{occupied:true}})){
+  assert.throws(()=>server({...row,...patch}),{message:'EMPTY_EPHEMERAL_PG17_REQUIRED:'+key})
+ }
+ assert.throws(()=>server({...row,database:'private-db',address:'private-host',login:'private-login',occupied:true}),
+  {message:'EMPTY_EPHEMERAL_PG17_REQUIRED:database,address,login,empty'})
 })
 
 test('CI blocks provider egress and limits any admitted socket to guarded loopback PostgreSQL',()=>{

@@ -6,7 +6,7 @@ import {assertTelegramIsolationServer} from './telegram-service-isolation-guard.
 import {A,B,PA,PB,OA,OB} from './telegram-service-runtime.mjs'
 export const LEGACY='246aa1a3-a371-5a83-9f4b-cd23ff027a76'
 export async function setupTelegramPolicyFixture(db) {
- const row=(await db.query(`select current_database() as database,inet_server_addr()::text as address,
+ const row=(await db.query(`select current_database() as database,host(inet_server_addr()) as address,
   inet_server_port() as port,current_setting('server_version_num') as version,current_user as login,
   (select rolsuper from pg_roles where rolname=current_user) as superuser,
   (exists(select 1 from pg_namespace where nspname !~ '^pg_' and nspname not in ('public','information_schema'))

@@ -12,7 +12,11 @@ export function assertTelegramIsolationEnvironment(env=process.env) {
 // The client endpoint is EXACTLY 127.0.0.1 above. Docker service NAT can
 // report an RFC1918 bridge address from inet_server_addr(), not that host endpoint.
 export function assertTelegramIsolationServer(row) {
- if(row.database!=='hh_app_test'||!/^(?:127\.0\.0\.1|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/.test(row.address)||row.port!==5432||
-    !/^17\d{4}$/.test(String(row.version))||row.login!=='postgres'||!row.superuser||row.occupied)
-  throw new Error('EMPTY_EPHEMERAL_PG17_REQUIRED')
+ const checks={database:row.database==='hh_app_test',
+  address:/^(?:127\.0\.0\.1|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/.test(row.address),
+  port:row.port===5432,version:/^17\d{4}$/.test(String(row.version)),
+  login:row.login==='postgres',superuser:Boolean(row.superuser),empty:!row.occupied}
+ const failed=Object.keys(checks).filter(key=>!checks[key])
+ // Bounded predicate names only; never disclose server rows or endpoint details.
+ if(failed.length)throw new Error('EMPTY_EPHEMERAL_PG17_REQUIRED:'+failed.join(','))
 }
