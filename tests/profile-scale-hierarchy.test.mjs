@@ -62,23 +62,28 @@ test('questionnaires and Pro only propose matching registered test kinds, totals
   assert.equal(profileBatteryTotals(catalogue,[]).minutes,0)
 })
 
-test('five localized screens contain topic accordions, default scales, direct launch and both mode totals', () => {
+test('five localized screens separate research scales, topics, tests and Ready', () => {
   const ui=source('components/personality-profiles-builder.tsx')
   const css=source('components/personality-profiles-builder.module.css')
   const page=source('app/[locale]/personality-profiles/page.tsx')
   for(const stages of [
-    '["Focus", "Topics", "Scales", "Tests", "Ready"]',
-    '["Запрос", "Темы", "Шкалы", "Тесты", "Начало"]',
-    '["Interés", "Temas", "Escalas", "Pruebas", "Inicio"]',
+    '["Focus", "Scales", "Topics", "Tests", "Ready"]',
+    '["Запрос", "Шкалы", "Темы", "Тесты", "Начало"]',
+    '["Interés", "Escalas", "Temas", "Pruebas", "Inicio"]',
   ]) assert.ok(ui.includes(stages))
-  const scaleStep=ui.slice(ui.indexOf('{step === 2 && <section'),ui.indexOf('{step === 3 && <section'))
+  const scaleStep=ui.slice(ui.indexOf('{step === 1 && <section'),ui.indexOf('{step === 2 && <section'))
+  const topicStep=ui.slice(ui.indexOf('{step === 2 && <section'),ui.indexOf('{step === 3 && <section'))
   const testStep=ui.slice(ui.indexOf('{step === 3 && <section'),ui.indexOf('{step === 4 && <section'))
-  assert.ok(scaleStep.includes('data-profile-scales-by-topic'))
-  assert.ok(scaleStep.includes('data-profile-scale-topic={group.area}'))
-  assert.ok(scaleStep.includes('data-profile-source-scale={scale.id}'))
-  assert.ok(scaleStep.includes('selectedScaleIds.includes(scale.id)'))
-  assert.ok(scaleStep.includes('scale.scaleQuestions'))
-  assert.ok(scaleStep.includes('scale.minutes'))
+  assert.ok(scaleStep.includes('data-profile-research-scale-options'))
+  assert.ok(scaleStep.includes('data-profile-research-choice={axis.id}'))
+  assert.ok(scaleStep.includes('selectedResearchIds.includes(axis.id)'))
+  assert.ok(topicStep.includes('data-profile-scales-by-topic'))
+  assert.ok(topicStep.includes('data-profile-scale-topic={group.area}'))
+  assert.ok(topicStep.includes('data-profile-topic-choice={scale.id}'))
+  assert.ok(topicStep.includes('selectedScaleIds.includes(scale.id)'))
+  assert.ok(!topicStep.includes('scale.testTitle'))
+  assert.ok(!topicStep.includes('scale.scaleQuestions'))
+  assert.ok(!topicStep.includes('scale.minutes'))
   assert.ok(testStep.includes('data-profile-test-mode'))
   assert.ok(testStep.includes('data-profile-mode={mode}'))
   assert.ok(testStep.includes('modeTotals[mode].minutes'))
