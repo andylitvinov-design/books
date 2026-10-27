@@ -40,19 +40,20 @@ test('only verified private Telegram owner commands are recognized',()=>{
 })
 test('owner inline keyboard is bot-authored and a ForceReply selects the next model',()=>{
   assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials'])
-  const live=ownerAiMenu({gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
+  const live=ownerAiMenu({five:{enough:true,available:['ux','product','engineering','critic','chair']},gemini:{ready:true},free:{ready:true},mistral:{ready:false,reason:'HTTP 429'}})
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
   assert.deepEqual(buttons,['hh-ai:all'])
   assert.doesNotMatch(buttons.join(' '),/hh-ai:mistral|hh-ai:both/)
   assert.doesNotMatch(live.text,/Mistral/)
   const tryFirst=ownerAiMenu({
+    five:{enough:true,available:['ux','product','engineering','critic','chair']},
     free:{candidate:true,ready:false,model:'nvidia/nemotron-3-ultra-550b-a55b:free'},
     free2:{candidate:true,ready:false,model:'google/gemma-4-31b-it:free'}
   })
-  assert.match(tryFirst.text,/подтвердили реальный ответ: 0/)
+  assert.match(tryFirst.text,/Предварительный каталог: 5\/5/)
   assert.deepEqual(tryFirst.reply_markup.inline_keyboard.flat()
     .filter(x=>x.callback_data==='hh-ai:all').map(x=>x.text),
-    ['🧠 Задать вопрос всем ИИ'])
+    ['🧠 Совет 4+1 · задать вопрос'])
   assert.ok(!tryFirst.reply_markup.inline_keyboard.flat()
     .some(x=>x.callback_data==='hh-ai:mistral'))
   assert.doesNotMatch(tryFirst.text,/Mistral/)
@@ -203,14 +204,16 @@ test('live provider menu never offers unverified models and free choice uses ver
 
 test('candidate models unlock the first explicit all-question but are never falsely called verified',()=>{
   const cold=ownerAiMenu({
+    five:{enough:true,available:['ux','product','engineering','critic','chair']},
     gemini:{candidate:true,model:'gemini-3.8-flash',ready:false},
     free:{candidate:true,model:'nvidia/nemotron-3-ultra-550b-a55b:free',ready:false},
     free2:{ready:false},mistral:{ready:false}
   })
   const noButtons=cold.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
   assert.deepEqual(noButtons,['hh-ai:all'])
-  assert.match(cold.text,/подтвердили реальный ответ: 0/)
+  assert.match(cold.text,/Предварительный каталог: 5\/5/)
   const live=ownerAiMenu({
+    five:{enough:true,available:['ux','product','engineering','critic','chair']},
     gemini:{ready:true,model:'gemini-3.8-flash'},
     free:{ready:true,model:'nvidia/nemotron-3-ultra-550b-a55b:free'},
     free2:{ready:true,model:'google/gemma-4-31b-it:free'},
@@ -218,7 +221,7 @@ test('candidate models unlock the first explicit all-question but are never fals
   })
   const buttons=live.reply_markup.inline_keyboard.flat().map(x=>x.callback_data)
   assert.deepEqual(buttons,['hh-ai:all'])
-  assert.match(live.text,/Предварительно доступно ИИ: 3/)
+  assert.match(live.text,/Предварительный каталог: 5\/5/)
   assert.doesNotMatch(buttons.join(','),/mistral/)
   const callback=parseOwnerAiUpdate({update_id:455,callback_query:{
     id:'cb-455',data:'hh-ai:all',from:base.message.from,
@@ -253,6 +256,6 @@ test('Supabase migration explicitly fixes old action/mode CHECK root cause, no n
   assert.match(service,/36 hours/)
   assert.match(service,/scope:'hh-owner-ai-verify-day'/)
   assert.match(service,/scope:'hh-owner-ai-all-day'/)
-  assert.match(service,/aggregateOwnerCouncil/)
+  assert.match(service,/runOwnerCouncilFive/)
   assert.match(service,/allowed.length<2/)
 })
