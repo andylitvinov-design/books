@@ -38,8 +38,16 @@ test("energy CTA transfers only in memory to the existing private intent field",
   assert.ok(ideas.includes('href={"/" + locale + "/services/remote-energy-support"}'));
   assert.ok(booking.includes("const stagedIntention = takeRemoteSupportLandingIntention()"));
   assert.ok(booking.includes("if (stagedIntention) setIntention(stagedIntention)"));
-  const landing = bridge.slice(bridge.indexOf("// One-use, same-tab handoff"));
+  // Scope the no-storage rule to the ephemeral free-text handoff only.
+  // The unrelated talisman draft added below this block deliberately stores
+  // *controlled non-sensitive* theme + public master identity across login.
+  const landing = bridge.slice(bridge.indexOf("// One-use, same-tab handoff"),
+    bridge.indexOf("// The talisman choice"));
+  assert.ok(landing.startsWith("// One-use, same-tab handoff"));
   assert.doesNotMatch(landing, /setItem\(|getItem\(|navigator\.sendBeacon|fetch\(|URLSearchParams\(/);
+  const talisman = bridge.slice(bridge.indexOf("export function normalizeTalismanEnquiry"));
+  assert.match(talisman, /REMOTE_SUPPORT_GOALS\.includes\(input\.goal\)/);
+  assert.doesNotMatch(talisman, /stageRemoteSupportPrivateIntention|navigator\.sendBeacon|localStorage/);
   assert.ok(screen.includes('<HolisticSupportChoices locale={locale} />'));
   assert.match(read("components/holistic-support-choices.tsx"), /data-holistic-choose="energy"/);
   assert.ok(!screen.includes("<FreeDiagnosticStart") && !screen.includes("<CompactLeadCapture"));
