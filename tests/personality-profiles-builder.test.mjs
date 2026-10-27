@@ -124,7 +124,7 @@ test('unified profile is multi-select and describes four separate analysis layer
   for (const token of [
     'data-profile-focus-selection', 'data-profile-focus={key}', 'data-profile-confirm-focus',
     'aria-pressed={focuses.includes(key)}', 'disabled={focuses.length === 0}',
-    'setAreas(areasFor(focuses).filter(area =>', 'data-profile-four-layers', 't.layers.map',
+    'setAreas(visibleAreas)', 'data-profile-four-layers', 't.layers.map',
     'ONE PERSONAL PROFILE', 'ОДИН ЛИЧНЫЙ ПРОФИЛЬ', 'UN PERFIL PERSONAL',
   ]) assert.ok(component.includes(token), token)
   assert.ok(!component.includes('data-profile-kind='))
@@ -200,7 +200,7 @@ test('Tests slide offers a direct start followed by discoverable filters for oth
     'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'data-profile-mode={mode}',
     "href={'/' + locale + '/client/tests'}"]) assert.ok(testsSlide.includes(phrase), phrase)
   assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key/)
-  assert.match(builder, /recommendProfileMode\(tests, selectedAxes, "pro"\)/)
+  assert.match(builder, /recommendProfileMode\(relevantTests, selectedAxes, "pro"\)/)
   assert.match(builder, /keys\.length < 12/)
   assert.match(builder, /test\.key === key && test\.testKind === modeKind/)
   assert.match(route, /testKind: entry\.testKind/)
@@ -224,11 +224,11 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
   }
   assert.match(builder, /test\.axes\.filter\(axis => selectedAxes\.includes\(axis\)\)/)
   assert.match(builder, /test\.testKind === modeKind/)
-  assert.match(builder, /extraProfile !== null && test\.axes\.some\(axis => effectiveExtraScales\.includes\(axis\)\)/)
+  assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
   assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)
   assert.match(builder, /setExtraScales\(previous => previous\.includes\(axis\)/)
   assert.match(builder, /\[\.\.\.previous, axis\]/)
-  assert.match(builder, /allAxesFor\(focusAreas\[extraProfile\]\)\.filter\(axis => measurableAxes\.has\(axis\)\)/)
+  assert.match(builder, /buildProfileScaleGroups\(tests, areasFor\(\[extraProfile\]\), areaAxes\)/)
   assert.match(builder, /test\.minutes !== null && test\.minutes <= Number\(timeFilter\)/)
   assert.match(builder, /selectedKeys\.length >= 12/)
   assert.ok(!builder.includes('setSelectedAxes('))
