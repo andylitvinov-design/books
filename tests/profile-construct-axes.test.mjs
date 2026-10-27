@@ -126,6 +126,10 @@ test('physical experience, work stress, empathy and sexuality are never inferred
     full.find(item => item.key === scale.testKey)?.topics.includes('body')))
   assert.ok(!work.some(scale=>scale.testKey==='k6' && scale.researchAxisId==='work::workload'),
     'general K6 distress is not an occupational-stress score')
+  assert.ok(!work.some(scale=>scale.key==='trait.via.spirituality' ||
+    scale.key==='trait.via.appreciation_beauty' ||
+    scale.key==='trait.via.capacity_for_love'),
+    'broad VIA strengths are not automatically occupational dispositions')
   assert.ok(connection.some(scale=>scale.researchAxisId==='connection::boundaries'))
   assert.ok(connection.some(scale=>scale.researchAxisId==='connection::intimacy'))
   assert.ok(connection.some(scale=>scale.researchAxisId==='connection::sexual_wellbeing'))
