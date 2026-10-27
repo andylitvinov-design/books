@@ -119,3 +119,19 @@ test('All reads the latest current source score per area, never coverage or an a
   assert.deepEqual(invalid.map(row=>row.axis),[null,null,null,null])
   assert.deepEqual(portraitSectorReadouts(null).map(row=>row.axis),[null,null,null,null])
 })
+
+test('optional visibility filter retains attributed real-source readouts and empty values',()=>{
+  const portrait={axes:{
+    stress:{mode:'directional',rawValue:2,min:0,max:5,percent:70,measuredAt:'2026-10-25'},
+    energy:{mode:'directional',rawValue:1,min:0,max:5,percent:20,measuredAt:'2026-10-26'},
+    clarity:{mode:'directional',rawValue:3,min:0,max:5,percent:50,measuredAt:'2026-10-25'},
+  }}
+  const original=portraitSectorReadouts(portrait)
+  assert.equal(original[0].axis,'energy')
+  assert.deepEqual(portraitSectorReadouts(portrait,['stress','clarity']).map(row=>row.axis),
+    ['stress','clarity',null,null])
+  const empty=portraitSectorReadouts(portrait,[])
+  assert.deepEqual(empty.map(row=>row.axis),[null,null,null,null])
+  assert.deepEqual(empty.map(row=>row.percent),[null,null,null,null])
+  assert.equal(original[0].axis,'energy','visual selection does not change saved readings')
+})
