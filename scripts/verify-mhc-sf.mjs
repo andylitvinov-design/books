@@ -158,7 +158,10 @@ try{
  passed('MHC-SF appears in Insights; compatible repeated sums appear in history')
  // The existing client-only PDF pipeline includes the same bilingual interpretation model.
  for(const locale of ['en','ru']){
-  await navigate(page,origin+'/'+locale+'/app')
+  // Finish reads in the page being left, but gate this destination on the
+  // actual interactive Profile below, not idle optional dashboard requests.
+  await page.waitForLoadState('networkidle')
+  await page.goto(origin+'/'+locale+'/app')
   await assertCabinetPortrait(page, expect, { origin, locale })
   await openCabinetMyTests(page, expect, { origin, locale })
   const download=page.waitForEvent('download',{timeout:60000})

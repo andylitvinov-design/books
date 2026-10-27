@@ -55,6 +55,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Cabinet entry and PDF readiness regressions
+        if: matrix.suite == 'extended'
+        run: node --test tests/asrs6-cabinet-entry-verifier.test.mjs tests/mhc-profile-pdf-readiness.test.mjs
+      - name: Public service browser contract regressions
+        if: matrix.suite == 'core'
+        run: node --test tests/alchemy-panel-contract.test.mjs tests/dao-free-entry-verifier.test.mjs tests/alchemy-compact-cta-verifier.test.mjs
       - name: Isolated test tools
         run: |
           mkdir -p /tmp/hh-app-browser-tools

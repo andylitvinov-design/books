@@ -6,8 +6,9 @@
  */
 import { chromium, webkit, expect } from '@playwright/test'
 import assert from 'node:assert/strict'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { assertIsolated } from '../tests/helpers/app-db-setup.mjs'
+import { observePortraitNavigation } from './helpers/portrait-navigation-diagnostics.mjs'
 import { alignAndMeasureStablePortraitFrame } from './helpers/portrait-frame-readiness.mjs'
 
 assertIsolated()
@@ -22,7 +23,19 @@ const context = await browser.newContext({ viewport: { width: 390, height: 844 }
 const page = await context.newPage()
 const problems = []
 page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
-const open = path => page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 90000 })
+const navigationDiagnostics = observePortraitNavigation(page, { origin })
+let completed = false
+const open = async path => {
+  navigationDiagnostics.mark('goto-start', path)
+  try {
+    const response = await page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 90000 })
+    navigationDiagnostics.mark('goto-complete', path)
+    return response
+  } catch (error) {
+    navigationDiagnostics.mark('goto-failed', path)
+    throw error
+  }
+}
 const card = () => page.locator('[data-testid="insights-psychological-portrait"]')
 const buttons = () => card().locator('button[data-portrait-sector]')
 const labels = ['body','work','relationships','growth']
@@ -112,6 +125,7 @@ try {
   // The current signed-in Profile is ProfileDomains (not the older
   // PersonalPortraitSummary/My Tests landing referenced in legacy E2E tests).
   await expect(page.locator('[data-profile-domains]')).toBeVisible({timeout:90000})
+  navigationDiagnostics.mark('signed-in')
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
   for (const locale of ['en','ru']) {
@@ -269,7 +283,15 @@ try {
     !(devOverlayBlocked && item === '[object Event]'))
   assert.equal(appProblems.length,0,'Browser script errors: '+appProblems.join('; '))
   console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 categories')
+  completed = true
 } finally {
+  navigationDiagnostics.mark(completed ? 'success' : 'failure')
+  try {
+    await writeFile(`${output}/${name}-navigation.json`, JSON.stringify(navigationDiagnostics.stop(), null, 2) + '\n')
+  } catch {
+    // A diagnostic write must never replace the original browser failure.
+    console.warn('PORTRAIT_NAVIGATION_DIAGNOSTICS_UNAVAILABLE')
+  }
   await context.close()
   await browser.close()
 }

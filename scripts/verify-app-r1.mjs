@@ -1,10 +1,11 @@
 import { observeHistoryNavigation, collectHistoryNavigationEvidence } from './helpers/history-navigation-diagnostics.mjs'
 import { boundedBestEffort, preserveBrowserFailure } from './helpers/browser-failure-evidence.mjs'
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs'
+import { assertAlchemyPanelGeometry, collectAlchemyReviewGeometry, assertAlchemyReviewFeed } from './helpers/alchemy-panel-contract.mjs'
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
+import { openContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
 import assert from 'node:assert/strict'
@@ -469,9 +470,9 @@ async function verifyPublicServiceConversionJourneys(){
       'Default payment details are collapsed before geometry measurement')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
-     assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
-     assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
-      'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
+     assertAlchemyPanelGeometry(measurements)
+     const reviewMeasurements=await servicePage.locator('[data-alchemy-panel="reviews"]').evaluate(collectAlchemyReviewGeometry)
+     assertAlchemyReviewFeed(reviewMeasurements,{locale,width})
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
      if(width===390){
       await guide.locator('summary').click()
@@ -496,19 +497,10 @@ async function verifyPublicServiceConversionJourneys(){
      await form.locator('select').first().selectOption('30')
      await form.locator('select').nth(1).selectOption('business')
      await expect(form.locator('select').first()).toHaveValue('30')
-     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(3)
-     const stack=servicePage.locator('[data-alchemy-review-stack]')
-     const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
-       nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
-     assert.equal(boxes.length,3,'All three source-backed videos are visible')
-     assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
-       'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
-     assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
-       'Vertical testimonial stack cannot overflow horizontally')
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const order=await openContactChannelChooser(pricing,expect)
+     const order=await openRegisteredCompactPhoneChooser(pricing,expect,servicePage)
      const prepared=await assertPreparedContactChannels(order,expect)
      assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
        'Selected 30-minute format must be carried into WhatsApp and Telegram')

@@ -46,6 +46,29 @@ export function createDaoCaptureRouteGuard(origin, env = process.env) {
   return { submissions, blocked, route }
 }
 
+// Read-only failure evidence: never serialize contact, DOM text, URLs or payloads.
+// Self-contained so Playwright can evaluate it without application hooks.
+export function daoConsentDiagnostics(form, expected) {
+  const contact = form.querySelector('input[name="contact"]')
+  const consent = form.querySelector('input[type="checkbox"]')
+  const button = form.querySelector('button[data-compact-channel="whatsapp"]')
+  const alerts = [...form.querySelectorAll('[role="alert"]')]
+  return {
+    formConnected: Boolean(form.isConnected),
+    documentComplete: form.ownerDocument?.readyState === 'complete',
+    contactMatches: contact?.value === expected.contact,
+    contactDisabled: Boolean(contact?.disabled),
+    consentChecked: Boolean(consent?.checked),
+    consentRequired: Boolean(consent?.required),
+    consentMissing: Boolean(consent?.validity?.valueMissing),
+    buttonPresent: Boolean(button),
+    buttonTypeIsButton: button?.type === 'button',
+    buttonDisabled: Boolean(button?.disabled),
+    alertCount: alerts.length,
+    expectedConsentAlert: alerts.some(alert => alert.textContent?.trim() === expected.required),
+  }
+}
+
 export async function assertDaoFreeEntryCapture(page, expect, { origin, locale }) {
   assertDaoVerifierBoundary(origin)
   assert.ok(Object.hasOwn(copy, locale), 'Only explicitly covered Dao locales are allowed')
@@ -88,7 +111,18 @@ export async function assertDaoFreeEntryCapture(page, expect, { origin, locale }
     await expect(capture.locator('[data-lead-saved]')).toHaveCount(0)
     await contact.fill(CONTACT)
     await whatsapp.click()
-    await expect(form.getByRole('alert')).toHaveText(t.required)
+    try {
+      await expect(form.getByRole('alert')).toHaveText(t.required)
+    } catch (error) {
+      let state = null
+      try { state = await form.evaluate(daoConsentDiagnostics, { contact: CONTACT, required: t.required }) }
+      catch { /* Diagnostics must never replace the original failing gate. */ }
+      try {
+        console.error('DAO_CONSENT_FAILURE', JSON.stringify({ locale, state,
+          syntheticSubmissions: guard.submissions.length, blockedRequests: guard.blocked.length }))
+      } catch { /* A diagnostic sink failure must not replace the original error. */ }
+      throw error
+    }
     assert.deepEqual(guard.submissions, [], 'No request without explicit consent')
     assert.deepEqual(await page.evaluate(() => window.__hhDaoCaptureProbe),
       { opens: [], destinations: [] }, 'No popup or messenger destination before consent')

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
-import { assertDaoVerifierBoundary, createDaoCaptureRouteGuard } from '../scripts/helpers/dao-free-entry-verifier.mjs'
+import { assertDaoVerifierBoundary, createDaoCaptureRouteGuard, daoConsentDiagnostics } from '../scripts/helpers/dao-free-entry-verifier.mjs'
 
 const origin = 'http://127.0.0.1:3100'
 const env = { CI: 'true', HH_APP_TEST_RUNTIME: 'isolated',
@@ -87,4 +87,39 @@ test('current public contracts retain exact locales, consent, geometry and isola
   assert.match(helper, /context\.unroute\('\*\*\/\*', guard\.route\)/)
   assert.match(helper, /window\.open = \(url, target\)/)
   assert.match(helper, /Contact never enters the messenger draft/)
+})
+
+
+test('consent diagnostics report only booleans and counts, never private field or alert text', () => {
+  const nodes = {
+    'input[name="contact"]': { value: 'synthetic-private@example.test', disabled: false },
+    'input[type="checkbox"]': { checked: false, required: true, validity: { valueMissing: true } },
+    'button[data-compact-channel="whatsapp"]': { type: 'button', disabled: false },
+  }
+  const form = { isConnected: true, ownerDocument: { readyState: 'complete' },
+    querySelector: key => nodes[key],
+    querySelectorAll: () => [{ textContent: 'Synthetic consent required' }],
+  }
+  const result = daoConsentDiagnostics(form, { contact: 'synthetic-private@example.test', required: 'Synthetic consent required' })
+  assert.deepEqual(result, { formConnected: true, documentComplete: true, contactMatches: true,
+    contactDisabled: false, consentChecked: false, consentRequired: true, consentMissing: true,
+    buttonPresent: true, buttonTypeIsButton: true, buttonDisabled: false, alertCount: 1, expectedConsentAlert: true })
+  assert.ok(Object.values(result).every(value => typeof value === 'boolean' || typeof value === 'number'))
+  assert.doesNotMatch(JSON.stringify(result), /synthetic-private|Synthetic consent required/)
+  nodes['input[name="contact"]'].value = ''
+  nodes['input[type="checkbox"]'].checked = true
+  nodes['button[data-compact-channel="whatsapp"]'].disabled = true
+  assert.equal(daoConsentDiagnostics(form, { contact: 'expected', required: 'different' }).contactMatches, false)
+  assert.equal(daoConsentDiagnostics(form, { contact: 'expected', required: 'different' }).expectedConsentAlert, false)
+  assert.equal(daoConsentDiagnostics(form, {}).consentChecked, true)
+  assert.equal(daoConsentDiagnostics(form, {}).buttonDisabled, true)
+})
+
+test('DAO failure diagnostics cannot skip, retry, waive or replace the original consent gate', () => {
+  const helper = read('scripts/helpers/dao-free-entry-verifier.mjs')
+  assert.match(helper, /try \{\s*await expect\(form.getByRole\('alert'\)\).toHaveText\(t.required\)/)
+  assert.match(helper, /catch \(error\) \{[\s\S]*DAO_CONSENT_FAILURE[\s\S]*throw error\s*\}/)
+  assert.doesNotMatch(helper, /waitForTimeout|test.skip|form.submit|requestSubmit|noValidate|force:\s*true/)
+  assert.equal((helper.match(/await whatsapp.click\(\)/g) || []).length, 2)
+  assert.match(helper, /assert.deepEqual\(guard.submissions, \[\], 'No request without explicit consent'\)/)
 })

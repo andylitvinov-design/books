@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import vm from 'node:vm'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const builder=read('components/app/practitioner-course-builder.jsx')
@@ -11,10 +12,27 @@ test('a course starts with its author-entered title and first editable screen',(
  assert.match(builder,/data-course-quick-start/)
  assert.match(builder,/const title=newTitle\.trim\(\)/)
  assert.match(builder,/if\(!title\)\{setError\(t\.enterTitle\);return\}/)
- assert.match(builder,/course=\{title,description:'',locale:newLocale,slides:\[makeSlide\(\)\]\}/)
+ const makeSlide=builder.match(/^const makeSlide=([^\n]+)$/m)?.[1]
+ const isMeditation=builder.match(/const isMeditation=([^\n]+)/)?.[1]
+ const course=builder.match(/const course=([^\n]+)\n\s+const \{item\}=await api\(\{action:'create',course\}\)/)?.[1]
+ assert.ok(makeSlide&&isMeditation&&course,'Execute the actual create payload and slide factory')
+ const id='11111111-1111-4111-8111-111111111111'
+ for(const [meditationType,contentType,kind] of [['','course','text'],['unknown','course','text'],
+  ['audio','audio_meditation','audio'],['video','video_meditation','video']]){
+  const actual=vm.runInNewContext('const title=newTitle.trim();const makeSlide='+makeSlide+
+   ';const isMeditation='+isMeditation+';('+course+')',{
+    newTitle:'  Synthetic author title  ',newLocale:'ru',meditationType,crypto:{randomUUID:()=>id},
+   },{timeout:1000})
+  assert.deepEqual(JSON.parse(JSON.stringify(actual)),{title:'Synthetic author title',description:'',locale:'ru',
+   contentType,slides:[{id,kind,title:'',body:''}]})
+ }
  assert.doesNotMatch(builder,/title:t\.new,description:'',locale:/)
  assert.match(builder,/onSubmit=\{event=>void create\(event\)\}/)
- assert.match(builder,/setCreating\(!list\.length\)/)
+ const initialCreate=builder.match(/setCreating\((Boolean\(startCreate\)[^\n]+)\)/)?.[1]
+ assert.ok(initialCreate,'Actual initial create-mode decision is required')
+ for(const [startCreate,list,expected] of [[false,[],true],[false,[{id:'synthetic'}],false],
+  [true,[],true],[true,[{id:'synthetic'}],true]])
+  assert.equal(vm.runInNewContext(initialCreate,{startCreate,list},{timeout:1000}),expected)
 })
 
 test('editing stays in one workspace and protects pending changes and active slide',()=>{

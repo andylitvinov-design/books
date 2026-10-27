@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
 
 const source = name => readFileSync(new URL('../'+name,import.meta.url),'utf8')
 
@@ -48,7 +49,38 @@ test('New Routes reuse protected audio editor without spawning duplicate media s
 
 test('Canonical course editor CSP permits scoped private draft upload and preview',()=>{
   assert.match(middleware,/reikiIntroAudioManager = .*courses/)
-  assert.match(middleware,/reikiIntroAudioManager \? reikiIntroAudioOrigin/)
+  // Use the actual signed-origin/route/connect expressions. A coaching learner
+  // may play audio but must not inherit the owner upload connection allowance.
+  const connect=middleware.match(/"connect-src 'self'"[^\n]+?(?=, "object-src 'none'")/)?.[0]
+  assert.ok(connect,'Actual connect-src expression is required')
+  const origin=middleware.match(/const reikiIntroAudioOrigin = ([\s\S]+?)\n  \}\)\(\)/)?.[1]
+  assert.ok(origin,'Actual signed audio origin expression is required')
+  const originExpression=origin+'\n  })()'
+  const gate=(name,pathname)=>{
+    const expression=middleware.match(new RegExp('const '+name+' = ([^\\n]+)'))?.[1]
+    assert.ok(expression,name)
+    return vm.runInNewContext(expression,{pathname},{timeout:1000})
+  }
+  const syntheticOrigin='https://aaaaaaaaaaaaaaaaaaaa.supabase.co'
+  for(const [pathname,uploadAllowed] of [
+    ['/admin/materials/courses/reiki-practitioner',true],
+    ['/admin/materials/coaching/egyptian',true],['/admin/materials/coaching/greek/',true],
+    ['/admin/materials/coaching/other',false],['/admin/materials/courses/other',false],
+    ['/en/app/coaching/egyptian',false],['/ru/app/coaching/greek',false],
+    ['/en/academy/principles-of-energywork/learn',false],
+    ['/en/about',false],['/en/client',false],
+  ]){
+    const gates=Object.fromEntries(['reikiIntroAudioManager','reikiLessonAudioPage',
+      'coachingOwnerAudioManager','coachingLearnerAudioPlayer'].map(name=>[name,gate(name,pathname)]))
+    for(const databaseOrigin of [syntheticOrigin,'http://aaaaaaaaaaaaaaaaaaaa.supabase.co','https://example.test']){
+      const signedOrigin=vm.runInNewContext(originExpression,{...gates,URL,
+        process:{env:{HH_APP_SUPABASE_URL:databaseOrigin}}},{timeout:1000})
+      const value=vm.runInNewContext(connect,{...gates,reikiIntroAudioOrigin:signedOrigin,
+        youtubeOAuthUploadAllowed:false,deliveryOrigin:'',externalVideoUploadOrigin:'',
+        practitionerCourseMediaOrigin:'',privateDocument:true},{timeout:1000})
+      assert.equal(value,"connect-src 'self'"+(uploadAllowed&&databaseOrigin===syntheticOrigin?' '+syntheticOrigin:''),pathname+' '+databaseOrigin)
+    }
+  }
   assert.match(middleware,/media-src 'self'/)
   assert.match(middleware,/connect-src 'self'/)
 })
