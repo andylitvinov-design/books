@@ -57,8 +57,8 @@ test('filtered focus summary is localized and mobile topics use compact full-wid
 
 test('topic cards show only available axes; third step exposes source-declared scales', () => {
   assert.ok(Object.values(PROFILE_AREA_AXES).flat().includes('anxiety'))
-  assert.match(builder, /visibleScaleGroups\.find\(group => group\.area === area\)\?\.scales/)
-  assert.match(builder, /axes\.map\(axis => axesCopy\[axis\]\?\.\[locale\] \|\| axis\)/)
+  assert.match(builder, /visibleScaleGroups\.find\(group => group\.area === area\)\?\.researchAxes/)
+  assert.match(builder, /axes\.map\(axis => profileResearchAxisLabel\(axis\.id, locale\)\)/)
   assert.match(builder, /disabled=\{!axes\.length\}/)
   assert.match(builder, /data-profile-scales-by-topic/)
   assert.match(builder, /data-profile-confirm-scales/)

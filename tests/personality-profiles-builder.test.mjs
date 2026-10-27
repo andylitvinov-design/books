@@ -46,7 +46,7 @@ test('public route uses existing verified guest catalogue, with strict eligibili
   assert.ok(component.includes('type Focus = "wellbeing" | "relationships" | "work" | "identity"'))
   assert.ok(component.includes('type Area = "traits" | "support" | "emotions" | "recovery"'))
   assert.match(component, /selectAll: "Выбрать все"/)
-  assert.match(component, /recommendProfileMode\(relevantTests, selectedAxes, "questionnaires"\)/)
+  assert.match(component, /recommendProfileAxisBattery\(tests, scaleGroups,/)
   // On Tests an explicit guest CTA launches only selected eligible test keys.
   // Ready separately offers one opt-in Google save without a duplicate guest action.
   assert.match(component, /const testHref = base \+ "\/client\?startTests=" \+ encodeURIComponent\(selectedKeys.join\(","\)\)/)
@@ -198,7 +198,7 @@ test('Tests slide offers a direct start followed by discoverable filters for oth
     'value={timeFilter}', 'value={sortFilter}', 'extraMatches', 'data-profile-mode={mode}',
     "href={'/' + locale + '/client/tests'}"]) assert.ok(testsSlide.includes(phrase), phrase)
   assert.match(builder, /selectedKeys\.flatMap\(key => tests\.filter\(test => test\.key === key/)
-  assert.match(builder, /recommendProfileMode\(relevantTests, selectedAxes, "pro"\)/)
+  assert.match(builder, /selectedScaleIds, "pro"\)/)
   assert.match(builder, /keys\.length < 12/)
   assert.match(builder, /test\.key === key && test\.testKind === modeKind/)
   assert.match(route, /testKind: entry\.testKind/)
@@ -220,7 +220,7 @@ test('additional test options inherit rights-filtered guest metadata; filters ne
     'entry.rightsStatus === "cleared"', 'entry.explicitOptIn !== true']) {
     assert.ok(route.includes(flag), flag)
   }
-  assert.match(builder, /test\.axes\.filter\(axis => selectedAxes\.includes\(axis\)\)/)
+  assert.match(builder, /selectedAxisRefs\.includes\(scale\.researchAxisId\)/)
   assert.match(builder, /test\.testKind === modeKind/)
   assert.match(builder, /extraProfile !== null && extraTestKeys\.has\(test\.key\)/)
   assert.match(builder, /const effectiveExtraScales = extraScales\.length \? extraScales : axesForExtraProfile/)

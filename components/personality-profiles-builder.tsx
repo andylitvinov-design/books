@@ -7,8 +7,8 @@ import styles from "./personality-profiles-builder.module.css";
 import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
-  buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes,
-  recommendProfileMode, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
+  buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes, selectedProfileResearchAxes,
+  profileResearchAxisLabel, recommendProfileAxisBattery, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity";
@@ -18,29 +18,21 @@ type PublicScale = { key: string; label: string; axis: string; scaleQuestions: n
 type PublicTest = { key: string; title: string; axes: string[]; minutes: number | null;
   questions: number | null; testKind: string; topics: string[]; scales: PublicScale[] };
 type Props = { locale: Locale; tests: PublicTest[] };
+type ProfileScaleGroup = {
+  area: Area;
+  scales: Array<{
+    id: string; key: string; label: string; axis: string; researchAxisId: string;
+    testKey: string; testTitle: string; testKind: string;
+    scaleQuestions: number | null; questions: number | null; minutes: number | null;
+  }>;
+  researchAxes: Array<{ id: string; sourceAxis: string; label: Record<Locale, string>; scaleCount: number }>;
+};
 
 // Shared, source-backed topic taxonomy. All catalogue axes are mapped,
 // but only topics supported by eligible tests appear in the wizard.
 const areaAxes = PROFILE_AREA_AXES as Record<Area, readonly string[]>;
 const focusAreas = PROFILE_FOCUS_AREAS as unknown as Record<Focus, Area[]>;
 const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
-
-const axesCopy: Record<string, Record<Locale, string>> = {
-  embodiment: { en: "Body awareness", ru: "Контакт с телом", es: "Conciencia corporal" },
-  sleep: { en: "Sleep and rest", ru: "Сон и отдых", es: "Sueño y descanso" },
-  stress: { en: "Perceived stress", ru: "Воспринимаемый стресс", es: "Estrés percibido" },
-  energy: { en: "Energy", ru: "Энергия", es: "Energía" },
-  resource: { en: "Personal resources", ru: "Личные ресурсы", es: "Recursos personales" },
-  self_support: { en: "Self-support", ru: "Самоподдержка", es: "Apoyo personal" },
-  clarity: { en: "Mental clarity", ru: "Ясность мышления", es: "Claridad mental" },
-  focus: { en: "Focus", ru: "Концентрация", es: "Concentración" },
-  functioning: { en: "Everyday functioning", ru: "Действия и эффективность", es: "Actividades cotidianas" },
-  meaning: { en: "Meaning and direction", ru: "Смысл и направление", es: "Sentido y dirección" },
-  mood: { en: "Current mood", ru: "Текущее настроение", es: "Estado emocional" },
-  personality: { en: "Personality patterns", ru: "Личностные особенности", es: "Patrones personales" },
-  emotional_regulation: { en: "Emotional awareness", ru: "Осознание эмоций", es: "Conciencia emocional" },
-  relationships: { en: "Relationships", ru: "Отношения", es: "Relaciones" },
-};
 
 const copy = {
   en: {
@@ -86,12 +78,12 @@ const copy = {
       money: ["Money decisions", "Choices · habits, not income"],
       meaning: ["Purpose & values", "Meaning · direction"],
     },
-    scaleTitle: "Choose the scales for your profile",
-    scaleHelp: "Only real source-declared dimensions can be measured. Keep the suggestions or select what you want to explore.",
+    scaleTitle: "Choose the axes and scales for your profile",
+    scaleHelp: "Research axes group related questions. Select the actual questionnaire scales beneath them; scores from different tests are not interchangeable.",
     selectAll: "Select all", clearAll: "Clear all", selected: "selected",
     scaleSourceLabel: "Questionnaire", scaleItemsLabel: "scale questions", scaleUnknown: "Scale item count not documented",
     fullTestNote: "The time and total questions shown belong to the full source questionnaire. Shared tests are counted only once in the next step.",
-    scaleSelected: "scales selected", scalePerTopic: "of this topic", scaleMore: "Show more scales", scaleFewer: "Show fewer scales",
+    scaleSelected: "scales selected", scalePerTopic: "of this topic", scaleSourceCount: "source scales", scaleMore: "Show more scales", scaleFewer: "Show fewer scales",
     scaleEmpty: "No eligible source-declared scales for this topic yet.", scaleRequired: "Choose at least one scale to continue.",
     modeCheckins: "Questionnaires", modePro: "Pro tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
     modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
@@ -169,12 +161,12 @@ const copy = {
       money: ["Решения о деньгах", "Привычки, не уровень дохода"],
       meaning: ["Ценности и смысл", "Цели · направление"],
     },
-    scaleTitle: "Выберите шкалы своего профиля",
-    scaleHelp: "Можно выбрать лишь реальные шкалы, указанные в источниках тестов. Оставьте предложенные или выберите свои.",
+    scaleTitle: "Выберите оси и шкалы своего профиля",
+    scaleHelp: "Оси группируют близкие темы, а галочки выбирают реальные шкалы тестов. Баллы разных методик не приравниваются друг к другу.",
     selectAll: "Выбрать все", clearAll: "Снять все", selected: "выбрано",
     scaleSourceLabel: "Опросник", scaleItemsLabel: "вопросов шкалы", scaleUnknown: "Число вопросов шкалы не указано в методике",
     fullTestNote: "Время и общее число вопросов относятся к тесту-источнику. Если шкалы входят в один тест, время на следующем шаге считается один раз.",
-    scaleSelected: "шкал выбрано", scalePerTopic: "по этой теме", scaleMore: "Больше шкал", scaleFewer: "Свернуть шкалы",
+    scaleSelected: "шкал выбрано", scalePerTopic: "по этой теме", scaleSourceCount: "исходных шкал", scaleMore: "Больше шкал", scaleFewer: "Свернуть шкалы",
     scaleEmpty: "По этой теме пока нет доступных шкал с указанным источником.", scaleRequired: "Выберите хотя бы одну шкалу.",
     modeCheckins: "Опросники", modePro: "Pro-тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
     modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
@@ -252,12 +244,12 @@ const copy = {
       money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
       meaning: ["Sentido y valores", "Metas · dirección"],
     },
-    scaleTitle: "Selecciona las escalas de tu perfil",
-    scaleHelp: "Solo medimos las dimensiones declaradas en los cuestionarios. Puedes cambiar las sugerencias.",
+    scaleTitle: "Elige los ejes y las escalas de tu perfil",
+    scaleHelp: "Los ejes agrupan temas afines; marca las escalas de cuestionarios reales. Sus resultados no son intercambiables.",
     selectAll: "Seleccionar todas", clearAll: "Desmarcar", selected: "seleccionadas",
     scaleSourceLabel: "Cuestionario", scaleItemsLabel: "preguntas de la escala", scaleUnknown: "Sin número de ítems verificado",
     fullTestNote: "El tiempo y el total de preguntas pertenecen al cuestionario completo. Si varias escalas usan el mismo test, su duración se cuenta una sola vez.",
-    scaleSelected: "escalas elegidas", scalePerTopic: "de este tema", scaleMore: "Más escalas", scaleFewer: "Ver menos escalas",
+    scaleSelected: "escalas elegidas", scalePerTopic: "de este tema", scaleSourceCount: "escalas de origen", scaleMore: "Más escalas", scaleFewer: "Ver menos escalas",
     scaleEmpty: "Aún no hay escalas disponibles con fuente para este tema.", scaleRequired: "Elige al menos una escala.",
     modeCheckins: "Cuestionarios", modePro: "Pruebas Pro", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
     modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
@@ -374,44 +366,51 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   // subscales; their question/time metadata always belongs to a real test.
   const visibleAreas = profileAreasWithTests(tests, focuses) as Area[];
   const activeAreas = areas.filter(area => visibleAreas.includes(area));
-  const visibleScaleGroups = buildProfileScaleGroups(tests, visibleAreas, areaAxes);
-  const scaleGroups = buildProfileScaleGroups(tests, activeAreas, areaAxes) as Array<{
-    area: Area; scales: Array<{ id: string; key: string; label: string; axis: string;
-      testKey: string; testTitle: string; testKind: string; scaleQuestions: number | null;
-      questions: number | null; minutes: number | null }>;
-  }>;
+  const visibleScaleGroups = buildProfileScaleGroups(tests, visibleAreas, areaAxes) as ProfileScaleGroup[];
+  const scaleGroups = buildProfileScaleGroups(tests, activeAreas, areaAxes) as ProfileScaleGroup[];
   const selectedAxes = selectedProfileAxes(scaleGroups, selectedScaleIds) as string[];
+  const selectedAxisRefs = selectedProfileResearchAxes(scaleGroups, selectedScaleIds) as string[];
   const selectedKeys = selectedByMode[batteryMode];
   const chosenTests = selectedKeys.flatMap(key => tests.filter(test => test.key === key &&
     test.testKind === (batteryMode === "pro" ? "professional" : "monitoring")));
-  const coverage = new Set(chosenTests.flatMap(test => test.axes.filter(axis => selectedAxes.includes(axis))));
+  // Coverage is by researched construct, not by a broad scorer axis such as "personality".
+  // Choosing a questionnaire never creates a new or interchangeable clinical score.
+  const coverage = new Set(scaleGroups.flatMap(group => group.scales
+    .filter(scale => selectedKeys.includes(scale.testKey) &&
+      selectedAxisRefs.includes(scale.researchAxisId)).map(scale => scale.researchAxisId)));
   const minutes = chosenTests.reduce((sum, test) => sum + (test.minutes || 0), 0);
   const modeTotals = {
     questionnaires: profileBatteryTotals(tests, selectedByMode.questionnaires),
     pro: profileBatteryTotals(tests, selectedByMode.pro),
   };
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
-  const extraGroups = extraProfile
-    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) : [];
-  const axesForExtraProfile = [...new Set(extraGroups.flatMap(group => group.scales.map(scale => scale.axis)))]
-    .sort((a, b) => (axesCopy[a]?.[locale] || a).localeCompare(axesCopy[b]?.[locale] || b, locale));
+  const extraGroups: ProfileScaleGroup[] = extraProfile
+    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) as ProfileScaleGroup[] : [];
+  const axesForExtraProfile = [...new Set(extraGroups.flatMap(group =>
+    group.researchAxes.map(axis => axis.id)))]
+    .sort((a, b) => profileResearchAxisLabel(a, locale).localeCompare(profileResearchAxisLabel(b, locale), locale));
   const effectiveExtraScales = extraScales.length ? extraScales : axesForExtraProfile;
   const extraTestKeys = new Set(extraGroups.flatMap(group => group.scales
-    .filter(scale => effectiveExtraScales.includes(scale.axis)).map(scale => scale.testKey)));
+    .filter(scale => effectiveExtraScales.includes(scale.researchAxisId)).map(scale => scale.testKey)));
+  const extraRelevance = (key: string) => extraGroups.reduce((total, group) => total +
+    group.scales.filter(scale => scale.testKey === key &&
+      effectiveExtraScales.includes(scale.researchAxisId)).length, 0);
   const extraMatches = tests
     .filter(test => !selectedKeys.includes(test.key))
     .filter(test => test.testKind === modeKind)
     .filter(test => extraProfile !== null && extraTestKeys.has(test.key))
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
-      [test.title, ...test.scales.map(scale => scale.label), ...test.axes.map(axis => axesCopy[axis]?.[locale] || axis)]
+      [test.title, ...test.scales.map(scale => scale.label),
+        ...extraGroups.flatMap(group => group.scales
+          .filter(scale => scale.testKey === test.key)
+          .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale)))]
         .join(" ").toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)))
     .sort((a, b) => sortFilter === "shortest"
       ? (a.minutes ?? 99) - (b.minutes ?? 99) || a.title.localeCompare(b.title, locale)
       : sortFilter === "alphabetical"
         ? a.title.localeCompare(b.title, locale)
-        : b.axes.filter(axis => effectiveExtraScales.includes(axis)).length -
-          a.axes.filter(axis => effectiveExtraScales.includes(axis)).length ||
+        : extraRelevance(b.key) - extraRelevance(a.key) ||
           (a.minutes ?? 99) - (b.minutes ?? 99) || a.key.localeCompare(b.key));
   const displayTests = showMore ? extraMatches : extraMatches.slice(0, 6);
 
@@ -473,17 +472,17 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     } else if (step === 2 && selectedScaleIds.length && selectedAxes.length) {
       const signature = [...selectedScaleIds].sort().join("|");
       if (batterySignature !== signature) {
-        // Keep both modes available: a Pro scale can cover an axis initially chosen
-        // in a monitoring test and vice versa, but ONLY within the selected topics.
-        const selectedTestKeys = new Set(scaleGroups.flatMap(group => group.scales
-          .filter(scale => selectedAxes.includes(scale.axis)).map(scale => scale.testKey)));
-        const relevantTests = tests.filter(test => selectedTestKeys.has(test.key));
-        setSelectedByMode({
-          questionnaires: recommendProfileMode(relevantTests, selectedAxes, "questionnaires"),
-          pro: recommendProfileMode(relevantTests, selectedAxes, "pro"),
-        });
+        // A selected *source scale* resolves to a particular research construct.
+        // Big Five extraversion cannot be substituted with an unrelated trait.
+        // The selector returns immutable suggestions; React keeps editable
+        // per-mode selections as its own mutable arrays.
+        const questionnaires = [...recommendProfileAxisBattery(tests, scaleGroups,
+          selectedScaleIds, "questionnaires")];
+        const pro = [...recommendProfileAxisBattery(tests, scaleGroups,
+          selectedScaleIds, "pro")];
+        setSelectedByMode({ questionnaires, pro });
         setBatterySignature(signature);
-        setBatteryMode("questionnaires");
+        setBatteryMode(questionnaires.length ? "questionnaires" : pro.length ? "pro" : "questionnaires");
       }
       setShowMore(false);
       setStep(3);
@@ -620,14 +619,13 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </p>
         <div className={styles.areaGrid} data-profile-topic-options>
           {visibleAreas.map(area => {
-            const axes = [...new Set(visibleScaleGroups.find(group => group.area === area)?.scales
-              .map(scale => scale.axis) || [])];
+            const axes = visibleScaleGroups.find(group => group.area === area)?.researchAxes || [];
             return <button type="button" key={area} aria-pressed={areas.includes(area)}
               disabled={!axes.length} className={styles.areaCard} onClick={() => toggleArea(area)}>
               <span className={styles.selectDot}>{areas.includes(area) && <Check size={14} aria-hidden="true" />}</span>
               <span><strong>{t.areas[area][0]}</strong>
                 <small>{axes.length
-                  ? axes.map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")
+                  ? axes.map(axis => profileResearchAxisLabel(axis.id, locale)).join(" · ")
                   : extra.notMeasured}</small>
               </span>
             </button>;
@@ -659,7 +657,15 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 <small>{selectedInTopic} / {group.scales.length} {t.scalePerTopic}</small>
               </span><ChevronDown size={18} aria-hidden="true" /></summary>
               <div className={styles.topicAccordionBody}>
-                {visible.map(scale => <label key={scale.id} className={styles.topicScaleRow}
+                {group.researchAxes.filter(axis =>
+                  visible.some(scale => scale.researchAxisId === axis.id)).map(axis =>
+                  <div key={axis.id} className={styles.topicAxisGroup} data-profile-research-axis={axis.id}>
+                    <div className={styles.topicAxisHeading}>
+                      <strong>{profileResearchAxisLabel(axis.id, locale)}</strong>
+                      <small>{axis.scaleCount} {t.scaleSourceCount}</small>
+                    </div>
+                    {visible.filter(scale => scale.researchAxisId === axis.id)
+                      .map(scale => <label key={scale.id} className={styles.topicScaleRow}
                     data-profile-source-scale={scale.id}>
                   <input type="checkbox" checked={selectedScaleIds.includes(scale.id)}
                     onChange={() => toggleScale(scale.id)} />
@@ -672,6 +678,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                       {scale.minutes ? "~" + scale.minutes + " " + t.minutes : ""}</small>
                   </span>
                 </label>)}
+                  </div>)}
                 {group.scales.length === 0 && <p className={styles.scaleRequired}>{t.scaleEmpty}</p>}
                 {group.scales.length > 8 && <button type="button" className={styles.scaleExpand}
                     onClick={() => setExpandedScaleAreas(previous => expanded
@@ -706,7 +713,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         <div className={styles.testCount}><ClipboardList size={17} aria-hidden="true" />
           <strong>{chosenTests.length} {t.testCount}</strong>
           {minutes > 0 && <span>· {minutes} {t.minutes}</span>}
-          <span>· {coverage.size}/{selectedAxes.length} {t.selected}</span>
+          <span>· {coverage.size}/{selectedAxisRefs.length} {t.selected}</span>
         </div>
         {chosenTests.length > 0 ? <div className={styles.testList} data-profile-recommended-tests>
           {chosenTests.map(test =>
@@ -717,12 +724,14 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                <span>{test.axes.filter(axis => selectedAxes.includes(axis))
-                  .map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")}</span>
+                <span>{[...new Set(scaleGroups.flatMap(group => group.scales
+                  .filter(scale => scale.testKey === test.key &&
+                    selectedAxisRefs.includes(scale.researchAxisId))
+                  .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
               </span>
             </label>)}
         </div> : <p className={styles.caution} role="status">{t.modeNoTests}</p>}
-        {coverage.size < selectedAxes.length && chosenTests.length > 0 &&
+        {coverage.size < selectedAxisRefs.length && chosenTests.length > 0 &&
           <p className={styles.caution}>{t.unmeasured}</p>}
         <div className={styles.startRow}>
           {selectedKeys.length > 0
@@ -761,7 +770,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                     ? previous.filter(item => item !== axis) : [...previous, axis]);
                   setShowMore(false);
                 }}>
-                {extraScales.includes(axis) ? "✓ " : "+ "}{axesCopy[axis]?.[locale] || axis}
+                {extraScales.includes(axis) ? "✓ " : "+ "}{profileResearchAxisLabel(axis, locale)}
               </button>)}
             </div>
             <div className={styles.extraScaleActions}>
@@ -800,7 +809,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                 <small>{test.questions ? test.questions + " " + t.questions : ""}
                   {test.questions && test.minutes ? " · " : ""}
                   {test.minutes ? test.minutes + " " + t.minutes : ""}</small>
-                <span>{test.axes.map(axis => axesCopy[axis]?.[locale] || axis).join(" · ")}</span>
+                <span>{[...new Set(extraGroups.flatMap(group => group.scales
+                  .filter(scale => scale.testKey === test.key &&
+                    effectiveExtraScales.includes(scale.researchAxisId))
+                  .map(scale => profileResearchAxisLabel(scale.researchAxisId, locale))))].join(" · ")}</span>
               </span>
             </label>)}
           </div> : <p className={styles.extraEmpty}>{extra.nothing}</p>}

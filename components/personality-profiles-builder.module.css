@@ -382,3 +382,11 @@
 }
 @media(max-width:350px){.topicAccordionTitle small,.topicScaleText small{font-size:10px}.batteryModeChoices button{padding:8px 7px}}
 @media(prefers-reduced-motion:reduce){.topicAccordion summary>svg{transition:none}}
+
+/* Construct axis → actual source questionnaire scales; no fabricated score or standalone subscale timer. */
+.topicAxisGroup{min-width:0;display:grid;gap:5px;padding:9px;border:1px solid #d8e5db;border-radius:12px;background:#f8fbf7}
+.topicAxisHeading{min-width:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;padding:0 2px 3px}
+.topicAxisHeading strong{min-width:0;overflow-wrap:anywhere;font-size:12px;line-height:1.35;font-weight:800;color:#315d4c}
+.topicAxisHeading small{font-size:10px;line-height:1.35;color:#667b6d}
+.topicAxisGroup .topicScaleRow{background:#fff;min-width:0}
+@media(max-width:350px){.topicAxisGroup{padding:7px}.topicAxisHeading strong{font-size:11px}.topicAxisHeading small{font-size:10px}}
