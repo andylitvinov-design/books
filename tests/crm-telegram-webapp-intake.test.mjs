@@ -61,6 +61,7 @@ test('Mini App appends to the active encrypted Telegram thread, never creates a 
   assert.match(backend,/verifyTelegramWebAppInitData/)
   assert.match(backend,/session\.stage !== 'done'/)
   assert.match(backend,/session\.consent_at/)
+  assert.match(backend,/payload\.topic !== \(session\.topic \|\| 'personal'\)/)
   assert.match(backend,/crm_tg_existing_thread/)
   assert.match(backend,/crm_msg_ingest/)
   assert.match(backend,/seal\(\{/)
