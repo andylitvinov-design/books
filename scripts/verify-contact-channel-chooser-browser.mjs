@@ -305,7 +305,22 @@ async function runEngine(name, engine) {
             }, null, {timeout:20000});
             const clickDocumentOrigin = await page.evaluate(() => {
               window.__hhDaoClickEvents = 0;
+              // Redacted, passive diagnostics only: never log contact fields,
+              // request bodies, texts, or messenger destinations.
+              window.__hhDaoButtonAtSetup = document.querySelector('main[data-free-entry-landing="dao"] button[data-compact-channel="whatsapp"]');
+              window.__hhDaoInputEvents = {pointerDowns:0, windowClicks:0, documentClicks:0, targetKind:null};
+              window.addEventListener("pointerdown", () => {
+                window.__hhDaoInputEvents.pointerDowns++;
+              }, {capture:true});
+              window.addEventListener("click", event => {
+                const sample = window.__hhDaoInputEvents;
+                sample.windowClicks++;
+                sample.targetKind = event.target instanceof Element
+                  ? (event.target.closest('button[data-compact-channel="whatsapp"]') ? "dao-whatsapp" : event.target.tagName.toLowerCase())
+                  : "non-element";
+              }, {capture:true});
               document.addEventListener("click", event => {
+                window.__hhDaoInputEvents.documentClicks++;
                 if (event.target instanceof Element &&
                     event.target.closest('main[data-free-entry-landing="dao"] button[data-compact-channel="whatsapp"]')) {
                   window.__hhDaoClickEvents++;
@@ -328,7 +343,14 @@ async function runEngine(name, engine) {
                 const contact = form?.querySelector('input[name="contact"]');
                 return {
                   domClicks: window.__hhDaoClickEvents ?? 0,
+                  inputEvents: window.__hhDaoInputEvents ?? null,
                   documentReplacedSinceTapSetup: performance.timeOrigin !== expectedDocumentOrigin,
+                  buttonReplacedSinceTapSetup: button !== window.__hhDaoButtonAtSetup,
+                  buttonHitAtCenter: Boolean(button && (() => {
+                    const rect=button.getBoundingClientRect();
+                    const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+                    return hit===button || button.contains(hit);
+                  })()),
                   reactHandlerPresent: Boolean(propsKey && typeof button[propsKey]?.onClick === "function"),
                   formConnected: Boolean(form?.isConnected),
                   buttonDisabled: Boolean(button?.disabled),
