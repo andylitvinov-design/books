@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { buildExplorerEntries, TEST_EXPLORER_AXES } from '../lib/assessments/test-explorer.js'
+import { auditProfileConstructLinks, buildAuthorAxisReview, authorAxisReviewCsv } from '../scripts/audit-profile-construct-links.mjs'
 import {
   PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, PROFILE_RESEARCH_AXES,
   buildProfileScaleGroups, defaultProfileScaleIds, profileAreasWithTests,
@@ -179,4 +180,36 @@ test('sensitive and reference-only measures never become new public source score
       'reference-only instrument must retain authored topic and category')
     assert.ok(!keys.has(reference.key),'reference-only method must not start')
   }
+})
+
+test('all 73 author-owned EN/RU families have an item-level qualified-review queue, never fake validation', () => {
+  const report = auditProfileConstructLinks()
+  const review = buildAuthorAxisReview(report)
+  assert.equal(report.counts.catalogue, 295)
+  assert.equal(report.counts.scoredAccount, 147)
+  assert.equal(report.counts.scoredGuest, 40)
+  assert.equal(report.counts.authorMethodsAwaitingIndependentReview, 73)
+  assert.equal(report.emptyResearchFacets.length, 0)
+  assert.deepEqual(report.unlinked, [])
+  assert.deepEqual(report.guestUnlinked, [])
+  assert.equal(review.methods, 73)
+  assert.equal(review.editions, 146)
+  assert.equal(review.items, 1498)
+  assert.equal(review.flaggedItems, 362)
+  assert.deepEqual(review.missingVersions, [])
+  assert.ok(review.unlinkedItemRows > 0,
+    'specialist scorer item-to-dimension mapping must not be inferred')
+  assert.ok(review.rows.every(row =>
+    row.reviewStatus === 'pending_qualified_content_review' &&
+    row.cognitiveInterviewStatus === 'not_completed' &&
+    row.psychometricValidation === 'not_established'))
+  assert.ok(review.rows.some(row => row.researchFacets.length > 0),
+    'some exact item-score mappings are available for reviewers')
+  assert.ok(review.rows.some(row => row.dimensionMapping === 'manual_construct_link_review'),
+    'unknown mappings remain visibly pending')
+  assert.equal(new Set(review.rows.map(row =>
+    [row.key,row.version,row.locale,row.itemId].join('::'))).size, review.items)
+  const csv=authorAxisReviewCsv(review)
+  assert.ok(csv.startsWith('key,version,locale,itemId,itemOrder,text,timeframe,'))
+  assert.equal(csv.trimEnd().split('\n').length, review.items + 1)
 })
