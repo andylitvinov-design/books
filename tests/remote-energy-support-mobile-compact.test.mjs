@@ -18,9 +18,14 @@ test("focus-first: compact choice and optional preferences before published spec
   assert.match(jsx, /master\.description \|\| t\.defaultDescription/);
   assert.match(jsx, /<details className=\{styles\.cardDetails\}>/);
   assert.match(jsx, /className=\{styles\.requestButton\}/);
-  assert.match(jsx, /\{isOpen && \(\s*<form id=/);
-  assert.match(route, /description: service\.copy\?\.shortDescription \|\| service\.copy\?\.description/);
-  assert.match(route, /service\.slug === "remote-energy-support" && service\.areaKey === "energy_spiritual"/);
+  assert.match(jsx, /\{isOpen && \(requestKind === "talisman" \? \(/);
+  assert.match(jsx, /<form id=\{"remote-request-" \+ master\.serviceId\} className=\{styles\.bookingForm\} onSubmit=\{submit\}>/);
+  assert.match(jsx, /\) : \(\s*<form id=/);
+  assert.match(jsx, /disabled=\{requestKind === "energy" && !offers\.length\}/);
+  const sharedOffers = read("lib/practitioners/public-remote-support-masters.ts");
+  assert.match(route, /listRemoteEnergySupportMasters\(locale\)/);
+  assert.match(sharedOffers, /description: service\.copy\?\.shortDescription \|\| service\.copy\?\.description/);
+  assert.match(sharedOffers, /service\.slug === "remote-energy-support" && service\.areaKey === "energy_spiritual"/);
   assert.match(css, /\.masterCard\{display:grid;grid-template-columns:minmax\(110px,34%\) minmax\(0,1fr\)/);
   assert.match(css, /@media\(max-width:365px\)/);
   assert.match(css, /\.masterCard\{grid-template-columns:87px minmax\(0,1fr\)/);
