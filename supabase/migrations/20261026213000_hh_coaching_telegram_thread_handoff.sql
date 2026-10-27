@@ -26,6 +26,23 @@ create policy crm_msg_telegram_handoff_lookup on app.crm_msg_threads
     and account_id::text=current_setting('hh.telegram_handoff_account',true)
     and user_hash=current_setting('hh.telegram_handoff_user',true)
   );
+-- The anonymous form route can inspect ONLY the exact consented customer
+-- CRM thread from a valid owner-encrypted handoff; all conditions default DENY
+-- without the transaction-local GUC values supplied by the server.
+grant select (id,owner_id,contact_id,user_hash,suppressed)
+  on app.crm_msg_threads to hh_app_backend;
+create policy crm_msg_coaching_handoff_read on app.crm_msg_threads
+  for select to hh_app_backend
+  using (owner_id::text=current_setting('hh.coaching_handoff_owner',true)
+    and id::text=current_setting('hh.coaching_handoff_thread',true)
+    and user_hash=current_setting('hh.coaching_handoff_user',true)
+    and not suppressed);
+grant select (id,owner_id,suppressed)
+  on app.crm_contacts to hh_app_backend;
+create policy crm_contact_coaching_handoff_read on app.crm_contacts
+  for select to hh_app_backend
+  using (owner_id::text=current_setting('hh.coaching_handoff_owner',true)
+    and id::text=current_setting('hh.coaching_handoff_contact',true));
 grant select (business_hash,user_hash,stage,consent_at)
   on app_private.crm_tg_diagnostic_sessions to hh_app_backend;
 create policy crm_tg_diagnostic_coaching_handoff_read
