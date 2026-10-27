@@ -14,6 +14,8 @@ on:
       - "tests/owner-telegram-video.test.mjs"
       - "scripts/openverse-video-sfx.mjs"
       - "tests/openverse-video-sfx.test.mjs"
+      - "scripts/propose-openverse-video-sfx.mjs"
+      - "tests/propose-openverse-video-sfx.test.mjs"
       - "docs/videos/OPENVERSE_SFX_20261026.md"
       - "tests/owner-telegram-audio-combine.test.mjs"
       - "supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql"
@@ -27,6 +29,8 @@ on:
       - "lib/practitioners/owner-telegram-video-*"
       - "scripts/openverse-video-sfx.mjs"
       - "tests/openverse-video-sfx.test.mjs"
+      - "scripts/propose-openverse-video-sfx.mjs"
+      - "tests/propose-openverse-video-sfx.test.mjs"
       - "app/api/admin/telegram-video/**"
       - ".github/workflows/hh-owner-telegram-video.yml"
 permissions:
@@ -43,11 +47,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Telegram and audio regression tests
-        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
+        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs tests/propose-openverse-video-sfx.test.mjs
       - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
         run: node scripts/verify-telegram-owner-video-media.mjs
       - name: JS lint for touched files
-        run: npx eslint lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js components/admin-telegram-videos.jsx tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
+        run: npx eslint lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js components/admin-telegram-videos.jsx tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs scripts/propose-openverse-video-sfx.mjs tests/propose-openverse-video-sfx.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit --incremental false
       - name: Next production build
