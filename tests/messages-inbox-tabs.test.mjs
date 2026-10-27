@@ -17,7 +17,7 @@ test('the owner inbox separates Telegram/private conversations and website/clien
   assert.deepEqual(filterInboxRows(rows,'requests').map(x=>x.key),['crm:5','business:3','request:4'])
   assert.equal(filterInboxRows(rows,'chats').length+filterInboxRows(rows,'requests').length,rows.length)
   assert.strictEqual(filterInboxRows(rows,'requests')[0],rows[1])
-  assert.deepEqual(filterInboxRows(rows,'requests',' BUSINESS ').map(x=>x.key),['business:3'])
+  assert.deepEqual(filterInboxRows(rows,'requests',' business request ').map(x=>x.key),['business:3'])
   assert.deepEqual(filterInboxRows(rows,'chats','andy').map(x=>x.key),['crm:1','direct:2'])
   assert.deepEqual(filterInboxRows(rows,'requests','telegram').map(x=>x.key),['crm:5'])
   // An incoming Telegram service enquiry is a lead, not a duplicate chat row.
