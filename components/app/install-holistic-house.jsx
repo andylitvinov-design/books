@@ -22,7 +22,7 @@ const COPY={
   ru:{
     title:'Holistic House на телефоне',subtitle:'Бесплатное приложение на главный экран: сообщения, отчёты, тесты и курсы.',
     install:'Установить бесплатно',desktopButton:'Скопировать ссылку для установки',
-    ios:'В Safari: нажмите «Поделиться» → «На экран Домой». Затем откройте новую иконку Holistic House.',
+    ios:'В Safari: нажмите «Поделиться» → На экран «Домой». Затем откройте новую иконку Holistic House.',
     android:'В Chrome: меню ⋮ → «Установить приложение» или «Добавить на главный экран».',
     desktop:'Откройте эту страницу в Safari или Chrome на телефоне и установите приложение бесплатно.',
     browser:'Если ссылка открыта внутри другого приложения, перенесите её в Safari или Chrome.',
@@ -78,7 +78,7 @@ export default function InstallHolisticHouse({locale='en',showGuideLink=true,lan
   },[])
   async function copyLink(){
     try{
-      await navigator.clipboard.writeText(window.location.origin+'/'+locale+'/install')
+      await navigator.clipboard.writeText('https://holistichouse.vercel.app/'+locale+'/install')
       setCopyResult('ok')
     }catch{setCopyResult('error')}
   }
