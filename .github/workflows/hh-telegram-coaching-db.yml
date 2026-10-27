@@ -1,0 +1,50 @@
+name: HH Telegram Coaching PostgreSQL17 linked intake
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hh-telegram-coaching-db.yml'
+      - 'supabase/migrations/20261026201600_hh_crm_tg_existing_thread_intake.sql'
+      - 'tests/crm-telegram-linked-intake.pg17.sql'
+      - 'lib/crm/telegram-coaching-link.js'
+      - 'lib/crm/telegram-coaching-chunks.mjs'
+      - 'tests/crm-telegram-coaching-chunks.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linked-intake-db17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute schema, owner RLS and exact-replay checks on disposable PostgreSQL 17
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+          psql -X -v ON_ERROR_STOP=1 -f tests/crm-telegram-linked-intake.pg17.sql
