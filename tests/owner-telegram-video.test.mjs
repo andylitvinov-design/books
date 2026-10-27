@@ -85,12 +85,19 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  assert.equal(parsed(callback('hh-video:done')).action,'done')
  assert.equal(parsed(callback('hh-video:status')).action,'status')
  assert.equal(parsed(callback('hh-video:publish:'+fixed)).jobId,fixed)
- const manifestButton=ownerVideoConfirmationButtons(fixed,966890850).inline_keyboard[0][0]
+ const manifestButton=ownerVideoConfirmationButtons(fixed,966890850,14).inline_keyboard[0][0]
  assert.match(manifestButton.text,/проверенный набор/)
  assert.ok(manifestButton.callback_data.length<=64)
  assert.deepEqual(
-   (({action,jobId,itemsUpdateId})=>({action,jobId,itemsUpdateId}))(parsed(callback(manifestButton.callback_data))),
-   {action:'confirm',jobId:fixed,itemsUpdateId:966890850})
+   (({action,jobId,itemsUpdateId,itemCount})=>({action,jobId,itemsUpdateId,itemCount}))(parsed(callback(manifestButton.callback_data))),
+   {action:'confirm',jobId:fixed,itemsUpdateId:966890850,itemCount:14})
+ // A late lower-ID Telegram update is accepted while the high-water ID stays
+ // unchanged; a manifest with 14 sources must not authorize 15.
+ assert.equal(parsed(callback(ownerVideoConfirmationButtons(fixed,966890850,15)
+   .inline_keyboard[0][0].callback_data))?.itemCount,15)
+ assert.ok(ownerVideoConfirmationButtons(fixed,Number.MAX_SAFE_INTEGER,30)
+   .inline_keyboard[0][0].callback_data.length<=64)
+ assert.throws(()=>ownerVideoConfirmationButtons(fixed,966890850,31),/INVALID_VIDEO_JOB/)
  assert.equal(parsed(callback('hh-video:c:'+fixed+':X')),null)
  assert.equal(parsed(callback('hh-video:publish:bad')),null)
  const spoof=callback('hh-video:done');spoof.callback_query.message.from.username='Attacker_bot'
@@ -206,7 +213,8 @@ test('full owner batch: 11 audio + 3 late photos exceeds old 120s cap, keeps all
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
  assert.match(service,/if\(event.action==='done'\)\{[\s\S]*await renderManifest\(config\)/)
  assert.match(service,/if\(event.action==='confirm'\)\{[\s\S]*await reserveRender\(config,event\)/)
- assert.match(service,/if\(event.itemsUpdateId!==Number\(row.last_update_id\)\)return \{state:'changed'\}/)
+ assert.match(service,/event.itemsUpdateId!==Number\(row.last_update_id\)/)
+ assert.match(service,/event.itemCount!==row.items.length/)
  const webhook=readFileSync(new URL('../app/api/app/notification-channels/telegram/webhook/route.js',import.meta.url),'utf8')
  assert.match(webhook,/export const maxDuration=300/)
 })
@@ -399,8 +407,10 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)
  const doneHandler=service.split("if(event.action==='done'){")[1].split("if(event.action==='retry'){")[0]
  assert.match(doneHandler,/if\(batch.state==='reserved'\)\{[\s\S]*await ownerMessage\(owner/)
- assert.match(service,/ownerVideoConfirmationButtons\(manifest.jobId,manifest.lastUpdateId\)/)
+ assert.match(service,/ownerVideoConfirmationButtons\(manifest.jobId,manifest.lastUpdateId,manifest.itemCount\)/)
  assert.match(service,/event.itemsUpdateId!==Number\(row.last_update_id\)/)
+ assert.match(service,/event.itemCount!==row.items.length/)
+ assert.match(service,/ownerVideoConfirmationButtons\(manifest.jobId,manifest.lastUpdateId,manifest.itemCount\)/)
  assert.match(service,/if\(event.action==='confirm'\)/)
  assert.match(service,/if\(result.state==='limit'&&result.notify\)/)
  assert.doesNotMatch(doneHandler.split("if(event.action==='confirm')")[0],/background:\(\)=>buildVideo/)
