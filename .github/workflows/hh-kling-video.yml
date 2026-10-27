@@ -1,0 +1,45 @@
+name: HH Kling Scene Studio
+
+on:
+  pull_request:
+    paths:
+      - 'lib/kling-video.mjs'
+      - 'app/admin/videos/**'
+      - 'components/kling-scene-studio.tsx'
+      - 'app/site-video-admin.css'
+      - 'tests/kling-video.test.mjs'
+      - '.github/workflows/hh-kling-video.yml'
+  push:
+    branches: [codex/public-book-library]
+    paths:
+      - 'lib/kling-video.mjs'
+      - 'app/admin/videos/**'
+      - 'components/kling-scene-studio.tsx'
+      - 'app/site-video-admin.css'
+      - 'tests/kling-video.test.mjs'
+      - '.github/workflows/hh-kling-video.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  kling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Contract tests (no paid provider calls)
+        run: node --test tests/kling-video.test.mjs
+      - name: Scoped ESLint
+        run: npx eslint lib/kling-video.mjs app/admin/videos/page.tsx app/admin/videos/kling-actions.js components/kling-scene-studio.tsx tests/kling-video.test.mjs
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Next.js build
+        run: npm run build
