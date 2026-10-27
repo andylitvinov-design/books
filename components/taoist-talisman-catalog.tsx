@@ -33,14 +33,19 @@ const copy = {
   },
 } as const;
 
-export function TaoistTalismanCatalog({ locale, featuredId }: { locale: PublicLocale; featuredId?: string }) {
+export function TaoistTalismanCatalog({ locale, featuredId, rankedIds }: { locale: PublicLocale; featuredId?: string; rankedIds?: readonly string[] }) {
   const router = useRouter();
   const t = copy[locale];
   // Use the *existing* illustrated SKUs and cart, just put the relevant
   // symbol first. No purchase is made or customer details transferred.
-  const orderedTalismans = featuredId && TAOIST_TALISMANS.some(item => item.id === featuredId)
-    ? [...TAOIST_TALISMANS].sort((a, b) => Number(b.id === featuredId) - Number(a.id === featuredId))
-    : TAOIST_TALISMANS;
+  const rankedOrder = new Map((rankedIds || []).map((id, index) => [id, index]));
+  const orderedTalismans = rankedOrder.size
+    ? [...TAOIST_TALISMANS].sort((a, b) =>
+        (rankedOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (rankedOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER))
+    : featuredId && TAOIST_TALISMANS.some(item => item.id === featuredId)
+      ? [...TAOIST_TALISMANS].sort((a, b) => Number(b.id === featuredId) - Number(a.id === featuredId))
+      : TAOIST_TALISMANS;
   const [cartIds, setCartIds] = useState<string[]>([]);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [storageError, setStorageError] = useState(false);
