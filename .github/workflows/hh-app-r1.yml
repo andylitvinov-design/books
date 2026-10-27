@@ -105,3 +105,36 @@ jobs:
         run: npm run test:app:db
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback
         run: node scripts/verify-eight-v2-registry-proposal.mjs
+
+  telegram-service-policy-model:
+    # Independent fresh PG17 service: never uses the incomplete broad App R1 fixture.
+    # Minimal synthetic prerequisite model, NOT production-schema/provider acceptance.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hh_app_test
+          POSTGRES_PASSWORD: synthetic-ci-admin
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hh_app_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      HH_APP_TEST_RUNTIME: isolated
+      HH_TELEGRAM_POLICY_FIXTURE: synthetic-only
+      HH_APP_DATABASE_URL: postgres://hh_app_ci_login:synthetic-ci-only@127.0.0.1:5432/hh_app_test
+      HH_TEST_ADMIN_DATABASE_URL: postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_app_test
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci --no-audit --no-fund
+      - name: Offline safety and injected runtime contracts (no DB/provider)
+        run: node --import ./tests/helpers/telegram-service-network-guard.mjs --test --test-isolation=none tests/service-telegram-isolation-guard.test.mjs tests/service-telegram-isolation-runtime.test.mjs tests/service-telegram-offering.test.mjs tests/telegram-multi-master-service.test.mjs
+      - name: PG17 combined-policy model with synthetic two-practitioner data
+        run: node --import ./tests/helpers/telegram-service-network-guard.mjs --test --test-isolation=none --test-concurrency=1 tests/telegram-service-policy.integration.mjs
