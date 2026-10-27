@@ -47,18 +47,16 @@ declare
   v_found integer;
 begin
   v_expected := coalesce(pg_catalog.cardinality(p_provider_hashes),0);
-  if p_business_hash !~ '^[a-f0-9]{64}
-
-    or p_user_hash !~ '^[a-f0-9]{64}
-
+  if p_business_hash !~ '^[a-f0-9]{64}$'
+    or p_user_hash !~ '^[a-f0-9]{64}$'
     or p_provider_hashes is null or p_event_hashes is null
     or v_expected < 1 or v_expected > 48
     or pg_catalog.cardinality(p_event_hashes) <> v_expected
     or exists (select 1 from pg_catalog.unnest(p_provider_hashes) as h(value)
-      where h.value is null or h.value !~ '^[a-f0-9]{64}
+      where h.value is null or h.value !~ '^[a-f0-9]{64}$'
 )
     or exists (select 1 from pg_catalog.unnest(p_event_hashes) as h(value)
-      where h.value is null or h.value !~ '^[a-f0-9]{64}
+      where h.value is null or h.value !~ '^[a-f0-9]{64}$'
 )
     or (select count(distinct h.value) from pg_catalog.unnest(p_provider_hashes) as h(value)) <> v_expected
   then return false;
