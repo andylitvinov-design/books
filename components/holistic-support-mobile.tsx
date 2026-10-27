@@ -44,7 +44,7 @@ const focusTopics: Record<Focus, MeditationTopic> = {
 };
 const focusRequest: Record<Focus, string> = {
   energy: "Inner balance and calm", money: "Work and money",
-  relationships: "Connection and relationships", goals: "Personal direction and goals",
+  relationships: "Connection and relationships", goals: "Work and money",
 };
 
 const copy = {
@@ -184,7 +184,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
   const onRecommendations = () => {
     setChoice("meditation"); setTheme(focusTopics[focus]); setProgram("all"); setMaster("all");
     setSelectedId(null); setPlaying(false);
-    document.getElementById("support-mobile-experience")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("support-mobile-experience")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   };
   const startVideo = () => {
     if (!selected) return;
@@ -272,7 +272,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/reiki-practitioner-sunrise.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
-                <div className={styles.heroFilters} aria-label={t.gallery}>
+                <div className={styles.heroFilters} role="group" aria-label={t.gallery}>
                   <span className={styles.heroMode}><Play size={19} aria-hidden="true" />{t.options[choice]}</span>
                   <label className={styles.heroFilter}><UserRound size={18} aria-hidden="true" /><span>{t.master}</span>
                     <select value={master} aria-label={t.master} onChange={event => { setMaster(event.target.value as Author); setPlaying(false); setSelectedId(null); }}>
