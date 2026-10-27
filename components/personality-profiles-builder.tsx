@@ -69,12 +69,12 @@ const copy = {
       money: ["Money decisions", "Choices · habits, not income"],
       meaning: ["Purpose & values", "Meaning · direction"],
     },
-    scaleTitle: "Choose the scales for your profile",
-    scaleHelp: "Only real source-declared dimensions can be measured. Keep the suggestions or select what you want to explore.",
+    scaleTitle: "Choose the axes and scales for your profile",
+    scaleHelp: "Research axes group related questions. Select the actual questionnaire scales beneath them; scores from different tests are not interchangeable.",
     selectAll: "Select all", clearAll: "Clear all", selected: "selected",
     scaleSourceLabel: "Questionnaire", scaleItemsLabel: "scale questions", scaleUnknown: "Scale item count not documented",
     fullTestNote: "The time and total questions shown belong to the full source questionnaire. Shared tests are counted only once in the next step.",
-    scaleSelected: "scales selected", scalePerTopic: "of this topic", scaleMore: "Show more scales", scaleFewer: "Show fewer scales",
+    scaleSelected: "scales selected", scalePerTopic: "of this topic", scaleSourceCount: "source scales", scaleMore: "Show more scales", scaleFewer: "Show fewer scales",
     scaleEmpty: "No eligible source-declared scales for this topic yet.", scaleRequired: "Choose at least one scale to continue.",
     modeCheckins: "Questionnaires", modePro: "Pro tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
     modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
@@ -152,12 +152,12 @@ const copy = {
       money: ["Решения о деньгах", "Привычки, не уровень дохода"],
       meaning: ["Ценности и смысл", "Цели · направление"],
     },
-    scaleTitle: "Выберите шкалы своего профиля",
-    scaleHelp: "Можно выбрать лишь реальные шкалы, указанные в источниках тестов. Оставьте предложенные или выберите свои.",
+    scaleTitle: "Выберите оси и шкалы своего профиля",
+    scaleHelp: "Оси группируют близкие темы, а галочки выбирают реальные шкалы тестов. Баллы разных методик не приравниваются друг к другу.",
     selectAll: "Выбрать все", clearAll: "Снять все", selected: "выбрано",
     scaleSourceLabel: "Опросник", scaleItemsLabel: "вопросов шкалы", scaleUnknown: "Число вопросов шкалы не указано в методике",
     fullTestNote: "Время и общее число вопросов относятся к тесту-источнику. Если шкалы входят в один тест, время на следующем шаге считается один раз.",
-    scaleSelected: "шкал выбрано", scalePerTopic: "по этой теме", scaleMore: "Больше шкал", scaleFewer: "Свернуть шкалы",
+    scaleSelected: "шкал выбрано", scalePerTopic: "по этой теме", scaleSourceCount: "исходных шкал", scaleMore: "Больше шкал", scaleFewer: "Свернуть шкалы",
     scaleEmpty: "По этой теме пока нет доступных шкал с указанным источником.", scaleRequired: "Выберите хотя бы одну шкалу.",
     modeCheckins: "Опросники", modePro: "Pro-тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
     modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
@@ -235,12 +235,12 @@ const copy = {
       money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
       meaning: ["Sentido y valores", "Metas · dirección"],
     },
-    scaleTitle: "Selecciona las escalas de tu perfil",
-    scaleHelp: "Solo medimos las dimensiones declaradas en los cuestionarios. Puedes cambiar las sugerencias.",
+    scaleTitle: "Elige los ejes y las escalas de tu perfil",
+    scaleHelp: "Los ejes agrupan temas afines; marca las escalas de cuestionarios reales. Sus resultados no son intercambiables.",
     selectAll: "Seleccionar todas", clearAll: "Desmarcar", selected: "seleccionadas",
     scaleSourceLabel: "Cuestionario", scaleItemsLabel: "preguntas de la escala", scaleUnknown: "Sin número de ítems verificado",
     fullTestNote: "El tiempo y el total de preguntas pertenecen al cuestionario completo. Si varias escalas usan el mismo test, su duración se cuenta una sola vez.",
-    scaleSelected: "escalas elegidas", scalePerTopic: "de este tema", scaleMore: "Más escalas", scaleFewer: "Ver menos escalas",
+    scaleSelected: "escalas elegidas", scalePerTopic: "de este tema", scaleSourceCount: "escalas de origen", scaleMore: "Más escalas", scaleFewer: "Ver menos escalas",
     scaleEmpty: "Aún no hay escalas disponibles con fuente para este tema.", scaleRequired: "Elige al menos una escala.",
     modeCheckins: "Cuestionarios", modePro: "Pruebas Pro", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
     modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
@@ -656,7 +656,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                   <div key={axis.id} className={styles.topicAxisGroup} data-profile-research-axis={axis.id}>
                     <div className={styles.topicAxisHeading}>
                       <strong>{profileResearchAxisLabel(axis.id, locale)}</strong>
-                      <small>{axis.scaleCount} {t.scalePerTopic}</small>
+                      <small>{axis.scaleCount} {t.scaleSourceCount}</small>
                     </div>
                     {visible.filter(scale => scale.researchAxisId === axis.id)
                       .map(scale => <label key={scale.id} className={styles.topicScaleRow}
