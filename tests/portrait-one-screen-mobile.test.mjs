@@ -13,7 +13,7 @@ test('only private Reports enlarges the coupled original photo and 360:390 SVG',
   assert.ok(mobile.startsWith('/* Reports portrait:'))
   assert.match(mobile, /@media\(max-width:620px\)/)
   assert.ok(mobile.includes(scoped))
-  assert.match(mobile, /width:min\(100%,clamp\(290px,43svh,390px\)\)/)
+  assert.match(mobile, /width:min\(100%,clamp\(275px,36svh,305px\)\)/)
   assert.match(mobile, /aspect-ratio:360 \/ 390/)
   assert.match(mobile, /height:220%!important/)
   assert.match(mobile, /transform:translate\(-80%,-50%\)/)
@@ -55,13 +55,13 @@ test('mobile portrait is the dominant image with tappable top filters and lower 
       const shortViewport = height <= 630
       const responsiveWidth = shortViewport
         ? Math.max(230, Math.min(275, .42 * height))
-        : Math.max(290, Math.min(390, .43 * height))
+        : Math.max(275, Math.min(305, .36 * height))
       const stageWidth = Math.min(width - 24, responsiveWidth)
       const stageHeight = stageWidth * 390 / 360
       assert.ok(stageWidth >= (shortViewport ? 228 : 262),
         `${width}x${height}: picture should be readable without covering the bottom navigation`)
-      const menusAndImage = 52 + stageHeight + 52 + 18
-      assert.ok(menusAndImage < Math.max(510, height - 100), `${width}x${height}: chart/menus too tall`)
+      const menusAndImage = 52 + 36 + 30 + stageHeight + 52 + 18
+      assert.ok(menusAndImage <= (shortViewport ? 470 : 535), `${width}x${height}: chart/menus too tall`)
     }
   }
 })

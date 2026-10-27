@@ -5,6 +5,9 @@ on:
     paths:
       - 'components/app/test-explorer-visual.jsx'
       - 'components/app/app-workspace.jsx'
+      - 'components/app/development-program.jsx'
+      - 'app/[locale]/app/[[...path]]/insights-compact.css'
+      - 'tests/reports-profile-axes-tests-goals.test.mjs'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
@@ -32,7 +35,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci --no-audit --no-fund
       - name: Four measured sectors, missing-score math, button and responsive contracts
-        run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs
+        run: node --test tests/portrait-sectors.test.mjs tests/portrait-rays-responsive.test.mjs tests/portrait-ray-labels.test.mjs tests/psych-portrait.test.mjs tests/portrait-report-actions.test.mjs tests/portrait-sector-take-test.test.mjs tests/portrait-one-screen-mobile.test.mjs tests/reports-profile-axes-tests-goals.test.mjs
       - name: TypeScript and JSX build check
         run: npm run build
       - run: npx --no-install tsc --noEmit

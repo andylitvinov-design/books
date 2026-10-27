@@ -186,16 +186,23 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
   const [allRows, setAllRows] = useState(false)
 
   useEffect(() => {
-    const openGoalsLink = () => {
-      if (window.location.hash !== '#hh-development-program') return
+    const showGoalsEditor = () => {
       setExpanded(true)
       setActivePanel('goals')
-      // The target is an existing private-account panel; opening a URL is not consent to save.
-      requestAnimationFrame(() => document.getElementById('hh-development-program')?.scrollIntoView({block:'start'}))
+      // The single saved Goals editor is shared by Reports and its CTA.
+      requestAnimationFrame(() =>
+        document.getElementById('hh-development-program')?.scrollIntoView({ block: 'start' }))
+    }
+    const openGoalsLink = () => {
+      if (window.location.hash === '#hh-development-program') showGoalsEditor()
     }
     openGoalsLink()
     window.addEventListener('hashchange', openGoalsLink)
-    return () => window.removeEventListener('hashchange', openGoalsLink)
+    window.addEventListener('hh:open-development-goals', showGoalsEditor)
+    return () => {
+      window.removeEventListener('hashchange', openGoalsLink)
+      window.removeEventListener('hh:open-development-goals', showGoalsEditor)
+    }
   }, [])
 
   useEffect(() => {
