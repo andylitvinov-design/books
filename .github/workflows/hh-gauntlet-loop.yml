@@ -136,8 +136,25 @@ jobs:
         run: |
           set -euo pipefail
           node --test tests/hh-gauntlet-loop.test.mjs
-          "$RUNNER_TEMP/hh-opencode-cli/node_modules/.bin/opencode" debug agents \
-            > "$RUNNER_TEMP/hh-oc-actual-agents.json"
+          # On a cold OpenCode v2 start, the first debug call may return [] while
+          # loading agent configuration. Retry only this read-only ACL probe.
+          for attempt in 1 2 3 4 5; do
+            "$RUNNER_TEMP/hh-opencode-cli/node_modules/.bin/opencode" debug agents \
+              > "$RUNNER_TEMP/hh-oc-actual-agents.json"
+            if node -e '
+              const list=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8"));
+              if(!Array.isArray(list) ||
+                 !["hh-gauntlet-builder","hh-gauntlet-critic"].every(name =>
+                   list.some(x => x.name===name || x.id===name))) process.exit(1);
+            ' "$RUNNER_TEMP/hh-oc-actual-agents.json"; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              echo "OpenCode did not load both custom agents after bounded retries."
+              exit 1
+            fi
+            sleep 2
+          done
           node --input-type=module - "$RUNNER_TEMP/hh-oc-actual-agents.json" <<'NODE'
           import { readFileSync } from 'node:fs'
           const raw = JSON.parse(readFileSync(process.argv[2], 'utf8'))
