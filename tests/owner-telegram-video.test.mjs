@@ -334,3 +334,9 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
  const transport=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
  assert.match(transport,/saved\[i\]\?\.description===command.description/)
 });
+
+test('admin YouTube upload guide points owner video to the same Dot bot, not CRM',()=>{
+ const page=readFileSync(new URL('../app/admin/youtube-upload/page.js',import.meta.url),'utf8')
+ assert.match(page,/https:\/\/t\.me\/Andydotbot\?start=video/)
+ assert.doesNotMatch(page,/t\.me\/holistichouse_bot\?start=video/)
+})
