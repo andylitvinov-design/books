@@ -257,5 +257,6 @@ test('Supabase migration explicitly fixes old action/mode CHECK root cause, no n
   assert.match(service,/scope:'hh-owner-ai-verify-day'/)
   assert.match(service,/scope:'hh-owner-ai-all-day'/)
   assert.match(service,/runOwnerCouncilFive/)
-  assert.match(service,/allowed.length<2/)
+  assert.match(service,/result.status==='unavailable'/)
+  assert.match(service,/sendOwnerDocument/)
 })
