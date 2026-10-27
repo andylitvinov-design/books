@@ -1375,7 +1375,7 @@
     min-height:0;
     /* 43svh rather than 31.38svh: the user's chart should dominate a normal
        iPhone viewport. Restrict by card width on narrow/short devices. */
-    width:min(100%,clamp(290px,43svh,390px));
+    width:min(100%,clamp(290px,43svh,330px));
     height:auto;
     aspect-ratio:360 / 390;
     margin:0 auto;
@@ -1460,7 +1460,7 @@
   margin:0 0 9px;color:#536e64;font:400 11px/1.4 system-ui,sans-serif;
 }
 @media(max-width:440px){
-  .visual:not(.visualCompact) .portraitModeBar{margin:0 2px 6px;padding:2px}
+  .visual:not(.visualCompact) .portraitModeBar{margin:0 2px 2px;padding:2px}
   .visual:not(.visualCompact) .portraitModeButton{min-height:44px;padding:7px 3px;font-size:11px}
   .visual:not(.visualCompact) .portraitControls{margin:0 2px 7px;padding:8px}
 }
