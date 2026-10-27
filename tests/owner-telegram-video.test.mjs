@@ -10,6 +10,8 @@ import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploade
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
+import {ownerAudioHelpMessage,ownerAudioMaterialsMessage} from '../lib/practitioners/owner-telegram-audio-model.mjs'
+import {OWNER_AI_COMMANDS} from '../lib/practitioners/owner-ai-telegram.mjs'
 
 const TIME=1793001600000
 const BOT='holistichouse_bot'
@@ -244,13 +246,18 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(migration,/public,file_size_limit,allowed_mime_types\)\nvalues\('hh-owner-video-drafts','hh-owner-video-drafts',false/)
  assert.match(crmWebhook,/verifyMessengerWebhook[\s\S]*receiveOwnerTelegramVideoWebhook[\s\S]*normalizeMessengerUpdates/)
  assert.match(crmWebhook,/channel:'crm'/)
+ const dotWebhook=readFileSync(new URL('../app/api/app/notification-channels/telegram/webhook/route.js',import.meta.url),'utf8')
+ assert.match(dotWebhook,/verifyClientTelegramSecret[\s\S]*receiveOwnerTelegramVideoWebhook[\s\S]*receiveOwnerTelegramAudioWebhook/)
+ assert.match(dotWebhook,/channel:'practice'/)
+ assert.match(dotWebhook,/if\(video.background\)after\(/)
  assert.match(crmWebhook,/ensureTelegramInlineWebhookUpdates/)
  const nextConfig=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8')
  assert.match(nextConfig,/\/api\/app\/crm\/messenger\/webhook\/\*/)
  assert.match(crmWebhook,/if\(video.background\)after\(/)
  assert.match(service,/event.chatId!==owner.chat\|\|event.userId!==owner.chat/)
  assert.match(service,/if\(env.VERCEL_ENV==='preview'\|\|env.HH_OWNER_VIDEO_ENABLED!=='true'\)/)
- assert.match(service,/if\(channel!=='crm'\)return \{handled:false\}/)
+ assert.match(service,/!\['crm','practice'\].includes\(channel\)/)
+ assert.match(service,/channel==='practice'&&telegramClientBotMode\(env\)!=='shared_practice'/)
  assert.match(service,/if\(event.action==='publish'\)/)
  assert.match(service,/if\(event.action==='done'\)/)
  assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)
@@ -295,3 +302,29 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
  assert.match(client,/credentials:'same-origin'/)
  assert.match(readFileSync(new URL('../app/admin/materials/page.js',import.meta.url),'utf8'),/<AdminTelegramVideos /)
 })
+
+test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials'])
+ assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
+ const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
+   .find(x=>x.callback_data==='hh-video:start')
+ assert.ok(videoButton)
+ assert.match(videoButton.text,/Создать видео/)
+ assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
+   .some(x=>x.callback_data==='hh-video:start'))
+ const dotCommand={update_id:2007,message:{
+   date:TIME/1000,chat:privateBase,from,message_id:47,text:'/video'}}
+ assert.equal(parseOwnerVideoUpdate(dotCommand,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ const dotCallback={update_id:2008,callback_query:{id:'video-start',
+   data:'hh-video:start',from,
+   message:{chat:privateBase,from:{is_bot:true,username:'Andydotbot'}}}}
+ assert.equal(parseOwnerVideoUpdate(dotCallback,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ assert.equal(parseOwnerVideoUpdate(dotCallback,{now:TIME,botUsername:'holistichouse_bot'}),null)
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/ownerAudioCombineBusy\(config\)/)
+ assert.match(service,/hh.owner_audio_manager/)
+ assert.match(service,/expires_at>now\(\)/)
+ assert.match(service,/channel==='practice'&&await ownerAudioCombineBusy/)
+ const transport=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
+ assert.match(transport,/saved\[i\]\?\.description===command.description/)
+});
