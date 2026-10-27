@@ -298,6 +298,17 @@ async function runEngine(name, engine) {
             assert.equal(await daoForm.locator('a[data-compact-channel]').count(),0,
               "No external messenger links before a server-acknowledged request");
             // Negative consent path must never reach POST or a messenger.
+            // Count genuine DOM clicks without invoking React handlers or
+            // leaking the synthetic contact into public CI diagnostics.
+            await page.evaluate(() => {
+              window.__hhDaoClickEvents = 0;
+              document.addEventListener("click", event => {
+                if (event.target instanceof Element &&
+                    event.target.closest('main[data-free-entry-landing="dao"] button[data-compact-channel="whatsapp"]')) {
+                  window.__hhDaoClickEvents++;
+                }
+              }, {capture:true});
+            });
             // Positive path intercepts POST above and stubs window.open here:
             // no real enquiry, popup, external request, or customer message.
             const previous = submissions.length;
@@ -305,7 +316,28 @@ async function runEngine(name, engine) {
             await whatsapp.click();
             assert.equal(submissions.length,previous,"Contact alone cannot bypass Dao consent");
             const consentError = daoForm.getByRole("alert");
-            await consentError.waitFor({state:"visible",timeout:8000});
+            try {
+              await consentError.waitFor({state:"visible",timeout:8000});
+            } catch (error) {
+              const diagnostic = await page.evaluate(() => {
+                const form = document.querySelector('main[data-free-entry-landing="dao"] [data-compact-lead-form]');
+                const button = form?.querySelector('button[data-compact-channel="whatsapp"]');
+                const propsKey = button && Object.keys(button).find(key => key.startsWith("__reactProps$"));
+                const contact = form?.querySelector('input[name="contact"]');
+                return {
+                  domClicks: window.__hhDaoClickEvents ?? 0,
+                  reactHandlerPresent: Boolean(propsKey && typeof button[propsKey]?.onClick === "function"),
+                  formConnected: Boolean(form?.isConnected),
+                  buttonDisabled: Boolean(button?.disabled),
+                  consentChecked: Boolean(form?.querySelector('input[type="checkbox"][required]')?.checked),
+                  contactAriaInvalid: contact?.getAttribute("aria-invalid") ?? null,
+                  alertCount: form?.querySelectorAll('[role="alert"]').length ?? 0,
+                  readyState: document.readyState,
+                };
+              });
+              throw new Error("Dao negative-consent UI did not render after tap; redacted DOM evidence=" +
+                JSON.stringify(diagnostic) + "; cause=" + error.message);
+            }
             assert.equal(await consentError.count(),1,"Missing opt-in has an accessible error");
             await consent.check();
             await page.evaluate(() => {
