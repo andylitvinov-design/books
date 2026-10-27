@@ -53,9 +53,21 @@ async function submitSyntheticForm(page, chooser, locale, submissions, receiptMo
     await form.locator('input[type="tel"]').fill("4165550123");
   } else await form.locator('input[autocomplete="email"]').fill("qa-browser@example.test");
   if (withName) {
-    // Name is an explicit opt-in field, hidden until requested.
-    await form.locator('details:has(input[autocomplete="name"]) > summary').click();
-    await form.locator('input[autocomplete="name"]').fill("QA Visitor");
+    // Preserve a disclosure already opened by native WebKit or page history.
+    // One genuine summary tap is required only while it is still closed.
+    const nameDetails = form.locator('details:has(input[autocomplete="name"])');
+    assert.equal(await nameDetails.count(), 1, "Exactly one optional name field");
+    const nameInput = nameDetails.locator('input[autocomplete="name"]');
+    if (!(await nameDetails.evaluate(element => element.open))) {
+      const summary = nameDetails.locator("summary");
+      await summary.scrollIntoViewIfNeeded();
+      await summary.click({ trial: true, timeout: 8000 });
+      await summary.click();
+    }
+    await nameInput.waitFor({ state: "visible", timeout: 8000 });
+    assert.equal(await nameDetails.evaluate(element => element.open), true,
+      "The optional name field is expanded before editing");
+    await nameInput.fill("QA Visitor");
   }
   // Alternate private note / no-note requests without expanding optional name.
   const privateNote = "PRIVATE_QA_NOTE_NOT_FOR_MESSENGER";
