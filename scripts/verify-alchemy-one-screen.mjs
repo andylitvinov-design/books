@@ -26,7 +26,9 @@ try {
     const page = await browser.newPage({viewport:{width,height}});
     const key = locale + "/" + width + "x" + height;
     try {
-      const response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"networkidle",timeout:45000});
+      // Static chapter geometry needs hydrated visible content, not network silence:
+      // third-party video/image requests may keep networkidle pending for 45s per viewport.
+      const response = await page.goto(origin + "/" + locale + "/services/alchemy-of-soul", {waitUntil:"domcontentloaded",timeout:45000});
       assert.equal(response?.status(), 200, key + ": route must return HTTP 200");
       const root = page.locator('main[data-core-service-detail="alchemy"]');
       await root.locator('h1').waitFor({state:"visible",timeout:30000});
