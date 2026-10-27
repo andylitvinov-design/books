@@ -323,10 +323,17 @@ try {
           }, RECEIPT_SESSION_KEY)
           await page.reload({ waitUntil: 'domcontentloaded' })
         }
-        await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
-        await expect(page.locator('.site-video-player').filter({ hasText: title })
-          .locator('.site-video-master-link')).toHaveAttribute(
-            'href', '/' + locale + '/masters/andy-litvinov#practitioner-videos')
+        if (slot.id === 'home-intro') {
+          // Deliberately archived site intros cannot replace the home's
+          // dedicated testimonial surface, even when their editor has a
+          // reviewed publication. The owner profile can still list them.
+          await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
+        } else {
+          await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
+          await expect(page.locator('.site-video-player').filter({ hasText: title })
+            .locator('.site-video-master-link')).toHaveAttribute(
+              'href', '/' + locale + '/masters/andy-litvinov#practitioner-videos')
+        }
         if (locale === 'en' && slot.id === 'home-intro') {
           // Follow the same published snapshot through its verified author
           // to the real master gallery. Long catalogues may start collapsed.
@@ -386,7 +393,7 @@ try {
     await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
     pass('Hide persists, retains draft and leaves other language unchanged')
     await editor.locator('.site-video-language-picker button').filter({ hasText: 'Spanish' }).click()
-    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(1)
+    await expect(editor.locator('.site-video-placement-list button')).toHaveCount(2)
     await expect(editor.locator('.site-video-editor-heading > a')).toHaveAttribute('href', '/es/about')
     await fill('QA Spanish About independent publication')
     await save('publish')
