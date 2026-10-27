@@ -31,6 +31,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
   const [selectedSector, setSelectedSector] = useState('all')
   const [portraitView, setPortraitView] = useState('chart')
   const [chartMode, setChartMode] = useState('profiles')
+  const [chartOptionsOpen, setChartOptionsOpen] = useState(false) // Optional third row opens only on a deliberate Chart tap.
   const portraitRayOptionsId = useId()
   const portraitChartId = portraitRayOptionsId + '-chart'
   const portraitAxisPanelId = portraitRayOptionsId + '-axes'
@@ -167,7 +168,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         <button type="button" className={styles.portraitSectorChip} data-portrait-sector="goal"
           data-selected={selectedSector === 'goal'}
           aria-label={ru ? 'Профиль цели' : es ? 'Perfil de la meta' : 'Goal Profile'}
-          aria-pressed={selectedSector === 'goal'} onClick={() => { setSelectedSector('goal'); setPortraitView('chart') }}>
+          aria-pressed={selectedSector === 'goal'} onClick={() => { setSelectedSector('goal'); setPortraitView('chart'); setChartOptionsOpen(false) }}>
           <span className={styles.portraitSectorLong}>{ru ? 'Профиль цели' : es ? 'Perfil de la meta' : 'Goal Profile'}</span>
           <span className={styles.portraitSectorShort} aria-hidden="true">{ru ? 'Цель' : es ? 'Meta' : 'Goal'}</span>
         </button>
@@ -185,7 +186,11 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         id={portraitRayOptionsId + '-' + key + '-tab'} role="tab"
         className={styles.portraitModeButton} data-portrait-view={key} aria-selected={portraitView === key}
         aria-controls={target} tabIndex={portraitView === key ? 0 : -1}
-        onClick={() => setPortraitView(key)}
+        aria-expanded={key === 'chart' ? chartOptionsOpen : undefined}
+        onClick={() => {
+          if (key === 'chart' && portraitView === 'chart') setChartOptionsOpen(current => !current)
+          else { setPortraitView(key); setChartOptionsOpen(false) }
+        }}
         onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
           event.preventDefault()
@@ -194,9 +199,11 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           const next = event.key === 'Home' ? 'chart' : event.key === 'End' ? 'tests'
             : order[(index + (event.key === 'ArrowRight' ? 1 : -1) + order.length) % order.length]
           setPortraitView(next)
+          setChartOptionsOpen(false)
           event.currentTarget.parentElement?.querySelector('[id="' + portraitRayOptionsId + '-' + next + '-tab"]')?.focus()
         }}>
         {caption}
+        {key === 'chart' && <span aria-hidden="true">⌄</span>}
         {key === 'axes' && <span aria-hidden="true">· {checkedRays.length}</span>}
       </button>)}
     </nav>}
@@ -275,7 +282,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         ? portraitTests({ selectedSector, selectedAxes: chosenForProfile, portrait })
         : portraitTests}
     </section>}
-    {portrait && !compact && selectedSector !== 'goal' && portraitView === 'chart' && <div className={styles.portraitChartChoices}
+    {portrait && !compact && selectedSector !== 'goal' && portraitView === 'chart' && chartOptionsOpen && <div className={styles.portraitChartChoices}
       role="group" aria-label={ru ? 'Вид колеса баланса' : es ? 'Vista de la rueda' : 'Wheel of balance view'}
       data-testid="portrait-chart-options">
       {[

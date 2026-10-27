@@ -298,6 +298,11 @@ try {
     await chartTab.click()
     await expect(chartTab).toHaveAttribute('aria-selected','true')
     const chartChoices = card().locator('[data-testid="portrait-chart-options"]')
+    await expect(chartChoices).toHaveCount(0)
+    // The optional wheel variant lives behind a second deliberate Chart tap,
+    // keeping the entire three-tab menu and photograph visible on short phones.
+    await chartTab.click()
+    await expect(chartChoices).toBeVisible()
     const allProfiles = chartChoices.locator('[data-chart-mode="profiles"]')
     const chosenAxes = chartChoices.locator('[data-chart-mode="axes"]')
     await chosenAxes.click()

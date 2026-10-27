@@ -428,6 +428,9 @@ test('second-level axes selection drives the whole-wheel chart across all four l
   assert.ok(sleepOption)
   rayInputs(sleepOption)[0].props.onChange()
   app.view('chart')
+  assert.equal(nodes(app.render(),'button',p=>p['data-chart-mode']==='axes').length,0,
+    'optional wheel variants must not consume the first mobile frame')
+  app.view('chart') // A second tap on the selected Chart tab reveals its optional wheel choices.
   const mode=nodes(app.render(),'button',p=>p['data-chart-mode']==='axes')[0]
   assert.ok(mode)
   mode.props.onClick()
