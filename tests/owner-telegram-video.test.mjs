@@ -311,18 +311,22 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','video','materials','track'])
+ assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
-   .find(x=>x.callback_data==='hh-video:start')
+   .find(x=>x.url==='https://t.me/Andydotbot?start=video')
  assert.ok(videoButton)
  assert.match(videoButton.text,/Создать видео/)
  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
-   .some(x=>x.callback_data==='hh-video:start'))
+   .some(x=>x.url==='https://t.me/Andydotbot?start=video'))
  const dotOwner={id:privateBase.id,is_bot:false}
  const dotCommand={update_id:2007,message:{
    date:TIME/1000,chat:privateBase,from:dotOwner,message_id:47,text:'/video'}}
  assert.equal(parseOwnerVideoUpdate(dotCommand,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ const dotLink={...dotCommand,message:{...dotCommand.message,text:'/start video'}}
+ assert.equal(parseOwnerVideoUpdate(dotLink,{now:TIME,botUsername:'andydotbot'})?.action,'start')
+ assert.match(ownerVideoStartMessage().text,/\/video_done/)
  const dotCallback={update_id:2008,callback_query:{id:'video-start',
    data:'hh-video:start',from:dotOwner,
    message:{chat:privateBase,from:{is_bot:true,username:'Andydotbot'}}}}
