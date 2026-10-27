@@ -22,6 +22,26 @@ const page = await context.newPage()
 const problems = []
 page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
 const open = path => page.goto(origin + path, { waitUntil: 'domcontentloaded', timeout: 90000 })
+
+// WebKit can complete synthetic Google onboarding while the app's own final
+// /en/app/portrait navigation is still pending. In that *one observed* case,
+// wait for the authenticated landing before retrying the requested Reports
+// navigation exactly once. All other interruptions/timeouts still fail.
+async function openReportsAfterAuth(locale) {
+  const path = '/' + locale + '/app/portfolio'
+  try {
+    return await open(path)
+  } catch (error) {
+    const cause = String(error)
+    const ownRedirect = name === 'webkit' && locale === 'en' &&
+      cause.includes('Navigation to "' + origin + path + '" is interrupted by another navigation to "' + origin + '/en/app/portrait"')
+    if (!ownRedirect) throw error
+    await expect(page).toHaveURL(/\/en\/app\/portrait(?:[?#]|$)/, { timeout: 30000 })
+    await expect(page.locator('[data-profile-domains]')).toBeVisible({ timeout: 30000 })
+    console.log('PORTRAIT_QA', name, 'one pending authenticated landing navigation finished; retry Reports once')
+    return open(path)
+  }
+}
 const card = () => page.locator('[data-testid="insights-psychological-portrait"]')
 const buttons = () => card().locator('button[data-portrait-sector]')
 const labels = ['body','work','relationships','growth']
@@ -115,7 +135,7 @@ try {
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
   for (const locale of ['en','ru']) {
-    await open('/'+locale+'/app/portfolio')
+    await openReportsAfterAuth(locale)
     await expect(card()).toBeVisible({timeout:90000})
     await expect(buttons()).toHaveCount(5,{timeout:30000})
     await expect(card().locator('[class*="visualState"]')).toHaveCount(0)
