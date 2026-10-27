@@ -6,7 +6,7 @@ on:
       - 'components/app/test-explorer-visual.jsx'
       - 'components/app/app-workspace.jsx'
       - 'components/app/development-program.jsx'
-      - 'app/[locale]/app/[[...path]]/insights-compact.css'
+      - 'app/**/insights-compact.css'
       - 'tests/reports-profile-axes-tests-goals.test.mjs'
       - 'components/app/portrait-test-quick-actions.jsx'
       - 'components/app/portrait-test-quick-actions.module.css'
