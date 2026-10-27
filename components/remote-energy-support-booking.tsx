@@ -9,6 +9,13 @@ import styles from "./remote-energy-support-booking.module.css";
 type Locale = "en" | "ru" | "es";
 type Format = "asynchronous" | "live";
 export type SupportRequestKind = "talisman" | "energy";
+type PriceBudget = "any" | "free" | "20" | "100";
+
+function publishedPriceFitsBudget(price: number, currency: string, budget: PriceBudget) {
+  if (budget === "any") return true;
+  if (budget === "free") return price === 0;
+  return currency === "EUR" && Number.isFinite(price) && price > 0 && price <= Number(budget);
+}
 
 export type EnergySupportMaster = {
   slug: string;
@@ -97,6 +104,9 @@ const WORDS = {
     minutes: "min",
     noPublishedOptions: "No approved duration or price is available",
     reviewCount: "verified reviews",
+    unpricedBudget: "Talisman prices are not published. Select Any to ask a practitioner without assuming a price.",
+    noPriceMatches: "No published practitioner price matches this budget. EUR caps do not convert other currencies.",
+    resetBudget: "Show all prices",
   },
   ru: {
     kindLabel: "Что вы хотите заказать?",
@@ -168,6 +178,9 @@ const WORDS = {
     minutes: "мин",
     noPublishedOptions: "Нет утверждённой длительности или цены",
     reviewCount: "проверенных отзывов",
+    unpricedBudget: "Цены на талисманы не опубликованы. Выберите «Любой», чтобы обсудить цену с мастером.",
+    noPriceMatches: "Нет предложений с подтверждённой ценой в этом диапазоне. Цены в других валютах не пересчитываются.",
+    resetBudget: "Показать все цены",
   },
   es: {
     kindLabel: "¿Qué deseas solicitar?",
@@ -239,6 +252,9 @@ const WORDS = {
     minutes: "min",
     noPublishedOptions: "No hay duración o precio aprobado",
     reviewCount: "reseñas verificadas",
+    unpricedBudget: "Los talismanes no tienen precio publicado. Elige Cualquiera para consultar sin suponer un precio.",
+    noPriceMatches: "No hay precios publicados en este presupuesto. No convertimos otras monedas a euros.",
+    resetBudget: "Mostrar todos los precios",
   },
 } as const;
 
@@ -258,7 +274,7 @@ function localDateToday() {
 
 export function RemoteEnergySupportBooking({
   locale, masters, preferredPractitioner, mode = "standalone", selectedKind = "energy",
-  initialGoal = "", onKindChange,
+  initialGoal = "", onKindChange, compactFinder = false, priceBudget = "any", onClearBudget,
 }: {
   locale: Locale;
   masters: EnergySupportMaster[];
@@ -267,6 +283,9 @@ export function RemoteEnergySupportBooking({
   selectedKind?: SupportRequestKind;
   initialGoal?: string;
   onKindChange?: (kind: SupportRequestKind) => void;
+  compactFinder?: boolean;
+  priceBudget?: PriceBudget;
+  onClearBudget?: () => void;
 }) {
   const t = WORDS[locale];
   const router = useRouter();
@@ -302,7 +321,15 @@ export function RemoteEnergySupportBooking({
     () => (selected?.priceOptions || []).filter((option) => Number.isFinite(option.price) && option.price > 0),
     [selected]
   );
-  const currentPrice = options.find((option) => option.duration === duration);
+  const budgetOptions = useMemo(
+    () => compactFinder ? options.filter(option => publishedPriceFitsBudget(option.price, selected?.currency || "", priceBudget)) : options,
+    [compactFinder, options, priceBudget, selected?.currency]
+  );
+  const currentPrice = budgetOptions.find((option) => option.duration === duration);
+  const matchingMasters = compactFinder && priceBudget !== "any"
+    ? requestKind === "talisman" ? [] : masters.filter(master =>
+      master.priceOptions.some(option => publishedPriceFitsBudget(option.price, master.currency, priceBudget)))
+    : masters;
   const priceLabel = (price: number, currency: string) => {
     try {
       return new Intl.NumberFormat(locale, {
@@ -320,10 +347,10 @@ export function RemoteEnergySupportBooking({
     if (stagedIntention) setIntention(stagedIntention);
   }, []);
   useEffect(() => {
-    if (options.length && !options.some((option) => option.duration === duration)) {
-      setDuration(options[0].duration);
+    if (budgetOptions.length && !budgetOptions.some((option) => option.duration === duration)) {
+      setDuration(budgetOptions[0].duration);
     }
-  }, [selectedServiceId, options, duration]);
+  }, [selectedServiceId, budgetOptions, duration]);
   useEffect(() => {
     if (methods.length && !methods.includes(method)) setMethod(methods[0]);
   }, [methods, method]);
@@ -412,14 +439,14 @@ export function RemoteEnergySupportBooking({
     <section className={mode === "inline" ? styles.page + " " + styles.inline : styles.page}
       aria-labelledby="remote-support-title" data-remote-support-intent-first
       data-support-request-kind={requestKind}>
-      <header className={styles.intro}>
+      {compactFinder ? <h2 id="remote-support-title" className={styles.srOnly}>{t.specialistsTitle}</h2> : <header className={styles.intro}>
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
         <h1 id="remote-support-title">{requestKind === "talisman" ? t.talismanTitle : t.title}</h1>
         <p>{requestKind === "talisman" ? t.talismanIntro : t.intro}</p>
         <p className={styles.steps}>{t.steps}</p>
-      </header>
+      </header>}
 
-      <div className={styles.kindChooser} role="group" aria-label={t.kindLabel}>
+      {!compactFinder && <div className={styles.kindChooser} role="group" aria-label={t.kindLabel}>
         <p>{t.kindLabel}</p>
         {(["talisman", "energy"] as const).map(kind => (
           <button key={kind} type="button" aria-pressed={requestKind === kind}
@@ -432,8 +459,8 @@ export function RemoteEnergySupportBooking({
             {kind === "talisman" ? t.kindTalisman : t.kindEnergy}
           </button>
         ))}
-      </div>
-      <section className={styles.intentPanel} aria-labelledby="remote-intent-heading">
+      </div>}
+      {!compactFinder && <section className={styles.intentPanel} aria-labelledby="remote-intent-heading">
         <div className={styles.sectionHeading}>
           <span className={styles.stepNumber} aria-hidden="true">01</span>
           <div>
@@ -464,7 +491,7 @@ export function RemoteEnergySupportBooking({
           aria-controls="remote-results" aria-expanded={showResults} onClick={findOptions}>
           {t.findOptions}<span aria-hidden="true">→</span>
         </button>
-      </section>
+      </section>}
 
       <section id="remote-results" className={styles.results} hidden={!showResults} aria-labelledby="remote-practitioners-title">
         <div className={styles.sectionHeading}>
@@ -475,18 +502,23 @@ export function RemoteEnergySupportBooking({
           </div>
         </div>
 
-        {masters.length === 0 ? (
+        {matchingMasters.length === 0 ? (
           <div className={styles.empty} role="status">
-            <p>{t.noMasters}</p>
+            <p>{compactFinder && priceBudget !== "any"
+              ? requestKind === "talisman" ? t.unpricedBudget : t.noPriceMatches
+              : t.noMasters}</p>
+            {compactFinder && priceBudget !== "any" && onClearBudget &&
+              <button type="button" className={styles.clearBudget} onClick={onClearBudget}>{t.resetBudget}</button>}
             <Link href={"/" + locale + "/masters"}>{t.more} →</Link>
             <Link href={"/" + locale + "/academy/reiki/yggdrasil/free-initiation"}>{t.freeReiki} →</Link>
           </div>
         ) : (
           <div className={styles.cards}>
-            {masters.map((master) => {
+            {matchingMasters.map((master) => {
               const isOpen = selectedServiceId === master.serviceId;
               const offers = master.priceOptions
-                .filter((offer) => Number.isFinite(offer.price) && offer.price > 0)
+                .filter((offer) => Number.isFinite(offer.price) && offer.price > 0 &&
+                  (!compactFinder || publishedPriceFitsBudget(offer.price, master.currency, priceBudget)))
                 .sort((a, b) => a.duration - b.duration);
               return (
                 <article key={master.serviceId} className={styles.masterOffer}
@@ -542,6 +574,12 @@ export function RemoteEnergySupportBooking({
                       <h4>{t.talismanFormTitle}</h4>
                       <p className={styles.bookingIntro}>{t.talismanHint}</p>
                       <p className={styles.privacyHint}>{t.privacyShort}</p>
+                      {compactFinder && <div className={styles.field}>
+                        <label htmlFor={"remote-intention-" + master.serviceId}>{t.intentionLabel}</label>
+                        <textarea id={"remote-intention-" + master.serviceId} className={styles.intentionInput}
+                          maxLength={1000} rows={2} value={intention} placeholder={t.intentionPlaceholder}
+                          onChange={event => setIntention(event.target.value)}/>
+                      </div>}
                       <button type="submit" className={styles.submit}>
                         {t.talismanSubmit} <span aria-hidden="true">→</span>
                       </button>
@@ -577,7 +615,7 @@ export function RemoteEnergySupportBooking({
                       <fieldset className={styles.durationGroup}>
                         <legend>{t.duration}</legend>
                         {REMOTE_SUPPORT_DURATIONS.map((minutes) => {
-                          const published = options.find((option) => option.duration === minutes);
+                          const published = budgetOptions.find((option) => option.duration === minutes);
                           return <label className={duration === minutes ? styles.activeDuration : ""} key={minutes}
                             title={!published ? t.unavailablePrice : undefined}>
                             <input type="radio" name="remote-duration" value={minutes}
@@ -607,6 +645,13 @@ export function RemoteEnergySupportBooking({
                           </div>
                         </div>
                       </div>
+                      {compactFinder && <div className={styles.field}>
+                        <label htmlFor={"remote-intention-" + master.serviceId}>{t.intentionLabel}</label>
+                        <textarea id={"remote-intention-" + master.serviceId} className={styles.intentionInput}
+                          maxLength={1000} rows={2} value={intention} placeholder={t.intentionPlaceholder}
+                          onChange={event => setIntention(event.target.value)}/>
+                        <small>{t.privacyShort}</small>
+                      </div>}
                       <details className={styles.requestSummary}>
                          <summary className={styles.requestSummaryToggle}>
                            <strong>{currentPrice && selected
