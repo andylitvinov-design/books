@@ -354,7 +354,11 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
             {wiseEnabled && <label data-chosen={activeMethod === "wise"}><input type="radio" name={id + "-payment"} checked={activeMethod === "wise"} onChange={() => setMethod("wise")} />{t.wise}</label>}
           </div>
         </fieldset>}
-        {showPayment && !squareAvailable && !hostedPayPalUrl && !verifiedPayPalEnabled && <p className={styles.hint} data-card-unavailable>{t.cardUnavailable}</p>}}
+        {showPayment && !squareAvailable && !hostedPayPalUrl && !verifiedPayPalEnabled && <p className={styles.hint} data-card-unavailable>{t.cardUnavailable}</p>}
+        {showPayment && <a className={styles.booking} href={bookingUrl} target="_blank" rel="noopener noreferrer">
+          <MessageCircle size={16} aria-hidden="true" />{t.book}
+        </a>}
+        <p className={styles.fine}><Check size={15} aria-hidden="true" /> {t.secure}. {t.checkoutNote}</p>
         {showPayment && <div className={styles.payment} aria-live="polite">
           {activeMethod === "square" && squareAvailable ? <>
             {squareApiEnabled && squareApiCad ? <button className={styles.primary} type="button"
@@ -418,10 +422,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           </> : null}
           {(activeMethod === "paypal" || activeMethod === "wise" || activeMethod === "interac" || (activeMethod === "square" && Boolean(squarePayment) && !squareApiEnabled)) && <a className={styles.receipt} href={receiptUrl} target="_blank" rel="noopener noreferrer">{t.afterPay}</a>}
         </div>}
-        {showPayment && <a className={styles.booking} href={bookingUrl} target="_blank" rel="noopener noreferrer">
-          <MessageCircle size={16} aria-hidden="true" />{t.book}
-        </a>}
-        <p className={styles.fine}><Check size={15} aria-hidden="true" /> {t.secure}. {t.checkoutNote}</p>
+
       </>}
     <Link href={`/${locale}/services/free-situation-review`} className={styles.free}>{t.free} <ArrowRight size={16} aria-hidden="true" /></Link>
   </section>;
