@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   FREE_MODELS, SAFE_EDIT_FILES, REQUIRED_CRITERIA, CONTRACT_TESTS,
   parseGauntletArgs, changedPathsFromPorcelain, checkEditScope, parseCriticVerdict,
+  allowsSyntheticActionsRun,
 } from '../../lib/benchmarking/hh-gauntlet-loop.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -46,7 +47,7 @@ function git(args) {
 function agentEnv() {
   // Deliberately do not inherit DATABASE_URL, VERCEL_TOKEN, SUPABASE_*, etc.
   const allowed = ['HOME', 'PATH', 'LANG', 'LC_ALL', 'TERM', 'TMPDIR',
-    'XDG_CONFIG_HOME', 'OPENCODE_API_KEY'];
+    'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'];
   const env = Object.fromEntries(allowed.filter(key => process.env[key])
     .map(key => [key, process.env[key]]));
   env.OPENCODE_DISABLE_CLAUDE_CODE = '1';
@@ -56,7 +57,9 @@ function agentEnv() {
 }
 
 function preflight(model) {
-  if (process.env.CI || process.env.VERCEL) throw new Error('Model loop forbidden in CI/Vercel');
+  if (process.env.VERCEL) throw new Error('Model loop forbidden in Vercel');
+  if (process.env.CI && !allowsSyntheticActionsRun(process.env))
+    throw new Error('Model loop in CI only permitted in isolated, credential-free PR runner');
   if (process.env.OPENCODE_DISABLE_FREE_MODELS === '1')
     throw new Error('Free models are disabled by OpenCode configuration');
   const branch = git(['branch', '--show-current']);
