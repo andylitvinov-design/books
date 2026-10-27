@@ -51,6 +51,12 @@ The independent critic returns a machine-validated scorecard for six predefined 
 
 The real Chromium/WebKit, mobile and PG17 RLS systems already exist in `.github/workflows/hh-free-express-wizard-v2.yml` and `scripts/verify-free-express-wizard-v2.mjs`. They remain the source of truth for their respective layers. This Gauntlet adds independent AI review and **reuses** those tests; it does not clone them or produce artificial customer leads.
 
+## OpenCode V2 agent security gate
+
+OpenCode CLI v2 does **not** use the V1 Markdown `permission:` map or `bash:` and `task:` action names; in V2 the correct form is an ordered `permissions:` list with `action`, `resource`, `effect`, including `shell` and `subagent`. Both agent files were migrated from legacy V1 to V2 in [PR #2247](https://github.com/andylitvinov-design/books/pull/2247), with an explicit global deny rule followed only by local source read/glob/grep and six exact Builder UI/test edit grants. Critic has zero edit grants. This is independently supported by the official [OpenCode v2 permissions guide](https://opencode.ai/v2/docs/permissions) and [v2 agent guide](https://opencode.ai/v2/docs/agents).
+
+The PR job now runs `opencode debug agents` **before model tool access**, checks the resolved permissions for both roles and stops on any parsing problem, missing agent, shell/external access, wildcard later grant or edit-list mismatch. It also runs the new V2 policy unit test before invoking Builder. This gate is required because passing source-level regex tests alone does not prove effective OpenCode permissions.
+
 ## Cloud test — 27 October 2026
 
 The authorized Mac is offline, so [PR #2247](https://github.com/andylitvinov-design/books/pull/2247) includes one isolated PR runner using pinned official `@opencode/cli@2.1.2`. A **real** zero-credential GLM-5.3-Flash Free text reply was observed in [GitHub Actions run #40506626748](https://github.com/andylitvinov-design/books/actions/runs/40506626748): `opencode v2.1.2`, exit `0`, NDJSON `step_start, text`, token `HH_GAUNTLET_FREE_20261027_OK` received. No billing key or stored account authentication was supplied. This verifies only the public free inference path, not permissions/Builder/Critic/CRM.
