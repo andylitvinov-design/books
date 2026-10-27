@@ -7,47 +7,51 @@ import { readFileSync } from "node:fs";
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const media = JSON.parse(read("data/academy/psimaster-media.generated.json"));
 
-test("Holistic Support has an accessible audio and video meditation destination in all three locales", () => {
+test("Holistic Support has a compact themed video gallery and original instrumental player in EN/RU/ES", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const css = read("app/[locale]/holistic-support/holistic-support.module.css");
+  const gallery = read("components/holistic-meditation-gallery.tsx");
+  const galleryCss = read("components/holistic-meditation-gallery.module.css");
   for (const label of [
-    "Meditation · Flight to the Sun", "Бесплатные подкачки", "Meditación · Flight to the Sun",
-  ]) assert.ok(page.includes(label), "missing locale text " + label);
-  assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="#meditation-practices" prefetch=\{false\}/);
-  assert.match(page, /href="#meditation-practices"/);
+    "Meditations · Video & audio", "Медитации · Видео и аудио", "Meditaciones · Vídeo y audio",
+    "Business", "Love", "Energy", "Health", "Бизнес", "Любовь", "Энергия", "Здоровье",
+    "Negocios", "Amor", "Energía", "Salud",
+  ]) assert.ok((page + gallery).includes(label), "missing localized meditation label " + label);
+
+assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="#meditation-practices" prefetch=\{false\}/);
   assert.match(page, /id="meditation-practices"/);
+  assert.match(page, /<HolisticMeditationGallery locale=\{locale\} videos=\{freeMeditationVideos\(locale\)\} \/>/);
+  assert.match(page, /id="meditation-audio"/);
   assert.match(page, /data-holistic-audio-player/);
   assert.match(page, /<audio controls preload="none"/);
   assert.match(page, /holistic-house-soft-melody-gentle-waves-96s\.wav/);
-  assert.match(page, /<AcademyCourseVideoPlaylist/);
-  assert.match(page, /compact\s*\/>/);
-  assert.match(page, /data-holistic-meditation-screen="video"/);
-  assert.match(page, /data-holistic-meditation-screen="audio"/);
-  assert.match(page, /id="meditation-audio"/);
-  assert.match(page, /href="#meditation-audio"/);
-  assert.match(css, /height:calc\(100svh - 112px\)/);
-  assert.match(css, /height:calc\(100svh - 142px\)/);
-  assert.match(css, /overflow-y:auto/);
-  const playlistCss = read("components/academy-course-video-playlist.module.css");
-  const playlistUi = read("components/academy-course-video-playlist.tsx");
-  assert.match(playlistCss, /\.compact \.sequence\{display:none\}/);
-  assert.match(playlistCss, /\.compact \.controls button\{[^}]*min-height:44px/);
-  assert.match(playlistUi, /key=\{active\.id\}/);
-  assert.match(playlistUi, /aria-label=\{compact \? lesson\.title : undefined\}/);
-
-  assert.match(page, /introText=\{t\.meditationVideoIntro\}/);
+  assert.match(page, /meditationAudioMissing/);
+  assert.match(page, /<details className=\{styles\.meditationRecordingNote\}>/);
   assert.match(page, /data-holistic-russian-archive/);
   assert.match(page, /\/ru\/holistic-support#meditation-practices/);
-  assert.ok(page.includes("Flight to the Sun · Original English video"));
-  assert.ok(page.includes("Flight to the Sun · Vídeo original en inglés"));
-  assert.ok(page.includes("Русскоязычные медитации · архив PsiMaster"));
-  assert.doesNotMatch(page, /Первое видео — «Полёт к солнцу»/);
-  assert.ok(page.indexOf("<AcademyCourseVideoPlaylist") < page.indexOf("data-holistic-audio-player"),
-    "video should be encountered before the ambient audio on narrow screens");
-  assert.match(css, /\.section\[data-holistic-meditations\]\{scroll-margin-top/);
-  assert.match(css, /@media\(max-width:350px\)/);
   assert.ok(page.indexOf("data-holistic-meditations") > page.indexOf("<HolisticSupportTopicFilter"));
   assert.ok(page.indexOf("data-holistic-meditations") < page.indexOf("data-holistic-coaching-followup"));
+
+  const meditationCss = css.slice(css.indexOf("/* Meditation library:"), css.indexOf("/* Holistic Support: a complete first-screen"));
+  assert.ok(meditationCss.includes(".section[data-holistic-meditations]"));
+  assert.ok(meditationCss.includes(".meditationAudioCard"));
+  assert.ok(meditationCss.includes("@media(max-width:650px)"));
+  assert.ok(meditationCss.includes("@media(max-width:350px)"));
+  assert.doesNotMatch(meditationCss, /height:calc\(100svh/);
+  assert.doesNotMatch(page, /<AcademyCourseVideoPlaylist|data-holistic-meditation-screen/);
+
+  assert.match(gallery, /role="group" aria-label=\{t\.filter\}/);
+  assert.match(gallery, /aria-pressed=\{activeTopic === topic\}/);
+  assert.match(gallery, /data-meditation-topic=\{topic\}/);
+  assert.match(gallery, /video\.topics\.includes\(activeTopic\)/);
+  assert.match(gallery, /setSelectedId\(null\)/);
+  assert.match(gallery, /<AcademyVideoPlayer/);
+  assert.match(gallery, /key=\{activeTopic \+ ":" \+ activeVideo\.id\}/);
+  assert.match(gallery, /data-meditation-video-id=\{video\.id\}/);
+  assert.match(galleryCss, /aspect-ratio:16\/9/);
+  assert.match(galleryCss, /object-fit:cover/);
+  assert.match(galleryCss, /@media\(max-width:430px\)/);
+  assert.doesNotMatch(gallery, /autoplay=\{true\}|video\.mp3/);
 });
 
 test("free Sun and original PsiMaster pump-up playlist uses source-linked IDs without fake extracted audio", () => {
@@ -138,4 +142,14 @@ test("language-aware meditation selector: EN Flight to the Sun, RU only seven or
   assert.equal(new Set(ru.map(video => video.id)).size, 7);
   assert.ok(ru.every(video => video.id !== originalSun.youtubeId));
   assert.ok(ru.every(video => !video.title.includes("original English")));
+  const allTopics = ["business", "love", "energy", "health"];
+  for (const topic of allTopics) {
+    assert.ok(ru.some(video => video.topics.includes(topic)), "RU missing " + topic);
+    assert.ok(en[0].topics.includes(topic), "EN original must remain reachable for " + topic);
+    assert.ok(es[0].topics.includes(topic), "ES links to the same English original for " + topic);
+  }
+  assert.ok(ru.filter(video => video.topics.includes("energy")).length >= 4);
+  assert.ok(ru.filter(video => video.topics.includes("health")).length >= 2);
+  assert.ok(ru.filter(video => video.topics.includes("love")).length >= 2);
+  assert.equal(new Set(ru.flatMap(video => video.topics)).size, 4);
 });

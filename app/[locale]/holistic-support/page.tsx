@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 
 import { HolisticSupportChoices } from "@/components/holistic-support-choices";
 import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
-import { AcademyCourseVideoPlaylist } from "@/components/academy-course-video-playlist";
+import { HolisticMeditationGallery } from "@/components/holistic-meditation-gallery";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { HolisticSupportTopicFilter } from "@/components/holistic-support-topic-filter";
@@ -58,8 +58,8 @@ const copy = {
     talismanSectionTitle: "Daoist Talismans · Discover & Request",
     talismanSectionLead: "Browse Fu-style symbolic talismans, explore their intentions and request a personal piece. The master confirms price and availability.",
     meditationEyebrow: "03 · MEDITATION PRACTICES",
-    meditationSectionTitle: "Meditation · Flight to the Sun",
-    meditationSectionLead: "Begin with an original English-guided Sun practice. The historical free PsiMaster Energy Pump-Ups series is accessible in Russian on the RU page.",
+    meditationSectionTitle: "Meditations · Video & audio",
+    meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
     meditationAudioTitle: "Audio · Gentle waves & melody",
     meditationAudioBody: "A 96-second instrumental soundscape for quiet attention. It is not an original PsiMaster guided recording.",
     meditationAudioLabel: "Play gentle waves and soft music",
@@ -70,6 +70,7 @@ const copy = {
     meditationMore: "Explore more Academy meditations",
     meditationRussianArchive: "Open the original PsiMaster series in Russian",
     meditationAudioFallback: "Your browser does not support audio playback.",
+    meditationSourceToggle: "About the original audio archive",
     meditationToAudio: "Next · Calming audio",
     meditationBackToVideo: "Back to video",
 
@@ -119,8 +120,8 @@ const copy = {
     talismanSectionTitle: "Даосские талисманы · Каталог",
     talismanSectionLead: "Посмотрите даосские талисманы Фу и выберите подходящий символ. Изготовление и цену мастер подтвердит отдельно.",
     meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
-    meditationSectionTitle: "Медитации · Бесплатные подкачки",
-    meditationSectionLead: "Три медитации Солнца, «Жизненная Сила», «Круг Огня» и две записи марафонов — оригинальные русскоязычные видео PsiMaster. Выберите запись и нажмите «Смотреть».",
+    meditationSectionTitle: "Медитации · Видео и аудио",
+    meditationSectionLead: "Выберите тему и смотрите оригинальные медитации Солнца, «Жизненную силу» и энергетические практики PsiMaster.",
     meditationAudioTitle: "Аудио · Мягкие волны и мелодия",
     meditationAudioBody: "Инструментальное сопровождение для спокойного внимания, 96 секунд. Это не оригинальная голосовая подкачка с PsiMaster.",
     meditationAudioLabel: "Воспроизвести мягкие волны и мелодию",
@@ -131,6 +132,7 @@ const copy = {
     meditationMore: "Другие медитации в Академии",
     meditationRussianArchive: "Оригинальный архив PsiMaster (RU)",
     meditationAudioFallback: "Ваш браузер не поддерживает воспроизведение аудио.",
+    meditationSourceToggle: "Об оригинальных аудиозаписях",
     meditationToAudio: "Далее · Спокойное аудио",
     meditationBackToVideo: "Назад к видео",
 
@@ -180,8 +182,8 @@ const copy = {
     talismanSectionTitle: "Talismanes taoístas · Catálogo",
     talismanSectionLead: "Explora talismanes de estilo Fu y solicita una pieza personal. El profesional confirma el precio y la disponibilidad.",
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
-    meditationSectionTitle: "Meditación · Flight to the Sun",
-    meditationSectionLead: "Empieza con un vídeo original del Sol en inglés. La serie histórica gratuita PsiMaster está disponible en su idioma original: ruso.",
+    meditationSectionTitle: "Meditaciones · Vídeo y audio",
+    meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso.",
     meditationAudioTitle: "Audio · Olas y melodía suave",
     meditationAudioBody: "Música instrumental de 96 segundos para una pausa tranquila. No es una grabación guiada original de PsiMaster.",
     meditationAudioLabel: "Reproducir olas y melodía suave",
@@ -192,6 +194,7 @@ const copy = {
     meditationMore: "Más meditaciones en la Academia",
     meditationRussianArchive: "Abrir la serie original de PsiMaster en ruso",
     meditationAudioFallback: "Tu navegador no permite reproducir audio.",
+    meditationSourceToggle: "Sobre los audios originales",
     meditationToAudio: "Siguiente · Audio tranquilo",
     meditationBackToVideo: "Volver a los vídeos",
 
@@ -242,68 +245,46 @@ export default async function HolisticSupportPage({ params }: Props) {
         <TaoistKoanBoard locale={locale} />
 
         <section id="meditation-practices" className={styles.section} data-holistic-meditations aria-labelledby="holistic-meditation-title">
-          <article className={styles.meditationFrame} data-holistic-meditation-screen="video" aria-label={t.meditationVideoTitle}>
-            <div className={styles.meditationScenic}>
-              <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill sizes="(max-width:650px) 100vw, 42vw" />
-              <div className={styles.meditationScenicCopy}>
-                <p className={styles.meditationEyebrow}>{t.meditationEyebrow} · 01 / 02</p>
-                <h2 id="holistic-meditation-title">{t.meditationSectionTitle}</h2>
-                <p className={styles.meditationScenicLead}>{t.meditationSectionLead}</p>
-              </div>
+          <header className={styles.meditationHero}>
+            <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill sizes="(max-width:650px) 100vw, 1190px" />
+            <div className={styles.meditationHeroCopy}>
+              <p className={styles.meditationEyebrow}>{t.meditationEyebrow}</p>
+              <h2 id="holistic-meditation-title">{t.meditationSectionTitle}</h2>
+              <p>{t.meditationSectionLead}</p>
             </div>
-            <div className={styles.meditationMain}>
-              <p className={styles.meditationKind}>{t.meditationVideoTitle}</p>
-              {freeMeditationVideos(locale).length > 0 ? (
-                <AcademyCourseVideoPlaylist
-                  locale={locale}
-                  courseTitle={t.meditationVideoTitle}
-                  lessons={freeMeditationVideos(locale)}
-                  introText={t.meditationVideoIntro}
-                  compact
-                />
-              ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
-              <nav className={styles.meditationFooterLinks} aria-label={t.meditationSectionTitle}>
-                {locale !== "ru" ? (
-                  <Link href="/ru/holistic-support#meditation-practices" className={styles.meditationArchiveLink} prefetch={false} data-holistic-russian-archive>
-                    {t.meditationRussianArchive}<span aria-hidden="true">↗</span>
-                  </Link>
-                ) : null}
-                <Link href="#meditation-audio" className={styles.meditationNext} prefetch={false}>
-                  {t.meditationToAudio}<span aria-hidden="true">↓</span>
+          </header>
+          <div className={styles.meditationContents}>
+            {freeMeditationVideos(locale).length > 0 ? (
+              <HolisticMeditationGallery locale={locale} videos={freeMeditationVideos(locale)} />
+            ) : <p className={styles.meditationSourceNote}>{t.meditationVideoUnavailable}</p>}
+            <nav className={styles.meditationFooterLinks} aria-label={t.meditationSectionTitle}>
+              {locale !== "ru" ? (
+                <Link href="/ru/holistic-support#meditation-practices" className={styles.meditationArchiveLink} prefetch={false} data-holistic-russian-archive>
+                  {t.meditationRussianArchive}<span aria-hidden="true">↗</span>
                 </Link>
-              </nav>
-            </div>
-          </article>
-
-          <article id="meditation-audio" className={styles.meditationFrame} data-holistic-meditation-screen="audio" aria-label={t.meditationAudioTitle}>
-            <div className={styles.meditationScenic}>
-              <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill sizes="(max-width:650px) 100vw, 42vw" />
-              <div className={styles.meditationScenicCopy}>
-                <p className={styles.meditationEyebrow}>{t.meditationEyebrow} · 02 / 02</p>
-                <h2>{t.meditationAudioTitle}</h2>
-                <p className={styles.meditationScenicLead}>{t.meditationAudioBody}</p>
-              </div>
-            </div>
-            <div className={styles.meditationMain}>
-              <div className={styles.meditationAudioRow} data-holistic-audio-player>
+              ) : null}
+              <Link href={"/" + locale + "/academy"} className={styles.meditationArchiveLink} prefetch={false}>
+                {t.meditationMore}<span aria-hidden="true">→</span>
+              </Link>
+            </nav>
+            <aside id="meditation-audio" className={styles.meditationAudioCard} data-holistic-audio-player aria-labelledby="holistic-meditation-audio-title">
+              <div className={styles.meditationAudioText}>
                 <span className={styles.freeTag}>{t.free}</span>
-                <h3>{t.meditationAudioTitle}</h3>
+                <h3 id="holistic-meditation-audio-title">{t.meditationAudioTitle}</h3>
+                <p>{t.meditationAudioBody}</p>
+              </div>
+              <div className={styles.meditationAudioControls}>
                 <audio controls preload="none" aria-label={t.meditationAudioLabel}>
                   <source src="/audio/holistic-house-soft-melody-gentle-waves-96s.wav" type="audio/wav" />
                   {t.meditationAudioFallback}
                 </audio>
+                <details className={styles.meditationRecordingNote}>
+                  <summary>{t.meditationSourceToggle}</summary>
+                  <p>{t.meditationAudioMissing}</p>
+                </details>
               </div>
-              <p className={styles.meditationSourceNote} role="note">{t.meditationAudioMissing}</p>
-              <nav className={styles.meditationFooterLinks} aria-label={t.meditationAudioTitle}>
-                <Link href="#meditation-practices" className={styles.meditationArchiveLink} prefetch={false}>
-                  {t.meditationBackToVideo}<span aria-hidden="true">↑</span>
-                </Link>
-                <Link href={"/" + locale + "/academy"} className={styles.meditationNext} prefetch={false}>
-                  {t.meditationMore}<span aria-hidden="true">→</span>
-                </Link>
-              </nav>
-            </div>
-          </article>
+            </aside>
+          </div>
         </section>
 
         <section id="talismans" className={styles.section} data-holistic-talismans aria-labelledby="holistic-talismans-title">
