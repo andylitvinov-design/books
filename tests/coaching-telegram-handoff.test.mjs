@@ -34,7 +34,7 @@ test('signed continuation never creates a second CRM contact and needs fresh STO
   const route=file('app/api/coaching-diagnostic/route.js')
   const repo=file('lib/practitioners/public-service-enquiry.js')
   const form=file('components/coaching-intake-form.tsx')
-  const migration=file('supabase/migrations/20261026213000_hh_coaching_telegram_thread_handoff.sql')
+  const migration=file('supabase/migrations/20261027004620_hh_coaching_telegram_thread_handoff_20261026.sql')
   assert.match(webhook,/issueTelegramCoachingHandoff\(/)
   assert.match(webhook,/next\.stage==='done'/)
   assert.match(webhook,/set_config\('hh\.telegram_handoff_user'/)
