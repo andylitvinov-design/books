@@ -102,8 +102,8 @@ test('free situation landing exposes locale-scoped chooser with distinct Telegra
     route.indexOf('normalizeMessengerUpdates(provider,body)'))
   assert.doesNotMatch(component,/sendOneMessengerMessage|autoSend|createContact|book|payment|sendBeacon/)
   const css=read('components/telegram-diagnostic-entry.module.css')
-  assert.match(css,/@media\(max-width:580px\)/)
-  assert.match(css,/min-height:46px/)
+  assert.match(css,/@media\s*\(max-width:\s*580px\)/)
+  assert.match(css,/min-height:\s*46px/)
 })
 
 test('free-review copy does not contradict consented optional Telegram photo and drawing',()=>{
