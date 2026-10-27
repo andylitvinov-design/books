@@ -3,7 +3,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium, webkit, expect } from '@playwright/test'
 import { lessonFor } from '../lib/inner-growth/lesson-library.js'
 import { COURSE_ANTISTRESS_SKILLS_V7 } from '../lib/inner-growth/anti-stress-skills-v7.js'
-import { oporaExperienceGuide, oporaExperienceDepth, oporaExperienceSupport, OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { OPORA_EXPERIENCE_DESIGN_VERSION } from '../lib/inner-growth/opora-as56-experience-guides.js'
+import { oporaAs60VariedDay, oporaAs60VariedJourney } from '../lib/inner-growth/opora-as60-varied-content.js'
+import { OPORA_EXPERIENCE_CHANNELS, OPORA_EXPERIENCE_SCENES } from '../lib/inner-growth/opora-as60-integrated-journey.js'
 import { buildOporaBrowserFixture, oporaFixtureOrigin as origin, oporaFixturePath,
   oporaFixtureBundlePath, oporaFixtureDocument, requireHostedOporaBrowser } from './opora-as56-browser-fixture.mjs'
 
@@ -15,6 +17,8 @@ await mkdir(output, { recursive: true })
 const fixture = await buildOporaBrowserFixture()
 const evidence = { scope: 'ACTUAL_HYDRATED_AS56_PLAYER_SYNTHETIC_DAY5_REAL_CSS_NO_AUTH_NO_API',
   engine: engineName, sourceProof: fixture.sourceProof, cases: [] }
+assert.deepEqual(OPORA_EXPERIENCE_CHANNELS, ['body', 'emotion', 'mental', 'imagery', 'ritual'])
+assert.deepEqual(OPORA_EXPERIENCE_SCENES, ['bodyExperience', 'emotionExperience', 'mentalExperience', 'imageryMeditation', 'ritualPractice'])
 const words = {
   ru: { save: 'Сохранить мою практику', next: 'Продолжить', previous: 'Назад', help: 'Показать мягкую подсказку',
     original: 'Показать мягкую подсказку', pause: 'Пауза', neutral: 'Вернуться с нейтральной опорой',
@@ -39,8 +43,9 @@ try {
     const context = await browser.newContext({ viewport: { width, height: width === 320 ? 667 : width === 430 ? 932 : 844 }, serviceWorkers: 'block' })
     context.setDefaultTimeout(15000)
     const page = await context.newPage(), errors = [], unexpectedRequests = []
-    const t = words[locale], brief = oporaExperienceGuide(5, locale)
-    const support = oporaExperienceSupport(5,locale)
+    const t = words[locale], daily = oporaAs60VariedDay(5, locale)
+    const journey = oporaAs60VariedJourney(5, locale), brief = daily.practice
+    const support = { title: daily.purposeTitle, body: daily.purpose }
     const data = { cycle: { id: '00000000-0000-4000-8000-000000001056', day: 5, durationDays: 14 },
       programme: { id: 'stress' }, currentSession: null,
       lesson: lessonFor('calm_regulation', 5, locale, 'standard', COURSE_ANTISTRESS_SKILLS_V7) }
@@ -84,6 +89,18 @@ try {
       await expect(button(t.pause)).toBeVisible()
       await expect(button(t.next)).toBeVisible()
     }
+    const assertChannel = async moment => {
+      const channel = OPORA_EXPERIENCE_CHANNELS[OPORA_EXPERIENCE_SCENES.indexOf(moment)]
+      assert.ok(channel, 'Only the five explicit AS6 channels are covered')
+      await expect(page.locator('[data-opora-current-screen="' + moment + '"]')).toBeVisible()
+      const card = page.locator('[data-opora-experience-channel="' + channel + '"]')
+      await expect(card).toHaveCount(1)
+      await expect(card).toContainText(journey[channel].text)
+      await expect(card).toContainText(journey[channel].hint)
+      await expect(page.getByRole('heading', { name: journey[channel].title, exact: true })).toBeVisible()
+      if (channel === 'mental') await expect(card).toContainText(journey.mental.plan)
+      await assertBounds(moment)
+    }
     const assertNeutral = async () => {
       await expect(page.getByRole('alertdialog')).toHaveCount(0)
       await expect(page.locator('[data-opora-neutral-anchor]')).toContainText(t.anchor)
@@ -115,9 +132,15 @@ try {
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="recapPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-practice-overview="5"]')).toBeVisible()
-      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(oporaExperienceDepth(5,locale).why)
+      await expect(page.locator('[data-opora-overview-purpose]')).toContainText(daily.result)
       await assertBounds('recapPractice')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-recapPractice.png` })
+      // New unsaved AS6 lessons include four complementary cards before practice.
+      // Navigate only; selecting a channel response must remain voluntary.
+      for (const moment of OPORA_EXPERIENCE_SCENES.slice(0, 4)) {
+        await click(t.next)
+        await assertChannel(moment)
+      }
       await click(t.next)
       await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await expect(page.getByText(brief, { exact: true })).toBeVisible()
@@ -126,6 +149,11 @@ try {
       await expect(page.getByText(detail, { exact: true })).toHaveCount(0)
       await assertBounds('brief')
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-brief.png` })
+      // The fifth channel follows practice; inspect it without claiming an attempt.
+      await click(t.next)
+      await assertChannel('ritualPractice')
+      await click(t.previous)
+      await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       // Repeated voluntary expansion/collapse is exercised before each pause.
       for (let i = 0; i < 2; i++) {
         await click(t.help)
@@ -148,10 +176,17 @@ try {
       if (!priorHelp) await page.screenshot({ path: `${output}/${locale}-${width}-neutral.png` })
       await click(t.original)
       await expect(page.getByText(detail, { exact: true })).toBeVisible()
-      await click(t.next) // Feel; navigation closes optional original guidance.
+      await click(t.next) // Ritual; navigation closes optional original guidance.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
       await expect(page.locator('[data-opora-optional-guidance]')).toHaveCount(0)
+      await click(t.next)
+      await expect(page.locator('[data-opora-current-screen="feel"]')).toBeVisible()
       await click(t.pause); await click(t.neutral)
-      await click(t.previous) // Feel -> Back must not resurrect day-five guidance.
+      await click(t.previous) // Feel -> ritual -> practice must not resurrect guidance.
+      await expect(page.locator('[data-opora-current-screen="ritualPractice"]')).toBeVisible()
+      await assertNeutral()
+      await click(t.previous)
+      await expect(page.locator('[data-opora-current-screen="practice"]')).toBeVisible()
       await assertNeutral()
       await click(t.original)
       await click(t.pause); await click(t.back)
@@ -192,7 +227,11 @@ try {
             assert.ok(size.screenWidth <= width + 1,
               locale + '/' + width + '/' + moment + ': recap must not overflow horizontally')
             if (moment !== 'recapFeedback') {
-              assert.equal(await recapPage.locator('[data-opora-current-screen] .summaryItem').count(),1,
+              // CSS-module names are hashed; count the actual summary's direct cards.
+              const summary = recapPage.locator(moment === 'recap'
+                ? '[data-opora-lesson-recap="true"]' : '[data-opora-daily-homework="5"]')
+              await expect(summary).toBeVisible()
+              assert.equal(await summary.locator(':scope > div').count(),1,
                 'Each takeaway has exactly one visible idea')
               await recapPage.screenshot({ path: `${output}/${locale}-${width}-${moment}.png` })
               await recapPage.getByRole('button', { name: t.next, exact: true }).click()
@@ -212,7 +251,7 @@ try {
       assert.equal(state.finalData, state.initialData, 'Synthetic input must remain unchanged')
       assert.deepEqual(unexpectedRequests, [], 'Every request must be an explicitly fulfilled fixture asset')
       assert.deepEqual(errors, [], 'No browser page errors')
-      evidence.cases.push({ locale, width, priorHelp, brief: true, repeatedHelp: true,
+      evidence.cases.push({ locale, width, priorHelp, brief: true, repeatedHelp: true, channels: 5,
         neutralReturn: true, feelBack: true, focusTrap: true, bounds: true, accidentalSaves: 0, unexpectedRequests: 0 })
     } catch (error) {
       await page.screenshot({ path: `${output}/failure-${locale}-${width}-${priorHelp}.png` }).catch(() => {})
