@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown,
   CircleUserRound, Coins, Compass, Heart, Home, Leaf, Play, RotateCcw,
@@ -169,10 +169,11 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
     const filtered = videos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
     const wanted = choice === "pump" ? "energy" : theme === "all" ? focusTopics[focus] : theme;
-    return [
-      ...filtered.filter(video => video.topics.includes(wanted)),
-      ...filtered.filter(video => !video.topics.includes(wanted)),
-    ].slice(0, 4);
+    const themed = filtered.filter(video => video.topics.includes(wanted));
+    // The explicit theme selector filters strictly. Focus alone is a ranking
+    // hint so four verified videos can still be explored without false claims.
+    if (choice === "pump" || theme !== "all") return themed.slice(0, 4);
+    return [...themed, ...filtered.filter(video => !video.topics.includes(wanted))].slice(0, 4);
   }, [videos, master, program, theme, focus, choice]);
   const selected = relevantVideos.find(video => video.id === selectedId) ?? relevantVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
@@ -267,7 +268,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {scene ? (
             <>
-              <div className={styles.hero} data-support-player>
+              <div className={styles.hero} data-support-player data-playing={playing ? "true" : "false"}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/reiki-practitioner-sunrise.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
@@ -364,7 +365,7 @@ export function HolisticSupportMobile({ locale, videos }: { locale: PublicLocale
         <section className={styles.progressPanel} id="support-progress" aria-labelledby="support-mobile-progress-heading">
           <h2 id="support-mobile-progress-heading">{t.progress}</h2>
           <div className={styles.progressGrid}>
-            <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as React.CSSProperties}>
+            <div className={styles.progressRing} style={{ "--support-completion": (progressTotal ? (progressCount / progressTotal) * 100 : 0) + "%" } as CSSProperties}>
               <strong>{progressCount}/{progressTotal}</strong>
             </div>
             <div><strong>{t.started}</strong><span>{t.private}</span></div>
