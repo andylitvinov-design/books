@@ -50,7 +50,7 @@ function harness({balance='2.00',responseModel=ARGON_GATEWAY_MODEL,finish='stop'
     assert.deepEqual(input.reasoning,{effort:'low'})
     assert.equal(input.messages[1].content,prompt)
     assert.equal(input.messages.length,2)
-    assert.equal(input.providerOptions,undefined)
+    assert.deepEqual(input.providerOptions,{gateway:{only:['google']}})
     return Response.json({
       model:responseModel,choices:[{finish_reason:finish,message:{content:body}}],
       usage
