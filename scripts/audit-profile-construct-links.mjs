@@ -163,8 +163,8 @@ if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).
     const bad = report.unlinked.length || report.guestUnlinked.length ||
       report.emptyResearchFacets.length ||
       report.counts.uniqueMethods !== report.counts.catalogue ||
-      report.counts.researchFacets !== 31 ||
-      report.counts.profiles !== 4 ||
+      report.counts.researchFacets !== 34 ||
+      report.counts.profiles !== 5 ||
       review.methods !== 73 || review.editions !== 146 || review.missingVersions.length
     console.log(JSON.stringify({
       counts: report.counts, unlinked: report.unlinked, guestUnlinked: report.guestUnlinked,
