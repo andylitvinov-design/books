@@ -216,7 +216,7 @@ export default function MessagesSimpleInbox({
       visual?.removeEventListener('scroll',requestUpdate)
       windowElement.style.removeProperty('--hh-mobile-window-height')
     }
-  },[])
+  },[openDetail]) // Tabs collapse while reading a chat; remeasure against the new top edge.
 
   const select=item=>{
     setSelectedKey(item.key)
