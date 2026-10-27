@@ -11,6 +11,7 @@ import { getRemedyDirectory } from "@/data/remedies";
 import { requireAdminRequest } from "@/lib/prescriptions/admin";
 import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
+import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import type { SiteVideoRecord } from "@/lib/site-videos/model";
 import { builtInSiteVideoRecords } from "@/lib/site-videos/defaults";
 import { getSiteVideoStore } from "@/lib/site-videos/store";
@@ -40,7 +41,7 @@ export default async function SiteVideosPage() {
   // Failure is explicit: the editor must not invent a master or publish unattributed video.
   let masters: { slug: string; name: string }[] = [];
   try {
-    const approved = await createPractitionerRepository(getAppConfig()).listPublicPractitioners("en");
+    const approved: PublicPractitioner[] = await createPractitionerRepository(getAppConfig()).listPublicPractitioners("en");
     masters = approved.map(item => ({
       slug: item.slug,
       name: item.profile.displayName || item.profile.name || item.slug,
