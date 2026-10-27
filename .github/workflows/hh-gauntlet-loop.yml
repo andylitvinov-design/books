@@ -104,16 +104,18 @@ jobs:
           node -e '
             const fs=require("fs");
             const raw=fs.readFileSync(process.argv[1],"utf8");
-            const lines=raw.split("\\n").filter(Boolean);
-            let hasText=false, error=false;
+            const lines=raw.split(/\r?\n/).filter(Boolean);
+            let hasText=false, error=false; const types=new Set();
             for(const line of lines){
               try{
                 const p=JSON.parse(line);
+                types.add(String(p.type || "unknown"));
                 if(p.type==="error" || p.type==="session.error")error=true;
                 const data=JSON.stringify(p);
                 if(data.includes("HH_GAUNTLET_FREE_20261027_OK") && /message|text|part|delta/i.test(data))hasText=true;
               } catch {}
             }
+            console.log("Event types: "+[...types].join(", ").slice(0,350));
             console.log("Synthetic free-model response received: "+(hasText&&!error));
             if(!hasText || error)process.exit(1);
           ' "$RUNNER_TEMP/hh-oc-free.stdout"
