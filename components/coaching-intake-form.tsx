@@ -249,11 +249,11 @@ export function CoachingIntakeForm({ locale }: { locale: PublicLocale }) {
   useEffect(() => {
     // Opaque token lives in memory only, not history, analytics or storage.
     const url = new URL(window.location.href);
-    const handoff = url.searchParams.get('handoff');
+    const handoff = new URLSearchParams(url.hash.slice(1)).get('handoff');
     if(handoff && /^h1\.[A-Za-z0-9_-]{120,1100}$/.test(handoff))setTelegramHandoff(handoff);
     if(handoff){
-      url.searchParams.delete('handoff');
-      window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);
+      url.hash='';
+      window.history.replaceState(window.history.state,'',url.pathname+url.search);
     }
     let active = true;
     let restored: Draft | null = null;
