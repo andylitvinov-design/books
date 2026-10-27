@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "luci
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
+import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
@@ -93,7 +94,7 @@ const copy = {
       steps: [
         { title: "Choose your focus", text: "At the bottom, select situation or energy and wellbeing." },
         { title: "Leave one contact", text: "Phone number and consent for one reply via WhatsApp or Telegram." },
-        { title: "Agree a secure handoff", text: "Do not send private answers or drawings via messengers. Andrey explains how to share details privately and receive a written reflection." },
+        { title: "Agree a secure handoff", text: "After consent, the Telegram dialogue may ask for an optional ordinary photo and drawing. Keep medical records, test results and sensitive details in the protected website form; WhatsApp is manual contact only." },
       ],
       startTitle: "What would you like to explore?",
       startLead: "Select your focus and leave your phone. Do not share private details in the chat.",
@@ -196,7 +197,7 @@ const copy = {
       steps: [
         { title: "Выберите тему", text: "Внизу страницы укажите: ситуация или энергия и самочувствие." },
         { title: "Оставьте контакт", text: "Телефон и согласие на один личный ответ через WhatsApp или Telegram." },
-        { title: "Согласуйте безопасный обмен", text: "Не отправляйте личные ответы и рисунки в мессенджерах. Андрей объяснит защищённый способ передачи подробностей и получения письменного разбора." },
+        { title: "Согласуйте безопасный обмен", text: "После согласия Telegram-бот может по желанию запросить обычное фото и рисунок. Медицинские документы, результаты тестов и чувствительные сведения передавайте только через защищённую форму сайта; WhatsApp — ручной контакт." },
       ],
       startTitle: "Что хотите исследовать?",
       startLead: "Выберите направление и оставьте телефон. Личные подробности не нужны в чате.",
@@ -299,7 +300,7 @@ const copy = {
       steps: [
         { title: "Elige tu tema", text: "Al final selecciona situación o energía y bienestar." },
         { title: "Deja tu contacto", text: "Tu teléfono y el consentimiento para una respuesta por mensajería." },
-        { title: "Acuerda un envío seguro", text: "No envíes respuestas privadas ni dibujos por mensajería. Andrey explica cómo compartir detalles de forma segura y recibir la revisión." },
+        { title: "Acuerda un envío seguro", text: "Tras dar tu consentimiento, Telegram puede pedir una foto normal y un dibujo opcionales. Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido; WhatsApp es contacto manual." },
       ],
       startTitle: "¿Qué deseas explorar?",
       startLead: "Elige el tema y deja tu teléfono, sin datos personales por chat.",
@@ -539,6 +540,8 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             </div>
           </section>
         ) : null}
+
+        {kind === "situation" ? <TelegramDiagnosticEntry locale={locale} /> : null}
 
         {kind === "situation" ? (
           <PersonalExpressEnquiry locale={locale} intro={
