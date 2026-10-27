@@ -31,12 +31,18 @@ try {
     })
     context.setDefaultTimeout(18000)
     const page = await context.newPage()
-    const failures = []
+    const failures = [], syntheticEnquiries = []
     page.on('pageerror', error => failures.push(error.message))
     // Never send a synthetic browser test to a live PSP, CRM or external site.
     await context.route('**/*', async route => {
       const req = route.request()
       const url = new URL(req.url())
+      // Deterministic local-only CRM success stub. No production lead is created.
+      if (url.origin === origin && url.pathname === '/api/service-enquiries' && req.method() === 'POST') {
+        syntheticEnquiries.push(req.postDataJSON())
+        return route.fulfill({ status: 201, contentType: 'application/json',
+          body: JSON.stringify({ saved: true, referenceCode: 'HH-A1B2C3D4E5F6' }) })
+      }
       if (url.origin !== origin || !['GET','HEAD'].includes(req.method())) return route.abort('blockedbyclient')
       return route.continue()
     })
@@ -97,6 +103,36 @@ try {
         const element = document.querySelector('[data-personal-service-cart]')
         return element && /50/.test(element.textContent || '')
       })
+      // The cart is now a two-step flow: no payment controls before a saved,
+      // reply-consented CRM order. Inspect only; never submit a synthetic lead.
+      assert.equal(await cart.locator('[data-cart-order-registration][data-cart-order-ready="false"]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
+      await cart.locator('[data-cart-start-order]').click()
+      const contactForm = cart.locator('[data-cart-contact-form]')
+      await contactForm.waitFor({ state: 'visible' })
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Order must require a contact and explicit reply-only opt-in')
+      assert.equal(await contactForm.locator('input[type="checkbox"][required]').count(), 1,
+        'The visitor must consent before the first-party CRM save')
+      assert.equal(await contactForm.locator('button').filter({ hasText: /Google/i }).count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0,
+        'No payment step before the CRM confirms an order')
+      await contactForm.locator('input[type="tel"]').fill('416 555 1234')
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Phone without reply-only opt-in is insufficient')
+      await contactForm.locator('input[type="checkbox"][required]').check()
+      await contactForm.locator('button[type="submit"]').click()
+      await cart.locator('[data-cart-order-registration][data-cart-order-ready="true"]').waitFor()
+      await cart.locator('[data-cart-payment-step]').waitFor({ state: 'visible' })
+      assert.equal(syntheticEnquiries.length, 1, 'Exactly one mocked CRM order')
+      assert.equal(syntheticEnquiries[0].contactConsent, true)
+      assert.equal(syntheticEnquiries[0].contact.phone, '+14165551234')
+      assert.equal(syntheticEnquiries[0].sourcePath, '/' + locale + '/cart')
+      assert.equal(syntheticEnquiries[0].serviceTitle.includes('30'), true)
+      assert.equal(await cart.locator('[data-cart-order-saved]').count(), 1)
+      assert.equal(await cart.locator('fieldset input[type="radio"]').count() > 0, true,
+        'Payment choices only after saved CRM reference')
       // No provider navigation: inspect only that the canonical payee/price are retained.
       const manual = page.locator('[data-cart-paypal-personal]')
       if (await manual.count()) {
