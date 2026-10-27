@@ -9,7 +9,7 @@ import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-simple-inbox.module.css'
 import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
-import {filterInboxRows,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
+import {filterInboxRows,inMessagesTab,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
 
 const COPY={
   en:{title:'Messages',hint:'Conversations and requests',search:'Find a person',empty:'No messages or requests yet.',
@@ -306,7 +306,8 @@ export default function MessagesSimpleInbox({
             href={'/'+locale+'/app/practice?panel=crm&crmTab=messages'}>{t.more}</a>}
         </div>
       </aside>
-      <div className={styles.detail} aria-live="polite">
+      <div className={styles.detail} aria-live="polite"
+        hidden={Boolean(selected)&&!inMessagesTab(selected,tab)}>
         {selected&&<header className={styles.personBar}>
           <button type="button" className={styles.back} onClick={()=>{setOpenDetail(false);setShowCard(false)}}
             aria-label={t.back}><ArrowLeft size={21} aria-hidden="true"/></button>
