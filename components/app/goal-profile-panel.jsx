@@ -68,7 +68,8 @@ const supportingTests = (entries, key, results) => {
     seen.add(test.key)
     const complete = (results || []).some(result => result.definitionKey === test.key &&
       result.definitionVersion === test.definition.version)
-    matches.push({ key:test.key, title:test.title, completed:complete, kind:test.testKind })
+    matches.push({ key:test.key, title:test.title, completed:complete, kind:test.testKind,
+      axis:rule.axis, dimensionKey:rule.dimensionKey })
   }
   return matches.sort((a,b) => Number(a.completed)-Number(b.completed)).slice(0,3)
 }
@@ -131,7 +132,8 @@ export function GoalProfilePanel({ locale = 'en', accountId, entriesByKey, resul
             {row.tests.length ? <ul>{row.tests.map(test => <li key={test.key}>
               <span>{test.title} <small>· {test.kind === 'professional' ? 'Pro' : 'Check-in'}</small></span>
               {test.completed ? <small>{t.done}</small> :
-                <Link href={'/' + lang + '/app/tests?explore=1&suggest=' + encodeURIComponent(test.key)} prefetch={false}>{t.take}</Link>}
+                <Link href={'/' + lang + '/app/tests?explore=1&suggest=' + encodeURIComponent(test.key) +
+                  '&axis=' + encodeURIComponent(test.axis)} prefetch={false}>{t.take}</Link>}
             </li>)}</ul> : <small>{t.noTests}</small>}
           </div>)}
         </div>
