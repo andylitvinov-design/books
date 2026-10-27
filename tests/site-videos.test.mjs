@@ -716,3 +716,34 @@ test('Spanish public videos are enabled only for About and the registered thank-
   record.published.language = 'en'
   assert.equal(toPublishedSiteVideo(record), undefined)
 })
+
+
+test('master attribution is a verified public snapshot, not an arbitrary or private field', () => {
+  const record = published({ practitionerSlug:'andy-litvinov', practitionerName:'Andy' })
+  assert.equal(isSiteVideoRecord(record), true)
+  assert.equal(toPublishedSiteVideo(record).practitionerSlug, 'andy-litvinov')
+  assert.equal(toPublishedSiteVideo(record).practitionerName, 'Andy')
+  assert.equal(toPublishedSiteVideo(record).driveUrl, undefined)
+  assert.equal(toPublishedSiteVideo(record).youtubeVisibility, undefined)
+  assert.equal(record.draft.practitionerSlug, 'andy-litvinov')
+  assert.equal(record.published.scope, 'public')
+  const hidden = prepareVideoChange(record, {slot:'home-intro', locale:'en',intent:'hide'})
+  assert.equal(toPublishedSiteVideo(hidden),undefined)
+  assert.equal(hidden.draft.practitionerSlug,'andy-litvinov')
+  // Existing legacy publications remain readable until their next owner edit.
+  assert.equal(toPublishedSiteVideo(published()).practitionerSlug,undefined)
+  for(const change of [
+    {practitionerSlug:'andy-litvinov',practitionerName:''},
+    {practitionerSlug:'',practitionerName:'Andy'},
+    {practitionerSlug:'../admin',practitionerName:'Someone'},
+    {practitionerSlug:'andy-litvinov',practitionerName:'x'.repeat(121)},
+    {practitionerSlug:'andy-litvinov',practitionerName:'Private\\u0000Profile'},
+  ]) assert.throws(()=>published(change),codeIs('validation'))
+  const changed = structuredClone(record)
+  changed.published.practitionerName = ''
+  assert.equal(isSiteVideoRecord(changed),false)
+  assert.equal(toPublishedSiteVideo(changed),undefined)
+  const altered = structuredClone(record)
+  altered.published.clientId = 'not-public'
+  assert.equal(toPublishedSiteVideo(altered),undefined)
+})
