@@ -23,7 +23,10 @@ test("Symbols and Energy Support cards disclose the same inline wizard with sepa
   assert.match(filter, /Encargar un talismán/);
   assert.match(filter, /Book energy support/);
   assert.match(filter, /Заказать энергоподдержку/);
-  assert.match(loader, /fetch\("\/api\/public\/remote-energy-support-masters\?locale="/);
+  assert.match(loader, /const query = "\/api\/public\/remote-energy-support-masters\?locale="/);
+  assert.match(loader, /fetch\(query, \{ credentials: "omit"/);
+  assert.match(loader, /kind=consultation/);
+  assert.match(loader, /setSearched\(true\)/);
   assert.match(loader, /controller\.abort\(\)/);
   assert.match(loader, /role="alert"/);
   assert.match(wizard, /data-support-request-kind=\{requestKind\}/);
