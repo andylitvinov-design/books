@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "luci
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
+import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
@@ -539,6 +540,8 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             </div>
           </section>
         ) : null}
+
+        {kind === "situation" ? <TelegramDiagnosticEntry locale={locale} /> : null}
 
         {kind === "situation" ? (
           <PersonalExpressEnquiry locale={locale} intro={
