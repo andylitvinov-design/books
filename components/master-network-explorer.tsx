@@ -549,9 +549,8 @@ function ServiceCard({
   const format = service.deliveryFormat === "in_person" ? t.inPerson :
     service.deliveryFormat === "hybrid" ? t.hybrid : t.online;
   const detailsHref = getPublicServiceDetailHref(locale, service.practitionerSlug, service.slug);
-  const requestHref = service.slug === "remote-energy-support"
-    ? "/" + locale + "/services/remote-energy-support?practitioner=" + encodeURIComponent(service.practitionerSlug)
-    : "/" + locale + "/app/consultations?service=" + encodeURIComponent(service.id);
+  const requestHref = detailsHref + (service.practitionerSlug === "andy-litvinov" &&
+    service.slug === "homeopathy-consultation" ? "" : "#site-service-request");
   const coverImage = service.photos?.[0] || service.imagePath;
   const requestText = profileView
     ? (isFree(service)

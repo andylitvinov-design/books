@@ -1,6 +1,6 @@
 // Deliberately MINIMAL SYNTHETIC prerequisite model, not production-schema parity.
 // Does NOT import/strip/run docs/crm/proposed-crm-schema.sql or its approval sentinel.
-// Applies the exact three public-enquiry/CRM INSERT migrations unchanged below.
+// Applies four exact migrations unchanged: table/RLS plus three PERMISSIVE CRM INSERT policies.
 import {readFile} from 'node:fs/promises'
 import {assertTelegramIsolationServer} from './telegram-service-isolation-guard.mjs'
 import {A,B,PA,PB,OA,OB} from './telegram-service-runtime.mjs'
@@ -52,6 +52,7 @@ export async function setupTelegramPolicyFixture(db) {
  for(const name of [
   '20261019152000_hh_public_service_enquiries_secure.sql',
   '20261020165000_hh_public_service_crm_contact_intake_20261020.sql',
+  '20261026221222_marketplace_direct_service_enquiry_crm_owner.sql',
   '20261026223912_hh_telegram_any_practitioner_service_enquiries_20261026.sql',
  ])await db.query(await readFile(new URL('../../supabase/migrations/'+name,import.meta.url),'utf8'))
  for(const id of [A,B])await db.query('insert into app.accounts(id) values($1)',[id])

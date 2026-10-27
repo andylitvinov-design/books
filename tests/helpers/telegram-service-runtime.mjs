@@ -50,8 +50,9 @@ export function runtime({transaction,databasePool,crmEnabled=()=>true,
   'node:crypto':crypto,'../assessments/contracts.js':contracts,'../app/database.js':{transaction},
   '../app/crypto.js':cipher,'../../data/app-services.js':{PRACTITIONER_ID},
   './telegram-service-offering.js':offerings,'./public-service-enquiry-input.mjs':input,
+  './contracts.js':serviceContracts,
   '../crm/repository.js':{crmEnabled},'./relay-privacy.mjs':privacy,
- },['createPublicServiceEnquiry','listPublicServiceEnquiries','updatePublicServiceEnquiry'])
+ },['createPublicServiceEnquiry','listPublicServiceEnquiries','updatePublicServiceEnquiry','publicServiceEnquiryView'])
  const messengerHashes=evaluate('lib/crm/messenger-store.js',{
   'node:crypto':crypto,'../app/crypto.js':cipher,'../assessments/contracts.js':contracts,
   './messenger-policy.js':policy,'./messenger-pagination.js':pagination,'./telegram-second-pilot.mjs':pilot,

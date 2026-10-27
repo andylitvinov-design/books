@@ -78,7 +78,7 @@ test('Master Network v3: filtered public catalog and actionable My Practice stay
   assert.match(finder,/language: string/)
   assert.match(finder,/onClick=\{\(\) => set\("area", id\)\}/)
   assert.match(finder,/Request free service/)
-  assert.match(finder,/\/app\/consultations\?service=/)
+  assert.match(finder,/#site-service-request/)
   assert.match(css,/@media \(max-width:640px\)/)
   assert.match(css,/:focus-visible/)
   assert.match(practice,/hh-practice-overview/)

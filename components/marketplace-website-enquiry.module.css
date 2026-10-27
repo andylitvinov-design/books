@@ -1,0 +1,41 @@
+.panel {
+  margin: 28px auto;
+  max-width: 760px;
+  padding: clamp(18px, 3.5vw, 30px);
+  border: 1px solid #dfd1c0;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f9f3eb, #fffdf9);
+  color: #392c25;
+  box-shadow: 0 8px 25px #5635220d;
+}
+.eyebrow { margin: 0 0 6px; color: #865d43; font-size: .69rem; font-weight: 800; letter-spacing: .1em; }
+.panel h2 { margin: 0; font-size: clamp(1.4rem, 4vw, 1.9rem); line-height: 1.2; }
+.intro { margin: 8px 0; color: #65554c; }
+.target { margin: 13px 0 18px; padding: 9px 12px; border-radius: 10px; background: #ece1d3; overflow-wrap: anywhere; }
+.form { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 13px; }
+.form > label:not(.consent) { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: .86rem; font-weight: 650; }
+.form input:not([type="checkbox"]), .form textarea {
+  width: 100%; min-width: 0; min-height: 44px; padding: 11px 12px;
+  border: 1px solid #bda997; border-radius: 11px; background: white;
+  color: #31221b; font: inherit; font-size: 16px; box-sizing: border-box;
+}
+.form textarea { resize: vertical; max-height: 210px; }
+.wide, .consent, .note, .form button, .error { grid-column: 1 / -1; }
+.consent { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; font-size: .82rem; color: #53483f; line-height: 1.45; }
+.consent input { width: 19px; height: 19px; flex: 0 0 19px; accent-color: #824c41; margin: 1px 0 0; }
+.note { display:flex; align-items: flex-start; gap: 7px; font-size: .75rem; color: #6b5c52; margin: 0; }
+.note svg { flex: 0 0 auto; }
+.form button {
+  display: inline-flex; justify-content: center; align-items: center; gap: 9px;
+  min-height: 46px; padding: 11px 20px; border: 0; border-radius: 12px;
+  background: #743d43; color: white; font-size: .96rem; font-weight: 750; cursor: pointer;
+}
+.form button:hover:not(:disabled) { background: #592c32; }
+.form button:disabled { opacity: .6; cursor: not-allowed; }
+.form :is(input, textarea, button):focus-visible { outline: 3px solid #ad7355; outline-offset: 2px; }
+.error { margin: 0; color: #9b2d30; font-size: .83rem; }
+.receipt { display: flex; gap: 10px; align-items: flex-start; color: #22583a; line-height: 1.4; }
+.receipt svg { flex: 0 0 auto; }
+.receipt p { margin: 5px 0 0; color: #53483f; }
+.trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); pointer-events: none; }
+@media(max-width: 430px) { .panel { margin: 15px 0; padding: 16px; border-radius: 14px; } .form { grid-template-columns: minmax(0,1fr); gap: 12px; } .form > * { grid-column: 1; } }
