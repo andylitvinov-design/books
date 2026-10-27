@@ -49,6 +49,9 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
         const url = BASE + "/" + locale + "/holistic-support/mandala";
         const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
         assert.equal(response?.status(), 200, engine + " " + url + " must return HTTP 200");
+        const imagePolicy = (response?.headers()["content-security-policy"] || "")
+          .split(";").find(item => item.trim().startsWith("img-src")) || "";
+        assert.match(imagePolicy, /\bblob:/, engine + " mandala CSP must allow local Blob images");
         await page.locator("[data-mandala-meditation]").waitFor({ state: "visible", timeout: 30000 });
         const preset = page.locator('[data-mandala-preset="star"]');
         await preset.click();
@@ -62,6 +65,10 @@ for (const [engine, browserType] of [["chromium", chromium], ["webkit", webkit]]
           buffer: PNG,
         });
         await page.locator('img[src^="blob:"]').first().waitFor({ state: "attached", timeout: 10000 });
+        await page.waitForFunction(() => {
+          const photo = document.querySelector('img[src^="blob:"]');
+          return photo && photo.complete && photo.naturalWidth > 0;
+        }, undefined, { timeout: 15000 });
         assert.deepEqual(uploaded, [], engine + " synthetic photo must not be uploaded");
 
         const downloadLink = page.locator('a[download="holistic-house-mandala.png"]');
