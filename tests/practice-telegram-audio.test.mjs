@@ -41,7 +41,8 @@ test('owner-only Practice > Materials > Audio reuses the existing private backen
  assert.match(media,/ownerMaterialRequest\(request/)
  assert.match(service,/status='ready' and combine_batch_id is null/)
  assert.doesNotMatch(recent,/getPublicUrl|createSignedUrl|service_role|storage_path/)
- assert.match(recent,/\?start=audio|admin\/materials\/telegram/)
+ assert.match(recent,/<Link href="\/admin\/materials\/telegram"/)
+ assert.doesNotMatch(recent,/<a href="\/admin\/materials\/telegram"/)
 })
 
 test('each file has single-gesture Play/Pause and authenticated Range-capable native audio',()=>{

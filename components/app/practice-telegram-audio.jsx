@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {ChevronRight,Headphones,LockKeyhole,Pause,Play,RefreshCw} from 'lucide-react'
 import {practiceTelegramRecentAudio} from '@/lib/practitioners/practice-telegram-recent-audio.mjs'
@@ -98,9 +99,9 @@ export default function PracticeTelegramAudio({locale='en',query=''}) {
           data-practice-telegram-refresh>
           <RefreshCw size={16} aria-hidden="true"/>
         </button>
-        <a href="/admin/materials/telegram" className={styles.all} data-practice-telegram-all>
+        <Link href="/admin/materials/telegram" className={styles.all} data-practice-telegram-all>
           {t.all}<ChevronRight size={15} aria-hidden="true"/>
-        </a>
+        </Link>
       </div>
     </div>
     {busy&&<p className={styles.note} role="status">{t.loading}</p>}
