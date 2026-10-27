@@ -75,10 +75,10 @@ begin
   if v_thread is null then return false; end if;
 
   select count(*) into v_found
-    from pg_catalog.unnest(p_provider_hashes,p_event_hashes) as expected(provider_hash,event_hash)
+    from pg_catalog.generate_subscripts(p_provider_hashes,1) as expected(i)
     join app.crm_msg_items m on m.owner_id=v_owner and m.thread_id=v_thread
-      and m.provider_hash=expected.provider_hash and m.direction='in' and m.status='received'
-    join app.crm_msg_events e on e.account_id=v_account and e.event_hash=expected.event_hash;
+      and m.provider_hash=p_provider_hashes[expected.i] and m.direction='in' and m.status='received'
+    join app.crm_msg_events e on e.account_id=v_account and e.event_hash=p_event_hashes[expected.i];
   return v_found=v_expected;
 end;
 $fn$;
