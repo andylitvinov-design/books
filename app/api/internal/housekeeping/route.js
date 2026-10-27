@@ -7,6 +7,7 @@ import { runHousekeepingCron } from '@/lib/app/housekeeping-cron'
 import { purgeExpiredGoalPhotos } from '@/lib/practitioners/remote-goal-photo'
 import { purgeExpiredFreeExpressMedia } from '@/lib/practitioners/free-express-media'
 import { purgeOldPublicTraffic } from '@/lib/analytics/public-traffic-retention'
+import {recoverOwnerAudioBatchFromCron} from '@/lib/practitioners/owner-telegram-audio-service'
 import {
   recordAppHousekeepingFailure,
   runAppHousekeeping,
@@ -15,7 +16,7 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export const maxDuration = 60
+export const maxDuration = 120
 
 export async function GET(request) {
   try {
@@ -23,6 +24,15 @@ export async function GET(request) {
       run: async () => {
         const config = getAppConfig()
         try {
+          // Exactly one historical owner batch, through the existing CRON_SECRET gate.
+          // Never block housekeeping or expose private audio/IDs in responses.
+          try{
+            const recovery=await recoverOwnerAudioBatchFromCron(config)
+            if(recovery.status==='provider_confirmed')
+              console.info('HH_OWNER_AUDIO_RECOVERY_PROVIDER_CONFIRMED')
+            else if(['telegram_not_confirmed','provider_accepted_receipt_not_persisted'].includes(recovery.status))
+              console.error('HH_OWNER_AUDIO_RECOVERY_NEEDS_REVIEW',recovery.status)
+          }catch{console.error('HH_OWNER_AUDIO_RECOVERY_ATTEMPT_FAILED')}
           const result = await runAppHousekeeping(config)
           // Existing daily authorized cron also refreshes non-identifying
           // guide clarification priorities; failure does not block maintenance.
