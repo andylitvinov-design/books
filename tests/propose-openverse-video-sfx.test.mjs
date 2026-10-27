@@ -50,7 +50,8 @@ test('real FFmpeg detects a hard cut, leaves a continuous shot without SFX; no f
  const clip=join(dir,'synthetic.mp4')
  await run(['-hide_banner','-nostdin','-loglevel','error','-y','-f','lavfi','-i','color=c=black:s=160x96:r=12:d=1.5',
  '-f','lavfi','-i','color=c=white:s=160x96:r=12:d=2',
- '-filter_complex','[0:v][1:v]concat=n=2:v=1:a=0[v]','-map','[v]','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p',clip])
+ '-f','lavfi','-i','sine=frequency=440:duration=3.5',
+ '-filter_complex','[0:v][1:v]concat=n=2:v=1:a=0[v]','-map','[v]','-map','2:a:0','-c:v','libx264','-c:a','aac','-preset','ultrafast','-pix_fmt','yuv420p',clip])
  const result=await proposeForVideo(clip,{executable:ffmpeg})
  assert.equal(result.decision,'review_required')
  assert.ok(result.proposedCuts.some(x=>x>1.3&&x<1.75),JSON.stringify(result))
@@ -63,5 +64,5 @@ test('real FFmpeg detects a hard cut, leaves a continuous shot without SFX; no f
  const continuous=join(dir,'continuous.mp4')
  await run(['-hide_banner','-nostdin','-loglevel','error','-y','-f','lavfi','-i','color=c=black:s=160x96:r=12:d=3.5',
  '-c:v','libx264','-preset','ultrafast',continuous])
- assert.equal((await proposeForVideo(continuous,{executable:ffmpeg})).decision,'no_scene_sfx_needed')
+ await assert.rejects(()=>proposeForVideo(continuous,{executable:ffmpeg}),/SFX_PROPOSAL_AUDIO_REQUIRED/)
 }))
