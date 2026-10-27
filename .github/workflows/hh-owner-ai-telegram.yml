@@ -6,7 +6,9 @@ on:
       - 'lib/practitioners/owner-ai-telegram.mjs'
       - 'lib/practitioners/owner-ai-telegram-service.js'
       - 'lib/practitioners/owner-ai-ensemble.mjs'
+      - 'lib/practitioners/owner-ai-five.mjs'
       - 'tests/practitioner-owner-ai-ensemble.test.mjs'
+      - 'tests/practitioner-owner-ai-five.test.mjs'
       - 'supabase/migrations/*owner_ai_telegram_real_modes*.sql'
       - 'lib/practitioners/owner-ai-provider-settings.js'
       - 'tests/practitioner-owner-ai-provider-setup.test.mjs'
@@ -56,6 +58,7 @@ jobs:
           node --check lib/practitioners/owner-ai-telegram.mjs
           node --check lib/practitioners/owner-ai-telegram-service.js
           node --check lib/practitioners/owner-ai-ensemble.mjs
+          node --check lib/practitioners/owner-ai-five.mjs
           node --check lib/practitioners/owner-telegram-audio-model.mjs
           node --check lib/practitioners/owner-telegram-audio-service.js
           node --check app/api/admin/materials/telegram/route.js
@@ -67,4 +70,4 @@ jobs:
       - name: Owner-only chat, free-cost model verification and customer pairing regressions
         run: |
           node --test tests/owner-telegram-audio-inbox.test.mjs
-          node --test tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-provider-readiness.test.mjs tests/practitioner-owner-ai-bootstrap.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/practitioner-owner-ai-ensemble.test.mjs tests/practitioner-council-free-models.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/practitioner-telegram-hub.test.mjs
+          node --test tests/practitioner-owner-ai-provider-setup.test.mjs tests/practitioner-council-provider-readiness.test.mjs tests/practitioner-owner-ai-bootstrap.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/practitioner-owner-ai-ensemble.test.mjs tests/practitioner-owner-ai-five.test.mjs tests/practitioner-council-free-models.test.mjs tests/messenger-telegram-link.test.mjs tests/client-telegram-owner-pilot.test.mjs tests/practitioner-telegram-hub.test.mjs
