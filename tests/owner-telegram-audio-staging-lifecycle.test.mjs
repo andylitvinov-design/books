@@ -51,6 +51,10 @@ test('part deletion uses batch scoped and in-flight safe guards',async()=>{
   await cleanup({},ID,storage)
   assert.deepEqual(removed,[['telegram-inbox/'+ID+'.ogg']])
   assert.match(sql[0][0],/status<>'processing'/)
+  assert.match(sql[1][0],/^update app_private\.telegram_owner_audio/)
+  assert.match(sql[1][0],/status='failed',storage_path=null,completed_at=null,combine_batch_id=null/)
+  assert.match(sql[1][0],/OWNER_AUDIO_TEMP_CLEANED/)
+  assert.doesNotMatch(sql[1][0],/delete from app_private/)
   assert.match(sql[1][0],/id=any\(\$3::uuid\[\]\)/)
   assert.deepEqual(sql[1][1][2],[ID])
 })
@@ -62,4 +66,21 @@ test('finish waits for ALL older staged uploads, including ready-before-append',
   assert.match(service,/if\(state\.obsoleteBatchId\)/)
   assert.match(service,/if\(combine\.state==='inactive'\)/)
   assert.match(service,/await deleteTemporaryAudioParts\(config,row\.batch_id,storage\)/)
+})
+
+test('late Telegram retries after final /done cannot create individual materials',async()=>{
+  const source=service.match(/async function claimAudio\([\s\S]*?\n}\nasync function markAudio/)
+  assert.ok(source,'read the actual owner-only audio claim implementation')
+  let queries=0
+  const claim=new Function('ownerTransaction','PRACTITIONER_ID',
+    source[0].replace(/\nasync function markAudio$/,'')+'\nreturn claimAudio')(
+    async(_cfg,fn)=>fn({query:async()=>{
+      queries++
+      if(queries>1)throw Error('LATE_PART_MUST_NOT_REACH_UPLOAD')
+      return {rows:[{status:'ready',started_update_id:100,last_command_update_id:200}]}
+    }}),'owner'
+  )
+  assert.deepEqual(await claim({}, {updateId:151}),{claimed:false,reason:'batch_finished'})
+  assert.equal(queries,1,'no part row is inserted or reimported')
+  assert.match(service,/if\(ignoredFinished\)return \{claimed:false,reason:'batch_finished'\}/)
 })
