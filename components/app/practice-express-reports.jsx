@@ -170,6 +170,8 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
   const [notice,setNotice] = useState('')
   const [selectedId,setSelectedId] = useState('')
   const [composing,setComposing] = useState(false)
+  const [editorActivation,setEditorActivation] = useState(0)
+  const editorHeadingRef = useRef(null)
   const pendingOperation = useRef(null) // Stable across network retries: never double-create a report.
   const [requestId,setRequestId] = useState('')
   const [language,setLanguage] = useState(['ru','es'].includes(locale) ? locale : 'en')
@@ -203,10 +205,15 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
     if (!requestId && eligible.length) setRequestId(eligible[0].id)
   },[eligible,requestId])
 
+  useEffect(() => {
+    if (composing && editorActivation > 0 && !loading) editorHeadingRef.current?.focus()
+  },[composing,editorActivation,loading])
+
   function startNew() {
     pendingOperation.current = null
     setSelectedId('')
     setComposing(true)
+    setEditorActivation(value => value+1)
     // Do not retain a stale request from an older report or practitioner.
     setRequestId(previous => eligible.some(item => item.id === previous) ? previous : (eligible[0]?.id || ''))
     setLanguage(['ru','es'].includes(locale) ? locale : 'en')
@@ -218,6 +225,7 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
   function open(item) {
     pendingOperation.current = null
     setComposing(true)
+    setEditorActivation(value => value+1)
     setSelectedId(item.id)
     setRequestId(item.requestId)
     setLanguage(item.language)
@@ -271,7 +279,7 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
       </div>}
       {eligible.length > 0 && !composing && !current && <p className={styles.hint}>{t.readyToStart}</p>}
       {(composing || current) && <form className={styles.form} onSubmit={event => {event.preventDefault();perform('save')}} autoComplete="off" data-express-report-editor>
-        <h3 className={styles.editorTitle}>{t.editor}</h3>
+        <h3 className={styles.editorTitle} ref={editorHeadingRef} tabIndex={-1}>{t.editor}</h3>
         <div className={styles.row}>
           <label>{t.client}
             <select value={requestId} disabled={Boolean(current) || busy || !eligible.length}
