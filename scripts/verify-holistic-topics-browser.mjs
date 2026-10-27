@@ -133,23 +133,34 @@ for (const engine of [chromium, webkit]) {
           assert.ok(firstScreen.width >= width - 24, label + " full-width request");
           assert.ok(firstScreen.height < 540, label + " one mobile-screen request height");
 
+          // A click starts an async directory request. Waiting only for the first
+          // article races React clearing stale results between fetches (CI #40568273832).
+          // Require the exact synthetic offers before asserting; never mask a missing offer.
+          const verifyConsultations = async (expected, scenario) => {
+            const sorted = [...expected].sort();
+            await page.waitForFunction(titles => {
+              const results = document.querySelector("#holistic-inline-order #holistic-inline-results");
+              if (!results || results.hidden) return false;
+              const actual = [...results.querySelectorAll("article h5")]
+                .map(node => (node.textContent || "").trim()).sort();
+              return actual.length === titles.length && actual.every((title, index) => title === titles[index]);
+            }, sorted, { timeout: 20000 });
+            const actual = (await finder.locator("#holistic-inline-results article h5").allInnerTexts())
+              .map(title => title.trim()).sort();
+            assert.deepEqual(actual, sorted, label + " " + scenario);
+          };
           await finder.locator('[data-support-choice="consultation"]').click();
           await finder.locator('[data-support-budget="20"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
-          assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
-            label + " EUR 20 excludes CAD 15 and EUR 100");
+          await verifyConsultations(["Synthetic €20 consultation"], "EUR 20 excludes CAD 15 and EUR 100");
           await finder.locator('[data-support-budget="100"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
-          assert.equal(await finder.locator('#holistic-inline-results article').count(), 2,
-            label + " EUR 100 includes 2 EUR offers, not CAD");
+          await verifyConsultations(["Synthetic €20 consultation", "Synthetic €100 consultation"],
+            "EUR 100 includes both EUR offers, not CAD");
           await finder.locator('[data-support-theme="relationships"]').click();
           await finder.locator('[data-support-budget="free"]').click();
           await finder.locator("[data-support-search]").click();
-          await finder.locator('#holistic-inline-results article').first().waitFor();
-          assert.equal(await finder.locator('#holistic-inline-results article').count(), 1,
-            label + " free relationship consultation");
+          await verifyConsultations(["Synthetic free introduction"], "free relationship consultation");
 
           await finder.locator('[data-support-choice="talisman"]').click();
           await finder.locator('[data-support-budget="20"]').click();
