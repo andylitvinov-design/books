@@ -517,9 +517,12 @@ test('actual main-scale and topic handlers never leak other areas or test drafts
   assert.equal(broad.showMore, false)
   assert.deepEqual(run('toggleMainScale','emotions',broad).selectedResearchIds,[])
   assert.deepEqual(run('toggleMainScale','goal'),original,'Goal keeps independent controls')
-  const selected = run('toggleTopicAxis','emotions::stress')
+  assert.deepEqual(run('toggleTopicAxis','emotions::stress').selectedScaleIds, [],
+    'an already-partially-selected research topic must be deselected cleanly')
+  const selected = run('toggleTopicAxis','emotions::stress',
+    { ...original, selectedScaleIds: [] })
   assert.deepEqual(selected.selectedScaleIds,['a::stress','b::stress'],
-    'one research topic matches only registered source scales in its own axis')
+    'one newly selected research topic matches only registered source scales in its own axis')
   assert.deepEqual(selected.selectedByMode,{questionnaires:[],pro:[]})
   assert.deepEqual(run('toggleTopicAxis','emotions::stress',selected).selectedScaleIds,[])
   assert.deepEqual(run('toggleTopicAxis','emotions::unknown'),original,
