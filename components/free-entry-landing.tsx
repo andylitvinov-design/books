@@ -379,9 +379,36 @@ const freeTestDirectCopy = {
 } as const;
 
 const situationFirstScreen = {
-  en: { lead: "Your question · a fresh perspective · a next step.", reviews: "See the full client video archive · 12 videos" },
-  ru: { lead: "Ваш вопрос · новый взгляд · следующий шаг.", reviews: "Все видеоотзывы клиентов · 12 видео" },
-  es: { lead: "Tu pregunta · otra perspectiva · un paso más.", reviews: "Todos los testimonios · 12 vídeos" },
+  en: {
+    lead: "Your question · a fresh perspective · a next step.",
+    resultsLabel: "Your free written review in three parts",
+    results: [
+      { title: "Your question", text: "Find the core of what matters." },
+      { title: "Fresh perspective", text: "Consider patterns and resources." },
+      { title: "Written next step", text: "Receive personal reflections." },
+    ],
+    reviews: "See the full client video archive · 12 videos",
+  },
+  ru: {
+    lead: "Ваш вопрос · новый взгляд · следующий шаг.",
+    resultsLabel: "Три результата бесплатного письменного разбора",
+    results: [
+      { title: "Ваш запрос", text: "Выделить главное." },
+      { title: "Новый взгляд", text: "Увидеть связи и ресурсы." },
+      { title: "Письменный ответ", text: "Наметить следующий шаг." },
+    ],
+    reviews: "Все видеоотзывы клиентов · 12 видео",
+  },
+  es: {
+    lead: "Tu pregunta · otra perspectiva · un paso más.",
+    resultsLabel: "Tres partes de tu revisión personal escrita",
+    results: [
+      { title: "Tu pregunta", text: "Identifica lo esencial." },
+      { title: "Otra mirada", text: "Explora patrones y recursos." },
+      { title: "Siguiente paso", text: "Recibe observaciones escritas." },
+    ],
+    reviews: "Todos los testimonios · 12 vídeos",
+  },
 } as const;
 
 const situationVideoStory = {
@@ -392,6 +419,9 @@ const situationVideoStory = {
     takeaway: "You receive personal written observations, not an automated test, appointment or medical diagnosis.",
     recording: "The existing recording introduces how I choose an approach. It is a general introduction, not yet a video made specifically about this free review.",
     audio: "Andrey's introduction · English audio",
+    constellationTitle: "Systemic constellations in practice",
+    constellationAudio: "Business Constellations · English audio · 2:14",
+    constellationNote: "A real recording introducing business constellations. This is an example of a wider method, not a recording of the free written review.",
     storiesEyebrow: "REAL CLIENT VIDEOS",
     storiesTitle: "Three real experiences with my work",
     storiesLead: "Original videos about other personal sessions and approaches. They are not reviews of this exact free service.",
@@ -405,6 +435,9 @@ const situationVideoStory = {
     takeaway: "Вы получаете личный письменный взгляд, а не автоматический тест, запись на приём или медицинский диагноз.",
     recording: "В доступном видео я рассказываю, как выбираю подход к работе. Это общее знакомство, отдельное видео именно об этой диагностике ещё не записано.",
     audio: "Видео Андрея · русский язык",
+    constellationTitle: "Алхимия Души и системный подход",
+    constellationAudio: "Алхимия Души · на русском · 4:18",
+    constellationNote: "Новая запись Андрея о более широком подходе «Алхимия Души», в котором используются в том числе системные расстановки. Это не видео самой бесплатной диагностики.",
     storiesEyebrow: "НАСТОЯЩИЕ ВИДЕООТЗЫВЫ",
     storiesTitle: "Три истории о работе со мной",
     storiesLead: "Реальные отзывы о разных личных сессиях и подходах, не обещания результата этой бесплатной услуги.",
@@ -418,6 +451,9 @@ const situationVideoStory = {
     takeaway: "Recibirás observaciones personales por escrito, no una prueba automática, una cita ni un diagnóstico médico.",
     recording: "Este vídeo existente presenta mi enfoque de alquimia psíquica. Es una introducción general, no un vídeo específico sobre la revisión exprés gratuita.",
     audio: "Presentación de Andrey · audio en español",
+    constellationTitle: "Constelaciones sistémicas en la práctica",
+    constellationAudio: "Business Constellations · audio en inglés · 2:14",
+    constellationNote: "Una grabación sobre constelaciones empresariales, no una sesión de la revisión escrita gratuita. El audio original está en inglés.",
     storiesEyebrow: "TESTIMONIOS REALES EN VÍDEO",
     storiesTitle: "Tres experiencias reales de clientes",
     storiesLead: "Vídeos sobre otros formatos de trabajo personal, no sobre este servicio gratuito. El audio original es en inglés; los títulos están traducidos.",
@@ -481,6 +517,13 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
     },
     poster: "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
   } : getServiceVideoMedia("overview", locale);
+  // Reuse the exact owner-supplied 23 Oct public recordings; neither is a
+  // recording of the free written express-review itself. RU is a broader
+  // Alchemy-of-the-Soul introduction, never labelled as a pure case study.
+  const constellationVideo = kind !== "situation" ? null : locale === "ru" ? {
+    video: { youtubeId: "IF0HAhSDwks", language: "ru" as const, title: "Алхимия Души", durationSeconds: 258 },
+    poster: "/images/holistic-house/andy-about.png",
+  } : getServiceVideoMedia("constellation-case", locale);
   const featuredReviewVideos = kind !== "situation" ? [] : locale === "ru"
     ? [testimonialVideos.ru[4], testimonialVideos.ru[1], testimonialVideos.ru[3]]
     : testimonialVideos[locale].slice(0, 3);
@@ -500,7 +543,20 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             <span className={styles.badge}>{kind === "situation" ? (locale === "ru" ? "ЛИЧНО · БЕСПЛАТНО" : locale === "es" ? "PERSONAL · GRATIS" : "PERSONAL · FREE") : common.free}</span>
             <h1 id="free-entry-title">{t.title}</h1>
             <p className={styles.lead}>{t.lead}</p>
-            {kind === "situation" ? <p className={styles.shortLead}>{situationFirstScreen[locale].lead}</p> : null}
+            {kind === "situation" ? (
+              <div className={styles.reviewValueSummary} data-free-review-benefits>
+                <p className={styles.shortLead}>{situationFirstScreen[locale].lead}</p>
+                <ol className={styles.reviewValueFlow} aria-label={situationFirstScreen[locale].resultsLabel}>
+                  {situationFirstScreen[locale].results.map((result, index) => (
+                    <li key={result.title}>
+                      <span className={styles.reviewValueNumber} aria-hidden="true">0{index + 1}</span>
+                      <strong>{result.title}</strong>
+                      <span>{result.text}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
             {kind === "situation" ? null : kind === "dao" ?
               <ul className={styles.daoBenefits} aria-label={locale === "ru" ? "Что вы получите" : locale === "es" ? "Qué recibirás" : "What you get"}>
                 {t.bullets.map((benefit) => <li key={benefit}><CheckCircle2 size={17} aria-hidden="true" /><span>{benefit}</span></li>)}
@@ -537,6 +593,14 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal fallbackPoster={situationVideo.poster} />
               <p className={styles.reviewIntroAudio}>{situationVideoStory[locale].audio}</p>
               <p className={styles.reviewIntroSourceNote}>{situationVideoStory[locale].recording}</p>
+              {constellationVideo ? (
+                <article className={styles.reviewIntroConstellation} data-free-review-constellation-video data-constellation-audio-language={constellationVideo.video.language}>
+                  <h3>{situationVideoStory[locale].constellationTitle}</h3>
+                  <p className={styles.reviewIntroAudio}>{situationVideoStory[locale].constellationAudio}</p>
+                  <SiteVideoPlayer video={constellationVideo.video} locale={locale} compact minimal fallbackPoster={constellationVideo.poster} />
+                  <p className={styles.reviewIntroSourceNote}>{situationVideoStory[locale].constellationNote}</p>
+                </article>
+              ) : null}
             </div>
           </section>
         ) : null}
