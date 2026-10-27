@@ -32,7 +32,7 @@ const reviews={
   free:{status:'ok',model:'google/gemma-4-31b-it:free',
     text:'Нужно проверить одну CRM запись и idempotency в API на реальных запросах.'}
 }
-function harness({balance=2,responseModel=ARGON_GATEWAY_MODEL,finish='stop',
+function harness({balance='2.00',responseModel=ARGON_GATEWAY_MODEL,finish='stop',
   http=200,body=JSON.stringify(synthesis),usage={total_tokens:1000},
   creditsStatus=200}={}){
   const requests=[]
@@ -95,7 +95,7 @@ test('disabled settings, preview or private question produce ZERO HTTP requests'
   assert.equal(h.requests.length,0)
 })
 test('missing/too-small/nonfree-looking balance stops before inference',async()=>{
-  for(const balance of [null,0,0.01,0.099,-1,5.6,999,'2',NaN]){
+  for(const balance of [null,0,0.01,0.099,-1,5.6,999,'5.5 USD','1e3','0x1','5..0',' 5','5,00',NaN]){
     const h=harness({balance})
     const r=await reviewArgonSynthesis(prompt,question,env,h.fetcher)
     assert.equal(r.status,'unavailable',String(balance))
@@ -108,7 +108,8 @@ test('missing/too-small/nonfree-looking balance stops before inference',async()=
   assert.equal(h.requests.length,1)
 })
 test('only an exact Argon STOP response with usage is accepted; never retries',async()=>{
-  const success=harness()
+  // Official Vercel API returns decimal strings, not numbers.
+  const success=harness({balance:'5.00'})
   const r=await reviewArgonSynthesis(prompt,question,env,success.fetcher)
   assert.equal(r.status,'ok')
   assert.equal(r.model,ARGON_GATEWAY_MODEL)
@@ -137,7 +138,7 @@ test('manual /all uses Argon only with two genuine free replies; valid JSON is a
   // so check what it sends rather than using the constant harness prompt.
   const fetcher=async(url,options)=>{
     if(String(url).endsWith('/credits'))
-      return Response.json({balance:2})
+      return Response.json({balance:'2.00'})
     const body=JSON.parse(options.body)
     assert.match(body.messages[1].content,/НЕДОВЕРЕННЫЕ ДАННЫЕ|недоверенные данные/i)
     assert.match(body.messages[1].content,/gemma/)
@@ -155,7 +156,7 @@ test('manual /all uses Argon only with two genuine free replies; valid JSON is a
 test('bad Argon synthesis is rejected without a chargeable retry or fake consensus',async()=>{
   let posts=0
   const fetcher=async (url)=>{
-    if(String(url).endsWith('/credits'))return Response.json({balance:3})
+    if(String(url).endsWith('/credits'))return Response.json({balance:'3.00'})
     posts++
     return Response.json({model:ARGON_GATEWAY_MODEL,usage:{total_tokens:900},
       choices:[{finish_reason:'stop',message:{content:'not JSON'}}]})
