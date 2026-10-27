@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import {
   validatePractitionerEvent, eventPublicProjection,
-  normalizeEventTicketPaymentHref, publicEventTicketCheckout,
+  normalizeEventTicketPaymentHref, publicEventTicketCheckout, eventTicketReviewSnapshot,
 } from '../lib/practitioners/event-contracts.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -122,6 +122,26 @@ test('ticket payment stays behind existing moderation, never creates leads, rese
   assert.match(admin,/ticketReviewed\[e\.id\]===true/)
   assert.match(adminRoute,/ticketPaymentReviewed:body\.ticketPaymentReviewed/)
   assert.doesNotMatch(repo,/markAsPaid|grantEntitlement|capturePayment|sendMoney/)
+})
+
+test('moderator review snapshot is invalidated by changed ticket, price, event date or title', () => {
+  const verified = validatePractitionerEvent(draft, {complete:true})
+  const snapshot = eventTicketReviewSnapshot(verified)
+  assert.equal(snapshot, eventTicketReviewSnapshot({...verified}))
+  for(const patch of [
+    {ticketPaymentHref:'https://square.link/u/OTHERPROGRAM40'},
+    {priceAmount:41},
+    {startsAt:'2030-11-12T18:00:00-05:00'},
+    {registrationHref:'https://example.org/new-registration'},
+    {title:{...verified.title,en:'Different event'}},
+  ]) assert.notEqual(snapshot,eventTicketReviewSnapshot({...verified,...patch}))
+  const repo=read('lib/practitioners/events-repository.js')
+  const moderator=read('components/practitioner-moderation.jsx')
+  const route=read('app/admin/practitioners/data/route.js')
+  assert.ok(repo.includes('input.ticketReviewSnapshot !== eventTicketReviewSnapshot(draft)'))
+  assert.ok(moderator.includes('ticketReviewSnapshot:eventTicketReviewSnapshot(e.draft)'))
+  assert.ok(moderator.includes('setTicketReviewed({})'))
+  assert.ok(route.includes('ticketReviewSnapshot:body.ticketReviewSnapshot'))
 })
 
 test('only future approved ticket links appear on directory and detail; master pages and ICS resolve safely', () => {
