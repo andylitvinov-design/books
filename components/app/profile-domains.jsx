@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Brain, CalendarDays, ChevronDown, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
+import FreeExpressMyRequests from './free-express-my-requests'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
 import { availableSavedReports, latestReceivedReport } from '@/lib/profile/report-summary'
 import './profile-domains.css'
@@ -394,6 +395,7 @@ export function ProfileDomains({
       </div>
     </details>}
     {external && <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>}
+    {!external && accountId && <FreeExpressMyRequests locale={locale} />}
     {external && footerActions}
   </section>
 }

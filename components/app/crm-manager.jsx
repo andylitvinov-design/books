@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { CRM_TEMPLATES } from '../../lib/crm/campaigns'
 import CrmEmailTools from './crm-email-tools'
 import CrmSmsTools from './crm-sms-tools'
@@ -38,8 +39,8 @@ const EXTRA_COPY = {
   ru: { all: 'Все', leads: 'Интересуются', clients: 'Клиенты', archived: 'Архив', suppress: 'Не связываться', suppressConfirm: 'Запретить рекламные сообщения этому контакту? На этой странице отменить это действие нельзя.', duplicate: 'Контакт с таким email уже существует.', showing: 'Поиск и фильтры работают по загруженным контактам. Для остальных нажмите «Загрузить ещё».', stage: 'Статус контакта', conflict: 'Контакт изменён в другой вкладке. Обновите страницу.' },
   es: { all: 'Todos', leads: 'Interesados', clients: 'Clientes', archived: 'Archivados', suppress: 'No contactar', suppressConfirm: '¿Excluir este contacto de los mensajes promocionales? No se puede revertir aquí.', duplicate: 'Ya existe un contacto con este correo.', showing: 'La búsqueda y los filtros abarcan los contactos cargados. Carga más para ver los demás.', stage: 'Estado del contacto', conflict: 'El contacto cambió en otra pestaña. Actualiza la página.' },
 }
-const CRM_SECTION_IDS=new Set(['overview','tasks','leads','messages','automations','sms','integrations','contacts'])
-export default function CrmManager({ locale = 'en', accountId }) {
+const CRM_SECTION_IDS=new Set(['overview','tasks','leads','pipeline','messages','automations','sms','integrations','contacts'])
+export default function CrmManager({ locale = 'en', accountId, publicEnquiries = [], onOpenRequest, onCreateReport }) {
   const language = COPY[locale] ? locale : 'en'
   const c = { ...COPY[language], ...EXTRA_COPY[language] }
   const billing = BILLING_COPY[language]
@@ -368,6 +369,7 @@ export default function CrmManager({ locale = 'en', accountId }) {
         ['overview',language==='ru'?'Обзор':language==='es'?'Resumen':'Overview'],
         ['tasks',language==='ru'?'Задачи':language==='es'?'Tareas':'Tasks'],
         ['leads',language==='ru'?'Лиды':language==='es'?'Leads':'Leads'],
+        ['pipeline',language==='ru'?'Воронка Business':language==='es'?'Embudo Business':'Business pipeline'],
         ['messages',language==='ru'?'Сообщения':language==='es'?'Mensajes':'Messages'],
         ['automations',language==='ru'?'Автоматизации':language==='es'?'Automatizaciones':'Automations'],
         ['sms','SMS'],
@@ -428,15 +430,34 @@ export default function CrmManager({ locale = 'en', accountId }) {
        <button type="button" className={styles.leadShortcut} onClick={()=>setActiveSection('leads')}>
          {language==='ru'?'Лиды без открытой задачи':language==='es'?'Leads sin tarea abierta':'Leads without an open task'} · {data.overview?.unplannedLeads??0} →
        </button>
-      <p><a href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
+      <p><Link href="/admin/reiki-leads" style={{color:'#087e95',fontWeight:800,textDecoration:'underline',textUnderlineOffset:3}}>
       {language==='ru'?'Открыть CRM по Reiki-курсу: лиды и письма →':language==='es'?'Abrir CRM de Reiki: solicitudes y cartas →':'Open Reiki CRM: course leads and initiation letters →'}
-    </a></p>
+    </Link></p>
+      <section className={styles.formCard} data-crm-website-requests>
+        <h3>{language==='ru'?'Заявки с сайта':language==='es'?'Solicitudes del sitio':'Website enquiries'} · {publicEnquiries.length}</h3>
+        <p>{language==='ru'?'Каждая сохранённая заявка отображается отдельно, даже если контакт уже существует в CRM.':language==='es'?'Cada solicitud aparece por separado aunque el contacto CRM ya exista.':'Each saved enquiry appears separately, even when its CRM contact already exists.'}</p>
+        {publicEnquiries.slice(0,15).map(enquiry=><div key={enquiry.id} style={{display:'flex',alignItems:'center',gap:10,justifyContent:'space-between',flexWrap:'wrap',padding:'10px 0',borderTop:'1px solid #e6dac8'}}>
+          <div><strong>{enquiry.contact?.displayName||enquiry.contact?.name||enquiry.referenceCode}</strong>
+            <small style={{display:'block'}}>{enquiry.referenceCode} · {enquiry.serviceTitle}</small></div>
+          <button type="button" onClick={()=>enquiry.reportEligible
+            ?onCreateReport?.(enquiry):onOpenRequest?.()}>
+            {enquiry.reportEligible
+              ?(language==='ru'?'Сформировать отчёт':language==='es'?'Crear informe':'Create report')
+              :(language==='ru'?'Открыть заявку':language==='es'?'Abrir solicitud':'Open enquiry')}
+          </button>
+        </div>)}
+        {publicEnquiries.length>15&&<button type="button" onClick={()=>onOpenRequest?.()}>{language==='ru'?'Все заявки':language==='es'?'Todas las solicitudes':'All enquiries'}</button>}
+      </section>
       <CrmWorkflowOverview locale={language} overview={data.overview} followups={data.followups||[]} activity={data.activity||[]}
          busy={busy} onAction={save} onOpenContact={focusContact} onViewTasks={()=>setActiveSection('tasks')} />
       <CrmBusinessEnquiries locale={language} enquiries={data.businessEnquiries||[]} busy={busy} onAction={save} />
       <CrmMarketingPanel key={accountId+'-marketing'} accountId={accountId} contacts={data.contacts||[]} locale={language} />
       </>}
-      {activeSection==='leads'&&<CrmLeadTriage key={accountId+'-'+language}
+      {activeSection==='pipeline'&&<>
+         <CrmBusinessEnquiries mode="board" locale={language} enquiries={data.businessEnquiries||[]} busy={busy} onAction={save} />
+         {notice&&<p role="status" className={styles.notice}>{notice}</p>}
+       </>}
+       {activeSection==='leads'&&<CrmLeadTriage key={accountId+'-'+language}
          accountId={accountId} locale={language} busy={busy} onAction={save} onOpenContact={focusContact}
          onAutoPlanned={()=>{const session=sessionRef.current;if(session?.accountId===accountId)void load(session).catch(()=>{})}}/>}
        {activeSection==='tasks'&&<>

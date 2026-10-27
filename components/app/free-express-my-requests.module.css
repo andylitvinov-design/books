@@ -1,0 +1,10 @@
+.root{border:1px solid #e2ccb9;border-radius:15px;background:#fff8ef;color:#503b31;padding:14px;margin:13px 0}
+.root h3{font:750 17px/1.4 system-ui,sans-serif;margin:0 0 6px}.root p{font:400 12px/1.5 system-ui,sans-serif;margin:0 0 9px;color:#756052}
+.root ol{padding:0;margin:0;list-style:none;display:grid;gap:8px}.root li{border-radius:9px;border:1px solid #e7d6c8;padding:10px;background:white;display:grid;gap:4px;word-break:break-word}
+.root strong{font:750 13px/1.4 system-ui,sans-serif}.root small{font:450 11px/1.4 system-ui,sans-serif;color:#80695d}
+@media(max-width:430px){.root{padding:11px}}
+.root button{justify-self:start;min-height:44px;padding:9px 12px;border:1px solid #b78f77;border-radius:10px;background:#fff9f0;color:#633f38;font:700 12px/1.4 system-ui,sans-serif;cursor:pointer}
+.root button:focus-visible{outline:3px solid #2165b3;outline-offset:2px}
+.root button:disabled{opacity:.55}
+.details{padding:9px;background:#fcf8f4;border:1px solid #e0cbb9;border-radius:9px;max-height:500px;overflow-y:auto}
+.details pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font:400 12px/1.55 system-ui,sans-serif;color:#47362c}

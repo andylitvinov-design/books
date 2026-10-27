@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
@@ -8,8 +8,7 @@ import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { getServiceVideoMedia } from "@/data/service-video-library";
-import { siteVideoWatchUrl } from "@/lib/site-videos/model";
-import { PersonalTestimonials } from "@/components/personal-testimonials";
+import { PersonalTestimonials, locallyArchivedVideoPosterIds, testimonialVideos } from "@/components/personal-testimonials";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./free-entry-landing.module.css";
 
@@ -379,9 +378,51 @@ const freeTestDirectCopy = {
 } as const;
 
 const situationFirstScreen = {
-  en: { lead: "Your question · a fresh perspective · a next step.", source: "Watch on YouTube", videoBadge: "Andrey · EN audio", reviews: "See real client stories · 12 videos" },
-  ru: { lead: "Ваш вопрос · новый взгляд · следующий шаг.", source: "Смотреть на YouTube", videoBadge: "Андрей · EN аудио", reviews: "Настоящие отзывы клиентов · 12 видео" },
-  es: { lead: "Tu pregunta · otra perspectiva · un paso más.", source: "Ver en YouTube", videoBadge: "Andrey · audio EN", reviews: "Testimonios reales · 12 vídeos" },
+  en: { lead: "Your question · a fresh perspective · a next step.", reviews: "See the full client video archive · 12 videos" },
+  ru: { lead: "Ваш вопрос · новый взгляд · следующий шаг.", reviews: "Все видеоотзывы клиентов · 12 видео" },
+  es: { lead: "Tu pregunta · otra perspectiva · un paso más.", reviews: "Todos los testimonios · 12 vídeos" },
+} as const;
+
+const situationVideoStory = {
+  en: {
+    eyebrow: "VIDEO · MEET ANDREY",
+    title: "How a personal express review works",
+    lead: "I look at one question you bring — a life situation, work, relationships or everyday wellbeing. Together with your short description, I consider what seems difficult, which resources may help and what you might explore next.",
+    takeaway: "You receive personal written observations, not an automated test, appointment or medical diagnosis.",
+    recording: "The existing recording introduces how I choose an approach. It is a general introduction, not yet a video made specifically about this free review.",
+    audio: "Andrey's introduction · English audio",
+    storiesEyebrow: "REAL CLIENT VIDEOS",
+    storiesTitle: "Three real experiences with my work",
+    storiesLead: "Original videos about other personal sessions and approaches. They are not reviews of this exact free service.",
+    enAudio: "English audio", ruAudio: "Russian audio",
+    storiesNote: "These are individual experiences, not guaranteed or typical results, and not medical evidence.",
+  },
+  ru: {
+    eyebrow: "ВИДЕО · ЗНАКОМСТВО С АНДРЕЕМ",
+    title: "Что такое личная экспресс-диагностика",
+    lead: "Я лично рассматриваю один ваш вопрос — ситуацию, работу, отношения, энергию или повседневное самочувствие. С помощью короткого описания мы уточняем основную сложность, возможные ресурсы и направление следующего шага.",
+    takeaway: "Вы получаете личный письменный взгляд, а не автоматический тест, запись на приём или медицинский диагноз.",
+    recording: "В доступном видео я рассказываю, как выбираю подход к работе. Это общее знакомство, отдельное видео именно об этой диагностике ещё не записано.",
+    audio: "Видео Андрея · русский язык",
+    storiesEyebrow: "НАСТОЯЩИЕ ВИДЕООТЗЫВЫ",
+    storiesTitle: "Три истории о работе со мной",
+    storiesLead: "Реальные отзывы о разных личных сессиях и подходах, не обещания результата этой бесплатной услуги.",
+    enAudio: "Аудио на английском", ruAudio: "Аудио на русском",
+    storiesNote: "Опыт каждого индивидуален; результаты не гарантированы, отзывы не доказывают лечебного эффекта.",
+  },
+  es: {
+    eyebrow: "VÍDEO · CONOCE A ANDREY",
+    title: "¿En qué consiste la revisión personal exprés?",
+    lead: "Analizo personalmente una pregunta que quieras compartir: una situación, el trabajo, las relaciones o tu bienestar cotidiano. A partir de una breve descripción, exploramos el reto central, los recursos y un posible siguiente paso.",
+    takeaway: "Recibirás observaciones personales por escrito, no una prueba automática, una cita ni un diagnóstico médico.",
+    recording: "Este vídeo existente presenta mi enfoque de alquimia psíquica. Es una introducción general, no un vídeo específico sobre la revisión exprés gratuita.",
+    audio: "Presentación de Andrey · audio en español",
+    storiesEyebrow: "TESTIMONIOS REALES EN VÍDEO",
+    storiesTitle: "Tres experiencias reales de clientes",
+    storiesLead: "Vídeos sobre otros formatos de trabajo personal, no sobre este servicio gratuito. El audio original es en inglés; los títulos están traducidos.",
+    enAudio: "Audio original en inglés", ruAudio: "Audio original en ruso",
+    storiesNote: "Son experiencias personales, no resultados típicos o garantizados ni evidencia de eficacia médica.",
+  },
 } as const;
 
 const situationApproach = {
@@ -427,7 +468,21 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
   const final = finalCopy[locale][kind];
-  const situationVideo = kind === "situation" ? getServiceVideoMedia("constellation-case", locale) : null;
+  // Existing approved, already-published introductions only. Dedicated express-review
+  // scripts remain drafts; no HeyGen render, upload or publication is implied.
+  const situationVideo = kind !== "situation" ? null : locale === "es" ? {
+    video: {
+      youtubeId: "",
+      heygenId: "2c251709aba74fd96ae8be43257a080b",
+      language: "es" as const,
+      title: "Mi enfoque de la alquimia psíquica",
+      durationSeconds: 31,
+    },
+    poster: "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp",
+  } : getServiceVideoMedia("overview", locale);
+  const featuredReviewVideos = kind !== "situation" ? [] : locale === "ru"
+    ? [testimonialVideos.ru[4], testimonialVideos.ru[1], testimonialVideos.ru[3]]
+    : testimonialVideos[locale].slice(0, 3);
 
   return (
     <main className={styles.page} lang={locale} data-free-entry-landing={kind}>
@@ -462,22 +517,28 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
           </div>
-          {situationVideo ? (
-            <div className={[styles.heroVisual, styles.situationVideo].join(" ")} id="service-video" data-featured-constellations-video>
-              <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal posterPriority fallbackPoster={situationVideo.poster} internalOnly />
-               <span className={styles.videoBadge}>{situationFirstScreen[locale].videoBadge}</span>
-              <a className={styles.videoSource} href={siteVideoWatchUrl(situationVideo.video)} target="_blank" rel="noopener noreferrer"
-                aria-label={situationFirstScreen[locale].source}>
-                {situationFirstScreen[locale].source}<ExternalLink size={13} aria-hidden="true" />
-              </a>
-            </div>
-          ) : (
-            <figure className={styles.heroVisual}>
-              <Image src={images.hero} alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />
-              {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
-            </figure>
-          )}
+          <figure className={styles.heroVisual}>
+            <Image src={images.hero} alt={t.photoAlt} fill priority sizes="(max-width: 800px) 100vw, 48vw" />
+            {kind !== "dao" ? <figcaption>{t.value}</figcaption> : null}
+          </figure>
         </section>
+
+        {situationVideo ? (
+          <section className={styles.reviewIntro} id="meet-andrey" aria-labelledby="free-review-intro-title" data-free-review-video-story>
+            <div className={styles.reviewIntroCopy}>
+              <p className={styles.sectionLabel}>{situationVideoStory[locale].eyebrow}</p>
+              <h2 id="free-review-intro-title">{situationVideoStory[locale].title}</h2>
+              <p className={styles.reviewIntroLead}>{situationVideoStory[locale].lead}</p>
+              <p className={styles.reviewIntroTakeaway}><CheckCircle2 size={19} aria-hidden="true" />{situationVideoStory[locale].takeaway}</p>
+              <a className={styles.reviewCta} href="#request-free-review">{t.cta}<ArrowRight size={17} aria-hidden="true" /></a>
+            </div>
+            <div className={styles.reviewIntroMedia} data-free-review-intro-video data-intro-audio-language={locale}>
+              <SiteVideoPlayer video={situationVideo.video} locale={locale} compact minimal fallbackPoster={situationVideo.poster} />
+              <p className={styles.reviewIntroAudio}>{situationVideoStory[locale].audio}</p>
+              <p className={styles.reviewIntroSourceNote}>{situationVideoStory[locale].recording}</p>
+            </div>
+          </section>
+        ) : null}
 
         {kind === "situation" ? (
           <PersonalExpressEnquiry locale={locale} intro={
@@ -516,6 +577,29 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                   <Image src={images.hero} alt={t.photoAlt} fill sizes="(max-width: 720px) 100vw, 40vw" />
                 </div>
               </section>
+              <section className={styles.reviewSocialProof} aria-labelledby="free-review-stories-title"
+                id="free-review-stories" data-featured-free-review-testimonials>
+                <header className={styles.reviewSocialProofHeader}>
+                  <p className={styles.sectionLabel}>{situationVideoStory[locale].storiesEyebrow}</p>
+                  <h2 id="free-review-stories-title">{situationVideoStory[locale].storiesTitle}</h2>
+                  <p>{situationVideoStory[locale].storiesLead}</p>
+                </header>
+                <div className={styles.reviewPreviewGrid}>
+                  {featuredReviewVideos.map((item) => (
+                    <article className={styles.reviewPreviewCard} key={item.id} data-testimonial-video-id={item.id}>
+                      <p className={styles.reviewAudioLabel}>
+                        {item.language === "ru" ? situationVideoStory[locale].ruAudio : situationVideoStory[locale].enAudio}
+                      </p>
+                      <SiteVideoPlayer video={{ youtubeId: item.id, title: item.title, language: item.language }}
+                        locale={locale} compact
+                        fallbackPoster={locallyArchivedVideoPosterIds.has(item.id)
+                          ? "/images/holistic-house/testimonial-posters/" + item.id + ".webp"
+                          : undefined} />
+                    </article>
+                  ))}
+                </div>
+                <p className={styles.reviewStoryDisclaimer}>{situationVideoStory[locale].storiesNote}</p>
+              </section>
               <section className={styles.reviewProcess} id="how-it-works" aria-labelledby="free-process-title">
                 <div className={styles.reviewProcessCopy}>
                   <p className={styles.sectionLabel}>03 / {common.process}</p>
@@ -536,7 +620,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
                 <PersonalTestimonials locale={locale} variant="all" />
               </details>
             </>
-          }>
+          } enableWizard={process.env.HH_FREE_EXPRESS_V2_ENABLED === "true"}>
             <div className={styles.coachingLink}>
               <Link href={"/" + locale + "/coaching/intake"} prefetch={false} data-source="coaching-questionnaire">
                 {common.coachingForm}<ArrowRight size={16} aria-hidden="true" />

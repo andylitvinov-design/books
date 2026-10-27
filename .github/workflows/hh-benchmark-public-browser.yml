@@ -17,7 +17,7 @@ concurrency:
 jobs:
   anonymous-smoke:
     name: Anonymous Chromium/WebKit · 320–430 · EN/RU/ES
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4

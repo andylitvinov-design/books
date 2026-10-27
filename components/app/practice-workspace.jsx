@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones } from 'lucide-react'
+import { Plus, FileText, Film, IdCard, UsersRound, Leaf, ReceiptText, BarChart3, ChevronRight, ClipboardList, Share2, CheckCircle2, CalendarDays, Megaphone, BookOpen, Headphones, MessageCircle } from 'lucide-react'
 import CrmManager from './crm-manager'
 import PractitionerClientProfiles from './practitioner-client-profiles'
 import PracticeExpressReports from './practice-express-reports'
@@ -11,6 +11,7 @@ import PracticeEvents from './practice-events'
 import PracticeServiceStatistics from './practice-service-statistics'
 import PracticeRequestsOverview from './practice-requests-overview'
 import PublicEnquiryContact from './public-enquiry-contact'
+import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
 import MyServicesDashboard from './my-services-dashboard'
 import SimpleServiceEditor from './simple-service-editor'
 import RemoteGoalPhoto from './remote-goal-photo'
@@ -165,7 +166,7 @@ export function PracticeEntry({data,locale}){
 }
 
 export default function PracticeWorkspace({locale,ownerTools=null,accountId=null}){
-  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState(''),[proStarter,setProStarter]=useState(''),[proCourseStart,setProCourseStart]=useState(false),[meditationType,setMeditationType]=useState(''),[meditationPickerOpen,setMeditationPickerOpen]=useState(false),[creationGoal,setCreationGoal]=useState('')
+  const ru=locale==='ru',[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[activePanel,setActivePanel]=useState(null),[materialTab,setMaterialTab]=useState('articles'),[materialShortcut,setMaterialShortcut]=useState({tab:'',nonce:0}),[shareNotice,setShareNotice]=useState(''),[newServiceRequest,setNewServiceRequest]=useState(0),[focusRequestId,setFocusRequestId]=useState(''),[selectedExpressRequestId,setSelectedExpressRequestId]=useState(''),[proStarter,setProStarter]=useState(''),[proCourseStart,setProCourseStart]=useState(false),[meditationType,setMeditationType]=useState(''),[meditationPickerOpen,setMeditationPickerOpen]=useState(false),[creationGoal,setCreationGoal]=useState('')
   async function load(){setError('');try{setData(await practiceFetch())}catch(e){setError(e.code||e.message)}}
   useEffect(()=>{load()},[])
   // Trusted cabinet deep link: owner still must authenticate before opening tools.
@@ -298,6 +299,11 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
     else url.searchParams.delete('panel')
     if(materialType)url.searchParams.set('materialTab',materialType)
     window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
+  }
+  function openExpressReportFor(request){
+    if(!request?.id || !(request.accountRequest===true || request.reportEligible===true))return
+    setSelectedExpressRequestId(request.id)
+    choosePanel('express-reports')
   }
   function choosePanel(panel){
     setActivePanel(panel)
@@ -484,6 +490,10 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         </button>
         <button type="button" onClick={()=>choosePanel('requests')} aria-pressed={activePanel==='requests'}>
           <ClipboardList aria-hidden="true"/><span>{d.requestsMetric}</span><strong>{openRequests}</strong>
+        </button>
+        <button type="button" onClick={()=>window.location.assign('/'+locale+'/app/messages'+(isOwner?'?tab=requests':''))}>
+          <MessageCircle aria-hidden="true"/><span>{ru?'Сообщения':locale==='es'?'Mensajes':'Messages'}</span>
+          <small>{ru?'Личный инбокс':locale==='es'?'Bandeja privada':'Private inbox'}</small>
         </button>
         <button type="button" onClick={()=>choosePanel('services')} aria-pressed={activePanel==='services'}>
           <Leaf aria-hidden="true"/><span>{d.services}</span><strong>{services.length}</strong>
@@ -674,7 +684,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
       </details>
         </div>}
-        {activePanel==='express-reports'&&<PracticeExpressReports locale={locale} accountId={accountId} requests={requests} owner={isOwner}/>}
+        {activePanel==='express-reports'&&<PracticeExpressReports locale={locale} accountId={accountId} requests={requests} owner={isOwner} initialRequestId={selectedExpressRequestId} onOpenRequests={()=>choosePanel('requests')}/>}
         {activePanel==='analytics'&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics">
           <PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} />
         </div>}
@@ -690,13 +700,18 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             practitionerTasks={data.practitionerTasks||[]}
             practitionerTaskSummary={data.practitionerTaskSummary}
             locale={locale} accountId={accountId} busy={busy} isOwner={isOwner}
+            freeExpressV2Enabled={data.freeExpressV2Enabled === true}
             onOpenLegacy={clientId=>openOwner(clientId?'client':'clients',clientId)}
             onRefresh={()=>load()}
+            onCreateReport={openExpressReportFor}
             focusRequestId={focusRequestId}
             onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))}/>}
         {activePanel==='crm'&&isOwner&&accountId&&
-          <CrmManager key={accountId} locale={locale} accountId={accountId}/>} 
+          <CrmManager key={accountId} locale={locale} accountId={accountId}
+            publicEnquiries={requests.filter(item=>item.requestKind==='public')}
+            onOpenRequest={()=>choosePanel('requests')}
+            onCreateReport={openExpressReportFor}/>}
         {activePanel==='profile'&&<>
           <ProfileEditor key={p?.revision||'profile'} practitioner={p} locale={locale} t={t} busy={busy}
             onSave={(profile,expectedRevision)=>act(()=>practiceFetch('/profile',{action:'save',profile,expectedRevision}))}
@@ -713,7 +728,8 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
             <div><strong>{publishedCount}</strong><span>{d.active}</span></div>
             <div><strong>{openRequests}</strong><span>{d.requestsMetric}</span></div>
           </div>
-          <Requests items={requests} t={t} locale={locale} busy={busy}
+          <Requests items={requests} t={t} locale={locale} busy={busy} enabled={data.freeExpressV2Enabled === true}
+            isOwner={isOwner} accountId={accountId} onCreateReport={openExpressReportFor}
             onStatus={(item,status,extra={})=>act(()=>practiceFetch('/requests/'+item.id,{...(status?{status}:{}),...extra,expectedRevision:item.revision}))}
             onSaveContact={(item,payload)=>act(()=>practiceFetch('/requests/'+item.id,payload))} />
         </>}
@@ -895,7 +911,7 @@ function Services({items,locale,busy,quota,createRequest=0,starter='',onSave,onS
         onSave={onSave} onSaveAndSubmit={onSaveAndSubmit} onPause={onPause} onDirtyChange={onDirtyChange} onMediaBusyChange={onMediaBusyChange}/>} />
   </>
 }
-function Requests({items,t,locale,busy,onStatus,onSaveContact}){
+function Requests({items,t,locale,busy,onStatus,onSaveContact,onCreateReport,enabled=false,isOwner=false,accountId}){
   const [proposals,setProposals]=useState({})
   const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status))?'open':'all')
   const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status):item.status===status))
@@ -917,13 +933,23 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact}){
     </label>
   </div><p className="hh-fine" role="status">{visible.length} / {items.length}</p>
     {!visible.length&&<p>{t.none}</p>}
-    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{x.message&&<p>{x.message}</p>}
+    {visible.map(x=><article className="hh-panel" key={x.id}><span className="hh-badge">{x.status}</span><p>{new Date(x.createdAt).toLocaleString()}</p><p>{safeLeadContact(x.contact)}</p>{enabled&&isOwner&&isOwnerFreeExpressRequest(x)
+        ?<FreeExpressOwnerCase request={x} locale={locale} accountId={accountId}/>
+        :x.message&&<p>{x.message}</p>}
+      <div className="hh-actions">
+        <button type="button" disabled={busy||!(x.accountRequest===true||x.reportEligible===true)}
+          onClick={()=>onCreateReport?.(x)}>
+          <FileText size={16} aria-hidden="true"/>{locale==='ru'?'Сформировать отчёт':locale==='es'?'Crear informe':'Create report'}
+        </button>
+        {x.requestKind==='public'&&!x.reportEligible&&
+          <small className="hh-fine">{locale==='ru'?'Доступно после сохранения заявки клиентом через Google.':locale==='es'?'Disponible cuando el cliente guarda su solicitud con Google.':'Available after the client saves this request with Google.'}</small>}
+      </div>
       {x.remoteBooking&&<p className="hh-fine"><strong>{locale==='ru'?'Дистанционная поддержка цели':'Goal support'}</strong>
         {' · '}{x.remoteBooking.duration} min · {x.remoteBooking.date} {x.remoteBooking.time} ({x.remoteBooking.timezone})
         {' · '}{x.remoteBooking.price} {x.remoteBooking.currency}
         {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.remoteBooking&&x.remoteBooking.photoPath&&
         <RemoteGoalPhoto key={x.id} requestId={x.id} role="master"
-          hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>} {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
+          hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>}  {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
       {x.remoteBooking&&x.remoteBooking.proposed&&<p className="hh-fine">
         {locale==='ru'?'Предложено новое время':'Alternative time offered'}:
         {' '}{x.remoteBooking.proposed.date} {x.remoteBooking.proposed.time}

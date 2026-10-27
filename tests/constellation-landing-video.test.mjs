@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 
-test("one owner-supplied YouTube video serves exactly the intended three service landings", () => {
+test("constellation video stays on its related paid service landings, not the free express-review hero", () => {
   const library = read("data/service-video-library.ts");
   const showcase = read("components/service-video-showcase.tsx");
   const personal = read("components/personal-service-landing.tsx");
@@ -22,8 +22,9 @@ test("one owner-supplied YouTube video serves exactly the intended three service
 
   assert.match(personal, /service === "systemic-constellations" \? "constellation-case"/);
   assert.match(business, /<ServiceVideoShowcase topic="constellation-case" locale=\{locale\} id="business-constellation-video" \/>/);
-  assert.match(free, /getServiceVideoMedia\("constellation-case", locale\)/);
-  assert.match(free, /data-featured-constellations-video/);
+  assert.doesNotMatch(free, /getServiceVideoMedia\("constellation-case", locale\)/);
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(free, /data-free-review-intro-video/);
   assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
   assert.doesNotMatch(free, /<ServiceVideoShowcase topic="overview"/);
   assert.equal((showcase.match(/"constellation-case": \{/g) ?? []).length, 3,
@@ -41,26 +42,38 @@ test("all three placements reuse the existing click-to-load video player and kee
   assert.match(player, /const externalLink = internalOnly \? null/);
 });
 
-test("mobile free-review starts with the recording, with a compact single-screen CTA", () => {
- const free = read("components/free-entry-landing.tsx");
- const css = read("components/free-entry-landing.module.css");
- const video = free.indexOf("data-featured-constellations-video");
- assert.ok(video > free.indexOf('aria-labelledby="free-entry-title"') && video < free.indexOf('id="what-you-get"'));
- assert.match(free, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
- assert.match(free, /siteVideoWatchUrl\(situationVideo\.video\)/);
- assert.match(free, /videoBadge: "Andrey · EN audio"/);
- assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
- assert.match(free, /Личная экспресс-диагностика с Андреем/);
- assert.match(free, /Revisión personal exprés gratuita con Andrey/);
- assert.match(css, /\.situationHero \.situationVideo\{order:0/);
- assert.match(css, /\.situationHero \.heroCopy\{order:1/);
- assert.match(css, /\.situationHero \.primary\{width:100%/);
- assert.match(css, /@media\(max-width:600px\) and \(max-height:730px\)/);
- assert.match(css, /\.situationScene\{min-height:0/);
- assert.match(css, /@media\(max-width:360px\) and \(max-height:620px\)/);
- assert.match(css, /\.situationScene \.sceneImage\{display:none\}/);
- assert.match(css, /\.situationHero \.primary\{min-height:44px\}/);
- assert.match(css, /\.situationHero \.videoSource\{right:7px;top:7px;min-height:44px/);
- assert.match(css, /\.situationVideo :global\(\.site-video-poster-title\)\{left:86px/);
- assert.match(css, /@media\(max-width:600px\)\{[\s\S]*?\.situationVideo :global\(\.site-video-poster-title\)\{left:72px/);
+test("personal free review has portrait-led hero, a separate locale-matched explainer and three visible previews", () => {
+  const free = read("components/free-entry-landing.tsx");
+  const css = read("components/free-entry-landing.module.css");
+  const hero = free.indexOf('aria-labelledby="free-entry-title"');
+  const video = free.indexOf('data-free-review-intro-video');
+  const outcome = free.indexOf('id="what-you-get"');
+  const proof = free.indexOf('data-featured-free-review-testimonials');
+  const process = free.indexOf('id="how-it-works"');
+  assert.ok(hero >= 0 && hero < video && video < outcome && outcome < proof && proof < process,
+    "Portrait → intro → value → three authentic client videos → steps");
+  assert.match(free, /getServiceVideoMedia\("overview", locale\)/);
+  assert.match(free, /heygenId: "2c251709aba74fd96ae8be43257a080b"/);
+  assert.match(free, /language: "es" as const/);
+  assert.match(free, /const featuredReviewVideos/);
+  assert.match(free, /testimonialVideos\.ru\[4\]/);
+  assert.match(free, /testimonialVideos\[locale\]\.slice\(0, 3\)/);
+  assert.match(free, /featuredReviewVideos\.map/);
+  assert.match(free, /data-testimonial-video-id=\{item\.id\}/);
+  assert.match(free, /locallyArchivedVideoPosterIds\.has\(item\.id\)/);
+  assert.match(free, /item\.language === "ru"/);
+  assert.match(free, /"Esta revisión exprés gratuita"|vídeo específico sobre la revisión exprés/);
+  assert.match(free, /"Видео Андрея · русский язык"/);
+  assert.match(free, /"Andrey's introduction · English audio"/);
+  assert.match(free, /href=\{kind === "situation" \? "#request-free-review"/);
+  assert.match(free, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
+  assert.match(free, /<PersonalTestimonials locale=\{locale\} variant="all" \/>/);
+  assert.doesNotMatch(free, /data-featured-constellations-video|siteVideoWatchUrl/);
+  assert.match(css, /\.situationHero \.heroVisual/);
+  assert.match(css, /\.reviewIntro/);
+  assert.match(css, /\.reviewPreviewGrid/);
+  assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css, /@media\(max-width:600px\)/);
+  assert.match(css, /@media\(max-width:360px\)/);
+  assert.match(css, /:focus-visible/);
 });

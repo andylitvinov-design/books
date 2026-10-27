@@ -39,13 +39,15 @@ test("free landings explain benefits before closing with one short capture", () 
   const hero = landing.indexOf('aria-labelledby="free-entry-title"');
   const outcome = landing.indexOf('id="what-you-get"');
   const process = landing.indexOf('id="how-it-works"');
-  const video = landing.indexOf('data-featured-constellations-video');
+  const video = landing.indexOf('data-free-review-intro-video');
+  const proof = landing.indexOf('data-featured-free-review-testimonials');
   const final = landing.lastIndexOf("<CompactLeadCapture");
-  assert.ok(hero > 0 && hero < video && video < outcome && outcome < process && process < final,
-    "The selected recording belongs in the first scene");
+  assert.ok(hero > 0 && hero < video && video < outcome && outcome < proof && proof < process && process < final,
+    "A separate video introduction and three visible reviews belong to the same landing");
   assert.match(landing, /kind === "tests" \? <section className=\{\[styles\.scene, styles\.processScene/,
     "Only Wu Xing hides the redundant process section");
-  assert.match(landing, /data-featured-constellations-video/);
+  assert.match(landing, /data-free-review-intro-video/);
+  assert.match(landing, /data-featured-free-review-testimonials/);
   assert.match(landing, /<SiteVideoPlayer video=\{situationVideo\.video\}/);
   assert.doesNotMatch(landing, /<ServiceVideoShowcase topic="overview"/);
   assert.match(landing, /t\.bullets\.map/);
@@ -150,4 +152,24 @@ test("express review WebKit reveal stays immediately below its button throughout
   assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
   assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
     "Visual translateY moves an expanded in-flow region above its reveal button in WebKit before animation settles");
+});
+
+test("mobile browser acceptance taps the entire focus card and validates the native radio and unchanged consent", () => {
+  const script = read("scripts/verify-free-review-live-mobile.mjs");
+  const widget = read("components/personal-express-enquiry.tsx");
+  const css = read("components/personal-express-enquiry.module.css");
+  assert.match(widget, /<label className=\{styles\.choice\} data-express-focus=\{area\}/);
+  assert.match(widget, /type="radio" name="express-review-focus" value=\{area\}/);
+  assert.match(widget, /checked=\{focus === area\} onChange=\{\(\) => setFocus\(area\)\}/);
+  for (const focus of ["energy", "situation"]) {
+    assert.ok(script.includes("await enquiry.locator('[data-express-focus=\""+focus+"\"]').click()"),
+      "A mobile user taps the wide label card: " + focus);
+    assert.ok(script.includes("await enquiry.locator('input[value=\""+focus+"\"]').isChecked()"),
+      "The selected radio itself must be checked: " + focus);
+  }
+  assert.doesNotMatch(script, /locator\('input\[value="(?:energy|situation)"\]'\)\.check\(\)/,
+    "Do not emulate tapping a moving 19px radio dot on WebKit");
+  assert.match(script, /"changing the focus cannot silently opt the user in"/);
+  assert.match(script, /"changing focus is not a lead or booking"/);
+  assert.match(css, /\.choice\{[^}]*min-height:94px/);
 });

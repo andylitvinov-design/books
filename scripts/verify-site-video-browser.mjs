@@ -87,10 +87,8 @@ try {
     }
   }
   for (const [target, slot, locale, id, youtubeId] of [
-    ['/?lang=en', 'home-intro', 'en', 'ed202847a43a96b918308aa972177b34', 'Y4K4piEwwA8'],
     ['/en/services', 'services-intro', 'en', '48105a2f2228e7cb3a67391e97acaf8b', 's30Y42IwPcg'],
     ['/en/homeopathy', 'homeopathy-intro', 'en', '34df311e461509433b45929908a9097a', 'ILyRWyHtJoE'],
-    ['/?lang=ru', 'home-intro', 'ru', '388a04b39ebf215ae656bcd22d0d0847', 'AE8Pelpo424'],
     ['/ru/services', 'services-intro', 'ru', '79c2845577865979cd95ac40a08fc01a', 'Cz6SxXJNZbw'],
     ['/ru/homeopathy', 'homeopathy-intro', 'ru', '0f984780d06948b1e78166e6e553e4e9', 'Q9NvYECKWuc'],
   ]) {
@@ -118,7 +116,12 @@ try {
     await expect(block.locator('iframe')).toHaveAttribute('src', new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${youtubeId}\\?`), { timeout: 10000 })
     await expect(block.locator('iframe')).toHaveAttribute('data-video-playback', 'youtube')
   }
-  pass(`${live ? 'Production' : 'Local'}: approved EN/RU Home, Services and Homeopathy videos use their exact YouTube mirrors on click`)
+  for (const home of ['/', '/ru']) {
+    await navigate(home)
+    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
+    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+  }
+  pass(`${live ? 'Production' : 'Local'}: EN/RU AI home intros hidden; Services and Homeopathy approved videos remain playable`)
 
   // Regressions reported by the owner: the Services videos were buried inside
   // a collapsed block, while the detailed service pages contained no players.
@@ -139,7 +142,10 @@ try {
         await expect(visibleGallery.locator('[data-video-slot="method-constellations"] .site-video-play')).toBeVisible()
       }
       const offers = page.locator('[data-services-studio-paid] [data-services-studio-card]')
-      await expect(offers).toHaveCount(5)
+      const expectedPaidOfferIds = ["monthly-support", "alchemy", "hypnotherapy", "constellations", "business", "remote-energy-support"]
+      await expect(offers).toHaveCount(expectedPaidOfferIds.length)
+      const paidOfferIds = await offers.evaluateAll(cards => cards.map(card => card.getAttribute('data-services-studio-card')))
+      assert.deepEqual(paidOfferIds, expectedPaidOfferIds, 'Services paid catalogue changed: ' + locale)
       for (const [id, suffix] of [['alchemy', 'alchemy-of-soul'], ['hypnotherapy', 'hypnotherapy-course']]) {
         // The offer itself is the matching card, not an obsolete direct-video link.
         const hrefs = await page.locator('[data-services-studio-card="' + id + '"] a[href]')
@@ -314,10 +320,10 @@ try {
     await fill('QA newer draft preserves publication')
     await save('draft')
     await navigate('/?lang=en')
-    await expect(page.getByText('QA home-intro en', { exact: true })).toBeVisible()
+    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     assert.ok(!(await page.content()).includes('QA newer draft preserves publication'))
     await navigate('/?lang=ru')
-    await expect(page.getByText('QA home-intro ru', { exact: true })).toBeVisible()
+    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     pass('Draft changes preserve published snapshot; EN/RU are isolated')
     const second = await adminContext.newPage()
     await openEditor(second)
@@ -332,20 +338,19 @@ try {
     await expect(second.locator('input[name="reviewed"]')).not.toBeChecked()
     await save('publish', second)
     await navigate('/?lang=en')
-    await expect(page.getByText('QA editor B retained edits', { exact: true })).toBeVisible()
+    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     pass('Concurrent edit rejected; refresh keeps edits and resets review; republish works')
     assert.equal(await page.locator('iframe').count(), 0)
-    // Test the edited homepage introduction specifically; unrelated public testimonial
-    // videos must not make the selector ambiguous.
-    await page.locator('[data-video-slot="home-intro"] .site-video-play').click()
-    await expect(page.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/OkLEN8Zb-sY\?/)
-    pass('YouTube privacy-enhanced iframe exists only after click')
+    // Owner withdrew approval: even a newly published archived home intro cannot
+    // leak back onto the public homepage. Testimonial videos remain independent.
+    await expect(page.locator('[data-personal-testimonials="home"]')).toHaveCount(1)
+    pass('Archived unpublished-quality home introduction cannot reappear in public')
     await save('hide', second)
     await navigate('/?lang=en')
     // Hiding a managed intro should leave independently published testimonials intact.
     assert.equal(await page.locator('[data-video-slot="home-intro"] .site-video-player').count(), 0)
     await navigate('/?lang=ru')
-    await expect(page.getByText('QA home-intro ru', { exact: true })).toBeVisible()
+    await expect(page.locator('[data-video-slot="home-intro"]')).toHaveCount(0)
     await openEditor(second)
     await expect(second.locator('input[name="title"]')).toHaveValue('QA editor B retained edits')
     pass('Hide persists, retains draft and leaves other language unchanged')

@@ -666,7 +666,9 @@ test('read-only auth fallback retries writer only on authentication, never on ti
     return { ok:true, json:async () => ({ result:null }) };
   };
   const store = createPublicSiteVideoStore({environment:env,fetchFn});
-  assert.equal(await store.get(videoKey('home-intro', 'en')), null);
+  // After the storage read succeeds with no override, use the registered built-in video.
+  // The authorization retry itself must still use only the two expected credentials.
+  assert.equal((await store.get(videoKey('home-intro', 'en')))?.key, videoKey('home-intro', 'en'));
   assert.deepEqual(keys, ['Bearer synthetic-read-only-token','Bearer synthetic-test-token']);
   for (const code of [429,503]) {
     const seen = [];

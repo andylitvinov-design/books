@@ -104,11 +104,11 @@ test("videos use existing lazy click-to-play player and mobile layout; links are
   assert.match(component, /moreToggle: "Ver más testimonios"/);
 });
 
-test("video browser verification selects the managed intro even when testimonials add other play buttons", () => {
+test("video browser verification keeps the retired home intro hidden while preserving testimonials", () => {
   const verifier = read("scripts", "verify-site-video-browser.mjs");
-  assert.match(verifier, /\[data-video-slot="home-intro"\] \.site-video-play/);
-  assert.match(verifier, /\[data-video-slot="home-intro"\] \.site-video-player/);
-  assert.doesNotMatch(verifier, /page\.locator\('\.site-video-play'\)\.click\(\)/);
+  assert.match(verifier, /\[data-video-slot="home-intro"\]/);
+  assert.doesNotMatch(verifier, /page\.locator\('\[data-video-slot="home-intro"\] \.site-video-play'\)\.click\(\)/);
+  assert.match(read("components", "personal-testimonials.tsx"), /data-testimonial-video-id/);
 });
 
 
@@ -159,4 +159,15 @@ test("the testimonial gallery uses real ID-matched archived frames instead of de
     assert.ok(component.includes(`id: "${id}"`));
     assert.ok(!existsSync(path.join(process.cwd(), "public/images/holistic-house/testimonial-posters", `${id}.webp`)));
   }
+});
+
+test("Services browser acceptance pins all six released paid offers in order", () => {
+  const verifier = read("scripts", "verify-site-video-browser.mjs");
+  const expected = ['monthly-support', 'alchemy', 'hypnotherapy', 'constellations', 'business', 'remote-energy-support'];
+  const literal = verifier.match(/const expectedPaidOfferIds = (\[[^\n]+\])/);
+  assert.ok(literal, 'browser gate must identify every expected paid card');
+  assert.deepEqual(JSON.parse(literal[1]), expected);
+  assert.ok(verifier.includes('await expect(offers).toHaveCount(expectedPaidOfferIds.length)'));
+  assert.ok(verifier.includes("await offers.evaluateAll(cards => cards.map(card => card.getAttribute('data-services-studio-card')))"));
+  assert.ok(verifier.includes('assert.deepEqual(paidOfferIds, expectedPaidOfferIds'));
 });

@@ -132,7 +132,17 @@ const nextConfig: NextConfig = {
     // Sharp 0.35 loads libvips from an optional native package. Next tracing
     // otherwise bundles the .node file without libvips-cpp.so into the Function.
     // Include only for this small private upload route, never all routes.
+    // Photo/audio rendering is confined to the authenticated owner Telegram webhook.
+    // Only this Function traces the pinned FFmpeg binary (no external render API).
+    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
     "/api/holistic-support/talismans": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // This route also re-encodes personal drawings/photos with Sharp. Vercel's
+    // file tracer may omit native libvips from a dynamically imported module.
+    // Scope native assets to this PRIVATE upload Function, not all app routes.
+    "/api/free-express/media": [
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",
     ],

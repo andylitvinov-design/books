@@ -65,7 +65,7 @@ export default async function InstallPage({params}){
     <InstallHolisticHouse locale={locale} showGuideLink={false}/>
     <div className={styles.actions}>
       <Link className={styles.primary} href={`/${locale}/app/portrait`}>{c.open}</Link>
-      <Link className={styles.link} href={`/${locale}/app/consultations`}>{c.messages}</Link>
+      <Link className={styles.link} href={`/${locale}/app/messages`}>{c.messages}</Link>
       <Link className={styles.link} href={`/${locale}/app/settings#hh-phone-notifications`}>{c.settings}</Link>
     </div>
     <section className={styles.steps} aria-label={c.stepsTitle}>

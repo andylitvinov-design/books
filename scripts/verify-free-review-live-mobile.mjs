@@ -30,15 +30,17 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(response?.status(), 200, "localized page HTTP 200");
           const main = page.locator('[data-free-entry-landing="situation"]');
           const hero = main.locator('section[aria-labelledby="free-entry-title"]');
-          const video = main.locator("[data-featured-constellations-video]");
+          const video = main.locator("[data-free-review-intro-video]");
           const mainCta = hero.locator('a[href="#request-free-review"]');
           await video.waitFor({ state: "visible", timeout: 25000 });
           await mainCta.waitFor({ state: "visible" });
           assert.ok((await hero.locator("h1").innerText()).trim().length > 15);
           assert.match(await hero.innerText(), /Andrey|Андреем|Андрей/i, "Andrey named in hero");
           assert.equal(await video.locator("iframe").count(), 0, "hero video does not autoplay");
-          const original = video.locator('a[href*="youtube.com/watch"]');
-          assert.equal(await original.getAttribute("href"), "https://www.youtube.com/watch?v=sfVFOQNr2qk");
+          assert.equal(await video.getAttribute("data-intro-audio-language"), locale,
+            "approved video introduction uses exact page audio language");
+          const selected = video.locator("button.site-video-play");
+          assert.equal(await selected.count(), 1, "separate video is poster-first");
           const outcome = main.locator("#what-you-get");
           const process = main.locator("#how-it-works");
           const method = main.locator("#how-i-review");
@@ -61,7 +63,7 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             };
             const main = document.querySelector('[data-free-entry-landing="situation"]');
             const hero = main.querySelector('section[aria-labelledby="free-entry-title"]');
-            const video = main.querySelector('[data-featured-constellations-video]');
+            const video = main.querySelector('[data-free-review-intro-video]');
             const frame = video.querySelector(".site-video-frame");
             const cta = hero.querySelector('a[href="#request-free-review"]');
             const nav = document.querySelector(".mobile-bottom-navigation");
@@ -80,9 +82,9 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.ok(geometry.overflow <= 2, "no horizontal scroll: " + geometry.overflow);
           assert.ok(geometry.frame && Math.abs(geometry.frame.width / geometry.frame.height - 16 / 9) < 0.06,
             "landscape intro poster aspect ratio 16:9");
-          assert.ok(geometry.video.bottom < geometry.cta.top, "watch first, CTA follows");
+          assert.ok(geometry.video.top >= geometry.hero.bottom - 1, "personal video below hero, not inside it");
           assert.ok(geometry.cta.height >= 44, "CTA has 44px touch target");
-          assert.ok(geometry.outcome.top > geometry.hero.top, "benefits after video hero");
+          assert.ok(geometry.outcome.top > geometry.video.top, "benefits after dedicated video");
           assert.ok(geometry.method.top > geometry.outcome.top, "one method screen after benefits");
           assert.ok(geometry.process.top > geometry.method.top, "steps after method");
           assert.ok(geometry.enquiry.top > geometry.process.top, "one form at the bottom");
@@ -100,6 +102,31 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
           assert.equal(await enquiry.locator('[data-reiki-phone-enquiry]').count(), 1,
             "only one CRM-first contact capture");
+          const featured = main.locator("[data-featured-free-review-testimonials]");
+          await featured.waitFor({ state: "visible" });
+          const featuredGeometry = await featured.evaluate(section => {
+            const cards = [...section.querySelectorAll("[data-testimonial-video-id]")];
+            const bounds = cards.map(card => {
+              const r = card.getBoundingClientRect();
+              return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+            });
+            return {
+              ids: cards.map(card => card.getAttribute("data-testimonial-video-id")),
+              bounds,
+              loadedIframes: section.querySelectorAll("iframe").length,
+              displayed: cards.every(card => getComputedStyle(card).display !== "none"),
+            };
+          });
+          assert.equal(featuredGeometry.ids.length, 3, "three authentic videos visible without opening archive");
+          assert.equal(new Set(featuredGeometry.ids).size, 3, "no repeated featured video");
+          assert.equal(featuredGeometry.ids[0], locale === "ru" ? "muOnIHllI7E" : "Dk0LBmOivQo",
+            "RU diagnosis story prioritized; EN/ES use original EN testimonials");
+          assert.equal(featuredGeometry.displayed, true, "three videos are not hidden");
+          assert.equal(featuredGeometry.loadedIframes, 0, "no testimonial autoplay");
+          assert.ok(featuredGeometry.bounds.every(r => r.left >= -2 && r.right <= width + 2),
+            "each featured poster fits the viewport");
+          if (width === 390) await page.screenshot({
+            path: output + "/" + name + "-featured-videos.png", animations: "disabled", timeout: 20000 });
           const reviews = main.locator("[data-review-stories]");
           assert.equal(await reviews.count(), 1, "existing authentic video reviews preserved");
           assert.equal(await reviews.evaluate(element => element.open), false, "light page until requested");
@@ -135,10 +162,16 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const play = video.locator("button.site-video-play");
           await play.waitFor({ state: "visible" });
           await play.click({ timeout: 15000 });
-          const iframe = video.locator('iframe[data-video-playback="youtube"]');
+          const iframe = video.locator('iframe[data-video-playback]');
           await iframe.waitFor({ state: "attached", timeout: 20000 });
-          assert.match(await iframe.getAttribute("src"), /^https:\/\/www\.youtube-nocookie\.com\/embed\/sfVFOQNr2qk\?/,
-            "approved YouTube source only");
+          const embedSrc = await iframe.getAttribute("src");
+          const expectedEmbed = locale === "ru"
+            ? /^https:\/\/www\.youtube-nocookie\.com\/embed\/Cz6SxXJNZbw\?/
+            : locale === "en"
+              ? /^https:\/\/www\.youtube-nocookie\.com\/embed\/s30Y42IwPcg\?/
+              : /^https:\/\/app\.heygen\.com\/embeds\/2c251709aba74fd96ae8be43257a080b$/;
+          assert.match(embedSrc, expectedEmbed,
+            "existing source language matches locale; no invented diagnosis video");
           await mainCta.click({ timeout: 15000 });
           assert.equal(new URL(page.url()).hash, "#request-free-review", "hero goes to start form");
           await enquiry.waitFor({ state: "visible" });
@@ -176,15 +209,57 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
           assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
             "opening the form is not contact consent");
-          assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
-          assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-          assert.equal(await enquiry.locator('[role="status"]').count(), 0,
-            "no actual lead saved by navigating");
-          await enquiry.locator('input[value="energy"]').check();
+          // The protected v2 wizard and the legacy compact capture are distinct
+          // safe variants. Neither navigation nor form opening creates a lead.
+          const wizardV2 = await enquiry.locator('[data-free-express-lead]').count() === 1;
+          if (wizardV2) {
+            const lead = enquiry.locator('[data-free-express-lead]');
+            assert.equal(await lead.locator('textarea').count(), 1, "one short question");
+            assert.equal(await lead.locator('input[type="checkbox"]').isChecked(), false,
+              "explicit consent remains unchecked");
+            assert.equal(await enquiry.locator('[data-free-express-receipt]').count(), 0,
+              "no CRM receipt from opening the form");
+            const fit = await enquiry.evaluate(root => {
+              const card = root.getBoundingClientRect();
+              const submit = root.querySelector('[data-free-express-lead] button[type="submit"]')?.getBoundingClientRect();
+              const fixedTab = [...document.querySelectorAll('nav')]
+                .filter(nav => getComputedStyle(nav).position === 'fixed')
+                .map(nav => nav.getBoundingClientRect())
+                .find(rect => rect.top > 0 && rect.top < innerHeight);
+              return { cardHeight: card.height, cardTop: card.top, submitBottom: submit?.bottom,
+                tabTop: fixedTab?.top ?? innerHeight,
+                overflow: document.documentElement.scrollWidth - innerWidth };
+            });
+            record.compactLeadFit = fit;
+            assert.ok(fit.cardHeight <= height - 90,
+              "first-contact section is not one mobile screen: " + JSON.stringify(fit));
+            assert.ok(fit.submitBottom <= fit.tabTop - 8,
+              "submit button must sit above fixed bottom tabs: " + JSON.stringify(fit));
+            assert.ok(fit.overflow <= 2, "mobile capture has no horizontal overflow");
+            assert.equal(await page.locator('[data-first-party-consent]').isVisible(), false,
+              "optional visitor analytics prompt cannot cover an open contact form");
+            if (width === 390) await page.screenshot({
+              path: output + "/" + name + "-compact-v2.png",
+              animations: "disabled", timeout: 20000 });
+          } else {
+            assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
+            assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
+            assert.equal(await enquiry.locator('[role="status"]').count(), 0,
+              "no actual lead saved by navigating");
+          }
+          // Touch users select the full 94px+ labelled card, not the tiny native
+          // radio dot. WebKit may still be smoothly scrolling from the hero
+          // anchor and a direct input.check() can hit a moving 19px target.
+          // Verify the REAL large-card interaction, including native checked
+          // state, selected styling and unchanged one-off contact consent.          await enquiry.locator('[data-express-focus="energy"]').click();
+          assert.equal(await enquiry.locator('input[value="energy"]').isChecked(), true,
+            "tapping the whole energy card checks the native radio");
           assert.equal(await enquiry.locator('[data-express-focus="energy"]').getAttribute('data-selected'), "true");
           assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
             "changing the focus cannot silently opt the user in");
-          await enquiry.locator('input[value="situation"]').check();
+          await enquiry.locator('[data-express-focus="situation"]').click();
+          assert.equal(await enquiry.locator('input[value="situation"]').isChecked(), true,
+            "tapping the whole situation card checks the native radio");
           assert.equal(await enquiry.locator('[data-express-focus="situation"]').getAttribute('data-selected'), "true");
           assert.equal(await enquiry.locator('[role="status"]').count(), 0,
             "changing focus is not a lead or booking");
