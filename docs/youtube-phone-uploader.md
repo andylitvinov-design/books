@@ -53,3 +53,12 @@ The authenticated Vercel production project is `codex-public-book-library`, doma
 - The YouTube Data API may enforce visibility restrictions independently of the requested Unlisted flag. Final readback is authoritative; report private/public/unknown status, never claim success if not verified.
 - A channel mapping cannot silently be switched after pairing. Changing a channel later requires an explicitly designed owner-controlled re-pairing process (not implemented).
 - Rollback by disabling `HH_YOUTUBE_PHONE_UPLOAD_ENABLED` in Vercel and redeploying. The UI remains safely unavailable; durable historical links remain intact.
+
+
+## Existing Telegram-video Web OAuth reused by iPhone (27 October 2026)
+
+On an authenticated admin page, the iPhone uploader uses the existing validated **public** Google Web Client ID from Telegram video when no dedicated `HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID` or previously saved phone ID is available. Priority: dedicated phone variable → phone Redis configuration → valid server `HH_OWNER_VIDEO_GOOGLE_CLIENT_ID` with the matching server-side secret configured. This eliminates repeated ID entry and the first-time setup checkbox. The private Client Secret never reaches the browser.
+
+This only configures Google's public OAuth client, **not** the user's YouTube channel authorization. Google still requires the owner to choose the correct account and grant YouTube scopes. The channel is independently matched against Russian `UCjWq6NHZTQkUr3bC3WbXXcw`; incorrect or missing consent blocks uploading. The existing browser uploader never silently reuses a confidential server refresh token or Metricool connection.
+
+For embedded Telegram iOS webviews, the Google chooser may require opening the same page in Safari. The owner must still authorize the channel through Google's UI. No new Google client, secret, Redis key, upload, external API subscription or public post is created by this fix. The emergency `HH_YOUTUBE_PHONE_UPLOAD_ENABLED=false` flag still stops the uploader. Real iPhone upload, YouTube channel+Unlisted readback and anonymous playback remain separate acceptance gates.
