@@ -445,11 +445,11 @@ async function verifyPublicServiceConversionJourneys(){
      assert.equal(await guide.evaluate(node=>node.open),false,'Long guide stays collapsed')
      await expect(servicePage.locator('[data-alchemy-lead-form="single"]')).toHaveCount(1)
      await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
-     assert.equal(await servicePage.locator('details[data-alchemy-payment-disclosure]').evaluate(node=>node.open),false,
-      'Default payment details are collapsed before geometry measurement')
+     assert.equal(await servicePage.locator('[data-alchemy-payment-disclosure]').count(),0,
+      'Payment methods are absent until the practitioner confirms the session')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
-     assert.equal(measurements.length,8,'Eight clearly separated Alchemy panels')
+     assert.equal(measurements.length,10,'Ten Alchemy chapters including videos and reports')
      assert.deepEqual(measurements.filter(x=>x.height>x.max),[],
       'Every collapsed Alchemy section must fit one phone screen: '+JSON.stringify(measurements))
      await assertAlchemyPaymentsExpanded(servicePage,expect,width)
@@ -473,11 +473,11 @@ async function verifyPublicServiceConversionJourneys(){
      await form.locator('select').first().selectOption('30')
      await form.locator('select').nth(1).selectOption('business')
      await expect(form.locator('select').first()).toHaveValue('30')
-     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(3)
+     await expect(servicePage.locator('[data-testimonial-video-id]')).toHaveCount(12)
      const stack=servicePage.locator('[data-alchemy-review-stack]')
      const boxes=await stack.locator('[data-testimonial-video-id]').evaluateAll(nodes=>
        nodes.map(node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom})))
-     assert.equal(boxes.length,3,'All three source-backed videos are visible')
+     assert.equal(boxes.length,12,'All twelve source-backed videos are visible')
      assert.ok(boxes.every((rect,index)=>index===0||rect.top>=boxes[index-1].bottom),
        'Testimonial cards must stack vertically: '+JSON.stringify(boxes))
      assert.ok(await stack.evaluate(node=>node.scrollWidth<=node.clientWidth+1),
@@ -485,10 +485,11 @@ async function verifyPublicServiceConversionJourneys(){
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const order=await openContactChannelChooser(pricing,expect)
-     const prepared=await assertPreparedContactChannels(order,expect)
-     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-       'Selected 30-minute format must be carried into WhatsApp and Telegram')
+     const book=pricing.locator('[data-booking-cta="book"]')
+     await expect(book).toHaveCount(1)
+     await book.click()
+     await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible()
+     await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(0)
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
     }else{
      const capture=servicePage.locator('[data-sitewide-capture="core-service"][data-core-service-capture="'+kind+'"]')

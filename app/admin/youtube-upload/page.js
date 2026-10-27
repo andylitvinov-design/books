@@ -73,9 +73,9 @@ export default async function YoutubeUploadPage() {
           Отправьте фотографии и аудио боту: он создаст приватный MP4 для проверки.
           Публикация на @shamanic_academy — только после отдельного подтверждения.
         </p>
-        <a href="https://t.me/holistichouse_bot?start=video" target="_blank" rel="noopener noreferrer"
+        <a href="https://t.me/Andydotbot?start=video" target="_blank" rel="noopener noreferrer"
           style={{display:'inline-block',fontSize:14,marginBottom:8}}>
-          🎬 Открыть видео в Telegram
+          🎬 Создать видео в Dot
         </a>
       </> : <p style={{margin:'0 0 8px',fontSize:14}}>
         ⏳ Telegram-видео ещё не включено на сервере. Команда <code>/video</code>

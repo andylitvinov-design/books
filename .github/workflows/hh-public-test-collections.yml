@@ -25,6 +25,8 @@ on:
       - 'lib/profile/profile-scale-selection.js'
       - 'tests/profile-test-taxonomy.test.mjs'
       - 'tests/profile-construct-axes.test.mjs'
+      - 'tests/goal-profile-journey.test.mjs'
+      - 'lib/profile/goal-profile.js'
       - 'scripts/audit-profile-construct-links.mjs'
       - 'tests/profile-scale-hierarchy.test.mjs'
       - 'tests/personality-profiles-focus-filter.test.mjs'
@@ -71,6 +73,7 @@ jobs:
           tests/profile-scale-hierarchy.test.mjs
           tests/profile-test-taxonomy.test.mjs
           tests/profile-construct-axes.test.mjs
+          tests/goal-profile-journey.test.mjs
           tests/unified-profile-layers.test.mjs
           tests/profile-test-course-journey.test.mjs
           tests/guest-test-journey-progress.test.mjs
@@ -85,6 +88,8 @@ jobs:
           lib/app/guest-test-journey.js
           components/personality-profiles-builder.tsx
           lib/profile/profile-scale-selection.js
+          lib/profile/goal-profile.js
+          tests/goal-profile-journey.test.mjs
           tests/personality-profiles-focus-filter.test.mjs
           tests/profile-scale-hierarchy.test.mjs
           tests/profile-test-taxonomy.test.mjs

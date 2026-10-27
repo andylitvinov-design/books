@@ -59,7 +59,7 @@ test("Holistic Support puts three accessible, photo-backed support choices first
   assert.ok(chooser.includes('<IdeasDiscovery locale={locale} variant="holistic-dao" />'));
   assert.equal((chooser.match(/<IdeasDiscovery /g) || []).length, 1, "reuse existing Dao engine once, only after selection");
   assert.ok(page.indexOf("<HolisticSupportChoices") < page.indexOf("<HolisticSupportTopicFilter"));
-  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf("data-holistic-healing"));
+  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf("data-holistic-meditations"));
   for (const option of ["meditations", "energy", "dao"]) assert.ok(chooser.includes('data-holistic-choose="' + option + '"'));
   assert.ok(!page.includes("<FreeDiagnosticStart") && !page.includes("<CompactLeadCapture"),
     "the personal coaching form moves to Coaching");
@@ -86,17 +86,16 @@ test("Holistic Support puts three accessible, photo-backed support choices first
   assert.ok(existsSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)));
 });
 
-test("energy support reuses the published practitioner, privacy and request journeys", () => {
+test("the thematic energy support path preserves privacy and request journeys without duplicate offers", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const remote = read("components/remote-energy-support-booking.tsx");
   const bridge = read("lib/practitioners/remote-energy-support.js");
-  assert.ok(page.includes("data-holistic-healing"));
-  for (const id of ["energy", "alchemy", "practitioner"]) {
-    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing offer " + id);
-  }
-  for (const link of ["/services/remote-energy-support", "/services/alchemy-of-soul",
-    "/pro#profi-practice"]) assert.ok(page.includes(link), "missing link "+link);
-  assert.ok(page.includes("data-holistic-practitioner-cta"));
+  const filter = read("components/holistic-support-topic-filter.tsx");
+  assert.ok(page.includes("<HolisticSupportTopicFilter locale={locale} />"));
+  assert.doesNotMatch(page, /data-holistic-healing|data-holistic-offer=/);
+  for (const link of ["#meditation-practices", "#talismans", "/services/remote-energy-support"])
+    assert.ok(filter.includes(link), "missing thematic link " + link);
+  assert.ok(filter.includes("data-holistic-topic-card={id}"));
   assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
   assert.match(read("app/[locale]/pro/page.tsx"), /MarketplaceMasterFinder practitioners=\{practitioners\}/);
   assert.ok(page.includes("data-holistic-coaching-followup"));

@@ -11,14 +11,15 @@ const focusAreas = PROFILE_FOCUS_AREAS
 const optionsFor = focuses => [...new Set(focuses.flatMap(focus => focusAreas[focus]))]
 
 test('each focus on slide one exposes only its own topics on slide two', () => {
-  assert.deepEqual(Object.keys(focusAreas), ['wellbeing', 'relationships', 'work', 'identity'])
+  assert.deepEqual(Object.keys(focusAreas), ['wellbeing', 'relationships', 'work', 'identity', 'goal'])
   assert.deepEqual(optionsFor(['wellbeing']), ['emotions', 'recovery', 'body'])
   assert.deepEqual(optionsFor(['relationships']), ['connection'])
   assert.deepEqual(optionsFor(['work']), ['work', 'money'])
   assert.deepEqual(optionsFor(['identity']), ['traits', 'support', 'meaning'])
+  assert.deepEqual(optionsFor(['goal']), ['goal'])
   assert.deepEqual(optionsFor(['wellbeing', 'relationships']), ['emotions', 'recovery', 'body', 'connection'])
   assert.deepEqual(optionsFor(['wellbeing', 'wellbeing']), ['emotions', 'recovery', 'body'])
-  assert.deepEqual(optionsFor(Object.keys(focusAreas)).length, 9)
+  assert.deepEqual(optionsFor(Object.keys(focusAreas)).length, 10)
   assert.deepEqual(optionsFor([]), [])
 })
 

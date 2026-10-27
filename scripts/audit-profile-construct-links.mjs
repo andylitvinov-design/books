@@ -23,7 +23,8 @@ const isScored = item => item.selectable === true && item.startable === true &&
 const isGuest = item => isScored(item) && item.guestEligible === true &&
   item.starterEligible !== false && item.free === true && item.explicitOptIn !== true
 const toSource = entry => ({
-  key: entry.key, title: entry.title, topics: entry.topics, testKind: entry.testKind,
+  key: entry.key, version: entry.definition?.version || entry.version,
+  title: entry.title, topics: entry.topics, testKind: entry.testKind,
   axes: entry.scaleGuide?.measurementAxes || [], minutes: entry.durationMinutes,
   questions: entry.questionCount, scales: (entry.scaleGuide?.scales || []).filter(scale =>
     scale && typeof scale.key === 'string' && typeof scale.axis === 'string' &&
@@ -163,8 +164,8 @@ if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).
     const bad = report.unlinked.length || report.guestUnlinked.length ||
       report.emptyResearchFacets.length ||
       report.counts.uniqueMethods !== report.counts.catalogue ||
-      report.counts.researchFacets !== 31 ||
-      report.counts.profiles !== 4 ||
+      report.counts.researchFacets !== 34 ||
+      report.counts.profiles !== 5 ||
       review.methods !== 73 || review.editions !== 146 || review.missingVersions.length
     console.log(JSON.stringify({
       counts: report.counts, unlinked: report.unlinked, guestUnlinked: report.guestUnlinked,

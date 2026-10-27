@@ -368,7 +368,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
   const services=data.services||[]
   const serviceQuota=data.serviceQuota||getHobbyServiceQuota(services)
   const publishedCount=services.filter(item=>item.status==='published').length
-  const openRequests=requests.filter(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status)).length
+  const openRequests=requests.filter(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status)).length
   const newRequests=requests.filter(item=>item.status==='requested').length
   const pendingServices=services.filter(item=>['submitted','changes_requested'].includes(item.status)).length
   const newServices=data.newServices
@@ -913,8 +913,8 @@ function Services({items,locale,busy,quota,createRequest=0,starter='',onSave,onS
 }
 function Requests({items,t,locale,busy,onStatus,onSaveContact,onCreateReport,enabled=false,isOwner=false,accountId}){
   const [proposals,setProposals]=useState({})
-  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status))?'open':'all')
-  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status):item.status===status))
+  const [status,setStatus]=useState(()=>items.some(item=>['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status))?'open':'all')
+  const visible=items.filter(item=>status==='all'||(status==='open'?['requested','contacted','booked','reschedule_proposed','confirmed','in_progress'].includes(item.status):item.status===status))
   const ru=t.requests==='Заявки'
   return <section className="hh-section"><div className="hh-practice-service-toolbar"><h2>{t.requests} <small>({items.length})</small></h2>
     <label className="hh-practice-requests-filter">{ru?'Статус':'Status'}
@@ -924,6 +924,7 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact,onCreateReport,ena
         <option value="contacted">{ru?'Связались':'Contacted'}</option>
         <option value="reschedule_proposed">{ru?'Предложен перенос':'Alternative time offered'}</option>
         <option value="confirmed">{ru?'Подтверждённые':'Confirmed'}</option>
+        <option value="booked">{locale==='ru'?'Бронь подтверждена':locale==='es'?'Reserva confirmada':'Booked · awaiting payment'}</option>
         <option value="in_progress">{ru?'В работе':'In progress'}</option>
         <option value="completed">{ru?'Завершённые':'Completed'}</option>
         <option value="declined">{ru?'Отклонённые':'Declined'}</option>
@@ -950,6 +951,24 @@ function Requests({items,t,locale,busy,onStatus,onSaveContact,onCreateReport,ena
         {' · '}{locale==='ru'?'Оплата не подключена':'No payment collection'}</p>}{x.remoteBooking&&x.remoteBooking.photoPath&&
         <RemoteGoalPhoto key={x.id} requestId={x.id} role="master"
           hasPhoto={true} status={x.status} locale={locale}/>} {x.requestKind==='public'&&<PublicEnquiryContact request={x} locale={locale} busy={busy} onSave={onSaveContact}/>}  {x.sharedExcerpt&&<details><summary>Shared result excerpt</summary>{x.sharedExcerpt.dimensions?.map(d=><p key={d.key}>{d.key}: {d.value}/{d.max}</p>)}</details>}{!x.remoteBooking&&['requested','contacted'].includes(x.status)&&<div className="hh-actions"><button disabled={busy} onClick={()=>onStatus(x,'contacted')}>{t.contacted}</button><button disabled={busy} onClick={()=>onStatus(x,'closed')}>{t.closed}</button></div>}
+      {x.requestKind==='public'&&x.bookingSku&&['requested','contacted'].includes(x.status)&&
+        <label className="hh-fine" data-owner-confirm-public-booking>
+          {locale==='ru'?'Согласованное с клиентом время (ваш местный часовой пояс)':locale==='es'?'Hora acordada (tu zona horaria local)':'Agreed session time (your local timezone)'}
+          <input type="datetime-local" style={{display:'block',width:'min(100%,300px)',minHeight:44,marginTop:6}}
+            value={proposals[x.id]||''} disabled={busy} onChange={event=>setProposals(prev=>({...prev,[x.id]:event.target.value}))}/>
+          <button type="button" disabled={busy||!proposals[x.id]||!Number.isFinite(new Date(proposals[x.id]).getTime())}
+            onClick={()=>onStatus(x,undefined,{action:'confirm_booking',confirmedStartAt:new Date(proposals[x.id]).toISOString()})}>
+            {locale==='ru'?'Подтвердить согласованное время':locale==='es'?'Confirmar hora acordada':'Confirm agreed time'}
+          </button>
+          <small style={{display:'block'}}>{locale==='ru'?'Только после согласия клиента. Откроет кнопку оплаты в его защищённом браузере.':locale==='es'?'Solo después de acordarlo con el cliente. Activa su acceso al carrito.':'Only after agreeing with the client. Unlocks their signed booking link to the cart.'}</small>
+        </label>}
+      {x.requestKind==='public'&&x.status==='booked'&&x.bookingStartsAt&&
+        <p className="hh-fine" data-owner-public-booking-confirmed>
+          {locale==='ru'?'Подтверждённая запись':locale==='es'?'Reserva confirmada':'Confirmed booking'}:
+          {' '}{new Date(x.bookingStartsAt).toLocaleString(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA')}
+          {' · '}{x.bookingSku==='express-consultation-30'?'€50 / 30 min':'€100 / 60 min'}
+          {' · '}{locale==='ru'?'Оплата подтверждается отдельно':locale==='es'?'El pago se confirma por separado':'Payment must be verified separately'}
+        </p>}
       {x.remoteBooking&&x.remoteBooking.proposed&&<p className="hh-fine">
         {locale==='ru'?'Предложено новое время':'Alternative time offered'}:
         {' '}{x.remoteBooking.proposed.date} {x.remoteBooking.proposed.time}

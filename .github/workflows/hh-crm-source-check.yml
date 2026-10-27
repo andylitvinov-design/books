@@ -126,6 +126,10 @@ jobs:
         run: node --test tests/crm-telegram-owner-pilot-links.test.mjs
       - name: First-person Telegram coaching conversation EN RU ES, old-session preservation and RLS
         run: node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs
+      - name: Verify EN/RU/ES free-review Telegram deep links and signed WhatsApp manual locale handoff
+        run: node --conditions=react-server --test tests/crm-express-review-language-channels.test.mjs
+      - name: Lint localized express review channel entry and strict WhatsApp marker
+        run: npx eslint components/telegram-diagnostic-entry.tsx lib/crm/express-review-channel-handoff.mjs tests/crm-express-review-language-channels.test.mjs
       - name: Actual six owner-authored Telegram messages match visible CRM scenario exactly
         run: node --test tests/crm-telegram-script-preview.test.mjs
       - name: Lint canonical Telegram script viewer and its parity tests
