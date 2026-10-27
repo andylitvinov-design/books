@@ -142,7 +142,7 @@ test('the detailed document can offer a strictly batch-scoped clean voice action
 
 test('resend reads only the completed owner-private result, never another chat',()=>{
   assert.match(service,/if\(batch\.state==='ready'\)return resendSavedCombined\(config,event,credentials,fetcher\)/)
-  assert.match(service,/if\(event\.action==='resend'\)return resendSavedCombined\(config,event,credentials,fetcher\)/)
+  assert.match(service,/if\(\['resend','track','voice'\]\.includes\(event\.action\)\)/)
   assert.match(service,/event\.chatId!==credentials\.chat\|\|event\.userId!==credentials\.chat/)
   assert.match(service,/event\.batchId&&session\.batch_id!==event\.batchId/)
   assert.match(service,/where practitioner_id=\$1 for update/)
