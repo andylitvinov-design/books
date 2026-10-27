@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { ArrowLeft, Expand, ImagePlus, Minimize2, Play, Sparkles, Trash2 } from "lucide-react";
@@ -103,7 +104,8 @@ function polygonPoints(edges: number, outer: number, inner?: number) {
 
 function MandalaArt({ option }: { option: Template }) {
   if (option.id === "stone") {
-    return <img src="/mandalas/legacy-stone-mosaic.svg" alt="" className={styles.pattern} draggable={false} />;
+    return <Image src="/mandalas/legacy-stone-mosaic.svg" alt="" fill unoptimized
+      sizes="(max-width: 720px) 100vw, 640px" className={styles.pattern} draggable={false} />;
   }
   const { ink, soft, id } = option;
   return (
