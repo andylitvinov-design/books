@@ -12,7 +12,7 @@ import { createPractitionerCourseRepository } from "@/lib/practitioners/course-r
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { getPublishedSiteVideos } from "@/lib/site-videos/public";
 import { siteVideoWatchUrl } from "@/lib/site-videos/model";
-import { getServiceVideoMedia } from "@/data/service-video-library";
+import { getServiceVideoMedia, englishPsychotherapyLandingVideo } from "@/data/service-video-library";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
@@ -158,7 +158,12 @@ export default async function MasterProfile({ params }: PageProps) {
           description: video.description || "",
           locale: video.language,
           url: siteVideoWatchUrl(video),
-        }))
+        })).concat([{
+          title: englishPsychotherapyLandingVideo.video.title,
+          description: englishPsychotherapyLandingVideo.video.description || "",
+          locale: englishPsychotherapyLandingVideo.video.language,
+          url: siteVideoWatchUrl(englishPsychotherapyLandingVideo.video),
+        }])
     ) : [];
   const seenPublicVideos = new Set<string>();
   const videos = [...(profile.videoMaterials || []), ...siteRecordings, ...approvedServiceVideos, ...originalVideos].filter(item => {
