@@ -97,6 +97,21 @@ try {
         const element = document.querySelector('[data-personal-service-cart]')
         return element && /50/.test(element.textContent || '')
       })
+      // The cart is now a two-step flow: no payment controls before a saved,
+      // reply-consented CRM order. Inspect only; never submit a synthetic lead.
+      assert.equal(await cart.locator('[data-cart-order-registration][data-cart-order-ready="false"]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
+      await cart.locator('[data-cart-start-order]').click()
+      const contactForm = cart.locator('[data-cart-contact-form]')
+      await contactForm.waitFor({ state: 'visible' })
+      assert.equal(await contactForm.locator('button[type="submit"]').isDisabled(), true,
+        'Order must require a contact and explicit reply-only opt-in')
+      assert.equal(await contactForm.locator('input[type="checkbox"][required]').count(), 1,
+        'The visitor must consent before the first-party CRM save')
+      assert.equal(await contactForm.locator('button').filter({ hasText: /Google/i }).count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0,
+        'No payment step before the CRM confirms an order')
       // No provider navigation: inspect only that the canonical payee/price are retained.
       const manual = page.locator('[data-cart-paypal-personal]')
       if (await manual.count()) {
