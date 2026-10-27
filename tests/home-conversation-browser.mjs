@@ -205,7 +205,18 @@ try {
           await dialog.getByRole("button", { name: scenario.send }).click();
           await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
           await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
-          await dialog.getByRole("button", { name: scenario.reset }).click();
+          // This fixed English question changes the chat language, not the page locale.
+          await expect(guide).toHaveAttribute("data-guide-phase", "conversation");
+          await expect(dialog.getByRole("log")).toContainText("A website guide can't provide emergency help.");
+          await expect(dialog.getByRole("button", { name: "Get guidance", exact: true })).toBeVisible();
+          const crisisReset = dialog.getByRole("button", { name: "Start over", exact: true });
+          await expect(crisisReset).toHaveCount(1);
+          await crisisReset.click();
+          await expect(guide).toHaveAttribute("data-guide-phase", "ready");
+          await expect(question).toHaveValue("");
+          await expect(guide.locator("[data-home-guide-result]")).toHaveCount(0);
+          await expect(guide.locator("[data-home-guide-choices]")).toHaveCount(0);
+          await expect(dialog.getByRole("button", { name: scenario.send, exact: true })).toBeVisible();
         }
         if (scenario.locale === "ru" && width === 390 && scenario.text.includes("тревожусь")) {
           // Natural two-question route and real local reply, including WebKit.

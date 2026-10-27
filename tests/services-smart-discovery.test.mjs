@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { parse } from 'postcss'
+import vm from 'node:vm'
+import ts from 'typescript'
 import {
   classifyDiscoveryIntent, DISCOVERY_AREAS, rankDiscoveryServices, rankEditorialDiscovery,
   normalizeDiscoveryInput, serviceMatchesDiscoveryFacets,
@@ -144,7 +146,10 @@ test('Services: optional booking-style search lives in the dedicated directory f
   for(const page of [main,es]){
     assert.ok(page.indexOf('<ServicesStudioOffers')>page.indexOf('<ServicesConversionHero'))
     assert.ok(page.indexOf('<PersonalTestimonials')>page.indexOf('<ServicesStudioOffers'))
-    assert.ok(page.indexOf('<PublicConsultationCta')>page.indexOf('<PersonalTestimonials'))
+    // Preserve the published early selector; the full composition/prop contract
+    // (including aliases and counterfactuals) lives in services-restored-layout.
+    const consultation=page.indexOf('<PublicConsultationCta')
+    assert.ok(consultation>page.indexOf('<ServicesConversionHero') && consultation<page.indexOf('<ServicesStudioOffers'))
     assert.match(page,/<ServicesIntroMedia/)
     assert.match(page,/<ServicesMethodVideos/)
     assert.doesNotMatch(page,/<ServicesSmartDiscovery|<ServiceCart/)
@@ -201,11 +206,9 @@ test('Explore by area is compact on mobile without removing category selection o
 
 
 test('service match results use full-width orderable cards with accessible details and real contact handoff',async()=>{
-  const [ui,css,en,es,matcher]=await Promise.all([
+  const [ui,css,matcher]=await Promise.all([
     readFile(new URL('../components/services-smart-discovery.tsx',import.meta.url),'utf8'),
     readFile(new URL('../components/services-smart-discovery.module.css',import.meta.url),'utf8'),
-    readFile(new URL('../app/[locale]/services/page.tsx',import.meta.url),'utf8'),
-    readFile(new URL('../app/es/services/page.tsx',import.meta.url),'utf8'),
     readFile(new URL('../lib/whatsapp-enquiry.js',import.meta.url),'utf8'),
   ])
   for(const key of ['resultTitle:"Your options"','resultTitle:"Ваши варианты"','resultTitle:"Tus opciones"']) assert.ok(ui.includes(key))
@@ -261,10 +264,9 @@ test('service match results use full-width orderable cards with accessible detai
   assert.ok(css.includes('.editorialChannels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'))
   assert.ok(css.includes('.editorialCard{grid-template-columns:minmax(0,1fr) 111px;'))
   assert.ok(css.includes('.editorialCard :is(button,a):focus-visible'))
-  assert.ok(en.includes('href:\`/\${locale}/services/systemic-constellations\`'))
-  assert.ok(en.includes('free:offer.id === "situation" || offer.id === "dao"'))
-  assert.ok(es.includes('details:detail,href,areaKey:areas[id]'))
-  assert.ok(en.includes('€50 / 30 min · €100 / 60 min'))
+  // Editorial records moved to the shared directory; execute their real
+  // producer, retaining locale routes, free flags, details and prices.
+  await assertDirectoryEditorial()
 })
 
 test('a relationship query such as Love shows relevant orderable services first, without unrelated free cards',()=>{
@@ -388,3 +390,120 @@ test('mobile service filters stay on one row; format and page language have visi
   assert.match(css,/\.quickFacets\{gap:5px;margin:10px 0 7px\}/);
   assert.doesNotMatch(css,/\.quickFacets\{grid-template-columns:repeat\(2,/);
 });
+
+// Execute the real TSX producer plus pure core offers. Every UI/config/repository
+// boundary is an explicit inert identity; live config, providers and DB never run.
+const directoryRead = path => readFile(new URL('../' + path, import.meta.url), 'utf8')
+const directoryNodes = node => Array.isArray(node) ? node.flatMap(directoryNodes)
+  : node && typeof node === 'object' ? [node, ...directoryNodes(node.props?.children)] : []
+function evaluateDirectoryModule(source, fileName, imports) {
+  const compiled = ts.transpileModule(source, {fileName, reportDiagnostics: true,
+    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}})
+  assert.equal((compiled.diagnostics || []).filter(item => item.category === ts.DiagnosticCategory.Error).length, 0)
+  const exports = {}
+  new vm.Script(compiled.outputText, {filename: fileName}).runInNewContext({exports,
+    process: {env: {}}, require(id) {
+      assert.ok(Object.hasOwn(imports, id), 'Unexpected directory dependency: ' + id)
+      return imports[id]
+    }}, {timeout: 1000})
+  return exports
+}
+async function assertDirectoryEditorial(source, coreSource) {
+  source ??= await directoryRead('components/services-directory-page.tsx')
+  coreSource ??= await directoryRead('data/core-service-offers.ts')
+  const core = evaluateDirectoryModule(coreSource, 'core-service-offers.ts', {})
+  const expectedCore = {
+    situation: ['free-situation-review', 'emotional_psychological'],
+    dao: ['dao-health-profile', 'homeopathy_holistic'],
+    alchemy: ['alchemy-of-soul', 'relationships'],
+    hypnotherapy: ['hypnotherapy-course', 'personal_development'],
+    business: ['business-consulting', 'business_money'],
+  }
+  for (const locale of ['en', 'ru', 'es']) {
+    const services = [offering('directory-one', 'relationships', 'Synthetic public service', 'Invented public copy'),
+      offering('directory-two', 'business_money', 'Second synthetic public service', 'Invented public copy')]
+    const calls = [], config = Object.freeze({synthetic: true})
+    const jsx = (type, props) => ({type, props: props || {}})
+    const imports = {
+      'react/jsx-runtime': {jsx, jsxs: jsx},
+      'next/link': {default: 'Link'},
+      'lucide-react': {ArrowLeft: 'ArrowLeft', ArrowRight: 'ArrowRight'},
+      '@/components/public-site-header': {PublicSiteHeader: 'PublicSiteHeader'},
+      '@/components/services-smart-discovery': {ServicesSmartDiscovery: 'ServicesSmartDiscovery'},
+      '@/components/master-network-explorer': {MarketplaceServiceFinder: 'MarketplaceServiceFinder'},
+      '@/data/core-service-offers': core,
+      '@/lib/app/config': {getAppConfig() { calls.push('config'); return config }},
+      '@/lib/practitioners/repository': {createPractitionerRepository(value) {
+        assert.equal(value, config); calls.push('repository')
+        return {async listPublicServices(language) { assert.equal(language, locale); calls.push(language); return services }}
+      }},
+      './services-directory-page.module.css': {default: Object.freeze({})},
+    }
+    const component = evaluateDirectoryModule(source, 'services-directory-page.tsx', imports)
+    const tree = await component.ServicesDirectoryPage({locale})
+    assert.deepEqual(calls, ['config', 'repository', locale])
+    assert.equal(tree.type, 'main'); assert.equal(tree.props.lang, locale)
+    const nodes = directoryNodes(tree)
+    const one = type => {const matches = nodes.filter(node => node.type === type); assert.equal(matches.length, 1, type); return matches[0]}
+    const discovery = one('ServicesSmartDiscovery'), finder = one('MarketplaceServiceFinder')
+    for (const node of [discovery, finder]) {
+      assert.equal(node.props.locale, locale)
+      assert.equal(node.props.services, services, 'Pass all and only actual published repository rows unchanged')
+    }
+    assert.equal(discovery.props.aiAvailable, false, 'No external AI is enabled by a public directory read')
+    const offers = discovery.props.editorialOffers
+    assert.equal(offers.length, 7)
+    assert.deepEqual(Array.from(offers, offer => offer.id), [...Object.keys(expectedCore), 'constellations', 'remote-energy-support'])
+    for (const offer of core.coreServiceOffers(locale)) {
+      const actual = offers.find(item => item.id === offer.id), [route, area] = expectedCore[offer.id]
+      assert.equal(actual.href, '/' + locale + '/services/' + route)
+      for (const key of ['title', 'promise', 'benefit', 'image', 'label']) assert.equal(actual[key], offer[key], offer.id + ':' + key)
+      assert.equal(actual.details, offer.benefit)
+      assert.equal(actual.areaKey, area)
+      const free = ['situation', 'dao'].includes(offer.id)
+      assert.equal(actual.free, free)
+      assert.equal(actual.price, free ? undefined : '€50 / 30 min · €100 / 60 min')
+    }
+    for (const [id, route, area, price] of [
+      ['constellations', 'systemic-constellations', 'relationships', '€50 / 30 min · €100 / 60 min'],
+      ['remote-energy-support', 'remote-energy-support', 'energy_spiritual', undefined],
+    ]) {
+      const offer = offers.find(item => item.id === id)
+      assert.equal(offer.href, '/' + locale + '/services/' + route)
+      assert.equal(offer.areaKey, area); assert.equal(offer.free, false); assert.equal(offer.price, price)
+      for (const key of ['title', 'promise', 'details', 'image', 'label']) assert.ok(typeof offer[key] === 'string' && offer[key].trim(), id + ':' + key)
+    }
+    assert.equal(nodes.filter(node => node.props?.id === 'service-listings').length, 1)
+    for (const route of ['services', 'masters']) assert.equal(nodes.filter(node => node.type === 'Link' && node.props.href === '/' + locale + '/' + route).length, 1)
+  }
+}
+
+test('directory editorial handoff rejects wrong locales, paid/free drift, lost details and manufactured or missing rows', async () => {
+  const source = await directoryRead('components/services-directory-page.tsx')
+  for (const [before, after] of [
+    ['coreServiceOffers(locale)', 'coreServiceOffers("en")'],
+    ['listPublicServices(locale)', 'listPublicServices("en")'],
+    ['details: offer.benefit', 'details: ""'],
+    ['areaKey: area[offer.id]', 'areaKey: "relationships"'],
+    ['free: offer.id === "situation" || offer.id === "dao"', 'free: true'],
+    ['? undefined : "€50 / 30 min · €100 / 60 min"', '? "€50" : "€50 / 30 min · €100 / 60 min"'],
+    ['"/services/systemic-constellations"', '"/services/alchemy-of-soul"'],
+    ['"/services/remote-energy-support"', '"/services/alchemy-of-soul"'],
+    ['editorialOffers={editorialOffers}', 'editorialOffers={editorialOffers.slice(1)}'],
+    ['<ServicesSmartDiscovery locale={locale} services={services}', '<ServicesSmartDiscovery locale={locale} services={[]}'],
+    ['<MarketplaceServiceFinder services={services}', '<MarketplaceServiceFinder services={[...services, services[0]]}'],
+    ['locale={locale} services={services} editorialOffers', 'locale="en" services={services} editorialOffers'],
+  ]) {
+    assert.equal(source.split(before).length, 2, 'Unique mutation target: ' + before)
+    await assert.rejects(() => assertDirectoryEditorial(source.replace(before, after)), {code: 'ERR_ASSERTION'})
+  }
+})
+
+test('directory producer accepts equivalent import aliases and locale-route concatenation', async () => {
+  const source = await directoryRead('components/services-directory-page.tsx')
+  const equivalent = source.replace('import { ServicesSmartDiscovery }', 'import { ServicesSmartDiscovery as Discovery }')
+    .replace('<ServicesSmartDiscovery ', '<Discovery ')
+    .replace('"/" + locale + "/services/systemic-constellations"', '`/${locale}/services/systemic-constellations`')
+  assert.notEqual(equivalent, source)
+  await assertDirectoryEditorial(equivalent)
+})

@@ -226,7 +226,7 @@
   .offerDetails p{font-size:11.5px}
   .offerActions{display:grid;grid-template-columns:1fr;gap:3px}
   .offerLink,.contactButton{width:100%!important;min-height:43px!important;padding:9px 10px!important;font-size:11.3px!important}
-  .offerDirectLink{min-height:37px;font-size:11px}
+  .offerDirectLink{min-height:44px;font-size:11px}
   .problemGrid{grid-template-columns:1fr 1fr;gap:8px}
   .problemCard{grid-template-columns:1fr;gap:6px;padding:15px}
   .cardNum{grid-row:auto;font-size:19px}

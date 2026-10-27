@@ -1,9 +1,10 @@
+import {removeAnonymousPortraitAdditions} from './helpers/anonymous-portrait-source-normalization.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {runInNewContext} from 'node:vm';
-import {createExpectedTestimonialPosterFixture,expectedTestimonialPoster,syntheticPosterSvg,assertSyntheticPosterObservation} from '../scripts/helpers/expected-testimonial-poster-fixture.mjs';
+import {createExpectedTestimonialPosterFixture,expectedTestimonialPoster,additionalTestimonialPoster,syntheticPosterSvg,assertSyntheticPosterObservation} from '../scripts/helpers/expected-testimonial-poster-fixture.mjs';
 import {createFreeEntryGuard,verifyFreeDiagnosisHub} from '../scripts/helpers/free-entry-current-verifier.mjs';
 const origin='http://127.0.0.1:3100',read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 function route(overrides={},locale='en') {
@@ -23,7 +24,7 @@ test('one exact public metadata URL is locally fulfilled as inert 640 by 360 syn
  assert.throws(()=>createExpectedTestimonialPosterFixture(origin,'fr'));
 });
 test('query, foreign host, other images, private/auth/body/navigation/frame/header variants are denied',async()=>{
- const urls=[expectedTestimonialPoster+'?token=PRIVATE',expectedTestimonialPoster+'?',expectedTestimonialPoster+'#PRIVATE',expectedTestimonialPoster.replace('hqdefault','maxresdefault'),expectedTestimonialPoster.replace('m9RfDgK76PU','5oj0BIbLT4w'),expectedTestimonialPoster.replace('i.ytimg.com','img.youtube.com'),expectedTestimonialPoster.replace('https:','http:'),expectedTestimonialPoster.replace('https://','https://PRIVATE@'),' '+expectedTestimonialPoster,expectedTestimonialPoster.replace('/vi/','/extra/../vi/')];
+ const urls=[expectedTestimonialPoster+'?token=PRIVATE',expectedTestimonialPoster+'?',expectedTestimonialPoster+'#PRIVATE',expectedTestimonialPoster.replace('hqdefault','maxresdefault'),expectedTestimonialPoster.replace('m9RfDgK76PU','UNKNOWN_QA_ID'),expectedTestimonialPoster.replace('i.ytimg.com','img.youtube.com'),expectedTestimonialPoster.replace('https:','http:'),expectedTestimonialPoster.replace('https://','https://PRIVATE@'),' '+expectedTestimonialPoster,expectedTestimonialPoster.replace('/vi/','/extra/../vi/')];
  const variants=[...urls.map(url=>({url:()=>url})),...['POST','HEAD'].map(method=>({method:()=>method})),{resourceType:()=> 'fetch'},{isNavigationRequest:()=>true},{postData:()=> 'PRIVATE'},
  ...[origin+'/en/services/free-consultation?token=PRIVATE',origin+'/en/services/free-situation-review',origin+'/ru/services/free-consultation','https://example.test/en/services/free-consultation'].map(url=>({frame:()=>({url:()=>url})})),
  {frame:()=>{throw Error('PRIVATE')}},{allHeaders:undefined},{allHeaders:async()=>{throw Error('PRIVATE')}},{allHeaders:async()=>null},
@@ -33,10 +34,10 @@ test('query, foreign host, other images, private/auth/body/navigation/frame/head
 test('cap one is race safe; repeated expected requests and every unknown provider remain fatal in real guard',async()=>{
  const fixture=createExpectedTestimonialPosterFixture(origin,'en'),a=route(),b=route();assert.deepEqual((await Promise.all([fixture.tryFulfill(a),fixture.tryFulfill(b)])).sort(),[false,true]);assert.equal(fixture.responses,1);
  const guard=createFreeEntryGuard(origin,'en',{syntheticTestimonialPoster:true});await guard.route(route());await guard.route(route());assert.equal(guard.fixturePosters,1);assert.deepEqual(guard.blocked,['unexpected-provider']);
- for(const url of [expectedTestimonialPoster,expectedTestimonialPoster.replace('m9RfDgK76PU','5oj0BIbLT4w'),'https://www.youtube-nocookie.com/embed/s30Y42IwPcg','https://app.heygen.com/embeds/2c251709aba74fd96ae8be43257a080b']) {
+ for(const url of [expectedTestimonialPoster,expectedTestimonialPoster.replace('m9RfDgK76PU','UNKNOWN_QA_ID'),'https://www.youtube-nocookie.com/embed/s30Y42IwPcg','https://app.heygen.com/embeds/2c251709aba74fd96ae8be43257a080b']) {
   const closed=createFreeEntryGuard(origin,'en'),request=route({url:()=>url});await closed.route(request);assert.deepEqual(closed.blocked,['unexpected-provider']);assert.equal(closed.fixturePosters,0);
  }
- const unknown=createFreeEntryGuard(origin,'en',{syntheticTestimonialPoster:true});await unknown.route(route({url:()=>expectedTestimonialPoster.replace('m9RfDgK76PU','5oj0BIbLT4w')}));assert.deepEqual(unknown.blocked,['unexpected-provider']);
+ const unknown=createFreeEntryGuard(origin,'en',{syntheticTestimonialPoster:true});await unknown.route(route({url:()=>expectedTestimonialPoster.replace('m9RfDgK76PU','UNKNOWN_QA_ID')}));assert.deepEqual(unknown.blocked,['unexpected-provider']);
 });
 test('missing target, unrequested fixture, cap excess, wrong source, broken/one-pixel or non-16:9 images fail',()=>{
  const observed={targetCount:1,imageCount:1,requests:1,sourceMatches:true,complete:true,naturalWidth:640,naturalHeight:360,width:320,height:180};assertSyntheticPosterObservation(observed);
@@ -55,6 +56,18 @@ test('pinned public metadata and current player declare this exact external post
 });
 test('fixture is opt-in only for current hub and preserves paid, consent, privacy, provider and real-click gates',()=>{
  let helper=read('scripts/helpers/free-entry-current-verifier.mjs');
+ // Erase this second-ID addition before retaining the original C/source oracle.
+ assert.match(helper,/fixturePosterRequests\('5oj0BIbLT4w'\)/);
+ assert.doesNotMatch(helper,/additionalCard\.scroll|additionalPoster\.scroll|additionalPoster\.evaluate\([^\n]*(?:src\s*=|loading\s*=)/);
+ helper=helper.replace('createExpectedTestimonialPosterFixture, expectedTestimonialPoster, additionalTestimonialPoster, assertSyntheticPosterObservation','createExpectedTestimonialPosterFixture, expectedTestimonialPoster, assertSyntheticPosterObservation')
+  .replace(', fixturePosterRequests:id=>posterFixture?.responsesFor(id)||0','')
+  .replace("await expect.poll(()=>guard.fixturePosterRequests('m9RfDgK76PU')).toBe(1)",'await expect.poll(()=>guard.fixturePosters).toBe(1)')
+  .replace("requests:guard.fixturePosterRequests('m9RfDgK76PU')})",'requests:guard.fixturePosters})');
+ const secondStart=helper.indexOf('  // This second source-declared poster is fulfilled only if the browser asks;'),secondEnd=helper.indexOf('  for(let i=0;i<offerIds.length;i++)',secondStart);
+ assert.ok(secondStart>0&&secondEnd>secondStart);helper=helper.slice(0,secondStart)+helper.slice(secondEnd);
+ const optionalStart=helper.indexOf("  const additionalRequests=guard.fixturePosterRequests('5oj0BIbLT4w')"),optionalEnd=helper.indexOf('  assert.deepEqual(guard.blocked,[])',optionalStart);
+ assert.ok(optionalStart>0&&optionalEnd>optionalStart);helper=helper.slice(0,optionalStart)+helper.slice(optionalEnd);
+ const currentBytes=Buffer.from(helper);assert.equal(createHash('sha1').update('blob '+currentBytes.length+'\0').update(currentBytes).digest('hex'),'57d1a267bf96e76e19dbf55e2e92b6c66779f49a');
  assert.equal((helper.match(/syntheticTestimonialPoster:true/g)||[]).length,1);
  assert.match(helper,/await posterCard.scrollIntoViewIfNeeded\(\)/);assert.match(helper,/await expect.poll\(\(\)=>guard.fixturePosters\).toBe\(1\)/);assert.match(helper,/assertSyntheticPosterObservation\(\{\.\.\.posterState/);
  assert.doesNotMatch(helper,/force:\s*true|dispatchEvent|setChecked/);
@@ -100,14 +113,37 @@ test('actual main caller installs real guard before its sole navigation/first po
  }
 });
 test('C navigation move alone reconstructs the exact approved A main and helper owns exactly one destination',()=>{
- let main=read('scripts/verify-public-services-production.mjs');
+ let main=removeAnonymousPortraitAdditions(read('scripts/verify-public-services-production.mjs'));
  assert.doesNotMatch(main,/await hub\.goto\(/);
  const anchor='              await verifyFreeDiagnosisHub(hub, expect, {origin, locale});\n';assert.equal(main.split(anchor).length-1,1);
  main=main.replace(anchor,'              await hub.goto(origin + "/" + locale + "/services/free-consultation", {waitUntil: "domcontentloaded"});\n'+anchor);
- const bytes=Buffer.from(main);assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),'7266723d83c1dd4138744be333a099af7c864ac7');
+ const bytes=Buffer.from(main);assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),'9b97e4798aaf722d42b99f68f010335a0f790246');
  const helper=read('scripts/helpers/free-entry-current-verifier.mjs'),hub=helper.slice(helper.indexOf('export async function verifyFreeDiagnosisHub'));
  assert.equal((hub.match(/await page\.goto\(/g)||[]).length,1);
  assert.ok(hub.indexOf("await context.route('**/*',guard.route)")<hub.indexOf(' try {\n  await page.goto('));
  assert.ok(hub.indexOf('await page.goto(')<hub.indexOf("assert.equal(page.url(),origin+'/'+locale+'/services/free-consultation')"));
  assert.match(hub,/finally \{ if\(popup\) await popup.close\(\); await context.unroute\('\*\*\/\*',guard.route\) \}/);
+});
+
+
+test('second native-observed public poster has its own cap and cannot broaden unknown providers',async()=>{
+ assert.equal(additionalTestimonialPoster,'https://i.ytimg.com/vi/5oj0BIbLT4w/hqdefault.jpg');
+ const metadata=read('components/personal-testimonials.tsx');
+ assert.match(metadata,/id: "5oj0BIbLT4w", title: "[^"\n]+", language: "ru"/);
+ assert.doesNotMatch(metadata.match(/export const locallyArchivedVideoPosterIds = new Set\(\[([\s\S]*?)\]\)/)?.[1]||'',/5oj0BIbLT4w/);
+ for(const locale of ['en','ru','es']) {
+  const fixture=createExpectedTestimonialPosterFixture(origin,locale),first=route({},locale),second=route({url:()=>additionalTestimonialPoster},locale);
+  assert.deepEqual(await Promise.all([fixture.tryFulfill(first),fixture.tryFulfill(second)]),[true,true]);assert.equal(fixture.responses,2);
+  assert.equal(fixture.responsesFor('m9RfDgK76PU'),1);assert.equal(fixture.responsesFor('5oj0BIbLT4w'),1);
+  assert.equal(first.calls[0].result.body,syntheticPosterSvg);assert.equal(second.calls[0].result.body,syntheticPosterSvg);
+  assert.equal(await fixture.tryFulfill(route({},locale)),false);assert.equal(await fixture.tryFulfill(route({url:()=>additionalTestimonialPoster},locale)),false);
+  assert.throws(()=>fixture.responsesFor('UNKNOWN_QA_ID'));
+ }
+ const fixture=createExpectedTestimonialPosterFixture(origin,'en');
+ const pairs=await Promise.all([fixture.tryFulfill(route({url:()=>additionalTestimonialPoster})),fixture.tryFulfill(route({url:()=>additionalTestimonialPoster}))]);assert.deepEqual(pairs.sort(),[false,true]);
+ assert.equal(fixture.responsesFor('m9RfDgK76PU'),0,'No unrelated first-ID load is manufactured by a second-ID request');
+ for(const suffix of ['?token=PRIVATE','?','#PRIVATE'])assert.equal(await createExpectedTestimonialPosterFixture(origin,'en').tryFulfill(route({url:()=>additionalTestimonialPoster+suffix})),false);
+ for(const headers of [{cookie:'PRIVATE'},{authorization:'PRIVATE'},{'x-private':'PRIVATE'}])assert.equal(await createExpectedTestimonialPosterFixture(origin,'en').tryFulfill(route({url:()=>additionalTestimonialPoster,allHeaders:async()=>headers})),false);
+ const guard=createFreeEntryGuard(origin,'en',{syntheticTestimonialPoster:true});await guard.route(route({url:()=>additionalTestimonialPoster}));assert.equal(guard.fixturePosterRequests('5oj0BIbLT4w'),1);assert.equal(guard.fixturePosterRequests('m9RfDgK76PU'),0);
+ const unknown=route({url:()=>additionalTestimonialPoster.replace('5oj0BIbLT4w','UNKNOWN_QA_ID')});await guard.route(unknown);assert.deepEqual(unknown.calls,[{kind:'abort',reason:'blockedbyclient'}]);assert.deepEqual(guard.blocked,['unexpected-provider']);
 });

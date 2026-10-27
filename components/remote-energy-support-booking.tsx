@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
+import { REMOTE_SUPPORT_DRAFT_KEY, REMOTE_SUPPORT_DURATIONS, TALISMAN_REQUEST_DRAFT_KEY, stageRemoteSupportPrivateIntention, takeRemoteSupportLandingIntention } from "@/lib/practitioners/remote-energy-support";
 import styles from "./remote-energy-support-booking.module.css";
+import { talismanFromCatalog } from "@/lib/practitioners/taoist-talismans";
 
 type Locale = "en" | "ru" | "es";
 type Format = "asynchronous" | "live";
+export type SupportRequestKind = "talisman" | "energy";
 
 export type EnergySupportMaster = {
   slug: string;
@@ -27,6 +29,16 @@ export type EnergySupportMaster = {
 
 const WORDS = {
   en: {
+    kindLabel: "What would you like to order?",
+    kindEnergy: "Energy support",
+    kindTalisman: "A personal talisman",
+    talismanTitle: "Request a personal talisman",
+    talismanIntro: "Choose a theme and a practitioner. Ask whether a custom symbolic talisman is available. No price or delivery is confirmed.",
+    talismanServiceType: "Custom talisman enquiry · Availability not confirmed",
+    talismanOffer: "Request talisman",
+    talismanFormTitle: "Ask this practitioner about a talisman",
+    talismanHint: "The practitioner will confirm whether they can create one, the design, price and delivery details before any order or payment.",
+    talismanSubmit: "Continue to private enquiry",
     eyebrow: "PERSONAL PRACTICE · ONLINE",
     title: "Energy support for your goal",
     intro: "Choose an area, add any preferences, and explore published practitioner offers.",
@@ -88,6 +100,16 @@ const WORDS = {
     reviewCount: "verified reviews",
   },
   ru: {
+    kindLabel: "Что вы хотите заказать?",
+    kindEnergy: "Энергетическую поддержку",
+    kindTalisman: "Персональный талисман",
+    talismanTitle: "Заказ персонального талисмана",
+    talismanIntro: "Выберите тему и мастера. Мастер отдельно подтвердит возможность изготовления, стоимость и доставку.",
+    talismanServiceType: "Запрос на талисман · Доступность не подтверждена",
+    talismanOffer: "Заказать талисман",
+    talismanFormTitle: "Обсудить талисман с этим мастером",
+    talismanHint: "Это заявка на обсуждение. Мастер уточнит символ, цену и условия до подтверждения заказа или оплаты.",
+    talismanSubmit: "Перейти к личной заявке",
     eyebrow: "ЛИЧНАЯ ПРАКТИКА · ОНЛАЙН",
     title: "Энергетическая поддержка цели",
     intro: "Выберите направление, при желании добавьте пожелания и найдите предложения мастеров.",
@@ -149,6 +171,16 @@ const WORDS = {
     reviewCount: "проверенных отзывов",
   },
   es: {
+    kindLabel: "¿Qué deseas solicitar?",
+    kindEnergy: "Apoyo energético",
+    kindTalisman: "Un talismán personal",
+    talismanTitle: "Solicitar un talismán personal",
+    talismanIntro: "Elige un tema y un profesional. La disponibilidad, el precio y la entrega deben confirmarse.",
+    talismanServiceType: "Consulta sobre talismán · Sin confirmar",
+    talismanOffer: "Solicitar talismán",
+    talismanFormTitle: "Preguntar por un talismán",
+    talismanHint: "El profesional confirmará si puede hacerlo, el diseño, el precio y la entrega antes de cualquier pago.",
+    talismanSubmit: "Continuar a la solicitud privada",
     eyebrow: "PRÁCTICA PERSONAL · EN LÍNEA",
     title: "Apoyo energético para tu objetivo",
     intro: "Elige un área, añade tus preferencias si quieres y explora ofertas publicadas.",
@@ -226,20 +258,33 @@ function localDateToday() {
 }
 
 export function RemoteEnergySupportBooking({
-  locale, masters, preferredPractitioner,
+  locale, masters, preferredPractitioner, mode = "standalone", selectedKind = "energy",
+  initialGoal = "", initialTalismanId = "", onKindChange,
 }: {
   locale: Locale;
   masters: EnergySupportMaster[];
   preferredPractitioner: string;
+  mode?: "inline" | "standalone";
+  selectedKind?: SupportRequestKind;
+  initialGoal?: string;
+  initialTalismanId?: string;
+  onKindChange?: (kind: SupportRequestKind) => void;
 }) {
   const t = WORDS[locale];
   const router = useRouter();
   const [selectedServiceId, setSelectedServiceId] = useState(() =>
     masters.find((master) => master.slug === preferredPractitioner)?.serviceId || ""
   );
-  const [goal, setGoal] = useState("");
+  const [goal, setGoal] = useState(initialGoal);
+  const [requestKind, setRequestKind] = useState<SupportRequestKind>(selectedKind);
+  const [catalogId, setCatalogId] = useState(initialTalismanId);
+  useEffect(() => {
+    setRequestKind(selectedKind);
+    if (initialGoal) setGoal(initialGoal);
+    setCatalogId(initialTalismanId);
+  }, [selectedKind, initialGoal, initialTalismanId]);
   const [intention, setIntention] = useState("");
-  const [showResults, setShowResults] = useState(Boolean(preferredPractitioner));
+  const [showResults, setShowResults] = useState(mode === "inline" || Boolean(preferredPractitioner));
   const [method, setMethod] = useState("");
   const [format, setFormat] = useState<Format>("asynchronous");
   const [duration, setDuration] = useState<number>(30);
@@ -288,13 +333,13 @@ export function RemoteEnergySupportBooking({
   }, [methods, method]);
 
   useEffect(() => {
-    if (!showResults) return;
+    if (!showResults || mode === "inline") return;
     const heading = document.getElementById("remote-practitioners-title");
     heading?.scrollIntoView({
       block: "start",
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
-  }, [showResults]);
+  }, [showResults, mode]);
 
   function findOptions() {
     if (!goal) {
@@ -324,17 +369,33 @@ export function RemoteEnergySupportBooking({
       document.querySelector<HTMLButtonElement>("[data-remote-focus-chip]")?.focus();
       return;
     }
-    if (!selected || !currentPrice || !method || !day || !time ||
-      (minimumDay && day < minimumDay)) {
+    if (!selected || (requestKind === "energy" && (!currentPrice || !method || !day || !time ||
+      (minimumDay && day < minimumDay)))) {
       setError("missing");
       return;
     }
     try {
+      if (requestKind === "talisman") {
+        // A talisman is an unpriced enquiry, not a remotely booked session.
+        // Only controlled, non-sensitive theme/master metadata survives login.
+        window.sessionStorage.setItem(TALISMAN_REQUEST_DRAFT_KEY, JSON.stringify({
+          version: 1, serviceId: selected.serviceId, practitioner: selected.name,
+          goal: topic,
+          ...(catalogId && talismanFromCatalog(catalogId)?.goal === topic ? { catalogId } : {}),
+          savedAt: Date.now(),
+        }));
+        stageRemoteSupportPrivateIntention(selected.serviceId, intention);
+        const cabinetLocale = locale === "es" ? "en" : locale;
+        router.push("/" + cabinetLocale + "/app/consultations?service=" +
+          encodeURIComponent(selected.serviceId) + "&source=talisman-enquiry");
+        return;
+      }
       const startsAt = new Date(day + "T" + time + ":00");
       if (!Number.isFinite(startsAt.getTime()) || startsAt.getTime() <= Date.now() + 5 * 60 * 1000) {
         setError("past");
         return;
       }
+      if (!currentPrice) { setError("missing"); return; }
       const draft = {
         version: 2, serviceId: selected.serviceId, practitioner: selected.name,
         goal: topic, method, format, duration, date: day, time, timezone,
@@ -354,14 +415,30 @@ export function RemoteEnergySupportBooking({
   };
 
   return (
-    <section className={styles.page} aria-labelledby="remote-support-title" data-remote-support-intent-first>
+    <section className={mode === "inline" ? styles.page + " " + styles.inline : styles.page}
+      aria-labelledby="remote-support-title" data-remote-support-intent-first
+      data-support-request-kind={requestKind}>
       <header className={styles.intro}>
         <p className={styles.eyebrow}>✦ {t.eyebrow}</p>
-        <h1 id="remote-support-title">{t.title}</h1>
-        <p>{t.intro}</p>
+        <h1 id="remote-support-title">{requestKind === "talisman" ? t.talismanTitle : t.title}</h1>
+        <p>{requestKind === "talisman" ? t.talismanIntro : t.intro}</p>
         <p className={styles.steps}>{t.steps}</p>
       </header>
 
+      <div className={styles.kindChooser} role="group" aria-label={t.kindLabel}>
+        <p>{t.kindLabel}</p>
+        {(["talisman", "energy"] as const).map(kind => (
+          <button key={kind} type="button" aria-pressed={requestKind === kind}
+            onClick={() => {
+              setRequestKind(kind);
+              setSelectedServiceId("");
+              setError("");
+              onKindChange?.(kind);
+            }}>
+            {kind === "talisman" ? t.kindTalisman : t.kindEnergy}
+          </button>
+        ))}
+      </div>
       <section className={styles.intentPanel} aria-labelledby="remote-intent-heading">
         <div className={styles.sectionHeading}>
           <span className={styles.stepNumber} aria-hidden="true">01</span>
@@ -374,7 +451,7 @@ export function RemoteEnergySupportBooking({
           {FOCUSES.map((focus) => (
             <button key={focus.id} type="button" data-remote-focus-chip aria-pressed={goal === focus.id}
               className={goal === focus.id ? styles.focusActive : ""}
-              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setError(""); }}>
+              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setCatalogId(""); setError(""); }}>
               {focus[locale]}
             </button>
           ))}
@@ -428,10 +505,10 @@ export function RemoteEnergySupportBooking({
                         : <span aria-hidden="true">✦</span>}
                     </div>
                     <div className={styles.masterCopy}>
-                      <p className={styles.serviceType}>{t.serviceType}</p>
+                      <p className={styles.serviceType}>{requestKind === "talisman" ? t.talismanServiceType : t.serviceType}</p>
                       <h3>{master.name}</h3>
                       <p className={styles.serviceDescription}>{master.description || t.defaultDescription}</p>
-                      {offers.length ? (
+                      {requestKind === "talisman" ? null : offers.length ? (
                         <div className={styles.offerPrices} aria-label={t.publishedFrom}>
                           {offers.map((offer) => (
                             <span key={offer.duration}>
@@ -459,14 +536,26 @@ export function RemoteEnergySupportBooking({
                         </details>
                         <button className={styles.requestButton} type="button"
                           aria-expanded={isOpen} aria-controls={"remote-request-" + master.serviceId}
-                          disabled={!offers.length}
+                          disabled={requestKind === "energy" && !offers.length}
                           onClick={() => { setSelectedServiceId(isOpen ? "" : master.serviceId); setError(""); }}>
-                          {isOpen ? t.hideOptions : t.requestThis} <span aria-hidden="true">→</span>
+                          {isOpen ? t.hideOptions : requestKind === "talisman" ? t.talismanOffer : t.requestThis} <span aria-hidden="true">→</span>
                         </button>
                       </div>
                     </div>
                   </div>
-                  {isOpen && (
+                  {isOpen && (requestKind === "talisman" ? (
+                    <form id={"remote-request-" + master.serviceId} className={styles.bookingForm} onSubmit={submit}>
+                      <h4>{t.talismanFormTitle}</h4>
+                      <p className={styles.bookingIntro}>{t.talismanHint}</p>
+                      <p className={styles.privacyHint}>{t.privacyShort}</p>
+                      <button type="submit" className={styles.submit}>
+                        {t.talismanSubmit} <span aria-hidden="true">→</span>
+                      </button>
+                      {error && <p className={styles.error} role="alert">
+                        {error === "focus" ? t.focusRequired : error === "missing" ? t.missingChoice : t.needsStorage}
+                      </p>}
+                    </form>
+                  ) : (
                     <form id={"remote-request-" + master.serviceId} className={styles.bookingForm} onSubmit={submit}>
                       <h4>{t.optionTitle}</h4>
                       <p className={styles.bookingIntro}>{t.optionHint}</p>
@@ -543,7 +632,7 @@ export function RemoteEnergySupportBooking({
                         </p>
                       )}
                     </form>
-                  )}
+                  ))}
                 </article>
               );
             })}

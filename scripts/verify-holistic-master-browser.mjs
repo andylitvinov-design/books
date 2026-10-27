@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { assertPublicJourneyRuntime, installPublicJourneyFence, assertHolisticContextHandoff }
   from "./helpers/public-journey-verifier.mjs";
+import { withHolisticDaoActionDiagnostics } from "./helpers/holistic-dao-action-diagnostics.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -39,6 +40,20 @@ async function verify(engine, locale, width) {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
+  async function openAnonymousArchive(expectedReads) {
+    const catalog = page.locator('[data-taoist-talisman-catalog]');
+    await catalog.waitFor({state:"visible"});
+    const archive = catalog.locator('button[aria-controls="tao-talisman-private-gallery"]');
+    assert.equal(await archive.count(), 1, label + ": one explicit archive toggle");
+    assert.equal(await archive.getAttribute("aria-expanded"), "false");
+    assert.equal(await catalog.locator('[data-support-talismans]').count(), 0,
+      label + ": no private gallery before explicit opening");
+    assert.equal(fence.summary().anonymousTalismanReads, expectedReads);
+    const target = await archive.boundingBox();
+    assert.ok(target && target.height >= 44 && target.width >= 44, label + ": archive touch target");
+    await archive.tap();
+    assert.equal(await archive.getAttribute("aria-expanded"), "true");
+  }
   try {
     const response = await page.goto(origin + "/" + locale + "/holistic-support", {
       waitUntil: "domcontentloaded", timeout: 60000,
@@ -46,6 +61,7 @@ async function verify(engine, locale, width) {
     assert.equal(response?.status(), 200, label + ": first screen returned HTTP 200");
     const root = page.locator("[data-holistic-first-screen]");
     await root.waitFor({state: "visible", timeout: 30000});
+    await openAnonymousArchive(0);
     const guestGallery = page.locator('[data-support-talismans]');
     await guestGallery.locator('a[href="/' + locale + '/app"]').waitFor({state:"visible"});
     assert.equal(await guestGallery.locator('img, form, [data-talisman-upload]').count(), 0,
@@ -152,14 +168,18 @@ async function verify(engine, locale, width) {
       label + ": no personal response before a question");
 
     const question = engineCard.locator("#ideas-question");
-    await question.fill(copy[locale].question);
-    await insight.tap();
-    const result = engineCard.locator('[data-ideas-result="dao"]');
-    await result.waitFor({state:"visible", timeout: 20000});
-    assert.ok((await result.locator("[data-ideas-dao-summary]").innerText()).trim().length > 15,
-      label + ": genuine symbolic response");
-    assert.equal(await question.inputValue(), copy[locale].question,
-      label + ": original words kept only in editable field");
+    await withHolisticDaoActionDiagnostics(page, engineCard, {
+      locale, readPageErrorCount: () => errors.length,
+    }, async () => {
+      await question.fill(copy[locale].question);
+      await insight.tap();
+      const result = engineCard.locator('[data-ideas-result="dao"]');
+      await result.waitFor({state:"visible", timeout: 20000});
+      assert.ok((await result.locator("[data-ideas-dao-summary]").innerText()).trim().length > 15,
+        label + ": genuine symbolic response");
+      assert.equal(await question.inputValue(), copy[locale].question,
+        label + ": original words kept only in editable field");
+    });
 
     await question.fill(copy[locale].intention);
     assert.equal(await engineCard.locator("[data-ideas-result]").count(), 0,
@@ -221,6 +241,7 @@ async function verify(engine, locale, width) {
     if (width === 390) {
       await page.goto(origin + "/" + locale + "/holistic-support", {waitUntil:"domcontentloaded"});
       await root.waitFor({state:"visible"});
+      await openAnonymousArchive(1);
       await guestGallery.locator('a[href="/' + locale + '/app"]').waitFor({state:"visible"});
       await page.screenshot({path:output + "/holistic-" + engine.name() + "-" + locale + "-390.png",fullPage:false});
     }

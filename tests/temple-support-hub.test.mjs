@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 import { activeCompactNavigationId, getCompactNavigation, getSiteNavigation } from "../lib/site-navigation-model.js";
 import { safePublicWhatsAppPath } from "../lib/whatsapp-enquiry.js";
 
@@ -9,14 +11,13 @@ const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8"
 test("Holistic Support is the seventh public tab and preserves separate Temple Insights", () => {
   const bar = read("components/mobile-bottom-navigation.tsx");
   const icons = read("components/compact-navigation-icons.ts");
-  const css = read("app/ia-v2.css");
-  const homeCss = read("app/holistic-house-home.css");
   for (const locale of ["en", "ru", "es"]) {
     const links = getCompactNavigation(locale);
     assert.equal(links.length, 7);
     assert.deepEqual(links.map(item => item.id), ["profile", "courses", "home", "analysis", "alchemy", "pro", "temple"]);
     assert.equal(links[1].href, "/" + locale + "/academy");
-    assert.equal(links[2].href, locale === 'en' ? '/' : '/' + locale);
+    assert.equal(links[2].href, locale === "en" ? "/" : "/" + locale);
+    assert.equal(links[3].href, "/" + locale + "/services/free-situation-review");
     assert.equal(links[6].href, "/" + locale + "/holistic-support");
     assert.equal(links[6].label, {en:"Holistic Support",ru:"Холистическая поддержка",es:"Apoyo holístico"}[locale]);
     assert.equal(activeCompactNavigationId("/" + locale + "/holistic-support"), "temple");
@@ -32,6 +33,12 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
   for (const label of ["Holistic Support", "Поддержка", "Apoyo holístico"])
     assert.ok(bar.includes("temple: '" + label + "'"), "missing mobile tab label " + label);
   assert.match(bar, /aria-label=\{item\.ariaLabel\}/);
+
+});
+
+test("Holistic Support seven-column CSS layout retains its mobile breakpoints", () => {
+  const css = read("app/ia-v2.css");
+  const homeCss = read("app/holistic-house-home.css");
   assert.match(css, /repeat\(7,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
@@ -59,7 +66,7 @@ test("Holistic Support puts three accessible, photo-backed support choices first
   assert.ok(chooser.includes('<IdeasDiscovery locale={locale} variant="holistic-dao" />'));
   assert.equal((chooser.match(/<IdeasDiscovery /g) || []).length, 1, "reuse existing Dao engine once, only after selection");
   assert.ok(page.indexOf("<HolisticSupportChoices") < page.indexOf("<HolisticSupportTopicFilter"));
-  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf("data-holistic-healing"));
+  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf("data-holistic-meditations"));
   for (const option of ["meditations", "energy", "dao"]) assert.ok(chooser.includes('data-holistic-choose="' + option + '"'));
   assert.ok(!page.includes("<FreeDiagnosticStart") && !page.includes("<CompactLeadCapture"),
     "the personal coaching form moves to Coaching");
@@ -86,17 +93,21 @@ test("Holistic Support puts three accessible, photo-backed support choices first
   assert.ok(existsSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)));
 });
 
-test("energy support reuses the published practitioner, privacy and request journeys", () => {
+test("the thematic energy support path preserves privacy and request journeys without duplicate offers", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const remote = read("components/remote-energy-support-booking.tsx");
   const bridge = read("lib/practitioners/remote-energy-support.js");
-  assert.ok(page.includes("data-holistic-healing"));
-  for (const id of ["energy", "alchemy", "practitioner"]) {
-    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing offer " + id);
-  }
-  for (const link of ["/services/remote-energy-support", "/services/alchemy-of-soul",
-    "/pro#profi-practice"]) assert.ok(page.includes(link), "missing link "+link);
-  assert.ok(page.includes("data-holistic-practitioner-cta"));
+  const filter = read("components/holistic-support-topic-filter.tsx");
+  assert.ok(page.includes("<HolisticSupportTopicFilter locale={locale} />"));
+  assert.doesNotMatch(page, /data-holistic-healing|data-holistic-offer=/);
+  assert.match(filter, /<Link href="#meditation-practices" prefetch=\{false\}/);
+  assert.match(filter, /data-holistic-order-trigger=\{id\}/);
+  assert.match(filter, /aria-controls="holistic-inline-order"/);
+  assert.match(filter, /onClick=\{\(\) => openOrder\(id === "talisman" \? "talisman" : "energy"\)\}/);
+  assert.match(filter, /<HolisticInlineSupportOrder locale=\{locale\} kind=\{orderKind\}/);
+  assert.match(filter, /initialGoal=\{initialGoal\[activeTopic\]\} onKindChange=\{setOrderKind\}/);
+  assert.doesNotMatch(filter, /href="#talismans"|href=\{[^}]*services\/remote-energy-support/);
+  assert.ok(filter.includes("data-holistic-topic-card={id}"));
   assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
   assert.match(read("app/[locale]/pro/page.tsx"), /MarketplaceMasterFinder practitioners=\{practitioners\}/);
   assert.ok(page.includes("data-holistic-coaching-followup"));
@@ -180,4 +191,93 @@ test("Coaching Lounge source path is permitted for real, consented CRM intake bu
   assert.match(backend, /normalizePublicServiceEnquiry/);
   assert.doesNotMatch(entry, /fetch\(|gtag\(|payment_received|payment_captured/);
   assert.doesNotMatch(read("app/[locale]/holistic-support/page.tsx"), /fetch\(|checkout|charge\(/);
+});
+
+// Exercise current thematic destinations without a browser, network or real requests.
+function assertThematicDestinations(input = read('components/holistic-support-topic-filter.tsx')) {
+  const jsx = (type, props) => ({ type, props: props || {} });
+  const compiled = ts.transpileModule(input, { compilerOptions: {
+    module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+  } }).outputText;
+  const goals = { business: 'Work and money', love: 'Connection and relationships', health: 'Inner balance and calm' };
+  for (const locale of ['en', 'ru', 'es']) for (const topic of Object.keys(goals)) {
+    function render(kind = null) {
+      let stateIndex = 0;
+      const updates = {}, events = [];
+      class CustomEvent { constructor(type, options) { this.type = type; this.detail = options.detail; } }
+      const window = { dispatchEvent(event) { assert.equal(event.type, 'hh-support-order-open'); assert.equal(event.detail.source, 'topics'); events.push(event); return true; } };
+      const modules = {
+        react: { useEffect: () => {}, useState: () => {
+          const index = stateIndex++;
+          return [index === 0 ? topic : kind, value => { updates[index === 0 ? 'topic' : 'kind'] = value; }];
+        } },
+        'react/jsx-runtime': { jsx, jsxs: jsx },
+        'next/link': { default: 'a', __esModule: true },
+        'next/image': { default: 'img', __esModule: true },
+        'lucide-react': { ArrowRight: 'icon', BriefcaseBusiness: 'icon', Heart: 'icon', HeartPulse: 'icon' },
+        './holistic-inline-support-order': { HolisticInlineSupportOrder: 'inline-order' },
+        './holistic-support-topic-filter.module.css': { default: new Proxy({}, { get: (_, name) => name }), __esModule: true },
+      };
+      const exports = {};
+      runInNewContext(compiled, { exports, window, CustomEvent, require: name => {
+        assert.ok(Object.hasOwn(modules, name), name); return modules[name];
+      } });
+      const nodes = [];
+      const walk = node => {
+        if (Array.isArray(node)) return node.forEach(walk);
+        if (!node || typeof node !== 'object') return;
+        nodes.push(node); walk(node.props?.children);
+      };
+      walk(exports.HolisticSupportTopicFilter({ locale }));
+      return { nodes, updates, events };
+    }
+    const initial = render();
+    assert.deepEqual(initial.nodes.filter(node => node.props['data-holistic-topic-card']).map(node => node.props['data-holistic-topic-card']),
+      ['meditation', 'talisman', 'expert']);
+    const meditation = initial.nodes.filter(node => node.type === 'a');
+    assert.equal(meditation.length, 1, 'Only meditation navigates; other offers open inline');
+    assert.equal(meditation[0].props.href, '#meditation-practices');
+    assert.equal(meditation[0].props.prefetch, false);
+    assert.equal(initial.nodes.filter(node => node.type === 'inline-order').length, 0);
+    for (const [offer, expectedKind] of [['talisman', 'talisman'], ['expert', 'energy']]) {
+      const buttons = initial.nodes.filter(node => node.props['data-holistic-order-trigger'] === offer);
+      assert.equal(buttons.length, 1);
+      assert.equal(buttons[0].type, 'button');
+      assert.equal(buttons[0].props.type, 'button');
+      assert.equal(buttons[0].props['aria-controls'], 'holistic-inline-order');
+      assert.equal(buttons[0].props['aria-expanded'], false);
+      const eventCount = initial.events.length;
+      buttons[0].props.onClick();
+      assert.equal(initial.events.length, eventCount + 1, "Each opening coordinates before selecting its kind");
+      assert.equal(initial.updates.kind, expectedKind);
+      const opened = render(initial.updates.kind);
+      const panels = opened.nodes.filter(node => node.type === 'inline-order');
+      assert.equal(panels.length, 1);
+      assert.equal(panels[0].props.kind, expectedKind);
+      assert.equal(panels[0].props.locale, locale);
+      assert.equal(panels[0].props.initialGoal, goals[topic]);
+      const active = opened.nodes.find(node => node.props['data-holistic-order-trigger'] === offer);
+      assert.equal(active.props['aria-expanded'], true);
+      panels[0].props.onClose();
+      assert.equal(opened.updates.kind, null);
+      assert.equal(render(opened.updates.kind).nodes.filter(node => node.type === 'inline-order').length, 0);
+    }
+  }
+}
+
+test('all locale and topic cards keep meditation navigation and explicit inline talisman or energy requests', () => {
+  assertThematicDestinations();
+});
+
+test('thematic destinations reject retired anchors, wrong request kinds and missing inline forms', () => {
+  const input = read('components/holistic-support-topic-filter.tsx');
+  for (const [before, after] of [
+    ['href="#meditation-practices"', 'href="#talismans"'],
+    ['openOrder(id === "talisman" ? "talisman" : "energy")', 'openOrder("energy")'],
+    ['{orderKind && (', '{false && ('],
+    ['window.dispatchEvent(new CustomEvent("hh-support-order-open", {detail:{source:"topics"}}));', ''],
+  ]) {
+    assert.ok(input.includes(before), before);
+    assert.throws(() => assertThematicDestinations(input.replaceAll(before, after)), { code: 'ERR_ASSERTION' }, before);
+  }
 });

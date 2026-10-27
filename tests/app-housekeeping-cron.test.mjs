@@ -89,8 +89,9 @@ test('production scheduler invokes only the guarded daily housekeeping route', (
   assert.match(route, /PRIVATE_HEADERS/)
   assert.deepEqual(config.crons, [
     { path: '/api/internal/housekeeping', schedule: '0 5 * * *' },
-    { path: '/api/internal/practice-telegram-digest', schedule: '0 13 * * *' },
-    { path: '/api/internal/council-archive-telegram', schedule: '0 21 * * *' },
+    { path: '/api/internal/revenue-ideas-telegram', schedule: '0 13,14 * * *' },
+    { path: '/api/internal/practice-telegram-digest', schedule: '0 13,14,19,20 * * *' },
+    { path: '/api/internal/council-archive-telegram', schedule: '0 16,17 * * *' },
   ])
 })
 

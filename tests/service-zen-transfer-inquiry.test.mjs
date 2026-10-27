@@ -55,12 +55,31 @@ test('ZEN is only an enquiry alongside existing PayPal; no API charge or receipt
   assert.match(cart, /buildZenTransferInquiry\(chosen\.map/)
   assert.match(cart, /data-zen-transfer-inquiry/)
   assert.match(read('components/consultation-choice-capture.tsx'), /data-zen-manual-request/)
-  assert.match(read('components/alchemy-soul-lead-form.tsx'), /data-zen-manual-request/)
   assert.match(read('components/commerce/personal-cart.tsx'), /data-zen-transfer-inquiry="cart"/)
   assert.match(paymentPage, /data-paypal-personal-link/)
   assert.match(cart, /serviceCommerceRuntime|\/api\/app\/commerce\/checkout/)
   assert.doesNotMatch(library, /fetch\(|post\(|update |deposit|markPaid|paymentIntent|ZEN_TERMINAL|secret|redirectUrl|acceptFunds/i)
   assert.match(paymentPage, /No payment is collected here/i)
+})
+
+test('Alchemy defers payment methods to the existing cart after verified booking confirmation', () => {
+  const alchemy = read('components/alchemy-soul-lead-form.tsx')
+  const chooser = read('components/contact-channel-chooser.tsx')
+  // Both one-time selectors pass only the published fixed-price SKU. The
+  // four-week programme remains a separate enquiry, never a guessed SKU.
+  for (const choice of ['format', 'selected']) {
+    assert.ok(alchemy.includes(`bookingSku={${choice} === "30" ? "express-consultation-30" : "personal-session-60"}`))
+  }
+  assert.match(alchemy, /data-alchemy-monthly-link/)
+  assert.doesNotMatch(alchemy, /data-zen-manual-request|buildZenTransferInquiry|data-alchemy-payment-disclosure/)
+  assert.match(chooser, /const paidReady = bookingConfirmed && Boolean\(saved && bookingStartsAt\)/)
+  assert.match(chooser, /fetch\("\/api\/service-enquiries\/booking-status", \{\s*credentials: "same-origin", cache: "no-store"/)
+  assert.match(chooser, /status\.bookingSku !== bookingSku/)
+  assert.match(chooser, /setBookingConfirmed\(status\.booked === true\)/)
+  assert.match(chooser, /if \(bookingSku\) \{ setBookingConfirmed\(false\); setBookingStartsAt\(null\); \}/)
+  assert.match(chooser, /\{paidReady && paymentExpanded \? \(\s*<section[^>]*data-booking-payment-options>/)
+  assert.match(chooser, /href=\{"\/" \+ locale \+ "\/cart\?items=" \+ encodeURIComponent\(bookingSku\)\}\s*prefetch=\{false\} data-booking-cart-link/)
+  assert.match(chooser, /Receipt is verified separately/)
 })
 
 test('no card top-up or unverified ZEN payee link is exposed', () => {

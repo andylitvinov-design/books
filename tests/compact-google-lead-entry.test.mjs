@@ -45,8 +45,10 @@ test('Google entry uses existing PKCE and prefill, never silently submits a CRM 
   assert.match(src,/sessionStorage\.setItem\("hh-google-enquiry-return"/)
   assert.match(src,/fetch\("\/api\/app\/auth\/contact-profile"/)
   assert.match(src,/setGoogleReady\(true\)/)
-  // Current compact-phone mode forces phone-only CRM capture; Google remains an explicit prefill, not an auto-send.
-  assert.match(src, /const usePhone = compactPhone \|\| method === "phone"/)
+  // Non-booking compact capture remains phone-only. Alchemy bookings may use the
+  // existing explicit Google email prefill; neither path silently submits.
+  assert.match(src, /const usePhone = \(compactPhone && !bookingSku\) \|\| method === "phone"/)
+  assert.match(src, /if \(\(compactPhone && !bookingSku\) \|\| url\.searchParams\.get\("hh_enquiry"\) !== "google"\) return/)
   assert.match(src, /email: usePhone \? "" : email\.trim\(\), phone: usePhone \? cleanedPhone : ""/)
   assert.match(src, /if \(busy \|\| saved\) return;/)
   assert.match(src,/contactConsent: consent/)

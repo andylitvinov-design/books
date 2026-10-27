@@ -289,6 +289,23 @@ async function exercise(engine, browserType, width) {
     transport.assertHealthy();
     assert.deepEqual(errors, []);
     phase = 'visual';
+    // Both retained first-click proofs above must finish before a fresh document
+    // establishes the idle-player precondition for the visual/poster checks.
+    const completedSwitches = results.filter(result => result.engine === engine && result.width === width && result.firstClickRetained === true);
+    assert.deepEqual(completedSwitches.map(({ from, to, heldRsc }) => [from, to, heldRsc]), [['en', 'ru', true], ['ru', 'en', true]]);
+    assert.equal(delayedLocale, null);
+    await delayedRscGate;
+    await transport.drain();
+    transport.assertHealthy();
+    const retainedEnglishReview = page.locator('[data-personal-testimonials="home"] [data-testimonial-video-id="Dk0LBmOivQo"]');
+    await expect(retainedEnglishReview).toHaveCount(1);
+    await expect(retainedEnglishReview.locator('iframe')).toHaveCount(1);
+    await expect(retainedEnglishReview.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/Dk0LBmOivQo\?/);
+    await expect(retainedEnglishReview.locator('.site-video-fallback-poster')).toHaveCount(0);
+    await page.goto(origin + homePath('en'), { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(origin + homePath('en'));
+    await expect(page.locator('main.house-home')).toHaveAttribute('lang', 'en');
+    transport.assertHealthy();
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
     const stableOffer = page.locator('[data-home-slide]');
     await expect(stableOffer).toHaveAttribute('data-home-slide', 'services');

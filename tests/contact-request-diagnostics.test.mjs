@@ -48,6 +48,14 @@ test('all diagnostic additions erase to the exact current browser-script preimag
   assert.match(script,/await saved\.waitFor\([^\n]+\);\s*requestPhase = "dao-receipt"/);
   assert.match(script,/assert\.deepEqual\(blocked,\[\],'No real API\/write\/provider operation attempted outside the exact synthetic enquiry'\)/);
   assert.match(script,/return route\.abort\('blockedbyclient'\)/);
+  // Failure-only branch diagnostics preserve the independently reviewed denial policy.
+  script=script.replace('import { createAnonymousAcademyBootstrapFixture, appendBootstrapFixtureFailure }','import { createAnonymousAcademyBootstrapFixture }')
+    .replace('const fixtureFailures = [];\n','')
+    .replace('          try {\n          appendBootstrapFixtureFailure(fixtureFailures,bootstrapFixture,blocked,requestPhase);\n          } catch { /* Diagnostics cannot replace either original final assertion. */ }\n','')
+    .replace('results,errors,fixtureFailures,failure:','results,errors,failure:')
+    .replace('  try {\n  await writeFile(', '  await writeFile(')
+    .replace('\n  } catch { if (!failure) failure = new Error("CONTACT_DIAGNOSTIC_WRITE_FAILED"); }','')
+    .replace('try { console.log("PASS browser messenger handoff on Chromium and WebKit",results.length); } catch { throw new Error("CONTACT_DIAGNOSTIC_LOG_FAILED"); }','console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);');
   // Separately reviewed denial fixture is removed explicitly, not mistaken for a diagnostic allowance.
   script=script.replace('import { createAnonymousAcademyBootstrapFixture } from "./helpers/anonymous-bootstrap-fixture.mjs";\n','')
     .replace('        const bootstrapFixture = createAnonymousAcademyBootstrapFixture(origin, locale);\n','')

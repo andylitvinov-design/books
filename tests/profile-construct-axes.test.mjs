@@ -21,7 +21,8 @@ const isGuest = entry => entry.selectable === true && entry.startable === true &
   entry.explicitOptIn !== true && entry.scaleGuide?.measurementAxes?.length
 
 const toSource = entry => ({
-  key: entry.key, title: entry.title, topics: entry.topics, testKind: entry.testKind,
+  key: entry.key, version: entry.definition?.version || entry.version,
+  title: entry.title, topics: entry.topics, testKind: entry.testKind,
   axes: entry.measurementAxes, minutes: entry.durationMinutes, questions: entry.questionCount,
   // Immutable scorer dimensions, not guessed questionnaire/diagnostic facets.
   scales: (entry.scaleGuide?.scales || []).filter(scale =>
@@ -36,10 +37,10 @@ const full = accountEntries.filter(entry =>
 const guest = guestEntries.filter(isGuest).map(toSource)
 const areas = [...new Set(Object.values(PROFILE_FOCUS_AREAS).flat())]
 
-test('31 source-backed research axes describe 4 profiles and 9 topics without inventing scoring axes', () => {
-  assert.deepEqual(Object.keys(PROFILE_FOCUS_AREAS), ['wellbeing','relationships','work','identity'])
+test('34 source-backed research facets describe 5 profiles and 10 topics without inventing scoring axes', () => {
+  assert.deepEqual(Object.keys(PROFILE_FOCUS_AREAS), ['wellbeing','relationships','work','identity','goal'])
   assert.deepEqual(new Set(areas), new Set(Object.keys(PROFILE_AREA_AXES)))
-  assert.equal(Object.values(PROFILE_RESEARCH_AXES).flat().length, 31)
+  assert.equal(Object.values(PROFILE_RESEARCH_AXES).flat().length, 34)
   assert.deepEqual(new Set(Object.values(PROFILE_AREA_AXES).flat()), new Set(TEST_EXPLORER_AXES))
   for (const [area, specs] of Object.entries(PROFILE_RESEARCH_AXES)) {
     assert.ok(specs.length > 0, area)

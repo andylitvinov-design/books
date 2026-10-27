@@ -1,7 +1,8 @@
+import { createAnonymousPortraitBootstrapFixture, portraitBootstrapPattern, anonymousPortraitCopy } from "./helpers/anonymous-portrait-bootstrap-fixture.mjs";
 import { attachPublicApiReadDiagnostics } from "./helpers/public-api-read-diagnostics.mjs";
 import { verifyFreeReviewCurrentFlow, verifyFreeDiagnosisHub } from './helpers/free-entry-current-verifier.mjs';
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { registerContactChannelRequest, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { registerContactChannelRequest } from './helpers/contact-channel-verifier.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -18,7 +19,8 @@ const output = "artifacts/public-services-production";
 await mkdir(output, { recursive: true });
 
 const browser = await chromium.launch();
-const diagnostics = { runtime: "next-start production", console: [], apiReadObservations: [], pageErrors: [], devIssueOverlay: false };
+const diagnostics = { runtime: "next-start production", console: [], apiReadObservations: [], anonymousPortraitDenials: [], pageErrors: [], devIssueOverlay: false };
+const portraitFixtures = new WeakMap(), approvedPortraitConsole = new WeakSet();
 let failure;
 try {
   const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 844 } });
@@ -30,7 +32,9 @@ try {
       if (message.type() === "error" || message.type() === "warning") {
         let path = "";
         try { path = new URL(message.location().url).pathname; } catch {}
-        diagnostics.console.push({ type: message.type(), text: message.text(), path });
+        const entry = { type: message.type(), text: message.text(), path };
+        diagnostics.console.push(entry);
+        portraitFixtures.get(page)?.observeConsole(message, entry);
       }
     });
     page.on("pageerror", (error) => diagnostics.pageErrors.push(error.message));
@@ -77,8 +81,8 @@ try {
       await expect(main.locator('[data-alchemy-format="60"]')).toHaveAttribute("aria-pressed", "true");
       await assertNoDevIssueOverlay(page, "es/alchemy-of-soul/" + width);
       await assertViewport(page, "es/alchemy-of-soul/" + width);
-      assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-        "Default Spanish payment details are collapsed before geometry measurement");
+      assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+        "Spanish booking does not expose payment methods before confirmed time");
       const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
         nodes.map(node => ({name: node.getAttribute("data-alchemy-panel"), height: Math.ceil(node.getBoundingClientRect().height), max: window.innerHeight - 80})));
       assert.equal(panelHeights.length, 10, "Ten Alchemy chapters including video and public sample report");
@@ -169,14 +173,33 @@ try {
       await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
       const cabinetBounds = await cabinetEntry.boundingBox();
       assert.ok(cabinetBounds && cabinetBounds.x >= 0 && cabinetBounds.x + cabinetBounds.width <= width + 1, "My Space entry must fit the visible header: " + locale + "/" + width);
+      const portraitFixture = createAnonymousPortraitBootstrapFixture(page, origin, locale);
+      portraitFixtures.set(page, portraitFixture);
+      await page.route(portraitBootstrapPattern, portraitFixture.route);
+      page.on("response", portraitFixture.observeResponse);
+      try {
+      portraitFixture.arm();
       await cabinetEntry.click();
       const privateSpaceDialog = page.locator("dialog#home-personal-space-dialog");
       await expect(privateSpaceDialog).toHaveAttribute("open", "");
       await visible(privateSpaceDialog.locator("#hh-my-space-title"));
       await expect(cabinetEntry).toHaveAttribute("aria-expanded", "true");
+      const anonymousCopy = anonymousPortraitCopy[locale];
+      await expect(privateSpaceDialog.getByText(anonymousCopy.guest, {exact:true})).toBeVisible();
+      await expect(privateSpaceDialog.getByRole("button", {name:anonymousCopy.googleName, exact:true})).toBeVisible();
+      await expect(privateSpaceDialog.getByText(anonymousCopy.unavailable, {exact:true})).toHaveCount(0);
+      await expect(privateSpaceDialog.getByRole("button", {name:anonymousCopy.retry, exact:true})).toHaveCount(0);
+      assert.deepEqual(await privateSpaceDialog.locator("a[data-space-link]").evaluateAll(links=>links.map(link=>link.getAttribute("data-space-link")).sort()), ["plan","profile"]);
+      await expect.poll(()=>portraitFixture.responses).toBe(1);
       await privateSpaceDialog.locator('header button[type="button"]').first().click();
       await expect(privateSpaceDialog).not.toHaveAttribute("open", "");
       await expect(cabinetEntry).toHaveAttribute("aria-expanded", "false");
+      diagnostics.anonymousPortraitDenials.push(portraitFixture.finish(approvedPortraitConsole));
+      } finally {
+        await page.unroute(portraitBootstrapPattern, portraitFixture.route);
+        page.off("response", portraitFixture.observeResponse);
+        portraitFixtures.delete(page);
+      }
       const siteMenu = header.locator("details.site-main-menu");
       await expect(siteMenu).not.toHaveAttribute("open", "");
       const menuTrigger = siteMenu.locator("summary.site-main-menu-trigger");
@@ -489,8 +512,8 @@ try {
           await page.screenshot({ path: output + "/core-" + locale + "-" + slug + "-hero-" + width + ".png", fullPage: false });
         }
         if (kind === "alchemy") {
-          assert.equal(await main.locator('details[data-alchemy-payment-disclosure]').evaluate(node => node.open), false,
-            "Default payment details are collapsed before geometry measurement");
+          assert.equal(await main.locator('[data-alchemy-payment-disclosure]').count(), 0,
+            "Payment options belong only to the confirmed booking cart");
         }
         if (kind === "alchemy" && width <= 390) {
           const panelHeights = await main.locator("[data-alchemy-panel]").evaluateAll((nodes) =>
@@ -550,27 +573,21 @@ try {
             });
             assert.ok(bottomGap >= 0 && bottomGap < 55, "No empty testimonial viewport after the last video");
             const pricing = main.locator('[data-alchemy-booking-formats]');
-            // Payments are still available after agreement, but the default
-            // 320/390px decision screen must not be extended by transfer notes.
-            const paymentDisclosure = pricing.locator('[data-alchemy-payment-disclosure]');
-            if (await paymentDisclosure.count()) {
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), false,
-                "Payment methods must be collapsed until explicitly requested");
-              await paymentDisclosure.locator('summary').click();
-              assert.equal(await paymentDisclosure.evaluate(node => node.open), true,
-                "Payment help can be expanded with an accessible control");
-              await paymentDisclosure.locator('summary').click();
-            }
+            // No payment methods or external provider links on an unconfirmed booking.
+            await assertAlchemyPaymentsExpanded(main, expect, width);
             await pricing.locator('[data-alchemy-format="month"]').click();
             await expect(pricing.locator('[data-alchemy-format="month"]')).toHaveAttribute('aria-pressed','true');
-            assert.equal(await paymentDisclosure.count(), 0,
-              "Unpriced monthly support must never expose one-time transfer amounts");
+            assert.equal(await pricing.locator('[data-booking-cta]').count(), 0,
+              "Monthly support uses its independent service enquiry, not this one-time booking flow");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const channels = await openRegisteredCompactPhoneChooser(pricing, expect, page);
-            const prepared = await assertPreparedContactChannels(channels, expect);
-            assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-              "Selected express session must appear in prepared order draft");
+            const book = pricing.locator('[data-booking-cta="book"]');
+            await expect(book).toHaveCount(1);
+            await book.click();
+            await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible();
+            await expect(pricing.locator('[data-booking-step="contact"] input[type="checkbox"]')).toHaveCount(1);
+            assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,
+              "No cart or payment method before a server-confirmed booking");
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {
@@ -653,7 +670,8 @@ try {
 
   diagnostics.devIssueOverlay = false;
   assert.deepEqual(diagnostics.pageErrors, [], "Unexpected browser page errors");
-  assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error"), [], "Unexpected browser console errors");
+  assert.equal(diagnostics.anonymousPortraitDenials.length, 8, "Every deliberate EN/RU services My Space activation has an explicit anonymous denial");
+  assert.deepEqual(diagnostics.console.filter((entry) => entry.type === "error" && !approvedPortraitConsole.has(entry)), [], "Unexpected browser console errors");
   await context.close();
 } catch (error) {
   failure = error;

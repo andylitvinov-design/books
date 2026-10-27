@@ -106,3 +106,25 @@ test('owner Gemini check reuses read-only official model endpoint without infere
   const missing=await inspectGeminiModelAccess({},async()=>{throw Error('never called')})
   assert.equal(missing.reason,'missing_key')
 })
+
+test('read-only Gemini preflight can choose stable 3.6 if primary explicitly unavailable',async()=>{
+  const calls=[]
+  const check=await inspectGeminiModelAccess({HH_COUNCIL_GEMINI_API_KEY:'fake'},async(url,opt)=>{
+    calls.push(String(url))
+    assert.equal(opt.method,'GET')
+    if(calls.length===1)return Response.json({},{status:429})
+    return Response.json({name:'models/gemini-3.6-flash',
+      supportedGenerationMethods:['generateContent']})
+  })
+  assert.equal(check.modelReady,true)
+  assert.equal(check.model,'gemini-3.6-flash')
+  assert.equal(check.reason,'valid_fallback_model')
+  assert.equal(calls.length,2)
+  let attempts=0
+  const denied=await inspectGeminiModelAccess({HH_COUNCIL_GEMINI_API_KEY:'fake'},async()=>{
+    attempts++
+    return Response.json({},{status:403})
+  })
+  assert.equal(denied.modelReady,false)
+  assert.equal(attempts,1)
+})

@@ -108,6 +108,11 @@ export function mount(name, exportName, initialProps, env, {sourceOverride} = {}
   const imports = {
     ...jsx,
     'next/navigation': {usePathname: () => env.window.location.pathname, useRouter: () => env.router},
+    // The real component imports Link only for its confirmed-booking cart.
+    // Ordinary contact coverage must fail if that separate branch renders.
+    'next/link': {default() {
+      assert.fail('Booking cart Link is outside the synthetic ordinary contact fixture')
+    }},
     'lucide-react': icons,
     // Anchor props/callbacks are retained. Native provider navigation is never executed.
     '@/components/acquisition-event-link': {AcquisitionEventLink: 'acquisition-link'},

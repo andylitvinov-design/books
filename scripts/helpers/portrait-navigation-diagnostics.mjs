@@ -65,7 +65,7 @@ function reloadErrorDetails(message, origin) {
 export function observePortraitNavigation(page, { origin, runtime = process.env.HH_APP_TEST_RUNTIME } = {}) {
   if (runtime !== 'isolated' || !sanitizePathname('/', origin)) throw new Error('Isolated loopback diagnostics only')
   const started = performance.now(), events = [], listeners = []
-  let stopped = false, dropped = 0, observedSockets = 0
+  let stopped = false, dropped = 0, observedSockets = 0, cleanupErrors = 0
   const reads = new WeakMap()
   let readSequence = 0, readLimitReported = false
   const add = event => {
@@ -74,8 +74,16 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
     events.push({ atMs: Math.round(performance.now() - started), ...event })
   }
   const listen = (type, callback, target = page) => {
-    const safe = (...args) => { try { callback(...args) } catch { add({ type: 'diagnostic-unavailable' }) } }
-    target.on(type, safe); listeners.push([target, type, safe])
+    const safe = (...args) => { if (stopped) return; try { callback(...args) } catch { add({ type: 'diagnostic-unavailable' }) } }
+    listeners.push([target, type, safe])
+    try { target.on(type, safe) }
+    catch (error) {
+      stopped = true; cleanupErrors++
+      for (const [owner, event, listener] of listeners) {
+        try { owner.off(event, listener) } catch { cleanupErrors++ }
+      }
+      throw error
+    }
   }
   const navigationRequest = (type, request, extra = {}) => {
     if (!request.isNavigationRequest() || request.frame() !== page.mainFrame()) return
@@ -207,9 +215,11 @@ export function observePortraitNavigation(page, { origin, runtime = process.env.
     stop() {
       if (!stopped) {
         stopped = true
-        for (const [target, type, callback] of listeners) target.off(type, callback)
+        for (const [target, type, callback] of listeners) {
+          try { target.off(type, callback) } catch { cleanupErrors++ }
+        }
       }
-      return { schemaVersion: 1, events: events.map(event => ({ ...event })), dropped }
+      return { schemaVersion: 1, events: events.map(event => ({ ...event })), dropped, ...(cleanupErrors ? { cleanupErrors } : {}) }
     },
   }
 }

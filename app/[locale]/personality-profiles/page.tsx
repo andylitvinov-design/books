@@ -69,6 +69,7 @@ export default async function PersonalityProfilesPage({ params }: Props) {
       entry.explicitOptIn !== true && entry.scaleGuide?.measurementAxes?.length)
     .map(entry => ({
       key: entry.key,
+      version: entry.definition?.version || entry.version,
       title: entry.title,
       axes: [...new Set((entry.scaleGuide.measurementAxes as unknown[])
         .filter((axis): axis is string => typeof axis === "string" && axis.length > 0))],

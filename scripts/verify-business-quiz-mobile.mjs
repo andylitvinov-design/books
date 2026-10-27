@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { mkdir } from 'node:fs/promises'
+import { createBusinessGeometryRecorder } from './helpers/business-geometry-diagnostics.mjs'
 import { assertPublicJourneyRuntime, installPublicJourneyFence, assertBusinessContextHandoff,
   assertBusinessGenericSessionCard, assertBusinessOfferChoices, assertBusinessPaidFormatPrice }
   from './helpers/public-journey-verifier.mjs'
@@ -46,6 +47,7 @@ async function verify(browserType,locale,width){
   const label=browserType.name()+'-'+locale+'-'+width
   const snap=browserType===webkit&&locale==='en'&&width===390
   const failures=[]
+  const recordGeometry=createBusinessGeometryRecorder(browserType.name(),locale,width)
   // Collect independent diagnostic failures; final assertion never waives any.
   const contract=action=>{try{action()}catch(error){failures.push(error.message)}}
   const target=async(control,name,aboveBar=false)=>{
@@ -54,6 +56,7 @@ async function verify(browserType,locale,width){
       label+': '+name+' retains 44px target and horizontal fit: '+JSON.stringify(box)))
     if(aboveBar&&width<=430)contract(()=>assert.ok(box&&box.y+box.height<770,
       label+': '+name+' retains original above-bottom-bar requirement: '+JSON.stringify(box)))
+    return box
   }
   const noOverflow=async(stage)=>{
     const size=await page.evaluate(()=>({viewport:innerWidth,content:document.documentElement.scrollWidth}))
@@ -79,10 +82,13 @@ async function verify(browserType,locale,width){
     const options=panel.locator('[data-direction-filter]')
     assert.deepEqual(await options.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-direction-filter'))),
       ['all',...topics],label+': current four needs plus reset')
-    for(const topic of topics)await target(panel.locator('[data-direction-filter="'+topic+'"]'),'topic '+topic)
+    const initialFailures=failures.length, needBoxes=[]
+    for(const topic of topics)needBoxes.push(await target(panel.locator('[data-direction-filter="'+topic+'"]'),'topic '+topic))
     const last=await options.last().boundingBox()
     if(width<=430)contract(()=>assert.ok(last&&last.y+last.height<770,label+': all need choices above bottom bar'))
     await noOverflow('initial')
+    // Observe only after every initial geometry assertion has already run.
+    if(failures.length>initialFailures)await recordGeometry(page,'initial-needs',[...needBoxes,last])
     assert.equal(await direction.locator('[data-direction-dialogue]').count(),0,label+': no unsolicited dialogue')
     const extras=page.locator('[data-direction-extra-for="business"]')
     assert.equal(await extras.evaluate(node=>node.open),false,label+': alternatives initially collapsed')
@@ -148,11 +154,14 @@ async function verify(browserType,locale,width){
     // multi-section layout no longer meets it; do not silently scroll each into compliance.
     await panel.locator('[data-direction-filter="money-beliefs"]').click()
     await panel.scrollIntoViewIfNeeded()
-    await target(freeCta,'free review CTA',true)
-    await target(paidCta,'paid consultation CTA',true)
+    const selectedFailures=failures.length
+    const freeBox=await target(freeCta,'free review CTA',true)
+    const paidBox=await target(paidCta,'paid consultation CTA',true)
     const paidNote=paidCta.locator('xpath=..').locator(':scope > span')
     assertBusinessGenericSessionCard({cta:(await paidCta.innerText()).trim(),note:(await paidNote.innerText()).trim(),
       ctaVisible:await paidCta.isVisible(),noteVisible:await paidNote.isVisible()},locale,label)
+    // Both original same-screen assertions precede any diagnostic observation.
+    if(failures.length>selectedFailures)await recordGeometry(page,'selected-needs',[freeBox,paidBox])
     if(snap)await page.screenshot({path:dir+'/01-current-direction-and-needs.png',fullPage:false})
     await paidCta.click()
     await page.waitForURL(url=>url.pathname==='/'+locale+'/services/business-consulting')
@@ -188,7 +197,9 @@ async function verify(browserType,locale,width){
     const transferredVisible=reviewCount===1&&await reviewContext.isVisible()
     for(const format of ['express','full']){
       const option=page.locator('[data-business-direct-option="'+format+'"]').first()
-      await target(option,format+' direct site form')
+      const optionFailures=failures.length
+      const optionBox=await target(option,format+' direct site form')
+      if(failures.length>optionFailures)await recordGeometry(page,format+'-option',[optionBox])
       await option.click()
       assert.equal(await form.locator('[data-business-field="format"]').inputValue(),format,label+': approved format reaches form')
       assertBusinessPaidFormatPrice({format:await form.locator('[data-business-field="format"]').inputValue(),

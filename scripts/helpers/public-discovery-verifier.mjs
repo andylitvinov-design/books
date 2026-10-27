@@ -208,7 +208,11 @@ export async function exercisePortraitRays(portrait, expect, locale) {
   const sectors = portrait.locator('[data-portrait-sectors]')
   const defaultSector = sectors.locator('[data-portrait-sector-all]')
   const originals = new Map()
-  await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(4)
+  // Four measured ray sectors remain separate from the non-ray Goal Profile.
+  await expect(sectors.locator('[data-portrait-sector]')).toHaveCount(5)
+  const goal = sectors.locator('[data-portrait-sector="goal"]')
+  await expect(goal).toHaveCount(1)
+  await expect(goal).toHaveAttribute('aria-pressed', 'false')
   await expect(defaultSector).toHaveAttribute('aria-pressed', 'true')
   await expect(defaultSector).toHaveCount(1)
   await expect(inputs).toHaveCount(0)

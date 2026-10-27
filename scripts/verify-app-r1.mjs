@@ -1,3 +1,4 @@
+import { verifyOporaPublicEntry } from './helpers/opora-public-entry-verifier.mjs'
 import { withPublicPickerActionDiagnostics } from './helpers/public-picker-action-diagnostics.mjs'
 import { classifyDiagnosticError } from './helpers/isolated-browser-diagnostics.mjs'
 import { assertFreeReviewLanding, verifyFreeReviewPrivateHandoff } from './helpers/free-review-private-handoff-verifier.mjs'
@@ -9,7 +10,6 @@ import { assertAlchemyPanelGeometry, collectAlchemyReviewGeometry, assertAlchemy
 import { assertAccountPickerDisclosure, openAccountTestPicker, exerciseAccountPickerDraftRetention, assertCompactAccountPicker } from './helpers/account-picker-disclosure-verifier.mjs'
 import { assertPublicDiscoveryChrome, exercisePublicCollections, exercisePortraitRays } from './helpers/public-discovery-verifier.mjs'
 import { assertCabinetPortrait, openCabinetMyTests, assertCabinetPrimaryNavigation, openCabinetHome, warmCabinetExitDocument } from './helpers/cabinet-navigation-verifier.mjs'
-import { openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs'
 import { verifyHypnotherapyRequest } from './helpers/hypnotherapy-request-verifier.mjs'
 import { assertDaoFreeEntryCapture } from './helpers/dao-free-entry-verifier.mjs'
 import {chromium,webkit,expect} from '@playwright/test'
@@ -472,8 +472,8 @@ async function verifyPublicServiceConversionJourneys(){
      assert.equal(await guide.evaluate(node=>node.open),false,'Long guide stays collapsed')
      await expect(servicePage.locator('[data-alchemy-lead-form="single"]')).toHaveCount(1)
      await expect(servicePage.locator('[data-sitewide-capture="core-service"]')).toHaveCount(0)
-     assert.equal(await servicePage.locator('details[data-alchemy-payment-disclosure]').evaluate(node=>node.open),false,
-      'Default payment details are collapsed before geometry measurement')
+     assert.equal(await servicePage.locator('[data-alchemy-payment-disclosure]').count(),0,
+      'Payment methods are absent until the practitioner confirms the session')
      const measurements=await servicePage.locator('[data-alchemy-panel]').evaluateAll(nodes=>
       nodes.map(node=>({name:node.getAttribute('data-alchemy-panel'),height:Math.ceil(node.getBoundingClientRect().height),max:window.innerHeight-80})))
      assertAlchemyPanelGeometry(measurements)
@@ -521,7 +521,7 @@ async function verifyPublicServiceConversionJourneys(){
      }
      await expect(form.getByLabel(locale==='ru'?'Код страны':'Country calling code',{exact:true})).toHaveCount(1)
      await expect(form.locator('[data-phone-country-input] input[type="tel"]')).toHaveAttribute('required','')
-     await expect(form.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]')).toHaveAttribute('required','')
+     await expect(form.locator('[data-booking-step="contact"] input[type="checkbox"]')).toHaveAttribute('required','')
      await expect(form.locator('[data-contact-order]')).toBeVisible()
      await expect(form.locator('[data-contact-order]')).toHaveAttribute('aria-expanded','false')
      await sessionFormat.selectOption('30')
@@ -531,10 +531,11 @@ async function verifyPublicServiceConversionJourneys(){
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')
-     const order=await openRegisteredCompactPhoneChooser(pricing,expect,servicePage)
-     const prepared=await assertPreparedContactChannels(order,expect)
-     assert.ok(prepared.whatsappUrl.searchParams.get('text').includes('€50'),
-       'Selected 30-minute format must be carried into WhatsApp and Telegram')
+     const book=pricing.locator('[data-booking-cta="book"]')
+     await expect(book).toHaveCount(1)
+     await book.click()
+     await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible()
+     await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(0)
      await expect(servicePage.locator('a[href="/'+locale+'/services/free-situation-review"]').first()).toBeVisible()
     }
    }
@@ -731,36 +732,11 @@ try {
  guestPickerFailurePage=null
  passed('pre-login test picker, optional filters, recommendations and full database')
 
- // The new public course presentation is a real mobile-first landing,
- // with seven expandable skills and all 14 days accessible before consent.
- for (const [language, title] of [
-   ['en',/Stress Relief/],
-   ['ru',/Антистресс/],
- ]) {
-   await page.goto(origin+'/'+language+'/app/course?program=stress')
-   const landing=page.locator('[data-opora-guest-landing]')
-   await expect(landing).toBeVisible({timeout:20000})
-   await expect(landing.getByRole('heading',{name:title,level:1})).toBeVisible()
-   await expect(landing.locator('[data-antistress-start-tests]')).toBeVisible()
-   const overview=landing.locator('[data-course-before-signup="guest"]')
-   await expect(overview).toBeVisible()
-   await expect(overview.locator('[data-course-phase]')).toHaveCount(7)
-   await expect(overview.locator('[data-course-skill-accordion]')).toHaveCount(7)
-   const firstStage=overview.locator('[data-course-skill-accordion]').first()
-   await firstStage.locator('summary').click()
-   await expect(firstStage).toHaveAttribute('open','')
-   const detailed=overview.locator('[data-course-14-day-list]')
-   await detailed.locator('summary').first().click()
-   await expect(detailed.locator('[data-course-day]')).toHaveCount(14)
-   for (const width of [320,390]) {
-     await page.setViewportSize({width,height:844})
-     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),
-       language+' redesigned OPORA landing must fit the mobile viewport')
-   }
-   await screenshotEvidence(page,{path:output+'/course-public-'+language+'.png',fullPage:false})
- }
+ // Preserve the anonymous OPORA deep link, explicit consent boundary, and
+ // all seven-skill/14-day checks through its real full-programme link.
+ await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})
  await page.setViewportSize({width:390,height:844})
- passed('anonymous EN/RU OPORA landing exposes seven skills and all 14 days without account access')
+ passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')
 
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
  await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})

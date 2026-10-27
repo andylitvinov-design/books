@@ -1,3 +1,4 @@
+import {removeAnonymousPortraitAdditions} from './helpers/anonymous-portrait-source-normalization.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -36,7 +37,7 @@ test('response observer is capped, passive, records detached frames and never re
  for(let i=0;i<50;i++)callbacks[0](response());assert.equal(observations.length,40);assert.doesNotMatch(JSON.stringify(observations),/PRIVATE|\/api\/|3100/);
 });
 test('observer additions erase to exact current main script and preserve all console/page/provider fatal gates',()=>{
- let source=readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8');
+ let source=removeAnonymousPortraitAdditions(readFileSync(new URL('../scripts/verify-public-services-production.mjs',import.meta.url),'utf8'));
  assert.match(source,/attachPublicApiReadDiagnostics\(page, origin, diagnostics.apiReadObservations\)/);
  assert.match(source,/assert.deepEqual\(diagnostics.console.filter\(\(entry\) => entry.type === "error"\), \[\]/);
  // Sequential C moves only this navigation under the helper's route guard.
@@ -46,5 +47,5 @@ test('observer additions erase to exact current main script and preserve all con
  source=source.replace('import { attachPublicApiReadDiagnostics } from "./helpers/public-api-read-diagnostics.mjs";\n','')
   .replace('console: [], apiReadObservations: [], pageErrors: []','console: [], pageErrors: []')
   .replace('    attachPublicApiReadDiagnostics(page, origin, diagnostics.apiReadObservations);\n','');
- const bytes=Buffer.from(source);assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),'7b58f58cce44de157d8ebd757a8fa6568e8ecb1a');
+ const bytes=Buffer.from(source);assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),'473ae326dbe3e8d6e36c1a8894860d0aca7cfdc0');
 });

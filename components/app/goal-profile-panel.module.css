@@ -1,0 +1,31 @@
+/* Standalone fifth goal profile, not another clinical wheel sector. */
+.root{width:100%;min-width:0;box-sizing:border-box;margin:8px 0 14px;padding:13px;border:1px solid #b7d6c7;border-radius:15px;background:#f6faf6;color:#28453c;font-family:system-ui,-apple-system,sans-serif;overflow-wrap:anywhere}
+.root *{box-sizing:border-box}
+.root h3{margin:0 0 5px;color:#1d6055;font-size:1.04rem}
+.root h4{margin:14px 0 8px;color:#255c50;font-size:.92rem}
+.root p{margin:4px 0 9px;font-size:.81rem;line-height:1.44}
+.root a{color:#176b5c;text-decoration:underline;text-underline-offset:2px}
+.root a:focus-visible{outline:3px solid #227468;outline-offset:3px;border-radius:4px}
+.scaleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.scaleCard{min-width:0;display:flex;flex-direction:column;gap:6px;padding:12px 10px;border:1px solid #cedfd6;border-radius:11px;background:#fff}
+.scaleCard strong{font-size:.8rem;line-height:1.3;min-height:30px}
+.value{color:#175f55;font-size:1.04rem;font-weight:800;font-variant-numeric:tabular-nums}
+.scaleCard meter{display:block;width:100%;height:13px;accent-color:#267d6b}
+.scaleCard small{font-size:.72rem;color:#59685e}
+.date,.note{display:block;margin:8px 0;font-size:.73rem;line-height:1.43;color:#596f64}
+.mainAction{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:3px 0;padding:8px 12px;border-radius:9px;background:#236c5e!important;color:#fff!important;font-weight:680;text-decoration:none!important;font-size:.84rem}
+.steps{margin:4px 0 0;padding:0 0 0 20px;display:grid;gap:10px}
+.steps>li{min-width:0;padding:0 0 0 2px}
+.steps>li>strong{display:block;font-size:.84rem}
+.steps>li>span{display:block;margin:4px 0;font-size:.76rem;line-height:1.4}
+.testGroup,.serviceGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:9px 0 0}
+.testSection,.serviceGrid>div{display:flex;flex-direction:column;min-width:0;gap:6px;background:#fff;border:1px solid #d1e0d8;border-radius:9px;padding:10px}
+.testSection>strong,.serviceGrid strong{font-size:.76rem;line-height:1.28}
+.testSection ul{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+.testSection li{display:grid;gap:3px;min-width:0;font-size:.74rem}
+.testSection li span{overflow-wrap:anywhere}
+.testSection small,.serviceGrid small{font-size:.7rem;line-height:1.36;color:#64766d}
+.testSection li a,.serviceGrid a{min-height:33px;display:flex;align-items:center;font-size:.76rem;font-weight:700}
+.steps>li>a{display:inline-block;margin:5px 0;font-size:.78rem}
+@media(max-width:700px){.scaleGrid,.testGroup,.serviceGrid{grid-template-columns:1fr}.scaleCard{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px}.scaleCard strong{min-height:0}.scaleCard meter{grid-column:1/-1}.testSection li{display:flex;align-items:center;justify-content:space-between;gap:10px}.testSection li span{flex:1}}
+@media(max-width:360px){.root{padding:10px}.testSection li{flex-wrap:wrap}}

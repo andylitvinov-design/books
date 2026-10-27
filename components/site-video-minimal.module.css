@@ -56,6 +56,7 @@
 }
 
 .minimal :global(.site-video-caption) {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;

@@ -53,10 +53,11 @@ test('all assessment sign-ins wait for the approved portrait and then exercise M
   }
 })
 
-test('bilingual account PDF journeys retain portrait entry, visible My Tests navigation and PDF assertions', () => {
+test('bilingual account PDF journeys retain portrait entry, visible My Tests navigation and PDF assertions', async () => {
   for (const name of ['mhc-sf', 'personality-types', 'compassion-assessments', 'relationships-assessments']) {
     const source = read('scripts/verify-' + name + '.mjs')
-    assert.match(source, /await navigate\(page,origin\+'\/'\+locale\+'\/app'\)\s+await assertCabinetPortrait\(page, expect, \{ origin, locale \}\)\s+await openCabinetMyTests\(page, expect, \{ origin, locale \}\)/, name)
+    if (name === 'mhc-sf') await assertMhcPdfContract(source)
+    else assert.match(source, /await navigate\(page,origin\+'\/'\+locale\+'\/app'\)\s+await assertCabinetPortrait\(page, expect, \{ origin, locale \}\)\s+await openCabinetMyTests\(page, expect, \{ origin, locale \}\)/, name)
     assert.ok(source.includes("'%PDF-1.4'"), name + ' PDF format proof')
     assert.ok(source.includes('bytes.length>12000'), name + ' PDF content proof')
   }
@@ -69,3 +70,116 @@ test('Spanish cabinet keeps its public root link and verifies the canonical port
   assert.ok(source.includes("toHaveAttribute('lang','en')"))
   assert.ok(source.includes(".hh-app .hh-entry"))
 })
+
+// Execute only the actual bilingual PDF block. Browser, helper and download
+// boundaries are inert; no verifier module, auth, API, DB or provider is run.
+async function assertMhcPdfJourney(source, invalid = {}) {
+  const {start, end} = mhcPdfBounds(source)
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+  const execute = new AsyncFunction('page', 'origin', 'assertCabinetPortrait', 'openCabinetMyTests',
+    'expect', 'readFile', 'assert', 'output', 'passed', source.slice(start, end))
+  const origin = 'http://127.0.0.1:3100', output = 'synthetic-pdf'
+  const events = []
+  let locale, stage = 'previous-document', pending = false
+  const file = {
+    async path() { events.push('path'); return 'synthetic-download' },
+    async saveAs(path) { assert.equal(path, output + '/report-' + locale + '.pdf'); events.push('save:' + locale) },
+  }
+  const page = {
+    async waitForLoadState(state) { assert.equal(state, 'networkidle'); events.push('idle') },
+    async goto(url) {
+      locale = url === origin + '/en/app' ? 'en' : url === origin + '/ru/app' ? 'ru' : null
+      assert.ok(locale, 'Navigate to the localized account root, not straight to Tests')
+      stage = 'root'; events.push('goto:' + locale)
+    },
+    waitForEvent(event, options) {
+      assert.equal(stage, 'tests'); assert.equal(event, 'download'); assert.equal(options.timeout, 60000)
+      assert.equal(pending, false); pending = true; events.push('download:' + locale)
+      return Promise.resolve(file)
+    },
+    getByRole(role, options) {
+      assert.equal(stage, 'tests'); assert.equal(role, 'button')
+      assert.deepEqual(options, {name: locale === 'ru' ? 'Скачать отчёт' : 'Download report', exact: true})
+      return {async click(...args) { assert.deepEqual(args, []); assert.equal(pending, true); pending = false; events.push('click:' + locale) }}
+    },
+  }
+  const expect = Object.freeze({fixture: true})
+  const portrait = async (target, assertion, options) => {
+    assert.equal(target, page); assert.equal(assertion, expect)
+    assert.deepEqual(options, {origin, locale}); assert.equal(stage, 'root')
+    stage = 'portrait'; events.push('portrait:' + locale)
+  }
+  const tests = async (target, assertion, options) => {
+    assert.equal(target, page); assert.equal(assertion, expect)
+    assert.deepEqual(options, {origin, locale}); assert.equal(stage, 'portrait')
+    stage = 'tests'; events.push('tests:' + locale)
+  }
+  const read = async path => {
+    assert.equal(path, 'synthetic-download'); assert.equal(pending, false); events.push('read:' + locale)
+    const bytes = Buffer.alloc(invalid.short === locale ? 12000 : 12001)
+    bytes.write(invalid.signature === locale ? 'NOT-PDF!' : '%PDF-1.4')
+    return bytes
+  }
+  const proof = {
+    equal(actual, expected) { events.push('signature:' + locale); assert.equal(actual, expected) },
+    ok(condition) { events.push('size:' + locale); assert.ok(condition) },
+  }
+  await execute(page, origin, portrait, tests, expect, read, proof, output, message => {
+    assert.equal(message, locale + ' PDF download includes persisted MHC-SF sums and interpretation model')
+    events.push('passed:' + locale)
+  })
+  assert.deepEqual(events, ['en', 'ru'].flatMap(language => ['idle', 'goto:' + language,
+    'portrait:' + language, 'tests:' + language, 'download:' + language, 'click:' + language,
+    'path', 'read:' + language, 'signature:' + language, 'size:' + language, 'save:' + language, 'passed:' + language]))
+}
+
+test('MHC PDF navigation and format/size proof reject missing, reordered and weakened actions', async () => {
+  const source = read('scripts/verify-mhc-sf.mjs')
+  const portrait = '  await assertCabinetPortrait(page, expect, { origin, locale })'
+  const tests = '  await openCabinetMyTests(page, expect, { origin, locale })'
+  for (const [before, after] of [
+    [portrait, ''], [tests, ''], [portrait, portrait + '\n' + portrait],
+    [portrait + '\n' + tests, tests + '\n' + portrait],
+    ["await page.goto(origin+'/'+locale+'/app')", "await page.goto(origin+'/'+locale+'/app/tests')"],
+    ["  await page.waitForLoadState('networkidle')", ''],
+    ["await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()", ''],
+    ["await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click()", "await page.getByRole('button',{name:locale==='ru'?'Скачать отчёт':'Download report',exact:true}).click({force:true})"],
+    ["page.waitForEvent('download',{timeout:60000})", "page.waitForEvent('download',{timeout:1})"],
+    ["assert.equal(bytes.subarray(0,8).toString(),'%PDF-1.4');", ''],
+    ['assert.ok(bytes.length>12000)', ''],
+    ['assert.ok(bytes.length>12000)', 'assert.ok(true)'],
+    ["assert.equal(bytes.subarray(0,8).toString(),'%PDF-1.4')", "assert.equal('%PDF-1.4','%PDF-1.4')"],
+  ]) {
+    assert.ok(source.includes(before), 'Mutation target: ' + before)
+    await assert.rejects(() => assertMhcPdfContract(mutateMhcPdf(source, before, after)), {code: 'ERR_ASSERTION'})
+  }
+  for (const locale of ['en', 'ru']) {
+    await assert.rejects(() => assertMhcPdfJourney(source, {signature: locale}), {code: 'ERR_ASSERTION'})
+    await assert.rejects(() => assertMhcPdfJourney(source, {short: locale}), {code: 'ERR_ASSERTION'})
+  }
+})
+
+test('MHC exact-block fixture accepts harmless equivalent native navigation syntax', async () => {
+  const source = read('scripts/verify-mhc-sf.mjs')
+  await assertMhcPdfContract(mutateMhcPdf(source, 'await page.goto(', "await page['goto']("))
+})
+
+function mhcPdfBounds(source) {
+  const marker = source.indexOf('// The existing client-only PDF pipeline')
+  const start = source.indexOf(" for(const locale of ['en','ru']){", marker)
+  const end = source.indexOf(' // Both language/mode journeys', start)
+  assert.ok(marker >= 0 && start > marker && end > start)
+  return {start, end}
+}
+function mutateMhcPdf(source, before, after) {
+  const {start, end} = mhcPdfBounds(source), block = source.slice(start, end)
+  assert.equal(block.split(before).length, 2, 'Unique exact-block mutation target: ' + before)
+  return source.slice(0, start) + block.replace(before, after) + source.slice(end)
+}
+async function assertMhcPdfContract(source) {
+  await assertMhcPdfJourney(source)
+  for (const locale of ['en', 'ru']) {
+    await assert.rejects(() => assertMhcPdfJourney(source, {signature: locale}), {code: 'ERR_ASSERTION'})
+    await assert.rejects(() => assertMhcPdfJourney(source, {short: locale}), {code: 'ERR_ASSERTION'})
+  }
+}

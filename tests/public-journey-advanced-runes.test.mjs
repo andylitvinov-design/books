@@ -14,11 +14,11 @@ const info = (extra = {}) => ({ url: origin + asset, method: 'GET', body: '', na
   hasAuthHeaders: false, hasPrefetchHeaders: false, prefetch: false,
   prefetchSignals: { purposePrefetch: false, nextRouterPrefetch: false, rsc: false }, ...extra })
 const decide = (request, fixtures = option, sensitive = []) => publicJourneyRequestDecision(request, origin, sensitive, fixtures)
-const compile = (path, modules) => {
-  const result = ts.transpileModule(source(path), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }, reportDiagnostics: true })
+const compile = (path, modules, sourceOverride = source(path), globals = {}) => {
+  const result = ts.transpileModule(sourceOverride, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX }, reportDiagnostics: true })
   assert.deepEqual(result.diagnostics.filter(item => item.category === ts.DiagnosticCategory.Error), [])
   const exports = {}
-  vm.runInNewContext(result.outputText, { exports, URL, require: name => { assert.ok(Object.hasOwn(modules, name), 'inert import'); return modules[name] } }, { timeout: 1000 })
+  vm.runInNewContext(result.outputText, { exports, URL, ...globals, require: name => { assert.ok(Object.hasOwn(modules, name), 'inert import: ' + name); return modules[name] } }, { timeout: 1000 })
   return exports
 }
 
@@ -29,20 +29,49 @@ test('exact pinned public PNG is rendered by authored public topic source, not a
   assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')
   assert.deepEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], [348, 341])
   const jsx = (type, props = {}) => typeof type === 'function' ? type(props) : { type, props }
-  const component = compile('components/holistic-support-topic-filter.tsx', {
-    'react/jsx-runtime': { jsx, jsxs: jsx }, react: { useState: () => ['business', () => assert.fail('no events')] },
-    'next/image': { default: 'img' }, 'next/link': { default: 'a' },
-    'lucide-react': { ArrowRight: 'ArrowRight', BriefcaseBusiness: 'BriefcaseBusiness', Heart: 'Heart', HeartPulse: 'HeartPulse' },
-    './holistic-support-topic-filter.module.css': { default: {} },
-  })
+  const render = (locale, sourceOverride = source('components/holistic-support-topic-filter.tsx')) => {
+    const effects = [], listeners = new Map()
+    const window = {
+      addEventListener(name, listener) { assert.equal(name, 'hh-support-order-open'); assert.equal(listeners.has(name), false); listeners.set(name, listener) },
+      removeEventListener(name, listener) { assert.equal(listeners.get(name), listener); listeners.delete(name) },
+    }
+    const component = compile('components/holistic-support-topic-filter.tsx', {
+      'react/jsx-runtime': { jsx, jsxs: jsx }, react: {
+        useState: initial => [typeof initial === 'function' ? initial() : initial, () => assert.fail('no events')],
+        useEffect: effect => effects.push(effect),
+      },
+      'next/image': { default: 'img' }, 'next/link': { default: 'a' },
+      'lucide-react': { ArrowRight: 'ArrowRight', BriefcaseBusiness: 'BriefcaseBusiness', Heart: 'Heart', HeartPulse: 'HeartPulse' },
+      './holistic-support-topic-filter.module.css': { default: {} },
+      './holistic-inline-support-order': { HolisticInlineSupportOrder() {
+        assert.fail('Unopened inline order is outside public poster provenance')
+      } },
+    }, sourceOverride, { window })
+    const tree = component.HolisticSupportTopicFilter({ locale })
+    assert.equal(effects.length, 2, 'Commit both actual coordination and default scroll effects')
+    const cleanup = effects[0]()
+    assert.equal(typeof cleanup, 'function'); assert.equal(listeners.size, 1)
+    listeners.get('hh-support-order-open')({ detail: { source: 'topics' } })
+    assert.equal(effects[1](), undefined)
+    cleanup(); assert.equal(listeners.size, 0)
+    return tree
+  }
   for (const locale of ['en', 'ru', 'es']) {
     const images = []
     const visit = node => { if (Array.isArray(node)) return node.forEach(visit); if (!node || typeof node !== 'object') return;
       if (node.type === 'img') images.push(node.props.src); visit(node.props?.children) }
-    visit(component.HolisticSupportTopicFilter({ locale }))
+    visit(render(locale))
     assert.equal(images.length, 3)
     assert.equal(images[1], asset)
   }
+  const topicSource = source('components/holistic-support-topic-filter.tsx')
+  const closedOrder = 'useState<SupportRequestKind | null>(null)'
+  assert.equal(topicSource.split(closedOrder).length - 1, 1)
+  assert.throws(() => render('en', topicSource.replace(closedOrder, "useState<SupportRequestKind | null>('talisman')")),
+    /Unopened inline order is outside public poster provenance/)
+  const guard = 'if (!orderKind) return;'
+  assert.equal(topicSource.split(guard).length - 1, 1)
+  assert.throws(() => render('en', topicSource.replace(guard, '')), /document is not defined/)
   assert.match(source('components/ideas-discovery.module.css'), /background-image:url\("\/academy\/reiki-yggdrasil\/source\/advanced-runes\.png"\)/)
 })
 

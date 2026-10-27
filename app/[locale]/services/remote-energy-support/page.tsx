@@ -3,11 +3,8 @@ import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
-import { getAppConfig } from "@/lib/app/config";
-import { createPractitionerRepository } from "@/lib/practitioners/repository";
-import { createServiceReviewRepository } from "@/lib/practitioners/reviews";
-import type { PublicPractitioner } from "@/lib/practitioners/public-types";
 import { RemoteEnergySupportBooking, type EnergySupportMaster } from "@/components/remote-energy-support-booking";
+import { listRemoteEnergySupportMasters } from "@/lib/practitioners/public-remote-support-masters";
 
 type PageProps = {
   params: Promise<{ locale: string }>;
@@ -42,47 +39,13 @@ export default async function RemoteEnergySupportPage({ params, searchParams }: 
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const { practitioner } = await searchParams;
-  let records: PublicPractitioner[] = [];
-  try {
-    records = await createPractitionerRepository(getAppConfig()).listPublicPractitioners(locale);
-  } catch {
-    // Only actual published, eligible service offerings can accept a booking request.
-  }
-  const masters: EnergySupportMaster[] = records.flatMap((record) =>
-    record.services
-      .filter((service) => service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual" && service.status === "published" &&
-        service.active && ["online", "hybrid"].includes(service.deliveryFormat) &&
-        ["fixed", "from"].includes(service.pricingMode))
-      .map((service) => ({
-        slug: record.slug,
-        name: record.profile.displayName || record.profile.name || service.practitionerName,
-        title: record.profile.professionalTitle || "",
-        photo: record.profile.photoPath || "",
-        serviceId: service.id,
-        methods: service.methods?.length ? service.methods : ["Remote support"],
-        bio: record.profile.shortBio || "",
-        description: service.copy?.shortDescription || service.copy?.description || "",
-        languages: service.languages || [],
-        currency: service.currency || "",
-        reviewCount: 0,
-        reviewAverage: 0,
-        priceOptions: service.priceOptions?.length
-          ? service.priceOptions
-          : ([10, 20, 30, 60].includes(service.durationMinutes || 0) &&
-             service.confirmedPrice != null && service.pricingMode !== "contact" && service.pricingMode !== "free"
-              ? [{ duration: service.durationMinutes as 10 | 20 | 30 | 60, price: service.confirmedPrice }] : []),
-      }))
-  );
-  const withReviews = await Promise.all(masters.map(async (master) => {
-    try {
-      const {summary} = await createServiceReviewRepository(getAppConfig()).listPublic(master.serviceId);
-      return {...master,reviewCount:summary.count,reviewAverage:summary.average};
-    } catch { return master; }
-  }));
+  let masters: EnergySupportMaster[] = [];
+  try { masters = await listRemoteEnergySupportMasters(locale); }
+  catch { /* Explicitly empty fallback keeps the standalone page usable when the directory is offline. */ }
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale}/>
-      <RemoteEnergySupportBooking locale={locale as "en" | "ru" | "es"} masters={withReviews} preferredPractitioner={practitioner || ""}/>
+      <RemoteEnergySupportBooking locale={locale as "en" | "ru" | "es"} masters={masters} preferredPractitioner={practitioner || ""}/>
     </main>
   );
 }

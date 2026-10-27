@@ -11,6 +11,7 @@ import { performance as nodePerformance } from 'node:perf_hooks'
 import { chromium, expect } from '@playwright/test'
 import { SITE_VIDEO_SLOTS } from '../lib/site-videos/model.js'
 import { RECEIPT_SESSION_KEY } from '../lib/practitioners/enquiry-receipt.mjs'
+import { verifyAboutVideoCaptionLayout } from './verify-about-video-caption-layout.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -382,6 +383,8 @@ try {
     }
   }
   browser = await chromium.launch({ headless: true })
+  await verifyAboutVideoCaptionLayout(browser, expect)
+  pass('Anonymous minimal-caption fixture: baseline overflow reproduced; contained with accessible names and unchanged normal flow at 1365/390px')
   const context = await browser.newContext({ viewport: { width: 1365, height: 1000 }, serviceWorkers: 'block' })
   const page = await context.newPage()
   const pageErrors = []

@@ -8,6 +8,10 @@ import {aggregateOwnerCouncil,ownerEnsembleSynthesisPrompt,
 
 const reply=(data,status=200)=>Response.json(data,{status})
 const models=[
+  {id:'qwen/qwen3.8-27b:free',pricing:{prompt:'0',completion:'0'},
+    architecture:{input_modalities:['text'],output_modalities:['text']}},
+  {id:'thinkingmachines/inkling-small:free',pricing:{prompt:'0',completion:'0'},
+    architecture:{input_modalities:['text'],output_modalities:['text']}},
   {id:'nvidia/nemotron-3-ultra-550b-a55b:free',pricing:{prompt:'0',completion:'0'},
     architecture:{input_modalities:['text'],output_modalities:['text']}},
   {id:'google/gemma-4-31b-it:free',pricing:{prompt:'0',completion:'0'},
@@ -33,19 +37,28 @@ const synth={
       why:'Исключить ошибочный призыв повторно отправить форму',
       check:'Клиент видит подтверждение только после успешного ответа API'}
   ],
+  options:[
+    {approach:'Упростить первый экран',advantage:'Меньше действий до отправки',
+      limit:'Не гарантирует запись заявки в CRM'},
+    {approach:'Сначала проверить серверный путь',advantage:'Выявляет коренную причину потери лидов',
+      limit:'Не заменяет UX-проверку на телефоне'}
+  ],
+  risks:[{risk:'Показать успех без записанной заявки',
+    mitigation:'Отображать подтверждение только после серверного receipt'}],
   unknowns:['Есть ли текущие серверные delivery receipts']
 }
 const results={
   gemini:sample('gemini-3.8-flash'),
-  free:sample('nvidia/nemotron-3-ultra-550b-a55b:free')
+  free:sample('qwen/qwen3.8-27b:free')
 }
-test('real live-catalog rankings prefer independently authored strong models, never paid substitutes',()=>{
+test('synthetic catalog ranks distinct $0 models and excludes banned provider logging terms',()=>{
   const top=chooseTopFreeOpenRouterModels(models)
   assert.deepEqual(top.map(m=>m.id),[
-    'nvidia/nemotron-3-ultra-550b-a55b:free',
+    'qwen/qwen3.8-27b:free',
     'google/gemma-4-31b-it:free'
   ])
-  assert.ok(top.every(m=>!m.id.includes('mistralai')))
+  assert.ok(top.every(m=>!m.id.includes('mistralai')&&!m.id.includes('inkling')&&!m.id.includes('nemotron')))
+  assert.equal(new Set(top.map(m=>m.id.split('/')[0])).size,2)
   assert.throws(()=>chooseTopFreeOpenRouterModels(models,0))
 })
 test('two independent OpenRouter completions are exactly $0 and actually name their own models',async()=>{
@@ -84,27 +97,38 @@ test('one verified responder never triggers synthesis or invents a consensus',as
   assert.equal(r.status,'unavailable')
   assert.equal(inference,0)
 })
-test('one extra real Gemini completion synthesizes concrete, attributable actions',async()=>{
+test('synthesis prefers proven zero-priced free model, not a second flaky Gemini request',async()=>{
   const prompt=ownerEnsembleSynthesisPrompt('Как улучшить вход?',results)
   assert.match(prompt,/НЕДОВЕРЕННЫЕ ДАННЫЕ/i)
-  assert.match(prompt,/Проверьте|Проверить/)
-  let calls=0
+  let completions=0
   const r=await aggregateOwnerCouncil('Как улучшить вход?',results,{
-    HH_COUNCIL_GEMINI_API_KEY:'synthetic',
-    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true'
+    HH_COUNCIL_GEMINI_API_KEY:'synthetic-google',
+    HH_COUNCIL_GEMINI_FREE_TIER_CONFIRMED:'true',
+    HH_COUNCIL_OPENROUTER_API_KEY:'synthetic-router'
   },async(url,opt)=>{
-    calls++
-    assert.match(String(url),/gemini-3\.8-flash:generateContent/)
+    const target=String(url)
+    assert.doesNotMatch(target,/generativelanguage.googleapis.com/)
+    if(target.endsWith('/key'))return reply({data:{key_id:'synthetic-test'}})
+    if(target.endsWith('/models'))return reply({data:models})
+    completions++
     const req=JSON.parse(opt.body)
-    assert.match(req.contents[0].parts[0].text,/crm/i)
-    return reply({candidates:[{finishReason:'STOP',content:{
-      parts:[{text:JSON.stringify(synth)}]}}]})
+    assert.equal(req.model,'qwen/qwen3.8-27b:free')
+    assert.equal(req.provider.allow_fallbacks,false)
+    assert.equal(req.provider.data_collection,'deny')
+    assert.equal(req.provider.max_price.prompt,0)
+    assert.match(req.messages[1].content,/crm/i)
+    return reply({model:req.model,usage:{cost:0},choices:[{
+      finish_reason:'stop',message:{content:JSON.stringify(synth)}
+    }]})
   })
-  assert.equal(calls,1)
+  assert.equal(completions,1)
   assert.equal(r.status,'ok')
-  assert.equal(r.model,'gemini-3.8-flash')
+  assert.equal(r.model,'qwen/qwen3.8-27b:free')
   assert.match(r.text,/🛠 Что конкретно сделать/)
   assert.match(r.text,/Проверить: В CRM появляется/)
+  assert.match(r.text,/Альтернативы и ограничения/)
+  assert.match(r.text,/Риски и защита/)
+  assert.match(r.text,/Отображать подтверждение только после серверного receipt/)
   assert.match(r.text,/Gemini \+ Free AI 1/)
   assert.doesNotMatch(r.text,/Mistral/)
 })

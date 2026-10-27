@@ -475,7 +475,8 @@ test('receipt acknowledgement bypass negative control exposes a detectable inval
     error => error.code === 'ERR_ASSERTION' && /An unconfirmed response must expose no messenger links/.test(error.message));
 });
 test('wrong recipient source negative control cannot pass the prepared-link contract', async () => {
-  const changed = mutateChooser('href={preparedWhatsApp}', 'href={preparedWhatsApp.replace("14376066502", "10000000000")}', 2);
+  // Canonical booking adds a third explicit WhatsApp anchor; corrupt all three.
+  const changed = mutateChooser('href={preparedWhatsApp}', 'href={preparedWhatsApp.replace("14376066502", "10000000000")}', 3);
   await assert.rejects(openCurrentChooser(mountChooser('en', undefined, false, {}, changed)),
     error => error.code === 'ERR_ASSERTION' && error.actual === '/10000000000' && error.expected === '/14376066502');
 });
@@ -528,4 +529,26 @@ for (const denied of [false, true]) test('default navigation requires a confirme
   assert.equal(f.nodes().filter(node => node.type === 'acquisition-link').length, 2,
     'Denied receipt storage preserves the in-place acknowledged fallback');
   assert.deepEqual(env.popups, []); assert.deepEqual(env.events, []);
+});
+
+
+test('ordinary contact fixture recognizes the real Link import but rejects rendering any booking/provider Link', () => {
+  const source = read('components/contact-channel-chooser.tsx');
+  assert.match(source, /import Link from "next\/link"/);
+  for (const href of ['/en/cart?items=express-consultation-30', 'https://provider.example.invalid/pay']) {
+    const env = environment('en');
+    const extra = '\nexport function FixtureLinkBoundary() { return <Link href=' + JSON.stringify(href) + ' prefetch={false}>Forbidden link</Link>; }';
+    assert.throws(() => mount('contact-channel-chooser', 'FixtureLinkBoundary', {}, env,
+      {sourceOverride: source + extra}), /Booking cart Link is outside the synthetic ordinary contact fixture/);
+    assert.deepEqual(env.attempts, []); assert.deepEqual(env.navigations, []); assert.deepEqual(env.popups, []);
+  }
+});
+
+test('ordinary contact fixture still rejects unknown component imports', () => {
+  const source = read('components/contact-channel-chooser.tsx');
+  const extra = '\nimport Unexpected from "unapproved-fixture-module";\nexport function FixtureImportBoundary() { return <Unexpected />; }';
+  const env = environment('en');
+  assert.throws(() => mount('contact-channel-chooser', 'FixtureImportBoundary', {}, env,
+    {sourceOverride: source + extra}), /Unexpected runtime dependency: unapproved-fixture-module/);
+  assert.deepEqual(env.attempts, []); assert.deepEqual(env.navigations, []); assert.deepEqual(env.popups, []);
 });

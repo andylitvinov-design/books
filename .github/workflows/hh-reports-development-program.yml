@@ -12,6 +12,10 @@ on:
       - 'app/api/app/**'
       - 'tests/reports-development-program.test.mjs'
       - 'tests/profile-portrait-test-suggestions.test.mjs'
+      - 'tests/goal-profile-journey.test.mjs'
+      - 'lib/profile/goal-profile.js'
+      - 'components/app/goal-profile-panel.jsx'
+      - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
       - 'package.json'
   pull_request:
@@ -22,6 +26,10 @@ on:
       - 'lib/app/development-goals.js'
       - 'tests/reports-development-program.test.mjs'
       - 'tests/profile-portrait-test-suggestions.test.mjs'
+      - 'tests/goal-profile-journey.test.mjs'
+      - 'lib/profile/goal-profile.js'
+      - 'components/app/goal-profile-panel.jsx'
+      - 'components/app/goal-profile-panel.module.css'
       - 'lib/profile/portrait-test-suggestions.js'
 permissions:
   contents: read
@@ -42,8 +50,8 @@ jobs:
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
       - name: Test development programme and canonical sector calculations
-        run: node --conditions=react-server --test tests/reports-development-program.test.mjs tests/profile-portrait-test-suggestions.test.mjs tests/portrait-sectors.test.mjs tests/psych-portrait.test.mjs tests/my-course-programs.test.mjs
+        run: node --conditions=react-server --test tests/reports-development-program.test.mjs tests/profile-portrait-test-suggestions.test.mjs tests/portrait-sectors.test.mjs tests/psych-portrait.test.mjs tests/my-course-programs.test.mjs tests/goal-profile-journey.test.mjs
       - name: Lint newly created feature files
-        run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js tests/profile-portrait-test-suggestions.test.mjs
+        run: npx --no-install eslint components/app/development-program.jsx lib/profile/development-program.js lib/profile/portrait-test-suggestions.js lib/app/development-goals.js lib/profile/goal-profile.js components/app/goal-profile-panel.jsx tests/profile-portrait-test-suggestions.test.mjs tests/goal-profile-journey.test.mjs
       - name: Verify production Next.js build without preview deployment
         run: npm run build

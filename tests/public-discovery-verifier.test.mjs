@@ -230,11 +230,16 @@ test('collection search exact oracle rejects omitted/extra preferences, reorderi
 
 function portraitHarness(locale, mutate = source => source, measuredCount = 8) {
   const react = hooks()
-  const { TestExplorerVisual } = compile(mutate(read('components/app/test-explorer-visual.jsx')), react, { '@/lib/assessments/test-explorer': explorerModule, '@/lib/assessments/portrait-ray-labels': portraitRayLabels, '@/lib/assessments/portrait-sectors': portraitSectors, '@/lib/assessments/portrait-constructs': portraitConstructs })
+  const { TestExplorerVisual } = compile(mutate(read('components/app/test-explorer-visual.jsx')), react, { '@/lib/assessments/test-explorer': explorerModule, '@/lib/assessments/portrait-ray-labels': portraitRayLabels, '@/lib/assessments/portrait-sectors': portraitSectors, '@/lib/assessments/portrait-constructs': portraitConstructs, './goal-profile-panel': { GoalProfilePanel: 'UnselectedGoalProfileBoundary' } })
   const axes = explorerModule.TEST_EXPLORER_AXES
   const props = { locale, coverage: { axes: {}, coveredCount: 0 }, portrait: { axes: Object.fromEntries(axes.filter(axis => axis !== 'personality').slice(0, measuredCount).map(axis => [axis, { percent: 50, rawValue:5, min:0, max:10, mode:"directional" }])) } }
   let tree
-  const render = () => renderWithEffects([react], () => tree = TestExplorerVisual(props))
+  const render = () => renderWithEffects([react], () => {
+    tree = TestExplorerVisual(props)
+    assert.equal(nodes(tree).filter(node => node.type === 'UnselectedGoalProfileBoundary').length, 0,
+      'Ray-only acceptance must not render the separate Goal Profile boundary')
+    return tree
+  })
   const locator = query => ({
     list: query,
     locator(selector) {
@@ -293,12 +298,19 @@ test('browser ray verifier rejects no-op expansion, obsolete caps, fabricated de
     ['const suggestedRays = PORTRAIT_AXES', 'const suggestedRays = measuredAxes'],
     ['setSelectedSector(sector.key)', '(setChosenRays(null), setSelectedSector(sector.key))'],
     ['portraitAxesForSectors([selectedSector])', "portraitAxesForSectors(['body'])"],
+    ['data-portrait-sector="goal"', 'data-portrait-sector="unexpected"'],
   ]
   for (const [before, after] of mutations) {
     assert.ok(read('components/app/test-explorer-visual.jsx').includes(before), 'Mutation must alter the actual current source')
     const h = portraitHarness('en', source => source.replace(before, after), 0)
     await assert.rejects(exercisePortraitRays(h.portrait, h.expect, 'en'))
   }
+})
+
+test('ray fixture rejects selecting the separate Goal Profile instead of masking its render', async () => {
+  const h = portraitHarness('en')
+  await h.portrait.locator('[data-portrait-sectors]').locator('[data-portrait-sector="goal"]').click()
+  assert.throws(() => h.portrait.list(), /Ray-only acceptance must not render the separate Goal Profile boundary/)
 })
 
 test('core keeps new discovery paths inside the isolated native browser acceptance and preserves Spanish public diagnostics', () => {

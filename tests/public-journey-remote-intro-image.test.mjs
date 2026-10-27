@@ -23,7 +23,7 @@ const compile = (path, modules) => {
   assert.deepEqual(result.diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error), [])
   const exports = {}
   vm.runInNewContext(result.outputText, { exports, require: name => {
-    assert.ok(Object.hasOwn(modules, name), 'Closed inert imports'); return modules[name]
+    assert.ok(Object.hasOwn(modules, name), 'Closed inert imports: ' + name); return modules[name]
   } }, { timeout: 1000 })
   return exports
 }
@@ -41,24 +41,39 @@ test('verified public JPEG is the sole declared background of the rendered remot
     '../billing/manual-config.js': { manualBillingConfig: deny }, '../assessments/contracts.js': { AppError: SyntheticAppError } })
   const env = { CI: 'true', NODE_ENV: 'production' }
   assert.throws(() => config.getAppConfig(env), error => error.message === 'APP_UNAVAILABLE' && error.status === 503)
+  const bookingAst = ts.createSourceFile('booking.tsx', source('components/remote-energy-support-booking.tsx'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const stateNames = []
+  const visitState = node => {
+    if (ts.isVariableDeclaration(node) && ts.isArrayBindingPattern(node.name) && ts.isCallExpression(node.initializer) && node.initializer.expression.getText() === 'useState') stateNames.push(node.name.elements[0].name.getText())
+    ts.forEachChild(node, visitState)
+  }
+  visitState(bookingAst)
+  assert.equal(stateNames.filter(name => name === 'showResults').length, 1)
+  const showResultsIndex = stateNames.indexOf('showResults')
   const common = { 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' }, 'next/link': { default: 'a' } }
   for (const locale of ['en', 'ru', 'es']) for (const showResults of [false, true]) {
     let hookIndex = 0, repositoryCalls = 0, reviewCalls = 0
     const booking = compile('components/remote-energy-support-booking.tsx', { ...common,
       'next/navigation': { useRouter: () => ({ push: deny }) },
+      '@/lib/practitioners/taoist-talismans': compile('lib/practitioners/taoist-talismans.js', {}),
       react: { useEffect: () => {}, useMemo: fn => fn(), useState: initial => {
-        const index = hookIndex++; return [index === 3 ? showResults : typeof initial === 'function' ? initial() : initial, deny]
+        const index = hookIndex++; return [index === showResultsIndex ? showResults : typeof initial === 'function' ? initial() : initial, deny]
       } },
       '@/lib/practitioners/remote-energy-support': { REMOTE_SUPPORT_DRAFT_KEY: 'SYNTHETIC_KEY', REMOTE_SUPPORT_DURATIONS: [10,20,30,60],
         stageRemoteSupportPrivateIntention: deny, takeRemoteSupportLandingIntention: deny },
       './remote-energy-support-booking.module.css': { default: new Proxy({}, { get: (_, name) => String(name) }) },
     })
+    let configurationReads = 0
+    const directory = compile('lib/practitioners/public-remote-support-masters.ts', {
+      '@/lib/app/config': { getAppConfig: () => { configurationReads++; return config.getAppConfig(env) } },
+      '@/lib/practitioners/repository': { createPractitionerRepository: () => { repositoryCalls++; deny() } },
+      '@/lib/practitioners/reviews': { createServiceReviewRepository: () => { reviewCalls++; deny() } },
+    })
     const page = compile('app/[locale]/services/remote-energy-support/page.tsx', { ...common,
       'next/navigation': { notFound: deny }, '@/components/public-site-header': { PublicSiteHeader: 'SharedHeaderNotExecuted' },
       '@/data/academy/catalog': { isPublicLocale: value => ['en','ru','es'].includes(value) },
-      '@/data/site-metadata': { metadataBaseFor: deny }, '@/lib/app/config': { getAppConfig: () => config.getAppConfig(env) },
-      '@/lib/practitioners/repository': { createPractitionerRepository: () => { repositoryCalls++; deny() } },
-      '@/lib/practitioners/reviews': { createServiceReviewRepository: () => { reviewCalls++; deny() } },
+      '@/data/site-metadata': { metadataBaseFor: deny },
+      '@/lib/practitioners/public-remote-support-masters': directory,
       '@/components/remote-energy-support-booking': booking,
     })
     const rendered = await page.default({ params: Promise.resolve({ locale }), searchParams: Promise.resolve({}) })
@@ -71,6 +86,8 @@ test('verified public JPEG is the sole declared background of the rendered remot
     }
     visit(rendered)
     assert.deepEqual([images, intros, empty, repositoryCalls, reviewCalls], [0, 1, 1, 0, 0])
+    assert.equal(configurationReads, 1, 'Real extracted directory must reach unavailable config before repository access')
+    assert.equal(hookIndex, stateNames.length, 'Named state mapping must cover the actual rendered booking component')
   }
 })
 

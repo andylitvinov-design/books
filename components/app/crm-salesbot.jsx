@@ -12,11 +12,13 @@ import {
 import styles from './crm-salesbot.module.css'
 import CrmSalesbotDraftControls from './crm-salesbot-drafts'
 import CrmSalesbotInternalRuns from './crm-salesbot-internal-runs'
+import CrmTelegramDiagnosticScript from './crm-telegram-diagnostic-script'
 
 const clone = value => JSON.parse(JSON.stringify(value))
 const LABELS = {
   en: {
-    title: 'Holistic SalesBot · Workflow studio', eyebrow: 'CRM AUTOMATIONS',
+    title: 'Other CRM workflows · preview only', eyebrow: 'CRM AUTOMATIONS',
+    extraTemplates: 'Other CRM scenarios · examples and internal previews (not the Telegram dialogue)',
     lead: 'Build a guided conversation and safely test every branch before connecting a real channel.',
     safety: 'Preview only · No customers contacted · No CRM leads, bookings or payments created.',
     explain: 'Changes remain on this page until you explicitly save an encrypted owner draft above. JSON export is optional.',
@@ -49,7 +51,8 @@ const LABELS = {
       handoff:'Owner handoff', end:'Finish' },
   },
   ru: {
-    title: 'Holistic SalesBot · Конструктор', eyebrow: 'АВТОМАТИЗАЦИИ CRM',
+    title: 'Другие CRM-сценарии · только предпросмотр', eyebrow: 'АВТОМАТИЗАЦИИ CRM',
+    extraTemplates: 'Другие CRM-сценарии · примеры и внутренние предпросмотры (не диалог Telegram)',
     lead: 'Настройте сценарий диалога и проверьте все ветки, прежде чем подключать реальный канал.',
     safety: 'Только предпросмотр · Никому не пишем · Не создаём лиды, записи и оплаты.',
     explain: 'Изменения остаются в этой вкладке, пока вы не сохраните зашифрованный черновик в CRM. JSON можно скопировать отдельно.',
@@ -82,7 +85,8 @@ const LABELS = {
       handoff:'Передача мастеру', end:'Завершение' },
   },
   es: {
-    title: 'Holistic SalesBot · Constructor', eyebrow: 'AUTOMATIZACIONES CRM',
+    title: 'Otros escenarios CRM · solo vista previa', eyebrow: 'AUTOMATIZACIONES CRM',
+    extraTemplates: 'Otros escenarios CRM · ejemplos y vistas previas internas (no Telegram)',
     lead: 'Diseña una conversación y prueba sus caminos antes de conectar un canal real.',
     safety: 'Solo vista previa · Sin mensajes ni contactos, reservas o pagos nuevos.',
     explain: 'Los cambios quedan en esta página hasta guardar el borrador cifrado en CRM. Copiar JSON es opcional.',
@@ -259,7 +263,11 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
   const outgoing = salesbotEditorEdges(selected)
   const activePath = outgoing.includes(insertPath) ? insertPath : outgoing[0] || ''
   const inDefaultTemplates = SALESBOT_TEMPLATES.some(template => template.id === templateId)
-  return <section className={styles.root} aria-labelledby="hh-salesbot-title" data-salesbot-mode="dry_run">
+  return <section className={styles.root} data-salesbot-studio="original-telegram-first">
+    <CrmTelegramDiagnosticScript locale={lang}/>
+    <details className={styles.extraTemplates} data-salesbot-mode="dry_run">
+      <summary className={styles.extraSummary}>{t.extraTemplates}</summary>
+      <div className={styles.extraBody}>
     <header className={styles.head}>
       <div>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
@@ -417,5 +425,7 @@ export default function CrmSalesbot({ accountId, locale = 'en' }) {
       </div>}
       <p className={styles.note}>{t.onlyPreview}</p>
     </div>
+      </div>
+    </details>
   </section>
 }

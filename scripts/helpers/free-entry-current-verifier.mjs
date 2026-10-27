@@ -1,4 +1,4 @@
-import { createExpectedTestimonialPosterFixture, expectedTestimonialPoster, assertSyntheticPosterObservation } from './expected-testimonial-poster-fixture.mjs'
+import { createExpectedTestimonialPosterFixture, expectedTestimonialPoster, additionalTestimonialPoster, assertSyntheticPosterObservation } from './expected-testimonial-poster-fixture.mjs'
 import assert from 'node:assert/strict'
 const REFERENCE = 'HH-ABCD1234EF56', PHONE = '+14165550123'
 // Source-pinned expectations; never inferred from a rendered URL or POST.
@@ -70,7 +70,7 @@ export function assertDiagnosisDraft(raw, locale, channel = 'whatsapp') {
 export function createFreeEntryGuard(origin, locale, {syntheticTestimonialPoster=false} = {}) {
  boundary(origin, locale)
  const posterFixture=syntheticTestimonialPoster===true?createExpectedTestimonialPosterFixture(origin,locale):null
- const state = {videoArmed:false, enquiryArmed:false, submissions:[], videos:0, handoffs:0, blocked:[], get fixturePosters(){return posterFixture?.responses||0}}
+ const state = {videoArmed:false, enquiryArmed:false, submissions:[], videos:0, handoffs:0, blocked:[], get fixturePosters(){return posterFixture?.responses||0}, fixturePosterRequests:id=>posterFixture?.responsesFor(id)||0}
  const block = (route, reason) => { state.blocked.push(reason); return route.abort('blockedbyclient') }
  state.route = async route => {
   const request = route.request(), url = new URL(request.url()), method = request.method()
@@ -167,13 +167,19 @@ export async function verifyFreeDiagnosisHub(page, expect, {origin,locale}) {
   const poster=posterCard.locator('img.site-video-poster')
   await expect(poster).toHaveCount(1); await expect(poster).toHaveAttribute('src',expectedTestimonialPoster)
   await posterCard.scrollIntoViewIfNeeded()
-  await expect.poll(()=>guard.fixturePosters).toBe(1)
+  await expect.poll(()=>guard.fixturePosterRequests('m9RfDgK76PU')).toBe(1)
   await expect.poll(()=>poster.evaluate(image=>image.complete&&image.naturalWidth===640&&image.naturalHeight===360)).toBe(true)
   const posterState=await poster.evaluate((image,expected)=>{
    const rect=image.getBoundingClientRect()
    return{sourceMatches:image.getAttribute('src')===expected,complete:image.complete,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,width:rect.width,height:rect.height}
   },expectedTestimonialPoster)
-  assertSyntheticPosterObservation({...posterState,targetCount:await posterCard.count(),imageCount:await poster.count(),requests:guard.fixturePosters})
+  assertSyntheticPosterObservation({...posterState,targetCount:await posterCard.count(),imageCount:await poster.count(),requests:guard.fixturePosterRequests('m9RfDgK76PU')})
+  // This second source-declared poster is fulfilled only if the browser asks;
+  // no scroll/load is forced for an otherwise offscreen image.
+  const additionalCard=hub.locator('[data-personal-testimonials="all"] [data-testimonial-video-id="5oj0BIbLT4w"]')
+  await expect(additionalCard).toHaveCount(1)
+  const additionalPoster=additionalCard.locator('img.site-video-poster')
+  await expect(additionalPoster).toHaveCount(1); await expect(additionalPoster).toHaveAttribute('src',additionalTestimonialPoster)
   for(let i=0;i<offerIds.length;i++) {
    const offer=hub.locator('[data-diagnosis-offer="'+offerIds[i]+'"]')
    await expect(offer.locator('h3')).toHaveText(c.titles[i])
@@ -226,6 +232,12 @@ export async function verifyFreeDiagnosisHub(page, expect, {origin,locale}) {
   await expect(dialog.locator('input[type="checkbox"]')).not.toBeChecked()
   await expect(dialog.locator('a[data-contact-channel]')).toHaveCount(0)
   assert.equal(guard.submissions.length,1,'Switching back to free is not another registration')
+  const additionalRequests=guard.fixturePosterRequests('5oj0BIbLT4w')
+  assert.ok(additionalRequests===0||additionalRequests===1,'Second declared poster remains optional and capped')
+  if(additionalRequests===1) {
+   await expect.poll(()=>additionalPoster.evaluate(image=>image.complete&&image.naturalWidth===640&&image.naturalHeight===360)).toBe(true)
+   assert.equal(await additionalPoster.getAttribute('src'),additionalTestimonialPoster)
+  }
   assert.deepEqual(guard.blocked,[])
  } finally { if(popup) await popup.close(); await context.unroute('**/*',guard.route) }
 }

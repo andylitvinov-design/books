@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+// Include 09/12/15 slot and owner-revenue tests in the existing focused Telegram CI.
+import './owner-telegram-daily-schedule.test.mjs'
 import {readFileSync} from 'node:fs'
 import {getTorontoCompletedPeriod,makePracticeDigest} from '../lib/practitioners/daily-digest.mjs'
 import {cronAuthorized} from '../lib/app/housekeeping-cron.js'
@@ -44,8 +46,9 @@ test('bot schedule is daily and independent of the existing housekeeping job',()
   const config=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8'))
   assert.deepEqual(config.crons,[
     {path:'/api/internal/housekeeping',schedule:'0 5 * * *'},
-    {path:'/api/internal/practice-telegram-digest',schedule:'0 13 * * *'},
-    {path:'/api/internal/council-archive-telegram',schedule:'0 21 * * *'},
+    {path:'/api/internal/revenue-ideas-telegram',schedule:'0 13,14 * * *'},
+    {path:'/api/internal/practice-telegram-digest',schedule:'0 13,14,19,20 * * *'},
+    {path:'/api/internal/council-archive-telegram',schedule:'0 16,17 * * *'},
   ])
 })
 test('cron owner auth denies anonymous caller and allows only correct CRON_SECRET',()=>{

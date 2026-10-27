@@ -6,7 +6,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { assertPublicJourneyRuntime, publicJourneyRequestDecision } from "./helpers/public-journey-verifier.mjs";
 
 import { blockedApiDetails } from "./helpers/contact-request-diagnostics.mjs";
-import { createAnonymousAcademyBootstrapFixture } from "./helpers/anonymous-bootstrap-fixture.mjs";
+import { createAnonymousAcademyBootstrapFixture, appendBootstrapFixtureFailure } from "./helpers/anonymous-bootstrap-fixture.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -18,6 +18,7 @@ const output = "artifacts/contact-channel-browser";
 await mkdir(output, { recursive: true });
 const results = [];
 const errors = [];
+const fixtureFailures = [];
 const questions = {
   en: "Leave your contact to enquire or join",
   ru: "Оставьте контакт, чтобы записаться или узнать подробности",
@@ -412,6 +413,9 @@ async function runEngine(name, engine) {
             await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
             assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
           }
+          try {
+          appendBootstrapFixtureFailure(fixtureFailures,bootstrapFixture,blocked,requestPhase);
+          } catch { /* Diagnostics cannot replace either original final assertion. */ }
           assert.equal(bootstrapFixture.denials,1,'Exactly one observed anonymous Academy probe receives the explicit auth denial');
           assert.deepEqual(blocked,[],'No real API/write/provider operation attempted outside the exact synthetic enquiry');
         } finally {
@@ -433,7 +437,9 @@ try {
   assert.ok(results.length >= 30,"Insufficient mobile and desktop coverage");
 } catch(e) { failure=e; }
 finally {
-  await writeFile(output+"/results.json",JSON.stringify({origin,live,checkedAt:new Date().toISOString(),results,errors,failure:failure?.message||null},null,2));
+  try {
+  await writeFile(output+"/results.json",JSON.stringify({origin,live,checkedAt:new Date().toISOString(),results,errors,fixtureFailures,failure:failure?.message||null},null,2));
+  } catch { if (!failure) failure = new Error("CONTACT_DIAGNOSTIC_WRITE_FAILED"); }
 }
 if(failure)throw failure;
-console.log("PASS browser messenger handoff on Chromium and WebKit",results.length);
+try { console.log("PASS browser messenger handoff on Chromium and WebKit",results.length); } catch { throw new Error("CONTACT_DIAGNOSTIC_LOG_FAILED"); }

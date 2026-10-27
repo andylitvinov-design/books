@@ -8,6 +8,7 @@ import * as contracts from '../lib/assessments/contracts.js'
 import * as cipher from '../lib/app/crypto.js'
 import * as input from '../lib/practitioners/public-service-enquiry-input.mjs'
 import * as privacy from '../lib/practitioners/relay-privacy.mjs'
+import * as booking from '../lib/practitioners/public-session-booking.mjs'
 import * as enquiries from '../lib/whatsapp-enquiry.js'
 import {PRACTITIONER_ID} from '../data/app-services.js'
 import {environment,mount,compileContactModule,turn} from './helpers/contact-channel-verifier-fixture.mjs'
@@ -42,9 +43,11 @@ function backend({available=true,crm=true}={}){
    return rows(available?[{id:PRACTITIONER_ID,owner_id:owner}]:[])
   }
   if(q.startsWith('insert into app.public_service_enquiries')){
-   assert.equal(args.length,10)
-   const [id,recipient_practitioner_id,service_title,source_path,locale,reference_code,description_ciphertext,contact_ciphertext,operation_id,operation_hash]=args
-   state.enquiries.push({id,recipient_practitioner_id,service_title,source_path,locale,reference_code,description_ciphertext,contact_ciphertext,operation_id,operation_hash,created_at:new Date()});return rows([])
+   assert.equal(args.length,11)
+   assert.match(q,/operation_id,operation_hash,booking_sku\) values\(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$10,\$11\)$/)
+   const [id,recipient_practitioner_id,service_title,source_path,locale,reference_code,description_ciphertext,contact_ciphertext,operation_id,operation_hash,booking_sku]=args
+   assert.equal(booking_sku,null,'Business registration must never become an Alchemy booking')
+   state.enquiries.push({id,recipient_practitioner_id,service_title,source_path,locale,reference_code,description_ciphertext,contact_ciphertext,operation_id,operation_hash,booking_sku,created_at:new Date()});return rows([])
   }
   if(q.startsWith('insert into app.crm_contacts')){const[id,owner_id,contact_ciphertext,email_hash,phone_hash,locale,source]=args;state.contacts.push({id,owner_id,contact_ciphertext,email_hash,phone_hash,locale,source});return rows([])}
   throw Error('UNAPPROVED_QUERY')
@@ -55,7 +58,8 @@ function backend({available=true,crm=true}={}){
   try{return await run(db)}catch(e){Object.assign(state,before);throw e}
  }
  const imports={'node:crypto':crypto,'../assessments/contracts.js':contracts,'../app/database.js':{transaction},'../app/crypto.js':cipher,
-  '../../data/app-services.js':{PRACTITIONER_ID},'./public-service-enquiry-input.mjs':input,'../crm/repository.js':{crmEnabled:()=>crm},'./relay-privacy.mjs':privacy}
+  '../../data/app-services.js':{PRACTITIONER_ID},'./public-service-enquiry-input.mjs':input,'../crm/repository.js':{crmEnabled:()=>crm},'./relay-privacy.mjs':privacy,
+  './public-session-booking.mjs':booking}
  const bindings={};let importsSeen=0
  const body=read('lib/practitioners/public-service-enquiry.js').replace(/^import 'server-only'\s*$/m,'').replace(/^import\s*\{([^}]+)\}\s*from\s*'([^']+)'\s*$/gm,(_,raw,path)=>{
   assert.ok(Object.hasOwn(imports,path),'Unapproved server dependency '+path);importsSeen++
@@ -121,7 +125,7 @@ test('wrong selected option is rejected rather than deriving expected offer from
 })
 test('normalizer and trusted server route still reject recipient spoofing, invalid title and unavailable owner',async()=>{
  const base={operationId:crypto.randomUUID(),serviceTitle:copy.en.title+' · '+expectedOptions.express,description:'',sourcePath:'/en/services/business-consulting',locale:'en',contact:{displayName:'',email:'business-qa@example.test',phone:''},contactConsent:true,website:''}
- for(const patch of [{practitionerId:owner},{ownerId:owner},{serviceTitle:'x'.repeat(161)},{contactConsent:false},{sourcePath:'/en/app/private'}]){
+ for(const patch of [{practitionerId:owner},{ownerId:owner},{serviceTitle:'x'.repeat(161)},{contactConsent:false},{sourcePath:'/en/app/private'},{bookingSku:'express-consultation-30'},{bookingSku:'personal-session-60'}]){
   const db=backend();await assert.rejects(db.create({...base,...patch}),{code:'INVALID_SERVICE_ENQUIRY'});assert.equal(db.state.transactions,0)
  }
  const unavailable=backend({available:false});await assert.rejects(unavailable.create(base),{code:'PRACTICE_UNAVAILABLE'});assert.equal(unavailable.state.enquiries.length,0)

@@ -129,7 +129,8 @@ test('route or active-locale changes close both disclosures without stealing foc
 test('locale selection and site-menu links close their own disclosures immediately', () => {
   assert.match(navigationSource, /function selectLocale\([^)]*\)\s*\{\s*if \(languageRef\.current\) languageRef\.current\.open = false/);
   assert.match(navigationSource, /onClick=\{\(\) => selectLocale\(next\)\}/);
-  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 6, 'All six menu link groups close their disclosure, including Shop and Cart');
+  assert.equal((navigationSource.match(/onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/g) ?? []).length, 7, 'All seven menu link groups close their disclosure, including Shop, Cart and Free App');
+  assert.match(navigationSource, /data-nav-item="install"[\s\S]*?onClick=\{\(\) => \{ if \(siteMenuRef\.current\) siteMenuRef\.current\.open = false; \}\}/);
 });
 test('Maya hub changes its actual locale and reader destinations, not just the menu label', () => {
   const hub = read('app/books/maya-tradition/page.tsx');

@@ -6,12 +6,16 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/internal/revenue-ideas-telegram",
+      "schedule": "0 13,14 * * *"
+    },
+    {
       "path": "/api/internal/practice-telegram-digest",
-      "schedule": "0 13 * * *"
+      "schedule": "0 13,14,19,20 * * *"
     },
     {
       "path": "/api/internal/council-archive-telegram",
-      "schedule": "0 21 * * *"
+      "schedule": "0 16,17 * * *"
     }
   ],
   "git": {

@@ -126,6 +126,14 @@ jobs:
         run: node --test tests/crm-telegram-owner-pilot-links.test.mjs
       - name: First-person Telegram coaching conversation EN RU ES, old-session preservation and RLS
         run: node --test tests/crm-telegram-natural-conversation-v2.test.mjs tests/crm-telegram-diagnostic.test.mjs
+      - name: Verify EN/RU/ES free-review Telegram deep links and signed WhatsApp manual locale handoff
+        run: node --conditions=react-server --test tests/crm-express-review-language-channels.test.mjs
+      - name: Lint localized express review channel entry and strict WhatsApp marker
+        run: npx eslint components/telegram-diagnostic-entry.tsx lib/crm/express-review-channel-handoff.mjs tests/crm-express-review-language-channels.test.mjs
+      - name: Actual six owner-authored Telegram messages match visible CRM scenario exactly
+        run: node --test tests/crm-telegram-script-preview.test.mjs
+      - name: Lint canonical Telegram script viewer and its parity tests
+        run: npx eslint components/app/crm-telegram-diagnostic-script.jsx lib/crm/telegram-diagnostic-v2.mjs tests/crm-telegram-script-preview.test.mjs
       - name: Lint Telegram V2 pure conversation and CRM private persistence
         run: npx eslint lib/crm/telegram-diagnostic-v2.mjs lib/crm/telegram-diagnostic.mjs lib/crm/messenger-webhook.js lib/crm/messenger-provider.js lib/crm/messenger-store.js components/app/crm-messenger.jsx components/app/crm-telegram-photo.jsx tests/crm-telegram-natural-conversation-v2.test.mjs
       - name: Telegram message-attached inline buttons, callback signature and webhook admission

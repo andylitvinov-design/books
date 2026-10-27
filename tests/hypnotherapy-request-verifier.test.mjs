@@ -88,7 +88,10 @@ function assertCoreServiceIntegration(script){
   assert.match(script,/main\[data-core-service-detail="hypnotherapy"\] > section:last-child > details/)
   assert.match(script,/Free review alternative starts collapsed/)
   assert.match(script,/assertDaoFreeEntryCapture\(servicePage/)
-  assert.match(script,/openRegisteredCompactPhoneChooser\(pricing/)
+  assert.match(script,/const book=pricing\.locator\('\[data-booking-cta="book"\]'\)/)
+  assert.match(script,/await book\.click\(\)/)
+  assert.match(script,/await expect\(pricing\.locator\('\[data-booking-step="contact"\]'\)\)\.toBeVisible\(\)/)
+  assert.match(script,/await expect\(pricing\.locator\('\[data-booking-payment-options\]'\)\)\.toHaveCount\(0\)/)
   assert.match(script,/assertAlchemyPanelGeometry\(measurements\)/)
   assert.match(script,/import \{ assertFreeReviewLanding, verifyFreeReviewPrivateHandoff \} from '.\/helpers\/free-review-private-handoff-verifier.mjs'/)
   assert.match(script,/await assertFreeReviewLanding\(publicPage,expect,locale\)/)
@@ -110,6 +113,8 @@ test('source integration preserves geometry/locales/other services and tests act
 // The retired public copy form is not a Hypnotherapy invariant; its replacement
 // must still be imported and called, alongside the unchanged Hypnotherapy flow.
 for(const [name,from,to] of [
+  ['missing current Alchemy Book action', 'await book.click()', 'await Promise.resolve()'],
+  ['premature Alchemy payment options', "await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(0)", "await expect(pricing.locator('[data-booking-payment-options]')).toHaveCount(1)"],
   ['missing hypnotherapy request', "await verifyHypnotherapyRequest(servicePage,expect,{origin,locale,channel:width===390?'whatsapp':'telegram'})", 'await Promise.resolve()'],
   ['wrong desktop channel', "channel:width===390?'whatsapp':'telegram'", "channel:'whatsapp'"],
   ['wrong authored footer owner', 'main[data-core-service-detail="hypnotherapy"] > section:last-child > details', '[data-sitewide-capture="core-service"] > details'],

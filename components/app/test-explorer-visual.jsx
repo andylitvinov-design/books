@@ -9,6 +9,7 @@ import {
   PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER,
   portraitAxesForSectors, portraitFullCircleAngleForAxis, portraitSectorReadouts, portraitSectorMidAngle,
 } from '@/lib/assessments/portrait-sectors'
+import { GoalProfilePanel } from './goal-profile-panel'
 import styles from './test-explorer.module.css'
 
 const PRIMARY_AXES = TEST_EXPLORER_AXES.slice(0, 10)
@@ -24,7 +25,7 @@ const PORTRAIT_RADAR_RADIUS = 146
 // No minimum offset: 0 maps to the centre and a half-scale value to half the ring.
 const proportionalRadius = (value, maximum) => PORTRAIT_RADAR_RADIUS * value / maximum
 
-export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false, portraitActions = null, portraitTab = 'tests' }) {
+export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCount = 0, selectedCount = 0, axisFilter, onAxisFilter, portrait = null, compact = false, portraitActions = null, portraitTab = 'tests', goalProfileProps = null }) {
   const [variant, setVariant] = useState('male')
   // Null means the latest measured axes; [] is an intentional empty selection.
   const [chosenRays, setChosenRays] = useState(null)
@@ -137,7 +138,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         : (ru ? 'Выберите темы слева: соответствующие оси подсветятся. Это предварительный просмотр, не результат.' : es ? 'Elige temas a la izquierda para destacar ejes; es una vista previa, no un resultado.' : 'Choose topics on the left to highlight axes. This is a preview, not a test result.')}</span>
     </div>}
     {portrait && !compact && <div className={styles.portraitSectorPicker} data-portrait-sectors
-      role="group" aria-label={ru ? 'Обзор и четыре категории портрета' : es ? 'Resumen y cuatro categorías del retrato' : 'Overview and four portrait categories'}>
+      role="group" aria-label={ru ? 'Обзор и пять профилей' : es ? 'Resumen y cinco perfiles' : 'Overview and five life profiles'}>
       <div className={styles.portraitSectorGrid}>
         <button type="button" className={[styles.portraitSectorChip, styles.portraitSectorAll].join(' ')}
           data-portrait-sector-all="true" data-selected={allSectors}
@@ -152,9 +153,16 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
           <span className={styles.portraitSectorLong}>{sector.label[locale] || sector.label.en}</span>
           <span className={styles.portraitSectorShort} aria-hidden="true">{sector.shortLabel[locale] || sector.shortLabel.en}</span>
         </button>)}
+        <button type="button" className={styles.portraitSectorChip} data-portrait-sector="goal"
+          data-selected={selectedSector === 'goal'}
+          aria-label={ru ? 'Профиль цели' : es ? 'Perfil de la meta' : 'Goal Profile'}
+          aria-pressed={selectedSector === 'goal'} onClick={() => setSelectedSector('goal')}>
+          <span className={styles.portraitSectorLong}>{ru ? 'Профиль цели' : es ? 'Perfil de la meta' : 'Goal Profile'}</span>
+          <span className={styles.portraitSectorShort} aria-hidden="true">{ru ? 'Цель' : es ? 'Meta' : 'Goal'}</span>
+        </button>
       </div>
     </div>}
-    <div className={styles.modelStage} tabIndex={portrait || compact ? -1 : 0} role={portrait || compact ? 'presentation' : 'application'} aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
+    {(!portrait || selectedSector !== 'goal') && <div className={styles.modelStage} tabIndex={portrait || compact ? -1 : 0} role={portrait || compact ? 'presentation' : 'application'} aria-label={ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag'} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
       <div className={styles.portraitArt} data-visible={variant === 'male' ? 'true' : 'false'} aria-hidden="true" style={{ transform: `translate3d(${rotation.y * .3}px, ${rotation.x * .3}px, 0)` }}>
         <Image src="/images/holistic-house-test-brain-concept.png" width={1672} height={941} unoptimized alt="" draggable={false} className={styles.portraitSource} />
       </div>
@@ -279,7 +287,8 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       {!portrait && !compact && <div className={styles.axisRing}>
         {PRIMARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}
       </div>}
-    </div>
+    </div>}
+    {portrait && !compact && selectedSector === 'goal' && <GoalProfilePanel locale={locale} {...goalProfileProps} />}
     {compact && !portrait && <div className={styles.compactAxes} role="status" aria-live="polite">
       <strong>{ru ? 'В фокусе' : es ? 'En foco' : 'Areas in focus'}</strong>
       <div>{activeAxes.length
@@ -289,7 +298,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
     {!portrait && !compact && <div className={styles.secondaryAxes}>{SECONDARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}</div>}
     {portrait && !compact && (typeof portraitActions === 'function'
       ? portraitActions({ selectedSector, portrait }) : portraitActions)}
-    {portrait && !compact && portraitTab === 'tests' && !allSectors && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
+    {portrait && !compact && portraitTab === 'tests' && !allSectors && selectedSector !== 'goal' && <section className={styles.portraitControls} aria-label={ru ? 'Выбор шкал портрета' : 'Choose portrait scales'}>
       <div className={styles.portraitControlsHeading}>
         <strong>{ru ? 'Лучи моего портрета' : es ? 'Escalas de mi retrato' : 'Choose my portrait rays'}</strong>
         <span>{visibleRays.length} / {focusOptions.length}</span>

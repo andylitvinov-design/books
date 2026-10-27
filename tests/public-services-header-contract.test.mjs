@@ -1,9 +1,11 @@
+import {removeAnonymousPortraitAdditions} from './helpers/anonymous-portrait-source-normalization.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { getSiteNavigation } from '../lib/site-navigation-model.js';
 
-const source = readFileSync(new URL('../scripts/verify-public-services-production.mjs', import.meta.url), 'utf8');
+// Retain the original header assertions; the full fixture-wrapped block is exercised separately.
+const source = removeAnonymousPortraitAdditions(readFileSync(new URL('../scripts/verify-public-services-production.mjs', import.meta.url), 'utf8'));
 const start = source.indexOf('      const header = page.locator("header.house-header--services");');
 const end = source.indexOf('      await assertViewport', start);
 assert.ok(start >= 0 && end > start, 'Extract the real public-header acceptance block');
