@@ -52,3 +52,9 @@
   .action{padding:7px 8px}
 }
 @media(prefers-reduced-motion:reduce){.tab{transition:none}}
+
+.titleButton{display:inline;max-width:100%;padding:0;border:0;background:transparent;color:inherit;cursor:pointer;font:inherit;letter-spacing:inherit;text-align:left}
+.titleButton:hover{text-decoration:underline;text-underline-offset:3px}
+.titleButton:focus-visible{outline:3px solid #aa7656;outline-offset:3px}
+button.action{cursor:pointer;font-family:Arial,Helvetica,sans-serif;text-align:left}
+button.action[aria-expanded="true"]{border-color:#83523d;background:#e3c9b5}
