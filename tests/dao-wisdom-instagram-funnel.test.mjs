@@ -124,4 +124,14 @@ test("web handoff fails closed and keeps existing non-Telegram first-party CRM i
   assert.match(page,/kind === "dao" \? <DaoTelegramHandoff locale=\{locale\} \/>/);
   assert.match(page,/<CompactLeadCapture/);
   assert.match(page,/dao-free-start/);
+  assert.equal((page.match(/<DaoTelegramHandoff locale=\{locale\}/g)||[]).length,1,
+    "one and only one Dao Instagram Telegram component");
+  assert.equal((page.match(/<CompactLeadCapture/g)||[]).length,2,
+    "one direct Dao fallback and unchanged tests capture");
+  const heroEnd = page.indexOf('{kind === "dao" ? <div id="dao-free-start"');
+  const resultStory = page.indexOf('styles.daoOutcomeScene');
+  assert.ok(heroEnd > page.indexOf('<section className={[styles.hero'),
+    "Dao CTA follows the hero");
+  assert.ok(resultStory > heroEnd,
+    "Instagram visitors see Telegram and fallback form before the long details");
 });
