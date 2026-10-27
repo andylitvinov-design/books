@@ -44,7 +44,7 @@ test('third screen is topics only; full tests and questionnaire length appear on
   const tests = stage(3);
   assert.match(topics, /data-profile-topics-step/);
   assert.match(topics, /data-profile-topic-choice=\{scale\.id\}/);
-  assert.match(topics, /<strong>\{scale\.label\}<\/strong>/);
+  assert.match(topics, /<strong>\{topicLabel\(group\.area, scale, locale\)\}<\/strong>/);
   assert.doesNotMatch(topics, /scale\.testTitle|scale\.scaleQuestions|scale\.minutes|scale\.questions|\{t\.scaleSourceLabel\}/);
   assert.match(tests, /data-profile-tests-step/);
   assert.match(tests, /data-profile-recommended-tests/);
@@ -72,4 +72,17 @@ test('independent scale controls and test mode targets are mobile accessible', (
   assert.match(css, /\.researchChoice:focus-visible/);
   assert.match(css, /@media\(max-width:450px\)/);
   assert.match(css, /\.batteryModeChoices button\{[^}]*min-height:65px/);
+});
+
+test('goal topics are source-keyed and not presented as questionnaire names', () => {
+  const supportRules = readFileSync(new URL('../lib/profile/goal-profile.js', import.meta.url), 'utf8');
+  const sources = [...supportRules.matchAll(/supportingSource\('(clarity|motivation|confidence)', '[^']+', '([^']+)',/g)];
+  assert.equal(sources.length, 11);
+  const goalTopics = builder.slice(builder.indexOf('const goalTopicLabels:'), builder.indexOf('const topicLabel ='));
+  for (const [, facet, key] of sources) {
+    assert.match(goalTopics, new RegExp('"' + key.replaceAll('.', '\\.') + '":'));
+    assert.ok(['clarity', 'motivation', 'confidence'].includes(facet));
+  }
+  assert.match(builder, /area === "goal" \? goalTopicLabels\[locale\]\[scale\.key\]/);
+  assert.match(builder, /focuses\.includes\("goal"\) && <p className=\{styles\.scaleSourceNote\}>\{t\.goalScaleNote\}/);
 });
