@@ -21,6 +21,11 @@ on:
       - 'lib/whatsapp-enquiry.js'
       - 'tests/coaching-diagnostic-funnel.test.mjs'
       - 'tests/coaching-intake-form.test.mjs'
+      - 'tests/coaching-intake-uncertain-send.test.mjs'
+      - 'tests/coaching-private-return.test.mjs'
+      - 'app/*/coaching/intake/page.tsx'
+      - 'app/api/app/*/route.js'
+      - 'lib/app/config.js'
       - 'tests/temple-insights-compact-cta.test.mjs'
       - 'components/tests-coaching-switchboard.tsx'
       - 'components/tests-coaching-switchboard.module.css'
@@ -72,9 +77,9 @@ jobs:
           node --check lib/app/personal-coaching-catalog.js
           node --check lib/coaching/public-coaching-catalog.js
           node --check lib/coaching/public-session-art.js
-          node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs tests/holistic-support-first-screen.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-three-choices.test.mjs tests/holistic-support-topics.test.mjs tests/holistic-support-talismans.test.mjs tests/temple-support-hub.test.mjs
+          node --test tests/public-coaching-discovery.test.mjs tests/ideas-mobile-ui.test.mjs tests/ideas-guidance.test.mjs tests/personal-coaching-model-selection.test.mjs tests/tests-coaching-switchboard.test.mjs tests/holistic-support-first-screen.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-three-choices.test.mjs tests/holistic-support-topics.test.mjs tests/holistic-support-talismans.test.mjs tests/temple-support-hub.test.mjs tests/coaching-intake-uncertain-send.test.mjs tests/coaching-private-return.test.mjs tests/crm-telegram-webapp-intake.test.mjs tests/crm-telegram-coaching-chunks.test.mjs
       - name: Lint modified application components
-        run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/holistic-support-choices.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts components/free-diagnostic-start.tsx components/coaching-intake-form.tsx app/\[locale\]/holistic-support/page.tsx app/\[locale\]/temple-insights/page.tsx app/api/coaching-diagnostic/route.js lib/coaching/diagnostic-enquiry.mjs lib/practitioners/public-service-enquiry-input.mjs lib/whatsapp-enquiry.js
+        run: npx --no-install eslint components/tests-coaching-switchboard.tsx components/ideas-discovery.tsx components/holistic-support-choices.tsx components/public-coaching-discovery.jsx app/\[locale\]/coaching/page.jsx app/\[locale\]/coaching/session/\[sessionId\]/page.jsx lib/coaching/public-coaching-catalog.js lib/coaching/public-session-art.js lib/app/personal-coaching-catalog.js lib/site-navigation-model.js lib/public-locales.ts components/free-diagnostic-start.tsx components/coaching-intake-form.tsx app/\[locale\]/holistic-support/page.tsx app/\[locale\]/temple-insights/page.tsx app/api/coaching-diagnostic/route.js lib/coaching/diagnostic-enquiry.mjs lib/practitioners/public-service-enquiry-input.mjs lib/whatsapp-enquiry.js tests/coaching-intake-uncertain-send.test.mjs app/\[locale\]/coaching/intake/page.tsx app/api/app/\[...path\]/route.js tests/coaching-private-return.test.mjs lib/crm/telegram-coaching-link.js lib/crm/telegram-coaching-chunks.mjs tests/crm-telegram-coaching-chunks.test.mjs tests/crm-telegram-webapp-intake.test.mjs
       - name: TypeScript noEmit
         run: npx --no-install tsc --noEmit
       - name: Next.js production build
