@@ -82,7 +82,7 @@ test('privacy hold catches personal emails, contacts, secrets, medical/clinical 
   for(const value of [
     'Секрет sk-'+'a'.repeat(32), 'Email personal@example.org',
     'телефон +1 647 555 0199', 'Пациент рассказал про симптомы',
-    'Here are my blood pressure records','', 'x'.repeat(2001)
+    'Here are my blood pressure records','Какие у меня планы?', '', 'x'.repeat(2001)
   ])assert.equal(argonQuestionAllowed(value),false,value.slice(0,30))
 })
 test('disabled settings, preview or private question produce ZERO HTTP requests',async()=>{
@@ -92,6 +92,11 @@ test('disabled settings, preview or private question produce ZERO HTTP requests'
     const r=await reviewArgonSynthesis(prompt,q,e,h.fetcher)
     assert.equal(r.status,'disabled')
   }
+  assert.equal(h.requests.length,0)
+  const leak=await reviewArgonSynthesis(
+    prompt+' Содержимое ответа другой модели: secret@example.org',
+    question,env,h.fetcher)
+  assert.equal(leak.status,'disabled')
   assert.equal(h.requests.length,0)
 })
 test('missing/too-small/nonfree-looking balance stops before inference',async()=>{
