@@ -90,7 +90,7 @@ function summarize(out) {
 
 function deterministicGates() {
   const tests = run(process.execPath, ['--test', ...CONTRACT_TESTS], 120_000);
-  const tsc = run(join(root, 'node_modules/.bin/tsc'), ['--noEmit'], 180_000);
+  const tsc = run(join(root, 'node_modules/.bin/tsc'), ['--noEmit', '--incremental', 'false'], 180_000);
   const lint = run(join(root, 'node_modules/.bin/eslint'),
     ['--max-warnings=0', ...SAFE_EDIT_FILES.filter(path => /\.(mjs|js|jsx|ts|tsx)$/.test(path))], 120_000);
   const whitespace = run('git', ['diff', '--check'], 20_000);
