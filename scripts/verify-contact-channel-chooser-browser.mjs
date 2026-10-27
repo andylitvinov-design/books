@@ -36,7 +36,7 @@ function draft(href, host, path) {
  * the first-party POST, verify its shape, and return a synthetic successful
  * acknowledgement. No real lead is written to production or test Supabase.
  */
-async function submitSyntheticForm(page, chooser, locale, submissions) {
+async function submitSyntheticForm(page, chooser, locale, submissions, receiptMode = "in-place") {
   const form=chooser.locator('form');
   await form.waitFor({state:"visible"});
   const button=form.locator('button[type="submit"]');
@@ -68,8 +68,18 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   await form.locator('input[type="checkbox"]').check();
   const priorCount=submissions.length;
   await button.click();
-  const wa=chooser.locator('a[data-contact-channel="whatsapp"]');
-  await wa.waitFor({state:"visible",timeout:10000});
+  if (receiptMode === "thank-you") {
+    // The standard chooser redirects AFTER the first-party save. Verify the
+    // same-session receipt, not a transient link in the unmounted form.
+    // Both the intercepted POST and its acknowledgement are synthetic.
+    await page.waitForURL(origin + "/" + locale + "/thank-you", { timeout: 12000 });
+    await page.locator("[data-service-thank-you]")
+      .getByText("HH-CA5016DE79E4", { exact: true })
+      .waitFor({ state: "visible", timeout: 12000 });
+  } else {
+    const wa = chooser.locator('a[data-contact-channel="whatsapp"]');
+    await wa.waitFor({ state: "visible", timeout: 10000 });
+  }
   assert.equal(submissions.length,priorCount+1,"Exactly one first-party registration submitted");
   const request=submissions[submissions.length-1];
   assert.equal(request.locale,locale);
@@ -85,7 +95,7 @@ async function submitSyntheticForm(page, chooser, locale, submissions) {
   assert.ok(!request.website);
 }
 
-async function verifyChooser(page, chooser, locale, name, screenshot, submissions) {
+async function verifyChooser(page, chooser, locale, name, screenshot, submissions, receiptMode = "in-place") {
   const trigger = chooser.locator("button[data-contact-order]");
   await trigger.scrollIntoViewIfNeeded();
   await trigger.waitFor({ state:"visible" });
@@ -108,7 +118,17 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   const tg = panel.locator('a[data-contact-channel="telegram"]');
   assert.equal(await wa.count(), 0, "Do not offer messenger before registration is saved");
   assert.equal(await tg.count(), 0, "Do not offer messenger before registration is saved");
-  await submitSyntheticForm(page,chooser,locale,submissions);
+  await submitSyntheticForm(page,chooser,locale,submissions,receiptMode);
+  if (receiptMode === "thank-you") {
+    assert.equal(new URL(page.url()).pathname, "/" + locale + "/thank-you",
+      "Standard chooser navigates only after a saved first-party enquiry");
+    if (screenshot) await page.locator("[data-service-thank-you]")
+      .screenshot({ path: output + "/" + slug(name) + ".png", animations: "disabled" });
+    results.push({ name, locale, viewportWidth: page.viewportSize().width,
+      contactSubmitted: true, receiptConfirmed: true, redirectedAfterSave: true,
+      externalHandoff: false });
+    return;
+  }
   assert.equal(await wa.count(), 1);
   assert.equal(await tg.count(), 1);
   const [waHref,tgHref] = await Promise.all([wa.getAttribute("href"),tg.getAttribute("href")]);
@@ -403,8 +423,10 @@ async function runEngine(name, engine) {
             await temple.locator('[data-temple-step="initiation"] button').first().click();
             const templeChooser = temple.locator("[data-contact-channel-chooser]");
             await templeChooser.waitFor({state:"visible"});
-            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
-            assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
+            // Temple uses the default chooser (stayAfterSave=false): the
+            // committed request navigates to /thank-you with its HH receipt.
+            await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",
+              true,submissions,"thank-you");
           }
         } finally {
           await page.close();
