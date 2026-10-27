@@ -107,7 +107,7 @@ test('CI structural controls: only signed post-consent opt-in event can enroll; 
   const webhook=src('lib/crm/messenger-webhook.js')
   const runtime=src('lib/crm/salesbot-internal-runtime.js')
   const store=src('lib/crm/salesbot-store.js')
-  const migration=src('supabase/migrations/20261027030000_hh_crm_salesbot_internal_event_runs.sql')
+  const migration=src('supabase/migrations/20261027021415_hh_crm_salesbot_internal_event_runs_20261026.sql')
   const api=src('app/api/app/crm/salesbot/runs/route.js')
   assert.match(webhook,/previous\?\.stage==='focus'&&next\.stage==='photo'/)
   assert.match(webhook,/previous\?\.consent_at&&next\.body&&next\.topic/)
