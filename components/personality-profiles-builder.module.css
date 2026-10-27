@@ -379,7 +379,7 @@
 .topicAccordionTitle strong{color:var(--forest);font-size:15px;line-height:1.3}
 .topicAccordionTitle small{color:#687b6e;font-size:11px}
 .topicAccordionBody{display:grid;gap:7px;padding:0 12px 13px}
-.topicScaleRow{display:flex;align-items:flex-start;gap:10px;min-width:0;padding:10px 11px;border:1px solid #d7e4da;border-radius:12px;background:#fff;cursor:pointer}
+.topicScaleRow{display:flex;align-items:center;min-height:46px;gap:10px;min-width:0;padding:10px 11px;border:1px solid #d7e4da;border-radius:12px;background:#fff;cursor:pointer}
 .topicScaleRow:has(input:checked){background:#edf6ed;border-color:#71a288}
 .topicScaleRow>input{flex:none;margin:4px 0 0;width:19px;height:19px;accent-color:#315f52}
 .topicScaleText{min-width:0;display:flex;flex:1;flex-direction:column;gap:3px;overflow-wrap:anywhere}
