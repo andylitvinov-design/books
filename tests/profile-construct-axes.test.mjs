@@ -166,7 +166,13 @@ test('EN/RU/ES use identical eligibility while retaining precise localized axis 
   }
   const raw=readFileSync(new URL('../components/personality-profiles-builder.tsx',import.meta.url),'utf8')
   assert.ok(raw.includes('data-profile-research-axis={axis.id}'))
-  assert.ok(raw.includes('profileResearchAxisLabel(axis.id, locale)'))
+  // The visual label can override the three goal facets, but every other
+  // construct still falls back to the existing localized source taxonomy.
+  assert.ok(raw.includes('researchLabel(axis.id, locale)'))
+  assert.ok(raw.includes('goalScaleLabels[locale][id] || profileResearchAxisLabel(id, locale)'))
+  for (const facet of ['clarity', 'motivation', 'confidence']) {
+    assert.ok(raw.includes('"goal::' + facet + '"'), facet + ' has its own scale choice')
+  }
   assert.ok(raw.includes('recommendProfileAxisBattery(tests, scaleGroups'))
   assert.ok(raw.includes('selectedProfileResearchAxes(scaleGroups, selectedScaleIds)'))
   assert.ok(!/setResearchScore|createPsychometricNorm|autoEnroll|patientAnswers/.test(raw),
