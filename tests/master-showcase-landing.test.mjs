@@ -74,6 +74,8 @@ test('published master video gallery reuses approved website videos, author link
   assert.match(page,/getPublishedSiteVideos\(\)/)
   assert.match(page,/video\.practitionerSlug === practitioner\.slug/)
   assert.match(page,/siteVideoWatchUrl\(video\)/)
+  assert.match(page,/existingYouTubeMirrors\[video\.heygenId\]/)
+  assert.match(page,/seenPublicVideos\.has\(item\.url\)/)
   assert.match(page,/profile\.videoMaterials/)
   assert.match(page,/getServiceVideoMedia\(topic, language\)\.video/)
   assert.match(page,/englishPsychotherapyLandingVideo\.video/)
