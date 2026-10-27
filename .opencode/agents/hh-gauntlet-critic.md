@@ -3,7 +3,12 @@ description: Independent fresh-context critic for Holistic House synthetic pilot
 mode: primary
 temperature: 0.1
 permission:
-  read: allow
+  read:
+    "*": allow
+    "*.env": deny
+    "*.env.*": deny
+    "**/.env": deny
+    "**/.env.*": deny
   glob: allow
   grep: allow
   list: allow
