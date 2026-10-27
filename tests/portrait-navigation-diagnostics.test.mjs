@@ -146,3 +146,81 @@ test('workflow preserves only filtered Next metadata after failure; hard browser
   assert.ok(source.indexOf('observePortraitNavigation(page, { origin })') < source.indexOf("await open('/en/app/portrait')"))
   assert.match(source, /navigationDiagnostics\.mark\('signed-in'\)/)
 })
+
+function socket(url = 'ws://127.0.0.1:3100/_next/webpack-hmr?secret=secret') {
+  const value = new EventEmitter()
+  value.url = () => url
+  return value
+}
+const emitFrame = (target, direction, message) => target.emit(direction, { payload: JSON.stringify(message) })
+test('HMR reports fixed incoming actions and actual outgoing reload signals, never payloads', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' }), ws = socket()
+  page.emit('websocket', ws)
+  emitFrame(ws, 'framereceived', { action: 'building', hash: 'secret' })
+  emitFrame(ws, 'framereceived', { action: 'serverComponentChanges', data: 'secret' })
+  emitFrame(ws, 'framesent', { event: 'client-full-reload', hadRuntimeError: true, stackTrace: 'secret', dependencyChain: ['secret'], clientId: 'secret' })
+  emitFrame(ws, 'framesent', { event: 'client-reload-page', hadRuntimeError: false, token: 'secret' })
+  emitFrame(ws, 'framesent', { event: 'server-component-reload-page', hash: 'secret' })
+  emitFrame(ws, 'framesent', { event: 'client-error', error: 'secret' })
+  emitFrame(ws, 'framereceived', { action: 'secret', data: 'secret' })
+  const result = probe.stop()
+  assert.equal(result.events.length, 6)
+  assert.deepEqual(result.events.filter(e => e.type === 'hmr-received').map(e => e.action), ['building', 'serverComponentChanges'])
+  const sent = result.events.filter(e => e.type === 'hmr-sent')
+  assert.deepEqual(sent.map(e => e.event), ['client-full-reload', 'client-reload-page', 'server-component-reload-page'])
+  assert.equal(sent[0].hadRuntimeError, true); assert.equal(sent[1].hadRuntimeError, false)
+  assert.doesNotMatch(JSON.stringify(result), /secret|stack|dependency|hash|clientId|token|ws:/)
+  assert.deepEqual(ws.eventNames(), [])
+})
+test('only the exact same-loopback HMR socket is observed, not auth or external sockets', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  for (const url of ['ws://external.invalid/_next/webpack-hmr', 'ws://127.0.0.1:54329/_next/webpack-hmr',
+    'ws://127.0.0.1:3100/api/auth', 'wss://127.0.0.1:3100/_next/webpack-hmr',
+    'ws://secret@127.0.0.1:3100/_next/webpack-hmr']) {
+    const ws = socket(url); page.emit('websocket', ws)
+    assert.deepEqual(ws.eventNames(), [])
+    emitFrame(ws, 'framesent', { event: 'client-full-reload', hadRuntimeError: true, secret: 'secret' })
+  }
+  assert.equal(probe.stop().events.length, 0)
+})
+test('HMR enforces UTF-8 byte limit and drops binary/malformed frames without exposing raw values', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' }), ws = socket()
+  page.emit('websocket', ws)
+  emitFrame(ws, 'framesent', { event: 'client-full-reload', stackTrace: 'ю'.repeat(9000) })
+  ws.emit('framesent', { payload: Buffer.from('secret') })
+  ws.emit('framesent', { payload: '{secret' })
+  emitFrame(ws, 'framesent', { event: 'client-full-reload', hadRuntimeError: 'secret', stackTrace: 'secret' })
+  const result = probe.stop()
+  assert.equal(result.events.filter(e => e.type === 'hmr-frame-dropped').length, 2)
+  assert.equal(result.events.filter(e => e.type === 'hmr-frame-invalid').length, 1)
+  const sent = result.events.filter(e => e.type === 'hmr-sent')
+  assert.equal(sent.length, 1); assert.ok(!Object.hasOwn(sent[0], 'hadRuntimeError'))
+  assert.doesNotMatch(JSON.stringify(result), /secret|ю|stackTrace/)
+})
+test('HMR observers are bounded and cleanup leaves original socket listeners intact', options, () => {
+  const { page } = fixture(), probe = observePortraitNavigation(page, { origin, runtime: 'isolated' }), sockets = []
+  let originalCalls = 0
+  for (let i = 0; i < 9; i++) {
+    const ws = socket(); sockets.push(ws); ws.on('framesent', () => { originalCalls++ }); page.emit('websocket', ws)
+  }
+  assert.equal(sockets[8].listenerCount('framesent'), 1)
+  for (let i = 0; i < 300; i++) emitFrame(sockets[0], 'framesent', { event: 'client-reload-page' })
+  const result = probe.stop()
+  assert.equal(result.events.length, 200); assert.ok(result.dropped > 0)
+  assert.ok(result.events.some(e => e.type === 'hmr-socket-limit'))
+  for (const ws of sockets) assert.deepEqual(ws.eventNames(), ['framesent'])
+  assert.equal(originalCalls, 300)
+  emitFrame(sockets[0], 'framesent', { event: 'client-reload-page' })
+  assert.equal(originalCalls, 301); assert.deepEqual(probe.stop(), result)
+})
+test('page errors include only a fixed Error.name class and still reach original error listener', options, () => {
+  const { page } = fixture(), errors = []
+  page.on('pageerror', error => errors.push(error))
+  const probe = observePortraitNavigation(page, { origin, runtime: 'isolated' })
+  const safe = new TypeError('secret'), arbitrary = { name: 'secret', message: 'secret', stack: 'secret' }
+  page.emit('pageerror', safe); page.emit('pageerror', arbitrary)
+  const result = probe.stop()
+  assert.deepEqual(result.events.map(e => e.errorName), ['TypeError', 'Other'])
+  assert.deepEqual(errors, [safe, arbitrary])
+  assert.doesNotMatch(JSON.stringify(result), /secret|message|stack/)
+})

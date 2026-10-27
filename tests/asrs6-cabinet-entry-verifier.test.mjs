@@ -5,13 +5,6 @@ import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
-const source = read('scripts/verify-asrs6.mjs')
-const start = source.indexOf("  await navigate(page, origin + '/en/app')")
-const end = source.indexOf('  const onboarding = ', start)
-assert.ok(start > 0 && end > start, 'exercise the actual initial browser-entry block')
-const enter = new Function('page', 'expect', 'navigate', 'origin',
-  'return (async () => {' + source.slice(start, end) + '})()')
-
 // Execute the actual guest portal JSX, with only element construction, icons,
 // Link and CSS substituted. No assessment definitions or scoring are imported.
 const jsx = (type, props) => typeof type === 'function' ? type(props || {}) : { type, props: props || {} }
@@ -59,9 +52,22 @@ function fixture({ busy = false, unavailable = false, omitPortal = false } = {})
   const navigate = async (target, path) => { assert.equal(target, page); paths.push(path) }
   return { page, expect, navigate, paths, portal, signinCalls: () => signinCalls, decoyCalls: () => decoyCalls }
 }
+for (const { label, path, startStatement, endStatement, consentStatement } of [
+  { label: 'ASRS', path: 'scripts/verify-asrs6.mjs',
+    startStatement: "  await navigate(page, origin + '/en/app')", endStatement: '  const onboarding = ',
+    consentStatement: "await page.getByLabel('I agree to private processing', { exact: false }).check()" },
+  { label: 'personality', path: 'scripts/verify-personality-types.mjs',
+    startStatement: " await navigate(page,origin+'/en/app')", endStatement: " await expect(page.getByRole('heading'",
+    consentStatement: "await page.getByLabel('I agree to private processing',{exact:false}).check()" },
+]) {
+const source = read(path)
+const start = source.indexOf(startStatement), end = source.indexOf(endStatement, start)
+assert.ok(start > 0 && end > start, 'exercise the actual initial browser-entry block: ' + label)
+const enter = new Function('page', 'expect', 'navigate', 'origin',
+  'return (async () => {' + source.slice(start, end) + '})()')
 const run = f => enter(f.page, f.expect, f.navigate, 'http://localhost:3100')
 
-test('actual ASRS entry clicks the current rendered Cabinet CTA and its real handler, not outside decoys', { timeout: 5000 }, async () => {
+test('actual ' + label + ' entry clicks the current rendered Cabinet CTA and its real handler, not outside decoys', { timeout: 5000 }, async () => {
   const f = fixture()
   assert.ok(walk(f.portal).some(node => node.type === 'button' && text(node) === 'Open my Cabinet with Google'))
   await run(f)
@@ -71,20 +77,22 @@ test('actual ASRS entry clicks the current rendered Cabinet CTA and its real han
 })
 
 for (const state of ['busy', 'unavailable', 'omitPortal']) {
-  test('ASRS entry refuses ' + state + ' instead of substituting another Google button', { timeout: 5000 }, async () => {
+  test(label + ' entry refuses ' + state + ' instead of substituting another Google button', { timeout: 5000 }, async () => {
     const f = fixture({ [state]: true })
     await assert.rejects(run(f))
     assert.equal(f.signinCalls(), 0); assert.equal(f.decoyCalls(), 0)
   })
 }
 
-test('entry repair keeps explicit consent and authenticated portrait/My Tests acceptance afterward', { timeout: 5000 }, () => {
-  const onboarding = source.indexOf('  const onboarding = ', start)
+test(label + ' entry repair keeps explicit consent and authenticated portrait/My Tests acceptance afterward', { timeout: 5000 }, () => {
+  const onboarding = end
   const adult = source.indexOf("await page.getByLabel('I am 18 or older.').check()", onboarding)
-  const consent = source.indexOf("await page.getByLabel('I agree to private processing', { exact: false }).check()", adult)
+  const consent = source.indexOf(consentStatement, adult)
   const portrait = source.indexOf('await assertCabinetPortrait(page, expect, { origin })', consent)
   const tests = source.indexOf('await openCabinetMyTests(page, expect, { origin })', portrait)
   assert.ok(onboarding > start && adult > onboarding && consent > adult && portrait > consent && tests > portrait)
   assert.ok(source.indexOf('assertIsolated()') > 0)
   assert.doesNotMatch(source.slice(start, end), /waitForTimeout|setTimeout|request\.|\.catch\(/)
 })
+
+}

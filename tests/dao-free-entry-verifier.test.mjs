@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
-import { assertDaoVerifierBoundary, createDaoCaptureRouteGuard, daoConsentDiagnostics } from '../scripts/helpers/dao-free-entry-verifier.mjs'
+import { assertDaoVerifierBoundary, createDaoCaptureRouteGuard, daoConsentDiagnostics, installDaoInteractionProbe } from '../scripts/helpers/dao-free-entry-verifier.mjs'
 
 const origin = 'http://127.0.0.1:3100'
 const env = { CI: 'true', HH_APP_TEST_RUNTIME: 'isolated',
@@ -73,7 +73,7 @@ test('current public contracts retain exact locales, consent, geometry and isola
   assert.match(app, /main\[data-free-entry-landing="dao"\]/)
   assert.match(app, /Discover what gives you strength\./)
   assert.match(app, /Узнайте, что даёт вам внутреннюю опору\./)
-  assert.match(app, /await assertDaoFreeEntryCapture\(servicePage,expect,\{origin,locale\}\)/)
+  assert.match(app, /await assertDaoFreeEntryCapture\(servicePage,expect,\{origin,locale,\s*failureScreenshotPath:output\+'\/dao-consent-'\+locale\+'-form.png'\}\)/)
   assert.match(app, /synthetic-receipt/)
   assert.match(mhc, /assertIsolated\(\)/)
   assert.match(mhc, /toHaveURL\(origin\+'\/en\/app\/portrait'\)/)
@@ -122,4 +122,96 @@ test('DAO failure diagnostics cannot skip, retry, waive or replace the original 
   assert.doesNotMatch(helper, /waitForTimeout|test.skip|form.submit|requestSubmit|noValidate|force:\s*true/)
   assert.equal((helper.match(/await whatsapp.click\(\)/g) || []).length, 2)
   assert.match(helper, /assert.deepEqual\(guard.submissions, \[\], 'No request without explicit consent'\)/)
+})
+
+function interactionFixture() {
+  const listeners = []
+  const win = {}
+  const doc = { defaultView: win,
+    addEventListener(type, listener, options) { listeners.push({ type, listener, ...options }) },
+    removeEventListener(type, listener, capture) {
+      const index = listeners.findIndex(row => row.type === type && row.listener === listener && row.capture === capture)
+      assert.notEqual(index, -1); listeners.splice(index, 1)
+    },
+  }
+  const contact = {}, child = {}, button = { contains: target => target === child || target === button }
+  const form = { ownerDocument: doc, isConnected: true,
+    querySelector: selector => selector.includes('contact') ? contact : button }
+  const dispatch = (type, target, phase, extra = {}) => {
+    const event = { type, target, isTrusted: true, defaultPrevented: false, ...extra }
+    for (const row of listeners.filter(row => row.type === type && row.capture === phase)) row.listener(event)
+  }
+  return { form, contact, button, child, win, listeners, dispatch }
+}
+
+function assertSafeEvidence(value) {
+  if (value === null) return
+  if (typeof value === 'object') { for (const child of Object.values(value)) assertSafeEvidence(child); return }
+  assert.ok(typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value)), 'Only booleans, finite counts and null')
+}
+
+test('interaction observer distinguishes no host bindings, stale controlled value and current bindings without invoking a handler', () => {
+  const f = interactionFixture()
+  installDaoInteractionProbe(f.form, { contact: 'synthetic-private@example.test' })
+  assert.equal(f.listeners.length, 4)
+  assert.ok(f.listeners.every(row => row.passive === true))
+  let calls = 0
+  f.contact.__reactProps$synthetic = { value: '', onChange() { calls++ } }
+  f.button.__reactProps$synthetic = { onClick() { calls++ } }
+  f.dispatch('input', f.contact, true); f.dispatch('input', f.contact, false)
+  f.dispatch('click', f.child, true)
+  f.contact.__reactProps$synthetic = { ...f.contact.__reactProps$synthetic, value: 'synthetic-private@example.test' }
+  f.dispatch('click', f.child, false, { defaultPrevented: true })
+  // Unrelated input/clicks must not enter the form-specific counters.
+  f.dispatch('input', {}, true); f.dispatch('click', {}, false)
+  const evidence = f.win.__hhDaoInteractionProbe.read(f.form)
+  assert.deepEqual(evidence.counts, { inputCapture: 1, inputBubble: 1, clickCapture: 1, clickBubble: 1, trustedClicks: 1 })
+  assert.equal(evidence.initial.contactPropsPresent, false)
+  assert.equal(evidence.initial.buttonOnClickBound, false)
+  assert.equal(evidence.clickCapture.contactPropsPresent, true)
+  assert.equal(evidence.clickCapture.contactOnChangeBound, true)
+  assert.equal(evidence.clickCapture.buttonOnClickBound, true)
+  assert.equal(evidence.clickCapture.contactPropMatches, false)
+  assert.equal(evidence.clickBubble.contactPropMatches, true)
+  assert.equal(evidence.current.contactPropMatches, true)
+  assert.equal(evidence.defaultPrevented, true)
+  assert.equal(evidence.sameForm && evidence.sameContact && evidence.sameButton, true)
+  assert.equal(calls, 0)
+  assertSafeEvidence(evidence)
+  assert.doesNotMatch(JSON.stringify(evidence), /synthetic-private|example.test|__reactProps|onChange\(|onClick\(/)
+  f.win.__hhDaoInteractionProbe.dispose()
+  assert.equal(f.listeners.length, 0)
+})
+
+test('interaction evidence retains missing bubble delivery and detects detached/replaced nodes without inspecting new field values', () => {
+  const f = interactionFixture()
+  installDaoInteractionProbe(f.form, { contact: 'synthetic-private@example.test' })
+  f.dispatch('click', f.button, true, { isTrusted: false })
+  f.form.isConnected = false
+  const replacement = { querySelector: () => ({}) }
+  const evidence = f.win.__hhDaoInteractionProbe.read(replacement)
+  assert.deepEqual(evidence.counts, { inputCapture: 0, inputBubble: 0, clickCapture: 1, clickBubble: 0, trustedClicks: 0 })
+  assert.equal(evidence.clickBubble, null)
+  assert.equal(evidence.originalFormConnected, false)
+  assert.equal(evidence.sameForm, false)
+  assert.equal(evidence.sameContact, false)
+  assert.equal(evidence.sameButton, false)
+  assertSafeEvidence(evidence)
+  f.win.__hhDaoInteractionProbe.dispose()
+})
+
+test('observer never invokes property getters, mutates control state, or patches event delivery', () => {
+  const f = interactionFixture()
+  Object.defineProperty(f.contact, '__reactProps$synthetic', { get() { throw new Error('getter must not run') } })
+  f.button.__reactProps$synthetic = {}
+  Object.defineProperty(f.button.__reactProps$synthetic, 'onClick', { get() { throw new Error('getter must not run') } })
+  installDaoInteractionProbe(f.form, { contact: 'synthetic-private@example.test' })
+  assert.equal(f.win.__hhDaoInteractionProbe.read(f.form).current.buttonOnClickBound, false)
+  const helper = read('scripts/helpers/dao-free-entry-verifier.mjs')
+  const observer = helper.slice(helper.indexOf('export function installDaoInteractionProbe('), helper.indexOf('export async function assertDaoFreeEntryCapture('))
+  assert.doesNotMatch(observer, /__reactFiber|\.onClick\(|\.onChange\(|preventDefault|stopPropagation|stopImmediatePropagation|dispatchEvent|\.click\(|\.value\s*=/)
+  assert.match(helper, /form\.screenshot\(\{ path: failureScreenshotPath,\s*mask: \[form\.locator\('input, textarea'\)\], timeout: 2500 \}\)/)
+  assert.match(helper, /window\.__hhDaoInteractionProbe\?\.dispose\(\)/)
+  assert.match(helper, /delete window\.__hhDaoInteractionProbe/)
+  f.win.__hhDaoInteractionProbe.dispose()
 })

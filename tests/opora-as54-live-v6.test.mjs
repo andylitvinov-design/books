@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
+import {runInNewContext} from 'node:vm'
 import {
   COURSE_ANTISTRESS_SKILLS_V6,OPORA54_SLIDE_MODEL,OPORA54_PRE_SAVE_KEYS,
   opora54Day,opora54SkillCards,opora54BlueprintValid,validateOpora54Signals,
@@ -134,7 +135,40 @@ test('independent mobile component has safe stop, 3 aphorism answers, hints and 
  const legacy=read('components/app/course-slide-player.jsx')
  const css=read('components/app/opora-v6-slide-player.module.css')
  const entry=read('components/app/course-today.jsx')
- assert.match(entry,/data\?\.lesson\?\.antiStress\?\.slideModel===OPORA54_SLIDE_MODEL/)
+ // Replay selects its displayed lesson, not the unrelated current lesson.
+ // Locate the actual player branch rather than accepting a matching dead string.
+ const parsedEntry=ts.createSourceFile('course-today.jsx',entry,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+ const gates=[]
+ const visit=node=>{
+   if(ts.isConditionalExpression(node)&&ts.isJsxSelfClosingElement(node.whenFalse)&&
+      node.whenFalse.tagName.getText(parsedEntry)==='CourseSlidePlayer')gates.push(node.condition)
+   ts.forEachChild(node,visit)
+ }
+ visit(parsedEntry)
+ assert.equal(gates.length,1,'Exactly one model/programme gate selects the lesson player')
+ const allowed=new Set(['playerData','data','lesson','antiStress','slideModel','OPORA54_SLIDE_MODEL','programme','id'])
+ const inspect=node=>{
+   if(ts.isIdentifier(node))assert.ok(allowed.has(node.text),'Unreviewed player-gate input '+node.text)
+   assert.ok(!ts.isCallExpression(node)&&!ts.isNewExpression(node)&&!ts.isElementAccessExpression(node)&&
+     !ts.isArrowFunction(node)&&!ts.isFunctionExpression(node),'Player gate must remain pure')
+   ts.forEachChild(node,inspect)
+ }
+ inspect(gates[0])
+ const predicate=gates[0].getText(parsedEntry)
+ const models=[OPORA54_SLIDE_MODEL,OPORA_SKILL_SLIDE_MODEL,'unsupported-model',undefined,null]
+ for(const displayedModel of models)for(const currentModel of models)for(const programme of [{id:'stress'},{id:'other'},{},null]){
+   const actual=runInNewContext('('+predicate+')',{
+     playerData:{lesson:{antiStress:{slideModel:displayedModel}}},
+     data:{lesson:{antiStress:{slideModel:currentModel}},programme},OPORA54_SLIDE_MODEL,
+   },{timeout:100})
+   assert.equal(actual,displayedModel===OPORA54_SLIDE_MODEL&&programme?.id==='stress',
+     'Only the displayed OPORA model in the stress programme selects an OPORA player')
+ }
+ for(const playerData of [null,{}, {lesson:null},{lesson:{}},{lesson:{antiStress:null}}]){
+   assert.equal(runInNewContext('('+predicate+')',{
+     playerData,data:{lesson:{antiStress:{slideModel:OPORA54_SLIDE_MODEL}},programme:{id:'stress'}},OPORA54_SLIDE_MODEL,
+   },{timeout:100}),false,'Missing displayed lesson/model must not borrow the current lesson')
+ }
  assert.match(entry,/<OporaV6SlidePlayer key=/)
  assert.match(entry,/:<CourseSlidePlayer key=/)
  assert.match(legacy,/export default function CourseSlidePlayer/)

@@ -3,6 +3,7 @@ import test from 'node:test'
 import { assertPublicJourneyRuntime, publicJourneyRequestDecision, installPublicJourneyFence,
   assertBusinessContextHandoff, assertHolisticContextHandoff, assertBusinessGenericSessionCard,
   assertBusinessOfferChoices, assertBusinessPaidFormatPrice } from '../scripts/helpers/public-journey-verifier.mjs'
+import { publicJourneyRequestDiagnostic } from '../scripts/helpers/public-journey-verifier.mjs'
 
 const origin = 'http://127.0.0.1:3100'
 const env = { CI: 'true', NODE_ENV: 'production' }
@@ -132,4 +133,46 @@ test('explicit paid choice must reach matching form format, duration and price',
     }
     assert.throws(() => assertBusinessPaidFormatPrice({ format: 'free', text: fixture.free }, 'free', locale, 'negative'))
   }
+})
+
+test('only the exact source-proven guest gallery GET can receive a synthetic anonymous response', async () => {
+  const fixtures={anonymousTalismans:true}
+  const request={url:origin+'/api/holistic-support/talismans',method:'GET'}
+  assert.equal(publicJourneyRequestDecision(request,origin,[],fixtures),'synthetic-anonymous-talismans')
+  assert.equal(publicJourneyRequestDecision(request,origin),'unplanned-route','fixture is explicit, never a default API waiver')
+  for(const change of [{method:'POST'},{method:'DELETE'},{method:'HEAD'},{body:'private'},
+    {navigation:true},{url:request.url+'?id=anything'},{url:request.url+'#anything'},
+    {url:request.url+'/'},{url:'https://holistichouse.vercel.app/api/holistic-support/talismans'}])
+    assert.notEqual(publicJourneyRequestDecision({...request,...change},origin,[],fixtures),'synthetic-anonymous-talismans')
+  assert.equal(publicJourneyRequestDecision({...request,body:'PRIVATE'},origin,['PRIVATE'],fixtures),'private-text')
+  let handler,fulfilled,continued=0
+  const fence=await installPublicJourneyFence({route:async(_,fn)=>{handler=fn}},origin,[],fixtures)
+  await handler({request:()=>({url:()=>request.url,method:()=>request.method,postData:()=>'',isNavigationRequest:()=>false}),
+    continue:async()=>{continued++},abort:async()=>assert.fail('expected isolated401'),fulfill:async data=>{fulfilled=data}})
+  assert.equal(continued,0,'private endpoint never hits a backend')
+  assert.deepEqual(fulfilled,{status:401,contentType:'application/json',body:'{"error":"UNAUTHENTICATED"}'})
+  assert.equal(fence.summary().anonymousTalismanReads,1)
+  assert.doesNotMatch(fulfilled.body,/items|imageUrl|saved|success/)
+  fence.assertNoSideEffects('synthetic guest')
+})
+
+test('request evidence is bounded and never includes arbitrary paths, query, body or headers', async () => {
+  const sample={url:origin+'/private/SENSITIVE?q=SECRET',method:'POST',body:'BODY_SECRET',navigation:false,
+    resourceType:'fetch',prefetch:true,headers:{authorization:'TOKEN'}}
+  const diagnostic=publicJourneyRequestDiagnostic(sample,'unplanned-route')
+  assert.equal(diagnostic.path,'[redacted]')
+  assert.doesNotMatch(JSON.stringify(diagnostic),/SENSITIVE|SECRET|TOKEN|authorization|\?q=/)
+  const known=origin+'/academy/reiki-yggdrasil/source/advanced-runes.png?question=SECRET'
+  assert.equal(publicJourneyRequestDiagnostic({...sample,url:known},'unplanned-route').path,
+    '/academy/reiki-yggdrasil/source/advanced-runes.png')
+  assert.equal(publicJourneyRequestDiagnostic({...sample,url:known},'private-text').path,'[redacted]')
+  assert.equal(publicJourneyRequestDecision({url:known,method:'GET'},origin),'unplanned-route','diagnostic visibility is NOT an asset allowlist')
+  let handler
+  const fence=await installPublicJourneyFence({route:async(_,fn)=>{handler=fn}},origin)
+  for(let i=0;i<25;i++)await handler({request:()=>({url:()=>sample.url,method:()=>sample.method,postData:()=>sample.body,
+    isNavigationRequest:()=>false,resourceType:()=>sample.resourceType,headers:()=>sample.headers}),
+    continue:async()=>assert.fail('unexpected forwarding'),abort:async()=>{},fulfill:async()=>assert.fail('unknown API cannot be stubbed as success')})
+  assert.equal(fence.summary().requestDiagnostics.length,20)
+  assert.throws(()=>fence.assertNoSideEffects('still fatal'),/no private-text, API, write or external navigation/)
+  assert.doesNotMatch(JSON.stringify(fence.summary()),/SENSITIVE|SECRET|TOKEN/)
 })

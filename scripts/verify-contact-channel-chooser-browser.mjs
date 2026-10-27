@@ -3,12 +3,14 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { assertPublicJourneyRuntime, publicJourneyRequestDecision } from "./helpers/public-journey-verifier.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
-const live = process.argv.includes("--live");
-const origin = live ? "https://holistichouse.vercel.app" : (process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100");
-if (!live && !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) throw new Error("Only local loopback QA is allowed outside --live");
+if (process.argv.includes("--live")) throw new Error("Synthetic contact acceptance must never run against live production");
+const live = false;
+const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
+assertPublicJourneyRuntime(origin);
 const output = "artifacts/contact-channel-browser";
 await mkdir(output, { recursive: true });
 const results = [];
@@ -157,6 +159,89 @@ async function verifyChooser(page, chooser, locale, name, screenshot, submission
   results.push({name,locale,viewportWidth,channels:["WhatsApp","Telegram"],matchingDrafts:true,contactSubmitted:true,keyboardClose:true,nonNavigating:true});
 }
 
+// PR1950 intentionally replaced five repeated panels with one real select.
+// Exercise every intent and its reset/deep-link contract, not a reduced count.
+async function verifyTantraChoice(page, locale, name, submissions) {
+  const capture=page.locator('[data-tantra-whatsapp-capture]');
+  const select=capture.locator('select#tantra-request-'+locale);
+  const intents=['free','personal','session','answers','feedback'];
+  assert.deepEqual(await select.locator('option').evaluateAll(nodes=>nodes.map(node=>node.value)),intents);
+  assert.equal(await select.evaluate(node=>node.labels?.length),1,'Native intent control retains one associated label');
+  await select.focus();
+  assert.equal(await select.evaluate(node=>document.activeElement===node),true,'Native intent choice remains keyboard-focusable');
+  const choiceBounds=await select.boundingBox();
+  assert.ok(choiceBounds&&choiceBounds.width>=150&&choiceBounds.height>=44,'One accessible full-size intent chooser: '+name);
+  const signatures={
+    en:{free:/free introductory Level 1/,personal:/€50 \/ 30 minutes/,session:/€100 \/ 60 minutes/,answers:/seven answers/,feedback:/whether I was able to tune in/},
+    ru:{free:/бесплатную вводную инициацию/,personal:/€50 \/ 30 минут/,session:/100 € \/ 60 минут/,answers:/7 ответов/,feedback:/удалось ли мне настроиться/},
+    es:{free:/iniciación introductoria gratuita/,personal:/€50 \/ 30 minutos/,session:/100 € \/ 60 minutos/,answers:/siete respuestas/,feedback:/si pude conectar/},
+  };
+  for(const intent of intents){
+    assert.equal(await capture.locator('#apply-'+intent).count(),1,'Preserved deep-link target '+intent);
+    await select.selectOption(intent);
+    assert.equal(await select.inputValue(),intent);
+    const chooser=capture.locator('[data-contact-channel-chooser][data-reiki-phone-enquiry]');
+    assert.equal(await chooser.count(),1,'Exactly one compact chooser for the selected intent');
+    assert.equal(await chooser.locator('[data-contact-order], input[type="email"], textarea').count(),0,
+      'No retired duplicate trigger, extra signup or private answer capture');
+    const phone=chooser.locator('input[type="tel"]');
+    const consent=chooser.locator('input[type="checkbox"][required]');
+    assert.equal(await phone.inputValue(),'','Changing intent clears prior synthetic contact');
+    assert.equal(await consent.isChecked(),false,'Changing intent cannot inherit consent');
+    assert.equal(await chooser.locator('a[data-contact-channel]').count(),0,'No saved/provider receipt before consent');
+    const selectedLabel=(await select.locator('option:checked').innerText()).trim();
+    const before=submissions.length;
+    await phone.fill('4165550123');
+    const submit=chooser.locator('[data-contact-channel-submit="whatsapp"]');
+    for(const channel of ['whatsapp','telegram']){
+      const button=chooser.locator('[data-contact-channel-submit="'+channel+'"]');
+      const box=await button.boundingBox();
+      assert.ok(box&&box.width>=100&&box.height>=44,'Usable compact channel button '+intent+'/'+channel);
+      assert.ok(box.x>=-1&&box.x+box.width<=page.viewportSize().width+1,'Compact button fits screen');
+    }
+    await submit.click();
+    assert.equal(submissions.length,before,'Phone alone never saves a request');
+    assert.equal(await consent.isChecked(),false);
+    await consent.check();
+    await submit.click();
+    const wa=chooser.locator('a[data-contact-channel="whatsapp"]');
+    const tg=chooser.locator('a[data-contact-channel="telegram"]');
+    await wa.waitFor({state:'visible'});
+    assert.equal(submissions.length,before+1,'Exactly one consented synthetic request per explicit intent');
+    const request=submissions.at(-1);
+    assert.equal(request.locale,locale);
+    assert.equal(request.contactConsent,true);
+    assert.deepEqual(request.contact,{displayName:'',email:'',phone:'+14165550123'});
+    assert.equal(request.sourcePath,'/'+locale+'/academy/reiki/tantra-reiki/free-initiation');
+    assert.equal(request.description,request.serviceTitle+' · '+selectedLabel,'Selected public intent, not invented private answers');
+    assert.ok(/^[a-f0-9-]{36}$/i.test(request.operationId));
+    assert.equal(request.website,'');
+    const waText=draft(await wa.getAttribute('href'),'wa.me','/14376066502');
+    assert.equal(draft(await tg.getAttribute('href'),'t.me','/AndyTherapist'),waText);
+    assert.match(waText,signatures[locale][intent],'Prepared request preserves selected intent '+intent);
+    assert.match(waText,/HH-CA5016DE79E4/);
+    assert.doesNotMatch(waText,/4165550123|qa-browser@example\.test|PRIVATE_QA_NOTE_NOT_FOR_MESSENGER/);
+    for(const channel of [wa,tg]){
+      const box=await channel.boundingBox();
+      assert.ok(box&&box.width>=100&&box.height>=44&&box.x>=-1&&box.x+box.width<=page.viewportSize().width+1);
+      await channel.click({trial:true,timeout:8000}); // hit-test only; never follow provider
+    }
+    assert.equal(new URL(page.url()).pathname,request.sourcePath,'stayAfterSave retains the local request card');
+    if(page.viewportSize().width===390&&(intent==='free'||intent==='feedback'))
+      await chooser.screenshot({path:output+'/'+slug(name+'-'+intent)+'.png',animations:'disabled'});
+    results.push({name:name+'-'+intent,locale,viewportWidth:page.viewportSize().width,intent,
+      syntheticOnly:true,contactSubmitted:true,channels:['WhatsApp','Telegram'],matchingDrafts:true});
+  }
+  // Preserve every former #apply-* entry without another submission or API read.
+  for(const intent of intents){
+    await page.evaluate(hash=>{window.location.hash=hash;},'#apply-'+intent);
+    await page.waitForFunction(({locale,intent})=>document.getElementById('tantra-request-'+locale)?.value===intent,{locale,intent});
+    assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(),false);
+    assert.equal(await capture.locator('a[data-contact-channel]').count(),0);
+  }
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,'No compact capture horizontal overflow');
+}
+
 async function runEngine(name, engine) {
   const browser = await engine.launch({headless:true});
   try {
@@ -168,16 +253,48 @@ async function runEngine(name, engine) {
         });
         const page = await context.newPage();
         const submissions=[];
-        await page.route("**/api/service-enquiries",async route=>{
-          if(route.request().method()!=="POST")return route.continue();
-          submissions.push(JSON.parse(route.request().postData()||"{}"));
-          await route.fulfill({status:200,contentType:"application/json",
-            body:JSON.stringify({saved:true,referenceCode:"HH-CA5016DE79E4"})});
+        const blocked=[];
+        // Fence the whole context, including popups. No request can write to a
+        // backend or navigate to a provider; only this exact synthetic POST exists.
+        await context.route('**/*',async route=>{
+          const request=route.request(),url=new URL(request.url()),method=request.method();
+          if(url.origin===origin&&url.pathname==='/api/service-enquiries'&&!url.search&&method==='POST'){
+            let payload;
+            try{payload=JSON.parse(request.postData()||'{}')}catch{}
+            const contact=payload?.contact;
+            if(payload?.contactConsent!==true||!contact||
+               ![contact.email,contact.phone].some(value=>value==='qa-browser@example.test'||value==='+14165550123')||
+               (contact.email&&contact.email!=='qa-browser@example.test')||
+               (contact.phone&&contact.phone!=='+14165550123')||
+               (contact.displayName&&contact.displayName!=='QA Visitor')){
+              blocked.push({category:'non-synthetic-enquiry'});
+              return route.abort('blockedbyclient');
+            }
+            submissions.push(payload);
+            return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({saved:true,referenceCode:'HH-CA5016DE79E4'})});
+          }
+          if(publicJourneyRequestDecision({url:request.url(),method,body:request.postData()||'',navigation:request.isNavigationRequest()},origin,
+            ['qa-browser@example.test','4165550123','PRIVATE_QA_NOTE_NOT_FOR_MESSENGER'])==='private-text'){
+            blocked.push({category:'private-text'});
+            return route.abort('blockedbyclient');
+          }
+          if(!['GET','HEAD'].includes(method)||url.pathname.startsWith('/api/')||
+             (url.origin!==origin&&request.isNavigationRequest())){
+            blocked.push({method:['GET','HEAD','POST','PUT','PATCH','DELETE'].includes(method)?method:'OTHER',
+              category:url.pathname.startsWith('/api/')?'unexpected-api':request.isNavigationRequest()?'external-navigation':'unexpected-write'});
+            return route.abort('blockedbyclient');
+          }
+          if(url.origin!==origin)return route.abort('blockedbyclient');
+          return route.continue();
         });
+        // Compact capture normally opens a provider tab after a saved receipt.
+        // Keep that interface entirely in memory BEFORE the page or handler loads.
+        await context.addInitScript(()=>{window.open=()=>({opener:null,closed:false,
+          location:{replace:()=>{}},close:()=>{}});});
         page.on("pageerror",e=>errors.push({name,width,locale,message:e.message}));
         try {
           const cases = [
-            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",selector:'[data-tantra-whatsapp-capture] [data-contact-channel-chooser]',min:5},
+            {path:"/"+locale+"/academy/reiki/tantra-reiki/free-initiation",tantra:true},
             {path:"/"+locale+"/academy/reiki/yggdrasil/free-initiation",selector:'[data-yggdrasil-form] [data-contact-channel-chooser]',min:1},
             {path:"/"+locale+"/academy",selector:'[data-academy-course-capture] [data-contact-channel-chooser]',min:1},
           ];
@@ -186,6 +303,11 @@ async function runEngine(name, engine) {
           for (const item of cases) {
             const response = await page.goto(origin + item.path,{waitUntil:"domcontentloaded",timeout:60000});
             assert.equal(response?.status(),200,name+" "+item.path);
+            if(item.tantra){
+              await page.locator('[data-tantra-whatsapp-capture] select').waitFor({state:'visible'});
+              await verifyTantraChoice(page,locale,[name,locale,width,'tantra'].join('-'),submissions);
+              continue;
+            }
             const items = page.locator(item.selector);
             await items.first().waitFor({state:"visible",timeout:25000});
             await page.waitForLoadState("networkidle",{timeout:20000}).catch(()=>{});
@@ -250,6 +372,7 @@ async function runEngine(name, engine) {
             await verifyChooser(page,templeChooser,"en","chromium-en-390-temple-personal",true,submissions);
             assert.equal(await templeChooser.locator('a[data-contact-channel="whatsapp"]').count(),1);
           }
+          assert.deepEqual(blocked,[],'No real API/write/provider operation attempted outside the exact synthetic enquiry');
         } finally {
           await page.close();
           await context.close();

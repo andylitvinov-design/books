@@ -487,16 +487,30 @@ async function verifyPublicServiceConversionJourneys(){
     if(width===390||width===1280)await servicePage.screenshot({path:output+'/service-'+locale+'-'+slug+'-'+width+'.png',fullPage:false})
     if(width!==390)continue
     if(kind==='dao'){
-     await assertDaoFreeEntryCapture(servicePage,expect,{origin,locale})
+     await assertDaoFreeEntryCapture(servicePage,expect,{origin,locale,
+      failureScreenshotPath:output+'/dao-consent-'+locale+'-form.png'})
      await assertPublicViewportFits(servicePage,locale+'/'+slug+'/'+width+'/synthetic-receipt')
     }else if(kind==='alchemy'){
      const form=servicePage.locator('[data-alchemy-lead-form="single"]')
      await form.scrollIntoViewIfNeeded()
-     await expect(form.locator('select')).toHaveCount(2)
+     // Only the two service options belong to this contract. The nested
+     // compact request also mounts a legitimate country-calling-code select.
+     await expect(form.locator(':scope > label > select')).toHaveCount(2)
+     const sessionFormat=form.getByRole('combobox',{name:locale==='ru'?'Формат':'Session format',exact:true})
+     const sessionTopic=form.getByRole('combobox',{name:locale==='ru'?'Тема':'Topic',exact:true})
+     for(const option of [sessionFormat,sessionTopic]){
+      await expect(option).toHaveCount(1)
+      await expect(option).toBeVisible()
+     }
+     await expect(form.getByLabel(locale==='ru'?'Код страны':'Country calling code',{exact:true})).toHaveCount(1)
+     await expect(form.locator('[data-phone-country-input] input[type="tel"]')).toHaveAttribute('required','')
+     await expect(form.locator('[data-compact-phone-trigger="true"] input[type="checkbox"]')).toHaveAttribute('required','')
      await expect(form.locator('[data-contact-order]')).toBeVisible()
-     await form.locator('select').first().selectOption('30')
-     await form.locator('select').nth(1).selectOption('business')
-     await expect(form.locator('select').first()).toHaveValue('30')
+     await expect(form.locator('[data-contact-order]')).toHaveAttribute('aria-expanded','false')
+     await sessionFormat.selectOption('30')
+     await sessionTopic.selectOption('business')
+     await expect(sessionFormat).toHaveValue('30')
+     await expect(sessionTopic).toHaveValue('business')
      const pricing=servicePage.locator('[data-alchemy-booking-formats]')
      await pricing.locator('[data-alchemy-format="30"]').click()
      await expect(pricing.locator('[data-alchemy-format="30"]')).toHaveAttribute('aria-pressed','true')

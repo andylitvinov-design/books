@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { boundedBestEffort } from './browser-failure-evidence.mjs'
 
 const REFERENCE = 'HH-ABCD1234EF56'
 const CONTACT = 'dao-qa@example.test'
@@ -69,7 +70,59 @@ export function daoConsentDiagnostics(form, expected) {
   }
 }
 
-export async function assertDaoFreeEntryCapture(page, expect, { origin, locale }) {
+// Isolated verifier observer only. Native event delivery and host props are not
+// proof that a React handler executed. Never invoke handlers or inspect fibers.
+export function installDaoInteractionProbe(form, expected) {
+  const doc = form.ownerDocument, win = doc.defaultView
+  const contact = form.querySelector('input[name="contact"]')
+  const button = form.querySelector('button[data-compact-channel="whatsapp"]')
+  const props = node => {
+    const key = node && Object.getOwnPropertyNames(node).find(name => name.startsWith('__reactProps$'))
+    // Use only data descriptors; do not invoke arbitrary application getters.
+    return key ? Object.getOwnPropertyDescriptor(node, key)?.value : undefined
+  }
+  const value = (object, key) => object && Object.getOwnPropertyDescriptor(object, key)?.value
+  const snapshot = () => {
+    const inputProps = props(contact), buttonProps = props(button)
+    return { contactPropsPresent: Boolean(inputProps), buttonPropsPresent: Boolean(buttonProps),
+      contactOnChangeBound: typeof value(inputProps, 'onChange') === 'function',
+      buttonOnClickBound: typeof value(buttonProps, 'onClick') === 'function',
+      contactPropMatches: value(inputProps, 'value') === expected.contact }
+  }
+  const counts = { inputCapture: 0, inputBubble: 0, clickCapture: 0, clickBubble: 0, trustedClicks: 0 }
+  const initial = snapshot()
+  let clickCapture = null, clickBubble = null, defaultPrevented = false
+  const listeners = []
+  for (const capture of [true, false]) {
+    const listener = event => {
+      if (event.type === 'input' && event.target === contact) {
+        counts[capture ? 'inputCapture' : 'inputBubble']++
+      } else if (event.type === 'click' && button?.contains(event.target)) {
+        counts[capture ? 'clickCapture' : 'clickBubble']++
+        if (capture) {
+          if (event.isTrusted) counts.trustedClicks++
+          clickCapture = snapshot()
+        } else clickBubble = snapshot()
+        defaultPrevented ||= Boolean(event.defaultPrevented)
+      }
+    }
+    for (const type of ['input', 'click']) {
+      doc.addEventListener(type, listener, { capture, passive: true })
+      listeners.push([type, listener, capture])
+    }
+  }
+  win.__hhDaoInteractionProbe = {
+    read(currentForm) {
+      return { initial, clickCapture, clickBubble, current: snapshot(), counts: { ...counts },
+        defaultPrevented, originalFormConnected: Boolean(form.isConnected), sameForm: currentForm === form,
+        sameContact: currentForm.querySelector('input[name="contact"]') === contact,
+        sameButton: currentForm.querySelector('button[data-compact-channel="whatsapp"]') === button }
+    },
+    dispose() { for (const [type, listener, capture] of listeners) doc.removeEventListener(type, listener, capture) },
+  }
+}
+
+export async function assertDaoFreeEntryCapture(page, expect, { origin, locale, failureScreenshotPath }) {
   assertDaoVerifierBoundary(origin)
   assert.ok(Object.hasOwn(copy, locale), 'Only explicitly covered Dao locales are allowed')
   const path = '/' + locale + '/services/dao-health-profile'
@@ -109,18 +162,28 @@ export async function assertDaoFreeEntryCapture(page, expect, { origin, locale }
     await expect(consent).not.toBeChecked()
     await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0)
     await expect(capture.locator('[data-lead-saved]')).toHaveCount(0)
+    await boundedBestEffort(() => form.evaluate(installDaoInteractionProbe, { contact: CONTACT }), 3000)
     await contact.fill(CONTACT)
     await whatsapp.click()
     try {
       await expect(form.getByRole('alert')).toHaveText(t.required)
     } catch (error) {
-      let state = null
-      try { state = await form.evaluate(daoConsentDiagnostics, { contact: CONTACT, required: t.required }) }
-      catch { /* Diagnostics must never replace the original failing gate. */ }
+      let state = null, interaction = null
+      // Bound evidence only, never the assertion or the user's original action.
+      await boundedBestEffort(async () => {
+        state = await form.evaluate(daoConsentDiagnostics, { contact: CONTACT, required: t.required })
+        interaction = await form.evaluate(node => node.ownerDocument.defaultView.__hhDaoInteractionProbe?.read(node) || null)
+      }, 3000)
       try {
-        console.error('DAO_CONSENT_FAILURE', JSON.stringify({ locale, state,
+        console.error('DAO_CONSENT_FAILURE', JSON.stringify({ locale, state, interaction,
           syntheticSubmissions: guard.submissions.length, blockedRequests: guard.blocked.length }))
       } catch { /* A diagnostic sink failure must not replace the original error. */ }
+      if (failureScreenshotPath) {
+        const outcome = await boundedBestEffort(() => form.screenshot({ path: failureScreenshotPath,
+          mask: [form.locator('input, textarea')], timeout: 2500 }), 3000)
+        try { console.error('DAO_CONSENT_FORM_SCREENSHOT', JSON.stringify({ locale, outcome })) }
+        catch { /* Keep the original consent error when screenshot logging fails. */ }
+      }
       throw error
     }
     assert.deepEqual(guard.submissions, [], 'No request without explicit consent')
@@ -170,6 +233,8 @@ export async function assertDaoFreeEntryCapture(page, expect, { origin, locale }
     // Remove the test-only popup double before reusing the document.
     try {
       await page.evaluate(() => {
+        try { window.__hhDaoInteractionProbe?.dispose() } catch { /* Evidence cleanup is non-fatal. */ }
+        delete window.__hhDaoInteractionProbe
         if (window.__hhDaoOriginalOpen) window.open = window.__hhDaoOriginalOpen
         delete window.__hhDaoOriginalOpen
         delete window.__hhDaoCaptureProbe

@@ -20,8 +20,10 @@ test('large-text client PDF uses a compact continuation header and preserves pri
   const source = buildPrescriptionPdf(sample, 'en', origin).toString('latin1')
   const pages = source.split('/Type /Page /Parent').length - 1
   assert.ok(pages >= 2, 'long report should exercise continuation pages')
-  assert.equal(source.split('/Lighthouse Do Q').length - 1, 2,
-    'both approved lighthouse images belong to the first-page identity and illustrated hero only')
+  assert.equal(source.split('/Lighthouse Do Q').length - 1, 1,
+    'one approved masthead lighthouse; no duplicate white-backed raster over the coastal hero (#1273)')
+  assert.ok(source.includes('q 82 0 0 80.81 68 724 cm /Lighthouse Do Q'), 'approved masthead placement is retained')
+  assert.ok(source.includes('0.94 0.91 0.83 rg'), 'vector coastal hero remains instead of duplicate raster art')
   assert.ok(source.includes('164 788 Tm'), 'recommendation has the restored readable premium letterhead')
   assert.ok(source.includes('68 801 Tm'), 'continuation has an uncluttered running brand header')
   assert.ok(source.includes('11.7 Tf'), 'state analysis uses larger A4 text')

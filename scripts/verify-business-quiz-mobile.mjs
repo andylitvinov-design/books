@@ -123,11 +123,19 @@ async function verify(browserType,locale,width){
       assert.equal(await group.locator('[data-offer-type]').count(),2,label+': collapsed '+kind+' offers')
     }
     for(const intent of ['test','advice','course','session']){
-      await direction.locator('[data-direction-intent="'+intent+'"]').click()
+      const chip=direction.locator('[data-direction-intent="'+intent+'"]')
+      await target(chip,'intent '+intent)
+      await chip.click()
+      assert.equal(await chip.getAttribute('aria-pressed'),'true',label+': intent selected')
       assert.deepEqual(await direction.locator('[data-direction-section]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-direction-section'))),[intent])
       if(intent==='advice')assert.equal(await direction.locator('[data-offer-action="advice"]').getAttribute('href'),'/'+locale+'/services/free-situation-review')
-      await direction.locator('[data-direction-action-reset]').click()
-      assert.equal(await direction.locator('[data-direction-section]').count(),3)
+      // PR1688 keeps one mobile row: the active chip itself toggles off.
+      // The auxiliary desktop reset is deliberately hidden below 780px.
+      await chip.click()
+      assert.equal(await chip.getAttribute('aria-pressed'),'false',label+': same intent toggles off')
+      assert.deepEqual(await direction.locator('[data-direction-section]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-direction-section'))),
+        ['test','course','session'],label+': reset restores every original category')
+      assert.equal(await panel.locator('[data-direction-filter="all"]').getAttribute('aria-pressed'),'true',label+': intent reset preserves topic state')
     }
     await extras.locator('summary').click()
     assert.equal(await extras.evaluate(node=>node.open),true)

@@ -106,3 +106,105 @@ test('exact current source keeps compact consent-first runtime and the registere
   assert.match(runtime, /data\.saved !== true/)
   assert.match(core, /prepared\.whatsappUrl\.searchParams\.get\('text'\)\.includes\('€50'\)/)
 })
+
+// Execute the whole bounded Alchemy form/pricing branch, using semantic labels
+// and inert controls. Never import browser/DB setup or invoke a provider.
+function serviceControls(locale, fault = '', countryFirst = false) {
+  const f = fixture(locale), changed = []
+  const words = locale === 'ru' ? ['Формат', 'Тема', 'Код страны'] : ['Session format', 'Topic', 'Country calling code']
+  const values = { format: '60', topic: 'relationships', country: 'CA' }
+  const fields = [
+    { id: 'format', name: fault === 'wrong-format-label' ? 'Other format' : words[0], direct: true, visible: fault !== 'hidden-format' },
+    { id: 'topic', name: words[1], direct: true, visible: true },
+    { id: 'country', name: words[2], direct: false, visible: false },
+  ].filter(field => !((fault === 'missing-format' && field.id === 'format') || (fault === 'missing-country' && field.id === 'country')))
+  if (fault === 'duplicate-topic') fields.push({ ...fields.find(field => field.id === 'topic') })
+  if (fault === 'extra-service-option') fields.push({ id: 'extra', name: 'Unexpected option', direct: true, visible: true })
+  if (countryFirst) fields.sort((a, b) => Number(b.id === 'country') - Number(a.id === 'country'))
+  function selections(getFields) {
+    return { selection: true, items: getFields,
+      first: () => selections(() => getFields().slice(0, 1)), nth: i => selections(() => getFields().slice(i, i + 1)),
+      selectOption: async value => {
+        const found = getFields(); assert.equal(found.length, 1); const field = found[0]
+        const options = field.id === 'format' ? ['60', ...(fault === 'missing-format-option' ? [] : ['30']), 'month']
+          : field.id === 'topic' ? ['relationships', 'stress', ...(fault === 'missing-topic-option' ? [] : ['business']), 'direction', 'other'] : ['CA', 'US']
+        assert.ok(options.includes(value), 'Only a current option can be selected')
+        if (fault !== 'ignored-' + field.id + '-change') values[field.id] = value
+        changed.push(field.id + ':' + value)
+      } }
+  }
+  const control = (kind, attrs = {}) => ({ selection: true, items: () => [{ id: kind, visible: true, attrs }] })
+  const form = { scrollIntoViewIfNeeded: async () => {},
+    getByRole: (role, options) => { assert.equal(role, 'combobox'); assert.equal(options.exact, true); return selections(() => fields.filter(field => field.name === options.name && field.visible)) },
+    // The service labels wrap their selects/options. Their accessible names
+    // are exact, while raw label text also contains option text. Country has
+    // an explicit aria-label and remains mounted inside the collapsed form.
+    getByLabel: (name, options) => { assert.equal(name, words[2]); assert.equal(options.exact, true); return selections(() => fields.filter(field => field.name === name)) },
+    locator: selector => {
+      if (selector === 'select') return selections(() => fields)
+      if (selector === ':scope > label > select') return selections(() => fields.filter(field => field.direct))
+      if (selector === '[data-contact-order]') return control('request', { 'aria-expanded': 'false' })
+      if (selector === '[data-phone-country-input] input[type="tel"]') return control('phone', fault === 'optional-phone' ? {} : { required: '' })
+      if (selector === '[data-compact-phone-trigger="true"] input[type="checkbox"]') return control('consent', fault === 'optional-consent' ? {} : { required: '' })
+      assert.fail('Unexpected service-form selector: ' + selector)
+    } }
+  let selectedPrice = '60'
+  const priceButton = control('price', { 'aria-pressed': 'false' })
+  priceButton.click = async () => { selectedPrice = '30'; priceButton.items = () => [{ id: 'price', visible: true, attrs: { 'aria-pressed': 'true' } }] }
+  const pricing = { locator: selector => selector === '[data-alchemy-format="30"]' ? priceButton : f.scope.locator(selector) }
+  const link = control('free-review'); link.first = () => link
+  const page = { ...f.page, locator: selector => {
+    if (selector === '[data-alchemy-lead-form="single"]') return form
+    if (selector === '[data-alchemy-booking-formats]') return pricing
+    assert.equal(selector, 'a[href="/' + locale + '/services/free-situation-review"]'); return link
+  } }
+  const expect = actual => actual.selection ? {
+    toHaveCount: async count => assert.equal(actual.items().length, count),
+    toBeVisible: async () => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].visible, true) },
+    toHaveValue: async value => { assert.equal(actual.items().length, 1); assert.equal(values[actual.items()[0].id], value) },
+    toHaveAttribute: async (name, value) => { assert.equal(actual.items().length, 1); assert.equal(actual.items()[0].attrs?.[name], value) },
+  } : f.expect(actual)
+  return { f, page, expect, changed, values, selectedPrice: () => selectedPrice }
+}
+async function runWholeAlchemyForm(h, locale) {
+  const script = read('scripts/verify-app-r1.mjs')
+  const start = script.indexOf('     const form=servicePage.locator(\'[data-alchemy-lead-form="single"]\')')
+  const end = script.indexOf("    }else{\n     const capture=servicePage.locator('[data-sitewide-capture=", start)
+  assert.ok(start > 0 && end > start)
+  return runInNewContext('(async () => {' + script.slice(start, end) + '\n})()', {
+    assert, locale, servicePage: h.page, expect: h.expect,
+    openContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels,
+  }, { timeout: 1000 })
+}
+for (const locale of ['en', 'ru']) for (const countryFirst of [false, true]) {
+  test(locale + ' complete Alchemy form branch distinguishes two options from phone country: countryFirst=' + countryFirst, async () => {
+    const h = serviceControls(locale, '', countryFirst)
+    await runWholeAlchemyForm(h, locale)
+    assert.deepEqual(h.changed, ['format:30', 'topic:business'])
+    assert.equal(h.values.country, 'CA', 'Service choices never alter the phone country')
+    assert.equal(h.selectedPrice(), '30')
+    assert.equal(h.f.state.requests.length, 1); assert.equal(h.f.state.requests[0].contactConsent, true)
+    assert.equal(h.f.state.externalClicks, 0)
+  })
+}
+for (const fault of ['missing-format', 'duplicate-topic', 'wrong-format-label', 'hidden-format',
+  'missing-country', 'extra-service-option', 'missing-format-option', 'missing-topic-option', 'optional-phone', 'optional-consent',
+  'ignored-format-change', 'ignored-topic-change']) {
+  test('complete Alchemy branch rejects broken semantic controls: ' + fault, async () => {
+    const h = serviceControls('en', fault)
+    await assert.rejects(runWholeAlchemyForm(h, 'en'), { code: 'ERR_ASSERTION' })
+    assert.equal(h.f.state.requests.length, 0, 'Broken prerequisites never reach even the synthetic pricing request')
+  })
+}
+test('source provides two labelled service choices and a separately required phone/country/consent form', () => {
+  const form = read('components/alchemy-soul-lead-form.tsx'), phone = read('components/phone-country-input.tsx')
+  const runtime = read('components/contact-channel-chooser.tsx')
+  assert.match(form, /<label htmlFor=\{formId \+ "-format"\}>\{t\.format\}\s*<select id=\{formId \+ "-format"\}/)
+  assert.match(form, /<label htmlFor=\{formId \+ "-topic"\}>\{t\.topics\}\s*<select id=\{formId \+ "-topic"\}/)
+  assert.match(phone, /<select aria-label=\{words\.country\}/)
+  for (const label of ['Country calling code', 'Код страны']) assert.ok(phone.includes(label))
+  assert.match(phone, /required=\{required\}/)
+  assert.match(runtime, /<PhoneCountryInput[\s\S]*?disabled=\{busy\} required/)
+  assert.match(runtime, /<input type="checkbox" checked=\{consent\} required disabled=\{busy\}/)
+  assert.match(runtime, /if \(!consent\) \{[\s\S]*?return;/)
+})

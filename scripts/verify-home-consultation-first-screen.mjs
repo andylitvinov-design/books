@@ -35,7 +35,10 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + ': public home must load');
           const slider = page.locator('[data-home-section-carousel] [role="region"][aria-roledescription="carousel"]');
           const paid = slider.locator('[data-home-first-screen-cta="paid"]');
-          const free = page.locator('[data-home-free-diagnosis-banner] [data-home-diagnosis-order]');
+          // PR1786 removed duplicate promo banners: the same free review is an
+          // explicit, no-cost offer in the seven-stage journey for all 3 locales.
+          const freeCard = page.locator('[data-home-offer-card="review"][data-home-offer-free="true"]');
+          const free = freeCard.locator('[data-home-offer-primary="review"]');
           await paid.waitFor({ state: 'visible', timeout: 30000 });
           await free.waitFor({ state: 'visible', timeout: 30000 });
           const [card, book, review] = await Promise.all([
@@ -52,18 +55,21 @@ for (const engine of [chromium, webkit]) {
           const paidHref = await paid.getAttribute('href');
           const freeHref = '/' + locale + '/services/free-situation-review';
           assert.equal(paidHref, '/' + locale + '/services#consultation', label + ': existing booking destination');
-          assert.equal(await free.getAttribute('aria-expanded'), 'false',
-            label + ': free diagnosis opens the existing consent-gated inline form');
-          // The approved first carousel slide keeps the original photo, seven named
+          assert.equal(await freeCard.count(), 1, label + ': exactly one free written review offer');
+          assert.equal(await free.getAttribute('href'), freeHref, label + ': real free review route, not an invented booking');
+          const freeDetails = freeCard.locator('[data-home-offer-details="review"]');
+          assert.equal(await freeDetails.getAttribute('aria-expanded'), 'false', label + ': review details initially collapsed');
+          assert.equal(await freeCard.locator('form').count(), 0, label + ': discovery never submits or grants consent');
+          // The approved first carousel slide keeps the original photo, six named
           // section links and the priced consultation button on the first fold.
           const sectionNav = page.locator('[data-home-hero-nav="true"]');
           await sectionNav.waitFor({ state: 'visible', timeout: 30000 });
           const sectionLinks = sectionNav.locator('a[data-home-nav-section]');
-          assert.equal(await sectionLinks.count(), 7, label + ': seven plain text site sections');
+          assert.equal(await sectionLinks.count(), 6, label + ': all six paired slide categories; Home remains in wordmark');
           assert.equal(await sectionNav.locator('svg, img').count(), 0, label + ': no icons in the hero navigation');
           assert.ok((await sectionNav.getAttribute('aria-label'))?.length > 3, label + ': accessible section list');
-          const keys = ['home', 'tests', 'services', 'academy', 'business', 'ideas', 'cabinet'];
-          const suffixes = ['', '/client/tests', '/services', '/academy', '/explore/business', '/books', '/app'];
+          const keys = ['services', 'academy', 'business', 'tests', 'ideas', 'cabinet'];
+          const suffixes = ['/explore/energy', '/explore/love', '/explore/business', '/client/tests', '/books', '/app'];
           for (let i = 0; i < keys.length; i++) {
             const link = sectionLinks.nth(i);
             assert.equal(await link.getAttribute('data-home-nav-section'), keys[i], label + ': navigation order');
@@ -73,7 +79,10 @@ for (const engine of [chromium, webkit]) {
             const target = await link.boundingBox();
             assert.ok(target && target.height >= 44, label + ': touch target for ' + keys[i]);
           }
-          assert.equal(await sectionLinks.nth(2).getAttribute('aria-current'), 'true', label + ': first services slide selected');
+          const homeLink = page.locator('header .house-wordmark');
+          assert.equal(await homeLink.count(), 1, label + ': Home remains separately accessible');
+          assert.equal(await homeLink.getAttribute('href'), locale === 'en' ? '/' : '/' + locale, label + ': localized Home wordmark');
+          assert.equal(await sectionLinks.first().getAttribute('aria-current'), 'true', label + ': first Energy slide selected');
           const [navBox, copyBox] = await Promise.all([
             sectionNav.boundingBox(), page.locator('[data-home-slide]').boundingBox(),
           ]);
@@ -90,22 +99,28 @@ for (const engine of [chromium, webkit]) {
           if (engine === webkit && width === 390) {
             await page.screenshot({ path: output + '/home-' + locale + '-webkit-390.png', fullPage: false });
           }
-          // Opening the existing collapsed catalogue is the only trigger for
-          // downloading its heavier client code. Preserve route links even if
-          // the visitor keeps the disclosure closed.
+          // PR1786/1816 replaced the duplicate catalogue with real topic links;
+          // only the optional conversation guide is lazy. Do not answer or send.
           if (width === 390) {
+            const filters=page.locator('[data-home-topic-filters]');
+            const topics=filters.locator('[data-home-topic-filter]');
+            assert.deepEqual(await topics.evaluateAll(nodes=>nodes.map(node=>({key:node.getAttribute('data-home-topic-filter'),href:node.getAttribute('href')}))),
+              ['energy','love','business','temple','services','courses'].map((key,index)=>({key,
+                href:'/'+locale+['/explore/energy','/explore/love','/explore/business','/temple-support','/services','/academy'][index]})),
+              label+': all existing topic and catalogue routes remain available');
             const more = page.locator('[data-home-more-deferred="true"]');
-            assert.equal(await more.locator('[data-home-start]').count(), 0,
-              label + ': closed catalogue must not inflate initial SSR/RSC');
+            assert.equal(await more.locator('[data-home-conversation-guide]').count(), 0,
+              label + ': closed optional guide must not inflate initial SSR/RSC');
             await more.locator('summary').first().click();
-            await page.locator('[data-home-start]').waitFor({ state: 'visible', timeout: 30000 });
+            const guide=more.locator('[data-home-conversation-guide]');
+            await guide.waitFor({ state: 'visible', timeout: 30000 });
+            assert.equal(await guide.count(),1,label+': one lazy guide, not repeated catalogue cards');
+            assert.equal(await guide.getAttribute('data-guide-phase'),'ready',label+': no invented visitor conversation');
             assert.equal(await more.getAttribute('open'), '',
-              label + ': expanding reveals the existing section directory');
-            if (locale !== 'es') {
-              await page.locator('[data-core-service-id]').first().waitFor({ state: 'visible', timeout: 30000 });
-            }
+              label + ': explicit disclosure mounts the optional guide');
             await more.locator('summary').first().click();
             assert.equal(await more.getAttribute('open'), null, label + ': closes without navigation');
+            await guide.waitFor({state:'detached'});
           }
           // Navigation is a genuine public route read. Do not submit a form, create
           // a lead, book an appointment or trigger a payment.

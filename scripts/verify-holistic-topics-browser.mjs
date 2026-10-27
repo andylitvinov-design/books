@@ -3,12 +3,14 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { assertPublicJourneyRuntime, installPublicJourneyFence } from "./helpers/public-journey-verifier.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
 const origin = process.env.HH_PUBLIC_QA_ORIGIN || "http://127.0.0.1:3100";
 if (!/^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(origin))
   throw new Error("Holistic topic mobile tests are loopback-only");
+assertPublicJourneyRuntime(origin);
 await mkdir("artifacts/holistic-topic-mobile", { recursive: true });
 const evidence = [];
 
@@ -21,7 +23,9 @@ for (const engine of [chromium, webkit]) {
         const page = await browser.newPage({
           viewport: { width, height: 844 }, deviceScaleFactor: 1,
           isMobile: true, hasTouch: true, reducedMotion: "reduce",
+          serviceWorkers: "block",
         });
+        const fence = await installPublicJourneyFence(page.context(), origin, [], {anonymousTalismans:true});
         const errors = [];
         page.on("pageerror", error => errors.push(error.message));
         try {
@@ -30,6 +34,11 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + " HTTP status");
           const root = page.locator("[data-holistic-topic-filter]");
           await root.waitFor({ state: "visible", timeout: 30000 });
+          const gallery = page.locator('[data-support-talismans]');
+          await gallery.locator('a[href="/' + locale + '/app"]').waitFor({state:"visible"});
+          assert.equal(await gallery.locator('img, form, [data-talisman-upload]').count(), 0,
+            label + " no private gallery contents or upload operations in guest QA");
+          assert.equal(fence.summary().anonymousTalismanReads, 1);
           assert.equal(await root.locator('[role="tab"]').count(), 3, label + " exactly three topic filters");
           let previousMeditationTitle = "";
           for (const topic of ["business", "love", "health"]) {
@@ -49,7 +58,11 @@ for (const engine of [chromium, webkit]) {
             const expert = panel.locator('[data-holistic-topic-card="expert"]');
             assert.equal(await meditation.locator("a").getAttribute("href"), "#meditation-practices");
             assert.equal(await talisman.locator("a").getAttribute("href"),
-              "/" + locale + "/academy/symbolic/artifacts-talismans");
+              "#talismans", label + " PR2022 uses the existing personal collection, not the historical archive");
+            const collection = page.locator('#talismans[data-holistic-talismans]');
+            assert.equal(await collection.count(), 1, label + " one real in-page collection destination");
+            assert.equal(await collection.locator('[data-support-talismans]').count(), 1,
+              label + " collection mount exists; never inspect private items or operate uploads here");
             assert.equal(await expert.locator("a").getAttribute("href"),
               "/" + locale + "/services/remote-energy-support");
             const currentTitle = (await meditation.locator("h3").innerText()).trim();
@@ -66,8 +79,11 @@ for (const engine of [chromium, webkit]) {
           await root.screenshot({ path: "artifacts/holistic-topic-mobile/" +
             engine.name() + "-" + locale + "-" + width + ".png" });
           assert.deepEqual(errors, [], label + " no runtime errors");
+          fence.assertNoSideEffects(label);
           evidence.push({ browser: engine.name(), locale, width, topics: 3, offerings: 3, overflow: false });
         } finally {
+          await writeFile("artifacts/holistic-topic-mobile/requests-" + engine.name() + "-" + locale + "-" + width + ".json",
+            JSON.stringify(fence.summary(), null, 2));
           await page.close();
         }
       }

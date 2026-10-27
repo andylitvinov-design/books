@@ -34,7 +34,8 @@ async function verify(engine, locale, width) {
     viewport: {width, height: 844}, deviceScaleFactor: 1, hasTouch: true, isMobile: true,
     reducedMotion: "reduce", serviceWorkers: "block",
   });
-  const fence = await installPublicJourneyFence(context, origin, [copy[locale].question, copy[locale].intention]);
+  const fence = await installPublicJourneyFence(context, origin, [copy[locale].question, copy[locale].intention],
+    {anonymousTalismans:true});
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -45,6 +46,11 @@ async function verify(engine, locale, width) {
     assert.equal(response?.status(), 200, label + ": first screen returned HTTP 200");
     const root = page.locator("[data-holistic-first-screen]");
     await root.waitFor({state: "visible", timeout: 30000});
+    const guestGallery = page.locator('[data-support-talismans]');
+    await guestGallery.locator('a[href="/' + locale + '/app"]').waitFor({state:"visible"});
+    assert.equal(await guestGallery.locator('img, form, [data-talisman-upload]').count(), 0,
+      label + ": synthetic anonymous gallery exposes no private image or upload form");
+    assert.equal(fence.summary().anonymousTalismanReads, 1, label + ": exact guest read was fulfilled in memory, never by the API");
     assert.equal(await root.locator("h1#holistic-journey-title").innerText(),
       copy[locale].title, label + ": localized heading");
     const firstChoices = root.locator("[data-holistic-choose]");
@@ -215,11 +221,17 @@ async function verify(engine, locale, width) {
     if (width === 390) {
       await page.goto(origin + "/" + locale + "/holistic-support", {waitUntil:"domcontentloaded"});
       await root.waitFor({state:"visible"});
+      await guestGallery.locator('a[href="/' + locale + '/app"]').waitFor({state:"visible"});
       await page.screenshot({path:output + "/holistic-" + engine.name() + "-" + locale + "-390.png",fullPage:false});
     }
+    fence.assertNoSideEffects(label + ": final screenshot included");
+    assert.equal(fence.summary().anonymousTalismanReads, width === 390 ? 2 : 1,
+      label + ": only the bounded source-proven gallery mounts received anonymous fixtures");
     evidence.push({engine:engine.name(),locale,width,result:"pass"});
     console.log("PASS " + label + ": symbolic insight, private energy handoff and one-use privacy");
   } finally {
+    await writeFile(output + "/requests-" + engine.name() + "-" + locale + "-" + width + ".json",
+      JSON.stringify(fence.summary(), null, 2));
     await context.close();
     await browser.close();
   }

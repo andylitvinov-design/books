@@ -21,13 +21,18 @@ function decoded(value) {
   return result
 }
 
-export function publicJourneyRequestDecision({ url, method, body = '', navigation = false }, origin, sensitive = []) {
+export function publicJourneyRequestDecision({ url, method, body = '', navigation = false }, origin, sensitive = [], fixtures = {}) {
   const contents = decoded(url) + '\n' + decoded(body)
   if (sensitive.some(value => value && contents.includes(value))) return 'private-text'
   let target
   try { target = new URL(url) } catch { return 'invalid-url' }
   if (!['GET', 'HEAD'].includes(method)) return 'write'
   if (target.origin !== origin) return navigation ? 'external-navigation' : 'external-resource'
+  // Source-proven initial guest gallery read only. Never send this account-owned
+  // endpoint to a backend, return successful contents, or intercept its writes.
+  if (fixtures.anonymousTalismans === true && method === 'GET' && !navigation && !body &&
+      target.pathname === '/api/holistic-support/talismans' && !target.search && !target.hash)
+    return 'synthetic-anonymous-talismans'
   // Public route rendering may read its own static resources. API/auth/admin,
   // assessment runner and any unplanned destination remain closed, even on localhost.
   if (/^\/(?:_next\/|images\/|audio\/|fonts\/|favicon\.|icon\.|apple-icon\.|manifest\.)/.test(target.pathname)) return 'allow'
@@ -35,22 +40,50 @@ export function publicJourneyRequestDecision({ url, method, body = '', navigatio
   return 'unplanned-route'
 }
 
-export async function installPublicJourneyFence(context, origin, sensitive = []) {
+const safeDiagnosticPaths = new Set([
+  '/', '/en', '/ru', '/es', '/api/holistic-support/talismans',
+  '/academy/reiki-yggdrasil/source/advanced-runes.png',
+  '/academy/reiki-yggdrasil/source/program-overview.jpg',
+])
+export function publicJourneyRequestDiagnostic(request, decision) {
+  let path = ''
+  try { path = new URL(request.url).pathname } catch {}
+  return { decision,
+    method: ['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'].includes(request.method) ? request.method : 'OTHER',
+    navigation: request.navigation === true,
+    resourceType: ['document','stylesheet','image','media','font','script','xhr','fetch','other'].includes(request.resourceType) ? request.resourceType : 'other',
+    prefetch: request.prefetch === true,
+    category: path.startsWith('/api/') ? 'api' : /\.(?:png|jpe?g|webp|avif|svg|ico|woff2?|wav|mp3|css|js)$/i.test(path) ? 'static-asset' : /^\/(?:en|ru|es)(?:\/|$)/.test(path) ? 'localized-route' : 'other',
+    path: decision === 'private-text' ? '[redacted]' : safeDiagnosticPaths.has(path) ? path : '[redacted]',
+  }
+}
+export async function installPublicJourneyFence(context, origin, sensitive = [], fixtures = {}) {
   const violations = []
   const blockedResources = []
+  const requestDiagnostics = []
+  let anonymousTalismanReads = 0
   await context.route('**/*', async route => {
     const request = route.request()
-    const decision = publicJourneyRequestDecision({ url: request.url(), method: request.method(),
-      body: request.postData() || '', navigation: request.isNavigationRequest() }, origin, sensitive)
+    const headers = request.headers?.() || {}
+    const info = { url: request.url(), method: request.method(), body: request.postData() || '',
+      navigation: request.isNavigationRequest(), resourceType: request.resourceType?.(),
+      prefetch: headers.purpose === 'prefetch' || headers['next-router-prefetch'] === '1' }
+    const decision = publicJourneyRequestDecision(info, origin, sensitive, fixtures)
     if (decision === 'allow') return route.continue()
+    if (decision === 'synthetic-anonymous-talismans') {
+      anonymousTalismanReads++
+      return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"UNAUTHENTICATED"}' })
+    }
     // Never save the URL/body: a failing implementation might contain private text.
     if (decision === 'external-resource') blockedResources.push(decision)
     else violations.push(decision)
+    if (requestDiagnostics.length < 20) requestDiagnostics.push(publicJourneyRequestDiagnostic(info, decision))
     await route.abort('blockedbyclient')
   })
   return {
-    assertNoSideEffects(label) { assert.deepEqual(violations, [], label + ': no private-text, API, write or external navigation attempt') },
-    summary() { return { violations: [...violations], blockedExternalResources: blockedResources.length } },
+    assertNoSideEffects(label) { assert.deepEqual(violations, [], label + ': no private-text, API, write or external navigation attempt; redacted request samples ' + JSON.stringify(requestDiagnostics)) },
+    summary() { return { violations: [...violations], blockedExternalResources: blockedResources.length,
+      anonymousTalismanReads, requestDiagnostics: [...requestDiagnostics] } },
   }
 }
 
