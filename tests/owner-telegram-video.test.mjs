@@ -337,7 +337,11 @@ test('backend only webhook and forced RLS migration; no cross-bot or automatic Y
  assert.match(service,/if\(event.action==='done'\)/)
  assert.doesNotMatch(service,/if\(result.state==='added'\)\{\s*await ownerMessage/)
  const doneHandler=service.split("if(event.action==='done'){")[1].split("if(event.action==='retry'){")[0]
- assert.doesNotMatch(doneHandler,/if\(batch.state==='reserved'\)\{\s*await ownerMessage/)
+ assert.match(doneHandler,/if\(batch.state==='reserved'\)\{[\s\S]*await ownerMessage\(owner/)
+ assert.match(service,/async function markPreviewDelivery\(config,jobId,confirmed\)/)
+ assert.match(service,/VIDEO_TELEGRAM_PREVIEW_UNCONFIRMED/)
+ assert.match(service,/Number.isSafeInteger\(result.result\?\.message_id\)/)
+ assert.match(service,/Повторить доставку MP4/)
  assert.match(service,/state='uncertain'/)
  assert.equal(readFileSync(new URL('../app/api/admin/telegram-video/youtube/start/route.js',import.meta.url),'utf8').includes("await requireAdminRequest()"),true)
 })
@@ -379,13 +383,14 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','video','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','materials','track'])
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const buttons=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
  assert.ok(buttons.some(x=>x.url==='https://t.me/Andydotbot?start=video_ru'))
  assert.ok(buttons.some(x=>x.url==='https://t.me/Andydotbot?start=video_en'))
  assert.ok(!buttons.some(x=>x.callback_data?.startsWith('hh-audio:to:')))
+ assert.ok(buttons.some(x=>x.url==='https://t.me/Andydotbot?start=combine'))
  assert.ok(ownerAudioMaterialsMessage().reply_markup.inline_keyboard.flat()
    .some(x=>x.url==='https://t.me/Andydotbot?start=video_en'))
  const dotOwner={id:privateBase.id,is_bot:false}
@@ -412,9 +417,9 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
 test('private /video command remains registered if Owner AI is disabled',()=>{
  const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
    ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
- assert.deepEqual(menu('shared_practice',false,true),['audio','video','materials','track'])
- assert.deepEqual(menu('shared_practice',true,true),['all','audio','video','materials','track'])
- assert.deepEqual(menu('shared_practice',true,false),['all','audio','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,false),['all','audio','combine','done','materials','track'])
  assert.deepEqual(menu('shared_practice',false,false),[])
  assert.deepEqual(menu('dedicated',true,true),[])
  const source=readFileSync(new URL('../lib/app/client-telegram-transport.js',import.meta.url),'utf8')
