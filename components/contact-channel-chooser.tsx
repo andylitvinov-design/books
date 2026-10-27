@@ -361,9 +361,10 @@ export function ContactChannelChooser({
         setEmail(current => current || nextEmail);
         if (nextName.length >= 2 && nextName.length <= 120) setDisplayName(current => current || nextName);
         setGoogleReady(true);
+        if (cartContact) setMethod("email");
       }).catch(() => { /* A guest can submit a request without Google. */ });
     return () => { active = false; };
-  }, [quick]);
+  }, [quick, cartContact]);
 
   async function startGoogle() {
     if (googleBusy || busy) return;
@@ -791,10 +792,11 @@ export function ContactChannelChooser({
                 onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
               <span>{c.consent}</span>
             </label>
-            {quick && !cartContact && <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
-              onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
-              {method === "email" ? c.quickPhone : c.quickEmail}
-            </button>}
+            {quick && (!cartContact || (googleReady && method === "email")) &&
+              <button type="button" className={styles.quickSwitch} disabled={busy || googleBusy}
+                onClick={() => { setMethod(current => current === "email" ? "phone" : "email"); setError(""); operationId.current = null; }}>
+                {method === "email" ? c.quickPhone : c.quickEmail}
+              </button>}
             {quick && <small className={styles.quickConsent}>{c.quickConsent}</small>}
             <label className={styles.honeypot} aria-hidden="true">
               Website <input type="text" name="website" autoComplete="off" tabIndex={-1}
