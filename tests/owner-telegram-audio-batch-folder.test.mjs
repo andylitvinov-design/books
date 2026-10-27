@@ -59,6 +59,9 @@ test('batch-specific folder/finish/cancel callbacks validate owner, bot and batc
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:cancel:'+ID)).action,'cancel')
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:resend:'+ID)).action,'resend')
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:resend:'+ID)).batchId,ID)
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:voice:'+ID)).action,'voice')
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:voice:'+ID)).batchId,ID)
+  assert.equal(parseOwnerAudioCallback(callback('hh-audio:voice:'+ID+':reiki')),null)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:resend:'+ID+':reiki')),null)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:bf:'+OLD+':greek')).batchId,OLD)
   assert.equal(parseOwnerAudioCallback(callback('hh-audio:bf:'+ID+':private-client')),null)
@@ -77,6 +80,8 @@ test('private Telegram deep link starts combine and previous audio flows remain'
   assert.equal(parseOwnerAudioCommand(command('/start audio'),NOW)?.action,'help')
   assert.equal(parseOwnerAudioCommand(command('/audio'),NOW)?.action,'help')
   assert.equal(parseOwnerAudioCommand(command('/done'),NOW)?.action,'done')
+  assert.equal(parseOwnerAudioCommand(command('/track'),NOW)?.action,'track')
+  assert.equal(parseOwnerAudioCommand(command('/track@Andydotbot'),NOW)?.action,'track')
   const spoof=command('/start combine');spoof.message.from.id=999999
   assert.equal(parseOwnerAudioCommand(spoof,NOW),null)
   assert.match(ownerAudioHelpMessage().text,/папку для ИТОГОВОГО файла/)
@@ -92,7 +97,8 @@ test('source contract: folder is used at save, retries and owner-only callbacks'
   assert.match(service,/folder:session\.result_folder,promptMessageId:session\.prompt_message_id,parts:ordered/)
   assert.match(service,/title,batch\.folder/)
   assert.doesNotMatch(service,/title,batch\.parts\[0\]\.folder/)
-  assert.match(service,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher\)/)
+  assert.match(service,/sendCombinedDocument\(credentials,bytes,batch\.parts\.length,saved\.folder,fetcher,saved\.id\)/)
+  assert.match(service,/sendCombinedVoice\(credentials,bytes,fetcher\)/)
   assert.doesNotMatch(service,/sendOwner\(credentials,'✅ Один файл из '/)
   assert.match(service,/updateAudioCombineProgress\(credentials,combine,fetcher\)/)
   assert.ok(service.indexOf("const ready=await markAudio(config,row.id,'ready'")<
