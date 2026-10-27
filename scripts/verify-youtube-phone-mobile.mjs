@@ -70,7 +70,7 @@ async function verify(browserType,engine,width,height){
   // We test protected /admin/youtube-upload separately without an owner cookie.
   // Next.js/admin shell can keep passive connections open. DOM readiness plus
   // explicit visible landmarks is the reliable mobile/WebKit acceptance gate.
-  const response=await page.goto(origin+'/__qa/youtube-phone',{waitUntil:'domcontentloaded',timeout:30000})
+  const response=await page.goto(origin+'/qa/youtube-phone',{waitUntil:'domcontentloaded',timeout:30000})
   assert.equal(response.status(),200)
   const root=page.locator('[data-youtube-upload-page]')
   await expect(root).toBeVisible({timeout:15000})
