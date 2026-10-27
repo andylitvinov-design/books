@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import styles from './crm-salesbot-drafts.module.css'
+import CrmSalesbotInternalRun from './crm-salesbot-internal-run'
 
 const COPY = {
   en: {
@@ -198,6 +199,9 @@ export default function CrmSalesbotDraftControls({ accountId, locale = 'en', flo
         disabled={busy || loading || !available || !selected || selected.status !== 'approved_preview'}
         onClick={() => void mutate('pause')}>{t.pause}</button>
     </div>
+    {selected?.status==='approved_preview'&&!dirty&&
+      <CrmSalesbotInternalRun key={accountId+':'+selected.id}
+        accountId={accountId} locale={lang} flowId={selected.id}/>}
     {notice && <p role={available ? 'status' : 'alert'} className={styles.note}>{notice}</p>}
   </section>
 }
