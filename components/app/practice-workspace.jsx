@@ -684,7 +684,7 @@ export default function PracticeWorkspace({locale,ownerTools=null,accountId=null
         <p>{ru?'Мастеру — 80% до применимых сборов и налогов. Бесплатные услуги без комиссии. Оплата на сайте и выплаты мастерам пока не включены.':'Practitioners receive 80% before applicable payment fees and taxes. Free services have no commission. Marketplace checkout and payouts are not yet enabled.'}</p>
       </details>
         </div>}
-        {activePanel==='express-reports'&&<PracticeExpressReports locale={locale} accountId={accountId} requests={requests} owner={isOwner} initialRequestId={selectedExpressRequestId}/>}
+        {activePanel==='express-reports'&&<PracticeExpressReports locale={locale} accountId={accountId} requests={requests} owner={isOwner} initialRequestId={selectedExpressRequestId} onOpenRequests={()=>choosePanel('requests')}/>}
         {activePanel==='analytics'&&<div id="hh-practice-v4-analytics" className="hh-practice-v4-analytics">
           <PracticeServiceStatistics analytics={data.serviceAnalytics} registrationStats={data.registrationStats} locale={locale} accountId={accountId} />
         </div>}
