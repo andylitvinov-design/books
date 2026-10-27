@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { runInNewContext } from 'node:vm'
 import { buildExplorerEntries, TEST_EXPLORER_AXES } from '../lib/assessments/test-explorer.js'
 import { auditProfileConstructLinks, buildAuthorAxisReview, authorAxisReviewCsv } from '../scripts/audit-profile-construct-links.mjs'
 import {
   PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, PROFILE_RESEARCH_AXES,
   buildProfileScaleGroups, defaultProfileScaleIds, profileAreasWithTests,
   selectedProfileResearchAxes, researchAxisForScale, profileResearchAxisLabel,
-  recommendProfileAxisBattery, previewProfileScales,
+  recommendProfileAxisBattery, recommendProfileTopThreeTests, rankProfileAxisTests, previewProfileScales,
 } from '../lib/profile/profile-scale-selection.js'
 
 const accountEntries = buildExplorerEntries({ locale: 'en', audience: 'account' })
@@ -167,10 +169,85 @@ test('EN/RU/ES use identical eligibility while retaining precise localized axis 
   const raw=readFileSync(new URL('../components/personality-profiles-builder.tsx',import.meta.url),'utf8')
   assert.ok(raw.includes('data-profile-research-axis={axis.id}'))
   assert.ok(raw.includes('profileResearchAxisLabel(axis.id, locale)'))
-  assert.ok(raw.includes('recommendProfileAxisBattery(tests, scaleGroups'))
   assert.ok(raw.includes('selectedProfileResearchAxes(scaleGroups, selectedScaleIds)'))
   assert.ok(!/setResearchScore|createPsychometricNorm|autoEnroll|patientAnswers/.test(raw),
     'research axes must remain a read-only selection classification')
+})
+
+test('current builder derives stable 3+5 suggestions and fit from selected source facets, not checked tests', () => {
+  const ts = createRequire(import.meta.url)('typescript')
+  const raw = readFileSync(new URL('../components/personality-profiles-builder.tsx', import.meta.url), 'utf8')
+  const source = ts.createSourceFile('profile.tsx', raw, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  assert.deepEqual(source.parseDiagnostics, [])
+  const component = source.statements.find(node => ts.isFunctionDeclaration(node) &&
+    node.name?.text === 'PersonalityProfilesBuilder')
+  assert.ok(component?.body)
+  // Execute only the actual pure recommendation declarations, not React, auth,
+  // network or scoring. A helper rename alone is not the acceptance criterion.
+  const names = ['modeKind', 'rankedCandidates', 'recommendedKeys', 'recommendedTests', 'fiveMoreTests']
+  const declarations = component.body.statements.filter(ts.isVariableStatement)
+    .flatMap(statement => [...statement.declarationList.declarations])
+    .filter(node => ts.isIdentifier(node.name) && names.includes(node.name.text))
+  assert.deepEqual(declarations.map(node => node.name.text), names)
+  assert.ok(declarations.every(node => node.initializer))
+  const script = ts.transpileModule('(() => {\n' + declarations.map(node =>
+    `const ${node.name.text} = ${node.initializer.getText(source)};`).join('\n') +
+    '\nreturn { ranking: rankedCandidates, primary: recommendedTests.map(({test, matchPercent}) => ({key: test.key, matchPercent})), additional: fiveMoreTests.map(({test, matchPercent}) => ({key: test.key, matchPercent})) };\n})()',
+    { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+  const entry = (key, extra = {}) => ({ key, testKind: 'monitoring',
+    free: true, startable: true, selectable: true, rightsStatus: 'cleared', ...extra })
+  const extras = Array.from({ length: 7 }, (_, index) => 'extra-0' + (index + 1))
+  const tests = [entry('broad'), entry('focused'), ...extras.map(key => entry(key)),
+    entry('unrelated'), entry('other-topic'), entry('restricted', { rightsStatus: 'restricted' }),
+    entry('paid', { free: false }), entry('no-start', { startable: false }),
+    entry('unselectable', { selectable: false }), entry('optin', { explicitOptIn: true }),
+    entry('professional', { testKind: 'professional' })]
+  const scale = (testKey, key, researchAxisId) => ({ id: testKey + '::' + key, testKey, researchAxisId })
+  const scaleGroups = [{ area: 'work', scales: [
+    scale('broad', 'f', 'work::focus'), scale('broad', 'p', 'work::functioning'),
+    scale('focused', 'f', 'work::focus'), ...extras.map(key => scale(key, 'f', 'work::focus')),
+    scale('unrelated', 's', 'emotions::stress'), scale('other-topic', 'f', 'connection::empathy'),
+    ...['restricted', 'paid', 'no-start', 'unselectable', 'optin', 'professional']
+      .map(key => scale(key, 'f', 'work::focus')),
+  ] }]
+  const input = { tests, scaleGroups, selectedScaleIds: ['focused::f', 'broad::p'], batteryMode: 'questionnaires' }
+  const original = JSON.stringify(input)
+  const evaluate = extra => JSON.parse(JSON.stringify(runInNewContext(script, {
+    recommendProfileAxisBattery, recommendProfileTopThreeTests, rankProfileAxisTests,
+    ...input, selectedKeys: [], ...extra,
+  }, { timeout: 1000 })))
+  const result = evaluate({})
+  assert.deepEqual(result.primary, [
+    { key: 'broad', matchPercent: 90 }, { key: 'focused', matchPercent: 50 },
+    { key: 'extra-01', matchPercent: 40 },
+  ])
+  assert.deepEqual(result.additional, extras.slice(1, 6).map(key => ({ key, matchPercent: 40 })))
+  assert.deepEqual(result.ranking.map(item => item.key), ['broad', 'focused', ...extras])
+  assert.ok(result.ranking.every(item => item.matchedAxes.length > 0 &&
+    item.matchedAxes.every(axis => ['work::focus', 'work::functioning'].includes(axis))))
+  // Unchecking every card or retaining only one must not remove suggestions.
+  for (const selectedKeys of [[], ['broad'], [...result.primary, ...result.additional].map(item => item.key)])
+    assert.deepEqual(evaluate({ selectedKeys }), result)
+  assert.deepEqual(evaluate({ tests: [...tests].reverse() }), result)
+  assert.deepEqual(evaluate({ selectedScaleIds: [] }), { ranking: [], primary: [], additional: [] })
+  const other = evaluate({ selectedScaleIds: ['unrelated::s'] })
+  assert.deepEqual(other.primary, [{ key: 'unrelated', matchPercent: 100 }])
+  assert.deepEqual(other.additional, [])
+  assert.deepEqual(other.ranking[0].matchedAxes, ['emotions::stress'])
+  const pro = evaluate({ batteryMode: 'pro' })
+  assert.deepEqual(pro.primary, [{ key: 'professional', matchPercent: 40 }])
+  assert.deepEqual(pro.additional, [])
+  // A high-ranking cluster for one facet must not crowd out another chosen
+  // facet merely to fill the three featured slots by rank alone.
+  const coverageKeys = ['a-focus-1', 'a-focus-2', 'a-focus-3', 'a-focus-4', 'z-purpose']
+  const coverage = evaluate({ tests: coverageKeys.map(key => entry(key)),
+    scaleGroups: [{ area: 'work', scales: coverageKeys.map(key =>
+      scale(key, 'f', key === 'z-purpose' ? 'work::functioning' : 'work::focus')) }],
+    selectedScaleIds: coverageKeys.map(key => key + '::f'),
+  })
+  assert.deepEqual(coverage.primary.map(item => item.key), ['a-focus-1', 'a-focus-2', 'z-purpose'])
+  assert.equal(coverage.additional.length, 2)
+  assert.equal(JSON.stringify(input), original, 'recommendations must not mutate source metadata or chosen facets')
 })
 
 test('sensitive and reference-only measures never become new public source scores', () => {

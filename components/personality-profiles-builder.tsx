@@ -404,7 +404,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
   // The visible catalogue is derived only from selected topics/scales, never
   // from checked test keys. Unchecking changes the plan, not the recommendation.
-  const rankedCandidates = rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode) as Array<{ key: string; matchPercent: number; matchedAxes: readonly string[] }>;
+  const rankedCandidates: ReadonlyArray<NonNullable<ReturnType<typeof rankProfileAxisTests>[number]>> =
+    rankProfileAxisTests(tests, scaleGroups, selectedScaleIds, batteryMode)
+      .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
   const recommendedKeys = recommendProfileTopThreeTests(tests, scaleGroups,
     selectedScaleIds, batteryMode);
   const recommendedTests = rankedCandidates
