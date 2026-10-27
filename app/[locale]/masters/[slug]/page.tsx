@@ -12,6 +12,7 @@ import { createPractitionerCourseRepository } from "@/lib/practitioners/course-r
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { getPublishedSiteVideos } from "@/lib/site-videos/public";
 import { siteVideoWatchUrl } from "@/lib/site-videos/model";
+import { getServiceVideoMedia } from "@/data/service-video-library";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
@@ -147,8 +148,20 @@ export default async function MasterProfile({ params }: PageProps) {
       url: "https://www.youtube.com/watch?v=" + item.id,
     }))
     : [];
+  const approvedServiceVideos = practitioner.slug === "andy-litvinov"
+    ? (["en", "ru"] as const).flatMap(language =>
+      (["overview", "alchemy", "hypnotherapy", "constellations", "constellation-case", "homeopathy"] as const)
+        .map(topic => getServiceVideoMedia(topic, language).video)
+        .filter(video => video.practitionerSlug === practitioner.slug)
+        .map(video => ({
+          title: video.title,
+          description: video.description || "",
+          locale: video.language,
+          url: siteVideoWatchUrl(video),
+        }))
+    ) : [];
   const seenPublicVideos = new Set<string>();
-  const videos = [...(profile.videoMaterials || []), ...siteRecordings, ...originalVideos].filter(item => {
+  const videos = [...(profile.videoMaterials || []), ...siteRecordings, ...approvedServiceVideos, ...originalVideos].filter(item => {
     if (seenPublicVideos.has(item.url)) return false;
     seenPublicVideos.add(item.url);
     return true;
