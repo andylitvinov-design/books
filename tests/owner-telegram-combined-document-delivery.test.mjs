@@ -153,7 +153,9 @@ test('resend reads only the completed owner-private result, never another chat',
   assert.match(service,/storage\.download\(row\.storage_path\)/)
   assert.match(service,/data\.size!==Number\(row\.bytes\)/)
   assert.match(service,/audioMatchesMagic\(bytes,'audio\/ogg'\)/)
-  assert.match(service,/sendCombinedDocument\(credentials,bytes,row\.parts,row\.folder,fetcher\)/)
+  assert.match(service,/sendCombinedDocument\(credentials,bytes,row\.parts,row\.folder,fetcher,id\)/)
+  assert.match(service,/if\(voiceOnly\)/)
+  assert.match(service,/sendCombinedVoice\(credentials,bytes,fetcher\)/)
   assert.match(service,/combinedDeliveryKeyboard\(id\)/)
   assert.match(service,/callback_data:'hh-audio:resend:'\+id/)
   assert.doesNotMatch(service,/storage\.upload\(row\.storage_path/)
@@ -269,6 +271,8 @@ test('uncertain Telegram sending exposes only explicit resend; no fake success',
   assert.equal(events.binaries.length,1)
   assert.match(events.messages.at(-1).text,/не подтвердил отправку/)
   assert.equal(events.messages.at(-1).keyboard.inline_keyboard[0][0].callback_data,
+    'hh-audio:voice:'+id)
+  assert.equal(events.messages.at(-1).keyboard.inline_keyboard[0][1].callback_data,
     'hh-audio:resend:'+id)
   assert.doesNotMatch(events.messages.at(-1).text,/повторно отправлен/)
   const corrupted=simulatedSavedResend(row,{corrupt:true})
