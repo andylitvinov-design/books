@@ -200,7 +200,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         {key === 'axes' && <span aria-hidden="true">· {checkedRays.length}</span>}
       </button>)}
     </nav>}
-    {portrait && !compact && portraitView === 'axes' && <section
+    {portrait && !compact && portraitView === 'axes' && selectedSector !== 'goal' && <section
       id={portraitAxisPanelId} role="tabpanel" aria-labelledby={portraitRayOptionsId + '-axes-tab'}
       className={styles.portraitControls} data-testid="portrait-axes-panel" aria-label={ru ? 'Оси и показатели профиля' : es ? 'Ejes e indicadores' : 'Profile axes and indicators'}>
       <div className={styles.portraitControlsHeading}>
@@ -268,7 +268,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       </details>}
       <p>{ru ? 'Крупное число — исходный балл теста. Позиция /100 лишь помогает нарисовать луч внутри именно этого опросника; это не процент здоровья, клинический уровень или сравнение с другим тестом. Описательные показатели не имеют идеального значения.' : es ? 'El número principal es la puntuación original. La posición /100 no mide salud ni permite comparar pruebas; una escala descriptiva no tiene valor ideal.' : 'The primary number is the original test score. Position /100 only draws this questionnaire’s scale, never health, clinical severity or comparison across tests. Descriptive measures have no ideal endpoint.'}</p>
     </section>}
-    {portrait && !compact && portraitView === 'tests' && <section
+    {portrait && !compact && portraitView === 'tests' && selectedSector !== 'goal' && <section
       id={portraitTestPanelId} role="tabpanel" aria-labelledby={portraitRayOptionsId + '-tests-tab'}
       data-testid="portrait-tests-panel" className={styles.portraitTestPanel}>
       {typeof portraitTests === 'function'
