@@ -29,7 +29,8 @@ test('models are strictly provider-qualified and free: no Step 5 paid fallback',
 
 test('CI model runs require exact GitHub-hosted, no-key, nonproduction sandbox', () => {
   const env = {
-    CI: 'true', GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request',
+    CI: 'true', GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push',
+    GITHUB_REF_NAME: 'codex/hh-gauntlet-run-20261027',
     GITHUB_REPOSITORY: 'andylitvinov-design/books',
     HH_GAUNTLET_CI_SYNTHETIC: 'isolated-20261027',
     RUNNER_TEMP: '/home/runner/work/_temp',
@@ -41,7 +42,10 @@ test('CI model runs require exact GitHub-hosted, no-key, nonproduction sandbox',
   assert.equal(allowsSyntheticActionsRun(env), true);
   for (const [name, value] of [
     ['CI', 'false'], ['GITHUB_ACTIONS', 'false'],
-    ['GITHUB_EVENT_NAME', 'push'], ['GITHUB_REPOSITORY', 'other/books'],
+    ['GITHUB_EVENT_NAME', 'pull_request'],
+    ['GITHUB_REF_NAME', 'codex/public-book-library'],
+    ['GITHUB_REF_NAME', 'codex/hh-gauntlet-execution-20261027'],
+    ['GITHUB_REPOSITORY', 'other/books'],
     ['HH_GAUNTLET_CI_SYNTHETIC', '1'],
     ['HOME', '/home/runner'],
     ['XDG_CONFIG_HOME', '/home/runner/.config'],
