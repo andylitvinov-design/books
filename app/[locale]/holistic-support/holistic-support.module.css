@@ -258,6 +258,13 @@
 .mobileExperienceLink:focus-visible{outline:3px solid #f7d18a;outline-offset:4px}
 @media(max-width:700px){.mobileExperienceLink{width:100%;min-height:48px;font-size:14px}}
 
+/* Legacy Power Place mandala constructor, simplified for a local-photo meditation journey. */
+.mandalaAction{display:flex;align-items:center;justify-content:center;gap:11px;min-height:55px;margin:12px 0;padding:12px 18px;border-radius:13px;background:#425d4d;color:#fffaf2;text-decoration:none;font:750 14px/1.35 Arial,Helvetica,sans-serif;text-align:center;box-shadow:0 4px 16px rgba(42,78,55,.15)}
+.mandalaAction:hover{background:#304a3d}
+.mandalaAction:focus-visible{outline:3px solid #d39e60;outline-offset:3px}
+.mandalaAction span:nth-child(2){flex:0 1 auto}
+@media(max-width:430px){.mandalaAction{margin:10px 0;padding:11px 12px;min-height:52px;font-size:12px;gap:8px}}
+
 /* On short 320px phones the fixed site chrome leaves less than 390px for
    the entry. Keep every choice and its copy; put the explanatory paragraph
    after the controls instead of shrinking option labels or clipping a choice.

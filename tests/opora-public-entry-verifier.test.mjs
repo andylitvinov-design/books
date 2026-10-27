@@ -105,7 +105,7 @@ test('read-only fence preserves existing routes and aborts auth, writes and prov
    fallback: async () => calls.push('fallback'), abort: async reason => calls.push(reason) })
   assert.deepEqual(calls, [allowed ? 'fallback' : 'blockedbyclient'])
   if (allowed) guard.assertUntouched()
-  else { assert.throws(() => guard.assertUntouched()); assert.deepEqual(Object.keys(guard.blocked[0]).sort(), ['method', 'sameOrigin']) }
+  else { assert.throws(() => guard.assertUntouched()); assert.deepEqual(Object.keys(guard.blocked[0]).sort(), ['endpoint', 'method', 'sameOrigin']) }
  }
  assert.throws(() => createOporaGuestPreviewGuard('https://holistic-house.com'))
 })

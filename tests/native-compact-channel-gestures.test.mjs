@@ -35,7 +35,10 @@ test('native fixture uses real mouse/touch/keyboard input and blocks all network
   assert.match(nativeCompactChannelFixture, /top:770.9px;width:157px;height:49px/)
   assert.match(nativeCompactChannelFixture, /bottom:0;height:69px/)
   const app = read('scripts/verify-app-r1.mjs')
-  assert.match(app, /try \{\s*await assertNativeCompactChannelGestures\(browser,expect,\{origin\}\)\s*passed\([^\n]+\)\s*await verifyPublicServiceConversionJourneys\(\)/)
+  const mainStart = app.indexOf('\ntry {\n')
+  const servicesStart = app.indexOf(' await verifyPublicServiceConversionJourneys()', mainStart)
+  assert.ok(mainStart >= 0 && servicesStart > mainStart)
+  assert.equal(app.slice(mainStart, servicesStart), "\ntry {\n await assertNativeCompactChannelGestures(browser,expect,{origin})\n passed('native compact channel mouse/touch gestures and navigation restoration without network')\n // Preserve the anonymous OPORA deep link, explicit consent boundary, and\n // all seven-skill/14-day checks through its real full-programme link.\n await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})\n await page.setViewportSize({width:390,height:844})\n passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')\n\n")
   assert.match(app, /await assertDaoFreeEntryCapture\(servicePage,expect,\{origin,locale,/)
 })
 

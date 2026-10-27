@@ -28,6 +28,7 @@ const pureImports = [
   '../inner-growth/anti-stress-practice-lab.js', '../inner-growth/anti-stress-method-activities.js',
   '../inner-growth/course-slide-sequence.js',
   '../inner-growth/course-progress.js', '../inner-growth/opora-module-exercise.js',
+  '../assessments/verified-history.js',
 ]
 const modules = Object.fromEntries(await Promise.all(pureImports.map(async specifier =>
   [specifier, await import(pathToFileURL(resolve(appRoot, specifier)).href)])))
@@ -203,4 +204,15 @@ test('current educational route AS6 remains usable as a selected course', async 
   const h = harness(course)
   assertCreated(h, await h.create(), COURSE_CONTENT_V4, preferences('AS6'))
   assert.equal(course.concerns_ciphertext, ciphertext, 'stored choice must remain unchanged')
+})
+
+// Pin the newly required pure dependency without relaxing the closed importer.
+test('cycle fixture binds actual history validation and keeps unknown or live transports closed', async () => {
+  const actual = await import(pathToFileURL(resolve(appRoot, '../assessments/verified-history.js')).href)
+  const loaded = runtime.require('../assessments/verified-history.js')
+  assert.equal(loaded.verifiedHistoryResult, actual.verifiedHistoryResult)
+  for (const invalid of [{}, { dimensions: [] }, { dimensions: [null] }])
+    assert.equal(loaded.verifiedHistoryResult(invalid), false)
+  assert.throws(() => runtime.require('./unapproved-runtime.js'), /No unmocked database or unknown import/)
+  assert.throws(() => runtime.require('./database.js').transaction(), /Live transaction is forbidden/)
 })

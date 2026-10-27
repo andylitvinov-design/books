@@ -28,7 +28,7 @@ function loadComponent(path, modules) {
 const common = {
   'react/jsx-runtime': { jsx, jsxs: jsx },
   'next/link': { default: link },
-  'lucide-react': Object.fromEntries(['BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'Sparkles', 'ChevronLeft', 'ChevronRight', 'ShieldCheck', 'Target', 'BriefcaseBusiness', 'ClipboardList', 'Heart', 'LockKeyhole', 'MessageCircle', 'UserRound', 'Users', 'X'].map(name => [name, () => null])),
+  'lucide-react': Object.fromEntries(['Download', 'Smartphone', 'BookOpen', 'Menu', 'ClipboardCheck', 'GraduationCap', 'ArrowUpRight', 'ArrowRight', 'FileText', 'Flower2', 'PlayCircle', 'ChevronDown', 'Sparkles', 'ChevronLeft', 'ChevronRight', 'ShieldCheck', 'Target', 'BriefcaseBusiness', 'ClipboardList', 'Heart', 'LockKeyhole', 'MessageCircle', 'UserRound', 'Users', 'X'].map(name => [name, () => null])),
 };
 let pathname = '/';
 const rootLayout = read('app/layout.tsx');
@@ -91,8 +91,12 @@ const { HomeFeaturedWorkspace } = loadComponent('components/home-featured-worksp
   '@/components/home-personal-space': { useHomePersonalSpace: () => null },
   './home-featured-workspace.module.css': { default: {} },
 });
+const { FreeMobileAppBanner } = loadComponent('components/free-mobile-app-banner.tsx', {
+  ...common, './free-mobile-app-banner.module.css': { default: {} },
+});
 const { HolisticHouseHome } = loadComponent('components/holistic-house-home.tsx', {
   ...common, '@/data/local-acquisition': acquisition,
+  '@/components/free-mobile-app-banner': { FreeMobileAppBanner },
   '@/components/home-section-carousel': { HomeSectionCarousel },
   '@/components/home-more-disclosure': { HomeMoreDisclosure },
   '@/components/home-featured-workspace': { HomeFeaturedWorkspace },
@@ -339,7 +343,7 @@ test('the menu preserves tap targets and makes secondary navigation a compact tw
 });
 
 async function menuScenario(locale, surface, fault) {
-  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about'];
+  const expectedMenu = ['/' + locale + '/services/free-situation-review', ...navigationModel.getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about'];
   pathname = surface === 'home' ? (locale === 'en' ? '/' : '/' + locale) : ['energy','love','business'].includes(surface) ? '/' + locale + '/explore/' + (surface) : '/' + locale + '/' + surface;
   const tree = SiteNavigation({ locale });
   const menuTree = treeNodes(tree).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
@@ -348,6 +352,11 @@ async function menuScenario(locale, surface, fault) {
   if (fault === 'wrong destination') actualHrefs[0] = '/wrong';
   if (fault === 'missing catalog destination') actualHrefs.splice(2, 1);
   if (fault === 'extra catalog destination') actualHrefs.push('/extra');
+  const installIndex = actualHrefs.indexOf('/' + locale + '/install');
+  if (fault === 'missing install') actualHrefs.splice(installIndex, 1);
+  if (fault === 'wrong install') actualHrefs[installIndex] = '/' + locale + '/wrong-install';
+  if (fault === 'cross-locale install') actualHrefs[installIndex] = '/' + (locale === 'en' ? 'ru' : 'en') + '/install';
+  if (fault === 'duplicate install') actualHrefs.splice(installIndex, 0, actualHrefs[installIndex]);
   const current = nodes.filter(node => node.props['aria-current'] === 'page');
   if (fault === 'missing active state') current.length = 0;
   if (fault === 'duplicate active state') current.push(nodes[0]);
@@ -515,5 +524,75 @@ for (const fault of ['missing dialog semantics', 'wrong dialog target', 'wrong i
   test('My Space matrix rejects ' + fault, async () => {
     await mySpaceMatrixScenario('ru', 390);
     await assert.rejects(mySpaceMatrixScenario('ru', 390, fault), { code: 'ERR_ASSERTION' });
+  });
+}
+
+for (const [locale, label] of [['en', 'Install for free'], ['ru', 'Установить бесплатно'], ['es', 'Instalar gratis']]) {
+  test(locale + ' actual free-app banner keeps its explicit localized install route', () => {
+    const tree = FreeMobileAppBanner({ locale });
+    assert.equal(tree.type, 'aside');
+    assert.equal(Object.hasOwn(tree.props, 'data-hh-free-app-banner'), true);
+    const links = treeNodes(tree).filter(node => node.type === 'a');
+    assert.equal(links.length, 1);
+    assert.equal(links[0].props.href, '/' + locale + '/install');
+    assert.equal(links[0].props.prefetch, false);
+    assert.equal(Object.hasOwn(links[0].props, 'data-hh-free-app-link'), true);
+    assert.ok(treeNodes(tree).some(node => node.type === 'h2'));
+    assert.ok(JSON.stringify(links[0]).includes(label));
+  });
+}
+for (const locale of ['en', 'ru']) test(locale + ' actual Home renders one real install banner, not a noop boundary', () => {
+  const tree = HolisticHouseHome({ locale });
+  const banners = treeNodes(tree).filter(node => Object.hasOwn(node.props || {}, 'data-hh-free-app-banner'));
+  assert.equal(banners.length, 1);
+  assert.equal(treeNodes(banners[0]).filter(node => node.type === 'a' && node.props.href === '/' + locale + '/install').length, 1);
+});
+
+for (const locale of ['en', 'ru', 'es']) for (const fault of ['missing install', 'wrong install', 'cross-locale install', 'duplicate install']) test(locale + ' menu rejects ' + fault, async () => {
+  await menuScenario(locale, 'home');
+  await assert.rejects(menuScenario(locale, 'home', fault), { code: 'ERR_ASSERTION' });
+});
+
+// Evaluate only the authored pure expectedMenu expression, never the browser matrix.
+function nativeExpectedMenu(locale, transform = value => value) {
+  const matrixStart = ia.indexOf('async function verifyPublicHeaderMatrix(');
+  assert.ok(matrixStart >= 0, 'actual native matrix must exist');
+  const matches = [...ia.slice(matrixStart).matchAll(/^        const expectedMenu = (.+)$/gm)];
+  assert.equal(matches.length, 1, 'exactly one native matrix menu expression');
+  const expression = transform(matches[0][1]);
+  return new Function('locale', 'getCompactNavigation', 'expected', 'return (' + expression + ');')(
+    locale, navigationModel.getCompactNavigation, navigationModel.getSiteNavigation(locale));
+}
+function assertNativeMenuParity(locale, transform) {
+  const independent = [
+    '/' + locale + '/services/free-situation-review',
+    ...navigationModel.getCompactNavigation(locale).map(item => item.href),
+    '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install',
+    ...navigationModel.getSiteNavigation(locale).filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href),
+    '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about',
+  ];
+  const native = nativeExpectedMenu(locale, transform);
+  assert.deepEqual(native, independent, 'native matrix expression preserves independently specified exact order');
+  pathname = locale === 'en' ? '/' : '/' + locale;
+  const rendered = SiteNavigation({ locale });
+  const menu = treeNodes(rendered).find(node => node.type === 'details' && node.props.className === 'site-main-menu');
+  assert.deepEqual(native, treeNodes(menu).filter(node => node.type === 'a').map(node => node.props.href), 'native matrix expression matches actual pinned menu JSX');
+}
+const installTerm = "'/' + locale + '/install', ";
+const nativeMenuMutants = {
+  omitted: value => value.replace(installTerm, ''),
+  wrong: value => value.replace(installTerm, "'/' + locale + '/wrong-install', "),
+  duplicate: value => value.replace(installTerm, installTerm + installTerm),
+  'cross-locale': value => value.replace(installTerm, "'/' + (locale === 'en' ? 'ru' : 'en') + '/install', "),
+};
+for (const locale of ['en', 'ru', 'es']) {
+  test(locale + ' native matrix expectedMenu matches independent order and real JSX', () => assertNativeMenuParity(locale));
+  for (const [fault, mutate] of Object.entries(nativeMenuMutants)) test(locale + ' native matrix expectedMenu rejects ' + fault + ' install', () => {
+    assertNativeMenuParity(locale);
+    assert.throws(() => assertNativeMenuParity(locale, expression => {
+      const mutated = mutate(expression);
+      assert.notEqual(mutated, expression, 'native expression mutation must apply');
+      return mutated;
+    }), error => error.code === 'ERR_ASSERTION' && error.message.includes('native matrix expression preserves independently specified exact order'));
   });
 }

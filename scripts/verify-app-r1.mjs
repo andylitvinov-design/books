@@ -1,3 +1,4 @@
+import { assertCabinetGuestSignin } from './helpers/cabinet-guest-signin-verifier.mjs'
 import { precompileOporaPublicRoutes } from './helpers/opora-public-route-precompile.mjs'
 import { withPublicServiceNavigationDiagnostics } from './helpers/public-service-navigation-diagnostics.mjs'
 import { verifyOporaPublicEntry } from './helpers/opora-public-entry-verifier.mjs'
@@ -571,14 +572,14 @@ async function verifyPublicServiceConversionJourneys(){
 }
 
 try {
+ await assertNativeCompactChannelGestures(browser,expect,{origin})
+ passed('native compact channel mouse/touch gestures and navigation restoration without network')
  // Preserve the anonymous OPORA deep link, explicit consent boundary, and
  // all seven-skill/14-day checks through its real full-programme link.
  await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})
  await page.setViewportSize({width:390,height:844})
  passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')
 
- await assertNativeCompactChannelGestures(browser,expect,{origin})
- passed('native compact channel mouse/touch gestures and navigation restoration without network')
  await verifyPublicServiceConversionJourneys()
  // Public test picker must work anonymously before OAuth.
  const guestPickerContext=await browser.newContext({viewport:{width:390,height:844}})
@@ -745,7 +746,7 @@ try {
  passed('pre-login test picker, optional filters, recommendations and full database')
 
  const response=await page.goto(origin+'/en/app');assert.match(response.headers()['cache-control'],/no-store/);assert.match(response.headers()['x-robots-tag'],/noindex/);assert.equal(response.headers()['referrer-policy'],'no-referrer')
- await page.getByRole('button',{name:'Continue with Google'}).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
+ await (await assertCabinetGuestSignin(page,expect,{origin})).click();await expect(page.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:60000})
  await page.getByLabel('I am 18 or older.').check();await page.getByLabel('I agree to private processing',{exact:false}).check();assert.equal(await page.getByLabel('I agree to optional marketing',{exact:false}).count(),0)
  await page.getByRole('button',{name:'Create my private space'}).click();await ready();
  await assertCabinetPortrait(page,expect,{origin});
@@ -1217,7 +1218,7 @@ try {
  await other.addCookies([{name:'hh_test_actor',value:'b',url:origin}])
  const otherPage=await other.newPage()
  await otherPage.goto(origin+'/en/app')
- await otherPage.getByRole('button',{name:'Continue with Google'}).click()
+ await (await assertCabinetGuestSignin(otherPage,expect,{origin})).click()
  await expect(otherPage).toHaveURL(/\/en\/app\/portrait$/,{timeout:30000})
  await expect(otherPage.getByRole('heading',{name:'Create my private space'})).toBeVisible({timeout:30000})
  // These old readiness signals are already true before consent is submitted.
@@ -1335,7 +1336,7 @@ try {
  const settingsResponse=await page.goto(origin+'/en/app/settings')
  assert.match(settingsResponse.headers()['cache-control']||'',/no-store/,'private settings navigation remains non-cacheable')
  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller))).toBe(true)
- await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await expect(page.getByRole('button',{name:'Continue with Google'})).toBeVisible();await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
+ await ready();await page.getByRole('button',{name:'Sign out on all devices'}).click();await assertCabinetGuestSignin(page,expect,{origin});await expect(page).toHaveURL(origin+'/en/app/portrait');await page.waitForLoadState('networkidle');assert.equal((await api('bootstrap')).status,401);passed('logout invalidates real test session and clears UI')
  // A fresh tab in the same cookie jar avoids racing Next's logout refresh.
  await page.close();page=await context.newPage();page.on('pageerror',capturePageError)
 
@@ -1415,7 +1416,7 @@ try {
  await launchPublicGuestWithoutAccountWrite(page,context,newPublicTest.definition)
  // Sign in explicitly, then append through the actual account picker.
  await page.goto(origin+'/en/app')
- await page.getByRole('button',{name:'Continue with Google',exact:true}).click()
+ await (await assertCabinetGuestSignin(page,expect,{origin})).click()
  await assertCabinetPortrait(page,expect,{origin})
  assert.deepEqual((await api('bootstrap')).data.activeTestPlan,savedBeforeSignout,'guest selection and Google sign-in leave the saved battery unchanged')
  const appendExplorer=await chooseSingleAccountTest(page,newPublicTest.title)

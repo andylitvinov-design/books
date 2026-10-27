@@ -212,17 +212,38 @@ test('actual verifier prefix cannot launch after deadline, including a late resp
   const late = document(TARGETS[0]); gate.resolve(late.response); await flush()
   assert.equal(late.counts.bodyCancelled, 1); assert.deepEqual(events, ['isolation'])
 })
-test('unchanged OPORA actions run first on the still-anonymous caller; other journeys retain order', async () => {
+test('unchanged OPORA actions follow the offline native gate before service app journeys', async () => {
   const source = await readFile(verifierURL, 'utf8')
   assert.equal(source.split('await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})').length, 2)
-  const first = source.indexOf('\ntry {\n'), native = source.indexOf(' await assertNativeCompactChannelGestures(browser,expect,{origin})', first)
-  assert.equal(source.slice(first, native), "\ntry {\n // Preserve the anonymous OPORA deep link, explicit consent boundary, and\n // all seven-skill/14-day checks through its real full-programme link.\n await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})\n await page.setViewportSize({width:390,height:844})\n passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')\n\n")
-  assert.ok(source.indexOf(' await verifyPublicServiceConversionJourneys()', native) > native)
-  assert.ok(source.indexOf(' const guestPickerContext=await browser.newContext', native) > source.indexOf(' await verifyPublicServiceConversionJourneys()', native))
-  assert.ok(source.indexOf(" const response=await page.goto(origin+'/en/app')", native) > source.indexOf(' await guestPickerContext.close()', native))
+  const first = source.indexOf('\ntry {\n'), service = source.indexOf(' await verifyPublicServiceConversionJourneys()', first)
+  assert.ok(first >= 0 && service > first)
+  assert.equal(source.slice(first, service), "\ntry {\n await assertNativeCompactChannelGestures(browser,expect,{origin})\n passed('native compact channel mouse/touch gestures and navigation restoration without network')\n // Preserve the anonymous OPORA deep link, explicit consent boundary, and\n // all seven-skill/14-day checks through its real full-programme link.\n await verifyOporaPublicEntry(page,expect,{origin,screenshotEvidence,output})\n await page.setViewportSize({width:390,height:844})\n passed('anonymous EN/RU OPORA invitation and linked programme expose seven skills and all 14 days without account access')\n\n")
+  assert.ok(source.indexOf(' const guestPickerContext=await browser.newContext', service) > service)
+  assert.ok(source.indexOf(" const response=await page.goto(origin+'/en/app')", service) > source.indexOf(' await guestPickerContext.close()', service))
   const beforeTry = source.slice(0, first)
   assert.match(beforeTry, /let page=await context\.newPage\(\)/)
   assert.doesNotMatch(beforeTry.slice(0, beforeTry.indexOf('async function')), /await page\.(?:goto|evaluate|click|setContent)|storageState\s*:/)
+})
+
+for (const stop of ['native', 'opora', 'none']) test('actual main prefix preserves strict sequence and fail-fast behavior: ' + stop, async () => {
+  const source = await readFile(verifierURL, 'utf8')
+  const start = source.indexOf('\ntry {\n') + '\ntry {\n'.length
+  const end = source.indexOf(' // Public test picker must work anonymously before OAuth.', start)
+  assert.ok(start > 0 && end > start)
+  const body = source.slice(start, end)
+  const events = [], failure = new Error('owned synthetic failure'), browser = {}, expect = {}, page = {
+    async setViewportSize(value) { assert.deepEqual(value, {width:390,height:844}); events.push('viewport') },
+  }, screenshotEvidence = {}, output = 'synthetic-only'
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+  const run = () => new AsyncFunction('browser', 'expect', 'origin', 'page', 'screenshotEvidence', 'output',
+    'assertNativeCompactChannelGestures', 'verifyOporaPublicEntry', 'verifyPublicServiceConversionJourneys', 'passed', body)(
+    browser, expect, ORIGIN, page, screenshotEvidence, output,
+    async (b, e, options) => { assert.equal(b,browser); assert.equal(e,expect); assert.deepEqual(options,{origin:ORIGIN}); events.push('native'); if(stop==='native')throw failure },
+    async (p, e, options) => { assert.equal(p,page); assert.equal(e,expect); assert.deepEqual(options,{origin:ORIGIN,screenshotEvidence,output}); events.push('opora'); if(stop==='opora')throw failure },
+    async () => { events.push('services') }, () => { events.push('passed') })
+  if (stop === 'none') await run()
+  else await assert.rejects(run, error => error === failure)
+  assert.deepEqual(events, stop === 'native' ? ['native'] : stop === 'opora' ? ['native','passed','opora'] : ['native','passed','opora','viewport','passed','services'])
 })
 test('existing OPORA native click, exact URL and page-error gates remain required', async () => {
   const source = await readFile(new URL('../scripts/helpers/opora-public-entry-verifier.mjs', import.meta.url), 'utf8')

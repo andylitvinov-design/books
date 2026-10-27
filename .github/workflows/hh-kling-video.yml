@@ -4,19 +4,29 @@ on:
   pull_request:
     paths:
       - 'lib/kling-video.mjs'
+      - 'lib/kling-avatar.mjs'
       - 'app/admin/videos/**'
       - 'components/kling-scene-studio.tsx'
+      - 'components/kling-avatar-studio.tsx'
+      - 'app/api/admin/kling-avatar/**'
+      - 'docs/videos/KLING_AVATAR_PILOT_20261027.md'
       - 'app/site-video-admin.css'
       - 'tests/kling-video.test.mjs'
+      - 'tests/kling-avatar.test.mjs'
       - '.github/workflows/hh-kling-video.yml'
   push:
     branches: [codex/public-book-library]
     paths:
       - 'lib/kling-video.mjs'
+      - 'lib/kling-avatar.mjs'
       - 'app/admin/videos/**'
       - 'components/kling-scene-studio.tsx'
+      - 'components/kling-avatar-studio.tsx'
+      - 'app/api/admin/kling-avatar/**'
+      - 'docs/videos/KLING_AVATAR_PILOT_20261027.md'
       - 'app/site-video-admin.css'
       - 'tests/kling-video.test.mjs'
+      - 'tests/kling-avatar.test.mjs'
       - '.github/workflows/hh-kling-video.yml'
 
 permissions:
@@ -36,9 +46,9 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Contract tests (no paid provider calls)
-        run: node --test tests/kling-video.test.mjs
+        run: node --test tests/kling-video.test.mjs tests/kling-avatar.test.mjs
       - name: Scoped ESLint
-        run: npx eslint lib/kling-video.mjs app/admin/videos/page.tsx app/admin/videos/kling-actions.js components/kling-scene-studio.tsx tests/kling-video.test.mjs
+        run: npx eslint lib/kling-video.mjs lib/kling-avatar.mjs app/admin/videos/page.tsx app/admin/videos/kling-actions.js app/api/admin/kling-avatar/route.js components/kling-scene-studio.tsx components/kling-avatar-studio.tsx tests/kling-video.test.mjs tests/kling-avatar.test.mjs
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Next.js build

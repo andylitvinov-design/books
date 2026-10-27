@@ -366,47 +366,54 @@ for(const method of ['abort','fallback'])test('cleanup retains rejected '+method
   assert.equal(f.handlers.length,0);assert.equal(f.timers.size,0)
 })
 
-// Unit-level authored parent state/prop/effect contract; children remain explicit
-// boundaries. The real inline denial component is exercised above, not replaced.
+// Unit-level authored parent state/prop/effect contract. The later owner request
+// replaces catalog inline selection with Add to cart -> Order -> localized cart.
+// Children remain explicit boundaries; storage and routing are synthetic/countable.
 function assertCatalogCoordination(catalogSource=read('components/taoist-talisman-catalog.tsx'), topicSource=read('components/holistic-support-topic-filter.tsx')) {
   const compile=(source,modules,globals={})=>{
-    const result=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true})
+    const result=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true})
     assert.deepEqual(result.diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error),[])
     const exports={};vm.runInNewContext(result.outputText,{exports,...globals,require:name=>{assert.ok(Object.hasOwn(modules,name),name);return modules[name]}},{timeout:1000});return exports
   }
   const data=compile(read('lib/practitioners/taoist-talismans.js'),{})
   for(const locale of ['en','ru','es']) {
-    const listeners=new Set(),events=[],scrolls=[]
-    class CustomEvent {constructor(type,options){this.type=type;this.detail=options.detail}}
-    const window={addEventListener(name,fn){assert.equal(name,'hh-support-order-open');listeners.add(fn)},
-      removeEventListener(name,fn){assert.equal(name,'hh-support-order-open');assert.equal(listeners.delete(fn),true)},
-      dispatchEvent(event){assert.equal(event.type,'hh-support-order-open');assert.ok(['topics','catalog'].includes(event.detail.source));events.push(event.detail.source);for(const fn of listeners)fn(event);return true},
+    const listeners=new Map(),events=[],scrolls=[],routes=[],writes=[];let stored=null,denySave=false,transportAttempts=0
+    class Event {constructor(type){this.type=type}}
+    class CustomEvent extends Event {constructor(type,options){super(type);this.detail=options.detail}}
+    const cartEvent='hh:taoist-talisman-cart-updated',cartKey='hh:taoist-talisman-cart:v1'
+    const window={sessionStorage:{
+      getItem(key){assert.equal(key,cartKey);return stored},
+      setItem(key,value){assert.equal(key,cartKey);const ids=JSON.parse(value);assert.ok(Array.isArray(ids));assert.ok(ids.every(id=>data.TAOIST_TALISMANS.some(item=>item.id===id)));writes.push([...ids]);if(denySave)throw new Error('synthetic storage denial');stored=value},
+    },addEventListener(name,fn){assert.ok([cartEvent,'hh-support-order-open'].includes(name));if(!listeners.has(name))listeners.set(name,new Set());listeners.get(name).add(fn)},
+      removeEventListener(name,fn){assert.ok([cartEvent,'hh-support-order-open'].includes(name));assert.equal(listeners.get(name)?.delete(fn),true)},
+      dispatchEvent(event){assert.ok([cartEvent,'hh-support-order-open'].includes(event.type));if(event.type==='hh-support-order-open')assert.equal(event.detail.source,'topics');events.push(event.type);for(const fn of listeners.get(event.type)||[])fn(event);return true},
       matchMedia(query){assert.equal(query,'(prefers-reduced-motion: reduce)');return {matches:true}}}
     const document={getElementById(id){
       assert.equal(id,'holistic-inline-order')
-      return {
-        scrollIntoView(options){assert.equal(options.behavior,'auto');scrolls.push('scroll')},
-        querySelector(selector){
-          assert.equal(selector,'#holistic-inline-order-title')
-          return {focus(options){assert.equal(options.preventScroll,true);scrolls.push('focus')}}
-        },
-      }
+      return {scrollIntoView(options){assert.equal(options.behavior,'auto');scrolls.push('scroll')},
+        querySelector(selector){assert.equal(selector,'#holistic-inline-order-title');return {focus(options){assert.equal(options.preventScroll,true);scrolls.push('focus')}}}}
     }}
+    const forbiddenFetch=()=>{transportAttempts++;throw new Error('Catalog coordination must not invoke transport')}
+    const cart=compile(read('lib/practitioners/taoist-talisman-cart.js'),{'./taoist-talismans.js':data},{window,Event,fetch:forbiddenFetch})
+    assert.equal(cart.TALISMAN_CART_UPDATED_EVENT,cartEvent);assert.equal(cart.TALISMAN_CART_STORAGE_KEY,cartKey)
+    const router={push(path){assert.equal(path,'/'+locale+'/talismans/cart');routes.push(path)}}
     const jsx=(type,props,key)=>({type,props:props||{},key})
     function mount(source,name,extra) {
       const states=[],effects=[],pending=[];let index=0,effectIndex=0
       const react={useState(initial){const i=index++;if(!(i in states))states[i]=typeof initial==='function'?initial():initial;return [states[i],value=>{states[i]=typeof value==='function'?value(states[i]):value}]},
         useEffect(fn,deps){const i=effectIndex++,old=effects[i];if(!old||deps.some((d,j)=>!Object.is(d,old.deps[j])))pending.push(()=>{old?.cleanup?.();effects[i]={deps,cleanup:fn()}})}}
       const component=compile(source,{'react/jsx-runtime':{jsx,jsxs:jsx},react,'next/image':{default:'img'},'next/link':{default:'a'},
-        './holistic-inline-support-order':{HolisticInlineSupportOrder:'InlineOrderBoundary'},...extra},{window,document,CustomEvent})[name]
+        './holistic-inline-support-order':{HolisticInlineSupportOrder:'InlineOrderBoundary'},...extra},{window,document,CustomEvent,fetch:forbiddenFetch})[name]
       return {render(){index=0;effectIndex=0;const tree=component({locale}),nodes=[];const walk=node=>{if(Array.isArray(node))return node.forEach(walk);if(!node||typeof node!=='object')return;nodes.push(node);walk(node.props?.children)};walk(tree);while(pending.length)pending.shift()();return nodes},close(){for(const effect of effects)effect.cleanup?.()}}
     }
     const catalog=mount(catalogSource,'TaoistTalismanCatalog',{'@/lib/practitioners/taoist-talismans':data,
+      '@/lib/practitioners/taoist-talisman-cart':cart,'next/navigation':{useRouter:()=>router},
       './support-talisman-gallery':{SupportTalismanGallery:'PrivateGalleryBoundary'},'./taoist-talisman-catalog.module.css':{default:{}}})
     const topics=mount(topicSource,'HolisticSupportTopicFilter',{'./holistic-support-topic-filter.module.css':{default:{}},
       'lucide-react':{ArrowRight:'icon',BriefcaseBusiness:'icon',Heart:'icon',HeartPulse:'icon'}})
-    const initial=catalog.render();topics.render();assert.equal(listeners.size,2)
+    const initial=catalog.render();topics.render();assert.equal(listeners.get(cartEvent).size,1);assert.equal(listeners.get('hh-support-order-open').size,1)
     assert.equal(initial.filter(n=>n.type==='PrivateGalleryBoundary'||n.type==='InlineOrderBoundary').length,0)
+    assert.equal(routes.length,0);assert.equal(writes.length,0)
     assert.deepEqual(initial.filter(n=>n.props['data-tao-talisman']).map(n=>n.props['data-tao-talisman']),Array.from(data.TAOIST_TALISMANS,item=>item.id))
     const archive=initial.find(n=>n.props['aria-controls']==='tao-talisman-private-gallery')
     assert.equal(archive.props['aria-expanded'],false);archive.props.onClick()
@@ -414,36 +421,50 @@ function assertCatalogCoordination(catalogSource=read('components/taoist-talisma
     assert.equal(nodes.find(n=>n.type==='PrivateGalleryBoundary').props.locale,locale)
     nodes.find(n=>n.props['aria-controls']==='tao-talisman-private-gallery').props.onClick()
     assert.equal(catalog.render().filter(n=>n.type==='PrivateGalleryBoundary').length,0)
+    const selected=[]
+    const text=node=>Array.isArray(node)?node.map(text).join(''):node&&typeof node==='object'?text(node.props?.children):String(node??'')
+    const labels={en:['Add to cart','Order'],ru:['В корзину','Заказать'],es:['Añadir al carrito','Solicitar']}[locale]
     for(const item of data.TAOIST_TALISMANS) {
-      let before=events.length
-      catalog.render().find(n=>n.props['data-tao-talisman-order']===item.id).props.onClick()
-      nodes=catalog.render();assert.equal(events.length,before+1);assert.equal(events.at(-1),'catalog')
-      let order=nodes.filter(n=>n.type==='InlineOrderBoundary');assert.equal(order.length,1)
-      assert.equal(order[0].key,item.id);assert.equal(order[0].props.kind,'talisman');assert.equal(order[0].props.initialGoal,item.goal)
-      assert.equal(order[0].props.initialTalismanId,item.id);assert.equal(order[0].props.locale,locale)
-      assert.equal(topics.render().filter(n=>n.type==='InlineOrderBoundary').length,0)
+      const beforeRoutes=routes.length,beforeWrites=writes.length,beforeEvents=events.length
+      const add=catalog.render().find(n=>n.props['data-tao-talisman-order']===item.id)
+      assert.equal(add.props['aria-pressed'],false);assert.ok(text(add).startsWith(labels[0]));add.props.onClick();selected.push(item.id)
+      nodes=catalog.render();assert.equal(routes.length,beforeRoutes);assert.equal(writes.length,beforeWrites+1);assert.deepEqual(writes.at(-1),selected)
+      assert.equal(events.length,beforeEvents+1);assert.equal(events.at(-1),cartEvent)
+      assert.equal(nodes.filter(n=>n.type==='InlineOrderBoundary').length,0)
+      const order=nodes.find(n=>n.props['data-tao-talisman-order']===item.id)
+      assert.equal(order.props['aria-pressed'],true);assert.ok(text(order).startsWith(labels[1]));order.props.onClick()
+      assert.equal(routes.length,beforeRoutes+1);assert.equal(writes.length,beforeWrites+1);assert.deepEqual(JSON.parse(stored),selected)
       topics.render().find(n=>n.props['data-holistic-order-trigger']==='expert').props.onClick()
-      assert.equal(events.at(-1),'topics');assert.equal(catalog.render().filter(n=>n.type==='InlineOrderBoundary').length,0)
-      order=topics.render().filter(n=>n.type==='InlineOrderBoundary');assert.equal(order.length,1);assert.equal(order[0].props.kind,'energy')
-      catalog.render().find(n=>n.props['data-tao-talisman-order']===item.id).props.onClick()
-      assert.equal(topics.render().filter(n=>n.type==='InlineOrderBoundary').length,0)
-      catalog.render().find(n=>n.type==='InlineOrderBoundary').props.onClose()
-      assert.equal(catalog.render().filter(n=>n.type==='InlineOrderBoundary').length,0)
+      assert.equal(events.at(-1),'hh-support-order-open')
+      const topicOrder=topics.render().filter(n=>n.type==='InlineOrderBoundary');assert.equal(topicOrder.length,1);assert.equal(topicOrder[0].props.kind,'energy');assert.equal(topicOrder[0].props.locale,locale)
+      assert.equal(catalog.render().filter(n=>n.type==='InlineOrderBoundary').length,0);assert.deepEqual(JSON.parse(stored),selected)
+      topicOrder[0].props.onClose();assert.equal(topics.render().filter(n=>n.type==='InlineOrderBoundary').length,0)
     }
+    const beforeBanner=routes.length
+    const banner=catalog.render().filter(n=>n.type==='button'&&!n.props['data-tao-talisman-order']&&!n.props['aria-controls'])
+    assert.equal(banner.length,1);assert.ok(text(banner[0]).includes(String(selected.length)));banner[0].props.onClick();assert.equal(routes.length,beforeBanner+1)
+    stored=null;window.dispatchEvent(new Event(cartEvent));catalog.render();denySave=true
+    const failedRoutes=routes.length,failedWrites=writes.length,failedEvents=events.length
+    catalog.render().find(n=>n.props['data-tao-talisman-order']===data.TAOIST_TALISMANS[0].id).props.onClick()
+    nodes=catalog.render();assert.equal(routes.length,failedRoutes);assert.equal(writes.length,failedWrites+1);assert.equal(events.length,failedEvents);assert.equal(stored,null)
+    assert.equal(nodes.filter(n=>n.props.role==='alert').length,1);assert.equal(nodes.find(n=>n.props['data-tao-talisman-order']===data.TAOIST_TALISMANS[0].id).props['aria-pressed'],false)
+    denySave=false;nodes.find(n=>n.props['data-tao-talisman-order']===data.TAOIST_TALISMANS[0].id).props.onClick();assert.equal(catalog.render().filter(n=>n.props.role==='alert').length,0)
     assert.ok(scrolls.length>0);assert.equal(scrolls.length%2,0)
-    catalog.close();topics.close();assert.equal(listeners.size,0)
+    catalog.close();topics.close();assert.equal([...listeners.values()].reduce((sum,set)=>sum+set.size,0),0);assert.equal(transportAttempts,0)
   }
 }
 
-test('actual catalog and topic state coordinate selected IDs, one order, lazy archive and listener cleanup in all locales',()=>{
+test('actual catalog uses Add to cart then localized Order while archive and topic privacy remain explicit',()=>{
   assertCatalogCoordination()
 })
 
-test('catalog coordination rejects wrong IDs/goals, eager private mount and missing cross-panel notification',()=>{
+test('catalog cart coordination rejects wrong IDs/routes, eager private mount and dropped save or listener guards',()=>{
   const catalog=read('components/taoist-talisman-catalog.tsx'),topic=read('components/holistic-support-topic-filter.tsx')
-  for(const [before,after] of [['initialTalismanId={selection.id}','initialTalismanId="wrong"'],
-    ['initialGoal={selection.goal}','initialGoal="wrong"'],['useState(false)','useState(true)'],
-    ['setSelection(null);','void 0;']]){
+  for(const [before,after] of [['[...cartIds, itemId]','[...cartIds, "wrong"]'],
+    ['"/" + locale + "/talismans/cart"','"/en/talismans/cart"'],['useState(false)','useState(true)'],
+    ['if (cartIds.includes(itemId))','if (false)'],['if (!saveBrowserTalismanCart','if (saveBrowserTalismanCart'],
+    ['window.removeEventListener(TALISMAN_CART_UPDATED_EVENT, sync);','void 0;'],
+    ['const router = useRouter();','const router = useRouter(); try { fetch("/unexpected") } catch {}']]){
     assert.ok(catalog.includes(before));assert.throws(()=>assertCatalogCoordination(catalog.replace(before,after)),{code:'ERR_ASSERTION'})
   }
   const dispatch='window.dispatchEvent(new CustomEvent("hh-support-order-open", {detail:{source:"topics"}}));'

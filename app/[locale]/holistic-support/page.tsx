@@ -60,6 +60,7 @@ const copy = {
     meditationEyebrow: "03 · MEDITATION PRACTICES",
     meditationSectionTitle: "Meditations · Videos",
     meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
+    meditationMandalaAction: "Create your personal mandala · add a photo and meditate",
     meditationVideoIntro: "An original English-language Flight to the Sun practice. The PsiMaster Sun and Energy Pump-Ups archive is in Russian, not translated as English content.",
     meditationVideoTitle: "Flight to the Sun · Original English video",
     meditationVideoUnavailable: "The original PsiMaster practice recordings are not available in the catalogue.",
@@ -114,6 +115,7 @@ const copy = {
     meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
     meditationSectionTitle: "Медитации · Видео",
     meditationSectionLead: "Выберите тему и смотрите оригинальные медитации Солнца, «Жизненную силу» и энергетические практики PsiMaster.",
+    meditationMandalaAction: "Создать свою мандалу · фото или цель + медитация",
     meditationVideoIntro: "Семь оригинальных видео PsiMaster на русском: три медитации Солнца, «Жизненная Сила», «Круг Огня», марафоны энергопрактик и чисток. Нажмите «Смотреть» на обложке; если встроенный плеер недоступен, откройте YouTube.",
     meditationVideoTitle: "Русскоязычные медитации · архив PsiMaster",
     meditationVideoUnavailable: "Оригинальные материалы PsiMaster пока недоступны в каталоге.",
@@ -168,6 +170,7 @@ const copy = {
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
     meditationSectionTitle: "Meditaciones · Vídeos",
     meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso.",
+    meditationMandalaAction: "Crear mi mandala · una foto, mi objetivo y meditación",
     meditationVideoIntro: "Práctica original Flight to the Sun con audio en inglés. El archivo de PsiMaster es ruso y no se presenta como un curso traducido al español.",
     meditationVideoTitle: "Flight to the Sun · Vídeo original en inglés",
     meditationVideoUnavailable: "Las grabaciones originales de PsiMaster no están disponibles en el catálogo.",
@@ -229,6 +232,9 @@ export default async function HolisticSupportPage({ params }: Props) {
               <p>{t.meditationSectionLead}</p>
             </div>
           </header>
+          <Link href={"/" + locale + "/holistic-support/mandala"} className={styles.mandalaAction} prefetch={false} data-holistic-mandala-entry>
+            <span aria-hidden="true">✺</span><span>{t.meditationMandalaAction}</span><span aria-hidden="true">→</span>
+          </Link>
           <div className={styles.meditationContents}>
             {freeMeditationVideos(locale).length > 0 ? (
               <HolisticMeditationGallery locale={locale} videos={freeMeditationVideos(locale)} />

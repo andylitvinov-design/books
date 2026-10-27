@@ -33,6 +33,20 @@ export function assertOporaGuestPreviewSnapshot(snapshot, locale) {
  assert.equal(snapshot.privacy, t.privacy)
 }
 
+// Diagnostic labels only, never request permissions. The source-backed endpoint
+// names are fixed; foreign origins, malformed input and every other path remain
+// unclassified. Never retain a raw URL, query, fragment, body or headers.
+export function classifyOporaBlockedEndpoint(rawUrl, origin) {
+ if (typeof rawUrl !== 'string' || rawUrl.length > 8192 || typeof origin !== 'string') return 'unclassified'
+ try {
+  const url = new URL(rawUrl)
+  if (url.origin !== origin || url.username || url.password) return 'unclassified'
+  if (url.pathname === '/api/analytics/public-page') return 'public_page_stat'
+  if (url.pathname === '/__nextjs_original-stack-frames') return 'development_stack_frames'
+ } catch {}
+ return 'unclassified'
+}
+
 // This anonymous preview must not start OAuth, create a course or send anything
 // to a provider. Fall through to existing fences for allowed local reads.
 export function createOporaGuestPreviewGuard(origin) {
@@ -40,10 +54,10 @@ export function createOporaGuestPreviewGuard(origin) {
  assert.equal(new URL(origin).origin, origin)
  const blocked = [], pending = new Set(), handlerErrors = []
  const handle = async route => {
-  const request = route.request(), url = new URL(request.url()), method = request.method()
+  const request = route.request(), rawUrl = request.url(), url = new URL(rawUrl), method = request.method()
   if (url.origin === origin && ['GET', 'HEAD'].includes(method) && !/^\/api\/app\/auth(?:\/|$)/.test(url.pathname)) return route.fallback()
   // Do not retain bodies, queries, auth handoff URLs, headers or credentials.
-  blocked.push({ sameOrigin: url.origin === origin, method })
+  blocked.push({ sameOrigin: url.origin === origin, method, endpoint: classifyOporaBlockedEndpoint(rawUrl, origin) })
   return route.abort('blockedbyclient')
  }
  const route = route => {
