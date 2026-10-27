@@ -14,11 +14,13 @@ assertPublicJourneyRuntime(origin);
 await mkdir("artifacts/holistic-topic-mobile", { recursive: true });
 const evidence = [];
 
-// One response per explicit opening, never a public-directory read or successful
-// practitioner payload. Other API traffic remains fatal while this scope is active.
-async function installInlineOrderDirectoryDenial(context, origin, locale, deadlineMs = 10000) {
+// Exactly one response per explicit Search: denial by default; an explicit closed fixture
+// may return authored public examples. Never consult a provider; all other API traffic is fatal.
+async function installInlineOrderDirectoryDenial(context, origin, locale, deadlineMs = 10000, responseFixture = "unavailable") {
   assert.match(origin, /^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/);
   assert.ok(["en", "ru", "es"].includes(locale));
+  assert.ok(["unavailable", "masters", "consultations"].includes(responseFixture),
+    "Only explicit synthetic fixtures may replace the default denial");
   assert.ok(Number.isSafeInteger(deadlineMs) && deadlineMs > 0 && deadlineMs <= 10000);
   const deadlineAt = Date.now() + deadlineMs;
   const bounded = (operation, phase) => new Promise((resolve, reject) => {
@@ -27,8 +29,33 @@ async function installInlineOrderDirectoryDenial(context, origin, locale, deadli
     Promise.resolve().then(operation).then(value => { clearTimeout(timer); resolve(value); },
       error => { clearTimeout(timer); reject(error); });
   });
-  const expectedUrl = origin + "/api/public/remote-energy-support-masters?locale=" + locale;
-  let armed = false, fulfilled = 0, closed = false, servedRequest = null;
+  const expectedUrl = origin + "/api/public/remote-energy-support-masters?locale=" + locale +
+    (responseFixture === "consultations" ? "&kind=consultation" : "");
+  const responseStatus = responseFixture === "unavailable" ? 503 : 200;
+  const consultations = [
+    { serviceId: "test-eur20", title: "Synthetic €20 consultation", practitionerName: "Fixture",
+      description: "Published session test record", areaKey: "business_money",
+      price: 20, currency: "EUR", pricingMode: "fixed", href: "/" + locale + "/services/fixture/eur20" },
+    { serviceId: "test-eur100", title: "Synthetic €100 consultation", practitionerName: "Fixture",
+      description: "Published session test record", areaKey: "business_money",
+      price: 100, currency: "EUR", pricingMode: "fixed", href: "/" + locale + "/services/fixture/eur100" },
+    { serviceId: "test-cad15", title: "Synthetic CAD consultation", practitionerName: "Fixture",
+      description: "Published session test record", areaKey: "business_money",
+      price: 15, currency: "CAD", pricingMode: "fixed", href: "/" + locale + "/services/fixture/cad15" },
+    { serviceId: "test-free", title: "Synthetic free introduction", practitionerName: "Fixture",
+      description: "Published introduction test record", areaKey: "relationships",
+      price: 0, currency: "EUR", pricingMode: "free", href: "/" + locale + "/services/fixture/free" },
+  ];
+  const masters = [{
+    slug: "fixture-master", name: "Fixture Master", title: "Synthetic published profile",
+    photo: "", serviceId: "fixture-energy", methods: ["Usui Reiki"], languages: ["en","ru","es"],
+    bio: "", description: "Fixture only", currency: "EUR",
+    priceOptions: [{ duration: 30, price: 50 }, { duration: 60, price: 100 }],
+    reviewCount: 0, reviewAverage: 0,
+  }];
+  const responseBody = responseFixture === "unavailable" ? '{"error":"QA_DIRECTORY_UNAVAILABLE"}' :
+    JSON.stringify(responseFixture === "consultations" ? { consultations } : { masters });
+  let armed = false, fulfilled = 0, observed = 0, closed = false, servedRequest = null;
   const violations = [], pending = new Set();
   let handlerFailure;
   const handle = async route => {
@@ -41,11 +68,13 @@ async function installInlineOrderDirectoryDenial(context, origin, locale, deadli
     let pathname = "";
     try { pathname = new URL(request.url()).pathname; } catch { /* Unknown URLs go to the unchanged fence. */ }
     if (!pathname.startsWith("/api/")) return bounded(() => route.fallback(), "fence fallback");
+    observed++;
+    const armedAtArrival = armed;
     let completeHeaders;
     try { completeHeaders = await bounded(() => request.allHeaders(), "header evidence"); } catch { /* Missing evidence fails closed. */ }
     const names = completeHeaders && typeof completeHeaders === "object" && !Array.isArray(completeHeaders)
       ? Object.keys(completeHeaders).map(name => name.toLowerCase()) : null;
-    const valid = !closed && armed && fulfilled === 0 && request.url() === expectedUrl &&
+    const valid = !closed && armedAtArrival && armed && fulfilled === 0 && request.url() === expectedUrl &&
       request.method() === "GET" && request.resourceType() === "fetch" && request.isNavigationRequest() === false &&
       !request.postData() && names !== null &&
       !names.some(name => ["authorization", "proxy-authorization", "cookie", "purpose", "sec-purpose", "next-router-prefetch", "rsc"].includes(name));
@@ -55,7 +84,7 @@ async function installInlineOrderDirectoryDenial(context, origin, locale, deadli
     }
     armed = false;
     servedRequest = request;
-    await bounded(() => route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"QA_DIRECTORY_UNAVAILABLE"}' }), "synthetic denial");
+    await bounded(() => route.fulfill({ status: responseStatus, contentType: "application/json", body: responseBody }), "synthetic directory response");
     fulfilled++;
   };
   const handler = route => {
@@ -66,8 +95,9 @@ async function installInlineOrderDirectoryDenial(context, origin, locale, deadli
   };
   await bounded(() => context.route("**/*", handler), "handler installation");
   return {
-    arm() { assert.equal(closed, false); assert.equal(armed, false); assert.equal(fulfilled, 0); assert.deepEqual(violations, []); armed = true; },
-    matchesResponse(response) { return servedRequest !== null && response.request() === servedRequest && response.status() === 503; },
+    assertIdle() { assert.equal(armed, false); assert.equal(fulfilled, 0); assert.equal(observed, 0); assert.deepEqual(violations, []); },
+    arm() { assert.equal(closed, false); assert.equal(armed, false); assert.equal(fulfilled, 0); assert.equal(observed, 0); assert.deepEqual(violations, []); armed = true; },
+    matchesResponse(response) { return servedRequest !== null && response.request() === servedRequest && response.status() === responseStatus; },
     assertCompleted() { assert.equal(armed, false); assert.equal(fulfilled, 1); assert.deepEqual(violations, []); },
     async close() {
       closed = true; armed = false;
@@ -155,15 +185,21 @@ for (const engine of [chromium, webkit]) {
                 const directory = await installInlineOrderDirectoryDenial(page.context(), origin, locale);
                 let openingFailure;
                 try {
-                  directory.arm();
-                  const deniedResponse = page.waitForResponse(response => directory.matchesResponse(response), { timeout: 10000 });
-                  // A failure never creates an unhandled pending wait or waives an unrelated 503.
-                  deniedResponse.catch(() => {});
                   await trigger.click();
-                  await deniedResponse;
                   const order = root.locator('[data-holistic-inline-order="' + kind + '"]');
                   await order.waitFor({ state: "visible" });
                   assert.equal(await root.locator('[data-holistic-inline-order]').count(), 1);
+                  assert.equal(await order.locator("[data-support-theme]").count(), 3);
+                  assert.equal(await order.locator("[data-support-choice]").count(), 3);
+                  assert.equal(await order.locator("[data-support-budget]").count(), 4);
+                  assert.equal(await order.locator("[data-support-search]").getAttribute("aria-expanded"), "false");
+                  directory.assertIdle();
+                  directory.arm();
+                  const deniedResponse = page.waitForResponse(response => directory.matchesResponse(response), { timeout: 10000 });
+                  // Search, not opening, requests one directory; unrelated responses never satisfy this wait.
+                  deniedResponse.catch(() => {});
+                  await order.locator("[data-support-search]").click();
+                  await deniedResponse;
                   await order.locator('[role="alert"]').waitFor({ state: "visible" });
                   directory.assertCompleted();
                   assert.equal(await trigger.getAttribute("aria-expanded"), "true");
@@ -199,11 +235,75 @@ for (const engine of [chromium, webkit]) {
             assert.ok(geometry.document <= geometry.viewport + 2,
               label + " no horizontal overflow " + JSON.stringify(geometry));
           }
+          // Owner 27 Oct: show the entire primary picker in one typical
+          // mobile viewport, including all themes, service types, budgets and CTA.
+          await root.locator('[data-holistic-topic="business"]').click();
+          await root.locator('[data-holistic-order-trigger="expert"]').click();
+          const finder = page.locator("#holistic-inline-order");
+          await finder.waitFor({ state: "visible" });
+          assert.equal(await finder.locator("[data-support-theme]").count(), 3, label + " 3 request themes");
+          assert.equal(await finder.locator("[data-support-choice]").count(), 3, label + " 3 service types");
+          assert.equal(await finder.locator("[data-support-budget]").count(), 4, label + " 4 price filters");
+          const firstScreen = await finder.boundingBox();
+          assert.ok(firstScreen && firstScreen.x >= -2 && firstScreen.x + firstScreen.width <= width + 2,
+            label + " request inside viewport " + JSON.stringify(firstScreen));
+          assert.ok(firstScreen.width >= width - 24, label + " full-width request");
+          assert.ok(firstScreen.height < 540, label + " one mobile-screen request height");
+
+          async function searchCompactFixture(responseFixture, count, empty, detail) {
+            const directory = await installInlineOrderDirectoryDenial(page.context(), origin, locale, 10000, responseFixture);
+            let searchFailure;
+            try {
+              directory.assertIdle();
+              directory.arm();
+              const response = page.waitForResponse(value => directory.matchesResponse(value), { timeout: 10000 });
+              response.catch(() => {});
+              await finder.locator("[data-support-search]").click();
+              await response;
+              const results = empty ? finder.locator('#remote-results [role="status"]') : finder.locator('#holistic-inline-results article');
+              await results.first().waitFor();
+              assert.equal(await finder.locator(empty ? "[data-remote-support-specialist]" : "#holistic-inline-results article").count(),
+                count, label + " " + detail);
+              assert.equal(await finder.locator('form, input, textarea, select').count(), 0,
+                label + " synthetic public results never submit or collect personal data");
+              directory.assertCompleted();
+              fence.assertNoSideEffects(label);
+            } catch (error) {
+              searchFailure = error;
+              throw error;
+            } finally {
+              try { await directory.close(); fence.assertNoSideEffects(label); } catch (error) {
+                if (!searchFailure) throw error;
+                console.error("Compact fixture cleanup also failed after primary search failure");
+              }
+            }
+          }
+
+          await finder.locator('[data-support-choice="consultation"]').click();
+          await finder.locator('[data-support-budget="20"]').click();
+          await searchCompactFixture("consultations", 1, false, "EUR 20 excludes CAD 15 and EUR 100");
+          await finder.locator('[data-support-budget="100"]').click();
+          await searchCompactFixture("consultations", 2, false, "EUR 100 includes 2 EUR offers, not CAD");
+          await finder.locator('[data-support-theme="relationships"]').click();
+          await finder.locator('[data-support-budget="free"]').click();
+          await searchCompactFixture("consultations", 1, false, "free relationship consultation");
+
+          await finder.locator('[data-support-choice="talisman"]').click();
+          await finder.locator('[data-support-budget="20"]').click();
+          await searchCompactFixture("masters", 0, true, "never quote an unpublished talisman price");
+
+          const finalGeometry = await page.evaluate(() => ({
+            viewport: document.documentElement.clientWidth,
+            page: document.documentElement.scrollWidth,
+          }));
+          assert.ok(finalGeometry.page <= finalGeometry.viewport + 2,
+            label + " no overflow with open picker " + JSON.stringify(finalGeometry));
+
           await root.screenshot({ path: "artifacts/holistic-topic-mobile/" +
             engine.name() + "-" + locale + "-" + width + ".png" });
           assert.deepEqual(errors, [], label + " no runtime errors");
           fence.assertNoSideEffects(label);
-          evidence.push({ browser: engine.name(), locale, width, topics: 3, offerings: 3, inlineOpenings: 12, directory: "synthetic-unavailable", overflow: false });
+          evidence.push({ browser: engine.name(), locale, width, topics: 3, offerings: 3, inlineOpenings: 12, deniedSearches: 12, compactSearches: 4, directory: "bounded-synthetic-only", overflow: false });
         } finally {
           await writeFile("artifacts/holistic-topic-mobile/requests-" + engine.name() + "-" + locale + "-" + width + ".json",
             JSON.stringify(fence.summary(), null, 2));

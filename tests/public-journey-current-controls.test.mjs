@@ -188,7 +188,7 @@ test('provider popup interface is stubbed before page load and never navigates',
   assert.match(tantra,/channel\.click\(\{trial:true,timeout:8000\}\)/)
 })
 
-async function directoryFixture(locale='en',deadlineMs=10000) {
+async function directoryFixture(locale='en',deadlineMs=10000,responseFixture='unavailable') {
   const source=read('scripts/verify-holistic-topics-browser.mjs')
   const node=findNode(source,node=>ts.isFunctionDeclaration(node)&&node.name?.getText()==='installInlineOrderDirectoryDenial')
   const timers=new Set()
@@ -198,8 +198,8 @@ async function directoryFixture(locale='en',deadlineMs=10000) {
   const origin='http://127.0.0.1:3100',handlers=[],actions=[]
   const context={route:async(pattern,handler)=>{assert.equal(pattern,'**/*');handlers.push(handler)},
     unroute:async(pattern,handler)=>{assert.equal(pattern,'**/*');assert.equal(handlers.pop(),handler)}}
-  const fixture=await install(context,origin,locale,deadlineMs)
-  const request=(patch={})=>({url:()=>origin+'/api/public/remote-energy-support-masters?locale='+locale,
+  const fixture=await install(context,origin,locale,deadlineMs,responseFixture)
+  const request=(patch={})=>({url:()=>origin+'/api/public/remote-energy-support-masters?locale='+locale+(responseFixture==='consultations'?'&kind=consultation':''),
     method:()=> 'GET',resourceType:()=> 'fetch',isNavigationRequest:()=> false,postData:()=>null,
     allHeaders:async()=>({accept:'*/*'}),...patch})
   const send=async req=>{assert.equal(handlers.length,1);await handlers[0]({request:()=>req,
@@ -208,7 +208,7 @@ async function directoryFixture(locale='en',deadlineMs=10000) {
   return {fixture,origin,handlers,actions,request,send,timers}
 }
 
-test('each explicit inline opening receives one own synthetic directory denial, never data or transport',async()=>{
+test('each explicit inline Search receives one own synthetic directory denial, never data or transport',async()=>{
   for(const locale of ['en','ru','es']) for(let repeat=0;repeat<2;repeat++) {
     const f=await directoryFixture(locale),request=f.request()
     f.fixture.arm();await f.send(request);f.fixture.assertCompleted()
@@ -257,31 +257,48 @@ test('inline fixture delegates non-API transport only to the unchanged fail-clos
   assert.throws(()=>f.fixture.assertCompleted(),{code:'ERR_ASSERTION'});await f.fixture.close()
 })
 
+function compileCompact(source,modules,globals={}) {
+  const result=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX},reportDiagnostics:true})
+  assert.deepEqual(result.diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error),[])
+  const exports={};vm.runInNewContext(result.outputText,{exports,...globals,require:name=>{assert.ok(Object.hasOwn(modules,name),name);return modules[name]}},{timeout:1000});return exports
+}
+function compactFixture(input,locale,kind,response={ok:false,status:503},goal='Work and money') {
+  const states=[],effects=[],pending=[],requests=[];let index=0,effectIndex=0,closed=0
+  const props={locale,kind,initialGoal:goal,onKindChange:value=>{props.kind=value},onClose:()=>{closed++}}
+  const jsx=(type,props,key)=>({type,props:props||{},key})
+  const modules={react:{useState(initial){const i=index++;if(!(i in states))states[i]=typeof initial==='function'?initial():initial;return [states[i],value=>{states[i]=typeof value==='function'?value(states[i]):value}]},
+    useEffect(fn,deps){const i=effectIndex++,old=effects[i];if(!old||deps.some((d,j)=>!Object.is(d,old.deps[j])))pending.push(()=>{old?.cleanup?.();effects[i]={deps,cleanup:fn()}})}},
+    'react/jsx-runtime':{jsx,jsxs:jsx},'next/link':{default:'a'},
+    '@/components/remote-energy-support-booking':{RemoteEnergySupportBooking:'booking'},
+    '@/lib/practitioners/holistic-search-budgets.js':compileCompact(read('lib/practitioners/holistic-search-budgets.js'),{}),
+    './holistic-inline-support-order.module.css':{default:{},__esModule:true}}
+  const exports=compileCompact(input,modules,{AbortController,fetch:async(url,options)=>{
+    requests.push({url,options});return {...response,json:async()=>{assert.equal(response.ok,true,'A denial must not consume practitioner data');return response.data}}
+  }})
+  const render=()=>{index=0;effectIndex=0;const nodes=[];const walk=node=>{if(Array.isArray(node))return node.forEach(walk);if(!node||typeof node!=='object')return;nodes.push(node);walk(node.props?.children)};walk(exports.HolisticInlineSupportOrder(props));while(pending.length)pending.shift()();return nodes}
+  return {render,requests,props,get closed(){return closed},close(){for(const effect of effects)effect.cleanup?.()},
+    click(name,value){const n=render().find(n=>Object.hasOwn(n.props,name)&&(value===undefined||n.props[name]===value));assert.ok(n,name+'='+value);n.props.onClick();return render()},
+    async settle(){await new Promise(resolve=>setImmediate(resolve));return render()}}
+}
 async function assertInlineUnavailable(input=read('components/holistic-inline-support-order.tsx')) {
-  const compiled=ts.transpileModule(input,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText
-  const jsx=(type,props)=>({type,props:props||{}})
-  const children=node=>{const nodes=[];const walk=node=>{if(Array.isArray(node))return node.forEach(walk);if(!node||typeof node!=='object')return;nodes.push(node);walk(node.props?.children)};walk(node);return nodes}
   for(const locale of ['en','ru','es']) for(const kind of ['talisman','energy']) {
-    const states=[null,false,0],effects=[],requests=[];let index=0,closed=0
-    const modules={react:{useState:()=>{const i=index++;return [states[i],value=>{states[i]=typeof value==='function'?value(states[i]):value}]},useEffect:fn=>effects.push(fn)},
-      'react/jsx-runtime':{jsx,jsxs:jsx},'@/components/remote-energy-support-booking':{RemoteEnergySupportBooking:'booking'},
-      './holistic-inline-support-order.module.css':{default:{},__esModule:true}}
-    const exports={}
-    vm.runInNewContext(compiled,{exports,AbortController,require:name=>{assert.ok(Object.hasOwn(modules,name),name);return modules[name]},
-      fetch:async(url,options)=>{requests.push({url,options});return {ok:false,status:503,json:async()=>assert.fail('A denial must not consume practitioner data')}}},{timeout:1000})
-    const render=()=>{index=0;return children(exports.HolisticInlineSupportOrder({locale,kind,initialGoal:'Work and money',onKindChange:()=>assert.fail('No order submission'),onClose:()=>{closed++}}))}
-    const first=render();assert.equal(first.filter(node=>node.props.role==='status').length,1)
-    const cleanup=effects[0]();await new Promise(resolve=>setImmediate(resolve))
-    const failed=render(),alerts=failed.filter(node=>node.props.role==='alert')
+    const f=compactFixture(input,locale,kind),first=f.render()
+    assert.equal(first.filter(n=>n.props.role==='status'||n.props.role==='alert').length,0,'No request/loading before explicit Search')
+    assert.equal(f.requests.length,0)
+    for(const [name,count] of [['data-support-theme',3],['data-support-choice',3],['data-support-budget',4],['data-support-search',1]])
+      assert.equal(first.filter(n=>Object.hasOwn(n.props,name)).length,count)
+    assert.equal(first.find(n=>Object.hasOwn(n.props,'data-support-search')).props['aria-expanded'],false)
+    assert.equal(f.click('data-support-search').filter(n=>n.props.role==='status').length,1)
+    const failed=await f.settle(),alerts=failed.filter(n=>n.props.role==='alert')
     assert.equal(alerts.length,1,'Directory denial must expose a visible error state')
     const text=node=>Array.isArray(node)?node.map(text).join(''):typeof node==='string'?node:text(node?.props?.children||'')
-    assert.ok(text(alerts[0]).includes({en:'The practitioner directory is temporarily unavailable.',ru:'Список мастеров временно недоступен.',es:'El directorio no está disponible por el momento.'}[locale]))
-    assert.equal(failed.filter(node=>node.type==='booking'||['form','input','textarea','select'].includes(node.type)).length,0)
+    assert.ok(text(alerts[0]).includes({en:'The practitioner directory is temporarily unavailable.',ru:'Каталог мастеров временно недоступен.',es:'El directorio no está disponible por el momento.'}[locale]))
+    assert.equal(failed.filter(n=>n.type==='booking'||['form','input','textarea','select'].includes(n.type)).length,0)
     assert.equal(failed[0].props['data-holistic-inline-order'],kind)
-    assert.equal(requests.length,1);assert.equal(requests[0].url,'/api/public/remote-energy-support-masters?locale='+locale)
-    assert.equal(requests[0].options.credentials,'omit');assert.equal(requests[0].options.signal.aborted,false)
-    failed.find(node=>node.type==='button'&&node.props['aria-label']).props.onClick();assert.equal(closed,1)
-    cleanup();assert.equal(requests[0].options.signal.aborted,true)
+    assert.equal(f.requests.length,1);assert.equal(f.requests[0].url,'/api/public/remote-energy-support-masters?locale='+locale)
+    assert.equal(f.requests[0].options.credentials,'omit');assert.equal(f.requests[0].options.signal.aborted,false)
+    failed.find(n=>n.type==='button'&&n.props['aria-label']).props.onClick();assert.equal(f.closed,1)
+    f.close();assert.equal(f.requests[0].options.signal.aborted,true)
   }
 }
 
@@ -487,4 +504,182 @@ test('executed master archive opener requires closed lazy state, exact prior rea
   await run({},0);await run({},1)
   for(const patch of [{count:0},{count:2},{before:'true'},{after:'false'},{eager:1},{reads:1},
     {target:{height:43,width:44}},{target:{height:44,width:43}}])await assert.rejects(run(patch),{code:'ERR_ASSERTION'})
+})
+
+test('positive compact fixtures require explicit choice and one exact response identity, never a provider read',async()=>{
+  for(const locale of ['en','ru','es'])for(const mode of ['masters','consultations']){
+    const f=await directoryFixture(locale,10000,mode),request=f.request()
+    f.fixture.assertIdle();f.fixture.arm();await f.send(request);f.fixture.assertCompleted()
+    assert.equal(f.actions.length,1);assert.equal(f.actions[0][0],'fulfill');assert.equal(f.actions[0][1].status,200)
+    const data=JSON.parse(f.actions[0][1].body);assert.deepEqual(Object.keys(data),[mode])
+    assert.deepEqual(data[mode].map(x=>x.serviceId),mode==='masters'?['fixture-energy']:['test-eur20','test-eur100','test-cad15','test-free'])
+    assert.equal(f.fixture.matchesResponse({request:()=>request,status:()=>200}),true)
+    assert.equal(f.fixture.matchesResponse({request:()=>request,status:()=>503}),false)
+    assert.equal(f.fixture.matchesResponse({request:()=>f.request(),status:()=>200}),false)
+    await f.fixture.close();assert.equal(f.handlers.length,0);assert.equal(f.timers.size,0)
+  }
+  for(const mode of [true,1,'true','directory',{},[]])await assert.rejects(directoryFixture('en',10000,mode),{code:'ERR_ASSERTION'})
+})
+
+test('positive compact fixtures retain method/auth/prefetch/query/duplicate gates and reject pre-arm delayed headers',async()=>{
+  for(const mode of ['masters','consultations']){
+    const patches=[{method:()=> 'POST'},{method:()=> 'HEAD'},{postData:()=> 'private'},
+      {resourceType:()=> 'document'},{isNavigationRequest:()=>true},{allHeaders:async()=>undefined},
+      ...['authorization','proxy-authorization','cookie','purpose','sec-purpose','next-router-prefetch','rsc'].map(name=>({allHeaders:async()=>({[name]:'fixture'})})),
+      {url:()=> 'http://127.0.0.1:3100/api/public/remote-energy-support-masters?locale=ru'},
+      {url:()=> 'https://foreign.invalid/api/public/remote-energy-support-masters?locale=en'},
+      {url:()=> 'http://127.0.0.1:3100/api/public/remote-energy-support-masters?locale=en'+(mode==='masters'?'&kind=consultation':'')},
+      {url:()=> 'http://127.0.0.1:3100/api/public/remote-energy-support-masters?locale=en&kind=consultation&extra=1'}]
+    for(const patch of patches){
+      const f=await directoryFixture('en',10000,mode);f.fixture.arm();await f.send(f.request(patch))
+      assert.deepEqual(f.actions,[['abort','blockedbyclient']]);assert.throws(()=>f.fixture.assertCompleted(),{code:'ERR_ASSERTION'})
+      await assert.rejects(f.fixture.close(),{code:'ERR_ASSERTION'});assert.equal(f.handlers.length,0);assert.equal(f.timers.size,0)
+    }
+    const duplicate=await directoryFixture('en',10000,mode);duplicate.fixture.arm()
+    await duplicate.send(duplicate.request());await duplicate.send(duplicate.request())
+    assert.equal(duplicate.actions[0][0],'fulfill');assert.deepEqual(duplicate.actions[1],['abort','blockedbyclient'])
+    await assert.rejects(duplicate.fixture.close(),{code:'ERR_ASSERTION'})
+    const early=await directoryFixture('en',10000,mode);let headers
+    const pending=early.send(early.request({allHeaders:()=>new Promise(resolve=>{headers=resolve})}))
+    await new Promise(resolve=>setImmediate(resolve));assert.equal(typeof headers,'function')
+    assert.throws(()=>early.fixture.assertIdle(),{code:'ERR_ASSERTION'})
+    assert.throws(()=>early.fixture.arm(),{code:'ERR_ASSERTION'})
+    headers({});await pending;assert.deepEqual(early.actions,[['abort','blockedbyclient']])
+    await assert.rejects(early.fixture.close(),{code:'ERR_ASSERTION'})
+  }
+})
+
+async function assertCompactBudgets(input=read('components/holistic-inline-support-order.tsx')){
+  for(const locale of ['en','ru','es']){
+    const directory=await directoryFixture(locale,10000,'consultations');directory.fixture.arm();await directory.send(directory.request())
+    const data=JSON.parse(directory.actions[0][1].body);await directory.fixture.close()
+    const f=compactFixture(input,locale,'energy',{ok:true,status:200,data})
+    f.render();assert.equal(f.requests.length,0)
+    f.click('data-support-choice','consultation')
+    for(const [budget,theme,ids] of [['20',null,['Synthetic €20 consultation']],['100',null,['Synthetic €20 consultation','Synthetic €100 consultation']],['free','relationships',['Synthetic free introduction']]]){
+      if(theme)f.click('data-support-theme',theme)
+      const oldRequests=f.requests.length,nodes=f.click('data-support-budget',budget)
+      assert.equal(nodes.find(n=>n.props.id==='holistic-inline-results').props.hidden,true)
+      assert.equal(f.requests.length,oldRequests)
+      f.click('data-support-search');const result=await f.settle()
+      assert.equal(f.requests.length,oldRequests+1)
+      assert.equal(f.requests.at(-1).url,'/api/public/remote-energy-support-masters?locale='+locale+'&kind=consultation')
+      assert.equal(f.requests.at(-1).options.credentials,'omit')
+      const titles=result.filter(n=>n.type==='h5').map(n=>n.props.children)
+      assert.deepEqual(titles,ids)
+      assert.equal(result.filter(n=>['form','input','textarea','select'].includes(n.type)).length,0)
+      for(const link of result.filter(n=>n.type==='a')){assert.equal(link.props.prefetch,false);assert.match(link.props.href,new RegExp('^/'+locale+'/services/fixture/'))}
+    }
+    f.close()
+  }
+}
+test('actual compact selector executes Search-only EUR20/EUR100/free consultation filtering in all locales',async()=>{
+  await assertCompactBudgets()
+})
+test('compact Search budget, topic, request-mode and initial-fetch regressions remain fatal',async()=>{
+  const source=read('components/holistic-inline-support-order.tsx')
+  for(const [before,after] of [
+    ['matchesHolisticEuroBudget(offer.price, offer.currency, offer.pricingMode, budget)','true'],
+    ['matchesHolisticGoal(offer.areaKey, topic)','true'],
+    ['if (!searched) return;',''],
+    ['"&kind=consultation"','""'],
+  ]){
+    assert.equal(source.split(before).length-1,1)
+    await assert.rejects(assertCompactBudgets(source.replace(before,after)),{code:'ERR_ASSERTION'})
+  }
+})
+
+async function assertCompactTalisman(input=read('components/remote-energy-support-booking.tsx')) {
+  const data=compileCompact(read('lib/practitioners/taoist-talismans.js'),{})
+  const bridge=compileCompact(read('lib/practitioners/remote-energy-support.js'),{'./taoist-talismans.js':data})
+  const budget=compileCompact(read('lib/practitioners/holistic-search-budgets.js'),{})
+  for(const locale of ['en','ru','es']){
+    const directory=await directoryFixture(locale,10000,'masters');directory.fixture.arm();await directory.send(directory.request())
+    const payload=JSON.parse(directory.actions[0][1].body);await directory.fixture.close()
+    const f=compactFixture(read('components/holistic-inline-support-order.tsx'),locale,'talisman',{ok:true,status:200,data:payload})
+    f.props.initialTalismanId='fu-prosperity';f.render();f.click('data-support-budget','20');f.click('data-support-search')
+    const nodes=await f.settle(),child=nodes.find(n=>n.type==='booking');assert.ok(child)
+    assert.equal(child.props.compactFinder,true);assert.equal(child.props.priceBudget,'20');assert.equal(child.props.initialTalismanId,'fu-prosperity')
+    const deny=()=>assert.fail('No interaction, transport, or navigation during price-filter render')
+    const jsx=(type,props)=>({type,props:props||{}})
+    // This selected-result render tests the pure price filter; mount effects are a separate fixture above.
+    const component=compileCompact(input,{
+      'react/jsx-runtime':{jsx,jsxs:jsx},react:{useState:initial=>[typeof initial==='function'?initial():initial,deny],useMemo:fn=>fn(),useEffect:()=>{}},
+      'next/link':{default:'a'},'next/navigation':{useRouter:()=>({push:deny})},
+      '@/lib/practitioners/remote-energy-support':bridge,'@/lib/practitioners/taoist-talismans':data,
+      '@/lib/practitioners/holistic-search-budgets.js':budget,'./remote-energy-support-booking.module.css':{default:{}}})
+    const result=[],walk=n=>{if(Array.isArray(n))return n.forEach(walk);if(!n||typeof n!=='object')return;result.push(n);walk(n.props?.children)}
+    walk(component.RemoteEnergySupportBooking(child.props))
+    assert.equal(result.filter(n=>Object.hasOwn(n.props,'data-remote-support-specialist')).length,0)
+    assert.equal(result.filter(n=>n.props.role==='status').length,1)
+    assert.equal(result.filter(n=>['form','input','textarea','select'].includes(n.type)).length,0)
+    f.close()
+  }
+}
+
+test('compact talisman EUR budget reaches actual booking filter without invented prices or exposing a form',async()=>{
+  await assertCompactTalisman()
+})
+test('talisman product-price filter regression cannot expose session offers as priced products',async()=>{
+  const source=read('components/remote-energy-support-booking.tsx')
+  const guard='const matchingMasters = compactFinder && priceBudget !== "any"'
+  assert.equal(source.split(guard).length-1,1)
+  await assert.rejects(assertCompactTalisman(source.replace(guard,'const matchingMasters = false')),{code:'ERR_ASSERTION'})
+})
+
+async function assertPublishedConsultations(input=read('lib/practitioners/public-remote-support-masters.ts')) {
+  const base={id:'fixture-confirmed',slug:'fixture-confirmed',status:'published',active:true,offeringType:'session',
+    copy:{title:'Synthetic offer',shortDescription:'Synthetic only'},areaKey:'business_money',pricingMode:'fixed',confirmedPrice:20,currency:'EUR'}
+  const services=[base,{...base,id:'fixture-free',slug:'fixture-free',pricingMode:'free',confirmedPrice:null},
+    {...base,id:'fixture-contact',slug:'fixture-contact',pricingMode:'contact',confirmedPrice:9,priceOptions:[{price:1}]},
+    {...base,id:'hidden-draft',status:'draft'},{...base,id:'hidden-inactive',active:false},
+    {...base,id:'hidden-type',offeringType:'product'},{...base,id:'hidden-energy',slug:'remote-energy-support'},
+    {...base,id:'hidden-title',copy:{}}]
+  for(const locale of ['en','ru','es']){
+    let configs=0,repositories=0,reads=0
+    const config={synthetic:true},directory=compileCompact(input,{
+      '@/lib/app/config':{getAppConfig(){configs++;return config}},
+      '@/lib/practitioners/repository':{createPractitionerRepository(value){repositories++;assert.equal(value,config);return {listPublicPractitioners:async lang=>{reads++;assert.equal(lang,locale);return [{slug:'fixture-master',profile:{displayName:'Fixture'},services}]}}}},
+      '@/lib/practitioners/reviews':{createServiceReviewRepository:()=>assert.fail('Consultation catalog has no review/provider access')},
+      '@/lib/practitioners/public-service-links.js':compileCompact(read('lib/practitioners/public-service-links.js'),{}),
+    })
+    const rows=await directory.listPublishedConsultationOffers(locale)
+    assert.deepEqual(Array.from(rows,row=>row.serviceId),['fixture-confirmed','fixture-free','fixture-contact'])
+    assert.deepEqual(Array.from(rows,row=>row.price),[20,0,null])
+    assert.deepEqual([configs,repositories,reads],[1,1,1])
+    for(const row of rows)assert.equal(row.href,'/'+locale+'/services/fixture-master/'+row.serviceId)
+  }
+}
+test('actual directory keeps published active consultation kinds and confirmed/free/contact prices; missing gates are detected',async()=>{
+  await assertPublishedConsultations()
+  const source=read('lib/practitioners/public-remote-support-masters.ts')
+  const old='service.status === "published" && service.active &&'
+  // The actual module has independent energy and consultation filters; target only the latter.
+  const begin=source.indexOf('export async function listPublishedConsultationOffers')
+  assert.ok(begin>0);const tail=source.slice(begin);assert.equal(tail.split(old).length-1,1)
+  await assert.rejects(assertPublishedConsultations(source.slice(0,begin)+tail.replace(old,'')),{code:'ERR_ASSERTION'})
+})
+
+test('actual public API dispatch validates locale/kind and preserves unavailable503 without real transport',async()=>{
+  for(const locale of ['en','ru','es']){
+    const calls=[];let unavailable=false
+    const route=compileCompact(read('app/api/public/remote-energy-support-masters/route.ts'),{
+      'next/server':{NextResponse:{json:(body,options={})=>({body,status:options.status??200,headers:options.headers})}},
+      '@/data/academy/catalog':{isPublicLocale:value=>['en','ru','es'].includes(value)},
+      '@/lib/practitioners/public-remote-support-masters':{
+        listPublishedConsultationOffers:async value=>{calls.push(['consultation',value]);if(unavailable)throw Error('synthetic unavailable');return [{serviceId:'fixture-only'}]},
+        listRemoteEnergySupportMasters:async value=>{calls.push(['masters',value]);if(unavailable)throw Error('synthetic unavailable');return [{serviceId:'fixture-only'}]},
+      },
+    })
+    const send=query=>route.GET({nextUrl:new URL('http://127.0.0.1:3100/api/public/remote-energy-support-masters'+query)})
+    for(const query of ['', '?locale=invalid','?locale='+locale+'&kind=private']){
+      const response=await send(query);assert.equal(response.status,400);assert.equal(response.headers['Cache-Control'],'no-store')
+    }
+    assert.equal(calls.length,0)
+    let response=await send('?locale='+locale);assert.equal(response.status,200);assert.deepEqual(Object.keys(response.body),['masters'])
+    response=await send('?locale='+locale+'&kind=consultation');assert.equal(response.status,200);assert.deepEqual(Object.keys(response.body),['consultations'])
+    assert.deepEqual(calls,[['masters',locale],['consultation',locale]])
+    unavailable=true;response=await send('?locale='+locale+'&kind=consultation')
+    assert.equal(response.status,503);assert.equal(response.body.error,'PRACTITIONERS_UNAVAILABLE');assert.equal(response.headers['Cache-Control'],'no-store')
+  }
 })

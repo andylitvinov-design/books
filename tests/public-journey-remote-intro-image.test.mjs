@@ -56,6 +56,7 @@ test('verified public JPEG is the sole declared background of the rendered remot
     const booking = compile('components/remote-energy-support-booking.tsx', { ...common,
       'next/navigation': { useRouter: () => ({ push: deny }) },
       '@/lib/practitioners/taoist-talismans': compile('lib/practitioners/taoist-talismans.js', {}),
+      '@/lib/practitioners/holistic-search-budgets.js': compile('lib/practitioners/holistic-search-budgets.js', {}),
       react: { useEffect: () => {}, useMemo: fn => fn(), useState: initial => {
         const index = hookIndex++; return [index === showResultsIndex ? showResults : typeof initial === 'function' ? initial() : initial, deny]
       } },
@@ -66,6 +67,7 @@ test('verified public JPEG is the sole declared background of the rendered remot
     let configurationReads = 0
     const directory = compile('lib/practitioners/public-remote-support-masters.ts', {
       '@/lib/app/config': { getAppConfig: () => { configurationReads++; return config.getAppConfig(env) } },
+      '@/lib/practitioners/public-service-links.js': compile('lib/practitioners/public-service-links.js', {}),
       '@/lib/practitioners/repository': { createPractitionerRepository: () => { repositoryCalls++; deny() } },
       '@/lib/practitioners/reviews': { createServiceReviewRepository: () => { reviewCalls++; deny() } },
     })
