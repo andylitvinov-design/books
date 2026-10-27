@@ -328,6 +328,13 @@ async function runEngine(name, engine) {
               }, {capture:true});
               return performance.timeOrigin;
             });
+            // Scroll and hit-test without dispatching an event before the
+            // *single* real tap. The previous hosted trace recorded a body
+            // click (not a button click) during automatic Playwright scrolling;
+            // a missed tap cannot establish a consent-regression verdict.
+            // Do not use force, DOM .click(), second taps, or synthetic consent.
+            await whatsapp.scrollIntoViewIfNeeded();
+            await whatsapp.click({trial:true,timeout:8000});
             // Positive path intercepts POST above and stubs window.open here:
             // no real enquiry, popup, external request, or customer message.
             await whatsapp.click();
