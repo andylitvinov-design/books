@@ -143,7 +143,7 @@ jobs:
       - name: Verify encrypted owner SalesBot drafts, revisions and negative access
         run: node --conditions=react-server --test tests/crm-salesbot-drafts.integration.mjs
       - name: Verify owner-only durable SalesBot CRM runs and no external send
-        run: node --test tests/crm-salesbot-owner-runs.test.mjs
+        run: node --conditions=react-server --test tests/crm-salesbot-owner-runs.test.mjs tests/crm-salesbot-owner-runs.integration.mjs
       - name: Lint SalesBot draft storage, private API and UI
         run: npx eslint lib/crm/salesbot-store.js components/app/crm-salesbot-drafts.jsx app/api/app/crm/salesbot/drafts/route.js tests/crm-salesbot-drafts.integration.mjs
       - name: Business pipeline stage integrity, owner actions and visual contract
