@@ -48,9 +48,18 @@ try {
     // Match production HTTPS validation without weakening the application rule.
     server.listen(443, '127.0.0.1')
     await once(server, 'listening')
+    // The production build is tested separately above. This isolated app
+    // exercises real admin actions with the existing RLS-protected PostgreSQL
+    // practitioner directory plus ephemeral Redis; Next production mode
+    // intentionally refuses loopback synthetic DB credentials.
+    assert.equal(process.env.HH_APP_TEST_RUNTIME, 'isolated')
+    assert.match(process.env.HH_APP_DATABASE_URL || '', /^postgres:\/\/hh_app_ci_login:[^@]+@127\.0\.0\.1:5432\/hh_app_test$/)
     const log = createWriteStream(`${evidence}/local-app.log`)
-    app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3100', '-H', '127.0.0.1'], {
-      env: { ...process.env, PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '', PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1', PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
+    app = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3100', '-H', '127.0.0.1'], {
+      env: { ...process.env, NODE_ENV: 'development', HH_APP_ENABLED: 'true',
+        PRESCRIPTIONS_ADMIN_TOKEN: testToken, PRESCRIPTIONS_ADMIN_PIN: '',
+        PRESCRIPTIONS_KV_REST_API_URL: 'https://127.0.0.1',
+        PRESCRIPTIONS_KV_REST_API_TOKEN: testToken },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     app.stdout.pipe(log); app.stderr.pipe(log)
@@ -248,6 +257,10 @@ try {
       await expect(target.locator('.site-video-manager')).toHaveAttribute('lang', 'en')
       // All 16 canonical site-video slots are selectable in the same editor.
       await expect(target.locator('.site-video-placement-list button')).toHaveCount(16)
+      // Approval is read from the actual isolated PostgreSQL fixture with RLS,
+      // not injected into the browser or mocked in the public form.
+      await expect(target.locator('select[name="practitionerSlug"] option[value="andy-litvinov"]'))
+        .toHaveText('Andy')
       assert.equal(await target.getByText('Video storage is currently unavailable.', { exact: false }).count(), 0)
     }
     async function choose(slot, locale = 'en', target = editor) {
@@ -258,6 +271,7 @@ try {
     async function fill(title, target = editor) {
       await target.locator('input[name="youtubeUrl"]').fill('https://youtu.be/OkLEN8Zb-sY?si=test-tracker')
       await target.locator('input[name="title"]').fill(title)
+      await target.locator('select[name="practitionerSlug"]').selectOption('andy-litvinov')
     }
     async function save(intent, target = editor) {
       if (intent === 'publish') {
@@ -307,8 +321,11 @@ try {
           await page.reload({ waitUntil: 'domcontentloaded' })
         }
         await expect(page.locator('.site-video-player').filter({ hasText: title })).toHaveCount(1)
+        await expect(page.locator('.site-video-player').filter({ hasText: title })
+          .locator('.site-video-master-link')).toHaveAttribute(
+            'href', '/' + locale + '/masters/andy-litvinov#practitioner-videos')
       }
-      pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions and isolated Redis`)
+      pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions, RLS PostgreSQL and isolated Redis`)
     }
     await choose(SITE_VIDEO_SLOTS[0])
     await editor.screenshot({ path: `${evidence}/editor-desktop.png`, fullPage: true })
