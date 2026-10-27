@@ -40,7 +40,7 @@ function run(command, args, timeoutMs, env = process.env) {
 function git(args) {
   const result = run('git', args, 20_000);
   if (!result.ok) throw new Error('Git preflight failed: ' + args[0]);
-  return result.stdout.trim();
+  return result.stdout.replace(/\\s+$/, '');
 }
 
 function agentEnv() {
