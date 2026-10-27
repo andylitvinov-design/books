@@ -1466,3 +1466,20 @@
 @media(prefers-reduced-motion:reduce){
   .visual:not(.visualCompact) .portraitModeButton{transition:none}
 }
+
+/* Optional source-axis wheel under the existing chart, not a third primary tab. */
+.visual:not(.visualCompact) .portraitChartChoices{
+  display:flex;justify-content:center;align-items:center;gap:4px;
+  margin:0 4px 6px;padding:2px;border-radius:9px;
+  background:rgba(235,245,239,.9);border:1px solid #d1e1d8;
+}
+.visual:not(.visualCompact) .portraitChartChoices button{
+  flex:1;min-width:0;min-height:28px;padding:4px 7px;
+  border:1px solid transparent;border-radius:7px;
+  background:transparent;color:#37675f;cursor:pointer;
+  font:650 11px/1.2 system-ui,sans-serif;
+}
+.visual:not(.visualCompact) .portraitChartChoices button[aria-pressed=true]{
+  background:#fffdfa;border-color:#b8d6ca;color:#155f53;
+}
+.visual:not(.visualCompact) .portraitChartChoices button:focus-visible{outline:3px solid #23796f;outline-offset:1px}
