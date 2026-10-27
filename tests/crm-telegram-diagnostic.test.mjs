@@ -227,6 +227,7 @@ test('diagnostic webhook forwards committed reply as Bot API text and optional W
       Buffer,PRIVATE_HEADERS:{},MESSENGER_CHANNELS:['telegram'],getAppConfig:()=>({}),
       NextResponse:{json:body=>body},verifyMessengerWebhook:()=>true,
       normalizeMessengerUpdates:()=>[{type:'incoming'}],ensureTelegramInlineWebhookUpdates:async()=>{},
+      receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
       processTelegramDiagnostic:async()=>{events.push('committed');return intake},
       sendTelegramDiagnosticPrompt:async input=>{
         assert.deepEqual(events,['committed'],'reply is sent only after intake resolves')
