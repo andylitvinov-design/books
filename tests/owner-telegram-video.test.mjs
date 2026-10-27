@@ -309,7 +309,7 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','materials','track'])
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
  const videoButton=ownerAudioHelpMessage().reply_markup.inline_keyboard.flat()
    .find(x=>x.callback_data==='hh-video:start')

@@ -6,6 +6,7 @@ export function publicHomePath(locale: PublicLocale) {
   return locale === 'en' ? '/' : `/${locale}`;
 }
 export function hasSpanishCounterpart(pathname: string) {
+  if (/^\/(?:en|ru|es)\/install\/?$/.test(pathname)) return true;
   if (/^\/(?:en|ru|es)\/pro\/?$/.test(pathname)) return true;
   if (/^\/(?:en|ru|es)\/(?:holistic-support|temple-support|temple-insights|personality-profiles|tests)\/?$/.test(pathname)) return true;
   if (/^\/(?:en|ru|es)\/dao\/hexagrams(?:\/(?:[1-9]|[1-5]\d|6[0-4]))?\/?$/.test(pathname)) return true;
