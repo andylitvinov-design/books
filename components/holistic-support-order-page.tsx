@@ -18,7 +18,7 @@ export function HolisticSupportOrderPage({ locale, topic }: {
 }) {
   const router = useRouter();
   const [kind, setKind] = useState<SupportRequestKind>("energy");
-  return <HolisticInlineSupportOrder locale={locale} kind={kind} initialGoal={goals[topic]}
+  return <HolisticInlineSupportOrder standalone locale={locale} kind={kind} initialGoal={goals[topic]}
     onKindChange={next => {
       if (next === "talisman") {
         router.push("/" + locale + "/talismans");
