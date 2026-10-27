@@ -58,6 +58,15 @@ test("secondary input scores affect the ranked *alternatives*, not the chosen fo
   assert.equal(workLow.videos[0].id, "fffffffffff");
 });
 
+test("broad videos with four loose tags do not crowd out a focused recording", () => {
+  const result = recommendSupportContent({
+    focus: "relationships", scores: { energy: 1, money: 1, relationships: 8, goals: 1 },
+    videos: [video("eeeeeeeeeee", ["energy", "business", "love", "health"]),
+      video("fffffffffff", ["love"])],
+  });
+  assert.equal(result.videos[0].id, "fffffffffff");
+});
+
 test("language matching is a tie-breaker without hiding verified originals", () => {
   const recordings = [video("eeeeeeeeeee", ["energy"], "en"), video("fffffffffff", ["energy"], "ru")];
   const ru = recommendSupportContent({ focus: "energy", scores: defaultScores, videos: recordings, locale: "ru" });
