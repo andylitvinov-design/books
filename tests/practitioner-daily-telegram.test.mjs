@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+// Include 09/12/15 slot and owner-revenue tests in the existing focused Telegram CI.
+import './owner-telegram-daily-schedule.test.mjs'
 import {readFileSync} from 'node:fs'
 import {getTorontoCompletedPeriod,makePracticeDigest} from '../lib/practitioners/daily-digest.mjs'
 import {cronAuthorized} from '../lib/app/housekeeping-cron.js'
