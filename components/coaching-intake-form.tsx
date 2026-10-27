@@ -399,7 +399,7 @@ export function CoachingIntakeForm({ locale, privateCopyMode = false }: { locale
           setTelegramInitData(telegramData);
           setTelegramStatus("linked");
           if (COACHING_TOPICS.some(item => item.id === result.topic)) {
-            setDraft(previous => hasSomeAnswers(previous) ? previous : { ...previous, topic: result.topic });
+            setDraft(previous => ({ ...previous, topic: result.topic }));
           }
         } else setTelegramStatus("unavailable");
       }).catch(() => { if (active && !privateCopyOnly.current) setTelegramStatus("unavailable"); });
@@ -600,7 +600,7 @@ export function CoachingIntakeForm({ locale, privateCopyMode = false }: { locale
 
     <div className={styles.basic}>
       <label>{t.labelTopic}
-        <select value={draft.topic} disabled={leadLocked || collision || busy} onChange={event => edit(previous => ({ ...previous, topic: event.target.value }))}>
+        <select value={draft.topic} disabled={requestFromTelegram || leadLocked || collision || busy} onChange={event => edit(previous => ({ ...previous, topic: event.target.value }))}>
           {COACHING_TOPICS.map(topic => <option key={topic.id} value={topic.id}>{topic.label[locale]}</option>)}
         </select>
       </label>
