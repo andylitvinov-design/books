@@ -116,6 +116,8 @@ test('existing owner-video Google Web Client ID automatically unlocks phone setu
     {clientId:dedicatedId,source:'dedicated'})
   assert.deepEqual(resolvePhoneYoutubeClientId({savedId,ownerVideoId:serverId,ownerVideoConfigured:true}),
     {clientId:savedId,source:'saved'})
+  assert.deepEqual(resolvePhoneYoutubeClientId({dedicatedId:'invalid-client-id',ownerVideoId:serverId,ownerVideoConfigured:true}),
+    {clientId:serverId,source:'owner_video'})
   assert.deepEqual(resolvePhoneYoutubeClientId({ownerVideoId:serverId,ownerVideoConfigured:false}),
     {clientId:null,source:'missing'})
   assert.deepEqual(resolvePhoneYoutubeClientId({ownerVideoId:'secret-not-a-client-id',ownerVideoConfigured:true}),
