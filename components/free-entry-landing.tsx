@@ -524,6 +524,18 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </figure>
         </section>
 
+        {kind === "dao" ? <div id="dao-free-start" data-dao-instagram-entry>
+          <DaoTelegramHandoff locale={locale} />
+          <CompactLeadCapture
+            locale={locale}
+            id={captureId}
+            serviceTitle={serviceTitles.dao}
+            title={final.title}
+            lead={final.lead}
+            disclaimer={common.limitations}
+          />
+        </div> : null}
+
         {situationVideo ? (
           <section className={styles.reviewIntro} id="meet-andrey" aria-labelledby="free-review-intro-title" data-free-review-video-story>
             <div className={styles.reviewIntroCopy}>
@@ -679,17 +691,14 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </section>
         ) : null}
 
-        {kind !== "situation" ? <div id={kind === "dao" ? "dao-free-start" : undefined}>
-          {kind === "dao" ? <DaoTelegramHandoff locale={locale} /> : null}
-          <CompactLeadCapture
-            locale={locale}
-            id={captureId}
-            serviceTitle={serviceTitles[kind]}
-            title={final.title}
-            lead={final.lead}
-            disclaimer={common.limitations}
-          />
-        </div> : null}
+        {kind === "tests" ? <CompactLeadCapture
+          locale={locale}
+          id={captureId}
+          serviceTitle={serviceTitles.tests}
+          title={final.title}
+          lead={final.lead}
+          disclaimer={common.limitations}
+        /> : null}
       </div>
     </main>
   );
