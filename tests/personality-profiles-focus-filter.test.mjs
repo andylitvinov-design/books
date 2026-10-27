@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests } from '../lib/profile/profile-scale-selection.js'
+import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES } from '../lib/profile/profile-scale-selection.js'
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 const builder = read('components/personality-profiles-builder.tsx')
@@ -24,7 +24,7 @@ test('each focus on slide one exposes only source-backed scales on slide two', (
 })
 
 test('slide two independently selects only source-backed research scales and clears stale drafts', () => {
-  assert.match(builder, /const areasFor = \(focuses: Focus\[\]\) => \[\.\.\.new Set\(focuses.flatMap\(focus => focusAreas\[focus\]\)\)\]/)
+  assert.doesNotMatch(builder, /extraProfile|extraGroups|areasFor\(/)
   assert.match(builder, /const visibleAreas = profileAreasWithTests\(tests, focuses\) as Area\[\];/)
   assert.match(builder, /const activeAreas = visibleAreas\.filter\(area =>/)
   assert.match(builder, /selectedResearchIds\.some\(id => id\.startsWith\(area \+ "::"\)\)/)
@@ -32,10 +32,13 @@ test('slide two independently selects only source-backed research scales and cle
   assert.match(builder, /if \(!visibleScaleGroups\.some\(group => group\.researchAxes\.some\(axis => axis\.id === id\)\)\) return;/)
   const stepTwo = builder.split('{step === 1 && <section')[1]?.split('{step === 2 && <section')[0]
   assert.ok(stepTwo, 'research scales screen must exist')
-  assert.match(stepTwo, /visibleScaleGroups\.map\(group =>/)
+  assert.match(stepTwo, /visibleScaleGroups\.flatMap\(group =>/)
   assert.doesNotMatch(stepTwo, /allAreas\.map/)
   assert.match(stepTwo, /data-profile-research-scale-options/)
   assert.match(stepTwo, /data-profile-research-choice=\{axis\.id\}/)
+  assert.match(stepTwo, /data-profile-main-scale=\{group\.area\}/)
+  assert.match(stepTwo, /toggleMainScale\(group\.area\)/)
+  assert.doesNotMatch(stepTwo, /scale\.testTitle|scale\.scaleQuestions|scale\.minutes|scale\.questions/)
   assert.match(stepTwo, /data-profile-selected-focus/)
   assert.match(builder, /else if \(step === 1 && selectedResearchIds\.length && scaleGroups\.some/)
   assert.match(builder, /disabled=\{selectedResearchIds\.length === 0\}/)
@@ -65,6 +68,8 @@ test('research scales are separate; third screen contains topics and no full que
   assert.match(builder, /data-profile-topics-step/)
   assert.match(builder, /data-profile-scales-by-topic/)
   assert.match(builder, /data-profile-topic-choice=\{scale\.id\}/)
+  assert.match(builder, /data-profile-topic-choice=\{axis\.id\}/)
+  assert.match(builder, /toggleTopicAxis\(axis\.id\)/)
   assert.match(builder, /data-profile-confirm-scales/)
   const topicStep = builder.split('{step === 2 && <section')[1]?.split('{step === 3 && <section')[0]
   assert.ok(topicStep)
