@@ -8,7 +8,7 @@ import { appFetch } from "@/lib/app/client-fetch";
 import { PENDING_TEST_SELECTION_KEY, makeTestSelectionIntent } from "@/lib/app/test-selection-intent";
 import { PROFILE_FOCUS_AREAS, PROFILE_AREA_AXES, profileAreasWithTests,
   buildProfileScaleGroups, defaultProfileScaleIds, selectedProfileAxes, selectedProfileResearchAxes,
-  profileResearchAxisLabel, recommendProfileAxisBattery, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
+  profileResearchAxisLabel, previewProfileScales, recommendProfileAxisBattery, profileBatteryTotals } from "@/lib/profile/profile-scale-selection";
 
 type Locale = "en" | "ru" | "es";
 type Focus = "wellbeing" | "relationships" | "work" | "identity";
@@ -644,7 +644,9 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           {scaleGroups.map((group, index) => {
             const selectedInTopic = group.scales.filter(scale => selectedScaleIds.includes(scale.id)).length;
             const expanded = expandedScaleAreas.includes(group.area);
-            const shortlist = group.scales.slice(0, 8);
+            // Always show one registered source scale per conceptual axis;
+            // additional alternatives belong behind "Show more".
+            const shortlist = previewProfileScales(group.scales, 8) as ProfileScaleGroup["scales"];
             const visible = expanded ? group.scales : [
               ...shortlist,
               ...group.scales.filter(scale => selectedScaleIds.includes(scale.id) &&
