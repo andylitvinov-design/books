@@ -3,10 +3,12 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Brain, CalendarDays, ChevronDown, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
+import { ArrowRight, Brain, CalendarDays, CheckCircle2, ChevronDown, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, PlusCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
 import FreeExpressMyRequests from './free-express-my-requests'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
+import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
+import { portraitLifeAreaProgress } from '@/lib/assessments/portrait-sectors'
 import { availableSavedReports, latestReceivedReport } from '@/lib/profile/report-summary'
 import './profile-domains.css'
 import './profile-refresh.css'
@@ -208,6 +210,8 @@ export function ProfileDomains({
   }, [focusReports, reportsContent])
   useEffect(() => { setInteractive(true) }, [])
   const external = mode === 'legacy'
+  const lifeAreas = external ? [] : portraitLifeAreaProgress(buildPsychPortrait(results))
+  const startedAreas = lifeAreas.filter(area => area.hasResults).length
   const availableReports = availableSavedReports(savedReports)
   const latestSavedReport = latestReceivedReport(savedReports)
   const lastReceivedDate = readableDate(latestSavedReport?.savedAt || latestSavedReport?.occurredOn, locale)
@@ -268,6 +272,30 @@ export function ProfileDomains({
   )
 
   return <section className="hh-profile-domains" data-profile-domains data-profile-mode={mode} data-profile-interactive={interactive ? "true" : "false"}>
+    {!external && <section className="hh-profile-life-areas" data-profile-life-areas
+      aria-label={ru ? 'Четыре направления моего профиля' : locale === 'es' ? 'Cuatro áreas de mi perfil' : 'My four profile areas'}>
+      <div className="hh-profile-life-areas-head">
+        <strong>{ru ? 'Мои 4 направления' : locale === 'es' ? 'Mis 4 áreas' : 'My 4 life areas'}</strong>
+        <span>{startedAreas}/4 {ru ? 'с результатами' : locale === 'es' ? 'con resultados' : 'with results'}</span>
+      </div>
+      <div className="hh-profile-life-areas-grid">
+        {lifeAreas.map(area => <Link key={area.key}
+          className="hh-profile-life-area" data-profile-life-area={area.key} data-has-results={area.hasResults}
+          href={area.hasResults ? '/' + locale + '/app/portfolio' : '/' + locale + '/personality-profiles'}
+          prefetch={false}>
+          {area.hasResults ? <CheckCircle2 size={19} aria-hidden="true" /> : <PlusCircle size={19} aria-hidden="true" />}
+          <span>
+            <strong>{area.shortLabel[locale] || area.shortLabel.en}</strong>
+            <small>{area.hasResults ?
+              (ru ? 'Есть результаты' : locale === 'es' ? 'Con resultados' : 'Results saved') :
+              (ru ? 'Создать' : locale === 'es' ? 'Crear' : 'Create')}</small>
+          </span>
+        </Link>)}
+      </div>
+      <p>{ru ? 'Галочка означает, что есть хотя бы один актуальный результат теста — это ещё не полный профиль.' :
+        locale === 'es' ? 'La marca indica al menos un resultado actual, no un perfil completo.' :
+          'A check means at least one current test result, not a completed assessment.'}</p>
+    </section>}
     {external && <header className="hh-domain-hero">
       <div className="hh-domain-title">
         <p className="hh-domain-eyebrow">{t.eyebrow}</p>

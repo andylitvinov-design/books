@@ -1373,9 +1373,11 @@
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorLong{display:none}
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
     min-height:0;
-    /* 43svh rather than 31.38svh: the user's chart should dominate a normal
-       iPhone viewport. Restrict by card width on narrow/short devices. */
-    width:min(100%,clamp(290px,43svh,390px));
+    /* Keep 43svh preferred, but fit the 535px menu-to-menu mobile budget:
+       two 52px controls, 26px status + 7px margin, and 20px for picker
+       padding/borders, row margins and a 1px rounding reserve. Convert the
+       remaining height to width without changing the 360:390 artwork. */
+    width:min(100%,clamp(290px,43svh,calc((535px - 2 * 52px - 26px - 7px - 20px) * 360 / 390)));
     height:auto;
     aspect-ratio:360 / 390;
     margin:0 auto;
@@ -1418,4 +1420,27 @@
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .modelStage:has(.portraitRadar){
     width:min(100%,clamp(230px,42svh,275px));
   }
+}
+
+
+/* Signed-in portrait: honest per-area progress, without a fabricated grade. */
+.visual:not(.visualCompact) .portraitAreaStatusLine{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  margin:0 2px 7px;color:#456b61;font:650 11px/1.25 system-ui,sans-serif;
+}
+.visual:not(.visualCompact) .portraitAreaStatusLine strong{color:#205f54}
+.visual:not(.visualCompact) .portraitAreaStatusLine a{
+  display:inline-flex;align-items:center;gap:4px;min-height:26px;
+  color:#176e61;text-decoration:underline;text-underline-offset:2px;font-weight:750;
+}
+.visual:not(.visualCompact) .portraitSectorChip{position:relative}
+.visual:not(.visualCompact) .portraitSectorFlag{
+  position:absolute;top:3px;right:3px;flex:none;width:12px;height:12px;
+  color:#1d776b;pointer-events:none;
+}
+.visual:not(.visualCompact) .portraitSectorChip[data-has-results="false"] .portraitSectorFlag{color:#8b8a7e}
+.visual:not(.visualCompact) .portraitSectorChip[aria-pressed="true"] .portraitSectorFlag{color:#fff}
+@media(max-width:440px){
+  .visual:not(.visualCompact) .portraitAreaStatusLine{font-size:10px}
+  .visual:not(.visualCompact) .portraitSectorFlag{top:2px;right:2px;width:11px;height:11px}
 }

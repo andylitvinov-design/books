@@ -10,7 +10,7 @@ import { portraitAxisChoices } from '../lib/assessments/portrait-constructs.js'
 import {
   PORTRAIT_SECTORS, PORTRAIT_SECTOR_KEYS, PORTRAIT_AXIS_ORDER,
   portraitAngleForAxis, portraitAxesForSectors, summarizePortraitSectors, portraitSectorReadouts,
-  portraitSectorMidAngle, portraitFullCircleAngleForAxis,
+  portraitSectorMidAngle, portraitFullCircleAngleForAxis, portraitLifeAreaProgress,
 } from '../lib/assessments/portrait-sectors.js'
 
 const require = createRequire(import.meta.url)
@@ -56,7 +56,7 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
       if (name === '@/lib/assessments/portrait-sectors') return {
         PORTRAIT_SECTORS,PORTRAIT_SECTOR_KEYS,PORTRAIT_AXIS_ORDER,
         portraitAngleForAxis,portraitAxesForSectors,summarizePortraitSectors,portraitSectorReadouts,
-        portraitSectorMidAngle,portraitFullCircleAngleForAxis,
+        portraitSectorMidAngle,portraitFullCircleAngleForAxis,portraitLifeAreaProgress,
       }
       if (name.endsWith('.module.css')) return {__esModule:true,default:new Proxy({}, {get:(_,key)=>key})}
       return require(name)
@@ -79,6 +79,43 @@ function harness(locale, measured = TEST_EXPLORER_AXES.filter(axis => axis !== '
     },
   }
 }
+
+test('life-area status names and coverage reflect current readings in EN, RU and ES',()=>{
+  const textContent = node => node == null ? '' : Array.isArray(node) ? node.map(textContent).join('')
+    : typeof node === 'object' ? textContent(node.props?.children) : String(node)
+  const status = {
+    en:{saved:'has results',missing:'not explored'},
+    ru:{saved:'есть результаты',missing:'не исследовано'},
+    es:{saved:'con resultados',missing:'sin resultados'},
+  }
+  for(const locale of ['en','ru','es']){
+    for(const measured of [[],['stress'],PORTRAIT_AXIS_ORDER]){
+      const app=harness(locale,measured)
+      const tree=app.render()
+      const expected=PORTRAIT_SECTORS.filter(sector=>sector.axes.some(axis=>measured.includes(axis)))
+      const line=nodes(tree,'div',p=>p.className==='portraitAreaStatusLine')
+      assert.equal(line.length,1)
+      assert.ok(textContent(line[0]).includes(`${expected.length}/4`),locale+' honest coverage')
+      for(const button of sectors(tree)){
+        const sector=PORTRAIT_SECTORS.find(item=>item.key===button.props['data-portrait-sector'])
+        const hasResults=expected.includes(sector)
+        assert.equal(button.props['data-has-results'],hasResults,locale+' '+sector.key)
+        assert.equal(button.props['aria-label'],sector.label[locale]+' · '+
+          (hasResults?status[locale].saved:status[locale].missing))
+        assert.equal(button.props['aria-pressed'],false)
+      }
+      const create=nodes(tree,'a',p=>p['data-profile-add-area']!==undefined)
+      assert.equal(create.length,1)
+      assert.equal(create[0].props.href,'/'+locale+'/personality-profiles')
+      const selected=app.choose('relationships')
+      assert.equal(sectors(selected).find(button=>button.props['data-portrait-sector']==='relationships').props['aria-pressed'],true)
+    }
+    const stale=harness(locale,['stress'])
+    stale.portrait.staleAxes.stress=stale.portrait.axes.stress
+    stale.portrait.axes={}
+    assert.ok(sectors(stale.render()).every(button=>button.props['data-has-results']===false))
+  }
+})
 
 test('All is the first of five views and labels actual original test values, not a domain average',()=>{
   for(const locale of ['en','ru','es']){
