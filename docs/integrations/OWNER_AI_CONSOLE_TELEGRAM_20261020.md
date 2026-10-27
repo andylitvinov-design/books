@@ -88,13 +88,13 @@ Existing signed shared-practice webhook and `@Andydotbot` are reused; **no secon
 
 | Role | Exact locked OpenRouter ID |
 |---|---|
-| UX and visual audit | `nvidia/nemotron-3.5-super-vl:free` |
-| Product and strategy | `google/gemma-4-31b-it:free` |
+| UX and visual audit | `qwen/qwen3.8-27b:free` |
+| Product and strategy | `dots-studio/dots-3-note-preview:free` |
 | Engineering and security | `cohere/north-mini-code:free` |
 | Skeptic and alternative hypothesis | `xingchen-agi/xing4.0-29b-a4b:free` |
-| Chief reasoning synthesizer | `nvidia/nemotron-3-ultra-550b-a55b:free` |
+| Chief reasoning synthesizer | `google/gemma-4-31b-it:free` |
 
-These are chosen complementary candidates, NOT a scientifically verified objective five-best benchmark. OpenCode's application-only GLM/DeepSeek Free access does not give a free third-party HTTP API. Model roster is pinned to prevent a quiet switch to a paid model. Each explicit user question performs two read-only OpenRouter GETs for user-key identity and live catalog, rejects any model whose COMPLETE pricing is not zero, performs up to four parallel POSTs with `max_price=0`, `allow_fallbacks:false`, `data_collection:'deny'` and checks exact returned model ID, finish reason, `usage.cost===0`; only then a **fifth** distinct $0 model attempts a structured source-attributed conclusion. No retry of ambiguous POSTs or paid substitute. Provider privacy policies and free rate limits may refuse inference; show truthful partial/unavailable status.
+These are chosen complementary candidates, NOT a scientifically verified objective five-best benchmark. **2026-10-27 CI correction:** the initially proposed NVIDIA models are blocked by the existing `freeOpenRouterModel` privacy guard because their free endpoints may collect prompts for training; keeping them made the five-model preflight fail even with zero-price fixtures. The revised Qwen/Dots/Cohere/XingChen/Gemma lineup uses five different authors which pass the strict local policy; OpenRouter must still accept `data_collection:'deny'` in a real request. The expired MiniMax free launch is not used. OpenCode's application-only GLM/DeepSeek Free access does not give a free third-party HTTP API. Model roster is pinned to prevent a quiet switch to a paid model. Each explicit user question performs two read-only OpenRouter GETs for user-key identity and live catalog, rejects any model whose COMPLETE pricing is not zero, performs up to four parallel POSTs with `max_price=0`, `allow_fallbacks:false`, `data_collection:'deny'` and checks exact returned model ID, finish reason, `usage.cost===0`; only then a **fifth** distinct $0 model attempts a structured source-attributed conclusion. No retry of ambiguous POSTs or paid substitute. Provider privacy policies and free rate limits may refuse inference; show truthful partial/unavailable status.
 
 **Telegram owner behavior:** 1:1 owner-private `/all` and `/council` are recognized; `/ai` menu now foregrounds **4+1**; `ForceReply` binds the question. Real fifth-model summary is delivered to the same verified owner chat as a compact Telegram message, then four genuine reviewer texts and synthesis/status metadata are delivered as a Markdown attachment using the preexisting verified `sendOwnerDocument`. Failed attachments are NOT silently retried. Historical `/gemini`, `/mistral`, `/free` commands remain available when typed, and audio/client `/start`/`/stop` flows are untouched. Neither source prompts nor answers enter public Supabase or log, just sanitized per-update outcome statuses.
 
