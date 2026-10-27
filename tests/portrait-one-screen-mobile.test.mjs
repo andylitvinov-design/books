@@ -81,3 +81,14 @@ test('desktop and public explorer retain the existing portrait geometry', () => 
   assert.match(desktop, /\.portraitSource\{/)
   assert.match(desktop, /\.visualCompact \.modelStage/)
 })
+
+test('second-level portrait menu is directly under five focus profiles with accessible taps', () => {
+  const submenu = css.slice(css.indexOf('/* Reports: thin second-level chart/axis switch'))
+  assert.match(visual, /data-testid="portrait-view-switch"/)
+  assert.match(visual, /portraitView === 'axes'/)
+  assert.match(visual, /portraitView === 'tests'/)
+  assert.match(visual, /data-portrait-sector="goal"/)
+  assert.match(submenu, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(submenu, /min-width:0;min-height:44px/)
+  assert.match(submenu, /@media\(max-width:440px\)/)
+})

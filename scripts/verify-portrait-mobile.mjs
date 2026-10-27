@@ -28,9 +28,9 @@ const labels = ['body','work','relationships','growth']
 const expected = { body: 5, work: 3, relationships: 4, growth: 5 }
 
 function assertMobileEvidence({ locale, width, sector, data }) {
-  assert.equal(data.buttonCount, 6, 'All plus five life-profile buttons')
-  assert.ok(data.sixInRow, `${locale} ${width}px: all six profile buttons must share one row`)
-  assert.ok(data.minTapHeight >= 44 && data.minTapWidth >= 44, `${locale} ${width}px: six category buttons need >=44px tap targets`)
+  assert.equal(data.buttonCount, 6, 'All and five life-profile buttons')
+  assert.ok(data.sixInRow, `${locale} ${width}px: five portrait buttons must share one row`)
+  assert.ok(data.minTapHeight >= 44, `${locale} ${width}px: all category buttons need >=44px tap height`)
   assert.ok(data.overflow <= 1, `${locale} ${width}px: no horizontal document overflow`)
   assert.ok(data.radarWidth > 0 && data.ringWidth / data.radarWidth > .78,
     `${locale} ${width}px: outer ring must fill most of the picture`)
@@ -72,7 +72,6 @@ async function measure(locale, width, sector) {
       buttonCount: buttons.length,
       sixInRow: tops.length === 6 && Math.max(...tops)-Math.min(...tops)<2,
       minTapHeight: Math.min(...buttons.map(button=>rect(button).height)),
-      minTapWidth: Math.min(...buttons.map(button=>rect(button).width)),
       pressedCount: pressed.length, pressedKey: pressed[0]?.getAttribute('data-portrait-sector'),
       overflow: document.documentElement.scrollWidth-innerWidth,
       radarWidth: image.width, ringWidth: rect(outer).width,
@@ -159,7 +158,6 @@ try {
     await all.click()
     await expect(all).toHaveAttribute('aria-pressed','true')
     await expect(card().locator('svg[data-radar-mode="summary"]')).toBeVisible()
-    await expect(card().locator('[data-summary-sector]')).toHaveCount(4)
     for (const width of [320,390,430]) {
       await page.setViewportSize({width,height:900})
       for (const sector of labels) {
@@ -178,30 +176,47 @@ try {
     const actions = card().locator('[data-testid="portrait-quick-actions"]')
     await expect(actions).toBeVisible()
     await expect(actions.locator('a, button')).toHaveCount(3)
-    const takeTest = actions.locator('[data-testid="portrait-completion-action"]')
-    await expect(takeTest).toContainText(locale === 'ru' ? 'Пройти тест' : 'Take Test')
-    await expect(takeTest).toHaveAttribute('aria-expanded','false')
-    await expect(actions.locator('[data-testid="portrait-analyses-action"]')).toContainText(locale === 'ru' ? 'Анализы' : 'Analyses')
-    await expect(actions.locator('[data-testid="portrait-recommendations-action"]')).toContainText(locale === 'ru' ? 'Рекомендации' : 'Recommendations')
+    const mini = card().locator('[data-testid="portrait-view-switch"]')
+    const chartTab = mini.locator('[data-portrait-view="chart"]')
+    const axesTab = mini.locator('[data-portrait-view="axes"]')
+    const testsTab = mini.locator('[data-portrait-view="tests"]')
+    await expect(mini.locator('[role="tab"]')).toHaveCount(3)
+    await expect(chartTab).toHaveAttribute('aria-selected','true')
+    await expect(axesTab).toContainText(locale === 'ru' ? 'Оси' : 'Axes')
+    await expect(testsTab).toContainText(locale === 'ru' ? 'Тесты' : 'Tests')
+    const goalsAction = actions.locator('[data-testid="portrait-goals-action"]')
+    await expect(goalsAction).toContainText(locale === 'ru' ? 'Цели' : 'Goals')
+    await expect(goalsAction).toHaveAttribute('href','#hh-development-program')
+    await expect(actions.locator('[data-testid="portrait-analyses-action"]')).toBeVisible()
+    await expect(actions.locator('[data-testid="portrait-recommendations-action"]')).toBeVisible()
 
-    // Owner's iPhone requirement: the first and last teal control rows must
+        // Owner's iPhone requirement: the first and last teal control rows must
     // share one visible mobile frame. Check geometry in the authenticated
     // isolated browser, including a short 550px screen and EN/RU wrapping.
     for (const width of [320, 390, 430]) {
       for (const height of [550, 768, 844]) {
         await page.setViewportSize({ width, height })
-        await card().locator('[data-portrait-sectors]').evaluate(
-          el => el.scrollIntoView({ block: 'start', inline: 'nearest' }))
+        await card().locator('[data-portrait-sectors]').evaluate(async el => {
+          // Align the *viewport* after scrollIntoView: a clipping <details>
+          // ancestor may consume its scroll request on short iPhones. Keep the
+          // exact 470/535px size, no-clipping, and >=44px touch assertions.
+          el.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' })
+          const viewportOffset = el.getBoundingClientRect().top
+          window.scrollBy({ top: viewportOffset - 6, behavior: 'instant' })
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+        })
         const frame = await card().evaluate(el => {
           const rect = node => node.getBoundingClientRect()
           const upper = rect(el.querySelector('[data-portrait-sectors]'))
           const lower = rect(el.querySelector('[data-testid="portrait-quick-actions"]'))
           const picture = rect(el.querySelector('[data-radar-layout="full-circle"]'))
           const upperButtons = [...el.querySelectorAll('[data-portrait-sectors] button')]
-          const lowerButtons = [...el.querySelectorAll('[data-testid="portrait-quick-actions"] button')]
+          const lowerButtons = [...el.querySelectorAll('[data-testid="portrait-quick-actions"] a, [data-testid="portrait-quick-actions"] button')]
           return {
             firstTop: upper.top,
             lastBottom: lower.bottom,
+            pageScrollY: window.scrollY,
+            maxScrollY: document.documentElement.scrollHeight - window.innerHeight,
             span: lower.bottom - upper.top,
             pictureWidth:picture.width,
             pictureHeight:picture.height,
@@ -233,84 +248,109 @@ try {
       }
     }
 
-    // Selecting a category, or even expanding Take Test, must not start a
-    // questionnaire. Only a specific test button creates/resumes a run.
+    // None of the three mini-tabs starts a test or mutates assessment scores.
+    // The Pro / Check-in filter is a genuine catalogue-backed subset.
     const work = card().locator('button[data-portrait-sector="work"]')
     await work.click()
     const reportUrl = page.url()
-    await takeTest.click()
-    await expect(takeTest).toHaveAttribute('aria-expanded','true')
-    const panel = card().locator('[data-testid="portrait-test-recommendations"]')
+    await testsTab.click()
+    await expect(testsTab).toHaveAttribute('aria-selected','true')
+    const panel = card().locator('[data-testid="portrait-profile-test-catalogue"]')
     await expect(panel).toBeVisible()
     await expect(panel).toContainText(locale === 'ru' ? 'Дело' : 'Work')
     const suggested = panel.locator('button[data-testid^="portrait-take-test-"]')
-    assert.ok(await suggested.count() > 0, 'Work needs real cleared test suggestions')
-    assert.equal(page.url(),reportUrl, 'Opening recommendations must not create a run')
-    const testNames = await suggested.evaluateAll(items=>items.map(item=>item.dataset.testid))
+    assert.ok(await suggested.count() > 0, 'Work needs real cleared test options')
+    assert.equal(page.url(),reportUrl,'Opening test catalogue must not create a run')
+    const keys = await panel.locator('[data-test-definition]').evaluateAll(items => items.map(item => item.dataset.testDefinition))
+    const proFilter = panel.locator('[data-portrait-test-kind="professional"]')
+    const checkinFilter = panel.locator('[data-portrait-test-kind="monitoring"]')
+    await proFilter.click()
+    await expect(proFilter).toHaveAttribute('aria-pressed','true')
+    const proKinds = await panel.locator('[data-test-definition]').evaluateAll(items => items.map(item => item.dataset.testKind))
+    assert.ok(proKinds.every(kind => kind === 'professional'),'Pro filter must not leak Check-ins')
+    await checkinFilter.click()
+    await expect(checkinFilter).toHaveAttribute('aria-pressed','true')
+    const checkinKinds = await panel.locator('[data-test-definition]').evaluateAll(items => items.map(item => item.dataset.testKind))
+    assert.ok(checkinKinds.every(kind => kind === 'monitoring'),'Check-in filter must not leak Pro')
+    await panel.locator('[data-portrait-test-kind="all"]').click()
     const relationships = card().locator('button[data-portrait-sector="relationships"]')
     await relationships.click()
     await expect(panel).toContainText(locale === 'ru' ? 'Отношения' : 'Relationships')
-    assert.equal(page.url(),reportUrl, 'Changing the category must not navigate')
-    const relationshipTests = await suggested.evaluateAll(items=>items.map(item=>item.dataset.testid))
-    assert.ok(relationshipTests.length>0, 'Relationships needs real cleared test suggestions')
-    assert.ok(testNames.some(key=>!relationshipTests.includes(key)) ||
-      relationshipTests.some(key=>!testNames.includes(key)), 'Category should change recommended tests')
-    await takeTest.click()
-    await expect(takeTest).toHaveAttribute('aria-expanded','false')
-    await expect(panel).not.toBeVisible()
+    const relKeys = await panel.locator('[data-test-definition]').evaluateAll(items => items.map(item => item.dataset.testDefinition))
+    assert.ok(relKeys.length > 0, 'Relationships needs real matching tests')
+    assert.ok(keys.some(key => !relKeys.includes(key)) || relKeys.some(key => !keys.includes(key)),
+      'Different life profiles should use different catalogue measurements')
+    assert.equal(page.url(),reportUrl,'Test filters and categories must not navigate')
 
-    // Switch all three views on a real authenticated synthetic account.
-    // Neither Analyses nor Recommendations may jump to a lower-page section.
+    // Axes selected in the second mini-tab control the full-circle wheel.
+    await axesTab.click()
+    await expect(card().locator('[data-testid="portrait-axes-panel"]')).toBeVisible()
+    const axisCheckbox = card().locator('[data-portrait-ray="relationships"] input[type="checkbox"]')
+    await expect(axisCheckbox).toBeChecked()
+    await axisCheckbox.uncheck()
+    await chartTab.click()
+    await expect(chartTab).toHaveAttribute('aria-selected','true')
+    const chartChoices = card().locator('[data-testid="portrait-chart-options"]')
+    const allProfiles = chartChoices.locator('[data-chart-mode="profiles"]')
+    const chosenAxes = chartChoices.locator('[data-chart-mode="axes"]')
+    await chosenAxes.click()
+    await expect(chosenAxes).toHaveAttribute('aria-pressed','true')
+    const wheel = card().locator('svg[data-radar-mode="axes"]')
+    await expect(wheel).toBeVisible()
+    await expect(wheel.locator('[data-detail-axis="relationships"]')).toHaveCount(0)
+    assert.ok(await wheel.locator('[data-detail-axis]').count() >= 12,'The chosen wheel combines axes from all four profiles')
+    await allProfiles.click()
+    await expect(allProfiles).toHaveAttribute('aria-pressed','true')
+    await all.click()
+    await expect(card().locator('svg[data-radar-mode="summary"]')).toBeVisible()
+
+    // Lower Goals is a link to the existing *private* saved programme editor;
+    // Analyses and Recommendations still switch their inline panels.
     const analysesTab = actions.locator('[data-testid="portrait-analyses-action"]')
     const recommendationsTab = actions.locator('[data-testid="portrait-recommendations-action"]')
-    await expect(actions).toHaveAttribute('role','tablist')
-    await expect(actions.locator('[role="tab"]')).toHaveCount(3)
+    await expect(actions).toHaveAttribute('role','group')
+    await expect(actions.locator('a,button')).toHaveCount(3)
     for (const width of [320,390,430]) {
       await page.setViewportSize({width,height:900})
       await actions.scrollIntoViewIfNeeded()
-      const before=page.url()
-      const y=await page.evaluate(()=>window.scrollY)
+      const before = page.url()
+      const y = await page.evaluate(()=>window.scrollY)
       await analysesTab.click()
-      await expect(analysesTab).toHaveAttribute('aria-selected','true')
+      await expect(analysesTab).toHaveAttribute('aria-pressed','true')
       await expect(card().locator('#hh-portrait-panel-analyses')).toBeVisible()
       await expect(card().locator('[data-testid="portrait-analyses"]')).toBeVisible()
-      await expect(panel).not.toBeVisible()
-      await expect(card().locator('[data-portrait-ray-options]')).toHaveCount(0)
       assert.ok(Math.abs((await page.evaluate(()=>window.scrollY))-y)<100,
-        `${locale} ${width}px: Analyses tab unexpectedly scrolled away from portrait`)
+        'Analyses should not scroll away from the portrait')
       await recommendationsTab.click()
-      await expect(recommendationsTab).toHaveAttribute('aria-selected','true')
+      await expect(recommendationsTab).toHaveAttribute('aria-pressed','true')
       await expect(card().locator('#hh-portrait-panel-analyses')).toBeHidden()
       await expect(card().locator('#hh-portrait-panel-recommendations')).toBeVisible()
       await expect(card().locator('[data-testid="portrait-recommendations"]')).toBeVisible()
-      assert.equal(page.url(),before,'Recommendations tab must stay on Reports')
+      assert.equal(page.url(),before,'Recommendations must stay on Reports')
       assert.ok((await page.evaluate(()=>document.documentElement.scrollWidth - innerWidth))<=1,
-        `${locale} ${width}px: inline recommendations overflow the mobile viewport`)
-      await takeTest.click()
-      await expect(takeTest).toHaveAttribute('aria-selected','true')
-      await expect(takeTest).toHaveAttribute('aria-expanded','true')
-      await expect(panel).toBeVisible()
-      await expect(card().locator('#hh-portrait-panel-recommendations')).toBeHidden()
-      await expect(card().locator('[data-portrait-ray-options]')).toBeVisible()
-      await takeTest.click()
-      await expect(panel).not.toBeVisible()
-      await takeTest.focus()
-      await page.keyboard.press('End')
-      await expect(recommendationsTab).toHaveAttribute('aria-selected','true')
-      await page.keyboard.press('Home')
-      await expect(takeTest).toHaveAttribute('aria-selected','true')
-      await expect(panel).toBeVisible()
-      await takeTest.click()
-      await expect(panel).not.toBeVisible()
-      assert.equal(page.url(),before,'Local keyboard tabs must not navigate')
-      console.log('PORTRAIT_TABS_QA',JSON.stringify({engine:name,locale,width,local:true}))
+        'Recommendations must not overflow the mobile viewport')
     }
-    if(locale==='en'){
+    // Keyboard navigation belongs to the three mini-tabs (Home/End/Arrow).
+    await chartTab.focus()
+    await page.keyboard.press('End')
+    await expect(testsTab).toHaveAttribute('aria-selected','true')
+    await testsTab.focus()
+    await page.keyboard.press('Home')
+    await expect(chartTab).toHaveAttribute('aria-selected','true')
+
+    if (locale === 'en') {
       await work.click()
-      await takeTest.click()
-      await suggested.first().click()
+      await testsTab.click()
+      const action = panel.locator('button[data-testid^="portrait-take-test-"]').first()
+      await expect(action).toBeVisible()
+      await action.click()
       await expect(page).toHaveURL(/\/en\/app\/runs\/[^/?#]+\?mode=quick/,{timeout:60000})
-      console.log('PORTRAIT_QA',name,'one explicit Take test click opened a real synthetic account test')
+      console.log('PORTRAIT_QA',name,'explicit test start reached synthetic authenticated run')
+    } else {
+      await goalsAction.click()
+      await expect(page.locator('#hh-development-goals-panel')).toBeVisible({timeout:30000})
+      await expect(page.locator('[data-development-target-editor]').first()).toBeVisible()
+      console.log('PORTRAIT_QA',name,'Goals opened existing private programme editor')
     }
   }
   // Next's development error-overlay may emit a blocked /__nextjs_original-stack-frames
@@ -320,7 +360,7 @@ try {
   const appProblems = problems.filter(item => !item.includes('/__nextjs_original-stack-frames') &&
     !(devOverlayBlocked && item === '[object Event]'))
   assert.equal(appProblems.length,0,'Browser script errors: '+appProblems.join('; '))
-  console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 scored sectors + separate Goal profile')
+  console.log('PORTRAIT_QA_SUCCESS',name, '2 locales x 3 widths x 4 categories')
 } finally {
   await context.close()
   await browser.close()

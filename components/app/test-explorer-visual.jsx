@@ -275,7 +275,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         ? portraitTests({ selectedSector, selectedAxes: chosenForProfile, portrait })
         : portraitTests}
     </section>}
-    {portrait && !compact && portraitView === 'chart' && <div className={styles.portraitChartChoices}
+    {portrait && !compact && selectedSector !== 'goal' && portraitView === 'chart' && <div className={styles.portraitChartChoices}
       role="group" aria-label={ru ? 'Вид колеса баланса' : es ? 'Vista de la rueda' : 'Wheel of balance view'}
       data-testid="portrait-chart-options">
       {[
@@ -285,10 +285,10 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
         data-chart-mode={key} aria-pressed={chartMode === key}
         onClick={() => setChartMode(key)}>{text}</button>)}
     </div>}
-    {portrait && !compact && portraitView === 'chart' && chartMode === 'axes' && checkedRays.length === 0 &&
+    {portrait && !compact && selectedSector !== 'goal' && portraitView === 'chart' && chartMode === 'axes' && checkedRays.length === 0 &&
       <p className={styles.portraitAxisHint} role="status">{ru ? 'Оси не выбраны. Отметьте их во вкладке «Оси».' :
         es ? 'No hay ejes elegidos. Selecciónalos en «Ejes».' : 'No axes selected. Choose indicators in the Axes tab.'}</p>}
-    <div id={portrait ? portraitChartId : undefined}
+    {(!portrait || selectedSector !== 'goal') && <div id={portrait ? portraitChartId : undefined}
       hidden={Boolean(portrait) && (portraitView !== 'chart' || selectedSector === 'goal')}
       aria-labelledby={portrait ? portraitRayOptionsId + '-chart-tab' : undefined}
       className={styles.modelStage} tabIndex={portrait || compact ? -1 : 0} role={portrait ? 'tabpanel' : compact ? 'presentation' : 'application'} aria-label={portrait ? (ru ? 'Диаграмма по отмеченным осям' : es ? 'Gráfico de indicadores elegidos' : 'Chart of selected indicators') : (ru ? 'Поверните модель стрелками или перетаскиванием' : es ? 'Gira el modelo con las flechas o arrastrando' : 'Rotate model with arrow keys or drag')} onKeyDown={onKeyDown} onPointerDown={start} onPointerMove={move} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
@@ -421,7 +421,7 @@ export function TestExplorerVisual({ locale, coverage, mode = 'topics', topicCou
       {!portrait && !compact && <div className={styles.axisRing}>
         {PRIMARY_AXES.map((axis) => <button type="button" key={axis} aria-pressed={axisFilter === axis} data-intensity={coverage.axes[axis]?.intensity || 'inactive'} onClick={() => onAxisFilter(axisFilter === axis ? null : axis)}>{label(axis)}</button>)}
       </div>}
-    </div>
+    </div>}
     {compact && !portrait && <div className={styles.compactAxes} role="status" aria-live="polite">
       <strong>{ru ? 'В фокусе' : es ? 'En foco' : 'Areas in focus'}</strong>
       <div>{activeAxes.length

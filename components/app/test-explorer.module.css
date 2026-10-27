@@ -1430,7 +1430,7 @@
 }
 .visual:not(.visualCompact) .portraitModeButton{
   display:flex;justify-content:center;align-items:center;gap:4px;
-  min-width:0;min-height:36px;padding:5px 7px;
+  min-width:0;min-height:44px;padding:7px 7px;
   border:1px solid transparent;border-radius:8px;
   background:transparent;color:#346a61;cursor:pointer;
   font:700 12px/1.2 system-ui,sans-serif;text-align:center;
@@ -1461,7 +1461,7 @@
 }
 @media(max-width:440px){
   .visual:not(.visualCompact) .portraitModeBar{margin:0 2px 6px;padding:2px}
-  .visual:not(.visualCompact) .portraitModeButton{min-height:32px;padding:5px 3px;font-size:11px}
+  .visual:not(.visualCompact) .portraitModeButton{min-height:44px;padding:7px 3px;font-size:11px}
   .visual:not(.visualCompact) .portraitControls{margin:0 2px 7px;padding:8px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -1477,7 +1477,7 @@
   background:rgba(236,244,239,.72);border:1px solid #cee1d7;
 }
 .visual:not(.visualCompact) .portraitChartChoices button{
-  min-height:32px;min-width:0;padding:5px 9px;border:1px solid transparent;
+  min-height:44px;min-width:0;padding:7px 9px;border:1px solid transparent;
   border-radius:7px;background:transparent;color:#4b786d;
   font:700 11px/1.2 system-ui,sans-serif;cursor:pointer;
 }
@@ -1492,13 +1492,13 @@
 }
 @media(max-width:440px){
   .visual:not(.visualCompact) .portraitModeButton{
-    min-height:36px;padding:6px 2px;font-size:clamp(10px,2.7vw,11px)
+    min-height:44px;padding:7px 2px;font-size:clamp(10px,2.7vw,11px)
   }
   .visual:not(.visualCompact) .portraitChartChoices{
     margin:2px 2px 5px;gap:3px
   }
   .visual:not(.visualCompact) .portraitChartChoices button{
-    min-height:29px;font-size:10.5px;padding:5px 3px
+    min-height:44px;font-size:10.5px;padding:8px 3px
   }
   /* The Goals anchor is as touchable as its adjacent actions on iPhone. */
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact)
