@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Compass, Headphones, HeartHandshake } from "lucide-react";
+import { ArrowRight, Compass, Headphones, HeartHandshake, Sparkles } from "lucide-react";
 
 import { IdeasDiscovery } from "@/components/ideas-discovery";
 import type { PublicLocale } from "@/lib/public-locales";
