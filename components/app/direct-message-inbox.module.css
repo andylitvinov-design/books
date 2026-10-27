@@ -32,6 +32,8 @@
 .attachment{display:grid;gap:8px;min-width:0}
 .attachment img{display:block;max-width:100%;width:auto;max-height:280px;height:auto;object-fit:contain;border-radius:8px}
 .attachment audio{width:100%;min-width:200px;max-width:100%}
+.loadOlder{align-self:center;min-height:42px;padding:9px 14px;border:1px solid #d1c0b3;border-radius:10px;background:#fff8ee;color:#67463b;font:700 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.loadOlder:disabled{opacity:.5;cursor:wait}
 .attachment button{justify-self:start;border:1px solid #ccad9d;border-radius:8px;padding:8px 9px;background:#fffcf9;color:#643e43;cursor:pointer}
 .compose{border-top:1px solid #eee2d6;padding:12px;display:grid;gap:9px}
 .compose>label:first-child{font:700 12px system-ui,sans-serif}
@@ -113,4 +115,26 @@
  .shell[data-compact="true"] .layout[data-chat-open="true"] .conversations{display:none}
  .shell[data-compact="true"] .layout[data-chat-open="false"] .chat{display:none}
  .shell[data-compact="true"] .thread,.shell[data-compact="true"] .selected{max-width:none}
+}
+
+
+/* Reuse the same protected on-site conversation as a single selected pane. */
+.shell[data-simple-detail="true"]{width:100%;height:100%;max-width:none;margin:0;padding:0;display:flex;flex-direction:column;min-width:0;min-height:0}
+.shell[data-simple-detail="true"] .layout{display:flex;flex:1;min-height:0;max-height:none;gap:0;margin:0;padding:0}
+.shell[data-simple-detail="true"] .chat{display:flex;flex:1;min-height:0;max-height:none;width:100%;border:0;border-radius:0;box-shadow:none}
+.shell[data-simple-detail="true"] .chatHeader{border:0;min-height:0;padding:5px 12px}
+.shell[data-simple-detail="true"] .chatHeader .back{display:none}
+.shell[data-simple-detail="true"] .feed{flex:1;min-height:0;max-height:none;overflow:auto;background:#fcfaf7}
+.shell[data-simple-detail="true"] .compose{flex:none;padding:10px 12px}
+.shell[data-simple-detail="true"] .placeholder{min-height:0}
+
+
+/* The shared one-window inbox also displays private on-site conversations. */
+@media(max-width:700px){
+  .shell[data-simple-detail="true"] .chat{min-height:0;overflow:hidden}
+  .shell[data-simple-detail="true"] .feed{flex:1 1 0%;min-height:0;max-height:none;overflow-y:auto}
+  .shell[data-simple-detail="true"] .compose{position:relative;z-index:2;margin-top:auto;flex:none;background:#fffdfb}
+  .shell[data-simple-detail="true"] .compose textarea{font:400 16px/1.4 system-ui,sans-serif;resize:none;max-height:110px}
+  .shell[data-simple-detail="true"] .actions{align-items:center}
+  .shell[data-simple-detail="true"] .send{min-height:44px;flex:none}
 }

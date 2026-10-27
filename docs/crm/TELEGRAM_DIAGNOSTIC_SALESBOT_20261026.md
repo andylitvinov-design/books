@@ -163,3 +163,20 @@ before releasing.
 → optional photo privately accessible to owner → manual owner reply accepted
 and physically received → /stop → blocked further sends. Only after real
 provider evidence and separate owner approval may public availability be enabled.
+
+## 27 October 2026 · CRM Automations must display the owner's *actual* six Telegram V2 messages
+The owner noticed that CRM → Automations displayed a **generic SalesBot example**
+("Start → Welcome → Choice → Offer") instead of the previously approved personal
+express-diagnostic script. That generic dry-run graph is **not** the customer
+Telegram conversation and cannot represent long text, consent, photo/drawing,
+the optional no-photo branch, or the real per-topic coaching link.
+**Source of truth remains `lib/crm/telegram-diagnostic-v2.mjs` `copy` and the existing transition function**:
+the read-only `telegramDiagnosticV2Script` projects exactly its six outgoing
+message texts and inline button labels, using the same canonical language data.
+In CRM Automations this script is shown **first**, with full original texts
+(EN/RU/ES), four genuine topic selections, both photo branches and the actual
+topic-scoped questionnaire link. "Other CRM scenarios" remains collapsed by
+default and is explicitly labeled **separate preview/internal flows**, never
+the Telegram script. It cannot silently edit or replace the author's live texts.
+No Telegram, Supabase, RLS, CRM contact, dispatch or environment flags changed.
+A physical second-account recipient test is still independent.
