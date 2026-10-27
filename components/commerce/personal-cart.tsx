@@ -246,10 +246,18 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
 
   function add(id: string) {
     if (squareBusy || !products.some(product => product.id === id)) return;
+    // A new selection is not covered by a previous provider receipt.
+    squareStatusGeneration.current += 1;
+    squareOperation.current = null;
+    setSquareOrderId(null);
+    setSquareStatus(null);
+    setSquareRepeatOf(null);
+    setSquareError(null);
     const next = restoreServiceCart(JSON.stringify([...selected, id]));
     setSelected(next);
     setOrderOpen(false);
     setOrderReceipt(null);
+    window.history.replaceState(window.history.state, "", window.location.pathname);
     try { window.sessionStorage.setItem(SERVICE_CART_STORAGE_KEY, JSON.stringify(next)); }
     catch { /* The selection remains in memory. */ }
     window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
