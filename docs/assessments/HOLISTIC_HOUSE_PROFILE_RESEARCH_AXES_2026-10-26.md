@@ -56,7 +56,7 @@ At the inspected source revision:
 | Free guest-starter scored methods | **40**; linked to at least one real topic and facet, **0 orphan** |
 | Research axes with at least one account method | **31 of 31** |
 | Topic with no guest-starter finance method | **Money**, hidden in public wizard |
-| Account-scoped facet–score links | **355**, including intentionally adjacent interests |
+| Account-scoped facet–score links | **340**, including intentionally adjacent interests |
 | Guest-starter facet–score links | **87** |
 | Reference-only / nonstartable / source-score exclusions | **148**; category kept, no invented scored axis |
 | Original HH authored families / EN+RU editions | **73 / 146** |
