@@ -66,6 +66,7 @@ async function scanFile(path,executable){
    proc.on('error',()=>end(Error('SFX_PROPOSAL_FFMPEG_UNAVAILABLE')))
    proc.on('close',code=>code===0&&bytes<=MAX_LOG_BYTES?end(null,Buffer.concat(chunks).toString('utf8')):end(Error('SFX_PROPOSAL_SCAN_FAILED')))
  })
+ if(!/\bStream #\d+:\d+[^\r\n]*:\s*Audio:/.test(output))invalid('AUDIO_REQUIRED')
  return parseSceneScan(output)
 }
 
