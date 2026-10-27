@@ -175,5 +175,5 @@ test('one @tao.ideas CRM Messages panel offers scoped approval, provider status 
   assert.match(ui,/https:\/\/www\.instagram\.com\/tao\.ideas\//);
   assert.match(policy,/HH_CRM_MSG_INSTAGRAM_USERNAME/);
   assert.match(policy,/instagramTaoInboxApproved/);
-  assert.match(provider,/INSTAGRAM\+'\/'\+version\+'\/me\/messages'/);
+  assert.ok(provider.includes("endpoint=INSTAGRAM+'/'+version+'/'+configuredExternalId('instagram',env)+'/messages'"));
 });
