@@ -354,6 +354,8 @@ test('private /video command remains registered if Owner AI is disabled',()=>{
  assert.match(source,/commands:ownerCommands,scope:\{type:'chat',chat_id:chatNumber\}/)
  assert.match(source,/ownerCommands.every\(\(command,i\)=>/)
  assert.match(source,/!info.allowed_updates\?\.includes\('callback_query'\)/)
+ const audioService=readFileSync(new URL('../lib/practitioners/owner-telegram-audio-service.js',import.meta.url),'utf8')
+ assert.match(audioService,/env.HH_OWNER_AI_TG_ENABLED==='true'\|\|env.HH_OWNER_VIDEO_ENABLED==='true'/)
 })
 
 test('admin YouTube upload guide points owner video to the same Dot bot, not CRM',()=>{
