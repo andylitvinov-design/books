@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Sparkles } from "luci
 
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
+import { DaoTelegramHandoff } from "@/components/dao-telegram-handoff";
 import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -512,7 +513,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
               </>}
             <div className={styles.actions}>
               {kind === "tests" ? <Link className={styles.primary} href={testsHref} prefetch={false}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></Link> :
-                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
+                <a className={styles.primary} href={kind === "situation" ? "#request-free-review" : kind === "dao" ? "#dao-free-start" : "#" + captureId}>{t.cta}<ArrowRight size={19} aria-hidden="true" /></a>}
               <a className={styles.secondary} href="#what-you-get">{kind === "dao" ? t.secondary : common.details}</a>
             </div>
             {kind === "dao" ? <p className={styles.daoSafety}><ShieldCheck size={15} aria-hidden="true" />{t.value}</p> : null}
@@ -678,14 +679,17 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
           </section>
         ) : null}
 
-        {kind !== "situation" ? <CompactLeadCapture
-          locale={locale}
-          id={captureId}
-          serviceTitle={serviceTitles[kind]}
-          title={final.title}
-          lead={final.lead}
-          disclaimer={common.limitations}
-        /> : null}
+        {kind !== "situation" ? <div id={kind === "dao" ? "dao-free-start" : undefined}>
+          {kind === "dao" ? <DaoTelegramHandoff locale={locale} /> : null}
+          <CompactLeadCapture
+            locale={locale}
+            id={captureId}
+            serviceTitle={serviceTitles[kind]}
+            title={final.title}
+            lead={final.lead}
+            disclaimer={common.limitations}
+          />
+        </div> : null}
       </div>
     </main>
   );
