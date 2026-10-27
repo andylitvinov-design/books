@@ -111,14 +111,14 @@ assert.ok(savedResend,'owner-only resend helper must exist')
 const resendSource=savedResend[0].replace(/\nasync function finishAudioCombine$/,'')
 
 function simulatedSavedResend(row,{corrupt=false,providerFails=false}={}){
-  const events={downloads:0,binaries:[],messages:[],claims:0,lastUpdate:100}
+  const events={downloads:0,binaries:[],messages:[],claims:0,cleanups:0,lastUpdate:100}
   const bytes=new Uint8Array(128)
   bytes.set([79,103,103,83],0)
   const run=new Function(
     'ownerTransaction','PRACTITIONER_ID','checkedAudioStorage',
     'sendCombinedDocument','sendOwner','combinedDeliveryKeyboard',
     'failure','OWNER_AUDIO_COMBINE_MAX_BYTES','OWNER_AUDIO_COMBINE_MAX_PARTS',
-    'audioMatchesMagic','folderLabel','itemLink',
+    'audioMatchesMagic','folderLabel','itemLink','deleteTemporaryAudioParts',
     resendSource+'\nreturn resendSavedCombined')(
     async(_,callback)=>callback({query:async(sql,values)=>{
       if(sql.includes('select batch_id,status,result_audio_id,last_command_update_id'))
@@ -154,6 +154,7 @@ function simulatedSavedResend(row,{corrupt=false,providerFails=false}={}){
     bytes=>!corrupt&&[79,103,103,83].every((value,i)=>bytes[i]===value),
     folder=>folder,
     id=>'https://holistichouse.vercel.app/admin/materials/telegram?item='+id,
+    async()=>{events.cleanups++},
   )
   return {run,events}
 }
@@ -170,6 +171,7 @@ test('finished file is resent from private Storage to Telegram with its selected
   assert.equal(events.binaries[0].folder,'meditations')
   assert.equal(events.binaries[0].data.length,128)
   assert.equal(events.messages.length,0,'successful binary delivery must be the sole final Telegram message')
+  assert.equal(events.cleanups,1,'a confirmed resend also clears hidden staged sources')
 })
 test('stale batch button never downloads or transmits another saved audio',async()=>{
   const id='550e8400-e29b-41d4-a716-446655440000'
