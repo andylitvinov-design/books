@@ -52,6 +52,12 @@ async function verify(browserType,engine,width,height){
   // The browser has NO owner cookie. Production admin authorization is never
   // mocked or bypassed; a separate UI-only fixture is available on CI loopback.
   const page=await context.newPage()
+  // Keep all Google provider calls out of this synthetic UI-only smoke test.
+  // Actual Google account/channel consent is a separate owner acceptance gate.
+  await page.route('https://accounts.google.com/gsi/client',route=>route.fulfill({
+    status:200,contentType:'application/javascript',
+    body:'window.google={accounts:{oauth2:{initTokenClient:()=>({requestAccessToken:()=>{}})}}};'
+  }))
   const errors=[]
   let uploaderNavigations = 0
   page.on('framenavigated',frame => {
