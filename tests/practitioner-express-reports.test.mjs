@@ -103,6 +103,8 @@ test('New express report opens a draft editor without an eligible request but ca
   const css = read('components/app/practice-express-reports.module.css')
   assert.match(ui, /function startNew\(\) \{[\s\S]*?setComposing\(true\)/)
   assert.match(ui, /onClick=\{startNew\} aria-expanded=\{composing\}/)
+  assert.match(ui, /setEditorActivation\(value => value\+1\)/)
+  assert.match(ui, /ref=\{editorHeadingRef\} tabIndex=\{-1\}/)
   assert.match(ui, /\{\(composing \|\| current\) && <form/)
   assert.doesNotMatch(ui, /\{eligible\.length \? <form/)
   assert.match(ui, /disabled=\{busy \|\| !requestId\}/)
