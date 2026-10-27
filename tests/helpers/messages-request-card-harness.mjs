@@ -47,6 +47,7 @@ export function compose({root,props,fetch,crmThreads=[]}){
   }
   const actual=new Set(['messages-simple-inbox.jsx','direct-message-inbox.jsx','messages-contact-card.jsx','practice-request-conversation.jsx'])
   const boundary={
+    './private-chat-photo':{default:()=>{throw Error('Forbidden photo renderer')}},
     './crm-messenger':{default:CrmFixture},
     './messages-client-requests':{default:inert('client-requests')},
     './practice-express-reports':{ClientExpressReportNotices:inert('express-notices')},
@@ -72,6 +73,7 @@ export function compose({root,props,fetch,crmThreads=[]}){
         // logical renderer, so native viewport measurement is NOT simulated.
         if(key==='@/lib/app/mobile-inbox-height.mjs')return load(resolve(root,'lib/app/mobile-inbox-height.mjs'))
         if(key==='@/lib/app/messages-inbox-tabs.mjs')return load(resolve(root,'lib/app/messages-inbox-tabs.mjs'))
+        if(key==='@/lib/app/messenger-private-media.mjs')return load(resolve(root,'lib/app/messenger-private-media.mjs'))
         if(key==='@/lib/practitioners/conversation-state')return load(resolve(root,'lib/practitioners/conversation-state.js'))
         if(Object.hasOwn(externals,key))return externals[key]
         if(Object.hasOwn(boundary,key))return boundary[key]

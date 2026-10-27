@@ -23,6 +23,11 @@ on:
       - 'tests/owner-telegram-audio-connection.test.mjs'
       - 'supabase/migrations/*telegram_owner_audio_combine.sql'
       - 'components/admin-telegram-audio.*'
+      - 'components/app/practice-telegram-audio.jsx'
+      - 'components/app/practice-telegram-audio.module.css'
+      - 'lib/practitioners/practice-telegram-auth-fetch.mjs'
+      - 'tests/practice-telegram-auth-fetch.test.mjs'
+      - 'tests/practice-telegram-audio.test.mjs'
       - 'tests/owner-telegram-audio-inbox.test.mjs'
       - 'supabase/migrations/*telegram_owner_audio_inbox.sql'
       - 'supabase/migrations/*telegram_owner_audio_destination.sql'
@@ -72,6 +77,10 @@ jobs:
           node --check lib/app/client-telegram-transport.js
           node --check app/api/app/notification-channels/telegram/webhook/route.js
           node --check app/api/app/notification-channels/telegram/setup/route.js
+      - name: My Practice Telegram private player and fresh-owner bridge regressions
+        run: |
+          node --check lib/practitioners/practice-telegram-auth-fetch.mjs
+          node --test tests/practice-telegram-auth-fetch.test.mjs tests/practice-telegram-audio.test.mjs tests/owner-telegram-audio-playback.test.mjs
       - name: Owner-only chat, free-cost model verification and customer pairing regressions
         run: |
           node --test tests/owner-telegram-audio-inbox.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/owner-telegram-audio-batch-folder.test.mjs tests/owner-telegram-audio-connection.test.mjs tests/owner-telegram-combined-document-delivery.test.mjs tests/owner-telegram-audio-staging-lifecycle.test.mjs

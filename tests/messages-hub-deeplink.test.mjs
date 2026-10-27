@@ -256,7 +256,7 @@ test('real direct Client card Back preserves the mounted draft and never sends m
   await f.click(f.button('Client card'));assert.ok(f.nodes().some(n=>n.props&&Object.hasOwn(n.props,'data-messages-client-card')))
   assert.equal(Boolean(replyInput(f)),false,'actual direct composer is hidden behind card')
   assert.ok([...f.app.instances.values()].find(x=>x.type.name==='DirectMessageInbox')===before)
-  await f.click(f.button('Back to chat'));assert.equal(replyInput(f)?.props.value,replyText)
+  await f.click(f.button('Back to conversation'));assert.equal(replyInput(f)?.props.value,replyText)
   assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.ok(!f.calls.some(c=>/photo|media/.test(c.path)))
 }))
 test('pending direct Send may reject while actual Client card stays open without losing retry identity',async()=>{
@@ -264,7 +264,7 @@ test('pending direct Send may reject while actual Client card stays open without
   try{await f.app.settle();await typeReply(f);await submitReply(f);const operation=sendCalls(f)[0].body.operationId
     await f.click(f.button('Client card'));pending.reject(Error('SYNTHETIC_UNCERTAIN_SEND'));await f.app.settle()
     assert.ok(f.nodes().some(n=>n.props&&Object.hasOwn(n.props,'data-messages-client-card')))
-    await f.click(f.button('Back to chat'));assert.equal(replyInput(f)?.props.value,replyText)
+    await f.click(f.button('Back to conversation'));assert.equal(replyInput(f)?.props.value,replyText)
     await submitReply(f);assert.equal(sendCalls(f)[1].body.operationId,operation);f.assertClean()
   }finally{f.close()}
 })

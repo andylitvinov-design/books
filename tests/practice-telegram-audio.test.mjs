@@ -6,6 +6,7 @@ import {practiceTelegramRecentAudio} from '../lib/practitioners/practice-telegra
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const practice=source('components/app/practice-materials.jsx')
 const recent=source('components/app/practice-telegram-audio.jsx')
+const bridge=source('lib/practitioners/practice-telegram-auth-fetch.mjs')
 const css=source('components/app/practice-telegram-audio.module.css')
 const route=source('app/api/admin/materials/telegram/route.js')
 const media=source('app/api/admin/materials/telegram/file/[id]/route.js')
@@ -35,8 +36,10 @@ test('owner-only Practice > Materials > Audio reuses the existing private backen
  assert.match(practice,/import PracticeTelegramAudio from '\.\/practice-telegram-audio'/)
  assert.match(practice,/tab==='audio'&&isOwner\?<section/)
  assert.match(practice,/<PracticeTelegramAudio locale=\{locale\} query=\{query\}\/>/)
- assert.match(recent,/fetch\('\/api\/admin\/materials\/telegram'/)
- assert.match(recent,/credentials:'same-origin',cache:'no-store'/)
+ assert.match(recent,/fetchPracticeTelegramAudio\(fetch,controller.signal\)/)
+ assert.match(bridge,/const listPath='\/api\/admin\/materials\/telegram'/)
+ assert.match(bridge,/credentials:'same-origin',cache:'no-store'/)
+ assert.match(bridge,/destination:'materials'/)
  assert.match(route,/ownerMaterialRequest\(request/)
  assert.match(media,/ownerMaterialRequest\(request/)
  assert.match(service,/status='ready' and combine_batch_id is null/)
@@ -52,6 +55,8 @@ test('each file has single-gesture Play/Pause and authenticated Range-capable na
  assert.match(recent,/preload="none" src=\{mediaPath\}/)
  assert.match(recent,/controls=\{isPlaying\}/)
  assert.match(recent,/data-practice-telegram-refresh/)
+ assert.match(recent,/data-practice-telegram-dot/)
+ assert.match(recent,/href="https:\/\/t.me\/Andydotbot"/)
  assert.match(recent,/visibilitychange/)
  assert.match(recent,/aria-label=\{\(isPlaying\?t\.pause:t\.play\)/)
  assert.match(recent,/const COPY=/)
@@ -62,9 +67,9 @@ test('each file has single-gesture Play/Pause and authenticated Range-capable na
 })
 
 
-test('recent audio Play Refresh and All retain at least 44px touch targets under scoped and mobile CSS',()=>{
+test('recent audio Play Refresh All and Dot retain at least 44px touch targets under scoped and mobile CSS',()=>{
  const rules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
- for(const name of ['play','refresh','all']){
+ for(const name of ['play','refresh','all','dotLink']){
   const base=rules.find(([,selector])=>selector.trim()==='.'+name)?.[2]
   assert.ok(base,'explicit base sizing for '+name)
   for(const dimension of ['min-width','min-height']){

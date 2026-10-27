@@ -26,10 +26,12 @@ async function handler(request) {
     let data
     if(request.method==='GET'){
       const params=new URL(request.url).searchParams
-      if([...params.keys()].some(key=>key!=='threadId')||params.getAll('threadId').length>1)
+      if([...params.keys()].some(key=>!['threadId','messagesBefore'].includes(key))||
+         params.getAll('threadId').length>1||params.getAll('messagesBefore').length>1||
+         params.has('messagesBefore')&&!params.has('threadId'))
         throw new AppError('INVALID_REQUEST',400)
       data=params.has('threadId')
-        ?await store.messages(actor,params.get('threadId')):await store.threads(actor)
+        ?await store.messages(actor,params.get('threadId'),params.get('messagesBefore')):await store.threads(actor)
       data={...data,accountId:actor.id}
     }else{
       await consumeRate(config,{op:'direct-message-actions',actor:actor.id},35,60)
