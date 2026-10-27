@@ -254,7 +254,7 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
         <div className={styles.stageColumn}>
           <div className={styles.stageCanvas} style={{ backgroundColor: current.back }}
             data-selected-mandala={current.id}
-            role="img" aria-label={current.names[locale] + ": " + t.photoAlt}>
+            role="group" aria-label={current.names[locale] + ": " + t.photoAlt}>
             <MandalaArt option={current} />
             <div className={styles.photoFrame + (squarePhoto ? " " + styles.square : "")}
               style={{ borderColor: current.ink }}>
@@ -264,10 +264,12 @@ export function MandalaMeditationClient({ locale, videos }: { locale: PublicLoca
                 <img className={styles.localPhoto} src={imageUrl} alt=""
                   style={{ objectPosition: offsetX + "% " + offsetY + "%", transform: "scale(" + zoom + ")" }} />
               ) : (
-                <span className={styles.photoPlaceholder}>
+                <button type="button" className={styles.photoPlaceholder}
+                  aria-label={t.upload} disabled={focusMode}
+                  onClick={() => fileInput.current?.click()}>
                   <ImagePlus aria-hidden="true" size={28} />
                   <span>{intention.trim() || t.empty}</span>
-                </span>
+                </button>
               )}
             </div>
           </div>
