@@ -132,7 +132,7 @@ jobs:
         run: npx eslint components/telegram-diagnostic-entry.tsx lib/crm/express-review-channel-handoff.mjs tests/crm-express-review-language-channels.test.mjs
       - name: Actual six owner-authored Telegram messages match visible CRM scenario exactly
         run: node --test tests/crm-telegram-script-preview.test.mjs
-      - name: @tao.ideas Instagram DM source, privacy, account gate, replay and STOP
+      - name: '@tao.ideas Instagram DM source, privacy, account gate, replay and STOP'
         run: node --test tests/crm-tao-ideas-instagram-inbox.test.mjs tests/crm-messenger.test.mjs
       - name: Lint dedicated Instagram source and operator contract
         run: npx eslint lib/crm/instagram-tao-inbox.mjs lib/crm/messenger-policy.js lib/crm/messenger-provider.js lib/crm/messenger-webhook.js components/app/crm-messenger.jsx tests/crm-tao-ideas-instagram-inbox.test.mjs
