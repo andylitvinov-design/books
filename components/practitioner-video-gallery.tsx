@@ -23,6 +23,12 @@ function embedFor(url:string):Embed|null{
    if(!/^\d{6,12}$/.test(id))return null
    return {src:'https://player.vimeo.com/video/'+id+'?dnt=1',poster:''}
   }
+  // Approved public HeyGen Share links in the existing website editor.
+  // No private or arbitrary iframe origins; media loads only after a click.
+  if(parsed.hostname==='app.heygen.com'){
+   const id=parsed.pathname.match(/^\/share\/([a-f0-9]{32})\/?$/)?.[1]
+   return id?{src:'https://app.heygen.com/embeds/'+id,poster:''}:null
+  }
  }catch{/* Invalid or legacy content stays hidden. */}
  return null
 }
