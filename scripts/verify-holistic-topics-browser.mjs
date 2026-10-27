@@ -48,10 +48,12 @@ for (const engine of [chromium, webkit]) {
             const talisman = panel.locator('[data-holistic-topic-card="talisman"]');
             const expert = panel.locator('[data-holistic-topic-card="expert"]');
             assert.equal(await meditation.locator("a").getAttribute("href"), "#meditation-practices");
-            assert.equal(await talisman.locator("a").getAttribute("href"),
-              "/" + locale + "/academy/symbolic/artifacts-talismans");
-            assert.equal(await expert.locator("a").getAttribute("href"),
-              "/" + locale + "/services/remote-energy-support");
+            const talismanButton = talisman.locator('[data-holistic-order-trigger="talisman"]');
+            const expertButton = expert.locator('[data-holistic-order-trigger="expert"]');
+            assert.equal(await talismanButton.getAttribute("aria-controls"),
+              "holistic-inline-order", label + " talisman opens in-page order");
+            assert.equal(await expertButton.getAttribute("aria-controls"),
+              "holistic-inline-order", label + " energy support opens in-page order");
             const currentTitle = (await meditation.locator("h3").innerText()).trim();
             assert.ok(currentTitle.length > 8 && currentTitle !== previousMeditationTitle,
               label + " topic-specific meditation card");
