@@ -153,8 +153,10 @@ test('five life directions retain the original topics and add a goal-support top
     'Cuerpo, salud y energía', 'Relaciones y cercanía',
     'Trabajo, negocios y dinero', 'Personalidad y crecimiento',
   ]) assert.ok(component.includes(phrase), phrase)
-  for (const name of ['PROFILE_FOCUS_AREAS', 'PROFILE_AREA_AXES', 'profileAreasWithTests'])
+  for (const name of ['PROFILE_AREA_AXES', 'profileAreasWithTests'])
     assert.ok(component.includes(name), 'uses shared source-backed taxonomy: ' + name)
+  const taxonomy = read('lib/profile/profile-scale-selection.js')
+  assert.ok(taxonomy.includes('PROFILE_FOCUS_AREAS'), 'focus mapping belongs to the shared library')
   assert.match(component, /\[focuses, setFocuses\] = useState<Focus\[]>\(\[\]\)/)
   assert.match(component, /\[areas, setAreas\] = useState<Area\[]>\(\[\]\)/)
   assert.doesNotMatch(component, /purpose: \[/)
