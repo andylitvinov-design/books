@@ -91,7 +91,7 @@ test('only a clear first-step affirmative grants consent; declines, ambiguity an
     assert.deepEqual(declined.keyboard,[],reply)
   }
   for(const reply of ['Да, но не сейчас','yes but not now','sí, pero no','maybe yes',
-    'сначала объясните','отношения','money','hello','no, yes','что это?',
+    'сначала объясните','Хочу уточнить','отношения','money','hello','no, yes','что это?',
     'yes'.repeat(100)]){
     const unclear=transitionTelegramDiagnostic(state(first,false),msg(reply))
     assert.equal(unclear.stage,'consent',reply)
