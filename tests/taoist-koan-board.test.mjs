@@ -37,7 +37,7 @@ test("board appears immediately after the theme cards and never sends private da
   const css = read("components/taoist-koan-board.module.css");
   const topic = page.indexOf("<HolisticSupportTopicFilter locale={locale} />");
   const quotes = page.indexOf("<TaoistKoanBoard locale={locale} />");
-  const nextSection = page.indexOf('id="holistic-healing-support"');
+  const nextSection = page.indexOf('id="meditation-practices"');
   assert.ok(topic >= 0 && quotes > topic && nextSection > quotes);
   assert.match(board, /data-taoist-koan-board/);
   assert.match(board, /data-taoist-koan-refresh/);
