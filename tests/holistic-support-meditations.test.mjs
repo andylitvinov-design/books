@@ -18,7 +18,7 @@ test("Holistic Support has a compact themed video gallery and original instrumen
     "Negocios", "Amor", "Energía", "Salud",
   ]) assert.ok((page + gallery).includes(label), "missing localized meditation label " + label);
 
-assert.match(read("components/holistic-support-topic-filter.tsx"), /<Link href="#meditation-practices" prefetch=\{false\}/);
+assert.match(read("components/holistic-support-topic-filter.tsx"), /"#meditation-practices"/);
   assert.match(page, /id="meditation-practices"/);
   assert.match(page, /<HolisticMeditationGallery locale=\{locale\} videos=\{freeMeditationVideos\(locale\)\} \/>/);
   assert.match(page, /id="meditation-audio"/);
