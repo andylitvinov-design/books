@@ -14,6 +14,7 @@ on:
       - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
       - 'app/\[locale\]/install/**'
+      - 'app/es/layout.tsx'
       - 'app/es/page.tsx'
       - 'components/holistic-house-home.tsx'
       - 'components/free-mobile-app-banner.*'
@@ -47,6 +48,7 @@ on:
       - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
       - 'app/\[locale\]/install/**'
+      - 'app/es/layout.tsx'
       - 'app/es/page.tsx'
       - 'components/holistic-house-home.tsx'
       - 'components/free-mobile-app-banner.*'
@@ -82,7 +84,7 @@ jobs:
       - name: Verify install manifests and private-message safety
         run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-free-install.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
-        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' lib/public-locales.ts
+        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' lib/public-locales.ts
       - name: Build public phone installation pages without credentials
         run: npm run build
       - name: Check EN/RU install pages and real PNG icons
