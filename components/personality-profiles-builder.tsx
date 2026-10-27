@@ -50,7 +50,7 @@ const copy = {
     ],
     entryNote: "You can explore without an account. Sign in only when you want to save results privately.",
     returnIntro: "How it works", wizardKicker: "Your free profile", selectTemplate: "Select this",
-    stages: ["Focus", "Topics", "Scales", "Tests", "Ready"],
+    stages: ["Focus", "Scales", "Topics", "Tests", "Ready"],
     profileTitle: "What would you like to understand or improve?",
     profileHelp: "Choose one or several interests. Each adds to the same personal profile; you can explore the rest later.",
     focusAdd: "Select this", focusSelected: "Selected",
@@ -65,8 +65,9 @@ const copy = {
       identity: ["Personality & personal growth", "Traits, strengths, values, life goals and self-actualization."],
       goal: ["Goal Profile", "Clarity, motivation and confidence in one chosen goal. Self-ratings are saved privately; tests provide context."],
     },
-    topicTitle: "Choose the specific topics that matter",
-    topicHelp: "Choose your topics here; open the next step to expand each topic into its real measured scales.",
+    goalScaleNote: "These three choices identify supporting topics. Your personal 0–10 goal ratings are separate, optional and private.",
+    topicTitle: "Select the scales that matter to you",
+    topicHelp: "Choose one or more research scales in each life direction. Goal clarity, motivation and confidence can be selected separately; no tests are selected here.",
     focusContext: "Selected interests",
     areas: {
       traits: ["Personality traits", "Patterns · strengths"],
@@ -78,20 +79,20 @@ const copy = {
       work: ["Work & focus", "Clarity · daily actions"],
       money: ["Money decisions", "Choices · habits, not income"],
       meaning: ["Purpose & values", "Meaning · direction"],
-      goal: ["Goal clarity · motivation · confidence", "Supporting questionnaires (not the 3 goal ratings)"],
+      goal: ["Your goal", "Clarity · motivation · confidence"],
     },
-    scaleTitle: "Choose the axes and scales for your profile",
-    scaleHelp: "Research axes group related questions. Select the actual questionnaire scales beneath them; scores from different tests are not interchangeable.",
+    scaleTitle: "Choose the topics within your scales",
+    scaleHelp: "Choose one or several topics for each selected scale. These are areas of exploration, not test choices. You will choose full questionnaires on the next screen.",
     selectAll: "Select all", clearAll: "Clear all", selected: "selected",
     scaleSourceLabel: "Questionnaire", scaleItemsLabel: "scale questions", scaleUnknown: "Scale item count not documented",
-    fullTestNote: "The time and total questions shown belong to the full source questionnaire. Shared tests are counted only once in the next step.",
-    scaleSelected: "scales selected", scalePerTopic: "of this topic", scaleSourceCount: "source scales", scaleMore: "Show more scales", scaleFewer: "Show fewer scales",
-    scaleEmpty: "No eligible source-declared scales for this topic yet.", scaleRequired: "Choose at least one scale to continue.",
-    modeCheckins: "Questionnaires", modePro: "Pro tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
+    fullTestNote: "Only topics are selected here. One topic can have several eligible questionnaires; on the Tests step you choose which complete tests to take.",
+    scaleSelected: "topics selected", scalePerTopic: "topics", scaleSourceCount: "topic options", scaleMore: "More topics", scaleFewer: "Fewer topics",
+    scaleEmpty: "No eligible source-declared scales for this topic yet.", scaleRequired: "Choose at least one topic to continue.",
+    modeCheckins: "Questionnaires / check-ins", modePro: "Professional tests", modeMeaning: "Pro = methods with a documented source, not a diagnosis or guarantee of clinical validation.",
     modeNoTests: "No eligible tests in this mode cover the selected scales. Choose the other mode or adjust scales.",
-    modeOverview: "Recommended for your selected scales", modeEstimated: "estimated total", modeSource: "Test questions",
+    modeOverview: "Filter by test type", modeEstimated: "estimated total", modeSource: "Test questions",
     testTitle: "Your recommended free test selection",
-    testHelp: "Start your suggested tests now, or add more from the filters below.",
+    testHelp: "Choose the tests you want to take for your topics. Switch between questionnaires and professional-source tests, or add more matching tests below.",
     testCount: "tests", minutes: "min", questions: "questions",
     more: "See more matching tests", less: "Show fewer",
     chosen: "Your selection", unmeasured: "Some selected topics may not have a suitable free questionnaire yet. No score will be invented.",
@@ -135,7 +136,7 @@ const copy = {
     ],
     entryNote: "Выбирать темы можно без регистрации. Для приватного сохранения результатов понадобится вход в кабинет.",
     returnIntro: "Как это работает", wizardKicker: "Ваш бесплатный профиль", selectTemplate: "Выбрать",
-    stages: ["Запрос", "Темы", "Шкалы", "Тесты", "Начало"],
+    stages: ["Запрос", "Шкалы", "Темы", "Тесты", "Начало"],
     profileTitle: "Что вы хотите понять или улучшить?",
     profileHelp: "Выберите одно или несколько направлений. Всё войдёт в один личный профиль — остальное можно изучить позже.",
     focusAdd: "Выбрать", focusSelected: "Выбрано",
@@ -150,8 +151,9 @@ const copy = {
       identity: ["Личность и развитие", "Характер, способности, ценности, смысл жизни и самореализация."],
       goal: ["Профиль цели", "Ясность, мотивация и уверенность в достижении выбранной цели. Личная самооценка сохраняется приватно."],
     },
-    topicTitle: "Уточните важные для вас темы",
-    topicHelp: "Выберите темы. На следующем шаге раскроются соответствующие им измеряемые шкалы.",
+    goalScaleNote: "Эти три шкалы помогают выбрать темы для исследования. Ваши личные оценки цели от 0 до 10 — отдельное, добровольное и приватное действие.",
+    topicTitle: "Выберите шкалы для исследования",
+    topicHelp: "В каждом направлении выберите одну или несколько шкал. Ясность цели, мотивация и уверенность отмечаются отдельно. Тесты здесь пока не выбираются.",
     focusContext: "Выбранные направления",
     areas: {
       traits: ["Особенности личности", "Качества · сильные стороны"],
@@ -163,20 +165,20 @@ const copy = {
       work: ["Работа и фокус", "Ясность · действия"],
       money: ["Решения о деньгах", "Привычки, не уровень дохода"],
       meaning: ["Ценности и смысл", "Цели · направление"],
-      goal: ["Ясность · мотивация · уверенность", "Вспомогательные тесты, не оценки конкретной цели"],
+      goal: ["Ваша цель", "Ясность · мотивация · уверенность"],
     },
-    scaleTitle: "Выберите оси и шкалы своего профиля",
-    scaleHelp: "Оси группируют близкие темы, а галочки выбирают реальные шкалы тестов. Баллы разных методик не приравниваются друг к другу.",
+    scaleTitle: "Выберите темы внутри шкал",
+    scaleHelp: "Для каждой выбранной шкалы отметьте одну или несколько тем. Это не список тестов — сами опросники вы выберете на следующем шаге.",
     selectAll: "Выбрать все", clearAll: "Снять все", selected: "выбрано",
     scaleSourceLabel: "Опросник", scaleItemsLabel: "вопросов шкалы", scaleUnknown: "Число вопросов шкалы не указано в методике",
-    fullTestNote: "Время и общее число вопросов относятся к тесту-источнику. Если шкалы входят в один тест, время на следующем шаге считается один раз.",
-    scaleSelected: "шкал выбрано", scalePerTopic: "по этой теме", scaleSourceCount: "исходных шкал", scaleMore: "Больше шкал", scaleFewer: "Свернуть шкалы",
-    scaleEmpty: "По этой теме пока нет доступных шкал с указанным источником.", scaleRequired: "Выберите хотя бы одну шкалу.",
-    modeCheckins: "Опросники", modePro: "Pro-тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
+    fullTestNote: "Здесь выбираются только темы. По одной теме может быть несколько подходящих опросников; конкретные тесты выбираются на следующем шаге.",
+    scaleSelected: "тем выбрано", scalePerTopic: "тем", scaleSourceCount: "вариантов тем", scaleMore: "Больше тем", scaleFewer: "Меньше тем",
+    scaleEmpty: "По этой теме пока нет доступных шкал с указанным источником.", scaleRequired: "Выберите хотя бы одну тему.",
+    modeCheckins: "Опросники / мониторинг", modePro: "Профессиональные тесты", modeMeaning: "Pro — методики с документированным источником, не медицинский диагноз и не гарантия клинической валидности.",
     modeNoTests: "В этом режиме нет подходящих разрешённых тестов по выбранным шкалам. Переключите режим или измените шкалы.",
-    modeOverview: "Рекомендуем по выбранным шкалам", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
+    modeOverview: "Фильтр по типу теста", modeEstimated: "всего ориентировочно", modeSource: "Вопросов теста",
     testTitle: "Предложенный набор бесплатных тестов",
-    testHelp: "Начните рекомендованные тесты или добавьте другие с помощью фильтров ниже.",
+    testHelp: "Выберите тесты по своим темам. Переключайтесь между опросниками и профессиональными методиками или добавляйте другие подходящие тесты ниже.",
     testCount: "тестов", minutes: "мин", questions: "вопросов",
     more: "Показать больше подходящих тестов", less: "Показать меньше",
     chosen: "Ваш выбор", unmeasured: "Для части тем может не оказаться подходящего бесплатного теста. Баллы не придумываются.",
@@ -220,7 +222,7 @@ const copy = {
     ],
     entryNote: "Puedes explorar sin cuenta. Inicia sesión solo si quieres guardar los resultados de forma privada.",
     returnIntro: "Cómo funciona", wizardKicker: "Tu perfil gratuito", selectTemplate: "Elegir",
-    stages: ["Interés", "Temas", "Escalas", "Pruebas", "Inicio"],
+    stages: ["Interés", "Escalas", "Temas", "Pruebas", "Inicio"],
     profileTitle: "¿Qué quieres comprender o mejorar?",
     profileHelp: "Elige uno o varios temas. Todos forman parte de un único perfil personal que puedes ampliar después.",
     focusAdd: "Elegir", focusSelected: "Elegido",
@@ -235,8 +237,9 @@ const copy = {
       identity: ["Personalidad y crecimiento", "Rasgos, fortalezas, valores, propósito y autorrealización."],
       goal: ["Perfil de la meta", "Claridad, motivación y confianza en una meta elegida. Autoevaluación privada y pruebas complementarias."],
     },
-    topicTitle: "Elige los temas específicos para explorar",
-    topicHelp: "Elige tus temas; en el siguiente paso podrás abrir sus escalas medibles.",
+    goalScaleNote: "Estas tres opciones permiten explorar temas relacionados. Las puntuaciones personales de tu meta (0–10) son independientes, opcionales y privadas.",
+    topicTitle: "Elige las escalas que quieres explorar",
+    topicHelp: "Selecciona una o varias escalas en cada área. Claridad de la meta, motivación y confianza son opciones separadas. Aquí todavía no eliges pruebas.",
     focusContext: "Áreas elegidas",
     areas: {
       traits: ["Rasgos personales", "Patrones · fortalezas"],
@@ -248,20 +251,20 @@ const copy = {
       work: ["Trabajo y enfoque", "Claridad · acciones"],
       money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
       meaning: ["Sentido y valores", "Metas · dirección"],
-      goal: ["Claridad · motivación · confianza", "Pruebas complementarias, no puntajes de la meta"],
+      goal: ["Tu meta", "Claridad · motivación · confianza"],
     },
-    scaleTitle: "Elige los ejes y las escalas de tu perfil",
-    scaleHelp: "Los ejes agrupan temas afines; marca las escalas de cuestionarios reales. Sus resultados no son intercambiables.",
+    scaleTitle: "Elige temas dentro de tus escalas",
+    scaleHelp: "Elige uno o varios temas por escala. Son áreas de exploración, no pruebas. Los cuestionarios completos se eligen en el paso siguiente.",
     selectAll: "Seleccionar todas", clearAll: "Desmarcar", selected: "seleccionadas",
     scaleSourceLabel: "Cuestionario", scaleItemsLabel: "preguntas de la escala", scaleUnknown: "Sin número de ítems verificado",
-    fullTestNote: "El tiempo y el total de preguntas pertenecen al cuestionario completo. Si varias escalas usan el mismo test, su duración se cuenta una sola vez.",
-    scaleSelected: "escalas elegidas", scalePerTopic: "de este tema", scaleSourceCount: "escalas de origen", scaleMore: "Más escalas", scaleFewer: "Ver menos escalas",
-    scaleEmpty: "Aún no hay escalas disponibles con fuente para este tema.", scaleRequired: "Elige al menos una escala.",
-    modeCheckins: "Cuestionarios", modePro: "Pruebas Pro", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
+    fullTestNote: "Aquí solo se eligen temas. Un tema puede tener varios cuestionarios adecuados; las pruebas completas se eligen en el paso siguiente.",
+    scaleSelected: "temas elegidos", scalePerTopic: "temas", scaleSourceCount: "temas disponibles", scaleMore: "Más temas", scaleFewer: "Menos temas",
+    scaleEmpty: "Aún no hay escalas disponibles con fuente para este tema.", scaleRequired: "Elige al menos un tema.",
+    modeCheckins: "Cuestionarios / seguimiento", modePro: "Pruebas profesionales", modeMeaning: "Pro significa metodología con fuente documentada; no garantiza validación clínica ni diagnóstico.",
     modeNoTests: "No hay pruebas autorizadas para estas escalas en este modo. Cambia el modo o las escalas.",
-    modeOverview: "Recomendado para tus escalas", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
+    modeOverview: "Filtrar por tipo de prueba", modeEstimated: "duración estimada total", modeSource: "Preguntas de la prueba",
     testTitle: "Tus pruebas gratuitas recomendadas",
-    testHelp: "Empieza las pruebas recomendadas o añade otras con los filtros de abajo.",
+    testHelp: "Elige pruebas según tus temas. Cambia entre cuestionarios y pruebas profesionales o añade otras pruebas compatibles abajo.",
     testCount: "pruebas", minutes: "min", questions: "preguntas",
     more: "Ver más pruebas compatibles", less: "Ver menos",
     chosen: "Tu selección", unmeasured: "Es posible que algunas áreas no tengan una prueba gratuita adecuada. No se inventan puntuaciones.",
@@ -293,13 +296,70 @@ const copy = {
   },
 } as const;
 
+// User-facing goal scales are three separate choices. They are NOT scored by
+// the supplementary questionnaires shown later, and they are never inferred.
+const goalScaleLabels: Record<Locale, Record<string, string>> = {
+  en: { "goal::clarity": "Goal clarity", "goal::motivation": "Motivation", "goal::confidence": "Confidence" },
+  ru: { "goal::clarity": "Ясность цели", "goal::motivation": "Мотивация", "goal::confidence": "Уверенность" },
+  es: { "goal::clarity": "Claridad de la meta", "goal::motivation": "Motivación", "goal::confidence": "Confianza" },
+};
+// Stage 3 describes areas of exploration rather than exposing source-test names.
+// Keys below are immutable *source dimension* IDs from the reviewed goal crosswalk;
+// they are supplementary topics, not direct measurements of the chosen goal.
+const goalTopicLabels: Record<Locale, Record<string, string>> = {
+  en: {
+    "weekly.clarity": "Clarity right now",
+    "function.decision_fog.overall": "Clarity in decisions",
+    "resources.values_direction.overall": "Values and direction",
+    "resources.meaning_compass.overall": "Meaning and direction",
+    "resources.motivation_spark.overall": "Everyday motivation",
+    "resources.change_readiness.overall": "Readiness for change",
+    "function.start_button.overall": "Starting important tasks",
+    "function.goal_obstacles.overall": "Obstacles and next steps",
+    "resources.confidence_pulse.overall": "General self-confidence",
+    "resource.self_support": "Perceived self-support",
+    "resources.inner_ally.overall": "Inner support",
+  },
+  ru: {
+    "weekly.clarity": "Ясность в данный момент",
+    "function.decision_fog.overall": "Ясность решений",
+    "resources.values_direction.overall": "Ценности и направление",
+    "resources.meaning_compass.overall": "Смысл и направление",
+    "resources.motivation_spark.overall": "Повседневная мотивация",
+    "resources.change_readiness.overall": "Готовность к переменам",
+    "function.start_button.overall": "Начало важных дел",
+    "function.goal_obstacles.overall": "Препятствия и следующие шаги",
+    "resources.confidence_pulse.overall": "Уверенность в себе",
+    "resource.self_support": "Ощущаемая поддержка себя",
+    "resources.inner_ally.overall": "Внутренняя опора",
+  },
+  es: {
+    "weekly.clarity": "Claridad en este momento",
+    "function.decision_fog.overall": "Claridad al decidir",
+    "resources.values_direction.overall": "Valores y dirección",
+    "resources.meaning_compass.overall": "Sentido y dirección",
+    "resources.motivation_spark.overall": "Motivación cotidiana",
+    "resources.change_readiness.overall": "Disposición al cambio",
+    "function.start_button.overall": "Empezar tareas importantes",
+    "function.goal_obstacles.overall": "Obstáculos y próximos pasos",
+    "resources.confidence_pulse.overall": "Confianza personal general",
+    "resource.self_support": "Autoapoyo percibido",
+    "resources.inner_ally.overall": "Apoyo interior",
+  },
+};
+const topicLabel = (area: Area, scale: { key: string; label: string }, locale: Locale) =>
+  area === "goal" ? goalTopicLabels[locale][scale.key] || scale.label : scale.label;
+
+const researchLabel = (id: string, locale: Locale) =>
+  goalScaleLabels[locale][id] || profileResearchAxisLabel(id, locale);
+
 // The discovery facets reuse the same rights-cleared catalogue and kind registry
 // as Test Explorer. No new clinical scales or questionnaires are generated.
 const additionalCopy = {
   en: {
     notMeasured: "No eligible free questionnaire yet",
     additionalTitle: "Other tests", additionalHint: "Optional. Add tests without replacing your recommended set.",
-    profile: "1. Choose one profile", scales: "2. Choose its scales", scaleHelp: "Select any number. With none checked, all scales in this profile apply.", chooseAll: "Select all", clearScales: "Clear all", chooseFirst: "Choose a profile to see matching additional tests.",
+    profile: "Explore other directions (optional)", allSelected: "My selected topics", scales: "2. Choose its scales", scaleHelp: "Select any number. With none checked, all scales in this profile apply.", chooseAll: "Select all", clearScales: "Clear all", chooseFirst: "Choose a profile to see matching additional tests.",
     search: "Search tests", searchPlaceholder: "Test name or scale",
     kind: "Type", allKinds: "All types", topic: "Topic", matching: "My topics", allTopics: "All topics",
     time: "Duration", anyTime: "Any length", two: "Up to 2 min", five: "Up to 5 min", ten: "Up to 10 min",
@@ -312,7 +372,7 @@ const additionalCopy = {
   ru: {
     notMeasured: "Пока нет доступного бесплатного теста",
     additionalTitle: "Другие тесты", additionalHint: "По желанию: добавьте тесты к рекомендованному набору.",
-    profile: "1. Выберите один профиль", scales: "2. Отметьте шкалы профиля", scaleHelp: "Можно отметить любое количество шкал. Без галочек учитываются все шкалы выбранного профиля.", chooseAll: "Выбрать все", clearScales: "Снять все", chooseFirst: "Выберите профиль, чтобы открыть дополнительные тесты.",
+    profile: "Другие направления (по желанию)", allSelected: "Мои выбранные темы", scales: "2. Отметьте шкалы профиля", scaleHelp: "Можно отметить любое количество шкал. Без галочек учитываются все шкалы выбранного профиля.", chooseAll: "Выбрать все", clearScales: "Снять все", chooseFirst: "Выберите профиль, чтобы открыть дополнительные тесты.",
     search: "Поиск теста", searchPlaceholder: "Название теста или шкалы",
     kind: "Тип", allKinds: "Все типы", topic: "Тема", matching: "Мои темы", allTopics: "Все темы",
     time: "Длительность", anyTime: "Любая", two: "До 2 мин", five: "До 5 мин", ten: "До 10 мин",
@@ -325,7 +385,7 @@ const additionalCopy = {
   es: {
     notMeasured: "Aún no hay prueba gratuita disponible",
     additionalTitle: "Otras pruebas", additionalHint: "Opcional: añade pruebas sin sustituir las recomendadas.",
-    profile: "1. Elige un perfil", scales: "2. Elige sus escalas", scaleHelp: "Selecciona cuantas escalas quieras. Sin selección se incluyen todas las del perfil.", chooseAll: "Seleccionar todas", clearScales: "Quitar todas", chooseFirst: "Elige un perfil para ver las pruebas adicionales.",
+    profile: "Otras áreas (opcional)", allSelected: "Mis temas elegidos", scales: "2. Elige sus escalas", scaleHelp: "Selecciona cuantas escalas quieras. Sin selección se incluyen todas las del perfil.", chooseAll: "Seleccionar todas", clearScales: "Quitar todas", chooseFirst: "Elige un perfil para ver las pruebas adicionales.",
     search: "Buscar pruebas", searchPlaceholder: "Nombre o escala",
     kind: "Tipo", allKinds: "Todos los tipos", topic: "Tema", matching: "Mis temas", allTopics: "Todos los temas",
     time: "Duración", anyTime: "Cualquiera", two: "Hasta 2 min", five: "Hasta 5 min", ten: "Hasta 10 min",
@@ -350,7 +410,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     });
   }, [started, step]);
   const [focuses, setFocuses] = useState<Focus[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [selectedResearchIds, setSelectedResearchIds] = useState<string[]>([]);
   const [selectedScaleIds, setSelectedScaleIds] = useState<string[]>([]);
   const [scalesInitialized, setScalesInitialized] = useState(false);
   const [expandedScaleAreas, setExpandedScaleAreas] = useState<Area[]>([]);
@@ -368,12 +428,18 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const accountLocale = locale === "es" ? "en" : locale;
   const extra = additionalCopy[locale];
 
-  // Topics define the scope. The accordion selects exact source-declared
-  // subscales; their question/time metadata always belongs to a real test.
+  // Step 2 selects real source-backed research facets separately. Step 3
+  // narrows each facet to topic options without revealing questionnaires.
   const visibleAreas = profileAreasWithTests(tests, focuses) as Area[];
-  const activeAreas = areas.filter(area => visibleAreas.includes(area));
   const visibleScaleGroups = buildProfileScaleGroups(tests, visibleAreas, areaAxes) as ProfileScaleGroup[];
-  const scaleGroups = buildProfileScaleGroups(tests, activeAreas, areaAxes) as ProfileScaleGroup[];
+  const activeAreas = visibleAreas.filter(area =>
+    selectedResearchIds.some(id => id.startsWith(area + "::")));
+  const scaleGroups: ProfileScaleGroup[] = (buildProfileScaleGroups(tests, activeAreas, areaAxes) as ProfileScaleGroup[])
+    .map(group => ({
+      ...group,
+      researchAxes: group.researchAxes.filter(axis => selectedResearchIds.includes(axis.id)),
+      scales: group.scales.filter(scale => selectedResearchIds.includes(scale.researchAxisId)),
+    }));
   const selectedAxes = selectedProfileAxes(scaleGroups, selectedScaleIds) as string[];
   const selectedAxisRefs = selectedProfileResearchAxes(scaleGroups, selectedScaleIds) as string[];
   const selectedKeys = selectedByMode[batteryMode];
@@ -390,12 +456,17 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     pro: profileBatteryTotals(tests, selectedByMode.pro),
   };
   const modeKind = batteryMode === "pro" ? "professional" : "monitoring";
+  // With no extra direction chosen, show more tests for the *current* topics
+  // immediately. The optional direction filter deliberately broadens discovery.
   const extraGroups: ProfileScaleGroup[] = extraProfile
-    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) as ProfileScaleGroup[] : [];
+    ? buildProfileScaleGroups(tests, areasFor([extraProfile]), areaAxes) as ProfileScaleGroup[]
+    : scaleGroups;
   const axesForExtraProfile = [...new Set(extraGroups.flatMap(group =>
     group.researchAxes.map(axis => axis.id)))]
     .sort((a, b) => profileResearchAxisLabel(a, locale).localeCompare(profileResearchAxisLabel(b, locale), locale));
-  const effectiveExtraScales = extraScales.length ? extraScales : axesForExtraProfile;
+  const effectiveExtraScales = extraProfile
+    ? (extraScales.length ? extraScales : axesForExtraProfile)
+    : selectedAxisRefs;
   const extraTestKeys = new Set(extraGroups.flatMap(group => group.scales
     .filter(scale => effectiveExtraScales.includes(scale.researchAxisId)).map(scale => scale.testKey)));
   const extraRelevance = (key: string) => extraGroups.reduce((total, group) => total +
@@ -404,7 +475,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
   const extraMatches = tests
     .filter(test => !selectedKeys.includes(test.key))
     .filter(test => test.testKind === modeKind)
-    .filter(test => extraProfile !== null && extraTestKeys.has(test.key))
+    .filter(test => extraTestKeys.has(test.key))
     .filter(test => timeFilter === "all" || (test.minutes !== null && test.minutes <= Number(timeFilter)))
     .filter(test => !search.trim() ||
       [test.title, ...test.scales.map(scale => scale.label),
@@ -424,21 +495,27 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
     setFocuses(previous => previous.includes(focus)
       ? previous.filter(item => item !== focus) : [...previous, focus]);
     // Other directions must not contribute stale topics, scales or plans.
-    setAreas([]);
+    setSelectedResearchIds([]);
     setSelectedScaleIds([]);
     setScalesInitialized(false);
     setSelectedByMode({ questionnaires: [], pro: [] });
     setBatterySignature("");
+    setExtraProfile(null);
+    setExtraScales([]);
     setShowMore(false);
   }
 
-  function toggleArea(area: Area) {
-    if (!visibleAreas.includes(area)) return;
-    setAreas(previous => previous.includes(area) ? previous.filter(item => item !== area) : [...previous, area]);
+  function toggleResearchAxis(id: string) {
+    if (!visibleScaleGroups.some(group => group.researchAxes.some(axis => axis.id === id))) return;
+    setSelectedResearchIds(previous => previous.includes(id)
+      ? previous.filter(item => item !== id) : [...previous, id]);
+    // A changed construct invalidates only the downstream topic/test draft.
     setSelectedScaleIds([]);
     setScalesInitialized(false);
     setSelectedByMode({ questionnaires: [], pro: [] });
     setBatterySignature("");
+    setExtraProfile(null);
+    setExtraScales([]);
     setShowMore(false);
   }
 
@@ -462,14 +539,14 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
 
   function goForward() {
     if (step === 0 && focuses.length) {
-      setAreas(visibleAreas);
+      setSelectedResearchIds([]);
       setSelectedScaleIds([]);
       setScalesInitialized(false);
       setSelectedByMode({ questionnaires: [], pro: [] });
       setBatterySignature("");
       setShowMore(false);
       setStep(1);
-    } else if (step === 1 && activeAreas.length) {
+    } else if (step === 1 && selectedResearchIds.length && scaleGroups.some(group => group.scales.length)) {
       if (!scalesInitialized) {
         setSelectedScaleIds(defaultProfileScaleIds(scaleGroups, 3));
         setScalesInitialized(true);
@@ -616,30 +693,37 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
         </details>
       </section>}
 
-      {step === 1 && <section aria-labelledby="profile-builder-step-title">
+      {step === 1 && <section aria-labelledby="profile-builder-step-title" data-profile-scale-selection-step>
         <p className={styles.templateLabel}>{t.unifiedNote}</p>
         <h2 id="profile-builder-step-title">{t.topicTitle}</h2>
         <p className={styles.help}>{t.topicHelp}</p>
         <p className={styles.focusContext} data-profile-selected-focus>
           <strong>{t.focusContext}:</strong> {focuses.map(focus => t.focuses[focus][0]).join(" · ")}
         </p>
-        <div className={styles.areaGrid} data-profile-topic-options>
-          {visibleAreas.map(area => {
-            const axes = visibleScaleGroups.find(group => group.area === area)?.researchAxes || [];
-            return <button type="button" key={area} aria-pressed={areas.includes(area)}
-              disabled={!axes.length} className={styles.areaCard} onClick={() => toggleArea(area)}>
-              <span className={styles.selectDot}>{areas.includes(area) && <Check size={14} aria-hidden="true" />}</span>
-              <span><strong>{t.areas[area][0]}</strong>
-                <small>{axes.length
-                  ? axes.map(axis => profileResearchAxisLabel(axis.id, locale)).join(" · ")
-                  : extra.notMeasured}</small>
-              </span>
-            </button>;
-          })}
+        <div className={styles.researchGroupList} data-profile-topic-options data-profile-research-scale-options>
+          {visibleScaleGroups.map(group => <div key={group.area} className={styles.researchArea}
+              data-profile-scale-area={group.area}>
+            <h3>{t.areas[group.area][0]}</h3>
+            <div className={styles.researchChoices} role="group" aria-label={t.areas[group.area][0]}>
+              {group.researchAxes.map(axis =>
+                <button key={axis.id} type="button" className={styles.researchChoice}
+                  data-profile-research-choice={axis.id} aria-pressed={selectedResearchIds.includes(axis.id)}
+                  onClick={() => toggleResearchAxis(axis.id)}>
+                  <span className={styles.selectDot} aria-hidden="true">
+                    {selectedResearchIds.includes(axis.id) && <Check size={15} />}
+                  </span>
+                  <strong>{researchLabel(axis.id, locale)}</strong>
+                </button>)}
+            </div>
+          </div>)}
         </div>
+        <p className={styles.researchSelectedCount} role="status">
+          {selectedResearchIds.length} {t.selected}
+        </p>
+        {focuses.includes("goal") && <p className={styles.scaleSourceNote}>{t.goalScaleNote}</p>}
       </section>}
 
-      {step === 2 && <section aria-labelledby="profile-builder-step-title" data-profile-scales-step>
+      {step === 2 && <section aria-labelledby="profile-builder-step-title" data-profile-scales-step data-profile-topics-step>
         <h2 id="profile-builder-step-title">{t.scaleTitle}</h2>
         <p className={styles.help}>{t.scaleHelp}</p>
         <div className={styles.scaleOverview} role="status">
@@ -669,21 +753,16 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
                   visible.some(scale => scale.researchAxisId === axis.id)).map(axis =>
                   <div key={axis.id} className={styles.topicAxisGroup} data-profile-research-axis={axis.id}>
                     <div className={styles.topicAxisHeading}>
-                      <strong>{profileResearchAxisLabel(axis.id, locale)}</strong>
+                      <strong>{researchLabel(axis.id, locale)}</strong>
                       <small>{axis.scaleCount} {t.scaleSourceCount}</small>
                     </div>
                     {visible.filter(scale => scale.researchAxisId === axis.id)
                       .map(scale => <label key={scale.id} className={styles.topicScaleRow}
-                    data-profile-source-scale={scale.id}>
+                    data-profile-source-scale={scale.id} data-profile-topic-choice={scale.id}>
                   <input type="checkbox" checked={selectedScaleIds.includes(scale.id)}
                     onChange={() => toggleScale(scale.id)} />
                   <span className={styles.topicScaleText}>
-                    <strong>{scale.label}</strong>
-                    <small>{t.scaleSourceLabel}: {scale.testTitle}</small>
-                    <small>{scale.scaleQuestions
-                      ? scale.scaleQuestions + " " + t.scaleItemsLabel + " · "
-                      : t.scaleUnknown + " · "}{scale.questions ? scale.questions + " " + t.questions + " · " : ""}
-                      {scale.minutes ? "~" + scale.minutes + " " + t.minutes : ""}</small>
+                    <strong>{topicLabel(group.area, scale, locale)}</strong>
                   </span>
                 </label>)}
                   </div>)}
@@ -760,6 +839,10 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <div className={styles.extraProfileSelector} data-profile-extra-profile-filter>
             <strong>{extra.profile}</strong>
             <div className={styles.extraProfileChoices} role="group" aria-label={extra.profile}>
+              <button type="button" data-profile-extra-profile="selected" aria-pressed={extraProfile === null}
+                onClick={() => { setExtraProfile(null); setExtraScales([]); setSearch(""); setShowMore(false); }}>
+                {extra.allSelected}
+              </button>
               {(["wellbeing", "relationships", "work", "identity", "goal"] as const).map(key =>
                 <button type="button" key={key} data-profile-extra-profile={key}
                   aria-pressed={extraProfile === key}
@@ -808,7 +891,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
               </select>
             </label>
           </div>
-          <p className={styles.extraResultCount} role="status">{extraProfile ? extraMatches.length + " " + extra.results : extra.chooseFirst}</p>
+          <p className={styles.extraResultCount} role="status">{extraMatches.length + " " + extra.results}</p>
           {displayTests.length ? <div className={styles.testList}>
             {displayTests.map(test => <label key={test.key} className={styles.testRow}>
               <input type="checkbox" checked={false} disabled={selectedKeys.length >= 12}
@@ -889,7 +972,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           ? <button type="button" className={styles.primary} disabled={focuses.length === 0}
               onClick={goForward} data-profile-confirm-focus>{t.next}<ArrowRight size={17} /></button>
           : step === 1
-            ? <button type="button" className={styles.primary} disabled={activeAreas.length === 0}
+            ? <button type="button" className={styles.primary} disabled={selectedResearchIds.length === 0}
                 onClick={goForward}>{t.next}<ArrowRight size={17} /></button>
             : step === 2
               ? <button type="button" className={styles.primary} disabled={selectedScaleIds.length === 0}
