@@ -760,7 +760,7 @@ export function PersonalityProfilesBuilder({ locale, tests }: Props) {
           <div className={styles.extraProfileSelector} data-profile-extra-profile-filter>
             <strong>{extra.profile}</strong>
             <div className={styles.extraProfileChoices} role="group" aria-label={extra.profile}>
-              {(["wellbeing", "relationships", "work", "identity"] as const).map(key =>
+              {(["wellbeing", "relationships", "work", "identity", "goal"] as const).map(key =>
                 <button type="button" key={key} data-profile-extra-profile={key}
                   aria-pressed={extraProfile === key}
                   onClick={() => { setExtraProfile(key); setExtraScales([]); setSearch(""); setShowMore(false); }}>
