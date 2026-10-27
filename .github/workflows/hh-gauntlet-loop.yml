@@ -163,10 +163,27 @@ jobs:
           else
             echo "No scorecard produced: blocked before model runner startup."
           fi
+          if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            if node --input-type=module -e '
+              import { execFileSync } from "node:child_process";
+              import { checkEditScope, changedPathsFromPorcelain } from "./lib/benchmarking/hh-gauntlet-loop.mjs";
+              const status=execFileSync("git", ["status","--porcelain=v1","--untracked-files=all"], {encoding:"utf8"});
+              const scope=checkEditScope(changedPathsFromPorcelain(status));
+              console.log("Safe patch: "+scope.ok+"; "+scope.reason);
+              if (!scope.ok) process.exit(1);
+            '; then
+              git diff --no-ext-diff --no-color HEAD -- components/free-express-wizard.tsx components/free-express-wizard.module.css components/personal-express-enquiry.tsx tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs tests/free-express-mobile-consent-layout.test.mjs \
+                > "$RUNNER_TEMP/hh-gauntlet-evidence/safe-proposal.patch"
+              if [ "$(wc -c < "$RUNNER_TEMP/hh-gauntlet-evidence/safe-proposal.patch")" -gt 35000 ]; then
+                rm "$RUNNER_TEMP/hh-gauntlet-evidence/safe-proposal.patch"
+                echo "Proposal exceeded bounded safe diff; discarded."
+              fi
+            fi
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: hh-gauntlet-free-agent-scorecard
-          path: ${{ runner.temp }}/hh-gauntlet-evidence/scorecard.json
+          path: ${{ runner.temp }}/hh-gauntlet-evidence/
           retention-days: 7
           if-no-files-found: warn
