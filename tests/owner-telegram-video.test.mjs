@@ -102,6 +102,18 @@ test('serverless bundled FFmpeg path falls back to executable in traced node_mod
  }finally{rmSync(temp,{force:true,recursive:true})}
 })
 
+test('Vercel npm installation permits only the pinned ffmpeg binary downloader',()=>{
+ const config=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8'))
+ assert.equal(config.dependencies['ffmpeg-static'],'5.3.0')
+ assert.equal(config.allowScripts['ffmpeg-static@5.3.0'],true)
+ assert.equal(Object.keys(config.allowScripts).length,1)
+ assert.equal(config.allowScripts['ffmpeg-static'],undefined)
+ assert.equal(config.allowScripts['unrs-resolver@1.11.1'],undefined)
+ const next=readFileSync(new URL('../next.config.ts',import.meta.url),'utf8')
+ assert.match(next,/\/api\/app\/notification-channels\/telegram\/webhook/)
+ assert.match(next,/node_modules\/ffmpeg-static\/ffmpeg/)
+})
+
 test('15 photographs and 15 audio pieces are allowed and compose in their real mixed order',()=>{
  const interleaved=Array.from({length:15},(_,i)=>[
    part('photo',i*2),part('audio',i*2+1,{duration:2})
