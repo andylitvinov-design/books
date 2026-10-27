@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { SERVICE_PRODUCTS } from "../lib/commerce/catalog.js";
 import { safePublicWhatsAppPath } from "../lib/whatsapp-enquiry.js";
+import { safeEnquiryReturnPath } from "../lib/app/enquiry-auth-redirect.js";
 import { normalizePublicServiceEnquiry } from "../lib/practitioners/public-service-enquiry-input.mjs";
 
 const source = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -80,6 +81,8 @@ test("stale payment and order receipts cannot survive a basket modification", ()
 test("order contact request is catalog-scoped and consented, not a paid invoice", () => {
   for (const locale of ["en", "ru", "es"]) {
     assert.equal(safePublicWhatsAppPath("/" + locale + "/cart"), "/" + locale + "/cart");
+    assert.equal(safeEnquiryReturnPath("/" + locale + "/cart", locale), "/" + locale + "/cart",
+      "Google must return to the same public cart after consent");
     assert.equal(safePublicWhatsAppPath("/" + locale + "/cart?access=private"), "/" + locale + "/cart");
     assert.equal(safePublicWhatsAppPath("/" + locale + "/app"), "");
   }
