@@ -19,7 +19,7 @@ Two separate confidence levels:
 
 ## Policy (before any AI)
 
-- **Free allowlist only:** `opencode/glm-5.3-flash-free` (default) or `opencode/deepseek-v4.1-flash-free`. Model availability must be confirmed by the local OpenCode catalog (`opencode models opencode`) and current OpenCode Console pricing. Model ID mismatch stops; it never falls back to a paid model.
+- **Free allowlist only:** `opencode/glm-5.3-flash-free` (default) or `opencode/deepseek-v4.1-flash-free`. Model availability must be confirmed by the local OpenCode catalog (`opencode models --standalone`) and current OpenCode Console pricing. Model ID mismatch stops; it never falls back to a paid model.
 - Step 5 Preview may be evaluated separately **only after its actual price, opt-in and spending limits have been approved**; it is deliberately not selectable here.
 - `--check` is the default and runs **offline**. `--run` must be explicitly requested. Production Vercel and ordinary CI remain blocked. A single **PR-only, zero-credential** GitHub Actions trial is permitted only with `HH_GAUNTLET_CI_SYNTHETIC=isolated-20261027`, the official exact repository, a disposable `codex/hh-gauntlet-*` branch, and an isolated matching HOME/XDG under `RUNNER_TEMP`. This is not enabled on production pushes; future agent PR experiments require their own deliberate gate.
 - Run only in an initially clean, disposable `codex/hh-gauntlet-*` worktree of `andylitvinov-design/books`. No `.env*`, `.vercel` or production credentials in that worktree.
@@ -39,7 +39,7 @@ npm ci --include=dev
 node scripts/benchmarking/hh-gauntlet-loop.mjs --check
 
 # Only after OpenCode is installed and its account's selected model is visibly free:
-opencode models opencode
+opencode models --standalone
 node scripts/benchmarking/hh-gauntlet-loop.mjs --run --model opencode/glm-5.3-flash-free --rounds 2
 ```
 
@@ -52,6 +52,8 @@ The independent critic returns a machine-validated scorecard for six predefined 
 The real Chromium/WebKit, mobile and PG17 RLS systems already exist in `.github/workflows/hh-free-express-wizard-v2.yml` and `scripts/verify-free-express-wizard-v2.mjs`. They remain the source of truth for their respective layers. This Gauntlet adds independent AI review and **reuses** those tests; it does not clone them or produce artificial customer leads.
 
 ## OpenCode V2 agent security gate
+
+OpenCode v2 CLI lists available free models using `opencode models --standalone`; the obsolete `opencode models opencode` positional form returns an error. The run preflight checks that the selected full free model ID is present before invoking an agent.
 
 OpenCode CLI v2 does **not** use the V1 Markdown `permission:` map or `bash:` and `task:` action names; in V2 the correct form is an ordered `permissions:` list with `action`, `resource`, `effect`, including `shell` and `subagent`. Both agent files were migrated from legacy V1 to V2 in [PR #2247](https://github.com/andylitvinov-design/books/pull/2247), with an explicit global deny rule followed only by local source read/glob/grep and six exact Builder UI/test edit grants. Critic has zero edit grants. This is independently supported by the official [OpenCode v2 permissions guide](https://opencode.ai/v2/docs/permissions) and [v2 agent guide](https://opencode.ai/v2/docs/agents).
 
