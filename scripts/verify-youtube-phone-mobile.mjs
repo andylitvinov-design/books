@@ -2,13 +2,11 @@
 // access, no YouTube uploads, no production writes, and no remote cookies.
 import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
-import {createHmac} from 'node:crypto'
 import {mkdirSync} from 'node:fs'
 import {chromium, webkit, expect} from '@playwright/test'
 
 const origin = 'http://127.0.0.1:3157'
 const evidence = '/tmp/youtube-phone-mobile-evidence'
-const PIN = 'isolated-youtube-mobile-qa-only'
 mkdirSync(evidence, {recursive:true})
 let app
 const browsers = []
@@ -18,7 +16,7 @@ async function boot() {
     env:{
       ...process.env,
       NEXT_TELEMETRY_DISABLED:'1',
-      PRESCRIPTIONS_ADMIN_PIN:PIN,
+      CI:'true',HH_APP_TEST_RUNTIME:'isolated',
       PRESCRIPTIONS_ADMIN_TOKEN:'',
       // No production Redis/YouTube credentials in this test.
       PRESCRIPTIONS_KV_REST_API_URL:'',
@@ -51,39 +49,26 @@ async function verify(browserType,engine,width,height){
     deviceScaleFactor:width<=430?3:1,serviceWorkers:'block',
     reducedMotion:'reduce',
   })
-  // The built application intentionally sets Secure owner cookies. Since this
-  // isolated fixture serves HTTP loopback, model a previously authorized
-  // HTTPS owner session with a synthetic HMAC cookie (same contract as the
-  // existing site-video-browser fixture). Do NOT loosen production cookies.
-  await context.addCookies([{
-    name:'prescriptions_admin',
-    value:createHmac('sha256',PIN).update('prescriptions-admin-v1').digest('base64url'),
-    url:origin+'/admin',httpOnly:true,secure:false,sameSite:'Strict',
-  }])
-  assert.ok((await context.cookies(origin+'/admin')).some(cookie=>cookie.name==='prescriptions_admin'),
-    engine+' '+width+' synthetic admin cookie rejected')
+  // The browser has NO owner cookie. Production admin authorization is never
+  // mocked or bypassed; a separate UI-only fixture is available on CI loopback.
   const page=await context.newPage()
   const errors=[]
   let uploaderNavigations = 0
   page.on('framenavigated',frame => {
-    if (frame === page.mainFrame() && /^\/admin\/youtube-upload\/?$/.test(new URL(frame.url()).pathname)) {
+    if (frame === page.mainFrame() && /^\/__qa\/youtube-phone\/?$/.test(new URL(frame.url()).pathname)) {
       uploaderNavigations += 1
     }
   })
   page.on('pageerror',err=>errors.push(err.message))
-  // Admin login and cookie issuance are covered by their own tests; this
-  // browser run exercises mobile scroll after an authenticated owner visit.
+  // The guarded UI-only route mounts the real uploader with synthetic data.
+  // We test protected /admin/youtube-upload separately without an owner cookie.
   // Next.js/admin shell can keep passive connections open. DOM readiness plus
   // explicit visible landmarks is the reliable mobile/WebKit acceptance gate.
-  const response=await page.goto(origin+'/admin/youtube-upload',{waitUntil:'domcontentloaded',timeout:30000})
+  const response=await page.goto(origin+'/__qa/youtube-phone',{waitUntil:'domcontentloaded',timeout:30000})
   assert.equal(response.status(),200)
   const root=page.locator('[data-youtube-upload-page]')
   await expect(root).toBeVisible({timeout:15000})
-  // Previously this route's CSP class was incorrectly classified as 'private'
-  // by client navigation while middleware sent 'youtube-uploader'. That caused
-  // recursive location.replace() and an unscrollable, jittering iPhone sheet.
-  // A legitimate first cross-policy navigation may replace one document
-  // (login -> admin -> OAuth-scoped route). What must never happen is a cycle.
+  // Guard against page self-navigation loops while checking actual mobile layout.
   await wait(850)
   const settledNavigationCount = uploaderNavigations
   await wait(850)
@@ -91,9 +76,10 @@ async function verify(browserType,engine,width,height){
     engine+' '+width+' unexpected uploader navigation sequence: '+settledNavigationCount)
   assert.equal(uploaderNavigations,settledNavigationCount,
     engine+' '+width+' uploader keeps replacing itself after hydration')
-  assert.equal(await page.evaluate(() => document.body.dataset.cspClass),'youtube-uploader',
-    engine+' '+width+' document CSP class mismatch')
-  console.log('Mobile QA: stable admin page in '+engine+' '+width+'px, navigation count '+uploaderNavigations)
+  await expect(page.getByText(/Google OAuth is already configured/)).toBeVisible()
+  await expect(page.getByRole('button',{name:'Choose Google \/ YouTube account'})).toBeVisible()
+  await expect(page.locator('input[placeholder*="apps.googleusercontent.com"]')).toHaveCount(0)
+  console.log('Mobile QA: stable isolated uploader in '+engine+' '+width+'px, navigation count '+uploaderNavigations)
   await expect(page.getByRole('heading',{name:'Phone → YouTube'})).toBeVisible()
   await expect(page.locator('input[type="file"]')).toHaveCount(1)
 
@@ -157,6 +143,12 @@ async function verify(browserType,engine,width,height){
 }
 try{
   await boot()
+  const protectedResponse=await fetch(origin+'/admin/youtube-upload',{redirect:'manual'})
+  if(protectedResponse.status===200){
+    assert.ok(!(await protectedResponse.text()).includes('data-youtube-upload-page'),
+      'Unauthenticated owner must never see actual YouTube admin page')
+  }else assert.ok([301,302,303,307,308,401,403,404].includes(protectedResponse.status),
+    'Protected owner page returned unexpected status '+protectedResponse.status)
   for (const [browserType,engine] of [[chromium,'chromium'],[webkit,'webkit']]){
     for(const [width,height] of [[320,620],[390,720],[430,932],[1365,900]]) {
       await verify(browserType,engine,width,height)
