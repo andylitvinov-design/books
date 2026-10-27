@@ -66,7 +66,8 @@ test("Talisman draft keeps only controlled theme and master identity across OAut
   assert.equal(readTalismanRequestDraft(bad, draft.serviceId, now), null);
   const workspace = read("components/app/app-workspace.jsx");
   assert.match(workspace, /readTalismanRequestDraft\(window\.sessionStorage, service\.id\)/);
-  assert.match(workspace, /talismanRequest: talismanDraft \? \{ version:1, goal:talismanDraft\.goal \}/);
+  assert.match(workspace, /talismanRequest: talismanDraft \? \{ version:1, goal:talismanDraft\.goal,/);
+  assert.match(workspace, /catalogId:talismanDraft\.catalogId/);
   assert.match(workspace, /TALISMAN_REQUEST_DRAFT_KEY/);
   assert.match(workspace, /Via Holistic House portal/);
 });
