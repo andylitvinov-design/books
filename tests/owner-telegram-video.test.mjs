@@ -1,10 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readFileSync} from 'node:fs'
+import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,chmodSync,rmSync} from 'node:fs'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {parseOwnerVideoUpdate,safeVideoParts,ownerVideoStartMessage,ownerVideoPreviewButtons,
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
-import {photoTimeline,videoRenderArguments} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {photoTimeline,videoRenderArguments,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
 import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
@@ -85,6 +87,21 @@ test('strict ordered safe source limits and anti-duplication',()=>{
  assert.equal(safeVideoParts([part('photo',0,{mime:'audio/mpeg'})]),null)
  assert.equal(safeVideoParts([part('photo',0,{bytes:6e6})]),null)
 })
+
+test('serverless bundled FFmpeg path falls back to executable in traced node_modules only',async()=>{
+ const temp=mkdtempSync(join(tmpdir(),'hh-video-exec-'))
+ try{
+   const folder=join(temp,'node_modules','ffmpeg-static')
+   mkdirSync(folder,{recursive:true})
+   const executable=join(folder,'ffmpeg')
+   writeFileSync(executable,'#!/bin/sh\\nexit 0\\n',{mode:0o755})
+   assert.equal(await resolveOwnerVideoFfmpegPath('/invalid/chunks/ffmpeg',temp),executable)
+   assert.equal(await resolveOwnerVideoFfmpegPath(executable,temp),executable)
+   chmodSync(executable,0o644)
+   await assert.rejects(()=>resolveOwnerVideoFfmpegPath('/invalid/chunks/ffmpeg',temp),/VIDEO_RENDERER_UNAVAILABLE/)
+ }finally{rmSync(temp,{force:true,recursive:true})}
+})
+
 test('15 photographs and 15 audio pieces are allowed and compose in their real mixed order',()=>{
  const interleaved=Array.from({length:15},(_,i)=>[
    part('photo',i*2),part('audio',i*2+1,{duration:2})

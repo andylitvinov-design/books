@@ -3,9 +3,11 @@ import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises'
 import {spawnSync} from 'node:child_process'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {renderOwnerTelegramVideo} from '../lib/practitioners/owner-telegram-video-render.mjs'
+import {renderOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 const binary=process.env.HH_TEST_FFMPEG_PATH||(await import('ffmpeg-static')).default
 if(!binary)throw Error('FFMPEG_STATIC_BINARY_NOT_INSTALLED')
+const executable=await resolveOwnerVideoFfmpegPath('/vercel/bundled/chunks/ffmpeg')
+if(!executable)throw Error('FFMPEG_PACKAGED_BINARY_UNRESOLVED')
 const dir=await mkdtemp(join(tmpdir(),'hh-video-ci-'))
 function run(args){
  const result=spawnSync(binary,['-hide_banner','-loglevel','error','-y',...args],{
@@ -34,7 +36,7 @@ try{
   duration:[1,4].includes(i)?2:0,updateId:100+i
  }))
  const mp4=await renderOwnerTelegramVideo(parts,{
-  executable:binary,fetchPart:p=>source[p.updateId-100]})
+  executable,fetchPart:p=>source[p.updateId-100]})
  if(mp4.length<1024||mp4.toString('ascii',4,8)!=='ftyp')throw Error('INVALID_MP4')
  const target=join(dir,'output.mp4')
  await writeFile(target,mp4)
@@ -73,7 +75,7 @@ try{
    }
  }
  const fullMp4=await renderOwnerTelegramVideo(fullParts,{
-   executable:binary,fetchPart:p=>fullSources[p.updateId-500]})
+   executable,fetchPart:p=>fullSources[p.updateId-500]})
  if(fullMp4.length<1024||fullMp4.toString('ascii',4,8)!=='ftyp')
    throw Error('VIDEO_15X15_NOT_MP4')
  const fullTarget=join(dir,'full-15-15.mp4')
