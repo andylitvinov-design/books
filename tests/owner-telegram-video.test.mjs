@@ -584,3 +584,15 @@ test('dual-target persistence keeps verified Google PKCE, private RLS and immuta
  assert.match(cb,/verifyYoutubeTargetOwner\(token\.access_token,sealed\.target\)/)
  assert.match(cb,/saveOwnerVideoYoutubeConsent\(config,token\.refresh_token,channel,sealed\.target\)/)
 })
+
+
+test('pre-existing private MP4 can choose RU/EN once without re-render or upload',()=>{
+ const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
+ assert.match(service,/row\.state==='preview'&&row\.youtube_target!==null/)
+ assert.match(service,/state:row\.state==='preview'\?'selected_saved':'selected'/)
+ assert.match(service,/result\.state==='selected_saved'/)
+ assert.match(service,/background:\(\)=>retrySavedPreview\(config,owner,fetcher\)/)
+ assert.match(service,/ownerVideoTargetKeyboard\(row\?\.job_id\)/)
+ assert.match(service,/await sendOwnerPreview\(owner,bytes,jobId,row\.youtube_target,fetcher\)/)
+ assert.match(service,/No.*YouTube|На YouTube ничего не отправлено/)
+})
