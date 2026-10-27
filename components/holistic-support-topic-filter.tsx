@@ -185,8 +185,7 @@ export function HolisticSupportTopicFilter({ locale }: { locale: PublicLocale })
                 <p>{selected.cards[id].body}</p>
                 <Link href={id === "meditation" ? "#meditation-practices" : "/" + locale +
                   (id === "talisman" ? "/talismans" : "/support-options?topic=" + activeTopic)}
-                  prefetch={false} className={styles.action}
-                  {...(id !== "meditation" ? { "data-holistic-order-trigger": id } : {})}>
+                  prefetch={false} className={styles.action} data-holistic-order-trigger={id}>
                   {t.actions[id]}<ArrowRight size={17} aria-hidden="true" />
                 </Link>
               </div>
