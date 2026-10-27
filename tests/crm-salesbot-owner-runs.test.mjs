@@ -32,7 +32,7 @@ test('CRM run reads immutable approved version, locks exact inbound lead and ide
   assert.match(db,/safeSimulation\(flow\.graph,next\)/)
   assert.match(db,/REVISION_CONFLICT/)
   assert.match(db,/torontoBusinessDate\(\)/)
-  assert.match(db,/this\.createFollowup/)
+  assert.match(db,/ctx\.createFollowup/)
   assert.match(db,/current\)return current\.id/)
   assert.match(db,/30\)throw new AppError\('SALESBOT_RUN_LIMIT'/)
   assert.match(route,/await auth\.verified\(\)/)
