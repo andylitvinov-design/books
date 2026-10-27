@@ -12,6 +12,7 @@ import { createPractitionerCourseRepository } from "@/lib/practitioners/course-r
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { getPublishedSiteVideos } from "@/lib/site-videos/public";
 import { siteVideoWatchUrl } from "@/lib/site-videos/model";
+import { existingYouTubeMirrors } from "@/lib/site-videos/mirrors";
 import { getServiceVideoMedia, englishPsychotherapyLandingVideo } from "@/data/service-video-library";
 import type { PublicPractitioner, PublicService } from "@/lib/practitioners/public-types";
 import { PractitionerServicesGrid } from "@/components/master-network-explorer";
@@ -134,7 +135,11 @@ export default async function MasterProfile({ params }: PageProps) {
         title: video.title,
         description: video.description || "",
         locale: video.language,
-        url: siteVideoWatchUrl(video),
+        // Collapse the already-verified YouTube mirror onto its canonical
+        // watch URL, or the same recording appears twice (HeyGen + YouTube).
+        url: video.heygenId && existingYouTubeMirrors[video.heygenId]
+          ? "https://www.youtube.com/watch?v=" + existingYouTubeMirrors[video.heygenId]
+          : siteVideoWatchUrl(video),
       }))
       .filter(video => Boolean(video.url));
   }
