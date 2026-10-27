@@ -78,6 +78,8 @@ test('published master video gallery reuses approved website videos, author link
   assert.match(page,/getServiceVideoMedia\(topic, language\)\.video/)
   assert.match(page,/href="#practitioner-videos"/)
   assert.match(gallery,/app\.heygen\.com/)
+  assert.match(gallery,/entries\.slice\(0,6\)/)
+  assert.match(gallery,/setShowAll\(true\)/)
   assert.match(gallery,/youtube-nocookie\.com/)
   assert.match(editor,/data-video-master-selector/)
   assert.match(editor,/masters\.map\(item/)
