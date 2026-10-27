@@ -76,6 +76,7 @@ test('published master video gallery reuses approved website videos, author link
   assert.match(page,/siteVideoWatchUrl\(video\)/)
   assert.match(page,/profile\.videoMaterials/)
   assert.match(page,/getServiceVideoMedia\(topic, language\)\.video/)
+  assert.match(page,/englishPsychotherapyLandingVideo\.video/)
   assert.match(page,/href="#practitioner-videos"/)
   assert.match(gallery,/app\.heygen\.com/)
   assert.match(gallery,/entries\.slice\(0,6\)/)
