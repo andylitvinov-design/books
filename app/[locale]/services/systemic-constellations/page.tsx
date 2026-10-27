@@ -24,12 +24,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     openGraph: {
       type: "website",
+      siteName: "Holistic House",
       locale: locale === "ru" ? "ru_RU" : locale === "es" ? "es_ES" : "en_CA",
       title: t.title + " — Holistic House",
       description: t.description,
       url: `/${locale}/services/systemic-constellations`,
+      // Explicitly retain the already-live first-party social portrait: a
+      // nested page openGraph object replaces, rather than extends, the parent.
+      images: [{ url: "/images/holistic-house/andy-about.png", alt: "Andrey Litvinov — Holistic House" }],
     },
-    twitter: { card: "summary", title: t.title + " — Holistic House", description: t.description },
+    twitter: {
+      card: "summary_large_image",
+      title: t.title + " — Holistic House",
+      description: t.description,
+      images: ["/images/holistic-house/andy-about.png"],
+    },
   };
 }
 
