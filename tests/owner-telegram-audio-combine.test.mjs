@@ -52,6 +52,9 @@ function callback(data){
     from:{id:555555,is_bot:false}}}
 }
 test('owner-only commands and legitimate private callback buttons',()=>{
+  assert.equal(parseOwnerAudioCommand(message('/start combine'),NOW)?.action,'combine')
+  assert.equal(parseOwnerAudioCommand(message('/start@Andydotbot combine'),NOW)?.action,'combine')
+  assert.equal(parseOwnerAudioCommand(message('/start invalid'),NOW),null)
   for(const command of ['combine','done','cancel']){
     assert.equal(parseOwnerAudioCommand(message('/'+command),NOW)?.action,command)
     assert.equal(parseOwnerAudioCommand(message('/'+command+'@Andydotbot'),NOW)?.action,command)
@@ -62,7 +65,7 @@ test('owner-only commands and legitimate private callback buttons',()=>{
   assert.equal(parseOwnerAudioCommand(bad,NOW),null)
   const fake=callback('hh-audio:done');fake.callback_query.message.from.username='NotDot'
   assert.equal(parseOwnerAudioCallback(fake),null)
-  assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>x.callback_data==='hh-audio:combine'))
+  assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>x.url==='https://t.me/Andydotbot?start=combine'))
   assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>x.callback_data==='hh-audio:folders'))
 })
 function pages(bytes){
