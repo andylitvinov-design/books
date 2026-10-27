@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import { publicEventTicketCheckout } from "../lib/practitioners/event-contracts.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const source = read("components/events-discovery.tsx");
@@ -41,6 +42,7 @@ function harness(locale) {
       if (name === "lucide-react") return new Proxy({}, { get: () => "svg" });
       if (name === "./events-discovery.module.css") return styles;
       if (name === "@/components/discovery-section-tabs") return { DiscoverySectionTabs: "tabs" };
+      if (name === "@/lib/practitioners/event-contracts") return { publicEventTicketCheckout };
       throw new Error("Unexpected import " + name);
     },
     Date, Intl,
@@ -57,7 +59,8 @@ function harness(locale) {
     registrationHref: "https://example.org/register",
   };
   const events = [
-    { ...base, id: "upcoming", startsAt: "2099-10-25T19:00:00-04:00", posterUrl: "/example-event.jpg" },
+    { ...base, id: "upcoming", startsAt: "2099-10-25T19:00:00-04:00", posterUrl: "/example-event.jpg",
+      priceLabel:"40 CAD",ticketPaymentHref:"https://square.link/u/HEARTCIRCLE40",ticketCurrency:"CAD",ticketAmountMinor:4000 },
     { ...base, id: "past", startsAt: "2020-01-20T19:00:00-05:00", posterUrl: "/past-event.jpg" },
   ];
   return {
@@ -122,6 +125,7 @@ for (const locale of ["en", "ru", "es"]) {
       "/academy/reiki-yggdrasil/source/temple-studies.png",
     );
     assert.ok(nodes(card).some(node => node.type === "a" && node.props.href === "https://example.org/register"));
+    assert.ok(nodes(card).some(node => node.type === "a" && node.props.href === "https://square.link/u/HEARTCIRCLE40" && node.props["data-event-ticket-checkout"] === "upcoming"));
     const button = nodes(card).find(node => node.type === "button" && node.props["aria-controls"]);
     assert.equal(button.props["aria-expanded"], false);
     assert.equal(nodes(card).find(node => node.props.id === button.props["aria-controls"]).props.hidden, true);
