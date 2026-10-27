@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {ChevronRight,Headphones,LockKeyhole,Pause,Play,RefreshCw} from 'lucide-react'
+import {fetchPracticeTelegramAudio} from '@/lib/practitioners/practice-telegram-auth-fetch.mjs'
 import {practiceTelegramRecentAudio} from '@/lib/practitioners/practice-telegram-recent-audio.mjs'
 import styles from './practice-telegram-audio.module.css'
 
@@ -10,17 +11,17 @@ const COPY={
     loading:'Loading recent recordings…',empty:'No Telegram recordings yet. Forward an audio to Dot first.',
     failed:'Could not load Telegram audio. Check your sign-in and retry.',
     play:'Play',pause:'Pause',playFailed:'Could not play this recording. Try again.',
-    private:'Private · only you can listen',audio:'Audio from Telegram'},
+    private:'Private · only you can listen',audio:'Audio from Telegram',dot:'Send audio via Dot'},
   ru:{title:'Последние аудио из Telegram',all:'Все записи',refresh:'Обновить аудио из Telegram',
     loading:'Загружаем последние записи…',empty:'Из Telegram пока нет записей. Перешлите аудио в Dot.',
     failed:'Не удалось загрузить аудио Telegram. Проверьте вход и повторите попытку.',
     play:'Воспроизвести',pause:'Пауза',playFailed:'Не удалось воспроизвести запись. Попробуйте ещё раз.',
-    private:'Приватно · доступно только вам',audio:'Аудио из Telegram'},
+    private:'Приватно · доступно только вам',audio:'Аудио из Telegram',dot:'Добавить через Dot'},
   es:{title:'Audios recientes de Telegram',all:'Todas las grabaciones',refresh:'Actualizar audios de Telegram',
     loading:'Cargando grabaciones recientes…',empty:'Aún no hay audios de Telegram. Reenvía uno a Dot.',
     failed:'No se pudieron cargar los audios. Comprueba tu sesión e inténtalo de nuevo.',
     play:'Reproducir',pause:'Pausar',playFailed:'No se pudo reproducir. Inténtalo de nuevo.',
-    private:'Privado · solo tú puedes escucharlo',audio:'Audio de Telegram'}
+    private:'Privado · solo tú puedes escucharlo',audio:'Audio de Telegram',dot:'Añadir desde Dot'}
 }
 const timeLabel=seconds=>{
   const n=Math.max(0,Math.floor(Number(seconds)||0))
@@ -49,12 +50,8 @@ export default function PracticeTelegramAudio({locale='en',query=''}) {
     pending.current=controller
     setBusy(true);setFailed(false)
     try{
-      const response=await fetch('/api/admin/materials/telegram',{
-        credentials:'same-origin',cache:'no-store',signal:controller.signal})
-      if(!response.ok)throw Error('OWNER_AUDIO_UNAVAILABLE')
-      const data=await response.json()
-      if(!Array.isArray(data.files))throw Error('OWNER_AUDIO_INVALID_LIST')
-      if(!controller.signal.aborted)setFiles(data.files)
+      const files=await fetchPracticeTelegramAudio(fetch,controller.signal)
+      if(!controller.signal.aborted)setFiles(files)
     }catch{
       if(!controller.signal.aborted)setFailed(true)
     }finally{
@@ -139,6 +136,10 @@ export default function PracticeTelegramAudio({locale='en',query=''}) {
         </article>
       })}
     </div>}
-    <p className={styles.privacy}><LockKeyhole size={13} aria-hidden="true"/>{t.private}</p>
+    <div className={styles.bottom}>
+      <p className={styles.privacy}><LockKeyhole size={13} aria-hidden="true"/>{t.private}</p>
+      <a href="https://t.me/Andydotbot" target="_blank" rel="noopener noreferrer"
+        className={styles.dotLink} data-practice-telegram-dot>{t.dot}</a>
+    </div>
   </section>
 }
