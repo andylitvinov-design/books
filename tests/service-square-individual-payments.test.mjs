@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { SERVICE_PRODUCTS } from '../lib/commerce/catalog.js'
 import {
-  buildSquarePaymentForServices, configuredSquarePaymentLinks, configuredStandaloneSquareSessionCad50,
+  buildSquarePaymentForServices, configuredSquarePaymentLinks, configuredStandaloneSquareSessionCad40, configuredStandaloneSquareSessionCad50,
   formatSquareCadAmount, normalizeSquarePaymentLink,
 } from '../lib/commerce/square-payment-links.js'
 
@@ -124,4 +124,41 @@ test('standalone Square CAD 50 session link remains separate from EUR cart and m
   assert.match(page, /No equivale a la consulta de €50/)
   assert.match(page, /No automatic booking or payment verification/)
   assert.doesNotMatch(page, /data-square-cad50-session-paid|window\.open|embedded-checkout-modal/)
+})
+
+test('standalone Square CAD 40 is a verified merchant payment link, not a EUR cart SKU', () => {
+  const link = configuredStandaloneSquareSessionCad40({ VERCEL_ENV: 'production' })
+  assert.deepEqual(link, {
+    url: 'https://square.link/u/tQheRKN2',
+    amountMinor: 4000,
+    currency: 'CAD',
+  })
+  assert.ok(Object.isFrozen(link))
+  assert.equal(normalizeSquarePaymentLink(link.url), link.url)
+  assert.notEqual(link.url, configuredStandaloneSquareSessionCad50({ VERCEL_ENV: 'production' }).url)
+  for (const VERCEL_ENV of ['preview', 'development']) {
+    assert.equal(configuredStandaloneSquareSessionCad40({ VERCEL_ENV }), null)
+  }
+  assert.equal(configuredStandaloneSquareSessionCad40({
+    VERCEL_ENV: 'production', HH_SQUARE_CAD_40_SESSION_DISABLED: 'true',
+  }), null)
+  assert.deepEqual(configuredStandaloneSquareSessionCad40({
+    VERCEL_ENV: 'production', HH_SQUARE_CAD_50_SESSION_DISABLED: 'true',
+  }), link)
+  assert.match(formatSquareCadAmount(link.amountMinor, 'en'), /40/)
+  assert.equal(buildSquarePaymentForServices([ids[0]], {}), null)
+  assert.equal(buildSquarePaymentForServices([ids[1]], {}), null)
+
+  const page = read('app/[locale]/payments/page.tsx')
+  assert.match(page, /configuredStandaloneSquareSessionCad40/)
+  assert.match(page, /data-square-cad40-session-payment/)
+  assert.match(page, /data-square-cad40-session-checkout/)
+  assert.match(page, /data-square-cad40-session-receipt/)
+  assert.match(page, /standaloneSquareSession40\.url/)
+  assert.match(page, /referrerPolicy="no-referrer"/)
+  assert.match(page, /Only use this CA\$40 link if Andrey/)
+  assert.match(page, /Используйте ссылку CA\$40 только если Андрей/)
+  assert.match(page, /Usa el enlace CA\$40 solo si Andrey/)
+  assert.match(page, /No automatic booking or payment verification/)
+  assert.doesNotMatch(page, /data-square-cad40-session-paid|window\.open|embedded-checkout-modal/)
 })
