@@ -324,6 +324,17 @@ try {
         await expect(page.locator('.site-video-player').filter({ hasText: title })
           .locator('.site-video-master-link')).toHaveAttribute(
             'href', '/' + locale + '/masters/andy-litvinov#practitioner-videos')
+        if (locale === 'en' && slot.id === 'home-intro') {
+          // Follow the same published snapshot through its verified author
+          // to the real master gallery. Long catalogues may start collapsed.
+          await navigate('/en/masters/andy-litvinov')
+          const gallery = page.locator('#practitioner-videos')
+          await expect(gallery).toBeVisible()
+          const showAll = gallery.getByRole('button', { name: /Show all videos/ })
+          if (await showAll.count()) await showAll.click()
+          await expect(gallery.getByText(title, { exact: true })).toBeVisible()
+          pass('Real approved master profile displays the newly published site video')
+        }
       }
       pass(`All ${publicSlots.length} ${locale.toUpperCase()} public placements publish via real server actions, RLS PostgreSQL and isolated Redis`)
     }
