@@ -37,6 +37,7 @@ test('owner tabs are linked, accessible and URL-backed without unmounting chat s
   assert.match(source,/url.searchParams.set\('tab','requests'\)/)
   assert.match(source,/url.searchParams.delete\('tab'\)/)
   assert.match(source,/setOpenDetail\(false\)/)
+  assert.match(source,/\},\[openDetail\]\) \/\/ Tabs collapse/)
   assert.doesNotMatch(source,/switchTab=.*setSelectedKey\(''\)/s)
   for(const term of ["chats:'Inbox'","requestsTab:'Client requests'","chats:'Входящие'","requestsTab:'Заявки'","chats:'Recibidos'","requestsTab:'Solicitudes'"])
     assert.ok(source.includes(term),term)
