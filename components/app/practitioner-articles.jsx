@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {BookOpen,FolderPlus,Folder,Search,PenLine,Trash2,Eye,ChevronDown} from 'lucide-react'
+import PractitionerWallComposer from './practitioner-wall-composer'
 import styles from './practitioner-articles.module.css'
 import {articleBlocks,inlineArticleSegments} from '@/lib/practitioners/article-format'
 
@@ -98,6 +99,7 @@ export default function PractitionerArticles({locale,services=[]}){
   archive:'Archivar',confirmArchive:'¿Archivar este artículo?',opened:'Abrir artículo publicado'
  }: {...base,folderFilters:ru?'Папки, поиск и фильтры':'Folders, search & filters',retry:ru?'Повторить':'Retry',loading:ru?'Загружаем статьи…':'Loading articles…'}
  const [items,setItems]=useState([]),[folders,setFolders]=useState([]),[selectedFolder,setSelectedFolder]=useState('all')
+ const [editingWallPost,setEditingWallPost]=useState(null)
  const [query,setQuery]=useState(''),[limit,setLimit]=useState(2),[statusFilter,setStatusFilter]=useState('all')
  const [editing,setEditing]=useState(null),[editorOpen,setEditorOpen]=useState(false)
  const [draft,setDraft]=useState(()=>initial(locale)),[folderId,setFolderId]=useState('')
@@ -141,6 +143,8 @@ export default function PractitionerArticles({locale,services=[]}){
  },[hasUnsaved])
  function choose(item){
   if(busy||operationRef.current||(hasUnsaved&&!window.confirm(t.discard)))return
+  if(item?.draft?.kind==='post'){setEditingWallPost(item);setEditorOpen(false);setError('');setNotice('');return}
+  setEditingWallPost(null)
   setEditing(item||null)
   setDraft(item?{...initial(item.draft?.locale||locale),...item.draft}:initial(locale))
   setTagInput((item?.draft?.tags||[]).join('\n'))
@@ -244,8 +248,9 @@ export default function PractitionerArticles({locale,services=[]}){
   })
  },[items,query,selectedFolder,statusFilter])
  const selected=folders.find(x=>x.id===selectedFolder)
- const complete=draft.title.trim()&&draft.excerpt.trim().length>=30&&draft.body.trim().length>=200
+ const complete=draft.kind==='post'?(Boolean(draft.title.trim())&&Boolean(draft.body.trim()||draft.media?.length)):Boolean(draft.title.trim()&&draft.excerpt.trim().length>=30&&draft.body.trim().length>=200)
  return <div className={styles.shell}>
+  <PractitionerWallComposer locale={locale} editing={editingWallPost} onCancelEdit={()=>setEditingWallPost(null)} onSaved={async()=>{setEditingWallPost(null);await reload()}}/>
   <div className={styles.top} data-material-primary-action="articles">
    <button type="button" className={styles.primary} disabled={busy} onClick={()=>choose(null)}><PenLine size={18} aria-hidden="true"/> {t.newArticle}</button>
    <span className={styles.compactSummary}>{t.heading} · {items.filter(x=>x.status!=='archived').length}</span>
