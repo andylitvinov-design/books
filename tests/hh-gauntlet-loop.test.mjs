@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import {
   FREE_MODELS, SAFE_EDIT_FILES, REQUIRED_CRITERIA, CONTRACT_TESTS,
   parseGauntletArgs, changedPathsFromPorcelain, checkEditScope, parseCriticVerdict,
+  allowsSyntheticActionsRun,
 } from '../lib/benchmarking/hh-gauntlet-loop.mjs';
 
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
@@ -24,6 +25,31 @@ test('models are strictly provider-qualified and free: no Step 5 paid fallback',
     'opencode/step-5-preview', 'opencode/glm-5.3-flash', 'fake/free-model']) {
     assert.throws(() => parseGauntletArgs(['--run', '--model', name]), /not in the verified-free/);
   }
+});
+
+test('CI model runs require exact GitHub-hosted, no-key, nonproduction sandbox', () => {
+  const env = {
+    CI: 'true', GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'pull_request',
+    GITHUB_REPOSITORY: 'andylitvinov-design/books',
+    HH_GAUNTLET_CI_SYNTHETIC: 'isolated-20261027',
+    RUNNER_TEMP: '/home/runner/work/_temp',
+    HOME: '/home/runner/work/_temp/hh-oc-home',
+    XDG_CONFIG_HOME: '/home/runner/work/_temp/hh-oc-home/config',
+    XDG_DATA_HOME: '/home/runner/work/_temp/hh-oc-home/data',
+    XDG_CACHE_HOME: '/home/runner/work/_temp/hh-oc-home/cache',
+  };
+  assert.equal(allowsSyntheticActionsRun(env), true);
+  for (const [name, value] of [
+    ['CI', 'false'], ['GITHUB_ACTIONS', 'false'],
+    ['GITHUB_EVENT_NAME', 'push'], ['GITHUB_REPOSITORY', 'other/books'],
+    ['HH_GAUNTLET_CI_SYNTHETIC', '1'],
+    ['HOME', '/home/runner'],
+    ['XDG_CONFIG_HOME', '/home/runner/.config'],
+    ['XDG_DATA_HOME', '/home/runner/.local/share'],
+    ['XDG_CACHE_HOME', '/home/runner/.cache'],
+    ['OPENCODE_API_KEY', 'fake-credential'],
+    ['VERCEL', '1'], ['OPENCODE_DISABLE_FREE_MODELS', '1'],
+  ]) assert.equal(allowsSyntheticActionsRun({ ...env, [name]: value }), false, name);
 });
 
 test('rounds, timeout, repeated flags and unexpected CLI arguments fail closed', () => {
