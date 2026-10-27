@@ -2,6 +2,7 @@ import { getAppConfig } from "@/lib/app/config";
 import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createServiceReviewRepository } from "@/lib/practitioners/reviews";
 import type { PublicPractitioner } from "@/lib/practitioners/public-types";
+import { getPublicServiceDetailHref } from "@/lib/practitioners/public-service-links.js";
 import type { EnergySupportMaster } from "@/components/remote-energy-support-booking";
 
 // Single published-only source for the standalone wizard and the in-page wizard.
@@ -43,4 +44,53 @@ export async function listRemoteEnergySupportMasters(locale: "en" | "ru" | "es")
       return master;
     }
   }));
+}
+
+/** Other approved 1:1/intro/assessment offers, never copied from the energy-only catalog.
+ * Discovery is read-only: the service page or secure Cabinet owns enquiry/booking.
+ */
+export type PublicConsultationOffer = {
+  serviceId: string;
+  title: string;
+  practitionerName: string;
+  description: string;
+  areaKey: string;
+  pricingMode: string;
+  price: number | null;
+  currency: string;
+  href: string;
+};
+
+export async function listPublishedConsultationOffers(locale: "en" | "ru" | "es"): Promise<PublicConsultationOffer[]> {
+  const config = getAppConfig();
+  const records: PublicPractitioner[] = await createPractitionerRepository(config).listPublicPractitioners(locale);
+  return records.flatMap(practitioner =>
+    practitioner.services
+      .filter(service => service.status === "published" && service.active &&
+        ["session", "assessment", "intro"].includes(service.offeringType) &&
+        service.slug !== "remote-energy-support" && Boolean(service.copy?.title))
+      .map(service => {
+        const validOptions = (service.priceOptions || [])
+          .filter(option => Number.isFinite(option.price) && option.price >= 0);
+        const free = service.pricingMode === "free" ||
+          (service.pricingMode !== "contact" && service.confirmedPrice === 0);
+        const confirmed = service.pricingMode !== "contact" &&
+          typeof service.confirmedPrice === "number" && Number.isFinite(service.confirmedPrice) &&
+          service.confirmedPrice >= 0 ? service.confirmedPrice : null;
+        const price = free ? 0 : confirmed ??
+          (service.pricingMode !== "contact" && validOptions.length
+            ? Math.min(...validOptions.map(option => option.price)) : null);
+        return {
+          serviceId: service.id,
+          title: service.copy.title,
+          practitionerName: practitioner.profile.displayName || practitioner.profile.name || service.practitionerName,
+          description: service.copy.shortDescription || "",
+          areaKey: service.areaKey,
+          pricingMode: service.pricingMode,
+          price,
+          currency: service.currency || "",
+          href: getPublicServiceDetailHref(locale, practitioner.slug, service.slug),
+        };
+      })
+  );
 }

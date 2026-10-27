@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { HolisticSupportChoices } from "@/components/holistic-support-choices";
-import { SupportTalismanGallery } from "@/components/support-talisman-gallery";
+import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticMeditationGallery } from "@/components/holistic-meditation-gallery";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { PublicSiteHeader } from "@/components/public-site-header";
@@ -55,8 +55,8 @@ const copy = {
     freeEngineTitle: "Optional: a symbolic I Ching reflection",
     freeEngineLead: "This separate, browser-based symbolic reflection is not the personal coaching diagnostic or a booking. No AI practitioner or medical diagnosis.",
     talismanEyebrow: "04 · SYMBOLS & TALISMANS",
-    talismanSectionTitle: "Talismans · Your symbolic collection",
-    talismanSectionLead: "Organize personal images by protection, energy, harmony, prosperity, wisdom and more. New uploads stay private.",
+    talismanSectionTitle: "Daoist Talismans · Discover & Request",
+    talismanSectionLead: "Browse Fu-style symbolic talismans, explore their intentions and request a personal piece. The master confirms price and availability.",
     meditationEyebrow: "03 · MEDITATION PRACTICES",
     meditationSectionTitle: "Meditations · Video & audio",
     meditationSectionLead: "Explore an original English Sun practice by theme. More recordings are available in the Russian archive.",
@@ -117,8 +117,8 @@ const copy = {
     freeEngineTitle: "Дополнительно: символическая подсказка И-Цзин",
     freeEngineLead: "Это отдельная символическая практика в браузере, не личная диагностика, не запись и не медицинский совет.",
     talismanEyebrow: "04 · СИМВОЛЫ И ТАЛИСМАНЫ",
-    talismanSectionTitle: "Талисманы · Личная коллекция",
-    talismanSectionLead: "Защита, энергия, гармония, благополучие, мудрость и другие рубрики. Новые загрузки доступны только вам.",
+    talismanSectionTitle: "Даосские талисманы · Каталог",
+    talismanSectionLead: "Посмотрите даосские талисманы Фу и выберите подходящий символ. Изготовление и цену мастер подтвердит отдельно.",
     meditationEyebrow: "03 · МЕДИТАТИВНЫЕ ПРАКТИКИ",
     meditationSectionTitle: "Медитации · Видео и аудио",
     meditationSectionLead: "Выберите тему и смотрите оригинальные медитации Солнца, «Жизненную силу» и энергетические практики PsiMaster.",
@@ -179,8 +179,8 @@ const copy = {
     freeEngineTitle: "Opcional: una reflexión simbólica del I Ching",
     freeEngineLead: "Es otra práctica simbólica en el navegador, no una evaluación personal, cita ni diagnóstico médico.",
     talismanEyebrow: "04 · SÍMBOLOS Y TALISMANES",
-    talismanSectionTitle: "Talismanes · Tu colección",
-    talismanSectionLead: "Protección, energía, armonía, prosperidad, sabiduría y más. Tus fotos nuevas son privadas.",
+    talismanSectionTitle: "Talismanes taoístas · Catálogo",
+    talismanSectionLead: "Explora talismanes de estilo Fu y solicita una pieza personal. El profesional confirma el precio y la disponibilidad.",
     meditationEyebrow: "03 · PRÁCTICAS DE MEDITACIÓN",
     meditationSectionTitle: "Meditaciones · Vídeo y audio",
     meditationSectionLead: "Elige un tema y descubre la práctica original del Sol en inglés. El archivo completo está disponible en ruso.",
@@ -293,7 +293,7 @@ export default async function HolisticSupportPage({ params }: Props) {
             <h2 id="holistic-talismans-title">{t.talismanSectionTitle}</h2>
             <p>{t.talismanSectionLead}</p>
           </div>
-          <SupportTalismanGallery locale={locale} />
+          <TaoistTalismanCatalog locale={locale} />
         </section>
 
         <aside className={styles.coachingAside} data-holistic-coaching-followup aria-labelledby="holistic-coaching-followup-title">
