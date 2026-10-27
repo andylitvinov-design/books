@@ -53,6 +53,7 @@ test('four independent providers, five exact free model IDs and separate fifth c
  assert.equal(new Set(COUNCIL_FIVE.map(x=>x.id)).size,5)
  assert.notEqual(COUNCIL_CHAIR.id,COUNCIL_FOUR[0].id)
  assert.ok(COUNCIL_FIVE.every(x=>x.id.endsWith(':free')))
+ assert.equal(COUNCIL_FIVE.some(x=>x.id.startsWith('nvidia/')),false,'privacy-logged NVIDIA free offers are excluded')
  assert.deepEqual(availableCouncilFive(catalog).filter(x=>x.available).map(x=>x.id),
   COUNCIL_FIVE.map(x=>x.id))
 })
