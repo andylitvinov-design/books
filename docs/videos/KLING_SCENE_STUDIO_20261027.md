@@ -15,7 +15,9 @@ authentication or publication system. EN/RU/ES user interface, warm mobile UI.
 - Compose an EN-friendly scene prompt from three starter examples or custom text;
   copy it to https://kling.ai/ for web/manual use **without API charge here**.
 - Choose text-to-video or image-to-video from an already-public
-  `https://holistichouse.vercel.app/images/...` JPG/PNG/WEBP URL.
+  `https://holistichouse.vercel.app/images/...` JPG/PNG URL.
+  Kling 3.0 does not accept WebP first-frame input; approved WebP assets must
+  be converted to JPG/PNG offline and published before they can be used.
   Strict URL allowlist and a separate rights/public-asset confirmation are
   enforced **on the server**; no private signed URLs or arbitrary remote hosts.
 - Render via official Kling 3.0 Text-to-Video / Image-to-Video API (once configured).
