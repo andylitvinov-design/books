@@ -164,7 +164,7 @@ test('bad Argon synthesis is rejected without a chargeable retry or fake consens
     if(String(url).endsWith('/credits'))return Response.json({balance:'3.00'})
     posts++
     return Response.json({model:ARGON_GATEWAY_MODEL,usage:{total_tokens:900},
-      choices:[{finish_reason:'stop',message:{content:'not JSON'}}]})
+      choices:[{finish_reason:'stop',message:{content:'Этот достаточно длинный ответ не является корректным JSON документом.'}}]})
   }
   const result=await aggregateOwnerCouncil(question,reviews,env,fetcher)
   assert.equal(result.status,'error')
