@@ -20,7 +20,7 @@ type PublicTest = { key: string; title: string; axes: string[]; minutes: number 
 type Props = { locale: Locale; tests: PublicTest[] };
 
 // Shared, source-backed topic taxonomy. All catalogue axes are mapped,
- // but only topics supported by eligible tests appear in the wizard.
+// but only topics supported by eligible tests appear in the wizard.
 const areaAxes = PROFILE_AREA_AXES as Record<Area, readonly string[]>;
 const focusAreas = PROFILE_FOCUS_AREAS as unknown as Record<Focus, Area[]>;
 const areasFor = (focuses: Focus[]) => [...new Set(focuses.flatMap(focus => focusAreas[focus]))];
@@ -80,7 +80,7 @@ const copy = {
       support: ["Resources & self-support", "Support · self-kindness"],
       emotions: ["Emotions & stress", "Mood · regulation"],
       recovery: ["Energy & rest", "Recovery · sleep"],
-      body: ["Body awareness", "Awareness · comfort"],
+      body: ["Body signals & energy", "Sensations · vitality"],
       connection: ["Relationships", "Connection · communication"],
       work: ["Work & focus", "Clarity · daily actions"],
       money: ["Money decisions", "Choices · habits, not income"],
@@ -163,7 +163,7 @@ const copy = {
       support: ["Ресурсы и поддержка", "Опора · бережность к себе"],
       emotions: ["Эмоции и стресс", "Настроение · регуляция"],
       recovery: ["Энергия и отдых", "Восстановление · сон"],
-      body: ["Контакт с телом", "Осознанность · комфорт"],
+      body: ["Ощущения и энергия тела", "Самочувствие · энергия"],
       connection: ["Отношения", "Связь · общение"],
       work: ["Работа и фокус", "Ясность · действия"],
       money: ["Решения о деньгах", "Привычки, не уровень дохода"],
@@ -246,7 +246,7 @@ const copy = {
       support: ["Recursos y apoyo", "Apoyo · autocompasión"],
       emotions: ["Emociones y estrés", "Ánimo · regulación"],
       recovery: ["Energía y descanso", "Recuperación · sueño"],
-      body: ["Conciencia corporal", "Sensaciones · comodidad"],
+      body: ["Señales del cuerpo y energía", "Sensaciones · vitalidad"],
       connection: ["Relaciones", "Conexión · comunicación"],
       work: ["Trabajo y enfoque", "Claridad · acciones"],
       money: ["Decisiones de dinero", "Hábitos, no nivel de ingresos"],
