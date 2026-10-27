@@ -11,7 +11,11 @@ test("Holistic Support thematic navigation reuses existing public routes and pra
   const support = read("app/[locale]/services/remote-energy-support/page.tsx");
 
   assert.match(page, /<HolisticSupportTopicFilter locale=\{locale\} \/>/);
-  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf('id="holistic-healing-support"'));
+  assert.ok(page.indexOf('id="holistic-healing-support"') < page.indexOf("<HolisticSupportTopicFilter"));
+  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf('id="meditation-practices"'));
+  assert.equal((page.match(/<HolisticSupportTopicFilter /g) || []).length, 1);
+  assert.doesNotMatch(page, /data-holistic-healing|holistic-healing-title|02 · PRACTICES & SUPPORT/);
+  assert.match(filter, /SUPPORT BY THEME/);
   const firstScreen = existsSync(new URL("../components/holistic-support-choices.tsx", import.meta.url))
     ? read("components/holistic-support-choices.tsx") : "";
   assert.match(page + firstScreen, /data-holistic-first-screen/);
