@@ -6,6 +6,8 @@ const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
 test('free-install landing has real EN/RU/ES routes, correct matching manifests and no APK promises',()=>{
   const landing=read('app/[locale]/install/page.jsx')
+  const spanishLayout=read('app/es/layout.tsx')
+  assert.match(spanishLayout,/manifest: '\/holistic-house-app-es\.webmanifest'/)
   const css=read('app/[locale]/install/install.module.css')
   for(const label of ['Install Holistic House for free','Установить Holistic House бесплатно','Instala Holistic House gratis'])
     assert.ok(landing.includes(label),label)
