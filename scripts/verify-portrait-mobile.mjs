@@ -21,13 +21,14 @@ const context = await browser.newContext({ viewport: { width: 390, height: 844 }
 const page = await context.newPage()
 const problems = []
 const bootstrapStatuses = []
+let verifiedAccountLanding = false
 page.on('pageerror', error => problems.push(String(error.message).slice(0, 250)))
 // Confirm a successful same-origin protected bootstrap, not only visible UI.
 // WebKit may abort an older fetch when an authenticated page navigates away.
 page.on('response', response => {
   try {
     const address = new URL(response.url())
-    if (address.origin === origin && address.pathname === '/api/app/bootstrap' &&
+    if (verifiedAccountLanding && address.origin === origin && address.pathname === '/api/app/bootstrap' &&
       bootstrapStatuses.length < 50) bootstrapStatuses.push(response.status())
   } catch { /* Ignore non-HTTP browser-internal resources only. */ }
 })
@@ -142,6 +143,7 @@ try {
   // The current signed-in Profile is ProfileDomains (not the older
   // PersonalPortraitSummary/My Tests landing referenced in legacy E2E tests).
   await expect(page.locator('[data-profile-domains]')).toBeVisible({timeout:90000})
+  verifiedAccountLanding = true
   console.log('PORTRAIT_QA',name,'synthetic Google PKCE double signed in (no real account)')
 
   for (const locale of ['en','ru']) {
