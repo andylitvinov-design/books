@@ -1,0 +1,58 @@
+name: HH Owner Telegram Photo Audio Video
+
+on:
+  pull_request:
+    branches: [codex/public-book-library]
+    paths:
+      - ".github/workflows/hh-owner-telegram-video.yml"
+      - "app/admin/youtube-upload/page.js"
+      - "app/admin/materials/page.js"
+      - "components/admin-telegram-videos.jsx"
+      - "app/api/admin/telegram-video/**"
+      - "app/api/app/crm/messenger/webhook/**"
+      - "app/api/app/notification-channels/telegram/webhook/**"
+      - "lib/app/client-telegram-transport.js"
+      - "lib/practitioners/owner-ai-telegram.mjs"
+      - "lib/practitioners/owner-telegram-audio-model.mjs"
+      - "lib/practitioners/owner-telegram-video-*"
+      - "tests/owner-telegram-video.test.mjs"
+      - "scripts/openverse-video-sfx.mjs"
+      - "tests/openverse-video-sfx.test.mjs"
+      - "docs/videos/OPENVERSE_SFX_20261026.md"
+      - "tests/owner-telegram-audio-combine.test.mjs"
+      - "supabase/migrations/20261026175000_hh_owner_telegram_photo_audio_video.sql"
+      - "supabase/migrations/20261027020000_hh_owner_video_final_only_cabinet.sql"
+      - "next.config.ts"
+      - "package.json"
+      - "package-lock.json"
+  push:
+    branches: [codex/public-book-library]
+    paths:
+      - "lib/practitioners/owner-telegram-video-*"
+      - "scripts/openverse-video-sfx.mjs"
+      - "tests/openverse-video-sfx.test.mjs"
+      - "app/api/admin/telegram-video/**"
+      - ".github/workflows/hh-owner-telegram-video.yml"
+permissions:
+  contents: read
+jobs:
+  owner-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Telegram and audio regression tests
+        run: node --test tests/owner-telegram-video.test.mjs tests/owner-telegram-audio-combine.test.mjs tests/practitioner-owner-ai-telegram.test.mjs tests/openverse-video-sfx.test.mjs
+      - name: Real 1080p MP4 with H264 AAC via ffmpeg-static
+        run: node scripts/verify-telegram-owner-video-media.mjs
+      - name: JS lint for touched files
+        run: npx eslint lib/app/client-telegram-transport.js lib/practitioners/owner-ai-telegram.mjs lib/practitioners/owner-telegram-audio-model.mjs app/api/app/notification-channels/telegram/webhook/route.js lib/practitioners/owner-telegram-video-* app/api/admin/telegram-video/youtube/start/route.js app/api/admin/telegram-video/youtube/callback/route.js app/api/admin/telegram-video/drafts/route.js "app/api/admin/telegram-video/drafts/[id]/file/route.js" "app/api/app/crm/messenger/webhook/[provider]/route.js" app/admin/youtube-upload/page.js app/admin/materials/page.js components/admin-telegram-videos.jsx tests/owner-telegram-video.test.mjs scripts/openverse-video-sfx.mjs tests/openverse-video-sfx.test.mjs
+      - name: TypeScript
+        run: npx tsc --noEmit --incremental false
+      - name: Next production build
+        run: npm run build

@@ -8,7 +8,7 @@ test('Holistic Support offers and opens personal talismans in all three locales'
   const hero=read('components/ideas-discovery.tsx')
   const widget=read('components/support-talisman-gallery.tsx')
   for(const locale of ['en','ru','es'])assert.match(widget,new RegExp('\\b'+locale+':\\s*\\{'))
-  assert.match(page,/data-holistic-offer="talismans"/)
+  assert.match(read("components/holistic-support-topic-filter.tsx"), /if \(offer === "talisman"\) return "#talismans"/)
   assert.match(page,/id="talismans"/)
   assert.match(page,/SupportTalismanGallery locale=\{locale\}/)
   assert.match(hero,/data-ideas-talismans/)

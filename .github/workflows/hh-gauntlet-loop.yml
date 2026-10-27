@@ -1,0 +1,57 @@
+name: Holistic House Gauntlet offline safety gate
+
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-gauntlet-loop.yml'
+      - '.opencode/agents/hh-gauntlet-*.md'
+      - 'docs/benchmarking/HH_GAUNTLET_LOOP_20261027.md'
+      - 'lib/benchmarking/hh-gauntlet-loop.mjs'
+      - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
+      - 'tests/hh-gauntlet-loop.test.mjs'
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-gauntlet-loop.yml'
+      - '.opencode/agents/hh-gauntlet-*.md'
+      - 'lib/benchmarking/hh-gauntlet-loop.mjs'
+      - 'scripts/benchmarking/hh-gauntlet-loop.mjs'
+      - 'tests/hh-gauntlet-loop.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hh-gauntlet-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-contract:
+    name: No-model, no-provider, no-private-data Gauntlet policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --include=dev --no-audit --no-fund
+      - name: Check offline-only CLI, model allowlist, critic rubric and permissions
+        run: |
+          node scripts/benchmarking/hh-gauntlet-loop.mjs --check
+          node --test tests/hh-gauntlet-loop.test.mjs
+      - name: Check existing free express flow and consent contracts
+        run: |
+          node --test tests/free-express-wizard-v2.test.mjs tests/free-express-unified-v2.test.mjs tests/free-express-owner-reply.test.mjs tests/free-express-retention.test.mjs tests/free-express-mobile-consent-layout.test.mjs
+      - name: Lint and typecheck
+        run: |
+          npx eslint scripts/benchmarking/hh-gauntlet-loop.mjs lib/benchmarking/hh-gauntlet-loop.mjs tests/hh-gauntlet-loop.test.mjs
+          npx tsc --noEmit
+      # No OpenCode CLI, API key, live POST, migrations, deployments or paid calls in CI.

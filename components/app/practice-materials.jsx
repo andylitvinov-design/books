@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react'
 import {BookOpen,ChevronRight,FileText,Headphones,Search,Leaf,Film,FolderOpen,LockKeyhole,Plus} from 'lucide-react'
 import PracticeMaterialPreview from './practice-material-preview'
+import PracticeTelegramAudio from './practice-telegram-audio'
 import PractitionerArticles from './practitioner-articles'
 import PractitionerCourseBuilder from './practitioner-course-builder'
 import PracticeReportMaterials from './practice-report-materials'
@@ -243,6 +244,7 @@ export default function PracticeMaterials({practitioner,services=[],locale='en',
     </div>
    </section>:
    tab==='audio'&&isOwner?<section className={styles.body} data-practice-audio-lessons>
+    <PracticeTelegramAudio locale={locale} query={query}/>
     <p className={styles.sectionCount}>{audioAction==='record'?(ru?'Выберите урок для записи аудио.':es?'Elige una lección para grabar.':'Choose a lesson to record audio.') :audioAction==='upload'?(ru?'Выберите урок для загрузки.':es?'Elige una lección para subir.':'Choose a lesson to upload.'):(ru?'Коучинг и Рейки · аудио по урокам':es?'Coaching y Reiki · audio por lección':'Coaching and Reiki · lesson audio')}</p>
     {coachingAudioCourses.length>0&&<CoachingAudioFolders courses={coachingAudioCourses} locale={locale}
        busy={busy} onOpen={onOpenCoachingAudio}/>}

@@ -9,9 +9,11 @@ import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import styles from './messages-simple-inbox.module.css'
 import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
+import {filterInboxRows,inMessagesTab,normalizeMessagesTab} from '@/lib/app/messages-inbox-tabs.mjs'
 
 const COPY={
   en:{title:'Messages',hint:'Conversations and requests',search:'Find a person',empty:'No messages or requests yet.',
+    tabs:'Message folders',chats:'Inbox',requestsTab:'Client requests',emptyChats:'No conversations yet.',emptyRequests:'No client requests yet.',noMatches:'No matching people.',
     choose:'Select a person to read the conversation',back:'Conversations',card:'Client card',refresh:'Refresh',loading:'Loading conversations…',
     telegram:'Telegram',website:'Website request',business:'Business request',direct:'Holistic House',
     waiting:'Waiting for your reply',received:'Received',details:'Request',contact:'Contact details',
@@ -20,6 +22,7 @@ const COPY={
     offline:'Offline — reconnect to read and send messages.',botLink:'Copy Telegram link',botCopied:'Link copied',updated:'Updated',noMessage:'No description supplied',private:'Replies to website contacts are not sent through Telegram automatically.',
     more:'More conversations',other:'Other requests',portal:'Private website conversations'},
   ru:{title:'Сообщения',hint:'Диалоги и заявки',search:'Найти человека',empty:'Пока нет сообщений и заявок.',
+    tabs:'Разделы сообщений',chats:'Входящие',requestsTab:'Заявки',emptyChats:'Пока нет переписок.',emptyRequests:'Пока нет заявок.',noMatches:'Ничего не найдено.',
     choose:'Выберите человека, чтобы открыть переписку',back:'К списку',card:'Карточка',refresh:'Обновить',loading:'Загружаем переписки…',
     telegram:'Telegram',website:'Заявка с сайта',business:'Бизнес-заявка',direct:'Holistic House',
     waiting:'Ждёт вашего ответа',received:'Получена',details:'Заявка',contact:'Контакты',
@@ -28,6 +31,7 @@ const COPY={
     offline:'Нет интернета — для загрузки и отправки сообщений требуется соединение.',botLink:'Копировать ссылку Telegram',botCopied:'Ссылка скопирована',updated:'Обновлено',noMessage:'Описание не указано',private:'Ответы на заявки сайта не отправляются в Telegram автоматически.',
     more:'Ещё диалоги',other:'Другие заявки',portal:'Личная переписка на сайте'},
   es:{title:'Mensajes',hint:'Conversaciones y solicitudes',search:'Buscar persona',empty:'Aún no hay mensajes ni solicitudes.',
+    tabs:'Carpetas de mensajes',chats:'Recibidos',requestsTab:'Solicitudes',emptyChats:'Aún no hay conversaciones.',emptyRequests:'Aún no hay solicitudes.',noMatches:'No se encontraron personas.',
     choose:'Elige una persona para abrir la conversación',back:'Volver',card:'Ficha',refresh:'Actualizar',loading:'Cargando conversaciones…',
     telegram:'Telegram',website:'Solicitud web',business:'Solicitud de negocio',direct:'Holistic House',
     waiting:'Esperando tu respuesta',received:'Recibida',details:'Solicitud',contact:'Contacto',
@@ -93,6 +97,7 @@ export default function MessagesSimpleInbox({
   const [portraits,setPortraits]=useState({})
   const [selectedKey,setSelectedKey]=useState('')
   const [search,setSearch]=useState('')
+  const [tab,setTab]=useState('chats')
   const [linkCopied,setLinkCopied]=useState(false)
   const [openDetail,setOpenDetail]=useState(false)
   const [showCard,setShowCard]=useState(false)
@@ -109,6 +114,10 @@ export default function MessagesSimpleInbox({
       window.removeEventListener('offline',syncNetwork)
     }
   },[])
+  useEffect(()=>{
+    const query=new URLSearchParams(window.location.search)
+    setTab(normalizeMessagesTab(query.get('tab')))
+  },[accountId])
   const onCrmThreads=useCallback(result=>setCrmState(result),[])
   const onDirectThreads=useCallback(result=>setDirectThreads(Array.isArray(result)?result:[]),[])
   const onPortraitFound=useCallback(({threadId,messageId})=>{
@@ -116,7 +125,7 @@ export default function MessagesSimpleInbox({
   },[])
   const rows=useMemo(()=>{
     const crm=(crmState.threads||[]).map(item=>({
-      key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,name:item.name||t.choose,
+      key:'crm:'+item.id,kind:'crm',id:item.id,contactId:item.contactId,lifecycle:item.lifecycle,name:item.name||t.choose,
       source:channelNames[item.channel]||item.channel,unread:Number(item.unreadCount)||0,
       needsReply:Boolean(item.needsReply),at:item.lastMessageAt||item.lastInboundAt,
       preview:item.needsReply?t.waiting:channelNames[item.channel]||item.channel,
@@ -145,8 +154,12 @@ export default function MessagesSimpleInbox({
       (Date.parse(b.at||'')||0)-(Date.parse(a.at||'')||0))
   },[crmState.threads,directThreads,requests,businessEnquiries,t])
   const selected=rows.find(item=>item.key===selectedKey)||null
-  const displayed=rows.filter(item=>!search.trim()||
-    item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+  // One canonical owner-scoped row set: filter by source, never duplicate a CRM lead.
+  const chatsCount=filterInboxRows(rows,'chats').length
+  const requestsCount=filterInboxRows(rows,'requests').length
+  const tabTotal=tab==='requests'?requestsCount:chatsCount
+  const tabLoading=tab==='requests'?(websiteLoading||crmState.loading):crmState.loading
+  const displayed=filterInboxRows(rows,tab,search)
   const unreadCount=rows.reduce((sum,item)=>sum+Math.max(0,item.unread),0)
   const crmThreadId=selected?.kind==='crm'?selected.id:''
   const directThreadId=selected?.kind==='direct'?selected.id:''
@@ -203,12 +216,22 @@ export default function MessagesSimpleInbox({
       visual?.removeEventListener('scroll',requestUpdate)
       windowElement.style.removeProperty('--hh-mobile-window-height')
     }
-  },[])
+  },[openDetail]) // Tabs collapse while reading a chat; remeasure against the new top edge.
 
   const select=item=>{
     setSelectedKey(item.key)
     setShowCard(false)
     setOpenDetail(true)
+  }
+  const switchTab=next=>{
+    if(next!=='chats'&&next!=='requests')return
+    setTab(next)
+    // Return to the list on phones without disposing an in-flight reply or draft.
+    setOpenDetail(false)
+    const url=new URL(window.location.href)
+    if(next==='requests')url.searchParams.set('tab','requests')
+    else url.searchParams.delete('tab')
+    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash)
   }
   const publicBotUrl=typeof telegramUrl==='string'&&/^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(telegramUrl)?telegramUrl:''
   const refresh=()=>{
@@ -235,18 +258,36 @@ export default function MessagesSimpleInbox({
         </button>
       </div>
     </header>
+    <div className={styles.tabs} role="tablist" aria-label={t.tabs}>
+      {[['chats',t.chats,chatsCount],['requests',t.requestsTab,requestsCount]].map(([id,label,count])=>
+        <button type="button" role="tab" key={id} id={'hh-simple-tab-'+id}
+          aria-controls="hh-simple-list-panel" aria-selected={tab===id} tabIndex={tab===id?0:-1}
+          onClick={()=>switchTab(id)}
+          onKeyDown={event=>{
+            if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return
+            event.preventDefault()
+            const next=event.key==='Home'?'chats':event.key==='End'?'requests':
+              event.key==='ArrowRight'?'requests':'chats'
+            switchTab(next)
+            document.getElementById('hh-simple-tab-'+next)?.focus()
+          }}>
+          {label}<span aria-hidden="true">{count}</span>
+        </button>)}
+    </div>
     <div className={styles.window} ref={inboxWindowRef}>
-      <aside className={styles.people} aria-label={t.back}>
+      <aside className={styles.people} id="hh-simple-list-panel" role="tabpanel"
+        aria-labelledby={'hh-simple-tab-'+tab}>
         <label className={styles.search}>
           <span className={styles.srOnly}>{t.search}</span>
           <input type="search" value={search} placeholder={t.search}
             onChange={e=>setSearch(e.target.value)} autoComplete="off"/>
         </label>
         <div className={styles.peopleScroll}>
-          {!rows.length&&(crmState.loading||websiteLoading)?<p className={styles.info} role="status">{t.loading}</p>:null}
-          {!rows.length&&!crmState.loading&&!websiteLoading?<p className={styles.info}>{t.empty}</p>:null}
-          {crmState.error&&<p role="alert" className={styles.info}>{t.loading}</p>}
-          {websiteUnavailable&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
+          {!tabTotal&&tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
+          {!tabTotal&&!tabLoading?<p className={styles.info}>{tab==='requests'?t.emptyRequests:t.emptyChats}</p>:null}
+          {tabTotal>0&&!displayed.length&&search.trim()&&<p className={styles.info}>{t.noMatches}</p>}
+          {crmState.error&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
+          {websiteUnavailable&&tab==='requests'&&<p role="alert" className={styles.info}>{t.unavailable}</p>}
           {displayed.map(row=><button type="button" key={row.key}
             aria-pressed={selectedKey===row.key}
             className={selectedKey===row.key?styles.personSelected:styles.person}
@@ -261,11 +302,12 @@ export default function MessagesSimpleInbox({
             {row.unread>0?<span className={styles.unread} aria-label={String(row.unread)}>{row.unread}</span>:
               row.needsReply?<span className={styles.needsReplyDot} aria-label={t.waiting}/>:null}
           </button>)}
-          {crmState.partial&&<a className={styles.history}
+          {tab==='chats'&&crmState.partial&&<a className={styles.history}
             href={'/'+locale+'/app/practice?panel=crm&crmTab=messages'}>{t.more}</a>}
         </div>
       </aside>
-      <div className={styles.detail} aria-live="polite">
+      <div className={styles.detail} aria-live="polite"
+        hidden={Boolean(selected)&&!inMessagesTab(selected,tab)}>
         {selected&&<header className={styles.personBar}>
           <button type="button" className={styles.back} onClick={()=>{setOpenDetail(false);setShowCard(false)}}
             aria-label={t.back}><ArrowLeft size={21} aria-hidden="true"/></button>

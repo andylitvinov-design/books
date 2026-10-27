@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server'
 import {getAppConfig} from '@/lib/app/config'
 import {closeDatabase} from '@/lib/app/database'
 import {cronAuthorized} from '@/lib/app/housekeeping-cron'
+import {torontoReportDue} from '@/lib/practitioners/owner-telegram-report-hours.mjs'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {practiceTelegramConfigured} from '@/lib/practitioners/daily-telegram-transport.mjs'
 import {deliverDailyPracticeDigest} from '@/lib/practitioners/daily-telegram-digest'
@@ -20,17 +21,30 @@ export const maxDuration=60
 export async function GET(request){
   if(!cronAuthorized(request,process.env))
     return NextResponse.json({error:'UNAUTHORIZED'},{status:401,headers:PRIVATE_HEADERS})
+  const ownerDue=torontoReportDue('operations')
+  const masterDue=torontoReportDue('revenue')
+  if(!ownerDue&&!masterDue)
+    return NextResponse.json({status:'not_due'},{headers:PRIVATE_HEADERS})
   if(process.env.VERCEL_ENV==='preview')
     return NextResponse.json({error:'NOT_AVAILABLE'},{status:404,headers:PRIVATE_HEADERS})
   if(!process.env.HH_PRACTICE_TG_BOT_TOKEN)
     return NextResponse.json({status:'token_missing'},{headers:PRIVATE_HEADERS})
   try{
     const config=getAppConfig()
-    // Same existing once-daily Vercel cron; per-master opted-in receipts are
-    // claimed independently and provider sending remains disabled by default.
-    if(masterAnalyticsTelegramReady(process.env)){
-      try{await scheduledMasterAnalyticsDigests(config,{env:process.env})}
-      catch{console.error('HH_MASTER_ANALYTICS_SCHEDULE_FAILED')}
+    // Preserve the previously existing 09:00 slot for *other* practitioners'
+    // separately opted-in analytics. It must never invoke the owner's 15:00
+    // statistics report or consume that report's private delivery receipt.
+    if(masterDue){
+      if(!masterAnalyticsTelegramReady(process.env))
+        return NextResponse.json({status:'master_schedule_disabled'},{headers:PRIVATE_HEADERS})
+      try{
+        const result=await scheduledMasterAnalyticsDigests(config,{env:process.env})
+        return NextResponse.json(result,{headers:PRIVATE_HEADERS})
+      }catch{
+        console.error('HH_MASTER_ANALYTICS_SCHEDULE_FAILED')
+        return NextResponse.json({error:'MASTER_DELIVERY_FAILED'},
+          {status:503,headers:PRIVATE_HEADERS})
+      }
     }
     const pairing=await ensureOwnerTelegramPairing(config)
     if(!['paired','already_configured'].includes(pairing.status))
@@ -51,7 +65,7 @@ export async function GET(request){
     if(!practiceTelegramConfigured(env))
       return NextResponse.json({status:'paired',delivery_enabled:false},
         {headers:PRIVATE_HEADERS})
-    return NextResponse.json(await deliverDailyPracticeDigest(config,{env}),
+    return NextResponse.json(await deliverDailyPracticeDigest(config,{env,technicalDigest:true}),
       {headers:PRIVATE_HEADERS})
   }catch{
     console.error('HH_PRACTICE_TELEGRAM_DIGEST_FAILED')

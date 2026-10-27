@@ -34,7 +34,7 @@ test('Holistic House has an independent canonical-domain native identity; PsiAlc
   assert.equal(sourceConfig.appName,'PsiAlchemy')
   assert.equal(hh.appId,'com.holistichouse.app')
   assert.equal(hh.appName,'Holistic House')
-  assert.equal(hh.server.url,'https://holistichouse.vercel.app/en/app/portrait')
+  assert.equal(hh.server.url,'https://holistichouse.vercel.app/en/app/messages')
   assert.deepEqual(hh.server.allowNavigation,['holistichouse.vercel.app'])
   assert.equal(hh.server.cleartext,false)
   assert.equal(JSON.parse(source('package.json')).dependencies['@capacitor/push-notifications'],undefined)

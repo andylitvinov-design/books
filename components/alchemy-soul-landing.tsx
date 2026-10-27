@@ -10,8 +10,6 @@ type AlchemyLocale = Locale | "es";
 import { SiteVideoPlayer } from "@/components/site-video-player";
 import { testimonialVideos, locallyArchivedVideoPosterIds } from "@/components/personal-testimonials";
 import { AlchemySoulFormatSelector, AlchemySoulLeadForm } from "@/components/alchemy-soul-lead-form";
-import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
-import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import { getServiceVideoMedia } from "@/data/service-video-library";
@@ -32,7 +30,7 @@ const copy = {
     headline: "Понять свой сценарий, найти ресурс и выбрать следующий шаг.",
     intro: "Сначала исследуем ситуацию через расстановку, затем через образную гипнотерапию — возможный внутренний корень. Дополнительные ресурсы подбираем индивидуально.",
     chips: ["Карта ситуации", "Личный ресурс", "План действий"],
-    cta: "Запросить сеанс",
+    cta: "Забронировать сеанс",
     freeStart: "Начать с бесплатного письменного разбора",
     practitioner: "С Андреем Литвиновым",
     place: "Онлайн · Торонто по договорённости",
@@ -116,7 +114,7 @@ const copy = {
     headline: "Understand the pattern. Find a resource. Choose your next step.",
     intro: "We first map the situation through a constellation, then explore the possible inner root through guided-imagery hypnotherapy. Additional resources are chosen individually.",
     chips: ["Situation map", "Personal resource", "Action plan"],
-    cta: "Request a session",
+    cta: "Book a Session",
     freeStart: "Start with a free written situation review",
     practitioner: "With Andrey Litvinov",
     place: "Online · Toronto by arrangement",
@@ -184,7 +182,7 @@ const copy = {
       { q: "Is this medical diagnosis?", a: "No. Constellation and imagery work explore experiences and situations. They do not establish medical diagnoses." },
       { q: "Is homeopathy required?", a: "No, it is optional. Homeopathy has no reliable evidence of effectiveness for treating medical or mental-health conditions." },
       { q: "Can we work online?", a: "Yes. Online is the main option, with in-person Toronto availability discussed individually." },
-      { q: "What happens when I enquire?", a: "WhatsApp opens a draft for your review; you choose whether to send it. We then discuss availability. There is no automatic booking or charge." },
+      { q: "What happens when I enquire?", a: "Choose your phone number or Google sign-in to send a booking enquiry. Andrey confirms a time before Pay Your Session reveals the cart. No automatic charge." },
     ],
 
     requestKicker: "YOUR FIRST STEP",
@@ -200,7 +198,7 @@ const copy = {
     headline: "Comprende el patrón, encuentra un recurso y elige tu siguiente paso.",
     intro: "Primero observamos la situación mediante una constelación y después exploramos posibles patrones internos con hipnoterapia de imágenes guiadas. Elegimos los recursos complementarios de forma individual.",
     chips: ["Mapa de situación", "Recurso personal", "Plan de acción"],
-    cta: "Solicitar una sesión",
+    cta: "Reservar una sesión",
     freeStart: "Empezar con una revisión escrita gratuita",
     practitioner: "Con Andrey Litvinov",
     place: "En línea · Toronto con cita previa",
@@ -268,7 +266,7 @@ const copy = {
       { q: "¿Es un diagnóstico médico?", a: "No. Las constelaciones y las imágenes guiadas permiten reflexionar sobre experiencias y situaciones, pero no establecen diagnósticos médicos." },
       { q: "¿Es necesaria la homeopatía?", a: "No, es opcional. La homeopatía carece de pruebas científicas fiables de eficacia para tratar enfermedades físicas o problemas de salud mental." },
       { q: "¿Podemos trabajar en línea?", a: "Sí. La modalidad principal es en línea. La posibilidad de una sesión presencial en Toronto se consulta individualmente." },
-      { q: "¿Qué ocurre al enviar una solicitud?", a: "Se abrirá WhatsApp con un borrador que podrás revisar y decidir si envías. Después acordamos la disponibilidad. No hay reserva ni cobro automáticos." },
+      { q: "¿Qué ocurre al enviar una solicitud?", a: "Reserva por teléfono o Google. Andrey confirma primero la hora; después se muestran el carrito y los métodos de pago. Sin cobro automático." },
     ],
 
     requestKicker: "TU PRIMER PASO",
@@ -405,7 +403,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
           </div>
           <div className={styles.heroOrder}>
             <ContactChannelChooser locale={locale} whatsappUrl={heroWhatsApp} label={t.cta}
-              compactPhone compactTrigger stayAfterSave
+              compactPhone compactTrigger stayAfterSave bookingSku="personal-session-60"
               className={styles.heroOrderButton} event="service_request_start"
               attributes={{ "data-alchemy-booking": "hero" }} />
           </div>
@@ -551,7 +549,7 @@ export function AlchemySoulLanding({ locale }: { locale: AlchemyLocale }) {
             <span className={styles.eyebrow}>{t.optionsKicker}</span>
             <h2 id="alchemy-options-title">{t.optionsTitle}</h2>
           </header>
-          <AlchemySoulFormatSelector locale={locale} wiseEnabled={wisePaymentsEnabled()} paypalPersonalEnabled={personalPayPalEnabled()} />
+          <AlchemySoulFormatSelector locale={locale} />
         </section>
 
         <section className={[styles.panel, styles.faqSection].join(" ")} data-alchemy-panel="faq" data-alchemy-visual="photo" aria-labelledby="alchemy-faq-title">

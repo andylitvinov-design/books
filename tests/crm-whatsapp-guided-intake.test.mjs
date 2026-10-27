@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {channelTransportReady,whatsappPilotReady,canReply,messengerSetupStatus} from '../lib/crm/messenger-policy.js'
 import {whatsappIntakeEvent,whatsappIntakeReady} from '../lib/crm/whatsapp-intake.mjs'
+import {whatsappExpressReviewHandoff} from '../lib/crm/express-review-channel-handoff.mjs'
 
 const source=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const env={
@@ -111,4 +112,15 @@ test('WhatsApp photos are encrypted in the CRM and served only to the owner',()=
   assert.match(provider,/location\.pathname\.startsWith\('\/whatsapp_business\/attachments\/'\)/)
   assert.match(provider,/bytes\.length>5\*1024\*1024/)
   assert.match(source('components/app/crm-messenger.jsx'),/\['telegram','whatsapp'\]\.includes\(selected.channel\)/)
+})
+
+test('website EN RU ES WhatsApp marker selects approved six-step locale before consent',()=>{
+  for(const locale of ['en','ru','es']){
+    const message=new URL(whatsappExpressReviewHandoff(locale)).searchParams.get('text')
+    const first=whatsappIntakeEvent(null,{rawText:message})
+    assert.equal(first.locale,locale)
+    assert.equal(first.stage,'consent')
+    assert.equal(first.body,null)
+    assert.equal(first.consent,false)
+  }
 })

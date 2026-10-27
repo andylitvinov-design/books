@@ -4,6 +4,7 @@ import {ArrowLeft, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} fro
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
 import MessagesContactCard from './messages-contact-card'
+import CrmSalesbotAssist from './crm-salesbot-assist'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -740,6 +741,19 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               {compact&&!conversationOnly?<Send size={18} aria-hidden="true"/>:t.send}
             </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
+            {selected.reply.ok&&<div className={styles.salesbotAssistSlot}>
+              <CrmSalesbotAssist key={`${accountId}:${selected.id}`} accountId={accountId}
+                threadId={selected.id} locale={lang} disabled={busy||threadLoading}
+                onInsert={draft=>{
+                  // Nothing is sent here; the owner must review and press Send.
+                  if(activeRef.current!==selected.id||busy||threadLoading||!selected.reply.ok)return false
+                  if(text.trim()&&!window.confirm(lang==='ru'?'Заменить текущий черновик?':
+                    lang==='es'?'¿Reemplazar el borrador actual?':'Replace your current draft?'))return false
+                  pendingRequest.current=null
+                  setText(draft)
+                  return true
+                }}/>
+            </div>}
           </div>
         </>}
       </div>

@@ -259,3 +259,32 @@
 .compactQuestionReveal[open] > summary::before{content:"−"}
 .compactQuestionReveal > summary:focus-visible{outline:3px solid #b87c44;outline-offset:2px}
 .compactQuestionReveal .compactQuestion{padding:4px 0 5px}
+
+/* Alchemy booking: the cart is shown only after server-verified practitioner confirmation. */
+.bookingForm,.bookingPayPanel { display:grid;gap:10px;min-width:0; }
+.bookingIntro,.bookingFine,.bookingPending,.bookingSuccess { margin:0;color:#3f6774;
+  font:500 13px/1.55 Arial,Helvetica,sans-serif;overflow-wrap:anywhere; }
+.bookingFine {font-size:11px}
+.bookingProduct {margin:0;font:750 14px/1.5 Arial,Helvetica,sans-serif;color:#14596b}
+.bookingSuccess {color:#176b4b;font-weight:750}
+.bookingPrimary,.bookingCheck {
+  box-sizing:border-box;min-height:49px;width:100%;padding:11px 12px;border:0;
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font:800 15px/1.35 Arial,Helvetica,sans-serif;text-align:center;
+  cursor:pointer;text-decoration:none;
+}
+.bookingPrimary {background:#ab526c;color:white}
+.bookingCheck {background:#e1f3f0;color:#186b71;border:1px solid #aed1cf}
+.bookingPrimary:disabled,.bookingCheck:disabled {opacity:.55;cursor:wait}
+.bookingSwitch {align-self:start;border:0;background:transparent;color:#166b8b;text-align:left;
+  font:650 12px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;cursor:pointer}
+.bookingPayPanel {margin-top:5px;padding:12px;border:1px solid #add9cf;border-radius:12px;
+  background:#eff9f4}
+.bookingPayPanel strong {color:#18596a;font:750 14px/1.45 Arial,Helvetica,sans-serif}
+.bookingPayPanel small {color:#52707d;line-height:1.5}
+.bookingChat {margin-top:5px;border-top:1px solid #d6e8e3;padding-top:8px}
+.bookingChat summary {min-height:44px;display:flex;align-items:center;cursor:pointer;
+  color:#22748d;font:650 13px/1.5 Arial,Helvetica,sans-serif}
+.bookingChat .compactChannels {margin-top:6px}
+@media(max-width:350px){.bookingPrimary,.bookingCheck{padding:9px 7px;font-size:13px}}
+@media(prefers-reduced-motion:reduce){.bookingPrimary,.bookingCheck{transition:none}}

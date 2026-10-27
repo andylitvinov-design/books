@@ -1,0 +1,111 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+
+const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
+
+test('free-install landing has real EN/RU/ES routes, correct matching manifests and no APK promises',()=>{
+  const landing=read('app/[locale]/install/page.jsx')
+  const spanishLayout=read('app/es/layout.tsx')
+  assert.match(spanishLayout,/manifest: '\/holistic-house-app-es\.webmanifest'/)
+  const css=read('app/[locale]/install/install.module.css')
+  for(const label of ['Install Holistic House for free','Установить Holistic House бесплатно','Instala Holistic House gratis'])
+    assert.ok(landing.includes(label),label)
+  assert.match(landing,/Object\.hasOwn\(COPY,locale\)/)
+  assert.match(landing,/landing\/>/)
+  assert.match(landing,/data-hh-free-install-landing/)
+  assert.match(landing,/holistic-house-app-es\.webmanifest/)
+  assert.match(landing,/holistic-house-app-ru\.webmanifest/)
+  assert.match(landing,/robots:\{index:false,follow:false\}/)
+  assert.match(landing,/app\/messages/)
+  assert.match(landing,/settings#hh-phone-notifications/)
+  assert.match(landing,/PWA/)
+  assert.match(landing,/не скачивание APK/)
+  assert.match(landing,/Añadir a la pantalla de inicio/)
+  assert.match(css,/@media\(max-width:430px\)/)
+  assert.match(css,/safe-area-inset-bottom/)
+  assert.doesNotMatch(landing,/href=\{?["'][^"']*\.(?:apk|aab|ipa)/i)
+  assert.doesNotMatch(landing,/https:\/\/play\.google\.com\/store\/apps\//i)
+})
+
+test('all three Home pages offer exactly the same free installer without duplicating app identity',()=>{
+  const home=read('components/holistic-house-home.tsx')
+  const es=read('app/es/page.tsx')
+  const banner=read('components/free-mobile-app-banner.tsx')
+  const css=read('components/free-mobile-app-banner.module.css')
+  assert.match(home,/<FreeMobileAppBanner locale=\{locale\} \/>/)
+  assert.match(es,/<FreeMobileAppBanner locale="es" \/>/)
+  assert.match(banner,/data-hh-free-app-banner/)
+  assert.match(banner,/data-hh-free-app-link/)
+  assert.match(banner,/href=\{`\/\$\{locale\}\/install`\}/)
+  for(const txt of ['Install for free','Установить бесплатно','Instalar gratis'])
+    assert.ok(banner.includes(txt),txt)
+  assert.match(css,/@media\(max-width:650px\)/)
+  assert.match(css,/min-height:50px/)
+  assert.match(css,/:focus-visible/)
+  const nav=read('components/site-navigation.tsx')
+  assert.match(nav,/data-nav-item="install"/)
+  assert.match(nav,/siteMenu\.install/)
+  const locales=read('lib/public-locales.ts')
+  assert.ok(locales.includes(String.raw`(?:en|ru|es)\/install`))
+})
+
+test('free install button uses browser PWA event, manual fallbacks and never claims install before appinstalled',()=>{
+  const ui=read('components/app/install-holistic-house.jsx')
+  const prompt=read('lib/pwa/install-prompt.js')
+  assert.match(ui,/data-hh-free-install/)
+  assert.match(ui,/data-hh-install-action/)
+  assert.match(ui,/onClick=\{install\}/)
+  assert.match(ui,/onPwaInstallPrompt\(event=>setOffer\(Boolean\(event\)\)\)/)
+  assert.match(ui,/requestPwaInstallation\(\)/)
+  assert.match(ui,/if\(!offer\)\{setInstructions\(true\);return\}/)
+  assert.match(ui,/if\(result\.accepted\) setAccepted\(true\)/)
+  assert.match(ui,/setStandalone\(true\)/)
+  assert.match(ui,/appinstalled/)
+  assert.match(ui,/navigator\.standalone===true/)
+  assert.match(ui,/window\.Capacitor\?\.isNativePlatform/)
+  assert.match(ui,/navigator\.clipboard\.writeText/)
+  assert.match(ui,/data-hh-install-guidance/)
+  assert.match(ui,/data-hh-copy-status/)
+  assert.match(ui,/https:\/\/holistichouse\.vercel\.app/)
+  assert.doesNotMatch(ui,/Notification\.requestPermission|PushManager|registerNativePushToken|localStorage|sessionStorage/)
+  assert.doesNotMatch(ui,/fetch\(|\.apk["']|\.aab["']/)
+  assert.match(prompt,/pending = null/)
+})
+
+test('existing Holistic House manifest and private cache policy are unchanged by free PWA installation',()=>{
+  const manifests=[
+    ['public/holistic-house-app.webmanifest','en'],
+    ['public/holistic-house-app-ru.webmanifest','ru'],
+    ['public/holistic-house-app-es.webmanifest','es']
+  ]
+  for(const [path,locale] of manifests){
+    const m=JSON.parse(read(path))
+    assert.equal(m.id,'/en/app')
+    assert.equal(m.name,'Holistic House')
+    assert.equal(m.display,'standalone')
+    assert.equal(m.start_url,`/${locale}/app/messages`)
+    assert.ok(m.icons.some(i=>i.sizes==='192x192'))
+    assert.ok(m.icons.some(i=>i.sizes==='512x512'))
+  }
+  const serviceWorker=read('public/sw.js')
+  assert.match(serviceWorker,/PRIVATE_PREFIXES/)
+  assert.match(serviceWorker,/\/es\/app/)
+  assert.match(serviceWorker,/network-only/)
+  assert.doesNotMatch(serviceWorker,/caches\.open\(.*private/)
+})
+
+test('install CI tests exact real messenger-first manifest, EN/RU/ES server pages and icon assets',()=>{
+  const workflow=read('.github/workflows/holistic-house-mobile-install.yml')
+  const checker=read('scripts/verify-hh-mobile-head.mjs')
+  assert.match(workflow,/holistic-house-free-install\.test\.mjs/)
+  assert.match(workflow,/holistic-house-app-es\.webmanifest/)
+  assert.match(workflow,/\/es\/install/)
+  assert.match(workflow,/\/ru\/app\/messages/)
+  assert.doesNotMatch(workflow,/start_url!=='\/ru\/app\/portrait'/)
+  assert.match(workflow,/node scripts\/verify-hh-mobile-head\.mjs/)
+  assert.match(checker,/\/es\/install/)
+  assert.match(checker,/\/holistic-house-app-es\.webmanifest/)
+  assert.match(workflow,/file \/tmp\/hh-icon\.png/)
+  assert.doesNotMatch(workflow,/pull_request_target:/)
+})

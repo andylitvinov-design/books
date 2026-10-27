@@ -14,6 +14,13 @@ on:
       - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
       - 'app/\[locale\]/install/**'
+      - 'app/es/layout.tsx'
+      - 'app/es/page.tsx'
+      - 'components/holistic-house-home.tsx'
+      - 'components/free-mobile-app-banner.*'
+      - 'components/site-navigation.tsx'
+      - 'lib/public-locales.ts'
+      - 'tests/holistic-house-free-install.test.mjs'
       - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
       - 'app/\[locale\]/app/layout.jsx'
       - 'components/app/install-holistic-house.jsx'
@@ -41,6 +48,13 @@ on:
       - 'tests/psialchemy-pwa.test.mjs'
       - 'app/holistic-house-icon/**'
       - 'app/\[locale\]/install/**'
+      - 'app/es/layout.tsx'
+      - 'app/es/page.tsx'
+      - 'components/holistic-house-home.tsx'
+      - 'components/free-mobile-app-banner.*'
+      - 'components/site-navigation.tsx'
+      - 'lib/public-locales.ts'
+      - 'tests/holistic-house-free-install.test.mjs'
       - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
       - 'components/app/install-holistic-house.jsx'
       - 'components/app/post-signup-install-offer.*'
@@ -68,9 +82,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Verify install manifests and private-message safety
-        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs
+        run: node --test tests/holistic-house-pwa.test.mjs tests/holistic-house-install-push-regression.test.mjs tests/holistic-house-post-signup-install.test.mjs tests/workflow-next-route-filters.test.mjs tests/psialchemy-pwa.test.mjs tests/holistic-house-free-install.test.mjs
       - name: Lint signed-in install prompt, global PWA registration and onboarding
-        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx
+        run: npx eslint components/pwa-registration.tsx components/app/post-signup-install-offer.jsx components/app/app-workspace.jsx lib/pwa/install-prompt.js components/app/install-holistic-house.jsx app/layout.tsx 'app/[locale]/layout.tsx' 'app/[locale]/homeopathy/layout.tsx' app/es/homeopathy/layout.tsx components/free-mobile-app-banner.tsx components/holistic-house-home.tsx app/es/page.tsx app/es/layout.tsx components/site-navigation.tsx 'app/[locale]/install/page.jsx' lib/public-locales.ts
       - name: Build public phone installation pages without credentials
         run: npm run build
       - name: Check EN/RU install pages and real PNG icons
@@ -84,11 +98,18 @@ jobs:
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/ru/install -o /tmp/hh-install-ru.html
           grep -q 'Holistic House' /tmp/hh-install-ru.html
+          grep -q 'Установить Holistic House бесплатно' /tmp/hh-install-ru.html
+          curl --fail --silent --show-error http://127.0.0.1:3098/en/install -o /tmp/hh-install-en.html
+          grep -q 'Install Holistic House for free' /tmp/hh-install-en.html
+          curl --fail --silent --show-error http://127.0.0.1:3098/es/install -o /tmp/hh-install-es.html
+          grep -q 'Instala Holistic House gratis' /tmp/hh-install-es.html
           for size in 180 192 512; do
             curl --fail --silent --show-error -D /tmp/hh-icon-headers -o /tmp/hh-icon.png "http://127.0.0.1:3098/holistic-house-icon/$size"
             grep -qi '^content-type: image/png' /tmp/hh-icon-headers
             file /tmp/hh-icon.png | grep -q "PNG image data, $size x $size"
           done
           curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-ru.webmanifest -o /tmp/hh-manifest-ru.json
-          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/portrait'||!f.shortcuts.some(x=>x.url==='/ru/app/consultations'))process.exit(1)"
+          node -e "const f=require('/tmp/hh-manifest-ru.json');if(f.start_url!=='/ru/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/ru/app/messages'))process.exit(1)"
+          curl --fail --silent --show-error http://127.0.0.1:3098/holistic-house-app-es.webmanifest -o /tmp/hh-manifest-es.json
+          node -e "const f=require('/tmp/hh-manifest-es.json');if(f.start_url!=='/es/app/messages'||f.id!=='/en/app'||!f.shortcuts.some(x=>x.url==='/es/app/messages'))process.exit(1)"
           node scripts/verify-hh-mobile-head.mjs http://127.0.0.1:3098

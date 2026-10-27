@@ -1226,9 +1226,9 @@
   .visual:not(.visualCompact) .portraitSectorChip{transition:none}
 }
 
-/* Portrait v4: All + four category views, and three compact quick actions. */
+/* Five life profiles plus All: goal ratings are separate from four scored portrait sectors. */
 .visual:not(.visualCompact) .portraitSectorGrid{
-  grid-template-columns:minmax(43px,.68fr) repeat(4,minmax(0,1fr));
+  grid-template-columns:minmax(44px,.68fr) repeat(5,minmax(44px,1fr));
   gap:5px;
 }
 .visual:not(.visualCompact) .portraitSectorAll{
@@ -1279,7 +1279,7 @@
 }
 @media(max-width:760px){
   .visual:not(.visualCompact) .portraitSectorGrid{
-    grid-template-columns:minmax(43px,.68fr) repeat(4,minmax(0,1fr));
+    grid-template-columns:minmax(44px,.68fr) repeat(5,minmax(44px,1fr));
     gap:4px;
   }
   .visual:not(.visualCompact) .portraitSectorChip,
@@ -1291,7 +1291,7 @@
 }
 @media(max-width:440px){
   .visual:not(.visualCompact) .portraitSectorGrid{
-    grid-template-columns:minmax(39px,.68fr) repeat(4,minmax(0,1fr));
+    grid-template-columns:minmax(44px,.68fr) repeat(5,minmax(44px,1fr));
     gap:3px;
   }
   .visual:not(.visualCompact) .portraitSectorChip,
@@ -1354,7 +1354,7 @@
     border-radius:10px;
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorGrid{
-    grid-template-columns:minmax(36px,.6fr) repeat(4,minmax(0,1fr));
+    grid-template-columns:minmax(44px,.64fr) repeat(5,minmax(44px,1fr));
     gap:3px;
   }
   :global(.hh-app) :global(.hh-insights-portrait) .visual:not(.visualCompact) .portraitSectorChip,

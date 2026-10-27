@@ -47,5 +47,5 @@ test('one-time setup is same-bot, verified owner, idempotent and not a message s
  assert.match(service,/registerClientTelegramWebhook\(env,\{config\}\)/)
  assert.match(cron,/cronAuthorized\(request,process.env\)/)
  assert.match(cron,/registerClientTelegramWebhook\(env,\{config\}\)/)
- assert.match(cron,/deliverDailyPracticeDigest\(config,\{env\}\)/)
+ assert.match(cron,/deliverDailyPracticeDigest\(config,\{env,technicalDigest:true\}\)/)
 })

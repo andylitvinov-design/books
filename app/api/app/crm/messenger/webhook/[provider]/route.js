@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic,processWhatsAppDiagnostic } from '@/lib/crm/messenger-webhook'
 import { sendTelegramDiagnosticPrompt,sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
+import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
+export const maxDuration=120
 const rejected=()=>new NextResponse('Unauthorized',{status:401,headers:PRIVATE_HEADERS})
 export async function GET(request,{params}){
   const {provider}=await params
@@ -29,6 +31,20 @@ export async function POST(request,{params}){
   try{
     const config=getAppConfig()
     const body=JSON.parse(raw.toString('utf8'))
+    if(provider==='telegram'){
+      const video=await receiveOwnerTelegramVideoWebhook(config,body,{channel:'crm'})
+      if(video.handled){
+        // The verified private owner command may be the first update needing
+        // callback_query delivery for the one-time YouTube publish button.
+        if(/^\/(?:video(?:_done|_retry|_cancel)?(?:@[A-Za-z0-9_]+)?|start(?:@[A-Za-z0-9_]+)?\s+video)$/i.test(String(body.message?.text||'').trim()))
+          await ensureTelegramInlineWebhookUpdates().catch(()=>{})
+        if(video.background)after(async()=>{
+          try{await video.background()}
+          catch{console.error('HH_OWNER_VIDEO_CRM_AFTER_FAILED')}
+        })
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      }
+    }
     const updates=normalizeMessengerUpdates(provider,body)
     // A previously registered bot may subscribe to 'message' only. Upgrade
     // the SAME already-owned signed webhook before its next inline prompt.

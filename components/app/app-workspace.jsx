@@ -67,7 +67,9 @@ import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
 import { appFetch } from '@/lib/app/client-fetch'
-import { REMOTE_SUPPORT_DRAFT_KEY, readRemoteSupportDraft, formatRemoteSupportDraft, takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
+import { REMOTE_SUPPORT_DRAFT_KEY, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft,
+  readTalismanRequestDraft, formatRemoteSupportDraft, formatTalismanRequestDraft,
+  takeRemoteSupportPrivateIntention } from '@/lib/practitioners/remote-energy-support'
 import { coursePendingKeys, isCourseTest, startOrResumeCourseTest } from '@/lib/app/course-test-flow'
 export { appFetch }
 
@@ -2325,6 +2327,7 @@ function PortfolioPage({ data, locale }) {
         </summary>
         <TestExplorerVisual locale={locale} coverage={coverageForFocus([])}
           portrait={buildPsychPortrait(data.results || [])}
+          goalProfileProps={{ accountId, entriesByKey, results: data.results || [] }}
           portraitTab={portraitTab}
           portraitActions={({ selectedSector, portrait }) => <>
             <PortraitTestQuickActions locale={locale} sector={selectedSector} portrait={portrait}
@@ -3849,9 +3852,20 @@ function RequestForm({ service, locale, data, close, onDone }) {
     [error, setError] = useState(null),
     operation = useRef(null),
     [energyPrefill, setEnergyPrefill] = useState(false),
-    [remoteDraft, setRemoteDraft] = useState(null)
+    [remoteDraft, setRemoteDraft] = useState(null),
+    [talismanDraft, setTalismanDraft] = useState(null)
   useEffect(() => {
     if (typeof window === 'undefined') return
+    const talisman = readTalismanRequestDraft(window.sessionStorage, service.id)
+    if (talisman && service.slug === 'remote-energy-support') {
+      const privateIntention = takeRemoteSupportPrivateIntention(service.id)
+      const prefill = formatTalismanRequestDraft(talisman, locale) +
+        (privateIntention ? '\n\n' + (locale === 'ru' ? 'Мои пожелания: ' : 'My preferences: ') + privateIntention : '')
+      setNote(current => current || prefill)
+      setTalismanDraft(talisman)
+      setEnergyPrefill(true)
+      return
+    }
     const draft = readRemoteSupportDraft(window.sessionStorage, service.id)
     if (!draft) return
     // User-entered free text travels only in client memory during same-tab
@@ -3871,7 +3885,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
     const body = operation.current || {
       serviceId: service.id,
       operationId: crypto.randomUUID(),
-      contact: remoteDraft ? 'Via Holistic House portal' : contact,
+      contact: (remoteDraft || talismanDraft) ? 'Via Holistic House portal' : contact,
       message: note,
       remoteBooking: remoteDraft ? {
         version:2, goal:remoteDraft.goal, method:remoteDraft.method, format:remoteDraft.format,
@@ -3879,14 +3893,18 @@ function RequestForm({ service, locale, data, close, onDone }) {
         timezone:remoteDraft.timezone, startsAt:remoteDraft.startsAt,
         expectedPrice:remoteDraft.expectedPrice, expectedCurrency:remoteDraft.expectedCurrency,
       } : undefined,
-      shareResultId: remoteDraft ? null : (shareId || null),
+      talismanRequest: talismanDraft ? { version:1, goal:talismanDraft.goal } : undefined,
+      shareResultId: (remoteDraft || talismanDraft) ? null : (shareId || null),
       shareConfirmed: confirmed,
     }
     operation.current = body
     try {
       await appFetch('requests', body)
-      if (energyPrefill && typeof window !== 'undefined' && readRemoteSupportDraft(window.sessionStorage, service.id)) {
-        window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY)
+      if (energyPrefill && typeof window !== 'undefined') {
+        if (readRemoteSupportDraft(window.sessionStorage, service.id))
+          window.sessionStorage.removeItem(REMOTE_SUPPORT_DRAFT_KEY)
+        if (readTalismanRequestDraft(window.sessionStorage, service.id))
+          window.sessionStorage.removeItem(TALISMAN_REQUEST_DRAFT_KEY)
       }
       operation.current = null
       await onDone()
@@ -3903,11 +3921,15 @@ function RequestForm({ service, locale, data, close, onDone }) {
         {c.close}
       </button>
       <h2>{service.copy[locale].title}</h2>
-      {energyPrefill && <p className="hh-fine">{locale === 'ru'
-        ? 'Ваш выбор мастера, метода, длительности и времени добавлен в сообщение. Это запрос, а не оплаченная или подтверждённая запись.'
-        : 'Your preferences for practitioner, method, duration and time are in the message. This is a request, not a paid or confirmed booking.'}</p>}
+      {energyPrefill && <p className="hh-fine">{talismanDraft
+        ? (locale === 'ru'
+          ? 'Это запрос на обсуждение талисмана. Мастер отдельно подтверждает возможность изготовления и цену; заказа и оплаты ещё нет.'
+          : 'This is a talisman enquiry. The practitioner must confirm availability and price; no order or payment has been made.')
+        : (locale === 'ru'
+          ? 'Ваш выбор мастера, метода, длительности и времени добавлен в сообщение. Это запрос, а не оплаченная или подтверждённая запись.'
+          : 'Your preferences for practitioner, method, duration and time are in the message. This is a request, not a paid or confirmed booking.')}</p>}
       <p>{c.requestNote}</p>
-      {service.slug === 'remote-energy-support' && !remoteDraft
+      {service.slug === 'remote-energy-support' && !remoteDraft && !talismanDraft
         ? <p><Link className="hh-primary"
             href={`/${locale}/services/remote-energy-support?practitioner=${encodeURIComponent(service.practitionerSlug || '')}`}
             prefetch={false}>
@@ -3916,7 +3938,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
              'Choose your duration and preferred time first'} →
           </Link></p>
         : <form className="hh-form" onSubmit={submit}>
-        {!remoteDraft && <label>
+        {!remoteDraft && !talismanDraft && <label>
           {c.contact}
           <input
             required
@@ -3926,7 +3948,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             onChange={(e) => setContact(e.target.value)}
           />
         </label>}
-        {remoteDraft && <p className="hh-fine">{locale==='ru'
+        {(remoteDraft || talismanDraft) && <p className="hh-fine">{locale==='ru'
           ? 'Общение через защищённый кабинет Holistic House. Контакты сторон не передаются напрямую.'
           : 'Messages stay in Holistic House. Personal contact details are not shared with the practitioner.'}</p>}
         <label>
@@ -3938,7 +3960,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             onChange={(e) => setNote(e.target.value)}
           />
         </label>
-        {!remoteDraft && <label>
+        {!remoteDraft && !talismanDraft && <label>
           {c.share}
           <select
             value={shareId}
@@ -3956,7 +3978,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             ))}
           </select>
         </label>}
-        {!remoteDraft && shared && (
+        {!remoteDraft && !talismanDraft && shared && (
           <>
             <div className="hh-notice">
               <p>
@@ -3981,7 +4003,7 @@ function RequestForm({ service, locale, data, close, onDone }) {
             </label>
           </>
         )}
-        {!remoteDraft && <p className="hh-fine">{c.sharingNote}</p>}
+        {!remoteDraft && !talismanDraft && <p className="hh-fine">{c.sharingNote}</p>}
         <button className="hh-primary" disabled={busy}>
           {busy ? c.saving : c.submitRequest}
         </button>

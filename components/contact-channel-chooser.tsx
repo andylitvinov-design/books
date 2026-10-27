@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { PhoneCountryInput } from "@/components/phone-country-input";
@@ -143,8 +144,10 @@ type Props = {
   attributes?: Record<string, string>;
   id?: string;
   quick?: boolean;
-  /** One-step phone + WhatsApp / Telegram handoff; never show the sign-up/Google panel. */
+  /** Phone + messenger handoff for existing compact forms. */
   compactPhone?: boolean;
+  /** Only Alchemy's fixed one-time SKU; never a client-specified amount or booking status. */
+  bookingSku?: "express-consultation-30" | "personal-session-60";
   /** Keep the original request button but reveal the compact phone-only form. */
   compactTrigger?: boolean;
   /** Keep the verified receipt in place so the visitor can select a messenger after saving. */
@@ -160,7 +163,7 @@ type Props = {
 /** Anonymous first-party lead save, followed by an explicit client-initiated messenger handoff. */
 export function ContactChannelChooser({
   locale, whatsappUrl, className, label, event = "contact_click", analyticsEvent,
-  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false,
+  onChannelClick, attributes, id, quick = false, compactPhone = false, compactTrigger = false, stayAfterSave = false, resetKey, publicTopic, publicServiceTitle, allowSecureExpressClaim = false, bookingSku,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -173,6 +176,9 @@ export function ContactChannelChooser({
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [saved, setSaved] = useState<SavedEnquiry | null>(null);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [bookingStartsAt, setBookingStartsAt] = useState<string | null>(null);
+  const [paymentExpanded, setPaymentExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const operationId = useRef<string | null>(null);
@@ -209,6 +215,9 @@ export function ContactChannelChooser({
       // so switching between free/personal choices never requires retyping it.
       setMethod("phone");
       setSaved(null);
+      setBookingConfirmed(false);
+      setBookingStartsAt(null);
+      setPaymentExpanded(false);
       setError("");
       operationId.current = null;
       return;
@@ -246,6 +255,46 @@ export function ContactChannelChooser({
     panelRef.current?.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
   }, [compactPhone, compactTrigger, open, saved]);
 
+  // Never trust a typed name, public HH reference, query string or local storage
+  // to unlock the cart. Only the original signed HttpOnly cookie + RLS can read
+  // the practitioner's confirmed booking status.
+  useEffect(() => {
+    if (!bookingSku) return;
+    let active = true;
+    fetch("/api/service-enquiries/booking-status", {
+      credentials: "same-origin", cache: "no-store",
+    }).then(response => response.ok ? response.json() : null)
+      .then(status => {
+        if (!active || !status || status.bookingSku !== bookingSku ||
+            !/^HH-[A-F0-9]{12}$/.test(status.referenceCode || "")) return;
+        setSaved({ saved: true, referenceCode: status.referenceCode });
+        setBookingConfirmed(status.booked === true);
+        setBookingStartsAt(status.booked === true && typeof status.startsAt === "string" ? status.startsAt : null);
+      }).catch(() => { /* No signed proof or offline: never unlock payment. */ });
+    return () => { active = false; };
+  }, [bookingSku, enquiryResetKey]);
+
+  async function checkBookingStatus() {
+    if (!bookingSku) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/service-enquiries/booking-status", {
+        credentials: "same-origin", cache: "no-store",
+      });
+      const status = await response.json().catch(() => ({}));
+      if (!response.ok || status.bookingSku !== bookingSku ||
+          !/^HH-[A-F0-9]{12}$/.test(status.referenceCode || "")) throw new Error("NOT_VERIFIED");
+      setSaved({ saved: true, referenceCode: status.referenceCode });
+      setBookingConfirmed(status.booked === true);
+      setBookingStartsAt(status.booked === true && typeof status.startsAt === "string" ? status.startsAt : null);
+    } catch {
+      setError(locale === "ru" ? "Не удалось проверить запись. Попробуйте позже." :
+        locale === "es" ? "No se ha podido comprobar la reserva." :
+        "Could not verify the booking. Please try again.");
+    } finally { setBusy(false); }
+  }
+
   const referredWhatsappUrl = withPaidAdReferral(
     withOrganicEventReferral(whatsappUrl, publicEventSearch, pathname, locale),
     publicAdSearch, pathname, locale,
@@ -263,7 +312,7 @@ export function ContactChannelChooser({
   // sessionStorage; never save entered contacts, private notes or tokens there.
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (compactPhone || url.searchParams.get("hh_enquiry") !== "google") return;
+    if ((compactPhone && !bookingSku) || url.searchParams.get("hh_enquiry") !== "google") return;
     let pending: { path?: string; service?: string; panel?: string } | null = null;
     try {
       pending = JSON.parse(window.sessionStorage.getItem("hh-google-enquiry-return") || "null");
@@ -291,7 +340,7 @@ export function ContactChannelChooser({
         setError("");
       }).catch(() => { if (active) setError(c.googleError); });
     return () => { active = false; };
-  }, [pathname, serviceTitle, panelId, c.googleError, compactPhone]);
+  }, [pathname, serviceTitle, panelId, c.googleError, compactPhone, bookingSku]);
 
   // Prefill from a verified account without silently creating a lead.
   // Consent is the explicit Submit tap after the reply-only disclosure.
@@ -344,7 +393,7 @@ export function ContactChannelChooser({
     if (busy || saved) return;
     if (submitting.current) return;
     const cleanedPhone = phone.replace(/[\s().-]/g, "");
-    const usePhone = compactPhone || method === "phone";
+    const usePhone = (compactPhone && !bookingSku) || method === "phone";
     if ((!usePhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
       (usePhone && !/^\+[1-9][0-9]{7,14}$/.test(cleanedPhone))) {
       setError(compactPhone ? c.compactPhoneError : c.contactError);
@@ -374,6 +423,7 @@ export function ContactChannelChooser({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           operationId: nextId, serviceTitle,
+          ...(bookingSku ? { bookingSku } : {}),
           description: expressReview
             ? [publicTopic?.trim() || "", ...(description.trim() ? ["Initial question: " + description.trim()] : [])].join("\n")
             : description.trim() || ((quick || compactPhone) ? publicTopic?.trim() || "" : ""),
@@ -388,6 +438,7 @@ export function ContactChannelChooser({
         throw new Error(data.error || "NOT_SAVED");
       }
       setSaved({ saved: true, referenceCode: data.referenceCode });
+      if (bookingSku) { setBookingConfirmed(false); setBookingStartsAt(null); }
       // Only a confirmed server/CRM write creates a receipt. No personal data
       // or sensitive answers are placed in browser storage or the URL.
       try {
@@ -431,6 +482,148 @@ export function ContactChannelChooser({
       originalMessage + "\n\n" + c.reference + ": " + saved.referenceCode,
     );
     preparedWhatsApp = draftUrl.toString();
+  }
+
+  if (compactPhone && bookingSku) {
+    const paidReady = bookingConfirmed && Boolean(saved && bookingStartsAt);
+    const sessionText = bookingSku === "express-consultation-30"
+      ? (locale === "ru" ? "Экспресс · 30 мин · €50" : locale === "es" ? "Exprés · 30 min · 50 €" : "Express · 30 min · €50")
+      : (locale === "ru" ? "Личная сессия · 60 мин · €100" : locale === "es" ? "Sesión personal · 60 min · 100 €" : "Personal session · 60 min · €100");
+    const bookLabel = locale === "ru" ? "Book a Session · Записаться" : locale === "es" ? "Book a Session · Reservar" : "Book a Session";
+    const payLabel = locale === "ru" ? "Pay Your Session · Оплатить" : locale === "es" ? "Pay Your Session · Pagar" : "Pay Your Session";
+    return (
+      <div className={[styles.compactPhone, styles.compactPhoneToggle].join(" ")}
+        data-contact-channel-chooser data-session-booking-flow data-booking-sku={bookingSku}>
+        <button id={id} type="button" className={[styles.trigger, className].filter(Boolean).join(" ")}
+          aria-expanded={open} aria-controls={panelId} data-contact-order
+          data-booking-cta={paidReady ? "pay" : "book"}
+          onClick={() => {
+            if (paidReady) { setOpen(true); setPaymentExpanded(value => !value); }
+            else { setOpen(value => !value); setPaymentExpanded(false); }
+          }}>
+          <ShoppingBag size={20} aria-hidden="true" />
+          <span>{paidReady ? payLabel : bookLabel}</span>
+          <ChevronDown className={styles.chevron} size={21} aria-hidden="true" />
+        </button>
+        <div ref={panelRef} id={panelId} className={styles.compactTogglePanel} hidden={!open}>
+          {!saved ? (
+            <form className={styles.bookingForm} data-booking-step="contact" onSubmit={submit}>
+              <p className={styles.bookingIntro}>{locale === "ru"
+                ? "Забронируйте выбранную сессию через телефон или Google. Время подтвердит Андрей."
+                : locale === "es" ? "Reserva con teléfono o Google. Andrey confirmará el horario."
+                  : "Book with your phone number or Google. Andrey will confirm the time."}</p>
+              <p className={styles.bookingProduct}>{sessionText}</p>
+              {!googleReady ? (
+                <button type="button" className={styles.googleButton} onClick={startGoogle}
+                  disabled={busy || googleBusy} aria-label={c.google}>
+                  <span className={styles.googleMark} aria-hidden="true">G</span>
+                  {googleBusy ? c.googleBusy : c.google}
+                </button>
+              ) : null}
+              {googleReady && method === "email" ? (
+                <>
+                  <p className={styles.googleReady} role="status">{c.googleReady}</p>
+                  <button className={styles.bookingSwitch} type="button"
+                    onClick={() => { setMethod("phone"); setError(""); operationId.current = null; }}>
+                    {c.quickPhone}
+                  </button>
+                </>
+              ) : (
+                <div className={styles.compactPhoneField}>
+                  <label htmlFor={panelId + "-phone"}>{c.compactPhoneLabel}</label>
+                  <PhoneCountryInput id={panelId + "-phone"} locale={locale} value={phone}
+                    disabled={busy || googleBusy} required onChange={value => {
+                      setPhone(value); setMethod("phone"); setError(""); operationId.current = null;
+                    }} />
+                </div>
+              )}
+              <label className={styles.compactConsent}>
+                <input type="checkbox" checked={consent} required disabled={busy || googleBusy}
+                  onChange={event => { setConsent(event.target.checked); setError(""); operationId.current = null; }} />
+                <span>{c.compactConsent}</span>
+              </label>
+              <label className={styles.honeypot} aria-hidden="true">
+                Website <input type="text" tabIndex={-1} autoComplete="off"
+                  value={website} onChange={event => setWebsite(event.target.value)} />
+              </label>
+              <button type="submit" className={styles.bookingPrimary}
+                disabled={busy || googleBusy || !consent ||
+                  (method === "email" ? !googleReady || !email.trim() : !phone.trim())}>
+                {busy ? c.sending : bookLabel}
+              </button>
+              <p className={styles.bookingFine}>{locale === "ru"
+                ? "Это заявка в CRM, не автоматическое подтверждение записи. Без оплаты и рекламы."
+                : locale === "es" ? "Se registra una solicitud, no una cita ni un pago automático. Sin publicidad."
+                  : "This creates a CRM enquiry, not a confirmed appointment or charge. No marketing."}</p>
+              {error && <p className={styles.error} role="alert">{error}</p>}
+            </form>
+          ) : (
+            <section className={styles.compactReceipt} data-booking-step={paidReady ? "confirmed" : "pending"}>
+              <p className={styles.saved} role="status">{c.saved} · {saved.referenceCode}</p>
+              <p className={styles.bookingProduct}>{sessionText}</p>
+              {paidReady ? (
+                <p className={styles.bookingSuccess}>
+                  {locale === "ru" ? "Время подтверждено:" : locale === "es" ? "Horario confirmado:" : "Confirmed time:"}
+                  {" "}<time dateTime={bookingStartsAt!}>
+                    {new Date(bookingStartsAt!).toLocaleString(locale === "ru" ? "ru-RU" : locale === "es" ? "es-ES" : "en-CA", {
+                      year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short",
+                    })}
+                  </time>
+                </p>
+              ) : (
+                <p className={styles.bookingPending} role="status">
+                  {locale === "ru"
+                    ? "Заявка получена. Андрей согласует с вами время; оплата откроется после его подтверждения."
+                    : locale === "es"
+                      ? "Solicitud recibida. Andrey acordará la hora contigo. El pago se habilita tras su confirmación."
+                      : "Request received. Andrey will agree a time with you. Payment unlocks only after his confirmation."}
+                </p>
+              )}
+              {paidReady && paymentExpanded ? (
+                <section className={styles.bookingPayPanel} data-booking-payment-options>
+                  <strong>{locale === "ru" ? "Ваша корзина" : locale === "es" ? "Tu carrito" : "Your cart"} · {sessionText}</strong>
+                  <Link className={styles.bookingPrimary}
+                    href={"/" + locale + "/cart?items=" + encodeURIComponent(bookingSku)}
+                    prefetch={false} data-booking-cart-link>
+                    {locale === "ru" ? "Открыть корзину и способы оплаты" : locale === "es"
+                      ? "Abrir carrito y métodos de pago" : "Open cart & payment methods"}
+                  </Link>
+                  <small>{locale === "ru" ? "Выберите доступный способ оплаты. Поступление подтверждается отдельно."
+                    : locale === "es" ? "Elige un método disponible. La recepción del pago se confirma por separado."
+                      : "Choose an available payment method in the cart. Receipt is verified separately."}</small>
+                </section>
+              ) : null}
+              {!paidReady ? (
+                <button type="button" className={styles.bookingCheck} disabled={busy}
+                  onClick={() => { void checkBookingStatus(); }} data-booking-check-status>
+                  {busy ? c.sending : locale === "ru" ? "Проверить подтверждение времени" : locale === "es"
+                    ? "Comprobar confirmación" : "Check booking confirmation"}
+                </button>
+              ) : null}
+              <details className={styles.bookingChat}>
+                <summary>{c.messengers}</summary>
+                <div className={styles.compactChannels}>
+                  <AcquisitionEventLink prefetch={false} className={styles.whatsapp} href={preparedWhatsApp}
+                    event={event} analyticsEvent={analyticsEvent} onClick={() => onChannelClick?.("whatsapp")}
+                    target="_blank" rel="noopener noreferrer"
+                    attributes={{ ...attributes, "data-contact-channel": "whatsapp" }}>
+                    <MessageCircle size={19} aria-hidden="true" />WhatsApp
+                  </AcquisitionEventLink>
+                  <AcquisitionEventLink prefetch={false} className={styles.telegram}
+                    href={telegramEnquiryUrlFromWhatsApp(preparedWhatsApp)}
+                    event={event} analyticsEvent={analyticsEvent}
+                    onClick={() => onChannelClick?.("telegram")} target="_blank" rel="noopener noreferrer"
+                    attributes={{ ...attributes, "data-contact-channel": "telegram" }}>
+                    <Send size={19} aria-hidden="true" />Telegram
+                  </AcquisitionEventLink>
+                </div>
+              </details>
+              {error && <p className={styles.error} role="alert">{error}</p>}
+            </section>
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (compactPhone) {

@@ -7,6 +7,7 @@ import folders from '@/components/materials-audio-folders.module.css'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {PractitionerMaterialsCabinet} from '@/components/practitioner-materials-cabinet'
+import AdminTelegramVideos from '@/components/admin-telegram-videos'
 export const dynamic='force-dynamic'
 export const metadata={title:'Materials · Holistic House',robots:{index:false,follow:false}}
 export default async function MaterialsPage(){
@@ -27,6 +28,7 @@ export default async function MaterialsPage(){
       <Link href="/admin/materials/coaching"><FolderOpen aria-hidden="true"/>{ru?'Коучинг':'Coaching'}</Link>
       <Link href={workspace+'videos'}><Film aria-hidden="true"/>{ru?'Видео':'Video'}</Link>
     </nav>
+    <AdminTelegramVideos locale={ru?'ru':'en'}/>
     <section className={folders.collection} aria-labelledby="materials-course-folders" data-materials-course-folder>
       <h2 className={folders.sectionTitle} id="materials-course-folders">
         <FolderOpen aria-hidden="true" />{ru?'Курсы':'Courses'}

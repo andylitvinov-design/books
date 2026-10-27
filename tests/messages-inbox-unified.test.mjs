@@ -108,19 +108,23 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages has five focused app destinations without public site navigation',()=>{
+test('Messages dock mirrors the current seven-destination private Cabinet menu',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const nav=read('components/app/messages-bottom-navigation.jsx')
   const css=read('app/[locale]/app/messages/messages-page.css')
+  const workspace=read('components/app/app-workspace.jsx')
   assert.ok(page.includes('<MessagesBottomNavigation locale={locale}/>'))
-  assert.ok(nav.includes('className="hh-mobile-app-nav hh-messages-app-dock"'))
-  assert.doesNotMatch(nav,/hh-mobile-app-nav-home/)
-  assert.equal((nav.match(/\{path:'/g)||[]).length,5)
+  assert.ok(nav.includes('className="hh-mobile-app-nav"'))
+  assert.match(nav,/hh-mobile-app-nav-home/)
+  assert.equal((nav.match(/\{path:'/g)||[]).length,6)
+  const order=[...nav.matchAll(/\{path:'([^']+)'/g)].map(match=>match[1].split('?')[0])
+  const cabinet=workspace.slice(workspace.indexOf('const nav = ['),workspace.indexOf('const navIsActive'))
+  const cabinetOrder=[...cabinet.matchAll(/id: '([^']+)'/g)].map(match=>match[1])
+  assert.deepEqual(order,cabinetOrder)
   assert.ok(nav.includes("locale==='es'?'en':locale"))
-  assert.match(css,/hh-messages-app-dock/)
+  assert.doesNotMatch(css,/hh-messages-app-dock|repeat\(5,minmax\(0,1fr\)\)/)
   assert.ok(css.includes('padding-bottom:calc(110px + env(safe-area-inset-bottom))'))
 })
-
 
 test('Messages compact mode opens only one mobile pane at a time, with accessible Back',()=>{
   const hub=read('components/app/messages-hub.jsx')

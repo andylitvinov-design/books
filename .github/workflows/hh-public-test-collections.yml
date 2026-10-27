@@ -22,6 +22,14 @@ on:
       - 'app/[locale]/personality-profiles/page.tsx'
       - 'tests/unified-profile-layers.test.mjs'
       - 'components/personality-profiles-builder.tsx'
+      - 'lib/profile/profile-scale-selection.js'
+      - 'tests/profile-test-taxonomy.test.mjs'
+      - 'tests/profile-construct-axes.test.mjs'
+      - 'tests/goal-profile-journey.test.mjs'
+      - 'lib/profile/goal-profile.js'
+      - 'scripts/audit-profile-construct-links.mjs'
+      - 'tests/profile-scale-hierarchy.test.mjs'
+      - 'tests/personality-profiles-focus-filter.test.mjs'
       - 'components/personality-profiles-builder.module.css'
       - 'components/app/cabinet-landing.jsx'
       - 'components/app/guest-test-journey-progress.jsx'
@@ -49,6 +57,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm ci --no-audit --no-fund
+      - name: Source-only taxonomy / scorer identity coverage for every registered test
+        run: node scripts/audit-profile-construct-links.mjs --verify
       - name: Real collection membership, matching, standard cards and EN/RU/ES tests
         run: >-
           node --conditions=react-server --test
@@ -59,6 +69,11 @@ jobs:
           tests/public-love-search.test.mjs
           tests/tantric-reflections.test.mjs
           tests/personality-profiles-builder.test.mjs
+          tests/personality-profiles-focus-filter.test.mjs
+          tests/profile-scale-hierarchy.test.mjs
+          tests/profile-test-taxonomy.test.mjs
+          tests/profile-construct-axes.test.mjs
+          tests/goal-profile-journey.test.mjs
           tests/unified-profile-layers.test.mjs
           tests/profile-test-course-journey.test.mjs
           tests/guest-test-journey-progress.test.mjs
@@ -72,6 +87,14 @@ jobs:
           lib/assessments/test-explorer.js
           lib/app/guest-test-journey.js
           components/personality-profiles-builder.tsx
+          lib/profile/profile-scale-selection.js
+          lib/profile/goal-profile.js
+          tests/goal-profile-journey.test.mjs
+          tests/personality-profiles-focus-filter.test.mjs
+          tests/profile-scale-hierarchy.test.mjs
+          tests/profile-test-taxonomy.test.mjs
+          tests/profile-construct-axes.test.mjs
+          scripts/audit-profile-construct-links.mjs
           components/app/unified-profile-layers.jsx
           lib/profile/unified-profile.js
           tests/unified-profile-layers.test.mjs

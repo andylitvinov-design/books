@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, BookOpen, CheckCircle2, ChevronDown, CircleHelp, ClipboardList, LockKeyhole, Save, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
 import { PORTRAIT_SECTORS, PORTRAIT_AXIS_ORDER } from '@/lib/assessments/portrait-sectors'
+import { GOAL_RATING_KEYS, GOAL_RATING_LABELS } from '@/lib/profile/goal-profile'
 import { buildPsychPortrait } from '@/lib/assessments/psych-portrait'
 import { buildExplorerEntries } from '@/lib/assessments/test-explorer'
 import { PROFILE_TEST_DOMAINS, recommendProfileTopicTests, recommendUnmeasuredPortraitTests } from '@/lib/profile/portrait-test-suggestions'
@@ -132,6 +133,12 @@ const programmeText = {
     ru: { title: 'Фокус и энергия', detail: 'Ясность, концентрация и посильные шаги в ежедневных делах.' },
   },
 }
+const goalCheckinCopy = {
+  en: { title:'Goal Profile · 3 self-ratings', intro:'Think of one concrete goal. Rate how it feels today (0–10), not how successful or healthy you are. These ratings are personal observations, not results of a validated questionnaire.', instruction:'Choose a value for all three scales to save them. Leave all blank if you only want to save development targets.', empty:'Not assessed', low:'Not at all', high:'Very much', clear:'Clear my ratings', missing:'Choose all 3 ratings, or clear all, before saving.', saved:'Saved privately' },
+  ru: { title:'Профиль цели · 3 самооценки', intro:'Подумайте об одной конкретной цели. Оцените её сегодня по шкале 0–10. Это ваши наблюдения, а не психологический диагноз и не результаты стандартизированного теста.', instruction:'Чтобы сохранить профиль цели, заполните все три шкалы. Если хотите сохранить только цели развития, оставьте их пустыми.', empty:'Не оценено', low:'Совсем нет', high:'Полностью', clear:'Очистить мои оценки', missing:'Заполните все 3 оценки или очистите их перед сохранением.', saved:'Сохранено приватно' },
+  es: { title:'Perfil de la meta · 3 autoevaluaciones', intro:'Piensa en una meta concreta. Evalúa cómo te sientes hoy (0–10), no tu salud ni tu éxito. Son observaciones personales, no pruebas clínicas validadas.', instruction:'Completa las tres escalas o déjalas todas vacías para guardar solo otros objetivos.', empty:'No evaluado', low:'Nada', high:'Mucho', clear:'Borrar mis puntuaciones', missing:'Completa las tres escalas o bórralas antes de guardar.', saved:'Guardado en privado' },
+}
+const emptyGoalRatings = () => Object.fromEntries(GOAL_RATING_KEYS.map(key => [key, '']))
 const initialGoals = () => ({
   version: DEVELOPMENT_GOALS_VERSION,
   targets: { ...DEFAULT_DEVELOPMENT_TARGETS },
@@ -171,10 +178,13 @@ function TargetSlider({ title, value, onChange, compact = false, ariaLabel = tit
 export default function DevelopmentProgram({ results = [], accountId, locale = 'en', hideBottomNotes = false }) {
   const lang = locale === 'ru' ? 'ru' : 'en'
   const t = words[lang]
+  const goalCopy = goalCheckinCopy[locale] || goalCheckinCopy.en
   const [expanded, setExpanded] = useState(true)
   const [loaded, setLoaded] = useState(false)
   const [goals, setGoals] = useState(initialGoals)
   const [revision, setRevision] = useState(0)
+  const [goalDraft, setGoalDraft] = useState(emptyGoalRatings)
+  const [goalDraftDirty, setGoalDraftDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -206,6 +216,8 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
       .then(value => {
         if (!active) return
         setGoals(value.goals)
+        setGoalDraft(Object.fromEntries(GOAL_RATING_KEYS.map(key => [key, value.goals?.goalCheckin?.values?.[key] == null ? '' : String(value.goals.goalCheckin.values[key])])) )
+        setGoalDraftDirty(false)
         setRevision(value.revision)
         setLoaded(true)
         if (value.revision > 0) setActivePanel(current => current ?? 'plan')
@@ -264,12 +276,26 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
   }
   async function saveGoals() {
     if (busy || !loaded) return
+    const values = GOAL_RATING_KEYS.map(key => goalDraft[key])
+    if (goalDraftDirty && values.some(value => value !== '') && values.some(value => value === '')) {
+      setError(goalCopy.missing)
+      return
+    }
     setBusy(true)
     setError('')
     setSavedMessage('')
     try {
-      const value = await appFetch('development-goals', { ...goals, revision }, 'POST', { accountId })
+      const checkin = goalDraftDirty ? {
+        goalCheckin: values.every(value => value === '') ? null : {
+          values: Object.fromEntries(GOAL_RATING_KEYS.map(key => [key, Number(goalDraft[key])])),
+          measuredAt: new Date().toISOString(),
+        },
+      } : {}
+      const value = await appFetch('development-goals', { ...goals, ...checkin, revision }, 'POST', { accountId })
       setGoals(value.goals)
+      setGoalDraft(Object.fromEntries(GOAL_RATING_KEYS.map(key => [key, value.goals?.goalCheckin?.values?.[key] == null ? '' : String(value.goals.goalCheckin.values[key])])) )
+      setGoalDraftDirty(false)
+      window.dispatchEvent(new Event('hh:goal-checkin-saved'))
       setRevision(value.revision)
       setDirty(false)
       setActivePanel('plan')
@@ -322,6 +348,29 @@ export default function DevelopmentProgram({ results = [], accountId, locale = '
         <span className={styles.pill}><SlidersHorizontal size={15} aria-hidden="true" /> {t.goals}</span>
         <p>{t.goalHint}</p>
       </div>
+      <fieldset className={styles.goalCheckin} data-goal-checkin-editor disabled={!loaded || busy}>
+        <legend>{goalCopy.title}</legend>
+        <p>{goalCopy.intro}</p>
+        <div className={styles.goalRatingGrid}>
+          {GOAL_RATING_KEYS.map(key => <label className={styles.goalRatingRow} key={key}>
+            <span>{GOAL_RATING_LABELS[key]?.[locale] || GOAL_RATING_LABELS[key].en}</span>
+            <select data-goal-checkin-control={key}
+              value={goalDraft[key]} onChange={event => {
+                setGoalDraft(previous => ({...previous, [key]: event.target.value}))
+                setGoalDraftDirty(true); setDirty(true); setSavedMessage(''); setError('')
+              }}>
+              <option value="">{goalCopy.empty}</option>
+              {Array.from({length:11}, (_, value) => <option key={value} value={String(value)}>{value} / 10</option>)}
+            </select>
+          </label>)}
+        </div>
+        <div className={styles.goalCheckinFooter}>
+          <small>{goalCopy.instruction} · 0: {goalCopy.low} · 10: {goalCopy.high}</small>
+          <button type="button" onClick={() => {
+            setGoalDraft(emptyGoalRatings()); setGoalDraftDirty(true); setDirty(true); setError('')
+          }}>{goalCopy.clear}</button>
+        </div>
+      </fieldset>
       <div className={styles.sectorGrid}>
         {PORTRAIT_SECTORS.map(sector => {
           const summary = plan.sectors.find(item => item.key === sector.key)

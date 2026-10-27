@@ -1,26 +1,43 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,ExternalLink,Images,UserRound} from 'lucide-react'
+import {ArrowLeft,ExternalLink,Images,UserRound,Video,Music2} from 'lucide-react'
 import CrmTelegramPhoto from './crm-telegram-photo'
+import PrivateChatPhoto from './private-chat-photo'
 import styles from './messages-contact-card.module.css'
+import {mediaFromMessages,mergeMediaPages} from '@/lib/app/messenger-private-media.mjs'
 
 const COPY={
- en:{title:'Client card',back:'Back to chat',contact:'Contact details',email:'Email',phone:'Phone',status:'Status',
- source:'Channel',date:'Received',photos:'Saved photos',hint:'Photos in this conversation’s recent messages.',
- none:'No recent photos saved here.',loading:'Opening private client details…',error:'Could not open private details. Reopen the card to retry.',
- master:'Master profile',openMaster:'Open verified master profile',full:'Full private request and files',
- empty:'No other verified contact details yet.',privacy:'CRM contacts, private client records and master profiles are not merged without a verified link.'},
- ru:{title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',status:'Статус',
- source:'Канал',date:'Получена',photos:'Сохранённые фотографии',hint:'Фото из последних сообщений этого диалога.',
- none:'В последних сообщениях фотографий нет.',loading:'Открываю защищённую карточку…',error:'Не удалось открыть сведения. Повторите открытие карточки.',
- master:'Профиль мастера',openMaster:'Открыть подтверждённый профиль мастера',full:'Полная защищённая заявка и материалы',
- empty:'Других подтверждённых данных пока нет.',privacy:'Контакты CRM, приватные данные клиентов и профили мастеров не объединяются без проверенной связи.'},
- es:{title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',status:'Estado',
- source:'Canal',date:'Recibida',photos:'Fotos guardadas',hint:'Fotos de los últimos mensajes de este chat.',
- none:'No hay fotos recientes.',loading:'Abriendo ficha privada…',error:'No se pueden abrir los datos. Vuelve a intentar.',
- master:'Perfil profesional',openMaster:'Abrir perfil profesional verificado',full:'Solicitud privada completa y archivos',
- empty:'No hay más datos verificados.',privacy:'Los contactos CRM, registros privados y perfiles profesionales no se vinculan sin identidad verificada.'}
+ en:{title:'Client card',back:'Back to conversation',contact:'Contact details',email:'Email',phone:'Phone',
+   status:'Status',source:'Channel',date:'Received',photos:'Conversation attachments',
+   hint:'Private photos and recordings are linked to this conversation; nothing is copied into a different client profile.',
+   none:'No attachments in the loaded history.',loading:'Opening private client details…',
+   error:'Could not open private details. Reopen the card to retry.',older:'Load earlier attachments',
+   olderBusy:'Loading earlier history…',olderError:'Could not load earlier history. Retry.',
+   master:'Master profile',openMaster:'Open verified master profile',full:'Open private client request and materials',
+   empty:'No other verified details yet.',privacy:'CRM contacts, private client records and master profiles are linked only after identity verification.',
+   video:'Videos from the private client case are available through its protected case link, not from this messenger archive.',
+   photo:'Photo',audio:'Audio',movie:'Video'},
+ ru:{title:'Карточка клиента',back:'К переписке',contact:'Данные клиента',email:'Email',phone:'Телефон',
+   status:'Статус',source:'Канал',date:'Получена',photos:'Материалы переписки',
+   hint:'Приватные фотографии и записи привязаны к диалогу. В другой профиль клиента ничего не копируется.',
+   none:'В загруженной истории вложений нет.',loading:'Открываю защищённую карточку…',
+   error:'Не удалось открыть сведения. Повторите открытие карточки.',older:'Показать более ранние материалы',
+   olderBusy:'Загружаю историю…',olderError:'Не удалось загрузить историю. Повторите.',
+   master:'Профиль мастера',openMaster:'Открыть подтверждённый профиль мастера',full:'Открыть защищённую заявку и материалы',
+   empty:'Других подтверждённых данных пока нет.',privacy:'Контакты CRM, приватные клиентские записи и профили мастеров связываются только после проверки личности.',
+   video:'Видео из личного дела доступны через защищённую заявку, а не через общий архив мессенджера.',
+   photo:'Фото',audio:'Аудио',movie:'Видео'},
+ es:{title:'Ficha del cliente',back:'Volver al chat',contact:'Datos de contacto',email:'Correo',phone:'Teléfono',
+   status:'Estado',source:'Canal',date:'Recibida',photos:'Adjuntos de la conversación',
+   hint:'Fotos y grabaciones privadas pertenecen a esta conversación y no se copian a otras fichas.',
+   none:'No hay adjuntos en el historial cargado.',loading:'Abriendo ficha privada…',
+   error:'No se pueden abrir los datos. Vuelve a intentar.',older:'Ver adjuntos anteriores',
+   olderBusy:'Cargando historial…',olderError:'No se pudo cargar el historial. Reintenta.',
+   master:'Perfil profesional',openMaster:'Abrir perfil profesional verificado',full:'Abrir solicitud y archivos privados',
+   empty:'No hay más datos verificados.',privacy:'Contactos CRM, expedientes privados y perfiles profesionales solo se enlazan tras verificar la identidad.',
+   video:'Los videos del expediente privado están disponibles en la solicitud protegida, no en este archivo de mensajes.',
+   photo:'Foto',audio:'Audio',movie:'Video'}
 }
 const validId=value=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(value||''))
 const validSlug=value=>typeof value==='string'&&/^[a-z0-9-]{2,90}$/.test(value)
@@ -34,57 +51,82 @@ function displayDate(value,locale){
  return Number.isFinite(date.getTime())?
    new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeZone:'America/Toronto'}).format(date):''
 }
-
-// The existing authenticated endpoints own authorization. Never join by name,
-// phone, email or Telegram identity; never fetch public Bot API media.
+async function privateJson(url,{accountId,signal,postBody}){
+ const response=await fetch(url,{method:postBody?'POST':'GET',credentials:'same-origin',cache:'no-store',
+   signal,headers:{'X-HH-Account-Id':accountId,...(postBody?{'Content-Type':'application/json'}:{})},
+   ...(postBody?{body:JSON.stringify(postBody)}:{})})
+ if(!response.ok)throw Error('PRIVATE_CARD_UNAVAILABLE')
+ return response.json()
+}
+function threadMatches(data,item){
+ return data.threads?.some(row=>row.id===item.id&&row.contactId===item.contactId)
+}
 export default function MessagesContactCard({item,accountId,locale='en',onBack}){
  const lang=COPY[locale]?locale:'en',t=COPY[lang]
  const stateKey=String(accountId||'')+':'+String(item?.key||'')
- const [state,setState]=useState({key:'',loading:false,error:false,contact:null,photos:[]})
+ const [state,setState]=useState({key:'',loading:false,error:false,contact:null,media:[],cursor:null,olderBusy:false,olderError:false})
+ const olderRef=useRef(null)
  const needsFetch=item?.kind==='crm'||item?.kind==='direct'
- const view=state.key===stateKey?state:{loading:needsFetch,error:false,contact:null,photos:[]}
+ const view=state.key===stateKey?state:{loading:needsFetch,error:false,contact:null,media:[],cursor:null,olderBusy:false}
  useEffect(()=>{
    const abort=new AbortController()
    if(!accountId||!validId(item?.id)||!needsFetch){
-     setState({key:stateKey,loading:false,error:false,contact:null,photos:[]})
+     setState({key:stateKey,loading:false,error:false,contact:null,media:[],cursor:null,olderBusy:false})
      return ()=>abort.abort()
    }
-   setState({key:stateKey,loading:true,error:false,contact:null,photos:[]})
+   setState({key:stateKey,loading:true,error:false,contact:null,media:[],cursor:null,olderBusy:false})
    async function load(){
      if(item.kind==='crm'){
        if(!validId(item.contactId))throw Error('UNLINKED_CONTACT')
-       const [contactReply,threadReply]=await Promise.all([
-         fetch('/api/app/crm/contact',{method:'POST',credentials:'same-origin',cache:'no-store',
-           signal:abort.signal,headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},
-           body:JSON.stringify({contactId:item.contactId})}),
-         fetch('/api/app/crm/messenger?'+new URLSearchParams({thread:item.id}),{
-           credentials:'same-origin',cache:'no-store',signal:abort.signal,
-           headers:{'X-HH-Account-Id':accountId}}),
+       const [contactData,threadData]=await Promise.all([
+         privateJson('/api/app/crm/contact',{accountId,signal:abort.signal,postBody:{contactId:item.contactId}}),
+         privateJson('/api/app/crm/messenger?'+new URLSearchParams({thread:item.id}),{accountId,signal:abort.signal}),
        ])
-       if(!contactReply.ok||!threadReply.ok)throw Error('PRIVATE_CARD_UNAVAILABLE')
-       const [contactData,threadData]=await Promise.all([contactReply.json(),threadReply.json()])
-       if(contactData.contact?.id!==item.contactId||
-          !threadData.threads?.some(row=>row.id===item.id&&row.contactId===item.contactId))
+       if(contactData.contact?.id!==item.contactId||!threadMatches(threadData,item))
          throw Error('CARD_IDENTITY_MISMATCH')
-       const photos=(threadData.messages||[]).filter(row=>row.photo===true&&validId(row.id))
-         .slice(-12).map(row=>({id:row.id,purpose:row.photoPurpose==='drawing'?'drawing':'portrait'}))
-       return {contact:contactData.contact,photos}
+       return {contact:contactData.contact,media:mediaFromMessages('crm',threadData.messages),
+         cursor:threadData.nextMessagesCursor||null}
      }
-     const reply=await fetch('/api/app/direct-messages?'+new URLSearchParams({threadId:item.id}),{
-       credentials:'same-origin',cache:'no-store',signal:abort.signal})
-     if(!reply.ok)throw Error('PRIVATE_CARD_UNAVAILABLE')
-     const data=await reply.json()
+     const data=await privateJson('/api/app/direct-messages?'+new URLSearchParams({threadId:item.id}),
+       {accountId,signal:abort.signal})
      if(data.accountId!==accountId||data.threadId!==item.id)throw Error('CARD_IDENTITY_MISMATCH')
-     const photos=(data.messages||[]).filter(row=>row.attachment?.kind==='image'&&validId(row.attachment.id))
-       .slice(-12).map(row=>({id:row.attachment.id}))
-     return {contact:null,photos}
+     return {contact:null,media:mediaFromMessages('direct',data.messages),
+       cursor:data.nextMessagesCursor||null}
    }
    load().then(result=>{if(!abort.signal.aborted)
-     setState({key:stateKey,loading:false,error:false,...result})})
+     setState({key:stateKey,loading:false,error:false,olderBusy:false,olderError:false,...result})})
      .catch(()=>{if(!abort.signal.aborted)
-       setState({key:stateKey,loading:false,error:true,contact:null,photos:[]})})
-   return ()=>abort.abort()
+       setState({key:stateKey,loading:false,error:true,contact:null,media:[],cursor:null,olderBusy:false})})
+   return ()=>{abort.abort();olderRef.current?.abort()}
  },[accountId,item?.id,item?.contactId,item?.kind,needsFetch,stateKey])
+
+ async function loadOlder(){
+   if(!view.cursor||view.olderBusy||!accountId||!needsFetch)return
+   olderRef.current?.abort()
+   const abort=new AbortController()
+   olderRef.current=abort
+   setState(previous=>previous.key===stateKey?{...previous,olderBusy:true,olderError:false}:previous)
+   try{
+     const params=item.kind==='crm'
+       ?new URLSearchParams({thread:item.id,messagesBefore:view.cursor})
+       :new URLSearchParams({threadId:item.id,messagesBefore:view.cursor})
+     const data=await privateJson((item.kind==='crm'?'/api/app/crm/messenger?':'/api/app/direct-messages?')+params,
+       {accountId,signal:abort.signal})
+     if(item.kind==='crm'&&!threadMatches(data,item))throw Error('CARD_IDENTITY_MISMATCH')
+     if(item.kind==='direct'&&(data.accountId!==accountId||data.threadId!==item.id))
+       throw Error('CARD_IDENTITY_MISMATCH')
+     if(abort.signal.aborted)return
+     const more=mediaFromMessages(item.kind,data.messages)
+     setState(previous=>{
+       if(previous.key!==stateKey||previous.cursor!==view.cursor)return previous
+       return {...previous,media:mergeMediaPages(previous.media,more),
+         cursor:data.nextMessagesCursor||null,olderBusy:false,olderError:false}
+     })
+   }catch{
+     if(!abort.signal.aborted)setState(previous=>previous.key===stateKey?
+       {...previous,olderBusy:false,olderError:true}:previous)
+   }finally{if(olderRef.current===abort)olderRef.current=null}
+ }
  const kind=item?.kind
  const contact=kind==='crm'?view.contact:kind==='request'?item.item?.contact:kind==='business'?item.item:null
  const email=field(contact,'email'),phone=field(contact,'phone'),status=field(contact,'lifecycle','status')||field(item?.item,'status')
@@ -114,18 +156,30 @@ export default function MessagesContactCard({item,accountId,locale='en',onBack})
        {t.openMaster}<ExternalLink size={16}/></Link></section>}
    {(kind==='crm'||kind==='direct')&&<section className={styles.section}>
      <h3><Images size={17}/>{t.photos}</h3><p className={styles.muted}>{t.hint}</p>
-     {view.photos.length>0?<div className={styles.gallery}>{view.photos.map(photo=>kind==='crm'
-       ?<CrmTelegramPhoto key={photo.id} accountId={accountId} threadId={item.id}
-          messageId={photo.id} locale={lang} purpose={photo.purpose}/>
-       :<a key={photo.id} href={'/api/app/direct-messages/media/'+photo.id}
-          target="_blank" rel="noopener noreferrer" aria-label={t.photos}>
-          <img src={'/api/app/direct-messages/media/'+photo.id} alt={t.photos} loading="lazy"/></a>)}</div>
+     {view.media.length>0?<div className={styles.gallery}>{view.media.map(media=>
+       <div key={media.id} className={styles.mediaItem}>
+         <small>{media.kind==='image'?t.photo:media.kind==='audio'?t.audio:t.movie}</small>
+         {kind==='crm'
+           ?<CrmTelegramPhoto accountId={accountId} threadId={item.id} messageId={media.id}
+              locale={lang} purpose={media.purpose}/>
+           :media.kind==='image'
+             ?<PrivateChatPhoto src={'/api/app/direct-messages/media/'+media.id} alt={t.photo} locale={lang}/>
+             :media.kind==='audio'
+               ?<audio controls preload="none" aria-label={t.audio}
+                  src={'/api/app/direct-messages/media/'+media.id}/>
+               :<video controls playsInline preload="none" aria-label={t.movie}
+                  src={'/api/app/direct-messages/media/'+media.id}/>}
+       </div>)}</div>
        :!view.loading&&!view.error&&<p className={styles.muted}>{t.none}</p>}
+     {view.cursor&&<button type="button" className={styles.olderButton} onClick={loadOlder}
+        disabled={view.olderBusy}>{view.olderBusy?t.olderBusy:t.older}</button>}
+     {view.olderError&&<p className={styles.notice} role="alert">{t.olderError}</p>}
    </section>}
    {kind==='request'&&validId(item.id)&&<section className={styles.section}>
-     <h3>{t.photos}</h3><Link prefetch={false} className={styles.link}
+     <h3><Video size={17}/>{t.photos}</h3><Link prefetch={false} className={styles.link}
        href={'/'+lang+'/app/practice?panel=clients&requestId='+encodeURIComponent(item.id)}>
        {t.full}<ExternalLink size={16}/></Link></section>}
+   {(kind==='crm'||kind==='direct')&&<p className={styles.privacy}><Music2 size={13}/>{t.video}</p>}
    <p className={styles.privacy}>{t.privacy}</p>
  </section>
 }

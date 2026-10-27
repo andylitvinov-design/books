@@ -23,7 +23,11 @@ const CHANNELS={
 }
 const COPY={
   en:{
-    heading:'Content command center',sub:'One place to prepare posts for your channels, with explicit approvals.',
+    heading:'Content command center',sub:'Prepare public posts quickly, with a clear review before any manual or connected publishing.',
+    quickTitle:'Create one post',quickGuide:'Choose a channel, write the title and caption, then save a draft. No social platform is contacted.',
+    quickStart:'Create draft',quickPosts:'Open saved posts',storagePending:'Draft storage not yet verified. If this persists, open Connections below and retry its Redis check.',refreshStore:'Reload stored drafts',
+    storagePassed:'Protected draft storage verified',moreOptions:'Extra options · brand, language, media and calendar',
+    advancedHint:'Optional public content only. Changes to an approved post require a fresh review.',
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',manual_done:'Manually marked done · unverified',
     sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify in Telegram',
     manualInbox:'To publish',manualDoneConfirm:'Have you actually posted this exact content in your chosen account? This only records your manual statement; Growth Studio CANNOT verify the social post.',manualDoneNotice:'Marked done manually — not verified by a social platform.',manualDoneButton:'Mark done (manual)',manualUndoConfirm:'Restore this item to the manual publishing queue? It will be counted as pending again.',manualUndoNotice:'Restored to manual posting queue.',manualUndo:'Restore manual task',manualDoneTime:'Owner marked done (not provider verified)',pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
@@ -60,7 +64,11 @@ const COPY={
     duplicate:'Duplicate into draft',
   },
   ru:{
-    heading:'Центр управления контентом',sub:'Готовьте публикации для разных площадок и согласовывайте их перед размещением.',
+    heading:'Центр управления контентом',sub:'Создавайте публикации быстро и согласовывайте их перед размещением.',
+    quickTitle:'Новая публикация',quickGuide:'Выберите площадку, напишите название и текст, затем сохраните черновик. Ничего не отправляется в соцсети.',
+    quickStart:'Создать черновик',quickPosts:'Открыть сохранённые',storagePending:'Хранилище черновиков ещё не проверено. Если надпись не исчезает, откройте «Подключения» ниже и повторите проверку Redis.',refreshStore:'Обновить черновики',
+    storagePassed:'Хранилище черновиков проверено',moreOptions:'Дополнительно · проект, язык, медиа и календарь',
+    advancedHint:'Только публичные материалы. После изменения одобренного поста требуется новое согласование.',
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',manual_done:'Отмечено вручную · не проверено',
     sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте Telegram',
     manualInbox:'К публикации',manualDoneConfirm:'Вы действительно разместили этот точный материал в нужном аккаунте? Это только ваша отметка; Growth Studio НЕ проверил пост в соцсети.',manualDoneNotice:'Отмечено вручную. Доставка в соцсеть не подтверждена.',manualDoneButton:'Отметить вручную',manualUndoConfirm:'Вернуть задачу в очередь ручных публикаций? Она снова будет считаться ожидающей.',manualUndoNotice:'Возвращено в очередь ручных публикаций.',manualUndo:'Вернуть задачу',manualDoneTime:'Отмечено вами; провайдер не проверялся',pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
@@ -104,7 +112,7 @@ const CHANNEL_WARNINGS={
 }
 const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
-  brand:'holistic_house',channel:'instagram',locale:'en',title:'',caption:'',
+  brand:'holistic_house',channel:'manual',locale:'en',title:'',caption:'',
   sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
 })
 const isoFromLocal = input => {
@@ -162,14 +170,21 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
   const [editing,setEditing]=useState(null)
-  const [form,setForm]=useState(empty)
+  const [form,setForm]=useState(()=>({...empty(),locale:initialLocale==='ru'?'ru':'en'}))
+  const [workspaceOpen,setWorkspaceOpen]=useState(false)
+  const [storageVerified,setStorageVerified]=useState(false)
   const [tab,setTab]=useState('compose')
   const [evergreenSource,setEvergreenSource]=useState(null)
   const [filter,setFilter]=useState('active')
   const [brandFilter,setBrandFilter]=useState('all')
   const [month,setMonth]=useState(()=>torontoKey(new Date().toISOString()).slice(0,7))
   useEffect(()=>{
-    const onLocale=event=>setLocale(event.detail==='ru'?'ru':'en')
+    const onLocale=event=>{
+      const nextLocale=event.detail==='ru'?'ru':'en'
+      setLocale(nextLocale)
+      // Do not silently relabel an already written or saved editorial post.
+      setForm(previous=>previous.title||previous.caption?previous:{...previous,locale:nextLocale})
+    }
     window.addEventListener('holistic-house-ui-locale',onLocale)
     return()=>window.removeEventListener('holistic-house-ui-locale',onLocale)
   },[])
@@ -216,19 +231,30 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       :'Text copied to editor only. Review facts, language and media rights, then save the draft. Nothing was published.')
   }
   const isEditing=Boolean(editing)
+  const openWorkspace=nextTab=>{
+    setWorkspaceOpen(true)
+    setTab(nextTab)
+    setNotice('')
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const target=document.getElementById(nextTab==='compose'?'growth-studio-compose':'growth-studio-posts')
+      if(target){
+        // Move keyboard/VoiceOver focus into the revealed workspace as well as scrolling.
+        target.focus({preventScroll:true})
+        target.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})
+      }
+    }))
+  }
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
-  const reset=()=>{setEditing(null);setForm(empty());setNotice('');setTab('compose')}
+  const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
   const edit=post=>{
     setEditing({id:post.id,revision:post.revision})
     setForm({...post,scheduledAt:localFromIso(post.scheduledAt)})
-    setTab('compose');setNotice('')
-    window.scrollTo({top:0,behavior:'smooth'})
+    openWorkspace('compose')
   }
   const duplicate=post=>{
     setEditing(null)
     setForm({...post,title:post.title+' copy',scheduledAt:'',campaign:post.campaign})
-    setTab('compose');setNotice('')
-    window.scrollTo({top:0,behavior:'smooth'})
+    openWorkspace('compose')
   }
   async function refresh(){
     setBusy(true);setNotice('')
@@ -240,7 +266,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     finally {setBusy(false)}
   }
   async function execute(action,post){
-    if (!ready||busy) return
+    if (!ready||!storageVerified||busy) return
     setBusy(true);setNotice('')
     try {
       const result=await updateGrowthStudioPostAction(action==='save'
@@ -320,18 +346,41 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     scheduledByDay.set(day,[...(scheduledByDay.get(day)||[]),post])
   }
   return <section className={styles.studio} aria-label="HH Growth Studio">
-    <div className={styles.intro}>
+    {workspaceOpen&&<div className={styles.intro}>
       <div><p className={styles.eyebrow}>HOLISTIC HOUSE · GROWTH STUDIO</p>
         <h2>{t.heading}</h2><p>{t.sub}</p></div>
       <div className={styles.safetyBadge}><ShieldCheck size={18} aria-hidden="true"/>{t.noAuto}</div>
+    </div>}
+    <div className={styles.quickLaunch}>
+      <div className={styles.quickLaunchCopy}>
+        <h3>{t.quickTitle}</h3>
+        <p>{t.quickGuide}</p>
+        <p className={storageVerified&&ready?styles.quickLaunchReady:styles.quickLaunchPending} role="status" aria-live="polite">
+          {storageVerified&&ready?t.storagePassed:t.storagePending}
+        </p>
+      </div>
+      <div className={styles.quickLaunchActions}>
+        <button type="button" className={styles.quickLaunchPrimary} disabled={!ready||!storageVerified||busy}
+          onClick={()=>openWorkspace('compose')}><Plus size={17} aria-hidden="true"/>{t.quickStart}</button>
+        {!ready&&<button type="button" className={styles.quickLaunchSecondary}
+          onClick={refresh} disabled={busy}><RefreshCcw size={16} aria-hidden="true"/>{t.refreshStore}</button>}
+        {records.length>0&&<button type="button" className={styles.quickLaunchSecondary}
+          onClick={()=>openWorkspace('posts')}><FileText size={16} aria-hidden="true"/>{t.quickPosts} · {records.length}</button>}
+      </div>
     </div>
+    <GrowthStudioConnections locale={locale} telegram={telegram}
+      onTelegramVerified={setTelegramVerified} onStorageVerified={setStorageVerified}/>
+    {workspaceOpen&&<>
     {!ready&&<p className={styles.warning} role="alert"><CircleAlert size={18}/>{t.unavailable}</p>}
     <p className={telegramVerified?styles.connectionReady:styles.connectionUnavailable}>
       <ShieldCheck size={15}/>{telegramVerified?(locale==='ru'?'Права бота Telegram подтверждены':'Telegram bot posting permissions verified'):
         telegram.ready?(locale==='ru'?'Настройки Telegram найдены — сначала проверьте права ниже':'Telegram settings found — verify posting permissions below'):t.telegramDisabled}
     </p>
     <p className={styles.privacyNote}><ShieldCheck size={15} aria-hidden="true"/>{t.unsafe}</p>
-    <GrowthStudioConnections locale={locale} telegram={telegram} onTelegramVerified={setTelegramVerified}/>
+    <div className={styles.workspaceClose}>
+      <button type="button" onClick={()=>setWorkspaceOpen(false)}>
+        {locale==='ru'?'Свернуть':'Collapse'}</button>
+    </div>
     <div className={styles.metrics}>
       <div><span>{t.draftCount}</span><strong>{counts.draft}</strong></div>
       <div><span>{t.approvedCount}</span><strong>{counts.approved}</strong></div>
@@ -354,45 +403,51 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       </div>
     </div>
     {notice&&<p className={styles.notice} role="status" aria-live="polite">{notice}</p>}
-    {tab==='compose'&&<div className={styles.columns}>
+    {tab==='compose'&&<div id="growth-studio-compose" tabIndex={-1} role="region" aria-label={t.compose} className={styles.columns}>
       <div className={styles.editor}>
         <div className={styles.sectionHead}><h3>{isEditing?t.selected:t.newDraft}</h3>
           <button type="button" onClick={reset}><Plus size={15}/>{t.new}</button></div>
-        <p className={styles.hint}>{t.createGuide}</p>
-        <div className={styles.pair}>
-          <label>{t.brand}<select disabled={!ready||busy} value={form.brand} onChange={set('brand')}>
-            {Object.keys(GROWTH_BRANDS).map(brand=><option key={brand} value={brand}>{BRANDS[brand]}</option>)}</select></label>
-          <label>{t.channel}<select disabled={!ready||busy} value={form.channel} onChange={set('channel')}>
+        <p className={styles.hint}>{t.quickGuide}</p>
+        <div className={styles.quickComposerFields}>
+          <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={set('channel')}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
-          <label>{t.language}<select disabled={!ready||busy} value={form.locale} onChange={set('locale')}>
-            {GROWTH_LANGUAGES.map(language=><option key={language} value={language}>{language.toUpperCase()}</option>)}</select></label>
-          <label>{t.campaign}<input disabled={!ready||busy} type="text" maxLength={64} pattern="[a-zA-Z0-9_-]*"
-            placeholder="academy_intro_202610" value={form.campaign} onChange={set('campaign')}/></label>
+          <label>{t.title}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={120} required
+            placeholder={locale==='ru'?'Название публикации':'Post title'}
+            value={form.title} onChange={set('title')}/></label>
+          <label>{t.caption}<textarea disabled={!ready||!storageVerified||busy} maxLength={3500} rows={5} value={form.caption}
+            placeholder={locale==='ru'?'Напишите публичный текст...':'Write public post text...'} onChange={set('caption')}/></label>
         </div>
-        <label>{t.title}<input disabled={!ready||busy} type="text" maxLength={120} required
-          placeholder={locale==='ru'?'Образовательный пост':'Education post'}
-          value={form.title} onChange={set('title')}/></label>
-        <label>{t.caption}<textarea disabled={!ready||busy} maxLength={3500} rows={6} value={form.caption}
-          placeholder={locale==='ru'?'Напишите короткий текст публикации...':'Write your post caption...'} onChange={set('caption')}/></label>
-        <p className={styles.hint}>{t.captionHint}</p>
-        <div className={styles.pair}>
-          <label>{t.media}<input disabled={!ready||busy} type="text" maxLength={500} value={form.mediaUrl||''}
-            placeholder={GROWTH_BRANDS[form.brand]+'/images/photo.webp'} onChange={set('mediaUrl')}/></label>
-          <label>{t.mediaAlt}<input disabled={!ready||busy} type="text" maxLength={240} value={form.mediaAlt||''}
-            placeholder={locale==='ru'?'Описание изображения':'What the image shows'} onChange={set('mediaAlt')}/></label>
-        </div>
-        <p className={styles.hint}>{t.mediaHint}</p>
-        <label>{t.source}<input disabled={!ready||busy} type="text" maxLength={500} value={form.sourceUrl}
-          placeholder={GROWTH_BRANDS[form.brand]+'/en/academy'} onChange={set('sourceUrl')}/></label>
-        <p className={styles.hint}>{t.sourceHint}</p>
-        <GrowthStudioSourcePicker brand={form.brand} sourceUrl={form.sourceUrl}
-          locale={locale} disabled={!ready||busy} onApply={applyPublicSource}/>
-        <label>{t.schedule}<input disabled={!ready||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
-        <p className={styles.hint}>{t.scheduleNote}</p>
-        <div className={styles.manualSlotActions}>
-          <button type="button" disabled={!ready||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
-          <span>{locale==='ru'?'Пн–Пт · 10:00/17:00 по Торонто. Не прогноз лучшего времени.':'Mon–Fri · 10:00/17:00 Toronto. Editorial preset, not an analytics-based best time.'}</span>
-        </div>
+        <details key={editing?.id||'new'} open={isEditing} className={styles.composerOptions}>
+          <summary>{t.moreOptions}{form.mediaUrl?' · 📷':''}{form.scheduledAt?' · 📅':''}</summary>
+          <p className={styles.hint}>{t.advancedHint}</p>
+          <div className={styles.pair}>
+            <label>{t.brand}<select disabled={!ready||!storageVerified||busy} value={form.brand} onChange={set('brand')}>
+              {Object.keys(GROWTH_BRANDS).map(brand=><option key={brand} value={brand}>{BRANDS[brand]}</option>)}</select></label>
+            <label>{t.language}<select disabled={!ready||!storageVerified||busy} value={form.locale} onChange={set('locale')}>
+              {GROWTH_LANGUAGES.map(language=><option key={language} value={language}>{language.toUpperCase()}</option>)}</select></label>
+            <label>{t.campaign}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={64} pattern="[a-zA-Z0-9_-]*"
+              placeholder="academy_intro_202610" value={form.campaign} onChange={set('campaign')}/></label>
+          </div>
+          <div className={styles.pair}>
+            <label>{t.media}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={500} value={form.mediaUrl||''}
+              placeholder={GROWTH_BRANDS[form.brand]+'/images/photo.webp'} onChange={set('mediaUrl')}/></label>
+            <label>{t.mediaAlt}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={240} value={form.mediaAlt||''}
+              placeholder={locale==='ru'?'Описание изображения':'What the image shows'} onChange={set('mediaAlt')}/></label>
+          </div>
+          <p className={styles.hint}>{t.mediaHint}</p>
+          <label>{t.source}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={500} value={form.sourceUrl}
+            placeholder={GROWTH_BRANDS[form.brand]+'/en/academy'} onChange={set('sourceUrl')}/></label>
+          <p className={styles.hint}>{t.sourceHint}</p>
+          <GrowthStudioSourcePicker brand={form.brand} sourceUrl={form.sourceUrl}
+            locale={locale} disabled={!ready||!storageVerified||busy} onApply={applyPublicSource}/>
+          <label>{t.schedule}<input disabled={!ready||!storageVerified||busy} type="datetime-local" value={form.scheduledAt} onChange={set('scheduledAt')}/></label>
+          <p className={styles.hint}>{t.scheduleNote}</p>
+          <div className={styles.manualSlotActions}>
+            <button type="button" disabled={!ready||!storageVerified||busy} onClick={suggestManualTime}><CalendarDays size={15}/>{t.planNext}</button>
+            <span>{locale==='ru'?'Пн–Пт · 10:00/17:00 по Торонто. Не прогноз лучшего времени.':'Mon–Fri · 10:00/17:00 Toronto. Editorial preset, not an analytics-based best time.'}</span>
+          </div>
+          <p className={styles.hint}>{t.captionHint}</p>
+        </details>
         {plannedConflict>0&&<p className={styles.manualSlotConflict} role="alert">{t.planCollision}</p>}
         <div className={styles.publisherDiagnostics} role="status" aria-live="polite">
           <strong>{CHANNEL_CAPABILITIES[form.channel]?.name || form.channel} · {METHOD_LABELS[locale]?.[CHANNEL_CAPABILITIES[form.channel]?.mode] || METHOD_LABELS.en.manual}</strong>
@@ -401,8 +456,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
               <li key={code}>{CHANNEL_WARNINGS[locale]?.[code]||CHANNEL_WARNINGS.en[code]||code}</li>)}</ul>}
         </div>
         <div className={styles.editorActions}>
-          <button className={styles.primary} disabled={!ready||busy||!form.title.trim()} type="button" onClick={()=>execute('save')}><Check size={16}/>{t.save}</button>
-          {isEditing&&<button type="button" disabled={!ready||busy} onClick={reset}>{t.clear}</button>}
+          <button className={styles.primary} disabled={!ready||!storageVerified||busy||!form.title.trim()} type="button" onClick={()=>execute('save')}><Check size={16}/>{t.save}</button>
+          {isEditing&&<button type="button" disabled={!ready||!storageVerified||busy} onClick={reset}>{t.clear}</button>}
         </div>
         {isEditing&&<p className={styles.hint}>{t.draft}: #{editing.revision}. {t.notes}</p>}
       </div>
@@ -427,7 +482,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         </div>
       </div>
     </div>}
-    {tab==='bulk'&&<GrowthStudioBulk locale={locale} base={form} ready={ready} onCreated={onCreated}/>}
+    {tab==='bulk'&&<GrowthStudioBulk locale={locale} base={form} ready={ready&&storageVerified} onCreated={onCreated}/>}
     {tab==='library'&&<section className={styles.library}>
       <h3>{t.library} · {library.length}</h3>
       <p className={styles.hint}>{t.mediaHint} <Link href="/admin/materials">{t.materials}</Link></p>
@@ -452,7 +507,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     </div>}
     {tab==='inbox'&&<GrowthStudioManualInbox
       records={records.filter(post=>brandFilter==='all'||post.brand===brandFilter)}
-      locale={locale} ready={ready} busy={busy}
+      locale={locale} ready={ready&&storageVerified} busy={busy}
       onEdit={edit} onMarkDone={markManualDone}/>}
     {tab==='calendar'&&<div className={styles.calendar}>
       <div className={styles.calendarHead}>
@@ -476,7 +531,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <p className={styles.hint}>{scheduled.length} {t.monthItems}. {t.notes}</p>
     </div>}
     {tab==='posts'&&evergreenSource&&<GrowthStudioEvergreen key={evergreenSource.id}
-      source={evergreenSource} locale={locale} disabled={!ready||busy}
+      source={evergreenSource} locale={locale} disabled={!ready||!storageVerified||busy}
       onClose={()=>setEvergreenSource(null)}
       onCreated={(items,reused)=>{
         onCreated(items);setEvergreenSource(null)
@@ -484,7 +539,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           ?reused?'Пакет повторов уже сохранён, дубли не созданы.':'Повторные черновики созданы. Проверьте и одобрите каждый отдельно.'
           :reused?'Repeat batch already exists — no duplicates.':'Repeat drafts created. Review and approve each separately.')
       }}/>} 
-    {tab==='posts'&&<div className={styles.postList}>
+    {tab==='posts'&&<div id="growth-studio-posts" tabIndex={-1} role="region" aria-label={t.pending} className={styles.postList}>
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
@@ -494,24 +549,24 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
             && <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button>}</div>
         <p className={styles.postExcerpt}>{post.caption||'—'}</p>
         <div className={styles.postButtons}>
-          {post.status==='draft'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
-          {post.status==='approved'&&<button type="button" disabled={busy||!ready} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
+          {post.status==='draft'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
+          {post.status==='approved'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
           {post.channel==='telegram'&&post.brand==='holistic_house'&&['approved','planned_manual'].includes(post.status)&&
-            <button type="button" disabled={busy||!ready||!telegramVerified}
+            <button type="button" disabled={busy||!ready||!storageVerified||!telegramVerified}
               title={telegramVerified?t.telegramSend:locale==='ru'?'Сначала проверьте права бота в разделе подключений':'Verify bot posting rights under Connections first'} onClick={()=>sendTelegram(post)}>
               <Send size={15}/>{t.telegramSend}</button>}
-          {post.status==='planned_manual'&&<button type="button" disabled={busy||!ready}
+          {post.status==='planned_manual'&&<button type="button" disabled={busy||!ready||!storageVerified}
             onClick={()=>markManualDone(post)}><CheckCheck size={15}/>{t.manualDoneButton}</button>}
-          {post.status==='manual_done'&&<button type="button" disabled={busy||!ready}
+          {post.status==='manual_done'&&<button type="button" disabled={busy||!ready||!storageVerified}
             onClick={()=>undoManualDone(post)}><RefreshCcw size={15}/>{t.manualUndo}</button>}
           {post.status==='manual_done'&&<small className={styles.manualDoneTimestamp}>{t.manualDoneTime}: {formatTime(post.manualDoneAt,locale)}</small>}
           {post.status==='published'&&post.delivery?.url&&
             <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>}
-          {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
+          {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
           {!['archived','sending','published','delivery_unknown','manual_done'].includes(post.status)&&
-            <button type="button" disabled={busy||!ready} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
+            <button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('archive',post)}><Trash2 size={15}/>{t.archive}</button>}
           {['approved','planned_manual','published'].includes(post.status)&&
-            <button type="button" disabled={busy||!ready} onClick={()=>{setEvergreenSource(post);setNotice('')}}>
+            <button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>{setEvergreenSource(post);setNotice('')}}>
               <RefreshCcw size={15}/>{locale==='ru'?'Подготовить повторы':'Prepare repeats'}</button>}
           <button type="button" onClick={()=>copyPost(post)}><Copy size={15}/>{t.copyPost}</button>
           {post.sourceUrl&&<button type="button" onClick={()=>copyLink(post)}><Copy size={15}/>{t.copy}</button>}
@@ -519,5 +574,6 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         </div>
       </article>)}
     </div>}
+    </>}
   </section>
 }

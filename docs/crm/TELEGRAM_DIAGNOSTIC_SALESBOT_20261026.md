@@ -163,3 +163,48 @@ before releasing.
 → optional photo privately accessible to owner → manual owner reply accepted
 and physically received → /stop → blocked further sends. Only after real
 provider evidence and separate owner approval may public availability be enabled.
+
+## 27 October 2026 · CRM Automations must display the owner's *actual* six Telegram V2 messages
+The owner noticed that CRM → Automations displayed a **generic SalesBot example**
+("Start → Welcome → Choice → Offer") instead of the previously approved personal
+express-diagnostic script. That generic dry-run graph is **not** the customer
+Telegram conversation and cannot represent long text, consent, photo/drawing,
+the optional no-photo branch, or the real per-topic coaching link.
+**Source of truth remains `lib/crm/telegram-diagnostic-v2.mjs` `copy` and the existing transition function**:
+the read-only `telegramDiagnosticV2Script` projects exactly its six outgoing
+message texts and inline button labels, using the same canonical language data.
+In CRM Automations this script is shown **first**, with full original texts
+(EN/RU/ES), four genuine topic selections, both photo branches and the actual
+topic-scoped questionnaire link. "Other CRM scenarios" remains collapsed by
+default and is explicitly labeled **separate preview/internal flows**, never
+the Telegram script. It cannot silently edit or replace the author's live texts.
+No Telegram, Supabase, RLS, CRM contact, dispatch or environment flags changed.
+A physical second-account recipient test is still independent.
+
+## 27 October 2026 · Language-targeted public entry from EN/RU/ES free express-review pages
+The owner-authored English (as well as RU and ES) six-message Telegram V2 script already
+exists; it is **not rewritten here**. The free express-review landing now
+reuses the existing `TelegramDiagnosticEntry` readiness check and displays the
+appropriate **`?start=hhreview_en|ru|es`** public BotFather deep link. The
+Telegram state machine takes this trusted static locale from the start payload,
+not the user's device language; STOP/consent, optional portrait/drawing and
+private intake remain unchanged. If public Telegram is not approved/ready, its
+link is not shown and the page offers the secure website intake.
+
+An existing, distinct **personal WhatsApp wa.me** link is offered with an
+**explicitly manual** label. It carries only the static `HHREVIEW_EN|RU|ES`
+language marker and the publicly safe service page in a customer-reviewed,
+customer-sent first message. The existing Meta signed webhook, if a WhatsApp
+Business account is ever genuinely connected, may recognize that marker **only
+to label an incoming owner CRM enquiry in the source locale**. It does **NOT**
+enroll/run a WhatsApp bot, create messaging consent, install a webhook,
+auto-send, load a photo, replace the Telegram copy, or enable the Meta production
+send gate. This separation is intentional while there is no verified WhatsApp
+Business CRM account. The personal WhatsApp link is not evidence of Cloud API.
+
+Acceptance: static links for EN/RU/ES, actual server-readiness fail closed,
+Meta HMAC signature before processing an incoming locale marker, no wrong-lang
+override or untrusted URL data, protected CRM owner scope; then GitHub focused
+CI/build, live domain SHA and real recipient tests per provider. **Do not
+claim WhatsApp automation or receipt works until the owner connects a real
+Meta Business number, webhook and validates a separate device E2E.**
