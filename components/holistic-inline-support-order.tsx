@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { RemoteEnergySupportBooking, type EnergySupportMaster, type SupportRequestKind } from "@/components/remote-energy-support-booking";
 import type { PublicLocale } from "@/lib/public-locales";
+import { matchesHolisticEuroBudget, matchesHolisticGoal } from "@/lib/practitioners/holistic-search-budgets.js";
 import styles from "./holistic-inline-support-order.module.css";
 
 type RequestChoice = SupportRequestKind | "consultation";
@@ -64,22 +65,6 @@ const copy = {
   },
 } as const;
 
-function matchesBudget(offer: ConsultationOffer, budget: Budget): boolean {
-  if (budget === "any") return true;
-  const free = offer.pricingMode === "free" ||
-    (offer.pricingMode !== "contact" && offer.price === 0);
-  if (budget === "free") return free;
-  return free || (offer.currency === "EUR" && offer.pricingMode !== "contact" &&
-    typeof offer.price === "number" && offer.price > 0 && offer.price <= Number(budget));
-}
-
-function matchesTopic(offer: ConsultationOffer, goal: string): boolean {
-  const areas = goal === "Work and money" ? ["business_money", "career_purpose"] :
-    goal === "Connection and relationships" ? ["relationships"] :
-    ["energy_spiritual", "body_somatic", "homeopathy_holistic", "emotional_psychological"];
-  return areas.includes(offer.areaKey);
-}
-
 export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindChange, onClose }: {
   locale: PublicLocale;
   kind: SupportRequestKind;
@@ -127,7 +112,8 @@ export function HolisticInlineSupportOrder({ locale, kind, initialGoal, onKindCh
   }, [locale, searched, choice, attempt]);
 
   const visibleConsultations = (consultations || [])
-    .filter(offer => matchesTopic(offer, topic) && matchesBudget(offer, budget))
+    .filter(offer => matchesHolisticGoal(offer.areaKey, topic) &&
+      matchesHolisticEuroBudget(offer.price, offer.currency, offer.pricingMode, budget))
     .slice(0, 16);
 
   return (
