@@ -104,7 +104,7 @@ function deterministicGates() {
 
 function invoke(agent, model, prompt, ms) {
   const result = run('opencode', [
-    'run', '--auto', '--model', model, '--agent', agent,
+    'run', '--standalone', '--auto', '--model', model, '--agent', agent,
     '--format', 'json', prompt,
   ], ms, agentEnv());
   if (!result.ok) throw new Error(agent + ' failed or timed out (no paid fallback): ' +
