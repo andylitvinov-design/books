@@ -14,6 +14,7 @@ const approved = { id, status:'approved_preview', version:1, flow:SALESBOT_TEMPL
 
 test('only valid, explicitly approved saved owner flows enter the manual reply helper', () => {
   assert.deepEqual(approvedSalesbotOperatorFlows([approved]).map(x => x.id), [id])
+  assert.deepEqual(approvedSalesbotOperatorFlows([{...approved,status:'active_internal'}]).map(x => x.id), [id])
   assert.equal(approvedSalesbotOperatorFlows([{...approved,status:'draft'}]).length, 0)
   assert.equal(approvedSalesbotOperatorFlows([{...approved,status:'paused'}]).length, 0)
   assert.equal(approvedSalesbotOperatorFlows([{...approved,version:0}]).length, 0)
