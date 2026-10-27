@@ -163,8 +163,15 @@ try {
     for (const width of [320, 390, 430]) {
       for (const height of [550, 768, 844]) {
         await page.setViewportSize({ width, height })
-        await card().locator('[data-portrait-sectors]').evaluate(
-          el => el.scrollIntoView({ block: 'start', inline: 'nearest' }))
+        await card().locator('[data-portrait-sectors]').evaluate(async el => {
+          // Align the *viewport* after scrollIntoView: a clipping <details>
+          // ancestor may consume its scroll request on short iPhones. Keep the
+          // exact 470/535px size, no-clipping, and >=44px touch assertions.
+          el.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' })
+          const viewportOffset = el.getBoundingClientRect().top
+          window.scrollBy({ top: viewportOffset - 6, behavior: 'instant' })
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+        })
         const frame = await card().evaluate(el => {
           const rect = node => node.getBoundingClientRect()
           const upper = rect(el.querySelector('[data-portrait-sectors]'))
@@ -175,6 +182,8 @@ try {
           return {
             firstTop: upper.top,
             lastBottom: lower.bottom,
+            pageScrollY: window.scrollY,
+            maxScrollY: document.documentElement.scrollHeight - window.innerHeight,
             span: lower.bottom - upper.top,
             pictureWidth:picture.width,
             pictureHeight:picture.height,
