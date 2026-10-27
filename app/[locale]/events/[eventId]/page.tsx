@@ -13,8 +13,9 @@ import styles from "./event-detail.module.css";
 
 type Props = { params: Promise<{ locale: string; eventId: string }> };
 
-// The upcoming/past CTA and indexability must change after the real start time.
-export const revalidate = 300;
+// Published tickets may be paused by moderators; do not cache a stale checkout CTA.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const locales: readonly PublicLocale[] = ["en", "ru", "es"];
 const isLocale = (value: string): value is PublicLocale => locales.includes(value as PublicLocale);
