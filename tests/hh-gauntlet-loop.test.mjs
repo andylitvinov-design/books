@@ -138,6 +138,12 @@ test('OpenCode v2 agents enforce ordered deny-all, scoped Builder edits and read
   assert.match(critic, /fresh session/);
 });
 
+test('deterministic typecheck leaves the disposable Git worktree free of cache files', () => {
+  const script = source('scripts/benchmarking/hh-gauntlet-loop.mjs');
+  assert.match(script, /\['--noEmit', '--incremental', 'false'\]/);
+  assert.match(script, /git\(\['status', '--porcelain=v1', '--untracked-files=all'\]\)/);
+});
+
 test('OpenCode v2 provider listing uses the supported standalone CLI form', () => {
   const script = source('scripts/benchmarking/hh-gauntlet-loop.mjs');
   assert.match(script, /\['models', '--standalone'\]/);
